@@ -26,9 +26,16 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             author TEXT NOT NULL,
             content TEXT NOT NULL,
+            image_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    # Ajout rétrocompatible de la colonne image_url si la table existe déjà sans cette colonne
+    try:
+        c.execute("ALTER TABLE messages ADD COLUMN image_url TEXT")
+    except sqlite3.OperationalError:
+        # Colonne déjà existante, on ignore l'erreur
+        pass
     
     # Table pour les alertes (météo, crues, etc.)
     c.execute('''
@@ -139,10 +146,13 @@ def get_total_approved_stats():
         'benevoles': row[2] or 0
     }
 
-def add_message(author, content):
+def add_message(author, content, image_url=None):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("INSERT INTO messages (author, content) VALUES (?, ?)", (author, content))
+    c.execute(
+        "INSERT INTO messages (author, content, image_url) VALUES (?, ?, ?)",
+        (author, content, image_url),
+    )
     conn.commit()
     conn.close()
 
