@@ -1,10 +1,11 @@
-
+CleanmyMap
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_svg)](https://cleanwalk.streamlit.app)
 
-Une solution technologique engagée permettant de cartographier, quantifier et prédire la pollution urbaine pour protéger nos ressources en eau. Né de la volonté de fédérer les Brigades Vertes, cet outil transforme chaque ramassage bénévole en une donnée scientifique précieuse.
+CleanmyMap : un site web dont le but principal est de mutualiser les résultats d'actions bénévoles de dépollution des rues. De nombreuses autres fonctionnalités sont disponibles pour faire de ce site un incontournable de l'écolo !
+Cet outil transforme chaque ramassage bénévole en une donnée scientifique précieuse et consultable par tous
 
 ## 🚀 Vision & Impact
-L'objectif est de rendre visible l'invisible. Un seul mégot pollue 1000 litres d'eau ; CleanWalk permet de mesurer précisément l'impact de chaque action citoyenne et d'accompagner les collectivités vers des solutions durables.
+L'objectif est de rendre visible l'invisible. Un seul mégot pollue 500 litres d'eau. CleanmyMap permet de mesurer précisément l'impact de chaque action citoyenne et d'accompagner les collectivités vers des solutions durables et vers toutes actions en faveur de l'environnement.
 
 ### Fondamentaux du projet :
 - **Engagement** : Valorisation des bénévoles et des partenaires locaux ("Médaille Verte").
