@@ -1,6 +1,6 @@
 import os
 import re
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import pandas as pd
 import streamlit as st
@@ -1994,49 +1994,50 @@ with tab_admin:
         st.session_state["admin_authenticated"] = False
         st.rerun()
 
-        pending = get_submissions_by_status('pending')
+    # Le contenu admin doit être en dehors du bloc 'if st.button'
+    pending = get_submissions_by_status('pending')
 
-        if not pending:
-            st.info("Aucune demande en attente.")
-        else:
-            for i, row in enumerate(pending):
-                with st.expander(f"#{i+1} • {row['date']} • {row['type_lieu']} • {row['adresse']}"):
-                    if check_flood_risk(row.get('lat'), row.get('lon'), row.get('adresse', ''), row.get('type_lieu', '')):
-                        st.error("🚨 Zone humide : risque de dispersion des micro-plastiques élevé, intervention prioritaire requise")
-                        
-                    st.write(
-                        {
-                            "Nom": row["nom"],
-                            "Association": row["association"],
-                            "Zone propre": row.get("est_propre", False),
-                            "Bénévoles": row["benevoles"],
-                            "Durée (min)": row["temps_min"],
-                            "Mégots": row["megots"],
-                            "Déchets (kg)": row["dechets_kg"],
-                            "Plastique (kg)": row.get("plastique_kg", 0),
-                            "Verre (kg)": row.get("verre_kg", 0),
-                            "Métal (kg)": row.get("metal_kg", 0),
-                            "GPS": row["gps"],
-                            "Commentaire": row["commentaire"],
-                        }
-                    )
-                    a, r = st.columns(2)
-                    if a.button("✅ Approuver", key=f"approve_{row['id']}", use_container_width=True):
-                        update_submission_status(row['id'], 'approved')
-                        st.rerun()
-                    if r.button("❌ Refuser", key=f"reject_{row['id']}", use_container_width=True):
-                        update_submission_status(row['id'], 'rejected')
-                        st.rerun()
+    if not pending:
+        st.info("Aucune demande en attente.")
+    else:
+        for i, row in enumerate(pending):
+            with st.expander(f"#{i+1} • {row['date']} • {row['type_lieu']} • {row['adresse']}"):
+                if check_flood_risk(row.get('lat'), row.get('lon'), row.get('adresse', ''), row.get('type_lieu', '')):
+                    st.error("🚨 Zone humide : risque de dispersion des micro-plastiques élevé, intervention prioritaire requise")
+                    
+                st.write(
+                    {
+                        "Nom": row["nom"],
+                        "Association": row["association"],
+                        "Zone propre": row.get("est_propre", False),
+                        "Bénévoles": row["benevoles"],
+                        "Durée (min)": row["temps_min"],
+                        "Mégots": row["megots"],
+                        "Déchets (kg)": row["dechets_kg"],
+                        "Plastique (kg)": row.get("plastique_kg", 0),
+                        "Verre (kg)": row.get("verre_kg", 0),
+                        "Métal (kg)": row.get("metal_kg", 0),
+                        "GPS": row["gps"],
+                        "Commentaire": row["commentaire"],
+                    }
+                )
+                a, r = st.columns(2)
+                if a.button("✅ Approuver", key=f"approve_{row['id']}", use_container_width=True):
+                    update_submission_status(row['id'], 'approved')
+                    st.rerun()
+                if r.button("❌ Refuser", key=f"reject_{row['id']}", use_container_width=True):
+                    update_submission_status(row['id'], 'rejected')
+                    st.rerun()
 
-        st.divider()
-        st.caption("Export rapide des actions validées")
-        db_approved = get_submissions_by_status('approved')
-        if db_approved:
-            approved_export_df = pd.DataFrame(db_approved)
-            st.download_button(
-                "⬇️ Télécharger CSV (actions validées)",
-                data=approved_export_df.to_csv(index=False).encode("utf-8"),
-                file_name="actions_validees.csv",
-                mime="text/csv",
-                use_container_width=True,
-            )
+    st.divider()
+    st.caption("Export rapide des actions validées")
+    db_approved = get_submissions_by_status('approved')
+    if db_approved:
+        approved_export_df = pd.DataFrame(db_approved)
+        st.download_button(
+            "⬇️ Télécharger CSV (actions validées)",
+            data=approved_export_df.to_csv(index=False).encode("utf-8"),
+            file_name="actions_validees.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
