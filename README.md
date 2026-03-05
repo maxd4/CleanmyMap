@@ -2,8 +2,8 @@
 
 https://cleanmymap.streamlit.app
 
-**Clean my Map** est une solution bénévole engagée en faveur de l'environnement dont le but principal est de mutualiser les résultats des actions bénévoles de dépollution des rues (cleanwalk). La visualisation se fait sur une carte intéractive.
-D'autres fonctionnalités permettent un engagement et un partage sur l'écologie, bien sur, mais aussi sur l'aide humanitaire et sociale et le développement durable.
+**Clean my Map** est une solution bénévole engagée en faveur de l'environnement dont le but principal est de mutualiser les résultats des actions bénévoles de dépollution des rues (cleanwalk). La visualisation se fait sur une carte interactive.
+D'autres fonctionnalités permettent un engagement et un partage sur l'écologie, bien sûr, mais aussi sur l'aide humanitaire et sociale et le développement durable.
 
 Cet outil transforme chaque ramassage bénévole en une donnée scientifique précieuse pour inciter à l'action.
 
@@ -49,8 +49,8 @@ graph TD
 
 ### 1. Cloner le projet
 ```bash
-git clone https://github.com/votre-compte/cleanwalk-app.git
-cd cleanwalk-app
+git clone https://github.com/votre-compte/cleanmymap-app.git
+cd cleanmymap-app
 ```
 
 ### 2. Installer les dépendances
@@ -60,7 +60,7 @@ pip install -r requirements.txt
 
 ### 3. Lancer l'application
 ```bash
-streamlit run dev/streamlit.py
+streamlit run app.py
 ```
 
 ---
@@ -69,14 +69,14 @@ streamlit run dev/streamlit.py
 L'application utilise une authentification Google (OIDC) pour l'accès administrateur. 
 Configurez vos secrets dans le dashboard Streamlit ou via un fichier `.env` :
 
-- `CLEANWALK_ADMIN_SECRET_CODE` : Code de double authentification.
-- `CLEANWALK_SHEET_URL` : Source de données historique (Google Sheets).
+- `CLEANMYMAP_ADMIN_SECRET_CODE` : Code de double authentification.
+- `CLEANMYMAP_SHEET_URL` : Source de données historique (Google Sheets).
 - `SENDGRID_API_KEY` : Pour l'envoi de la Gazette Automatisée.
 
 ---
 
 ## 🤝 Contribution & Science Citoyenne
-Les données de CleanWalk sont ouvertes à la communauté scientifique. Les administrateurs peuvent générer un export anonymisé dans l'onglet Admin pour les besoins de recherche environnementale.
+Les données de **Clean my Map** sont ouvertes à la communauté scientifique. Les administrateurs peuvent générer un export anonymisé dans l'onglet Admin pour les besoins de recherche environnementale.
 
 ---
 *Projet propulsé par les Brigades Vertes - Veiller ensemble sur notre territoire.*
