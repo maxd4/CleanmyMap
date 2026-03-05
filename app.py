@@ -966,108 +966,232 @@ def load_sheet_actions(sheet_url: str):
     return out
 
 
-@st.cache_data(ttl=300)
-def load_excel_actions(file_path: str):
-    """Charge les actions du fichier Excel local et les convertit en actions affichables."""
-    if not os.path.exists(file_path):
-        return []
-    try:
-        raw = pd.read_excel(file_path)
-        raw.columns = raw.columns.str.strip()
-    except Exception as e:
-        print(f"Erreur Excel: {e}")
-        return []
-
-    c_date = _find_col(raw, ["date", "jour"])
-    c_addr = _find_col(raw, ["adresse", "gps", "lieu", "coordo"])
-    c_type = _find_col(raw, ["type", "categorie", "catégorie"])
-    c_assoc = _find_col(raw, ["association", "asso"])
-    c_megots = _find_col(raw, ["megots", "mégots", "nbr megots"])
-    c_dechets = _find_col(raw, ["dechets", "déchets", "kg", "poids"])
-    c_ben = _find_col(raw, ["benevoles", "bénévoles", "participants", "nombre benevoles"])
-    c_propre = _find_col(raw, ["liste lieux propres", "lieux_propres", "propres"])
-
-    # Gérer les colonnes requises si manquantes
-    if not c_addr and not c_propre:
-        return []
-
-    out = []
-    db_approved = get_submissions_by_status('approved')
-    known_pool = [str(a.get('adresse', '')) for a in db_approved if a.get('adresse')]
-
-    for _, r in raw.iterrows():
-        raw_adresse = str(r.get(c_addr, "") if c_addr else "").strip()
-        if not raw_adresse or raw_adresse.lower() in {"nan", "none"}:
-            continue
-            
-        adresse = fuzzy_address_match(raw_adresse, known_pool)
-        if adresse not in known_pool:
-            known_pool.append(adresse)
-
-        lat, lon = parse_coords(adresse)
-        dt = pd.to_datetime(r.get(c_date), errors='coerce', dayfirst=True) if c_date else pd.NaT
-        d = dt.date().isoformat() if pd.notna(dt) else ""
-
-        out.append(
-            {
-                "id": f"excel_{len(out)}_{d}_{adresse[:20]}",
-                "nom": "Référent Excel",
-                "association": str(r.get(c_assoc, "Indépendant") if c_assoc else "Indépendant"),
-                "type_lieu": str(r.get(c_type, "Non spécifié") if c_type else "Non spécifié"),
-                "adresse": adresse,
-                "date": d,
-                "benevoles": int(pd.to_numeric(r.get(c_ben, 1), errors='coerce') or 1),
-                "temps_min": 1,
-                "megots": int(pd.to_numeric(r.get(c_megots, 0), errors='coerce') or 0),
-                "dechets_kg": float(pd.to_numeric(r.get(c_dechets, 0), errors='coerce') or 0),
-                "gps": adresse,
-                "lat": lat,
-                "lon": lon,
-                "commentaire": "Import Excel",
-                "submitted_at": datetime.now().isoformat(timespec="seconds"),
-                "est_propre": False,
-                "source": "fichier_excel",
-                "plastique_kg": 0.0,
-                "verre_kg": 0.0,
-                "metal_kg": 0.0,
-            }
-        )
-
-    # Convertir la colonne 'liste lieux propres' en points 'zone propre'
-    if c_propre:
-        uniques = raw[c_propre].fillna('').astype(str).str.strip()
-        for raw_lieu in sorted({v for v in uniques if v and v.lower() not in {"nan", "none"}}):
-            lieu = fuzzy_address_match(raw_lieu, known_pool)
-            if lieu not in known_pool:
-                known_pool.append(lieu)
-                
-            lat, lon = parse_coords(lieu)
-            out.append(
-                {
-                    "id": f"excel_propre_{lieu[:20]}",
-                    "nom": "Référent Excel",
-                    "association": "Signalement Excel",
-                    "type_lieu": "Non spécifié",
-                    "adresse": lieu,
-                    "date": "",
-                    "benevoles": 0,
-                    "temps_min": 0,
-                    "megots": 0,
-                    "dechets_kg": 0.0,
-                    "gps": lieu,
-                    "lat": lat,
-                    "lon": lon,
-                    "commentaire": "Zone propre signalée (Excel)",
-                    "submitted_at": datetime.now().isoformat(timespec="seconds"),
-                    "est_propre": True,
-                    "source": "fichier_excel",
-                    "plastique_kg": 0.0,
-                    "verre_kg": 0.0,
-                    "metal_kg": 0.0,
-                }
-            )
-
-    return out
+TEST_DATA = [
+    {
+        'adresse': 'Bois de Vincennes, Paris',
+        'lat': 48.8289,
+        'lon': 2.4325,
+        'ville': 'Paris',
+        'type_lieu': 'Bois/Parc/Jardin/Square/Sentier',
+        'association': 'Test Association',
+        'megots': 5000,
+        'dechets_kg': 200,
+        'temps_min': 120,
+        'benevoles': 10,
+        'date': '2024-02-18',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Rue Maurice Utrillo, Paris',
+        'lat': 48.8912,
+        'lon': 2.3378,
+        'ville': 'Paris',
+        'type_lieu': 'N° Boulevard/Avenue/Place',
+        'association': 'Test Association',
+        'megots': 800,
+        'dechets_kg': 50,
+        'temps_min': 45,
+        'benevoles': 3,
+        'date': '2025-08-18',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Sortie Métro Barbès-Rochechouart, Paris',
+        'lat': 48.8838,
+        'lon': 2.3509,
+        'ville': 'Paris',
+        'type_lieu': 'N° Boulevard/Avenue/Place',
+        'association': 'Test Association',
+        'megots': 12000,
+        'dechets_kg': 100,
+        'temps_min': 20,
+        'benevoles': 5,
+        'date': '2026-02-08',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Rue de Rivoli, Paris',
+        'lat': 48.8575,
+        'lon': 2.3514,
+        'ville': 'Paris',
+        'type_lieu': 'N° Boulevard/Avenue/Place',
+        'association': 'Test Association',
+        'megots': 0,
+        'dechets_kg': 0,
+        'temps_min': 60,
+        'benevoles': 2,
+        'date': '2023-01-01',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Tour Eiffel, Paris',
+        'lat': 48.8584,
+        'lon': 2.2945,
+        'ville': 'Paris',
+        'type_lieu': 'Monument',
+        'association': 'Test Association',
+        'megots': 3500,
+        'dechets_kg': 75,
+        'temps_min': 90,
+        'benevoles': 8,
+        'date': '2024-06-15',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Montmartre, Paris',
+        'lat': 48.8867,
+        'lon': 2.3431,
+        'ville': 'Paris',
+        'type_lieu': 'Quartier',
+        'association': 'Test Association',
+        'megots': 2800,
+        'dechets_kg': 45,
+        'temps_min': 75,
+        'benevoles': 6,
+        'date': '2024-09-22',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Quai de Valmy, Paris 10e',
+        'lat': 48.8705,
+        'lon': 2.3650,
+        'ville': 'Paris',
+        'type_lieu': 'Quai/Pont/Port',
+        'association': 'Clean Walk Paris 10',
+        'megots': 4500,
+        'dechets_kg': 180,
+        'temps_min': 150,
+        'benevoles': 25,
+        'date': '2025-09-21',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Parc des Buttes-Chaumont, Paris 19e',
+        'lat': 48.8808,
+        'lon': 2.3825,
+        'ville': 'Paris',
+        'type_lieu': 'Bois/Parc/Jardin/Square/Sentier',
+        'association': 'Green Friday',
+        'megots': 3200,
+        'dechets_kg': 210,
+        'temps_min': 180,
+        'benevoles': 40,
+        'date': '2025-11-29',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Place de la République, Paris 3e',
+        'lat': 48.8675,
+        'lon': 2.3632,
+        'ville': 'Paris',
+        'type_lieu': 'N° Boulevard/Avenue/Place',
+        'association': 'Collectif Nettoyons Paris',
+        'megots': 6800,
+        'dechets_kg': 290,
+        'temps_min': 200,
+        'benevoles': 55,
+        'date': '2026-01-17',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Lac Daumesnil, Bois de Vincennes, Paris 12e',
+        'lat': 48.8305,
+        'lon': 2.4150,
+        'ville': 'Paris',
+        'type_lieu': 'Bois/Parc/Jardin/Square/Sentier',
+        'association': 'Paris Zéro Déchet',
+        'megots': 5200,
+        'dechets_kg': 310,
+        'temps_min': 220,
+        'benevoles': 35,
+        'date': '2025-10-12',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Parc Montsouris, Paris 14e',
+        'lat': 48.8225,
+        'lon': 2.3380,
+        'ville': 'Paris',
+        'type_lieu': 'Bois/Parc/Jardin/Square/Sentier',
+        'association': 'Étudiants pour la Planète',
+        'megots': 1800,
+        'dechets_kg': 95,
+        'temps_min': 120,
+        'benevoles': 18,
+        'date': '2025-11-05',
+        'est_propre': False
+    },
+    {
+        "adresse": "Parc de la Villette, Paris 19e",
+        'lat': 48.8915,
+        'lon': 2.3895,
+        'ville': 'Paris',
+        'type_lieu': 'Quai/Pont/Port',
+        'association': 'Green Wednesday',
+        'megots': 4100,
+        'dechets_kg': 195,
+        'temps_min': 170,
+        'benevoles': 30,
+        'date': '2026-02-28',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Quai de la Tournelle, Paris 5e',
+        'lat': 48.8510,
+        'lon': 2.3540,
+        'ville': 'Paris',
+        'type_lieu': 'Quai/Pont/Port',
+        'association': 'Paris Clean Walk',
+        'megots': 3800,
+        'dechets_kg': 170,
+        'temps_min': 140,
+        'benevoles': 22,
+        'date': '2025-08-15',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Parc André Citroën, Paris 15e',
+        'lat': 48.8410,
+        'lon': 2.2760,
+        'ville': 'Paris',
+        'type_lieu': 'Bois/Parc/Jardin/Square/Sentier',
+        'association': 'Green Family',
+        'megots': 2700,
+        'dechets_kg': 140,
+        'temps_min': 130,
+        'benevoles': 28,
+        'date': '2025-09-07',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Porte de Clignancourt, Paris 18e',
+        'lat': 48.9005,
+        'lon': 2.3450,
+        'ville': 'Paris',
+        'type_lieu': 'N° Boulevard/Avenue/Place',
+        'association': 'Les Éco-puces',
+        'megots': 5900,
+        'dechets_kg': 420,
+        'temps_min': 250,
+        'benevoles': 45,
+        'date': '2025-12-14',
+        'est_propre': False
+    },
+    {
+        'adresse': 'Jardin du Luxembourg, Paris 6e',
+        'lat': 48.8465,
+        'lon': 2.3370,
+        'ville': 'Paris',
+        'type_lieu': 'Bois/Parc/Jardin/Square/Sentier',
+        'association': 'Sénat Propre',
+        'megots': 2100,
+        'dechets_kg': 85,
+        'temps_min': 110,
+        'benevoles': 15,
+        'date': '2025-07-22',
+        'est_propre': False
+    }
+]
 
 def init_state():
     pass # Les listes temporaires ont été remplacées par SQLite
@@ -1121,9 +1245,7 @@ st.markdown(
 )
 
 sheet_actions = load_sheet_actions(GOOGLE_SHEET_URL)
-excel_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "historical_data.xlsx")
-excel_actions = load_excel_actions(excel_path)
-all_imported_actions = sheet_actions + excel_actions
+all_imported_actions = sheet_actions + TEST_DATA
 # Import manuel ou asynchrone pour ne les insérer qu'une seule fois. 
 # Pour l'instant on garde une vue concaténée en lecture
 
@@ -1132,70 +1254,22 @@ approved_count = len(get_submissions_by_status('approved'))
 
 tabs = st.tabs([
     "📝 Déclaration bénévole",
-    "🏠 Accueil",
     "🗺️ Carte & Actions",
+    "📄 Rapport PDF",
+    "📋 Historique des Actions",
     "📍 Calculateur de Trajet Vert",
     "♻️ Seconde Vie",
     "💬 Mur Communautaire",
     "🏛️ Espace Élus",
-    "📚 Guide du Citoyen",
+    "📊 Notre Impact",
     "⚙️ Admin / Validation"
 ])
 
-tab_add, tab_home, tab_view, tab_route, tab_recycling, tab_wall, tab_elus, tab_guide, tab_admin = tabs
+tab_add, tab_view, tab_report, tab_history, tab_route, tab_recycling, tab_wall, tab_elus, tab_home, tab_admin = tabs
 
 with tab_home:
-    st.markdown("### 🎯 Nos objectifs communs")
-    st.write("Agissez concrètement pour la planète en nettoyant nos espaces publics.")
+    st.markdown("### 📊 Notre Impact")
     
-    # Statistiques depuis SQLite (+ Sheet pour l'historique non-BDD)
-    db_stats = get_total_approved_stats()
-    
-    # On ajoute au DB Stats le poids et mégots venant du google sheet pour la cohérence globale
-    sheet_megots = sum(a.get('megots', 0) for a in sheet_actions)
-    sheet_dechets = sum(a.get('dechets_kg', 0) for a in sheet_actions)
-    
-    total_m = db_stats['megots'] + sheet_megots
-    total_d = db_stats['dechets_kg'] + sheet_dechets
-    
-    obj_m = 1000000 # 1 million de mégots
-    obj_d = 5000    # 5 tonnes
-    
-    prog_m = min(1.0, total_m / obj_m)
-    prog_d = min(1.0, total_d / obj_d)
-    
-    st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-    st.markdown("### Objectif 1 Million de Mégots 🎯")
-    st.progress(prog_m)
-    st.caption(f"**{total_m:,.0f}** / {obj_m:,.0f} mégots ramassés !")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-    st.markdown("### Objectif 5 Tonnes de Déchets 🎯")
-    st.progress(prog_d)
-    st.caption(f"**{total_d:,.1f}** / {obj_d:,.0f} kg de déchets récupérés !")
-    st.markdown('</div>', unsafe_allow_html=True)
-    
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.info("Rejoignez des milliers de citoyens engagés pour une nature plus propre.")
-    with col_b:
-        st.warning("Devenez bénévole dès aujourd'hui, seul ou en association !")
-
-    st.divider()
-    with st.expander("📖 Méthodologie et Calculs"):
-        st.markdown(f"""
-        **Comment calculons-nous ces chiffres ?**
-        * **Environnement** : Le ramassage d'**1 mégot** évite l'émission de **{IMPACT_CONSTANTS['CO2_PER_MEGOT_KG']} kg de CO2e** et protège **{IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L']}L d'eau**.
-        * **Recyclage** : Equivalences matérielles basées sur la **Base Empreinte de l'ADEME**.
-        * **Index de Propreté** : Ratio **(Déchets / Temps passé)** normalisé.
-        """)
-
-    st.info("Utilisez l'onglet Déclaration pour contribuer ou consulter la carte.")
-
-with tab_view:
-    st.info("Consultez la carte interactive directement dans l'onglet 'Déclaration bénévole'.")
-with tab_add:
     st.markdown('<div class="premium-card">', unsafe_allow_html=True)
     st.subheader("🏅 Mon Grade Citoyen")
     c_p1, c_p2 = st.columns([2, 1])
@@ -1206,151 +1280,22 @@ with tab_add:
         st.write("") # Spacer
         if check_pseudo:
             db_approved = get_submissions_by_status('approved')
-            temp_df = pd.DataFrame(all_imported_actions + db_approved)
-            badge = get_user_badge(check_pseudo.strip(), temp_df) if not temp_df.empty else ""
+            all_actions_df = pd.DataFrame(all_imported_actions + db_approved)
+            badge = get_user_badge(check_pseudo.strip(), all_actions_df) if not all_actions_df.empty else ""
             if badge: st.success(badge)
             else: st.info("Nouveau contributeur ? Bienvenue !")
     st.markdown('</div>', unsafe_allow_html=True)
 
     st.divider()
-    with st.form("submission_form", clear_on_submit=True):
-        st.subheader("🏁 Nouvelle déclaration")
+    col_a, col_b = st.columns(2)
+    with col_a:
+        st.info("Rejoignez des milliers de citoyens engagés pour une nature plus propre.")
+    with col_b:
+        st.warning("Devenez bénévole dès aujourd'hui, seul ou en association !")
 
-        action_type = st.radio(
-            "Type d'action",
-            ["Ajouter une récolte", "Déclarer un lieu propre"],
-            horizontal=True,
-            help="Choisissez 'Lieu propre' si vous signalez une zone sans aucun déchet."
-        )
-        zone_propre = (action_type == "Déclarer un lieu propre")
+    st.info("Utilisez l'onglet Déclaration pour contribuer ou consulter la carte.")
 
-        if action_type == "Ajouter une récolte":
-            st.subheader("📝 Détails de la récolte")
-            c1, c2 = st.columns(2)
-            with c1:
-                nom = st.text_input("Votre prénom / pseudo*", value=check_pseudo if check_pseudo else "", placeholder="Ex: Sarah", key="harvest_pseudo")
-                association = st.text_input("Association", placeholder="Ex: Clean Walk Paris 10")
-                type_lieu = st.selectbox("Type de lieu*", TYPE_LIEU_OPTIONS, index=0)
-                adresse = st.text_input("Adresse / lieu*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Tour Eiffel, Paris")
-            with c2:
-                action_date = st.date_input("Date de l'action*", value=date.today(), max_value=date.today())
-                benevoles = st.number_input("Nombre de bénévoles*", min_value=1, value=1, step=1)
-                temps_min = st.number_input("Durée (minutes)*", min_value=1, value=60, step=5)
-                gps = st.text_input("Coordonnées GPS (optionnel)", placeholder="48.8584, 2.2945")
-
-            st.divider()
-            c3, c4 = st.columns(2)
-            with c3:
-                megots = st.number_input("Mégots collectés", min_value=0, value=0, step=10)
-            with c4:
-                dechets_kg = st.number_input("Déchets (total kg)", min_value=0.0, value=0.0, step=0.5)
-            
-            with st.expander("Détail optionnel des déchets (en kg)"):
-                cd1, cd2, cd3 = st.columns(3)
-                with cd1:
-                    plastique_kg = st.number_input("Plastique (kg)", min_value=0.0, step=0.5)
-                with cd2:
-                    verre_kg = st.number_input("Verre (kg)", min_value=0.0, step=0.5)
-                with cd3:
-                    metal_kg = st.number_input("Métal (kg)", min_value=0.0, step=0.5)
-
-            if type_lieu == "Établissement Engagé (Label)":
-                engagement = st.text_area("quelles sont les actions de cet établissement ?", placeholder="ex: démarche zéro déchet, collecte solidaire...")
-                commentaire = st.text_area("petite note complémentaire (optionnel)", placeholder="informations utiles pour l'équipe")
-                if engagement:
-                    commentaire = f"[engagement] {engagement}\n{commentaire}"
-            else:
-                commentaire = st.text_area("commentaire (optionnel)", placeholder="informations utiles pour l'équipe")
-        else:
-            st.subheader("🧼 Signalement Zone Propre")
-            nom = st.text_input("Votre pseudo*", value=check_pseudo if check_pseudo else "", placeholder="Ex: Jean_Vert", key="clean_pseudo")
-            adresse = st.text_input("Lieu constaté propre*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Place de la Bastille, Paris")
-            action_date = st.date_input("Date du constat*", value=date.today(), max_value=date.today())
-            
-            # Valeurs par défaut pour le mode propre
-            association = "Indépendant"
-            type_lieu = "Non spécifié"
-            benevoles = 1
-            temps_min = 1
-            megots = 0
-            dechets_kg = 0.0
-            plastique_kg = 0.0
-            verre_kg = 0.0
-            metal_kg = 0.0
-            gps = ""
-            commentaire = "Zone signalée propre"
-        
-        st.markdown("---")
-        subscribe_newsletter = st.checkbox("recevoir la gazette des brigades (impact trimestriel)", value=True)
-            
-        submitted = st.form_submit_button("partager mon action", use_container_width=True)
-
-    if submitted:
-        if not nom.strip() or not adresse.strip() or not type_lieu:
-            st.error("Merci de remplir les champs obligatoires (*)")
-        else:
-            # Fuzzy match contre la base existante pour unifier les noms
-            approved_actions = get_submissions_by_status('approved')
-            existing_pool = [a.get('adresse') for a in approved_actions if a.get('adresse')]
-            adresse_propre = fuzzy_address_match(adresse.strip(), existing_pool)
-            
-            lat, lon = parse_coords(gps)
-            data_to_save = {
-                "id": str(uuid.uuid4()),
-                "nom": nom.strip(),
-                "association": association.strip() or "Indépendant",
-                "type_lieu": type_lieu,
-                "adresse": adresse_propre,
-                "date": str(action_date),
-                "benevoles": int(benevoles),
-                "temps_min": int(temps_min),
-                "megots": int(megots),
-                "dechets_kg": float(dechets_kg),
-                "plastique_kg": float(plastique_kg),
-                "verre_kg": float(verre_kg),
-                "metal_kg": float(metal_kg),
-                "gps": gps.strip(),
-                "lat": lat,
-                "lon": lon,
-                "commentaire": commentaire.strip(),
-                "submitted_at": datetime.now().isoformat(timespec="seconds"),
-                "est_propre": bool(zone_propre),
-                "source": "formulaire",
-            }
-            insert_submission(data_to_save, status='pending')
-            
-            if subscribe_newsletter:
-                add_subscriber(main_user_email)
-                
-            st.success("Votre demande a bien été enregistrée dans la base de données SQLite ✅ Elle sera vérifiée par un administrateur.")
-
-    st.divider()
-    with st.expander("📱 Kit Organisateur : Générer un QR Code de Terrain", expanded=False):
-        st.write("Idéal pour vos Cleanups : les bénévoles flashent le code et arrivent sur le formulaire avec l'adresse déjà prête !")
-        qr_loc = st.text_input("Lieu ou Point de RDV pour le QR Code :", placeholder="Ex: Pont de l'Alma")
-        if qr_loc:
-            # Construire l'URL avec paramètre (base simple pour test)
-            base_url = "https://cleanmymap.streamlit.app" 
-            final_url = f"{base_url}/?lieu={qr_loc.replace(' ', '_')}"
-            
-            qr = qrcode.QRCode(version=1, box_size=10, border=5)
-            qr.add_data(final_url)
-            qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white")
-            
-            # Affichage
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            st.image(buf.getvalue(), width=250, caption=f"QR Code pour : {qr_loc}")
-            
-            st.download_button(
-                label="⬇️ Télécharger le QR Code (PNG)",
-                data=buf.getvalue(),
-                file_name=f"QR_CleanMyMap_{qr_loc.replace(' ', '_')}.png",
-                mime="image/png"
-            )
-
-    st.divider()
+with tab_view:
     st.subheader("🗺️ Carte Interactive des Actions")
     
     # Chargement DB + imports (Google Sheet et Excel)
@@ -1472,18 +1417,169 @@ with tab_add:
     
     st_folium(m, width=900, height=500, returned_objects=[])
 
+with tab_add:
+    st.divider()
+    with st.form("submission_form", clear_on_submit=True):
+        st.subheader("🏁 Nouvelle déclaration")
+
+        action_type = st.radio(
+            "Type d'action",
+            ["Ajouter une récolte", "Déclarer un lieu propre"],
+            horizontal=True,
+            help="Choisissez 'Lieu propre' si vous signalez une zone sans aucun déchet."
+        )
+        zone_propre = (action_type == "Déclarer un lieu propre")
+
+        if action_type == "Ajouter une récolte":
+            st.subheader("📝 Détails de la récolte")
+            c1, c2 = st.columns(2)
+            with c1:
+                nom = st.text_input("Votre prénom / pseudo*", value=check_pseudo if check_pseudo else "", placeholder="Ex: Sarah", key="harvest_pseudo")
+                association = st.text_input("Association", placeholder="Ex: Clean Walk Paris 10")
+                type_lieu = st.selectbox("Type de lieu*", TYPE_LIEU_OPTIONS, index=0)
+                adresse = st.text_input("Adresse / lieu*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Tour Eiffel, Paris")
+            with c2:
+                action_date = st.date_input("Date de l'action*", value=date.today(), max_value=date.today())
+                benevoles = st.number_input("Nombre de bénévoles*", min_value=1, value=1, step=1)
+                temps_min = st.number_input("Durée (minutes)*", min_value=1, value=60, step=5)
+                gps = st.text_input("Coordonnées GPS (optionnel)", placeholder="48.8584, 2.2945")
+
+            st.divider()
+            c3, c4 = st.columns(2)
+            with c3:
+                megots = st.number_input("Mégots collectés", min_value=0, value=0, step=10)
+            with c4:
+                dechets_kg = st.number_input("Déchets (total kg)", min_value=0.0, value=0.0, step=0.5)
+            
+            with st.expander("Détail optionnel des déchets (en kg)"):
+                cd1, cd2, cd3 = st.columns(3)
+                with cd1:
+                    plastique_kg = st.number_input("Plastique (kg)", min_value=0.0, step=0.5)
+                with cd2:
+                    verre_kg = st.number_input("Verre (kg)", min_value=0.0, step=0.5)
+                with cd3:
+                    metal_kg = st.number_input("Métal (kg)", min_value=0.0, step=0.5)
+
+            if type_lieu == "Établissement Engagé (Label)":
+                engagement = st.text_area("quelles sont les actions de cet établissement ?", placeholder="ex: démarche zéro déchet, collecte solidaire...")
+                commentaire = st.text_area("petite note complémentaire (optionnel)", placeholder="informations utiles pour l'équipe")
+                if engagement:
+                    commentaire = f"[engagement] {engagement}\n{commentaire}"
+            else:
+                commentaire = st.text_area("commentaire (optionnel)", placeholder="informations utiles pour l'équipe")
+        else:
+            st.subheader("🧼 Signalement Zone Propre")
+            nom = st.text_input("Votre pseudo*", value=check_pseudo if check_pseudo else "", placeholder="Ex: Jean_Vert", key="clean_pseudo")
+            adresse = st.text_input("Lieu constaté propre*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Place de la Bastille, Paris")
+            action_date = st.date_input("Date du constat*", value=date.today(), max_value=date.today())
+            
+            # Valeurs par défaut pour le mode propre
+            association = "Indépendant"
+            type_lieu = "Non spécifié"
+            benevoles = 1
+            temps_min = 1
+            megots = 0
+            dechets_kg = 0.0
+            plastique_kg = 0.0
+            verre_kg = 0.0
+            metal_kg = 0.0
+            gps = ""
+            commentaire = "Zone signalée propre"
+        
+        st.markdown("---")
+        subscribe_newsletter = st.checkbox("recevoir la gazette des brigades (impact trimestriel)", value=True)
+        user_email = ""
+        if subscribe_newsletter:
+            user_email = st.text_input("votre adresse email pour la gazette*", placeholder="ex: camille@écologie.fr")
+            
+        submitted = st.form_submit_button("partager mon action", use_container_width=True)
+
+    if submitted:
+        if not nom.strip() or not adresse.strip() or not type_lieu:
+            st.error("Merci de remplir les champs obligatoires (*)")
+        elif subscribe_newsletter and not user_email.strip():
+            st.error("Merci de renseigner votre email pour la gazette.")
+        else:
+            # Fuzzy match contre la base existante pour unifier les noms
+            approved_actions = get_submissions_by_status('approved')
+            existing_pool = [a.get('adresse') for a in approved_actions if a.get('adresse')]
+            adresse_propre = fuzzy_address_match(adresse.strip(), existing_pool)
+            
+            lat, lon = parse_coords(gps)
+            data_to_save = {
+                "id": str(uuid.uuid4()),
+                "nom": nom.strip(),
+                "association": association.strip(),
+                "type_lieu": type_lieu,
+                "adresse": adresse_propre,
+                "date": str(action_date),
+                "benevoles": benevoles,
+                "temps_min": temps_min,
+                "megots": megots,
+                "dechets_kg": dechets_kg,
+                "plastique_kg": plastik_kg,
+                "verre_kg": verre_kg,
+                "metal_kg": metal_kg,
+                "gps": gps,
+                "lat": lat,
+                "lon": lon,
+                "commentaire": commentaire,
+                "est_propre": zone_propre,
+                "submitted_at": datetime.now().isoformat()
+            }
+            insert_submission(data_to_save)
+            if subscribe_newsletter and user_email:
+                add_subscriber(user_email)
+            st.success("Merci ! Votre action a été enregistrée et sera validée par un administrateur.")
+            st.balloons()
+            st.rerun()
+
+with tab_report:
+    st.subheader("📄 Rapport d'Impact Clean My Map")
+    db_approved = get_submissions_by_status('approved')
+    public_actions = all_imported_actions + db_approved
+    public_df = pd.DataFrame(public_actions)
+    
     if not public_df.empty:
-        pdf_bytes = build_public_pdf(public_df, STREAMLIT_PUBLIC_URL, critical_zones)
+        pdf_bytes = build_public_pdf(public_df, STREAMLIT_PUBLIC_URL, get_critical_zones(public_df))
         st.download_button(
-            "📄 Télécharger le rapport PDF (auto-mis à jour)",
+            "⬇️ Télécharger le rapport complet (PDF)",
             data=pdf_bytes,
             file_name="cleanmymap_rapport_public.pdf",
             mime="application/pdf",
             use_container_width=True,
         )
-        st.dataframe(public_df[["date", "type_lieu", "adresse", "est_propre", "benevoles", "megots", "dechets_kg"]], use_container_width=True, hide_index=True)
+        
+        st.divider()
+        st.markdown("### 👁️ Aperçu du Rapport")
+        
+        # Synthèse visuelle pour le web
+        col1, col2, col3 = st.columns(3)
+        total_d = public_df['dechets_kg'].sum()
+        total_m = public_df['megots'].sum()
+        total_b = public_df['benevoles'].sum()
+        
+        col1.metric("Déchets", f"{total_d:.1f} kg")
+        col2.metric("Mégots", f"{total_m:,}")
+        col3.metric("Bénévoles", f"{total_b:,}")
+        
+        st.write("---")
+        st.markdown("#### 🔍 Dernières actions marquantes")
+        st.dataframe(public_df.sort_values('date', ascending=False).head(10)[["date", "type_lieu", "adresse", "dechets_kg", "megots"]], use_container_width=True, hide_index=True)
     else:
-        st.info("Aucune action disponible pour le moment. Soyez le premier à contribuer !")
+        st.info("Aucune donnée disponible pour générer le rapport.")
+
+with tab_history:
+    st.subheader("📋 Historique des Actions Citoyennes")
+    db_approved = get_submissions_by_status('approved')
+    public_actions = all_imported_actions + db_approved
+    public_df = pd.DataFrame(public_actions)
+    
+    if not public_df.empty:
+        st.write(f"Retrouvez ici l'ensemble des {len(public_df)} actions recensées par la communauté.")
+        st.dataframe(public_df[["date", "type_lieu", "adresse", "est_propre", "benevoles", "megots", "dechets_kg"]].sort_values('date', ascending=False), use_container_width=True, hide_index=True)
+    else:
+        st.info("L'historique est actuellement vide.")
 
 with tab_route:
     st.subheader("📍 Calculateur de Trajet Vert (Logistique)")
@@ -1719,9 +1815,11 @@ with tab_wall:
         all_actions_df = pd.DataFrame(all_imported_actions + db_approved)
         
         for m in reversed(messages): # Plus récent en haut
-            badge = get_user_badge(m['pseudo'], all_actions_df)
-            st.markdown(f"**{m['pseudo']}** {badge} • *{m['timestamp']}*")
-            st.info(m['content'])
+            pseudo = m.get('author', m.get('pseudo', 'Anonyme'))
+            timestamp = m.get('created_at', m.get('timestamp', ''))
+            badge = get_user_badge(pseudo, all_actions_df)
+            st.markdown(f"**{pseudo}** {badge} • *{timestamp}*")
+            st.info(m.get('content', ''))
             st.markdown("---")
 
 # ------------------------------------------------------------------------
