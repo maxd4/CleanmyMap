@@ -1015,46 +1015,17 @@ if lieu_prefill:
 
 # Configuration injectée via CSS global plus haut
 
-# --- MUR DE CONNEXION (MANDATORY LOGIN) ---
-main_user_email = _google_user_email()
-
-if main_user_email is None:
-    st.markdown(
-        """
-        <div style="text-align: center; padding: 80px 20px;">
-            <h1 style="color: #0f766e; font-size: 3rem; margin-bottom: 20px;">🌿 Bienvenue sur Clean my Map</h1>
-            <p style="font-size: 1.25rem; color: #64748b; max-width: 700px; margin: 0 auto 40px auto;">
-                La plateforme citoyenne pour cartographier et protéger notre environnement. 
-                Rejoignez les brigades et agissez pour la préservation de nos ressources en eau.
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    if hasattr(st, "login"):
-        if st.button("s'identifier avec google", use_container_width=True, type="primary"):
-            st.login()
-    else:
-        st.info("Authenticator Streamlit requis. En local, simulez la connexion via les variables d'environnement ou passez outre ce bloc.")
-        # Pour le développement local, on peut laisser un bouton de test
-        if st.button("🚧 [DEV] Simuler une connexion (sophi.clean@gmail.com)"):
-            st.session_state["dev_email"] = "sophi.clean@gmail.com"
-            st.rerun()
-    
-    # Check mock session
-    if "dev_email" in st.session_state:
-        main_user_email = st.session_state["dev_email"]
-    else:
-        st.stop()
+# --- AUTHENTIFICATION (SIMPLIFIÉE) ---
+# Accès libre pour les bénévoles, mot de passe pour l'admin.
+main_user_email = _google_user_email() or "Bénévole Anonyme"
 
 st.markdown(
     """
     <div class="hero">
       <h1>Protéger ensemble notre territoire</h1>
-      <p>Bonjour <b>{main_user_email}</b>, ravi de vous revoir parmi nous !</p>
-      <p>Chaque action déclarée renforce la science citoyenne et aide les élus à mieux équiper nos villes.</p>
+      <p>Bienvenue sur <b>Clean my Map</b> ! Chaque action déclarée renforce la science citoyenne.</p>
     </div>
-    """.format(main_user_email=main_user_email),
+    """,
     unsafe_allow_html=True,
 )
 
@@ -1141,148 +1112,15 @@ with tab_home:
         st.warning("Devenez bénévole dès aujourd'hui, seul ou en association !")
 
     st.divider()
-    with st.expander("📖 Méthodologie et Calculs (v2.1 - Industrialisation)"):
+    with st.expander("📖 Méthodologie et Calculs"):
         st.markdown(f"""
         **Comment calculons-nous ces chiffres ?**
-        * **Environnement** : Le ramassage d'**1 mégot** permet d'éviter l'émission de **{IMPACT_CONSTANTS['CO2_PER_MEGOT_KG']} kg de CO2e** (sur l'ensemble de son cycle de vie, source *ADEME/OMS*) et protège jusqu'à **{IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L']}L d'eau** de la pollution toxique aux métaux lourds et à la nicotine (source *Surfrider Foundation / INERIS*).
-        * **Recyclage Plastique** : Les équivalences matérielles (1 banc public = {int(IMPACT_CONSTANTS['PLASTIQUE_POUR_BANC_KG'])} kg de plastique, 1 pull polaire = {IMPACT_CONSTANTS['PLASTIQUE_POUR_PULL_KG']} kg de déchets plastiques de type PET) sont issues d'extrapolations basées sur la **Base Empreinte de l'ADEME**.
-        * **Index de Propreté** : Cet indice est calculé selon le ratio **(Déchets collectés / Temps passé)**, puis normalisé sur l'ensemble de la ville pour identifier objectivement les zones critiques.
-        * *Moteur de calcul : v2.1 (Industrialisation).*
+        * **Environnement** : Le ramassage d'**1 mégot** évite l'émission de **{IMPACT_CONSTANTS['CO2_PER_MEGOT_KG']} kg de CO2e** et protège **{IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L']}L d'eau**.
+        * **Recyclage** : Equivalences matérielles basées sur la **Base Empreinte de l'ADEME**.
+        * **Index de Propreté** : Ratio **(Déchets / Temps passé)** normalisé.
         """)
 
-    with st.form("submission_form", clear_on_submit=True):
-        st.subheader("🏁 Mon Grade Citoyen & Nouvelle déclaration")
-        
-        c_p1, c_p2 = st.columns([2, 1])
-        with c_p1:
-            check_pseudo = st.text_input("Vérifier mon grade (Pseudo)*", placeholder="Ex: Jean_Vert")
-        with c_p2:
-            st.write("") # Spacer
-            st.write("") # Spacer
-            if check_pseudo:
-                db_approved = get_submissions_by_status('approved')
-                temp_df = pd.DataFrame(all_imported_actions + db_approved)
-                badge = get_user_badge(check_pseudo.strip(), temp_df) if not temp_df.empty else ""
-                if badge: st.success(badge)
-                else: st.info("Nouveau ?")
-
-        st.divider()
-
-        zone_propre = st.checkbox("✅ Je signale une zone propre (sans collecte de déchets)")
-
-        st.subheader("Nouvelle action")
-        c1, c2 = st.columns(2)
-        with c1:
-            nom = st.text_input("Votre prénom / pseudo*", placeholder="Ex: Sarah")
-            association = st.text_input("Association", placeholder="Ex: Clean Walk Paris 10")
-            type_lieu = st.selectbox("Type de lieu*", TYPE_LIEU_OPTIONS, index=0)
-            adresse = st.text_input("Adresse / lieu*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Tour Eiffel, Paris")
-        with c2:
-            action_date = st.date_input("Date de l'action*", value=date.today(), max_value=date.today())
-            benevoles = st.number_input("Nombre de bénévoles*", min_value=1, value=1, step=1)
-            temps_min = st.number_input("Durée (minutes)*", min_value=1, value=60, step=5)
-            gps = st.text_input("Coordonnées GPS (optionnel)", placeholder="48.8584, 2.2945")
-
-        if zone_propre:
-            st.info("Mode zone propre activé : les compteurs déchets/mégots sont mis à 0.")
-            megots = 0
-            dechets_kg = 0.0
-            plastique_kg = 0.0
-            verre_kg = 0.0
-            metal_kg = 0.0
-        else:
-            c3, c4 = st.columns(2)
-            with c3:
-                megots = st.number_input("Mégots collectés", min_value=0, value=0, step=10)
-            with c4:
-                dechets_kg = st.number_input("Déchets (total kg)", min_value=0.0, value=0.0, step=0.5)
-            
-            with st.expander("Détail optionnel des déchets (en kg)"):
-                cd1, cd2, cd3 = st.columns(3)
-                with cd1:
-                    plastique_kg = st.number_input("Plastique (kg)", min_value=0.0, step=0.5)
-                with cd2:
-                    verre_kg = st.number_input("Verre (kg)", min_value=0.0, step=0.5)
-                with cd3:
-                    metal_kg = st.number_input("Métal (kg)", min_value=0.0, step=0.5)
-
-        if type_lieu == "Établissement Engagé (Label)":
-            engagement = st.text_area("quelles sont les actions de cet établissement ?", placeholder="ex: démarche zéro déchet, collecte solidaire...")
-            commentaire = st.text_area("petite note complémentaire (optionnel)", placeholder="informations utiles pour l'équipe")
-            if engagement:
-                commentaire = f"[engagement] {engagement}\n{commentaire}"
-        else:
-            commentaire = st.text_area("commentaire (optionnel)", placeholder="informations utiles pour l'équipe")
-        
-        st.markdown("---")
-        subscribe_newsletter = st.checkbox("recevoir la gazette des brigades (impact trimestriel)", value=True)
-            
-        submitted = st.form_submit_button("partager mon action", use_container_width=True)
-
-    if submitted:
-        if not nom.strip() or not adresse.strip() or not type_lieu:
-            st.error("Merci de remplir les champs obligatoires (*)")
-        else:
-            # Fuzzy match contre la base existante pour unifier les noms
-            approved_actions = get_submissions_by_status('approved')
-            existing_pool = [a.get('adresse') for a in approved_actions if a.get('adresse')]
-            adresse_propre = fuzzy_address_match(adresse.strip(), existing_pool)
-            
-            lat, lon = parse_coords(gps)
-            data_to_save = {
-                "id": str(uuid.uuid4()),
-                "nom": nom.strip(),
-                "association": association.strip() or "Indépendant",
-                "type_lieu": type_lieu,
-                "adresse": adresse_propre,
-                "date": str(action_date),
-                "benevoles": int(benevoles),
-                "temps_min": int(temps_min),
-                "megots": int(megots),
-                "dechets_kg": float(dechets_kg),
-                "plastique_kg": float(plastique_kg),
-                "verre_kg": float(verre_kg),
-                "metal_kg": float(metal_kg),
-                "gps": gps.strip(),
-                "lat": lat,
-                "lon": lon,
-                "commentaire": commentaire.strip(),
-                "submitted_at": datetime.now().isoformat(timespec="seconds"),
-                "est_propre": bool(zone_propre),
-                "source": "formulaire",
-            }
-            insert_submission(data_to_save, status='pending')
-            
-            if subscribe_newsletter:
-                add_subscriber(main_user_email)
-                
-            st.success("Votre demande a bien été enregistrée dans la base de données SQLite ✅ Elle sera vérifiée par un administrateur.")
-
-    st.divider()
-    with st.expander("📱 Kit Organisateur : Générer un QR Code de Terrain", expanded=False):
-        st.write("Idéal pour vos Cleanups : les bénévoles flashent le code et arrivent sur le formulaire avec l'adresse déjà prête !")
-        qr_loc = st.text_input("Lieu ou Point de RDV pour le QR Code :", placeholder="Ex: Pont de l'Alma")
-        if qr_loc:
-            # Construire l'URL avec paramètre (base simple pour test)
-            base_url = "https://cleanmymap.streamlit.app" 
-            final_url = f"{base_url}/?lieu={qr_loc.replace(' ', '_')}"
-            
-            qr = qrcode.QRCode(version=1, box_size=10, border=5)
-            qr.add_data(final_url)
-            qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white")
-            
-            # Affichage
-            buf = io.BytesIO()
-            img.save(buf, format="PNG")
-            st.image(buf.getvalue(), width=250, caption=f"QR Code pour : {qr_loc}")
-            
-            st.download_button(
-                label="⬇️ Télécharger le QR Code (PNG)",
-                data=buf.getvalue(),
-                file_name=f"QR_CleanMyMap_{qr_loc.replace(' ', '_')}.png",
-                mime="image/png"
-            )
+    st.info("Utilisez les onglets ci-dessus pour naviguer dans l'espace citoyen.")
 
 with tab_view:
     st.divider()
@@ -1426,8 +1264,141 @@ with tab_view:
             if c in public_df.columns
         ]
         st.dataframe(public_df[display_cols], use_container_width=True, hide_index=True)
-    else:
         st.info("Aucune action disponible pour le moment.")
+with tab_add:
+    with st.form("submission_form", clear_on_submit=True):
+        st.subheader("🏁 Mon Grade Citoyen & Nouvelle déclaration")
+        
+        c_p1, c_p2 = st.columns([2, 1])
+        with c_p1:
+            check_pseudo = st.text_input("Vérifier mon grade (Pseudo)*", placeholder="Ex: Jean_Vert")
+        with c_p2:
+            st.write("") # Spacer
+            st.write("") # Spacer
+            if check_pseudo:
+                db_approved = get_submissions_by_status('approved')
+                temp_df = pd.DataFrame(all_imported_actions + db_approved)
+                badge = get_user_badge(check_pseudo.strip(), temp_df) if not temp_df.empty else ""
+                if badge: st.success(badge)
+                else: st.info("Nouveau ?")
+
+        st.divider()
+
+        zone_propre = st.checkbox("✅ Je signale une zone propre (sans collecte de déchets)")
+
+        st.subheader("Nouvelle action")
+        c1, c2 = st.columns(2)
+        with c1:
+            nom = st.text_input("Votre prénom / pseudo*", placeholder="Ex: Sarah")
+            association = st.text_input("Association", placeholder="Ex: Clean Walk Paris 10")
+            type_lieu = st.selectbox("Type de lieu*", TYPE_LIEU_OPTIONS, index=0)
+            adresse = st.text_input("Adresse / lieu*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Tour Eiffel, Paris")
+        with c2:
+            action_date = st.date_input("Date de l'action*", value=date.today(), max_value=date.today())
+            benevoles = st.number_input("Nombre de bénévoles*", min_value=1, value=1, step=1)
+            temps_min = st.number_input("Durée (minutes)*", min_value=1, value=60, step=5)
+            gps = st.text_input("Coordonnées GPS (optionnel)", placeholder="48.8584, 2.2945")
+
+        if zone_propre:
+            st.info("Mode zone propre activé : les compteurs déchets/mégots sont mis à 0.")
+            megots = 0
+            dechets_kg = 0.0
+            plastique_kg = 0.0
+            verre_kg = 0.0
+            metal_kg = 0.0
+        else:
+            c3, c4 = st.columns(2)
+            with c3:
+                megots = st.number_input("Mégots collectés", min_value=0, value=0, step=10)
+            with c4:
+                dechets_kg = st.number_input("Déchets (total kg)", min_value=0.0, value=0.0, step=0.5)
+            
+            with st.expander("Détail optionnel des déchets (en kg)"):
+                cd1, cd2, cd3 = st.columns(3)
+                with cd1:
+                    plastique_kg = st.number_input("Plastique (kg)", min_value=0.0, step=0.5)
+                with cd2:
+                    verre_kg = st.number_input("Verre (kg)", min_value=0.0, step=0.5)
+                with cd3:
+                    metal_kg = st.number_input("Métal (kg)", min_value=0.0, step=0.5)
+
+        if type_lieu == "Établissement Engagé (Label)":
+            engagement = st.text_area("quelles sont les actions de cet établissement ?", placeholder="ex: démarche zéro déchet, collecte solidaire...")
+            commentaire = st.text_area("petite note complémentaire (optionnel)", placeholder="informations utiles pour l'équipe")
+            if engagement:
+                commentaire = f"[engagement] {engagement}\n{commentaire}"
+        else:
+            commentaire = st.text_area("commentaire (optionnel)", placeholder="informations utiles pour l'équipe")
+        
+        st.markdown("---")
+        subscribe_newsletter = st.checkbox("recevoir la gazette des brigades (impact trimestriel)", value=True)
+            
+        submitted = st.form_submit_button("partager mon action", use_container_width=True)
+
+    if submitted:
+        if not nom.strip() or not adresse.strip() or not type_lieu:
+            st.error("Merci de remplir les champs obligatoires (*)")
+        else:
+            # Fuzzy match contre la base existante pour unifier les noms
+            approved_actions = get_submissions_by_status('approved')
+            existing_pool = [a.get('adresse') for a in approved_actions if a.get('adresse')]
+            adresse_propre = fuzzy_address_match(adresse.strip(), existing_pool)
+            
+            lat, lon = parse_coords(gps)
+            data_to_save = {
+                "id": str(uuid.uuid4()),
+                "nom": nom.strip(),
+                "association": association.strip() or "Indépendant",
+                "type_lieu": type_lieu,
+                "adresse": adresse_propre,
+                "date": str(action_date),
+                "benevoles": int(benevoles),
+                "temps_min": int(temps_min),
+                "megots": int(megots),
+                "dechets_kg": float(dechets_kg),
+                "plastique_kg": float(plastique_kg),
+                "verre_kg": float(verre_kg),
+                "metal_kg": float(metal_kg),
+                "gps": gps.strip(),
+                "lat": lat,
+                "lon": lon,
+                "commentaire": commentaire.strip(),
+                "submitted_at": datetime.now().isoformat(timespec="seconds"),
+                "est_propre": bool(zone_propre),
+                "source": "formulaire",
+            }
+            insert_submission(data_to_save, status='pending')
+            
+            if subscribe_newsletter:
+                add_subscriber(main_user_email)
+                
+            st.success("Votre demande a bien été enregistrée dans la base de données SQLite ✅ Elle sera vérifiée par un administrateur.")
+
+    st.divider()
+    with st.expander("📱 Kit Organisateur : Générer un QR Code de Terrain", expanded=False):
+        st.write("Idéal pour vos Cleanups : les bénévoles flashent le code et arrivent sur le formulaire avec l'adresse déjà prête !")
+        qr_loc = st.text_input("Lieu ou Point de RDV pour le QR Code :", placeholder="Ex: Pont de l'Alma")
+        if qr_loc:
+            # Construire l'URL avec paramètre (base simple pour test)
+            base_url = "https://cleanmymap.streamlit.app" 
+            final_url = f"{base_url}/?lieu={qr_loc.replace(' ', '_')}"
+            
+            qr = qrcode.QRCode(version=1, box_size=10, border=5)
+            qr.add_data(final_url)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color="black", back_color="white")
+            
+            # Affichage
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            st.image(buf.getvalue(), width=250, caption=f"QR Code pour : {qr_loc}")
+            
+            st.download_button(
+                label="⬇️ Télécharger le QR Code (PNG)",
+                data=buf.getvalue(),
+                file_name=f"QR_CleanMyMap_{qr_loc.replace(' ', '_')}.png",
+                mime="image/png"
+            )
 
 with tab_route:
     st.subheader("📍 Calculateur de Trajet Vert (Logistique)")
@@ -1995,42 +1966,33 @@ with tab_admin:
     else:
         st.info("Aucune action validée pour le moment.")
 
-    email = _google_user_email()
+    st.subheader("Espace administrateur ⚙️")
 
-    if email is None:
-        st.warning("Connectez-vous avec Google pour accéder à la modération.")
-        if hasattr(st, "login"):
-            if st.button("🔐 Se connecter avec Google", use_container_width=True):
-                try:
-                    st.login()
-                except Exception as e:
-                    st.error(f"Connexion Google indisponible: {e}")
-        else:
-            st.info(
-                "Cette version locale de Streamlit ne supporte pas st.login(). "
-                "Activez l'authentification Streamlit (Cloud/OIDC) puis relancez."
-            )
+    if not ADMIN_SECRET_CODE:
+        # Fallback to check st.secrets if os.getenv failed
+        ADMIN_SECRET_CODE = st.secrets.get("CLEANMYMAP_ADMIN_SECRET_CODE", "")
+    
+    if not ADMIN_SECRET_CODE:
+        st.error("Mot de passe administrateur non configuré (CLEANMYMAP_ADMIN_SECRET_CODE).")
+        st.stop()
 
-    else:
-        st.success(f"Compte Google connecté: {email}")
+    if "admin_authenticated" not in st.session_state:
+        st.session_state["admin_authenticated"] = False
 
-        if not ADMIN_SECRET_CODE:
-            st.error(
-                "Code secret admin non configuré côté serveur. "
-                "Définissez CLEANWALK_ADMIN_SECRET_CODE dans les variables d'environnement."
-            )
-            st.stop()
+    if not st.session_state["admin_authenticated"]:
+        secret_input = st.text_input("Code secret administrateur", type="password", key="admin_pwd_input")
+        if st.button("Se connecter à l'espace Admin", use_container_width=True):
+            if secret_input == ADMIN_SECRET_CODE:
+                st.session_state["admin_authenticated"] = True
+                st.rerun()
+            else:
+                st.error("Code incorrect.")
+        st.stop()
 
-        secret_input = st.text_input("Code secret administrateur", type="password")
-        if secret_input != ADMIN_SECRET_CODE:
-            st.warning("Code secret incorrect. Accès modération bloqué.")
-            if hasattr(st, "logout"):
-                st.button("Se déconnecter", on_click=st.logout)
-            st.stop()
-
-        st.success("double authentification validée")
-        if hasattr(st, "logout"):
-            st.button("Se déconnecter", on_click=st.logout)
+    st.success("Accès administrateur validé ✅")
+    if st.button("Se déconnecter de l'espace Admin"):
+        st.session_state["admin_authenticated"] = False
+        st.rerun()
 
         pending = get_submissions_by_status('pending')
 
