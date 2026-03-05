@@ -1,11 +1,12 @@
-CleanmyMap
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_svg)](https://cleanwalk.streamlit.app)
+# 🌿 Clean my Map • Plateforme Citoyenne de Protection de l'Eau
 
-CleanmyMap : un site web dont le but principal est de mutualiser les résultats d'actions bénévoles de dépollution des rues. De nombreuses autres fonctionnalités sont disponibles pour faire de ce site un incontournable de l'écolo !
-Cet outil transforme chaque ramassage bénévole en une donnée scientifique précieuse et consultable par tous
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_svg)](https://cleanmymap.streamlit.app)
+[![Science Citoyenne](https://img.shields.io/badge/Science-Citoyenne-blue)](https://www.surfrider.eu)
+
+**Clean my Map** est une solution technologique engagée permettant de cartographier, quantifier et prédire la pollution urbaine pour protéger nos ressources en eau. Né de la volonté de fédérer les citoyens, cet outil transforme chaque ramassage bénévole en une donnée scientifique précieuse.
 
 ## 🚀 Vision & Impact
-L'objectif est de rendre visible l'invisible. Un seul mégot pollue 500 litres d'eau. CleanmyMap permet de mesurer précisément l'impact de chaque action citoyenne et d'accompagner les collectivités vers des solutions durables et vers toutes actions en faveur de l'environnement.
+L'objectif est de rendre visible l'invisible. Un seul mégot pollue 1000 litres d'eau ; **Clean my Map** permet de mesurer précisément l'impact de chaque action citoyenne et d'accompagner les collectivités vers des solutions durables.
 
 ### Fondamentaux du projet :
 - **Engagement** : Valorisation des bénévoles et des partenaires locaux ("Médaille Verte").
