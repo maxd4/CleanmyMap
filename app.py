@@ -54,9 +54,135 @@ def get_impact_sources():
 
 
 st.set_page_config(
-    page_title="cleanwalk • plateforme citoyenne",
-    page_icon="🌿",
+    page_title="Clean my Map • Protection Citoyenne",
+    page_icon="🗺️",
     layout="wide",
+)
+
+# Custom Professional CSS
+st.markdown(
+    """
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+    }
+
+    .main {
+        background-color: #f8fafc;
+    }
+
+    .stApp {
+        background: radial-gradient(circle at top right, rgba(34, 197, 94, 0.05), transparent),
+                    radial-gradient(circle at bottom left, rgba(15, 118, 110, 0.05), transparent);
+    }
+
+    .hero {
+        background: linear-gradient(135deg, #064e4b 0%, #0f766e 45%, #22c55e 100%);
+        border-radius: 24px;
+        padding: 40px;
+        color: white;
+        box-shadow: 0 20px 40px rgba(15, 118, 110, 0.15);
+        margin-bottom: 30px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .hero h1 {
+        font-size: 2.8rem !important;
+        font-weight: 800 !important;
+        margin-bottom: 10px !important;
+        letter-spacing: -0.02em;
+    }
+
+    .hero p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        max-width: 600px;
+    }
+
+    /* Impact Cards */
+    .impact-container {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .impact-card {
+        flex: 1;
+        background: white;
+        padding: 24px;
+        border-radius: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+    }
+
+    .impact-card:hover {
+        transform: translateY(-4px);
+    }
+
+    .impact-label {
+        font-size: 0.875rem;
+        color: #64748b;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+    }
+
+    .impact-value {
+        font-size: 1.875rem;
+        font-weight: 700;
+        color: #0f766e;
+    }
+
+    .impact-unit {
+        font-size: 1rem;
+        color: #94a3b8;
+        margin-left: 4px;
+    }
+
+    /* Custom Progress Bars */
+    .stProgress > div > div > div > div {
+        background-image: linear-gradient(90deg, #0f766e, #22c55e);
+        border-radius: 10px;
+    }
+
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: transparent;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        height: 45px;
+        white-space: pre-wrap;
+        background-color: white;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 10px 20px;
+        gap: 0px;
+        font-weight: 600;
+        color: #64748b;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background-color: #0f766e !important;
+        color: white !important;
+        border-color: #0f766e !important;
+    }
+
+    /* Form Styling */
+    .stForm {
+        background: white;
+        padding: 30px;
+        border-radius: 24px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
 )
 
 eco_mode = st.sidebar.checkbox("mode basse consommation", help="réduit l'usage des données pour une navigation plus sobre.")
@@ -147,14 +273,14 @@ TYPE_LIEU_OPTIONS = [
 ]
 
 GOOGLE_SHEET_URL = os.getenv(
-    "CLEANWALK_SHEET_URL",
+    "CLEANMYMAP_SHEET_URL",
     "https://docs.google.com/spreadsheets/d/1kKkhylwqo10OA-p6CDuNwYihzW0ElwTeFwCwZ6O-rJw/edit#gid=0",
 )
 STREAMLIT_PUBLIC_URL = os.getenv(
-    "CLEANWALK_STREAMLIT_PUBLIC_URL",
-    "https://votre-app-streamlit.streamlit.app",
+    "CLEANMYMAP_STREAMLIT_PUBLIC_URL",
+    "https://cleanmymap.streamlit.app",
 ).strip()
-ADMIN_SECRET_CODE = os.getenv("CLEANWALK_ADMIN_SECRET_CODE", "").strip()
+ADMIN_SECRET_CODE = os.getenv("CLEANMYMAP_ADMIN_SECRET_CODE", "").strip()
 
 
 @st.cache_data(ttl=86400)
@@ -361,7 +487,7 @@ def build_public_pdf(actions_df: pd.DataFrame, app_url: str, critical_zones: set
     pdf.add_page()
 
     pdf.set_font("Helvetica", "B", 18)
-    pdf.cell(0, 10, _txt("cleanwalk - rapport d'impact et de protection"), ln=True)
+    pdf.cell(0, 10, _txt("Clean my Map - rapport d'impact et de protection"), ln=True)
     pdf.set_font("Helvetica", "", 11)
     pdf.cell(0, 7, _txt(f"Généré le {datetime.now().strftime('%d/%m/%Y %H:%M')}"), ln=True)
     pdf.ln(2)
@@ -446,7 +572,7 @@ def build_public_pdf(actions_df: pd.DataFrame, app_url: str, critical_zones: set
     if not partenaires.empty:
         pdf.ln(8)
         pdf.set_font("Helvetica", "B", 12)
-        pdf.set_text_color(15, 118, 110) # Vert d'eau
+        pdf.set_text_color(15, 118, 110) # Vert Clean my Map
         pdf.cell(0, 8, _txt("remerciements aux partenaires locaux"), ln=True)
         pdf.set_text_color(0, 0, 0)
         pdf.set_font("Helvetica", "I", 10)
@@ -574,7 +700,7 @@ def build_certificat_eco_quartier(nom_quartier: str):
     
     # En-tête
     pdf.set_font("Helvetica", "B", 24)
-    pdf.set_text_color(15, 118, 110) # Vert CleanWalk
+    pdf.set_text_color(15, 118, 110) # Vert Clean my Map
     pdf.cell(0, 40, _txt("CERTIFICAT D'IMPACT CITOYEN"), ln=True, align='C')
     
     pdf.ln(10)
@@ -887,38 +1013,7 @@ if lieu_prefill:
     st.toast(f"📍 Lieu détecté via QR Code : {lieu_prefill}", icon="📱")
 
 
-st.markdown(
-    """
-    <style>
-    .block-container {padding-top: 1rem; padding-bottom: 2rem; max-width: 980px;}
-    .hero {
-        background: linear-gradient(135deg, #0f766e 0%, #0ea5a3 45%, #22c55e 100%);
-        border-radius: 18px;
-        padding: 18px 20px;
-        color: white;
-        box-shadow: 0 10px 24px rgba(15, 118, 110, .22);
-        margin-bottom: 16px;
-    }
-    .hero h2 {margin: 0; font-size: 1.4rem;}
-    .hero p {margin: 6px 0 0 0; opacity: .95;}
-    .kpi {
-        background: white;
-        border-radius: 14px;
-        border: 1px solid #e8eef4;
-        padding: 12px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,.04);
-    }
-    .kpi .v {font-size: 1.4rem; font-weight: 700; color: #0f766e;}
-    .kpi .l {font-size: .86rem; color: #607080;}
-    @media (max-width: 768px) {
-        .hero h2 {font-size: 1.1rem;}
-        .hero p {font-size: .9rem;}
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# Configuration injectée via CSS global plus haut
 
 # --- MUR DE CONNEXION (MANDATORY LOGIN) ---
 main_user_email = _google_user_email()
@@ -926,9 +1021,12 @@ main_user_email = _google_user_email()
 if main_user_email is None:
     st.markdown(
         """
-        <div style="text-align: center; padding: 50px;">
-            <h1 style="color: #15766E;">bienvenue sur cleanwalk</h1>
-            <p style="font-size: 1.2em;">pour accéder à l'espace des brigades vertes et partager vos actions, merci de vous identifier avec votre compte google.</p>
+        <div style="text-align: center; padding: 80px 20px;">
+            <h1 style="color: #0f766e; font-size: 3rem; margin-bottom: 20px;">🌿 Bienvenue sur Clean my Map</h1>
+            <p style="font-size: 1.25rem; color: #64748b; max-width: 700px; margin: 0 auto 40px auto;">
+                La plateforme citoyenne pour cartographier et protéger notre environnement. 
+                Rejoignez les brigades et agissez pour la préservation de nos ressources en eau.
+            </p>
         </div>
         """,
         unsafe_allow_html=True
@@ -952,24 +1050,37 @@ if main_user_email is None:
 st.markdown(
     """
     <div class="hero">
-      <h2>déclarer une action de soin pour notre territoire</h2>
-      <p>bienvenue, <b>{main_user_email}</b></p>
-      <p>votre engagement permet de nourrir la carte publique des actions citoyennes.</p>
+      <h1>Protéger ensemble notre territoire</h1>
+      <p>Bonjour <b>{main_user_email}</b>, ravi de vous revoir parmi nous !</p>
+      <p>Chaque action déclarée renforce la science citoyenne et aide les élus à mieux équiper nos villes.</p>
     </div>
     """.format(main_user_email=main_user_email),
     unsafe_allow_html=True,
 )
 
-# --- Bannière d'Impact Global (Preuve Sociale) ---
+# --- Bannière d'Impact Global (Custom Cards) ---
 stats_global = get_total_approved_stats()
-col_g1, col_g2, col_g3 = st.columns(3)
-with col_g1:
-    st.metric("matières retirées", f"{stats_global['dechets_kg']:.1f} kg")
-with col_g2:
-    st.metric("eau préservée", f"{stats_global['megots'] * IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L']:,} litres")
-with col_g3:
-    st.metric("brigadiers unis", f"{stats_global['benevoles']:,}")
-st.markdown("---")
+eau_litres = stats_global['megots'] * IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L']
+
+st.markdown(
+    f"""
+    <div class="impact-container">
+        <div class="impact-card">
+            <div class="impact-label">Déchets retirés</div>
+            <div class="impact-value">{stats_global['dechets_kg']:.1f}<span class="impact-unit">kg</span></div>
+        </div>
+        <div class="impact-card">
+            <div class="impact-label">Eau préservée</div>
+            <div class="impact-value">{eau_litres:,}<span class="impact-unit">L</span></div>
+        </div>
+        <div class="impact-card">
+            <div class="impact-label">Citoyens engagés</div>
+            <div class="impact-value">{stats_global['benevoles']:,}</div>
+        </div>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 sheet_actions = load_sheet_actions(GOOGLE_SHEET_URL)
 excel_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "historical_data.xlsx")
@@ -996,7 +1107,7 @@ tabs = st.tabs([
 tab_home, tab_view, tab_add, tab_route, tab_recycling, tab_wall, tab_elus, tab_guide, tab_admin = tabs
 
 with tab_home:
-    st.subheader("Bienvenue sur la plateforme CleanWalk !")
+    st.markdown("### 🎯 Nos objectifs communs")
     st.write("Agissez concrètement pour la planète en nettoyant nos espaces publics.")
     
     # Statistiques depuis SQLite (+ Sheet pour l'historique non-BDD)
@@ -1149,11 +1260,11 @@ with tab_home:
 
     st.divider()
     with st.expander("📱 Kit Organisateur : Générer un QR Code de Terrain", expanded=False):
-        st.write("Idéal pour vos CleanWalks : les bénévoles flashent le code et arrivent sur le formulaire avec l'adresse déjà prête !")
+        st.write("Idéal pour vos Cleanups : les bénévoles flashent le code et arrivent sur le formulaire avec l'adresse déjà prête !")
         qr_loc = st.text_input("Lieu ou Point de RDV pour le QR Code :", placeholder="Ex: Pont de l'Alma")
         if qr_loc:
-            # Construire l'URL avec paramètre (base simple pour test, idéalement STREAMLIT_PUBLIC_URL)
-            base_url = "https://cleanwalk-interactive.streamlit.app" # URL de démo
+            # Construire l'URL avec paramètre (base simple pour test)
+            base_url = "https://cleanmymap.streamlit.app" 
             final_url = f"{base_url}/?lieu={qr_loc.replace(' ', '_')}"
             
             qr = qrcode.QRCode(version=1, box_size=10, border=5)
@@ -1169,7 +1280,7 @@ with tab_home:
             st.download_button(
                 label="⬇️ Télécharger le QR Code (PNG)",
                 data=buf.getvalue(),
-                file_name=f"QR_CleanWalk_{qr_loc.replace(' ', '_')}.png",
+                file_name=f"QR_CleanMyMap_{qr_loc.replace(' ', '_')}.png",
                 mime="image/png"
             )
 
@@ -1303,7 +1414,7 @@ with tab_view:
         st.download_button(
             "📄 Télécharger le rapport PDF (auto-mis à jour)",
             data=pdf_bytes,
-            file_name="cleanwalk_rapport_public.pdf",
+            file_name="cleanmymap_rapport_public.pdf",
             mime="application/pdf",
             use_container_width=True,
         )
@@ -1350,7 +1461,7 @@ with tab_route:
                     st.error("Veuillez saisir un point de départ et un point d'arrivée.")
                 else:
                     with st.spinner("Géocodage des adresses..."):
-                        geolocator = Nominatim(user_agent="cleanwalk_app")
+                        geolocator = Nominatim(user_agent="cleanmymap_app")
                         try:
                             loc_a = geolocator.geocode(point_a, timeout=10)
                             loc_b = geolocator.geocode(point_b, timeout=10)
@@ -1642,7 +1753,7 @@ with tab_elus:
                         st.download_button(
                             label="télécharger la sauvegarde",
                             data=json_data,
-                            file_name=f"backup_cleanwalk_{datetime.now().strftime('%Y%m%d')}.json",
+                            file_name=f"backup_cleanmymap_{datetime.now().strftime('%Y%m%d')}.json",
                             mime="application/json"
                         )
                 with col_b2:

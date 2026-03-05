@@ -61,7 +61,7 @@ def generate_quarterly_report():
     félicitations à toutes et tous pour votre engagement.
     continuons à veiller ensemble sur notre environnement.
     
-    l'équipe cleanwalk
+    l'équipe Clean my Map
     """
     return report
 
