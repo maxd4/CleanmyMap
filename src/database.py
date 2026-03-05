@@ -136,7 +136,8 @@ def get_total_approved_stats():
             SUM(megots) as total_megots, 
             SUM(dechets_kg) as total_dechets, 
             SUM(benevoles) as total_benevoles
-        FROM submissions WHERE status = 'approved'
+        FROM submissions 
+        WHERE status = 'approved' AND est_propre = 0
     """)
     row = c.fetchone()
     conn.close()
