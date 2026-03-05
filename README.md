@@ -1,7 +1,6 @@
 # 🌿 Clean my Map • Plateforme Citoyenne de Protection de l'Eau
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_svg)](https://cleanmymap.streamlit.app)
-[![Science Citoyenne](https://img.shields.io/badge/Science-Citoyenne-blue)](https://www.surfrider.eu)
+[![Streamlit App][(https://static.streamlit.io/badges/streamlit_badge_svg)](https://cleanmymap.streamlit.app)](https://cleanmymap.streamlit.app/)
 
 **Clean my Map** est une solution technologique engagée permettant de cartographier, quantifier et prédire la pollution urbaine pour protéger nos ressources en eau. Né de la volonté de fédérer les citoyens, cet outil transforme chaque ramassage bénévole en une donnée scientifique précieuse.
 
