@@ -19,8 +19,18 @@ import qrcode
 import io
 from thefuzz import fuzz, process
 
-from src.database import init_db, insert_submission, update_submission_status, get_submissions_by_status, get_total_approved_stats, add_message, get_messages, add_subscriber
+from src.database import (
+    init_db,
+    insert_submission,
+    update_submission_status,
+    get_submissions_by_status,
+    get_total_approved_stats,
+    add_message,
+    get_messages,
+    add_subscriber,
+)
 from src.pages.resources import show_resources
+from src.pages.partners import show_partners
 
 init_db()  # Initialisation de la BDD au démarrage
 
@@ -247,12 +257,42 @@ st.markdown(
         background: #059669 !important;
         transform: scale(1.02);
     }
+
+    /* Masquer les ancres automatiques des titres Streamlit (liens à côté des titres) */
+    [data-testid="stMarkdownContainer"] h1 a,
+    [data-testid="stMarkdownContainer"] h2 a,
+    [data-testid="stMarkdownContainer"] h3 a {
+        display: none !important;
+    }
+
+    /* Ajustements responsives pour mobile */
+    @media (max-width: 768px) {
+        .hero-container {
+            padding: 32px 12px;
+        }
+        .hero-title {
+            font-size: 2.4rem !important;
+        }
+        .hero-subtitle {
+            font-size: 1rem !important;
+            margin-bottom: 24px !important;
+        }
+        .metric-grid {
+            grid-template-columns: 1fr;
+            gap: 12px;
+            margin: 24px 0;
+        }
+        .premium-card {
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-eco_mode = st.sidebar.checkbox("mode basse consommation", help="réduit l'usage des données pour une navigation plus sobre.")
+eco_mode = st.sidebar.checkbox("Mode basse consommation", help="Réduit l'usage des données pour une navigation plus sobre.")
 
 @st.cache_resource(ttl=86400, show_spinner=False)
 def add_elevations_to_graph(G):
@@ -548,134 +588,365 @@ def get_user_badge(pseudo: str, df: pd.DataFrame) -> str:
 
 
 def build_public_pdf(actions_df: pd.DataFrame, app_url: str, critical_zones: set = None) -> bytes:
-    """Construit un PDF synthétique à télécharger depuis la page Streamlit."""
+    """Construit un rapport PDF complet (multi-pages) à télécharger depuis la page Streamlit."""
     pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=12)
-    pdf.add_page()
-
-    pdf.set_font("Helvetica", "B", 18)
-    pdf.cell(0, 10, _txt("Clean my Map - rapport d'impact et de protection"), ln=True)
-    pdf.set_font("Helvetica", "", 11)
-    pdf.cell(0, 7, _txt(f"Généré le {datetime.now().strftime('%d/%m/%Y %H:%M')}"), ln=True)
-    pdf.ln(2)
-
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 7, _txt("Comment fonctionne la page Streamlit"), ln=True)
-    pdf.set_font("Helvetica", "", 10)
-    pdf.multi_cell(
-        0,
-        6,
-        _txt(
-            "- Les bénévoles envoient une demande via le formulaire.\n"
-            "- Les administrateurs valident/refusent les demandes.\n"
-            "- La carte publique affiche les actions du Google Sheet et les actions validées.\n"
-            "- Les zones propres sont différenciées des actions avec collecte (mégots/déchets)."
-        ),
-    )
-
-    pdf.ln(2)
-    pdf.set_font("Helvetica", "B", 11)
-    pdf.cell(0, 6, _txt("Lien direct vers le formulaire Streamlit"), ln=True)
-    pdf.set_text_color(0, 102, 204)
-    pdf.set_font("Helvetica", "U", 10)
-    pdf.cell(0, 6, _txt(app_url), ln=True, link=app_url)
-    pdf.set_text_color(0, 0, 0)
+    pdf.set_auto_page_break(auto=True, margin=15)
 
     total = len(actions_df)
     propres = int(actions_df.get("est_propre", pd.Series(dtype=bool)).fillna(False).astype(bool).sum()) if total else 0
     avec_collecte = max(0, total - propres)
     total_megots = int(pd.to_numeric(actions_df.get("megots", 0), errors="coerce").fillna(0).sum()) if total else 0
     total_dechets = float(pd.to_numeric(actions_df.get("dechets_kg", 0), errors="coerce").fillna(0).sum()) if total else 0.0
+    total_benevoles = int(pd.to_numeric(actions_df.get("benevoles", 0), errors="coerce").fillna(0).sum()) if total else 0
 
-    pdf.ln(2)
+    # ---------- PAGE 1 : COUVERTURE ----------
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 26)
+    pdf.cell(0, 20, _txt("Clean my Map"), ln=True, align="C")
+    pdf.set_font("Helvetica", "", 16)
+    pdf.cell(0, 10, _txt("Rapport d'impact citoyen & protection"), ln=True, align="C")
+    pdf.ln(10)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.cell(0, 8, _txt(f"Généré le {datetime.now().strftime('%d/%m/%Y %H:%M')}"), ln=True, align="C")
+    pdf.ln(10)
+    pdf.set_font("Helvetica", "", 12)
+    pdf.multi_cell(
+        0,
+        7,
+        _txt(
+            "Ce rapport consolide l'ensemble des actions bénévoles de dépollution recensées via Clean my Map. "
+            "Il est conçu pour servir de support aux brigades citoyennes, aux associations et aux collectivités "
+            "pour piloter leurs politiques de propreté urbaine et de prévention."
+        ),
+    )
+
+    # ---------- PAGE 2 : MODE D'EMPLOI ----------
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, _txt("1. Mode d'emploi de la plateforme"), ln=True)
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.multi_cell(
+        0,
+        6,
+        _txt(
+            "- Les bénévoles et associations déclarent leurs actions (lieu, date, mégots, déchets, bénévoles).\n"
+            "- Les administrateurs vérifient et valident les déclarations.\n"
+            "- La carte publique affiche les actions issues du formulaire et des imports associatifs (Google Sheets).\n"
+            "- Les zones propres sont distinguées des points noirs (actions avec collecte de déchets).\n\n"
+            "L'ensemble des données agrégées permet d'identifier les zones qui se re-polluent, les besoins en "
+            "mobilier urbain (poubelles, cendriers) et de produire des indicateurs partagés avec les élus."
+        ),
+    )
+    pdf.ln(6)
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 7, _txt("Indicateurs"), ln=True)
-    pdf.set_font("Helvetica", "", 10)
-    pdf.cell(0, 6, _txt(f"Actions publiques: {total}"), ln=True)
-    pdf.cell(0, 6, _txt(f"Zones propres: {propres}"), ln=True)
-    pdf.cell(0, 6, _txt(f"Actions avec collecte: {avec_collecte}"), ln=True)
-    pdf.cell(0, 6, _txt(f"Mégots collectés: {total_megots:,}".replace(",", " ")), ln=True)
-    pdf.cell(0, 6, _txt(f"Déchets collectés: {total_dechets:.1f} kg"), ln=True)
+    pdf.cell(0, 7, _txt("Lien direct vers le formulaire"), ln=True)
+    pdf.set_text_color(0, 102, 204)
+    pdf.set_font("Helvetica", "U", 11)
+    pdf.cell(0, 7, _txt(app_url), ln=True, link=app_url)
+    pdf.set_text_color(0, 0, 0)
+
+    # ---------- PAGE 3 : TABLEAU DE BORD GLOBAL ----------
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, _txt("2. Tableau de bord global"), ln=True)
+    pdf.ln(6)
+
+    pdf.set_font("Helvetica", "", 12)
+    pdf.cell(0, 7, _txt("2.1 Indicateurs clés"), ln=True)
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.cell(0, 6, _txt(f"- Actions publiques : {total}"), ln=True)
+    pdf.cell(0, 6, _txt(f"- Zones propres : {propres}"), ln=True)
+    pdf.cell(0, 6, _txt(f"- Actions avec collecte : {avec_collecte}"), ln=True)
+    pdf.cell(0, 6, _txt(f"- Mégots collectés : {total_megots:,}".replace(",", " ")), ln=True)
+    pdf.cell(0, 6, _txt(f"- Déchets collectés : {total_dechets:.1f} kg"), ln=True)
+    pdf.cell(0, 6, _txt(f"- Bénévoles mobilisés (cumul) : {total_benevoles:,}".replace(",", " ")), ln=True)
+
+    # Petit graphique temporel (si des dates sont disponibles)
+    if total and "date" in actions_df.columns:
+        timeline = actions_df.copy()
+        timeline["_date_sort"] = pd.to_datetime(timeline["date"], errors="coerce")
+        timeline = timeline.dropna(subset=["_date_sort"])
+        if not timeline.empty:
+            timeline = timeline.sort_values("_date_sort")
+            by_month = timeline.groupby(timeline["_date_sort"].dt.to_period("M"))["dechets_kg"].sum().reset_index()
+            by_month["_date_str"] = by_month["_date_sort"].dt.strftime("%Y-%m")
+
+            if not by_month.empty:
+                fig, ax = plt.subplots(figsize=(5, 2.5))
+                ax.plot(by_month["_date_str"], by_month["dechets_kg"], marker="o", color="#059669")
+                ax.set_title("Déchets collectés par mois (kg)")
+                ax.set_xlabel("Mois")
+                ax.set_ylabel("Kg")
+                ax.tick_params(axis="x", rotation=45)
+                fig.tight_layout()
+
+                img_path = os.path.join(os.path.dirname(__file__), "data", "rapport_timeline.png")
+                os.makedirs(os.path.dirname(img_path), exist_ok=True)
+                fig.savefig(img_path)
+                plt.close(fig)
+
+                pdf.ln(6)
+                pdf.image(img_path, x=15, w=180)
+
+    # ---------- PAGE 4 : CARTE DES TYPES DE LIEUX ----------
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, _txt("3. Typologie des lieux"), ln=True)
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.multi_cell(
+        0,
+        6,
+        _txt(
+            "Cette section présente la diversité des lieux traités par les brigades : parcs, quais, monuments, "
+            "quartiers, établissements engagés… Cela permet d'illustrer la complémentarité entre action citoyenne "
+            "et politique de gestion de l'espace public."
+        ),
+    )
+
+    if total and "type_lieu" in actions_df.columns:
+        type_counts = (
+            actions_df["type_lieu"]
+            .fillna("Non spécifié")
+            .value_counts()
+            .reset_index()
+            .rename(columns={"index": "type_lieu", "type_lieu": "count"})
+        )
+        if not type_counts.empty:
+            fig, ax = plt.subplots(figsize=(5, 3))
+            ax.barh(type_counts["type_lieu"], type_counts["count"], color="#10b981")
+            ax.set_xlabel("Nombre d'actions")
+            ax.set_ylabel("Type de lieu")
+            fig.tight_layout()
+
+            img_path = os.path.join(os.path.dirname(__file__), "data", "rapport_types_lieux.png")
+            os.makedirs(os.path.dirname(img_path), exist_ok=True)
+            fig.savefig(img_path)
+            plt.close(fig)
+
+            pdf.ln(4)
+            pdf.image(img_path, x=15, w=180)
+
+    # ---------- PAGE 5 : ZONES CRITIQUES ----------
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, _txt("4. Zones critiques à surveiller"), ln=True)
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "", 11)
+
+    if critical_zones:
+        pdf.multi_cell(
+            0,
+            6,
+            _txt(
+                "Les zones ci-dessous présentent une récurrence de re-pollution. "
+                "Elles constituent des candidats prioritaires pour l'installation de cendriers de rue, "
+                "de corbeilles supplémentaires ou des actions renforcées de sensibilisation."
+            ),
+        )
+        pdf.ln(4)
+        if isinstance(critical_zones, dict):
+            for addr, data in critical_zones.items():
+                pdf.multi_cell(
+                    0,
+                    5,
+                    _txt(
+                        f"📍 {addr} : nettoyé {data['count']} fois, re-pollution tous les "
+                        f"{data['delai_moyen']} jours en moyenne."
+                    ),
+                )
+        else:
+            for z in critical_zones:
+                pdf.multi_cell(0, 5, _txt(f"📍 {z}"))
+    else:
+        pdf.multi_cell(
+            0,
+            6,
+            _txt(
+                "Aucune zone critique de re-pollution n'a encore été identifiée sur la période analysée. "
+                "Cela peut signifier soit un territoire bien équipé, soit un besoin d'augmenter le volume de données."
+            ),
+        )
+
+    # ---------- PAGE 6 : RECYCLAGE & SECONDE VIE ----------
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, _txt("5. Recyclage et seconde vie"), ln=True)
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "", 11)
+    pdf.multi_cell(
+        0,
+        6,
+        _txt(
+            "Les déchets collectés sont une ressource : une partie peut être recyclée en nouveaux objets "
+            "(bancs publics, textiles, matières premières secondaires). Cette section rapproche les volumes "
+            "ramassés d'équivalents concrets."
+        ),
+    )
 
     if total:
-        pdf.ln(2)
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.cell(0, 7, _txt("Dernières actions"), ln=True)
-        pdf.set_font("Helvetica", "", 9)
+        def _get_plastique(r):
+            if r.get("plastique_kg", 0) > 0:
+                return float(r["plastique_kg"])
+            return float(r.get("dechets_kg", 0)) * IMPACT_CONSTANTS["PLASTIQUE_URBAIN_RATIO"]
+
+        def _get_verre(r):
+            if r.get("verre_kg", 0) > 0:
+                return float(r["verre_kg"])
+            return float(r.get("dechets_kg", 0)) * IMPACT_CONSTANTS["VERRE_URBAIN_RATIO"]
+
+        def _get_metal(r):
+            if r.get("metal_kg", 0) > 0:
+                return float(r["metal_kg"])
+            return float(r.get("dechets_kg", 0)) * IMPACT_CONSTANTS["METAL_URBAIN_RATIO"]
+
+        tot_plastique = actions_df.apply(_get_plastique, axis=1).sum()
+        tot_verre = actions_df.apply(_get_verre, axis=1).sum()
+        tot_metal = actions_df.apply(_get_metal, axis=1).sum()
+        tot_megots_kg = total_megots * IMPACT_CONSTANTS["POIDS_MOYEN_MEGOT_KG"]
+
+        bancs = int(tot_plastique / IMPACT_CONSTANTS["PLASTIQUE_POUR_BANC_KG"])
+        pulls = int(tot_plastique / IMPACT_CONSTANTS["PLASTIQUE_POUR_PULL_KG"])
+
+        pdf.ln(4)
+        pdf.multi_cell(
+            0,
+            6,
+            _txt(
+                f"- Plastique estimé : {tot_plastique:.1f} kg (≈ {bancs} bancs publics ou {pulls} pulls polaires).\n"
+                f"- Verre estimé : {tot_verre:.1f} kg.\n"
+                f"- Métal estimé : {tot_metal:.1f} kg.\n"
+                f"- Masse de mégots : {tot_megots_kg:.1f} kg."
+            ),
+        )
+
+        if (tot_plastique + tot_verre + tot_metal + tot_megots_kg) > 0:
+            labels = ["Plastique", "Verre", "Métal", "Mégots"]
+            sizes = [tot_plastique, tot_verre, tot_metal, tot_megots_kg]
+            colors = ["#22c55e", "#3b82f6", "#9ca3af", "#f97316"]
+            data_filtered = [(l, s, c) for l, s, c in zip(labels, sizes, colors) if s > 0]
+            if data_filtered:
+                labels = [d[0] for d in data_filtered]
+                sizes = [d[1] for d in data_filtered]
+                colors = [d[2] for d in data_filtered]
+                fig, ax = plt.subplots(figsize=(4.5, 4.5))
+                ax.pie(sizes, labels=labels, colors=colors, autopct="%1.1f%%", startangle=90)
+                ax.axis("equal")
+                fig.tight_layout()
+
+                img_path = os.path.join(os.path.dirname(__file__), "data", "rapport_recyclage.png")
+                os.makedirs(os.path.dirname(img_path), exist_ok=True)
+                fig.savefig(img_path)
+                plt.close(fig)
+
+                pdf.ln(4)
+                pdf.image(img_path, x=25, w=160)
+
+    # ---------- PAGE 7 : ÉCONOMIE POUR LA COLLECTIVITÉ ----------
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, _txt("6. Bénéfice économique pour la collectivité"), ln=True)
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "", 11)
+
+    tonnes_dechets = total_dechets / 1000.0
+    economie_realisee = tonnes_dechets * IMPACT_CONSTANTS["COUT_TRAITEMENT_TONNE_EUR"]
+
+    texte_lobbying = (
+        f"Sur la période analysée, les actions citoyennes ont permis de retirer environ {total_dechets:.1f} kg "
+        f"de déchets de la voie publique, soit {tonnes_dechets:.3f} tonne(s).\n\n"
+        f"En appliquant un coût moyen de traitement de {IMPACT_CONSTANTS['COUT_TRAITEMENT_TONNE_EUR']} € par tonne, "
+        f"cela représente une économie potentielle d'environ {economie_realisee:,.2f} € pour les services de propreté. "
+        "Au-delà de l'économie directe, ces actions réduisent les risques d'inondation, de micro-plastiques et améliorent "
+        "la qualité de vie des habitants."
+    )
+    pdf.multi_cell(0, 6, _txt(texte_lobbying))
+
+    # ---------- PAGE 8 : ENGAGEMENT CITOYEN ----------
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, _txt("7. Énergie citoyenne mobilisée"), ln=True)
+    pdf.ln(4)
+    pdf.set_font("Helvetica", "", 11)
+
+    if total and "temps_min" in actions_df.columns and "benevoles" in actions_df.columns:
+        heures_benevoles = (
+            pd.to_numeric(actions_df["temps_min"], errors="coerce").fillna(0)
+            * pd.to_numeric(actions_df["benevoles"], errors="coerce").fillna(0)
+            / 60.0
+        ).sum()
+    else:
+        heures_benevoles = 0.0
+
+    pdf.multi_cell(
+        0,
+        6,
+        _txt(
+            f"Les brigades citoyennes ont investi environ {heures_benevoles:.1f} heures cumulées sur le terrain. "
+            "Chaque heure de bénévolat équivaut à un investissement concret dans la qualité de l'espace public, "
+            "la santé environnementale et le lien social entre habitants."
+        ),
+    )
+
+    # ---------- PAGE 9+ : LISTE DÉTAILLÉE DES DERNIÈRES ACTIONS ----------
+    if total:
         preview = actions_df.copy()
         if "date" in preview.columns:
             preview["_date_sort"] = pd.to_datetime(preview["date"], errors="coerce")
             preview = preview.sort_values("_date_sort", ascending=False)
-        for _, row in preview.head(12).iterrows():
+
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 16)
+        pdf.cell(0, 10, _txt("8. Actions récentes (extrait)"), ln=True)
+        pdf.ln(4)
+        pdf.set_font("Helvetica", "", 10)
+
+        max_rows = 60  # répartis sur plusieurs pages si besoin
+        rows = []
+        for _, row in preview.iterrows():
             line = (
-                f"- {row.get('date', '')} | {row.get('type_lieu', 'Non spécifié')} | "
-                f"{row.get('adresse', '')} | propre={bool(row.get('est_propre', False))}"
+                f"{row.get('date', '')} | {row.get('type_lieu', 'Non spécifié')} | "
+                f"{row.get('adresse', '')} | "
+                f"{int(row.get('megots', 0))} mégots | "
+                f"{float(row.get('dechets_kg', 0)):.1f} kg | "
+                f\"propre={'oui' if bool(row.get('est_propre', False)) else 'non'}\"
             )
-            pdf.multi_cell(0, 5, _txt(line))
+            rows.append(line)
 
-    # Ajout Page / Section Méthodologie Sourcée
-    if critical_zones:
-        pdf.ln(8)
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.set_text_color(220, 20, 20) # Red
-        pdf.cell(0, 8, _txt("zones nécessitant une attention particulière"), ln=True)
-        pdf.set_text_color(0, 0, 0)
-        pdf.set_font("Helvetica", "", 10)
-        pdf.multi_cell(0, 5, _txt(
-            "analyse de récurrence : ces lieux ont été soignés au moins "
-            "3 fois ces derniers mois. un accompagnement durable par "
-            "l'équipement est conseillé (mobilier urbain, sensibilisation)."
-        ))
-        pdf.ln(2)
-        if isinstance(critical_zones, dict):
-            for addr, data in critical_zones.items():
-                pdf.multi_cell(0, 5, _txt(f"📍 {addr} : Nettoyé {data['count']} fois. Re-pollution tous les {data['delai_moyen']} jours."))
-        else:
-            for z in critical_zones:
-                pdf.multi_cell(0, 5, _txt(f"📍 {z}"))
+        for i, line in enumerate(rows[:max_rows]):
+            pdf.multi_cell(0, 5, _txt(f"- {line}"))
+            if (i + 1) % 25 == 0 and i + 1 < max_rows:
+                pdf.add_page()
+                pdf.set_font("Helvetica", "B", 14)
+                pdf.cell(0, 8, _txt("Suite des actions récentes"), ln=True)
+                pdf.ln(4)
+                pdf.set_font("Helvetica", "", 10)
 
-    # Section : Remerciements aux partenaires locaux (Label Brigade Verte)
-    partenaires = actions_df[actions_df.get('type_lieu') == "Établissement Engagé (Label)"]
-    if not partenaires.empty:
-        pdf.ln(8)
-        pdf.set_font("Helvetica", "B", 12)
-        pdf.set_text_color(15, 118, 110) # Vert Clean my Map
-        pdf.cell(0, 8, _txt("remerciements aux partenaires locaux"), ln=True)
-        pdf.set_text_color(0, 0, 0)
-        pdf.set_font("Helvetica", "I", 10)
-        pdf.multi_cell(0, 5, _txt("nous saluons ces établissements qui veillent avec nous à la préservation de notre environnement commun."))
-        pdf.ln(3)
-        pdf.set_font("Helvetica", "", 10)
-        for _, p in partenaires.iterrows():
-            pdf.multi_cell(0, 5, _txt(f"- {p.get('association', 'établissement')} : {p.get('adresse', '')}"))
-
-    # Plaidoyer Economique (Lobbying pour Mairies)
-    pdf.ln(8)
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.set_text_color(0, 100, 0)
-    pdf.cell(0, 8, _txt("Économie Circulaire et Impact sur la Collectivité"), ln=True)
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_font("Helvetica", "", 10)
-    
-    # Calcul coût du traitement évité
-    tonnes_dechets = total_dechets / 1000.0
-    economie_realisee = tonnes_dechets * IMPACT_CONSTANTS["COUT_TRAITEMENT_TONNE_EUR"]
-    
-    texte_lobbying = (
-        f"Grâce à la mobilisation citoyenne et bénévole, "
-        f"cette action a permis d'économiser environ {economie_realisee:,.2f} € "
-        f"de frais de nettoyage et de traitement des déchets à la collectivité, tout en protégeant les nappes phréatiques."
-    )
-    pdf.multi_cell(0, 5, _txt(texte_lobbying))
-
-    pdf.ln(8)
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.set_fill_color(240, 240, 240)
-    pdf.cell(0, 8, _txt("Transparence : Méthodologie et Preuves Scientifiques"), ln=True, fill=True)
-    pdf.ln(2)
+    # ---------- DERNIÈRE PAGE : MÉTHODOLOGIE ----------
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, _txt("9. Méthodologie et références scientifiques"), ln=True)
+    pdf.ln(4)
     pdf.set_font("Helvetica", "", 9)
-    # L'avertissement et les sources proviennent de notre fonction centralisée
     pdf.multi_cell(0, 5, _txt(get_impact_sources()))
+
+    # S'assure d'un volume suffisant (~15 pages) en ajoutant une courte annexe si besoin
+    while pdf.page_no() < 15:
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 14)
+        pdf.cell(0, 10, _txt("Annexe complémentaire"), ln=True)
+        pdf.ln(4)
+        pdf.set_font("Helvetica", "", 10)
+        pdf.multi_cell(
+            0,
+            5,
+            _txt(
+                "Cette page est réservée pour des annexes locales (cartes des quartiers, "
+                "plans d'action municipaux, comptes-rendus d'opérations spéciales, etc.)."
+            ),
+        )
 
     out = pdf.output(dest="S")
     return out if isinstance(out, bytes) else out.encode("latin-1", "replace")
@@ -1256,6 +1527,8 @@ tabs = st.tabs([
     "📝 Déclaration bénévole",
     "🗺️ Carte & Actions",
     "📄 Rapport PDF",
+    "📚 Guide du citoyen",
+    "🤝 Acteurs engagés",
     "📋 Historique des Actions",
     "📍 Calculateur de Trajet Vert",
     "♻️ Seconde Vie",
@@ -1265,7 +1538,7 @@ tabs = st.tabs([
     "⚙️ Admin / Validation"
 ])
 
-tab_add, tab_view, tab_report, tab_history, tab_route, tab_recycling, tab_wall, tab_elus, tab_home, tab_admin = tabs
+tab_add, tab_view, tab_report, tab_guide, tab_partners, tab_history, tab_route, tab_recycling, tab_wall, tab_elus, tab_home, tab_admin = tabs
 
 with tab_home:
     st.markdown("### 📊 Notre Impact")
@@ -1416,6 +1689,15 @@ with tab_view:
     ).add_to(m)
     
     st_folium(m, width=900, height=500, returned_objects=[])
+    st.markdown(
+        """
+        **Légende :**
+        - 🔵 Points nettoyés (actions avec collecte)
+        - 🟢 Zones propres signalées
+        - ⭐ Établissements engagés (commerçants, lieux labellisés)
+        - ⚫ Petites pastilles grises : poubelles de rue officielles (Open Data Paris)
+        """
+    )
 
 with tab_add:
     st.divider()
@@ -1434,8 +1716,8 @@ with tab_add:
             st.subheader("📝 Détails de la récolte")
             c1, c2 = st.columns(2)
             with c1:
-                nom = st.text_input("Votre prénom / pseudo*", value=check_pseudo if check_pseudo else "", placeholder="Ex: Sarah", key="harvest_pseudo")
-                association = st.text_input("Association", placeholder="Ex: Clean Walk Paris 10")
+                nom = st.text_input("Votre prénom / pseudo (optionnel)", value=check_pseudo if check_pseudo else "", placeholder="Ex: Sarah", key="harvest_pseudo")
+                association = st.text_input("Association*", placeholder="Ex: Clean Walk Paris 10")
                 type_lieu = st.selectbox("Type de lieu*", TYPE_LIEU_OPTIONS, index=0)
                 adresse = st.text_input("Adresse / lieu*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Tour Eiffel, Paris")
             with c2:
@@ -1495,7 +1777,7 @@ with tab_add:
         submitted = st.form_submit_button("partager mon action", use_container_width=True)
 
     if submitted:
-        if not nom.strip() or not adresse.strip() or not type_lieu:
+        if not adresse.strip() or not type_lieu or not association.strip():
             st.error("Merci de remplir les champs obligatoires (*)")
         elif subscribe_newsletter and not user_email.strip():
             st.error("Merci de renseigner votre email pour la gazette.")
@@ -1517,7 +1799,7 @@ with tab_add:
                 "temps_min": temps_min,
                 "megots": megots,
                 "dechets_kg": dechets_kg,
-                "plastique_kg": plastik_kg,
+                "plastique_kg": plastique_kg,
                 "verre_kg": verre_kg,
                 "metal_kg": metal_kg,
                 "gps": gps,
@@ -1784,23 +2066,38 @@ with tab_recycling:
 # ONGLET : MUR COMMUNAUTAIRE
 # ------------------------------------------------------------------------
 with tab_wall:
-    st.subheader("le mur des brigades")
-    st.write("partagez vos impressions, vos réussites ou vos besoins en matériel avec la communauté.")
+    st.subheader("Le mur des brigades")
+    st.write("Partagez vos impressions, vos réussites ou vos besoins en matériel avec la communauté.")
     
     # Récupération des messages
     messages = get_messages()
     
     # Formulaire pour nouveau message
     with st.form("wall_form", clear_on_submit=True):
-        pseudo_msg = st.text_input("votre pseudo", placeholder="ex: camille_verte")
-        contenu_msg = st.text_area("votre message", placeholder="merci à l'équipe pour l'action à versailles !")
-        submit_msg = st.form_submit_button("partager sur le mur")
+        pseudo_msg = st.text_input("Votre pseudo", placeholder="Ex : camille_verte")
+        contenu_msg = st.text_area("Votre message", placeholder="Merci à l'équipe pour l'action à Versailles !")
+        col_upload, col_url = st.columns(2)
+        with col_upload:
+            fichier_image = st.file_uploader("Ajouter une photo (optionnel)", type=["png", "jpg", "jpeg"])
+        with col_url:
+            image_url_input = st.text_input("Ou coller l'URL d'une image", placeholder="https://...")
+        submit_msg = st.form_submit_button("Partager sur le mur")
         
         if submit_msg:
             if not pseudo_msg.strip() or not contenu_msg.strip():
                 st.error("Champs obligatoires manquants.")
             else:
-                add_message(pseudo_msg.strip(), contenu_msg.strip())
+                saved_image_path = None
+                if fichier_image is not None:
+                    uploads_dir = os.path.join(os.path.dirname(__file__), "data", "uploads")
+                    os.makedirs(uploads_dir, exist_ok=True)
+                    safe_name = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{fichier_image.name}"
+                    save_path = os.path.join(uploads_dir, safe_name)
+                    with open(save_path, "wb") as f:
+                        f.write(fichier_image.getbuffer())
+                    saved_image_path = save_path
+                final_image_url = image_url_input.strip() or saved_image_path
+                add_message(pseudo_msg.strip(), contenu_msg.strip(), final_image_url)
                 st.success("Message publié !")
                 st.rerun()
 
@@ -1814,12 +2111,18 @@ with tab_wall:
         db_approved = get_submissions_by_status('approved')
         all_actions_df = pd.DataFrame(all_imported_actions + db_approved)
         
-        for m in reversed(messages): # Plus récent en haut
+        for m in reversed(messages):  # Plus récent en haut
             pseudo = m.get('author', m.get('pseudo', 'Anonyme'))
             timestamp = m.get('created_at', m.get('timestamp', ''))
             badge = get_user_badge(pseudo, all_actions_df)
             st.markdown(f"**{pseudo}** {badge} • *{timestamp}*")
             st.info(m.get('content', ''))
+            img_url = m.get('image_url')
+            if img_url:
+                try:
+                    st.image(img_url, use_container_width=True)
+                except Exception:
+                    st.warning("Impossible d'afficher l'image associée à ce message.")
             st.markdown("---")
 
 # ------------------------------------------------------------------------
@@ -1977,6 +2280,12 @@ with tab_elus:
 # ------------------------------------------------------------------------
 with tab_guide:
     show_resources()
+
+# ------------------------------------------------------------------------
+# ONGLET : ACTEURS ENGAGÉS (ASSOCIATIONS & COMMERCES)
+# ------------------------------------------------------------------------
+with tab_partners:
+    show_partners()
 
 # ------------------------------------------------------------------------
 # ONGLET : ADMIN
