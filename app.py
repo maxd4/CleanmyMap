@@ -60,125 +60,192 @@ st.set_page_config(
 )
 
 # Custom Professional CSS
+# --- DESIGN SYSTEM (PREMIUM APPLE STYLE) ---
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     
-    html, body, [class*="css"] {
-        font-family: 'Inter', sans-serif;
+    :root {
+        --primary: #059669;
+        --primary-soft: rgba(5, 150, 105, 0.1);
+        --bg-glass: rgba(255, 255, 255, 0.7);
+        --border-glass: rgba(255, 255, 255, 0.3);
+        --text-main: #1e293b;
+        --text-soft: #64748b;
     }
 
-    .main {
-        background-color: #f8fafc;
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, sans-serif !important;
+        color: var(--text-main);
     }
 
     .stApp {
-        background: radial-gradient(circle at top right, rgba(34, 197, 94, 0.05), transparent),
-                    radial-gradient(circle at bottom left, rgba(15, 118, 110, 0.05), transparent);
+        background: radial-gradient(circle at top right, #e2f2ef, #ffffff),
+                    radial-gradient(circle at bottom left, #f1f5f9, #ffffff);
     }
 
-    .hero {
-        background: linear-gradient(135deg, #064e4b 0%, #0f766e 45%, #22c55e 100%);
+    /* Hide Streamlit Header/Footer for cleanliness */
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+
+    /* Glass Container */
+    .premium-card {
+        background: var(--bg-glass);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--border-glass);
         border-radius: 24px;
-        padding: 40px;
-        color: white;
-        box-shadow: 0 20px 40px rgba(15, 118, 110, 0.15);
-        margin-bottom: 30px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 32px;
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+        margin-bottom: 24px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    .hero h1 {
-        font-size: 2.8rem !important;
+    .premium-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Hero Section */
+    .hero-container {
+        text-align: center;
+        padding: 60px 20px;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .hero-title {
+        font-size: 4rem !important;
         font-weight: 800 !important;
-        margin-bottom: 10px !important;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.04em !important;
+        background: linear-gradient(135deg, #1e293b 0%, #059669 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 16px !important;
     }
 
-    .hero p {
-        font-size: 1.1rem;
-        opacity: 0.9;
+    .hero-subtitle {
+        font-size: 1.25rem !important;
+        color: var(--text-soft);
         max-width: 600px;
+        margin: 0 auto 40px !important;
+        line-height: 1.6 !important;
     }
 
-    /* Impact Cards */
-    .impact-container {
-        display: flex;
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-
-    .impact-card {
-        flex: 1;
-        background: white;
-        padding: 24px;
-        border-radius: 20px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        transition: transform 0.2s;
-    }
-
-    .impact-card:hover {
-        transform: translateY(-4px);
-    }
-
-    .impact-label {
-        font-size: 0.875rem;
-        color: #64748b;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 8px;
-    }
-
-    .impact-value {
-        font-size: 1.875rem;
-        font-weight: 700;
-        color: #0f766e;
-    }
-
-    .impact-unit {
-        font-size: 1rem;
-        color: #94a3b8;
-        margin-left: 4px;
-    }
-
-    /* Custom Progress Bars */
-    .stProgress > div > div > div > div {
-        background-image: linear-gradient(90deg, #0f766e, #22c55e);
-        border-radius: 10px;
-    }
-
+    /* Tab Styling */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: transparent;
+        padding: 6px;
+        background: rgba(0,0,0,0.03);
+        border-radius: 16px;
+        gap: 4px;
     }
 
     .stTabs [data-baseweb="tab"] {
-        height: 45px;
-        white-space: pre-wrap;
-        background-color: white;
         border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        padding: 10px 20px;
-        gap: 0px;
         font-weight: 600;
-        color: #64748b;
+        font-size: 0.9rem;
+        padding: 8px 16px;
+        transition: all 0.2s;
+        border: none !important;
+        color: var(--text-soft);
     }
 
     .stTabs [aria-selected="true"] {
-        background-color: #0f766e !important;
-        color: white !important;
-        border-color: #0f766e !important;
+        background: white !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        color: var(--primary) !important;
     }
 
-    /* Form Styling */
-    .stForm {
+    /* Metric Cards */
+    .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 20px;
+        margin: 40px 0;
+    }
+
+    .metric-card {
         background: white;
-        padding: 30px;
-        border-radius: 24px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        padding: 24px;
+        border-radius: 20px;
+        border: 1px solid #f1f5f9;
+        text-align: left;
+    }
+
+    .metric-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 4px;
+    }
+
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: var(--primary);
+    }
+
+    .metric-unit {
+        font-size: 1rem;
+        color: #94a3b8;
+        font-weight: 400;
+        margin-left: 4px;
+    }
+
+    /* Form Overhaul */
+    .stForm {
+        border: none !important;
+        background: var(--bg-glass) !important;
+        backdrop-filter: blur(12px);
+        border-radius: 28px !important;
+        padding: 40px !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    /* Callouts styling */
+    div[data-testid="stNotification"] {
+        border-radius: 16px !important;
+        border: none !important;
+        background-color: white !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
+    }
+
+    /* Progress bar styling */
+    .stProgress div[role="progressbar"] > div {
+        background: linear-gradient(90deg, #10b981, #34d399) !important;
+        border-radius: 999px !important;
+    }
+
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #ffffff !important;
+        border-right: 1px solid #f1f5f9 !important;
+    }
+
+    /* Input Fields */
+    .stTextInput input, .stTextArea textarea, .stSelectbox [data-baseweb="select"] {
+        border-radius: 12px !important;
+        border: 1px solid #e2e8f0 !important;
+        background-color: #f8fafc !important;
+    }
+
+    /* Custom Buttons */
+    .stButton > button {
+        background: #1e293b !important;
+        color: white !important;
+        border-radius: 14px !important;
+        padding: 12px 24px !important;
+        font-weight: 600 !important;
+        border: none !important;
+        transition: all 0.3s !important;
+    }
+
+    .stButton > button:hover {
+        background: #059669 !important;
+        transform: scale(1.02);
     }
     </style>
     """,
@@ -1021,9 +1088,9 @@ main_user_email = _google_user_email() or "Bénévole Anonyme"
 
 st.markdown(
     """
-    <div class="hero">
-      <h1>Protéger ensemble notre territoire</h1>
-      <p>Bienvenue sur <b>Clean my Map</b> ! Chaque action déclarée renforce la science citoyenne.</p>
+    <div class="hero-container">
+      <h1 class="hero-title">Agir. Cartographier.<br>Préserver.</h1>
+      <p class="hero-subtitle"><b>Clean my Map</b> est l'outil citoyen qui transforme chaque déchet ramassé en donnée scientifique pour protéger durablement notre environnement.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -1035,18 +1102,18 @@ eau_litres = stats_global['megots'] * IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L
 
 st.markdown(
     f"""
-    <div class="impact-container">
-        <div class="impact-card">
-            <div class="impact-label">Déchets retirés</div>
-            <div class="impact-value">{stats_global['dechets_kg']:.1f}<span class="impact-unit">kg</span></div>
+    <div class="metric-grid">
+        <div class="metric-card">
+            <div class="metric-label">Déchets retirés</div>
+            <div class="metric-value">{stats_global['dechets_kg']:.1f}<span class="metric-unit">kg</span></div>
         </div>
-        <div class="impact-card">
-            <div class="impact-label">Eau préservée</div>
-            <div class="impact-value">{eau_litres:,}<span class="impact-unit">L</span></div>
+        <div class="metric-card">
+            <div class="metric-label">Eau préservée</div>
+            <div class="metric-value">{eau_litres:,}<span class="metric-unit">Litres</span></div>
         </div>
-        <div class="impact-card">
-            <div class="impact-label">Citoyens engagés</div>
-            <div class="impact-value">{stats_global['benevoles']:,}</div>
+        <div class="metric-card">
+            <div class="metric-label">Citoyens engagés</div>
+            <div class="metric-value">{stats_global['benevoles']:,}<span class="metric-unit">Héros</span></div>
         </div>
     </div>
     """,
@@ -1064,9 +1131,9 @@ pending_count = len(get_submissions_by_status('pending'))
 approved_count = len(get_submissions_by_status('approved'))
 
 tabs = st.tabs([
+    "📝 Déclaration bénévole",
     "🏠 Accueil",
     "🗺️ Carte & Actions",
-    "📝 Déclaration bénévole",
     "📍 Calculateur de Trajet Vert",
     "♻️ Seconde Vie",
     "💬 Mur Communautaire",
@@ -1075,7 +1142,7 @@ tabs = st.tabs([
     "⚙️ Admin / Validation"
 ])
 
-tab_home, tab_view, tab_add, tab_route, tab_recycling, tab_wall, tab_elus, tab_guide, tab_admin = tabs
+tab_add, tab_home, tab_view, tab_route, tab_recycling, tab_wall, tab_elus, tab_guide, tab_admin = tabs
 
 with tab_home:
     st.markdown("### 🎯 Nos objectifs communs")
@@ -1097,13 +1164,17 @@ with tab_home:
     prog_m = min(1.0, total_m / obj_m)
     prog_d = min(1.0, total_d / obj_d)
     
+    st.markdown('<div class="premium-card">', unsafe_allow_html=True)
     st.markdown("### Objectif 1 Million de Mégots 🎯")
     st.progress(prog_m)
     st.caption(f"**{total_m:,.0f}** / {obj_m:,.0f} mégots ramassés !")
+    st.markdown('</div>', unsafe_allow_html=True)
     
+    st.markdown('<div class="premium-card">', unsafe_allow_html=True)
     st.markdown("### Objectif 5 Tonnes de Déchets 🎯")
     st.progress(prog_d)
     st.caption(f"**{total_d:,.1f}** / {obj_d:,.0f} kg de déchets récupérés !")
+    st.markdown('</div>', unsafe_allow_html=True)
     
     col_a, col_b = st.columns(2)
     with col_a:
@@ -1120,193 +1191,54 @@ with tab_home:
         * **Index de Propreté** : Ratio **(Déchets / Temps passé)** normalisé.
         """)
 
-    st.info("Utilisez les onglets ci-dessus pour naviguer dans l'espace citoyen.")
+    st.info("Utilisez l'onglet Déclaration pour contribuer ou consulter la carte.")
 
 with tab_view:
-    st.divider()
-    st.subheader("Carte publique (actions validées + fichiers)")
-
-    # Chargement DB + imports (Google Sheet et Excel)
-    db_approved = get_submissions_by_status('approved')
-    public_actions = all_imported_actions + db_approved
-    public_df = pd.DataFrame(public_actions)
-
-    if not public_df.empty:
-        critical_zones = get_critical_zones(public_df)
-        map_df = public_df.dropna(subset=["lat", "lon"]).copy()
-        
-        if not map_df.empty:
-            center_lat, center_lon = map_df["lat"].mean(), map_df["lon"].mean()
-            m = folium.Map(location=[center_lat, center_lon], zoom_start=11)
-            
-            # Récupération Open Data (Poubelles de rue)
-            official_bins = get_paris_bins()
-            
-            features = []
-            
-            # Ajouter les poubelles officielles sur la carte (statiquement ou temporellement si date connue)
-            for b in official_bins:
-                features.append({
-                    'type': 'Feature',
-                    'geometry': {'type': 'Point', 'coordinates': [b['lon'], b['lat']]},
-                    'properties': {
-                        'time': datetime.now().strftime('%Y-%m-%d'), # Toujours présent
-                        'popup': f"<b>🗑️ Info Officielle</b><br>Type: {b.get('type')}<br>Propriétaire: Ville de Paris",
-                        'icon': 'circle',
-                        'iconstyle': {
-                            'color': '#808080',
-                            'fillColor': '#808080',
-                            'fillOpacity': 0.4,
-                            'radius': 3
-                        },
-                        'style': {'color': '#808080'}
-                    }
-                })
-
-            for _, row in map_df.iterrows():
-                is_critical = row.get('adresse', '') in critical_zones
-                is_clean = row.get('est_propre', False)
-                is_business = row.get('type_lieu') == "Établissement Engagé (Label)"
-                
-                # Gap Analysis (Open Data) pour Paris
-                # On ne lance l'analyse que si c'est un point noir
-                gap_alert = ""
-                if not is_clean and not is_business and row.get('lat') and row.get('lon'):
-                    # Si dans Paris (simplifié par check lat/lon proche Paris)
-                    if 48.8 <= row['lat'] <= 48.9 and 2.2 <= row['lon'] <= 2.4:
-                        is_gap, dist = calculate_infrastructure_gap(row['lat'], row['lon'], official_bins)
-                        if is_gap:
-                            gap_alert = f"<br><b style='color:orange;'>besoin d'équipement</b><br>poubelle la plus proche : {int(dist)}m (> 200m)"
-
-                icon = 'circle'
-                if is_critical:
-                    color = "red"
-                    radius = 15
-                elif is_business:
-                    color = "#FFD700" # Gold
-                    radius = 18
-                    icon = 'star'
-                elif is_clean:
-                    color = "green"
-                    radius = 8
-                else:
-                    color = "blue"
-                    radius = 10
-                    
-                popup_html = f"<b>{row.get('type_lieu', 'lieu')}</b><br>asso/nom: {row.get('association', 'inconnu')}<br>"
-                if not is_business:
-                    popup_html += f"mégots: {int(row.get('megots', 0))}<br>déchets: {float(row.get('dechets_kg', 0))} kg<br>statut: {'propre' if is_clean else 'nettoyé'}"
-                else:
-                    popup_html += f"<b>établissement labellisé</b><br>{row.get('commentaire', '')}"
-                
-                popup_html += gap_alert
-                if is_critical:
-                    popup_html += "<br><b>lieu à surveiller</b>"
-                
-                # Formatage date ISO (YYYY-MM-DD)
-                raw_date = row.get('date', '')
-                if not raw_date or str(raw_date).lower() in ["nan", "none", ""]:
-                    try:
-                        raw_date = row.get('submitted_at', '').split('T')[0]
-                    except:
-                        raw_date = datetime.now().strftime('%Y-%m-%d')
-                
-                features.append({
-                    'type': 'Feature',
-                    'geometry': {
-                        'type': 'Point',
-                        'coordinates': [row['lon'], row['lat']],
-                    },
-                    'properties': {
-                        'time': raw_date,
-                        'popup': popup_html,
-                        'icon': icon,
-                        'iconstyle': {
-                            'color': color,
-                            'fillColor': color,
-                            'fillOpacity': 0.6,
-                            'radius': radius
-                        },
-                        'style': {'color': color}
-                    }
-                })
-
-            TimestampedGeoJson(
-                {
-                    'type': 'FeatureCollection',
-                    'features': features,
-                },
-                period='P1D',
-                add_last_point=True,
-                auto_play=False,
-                loop=False,
-                max_speed=1,
-                loop_button=True,
-                date_options='YYYY-MM-DD',
-                time_slider_drag_update=True
-            ).add_to(m)
-            
-            st_folium(m, width=900, height=500, returned_objects=[])
-
-        pdf_bytes = build_public_pdf(public_df, STREAMLIT_PUBLIC_URL, critical_zones)
-        st.download_button(
-            "📄 Télécharger le rapport PDF (auto-mis à jour)",
-            data=pdf_bytes,
-            file_name="cleanmymap_rapport_public.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-        )
-
-        public_df['alerte_crue'] = public_df.apply(lambda r: "🚨 Prioritaire" if check_flood_risk(r.get('lat'), r.get('lon'), r.get('adresse',''), r.get('type_lieu','')) else "OK", axis=1)
-
-        display_cols = [
-            c for c in ["date", "type_lieu", "adresse", "alerte_crue", "est_propre", "benevoles", "megots", "dechets_kg", "source"]
-            if c in public_df.columns
-        ]
-        st.dataframe(public_df[display_cols], use_container_width=True, hide_index=True)
-        st.info("Aucune action disponible pour le moment.")
+    st.info("Consultez la carte interactive directement dans l'onglet 'Déclaration bénévole'.")
 with tab_add:
+    st.markdown('<div class="premium-card">', unsafe_allow_html=True)
+    st.subheader("🏅 Mon Grade Citoyen")
+    c_p1, c_p2 = st.columns([2, 1])
+    with c_p1:
+        check_pseudo = st.text_input("Vérifier mon grade (entrez votre pseudo)", placeholder="Ex: Jean_Vert", key="top_check_pseudo")
+    with c_p2:
+        st.write("") # Spacer
+        st.write("") # Spacer
+        if check_pseudo:
+            db_approved = get_submissions_by_status('approved')
+            temp_df = pd.DataFrame(all_imported_actions + db_approved)
+            badge = get_user_badge(check_pseudo.strip(), temp_df) if not temp_df.empty else ""
+            if badge: st.success(badge)
+            else: st.info("Nouveau contributeur ? Bienvenue !")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.divider()
     with st.form("submission_form", clear_on_submit=True):
-        st.subheader("🏁 Mon Grade Citoyen & Nouvelle déclaration")
-        
-        c_p1, c_p2 = st.columns([2, 1])
-        with c_p1:
-            check_pseudo = st.text_input("Vérifier mon grade (Pseudo)*", placeholder="Ex: Jean_Vert")
-        with c_p2:
-            st.write("") # Spacer
-            st.write("") # Spacer
-            if check_pseudo:
-                db_approved = get_submissions_by_status('approved')
-                temp_df = pd.DataFrame(all_imported_actions + db_approved)
-                badge = get_user_badge(check_pseudo.strip(), temp_df) if not temp_df.empty else ""
-                if badge: st.success(badge)
-                else: st.info("Nouveau ?")
+        st.subheader("🏁 Nouvelle déclaration")
 
-        st.divider()
+        action_type = st.radio(
+            "Type d'action",
+            ["Ajouter une récolte", "Déclarer un lieu propre"],
+            horizontal=True,
+            help="Choisissez 'Lieu propre' si vous signalez une zone sans aucun déchet."
+        )
+        zone_propre = (action_type == "Déclarer un lieu propre")
 
-        zone_propre = st.checkbox("✅ Je signale une zone propre (sans collecte de déchets)")
+        if action_type == "Ajouter une récolte":
+            st.subheader("📝 Détails de la récolte")
+            c1, c2 = st.columns(2)
+            with c1:
+                nom = st.text_input("Votre prénom / pseudo*", value=check_pseudo if check_pseudo else "", placeholder="Ex: Sarah", key="harvest_pseudo")
+                association = st.text_input("Association", placeholder="Ex: Clean Walk Paris 10")
+                type_lieu = st.selectbox("Type de lieu*", TYPE_LIEU_OPTIONS, index=0)
+                adresse = st.text_input("Adresse / lieu*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Tour Eiffel, Paris")
+            with c2:
+                action_date = st.date_input("Date de l'action*", value=date.today(), max_value=date.today())
+                benevoles = st.number_input("Nombre de bénévoles*", min_value=1, value=1, step=1)
+                temps_min = st.number_input("Durée (minutes)*", min_value=1, value=60, step=5)
+                gps = st.text_input("Coordonnées GPS (optionnel)", placeholder="48.8584, 2.2945")
 
-        st.subheader("Nouvelle action")
-        c1, c2 = st.columns(2)
-        with c1:
-            nom = st.text_input("Votre prénom / pseudo*", placeholder="Ex: Sarah")
-            association = st.text_input("Association", placeholder="Ex: Clean Walk Paris 10")
-            type_lieu = st.selectbox("Type de lieu*", TYPE_LIEU_OPTIONS, index=0)
-            adresse = st.text_input("Adresse / lieu*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Tour Eiffel, Paris")
-        with c2:
-            action_date = st.date_input("Date de l'action*", value=date.today(), max_value=date.today())
-            benevoles = st.number_input("Nombre de bénévoles*", min_value=1, value=1, step=1)
-            temps_min = st.number_input("Durée (minutes)*", min_value=1, value=60, step=5)
-            gps = st.text_input("Coordonnées GPS (optionnel)", placeholder="48.8584, 2.2945")
-
-        if zone_propre:
-            st.info("Mode zone propre activé : les compteurs déchets/mégots sont mis à 0.")
-            megots = 0
-            dechets_kg = 0.0
-            plastique_kg = 0.0
-            verre_kg = 0.0
-            metal_kg = 0.0
-        else:
+            st.divider()
             c3, c4 = st.columns(2)
             with c3:
                 megots = st.number_input("Mégots collectés", min_value=0, value=0, step=10)
@@ -1322,13 +1254,31 @@ with tab_add:
                 with cd3:
                     metal_kg = st.number_input("Métal (kg)", min_value=0.0, step=0.5)
 
-        if type_lieu == "Établissement Engagé (Label)":
-            engagement = st.text_area("quelles sont les actions de cet établissement ?", placeholder="ex: démarche zéro déchet, collecte solidaire...")
-            commentaire = st.text_area("petite note complémentaire (optionnel)", placeholder="informations utiles pour l'équipe")
-            if engagement:
-                commentaire = f"[engagement] {engagement}\n{commentaire}"
+            if type_lieu == "Établissement Engagé (Label)":
+                engagement = st.text_area("quelles sont les actions de cet établissement ?", placeholder="ex: démarche zéro déchet, collecte solidaire...")
+                commentaire = st.text_area("petite note complémentaire (optionnel)", placeholder="informations utiles pour l'équipe")
+                if engagement:
+                    commentaire = f"[engagement] {engagement}\n{commentaire}"
+            else:
+                commentaire = st.text_area("commentaire (optionnel)", placeholder="informations utiles pour l'équipe")
         else:
-            commentaire = st.text_area("commentaire (optionnel)", placeholder="informations utiles pour l'équipe")
+            st.subheader("🧼 Signalement Zone Propre")
+            nom = st.text_input("Votre pseudo*", value=check_pseudo if check_pseudo else "", placeholder="Ex: Jean_Vert", key="clean_pseudo")
+            adresse = st.text_input("Lieu constaté propre*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Place de la Bastille, Paris")
+            action_date = st.date_input("Date du constat*", value=date.today(), max_value=date.today())
+            
+            # Valeurs par défaut pour le mode propre
+            association = "Indépendant"
+            type_lieu = "Non spécifié"
+            benevoles = 1
+            temps_min = 1
+            megots = 0
+            dechets_kg = 0.0
+            plastique_kg = 0.0
+            verre_kg = 0.0
+            metal_kg = 0.0
+            gps = ""
+            commentaire = "Zone signalée propre"
         
         st.markdown("---")
         subscribe_newsletter = st.checkbox("recevoir la gazette des brigades (impact trimestriel)", value=True)
@@ -1399,6 +1349,141 @@ with tab_add:
                 file_name=f"QR_CleanMyMap_{qr_loc.replace(' ', '_')}.png",
                 mime="image/png"
             )
+
+    st.divider()
+    st.subheader("🗺️ Carte Interactive des Actions")
+    
+    # Chargement DB + imports (Google Sheet et Excel)
+    db_approved = get_submissions_by_status('approved')
+    public_actions = all_imported_actions + db_approved
+    public_df = pd.DataFrame(public_actions)
+
+    critical_zones = get_critical_zones(public_df) if not public_df.empty else []
+    
+    # Fallback sur Paris si vide
+    center_lat, center_lon = 48.8566, 2.3522
+    zoom_start = 12
+    
+    map_df = pd.DataFrame()
+    if not public_df.empty:
+        map_df = public_df.dropna(subset=["lat", "lon"]).copy()
+        if not map_df.empty:
+            center_lat, center_lon = map_df["lat"].mean(), map_df["lon"].mean()
+            zoom_start = 11
+
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start)
+    
+    # Récupération Open Data (Poubelles de rue)
+    official_bins = get_paris_bins()
+    features = []
+    
+    # Ajouter les poubelles officielles
+    for b in official_bins:
+        features.append({
+            'type': 'Feature',
+            'geometry': {'type': 'Point', 'coordinates': [b['lon'], b['lat']]},
+            'properties': {
+                'time': datetime.now().strftime('%Y-%m-%d'),
+                'popup': f"<b>🗑️ Info Officielle</b><br>Type: {b.get('type')}<br>Propriétaire: Ville de Paris",
+                'icon': 'circle',
+                'iconstyle': {
+                    'color': '#808080',
+                    'fillColor': '#808080',
+                    'fillOpacity': 0.4,
+                    'radius': 3
+                },
+                'style': {'color': '#808080'}
+            }
+        })
+
+    if not map_df.empty:
+        for _, row in map_df.iterrows():
+            is_critical = row.get('adresse', '') in critical_zones
+            is_clean = row.get('est_propre', False)
+            is_business = row.get('type_lieu') == "Établissement Engagé (Label)"
+            
+            gap_alert = ""
+            if not is_clean and not is_business and row.get('lat') and row.get('lon'):
+                if 48.8 <= row['lat'] <= 48.9 and 2.2 <= row['lon'] <= 2.4:
+                    is_gap, dist = calculate_infrastructure_gap(row['lat'], row['lon'], official_bins)
+                    if is_gap:
+                        gap_alert = f"<br><b style='color:orange;'>besoin d'équipement</b><br>poubelle la plus proche : {int(dist)}m (> 200m)"
+
+            icon = 'circle'
+            if is_critical:
+                color = "red"
+                radius = 15
+            elif is_business:
+                color = "#FFD700" 
+                radius = 18
+                icon = 'star'
+            elif is_clean:
+                color = "green"
+                radius = 8
+            else:
+                color = "blue"
+                radius = 10
+                
+            popup_html = f"<b>{row.get('type_lieu', 'lieu')}</b><br>asso/nom: {row.get('association', 'inconnu')}<br>"
+            if not is_business:
+                popup_html += f"mégots: {int(row.get('megots', 0))}<br>déchets: {float(row.get('dechets_kg', 0))} kg<br>statut: {'propre' if is_clean else 'nettoyé'}"
+            else:
+                popup_html += f"<b>établissement labellisé</b><br>{row.get('commentaire', '')}"
+            
+            popup_html += gap_alert
+            if is_critical:
+                popup_html += "<br><b>lieu à surveiller</b>"
+            
+            raw_date = row.get('date', '')
+            if not raw_date or str(raw_date).lower() in ["nan", "none", ""]:
+                try:
+                    raw_date = row.get('submitted_at', '').split('T')[0]
+                except:
+                    raw_date = datetime.now().strftime('%Y-%m-%d')
+            
+            features.append({
+                'type': 'Feature',
+                'geometry': {'type': 'Point', 'coordinates': [row['lon'], row['lat']]},
+                'properties': {
+                    'time': raw_date,
+                    'popup': popup_html,
+                    'icon': icon,
+                    'iconstyle': {
+                        'color': color,
+                        'fillColor': color,
+                        'fillOpacity': 0.6,
+                        'radius': radius
+                    },
+                    'style': {'color': color}
+                }
+            })
+
+    TimestampedGeoJson(
+        {'type': 'FeatureCollection', 'features': features},
+        period='P1D',
+        add_last_point=True,
+        auto_play=False,
+        loop=False,
+        max_speed=1,
+        loop_button=True,
+        date_options='YYYY-MM-DD',
+        time_slider_drag_update=True
+    ).add_to(m)
+    
+    st_folium(m, width=900, height=500, returned_objects=[])
+
+    if not public_df.empty:
+        pdf_bytes = build_public_pdf(public_df, STREAMLIT_PUBLIC_URL, critical_zones)
+        st.download_button(
+            "📄 Télécharger le rapport PDF (auto-mis à jour)",
+            data=pdf_bytes,
+            file_name="cleanmymap_rapport_public.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
+        st.dataframe(public_df[["date", "type_lieu", "adresse", "est_propre", "benevoles", "megots", "dechets_kg"]], use_container_width=True, hide_index=True)
+    else:
+        st.info("Aucune action disponible pour le moment. Soyez le premier à contribuer !")
 
 with tab_route:
     st.subheader("📍 Calculateur de Trajet Vert (Logistique)")
