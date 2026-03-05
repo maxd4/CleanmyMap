@@ -1,8 +1,11 @@
-# 🌿 Clean my Map • Plateforme Citoyenne de Protection de l'Eau
+# 🌿 Clean my Map • Plateforme Citoyenne pour les Actions Bénévoles de Dépollution
 
-[![Streamlit App][(https://static.streamlit.io/badges/streamlit_badge_svg)](https://cleanmymap.streamlit.app)](https://cleanmymap.streamlit.app/)
+https://cleanmymap.streamlit.app
 
-**Clean my Map** est une solution technologique engagée permettant de cartographier, quantifier et prédire la pollution urbaine pour protéger nos ressources en eau. Né de la volonté de fédérer les citoyens, cet outil transforme chaque ramassage bénévole en une donnée scientifique précieuse.
+**Clean my Map** est une solution bénévole engagée en faveur de l'environnement dont le but principal est de mutualiser les résultats des actions bénévoles de dépollution des rues (cleanwalk). La visualisation se fait sur une carte intéractive.
+D'autres fonctionnalités permettent un engagement et un partage sur l'écologie, bien sur, mais aussi sur l'aide humanitaire et sociale et le développement durable.
+
+Cet outil transforme chaque ramassage bénévole en une donnée scientifique précieuse pour inciter à l'action.
 
 ## 🚀 Vision & Impact
 L'objectif est de rendre visible l'invisible. Un seul mégot pollue 1000 litres d'eau ; **Clean my Map** permet de mesurer précisément l'impact de chaque action citoyenne et d'accompagner les collectivités vers des solutions durables.
