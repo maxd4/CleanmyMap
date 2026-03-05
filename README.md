@@ -1,9 +1,7 @@
-# 🌿 CleanWalk • Plateforme Citoyenne de Protection de l'Eau
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_svg)](https://cleanwalk.streamlit.app)
-[![Science Citoyenne](https://img.shields.io/badge/Science-Citoyenne-blue)](https://www.surfrider.eu)
 
-**CleanWalk** est une solution technologique engagée permettant de cartographier, quantifier et prédire la pollution urbaine pour protéger nos ressources en eau. Né de la volonté de fédérer les Brigades Vertes, cet outil transforme chaque ramassage bénévole en une donnée scientifique précieuse.
+Une solution technologique engagée permettant de cartographier, quantifier et prédire la pollution urbaine pour protéger nos ressources en eau. Né de la volonté de fédérer les Brigades Vertes, cet outil transforme chaque ramassage bénévole en une donnée scientifique précieuse.
 
 ## 🚀 Vision & Impact
 L'objectif est de rendre visible l'invisible. Un seul mégot pollue 1000 litres d'eau ; CleanWalk permet de mesurer précisément l'impact de chaque action citoyenne et d'accompagner les collectivités vers des solutions durables.
