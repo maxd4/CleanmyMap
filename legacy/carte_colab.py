@@ -15,7 +15,7 @@ import warnings
 import re
 from datetime import datetime
 
-!pip install fpdf folium -q
+# # !pip install fpdf folium -q
 from fpdf import FPDF
 import folium
 from folium.plugins import MarkerCluster, HeatMap
@@ -888,7 +888,7 @@ import pandas as pd
 from datetime import datetime
 
 # Installation silencieuse
-!pip install unidecode -q
+# !pip install unidecode -q
 import unidecode
 
 print("🔧 NORMALISATION DES NOMS DE LIEUX")
@@ -1161,7 +1161,7 @@ try:
     print("  ✅ osmnx importé avec succès")
 except ImportError:
     print("  ⚠️ Installation forcée de osmnx...")
-    !pip install osmnx==1.9.4 -q
+    # !pip install osmnx==1.9.4 -q
     import osmnx as ox
     print("  ✅ osmnx installé et importé")
 
