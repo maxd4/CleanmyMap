@@ -1739,7 +1739,7 @@ with tab_elus:
                 eligible_villes = get_eco_districts(approved_df)
                 if recherche_ville.lower() in [v.lower() for v in eligible_villes]:
                     st.success(f"🏅 félicitations ! **{recherche_ville}** est labellisé **éco-quartier citoyen**.")
-                    certif_eco = build_eco_district_certificate(recherche_ville)
+                    certif_eco = build_certificat_eco_quartier(recherche_ville)
                     st.download_button(
                         label=f"télécharger le diplôme éco-quartier ({recherche_ville})",
                         data=certif_eco,
