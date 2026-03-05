@@ -31,6 +31,7 @@ from src.database import (
 )
 from src.pages.resources import show_resources
 from src.pages.partners import show_partners
+from src.report_generator import PDFReport
 
 init_db()  # Initialisation de la BDD au démarrage
 
@@ -77,22 +78,29 @@ st.markdown(
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     
     :root {
-        --primary: #059669;
-        --primary-soft: rgba(5, 150, 105, 0.1);
-        --bg-glass: rgba(255, 255, 255, 0.7);
-        --border-glass: rgba(255, 255, 255, 0.3);
-        --text-main: #1e293b;
-        --text-soft: #64748b;
+        --primary: #10b981;
+        --primary-soft: rgba(16, 185, 129, 0.1);
+        
+        /* Variables adaptatives basées sur l'interface Streamlit */
+        --bg-glass: rgba(255, 255, 255, 0.05);
+        --border-glass: rgba(128, 128, 128, 0.2);
+        --text-soft: #94a3b8;
+    }
+
+    /* Support du mode sombre automatique via media query ou héritage Streamlit */
+    @media (prefers-color-scheme: light) {
+        :root {
+            --bg-glass: rgba(255, 255, 255, 0.7);
+            --border-glass: rgba(0, 0, 0, 0.05);
+        }
+        .stApp {
+            background: radial-gradient(circle at top right, #e2f2ef, #ffffff),
+                        radial-gradient(circle at bottom left, #f1f5f9, #ffffff);
+        }
     }
 
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, sans-serif !important;
-        color: var(--text-main);
-    }
-
-    .stApp {
-        background: radial-gradient(circle at top right, #e2f2ef, #ffffff),
-                    radial-gradient(circle at bottom left, #f1f5f9, #ffffff);
     }
 
     /* Hide Streamlit Header/Footer for cleanliness */
@@ -114,7 +122,7 @@ st.markdown(
 
     .premium-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
     }
 
     /* Hero Section */
@@ -129,7 +137,8 @@ st.markdown(
         font-size: 4rem !important;
         font-weight: 800 !important;
         letter-spacing: -0.04em !important;
-        background: linear-gradient(135deg, #1e293b 0%, #059669 100%);
+        /* Gradient adapté pour être lisible sur fond clair et sombre */
+        background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 16px !important;
@@ -146,7 +155,7 @@ st.markdown(
     /* Tab Styling */
     .stTabs [data-baseweb="tab-list"] {
         padding: 6px;
-        background: rgba(0,0,0,0.03);
+        background: rgba(128, 128, 128, 0.1);
         border-radius: 16px;
         gap: 4px;
     }
@@ -158,13 +167,12 @@ st.markdown(
         padding: 8px 16px;
         transition: all 0.2s;
         border: none !important;
-        color: var(--text-soft);
     }
 
     .stTabs [aria-selected="true"] {
-        background: white !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        color: var(--primary) !important;
+        background: var(--primary) !important;
+        color: white !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
     }
 
     /* Metric Cards */
@@ -176,10 +184,10 @@ st.markdown(
     }
 
     .metric-card {
-        background: white;
+        background: var(--bg-glass);
         padding: 24px;
         border-radius: 20px;
-        border: 1px solid #f1f5f9;
+        border: 1px solid var(--border-glass);
         text-align: left;
     }
 
@@ -200,27 +208,25 @@ st.markdown(
 
     .metric-unit {
         font-size: 1rem;
-        color: #94a3b8;
+        color: var(--text-soft);
         font-weight: 400;
         margin-left: 4px;
     }
 
     /* Form Overhaul */
     .stForm {
-        border: none !important;
+        border: 1px solid var(--border-glass) !important;
         background: var(--bg-glass) !important;
         backdrop-filter: blur(12px);
         border-radius: 28px !important;
         padding: 40px !important;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1) !important;
     }
 
     /* Callouts styling */
     div[data-testid="stNotification"] {
         border-radius: 16px !important;
-        border: none !important;
-        background-color: white !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
+        border: 1px solid var(--border-glass) !important;
+        background-color: var(--bg-glass) !important;
     }
 
     /* Progress bar styling */
@@ -231,20 +237,12 @@ st.markdown(
 
     /* Sidebar Styling */
     section[data-testid="stSidebar"] {
-        background-color: #ffffff !important;
-        border-right: 1px solid #f1f5f9 !important;
-    }
-
-    /* Input Fields */
-    .stTextInput input, .stTextArea textarea, .stSelectbox [data-baseweb="select"] {
-        border-radius: 12px !important;
-        border: 1px solid #e2e8f0 !important;
-        background-color: #f8fafc !important;
+        border-right: 1px solid var(--border-glass) !important;
     }
 
     /* Custom Buttons */
     .stButton > button {
-        background: #1e293b !important;
+        background: var(--primary) !important;
         color: white !important;
         border-radius: 14px !important;
         padding: 12px 24px !important;
@@ -254,7 +252,7 @@ st.markdown(
     }
 
     .stButton > button:hover {
-        background: #059669 !important;
+        opacity: 0.9;
         transform: scale(1.02);
     }
 
@@ -453,6 +451,38 @@ def _google_user_email():
     return None
 
 
+@st.cache_data(ttl=3600)
+def geocode_and_resolve(location_input: str):
+    """
+    Tente de résoudre un emplacement (GPS ou texte) en (lat, lon, adresse_formatee).
+    """
+    if not location_input or len(location_input.strip()) < 3:
+        return None, None, location_input
+
+    # 1. Tentative de lecture directe des coordonnées (Decimal)
+    lat, lon = parse_coords(location_input)
+    geolocator = Nominatim(user_agent="cleanmymap_app_v2")
+
+    if lat is not None and lon is not None:
+        try:
+            # Récupération de l'adresse textuelle à partir des coordonnées
+            location = geolocator.reverse((lat, lon), timeout=5)
+            address = location.address if location else f"{lat}, {lon}"
+            return lat, lon, address
+        except Exception:
+            return lat, lon, f"{lat}, {lon}"
+
+    # 2. Tentative de géocodage textuel
+    try:
+        location = geolocator.geocode(location_input, timeout=5)
+        if location:
+            return location.latitude, location.longitude, location.address
+    except Exception:
+        pass
+
+    return None, None, location_input
+
+
 def parse_coords(value: str):
     if not value:
         return None, None
@@ -588,16 +618,20 @@ def get_user_badge(pseudo: str, df: pd.DataFrame) -> str:
 
 
 def build_public_pdf(actions_df: pd.DataFrame, app_url: str, critical_zones: set = None) -> bytes:
-    """Construit un rapport PDF complet (multi-pages) à télécharger depuis la page Streamlit."""
+    """Construit un rapport PDF complet (multi-pages) avec séparation stricte Récoltes/Lieux Propres."""
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
 
     total = len(actions_df)
-    propres = int(actions_df.get("est_propre", pd.Series(dtype=bool)).fillna(False).astype(bool).sum()) if total else 0
-    avec_collecte = max(0, total - propres)
-    total_megots = int(pd.to_numeric(actions_df.get("megots", 0), errors="coerce").fillna(0).sum()) if total else 0
-    total_dechets = float(pd.to_numeric(actions_df.get("dechets_kg", 0), errors="coerce").fillna(0).sum()) if total else 0.0
-    total_benevoles = int(pd.to_numeric(actions_df.get("benevoles", 0), errors="coerce").fillna(0).sum()) if total else 0
+    df_propres = actions_df[actions_df.get("est_propre", False) == True].copy()
+    df_recoltes = actions_df[actions_df.get("est_propre", False) == False].copy()
+
+    propres_count = len(df_propres)
+    recoltes_count = len(df_recoltes)
+    
+    total_megots = int(pd.to_numeric(df_recoltes.get("megots", 0), errors="coerce").fillna(0).sum()) if recoltes_count else 0
+    total_dechets = float(pd.to_numeric(df_recoltes.get("dechets_kg", 0), errors="coerce").fillna(0).sum()) if recoltes_count else 0.0
+    total_benevoles = int(pd.to_numeric(df_recoltes.get("benevoles", 0), errors="coerce").fillna(0).sum()) if recoltes_count else 0
 
     # ---------- PAGE 1 : COUVERTURE ----------
     pdf.add_page()
@@ -614,122 +648,82 @@ def build_public_pdf(actions_df: pd.DataFrame, app_url: str, critical_zones: set
         0,
         7,
         _txt(
-            "Ce rapport consolide l'ensemble des actions bénévoles de dépollution recensées via Clean my Map. "
-            "Il est conçu pour servir de support aux brigades citoyennes, aux associations et aux collectivités "
-            "pour piloter leurs politiques de propreté urbaine et de prévention."
+            "Ce rapport consolide deux types de données citoyennes : "
+            "1. Les actions de dépollution (récoltes de déchets).\n"
+            "2. Les signalements de propreté (zones sans pollution).\n\n"
+            "Il permet d'orienter les politiques de propreté urbaine en identifiant les points noirs "
+            "et en valorisant les zones préservées."
         ),
     )
 
-    # ---------- PAGE 2 : MODE D'EMPLOI ----------
+    # ---------- PAGE 2 : ACTIONS DE DÉPOLLUTION ----------
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, _txt("1. Mode d'emploi de la plateforme"), ln=True)
-    pdf.ln(4)
-    pdf.set_font("Helvetica", "", 11)
-    pdf.multi_cell(
-        0,
-        6,
-        _txt(
-            "- Les bénévoles et associations déclarent leurs actions (lieu, date, mégots, déchets, bénévoles).\n"
-            "- Les administrateurs vérifient et valident les déclarations.\n"
-            "- La carte publique affiche les actions issues du formulaire et des imports associatifs (Google Sheets).\n"
-            "- Les zones propres sont distinguées des points noirs (actions avec collecte de déchets).\n\n"
-            "L'ensemble des données agrégées permet d'identifier les zones qui se re-polluent, les besoins en "
-            "mobilier urbain (poubelles, cendriers) et de produire des indicateurs partagés avec les élus."
-        ),
-    )
+    pdf.cell(0, 10, _txt("1. Bilan des actions de dépollution"), ln=True)
     pdf.ln(6)
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 7, _txt("Lien direct vers le formulaire"), ln=True)
-    pdf.set_text_color(0, 102, 204)
-    pdf.set_font("Helvetica", "U", 11)
-    pdf.cell(0, 7, _txt(app_url), ln=True, link=app_url)
-    pdf.set_text_color(0, 0, 0)
-
-    # ---------- PAGE 3 : TABLEAU DE BORD GLOBAL ----------
-    pdf.add_page()
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, _txt("2. Tableau de bord global"), ln=True)
-    pdf.ln(6)
-
     pdf.set_font("Helvetica", "", 12)
-    pdf.cell(0, 7, _txt("2.1 Indicateurs clés"), ln=True)
+    pdf.cell(0, 8, _txt(f"Nombre total de récoltes validées : {recoltes_count}"), ln=True)
     pdf.ln(4)
+    
+    pdf.set_font("Helvetica", "B", 12)
+    pdf.cell(0, 8, _txt("Impact cumulé :"), ln=True)
     pdf.set_font("Helvetica", "", 11)
-    pdf.cell(0, 6, _txt(f"- Actions publiques : {total}"), ln=True)
-    pdf.cell(0, 6, _txt(f"- Zones propres : {propres}"), ln=True)
-    pdf.cell(0, 6, _txt(f"- Actions avec collecte : {avec_collecte}"), ln=True)
     pdf.cell(0, 6, _txt(f"- Mégots collectés : {total_megots:,}".replace(",", " ")), ln=True)
     pdf.cell(0, 6, _txt(f"- Déchets collectés : {total_dechets:.1f} kg"), ln=True)
-    pdf.cell(0, 6, _txt(f"- Bénévoles mobilisés (cumul) : {total_benevoles:,}".replace(",", " ")), ln=True)
+    pdf.cell(0, 6, _txt(f"- Bénévoles mobilisés : {total_benevoles:,}".replace(",", " ")), ln=True)
 
-    # Petit graphique temporel (si des dates sont disponibles)
-    if total and "date" in actions_df.columns:
-        timeline = actions_df.copy()
+    if recoltes_count and "date" in df_recoltes.columns:
+        # (Graphique temporel uniquement pour les récoltes)
+        timeline = df_recoltes.copy()
         timeline["_date_sort"] = pd.to_datetime(timeline["date"], errors="coerce")
         timeline = timeline.dropna(subset=["_date_sort"])
         if not timeline.empty:
             timeline = timeline.sort_values("_date_sort")
             by_month = timeline.groupby(timeline["_date_sort"].dt.to_period("M"))["dechets_kg"].sum().reset_index()
             by_month["_date_str"] = by_month["_date_sort"].dt.strftime("%Y-%m")
-
             if not by_month.empty:
                 fig, ax = plt.subplots(figsize=(5, 2.5))
                 ax.plot(by_month["_date_str"], by_month["dechets_kg"], marker="o", color="#059669")
-                ax.set_title("Déchets collectés par mois (kg)")
+                ax.set_title("Évolution des récoltes (kg)")
                 ax.set_xlabel("Mois")
                 ax.set_ylabel("Kg")
                 ax.tick_params(axis="x", rotation=45)
                 fig.tight_layout()
-
-                img_path = os.path.join(os.path.dirname(__file__), "data", "rapport_timeline.png")
-                os.makedirs(os.path.dirname(img_path), exist_ok=True)
+                img_path = os.path.join(os.path.dirname(__file__), "data", "rapport_recoltes.png")
                 fig.savefig(img_path)
                 plt.close(fig)
-
                 pdf.ln(6)
                 pdf.image(img_path, x=15, w=180)
 
-    # ---------- PAGE 4 : CARTE DES TYPES DE LIEUX ----------
+    # ---------- PAGE 3 : SIGNALEMENTS DE PROPRETÉ ----------
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, _txt("3. Typologie des lieux"), ln=True)
-    pdf.ln(4)
+    pdf.cell(0, 10, _txt("2. Signalements de zones propres"), ln=True)
+    pdf.ln(6)
     pdf.set_font("Helvetica", "", 11)
     pdf.multi_cell(
         0,
         6,
         _txt(
-            "Cette section présente la diversité des lieux traités par les brigades : parcs, quais, monuments, "
-            "quartiers, établissements engagés… Cela permet d'illustrer la complémentarité entre action citoyenne "
-            "et politique de gestion de l'espace public."
+            f"La communauté a effectué {propres_count} signalements de zones propres. "
+            "Ces signalements sont essentiels pour cartographier les secteurs où la gestion des "
+            "déchets est efficace ou là où le civisme est exemplaire."
         ),
     )
+    pdf.ln(6)
+    
+    if propres_count:
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.cell(0, 8, _txt("Dernières zones signalées propres :"), ln=True)
+        pdf.set_font("Helvetica", "", 10)
+        # Afficher les 10 dernières adresses propres
+        recent_propres = df_propres.sort_values("date", ascending=False).head(10)
+        for _, r in recent_propres.iterrows():
+            pdf.cell(0, 6, _txt(f"✨ {r['date']} - {r['adresse']}"), ln=True)
+    else:
+        pdf.cell(0, 6, _txt("Aucun signalement de zone propre pour le moment."), ln=True)
 
-    if total and "type_lieu" in actions_df.columns:
-        type_counts = (
-            actions_df["type_lieu"]
-            .fillna("Non spécifié")
-            .value_counts()
-            .reset_index()
-            .rename(columns={"index": "type_lieu", "type_lieu": "count"})
-        )
-        if not type_counts.empty:
-            fig, ax = plt.subplots(figsize=(5, 3))
-            ax.barh(type_counts["type_lieu"], type_counts["count"], color="#10b981")
-            ax.set_xlabel("Nombre d'actions")
-            ax.set_ylabel("Type de lieu")
-            fig.tight_layout()
-
-            img_path = os.path.join(os.path.dirname(__file__), "data", "rapport_types_lieux.png")
-            os.makedirs(os.path.dirname(img_path), exist_ok=True)
-            fig.savefig(img_path)
-            plt.close(fig)
-
-            pdf.ln(4)
-            pdf.image(img_path, x=15, w=180)
-
-    # ---------- PAGE 5 : ZONES CRITIQUES ----------
+    # ---------- PAGE 4 : ZONES CRITIQUES ----------
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 16)
     pdf.cell(0, 10, _txt("4. Zones critiques à surveiller"), ln=True)
@@ -911,7 +905,7 @@ def build_public_pdf(actions_df: pd.DataFrame, app_url: str, critical_zones: set
                 f"{row.get('adresse', '')} | "
                 f"{int(row.get('megots', 0))} mégots | "
                 f"{float(row.get('dechets_kg', 0)):.1f} kg | "
-                f\"propre={'oui' if bool(row.get('est_propre', False)) else 'non'}\"
+                f"propre={'oui' if bool(row.get('est_propre', False)) else 'non'}"
             )
             rows.append(line)
 
@@ -1465,7 +1459,19 @@ TEST_DATA = [
 ]
 
 def init_state():
-    pass # Les listes temporaires ont été remplacées par SQLite
+    if 'sandbox_actions' not in st.session_state:
+        st.session_state['sandbox_actions'] = [
+            {
+                "id": "demo_1",
+                "type_lieu": "Brouillon Démo",
+                "adresse": "Exemple 1 (Test)",
+                "megots": 150,
+                "dechets_kg": 2.5,
+                "lat": 48.8566,
+                "lon": 2.3522,
+                "est_propre": False
+            }
+        ]
 
 init_state()
 
@@ -1526,6 +1532,7 @@ approved_count = len(get_submissions_by_status('approved'))
 tabs = st.tabs([
     "📝 Déclaration bénévole",
     "🗺️ Carte & Actions",
+    "🧪 Zone d'entraînement",
     "📄 Rapport PDF",
     "📚 Guide du citoyen",
     "🤝 Acteurs engagés",
@@ -1534,11 +1541,67 @@ tabs = st.tabs([
     "♻️ Seconde Vie",
     "💬 Mur Communautaire",
     "🏛️ Espace Élus",
+    "📱 Kit Organisateur",
     "📊 Notre Impact",
     "⚙️ Admin / Validation"
 ])
 
-tab_add, tab_view, tab_report, tab_guide, tab_partners, tab_history, tab_route, tab_recycling, tab_wall, tab_elus, tab_home, tab_admin = tabs
+tab_add, tab_view, tab_sandbox, tab_report, tab_guide, tab_partners, tab_history, tab_route, tab_recycling, tab_wall, tab_elus, tab_kit, tab_home, tab_admin = tabs
+
+with tab_kit:
+    st.header("📱 Kit Organisateur : QR Code de Terrain")
+    
+    st.markdown("""
+    ### Pourquoi utiliser un QR Code ?
+    Le QR Code de terrain est un outil essentiel pour les organisateurs de Clean Walks. Il permet de :
+    1. **Simplifier la saisie** : En scannant le code, le lieu de l'action est automatiquement pré-rempli pour les bénévoles.
+    2. **Uniformiser les données** : Toutes les déclarations de votre événement porteront exactement le même nom de lieu, facilitant le bilan final.
+    3. **Gagner du temps** : Vos bénévoles n'ont plus qu'à renseigner les quantités ramassées.
+    
+    ---
+    ### Générer votre code
+    Saisissez le nom du lieu ou les coordonnées GPS exactes pour générer le QR Code à imprimer ou à afficher sur votre téléphone pendant l'action.
+    """)
+    
+    with st.form("qr_generator_form"):
+        lieu_event = st.text_input("Nom du lieu ou Coordonnées GPS", placeholder="Ex: Place de la Bastille, Paris ou 48.8534, 2.3488")
+        color_qr = st.color_picker("Couleur du QR Code", "#059669")
+        generate_btn = st.form_submit_button("Générer le QR Code de terrain", use_container_width=True)
+        
+    if generate_btn:
+        if not lieu_event.strip():
+            st.warning("Veuillez saisir un lieu pour générer le code.")
+        else:
+            # Construction de l'URL de l'application avec le paramètre de pré-remplissage
+            # On utilise STREAMLIT_PUBLIC_URL si définie, sinon une URL générique
+            base_url = "https://cleanwalk.streamlit.app"
+            share_url = f"{base_url}/?lieu={requests.utils.quote(lieu_event.strip())}"
+            
+            # Génération du QR Code
+            qr = qrcode.QRCode(version=1, box_size=10, border=4)
+            qr.add_data(share_url)
+            qr.make(fit=True)
+            img_qr = qr.make_image(fill_color=color_qr, back_color="white")
+            
+            # Conversion pour affichage Streamlit
+            buf = io.BytesIO()
+            img_qr.save(buf, format="PNG")
+            byte_im = buf.getvalue()
+            
+            col_qr1, col_qr2 = st.columns([1, 2])
+            with col_qr1:
+                st.image(byte_im, caption="QR Code à scanner sur le terrain", use_container_width=True)
+            with col_qr2:
+                st.success("✅ Votre QR Code est prêt !")
+                st.write(f"**Lien encodé :** `{share_url}`")
+                st.download_button(
+                    label="⬇️ Télécharger le QR Code (PNG)",
+                    data=byte_im,
+                    file_name=f"qrcode_terrain_{lieu_event.replace(' ', '_')}.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
+                st.info("💡 **Conseil :** Imprimez ce code et fixez-le sur votre peson ou sur votre sac de collecte principal pour que chaque bénévole puisse flasher son impact en fin d'action.")
 
 with tab_home:
     st.markdown("### 📊 Notre Impact")
@@ -1699,19 +1762,78 @@ with tab_view:
         """
     )
 
+with tab_sandbox:
+    st.header("🧪 Zone d'entraînement (Brouillon)")
+    st.info("Cette zone est un bac à sable : vous pouvez ajouter des données fictives pour tester l'outil. Elles ne sont **pas enregistrées** dans la base réelle et seront perdues si vous rafraîchissez la page.")
+    
+    col_sb1, col_sb2 = st.columns([1, 2])
+    
+    with col_sb1:
+        st.subheader("Simuler une action")
+        with st.form("sandbox_form"):
+            sb_nom = st.text_input("Pseudo fictif", value="Testeur")
+            sb_type = st.selectbox("Type de lieu", TYPE_LIEU_OPTIONS)
+            sb_loc = st.text_input("Emplacement (Adresse ou GPS)", value="48.8584, 2.2945")
+            sb_weight = st.number_input("Poids mégots (g)", min_value=0.0, value=50.0)
+            sb_cond = st.selectbox("État mégots", ["Sec", "Mélangé / Impuretés", "Humide"])
+            sb_kg = st.number_input("Déchets (kg)", min_value=0.0, value=1.5)
+            sb_propre = st.checkbox("Signaler comme zone propre")
+            
+            sb_submit = st.form_submit_button("Ajouter au brouillon")
+            
+            if sb_submit:
+                lat, lon, res_addr = geocode_and_resolve(sb_loc)
+                coeffs = {"Sec": 0.20, "Mélangé / Impuretés": 0.27, "Humide": 0.35}
+                m_count = int(sb_weight / coeffs[sb_cond]) if sb_weight > 0 else 0
+                
+                new_draft = {
+                    "id": f"draft_{len(st.session_state['sandbox_actions'])}",
+                    "nom": sb_nom,
+                    "type_lieu": sb_type,
+                    "adresse": res_addr,
+                    "megots": 0 if sb_propre else m_count,
+                    "dechets_kg": 0.0 if sb_propre else sb_kg,
+                    "lat": lat or 48.85, 
+                    "lon": lon or 2.35,
+                    "est_propre": sb_propre
+                }
+                st.session_state['sandbox_actions'].append(new_draft)
+                st.success("Action ajoutée au brouillon !")
+                st.rerun()
+
+        if st.button("🗑️ Vider le brouillon"):
+            st.session_state['sandbox_actions'] = []
+            st.rerun()
+
+    with col_sb2:
+        st.subheader("Carte de test")
+        # Carte simplifiée pour le sandbox
+        m_sb = folium.Map(location=[48.8566, 2.3522], zoom_start=12)
+        
+        for act in st.session_state['sandbox_actions']:
+            if act['lat'] and act['lon']:
+                color = "green" if act['est_propre'] else "blue"
+                folium.Marker(
+                    [act['lat'], act['lon']],
+                    popup=f"<b>{act['type_lieu']}</b><br>Mégots: {act['megots']}<br>Kg: {act['dechets_kg']}",
+                    icon=folium.Icon(color=color, icon='info-sign')
+                ).add_to(m_sb)
+        
+        st_folium(m_sb, width=600, height=500, key="sandbox_map")
+
 with tab_add:
     st.divider()
+    
+    # Sélection du type d'action via un bouton radio plus explicite
+    action_type = st.radio(
+        "Que souhaitez-vous faire ?",
+        ["Ajouter une récolte", "Déclarer un lieu propre"],
+        horizontal=True,
+        help="Choisissez 'Lieu propre' si vous signalez une zone sans aucun déchet."
+    )
+    zone_propre = (action_type == "Déclarer un lieu propre")
+    
     with st.form("submission_form", clear_on_submit=True):
-        st.subheader("🏁 Nouvelle déclaration")
-
-        action_type = st.radio(
-            "Type d'action",
-            ["Ajouter une récolte", "Déclarer un lieu propre"],
-            horizontal=True,
-            help="Choisissez 'Lieu propre' si vous signalez une zone sans aucun déchet."
-        )
-        zone_propre = (action_type == "Déclarer un lieu propre")
-
         if action_type == "Ajouter une récolte":
             st.subheader("📝 Détails de la récolte")
             c1, c2 = st.columns(2)
@@ -1719,28 +1841,32 @@ with tab_add:
                 nom = st.text_input("Votre prénom / pseudo (optionnel)", value=check_pseudo if check_pseudo else "", placeholder="Ex: Sarah", key="harvest_pseudo")
                 association = st.text_input("Association*", placeholder="Ex: Clean Walk Paris 10")
                 type_lieu = st.selectbox("Type de lieu*", TYPE_LIEU_OPTIONS, index=0)
-                adresse = st.text_input("Adresse / lieu*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Tour Eiffel, Paris")
             with c2:
                 action_date = st.date_input("Date de l'action*", value=date.today(), max_value=date.today())
                 benevoles = st.number_input("Nombre de bénévoles*", min_value=1, value=1, step=1)
                 temps_min = st.number_input("Durée (minutes)*", min_value=1, value=60, step=5)
-                gps = st.text_input("Coordonnées GPS (optionnel)", placeholder="48.8584, 2.2945")
+            
+            emplacement_brut = st.text_input(
+                "Emplacement (Adresse ou GPS)*", 
+                value=lieu_prefill if lieu_prefill else "", 
+                placeholder="Ex: 48.8584, 2.2945 ou Tour Eiffel, Paris",
+                help="💡 Il est préférable de saisir les coordonnées GPS exactes pour un affichage précis sur la carte."
+            )
 
             st.divider()
             c3, c4 = st.columns(2)
             with c3:
-                megots = st.number_input("Mégots collectés", min_value=0, value=0, step=10)
+                st.write("**🚬 Mégots**")
+                m_weight = st.number_input("Poids total (grammes)", min_value=0.0, value=0.0, step=10.0)
+                m_condition = st.selectbox("État des mégots", ["Sec", "Mélangé / Impuretés", "Humide"])
+                coeffs = {"Sec": 0.20, "Mélangé / Impuretés": 0.27, "Humide": 0.35}
+                megots = int(m_weight / coeffs[m_condition]) if m_weight > 0 else 0
+                if m_weight > 0:
+                    st.info(f"Estimation : ~**{megots}** mégots")
             with c4:
                 dechets_kg = st.number_input("Déchets (total kg)", min_value=0.0, value=0.0, step=0.5)
             
-            with st.expander("Détail optionnel des déchets (en kg)"):
-                cd1, cd2, cd3 = st.columns(3)
-                with cd1:
-                    plastique_kg = st.number_input("Plastique (kg)", min_value=0.0, step=0.5)
-                with cd2:
-                    verre_kg = st.number_input("Verre (kg)", min_value=0.0, step=0.5)
-                with cd3:
-                    metal_kg = st.number_input("Métal (kg)", min_value=0.0, step=0.5)
+            plastique_kg, verre_kg, metal_kg = 0.0, 0.0, 0.0
 
             if type_lieu == "Établissement Engagé (Label)":
                 engagement = st.text_area("quelles sont les actions de cet établissement ?", placeholder="ex: démarche zéro déchet, collecte solidaire...")
@@ -1749,23 +1875,29 @@ with tab_add:
                     commentaire = f"[engagement] {engagement}\n{commentaire}"
             else:
                 commentaire = st.text_area("commentaire (optionnel)", placeholder="informations utiles pour l'équipe")
+        
         else:
             st.subheader("🧼 Signalement Zone Propre")
+            st.info("Utilisez ce formulaire pour signaler un lieu où il n'y a aucun déchet à ramasser.")
             nom = st.text_input("Votre pseudo*", value=check_pseudo if check_pseudo else "", placeholder="Ex: Jean_Vert", key="clean_pseudo")
-            adresse = st.text_input("Lieu constaté propre*", value=lieu_prefill if lieu_prefill else "", placeholder="Ex: Place de la Bastille, Paris")
             action_date = st.date_input("Date du constat*", value=date.today(), max_value=date.today())
             
-            # Valeurs par défaut pour le mode propre
+            emplacement_brut = st.text_input(
+                "Emplacement (Adresse ou GPS)*", 
+                value=lieu_prefill if lieu_prefill else "", 
+                placeholder="Ex: 48.8584, 2.2945 ou Place de la Bastille, Paris",
+                help="💡 Il est préférable de saisir les coordonnées GPS exactes pour un affichage précis sur la carte.",
+                key="clean_location"
+            )
+            
+            # Valeurs par défaut automatiques pour un lieu propre
             association = "Indépendant"
-            type_lieu = "Non spécifié"
+            type_lieu = "Signalement Propreté"
             benevoles = 1
             temps_min = 1
             megots = 0
             dechets_kg = 0.0
-            plastique_kg = 0.0
-            verre_kg = 0.0
-            metal_kg = 0.0
-            gps = ""
+            plastique_kg, verre_kg, metal_kg = 0.0, 0.0, 0.0
             commentaire = "Zone signalée propre"
         
         st.markdown("---")
@@ -1777,23 +1909,25 @@ with tab_add:
         submitted = st.form_submit_button("partager mon action", use_container_width=True)
 
     if submitted:
-        if not adresse.strip() or not type_lieu or not association.strip():
+        if not emplacement_brut.strip() or not type_lieu or not association.strip():
             st.error("Merci de remplir les champs obligatoires (*)")
         elif subscribe_newsletter and not user_email.strip():
             st.error("Merci de renseigner votre email pour la gazette.")
         else:
-            # Fuzzy match contre la base existante pour unifier les noms
+            with st.spinner("Analyse de l'emplacement..."):
+                lat, lon, adresse_resolue = geocode_and_resolve(emplacement_brut)
+            
+            # Fuzzy match contre la base existante pour unifier les noms d'adresses
             approved_actions = get_submissions_by_status('approved')
             existing_pool = [a.get('adresse') for a in approved_actions if a.get('adresse')]
-            adresse_propre = fuzzy_address_match(adresse.strip(), existing_pool)
+            adresse_finale = fuzzy_address_match(adresse_resolue, existing_pool)
             
-            lat, lon = parse_coords(gps)
             data_to_save = {
                 "id": str(uuid.uuid4()),
                 "nom": nom.strip(),
                 "association": association.strip(),
                 "type_lieu": type_lieu,
-                "adresse": adresse_propre,
+                "adresse": adresse_finale,
                 "date": str(action_date),
                 "benevoles": benevoles,
                 "temps_min": temps_min,
@@ -1802,7 +1936,7 @@ with tab_add:
                 "plastique_kg": plastique_kg,
                 "verre_kg": verre_kg,
                 "metal_kg": metal_kg,
-                "gps": gps,
+                "gps": f"{lat}, {lon}" if lat and lon else emplacement_brut,
                 "lat": lat,
                 "lon": lon,
                 "commentaire": commentaire,
@@ -1823,7 +1957,8 @@ with tab_report:
     public_df = pd.DataFrame(public_actions)
     
     if not public_df.empty:
-        pdf_bytes = build_public_pdf(public_df, STREAMLIT_PUBLIC_URL, get_critical_zones(public_df))
+        # Use the new aesthetic and professional PDF generator
+        pdf_bytes = PDFReport(public_df).generate(dest='S')
         st.download_button(
             "⬇️ Télécharger le rapport complet (PDF)",
             data=pdf_bytes,
