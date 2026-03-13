@@ -48,7 +48,7 @@ def init_db():
         )
     ''')
     
-    # Table pour les soumissions (actions de nettoyage)
+    # Table pour les soumissions (actions de nettoyage et acteurs engagés)
     # status: 'pending', 'approved', 'rejected'
     # source: 'formulaire', 'google_sheet'
     c.execute('''
@@ -73,9 +73,21 @@ def init_db():
             est_propre BOOLEAN,
             source TEXT,
             status TEXT DEFAULT 'pending',
+            description TEXT,
+            website_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    
+    # Ajout rétrocompatible des colonnes si nécessaire
+    try:
+        c.execute("ALTER TABLE submissions ADD COLUMN description TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE submissions ADD COLUMN website_url TEXT")
+    except sqlite3.OperationalError:
+        pass
 
     # Table pour les abonnés à la newsletter
     c.execute('''
@@ -85,7 +97,36 @@ def init_db():
             subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
-    
+    # Table pour les "Spots" (Clone Trash Spotter - Signalement rapide)
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS spots (
+            id TEXT PRIMARY KEY,
+            lat REAL,
+            lon REAL,
+            adresse TEXT,
+            type_dechet TEXT,
+            photo_url TEXT,
+            reporter_name TEXT,
+            status TEXT DEFAULT 'active', -- 'active' ou 'cleaned'
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Table pour les récompenses et badges
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS user_rewards (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_name TEXT,
+            badge_name TEXT,
+            earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # Ajout de la colonne eco_points à submissions si elle n'existe pas
+    try:
+        c.execute("ALTER TABLE submissions ADD COLUMN eco_points INTEGER DEFAULT 0")
+    except sqlite3.OperationalError: pass
+
     conn.commit()
     conn.close()
 
@@ -96,15 +137,16 @@ def insert_submission(data, status='pending'):
         INSERT OR IGNORE INTO submissions (
             id, nom, association, type_lieu, adresse, date, benevoles, temps_min,
             megots, dechets_kg, plastique_kg, verre_kg, metal_kg, gps, lat, lon,
-            commentaire, est_propre, source, status, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            commentaire, est_propre, source, status, description, website_url, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data.get('id'), data.get('nom'), data.get('association'), data.get('type_lieu'),
         data.get('adresse'), data.get('date'), data.get('benevoles'), data.get('temps_min'),
         data.get('megots'), data.get('dechets_kg'), data.get('plastique_kg', 0.0),
         data.get('verre_kg', 0.0), data.get('metal_kg', 0.0), data.get('gps'),
         data.get('lat'), data.get('lon'), data.get('commentaire'), data.get('est_propre', False),
-        data.get('source', 'formulaire'), status, data.get('submitted_at', datetime.now().isoformat())
+        data.get('source', 'formulaire'), status, data.get('description'), 
+        data.get('website_url'), data.get('submitted_at', datetime.now().isoformat())
     ))
     conn.commit()
     conn.close()
@@ -113,6 +155,16 @@ def update_submission_status(sub_id, new_status):
     conn = get_connection()
     c = conn.cursor()
     c.execute("UPDATE submissions SET status = ? WHERE id = ?", (new_status, sub_id))
+    conn.commit()
+    conn.close()
+
+def update_submission_data(sub_id, description, website_url):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        "UPDATE submissions SET description = ?, website_url = ? WHERE id = ?",
+        (description, website_url, sub_id)
+    )
     conn.commit()
     conn.close()
 
@@ -191,6 +243,52 @@ def get_top_contributors(limit=3):
         WHERE status = 'approved' 
         GROUP BY nom 
         ORDER BY total_kg DESC 
+        LIMIT ?
+    """, (limit,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+def add_spot(lat, lon, adresse, type_dechet, reporter_name, photo_url=None):
+    conn = get_connection()
+    c = conn.cursor()
+    import uuid
+    spot_id = str(uuid.uuid4())
+    c.execute('''
+        INSERT INTO spots (id, lat, lon, adresse, type_dechet, reporter_name, photo_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (spot_id, lat, lon, adresse, type_dechet, reporter_name, photo_url))
+    conn.commit()
+    conn.close()
+    return spot_id
+
+def get_active_spots():
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("SELECT * FROM spots WHERE status = 'active' ORDER BY created_at DESC")
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def calculate_user_points(user_name):
+    conn = get_connection()
+    c = conn.cursor()
+    # Somme des points des actions approuvées
+    c.execute("SELECT SUM(eco_points) FROM submissions WHERE nom = ? AND status = 'approved'", (user_name,))
+    points = c.fetchone()[0] or 0
+    conn.close()
+    return points
+
+def get_leaderboard(limit=10):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute("""
+        SELECT nom, SUM(eco_points) as total_points, COUNT(*) as nb_actions
+        FROM submissions 
+        WHERE status = 'approved' 
+        GROUP BY nom 
+        ORDER BY total_points DESC 
         LIMIT ?
     """, (limit,))
     rows = c.fetchall()

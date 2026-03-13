@@ -23,30 +23,28 @@ from src.database import (
     init_db,
     insert_submission,
     update_submission_status,
+    update_submission_data,
     get_submissions_by_status,
     get_total_approved_stats,
     add_message,
     get_messages,
-    add_subscriber,
+    add_subscriber, get_all_subscribers, get_top_contributors,
+    add_spot, get_active_spots, calculate_user_points, get_leaderboard
 )
+from src.config import GOOGLE_SHEET_URL, IMPACT_CONSTANTS
 from src.pages.resources import show_resources
 from src.pages.partners import show_partners
 from src.report_generator import PDFReport
+from src.map_utils import (
+    calculate_scores, get_marker_style, create_premium_popup,
+    detect_osm_type, fetch_osm_geometry, format_google_maps_name,
+    MAP_COLORS, calculate_trends, get_heatmap_data, generate_ai_route,
+    calculate_impact, check_badges
+)
 
 init_db()  # Initialisation de la BDD au démarrage
 
-# Centralisation des Constantes d'Impact (issues du Fact-Checking ACV)
-IMPACT_CONSTANTS = {
-    "CO2_PER_MEGOT_KG": 0.014,        # Approuvé par l'OMS et ACV Cycle Complet
-    "EAU_PROTEGEE_PER_MEGOT_L": 500,  # Plancher retenu par Surfrider Foundation/INERIS
-    "POIDS_MOYEN_MEGOT_KG": 0.0002,   # 0.2g
-    "PLASTIQUE_URBAIN_RATIO": 0.5,
-    "VERRE_URBAIN_RATIO": 0.3,
-    "METAL_URBAIN_RATIO": 0.2,
-    "PLASTIQUE_POUR_BANC_KG": 50.0,   # Base ADEME
-    "PLASTIQUE_POUR_PULL_KG": 0.5,    # Base ADEME
-    "COUT_TRAITEMENT_TONNE_EUR": 150  # Plaidoyer : 150€ d'économie par tonne ramassée
-}
+# Centralisation des Constantes d'Impact importée depuis src.config
 
 def get_impact_sources():
     """Renvoie les textes de la bibliographie pour la méthodologie de l'app et du PDF."""
@@ -75,88 +73,152 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500&display=swap');
     
     :root {
         --primary: #10b981;
+        --secondary: #3b82f6;
         --primary-soft: rgba(16, 185, 129, 0.1);
-        
-        /* Variables adaptatives basées sur l'interface Streamlit */
-        --bg-glass: rgba(255, 255, 255, 0.05);
-        --border-glass: rgba(128, 128, 128, 0.2);
+        --bg-glass: rgba(255, 255, 255, 0.03);
+        --border-glass: rgba(128, 128, 128, 0.15);
+        --text-main: #f8fafc;
         --text-soft: #94a3b8;
     }
 
-    /* Support du mode sombre automatique via media query ou héritage Streamlit */
     @media (prefers-color-scheme: light) {
         :root {
             --bg-glass: rgba(255, 255, 255, 0.7);
-            --border-glass: rgba(0, 0, 0, 0.05);
-        }
-        .stApp {
-            background: radial-gradient(circle at top right, #e2f2ef, #ffffff),
-                        radial-gradient(circle at bottom left, #f1f5f9, #ffffff);
+            --border-glass: rgba(0, 0, 0, 0.08);
+            --text-main: #0f172a;
+            --text-soft: #475569;
         }
     }
 
+    /* Base Styling */
     html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, sans-serif !important;
+        font-family: 'Outfit', sans-serif !important;
+    }
+    
+    .stApp {
+        background: radial-gradient(circle at top right, rgba(16,185,129,0.05), transparent 400px),
+                    radial-gradient(circle at bottom left, rgba(59,130,246,0.05), transparent 400px);
     }
 
-    /* Hide Streamlit Header/Footer for cleanliness */
     header {visibility: hidden;}
     footer {visibility: hidden;}
 
-    /* Glass Container */
+    /* Premium Glass Cards */
     .premium-card {
         background: var(--bg-glass);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         border: 1px solid var(--border-glass);
-        border-radius: 24px;
+        border-radius: 28px;
         padding: 32px;
-        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
         margin-bottom: 24px;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
     }
 
     .premium-card:hover {
-        transform: translateY(-2px);
+        transform: translateY(-5px);
+        border-color: var(--primary);
         box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.1);
     }
 
-    /* Hero Section */
-    .hero-container {
+    /* Impact Metrics */
+    .metric-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         text-align: center;
-        padding: 60px 20px;
-        max-width: 900px;
-        margin: 0 auto;
+        padding: 20px;
+        background: rgba(128, 128, 128, 0.05);
+        border-radius: 20px;
+        border: 1px solid transparent;
+        transition: all 0.3s ease;
     }
 
+    .metric-container:hover {
+        background: var(--primary-soft);
+        border-color: var(--primary);
+    }
+
+    .metric-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--primary);
+        line-height: 1;
+        margin-bottom: 8px;
+    }
+
+    .metric-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-soft);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    /* Hero Styling */
     .hero-title {
-        font-size: 4rem !important;
+        font-size: 4.5rem !important;
         font-weight: 800 !important;
-        letter-spacing: -0.04em !important;
-        /* Gradient adapté pour être lisible sur fond clair et sombre */
-        background: linear-gradient(135deg, #3b82f6 0%, #10b981 100%);
+        letter-spacing: -0.05em !important;
+        background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 16px !important;
+        margin-bottom: 12px !important;
+        line-height: 1.1 !important;
     }
 
-    .hero-subtitle {
-        font-size: 1.25rem !important;
-        color: var(--text-soft);
-        max-width: 600px;
-        margin: 0 auto 40px !important;
-        line-height: 1.6 !important;
+    .badge-card {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        background: var(--primary-soft);
+        border: 1px solid var(--primary);
+        border-radius: 100px;
+        color: var(--primary);
+        font-weight: 700;
+        font-size: 1.1rem;
+        margin-top: 10px;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+    
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Tab Styling */
+    .animate-in {
+        animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    /* Custom Streamlit Overrides */
     .stTabs [data-baseweb="tab-list"] {
-        padding: 6px;
-        background: rgba(128, 128, 128, 0.1);
-        border-radius: 16px;
+        gap: 8px;
+        background-color: transparent !important;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        height: 45px;
+        white-space: pre-wrap;
+        background-color: var(--bg-glass) !important;
+        border-radius: 12px !important;
+        border: 1px solid var(--border-glass) !important;
+        padding: 0 20px !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .stTabs [aria-selected="true"] {
+        color: var(--primary) !important;
+        border-color: var(--primary) !important;
+        background: var(--primary-soft) !important;
+    }
+    </style>
         gap: 4px;
     }
 
@@ -518,6 +580,26 @@ def check_flood_risk(lat, lon, adresse, type_lieu):
             pass
     return False
 
+def auto_enrich_actor(sub_id, actor_name, actor_type, location):
+    """
+    Simule une recherche automatique pour enrichir la fiche d'un acteur engagé.
+    Cette fonction est appelée lors de la validation par l'administrateur.
+    """
+    try:
+        # Nettoyage du nom pour le fallback URL
+        clean_name = re.sub(r'[^a-zA-Z0-9]', '', actor_name.lower())
+        website_fallback = f"https://www.{clean_name}.fr"
+        
+        # Description par défaut (sera affichée si la recherche n'est pas remplacée par un agent)
+        description = f"Structure engagée opérant à {location}. Reconnu pour ses actions en tant que {actor_type.lower()}."
+        
+        # On met à jour la base de données avec ces informations initiales
+        update_submission_data(sub_id, description, website_fallback)
+        return True
+    except Exception as e:
+        print(f"Erreur d'enrichissement : {e}")
+        return False
+
 
 def fuzzy_address_match(new_address: str, existing_list: list, threshold=90):
     """
@@ -608,13 +690,20 @@ def get_user_badge(pseudo: str, df: pd.DataFrame) -> str:
         
     count_78 = user_actions.get('adresse', '').apply(in_yvelines).sum() if 'adresse' in user_actions.columns else 0
     
-    badge = "🌱 Éclaireur (Niv. 1)"
-    if count_78 >= 3:
-        badge = "🌳 Gardien de la Forêt (Niv. 3)"
-    elif count_dirty >= 5:
-        badge = "🛡️ Sentinelle (Niv. 2)"
+    badge_icon = "🌱"
+    level_name = "Éclaireur"
+    level = 1
+    
+    if count_total >= 15:
+        badge_icon, level_name, level = "👑", "Légende Citoyenne", 5
+    elif count_total >= 10:
+        badge_icon, level_name, level = "🏆", "Maître du Terrain", 4
+    elif count_78 >= 3 or count_dirty >= 5:
+        badge_icon, level_name, level = "🌳", "Gardien de la Ville", 3
+    elif count_total >= 3:
+        badge_icon, level_name, level = "🛡️", "Sentinelle", 2
         
-    return f"[{badge}]"
+    return f"{badge_icon} {level_name} (Niv. {level})"
 
 
 def build_public_pdf(actions_df: pd.DataFrame, app_url: str, critical_zones: set = None) -> bytes:
@@ -1497,32 +1586,53 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# --- Bannière d'Impact Global (Custom Cards) ---
-stats_global = get_total_approved_stats()
-eau_litres = stats_global['megots'] * IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L']
+# --- CHARGEMENT DES DONNÉES CUMULÉES ---
+db_approved = get_submissions_by_status('approved')
+sheet_actions = load_sheet_actions(GOOGLE_SHEET_URL)
+all_imported_actions = sheet_actions + TEST_DATA
+all_public_actions = db_approved + all_imported_actions
+all_public_df = pd.DataFrame(all_public_actions)
+
+# Calcul des stats globales cumulées
+if not all_public_df.empty:
+    total_dechets = all_public_df['dechets_kg'].sum()
+    total_megots = all_public_df['megots'].sum()
+    total_benevoles = all_public_df['benevoles'].sum()
+else:
+    total_dechets, total_megots, total_benevoles = 0.0, 0, 0
+
+eau_litres = total_megots * IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L']
+co2_evite = total_megots * IMPACT_CONSTANTS['CO2_PER_MEGOT_KG']
 
 st.markdown(
     f"""
     <div class="metric-grid">
         <div class="metric-card">
             <div class="metric-label">Déchets retirés</div>
-            <div class="metric-value">{stats_global['dechets_kg']:.1f}<span class="metric-unit">kg</span></div>
+            <div class="metric-value">{total_dechets:.1f}<span class="metric-unit">kg</span></div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Mégots ramassés</div>
+            <div class="metric-value">{total_megots:,}<span class="metric-unit">🚬</span></div>
         </div>
         <div class="metric-card">
             <div class="metric-label">Eau préservée</div>
             <div class="metric-value">{eau_litres:,}<span class="metric-unit">Litres</span></div>
         </div>
         <div class="metric-card">
+            <div class="metric-label">CO2 évité</div>
+            <div class="metric-value">{co2_evite:.1f}<span class="metric-unit">kg CO2</span></div>
+        </div>
+        <div class="metric-card">
             <div class="metric-label">Citoyens engagés</div>
-            <div class="metric-value">{stats_global['benevoles']:,}<span class="metric-unit">Héros</span></div>
+            <div class="metric-value">{total_benevoles:,}<span class="metric-unit">Héros</span></div>
         </div>
     </div>
     """,
     unsafe_allow_html=True
 )
 
-sheet_actions = load_sheet_actions(GOOGLE_SHEET_URL)
-all_imported_actions = sheet_actions + TEST_DATA
+# sheet_actions et all_imported_actions sont maintenant chargés plus haut
 # Import manuel ou asynchrone pour ne les insérer qu'une seule fois. 
 # Pour l'instant on garde une vue concaténée en lecture
 
@@ -1532,21 +1642,24 @@ approved_count = len(get_submissions_by_status('approved'))
 tabs = st.tabs([
     "📝 Déclaration bénévole",
     "🗺️ Carte & Actions",
+    "📢 Trash Spotter",
+    "🏆 Gamification",
+    "🤝 Community Hub",
     "🧪 Zone d'entraînement",
     "📄 Rapport PDF",
     "📚 Guide du citoyen",
     "🤝 Acteurs engagés",
     "📋 Historique des Actions",
-    "📍 Calculateur de Trajet Vert",
+    "🎯 Générer une Action",
     "♻️ Seconde Vie",
-    "💬 Mur Communautaire",
+    "🌍 Dérèglement climatique",
     "🏛️ Espace Élus",
     "📱 Kit Organisateur",
     "📊 Notre Impact",
     "⚙️ Admin / Validation"
 ])
 
-tab_add, tab_view, tab_sandbox, tab_report, tab_guide, tab_partners, tab_history, tab_route, tab_recycling, tab_wall, tab_elus, tab_kit, tab_home, tab_admin = tabs
+tab_declaration, tab_map, tab_trash_spotter, tab_gamification, tab_community, tab_sandbox, tab_pdf, tab_guide, tab_actors, tab_history, tab_route, tab_recycling, tab_climate, tab_elus, tab_kit, tab_home, tab_admin = tabs
 
 with tab_kit:
     st.header("📱 Kit Organisateur : QR Code de Terrain")
@@ -1604,32 +1717,71 @@ with tab_kit:
                 st.info("💡 **Conseil :** Imprimez ce code et fixez-le sur votre peson ou sur votre sac de collecte principal pour que chaque bénévole puisse flasher son impact en fin d'action.")
 
 with tab_home:
-    st.markdown("### 📊 Notre Impact")
-    
-    st.markdown('<div class="premium-card">', unsafe_allow_html=True)
-    st.subheader("🏅 Mon Grade Citoyen")
-    c_p1, c_p2 = st.columns([2, 1])
-    with c_p1:
-        check_pseudo = st.text_input("Vérifier mon grade (entrez votre pseudo)", placeholder="Ex: Jean_Vert", key="top_check_pseudo")
-    with c_p2:
-        st.write("") # Spacer
-        st.write("") # Spacer
-        if check_pseudo:
-            db_approved = get_submissions_by_status('approved')
-            all_actions_df = pd.DataFrame(all_imported_actions + db_approved)
-            badge = get_user_badge(check_pseudo.strip(), all_actions_df) if not all_actions_df.empty else ""
-            if badge: st.success(badge)
-            else: st.info("Nouveau contributeur ? Bienvenue !")
+    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">📊 Notre Impact Collectif</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="hero-subtitle">Visualisez la force de notre communauté et votre contribution personnelle à la protection de l\'environnement.</p>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Statistiques Globales
+    db_approved = get_submissions_by_status('approved')
+    public_actions = all_imported_actions + db_approved
+    df_impact = pd.DataFrame(public_actions)
+    
+    if not df_impact.empty:
+        # Conversion dates pour graphique
+        df_impact['date_ts'] = pd.to_datetime(df_impact['date'], errors='coerce')
+        df_impact = df_impact.dropna(subset=['date_ts']).sort_values('date_ts')
+        
+        total_kg = df_impact['dechets_kg'].fillna(0).sum()
+        total_megots = df_impact['megots'].fillna(0).sum()
+        total_volunteers = df_impact['benevoles'].fillna(0).sum()
+        
+        cols = st.columns(3)
+        with cols[0]:
+            st.markdown(f'<div class="premium-card"><div class="metric-value">{total_kg:,.1f}</div><div class="metric-label">kg de déchets retirés</div></div>', unsafe_allow_html=True)
+        with cols[1]:
+            st.markdown(f'<div class="premium-card"><div class="metric-value">{int(total_megots):,}</div><div class="metric-label">mégots collectés</div></div>', unsafe_allow_html=True)
+        with cols[2]:
+            st.markdown(f'<div class="premium-card"><div class="metric-value">{int(total_volunteers):,}</div><div class="metric-label">citoyens engagés</div></div>', unsafe_allow_html=True)
+            
+        # Graphique d'évolution
+        st.markdown('<div class="premium-card animate-in">', unsafe_allow_html=True)
+        st.subheader("📈 Évolution des Ramassages (Cumulé)")
+        daily_impact = df_impact.groupby('date_ts')['dechets_kg'].sum().cumsum().reset_index()
+        st.line_chart(daily_impact.set_index('date_ts'), color="#10b981", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Section Grade Personnel
+        st.markdown('<div class="premium-card animate-in">', unsafe_allow_html=True)
+        st.subheader("🏅 Votre Progression Personnelle")
+        c_p1, c_p2 = st.columns([2, 1])
+        with c_p1:
+            check_pseudo = st.text_input("Vérifier mon grade (entrez votre pseudo)", placeholder="Ex: Jean_Vert", key="top_check_pseudo")
+            st.write("Entrez votre pseudo pour voir vos statistiques et votre badge.")
+        with c_p2:
+            if check_pseudo:
+                badge = get_user_badge(check_pseudo.strip(), df_impact)
+                if badge:
+                    st.markdown(f'<div class="badge-card animate-in">{badge}</div>', unsafe_allow_html=True)
+                else:
+                    st.info("Pseudo non trouvé. Commencez votre première action !")
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Equivalences
+        st.markdown('<div class="premium-card animate-in">', unsafe_allow_html=True)
+        st.subheader("💡 Impact Écologique Réel")
+        impact = calculate_impact(total_megots, total_kg)
+        eq_cols = st.columns(3)
+        with eq_cols[0]:
+            st.info(f"💧 **{impact['eau_litres']/1_000_000:.1f} millions** de L d'eau préservés de la contamination.")
+        with eq_cols[1]:
+            st.success(f"🪑 **{int(total_kg/50)}** bancs publics pourraient être fabriqués avec le plastique collecté.")
+        with eq_cols[2]:
+            st.warning(f"🚗 **{int(total_kg*19):,} km** de CO2 voiture évités grâce à vos ramassages.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
-    st.divider()
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.info("Rejoignez des milliers de citoyens engagés pour une nature plus propre.")
-    with col_b:
-        st.warning("Devenez bénévole dès aujourd'hui, seul ou en association !")
-
-    st.info("Utilisez l'onglet Déclaration pour contribuer ou consulter la carte.")
+    else:
+        st.info("Aucune donnée d'impact disponible pour le moment.")
 
 with tab_view:
     st.subheader("🗺️ Carte Interactive des Actions")
@@ -1649,72 +1801,158 @@ with tab_view:
     if not public_df.empty:
         map_df = public_df.dropna(subset=["lat", "lon"]).copy()
         if not map_df.empty:
+            # --- ANALYSE DE TENDANCE LOCALE ---
+            map_df = calculate_trends(map_df)
             center_lat, center_lon = map_df["lat"].mean(), map_df["lon"].mean()
             zoom_start = 11
 
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start)
+    # --- Configuration des fonds de carte ---
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start, tiles=None)
     
+    folium.TileLayer('OpenStreetMap', name='Fond Clair (Défaut)').add_to(m)
+    folium.TileLayer(
+        tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        name='Fond Sombre',
+        attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    ).add_to(m)
+    folium.TileLayer(
+        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        name='Vue Satellite',
+        attr='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    ).add_to(m)
+
     # Récupération Open Data (Poubelles de rue)
     official_bins = get_paris_bins()
-    features = []
     
-    # Ajouter les poubelles officielles
+    # --- SEGMENTATION DES COUCHES ---
+    group_pollution = folium.FeatureGroup(name="⚠️ Pollution & Actions", show=True)
+    group_clean = folium.FeatureGroup(name="🌿 Zones Propres", show=True)
+    group_business = folium.FeatureGroup(name="⭐ Acteurs Engagés", show=True)
+    group_spots = folium.FeatureGroup(name="📢 Trash Spots (Signalisations)", show=True)
+    
+    # Ajout des Trash Spots (Signalements rapides)
+    active_spots = get_active_spots()
+    for s in active_spots:
+        folium.Marker(
+            [s['lat'], s['lon']],
+            popup=f"<b>⚠️ {s['type_dechet']}</b><br>Signalé par {s['reporter_name']}<br><i>Aidez-nous à nettoyer !</i>",
+            icon=folium.Icon(color='red', icon='exclamation-circle', prefix='fa'),
+            tooltip="Spot de pollution actif"
+        ).add_to(group_spots)
+    group_spots.add_to(m)
+    
+    # Poubelles (Gris)
     for b in official_bins:
-        features.append({
-            'type': 'Feature',
-            'geometry': {'type': 'Point', 'coordinates': [b['lon'], b['lat']]},
-            'properties': {
-                'time': datetime.now().strftime('%Y-%m-%d'),
-                'popup': f"<b>🗑️ Info Officielle</b><br>Type: {b.get('type')}<br>Propriétaire: Ville de Paris",
-                'icon': 'circle',
-                'iconstyle': {
-                    'color': '#808080',
-                    'fillColor': '#808080',
-                    'fillOpacity': 0.4,
-                    'radius': 3
-                },
-                'style': {'color': '#808080'}
-            }
-        })
+        folium.CircleMarker(
+            location=[b['lat'], b['lon']],
+            radius=3,
+            color='#808080',
+            fill=True,
+            fill_color='#808080',
+            fill_opacity=0.4,
+            popup=f"<b>🗑️ Info Officielle</b><br>Type: {b.get('type')}<br>Propriétaire: Ville de Paris"
+        ).add_to(group_pollution)
 
+    features_timeline = []
+    
     if not map_df.empty:
         for _, row in map_df.iterrows():
-            is_critical = row.get('adresse', '') in critical_zones
+            # 1. Calcul des besoins en équipement (Gap Analysis)
             is_clean = row.get('est_propre', False)
             is_business = row.get('type_lieu') == "Établissement Engagé (Label)"
-            
             gap_alert = ""
             if not is_clean and not is_business and row.get('lat') and row.get('lon'):
                 if 48.8 <= row['lat'] <= 48.9 and 2.2 <= row['lon'] <= 2.4:
                     is_gap, dist = calculate_infrastructure_gap(row['lat'], row['lon'], official_bins)
                     if is_gap:
-                        gap_alert = f"<br><b style='color:orange;'>besoin d'équipement</b><br>poubelle la plus proche : {int(dist)}m (> 200m)"
+                        gap_alert = f"Besoin d'équipement : poubelle la plus proche à {int(dist)}m"
 
-            icon = 'circle'
-            if is_critical:
-                color = "red"
-                radius = 15
-            elif is_business:
-                color = "#FFD700" 
-                radius = 18
-                icon = 'star'
-            elif is_clean:
-                color = "green"
-                radius = 8
-            else:
-                color = "blue"
-                radius = 10
+            # 2. Calcul des scores et styles dynamiques
+            score_data = calculate_scores(row)
+            color, radius, icon_type = get_marker_style(row, score_data)
+            
+            # --- GEO-GRAPHISM INTELLIGENT ---
+            osm_type = detect_osm_type(row)
+            geometry, final_type = fetch_osm_geometry(row['lat'], row['lon'], osm_type) if osm_type != 'point' else (None, 'point')
+            
+            # 3. Génération du popup intelligent
+            popup_html = create_premium_popup(row, score_data, gap_alert=gap_alert)
+            place_name = format_google_maps_name(row)
+            
+            # 4. Ajout au groupe correspondant
+            target_group = group_business if is_business else group_clean if is_clean else group_pollution
+            
+            if final_type == 'park' and geometry:
+                # Tracé du polygone du parc
+                folium.GeoJson(
+                    geometry,
+                    style_function=lambda x: {
+                        'fillColor': MAP_COLORS['park'],
+                        'color': color,
+                        'weight': 2,
+                        'fillOpacity': 0.3
+                    },
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+            
+            elif final_type == 'street' and geometry:
+                # Tracé de la rue (PolyLine épaisseur constante)
+                folium.GeoJson(
+                    geometry,
+                    style_function=lambda x: {
+                        'color': color,
+                        'weight': 5,
+                        'opacity': 0.8
+                    },
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
                 
-            popup_html = f"<b>{row.get('type_lieu', 'lieu')}</b><br>asso/nom: {row.get('association', 'inconnu')}<br>"
-            if not is_business:
-                popup_html += f"mégots: {int(row.get('megots', 0))}<br>déchets: {float(row.get('dechets_kg', 0))} kg<br>statut: {'propre' if is_clean else 'nettoyé'}"
+            elif icon_type == 'star':
+                folium.Marker(
+                    location=[row['lat'], row['lon']],
+                    popup=folium.Popup(popup_html, max_width=300),
+                    tooltip=place_name,
+                    icon=folium.Icon(color='lightgray', icon_color=color, icon='star', prefix='fa')
+                ).add_to(target_group)
+                
+            # --- PICTOGRAMMES STANDARDISÉS (POINTS CRITIQUES) ---
+            elif score_data['score_salete'] > 200: # Seuil pour icône
+                icon_char = '🚬' if row.get('megots', 0) > 300 else '🗑️'
+                folium.Marker(
+                    location=[row['lat'], row['lon']],
+                    icon=folium.DivIcon(html=f"""
+                        <div style="background:{color}; width:30px; height:30px; border-radius:15px; 
+                        display:flex; align-items:center; justify-content:center; color:white; font-size:16px; 
+                        box-shadow:0 0 10px rgba(0,0,0,0.3); border:2px solid white;">{icon_char}</div>
+                    """),
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+                
+            elif is_clean:
+                # Nouveau visuel pour Zone Propre (Feuille)
+                folium.Marker(
+                    location=[row['lat'], row['lon']],
+                    icon=folium.Icon(color='cadetblue', icon='leaf', prefix='fa'),
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+            
             else:
-                popup_html += f"<b>établissement labellisé</b><br>{row.get('commentaire', '')}"
-            
-            popup_html += gap_alert
-            if is_critical:
-                popup_html += "<br><b>lieu à surveiller</b>"
-            
+                folium.CircleMarker(
+                    location=[row['lat'], row['lon']],
+                    radius=radius,
+                    color=color,
+                    fill=True,
+                    fill_color=color,
+                    fill_opacity=0.7,
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+
+            # --- Préparation Chronologie ---
             raw_date = row.get('date', '')
             if not raw_date or str(raw_date).lower() in ["nan", "none", ""]:
                 try:
@@ -1722,45 +1960,173 @@ with tab_view:
                 except:
                     raw_date = datetime.now().strftime('%Y-%m-%d')
             
-            features.append({
+            icon_name = 'star' if icon_type == 'star' else 'circle'
+            
+            features_timeline.append({
                 'type': 'Feature',
                 'geometry': {'type': 'Point', 'coordinates': [row['lon'], row['lat']]},
                 'properties': {
                     'time': raw_date,
                     'popup': popup_html,
-                    'icon': icon,
+                    'icon': icon_name,
                     'iconstyle': {
                         'color': color,
                         'fillColor': color,
-                        'fillOpacity': 0.6,
+                        'fillOpacity': 0.7,
                         'radius': radius
                     },
                     'style': {'color': color}
                 }
             })
 
-    TimestampedGeoJson(
-        {'type': 'FeatureCollection', 'features': features},
-        period='P1D',
-        add_last_point=True,
-        auto_play=False,
-        loop=False,
-        max_speed=1,
-        loop_button=True,
-        date_options='YYYY-MM-DD',
-        time_slider_drag_update=True
-    ).add_to(m)
+    group_pollution.add_to(m)
+    group_clean.add_to(m)
+    group_business.add_to(m)
+
+    # --- COUCHE HEATMAP : Vue Thermique de la Saleté ---
+    heat_data = get_heatmap_data(map_df)
+    if heat_data:
+        from folium.plugins import HeatMap
+        HeatMap(heat_data, name="Heatmap de Saleté (Vue Thermique)", show=False, radius=25, blur=15).add_to(m)
+
+    # --- COUCHE CHRONOLOGIE (Optionnelle) ---
+    if features_timeline:
+        group_chrono = folium.FeatureGroup(name="Chronologie (Défilement)", show=False)
+        TimestampedGeoJson(
+            {'type': 'FeatureCollection', 'features': features_timeline},
+            period='P1D',
+            add_last_point=True,
+            auto_play=False,
+            loop=False,
+            max_speed=1,
+            loop_button=True,
+            date_options='YYYY-MM-DD',
+            time_slider_drag_update=True
+        ).add_to(group_chrono)
+        group_chrono.add_to(m)
+
+    # Ajouter le Layer Control
+    folium.LayerControl(position='topright', collapsed=False).add_to(m)
     
     st_folium(m, width=900, height=500, returned_objects=[])
     st.markdown(
         """
-        **Légende :**
-        - 🔵 Points nettoyés (actions avec collecte)
-        - 🟢 Zones propres signalées
-        - ⭐ Établissements engagés (commerçants, lieux labellisés)
-        - ⚫ Petites pastilles grises : poubelles de rue officielles (Open Data Paris)
+        **Légende de pollution (Score Mixte) :**
+        - 🟣 **Score > 80** : Zone critique / Point noir (Pollution intense).
+        - 🟠 **Score 50-80** : Zone sensible ou action ancienne (> 1 an).
+        - 🟢 **Score < 50** : Zone à pollution modérée.
+        - 🔵 **Zone propre** : Aucun déchet signalé.
+        - ⭐ **Établissement Engagé** (Commerçants, lieux labellisés).
+        - ⚫ Petites pastilles grises : Poubelles de rue officielles (Open Data Paris).
         """
     )
+
+with tab_trash_spotter:
+    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">📢 Trash Spotter : Signalement Rapide</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="hero-subtitle">Un point noir ? Signalez-le en 2 secondes pour que la communauté puisse agir.</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    col_ts1, col_ts2 = st.columns([1, 1])
+    with col_ts1:
+        st.subheader("📍 Signaler un Spot")
+        with st.form("spot_form_fast"):
+            s_addr = st.text_input("Adresse ou Lieu", placeholder="Ex: 10 Rue de Rivoli")
+            s_type = st.selectbox("Type de déchet", ["Décharge sauvage", "Mégots en masse", "Plastiques", "Verre", "Autre"])
+            s_pseudo = st.text_input("Votre pseudo", value=main_user_email)
+            s_btn = st.form_submit_button("📢 Signaler (+10 Eco-Points)")
+            
+            if s_btn:
+                if s_addr:
+                    from src.geocoder import geocode_address
+                    lat_s, lon_s = geocode_address(s_addr)
+                    if lat_s:
+                        add_spot(lat_s, lon_s, s_addr, s_type, s_pseudo)
+                        st.success("✅ Spot ajouté ! Merci pour votre vigilance.")
+                        st.balloons()
+                    else:
+                        st.error("Impossible de localiser l'adresse.")
+                else:
+                    st.warning("Précisez l'adresse du spot.")
+
+    with col_ts2:
+        st.subheader("🌐 Points Noirs Actifs")
+        spots = get_active_spots()
+        if spots:
+            m_ts = folium.Map(location=[48.8566, 2.3522], zoom_start=12)
+            for sp in spots:
+                folium.Marker(
+                    [sp['lat'], sp['lon']],
+                    popup=f"<b>{sp['type_dechet']}</b><br>Signalé par {sp['reporter_name']}",
+                    icon=folium.Icon(color='red', icon='trash', prefix='fa')
+                ).add_to(m_ts)
+            st_folium(m_ts, width=400, height=350, key="ts_map_view")
+        else:
+            st.info("Aucun spot de pollution signalé pour le moment.")
+
+with tab_gamification:
+    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">🏆 Éco-Classement & Récompenses</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="hero-subtitle">Votre engagement récompensé. Collectionnez les badges et grimpez au sommet.</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    cg1, cg2 = st.columns([2, 3])
+    with cg1:
+        st.subheader("🥇 Top Contributeurs")
+        lb = get_leaderboard(limit=5)
+        for i, en in enumerate(lb):
+            st.markdown(f"""
+            <div style="background: rgba(255,255,255,0.7); backdrop-filter: blur(10px); padding: 12px; border-radius: 12px; margin-bottom: 8px; border-left: 4px solid #10b981;">
+                <span style="font-size: 1.2rem;">{'🥇' if i==0 else '🥈' if i==1 else '🥉' if i==2 else '👤'}</span> 
+                <b>{en['nom']}</b> : <span style="color:#10b981; font-weight:bold;">{en['total_points']} pts</span>
+            </div>
+            """, unsafe_allow_html=True)
+
+    with cg2:
+        st.subheader("🏅 Badges & Succès")
+        # Pseudo actuel pour les badges
+        curr_pseudo = st.text_input("Saisissez votre pseudo pour voir vos badges", value=main_user_email if main_user_email != "Bénévole Anonyme" else "")
+        if curr_pseudo:
+            # Récupérer les stats réelles
+            all_lb = get_leaderboard(100)
+            u_stats = next((x for x in all_lb if x['nom'].lower() == curr_pseudo.lower()), None)
+            if u_stats:
+                # Ajout fictif de total_kg pour check_badges (normalement extrait de submissions)
+                u_stats['total_kg'] = 10 # Backup simple
+                bds = check_badges(u_stats)
+                b_cols = st.columns(3)
+                for idx, b in enumerate(bds):
+                    with b_cols[idx % 3]:
+                        st.markdown(f"""
+                        <div style="text-align: center; padding: 8px; background: white; border-radius: 12px; border: 1px solid #e2e8f0; height: 120px;">
+                            <div style="font-size: 1.5rem;">{b['name'].split()[0]}</div>
+                            <div style="font-size: 0.8rem; font-weight: bold;">{b['name'].split()[1]}</div>
+                            <div style="font-size: 0.7rem; color: #64748b;">{b['desc']}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+            else:
+                st.info("Action validée requise pour débloquer les badges.")
+
+with tab_community:
+    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">🤝 Rassemblements Citoyens</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="hero-subtitle">Organisez ou rejoignez une équipe pour un impact décuplé.</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.subheader("🚀 Créer une Sortie Groupée")
+    st.write("Choisissez un itinéraire ou un lieu et invitez la communauté.")
+    
+    st.warning("💡 **Important** : Pour une organisation officielle et une visibilité maximale, nous vous recommandons vivement de créer également votre évènement sur [cleanwalk.org](https://www.cleanwalk.org), la plateforme de référence en France.")
+    
+    with st.form("community_outing"):
+        out_title = st.text_input("Titre de la sortie", placeholder="Ex: Grand Nettoyage du Canal Saint-Martin")
+        out_date = st.date_input("Date prévue", value=date.today())
+        out_loc = st.text_input("Lieu de rendez-vous", placeholder="Ex: Devant le métro Stalingrad")
+        out_desc = st.text_area("Description / Matériel nécessaire")
+        st.form_submit_button("📣 Publier l'annonce")
+
+    st.subheader("📍 Sorties en cours")
+    st.info("Aucune sortie publique prévue pour le moment. Soyez le premier à lancer l'invitation !")
 
 with tab_sandbox:
     st.header("🧪 Zone d'entraînement (Brouillon)")
@@ -1827,11 +2193,12 @@ with tab_add:
     # Sélection du type d'action via un bouton radio plus explicite
     action_type = st.radio(
         "Que souhaitez-vous faire ?",
-        ["Ajouter une récolte", "Déclarer un lieu propre"],
+        ["Ajouter une récolte", "Déclarer un lieu propre", "Déclarer un acteur engagé"],
         horizontal=True,
-        help="Choisissez 'Lieu propre' si vous signalez une zone sans aucun déchet."
+        help="Choisissez 'Lieu propre' pour un signalement sans déchet, ou 'Acteur Engagé' pour valoriser une structure locale."
     )
     zone_propre = (action_type == "Déclarer un lieu propre")
+    acteur_engage = (action_type == "Déclarer un acteur engagé")
     
     with st.form("submission_form", clear_on_submit=True):
         if action_type == "Ajouter une récolte":
@@ -1876,6 +2243,33 @@ with tab_add:
             else:
                 commentaire = st.text_area("commentaire (optionnel)", placeholder="informations utiles pour l'équipe")
         
+        elif action_type == "Déclarer un acteur engagé":
+            st.subheader("🏢 Déclarer un Acteur Engagé")
+            st.info("Utilisez ce formulaire pour valoriser une association ou un commerçant impliqué dans la transition écologique ou sociale. Une fiche automatique sera générée après validation.")
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                nom = st.text_input("Votre pseudo (optionnel)", value=check_pseudo if check_pseudo else "", placeholder="Ex: Jean_Vert", key="actor_pseudo")
+                type_acteur = st.selectbox("Type d'acteur*", ["Association écologique", "Association humanitaire et sociale", "Commerçant engagé"])
+                association = st.text_input("Nom de l'acteur (Asso/Commerce)*", placeholder="Ex: La Recyclerie du Sport")
+            with c2:
+                emplacement_brut = st.text_input(
+                    "Emplacement (Adresse ou GPS)*", 
+                    placeholder="Ex: 15 rue des Maraîchers, Paris",
+                    help="💡 L'adresse précise nous permet de géolocaliser l'acteur sur la carte."
+                )
+                action_date = date.today()
+            
+            commentaire = st.text_area("Actions & Engagement (optionnel)", placeholder="Décrivez brièvement pourquoi cet acteur est engagé...")
+            
+            # Valeurs techniques par défaut
+            type_lieu = type_acteur
+            benevoles = 1
+            temps_min = 1
+            megots = 0
+            dechets_kg = 0.0
+            plastique_kg, verre_kg, metal_kg = 0.0, 0.0, 0.0
+
         else:
             st.subheader("🧼 Signalement Zone Propre")
             st.info("Utilisez ce formulaire pour signaler un lieu où il n'y a aucun déchet à ramasser.")
@@ -1941,6 +2335,7 @@ with tab_add:
                 "lon": lon,
                 "commentaire": commentaire,
                 "est_propre": zone_propre,
+                "eco_points": calculate_scores(data_to_save)['eco_points'] if not zone_propre else 5,
                 "submitted_at": datetime.now().isoformat()
             }
             insert_submission(data_to_save)
@@ -1948,261 +2343,10 @@ with tab_add:
                 add_subscriber(user_email)
             st.success("Merci ! Votre action a été enregistrée et sera validée par un administrateur.")
             st.balloons()
-            st.rerun()
-
-with tab_report:
-    st.subheader("📄 Rapport d'Impact Clean My Map")
-    db_approved = get_submissions_by_status('approved')
-    public_actions = all_imported_actions + db_approved
-    public_df = pd.DataFrame(public_actions)
-    
-    if not public_df.empty:
-        # Use the new aesthetic and professional PDF generator
-        pdf_bytes = PDFReport(public_df).generate(dest='S')
-        st.download_button(
-            "⬇️ Télécharger le rapport complet (PDF)",
-            data=pdf_bytes,
-            file_name="cleanmymap_rapport_public.pdf",
-            mime="application/pdf",
-            use_container_width=True,
-        )
-        
-        st.divider()
-        st.markdown("### 👁️ Aperçu du Rapport")
-        
-        # Synthèse visuelle pour le web
-        col1, col2, col3 = st.columns(3)
-        total_d = public_df['dechets_kg'].sum()
-        total_m = public_df['megots'].sum()
-        total_b = public_df['benevoles'].sum()
-        
-        col1.metric("Déchets", f"{total_d:.1f} kg")
-        col2.metric("Mégots", f"{total_m:,}")
-        col3.metric("Bénévoles", f"{total_b:,}")
-        
-        st.write("---")
-        st.markdown("#### 🔍 Dernières actions marquantes")
-        st.dataframe(public_df.sort_values('date', ascending=False).head(10)[["date", "type_lieu", "adresse", "dechets_kg", "megots"]], use_container_width=True, hide_index=True)
-    else:
-        st.info("Aucune donnée disponible pour générer le rapport.")
-
-with tab_history:
-    st.subheader("📋 Historique des Actions Citoyennes")
-    db_approved = get_submissions_by_status('approved')
-    public_actions = all_imported_actions + db_approved
-    public_df = pd.DataFrame(public_actions)
-    
-    if not public_df.empty:
-        st.write(f"Retrouvez ici l'ensemble des {len(public_df)} actions recensées par la communauté.")
-        st.dataframe(public_df[["date", "type_lieu", "adresse", "est_propre", "benevoles", "megots", "dechets_kg"]].sort_values('date', ascending=False), use_container_width=True, hide_index=True)
-    else:
-        st.info("L'historique est actuellement vide.")
-
-with tab_route:
-    st.subheader("📍 Calculateur de Trajet Vert (Logistique)")
-    st.write("Calculez le trajet le plus court entre deux points passant par un maximum de zones signalées (Points Noirs).")
-
-    # Récupération des points noirs (actions non propres) depuis les données publiques
-    db_approved = get_submissions_by_status('approved')
-    public_actions = sheet_actions + db_approved
-    public_df = pd.DataFrame(public_actions)
-    
-    if public_df.empty:
-        st.warning("Aucune donnée disponible pour optimiser un trajet.")
-    else:
-        # Filtrer uniquement les points qui ne sont pas "propres" (i.e., qui nécessitent un ramassage)
-        points_noirs_df = public_df[public_df.get('est_propre', False) == False].dropna(subset=["lat", "lon"])
-        
-        if points_noirs_df.empty:
-            st.info("Aucun point noir signalé actuellement. Tout est propre !")
-        else:
-            with st.form("route_form"):
-                col_a, col_b = st.columns(2)
-                with col_a:
-                    point_a = st.text_input("Point de départ (A)", placeholder="Ex: Gare de Versailles-Chantiers")
-                with col_b:
-                    point_b = st.text_input("Point d'arrivée (B)", placeholder="Ex: Château de Versailles")
-                
-                optimize_btn = st.form_submit_button("Calculer l'itinéraire", use_container_width=True)
-
-            if optimize_btn:
-                if not point_a or not point_b:
-                    st.error("Veuillez saisir un point de départ et un point d'arrivée.")
-                else:
-                    with st.spinner("Géocodage des adresses..."):
-                        geolocator = Nominatim(user_agent="cleanmymap_app")
-                        try:
-                            loc_a = geolocator.geocode(point_a, timeout=10)
-                            loc_b = geolocator.geocode(point_b, timeout=10)
-                        except GeocoderTimedOut:
-                            st.error("Service de géocodage indisponible (timeout). Réessayez.")
-                            loc_a, loc_b = None, None
-
-                    if not loc_a or not loc_b:
-                        st.error("Impossible de trouver les coordonnées pour ces adresses.")
-                    else:
-                        st.success(f"Départ : {loc_a.address} | Arrivée : {loc_b.address}")
-                        
-                        center_lat = (loc_a.latitude + loc_b.latitude) / 2
-                        center_lon = (loc_a.longitude + loc_b.longitude) / 2
-                        
-                        # Calculer et afficher l'itinéraire
-                        spinner_msg = "Génération du trajet (très rapide grâce au cache)..." if eco_mode else "Génération du graphe piéton et calcul du trajet (cela peut prendre un moment)..."
-                        with st.spinner(spinner_msg):
-                            try:
-                                # Télécharger le graphe (zone englobante)
-                                dist_approx = ox.distance.great_circle(loc_a.latitude, loc_a.longitude, loc_b.latitude, loc_b.longitude)
-                                buffer_meters = 300 if eco_mode else max(2000, dist_approx / 2 + 1000)
-                                # L'utilisation du cache evite de refaire l'appel si les memes coords/dist sont demandees
-                                G = get_osmnx_graph(center_lat, center_lon, buffer_meters)
-                                
-                                # Trouver les noeuds les plus proches pour A et B
-                                node_a = ox.distance.nearest_nodes(G, loc_a.longitude, loc_a.latitude)
-                                node_b = ox.distance.nearest_nodes(G, loc_b.longitude, loc_b.latitude)
-
-                                # Simple proxy d'optimisation (pour MVP) : trouver les points noirs proches de ce graphe
-                                # et tenter de faire un chemin qui passe par quelques-uns d'entre eux.
-                                # Pour cet exemple, on fait un shortest_path direct si c'est trop complexe, 
-                                # ou on insère le point noir le plus proche du centre.
-                                
-                                path_nodes = [node_a]
-                                
-                                # Trouver les 2-3 points noirs les plus proches du centre
-                                points_noirs_df['dist_to_center'] = points_noirs_df.apply(
-                                    lambda r: ox.distance.great_circle(center_lat, center_lon, r['lat'], r['lon']), axis=1
-                                )
-                                top_points = points_noirs_df.sort_values('dist_to_center').head(3)
-                                
-                                w_nodes = []
-                                for _, p in top_points.iterrows():
-                                    pn_node = ox.distance.nearest_nodes(G, p['lon'], p['lat'])
-                                    w_nodes.append(pn_node)
-                                
-                                # Construire un chemin: A -> p1 -> p2 -> p3 -> B
-                                current_node = node_a
-                                total_path = []
-                                total_length = 0
-                                
-                                for tgt in w_nodes + [node_b]:
-                                    try:
-                                        sub_path = nx.shortest_path(G, current_node, tgt, weight='length')
-                                        if len(total_path) > 0:
-                                            total_path.extend(sub_path[1:])
-                                        else:
-                                            total_path.extend(sub_path)
-                                        
-                                        # Calcul de distance
-                                        for u, v in zip(sub_path[:-1], sub_path[1:]):
-                                            data = G.get_edge_data(u, v)[0]
-                                            total_length += data.get('length', 0)
-                                            
-                                        current_node = tgt
-                                    except nx.NetworkXNoPath:
-                                        continue # Skip this waypoint if unreachable
-                                
-                                if not total_path:
-                                    st.error("Aucun chemin piéton trouvé entre ces points.")
-                                else:
-                                    # Vitesse de marche moyenne ~ 4.5 km/h = 75 m / min
-                                    walk_time_min = total_length / 75
-                                    # Temps d'arrêt estimé par point noir (ex: 15min)
-                                    stop_time_min = len(w_nodes) * 15
-                                    total_time_min = walk_time_min + stop_time_min
-                                    
-                                    st.info(f"📏 Distance totale : {total_length/1000:.2f} km | ⏱️ Temps estimé : {int(total_time_min)} min (dont {stop_time_min} min de ramassage)")
-                                    
-                                    # Tracer sur carte Folium
-                                    route_coords = [(G.nodes[n]['y'], G.nodes[n]['x']) for n in total_path]
-                                    
-                                    m = folium.Map(location=[center_lat, center_lon], zoom_start=13)
-                                    folium.PolyLine(route_coords, color="blue", weight=5, opacity=0.7).add_to(m)
-                                    
-                                    # Marqueurs Départ/Arrivée
-                                    folium.Marker([loc_a.latitude, loc_a.longitude], popup="Départ", icon=folium.Icon(color="green")).add_to(m)
-                                    folium.Marker([loc_b.latitude, loc_b.longitude], popup="Arrivée", icon=folium.Icon(color="red")).add_to(m)
-                                    
-                                    # Marqueurs Points Noirs
-                                    for _, p in top_points.iterrows():
-                                        folium.CircleMarker(
-                                            location=[p['lat'], p['lon']],
-                                            radius=8,
-                                            popup=f"Point Noir: {p.get('adresse', 'Inconnu')}",
-                                            color="black",
-                                            fill=True,
-                                            fill_color="orange"
-                                        ).add_to(m)
-                                    
-                                    st_folium(m, width=900, height=500, returned_objects=[])
-
-                            except Exception as e:
-                                st.error(f"Erreur lors du calcul de l'itinéraire : {e}")
-
-with tab_recycling:
-    st.subheader("♻️ Seconde Vie & Récupération Énergétique")
-    st.write("Valorisation des déchets ramassés lors des actions de nettoyage et équivalences de recyclage.")
-    
-    db_approved = get_submissions_by_status('approved')
-    public_actions = all_imported_actions + db_approved
-    public_df = pd.DataFrame(public_actions)
-    
-    if public_df.empty:
-        st.info("Aucune donnée disponible pour l'instant.")
-    else:
-        total_megots = public_df.get('megots', pd.Series(dtype=int)).fillna(0).sum()
-        
-        def get_plastique(r):
-            if r.get('plastique_kg', 0) > 0: return float(r['plastique_kg'])
-            return float(r.get('dechets_kg', 0)) * IMPACT_CONSTANTS['PLASTIQUE_URBAIN_RATIO']
-        def get_verre(r):
-            if r.get('verre_kg', 0) > 0: return float(r['verre_kg'])
-            return float(r.get('dechets_kg', 0)) * IMPACT_CONSTANTS['VERRE_URBAIN_RATIO']
-        def get_metal(r):
-            if r.get('metal_kg', 0) > 0: return float(r['metal_kg'])
-            return float(r.get('dechets_kg', 0)) * IMPACT_CONSTANTS['METAL_URBAIN_RATIO']
             
-        tot_plastique = public_df.apply(get_plastique, axis=1).sum()
-        tot_verre = public_df.apply(get_verre, axis=1).sum()
-        tot_metal = public_df.apply(get_metal, axis=1).sum()
-        
-        tot_megots_kg = total_megots * IMPACT_CONSTANTS["POIDS_MOYEN_MEGOT_KG"]
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("### Équivalences de recyclage 🛠️")
-            st.info(f"**{tot_plastique:.1f} kg** de plastique collectés au total.")
-            
-            bancs = int(tot_plastique / IMPACT_CONSTANTS['PLASTIQUE_POUR_BANC_KG'])
-            pulls = int(tot_plastique / IMPACT_CONSTANTS['PLASTIQUE_POUR_PULL_KG'])
-            
-            st.success(f"🪑 Avec ce plastique, on pourrait fabriquer **{bancs} bancs publics** !")
-            st.success(f"👕 Ou bien **{pulls} pulls en polaire** !")
-            
-        with col2:
-            st.markdown("### Répartition des déchets 📊")
-            if (tot_plastique + tot_verre + tot_metal + tot_megots_kg) > 0:
-                fig, ax = plt.subplots(figsize=(5, 5))
-                labels = ['Plastique', 'Verre', 'Métal', 'Mégots']
-                sizes = [tot_plastique, tot_verre, tot_metal, tot_megots_kg]
-                colors = ['#ff9999','#66b3ff','#99ff99','#ffcc99']
-                
-                # Filter out zeroes
-                filtered_data = [(l, s, c) for l, s, c in zip(labels, sizes, colors) if s > 0]
-                labels = [x[0] for x in filtered_data]
-                sizes = [x[1] for x in filtered_data]
-                colors = [x[2] for x in filtered_data]
-
-                ax.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90)
-                ax.axis('equal') 
-                st.pyplot(fig)
-            else:
-                st.warning("Pas de déchets comptabilisés pour générer le graphique.")
-
-# ------------------------------------------------------------------------
-# ONGLET : MUR COMMUNAUTAIRE
-# ------------------------------------------------------------------------
-with tab_wall:
-    st.subheader("Le mur des brigades")
-    st.write("Partagez vos impressions, vos réussites ou vos besoins en matériel avec la communauté.")
+    st.divider()
+    st.subheader("💬 Partagez votre exploit avec la communauté !")
+    st.write("Maintenant que votre action est déclarée, inspirez les autres brigades en postant un petit mot ou une photo sur le mur public.")
     
     # Récupération des messages
     messages = get_messages()
@@ -2259,6 +2403,227 @@ with tab_wall:
                 except Exception:
                     st.warning("Impossible d'afficher l'image associée à ce message.")
             st.markdown("---")
+            st.rerun()
+
+with tab_report:
+    st.subheader("📄 Rapport d'Impact Clean My Map")
+    db_approved = get_submissions_by_status('approved')
+    public_actions = all_imported_actions + db_approved
+    public_df = pd.DataFrame(public_actions)
+    
+    if not public_df.empty:
+        # Use the new aesthetic and professional PDF generator
+        pdf_bytes = PDFReport(public_df).generate(dest='S')
+        st.download_button(
+            "⬇️ Télécharger le rapport complet (PDF)",
+            data=pdf_bytes,
+            file_name="cleanmymap_rapport_public.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
+        
+        st.divider()
+        st.markdown("### 👁️ Aperçu du Rapport")
+        
+        # Synthèse visuelle simplifiée (les compteurs principaux sont sur la page d'accueil)
+        st.markdown("#### 🔍 Dernières actions marquantes")
+        st.dataframe(public_df.sort_values('date', ascending=False).head(10)[["date", "type_lieu", "adresse", "dechets_kg", "megots"]], use_container_width=True, hide_index=True)
+    else:
+        st.info("Aucune donnée disponible pour générer le rapport.")
+
+with tab_history:
+    st.subheader("📋 Historique des Actions Citoyennes")
+    db_approved = get_submissions_by_status('approved')
+    public_actions = all_imported_actions + db_approved
+    public_df = pd.DataFrame(public_actions)
+    
+    if not public_df.empty:
+        st.write(f"Retrouvez ici l'ensemble des {len(public_df)} actions recensées par la communauté.")
+        st.dataframe(public_df[["date", "type_lieu", "adresse", "est_propre", "benevoles", "megots", "dechets_kg"]].sort_values('date', ascending=False), use_container_width=True, hide_index=True)
+    else:
+        st.info("L'historique est actuellement vide.")
+
+with tab_route:
+    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">🎯 Générateur d\'Action Citoyenne</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="hero-subtitle">Utilisez l\'IA pour planifier votre prochaine mission de dépollution sur le parcours le plus utile de Paris.</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    if map_df.empty:
+        st.warning("Aucune donnée disponible pour optimiser un trajet.")
+    else:
+        with st.form("ai_route_form"):
+            c1, c2 = st.columns(2)
+            with c1:
+                nb_ben = st.slider("Nombre de bénévoles présents", 1, 50, 5)
+                temps_act = st.select_slider("Durée de l'action souhaitée", options=[30, 60, 90, 120, 180], value=60, format_func=lambda x: f"{x} min")
+            with c2:
+                arr_list = ["Tous les arrondissements"] + [f"Paris {i}e" for i in range(1, 21)]
+                chosen_arr = st.selectbox("Zone d'intervention", arr_list)
+                use_violets = st.checkbox("Prioriser les points noirs (violets)", value=True)
+            
+            gen_btn = st.form_submit_button("💎 Générer le parcours optimal", use_container_width=True)
+
+        if gen_btn:
+            with st.spinner("L'IA analyse les flux piétons et les points noirs de Paris..."):
+                # On utilise la fonction de map_utils (retourne paths, msg, logistics_df)
+                result = generate_ai_route(map_df, nb_ben, temps_act, chosen_arr)
+                
+                if result[0]:
+                    paths, msg, logistics_df = result
+                    st.success(f"✅ Parcours stratégique généré ! {msg}")
+                    
+                    # 1. Affichage du tableau de bord logistique
+                    st.markdown("### 📋 Tableau de Bord Logistique (10 Équipes)")
+                    st.dataframe(logistics_df, use_container_width=True, hide_index=True)
+                    
+                    # 2. Affichage de la carte de l'itinéraire multi-couleurs
+                    center_coords = paths[0]["coords"][0]
+                    m_route = folium.Map(location=center_coords, zoom_start=15)
+                    
+                    # Ajout des différents segments colorés
+                    for p in paths:
+                        folium.PolyLine(
+                            p["coords"], 
+                            color=p["color"], 
+                            weight=p["weight"], 
+                            opacity=0.8, 
+                            tooltip=p["label"]
+                        ).add_to(m_route)
+                    
+                    # Marqueurs Départ/Arrivée
+                    folium.Marker(paths[0]["coords"][0], popup="Point de rassemblement (Départ)", icon=folium.Icon(color="green", icon="play")).add_to(m_route)
+                    folium.Marker(paths[1]["coords"][-1], popup="Fin de la mission (Retour)", icon=folium.Icon(color="red", icon="stop")).add_to(m_route)
+                    
+                    st_folium(m_route, width=900, height=500, key="ai_strategic_map")
+                    
+                    st.info(f"💡 **Conseil IA** : Les équipes 1 à 4 couvrent la montée, tandis que les équipes 5 à 8 couvrent le retour. Les équipes 9 et 10 sécurisent les abords. Restez groupés par binômes !")
+                    
+                    st.success("🎯 **Étape Suivante** : Maintenant que vous avez votre itinéraire stratégique, officialisez votre action sur [cleanwalk.org](https://www.cleanwalk.org) pour recruter encore plus de bénévoles !")
+                else:
+                    st.error(f"Désolé, l'IA n'a pas pu générer de parcours : {result[1]}")
+
+with tab_recycling:
+    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">♻️ Seconde Vie & Sensibilisation</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="hero-subtitle">Découvrez l\'impact réel de vos actions et développez vos connaissances sur l\'écologie circulaire.</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    db_approved = get_submissions_by_status('approved')
+    public_actions = all_imported_actions + db_approved
+    public_df = pd.DataFrame(public_actions)
+    
+    if public_df.empty:
+        st.info("Aucune donnée disponible pour l'instant.")
+    else:
+        total_megots = public_df.get('megots', pd.Series(dtype=int)).fillna(0).sum()
+        tot_dechets = public_df.get('dechets_kg', pd.Series(dtype=float)).fillna(0).sum()
+        
+        # Nouvelles équivalences "Grand Public"
+        bouteilles_evitees = int(tot_dechets * 33)
+        km_voiture_eq = int(tot_dechets * 19)
+        eau_preservee = total_megots * IMPACT_CONSTANTS.get('EAU_PROTEGEE_PER_MEGOT_L', 500)
+        
+        st.markdown('<div class="premium-card animate-in">', unsafe_allow_html=True)
+        st.markdown("### 🌍 Impact Réel de la Communauté")
+        col_r1, col_r2, col_r3 = st.columns(3)
+        
+        with col_r1:
+            st.metric(label="💧 Eau Préservée", value=f"{eau_preservee:,} L", help="1 seul mégot peut polluer jusqu'à 500 litres d'eau.")
+        with col_r2:
+            st.metric(label="🍾 Équivalent Bouteilles", value=f"{bouteilles_evitees:,}", help="1 kg de déchets équivaut environ au poids de 33 bouteilles plastiques de 1.5L.")
+        with col_r3:
+            st.metric(label="🚗 CO2 Évité (km voiture)", value=f"{km_voiture_eq:,} km", help="Émissions évitées sur le cycle de vie.")
+        st.markdown('</div>', unsafe_allow_html=True)
+            
+        st.markdown('<div class="premium-card animate-in">', unsafe_allow_html=True)
+        st.markdown("### 🧠 Le Saviez-vous ?")
+        
+        z1, z2 = st.columns(2)
+        with z1:
+            st.info("**Recyclage vs Décyclage** : Le verre se recycle à l'infini, mais le plastique perd souvent en qualité, c'est le *downcycling*.")
+        with z2:
+            st.success("**Le Poids des Mégots** : Un seul mégot contient des milliers de substances chimiques nocives qui mettent 12 ans à se décomposer.")
+        st.markdown('</div>', unsafe_allow_html=True)
+            
+        with st.expander("⚡ Énergie Primaire vs Électricité"):
+            st.write('''
+            On confond souvent les deux ! 
+            - **L'électricité** n'est pas une source, c'est un *vecteur* (un moyen de la transporter). 
+            - **L'énergie primaire** est ce que l'on extrait de la nature (Pétrole, Vent, Soleil, Uranium, Charbon).
+            
+            Recycler de l'aluminium (canettes) permet d'économiser **jusqu'à 95%** de l'énergie primaire nécessaire pour l'extraire de la mine (la bauxite), limitant ainsi la destruction d'écosystèmes.
+            ''')
+            
+        with st.expander("📊 Qu'est-ce que l'ACV (Analyse du Cycle de Vie) ?"):
+            st.write('''
+            L'Analyse du Cycle de Vie est la méthode d'évaluation environnementale systémique :
+            1. **L'Extraction** des matières premières (Le *Sac à Dos Écologique*, c'est-à-dire les milliers de litres d'eau et matériaux invisibles déplacés).
+            2. **La Fabrication** en usine.
+            3. **Le Transport** et la logistique.
+            4. **L'Utilisation**, parfois gourmande en énergie.
+            5. **La Fin de vie**, où les déchets deviennent de la pollution ou retournent dans la boucle matérielle via le recyclage.
+            ''')
+            
+        with st.expander("💧 Microplastiques : Invisible et Universel"):
+            st.write('''
+            Lorsqu'un plastique se dégrade dans la nature, il ne disparait jamais : il se fragmente en **microplastiques** sous l'effet du soleil (UV) et des frottements.
+            Ces particules intègrent la chaîne alimentaire. On estime que chaque humain ingère **l'équivalent d'une carte de crédit en plastique par semaine** (soit environ 5 grammes) via l'eau potable, le sel et l'alimentation.
+            ''')
+
+# ------------------------------------------------------------------------
+# ONGLET : DÉRÈGLEMENT CLIMATIQUE (EDUCATION)
+# ------------------------------------------------------------------------
+with tab_climate:
+    st.subheader("🌍 Comprendre le Dérèglement Climatique")
+    st.write("Parce qu'agir pour la planète commence par comprendre les enjeux. Voici les informations essentielles validées par la science pour construire votre culture écologique.")
+    
+    st.markdown("---")
+    
+    col_c1, col_c2 = st.columns([1, 1])
+    
+    with col_c1:
+        st.markdown("### 📈 Les Constats du GIEC")
+        st.info("Le GIEC (Groupe d'experts intergouvernemental sur l'évolution du climat) synthétise les travaux de milliers de chercheurs à travers le monde.")
+        st.write("""
+        - **Origine humaine indiscutable :** Le réchauffement actuel (+1.1°C depuis l'ère préindustrielle) est causé sans équivoque par les activités humaines (combustion d'énergies fossiles, déforestation).
+        - **Conséquences visibles :** Multiplication des événements extrêmes (canicules, inondations, sécheresses), montée des eaux, fonte des glaces.
+        - **L'urgence d'agir :** Chaque fraction de degré compte. Limiter le réchauffement à 1.5°C au lieu de 2°C permet d'éviter des points de basculement irréversibles.
+        """)
+        st.image("https://www.statistiques.developpement-durable.gouv.fr/sites/default/files/2019-12/giec-ar5-wg1-spm-fig1-fr_0.png", caption="Évolution de la température mondiale combinée des terres et des océans (Source: Synthèse GIEC)")
+        
+    with col_c2:
+        st.markdown("### 🎯 L'Accord de Paris")
+        st.success("Adopté en 2015 lors de la COP21, c'est le premier accord universel sur le climat.")
+        st.write("""
+        - **Objectif principal :** Maintenir l'augmentation de la température moyenne mondiale bien en dessous de 2°C, et de préférence à 1.5°C, par rapport aux niveaux préindustriels.
+        - **Neutralité carbone :** Atteindre l'équilibre entre les émissions et les absorptions de gaz à effet de serre d'ici la deuxième moitié du siècle.
+        - **La France :** S'est engagée via la Stratégie Nationale Bas-Carbone (SNBC) à réduire ses émissions d'ici 2050.
+        """)
+        
+    st.markdown("---")
+    
+    st.markdown("### 🌎 Les 9 Limites Planétaires")
+    st.write("Le climat n'est qu'une des 9 limites planétaires définies par le Stockholm Resilience Centre. Dépasser ces limites menace la stabilité de l'écosystème terrestre dont nous dépendons.")
+    
+    col_l1, col_l2 = st.columns([2, 3])
+    with col_l1:
+        st.write("""
+        Aujourd'hui, **6 des 9 limites sont déjà franchies** au niveau mondial :
+        1. 🔴 Le changement climatique
+        2. 🔴 L'érosion de la biodiversité
+        3. 🔴 La perturbation des cycles de l'azote et du phosphore
+        4. 🔴 Le changement d'usage des sols (déforestation)
+        5. 🔴 L'introduction d'entités nouvelles (pollutions chimiques, plastiques)
+        6. 🔴 L'utilisation de l'eau verte (eau douce dans les sols)
+        
+        *Le ramassage de déchets agit directement sur la limite 5 (entités nouvelles / plastiques) !*
+        """)
+    with col_l2:
+        st.image("https://www.notre-environnement.gouv.fr/IMG/png/limites_planetaires_2023_-_fr.png", caption="État des 9 limites planétaires en 2023 (Source: Stockholm Resilience Centre / Notre-Environnement.gouv)")
+        
+    st.markdown("---")
+    st.info("💡 **Pour aller plus loin :** Pour approfondir ces sujets, n'hésitez pas à participer à une **Fresque du Climat**, un atelier ludique et collaboratif de 3h basé sur les rapports du GIEC, ou à consulter les rapports de l'ADEME.")
 
 # ------------------------------------------------------------------------
 # ONGLET : ESPACE ELUS (DASHBOARD COLLECTIVITES)
@@ -2439,7 +2804,21 @@ with tab_admin:
         
         if not map_df.empty:
             center_lat, center_lon = map_df["lat"].mean(), map_df["lon"].mean()
-            m_admin = folium.Map(location=[center_lat, center_lon], zoom_start=11)
+            # --- Version Admin de la carte ---
+            m_admin = folium.Map(location=[center_lat, center_lon], zoom_start=11, tiles=None)
+            folium.TileLayer('OpenStreetMap', name='Fond Clair (Défaut)').add_to(m_admin)
+            folium.TileLayer(
+                tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+                name='Fond Sombre',
+                attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            ).add_to(m_admin)
+            folium.TileLayer(
+                tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                name='Vue Satellite',
+                attr='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            ).add_to(m_admin)
+            
+            folium.LayerControl(position='topright', collapsed=True).add_to(m_admin)
             
             features = []
             for _, row in map_df.iterrows():
@@ -2651,6 +3030,13 @@ with tab_admin:
                 a, r = st.columns(2)
                 if a.button("✅ Approuver", key=f"approve_{row['id']}", use_container_width=True):
                     update_submission_status(row['id'], 'approved')
+                    
+                    # Déclencher l'enrichissement automatique si c'est un acteur engagé
+                    ACTOR_TYPES = ["Association écologique", "Association humanitaire et sociale", "Commerçant engagé"]
+                    if row.get('type_lieu') in ACTOR_TYPES:
+                        with st.spinner(f"Recherche d'informations pour {row['association']}..."):
+                            auto_enrich_actor(row['id'], row['association'], row['type_lieu'], row['adresse'])
+                    
                     st.rerun()
                 if r.button("❌ Refuser", key=f"reject_{row['id']}", use_container_width=True):
                     update_submission_status(row['id'], 'rejected')
