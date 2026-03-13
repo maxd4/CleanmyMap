@@ -20,6 +20,19 @@ COLUMN_KEYWORDS = {
     'propre': ['liste lieux propres', 'liste_lieux_propres', 'lieux_propres', 'propres'],
 }
 
+# Centralisation des Constantes d'Impact (issues du Fact-Checking ACV)
+IMPACT_CONSTANTS = {
+    "CO2_PER_MEGOT_KG": 0.014,        # Approuvé par l'OMS et ACV Cycle Complet
+    "EAU_PROTEGEE_PER_MEGOT_L": 500,  # Plancher retenu par Surfrider Foundation/INERIS
+    "POIDS_MOYEN_MEGOT_KG": 0.0002,   # 0.2g
+    "PLASTIQUE_URBAIN_RATIO": 0.5,
+    "VERRE_URBAIN_RATIO": 0.3,
+    "METAL_URBAIN_RATIO": 0.2,
+    "PLASTIQUE_POUR_BANC_KG": 50.0,   # Base ADEME
+    "PLASTIQUE_POUR_PULL_KG": 0.5,    # Base ADEME
+    "COUT_TRAITEMENT_TONNE_EUR": 150  # Plaidoyer : 150€ d'économie par tonne ramassée
+}
+
 TYPE_COLORS = {
     'Quai/Pont/Port': '#3498db',
     'Bois/Parc/Jardin/Square/Sentier': '#27ae60',
