@@ -57,9 +57,9 @@ TRANSLATIONS = {
     "fr": {
         "title": "Clean my Map • Protection Citoyenne",
         "tagline": "Visualisez, Agissez, Protégez.",
-        "welcome": "Bienvenue sur Clean my Map",
+        "welcome": "Agir. Cartographier. Préserver.",
+        "hero_subtitle": "Rejoignez le mouvement citoyen pour une planète plus propre. Chaque action compte, chaque geste est valorisé.",
         "impact_collectif": "📊 Notre Impact Collectif",
-        "hero_subtitle": "Visualisez la force de notre communauté et votre contribution personnelle à la protection de l'environnement.",
         "kg_removed": "kg de déchets retirés",
         "megots_collected": "mégots collectés",
         "citizens_engaged": "citoyens engagés",
@@ -69,32 +69,39 @@ TRANSLATIONS = {
         "check_grade": "Vérifier mon grade",
         "eco_impact_title": "💡 Impact Écologique Réel",
         "lang_select": "🌐 Langue / Language",
-        "declaration": "📝 Déclaration bénévole",
-        "map_actions": "🗺️ Carte & Actions",
-        "trash_spotter": "📢 Trash Spotter",
-        "gamification": "🏆 Gamification",
-        "community_hub": "🤝 Community Hub",
-        "sandbox": "🧪 Zone d'entraînement",
-        "pdf_report": "📄 Rapport PDF",
-        "guide": "📚 Guide du citoyen",
-        "actors": "🤝 Acteurs engagés",
-        "history": "📋 Historique des Actions",
-        "generate_action": "🎯 Générer une Action",
-        "recycling": "♻️ Seconde Vie",
-        "climate": "🌍 Dérèglement climatique",
-        "elus": "🏗️ Espace Élus",
-        "kit": "📱 Kit Organisateur",
-        "weather": "🌤️ Météo & Action",
-        "compare": "🏙️ Comparaison Territoriale",
-        "admin": "⚙️ Admin / Validation",
+        "tab_declaration": "🎯 Déclarer une Action",
+        "tab_map": "🗺️ Carte Interactive",
+        "tab_trash_spotter": "📢 Trash Spotter",
+        "tab_gamification": "🏆 Classement & Badges",
+        "tab_community": "🤝 Rassemblements",
+        "tab_sandbox": "🧪 Zone d'entraînement",
+        "tab_pdf": "📄 Rapport Impact",
+        "tab_guide": "📚 Guide Pratique",
+        "tab_actors": "🤝 Partenaires Engagés",
+        "tab_history": "📋 Historique",
+        "tab_route": "🎯 Planifier (IA)",
+        "tab_recycling": "♻️ Seconde Vie",
+        "tab_climate": "🌍 Enjeux Climatiques",
+        "tab_elus": "🏛️ Espace Collectivités",
+        "tab_kit": "📱 Kit Terrain",
+        "tab_home": "📊 Notre Impact",
+        "tab_weather": "🌤️ Météo",
+        "tab_compare": "🏙️ Comparaison",
+        "tab_admin": "⚙️ Validation Admin",
         "eco_mode": "Mode basse consommation",
+        "nav_label": "📌 Navigation",
+        "nav_action": "🚀 Lancer l'action",
+        "nav_stats": "📊 Résultats & Impact",
+        "nav_social": "🏆 Communauté",
+        "nav_edu": "📚 Comprendre & Apprendre",
+        "nav_admin": "⚙️ Administration & Outils",
     },
     "en": {
         "title": "Clean my Map • Citizen Protection",
         "tagline": "Visualize, Act, Protect.",
-        "welcome": "Welcome to Clean my Map",
+        "welcome": "Act. Map. Preserve.",
+        "hero_subtitle": "Join the citizen movement for a cleaner planet. Every action counts, every gesture is valued.",
         "impact_collectif": "📊 Our Collective Impact",
-        "hero_subtitle": "Visualize the strength of our community and your personal contribution to environmental protection.",
         "kg_removed": "kg of waste removed",
         "megots_collected": "cigarette butts collected",
         "citizens_engaged": "engaged citizens",
@@ -104,25 +111,32 @@ TRANSLATIONS = {
         "check_grade": "Check my grade",
         "eco_impact_title": "💡 Real Ecological Impact",
         "lang_select": "🌐 Language",
-        "declaration": "📝 Volunteer Declaration",
-        "map_actions": "🗺️ Map & Actions",
-        "trash_spotter": "📢 Trash Spotter",
-        "gamification": "🏆 Gamification",
-        "community_hub": "🤝 Community Hub",
-        "sandbox": "🧪 Sandbox Zone",
-        "pdf_report": "📄 PDF Report",
-        "guide": "📚 Citizen Guide",
-        "actors": "🤝 Engaged Actors",
-        "history": "📋 Action History",
-        "generate_action": "🎯 Generate an Action",
-        "recycling": "♻️ Second Life",
-        "climate": "🌍 Climate Change",
-        "elus": "🏗️ Elected Officials",
-        "kit": "📱 Organizer Kit",
-        "weather": "🌤️ Weather & Action",
-        "compare": "🏙️ Territorial Comparison",
-        "admin": "⚙️ Admin / Validation",
+        "tab_declaration": "🎯 Declare an Action",
+        "tab_map": "🗺️ Interactive Map",
+        "tab_trash_spotter": "📢 Trash Spotter",
+        "tab_gamification": "🏆 Leaderboard & Badges",
+        "tab_community": "🤝 Meetups",
+        "tab_sandbox": "🧪 Sandbox Zone",
+        "tab_pdf": "📄 Impact Report",
+        "tab_guide": "📚 Practical Guide",
+        "tab_actors": "🤝 Engaged Partners",
+        "tab_history": "📋 History",
+        "tab_route": "🎯 Plan (IA)",
+        "tab_recycling": "♻️ Second Life",
+        "tab_climate": "🌍 Climate Issues",
+        "tab_elus": "🏛️ Local Authorities",
+        "tab_kit": "📱 Field Kit",
+        "tab_home": "📊 Our Impact",
+        "tab_weather": "🌤️ Weather",
+        "tab_compare": "🏙️ Territorial Comparison",
+        "tab_admin": "⚙️ Admin Validation",
         "eco_mode": "Eco Mode (Data Saver)",
+        "nav_label": "📌 Navigation",
+        "nav_action": "🚀 Start Action",
+        "nav_stats": "📊 Results & Impact",
+        "nav_social": "🏆 Community",
+        "nav_edu": "📚 Learn & Understand",
+        "nav_admin": "⚙️ Admin & Tools",
     }
 }
 
@@ -1756,10 +1770,10 @@ check_pseudo = ""
 main_user_email = _google_user_email() or "Bénévole Anonyme"
 
 st.markdown(
-    """
+    f"""
     <div class="hero-container">
-      <h1 class="hero-title">Agir. Cartographier.<br>Préserver.</h1>
-      <p class="hero-subtitle"><b>Clean my Map</b> est l'outil citoyen qui transforme chaque déchet ramassé en donnée scientifique pour protéger durablement notre environnement.</p>
+      <h1 class="hero-title">{t("welcome")}</h1>
+      <p class="hero-subtitle">{t("hero_subtitle")}</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -1823,26 +1837,111 @@ st.markdown(
 pending_count = len(get_submissions_by_status('pending'))
 approved_count = len(get_submissions_by_status('approved'))
 
-tabs = st.tabs([
-    "🏆 Gamification",
-    "🤝 Community Hub",
-    "🧪 Zone d'entraînement",
-    "📄 Rapport PDF",
-    "📚 Guide du citoyen",
-    "🤝 Acteurs engagés",
-    "📋 Historique des Actions",
-    "🎯 Générer une Action",
-    "♻️ Seconde Vie",
-    "🌍 Dérèglement climatique",
-    "🏛️ Espace Élus",
-    "📱 Kit Organisateur",
-    "📊 Notre Impact",
-    "🌤️ Météo & Action",
-    "🏙️ Comparaison Territoriale",
-    "⚙️ Admin / Validation"
-])
+# --- NAVIGATION STRUCTURÉE ---
+with st.sidebar:
+    st.markdown(f"### {t('nav_label')}")
+    
+    # Catégorie 1: Action
+    with st.expander(t("nav_action"), expanded=True):
+        nav_action = st.radio(
+            "Action Choice", 
+            [t("tab_declaration"), t("tab_map"), t("tab_trash_spotter"), t("tab_route")],
+            label_visibility="collapsed",
+            key="nav_action_radio"
+        )
+    
+    # Catégorie 2: Résultats
+    with st.expander(t("nav_stats"), expanded=False):
+        nav_stats = st.radio(
+            "Stats Choice",
+            [t("tab_home"), t("tab_history"), t("tab_pdf"), t("tab_compare"), t("tab_weather")],
+            label_visibility="collapsed",
+            key="nav_stats_radio"
+        )
+    
+    # Catégorie 3: Communauté
+    with st.expander(t("nav_social"), expanded=False):
+        nav_social = st.radio(
+            "Social Choice",
+            [t("tab_gamification"), t("tab_community"), t("tab_actors")],
+            label_visibility="collapsed",
+            key="nav_social_radio"
+        )
+        
+    # Catégorie 4: Éducation
+    with st.expander(t("nav_edu"), expanded=False):
+        nav_edu = st.radio(
+            "Edu Choice",
+            [t("tab_guide"), t("tab_recycling"), t("tab_climate")],
+            label_visibility="collapsed",
+            key="nav_edu_radio"
+        )
+        
+    # Catégorie 5: Outils & Admin
+    with st.expander(t("nav_admin"), expanded=False):
+        nav_admin = st.radio(
+            "Admin Choice",
+            [t("tab_kit"), t("tab_elus"), t("tab_sandbox"), t("tab_admin")],
+            label_visibility="collapsed",
+            key="nav_admin_radio"
+        )
 
-tab_declaration, tab_map, tab_trash_spotter, tab_gamification, tab_community, tab_sandbox, tab_pdf, tab_guide, tab_actors, tab_history, tab_route, tab_recycling, tab_climate, tab_elus, tab_kit, tab_home, tab_weather, tab_compare, tab_admin = tabs
+# Mapping de la sélection globale (on utilise un state pour savoir quel onglet est actif)
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = t("tab_home")
+
+# Détecter quel radio a été cliqué en dernier pour changer l'onglet actif
+# Pour chaque catégorie, on vérifie si la valeur actuelle du radio est différente de la dernière valeur connue
+for cat_key in ['nav_action', 'nav_stats', 'nav_social', 'nav_edu', 'nav_admin']:
+    radio_key = f"{cat_key}_radio"
+    prev_key = f"prev_{cat_key}"
+    curr_val = st.session_state.get(radio_key)
+    if curr_val and curr_val != st.session_state.get(prev_key):
+        st.session_state.active_tab = curr_val
+        st.session_state[prev_key] = curr_val
+
+# Initialisation des containers (pour garder la compatibilité avec le code existant line 1845)
+tab_declaration = st.empty()
+tab_map = st.empty()
+tab_trash_spotter = st.empty()
+tab_gamification = st.empty()
+tab_community = st.empty()
+tab_sandbox = st.empty()
+tab_pdf = st.empty()
+tab_guide = st.empty()
+tab_actors = st.empty()
+tab_history = st.empty()
+tab_route = st.empty()
+tab_recycling = st.empty()
+tab_climate = st.empty()
+tab_elus = st.empty()
+tab_kit = st.empty()
+tab_home = st.empty()
+tab_weather = st.empty()
+tab_compare = st.empty()
+tab_admin = st.empty()
+
+# On active le container correspondant à la sélection
+active = st.session_state.active_tab
+if active == t("tab_declaration"): tab_declaration = st.container()
+elif active == t("tab_map"): tab_map = st.container()
+elif active == t("tab_trash_spotter"): tab_trash_spotter = st.container()
+elif active == t("tab_gamification"): tab_gamification = st.container()
+elif active == t("tab_community"): tab_community = st.container()
+elif active == t("tab_sandbox"): tab_sandbox = st.container()
+elif active == t("tab_pdf"): tab_pdf = st.container()
+elif active == t("tab_guide"): tab_guide = st.container()
+elif active == t("tab_actors"): tab_actors = st.container()
+elif active == t("tab_history"): tab_history = st.container()
+elif active == t("tab_route"): tab_route = st.container()
+elif active == t("tab_recycling"): tab_recycling = st.container()
+elif active == t("tab_climate"): tab_climate = st.container()
+elif active == t("tab_elus"): tab_elus = st.container()
+elif active == t("tab_kit"): tab_kit = st.container()
+elif active == t("tab_home"): tab_home = st.container()
+elif active == t("tab_weather"): tab_weather = st.container()
+elif active == t("tab_compare"): tab_compare = st.container()
+elif active == t("tab_admin"): tab_admin = st.container()
 
 # Alias rétrocompatibles (évite les NameError après renommage d'onglets)
 tab_view = tab_map
