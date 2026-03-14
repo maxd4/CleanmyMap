@@ -247,7 +247,7 @@ def create_premium_popup(row, score_data, gap_alert=""):
     if is_clean:
         return f"""
         <div style="font-family: 'Outfit', sans-serif; width: 260px; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 20px rgba(0,0,0,0.1); border: 2px solid #3498db33;">
-            <div style="background: linear-gradient(135deg, #ebf8ff, #v2fdf5); color: #2980b9; padding: 15px; text-align: center; border-bottom: 1px solid #3498db11;">
+            <div style="background: linear-gradient(135deg, #ebf8ff, #e0fdf4); color: #2980b9; padding: 15px; text-align: center; border-bottom: 1px solid #3498db11;">
                 <div style="font-size: 28px; margin-bottom: 5px;">🌿</div>
                 <div style="font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #1e40af;">Zone Impeccable</div>
                 <div style="font-size: 10px; font-weight: 500; color: #3b82f6;">Signalement de Propreté</div>
@@ -339,6 +339,9 @@ def create_premium_popup(row, score_data, gap_alert=""):
                 <div style="font-size: 11px; font-weight: 700; color: {color};">
                     Score: {score_data['score_mixte']:.1f}
                 </div>
+            </div>
+            <div style="margin-top: 8px; text-align: center; background: linear-gradient(135deg, #10b981, #34d399); border-radius: 8px; padding: 5px;">
+                <span style="color: white; font-weight: 700; font-size: 12px;">🌿 {score_data['eco_points']} Éco-Points</span>
             </div>
             {gap_html}
         </div>

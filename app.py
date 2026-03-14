@@ -32,7 +32,8 @@ from src.database import (
     add_spot, get_active_spots, calculate_user_points, get_leaderboard,
     add_mission_validation, get_mission_validation_summary
 )
-from src.config import GOOGLE_SHEET_URL, IMPACT_CONSTANTS
+from src.config import OUTPUT_DIR, GOOGLE_SHEET_URL, IMPACT_CONSTANTS
+from src.predictive_ai import calculate_pollution_risk, get_risk_recommendations
 from src.pages.resources import show_resources
 from src.pages.partners import show_partners
 from src.pages.leaderboards import render_historical_rankings
@@ -51,29 +52,141 @@ init_db()  # Initialisation de la BDD au démarrage
 
 # Centralisation des Constantes d'Impact importée depuis src.config
 
+# --- INTERNATIONALISATION (i18n) ---
+TRANSLATIONS = {
+    "fr": {
+        "title": "Clean my Map • Protection Citoyenne",
+        "tagline": "Visualisez, Agissez, Protégez.",
+        "welcome": "Bienvenue sur Clean my Map",
+        "impact_collectif": "📊 Notre Impact Collectif",
+        "hero_subtitle": "Visualisez la force de notre communauté et votre contribution personnelle à la protection de l'environnement.",
+        "kg_removed": "kg de déchets retirés",
+        "megots_collected": "mégots collectés",
+        "citizens_engaged": "citoyens engagés",
+        "evolution_title": "📈 Évolution des Ramassages (Cumulé)",
+        "progression_title": "🏅 Votre Progression Personnelle",
+        "pseudo_placeholder": "Ex: Jean_Vert",
+        "check_grade": "Vérifier mon grade",
+        "eco_impact_title": "💡 Impact Écologique Réel",
+        "lang_select": "🌐 Langue / Language",
+        "declaration": "📝 Déclaration bénévole",
+        "map_actions": "🗺️ Carte & Actions",
+        "trash_spotter": "📢 Trash Spotter",
+        "gamification": "🏆 Gamification",
+        "community_hub": "🤝 Community Hub",
+        "sandbox": "🧪 Zone d'entraînement",
+        "pdf_report": "📄 Rapport PDF",
+        "guide": "📚 Guide du citoyen",
+        "actors": "🤝 Acteurs engagés",
+        "history": "📋 Historique des Actions",
+        "generate_action": "🎯 Générer une Action",
+        "recycling": "♻️ Seconde Vie",
+        "climate": "🌍 Dérèglement climatique",
+        "elus": "🏗️ Espace Élus",
+        "kit": "📱 Kit Organisateur",
+        "weather": "🌤️ Météo & Action",
+        "compare": "🏙️ Comparaison Territoriale",
+        "admin": "⚙️ Admin / Validation",
+        "eco_mode": "Mode basse consommation",
+    },
+    "en": {
+        "title": "Clean my Map • Citizen Protection",
+        "tagline": "Visualize, Act, Protect.",
+        "welcome": "Welcome to Clean my Map",
+        "impact_collectif": "📊 Our Collective Impact",
+        "hero_subtitle": "Visualize the strength of our community and your personal contribution to environmental protection.",
+        "kg_removed": "kg of waste removed",
+        "megots_collected": "cigarette butts collected",
+        "citizens_engaged": "engaged citizens",
+        "evolution_title": "📈 Cleanup Evolution (Cumulative)",
+        "progression_title": "🏅 Your Personal Progression",
+        "pseudo_placeholder": "Ex: Green_John",
+        "check_grade": "Check my grade",
+        "eco_impact_title": "💡 Real Ecological Impact",
+        "lang_select": "🌐 Language",
+        "declaration": "📝 Volunteer Declaration",
+        "map_actions": "🗺️ Map & Actions",
+        "trash_spotter": "📢 Trash Spotter",
+        "gamification": "🏆 Gamification",
+        "community_hub": "🤝 Community Hub",
+        "sandbox": "🧪 Sandbox Zone",
+        "pdf_report": "📄 PDF Report",
+        "guide": "📚 Citizen Guide",
+        "actors": "🤝 Engaged Actors",
+        "history": "📋 Action History",
+        "generate_action": "🎯 Generate an Action",
+        "recycling": "♻️ Second Life",
+        "climate": "🌍 Climate Change",
+        "elus": "🏗️ Elected Officials",
+        "kit": "📱 Organizer Kit",
+        "weather": "🌤️ Weather & Action",
+        "compare": "🏙️ Territorial Comparison",
+        "admin": "⚙️ Admin / Validation",
+        "eco_mode": "Eco Mode (Data Saver)",
+    }
+}
+
+# --- GESTION DE LA LANGUE DANS SESSION STATE ---
+if "lang" not in st.session_state:
+    st.session_state.lang = "fr"
+
+def t(key):
+    """Fonction de traduction courte."""
+    return TRANSLATIONS[st.session_state.lang].get(key, key)
+
 def get_impact_sources():
     """Renvoie les textes de la bibliographie pour la méthodologie de l'app et du PDF."""
-    return (
-        "méthodologie et sources :\n\n"
-        "- impact carbone du mégot (0.014 kg co2e) : inclut la culture, la création du filtre en "
-        "acétate de cellulose et la fin de vie. données alignées sur l'oms.\n"
-        "- impact eau (500l/mégot) : contamination toxique aux métaux lourds (arsenic, plomb) et "
-        "à la nicotine selon surfrider foundation et l'ineris.\n"
-        "- equivalences plastiques (bancs: 50kg, pulls: 0.5kg) : extrapolations du poids équivalent "
-        "fondées sur la base empreinte (carbone) de l'ademe.\n\n"
-        "avertissement : ce rapport de synthèse a été généré via l'assistance d'une intelligence artificielle. "
-        "bien que les statistiques soient basées sur une bibliographie scientifique officielle, le "
-        "document automatique peut contenir des approximations ou des erreurs de traitement."
-    )
+    if st.session_state.lang == "fr":
+        return (
+            "méthodologie et sources :\n\n"
+            "- impact carbone du mégot (0.014 kg co2e) : inclut la culture, la création du filtre en "
+            "acétate de cellulose et la fin de vie. données alignées sur l'oms.\n"
+            "- impact eau (500l/mégot) : contamination toxique aux métaux lourds (arsenic, plomb) et "
+            "à la nicotine selon surfrider foundation et l'ineris.\n"
+            "- equivalences plastiques (bancs: 50kg, pulls: 0.5kg) : extrapolations du poids équivalent "
+            "fondées sur la base empreinte (carbone) de l'ademe.\n\n"
+            "avertissement : ce rapport de synthèse a été généré via l'assistance d'une intelligence artificielle. "
+            "bien que les statistiques soient basées sur une bibliographie scientifique officielle, le "
+            "document automatique peut contenir des approximations ou des erreurs de traitement."
+        )
+    else:
+        return (
+            "methodology and sources:\n\n"
+            "- carbon impact of a cigarette butt (0.014 kg co2e): includes cultivation, creation of the "
+            "cellulose acetate filter and end-of-life. data aligned with who.\n"
+            "- water impact (500l/butt): toxic contamination with heavy metals (arsenic, lead) and "
+            "nicotine according to surfrider foundation and ineris.\n"
+            "- plastic equivalences (benches: 50kg, sweaters: 0.5kg): extrapolations of equivalent weight "
+            "based on the ademe carbon footprint database.\n\n"
+            "disclaimer: this synthesis report was generated with AI assistance. "
+            "while statistics are based on official scientific bibliography, the "
+            "automatic document may contain approximations or processing errors."
+        )
 
 
 st.set_page_config(
-    page_title="Clean my Map • Protection Citoyenne",
+    page_title=TRANSLATIONS[st.session_state.lang]["title"],
     page_icon="🗺️",
     layout="wide",
 )
 
+# Sélecteur de langue dans la sidebar (en haut)
+with st.sidebar:
+    st.session_state.lang = st.radio(
+        t("lang_select"),
+        options=["fr", "en"],
+        format_func=lambda x: "Français" if x == "fr" else "English",
+        key="lang_radio",
+        horizontal=True
+    )
+    st.markdown("---")
+
 # Custom Professional CSS
+# --- PWA SUPPORT ---
+st.markdown('<link rel="manifest" href="/manifest.json">', unsafe_allow_html=True)
+st.markdown('<meta name="apple-mobile-web-app-capable" content="yes">', unsafe_allow_html=True)
+st.markdown('<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">', unsafe_allow_html=True)
+
 # --- DESIGN SYSTEM (PREMIUM APPLE STYLE) ---
 st.markdown(
     """
@@ -157,6 +270,82 @@ st.markdown(
         margin-bottom: 8px;
     }
 
+    /* --- WORLD CLASS LANDING ANIMATIONS --- */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-15px); }
+        100% { transform: translateY(0px); }
+    }
+    @keyframes glow {
+        0% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.2); }
+        50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
+        100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.2); }
+    }
+
+    .animate-in { animation: fadeInUp 0.8s ease-out forwards; }
+    .floating { animation: float 4s ease-in-out infinite; }
+    
+    .hero-container {
+        text-align: center;
+        padding: 80px 20px;
+        background: radial-gradient(circle at center, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
+        border-radius: 40px;
+        margin-bottom: 40px;
+    }
+    
+    .hero-title {
+        font-size: 4.5rem !important;
+        font-weight: 900 !important;
+        background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -2px;
+        line-height: 1.1;
+        margin-bottom: 24px;
+    }
+    
+    .hero-subtitle {
+        font-size: 1.4rem !important;
+        color: #64748b;
+        max-width: 700px;
+        margin: 0 auto 40px auto;
+        line-height: 1.6;
+    }
+
+    .feature-card {
+        padding: 40px;
+        border-radius: 30px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        cursor: pointer;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        background: white;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    
+    /* Dark Mode Emeraude Overlay for Stats */
+    .stat-glow {
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        animation: glow 3s infinite;
+    }
+    
+    /* Parallax effect placeholders */
+    .parallax-bg {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        z-index: -1;
+        overflow: hidden;
+    }
+    
     .metric-label {
         font-size: 0.9rem;
         font-weight: 500;
@@ -1556,6 +1745,9 @@ lieu_prefill = st.query_params.get("lieu", "")
 if lieu_prefill:
     st.toast(f"📍 Lieu détecté via QR Code : {lieu_prefill}", icon="📱")
 
+# Initialisation de check_pseudo avant les tabs pour qu'il soit toujours défini
+check_pseudo = ""
+
 
 # Configuration injectée via CSS global plus haut
 
@@ -1582,9 +1774,14 @@ all_public_df = pd.DataFrame(all_public_actions)
 
 # Calcul des stats globales cumulées
 if not all_public_df.empty:
-    total_dechets = all_public_df['dechets_kg'].sum()
-    total_megots = all_public_df['megots'].sum()
-    total_benevoles = all_public_df['benevoles'].sum()
+    # Normaliser benevoles / nb_benevoles (les deux noms coexistent dans les sources)
+    if 'benevoles' not in all_public_df.columns and 'nb_benevoles' in all_public_df.columns:
+        all_public_df['benevoles'] = all_public_df['nb_benevoles']
+    elif 'nb_benevoles' not in all_public_df.columns and 'benevoles' in all_public_df.columns:
+        all_public_df['nb_benevoles'] = all_public_df['benevoles']
+    total_dechets = all_public_df['dechets_kg'].fillna(0).sum()
+    total_megots = all_public_df['megots'].fillna(0).sum()
+    total_benevoles = all_public_df.get('benevoles', all_public_df.get('nb_benevoles', pd.Series(dtype=float))).fillna(0).sum()
 else:
     total_dechets, total_megots, total_benevoles = 0.0, 0, 0
 
@@ -1627,9 +1824,6 @@ pending_count = len(get_submissions_by_status('pending'))
 approved_count = len(get_submissions_by_status('approved'))
 
 tabs = st.tabs([
-    "📝 Déclaration bénévole",
-    "🗺️ Carte & Actions",
-    "📢 Trash Spotter",
     "🏆 Gamification",
     "🤝 Community Hub",
     "🧪 Zone d'entraînement",
@@ -1643,10 +1837,12 @@ tabs = st.tabs([
     "🏛️ Espace Élus",
     "📱 Kit Organisateur",
     "📊 Notre Impact",
+    "🌤️ Météo & Action",
+    "🏙️ Comparaison Territoriale",
     "⚙️ Admin / Validation"
 ])
 
-tab_declaration, tab_map, tab_trash_spotter, tab_gamification, tab_community, tab_sandbox, tab_pdf, tab_guide, tab_actors, tab_history, tab_route, tab_recycling, tab_climate, tab_elus, tab_kit, tab_home, tab_admin = tabs
+tab_declaration, tab_map, tab_trash_spotter, tab_gamification, tab_community, tab_sandbox, tab_pdf, tab_guide, tab_actors, tab_history, tab_route, tab_recycling, tab_climate, tab_elus, tab_kit, tab_home, tab_weather, tab_compare, tab_admin = tabs
 
 # Alias rétrocompatibles (évite les NameError après renommage d'onglets)
 tab_view = tab_map
@@ -1680,7 +1876,7 @@ with tab_kit:
         else:
             # Construction de l'URL de l'application avec le paramètre de pré-remplissage
             # On utilise STREAMLIT_PUBLIC_URL si définie, sinon une URL générique
-            base_url = "https://cleanwalk.streamlit.app"
+            base_url = STREAMLIT_PUBLIC_URL
             share_url = f"{base_url}/?lieu={requests.utils.quote(lieu_event.strip())}"
             
             # Génération du QR Code
@@ -1730,15 +1926,45 @@ with tab_kit:
     )
 
 with tab_home:
-    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
-    st.markdown('<h1 class="hero-title">📊 Notre Impact Collectif</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="hero-subtitle">Visualisez la force de notre communauté et votre contribution personnelle à la protection de l\'environnement.</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    # --- HERO SECTION (Landing Page Style) ---
+    st.markdown(f"""
+        <div class="hero-container animate-in">
+            <h1 class="hero-title">{t("welcome")}</h1>
+            <p class="hero-subtitle">{t("hero_subtitle")}</p>
+            <div style="display:flex; justify-content:center; gap:20px; margin-top:40px;">
+                <div class="floating" style="font-size:3rem;">🌍</div>
+                <div class="floating" style="font-size:3rem; animation-delay:0.5s;">🌿</div>
+                <div class="floating" style="font-size:3rem; animation-delay:1s;">✨</div>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
     
-    # Statistiques Globales
-    db_approved = get_submissions_by_status('approved')
-    public_actions = all_imported_actions + db_approved
-    df_impact = pd.DataFrame(public_actions)
+    # Statistiques Globales (Grid de Cartes Premium)
+    # --- PREDICTIVE AI RISK BANNER ---
+    risk_data = calculate_pollution_risk(df_impact)
+    risk_color = "#ef4444" if risk_data['level'] == "Critique" else "#f97316" if risk_data['level'] == "Élevé" else "#eab308" if risk_data['level'] == "Modéré" else "#10b981"
+    
+    st.markdown(f"""
+        <div class="premium-card animate-in stat-glow" style="border-left:8px solid {risk_color}; animation-delay:0.1s;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <h4 style="margin:0; color:{risk_color}; text-transform:uppercase; letter-spacing:1px; font-size:12px;">
+                        { "🤖 ANALYSE PRÉDICTIVE IA" if st.session_state.lang == "fr" else "🤖 AI PREDICTIVE ANALYSIS" }
+                    </h4>
+                    <p style="margin:5px 0 0 0; font-size:16px; font-weight:600;">
+                        { risk_data['message'] if st.session_state.lang == "fr" else risk_data['level'] + " Risk: Pollution levels expected to rise." }
+                    </p>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:24px; font-weight:bold; color:{risk_color};">{risk_data['risk_score']}%</div>
+                    <div style="font-size:10px; color:#64748b;">RISK SCORE</div>
+                </div>
+            </div>
+            <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+                { "".join([f'<span style="background:rgba(0,0,0,0.05); padding:4px 10px; border-radius:10px; font-size:11px;"># {rec}</span>' for rec in get_risk_recommendations(risk_data, lang=st.session_state.lang)]) }
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
     
     if not df_impact.empty:
         # Conversion dates pour graphique
@@ -1749,52 +1975,61 @@ with tab_home:
         total_megots = df_impact['megots'].fillna(0).sum()
         total_volunteers = df_impact['benevoles'].fillna(0).sum()
         
-        cols = st.columns(3)
-        with cols[0]:
-            st.markdown(f'<div class="premium-card"><div class="metric-value">{total_kg:,.1f}</div><div class="metric-label">kg de déchets retirés</div></div>', unsafe_allow_html=True)
-        with cols[1]:
-            st.markdown(f'<div class="premium-card"><div class="metric-value">{int(total_megots):,}</div><div class="metric-label">mégots collectés</div></div>', unsafe_allow_html=True)
-        with cols[2]:
-            st.markdown(f'<div class="premium-card"><div class="metric-value">{int(total_volunteers):,}</div><div class="metric-label">citoyens engagés</div></div>', unsafe_allow_html=True)
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(f'<div class="feature-card animate-in" style="animation-delay:0.2s;"><div class="metric-value" style="color:#10b981">{total_kg:,.1f}</div><div class="metric-label">{t("kg_removed")}</div></div>', unsafe_allow_html=True)
+        with c2:
+            st.markdown(f'<div class="feature-card animate-in" style="animation-delay:0.4s;"><div class="metric-value" style="color:#3b82f6">{int(total_megots):,}</div><div class="metric-label">{t("megots_collected")}</div></div>', unsafe_allow_html=True)
+        with c3:
+            st.markdown(f'<div class="feature-card animate-in" style="animation-delay:0.6s;"><div class="metric-value" style="color:#8b5cf6">{int(total_volunteers):,}</div><div class="metric-label">{t("citizens_engaged")}</div></div>', unsafe_allow_html=True)
             
-        # Graphique d'évolution
-        st.markdown('<div class="premium-card animate-in">', unsafe_allow_html=True)
-        st.subheader("📈 Évolution des Ramassages (Cumulé)")
+        st.markdown("<br>", unsafe_allow_html=True)
+            
+        # Graphique d'évolution (Design épuré)
+        st.markdown(f'<div class="premium-card animate-in" style="animation-delay:0.8s;"><h3>{t("evolution_title")}</h3>', unsafe_allow_html=True)
         daily_impact = df_impact.groupby('date_ts')['dechets_kg'].sum().cumsum().reset_index()
-        st.line_chart(daily_impact.set_index('date_ts'), color="#10b981", width="stretch")
+        st.line_chart(daily_impact.set_index('date_ts'), color="#10b981", height=300)
         st.markdown('</div>', unsafe_allow_html=True)
         
         # Section Grade Personnel
-        st.markdown('<div class="premium-card animate-in">', unsafe_allow_html=True)
-        st.subheader("🏅 Votre Progression Personnelle")
+        st.markdown(f'<div class="premium-card animate-in" style="animation-delay:1s;"><h3>{t("progression_title")}</h3>', unsafe_allow_html=True)
         c_p1, c_p2 = st.columns([2, 1])
         with c_p1:
-            check_pseudo = st.text_input("Vérifier mon grade (entrez votre pseudo)", placeholder="Ex: Jean_Vert", key="top_check_pseudo")
-            st.write("Entrez votre pseudo pour voir vos statistiques et votre badge.")
+            check_pseudo = st.text_input(t("check_grade"), placeholder=t("pseudo_placeholder"), key="top_check_pseudo_v2")
+            st.info(t("check_grade") if st.session_state.lang == "fr" else "Enter your pseudo to see your stats and badge.")
         with c_p2:
             if check_pseudo:
                 badge = get_user_badge(check_pseudo.strip(), df_impact)
                 if badge:
                     st.markdown(f'<div class="badge-card animate-in">{badge}</div>', unsafe_allow_html=True)
                 else:
-                    st.info("Pseudo non trouvé. Commencez votre première action !")
+                    msg = "Pseudo non trouvé. Commencez votre première action !" if st.session_state.lang == "fr" else "Pseudo not found. Start your first action!"
+                    st.warning(msg)
         st.markdown('</div>', unsafe_allow_html=True)
         
-        # Equivalences
-        st.markdown('<div class="premium-card animate-in">', unsafe_allow_html=True)
-        st.subheader("💡 Impact Écologique Réel")
+        # Équivalences & Impact Réel
+        st.markdown(f'<div class="premium-card animate-in" style="animation-delay:1.2s;"><h3>{t("eco_impact_title")}</h3>', unsafe_allow_html=True)
         impact = calculate_impact(total_megots, total_kg)
         eq_cols = st.columns(3)
-        with eq_cols[0]:
-            st.info(f"💧 **{impact['eau_litres']/1_000_000:.1f} millions** de L d'eau préservés de la contamination.")
-        with eq_cols[1]:
-            st.success(f"🪑 **{int(total_kg/50)}** bancs publics pourraient être fabriqués avec le plastique collecté.")
-        with eq_cols[2]:
-            st.warning(f"🚗 **{int(total_kg*19):,} km** de CO2 voiture évités grâce à vos ramassages.")
+        if st.session_state.lang == "fr":
+            with eq_cols[0]:
+                st.info(f"💧 **{impact['eau_litres']/1_000_000:.1f} M** L d'eau préservés.")
+            with eq_cols[1]:
+                st.success(f"🪑 **{int(total_kg/50)}** bancs publics recyclés.")
+            with eq_cols[2]:
+                st.warning(f"🚗 **{int(total_kg*19):,} km** de CO2 évités.")
+        else:
+            with eq_cols[0]:
+                st.info(f"💧 **{impact['eau_litres']/1_000_000:.1f} M** L water protected.")
+            with eq_cols[1]:
+                st.success(f"🪑 **{int(total_kg/50)}** public benches recycled.")
+            with eq_cols[2]:
+                st.warning(f"🚗 **{int(total_kg*19):,} km** CO2 avoided.")
         st.markdown('</div>', unsafe_allow_html=True)
 
     else:
-        st.info("Aucune donnée d'impact disponible pour le moment.")
+        msg = "Aucune donnée d'impact disponible pour le moment." if st.session_state.lang == "fr" else "No impact data available yet."
+        st.info(msg)
 
 with tab_view:
     st.subheader("🗺️ Carte Interactive des Actions")
@@ -1838,7 +2073,9 @@ with tab_view:
     official_bins = get_paris_bins()
     
     # --- SEGMENTATION DES COUCHES ---
+    from folium.plugins import MarkerCluster
     group_pollution = folium.FeatureGroup(name="⚠️ Pollution & Actions", show=True)
+    cluster_pollution = MarkerCluster(name="🟣 Cluster Pollution (dense)", show=False, disableClusteringAtZoom=14)
     group_clean = folium.FeatureGroup(name="🌿 Zones Propres", show=True)
     group_business = folium.FeatureGroup(name="⭐ Acteurs Engagés", show=True)
     group_spots = folium.FeatureGroup(name="📢 Trash Spots (Signalisations)", show=True)
@@ -1896,12 +2133,13 @@ with tab_view:
             target_group = group_business if is_business else group_clean if is_clean else group_pollution
             
             if final_type == 'park' and geometry:
-                # Tracé du polygone du parc
+                # Tracé du polygone du parc (lambda capture color pour éviter closure bug)
+                _park_color = color
                 folium.GeoJson(
                     geometry,
-                    style_function=lambda x: {
+                    style_function=lambda x, c=_park_color: {
                         'fillColor': MAP_COLORS['park'],
-                        'color': color,
+                        'color': c,
                         'weight': 2,
                         'fillOpacity': 0.3
                     },
@@ -1910,11 +2148,12 @@ with tab_view:
                 ).add_to(target_group)
             
             elif final_type == 'street' and geometry:
-                # Tracé de la rue (PolyLine épaisseur constante)
+                # Tracé de la rue (lambda capture color pour éviter closure bug)
+                _street_color = color
                 folium.GeoJson(
                     geometry,
-                    style_function=lambda x: {
-                        'color': color,
+                    style_function=lambda x, c=_street_color: {
+                        'color': c,
                         'weight': 5,
                         'opacity': 0.8
                     },
@@ -1993,8 +2232,87 @@ with tab_view:
             })
 
     group_pollution.add_to(m)
+    cluster_pollution.add_to(m)
     group_clean.add_to(m)
     group_business.add_to(m)
+
+    # --- LÉGENDE HTML OVERLAY (BILAN RICHE) ---
+    from branca.element import MacroElement
+    from jinja2 import Template
+
+    # Calcul des statistiques en temps réel pour la légende
+    _nb_actions = len(map_df) if not map_df.empty else 0
+    _nb_megots = int(map_df['megots'].fillna(0).sum()) if not map_df.empty else 0
+    _nb_kg = map_df['dechets_kg'].fillna(0).sum() if not map_df.empty else 0.0
+    _nb_volunteers = int(map_df['benevoles'].fillna(0).sum()) if not map_df.empty else 0
+    _nb_critiques = len(map_df[map_df['score_mixte'] > 80]) if not map_df.empty and 'score_mixte' in map_df.columns else 0
+    
+    # Impact environnemental
+    _impact = calculate_impact(_nb_megots, _nb_kg)
+    _co2 = _impact['co2_kg']
+    _km = int(_co2 / 0.2) if _co2 > 0 else 0
+    _eau = _impact['eau_litres']
+    _douches = int(_eau / 50) if _eau > 0 else 0
+    _current_date = datetime.now().strftime('%d/%m')
+
+    legend_html = f"""
+    {{% macro script(this, kwargs) %}}
+    var legend = L.control({{position: 'bottomleft'}});
+    legend.onAdd = function(map) {{
+        var div = L.DomUtil.create('div', 'info legend');
+        div.style.background = 'rgba(255,255,255,0.95)';
+        div.style.backdropFilter = 'blur(10px)';
+        div.style.padding = '15px';
+        div.style.borderRadius = '20px';
+        div.style.boxShadow = '0 8px 32px rgba(0,0,0,0.15)';
+        div.style.border = '1px solid rgba(16,185,129,0.3)';
+        div.style.fontSize = '12px';
+        div.style.fontFamily = 'Outfit, sans-serif';
+        div.style.lineHeight = '1.5';
+        div.style.minWidth = '200px';
+        div.style.color = '#1e293b';
+
+        div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
+                <span style="font-size:16px;">🗺️</span>
+                <div style="text-align:right;">
+                    <b style="color:#10b981; font-size:14px; display:block;">BILAN 2026</b>
+                    <small style="color:#94a3b8;">{_current_date}</small>
+                </div>
+            </div>
+            
+            <b style="color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;">📋 ÉTAT DES LIEUX</b><br>
+            <div style="margin:5px 0 10px 0; display:grid; grid-template-columns: 1fr 1fr; gap:2px;">
+                <span><span style="color:#3498db;">●</span> Propres</span>
+                <span><span style="color:#27ae60;">●</span> Nettoyés</span>
+                <span><span style="color:#e67e22;">●</span> À inspecter</span>
+                <span><span style="color:#8e44ad;">●</span> Pollués</span>
+            </div>
+            
+            <div style="margin-bottom:10px;">
+                <span>⚠️ <b>{_nb_critiques}</b> Point critique</span><br>
+                <span>📍 <b>{_nb_actions}</b> Actions</span><br>
+                <span>👥 <b>{_nb_volunteers}</b> Bénévoles</span><br>
+                <span>🚬 <b>{_nb_megots:,}</b> Mégots</span><br>
+                <span>♻️ <b>{_nb_kg:.1f} kg</b> Déchets</span>
+            </div>
+
+            <b style="color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;">🌍 IMPACT</b><br>
+            <div style="margin-top:5px; background:rgba(16,185,129,0.05); padding:8px; border-radius:12px; border:1px solid rgba(16,185,129,0.1);">
+                <span>💨 <b>{_co2:.1f} kg</b> CO₂ évité</span><br>
+                <small style="color:#64748b; margin-left:18px;">🚗 { _km:,} km voiture</small><br>
+                <span>💧 <b>{_eau:,} L</b> Eau préservée</span><br>
+                <small style="color:#64748b; margin-left:18px;">🚿 {_douches:,} douches</small>
+            </div>
+        `;
+        return div;
+    }};
+    legend.addTo({{{{ this._parent.get_name() }}}});
+    {{% endmacro %}}
+    """
+    legend_element = MacroElement()
+    legend_element._template = Template(legend_html)
+    m.add_child(legend_element)
 
     # --- COUCHE HEATMAP : Vue Thermique de la Saleté ---
     heat_data = get_heatmap_data(map_df)
@@ -2021,18 +2339,61 @@ with tab_view:
     # Ajouter le Layer Control
     folium.LayerControl(position='topright', collapsed=False).add_to(m)
     
-    st_folium(m, width=900, height=500, returned_objects=[])
-    st.markdown(
-        """
-        **Légende de pollution (Score Mixte) :**
-        - 🟣 **Score > 80** : Zone critique / Point noir (Pollution intense).
-        - 🟠 **Score 50-80** : Zone sensible ou action ancienne (> 1 an).
-        - 🟢 **Score < 50** : Zone à pollution modérée.
-        - 🔵 **Zone propre** : Aucun déchet signalé.
-        - ⭐ **Établissement Engagé** (Commerçants, lieux labellisés).
-        - ⚫ Petites pastilles grises : Poubelles de rue officielles (Open Data Paris).
-        """
-    )
+    # --- CHOIX DU MODE DE VUE (2D vs 3D) ---
+    col_view_opt, col_view_lang = st.columns([3, 1])
+    with col_view_opt:
+        view_mode = st.radio(
+            "Mode de visualisation" if st.session_state.lang == "fr" else "Visualization Mode",
+            options=["2D (Standard)", "3D (Immersif)"],
+            horizontal=True,
+            帮助="Le mode 3D nécessite plus de ressources mais offre une vue spectaculaire des hotspots." if st.session_state.lang == "fr" else "3D mode requires more resources but offers a spectacular view of hotspots."
+        )
+
+    if "3D" in view_mode:
+        import pydeck as pdk
+        st.info("💡 **Montagnes de Mégots** : La hauteur des colonnes représente la densité de pollution cumulée." if st.session_state.lang == "fr" else "💡 **Cigarette Butt Mountains**: Column height represents cumulative pollution density.")
+        
+        # Color scale based on density (Green to Red)
+        layer_3d = pdk.Layer(
+            "HexagonLayer",
+            map_df,
+            get_position=["lon", "lat"],
+            auto_highlight=True,
+            elevation_scale=5,
+            elevation_range=[0, 1000],
+            extruded=True,
+            coverage=1,
+            radius=150,
+            pickable=True,
+            get_fill_color="[255, (1 - value/100) * 255, 0, 180]", # Dynamic color simulation
+            color_range=[
+                [16, 185, 129],  # Emerald
+                [59, 130, 246],  # Blue
+                [249, 115, 22],  # Orange
+                [239, 68, 68],   # Red
+            ]
+        )
+        
+        view_state = pdk.ViewState(
+            latitude=center_lat,
+            longitude=center_lon,
+            zoom=12,
+            pitch=45,
+            bearing=0
+        )
+        
+        r = pdk.Deck(
+            layers=[layer_3d],
+            initial_view_state=view_state,
+            map_style="mapbox://styles/mapbox/dark-v10",
+            tooltip={
+                "html": "<b>Densité :</b> {elevationValue} unités" if st.session_state.lang == "fr" else "<b>Density:</b> {elevationValue} units",
+                "style": {"color": "white", "backgroundColor": "#10b981"}
+            }
+        )
+        st.pydeck_chart(r, use_container_width=True)
+    else:
+        st_folium(m, width=900, height=520, returned_objects=[])
 
 with tab_trash_spotter:
     st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
@@ -2453,30 +2814,49 @@ with tab_add:
             st.markdown("---")
 
 with tab_report:
-    st.subheader("📄 Rapport d'Impact Clean My Map")
+    st.markdown(f'<div class="hero-container animate-in">', unsafe_allow_html=True)
+    st.markdown(f'<h1 class="hero-title">📄 {t("report_tab")}</h1>', unsafe_allow_html=True)
+    st.markdown(f'<p class="hero-subtitle">Générez un bilan officiel de vos actions citoyennes.</p>' if st.session_state.lang == "fr" else '<p class="hero-subtitle">Generate an official report of your citizen actions.</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     db_approved = get_submissions_by_status('approved')
     public_actions = all_imported_actions + db_approved
     public_df = pd.DataFrame(public_actions)
     
     if not public_df.empty:
-        # Use the new aesthetic and professional PDF generator
-        pdf_bytes = PDFReport(public_df).generate(dest='S')
-        st.download_button(
-            "⬇️ Télécharger le rapport complet (PDF)",
-            data=pdf_bytes,
-            file_name="cleanmymap_rapport_public.pdf",
-            mime="application/pdf",
-            width="stretch",
-        )
+        c_rep1, c_rep2 = st.columns([2, 1])
+        with c_rep2:
+            st.markdown('<div class="premium-card">', unsafe_allow_html=True)
+            st.write("⚙️ **Options du Rapport**")
+            is_rse_mode = st.toggle("Format Corporate RSE", value=False, help="Ajoute des métriques ESG et une valorisation du mécénat pour les bilans RSE d'entreprises.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            if is_rse_mode:
+                st.success("🏢 **Mode RSE Activé**\nLe rapport inclura les métriques d'impact social et environnemental.")
+                total_h = int((public_df['temps_min'] * public_df.get('benevoles', 1)).sum() / 60)
+                st.metric("Temps de mécénat accumulé", f"{total_h} h")
         
-        st.divider()
-        st.markdown("### 👁️ Aperçu du Rapport")
-        
-        # Synthèse visuelle simplifiée (les compteurs principaux sont sur la page d'accueil)
-        st.markdown("#### 🔍 Dernières actions marquantes")
-        st.dataframe(public_df.sort_values('date', ascending=False).head(10)[["date", "type_lieu", "adresse", "dechets_kg", "megots"]], width="stretch", hide_index=True)
+        with c_rep1:
+            # Préparation du générateur
+            report_gen = PDFReport(public_df)
+            report_gen.is_rse = is_rse_mode
+            pdf_bytes = report_gen.generate(dest='S')
+            
+            label_btn = "⬇️ Télécharger le Rapport RSE (PDF)" if is_rse_mode else t("download_pdf")
+            st.download_button(
+                label_btn,
+                data=pdf_bytes,
+                file_name=f"cleanmymap_rapport_{'rse' if is_rse_mode else 'public'}.pdf",
+                mime="application/pdf",
+                width="stretch",
+            )
+            
+            st.divider()
+            st.markdown(f"### 👁️ { 'Aperçu des données' if st.session_state.lang == 'fr' else 'Data Preview' }")
+            st.markdown("#### 🔍 Dernières actions marquantes")
+            st.dataframe(public_df.sort_values('date', ascending=False).head(10)[["date", "type_lieu", "adresse", "dechets_kg", "megots"]], width="stretch", hide_index=True)
     else:
-        st.info("Aucune donnée disponible pour générer le rapport.")
+        st.info("Aucune donnée disponible pour générer le rapport." if st.session_state.lang == "fr" else "No data available to generate report.")
 
 with tab_history:
     st.subheader("📋 Historique des Actions Citoyennes")
@@ -2836,6 +3216,130 @@ with tab_elus:
                         )
                 else:
                     st.info("Aucune zone n'a encore atteint le seuil des 180 jours de propreté continue avec signalements de contrôle. Encouragez vos citoyens à signaler les zones propres pour activer le label !")
+
+                # --- NOUVEAU : LETTRE AU MAIRE ---
+                st.markdown("---")
+                st.subheader("✉️ Génération de Courrier Officiel")
+                st.write("Générez un courrier officiel à destination de la mairie, avec les statistiques réelles de votre territoire et des recommandations d'infrastructure concrètes.")
+                
+                with st.form("lettre_maire_form"):
+                    col_lm1, col_lm2 = st.columns(2)
+                    with col_lm1:
+                        nom_maire = st.text_input("Nom du Maire / Élu", placeholder="Ex: Monsieur le Maire Pierre Dupont")
+                        nom_association_lettre = st.text_input("Expéditeur (Association)", placeholder="Ex: Association Clean Walk Paris 10")
+                    with col_lm2:
+                        date_lettre = st.date_input("Date du courrier", value=date.today())
+                        objet_lettre = st.text_input("Objet (optionnel)", value=f"Rapport d'impact citoyen — Action bénévole à {recherche_ville}")
+                    gen_lettre_btn = st.form_submit_button("📄 Générer la Lettre (PDF)")
+                
+                if gen_lettre_btn:
+                    def build_lettre_maire(nom_m, nom_asso, ville, tot_d, tot_meg, n_act, pts_crit, d_lettre, objet) -> bytes:
+                        from fpdf import FPDF
+                        pdf = FPDF()
+                        pdf.add_page()
+                        pdf.set_margins(20, 20, 20)
+                        pdf.set_auto_page_break(auto=True, margin=25)
+                        
+                        # En-tête association
+                        pdf.set_font('Helvetica', 'B', 11)
+                        pdf.set_text_color(5, 150, 105)  # Vert CMM
+                        pdf.cell(0, 6, _txt(nom_asso), ln=True)
+                        pdf.set_font('Helvetica', '', 9)
+                        pdf.set_text_color(100, 116, 139)
+                        pdf.cell(0, 5, _txt(f"contact@cleanmymap.fr | {STREAMLIT_PUBLIC_URL}"), ln=True)
+                        pdf.ln(3)
+                        pdf.set_draw_color(16, 185, 129)
+                        pdf.set_line_width(0.5)
+                        pdf.line(20, pdf.get_y(), 190, pdf.get_y())
+                        pdf.ln(8)
+                        
+                        # Destinataire
+                        pdf.set_font('Helvetica', '', 10); pdf.set_text_color(51, 65, 85)
+                        pdf.cell(0, 6, _txt(nom_m), ln=True)
+                        pdf.cell(0, 6, _txt(f"Mairie de {ville}"), ln=True)
+                        pdf.ln(5)
+                        
+                        # Date & Objet
+                        pdf.set_font('Helvetica', '', 10)
+                        pdf.cell(0, 6, _txt(f"Le {d_lettre.strftime('%d %B %Y')}"), ln=True, align='R')
+                        pdf.ln(4)
+                        pdf.set_font('Helvetica', 'B', 10)
+                        pdf.multi_cell(0, 6, _txt(f"Objet : {objet}"))
+                        pdf.ln(6)
+                        
+                        # Corps
+                        eco = (tot_d / 1000) * IMPACT_CONSTANTS['COUT_TRAITEMENT_TONNE_EUR']
+                        eau = int(tot_meg * IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L'])
+                        
+                        pdf.set_font('Helvetica', '', 10)
+                        corps = (
+                            f"{nom_m},\n\n"
+                            f"Nous avons l'honneur de vous adresser le présent rapport d'activité concernant "
+                            f"les actions citoyennes de dépollution menées sur le territoire de {ville}.\n\n"
+                            f"Au cours de la période analysée, nos brigades bénévoles ont réalisé {n_act} interventions, "
+                            f"permettant de retirer {tot_d:.1f} kg de déchets et {tot_meg:,} mégots de la voie publique."
+                            f" Ces actions ont préservé environ {eau:,} litres d'eau de la contamination toxique "
+                            f"et représentent une économie estimée à {eco:,.0f} € pour les services de propreté de votre commune.\n\n"
+                        )
+                        pdf.multi_cell(0, 6, _txt(corps))
+                        
+                        if pts_crit:
+                            pdf.set_font('Helvetica', 'B', 10)
+                            pdf.cell(0, 6, _txt("Zones de récurrence identifiées (Points noirs) :"), ln=True)
+                            pdf.set_font('Helvetica', '', 10)
+                            if isinstance(pts_crit, dict):
+                                for addr, data in list(pts_crit.items())[:5]:
+                                    pdf.multi_cell(0, 5, _txt(f"- {addr} : {data['count']} passages bénévoles, re-pollution tous les {data['delai_moyen']} jours en moyenne."))
+                            pdf.ln(3)
+                            pdf.multi_cell(0, 6, _txt(
+                                "Pour limiter la récidive de pollution sur ces zones, nous vous recommandons "
+                                "d'envisager l'installation d'infrastructures de collecte supplémentaires "
+                                "(cendriers de rue, corbeilles), ainsi que des campagnes de sensibilisation ciblées."
+                            ))
+                        
+                        pdf.ln(6)
+                        pdf.multi_cell(0, 6, _txt(
+                            "Nous restons à votre disposition pour tout échange ou partenariat visant à "
+                            "coordonner nos actions avec les services municipaux de propreté.\n\n"
+                            "Dans l'attente d'une réponse favorable, veuillez agréer, " + nom_m + ", "
+                            "l'expression de nos salutations distinguées.\n\n"
+                        ))
+                        pdf.set_font('Helvetica', 'B', 10)
+                        pdf.cell(0, 6, _txt(nom_asso), ln=True)
+                        
+                        out = pdf.output(dest='S')
+                        return out if isinstance(out, bytes) else out.encode('latin-1', 'replace')
+                    
+                    lettre_bytes = build_lettre_maire(
+                        nom_maire or "Monsieur/Madame le Maire",
+                        nom_association_lettre or "Clean My Map",
+                        recherche_ville, tot_dechets, int(tot_megots),
+                        nb_actions, points_critiques,
+                        date_lettre, objet_lettre
+                    )
+                    
+                    # Aperçu HTML de la lettre
+                    st.markdown(f"""
+                    <div style="background: white; border: 1px solid #e2e8f0; border-radius: 16px; padding: 32px; font-family: 'Georgia', serif; line-height: 1.7; color: #1e293b; margin: 16px 0;">
+                        <div style="color: #059669; font-weight: bold; font-size: 14px;">{nom_association_lettre or 'Clean My Map'}</div>
+                        <div style="color: #94a3b8; font-size: 11px; margin-bottom: 16px;">contact@cleanmymap.fr</div>
+                        <div style="border-top: 1px solid #10b981; margin-bottom: 16px;"></div>
+                        <div><strong>{nom_maire or 'Monsieur/Madame le Maire'}</strong><br>Mairie de {recherche_ville}</div>
+                        <div style="text-align: right; font-size: 12px; color: #64748b;">Le {date_lettre.strftime('%d/%m/%Y')}</div>
+                        <p><strong>Objet : {objet_lettre}</strong></p>
+                        <p>{nom_maire or 'Monsieur/Madame le Maire'},</p>
+                        <p>Nos brigades bénévoles ont réalisé <strong>{nb_actions} interventions</strong> sur votre territoire, retirant <strong>{tot_dechets:.1f} kg</strong> de déchets et <strong>{int(tot_megots):,}</strong> mégots — soit une économie estimée à <strong>{(tot_dechets/1000)*IMPACT_CONSTANTS['COUT_TRAITEMENT_TONNE_EUR']:,.0f} €</strong> pour la collectivité.</p>
+                        <p style="color: #64748b; font-style: italic;">[...] Cordialement, {nom_association_lettre or 'Clean My Map'}</p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    st.download_button(
+                        "⬇️ Télécharger la lettre officielle (PDF)",
+                        data=lettre_bytes,
+                        file_name=f"lettre_mairie_{recherche_ville}_{date_lettre}.pdf",
+                        mime="application/pdf",
+                        width="stretch"
+                    )
     else:
         st.info("Aucune donnée publique approuvée disponible pour le moment afin d'alimenter cet espace.")
 
@@ -2852,11 +3356,165 @@ with tab_partners:
     show_partners()
 
 # ------------------------------------------------------------------------
+# ONGLET : MÉTÉO & ACTION
+# ------------------------------------------------------------------------
+with tab_weather:
+    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">🌤️ Météo & Planification</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="hero-subtitle">Analysez les conditions idéales pour votre prochaine Clean Walk.</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    @st.cache_data(ttl=1800)
+    def get_weather_forecast(lat=48.8566, lon=2.3522):
+        try:
+            url = (f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
+                   f"&daily=precipitation_sum,temperature_2m_max&past_days=3&timezone=Europe%2FParis")
+            r = requests.get(url, timeout=8)
+            if r.status_code == 200:
+                return r.json()
+        except Exception:
+            pass
+        return None
+
+    weather_data = get_weather_forecast()
+    col_w1, col_w2 = st.columns([2, 1])
+
+    with col_w1:
+        if weather_data and 'daily' in weather_data:
+            daily = weather_data['daily']
+            df_weather = pd.DataFrame({
+                'Date': pd.to_datetime(daily.get('time', [])),
+                'Pluie (mm)': [p if p is not None else 0 for p in daily.get('precipitation_sum', [])],
+                'Temp. max': [t if t is not None else 0 for t in daily.get('temperature_2m_max', [])],
+            })
+            df_weather['Optimal'] = (df_weather['Pluie (mm)'] < 2) & (df_weather['Temp. max'] > 8)
+
+            fig_w, ax_p = plt.subplots(figsize=(9, 3.5))
+            ax_t = ax_p.twinx()
+            colors_bar = ['#22c55e' if o else '#f87171' for o in df_weather['Optimal']]
+            ax_p.bar(df_weather['Date'].dt.strftime('%d/%m'), df_weather['Pluie (mm)'], color=colors_bar, alpha=0.7)
+            ax_t.plot(df_weather['Date'].dt.strftime('%d/%m'), df_weather['Temp. max'], color='#f97316', marker='o', linewidth=2)
+            ax_p.set_ylabel('Pluie (mm)', fontsize=9); ax_t.set_ylabel('Temp. max (°C)', fontsize=9, color='#f97316')
+            ax_p.axhline(2, color='#ef4444', linestyle='--', linewidth=1, alpha=0.6)
+            ax_p.tick_params(axis='x', rotation=25, labelsize=8)
+            plt.title("Fenêtres d'action (vert = idéal, rouge = pluie)", fontsize=11, fontweight='bold', color='#1e293b')
+            fig_w.tight_layout(); st.pyplot(fig_w); plt.close(fig_w)
+
+            best = df_weather[df_weather['Optimal'] & (df_weather['Date'] >= pd.Timestamp.today())]
+            if not best.empty:
+                nb = best.iloc[0]
+                st.success(f"✅ **Meilleure fenêtre** : {nb['Date'].strftime('%A %d %B')} — {nb['Temp. max']:.0f}°C, {nb['Pluie (mm)']:.1f}mm. Conditions parfaites pour une Clean Walk !")
+            else:
+                st.warning("⚠️ Pas de fenêtre idéale dans les 7 prochains jours. Consultez à nouveau dans quelques jours.")
+        else:
+            st.info("Données météo indisponibles (API Open-Meteo). Réessayez dans quelques instants.")
+
+    with col_w2:
+        st.markdown('<div class="premium-card">', unsafe_allow_html=True)
+        st.subheader("📆 Historique mensuel")
+        if not all_public_df.empty and 'date' in all_public_df.columns:
+            df_hist = all_public_df.copy()
+            df_hist['date_dt'] = pd.to_datetime(df_hist['date'], errors='coerce')
+            monthly_count = df_hist.dropna(subset=['date_dt']).groupby(df_hist['date_dt'].dt.month).size()
+            mn = {1:'Jan',2:'Fév',3:'Mar',4:'Avr',5:'Mai',6:'Jun',7:'Jul',8:'Aoû',9:'Sep',10:'Oct',11:'Nov',12:'Déc'}
+            for m, cnt in monthly_count.items():
+                bp = int(cnt / max(monthly_count) * 100)
+                st.markdown(f"<div style='display:flex;align-items:center;gap:8px;margin-bottom:4px;'>"
+                    f"<span style='width:28px;font-size:11px;color:#64748b;'>{mn.get(m,'?')}</span>"
+                    f"<div style='flex:1;background:#f1f5f9;border-radius:4px;height:14px;'>"
+                    f"<div style='width:{bp}%;background:#10b981;height:14px;border-radius:4px;'></div></div>"
+                    f"<span style='font-size:11px;color:#1e293b;font-weight:600;'>{cnt}</span></div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+# ------------------------------------------------------------------------
+# ONGLET : COMPARAISON TERRITORIALE
+# ------------------------------------------------------------------------
+with tab_compare:
+    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
+    st.markdown('<h1 class="hero-title">🏙️ Comparaison Territoriale</h1>', unsafe_allow_html=True)
+    st.markdown('<p class="hero-subtitle">Classement des zones : kg/action, mégots/bénévole, Score IPC.</p>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    df_cmp = pd.DataFrame(all_imported_actions + get_submissions_by_status('approved'))
+
+    if df_cmp.empty:
+        st.info("Pas encore de données disponibles.")
+    else:
+        df_cmp['benevoles'] = pd.to_numeric(df_cmp.get('benevoles', df_cmp.get('nb_benevoles', 1)), errors='coerce').fillna(1)
+        df_cmp['megots'] = pd.to_numeric(df_cmp['megots'], errors='coerce').fillna(0)
+        df_cmp['dechets_kg'] = pd.to_numeric(df_cmp['dechets_kg'], errors='coerce').fillna(0)
+        df_cmp['temps_min'] = pd.to_numeric(df_cmp.get('temps_min', 60), errors='coerce').fillna(60)
+        df_cmp_dirty = df_cmp[df_cmp.get('est_propre', False) == False].copy()
+
+        c1c, c2c = st.columns(2)
+        with c1c:
+            group_by = st.selectbox("Grouper par", ["Type de lieu", "Adresse (Top 20)"], key="cmp_group")
+        with c2c:
+            sort_by = st.selectbox("Trier par", ["Score IPC", "kg / action", "Mégots / bénévole", "Nombre d'actions"], key="cmp_sort")
+
+        if group_by == "Type de lieu":
+            group_col = 'type_lieu'
+        else:
+            df_cmp_dirty = df_cmp_dirty.copy()
+            df_cmp_dirty['adresse_short'] = df_cmp_dirty['adresse'].apply(lambda x: str(x)[:40])
+            group_col = 'adresse_short'
+
+        if group_col not in df_cmp_dirty.columns:
+            df_cmp_dirty[group_col] = 'Inconnu'
+
+        grp = df_cmp_dirty.groupby(group_col).agg(
+            nb_actions=('megots', 'count'),
+            total_kg=('dechets_kg', 'sum'),
+            total_megots=('megots', 'sum'),
+            total_benevoles=('benevoles', 'sum'),
+            total_min=('temps_min', 'sum'),
+        ).reset_index()
+        grp['kg_par_action'] = (grp['total_kg'] / grp['nb_actions']).round(2)
+        grp['megots_par_benevole'] = (grp['total_megots'] / grp['total_benevoles'].replace(0, 1)).round(1)
+        grp['score_ipc'] = (grp['total_megots'] / (grp['total_min'] / 60).replace(0, 1)).round(1)
+        sort_map = {"Score IPC": "score_ipc", "kg / action": "kg_par_action",
+                    "Mégots / bénévole": "megots_par_benevole", "Nombre d'actions": "nb_actions"}
+        grp = grp.sort_values(sort_map[sort_by], ascending=False).reset_index(drop=True)
+
+        st.markdown('<div class="premium-card animate-in">', unsafe_allow_html=True)
+        for i, row in grp.head(15).iterrows():
+            medal = "🥇" if i == 0 else "🥈" if i == 1 else "🥉" if i == 2 else f"#{i+1}"
+            bar_pct = int(row[sort_map[sort_by]] / max(grp[sort_map[sort_by]].max(), 0.001) * 100)
+            bg = "#10b981" if i == 0 else "#34d399" if i == 1 else "#6ee7b7" if i == 2 else "#d1fae5"
+            border = "3px solid #10b981" if i < 3 else "1px solid #e2e8f0"
+            st.markdown(f"""
+            <div style="background:{'linear-gradient(135deg,#f0fdf4,#ecfdf5)' if i < 3 else '#f8fafc'};
+                    border-radius:12px;padding:12px 16px;margin-bottom:8px;border-left:{border};">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <div><span style="font-size:1.1rem;">{medal}</span>
+                    <strong style="color:#1e293b;margin-left:8px;">{str(row[group_col])[:45]}</strong></div>
+                    <div style="text-align:right;font-size:12px;color:#64748b;">
+                        {int(row['nb_actions'])} actions · {row['total_kg']:.1f} kg · {int(row['total_megots']):,} mégots</div>
+                </div>
+                <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+                    <div style="flex:1;background:#e2e8f0;border-radius:4px;height:8px;">
+                        <div style="width:{bar_pct}%;background:{bg};height:8px;border-radius:4px;"></div></div>
+                    <span style="font-size:12px;font-weight:700;color:#059669;">{sort_by}: {row[sort_map[sort_by]]:.1f}</span>
+                </div>
+            </div>""", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        st.divider()
+        grp_disp = grp.rename(columns={group_col: 'Zone', 'nb_actions': 'Actions', 'total_kg': 'Total kg',
+            'total_megots': 'Mégots', 'total_benevoles': 'Bénévoles', 'kg_par_action': 'kg/action',
+            'megots_par_benevole': 'Mégots/bén.', 'score_ipc': 'Score IPC'})
+        st.dataframe(grp_disp[['Zone','Actions','Total kg','Mégots','Bénévoles','kg/action','Mégots/bén.','Score IPC']],
+                     hide_index=True, width=900)
+        st.download_button("⬇️ Exporter (CSV)", data=grp_disp.to_csv(index=False).encode('utf-8'),
+                           file_name="comparaison_territoriale.csv", mime="text/csv")
+
+# ------------------------------------------------------------------------
 # ONGLET : ADMIN
 # ------------------------------------------------------------------------
 with tab_admin:
     st.subheader("Espace administrateur")
     st.caption("Connexion Google obligatoire pour les administrateurs")
+
 
     st.subheader("Carte publique (actions validées)")
     db_approved = get_submissions_by_status('approved')
