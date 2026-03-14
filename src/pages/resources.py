@@ -1,9 +1,6 @@
 import streamlit as st
 import os
 
-import streamlit as st
-import os
-
 def show_resources():
     st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
     st.markdown('<h1 class="hero-title">🌱 Le Guide du Citoyen Vert</h1>', unsafe_allow_html=True)
@@ -18,7 +15,7 @@ def show_resources():
     with col1:
         st.image("https://raw.githubusercontent.com/sophi/carte-interactive-clean-walk-main/main/assets/infographie_ademe_megot.png", 
                     caption="Cycle de pollution (Source: ADEME)",
-                    use_container_width=True)
+                    width="stretch")
     
     with col2:
         st.markdown("""
@@ -30,7 +27,7 @@ def show_resources():
         - Arrive dans les cours d'eau puis l'océan.
         - Libère nicotine, métaux lourds et micro-plastiques.
         """)
-        st.link_button("Consulter l'étude ADEME", "https://librairie.ademe.fr/recherche?search_query=megots", use_container_width=True)
+        st.link_button("Consulter l'étude ADEME", "https://librairie.ademe.fr/recherche?search_query=megots", width="stretch")
     st.markdown('</div>', unsafe_allow_html=True)
 
     # --- 2. GUIDE DU TRI ---
@@ -41,7 +38,7 @@ def show_resources():
     with col3:
         st.image("https://raw.githubusercontent.com/sophi/carte-interactive-clean-walk-main/main/assets/consignes_tri_generique.png", 
                     caption="Consignes de tri",
-                    use_container_width=True)
+                    width="stretch")
         
     with col4:
         regime_tri = st.selectbox("Choisissez votre zone :", ["Paris", "Yvelines"], key="resource_tri_zone")
@@ -51,7 +48,7 @@ def show_resources():
         else:
             st.info("💡 **Yvelines :** extension du tri simplifiée : 100 % des emballages ménagers dans le bac jaune.")
         
-        st.link_button("Guide complet de Citeo", "https://www.citeo.com/le-guide-du-tri", use_container_width=True)
+        st.link_button("Guide complet de Citeo", "https://www.citeo.com/le-guide-du-tri", width="stretch")
     st.markdown('</div>', unsafe_allow_html=True)
 
     # --- 3. ÉCO-GESTES ---
@@ -62,7 +59,7 @@ def show_resources():
     with col5:
         st.image("https://raw.githubusercontent.com/sophi/carte-interactive-clean-walk-main/main/assets/eco_gestes_maison.png", 
                     caption="Gestes du quotidien",
-                    use_container_width=True)
+                    width="stretch")
             
     with col6:
         st.markdown("""
@@ -72,7 +69,7 @@ def show_resources():
         - **Alimentation** : privilégiez le vrac et les produits de saison locaux.
         - **Eau** : installez des mousseurs pour veiller sur la ressource sans perte de confort.
         """)
-        st.link_button("Plus de conseils ADEME", "https://agirpourlatransition.ademe.fr/particuliers/", use_container_width=True)
+        st.link_button("Plus de conseils ADEME", "https://agirpourlatransition.ademe.fr/particuliers/", width="stretch")
     st.markdown('</div>', unsafe_allow_html=True)
 
     # --- 4. SÉCURITÉ ET BONNES PRATIQUES ---
@@ -84,7 +81,7 @@ def show_resources():
         st.image(
             "https://raw.githubusercontent.com/sophi/carte-interactive-clean-walk-main/main/assets/cleanwalk_securite.png",
             caption="Sécurité sur le terrain",
-            use_container_width=True,
+            width="stretch",
         )
 
     with col8:
