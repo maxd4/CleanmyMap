@@ -122,10 +122,27 @@ def init_db():
         )
     ''')
 
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS mission_validations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            submission_id TEXT NOT NULL,
+            voter_name TEXT NOT NULL,
+            vote INTEGER NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(submission_id, voter_name)
+        )
+    ''')
+
     # Ajout de la colonne eco_points à submissions si elle n'existe pas
     try:
         c.execute("ALTER TABLE submissions ADD COLUMN eco_points INTEGER DEFAULT 0")
     except sqlite3.OperationalError: pass
+
+    # Date de validation (pour KPI de délai de modération)
+    try:
+        c.execute("ALTER TABLE submissions ADD COLUMN validated_at TIMESTAMP")
+    except sqlite3.OperationalError:
+        pass
 
     conn.commit()
     conn.close()
@@ -137,8 +154,8 @@ def insert_submission(data, status='pending'):
         INSERT OR IGNORE INTO submissions (
             id, nom, association, type_lieu, adresse, date, benevoles, temps_min,
             megots, dechets_kg, plastique_kg, verre_kg, metal_kg, gps, lat, lon,
-            commentaire, est_propre, source, status, description, website_url, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            commentaire, est_propre, source, status, description, website_url, eco_points, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data.get('id'), data.get('nom'), data.get('association'), data.get('type_lieu'),
         data.get('adresse'), data.get('date'), data.get('benevoles'), data.get('temps_min'),
@@ -146,7 +163,7 @@ def insert_submission(data, status='pending'):
         data.get('verre_kg', 0.0), data.get('metal_kg', 0.0), data.get('gps'),
         data.get('lat'), data.get('lon'), data.get('commentaire'), data.get('est_propre', False),
         data.get('source', 'formulaire'), status, data.get('description'), 
-        data.get('website_url'), data.get('submitted_at', datetime.now().isoformat())
+        data.get('website_url'), data.get('eco_points', 0), data.get('submitted_at', datetime.now().isoformat())
     ))
     conn.commit()
     conn.close()
@@ -154,7 +171,16 @@ def insert_submission(data, status='pending'):
 def update_submission_status(sub_id, new_status):
     conn = get_connection()
     c = conn.cursor()
-    c.execute("UPDATE submissions SET status = ? WHERE id = ?", (new_status, sub_id))
+    if new_status in ('approved', 'rejected'):
+        c.execute(
+            "UPDATE submissions SET status = ?, validated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (new_status, sub_id),
+        )
+    else:
+        c.execute(
+            "UPDATE submissions SET status = ?, validated_at = NULL WHERE id = ?",
+            (new_status, sub_id),
+        )
     conn.commit()
     conn.close()
 
@@ -294,3 +320,43 @@ def get_leaderboard(limit=10):
     rows = c.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+
+def add_mission_validation(submission_id, voter_name, vote):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        """
+        INSERT INTO mission_validations (submission_id, voter_name, vote)
+        VALUES (?, ?, ?)
+        ON CONFLICT(submission_id, voter_name) DO UPDATE SET
+            vote = excluded.vote,
+            created_at = CURRENT_TIMESTAMP
+        """,
+        (submission_id, voter_name, int(vote)),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_mission_validation_summary(submission_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT
+            SUM(CASE WHEN vote > 0 THEN 1 ELSE 0 END) as up,
+            SUM(CASE WHEN vote < 0 THEN 1 ELSE 0 END) as down,
+            COALESCE(SUM(vote), 0) as score
+        FROM mission_validations
+        WHERE submission_id = ?
+        """,
+        (submission_id,),
+    )
+    row = c.fetchone()
+    conn.close()
+    return {
+        'up': row[0] or 0,
+        'down': row[1] or 0,
+        'score': row[2] or 0,
+    }
