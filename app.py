@@ -29,12 +29,17 @@ from src.database import (
     add_message,
     get_messages,
     add_subscriber, get_all_subscribers, get_top_contributors,
-    add_spot, get_active_spots, calculate_user_points, get_leaderboard
+    add_spot, get_active_spots, calculate_user_points, get_leaderboard,
+    add_mission_validation, get_mission_validation_summary
 )
 from src.config import GOOGLE_SHEET_URL, IMPACT_CONSTANTS
 from src.pages.resources import show_resources
 from src.pages.partners import show_partners
+from src.pages.leaderboards import render_historical_rankings
+from src.pages.community_validation import render_mission_validation
+from src.data_quality import validate_submission_inputs, get_weight_conversion_hints
 from src.report_generator import PDFReport
+from src.pages.partner_dashboard import render_partner_dashboard
 from src.map_utils import (
     calculate_scores, get_marker_style, create_premium_popup,
     detect_osm_type, fetch_osm_geometry, format_google_maps_name,
@@ -217,24 +222,6 @@ st.markdown(
         color: var(--primary) !important;
         border-color: var(--primary) !important;
         background: var(--primary-soft) !important;
-    }
-    </style>
-        gap: 4px;
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 12px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        padding: 8px 16px;
-        transition: all 0.2s;
-        border: none !important;
-    }
-
-    .stTabs [aria-selected="true"] {
-        background: var(--primary) !important;
-        color: white !important;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
     }
 
     /* Metric Cards */
@@ -1661,6 +1648,12 @@ tabs = st.tabs([
 
 tab_declaration, tab_map, tab_trash_spotter, tab_gamification, tab_community, tab_sandbox, tab_pdf, tab_guide, tab_actors, tab_history, tab_route, tab_recycling, tab_climate, tab_elus, tab_kit, tab_home, tab_admin = tabs
 
+# Alias rétrocompatibles (évite les NameError après renommage d'onglets)
+tab_view = tab_map
+tab_add = tab_declaration
+tab_report = tab_pdf
+tab_partners = tab_actors
+
 with tab_kit:
     st.header("📱 Kit Organisateur : QR Code de Terrain")
     
@@ -1679,7 +1672,7 @@ with tab_kit:
     with st.form("qr_generator_form"):
         lieu_event = st.text_input("Nom du lieu ou Coordonnées GPS", placeholder="Ex: Place de la Bastille, Paris ou 48.8534, 2.3488")
         color_qr = st.color_picker("Couleur du QR Code", "#059669")
-        generate_btn = st.form_submit_button("Générer le QR Code de terrain", use_container_width=True)
+        generate_btn = st.form_submit_button("Générer le QR Code de terrain", width="stretch")
         
     if generate_btn:
         if not lieu_event.strip():
@@ -1703,7 +1696,7 @@ with tab_kit:
             
             col_qr1, col_qr2 = st.columns([1, 2])
             with col_qr1:
-                st.image(byte_im, caption="QR Code à scanner sur le terrain", use_container_width=True)
+                st.image(byte_im, caption="QR Code à scanner sur le terrain", width="stretch")
             with col_qr2:
                 st.success("✅ Votre QR Code est prêt !")
                 st.write(f"**Lien encodé :** `{share_url}`")
@@ -1712,9 +1705,29 @@ with tab_kit:
                     data=byte_im,
                     file_name=f"qrcode_terrain_{lieu_event.replace(' ', '_')}.png",
                     mime="image/png",
-                    use_container_width=True
+                    width="stretch"
                 )
                 st.info("💡 **Conseil :** Imprimez ce code et fixez-le sur votre peson ou sur votre sac de collecte principal pour que chaque bénévole puisse flasher son impact en fin d'action.")
+
+    st.markdown("---")
+    st.subheader("🧾 Templates imprimables & gestion multi-bénévoles")
+    nb_participants = st.number_input("Nombre de bénévoles attendus", min_value=1, value=10, step=1, key="kit_participants")
+    nb_equipes = st.number_input("Nombre d'équipes", min_value=1, value=3, step=1, key="kit_teams")
+
+    planner = pd.DataFrame({
+        "equipe": [f"Équipe {((i % nb_equipes) + 1)}" for i in range(nb_participants)],
+        "benevole": [f"Participant {i+1}" for i in range(nb_participants)],
+        "telephone": ["" for _ in range(nb_participants)],
+        "materiel": ["gants, sacs, pinces" for _ in range(nb_participants)],
+    })
+    st.dataframe(planner, width="stretch", hide_index=True)
+    st.download_button(
+        "⬇️ Télécharger template équipes (CSV)",
+        data=planner.to_csv(index=False).encode("utf-8"),
+        file_name="template_equipes_cleanmymap.csv",
+        mime="text/csv",
+        width="stretch",
+    )
 
 with tab_home:
     st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
@@ -1748,7 +1761,7 @@ with tab_home:
         st.markdown('<div class="premium-card animate-in">', unsafe_allow_html=True)
         st.subheader("📈 Évolution des Ramassages (Cumulé)")
         daily_impact = df_impact.groupby('date_ts')['dechets_kg'].sum().cumsum().reset_index()
-        st.line_chart(daily_impact.set_index('date_ts'), color="#10b981", use_container_width=True)
+        st.line_chart(daily_impact.set_index('date_ts'), color="#10b981", width="stretch")
         st.markdown('</div>', unsafe_allow_html=True)
         
         # Section Grade Personnel
@@ -2117,6 +2130,13 @@ with tab_community:
     st.write("Choisissez un itinéraire ou un lieu et invitez la communauté.")
     
     st.warning("💡 **Important** : Pour une organisation officielle et une visibilité maximale, nous vous recommandons vivement de créer également votre évènement sur [cleanwalk.org](https://www.cleanwalk.org), la plateforme de référence en France.")
+
+    pending_actions = get_submissions_by_status('pending')
+    render_mission_validation(
+        pending_actions,
+        vote_func=add_mission_validation,
+        summary_func=get_mission_validation_summary,
+    )
     
     with st.form("community_outing"):
         out_title = st.text_input("Titre de la sortie", placeholder="Ex: Grand Nettoyage du Canal Saint-Martin")
@@ -2170,6 +2190,17 @@ with tab_sandbox:
         if st.button("🗑️ Vider le brouillon"):
             st.session_state['sandbox_actions'] = []
             st.rerun()
+
+        st.markdown("---")
+        st.subheader("🎮 Simulateur mission fictive")
+        target_kg = st.number_input("Objectif mission (kg)", min_value=1.0, value=20.0, step=1.0, key="sb_target_kg")
+        target_megots = st.number_input("Objectif mission (mégots)", min_value=0, value=1500, step=100, key="sb_target_megots")
+        drafted_df = pd.DataFrame(st.session_state['sandbox_actions'])
+        done_kg = float(drafted_df.get('dechets_kg', pd.Series(dtype=float)).fillna(0).sum()) if not drafted_df.empty else 0.0
+        done_megots = int(drafted_df.get('megots', pd.Series(dtype=float)).fillna(0).sum()) if not drafted_df.empty else 0
+        completion = min(((done_kg / target_kg) + (done_megots / max(target_megots, 1))) / 2 * 100, 100)
+        st.progress(int(completion))
+        st.caption(f"Completion rate mission fictive: {completion:.1f}% — {done_kg:.1f}/{target_kg:.1f} kg, {done_megots}/{target_megots} mégots")
 
     with col_sb2:
         st.subheader("Carte de test")
@@ -2232,6 +2263,8 @@ with tab_add:
                     st.info(f"Estimation : ~**{megots}** mégots")
             with c4:
                 dechets_kg = st.number_input("Déchets (total kg)", min_value=0.0, value=0.0, step=0.5)
+                hints = get_weight_conversion_hints(dechets_kg)
+                st.caption(f"≈ {hints['sacs_30l']} sacs 30L • ≈ {hints['bouteilles_1_5l']} bouteilles 1.5L")
             
             plastique_kg, verre_kg, metal_kg = 0.0, 0.0, 0.0
 
@@ -2300,7 +2333,7 @@ with tab_add:
         if subscribe_newsletter:
             user_email = st.text_input("votre adresse email pour la gazette*", placeholder="ex: camille@écologie.fr")
             
-        submitted = st.form_submit_button("partager mon action", use_container_width=True)
+        submitted = st.form_submit_button("partager mon action", width="stretch")
 
     if submitted:
         if not emplacement_brut.strip() or not type_lieu or not association.strip():
@@ -2308,8 +2341,23 @@ with tab_add:
         elif subscribe_newsletter and not user_email.strip():
             st.error("Merci de renseigner votre email pour la gazette.")
         else:
+            quality_errors = validate_submission_inputs({
+                "benevoles": benevoles,
+                "temps_min": temps_min,
+                "megots": megots,
+                "dechets_kg": dechets_kg,
+                "emplacement_brut": emplacement_brut,
+            })
+            if quality_errors:
+                for err in quality_errors:
+                    st.error(err)
+                st.stop()
+
             with st.spinner("Analyse de l'emplacement..."):
                 lat, lon, adresse_resolue = geocode_and_resolve(emplacement_brut)
+            if lat is not None and lon is not None and not (-90 <= float(lat) <= 90 and -180 <= float(lon) <= 180):
+                st.error("Coordonnées géocodées incohérentes. Vérifiez votre saisie.")
+                st.stop()
             
             # Fuzzy match contre la base existante pour unifier les noms d'adresses
             approved_actions = get_submissions_by_status('approved')
@@ -2335,9 +2383,9 @@ with tab_add:
                 "lon": lon,
                 "commentaire": commentaire,
                 "est_propre": zone_propre,
-                "eco_points": calculate_scores(data_to_save)['eco_points'] if not zone_propre else 5,
                 "submitted_at": datetime.now().isoformat()
             }
+            data_to_save["eco_points"] = 5 if zone_propre else calculate_scores(data_to_save)['eco_points']
             insert_submission(data_to_save)
             if subscribe_newsletter and user_email:
                 add_subscriber(user_email)
@@ -2399,11 +2447,10 @@ with tab_add:
             img_url = m.get('image_url')
             if img_url:
                 try:
-                    st.image(img_url, use_container_width=True)
+                    st.image(img_url, width="stretch")
                 except Exception:
                     st.warning("Impossible d'afficher l'image associée à ce message.")
             st.markdown("---")
-            st.rerun()
 
 with tab_report:
     st.subheader("📄 Rapport d'Impact Clean My Map")
@@ -2419,7 +2466,7 @@ with tab_report:
             data=pdf_bytes,
             file_name="cleanmymap_rapport_public.pdf",
             mime="application/pdf",
-            use_container_width=True,
+            width="stretch",
         )
         
         st.divider()
@@ -2427,7 +2474,7 @@ with tab_report:
         
         # Synthèse visuelle simplifiée (les compteurs principaux sont sur la page d'accueil)
         st.markdown("#### 🔍 Dernières actions marquantes")
-        st.dataframe(public_df.sort_values('date', ascending=False).head(10)[["date", "type_lieu", "adresse", "dechets_kg", "megots"]], use_container_width=True, hide_index=True)
+        st.dataframe(public_df.sort_values('date', ascending=False).head(10)[["date", "type_lieu", "adresse", "dechets_kg", "megots"]], width="stretch", hide_index=True)
     else:
         st.info("Aucune donnée disponible pour générer le rapport.")
 
@@ -2439,7 +2486,8 @@ with tab_history:
     
     if not public_df.empty:
         st.write(f"Retrouvez ici l'ensemble des {len(public_df)} actions recensées par la communauté.")
-        st.dataframe(public_df[["date", "type_lieu", "adresse", "est_propre", "benevoles", "megots", "dechets_kg"]].sort_values('date', ascending=False), use_container_width=True, hide_index=True)
+        st.dataframe(public_df[["date", "type_lieu", "adresse", "est_propre", "benevoles", "megots", "dechets_kg"]].sort_values('date', ascending=False), width="stretch", hide_index=True)
+        render_historical_rankings(public_df)
     else:
         st.info("L'historique est actuellement vide.")
 
@@ -2452,6 +2500,19 @@ with tab_route:
     if map_df.empty:
         st.warning("Aucune donnée disponible pour optimiser un trajet.")
     else:
+        st.markdown("### 🧭 Recommandation basée sur historique")
+        hotspots = get_critical_zones(map_df)
+        if hotspots:
+            recs = []
+            if isinstance(hotspots, dict):
+                for addr, data in list(sorted(hotspots.items(), key=lambda x: x[1].get('count', 0), reverse=True))[:5]:
+                    recs.append({"zone": addr, "occurrences": data.get("count", 0), "delai_moyen_j": data.get("delai_moyen", "n/a")})
+            else:
+                recs = [{"zone": str(z), "occurrences": 1, "delai_moyen_j": "n/a"} for z in hotspots[:5]]
+            st.dataframe(pd.DataFrame(recs), width="stretch", hide_index=True)
+        else:
+            st.caption("Pas assez d'historique pour générer des recommandations de spots.")
+
         with st.form("ai_route_form"):
             c1, c2 = st.columns(2)
             with c1:
@@ -2462,7 +2523,7 @@ with tab_route:
                 chosen_arr = st.selectbox("Zone d'intervention", arr_list)
                 use_violets = st.checkbox("Prioriser les points noirs (violets)", value=True)
             
-            gen_btn = st.form_submit_button("💎 Générer le parcours optimal", use_container_width=True)
+            gen_btn = st.form_submit_button("💎 Générer le parcours optimal", width="stretch")
 
         if gen_btn:
             with st.spinner("L'IA analyse les flux piétons et les points noirs de Paris..."):
@@ -2475,7 +2536,7 @@ with tab_route:
                     
                     # 1. Affichage du tableau de bord logistique
                     st.markdown("### 📋 Tableau de Bord Logistique (10 Équipes)")
-                    st.dataframe(logistics_df, use_container_width=True, hide_index=True)
+                    st.dataframe(logistics_df, width="stretch", hide_index=True)
                     
                     # 2. Affichage de la carte de l'itinéraire multi-couleurs
                     center_coords = paths[0]["coords"][0]
@@ -2635,8 +2696,11 @@ with tab_elus:
     # Extraire une liste de Villes/Codes Postaux basique à partir des actions approuvées
     db_approved = get_submissions_by_status('approved')
     approved_df = pd.DataFrame(db_approved)
-    
+    all_submissions_df = pd.DataFrame(get_submissions_by_status(None))
+
     if not approved_df.empty and 'adresse' in approved_df.columns:
+        render_partner_dashboard(all_submissions_df, approved_df, PDFReport)
+        st.markdown("---")
         # Essayer d'extraire le dernier "mot" de l'adresse (souvent la Ville ou le Code postal) ou afficher toute l'adresse si court
         # Une méthode robuste pour des adresses non normalisées est de demander à l'élu de filtrer par "Mot Clé"
         villes_uniques = ["Paris", "Versailles", "Montreuil", "Lyon", "Marseille", "Toulouse"] # Liste par défaut si parsing complexe
@@ -2909,7 +2973,7 @@ with tab_admin:
         
         st.dataframe(
             approved_df[["date", "type_lieu", "adresse", "benevoles", "megots", "dechets_kg"]],
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
         )
 
@@ -2987,7 +3051,7 @@ with tab_admin:
 
     if not st.session_state["admin_authenticated"]:
         secret_input = st.text_input("Code secret administrateur", type="password", key="admin_pwd_input")
-        if st.button("Se connecter à l'espace Admin", use_container_width=True):
+        if st.button("Se connecter à l'espace Admin", width="stretch"):
             if secret_input == ADMIN_SECRET_CODE:
                 st.session_state["admin_authenticated"] = True
                 st.rerun()
@@ -3028,7 +3092,7 @@ with tab_admin:
                     }
                 )
                 a, r = st.columns(2)
-                if a.button("✅ Approuver", key=f"approve_{row['id']}", use_container_width=True):
+                if a.button("✅ Approuver", key=f"approve_{row['id']}", width="stretch"):
                     update_submission_status(row['id'], 'approved')
                     
                     # Déclencher l'enrichissement automatique si c'est un acteur engagé
@@ -3038,7 +3102,7 @@ with tab_admin:
                             auto_enrich_actor(row['id'], row['association'], row['type_lieu'], row['adresse'])
                     
                     st.rerun()
-                if r.button("❌ Refuser", key=f"reject_{row['id']}", use_container_width=True):
+                if r.button("❌ Refuser", key=f"reject_{row['id']}", width="stretch"):
                     update_submission_status(row['id'], 'rejected')
                     st.rerun()
 
@@ -3052,5 +3116,5 @@ with tab_admin:
             data=approved_export_df.to_csv(index=False).encode("utf-8"),
             file_name="actions_validees.csv",
             mime="text/csv",
-            use_container_width=True,
+            width="stretch",
         )
