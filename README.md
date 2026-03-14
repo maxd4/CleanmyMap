@@ -80,3 +80,10 @@ Les données de **Clean my Map** sont ouvertes à la communauté scientifique. L
 
 ---
 *Projet propulsé par les Brigades Vertes - Veiller ensemble sur notre territoire.*
+
+## 🧪 Clone de travail local (`APPLI`)
+Pour travailler sur une copie locale dédiée, un clone du repo peut être créé dans le dossier `/workspace/APPLI` :
+
+```bash
+git clone /workspace/CleanmyMap /workspace/APPLI
+```
