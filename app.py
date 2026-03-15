@@ -640,6 +640,13 @@ def inject_visual_polish(theme_mode: str):
             --edge-soft: {palette['edge']};
             --shadow-card: {palette['shadow']};
             --input-bg: {palette['input_bg']};
+            --brand: #14b8a6;
+            --brand-strong: #0ea5a4;
+            --accent: #2563eb;
+        }}
+
+        html, body, [class*="css"], .stApp {{
+            font-family: 'Outfit', 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important;
         }}
 
         .stApp {{
@@ -648,6 +655,22 @@ def inject_visual_polish(theme_mode: str):
                 radial-gradient(760px 420px at 100% 0%, rgba(37, 99, 235, 0.14), transparent 70%),
                 var(--surface-0) !important;
             color: var(--ink-1);
+        }}
+
+        .main .block-container {{
+            max-width: 1380px !important;
+            padding-top: 0.35rem !important;
+            padding-bottom: 2.1rem !important;
+        }}
+
+        [data-testid="stHeader"] {{
+            height: 0 !important;
+            min-height: 0 !important;
+        }}
+
+        [data-testid="stVerticalBlock"] > div:has(> .top-control-shell) {{
+            margin-top: 0 !important;
+            padding-top: 0 !important;
         }}
 
         h1, h2, h3, h4, h5, h6,
@@ -669,6 +692,15 @@ def inject_visual_polish(theme_mode: str):
             box-shadow: var(--shadow-card) !important;
         }}
 
+        .top-control-shell,
+        .app-shell,
+        .nav-shell,
+        .section-shell,
+        .premium-card,
+        .metric-card {{
+            border-radius: 18px !important;
+        }}
+
         .metric-card, .kpi-chip, .stExpander, div[data-testid="stMetric"] {{
             background: var(--surface-2) !important;
         }}
@@ -685,7 +717,64 @@ def inject_visual_polish(theme_mode: str):
             color: var(--ink-3) !important;
         }}
 
+        .app-shell {{
+            padding: 22px 24px !important;
+        }}
+
+        .nav-shell {{
+            padding: 14px 16px 16px !important;
+            margin-top: 6px !important;
+        }}
+
+        .metric-grid {{
+            margin: 14px 0 18px 0 !important;
+            gap: 12px !important;
+        }}
+
+        .metric-card {{
+            min-height: 100px;
+            padding: 16px 18px !important;
+        }}
+
+        .metric-value {{
+            color: var(--brand) !important;
+            letter-spacing: -0.01em;
+        }}
+
+        .section-chip {{
+            background: color-mix(in srgb, var(--brand) 14%, transparent) !important;
+            border-color: color-mix(in srgb, var(--brand) 26%, transparent) !important;
+            color: var(--ink-2) !important;
+        }}
+
+        .stButton > button,
+        .stDownloadButton > button {{
+            border-radius: 12px !important;
+            border: 1px solid transparent !important;
+            padding: 0.58rem 1rem !important;
+            background: linear-gradient(135deg, var(--brand), var(--accent)) !important;
+            color: white !important;
+            font-weight: 700 !important;
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22) !important;
+            transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+        }}
+
+        .stButton > button:hover,
+        .stDownloadButton > button:hover {{
+            transform: translateY(-1px);
+            opacity: 0.95;
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.3) !important;
+        }}
+
+        .stButton > button[kind="secondary"] {{
+            background: var(--surface-2) !important;
+            border-color: var(--edge-soft) !important;
+            color: var(--ink-1) !important;
+            box-shadow: none !important;
+        }}
+
         div[data-baseweb="select"] > div,
+        div[data-baseweb="select"] input,
         .stTextInput > div > div > input,
         .stTextArea textarea,
         .stNumberInput input,
@@ -693,6 +782,16 @@ def inject_visual_polish(theme_mode: str):
             background: var(--input-bg) !important;
             color: var(--ink-1) !important;
             border: 1px solid var(--edge-soft) !important;
+            border-radius: 12px !important;
+        }}
+
+        div[data-baseweb="select"] > div:focus-within,
+        .stTextInput > div > div > input:focus,
+        .stTextArea textarea:focus,
+        .stNumberInput input:focus,
+        .stDateInput input:focus {{
+            border-color: color-mix(in srgb, var(--accent) 66%, transparent) !important;
+            box-shadow: 0 0 0 0.18rem rgba(37,99,235,.22) !important;
         }}
 
         section[data-testid="stSidebar"] {{
@@ -706,15 +805,16 @@ def inject_visual_polish(theme_mode: str):
         }}
 
         .top-control-shell {{
-            border-radius: 20px;
-            padding: 12px 14px;
-            margin-bottom: 16px;
+            border-radius: 18px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
         }}
 
         .rubric-caption {{
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
             color: var(--ink-3) !important;
             font-size: 0.92rem;
+            font-weight: 600;
         }}
 
         .right-nav-scroll {{
@@ -722,8 +822,19 @@ def inject_visual_polish(theme_mode: str):
             overflow-y: auto;
             border: 1px solid var(--edge-soft);
             border-radius: 14px;
-            padding: 8px 10px;
+            padding: 10px 12px;
             background: var(--surface-2);
+        }}
+
+        .right-nav-scroll::-webkit-scrollbar {{
+            width: 10px;
+        }}
+
+        .right-nav-scroll::-webkit-scrollbar-thumb {{
+            background: color-mix(in srgb, var(--ink-3) 45%, transparent);
+            border-radius: 999px;
+            border: 2px solid transparent;
+            background-clip: content-box;
         }}
 
         .right-nav-scroll [data-testid="stRadio"] label p,
@@ -740,11 +851,61 @@ def inject_visual_polish(theme_mode: str):
             border-radius: 12px !important;
             font-weight: 700 !important;
         }}
+
+        [data-testid="stNotification"],
+        div[data-baseweb="notification"] {{
+            border-radius: 14px !important;
+            border: 1px solid var(--edge-soft) !important;
+            background: var(--surface-2) !important;
+        }}
+
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 8px;
+        }}
+
+        .stTabs [data-baseweb="tab"] {{
+            border-radius: 12px !important;
+            border: 1px solid var(--edge-soft) !important;
+            background: var(--surface-2) !important;
+            color: var(--ink-2) !important;
+        }}
+
+        .stTabs [aria-selected="true"] {{
+            background: color-mix(in srgb, var(--brand) 22%, transparent) !important;
+            border-color: color-mix(in srgb, var(--brand) 60%, transparent) !important;
+            color: var(--ink-1) !important;
+        }}
+
+        @media (max-width: 1100px) {{
+            .main .block-container {{
+                max-width: 100% !important;
+                padding-top: 0.4rem !important;
+            }}
+
+            .metric-grid {{
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }}
+        }}
+
+        @media (max-width: 720px) {{
+            .top-control-shell {{
+                padding: 10px;
+            }}
+
+            .metric-grid {{
+                grid-template-columns: 1fr !important;
+            }}
+
+            .right-nav-scroll {{
+                max-height: 240px;
+            }}
+        }}
         </style>
         """,
         unsafe_allow_html=True,
     )
 
+inject_visual_polish(st.session_state.theme_mode)
 
 st.markdown('<div class="top-control-shell">', unsafe_allow_html=True)
 lang_col, theme_col, eco_col = st.columns([1.5, 1.2, 1.3], gap="medium")
@@ -774,8 +935,6 @@ with eco_col:
     )
     st.session_state.eco_mode = eco_mode
 st.markdown('</div>', unsafe_allow_html=True)
-
-inject_visual_polish(st.session_state.theme_mode)
 
 @st.cache_resource(ttl=86400, show_spinner=False)
 def add_elevations_to_graph(G):
@@ -2027,10 +2186,6 @@ else:
 
 eau_litres = total_megots * IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L']
 co2_evite = total_megots * IMPACT_CONSTANTS['CO2_PER_MEGOT_KG']
-pending_count = len(get_submissions_by_status('pending'))
-approved_count = len(get_submissions_by_status('approved'))
-public_count = len(all_public_actions)
-
 st.markdown(
     f"""
     <section class="app-shell animate-in">
@@ -2110,13 +2265,13 @@ if "active_tab" not in st.session_state or st.session_state.active_tab not in na
 
 active_tab = st.session_state.active_tab
 
-# Affichage du menu de navigation en haut de la page (hub + KPIs)
+# Affichage du menu de navigation en haut de la page
 st.markdown('<div class="nav-shell">', unsafe_allow_html=True)
 st.markdown(
     f'<p class="nav-shell-caption">{"Navigation principale" if st.session_state.lang == "fr" else "Main navigation"} - {"Selectionnez un espace pour agir ou analyser vos resultats." if st.session_state.lang == "fr" else "Select a workspace to act or analyze your results."}</p>',
     unsafe_allow_html=True,
 )
-nav_col, menu_col, kpi_col = st.columns([3.6, 2.2, 1.8], gap="large")
+nav_col, menu_col = st.columns([4.6, 2.4], gap="large")
 with nav_col:
     st.markdown(
         f'<p class="rubric-caption">{"Rubriques rapides" if st.session_state.lang == "fr" else "Quick sections"}</p>',
@@ -2155,26 +2310,6 @@ with menu_col:
     if selected_menu_tab != active_tab:
         active_tab = selected_menu_tab
 
-with kpi_col:
-    st.markdown(
-        f"""
-        <div class="kpi-chip-grid">
-            <div class="kpi-chip">
-                <div class="kpi-chip-label">{"Actions" if st.session_state.lang == "fr" else "Actions"}</div>
-                <div class="kpi-chip-value">{public_count}</div>
-            </div>
-            <div class="kpi-chip">
-                <div class="kpi-chip-label">{"A valider" if st.session_state.lang == "fr" else "Pending"}</div>
-                <div class="kpi-chip-value">{pending_count}</div>
-            </div>
-            <div class="kpi-chip">
-                <div class="kpi-chip-label">{"Validees" if st.session_state.lang == "fr" else "Approved"}</div>
-                <div class="kpi-chip-value">{approved_count}</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 st.markdown('</div>', unsafe_allow_html=True)
 
 # Synchronisation du state
