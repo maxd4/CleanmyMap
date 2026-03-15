@@ -4,7 +4,7 @@ set -euo pipefail
 # Resolve common merge conflicts for this repository by preferring current branch
 # versions for large generated/long-lived files, then show remaining conflicts.
 
-FILES=("README.md" "dev/streamlit.py" "pdf")
+FILES=("README.md" "dev/streamlit.py" "pdf" "app.py")
 
 echo "🔍 Vérification des conflits Git..."
 if ! git diff --name-only --diff-filter=U | grep -q .; then
