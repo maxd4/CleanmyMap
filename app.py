@@ -89,6 +89,9 @@ TRANSLATIONS = {
         "tab_compare": "🏙️ Comparaison",
         "tab_admin": "⚙️ Validation Admin",
         "eco_mode": "Mode basse consommation",
+        "theme_mode": "🎨 Thème",
+        "theme_light": "Clair",
+        "theme_dark": "Sombre",
         "nav_label": "📌 Navigation",
         "nav_action": "🚀 Lancer l'action",
         "nav_stats": "📊 Résultats & Impact",
@@ -136,6 +139,9 @@ TRANSLATIONS = {
         "tab_compare": "🏙️ Territorial Comparison",
         "tab_admin": "⚙️ Admin Validation",
         "eco_mode": "Eco Mode (Data Saver)",
+        "theme_mode": "🎨 Theme",
+        "theme_light": "Light",
+        "theme_dark": "Dark",
         "nav_label": "📌 Navigation",
         "nav_action": "🚀 Start Action",
         "nav_stats": "📊 Results & Impact",
@@ -153,6 +159,9 @@ TRANSLATIONS = {
 # --- GESTION DE LA LANGUE DANS SESSION STATE ---
 if "lang" not in st.session_state:
     st.session_state.lang = "fr"
+
+if "theme_mode" not in st.session_state:
+    st.session_state.theme_mode = "light"
 
 def t(key):
     """Fonction de traduction courte."""
@@ -239,18 +248,8 @@ st.set_page_config(
     page_title=TRANSLATIONS[st.session_state.lang]["title"],
     page_icon="🗺️",
     layout="wide",
+    initial_sidebar_state="collapsed",
 )
-
-# Sélecteur de langue dans la sidebar (en haut)
-with st.sidebar:
-    st.session_state.lang = st.radio(
-        t("lang_select"),
-        options=["fr", "en"],
-        format_func=lambda x: "Français" if x == "fr" else "English",
-        key="lang_radio",
-        horizontal=True
-    )
-    st.markdown("---")
 
 # Custom Professional CSS
 # --- PWA SUPPORT ---
@@ -601,366 +600,152 @@ st.markdown(
 
 
 
-def inject_visual_polish():
+def inject_visual_polish(theme_mode: str):
     """Surcouche visuelle maintenable (sans impact logique metier)."""
-    st.markdown(
-        """
-        <style>
-        :root {
-            --surface-0: #f6f9fc;
-            --surface-1: rgba(255, 255, 255, 0.88);
-            --surface-2: #ffffff;
-            --ink-1: #0f172a;
-            --ink-2: #334155;
-            --ink-3: #64748b;
-            --brand-1: #0ea5a4;
-            --brand-2: #2563eb;
-            --brand-grad: linear-gradient(135deg, #0ea5a4 0%, #2563eb 100%);
-            --ring: rgba(37, 99, 235, 0.24);
-            --edge-soft: rgba(15, 23, 42, 0.08);
-            --space-1: 6px;
-            --space-2: 10px;
-            --space-3: 14px;
-            --space-4: 18px;
-            --space-5: 24px;
-            --space-6: 30px;
-            --radius-sm: 10px;
-            --radius-md: 14px;
-            --radius-lg: 20px;
-            --radius-xl: 28px;
-            --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
-            --shadow-card: 0 14px 32px rgba(15, 23, 42, 0.06);
+    if theme_mode == "dark":
+        palette = {
+            "surface_0": "#08111f",
+            "surface_1": "rgba(15, 23, 42, 0.82)",
+            "surface_2": "#111c31",
+            "ink_1": "#e2e8f0",
+            "ink_2": "#cbd5e1",
+            "ink_3": "#94a3b8",
+            "edge": "rgba(148, 163, 184, 0.28)",
+            "shadow": "0 14px 32px rgba(2, 6, 23, 0.45)",
+            "input_bg": "#0f172a",
+        }
+    else:
+        palette = {
+            "surface_0": "#f6f9fc",
+            "surface_1": "rgba(255, 255, 255, 0.88)",
+            "surface_2": "#ffffff",
+            "ink_1": "#0f172a",
+            "ink_2": "#334155",
+            "ink_3": "#64748b",
+            "edge": "rgba(15, 23, 42, 0.08)",
+            "shadow": "0 14px 32px rgba(15, 23, 42, 0.06)",
+            "input_bg": "#ffffff",
         }
 
-        .stApp {
+    st.markdown(
+        f"""
+        <style>
+        :root {{
+            --surface-0: {palette['surface_0']};
+            --surface-1: {palette['surface_1']};
+            --surface-2: {palette['surface_2']};
+            --ink-1: {palette['ink_1']};
+            --ink-2: {palette['ink_2']};
+            --ink-3: {palette['ink_3']};
+            --edge-soft: {palette['edge']};
+            --shadow-card: {palette['shadow']};
+            --input-bg: {palette['input_bg']};
+        }}
+
+        .stApp {{
             background:
                 radial-gradient(900px 460px at 8% -8%, rgba(14, 165, 164, 0.15), transparent 70%),
                 radial-gradient(760px 420px at 100% 0%, rgba(37, 99, 235, 0.14), transparent 70%),
                 var(--surface-0) !important;
-        }
-
-        .block-container {
-            max-width: 1280px !important;
-            padding-top: 1.25rem !important;
-            padding-bottom: 3.4rem !important;
-        }
-
-        h1, h2, h3 {
-            letter-spacing: -0.02em;
             color: var(--ink-1);
-        }
+        }}
 
+        h1, h2, h3, h4, h5, h6,
         [data-testid="stMarkdownContainer"] p,
         [data-testid="stMarkdownContainer"] li,
-        [data-testid="stMetricLabel"] {
-            color: var(--ink-2);
-        }
+        [data-testid="stMetricLabel"],
+        label,
+        span,
+        small {{
+            color: var(--ink-2) !important;
+        }}
 
-        .app-shell {
-            position: relative;
-            overflow: hidden;
-            border-radius: 28px;
-            padding: 26px 28px;
-            margin: 0 0 20px 0;
-            background: var(--surface-1);
-            border: 1px solid var(--edge-soft);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-        }
-
-        .app-shell::after {
-            content: "";
-            position: absolute;
-            right: -40px;
-            top: -40px;
-            width: 220px;
-            height: 220px;
-            border-radius: 999px;
-            background: radial-gradient(circle, rgba(14, 165, 164, 0.24), transparent 70%);
-            pointer-events: none;
-        }
-
-        .app-shell-eyebrow {
-            font-size: 0.78rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: #0f766e;
-            margin-bottom: 8px;
-        }
-
-        .app-shell-title {
-            margin: 0 0 6px 0;
-            font-size: 1.7rem;
-            line-height: 1.2;
-            color: var(--ink-1);
-        }
-
-        .app-shell-subtitle {
-            margin: 0;
-            color: var(--ink-3);
-            max-width: 920px;
-            line-height: 1.55;
-        }
-
-        .section-shell {
-            border-radius: var(--radius-xl);
-            border: 1px solid var(--edge-soft);
-            background: linear-gradient(160deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.72));
-            box-shadow: var(--shadow-soft);
-            padding: 28px 24px;
-            margin-bottom: var(--space-5);
-        }
-
-        .section-shell.compact {
-            border-radius: var(--radius-lg);
-            padding: 18px 20px;
-            margin-bottom: var(--space-4);
-        }
-
-        .section-kicker {
-            font-size: 0.75rem;
-            letter-spacing: 0.09em;
-            text-transform: uppercase;
-            font-weight: 800;
-            color: #0f766e;
-            margin-bottom: var(--space-1);
-        }
-
-        .section-title {
-            margin: 0;
-            line-height: 1.15;
-            letter-spacing: -0.02em;
-            font-size: clamp(1.6rem, 2.5vw, 2.4rem);
-            color: var(--ink-1);
-        }
-
-        .section-subtitle {
-            margin: var(--space-2) 0 0 0;
-            max-width: 900px;
-            color: var(--ink-3);
-            line-height: 1.55;
-            font-size: 1.02rem;
-        }
-
-        .section-chip-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: var(--space-3);
-        }
-
-        .section-chip {
-            border-radius: 999px;
-            border: 1px solid var(--edge-soft);
-            background: #fff;
-            padding: 4px 10px;
-            font-size: 0.78rem;
-            color: var(--ink-2);
-            font-weight: 600;
-        }
-
-        .nav-shell {
-            border-radius: 22px;
-            border: 1px solid var(--edge-soft);
-            background: var(--surface-1);
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-            padding: 16px 18px 12px 18px;
-            margin-bottom: 20px;
-        }
-
-        .nav-shell-caption {
-            margin: 0 0 8px 0;
-            color: var(--ink-3);
-            font-size: 0.9rem;
-        }
-
-        .kpi-chip-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
-        }
-
-        .kpi-chip {
-            border-radius: 14px;
-            border: 1px solid var(--edge-soft);
-            background: var(--surface-2);
-            padding: 10px 10px 9px;
-            text-align: center;
-        }
-
-        .kpi-chip-label {
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            color: var(--ink-3);
-            font-weight: 700;
-        }
-
-        .kpi-chip-value {
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: var(--ink-1);
-            line-height: 1.05;
-        }
-
-        div[data-baseweb="select"] > div {
-            min-height: 46px !important;
-            border-radius: 12px !important;
-            border: 1px solid var(--edge-soft) !important;
-            background: #fff !important;
-            box-shadow: 0 2px 0 rgba(15, 23, 42, 0.02);
-        }
-
-        div[data-baseweb="select"] > div:focus-within {
-            border-color: #2563eb !important;
-            box-shadow: 0 0 0 4px var(--ring);
-        }
-
-        .hero-container {
-            border: 1px solid var(--edge-soft);
-            background: linear-gradient(160deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72));
-            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.07);
-            padding: 64px 24px !important;
-            margin-bottom: 26px !important;
-            border-radius: 30px !important;
-        }
-
-        .hero-title {
-            font-size: clamp(2.1rem, 4vw, 3.3rem) !important;
-            letter-spacing: -0.025em !important;
-        }
-
-        .hero-subtitle {
-            font-size: clamp(1rem, 1.5vw, 1.2rem) !important;
-            color: var(--ink-3) !important;
-        }
-
-        .premium-card {
-            border-radius: var(--radius-lg) !important;
+        .app-shell, .nav-shell, .premium-card, .section-shell,
+        .metric-card, .kpi-chip, .top-control-shell,
+        .stForm, .stExpander, div[data-testid="stMetric"],
+        .stDataFrame, div[data-testid="stTable"] {{
             background: var(--surface-1) !important;
             border: 1px solid var(--edge-soft) !important;
             box-shadow: var(--shadow-card) !important;
-        }
+        }}
 
-        .metric-grid {
-            gap: 14px !important;
-            margin: 18px 0 28px 0 !important;
-        }
+        .metric-card, .kpi-chip, .stExpander, div[data-testid="stMetric"] {{
+            background: var(--surface-2) !important;
+        }}
 
-        .metric-card {
-            background: #fff !important;
-            border: 1px solid var(--edge-soft) !important;
-            border-radius: 18px !important;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05) !important;
-        }
+        .app-shell-title, .section-title, .kpi-chip-value,
+        [data-testid="stMarkdownContainer"] h1,
+        [data-testid="stMarkdownContainer"] h2,
+        [data-testid="stMarkdownContainer"] h3 {{
+            color: var(--ink-1) !important;
+        }}
 
-        .metric-label {
+        .app-shell-subtitle, .section-subtitle, .nav-shell-caption,
+        .metric-label, .kpi-chip-label, .metric-unit {{
             color: var(--ink-3) !important;
-            font-weight: 700 !important;
-        }
+        }}
 
-        .metric-value {
-            color: #0b8f86 !important;
-        }
-
-        .stButton > button,
-        .stDownloadButton > button {
-            border-radius: 12px !important;
-            border: none !important;
-            padding: 0.6rem 1rem !important;
-            font-weight: 700 !important;
-            background: var(--brand-grad) !important;
-            color: #fff !important;
-            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        .stButton > button:hover,
-        .stDownloadButton > button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 12px 20px rgba(37, 99, 235, 0.32);
-        }
-
+        div[data-baseweb="select"] > div,
         .stTextInput > div > div > input,
         .stTextArea textarea,
         .stNumberInput input,
-        .stDateInput input {
-            border-radius: 12px !important;
+        .stDateInput input {{
+            background: var(--input-bg) !important;
+            color: var(--ink-1) !important;
             border: 1px solid var(--edge-soft) !important;
-            background: #fff !important;
-        }
+        }}
 
-        .stTextInput > div > div > input:focus,
-        .stTextArea textarea:focus,
-        .stNumberInput input:focus,
-        .stDateInput input:focus {
-            border-color: #2563eb !important;
-            box-shadow: 0 0 0 3px var(--ring) !important;
-        }
+        section[data-testid="stSidebar"] {{
+            width: 0 !important;
+            min-width: 0 !important;
+            border-right: none !important;
+        }}
 
-        .stDataFrame, div[data-testid="stTable"] {
-            border-radius: 16px !important;
-            overflow: hidden;
-            border: 1px solid var(--edge-soft);
-            background: #fff;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-        }
+        [data-testid="collapsedControl"] {{
+            display: none !important;
+        }}
 
-        .stForm {
-            background: var(--surface-1) !important;
-            border-radius: 22px !important;
-            border: 1px solid var(--edge-soft) !important;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07) !important;
-            padding: 26px !important;
-        }
-
-        .stExpander {
-            border: 1px solid var(--edge-soft) !important;
-            border-radius: 16px !important;
-            background: #fff;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
-        }
-
-        div[data-testid="stMetric"] {
-            background: #fff;
-            border-radius: 14px;
-            border: 1px solid var(--edge-soft);
+        .top-control-shell {{
+            border-radius: 20px;
             padding: 12px 14px;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
-        }
-
-        section[data-testid="stSidebar"] {
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(245, 250, 255, 0.9)) !important;
-            border-right: 1px solid var(--edge-soft) !important;
-        }
-
-        section[data-testid="stSidebar"] .stRadio [role="radiogroup"] {
-            background: #fff;
-            padding: 8px;
-            border-radius: 12px;
-            border: 1px solid var(--edge-soft);
-        }
-
-        @media (max-width: 900px) {
-            .app-shell {
-                padding: 18px;
-            }
-            .kpi-chip-grid {
-                grid-template-columns: 1fr;
-            }
-            .nav-shell {
-                padding: 12px;
-            }
-        }
+            margin-bottom: 16px;
+        }}
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 
-inject_visual_polish()
+st.markdown('<div class="top-control-shell">', unsafe_allow_html=True)
+lang_col, theme_col, eco_col = st.columns([1.5, 1.2, 1.3], gap="medium")
+with lang_col:
+    st.session_state.lang = st.radio(
+        t("lang_select"),
+        options=["fr", "en"],
+        format_func=lambda x: "Français" if x == "fr" else "English",
+        key="lang_radio_top",
+        horizontal=True,
+    )
+with theme_col:
+    selected_theme = st.radio(
+        t("theme_mode"),
+        options=["light", "dark"],
+        format_func=lambda x: t("theme_light") if x == "light" else t("theme_dark"),
+        key="theme_mode_radio",
+        horizontal=True,
+    )
+    st.session_state.theme_mode = selected_theme
+with eco_col:
+    eco_mode = st.checkbox(
+        t("eco_mode"),
+        value=st.session_state.get("eco_mode", False),
+        help="Réduit l'usage des données pour une navigation plus sobre.",
+        key="eco_mode_checkbox",
+    )
+    st.session_state.eco_mode = eco_mode
+st.markdown('</div>', unsafe_allow_html=True)
 
-eco_mode = st.sidebar.checkbox("Mode basse consommation", help="Réduit l'usage des données pour une navigation plus sobre.")
+inject_visual_polish(st.session_state.theme_mode)
 
 @st.cache_resource(ttl=86400, show_spinner=False)
 def add_elevations_to_graph(G):
@@ -4256,7 +4041,7 @@ with tab_admin:
             ).add_to(m_admin)
             
             # --- IA de Flux & Topographie ---
-            show_flow_ai = st.sidebar.checkbox("afficher l'ia de flux (entonnoirs à pollution)", value=False)
+            show_flow_ai = st.checkbox("Afficher l'IA de flux (entonnoirs à pollution)", value=False)
             if show_flow_ai:
                 with st.spinner("analyse des pentes et du ruissellement en cours..."):
                     # On utilise le graphe OSMnx pour la zone moyenne
@@ -4270,7 +4055,7 @@ with tab_admin:
                             icon=folium.Icon(color='purple', icon='bullseye', prefix='fa'),
                             popup=f"<b>{sink['type']}</b><br>{sink['description']}"
                         ).add_to(m_admin)
-                st.sidebar.success(f"{len(sinks)} entonnoirs détectés")
+                st.success(f"{len(sinks)} entonnoirs détectés")
 
             st_folium(m_admin, width=900, height=500, returned_objects=[])
         
