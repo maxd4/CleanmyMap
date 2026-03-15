@@ -710,6 +710,36 @@ def inject_visual_polish(theme_mode: str):
             padding: 12px 14px;
             margin-bottom: 16px;
         }}
+
+        .rubric-caption {{
+            margin: 0 0 10px 0;
+            color: var(--ink-3) !important;
+            font-size: 0.92rem;
+        }}
+
+        .right-nav-scroll {{
+            max-height: 320px;
+            overflow-y: auto;
+            border: 1px solid var(--edge-soft);
+            border-radius: 14px;
+            padding: 8px 10px;
+            background: var(--surface-2);
+        }}
+
+        .right-nav-scroll [data-testid="stRadio"] label p,
+        .right-nav-scroll [data-testid="stRadio"] label span {{
+            color: var(--ink-1) !important;
+            font-weight: 600;
+        }}
+
+        .rubric-buttons .stButton > button {{
+            border: 1px solid var(--edge-soft) !important;
+            background: var(--surface-2) !important;
+            color: var(--ink-1) !important;
+            box-shadow: none !important;
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+        }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -2052,7 +2082,7 @@ st.markdown(
 # Import manuel ou asynchrone pour ne les insérer qu'une seule fois. 
 # Pour l'instant on garde une vue concaténée en lecture
 
-# --- NAVIGATION HORIZONTALE (DROPDOWN) ---
+# --- NAVIGATION PAR RUBRIQUES CLIQUABLES ---
 # Liste des options classées par priorité
 nav_options = [
     t("tab_home"),
@@ -2075,21 +2105,56 @@ nav_options = [
     t("tab_admin"),
 ]
 
+if "active_tab" not in st.session_state or st.session_state.active_tab not in nav_options:
+    st.session_state.active_tab = nav_options[0]
+
+active_tab = st.session_state.active_tab
+
 # Affichage du menu de navigation en haut de la page (hub + KPIs)
 st.markdown('<div class="nav-shell">', unsafe_allow_html=True)
 st.markdown(
     f'<p class="nav-shell-caption">{"Navigation principale" if st.session_state.lang == "fr" else "Main navigation"} - {"Selectionnez un espace pour agir ou analyser vos resultats." if st.session_state.lang == "fr" else "Select a workspace to act or analyze your results."}</p>',
     unsafe_allow_html=True,
 )
-nav_col, kpi_col = st.columns([4.5, 2], gap="large")
+nav_col, menu_col, kpi_col = st.columns([3.6, 2.2, 1.8], gap="large")
 with nav_col:
-    active_tab = st.selectbox(
+    st.markdown(
+        f'<p class="rubric-caption">{"Rubriques rapides" if st.session_state.lang == "fr" else "Quick sections"}</p>',
+        unsafe_allow_html=True,
+    )
+    quick_nav_options = nav_options[:8]
+    st.markdown('<div class="rubric-buttons">', unsafe_allow_html=True)
+    for row_start in range(0, len(quick_nav_options), 4):
+        row_items = quick_nav_options[row_start:row_start + 4]
+        row_cols = st.columns(len(row_items))
+        for col, label in zip(row_cols, row_items):
+            with col:
+                if st.button(
+                    label,
+                    key=f"quick_rubric_{label}",
+                    use_container_width=True,
+                    type="primary" if active_tab == label else "secondary",
+                ):
+                    active_tab = label
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with menu_col:
+    st.markdown(
+        f'<p class="rubric-caption">{"Toutes les rubriques" if st.session_state.lang == "fr" else "All sections"}</p>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="right-nav-scroll">', unsafe_allow_html=True)
+    selected_menu_tab = st.radio(
         t("nav_label"),
         options=nav_options,
-        index=0,
-        key="nav_selectbox",
-        label_visibility="collapsed"
+        index=nav_options.index(active_tab),
+        key="right_nav_radio",
+        label_visibility="collapsed",
     )
+    st.markdown('</div>', unsafe_allow_html=True)
+    if selected_menu_tab != active_tab:
+        active_tab = selected_menu_tab
+
 with kpi_col:
     st.markdown(
         f"""
