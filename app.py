@@ -95,6 +95,11 @@ TRANSLATIONS = {
         "nav_social": "🏆 Communauté",
         "nav_edu": "📚 Comprendre & Apprendre",
         "nav_admin": "⚙️ Administration & Outils",
+        "eau_preserved": "Eau préservée",
+        "co2_avoided": "CO2 évité",
+        "dechets_removed": "Déchets retirés",
+        "megots_collected": "Mégots ramassés",
+        "citizens_engaged": "Citoyens engagés",
     },
     "en": {
         "title": "Clean my Map • Citizen Protection",
@@ -137,6 +142,11 @@ TRANSLATIONS = {
         "nav_social": "🏆 Community",
         "nav_edu": "📚 Learn & Understand",
         "nav_admin": "⚙️ Admin & Tools",
+        "eau_preserved": "Water protected",
+        "co2_avoided": "CO2 avoided",
+        "dechets_removed": "Waste removed",
+        "megots_collected": "Cigarette butts",
+        "citizens_engaged": "Engaged citizens",
     }
 }
 
@@ -147,6 +157,22 @@ if "lang" not in st.session_state:
 def t(key):
     """Fonction de traduction courte."""
     return TRANSLATIONS[st.session_state.lang].get(key, key)
+
+def get_user_badge(pseudo, df_impact):
+    """Calcule le badge et le grade d'un utilisateur d'après ses statistiques."""
+    if df_impact.empty or not pseudo: return None
+    user_data = df_impact[df_impact['nom'].str.strip().str.lower() == pseudo.strip().lower()]
+    if user_data.empty: return None
+    
+    stats = {
+        'nb_actions': len(user_data),
+        'total_kg': user_data['dechets_kg'].fillna(0).sum(),
+        'total_points': user_data['eco_points'].fillna(0).sum() if 'eco_points' in user_data.columns else 0
+    }
+    badges = check_badges(stats) # de map_utils
+    if badges:
+        return f"{badges[-1]['name']} ({badges[-1]['desc']})"
+    return None
 
 def get_impact_sources():
     """Renvoie les textes de la bibliographie pour la méthodologie de l'app et du PDF."""
@@ -176,6 +202,37 @@ def get_impact_sources():
             "while statistics are based on official scientific bibliography, the "
             "automatic document may contain approximations or processing errors."
         )
+
+
+def i18n_text(fr_text: str, en_text: str) -> str:
+    """Retourne le texte FR/EN selon la langue active."""
+    return fr_text if st.session_state.lang == "fr" else en_text
+
+
+def render_tab_header(
+    icon: str,
+    title_fr: str,
+    title_en: str,
+    subtitle_fr: str,
+    subtitle_en: str,
+    chips: list[str] | None = None,
+    compact: bool = False,
+) -> None:
+    """Header de section reutilisable pour uniformiser tous les onglets."""
+    chips = chips or []
+    chip_html = "".join(f"<span class='section-chip'>{c}</span>" for c in chips)
+    shell_class = "section-shell compact" if compact else "section-shell"
+    st.markdown(
+        f"""
+        <section class="{shell_class} animate-in">
+            <div class="section-kicker">{icon} {i18n_text("Espace", "Workspace")}</div>
+            <h1 class="section-title">{icon} {i18n_text(title_fr, title_en)}</h1>
+            <p class="section-subtitle">{i18n_text(subtitle_fr, subtitle_en)}</p>
+            {"<div class='section-chip-row'>" + chip_html + "</div>" if chip_html else ""}
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 st.set_page_config(
@@ -376,7 +433,7 @@ st.markdown(
         background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        margin-bottom: 12px !important;
+        margin-bottom: 24px !important;
         line-height: 1.1 !important;
     }
 
@@ -541,6 +598,367 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+
+
+def inject_visual_polish():
+    """Surcouche visuelle maintenable (sans impact logique metier)."""
+    st.markdown(
+        """
+        <style>
+        :root {
+            --surface-0: #f6f9fc;
+            --surface-1: rgba(255, 255, 255, 0.88);
+            --surface-2: #ffffff;
+            --ink-1: #0f172a;
+            --ink-2: #334155;
+            --ink-3: #64748b;
+            --brand-1: #0ea5a4;
+            --brand-2: #2563eb;
+            --brand-grad: linear-gradient(135deg, #0ea5a4 0%, #2563eb 100%);
+            --ring: rgba(37, 99, 235, 0.24);
+            --edge-soft: rgba(15, 23, 42, 0.08);
+            --space-1: 6px;
+            --space-2: 10px;
+            --space-3: 14px;
+            --space-4: 18px;
+            --space-5: 24px;
+            --space-6: 30px;
+            --radius-sm: 10px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+            --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
+            --shadow-card: 0 14px 32px rgba(15, 23, 42, 0.06);
+        }
+
+        .stApp {
+            background:
+                radial-gradient(900px 460px at 8% -8%, rgba(14, 165, 164, 0.15), transparent 70%),
+                radial-gradient(760px 420px at 100% 0%, rgba(37, 99, 235, 0.14), transparent 70%),
+                var(--surface-0) !important;
+        }
+
+        .block-container {
+            max-width: 1280px !important;
+            padding-top: 1.25rem !important;
+            padding-bottom: 3.4rem !important;
+        }
+
+        h1, h2, h3 {
+            letter-spacing: -0.02em;
+            color: var(--ink-1);
+        }
+
+        [data-testid="stMarkdownContainer"] p,
+        [data-testid="stMarkdownContainer"] li,
+        [data-testid="stMetricLabel"] {
+            color: var(--ink-2);
+        }
+
+        .app-shell {
+            position: relative;
+            overflow: hidden;
+            border-radius: 28px;
+            padding: 26px 28px;
+            margin: 0 0 20px 0;
+            background: var(--surface-1);
+            border: 1px solid var(--edge-soft);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+        }
+
+        .app-shell::after {
+            content: "";
+            position: absolute;
+            right: -40px;
+            top: -40px;
+            width: 220px;
+            height: 220px;
+            border-radius: 999px;
+            background: radial-gradient(circle, rgba(14, 165, 164, 0.24), transparent 70%);
+            pointer-events: none;
+        }
+
+        .app-shell-eyebrow {
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: #0f766e;
+            margin-bottom: 8px;
+        }
+
+        .app-shell-title {
+            margin: 0 0 6px 0;
+            font-size: 1.7rem;
+            line-height: 1.2;
+            color: var(--ink-1);
+        }
+
+        .app-shell-subtitle {
+            margin: 0;
+            color: var(--ink-3);
+            max-width: 920px;
+            line-height: 1.55;
+        }
+
+        .section-shell {
+            border-radius: var(--radius-xl);
+            border: 1px solid var(--edge-soft);
+            background: linear-gradient(160deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.72));
+            box-shadow: var(--shadow-soft);
+            padding: 28px 24px;
+            margin-bottom: var(--space-5);
+        }
+
+        .section-shell.compact {
+            border-radius: var(--radius-lg);
+            padding: 18px 20px;
+            margin-bottom: var(--space-4);
+        }
+
+        .section-kicker {
+            font-size: 0.75rem;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: #0f766e;
+            margin-bottom: var(--space-1);
+        }
+
+        .section-title {
+            margin: 0;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+            font-size: clamp(1.6rem, 2.5vw, 2.4rem);
+            color: var(--ink-1);
+        }
+
+        .section-subtitle {
+            margin: var(--space-2) 0 0 0;
+            max-width: 900px;
+            color: var(--ink-3);
+            line-height: 1.55;
+            font-size: 1.02rem;
+        }
+
+        .section-chip-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: var(--space-3);
+        }
+
+        .section-chip {
+            border-radius: 999px;
+            border: 1px solid var(--edge-soft);
+            background: #fff;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            color: var(--ink-2);
+            font-weight: 600;
+        }
+
+        .nav-shell {
+            border-radius: 22px;
+            border: 1px solid var(--edge-soft);
+            background: var(--surface-1);
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+            padding: 16px 18px 12px 18px;
+            margin-bottom: 20px;
+        }
+
+        .nav-shell-caption {
+            margin: 0 0 8px 0;
+            color: var(--ink-3);
+            font-size: 0.9rem;
+        }
+
+        .kpi-chip-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .kpi-chip {
+            border-radius: 14px;
+            border: 1px solid var(--edge-soft);
+            background: var(--surface-2);
+            padding: 10px 10px 9px;
+            text-align: center;
+        }
+
+        .kpi-chip-label {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--ink-3);
+            font-weight: 700;
+        }
+
+        .kpi-chip-value {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--ink-1);
+            line-height: 1.05;
+        }
+
+        div[data-baseweb="select"] > div {
+            min-height: 46px !important;
+            border-radius: 12px !important;
+            border: 1px solid var(--edge-soft) !important;
+            background: #fff !important;
+            box-shadow: 0 2px 0 rgba(15, 23, 42, 0.02);
+        }
+
+        div[data-baseweb="select"] > div:focus-within {
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 4px var(--ring);
+        }
+
+        .hero-container {
+            border: 1px solid var(--edge-soft);
+            background: linear-gradient(160deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72));
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.07);
+            padding: 64px 24px !important;
+            margin-bottom: 26px !important;
+            border-radius: 30px !important;
+        }
+
+        .hero-title {
+            font-size: clamp(2.1rem, 4vw, 3.3rem) !important;
+            letter-spacing: -0.025em !important;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 1.5vw, 1.2rem) !important;
+            color: var(--ink-3) !important;
+        }
+
+        .premium-card {
+            border-radius: var(--radius-lg) !important;
+            background: var(--surface-1) !important;
+            border: 1px solid var(--edge-soft) !important;
+            box-shadow: var(--shadow-card) !important;
+        }
+
+        .metric-grid {
+            gap: 14px !important;
+            margin: 18px 0 28px 0 !important;
+        }
+
+        .metric-card {
+            background: #fff !important;
+            border: 1px solid var(--edge-soft) !important;
+            border-radius: 18px !important;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05) !important;
+        }
+
+        .metric-label {
+            color: var(--ink-3) !important;
+            font-weight: 700 !important;
+        }
+
+        .metric-value {
+            color: #0b8f86 !important;
+        }
+
+        .stButton > button,
+        .stDownloadButton > button {
+            border-radius: 12px !important;
+            border: none !important;
+            padding: 0.6rem 1rem !important;
+            font-weight: 700 !important;
+            background: var(--brand-grad) !important;
+            color: #fff !important;
+            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stButton > button:hover,
+        .stDownloadButton > button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 20px rgba(37, 99, 235, 0.32);
+        }
+
+        .stTextInput > div > div > input,
+        .stTextArea textarea,
+        .stNumberInput input,
+        .stDateInput input {
+            border-radius: 12px !important;
+            border: 1px solid var(--edge-soft) !important;
+            background: #fff !important;
+        }
+
+        .stTextInput > div > div > input:focus,
+        .stTextArea textarea:focus,
+        .stNumberInput input:focus,
+        .stDateInput input:focus {
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 3px var(--ring) !important;
+        }
+
+        .stDataFrame, div[data-testid="stTable"] {
+            border-radius: 16px !important;
+            overflow: hidden;
+            border: 1px solid var(--edge-soft);
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        }
+
+        .stForm {
+            background: var(--surface-1) !important;
+            border-radius: 22px !important;
+            border: 1px solid var(--edge-soft) !important;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07) !important;
+            padding: 26px !important;
+        }
+
+        .stExpander {
+            border: 1px solid var(--edge-soft) !important;
+            border-radius: 16px !important;
+            background: #fff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+        }
+
+        div[data-testid="stMetric"] {
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid var(--edge-soft);
+            padding: 12px 14px;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+        }
+
+        section[data-testid="stSidebar"] {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(245, 250, 255, 0.9)) !important;
+            border-right: 1px solid var(--edge-soft) !important;
+        }
+
+        section[data-testid="stSidebar"] .stRadio [role="radiogroup"] {
+            background: #fff;
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid var(--edge-soft);
+        }
+
+        @media (max-width: 900px) {
+            .app-shell {
+                padding: 18px;
+            }
+            .kpi-chip-grid {
+                grid-template-columns: 1fr;
+            }
+            .nav-shell {
+                padding: 12px;
+            }
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+inject_visual_polish()
 
 eco_mode = st.sidebar.checkbox("Mode basse consommation", help="Réduit l'usage des données pour une navigation plus sobre.")
 
@@ -1769,22 +2187,15 @@ check_pseudo = ""
 # Accès libre pour les bénévoles, mot de passe pour l'admin.
 main_user_email = _google_user_email() or "Bénévole Anonyme"
 
-st.markdown(
-    f"""
-    <div class="hero-container">
-      <h1 class="hero-title">{t("welcome")}</h1>
-      <p class="hero-subtitle">{t("hero_subtitle")}</p>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
 # --- CHARGEMENT DES DONNÉES CUMULÉES ---
 db_approved = get_submissions_by_status('approved')
 sheet_actions = load_sheet_actions(GOOGLE_SHEET_URL)
 all_imported_actions = sheet_actions + TEST_DATA
 all_public_actions = db_approved + all_imported_actions
 all_public_df = pd.DataFrame(all_public_actions)
+
+# Correction NameError reported by user
+df_impact = all_public_df
 
 # Calcul des stats globales cumulées
 if not all_public_df.empty:
@@ -1801,28 +2212,50 @@ else:
 
 eau_litres = total_megots * IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L']
 co2_evite = total_megots * IMPACT_CONSTANTS['CO2_PER_MEGOT_KG']
+pending_count = len(get_submissions_by_status('pending'))
+approved_count = len(get_submissions_by_status('approved'))
+public_count = len(all_public_actions)
+
+st.markdown(
+    f"""
+    <section class="app-shell animate-in">
+        <div class="app-shell-eyebrow">
+            {"Plateforme citoyenne" if st.session_state.lang == "fr" else "Citizen platform"}
+        </div>
+        <h2 class="app-shell-title">
+            {"Pilotez vos cleanwalks comme un vrai produit terrain" if st.session_state.lang == "fr" else "Run your cleanwalks with a product-grade interface"}
+        </h2>
+        <p class="app-shell-subtitle">
+            {"Suivez l'impact en temps reel, declarez les actions, visualisez les zones prioritaires et coordonnez les benevoles avec une experience plus claire, moderne et professionnelle."
+            if st.session_state.lang == "fr"
+            else "Track impact in real time, declare actions, visualize priority zones, and coordinate volunteers in a cleaner, modern, product-style experience."}
+        </p>
+    </section>
+    """,
+    unsafe_allow_html=True,
+)
 
 st.markdown(
     f"""
     <div class="metric-grid">
         <div class="metric-card">
-            <div class="metric-label">Déchets retirés</div>
+            <div class="metric-label">{t("dechets_removed")}</div>
             <div class="metric-value">{total_dechets:.1f}<span class="metric-unit">kg</span></div>
         </div>
         <div class="metric-card">
-            <div class="metric-label">Mégots ramassés</div>
+            <div class="metric-label">{t("megots_collected")}</div>
             <div class="metric-value">{total_megots:,}<span class="metric-unit">🚬</span></div>
         </div>
         <div class="metric-card">
-            <div class="metric-label">Eau préservée</div>
+            <div class="metric-label">{t("eau_preserved")}</div>
             <div class="metric-value">{eau_litres:,}<span class="metric-unit">Litres</span></div>
         </div>
         <div class="metric-card">
-            <div class="metric-label">CO2 évité</div>
+            <div class="metric-label">{t("co2_avoided")}</div>
             <div class="metric-value">{co2_evite:.1f}<span class="metric-unit">kg CO2</span></div>
         </div>
         <div class="metric-card">
-            <div class="metric-label">Citoyens engagés</div>
+            <div class="metric-label">{t("citizens_engaged")}</div>
             <div class="metric-value">{total_benevoles:,}<span class="metric-unit">Héros</span></div>
         </div>
     </div>
@@ -1834,71 +2267,68 @@ st.markdown(
 # Import manuel ou asynchrone pour ne les insérer qu'une seule fois. 
 # Pour l'instant on garde une vue concaténée en lecture
 
-pending_count = len(get_submissions_by_status('pending'))
-approved_count = len(get_submissions_by_status('approved'))
+# --- NAVIGATION HORIZONTALE (DROPDOWN) ---
+# Liste des options classées par priorité
+nav_options = [
+    t("tab_home"),
+    t("tab_map"),
+    t("tab_declaration"),
+    t("tab_trash_spotter"),
+    t("tab_gamification"),
+    t("tab_pdf"),
+    t("tab_history"),
+    t("tab_community"),
+    t("tab_actors"),
+    t("tab_route"),
+    t("tab_recycling"),
+    t("tab_climate"),
+    t("tab_elus"),
+    t("tab_weather"),
+    t("tab_compare"),
+    t("tab_kit"),
+    t("tab_sandbox"),
+    t("tab_admin"),
+]
 
-# --- NAVIGATION STRUCTURÉE ---
-with st.sidebar:
-    st.markdown(f"### {t('nav_label')}")
-    
-    # Catégorie 1: Action
-    with st.expander(t("nav_action"), expanded=True):
-        nav_action = st.radio(
-            "Action Choice", 
-            [t("tab_declaration"), t("tab_map"), t("tab_trash_spotter"), t("tab_route")],
-            label_visibility="collapsed",
-            key="nav_action_radio"
-        )
-    
-    # Catégorie 2: Résultats
-    with st.expander(t("nav_stats"), expanded=False):
-        nav_stats = st.radio(
-            "Stats Choice",
-            [t("tab_home"), t("tab_history"), t("tab_pdf"), t("tab_compare"), t("tab_weather")],
-            label_visibility="collapsed",
-            key="nav_stats_radio"
-        )
-    
-    # Catégorie 3: Communauté
-    with st.expander(t("nav_social"), expanded=False):
-        nav_social = st.radio(
-            "Social Choice",
-            [t("tab_gamification"), t("tab_community"), t("tab_actors")],
-            label_visibility="collapsed",
-            key="nav_social_radio"
-        )
-        
-    # Catégorie 4: Éducation
-    with st.expander(t("nav_edu"), expanded=False):
-        nav_edu = st.radio(
-            "Edu Choice",
-            [t("tab_guide"), t("tab_recycling"), t("tab_climate")],
-            label_visibility="collapsed",
-            key="nav_edu_radio"
-        )
-        
-    # Catégorie 5: Outils & Admin
-    with st.expander(t("nav_admin"), expanded=False):
-        nav_admin = st.radio(
-            "Admin Choice",
-            [t("tab_kit"), t("tab_elus"), t("tab_sandbox"), t("tab_admin")],
-            label_visibility="collapsed",
-            key="nav_admin_radio"
-        )
+# Affichage du menu de navigation en haut de la page (hub + KPIs)
+st.markdown('<div class="nav-shell">', unsafe_allow_html=True)
+st.markdown(
+    f'<p class="nav-shell-caption">{"Navigation principale" if st.session_state.lang == "fr" else "Main navigation"} - {"Selectionnez un espace pour agir ou analyser vos resultats." if st.session_state.lang == "fr" else "Select a workspace to act or analyze your results."}</p>',
+    unsafe_allow_html=True,
+)
+nav_col, kpi_col = st.columns([4.5, 2], gap="large")
+with nav_col:
+    active_tab = st.selectbox(
+        t("nav_label"),
+        options=nav_options,
+        index=0,
+        key="nav_selectbox",
+        label_visibility="collapsed"
+    )
+with kpi_col:
+    st.markdown(
+        f"""
+        <div class="kpi-chip-grid">
+            <div class="kpi-chip">
+                <div class="kpi-chip-label">{"Actions" if st.session_state.lang == "fr" else "Actions"}</div>
+                <div class="kpi-chip-value">{public_count}</div>
+            </div>
+            <div class="kpi-chip">
+                <div class="kpi-chip-label">{"A valider" if st.session_state.lang == "fr" else "Pending"}</div>
+                <div class="kpi-chip-value">{pending_count}</div>
+            </div>
+            <div class="kpi-chip">
+                <div class="kpi-chip-label">{"Validees" if st.session_state.lang == "fr" else "Approved"}</div>
+                <div class="kpi-chip-value">{approved_count}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+st.markdown('</div>', unsafe_allow_html=True)
 
-# Mapping de la sélection globale (on utilise un state pour savoir quel onglet est actif)
-if "active_tab" not in st.session_state:
-    st.session_state.active_tab = t("tab_home")
-
-# Détecter quel radio a été cliqué en dernier pour changer l'onglet actif
-# Pour chaque catégorie, on vérifie si la valeur actuelle du radio est différente de la dernière valeur connue
-for cat_key in ['nav_action', 'nav_stats', 'nav_social', 'nav_edu', 'nav_admin']:
-    radio_key = f"{cat_key}_radio"
-    prev_key = f"prev_{cat_key}"
-    curr_val = st.session_state.get(radio_key)
-    if curr_val and curr_val != st.session_state.get(prev_key):
-        st.session_state.active_tab = curr_val
-        st.session_state[prev_key] = curr_val
+# Synchronisation du state
+st.session_state.active_tab = active_tab
 
 # Initialisation des containers (pour garder la compatibilité avec le code existant line 1845)
 tab_declaration = st.empty()
@@ -1950,7 +2380,15 @@ tab_report = tab_pdf
 tab_partners = tab_actors
 
 with tab_kit:
-    st.header("📱 Kit Organisateur : QR Code de Terrain")
+    render_tab_header(
+        icon="\U0001F4F1",
+        title_fr="Kit Organisateur",
+        title_en="Organizer Kit",
+        subtitle_fr="Generez un QR Code terrain, des templates equipes et des supports pre-remplis pour fluidifier vos cleanwalks.",
+        subtitle_en="Generate field QR codes, team templates, and prefilled materials to streamline your cleanwalk operations.",
+        chips=[i18n_text("Terrain", "Field"), i18n_text("QR Code", "QR Code"), i18n_text("Organisation", "Operations")],
+        compact=True,
+    )
     
     st.markdown("""
     ### Pourquoi utiliser un QR Code ?
@@ -2025,18 +2463,14 @@ with tab_kit:
     )
 
 with tab_home:
-    # --- HERO SECTION (Landing Page Style) ---
-    st.markdown(f"""
-        <div class="hero-container animate-in">
-            <h1 class="hero-title">{t("welcome")}</h1>
-            <p class="hero-subtitle">{t("hero_subtitle")}</p>
-            <div style="display:flex; justify-content:center; gap:20px; margin-top:40px;">
-                <div class="floating" style="font-size:3rem;">🌍</div>
-                <div class="floating" style="font-size:3rem; animation-delay:0.5s;">🌿</div>
-                <div class="floating" style="font-size:3rem; animation-delay:1s;">✨</div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
+    render_tab_header(
+        icon="\U0001F4CA",
+        title_fr="Notre Impact",
+        title_en="Our Impact",
+        subtitle_fr="Visualisez les indicateurs cles, les tendances et l'impact collectif des actions citoyennes.",
+        subtitle_en="Track key indicators, trends, and the collective impact of citizen actions.",
+        chips=[i18n_text("Impact", "Impact"), i18n_text("Tendances", "Trends"), i18n_text("Communaute", "Community")],
+    )
     
     # Statistiques Globales (Grid de Cartes Premium)
     # --- PREDICTIVE AI RISK BANNER ---
@@ -2131,7 +2565,15 @@ with tab_home:
         st.info(msg)
 
 with tab_view:
-    st.subheader("🗺️ Carte Interactive des Actions")
+    render_tab_header(
+        icon="\U0001F5FA\ufe0f",
+        title_fr="Carte Interactive des Actions",
+        title_en="Interactive Action Map",
+        subtitle_fr="Explorez les actions validees, les zones sensibles, la chronologie et les couches geographiques en un seul espace.",
+        subtitle_en="Explore validated actions, sensitive zones, timeline, and geographic layers in one workspace.",
+        chips=[i18n_text("Cartographie", "Mapping"), i18n_text("Analyse", "Analytics"), i18n_text("Temps reel", "Live")],
+        compact=True,
+    )
     
     # Chargement DB + imports (Google Sheet et Excel)
     db_approved = get_submissions_by_status('approved')
@@ -2203,7 +2645,15 @@ with tab_view:
         ).add_to(group_pollution)
 
     features_timeline = []
-    
+    max_osm_shapes = 80
+    enable_osm_shapes = len(map_df) <= max_osm_shapes
+    if not enable_osm_shapes:
+        st.caption(
+            f"Mode rapide: geometries OSM desactivees au-dela de {max_osm_shapes} points."
+            if st.session_state.lang == "fr"
+            else f"Fast mode: OSM geometries disabled above {max_osm_shapes} points."
+        )
+
     if not map_df.empty:
         for _, row in map_df.iterrows():
             # 1. Calcul des besoins en équipement (Gap Analysis)
@@ -2222,7 +2672,10 @@ with tab_view:
             
             # --- GEO-GRAPHISM INTELLIGENT ---
             osm_type = detect_osm_type(row)
-            geometry, final_type = fetch_osm_geometry(row['lat'], row['lon'], osm_type) if osm_type != 'point' else (None, 'point')
+            if enable_osm_shapes and osm_type != 'point':
+                geometry, final_type = fetch_osm_geometry(row['lat'], row['lon'], osm_type)
+            else:
+                geometry, final_type = (None, 'point')
             
             # 3. Génération du popup intelligent
             popup_html = create_premium_popup(row, score_data, gap_alert=gap_alert)
@@ -2421,7 +2874,6 @@ with tab_view:
 
     # --- COUCHE CHRONOLOGIE (Optionnelle) ---
     if features_timeline:
-        group_chrono = folium.FeatureGroup(name="Chronologie (Défilement)", show=False)
         TimestampedGeoJson(
             {'type': 'FeatureCollection', 'features': features_timeline},
             period='P1D',
@@ -2432,8 +2884,7 @@ with tab_view:
             loop_button=True,
             date_options='YYYY-MM-DD',
             time_slider_drag_update=True
-        ).add_to(group_chrono)
-        group_chrono.add_to(m)
+        ).add_to(m)
 
     # Ajouter le Layer Control
     folium.LayerControl(position='topright', collapsed=False).add_to(m)
@@ -2445,7 +2896,7 @@ with tab_view:
             "Mode de visualisation" if st.session_state.lang == "fr" else "Visualization Mode",
             options=["2D (Standard)", "3D (Immersif)"],
             horizontal=True,
-            帮助="Le mode 3D nécessite plus de ressources mais offre une vue spectaculaire des hotspots." if st.session_state.lang == "fr" else "3D mode requires more resources but offers a spectacular view of hotspots."
+            help="Le mode 3D nécessite plus de ressources mais offre une vue spectaculaire des hotspots." if st.session_state.lang == "fr" else "3D mode requires more resources but offers a spectacular view of hotspots."
         )
 
     if "3D" in view_mode:
@@ -2495,10 +2946,14 @@ with tab_view:
         st_folium(m, width=900, height=520, returned_objects=[])
 
 with tab_trash_spotter:
-    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
-    st.markdown('<h1 class="hero-title">📢 Trash Spotter : Signalement Rapide</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="hero-subtitle">Un point noir ? Signalez-le en 2 secondes pour que la communauté puisse agir.</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    render_tab_header(
+        icon="\U0001F4E2",
+        title_fr="Trash Spotter",
+        title_en="Trash Spotter",
+        subtitle_fr="Signalez rapidement les points noirs pour mobiliser la communaute et accelerer les interventions.",
+        subtitle_en="Quickly report black spots to mobilize the community and accelerate interventions.",
+        chips=[i18n_text("Signalement", "Reporting"), i18n_text("Reactivite", "Response")],
+    )
 
     col_ts1, col_ts2 = st.columns([1, 1])
     with col_ts1:
@@ -2538,10 +2993,14 @@ with tab_trash_spotter:
             st.info("Aucun spot de pollution signalé pour le moment.")
 
 with tab_gamification:
-    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
-    st.markdown('<h1 class="hero-title">🏆 Éco-Classement & Récompenses</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="hero-subtitle">Votre engagement récompensé. Collectionnez les badges et grimpez au sommet.</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    render_tab_header(
+        icon="\U0001F3C6",
+        title_fr="Eco-classement & Recompenses",
+        title_en="Eco Ranking & Rewards",
+        subtitle_fr="Suivez la dynamique de la communaute, valorisez les efforts et activez les badges de progression.",
+        subtitle_en="Track community momentum, reward impact, and unlock progression badges.",
+        chips=[i18n_text("Leaderboard", "Leaderboard"), i18n_text("Badges", "Badges")],
+    )
 
     cg1, cg2 = st.columns([2, 3])
     with cg1:
@@ -2581,10 +3040,14 @@ with tab_gamification:
                 st.info("Action validée requise pour débloquer les badges.")
 
 with tab_community:
-    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
-    st.markdown('<h1 class="hero-title">🤝 Rassemblements Citoyens</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="hero-subtitle">Organisez ou rejoignez une équipe pour un impact décuplé.</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    render_tab_header(
+        icon="\U0001F91D",
+        title_fr="Rassemblements Citoyens",
+        title_en="Community Meetups",
+        subtitle_fr="Coordonnez les sorties, partagez les annonces et engagez les benevoles autour d'actions locales.",
+        subtitle_en="Coordinate outings, publish announcements, and engage volunteers around local actions.",
+        chips=[i18n_text("Communaute", "Community"), i18n_text("Coordination", "Coordination")],
+    )
 
     st.subheader("🚀 Créer une Sortie Groupée")
     st.write("Choisissez un itinéraire ou un lieu et invitez la communauté.")
@@ -2609,7 +3072,15 @@ with tab_community:
     st.info("Aucune sortie publique prévue pour le moment. Soyez le premier à lancer l'invitation !")
 
 with tab_sandbox:
-    st.header("🧪 Zone d'entraînement (Brouillon)")
+    render_tab_header(
+        icon="\U0001F9EA",
+        title_fr="Zone d'entrainement",
+        title_en="Sandbox",
+        subtitle_fr="Testez des scenarios fictifs sans impacter la base de donnees de production.",
+        subtitle_en="Test fictional scenarios without impacting the production database.",
+        chips=[i18n_text("Brouillon", "Draft"), i18n_text("Simulation", "Simulation")],
+        compact=True,
+    )
     st.info("Cette zone est un bac à sable : vous pouvez ajouter des données fictives pour tester l'outil. Elles ne sont **pas enregistrées** dans la base réelle et seront perdues si vous rafraîchissez la page.")
     
     col_sb1, col_sb2 = st.columns([1, 2])
@@ -2679,6 +3150,15 @@ with tab_sandbox:
         st_folium(m_sb, width=600, height=500, key="sandbox_map")
 
 with tab_add:
+    render_tab_header(
+        icon="\U0001F3AF",
+        title_fr="Declarer une action",
+        title_en="Declare an Action",
+        subtitle_fr="Soumettez une recolte, un lieu propre ou un acteur engage avec un formulaire clair et guide.",
+        subtitle_en="Submit a cleanup, a clean area, or an engaged actor using a clear and guided form.",
+        chips=[i18n_text("Formulaire", "Form"), i18n_text("Qualite", "Data quality")],
+        compact=True,
+    )
     st.divider()
     
     # Sélection du type d'action via un bouton radio plus explicite
@@ -2913,10 +3393,14 @@ with tab_add:
             st.markdown("---")
 
 with tab_report:
-    st.markdown(f'<div class="hero-container animate-in">', unsafe_allow_html=True)
-    st.markdown(f'<h1 class="hero-title">📄 {t("report_tab")}</h1>', unsafe_allow_html=True)
-    st.markdown(f'<p class="hero-subtitle">Générez un bilan officiel de vos actions citoyennes.</p>' if st.session_state.lang == "fr" else '<p class="hero-subtitle">Generate an official report of your citizen actions.</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    render_tab_header(
+        icon="\U0001F4C4",
+        title_fr="Rapport d'impact",
+        title_en="Impact Report",
+        subtitle_fr="Generez un rapport PDF exploitable pour le pilotage, la communication et les partenaires.",
+        subtitle_en="Generate a PDF report for operations, communication, and partners.",
+        chips=[i18n_text("PDF", "PDF"), i18n_text("RSE", "ESG")],
+    )
     
     db_approved = get_submissions_by_status('approved')
     public_actions = all_imported_actions + db_approved
@@ -2958,7 +3442,14 @@ with tab_report:
         st.info("Aucune donnée disponible pour générer le rapport." if st.session_state.lang == "fr" else "No data available to generate report.")
 
 with tab_history:
-    st.subheader("📋 Historique des Actions Citoyennes")
+    render_tab_header(
+        icon="\U0001F4CB",
+        title_fr="Historique des actions",
+        title_en="Action History",
+        subtitle_fr="Consultez toutes les actions recensees, leur contexte et les tendances historiques.",
+        subtitle_en="Browse all recorded actions, their context, and historical trends.",
+        compact=True,
+    )
     db_approved = get_submissions_by_status('approved')
     public_actions = all_imported_actions + db_approved
     public_df = pd.DataFrame(public_actions)
@@ -2971,10 +3462,14 @@ with tab_history:
         st.info("L'historique est actuellement vide.")
 
 with tab_route:
-    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
-    st.markdown('<h1 class="hero-title">🎯 Générateur d\'Action Citoyenne</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="hero-subtitle">Utilisez l\'IA pour planifier votre prochaine mission de dépollution sur le parcours le plus utile de Paris.</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    render_tab_header(
+        icon="\U0001F3AF",
+        title_fr="Generateur d'action citoyenne IA",
+        title_en="AI Mission Planner",
+        subtitle_fr="Planifiez un parcours strategique avec l'IA selon l'historique de pollution et vos ressources terrain.",
+        subtitle_en="Plan a strategic route with AI based on pollution history and field resources.",
+        chips=[i18n_text("IA", "AI"), i18n_text("Parcours", "Routing")],
+    )
 
     if map_df.empty:
         st.warning("Aucune donnée disponible pour optimiser un trajet.")
@@ -3044,10 +3539,14 @@ with tab_route:
                     st.error(f"Désolé, l'IA n'a pas pu générer de parcours : {result[1]}")
 
 with tab_recycling:
-    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
-    st.markdown('<h1 class="hero-title">♻️ Seconde Vie & Sensibilisation</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="hero-subtitle">Découvrez l\'impact réel de vos actions et développez vos connaissances sur l\'écologie circulaire.</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    render_tab_header(
+        icon="\u267b\ufe0f",
+        title_fr="Seconde vie & sensibilisation",
+        title_en="Second Life & Awareness",
+        subtitle_fr="Transformez les donnees terrain en impact concret et en culture ecologique utile.",
+        subtitle_en="Turn field data into concrete impact and practical environmental awareness.",
+        chips=[i18n_text("Impact", "Impact"), i18n_text("Pedagogie", "Education")],
+    )
     
     db_approved = get_submissions_by_status('approved')
     public_actions = all_imported_actions + db_approved
@@ -3115,7 +3614,14 @@ with tab_recycling:
 # ONGLET : DÉRÈGLEMENT CLIMATIQUE (EDUCATION)
 # ------------------------------------------------------------------------
 with tab_climate:
-    st.subheader("🌍 Comprendre le Dérèglement Climatique")
+    render_tab_header(
+        icon="\U0001F30D",
+        title_fr="Comprendre le dereglement climatique",
+        title_en="Understanding Climate Disruption",
+        subtitle_fr="Une base scientifique claire pour renforcer l'action citoyenne locale.",
+        subtitle_en="A clear scientific baseline to strengthen local citizen action.",
+        compact=True,
+    )
     st.write("Parce qu'agir pour la planète commence par comprendre les enjeux. Voici les informations essentielles validées par la science pour construire votre culture écologique.")
     
     st.markdown("---")
@@ -3169,7 +3675,15 @@ with tab_climate:
 # ONGLET : ESPACE ELUS (DASHBOARD COLLECTIVITES)
 # ------------------------------------------------------------------------
 with tab_elus:
-    st.header("espace territoires (dashboard collectivités)")
+    render_tab_header(
+        icon="\U0001F3DB\ufe0f",
+        title_fr="Espace Territoires",
+        title_en="Territories Dashboard",
+        subtitle_fr="Analysez l'impact local, les zones de vigilance et les leviers de decision pour votre collectivite.",
+        subtitle_en="Analyze local impact, risk areas, and decision levers for your municipality.",
+        chips=[i18n_text("Collectivites", "Municipalities"), i18n_text("Pilotage", "Steering")],
+        compact=True,
+    )
     st.write("ce portail permet de visualiser l'impact de l'action citoyenne sur votre commune.")
     
     # Extraire une liste de Villes/Codes Postaux basique à partir des actions approuvées
@@ -3446,22 +3960,42 @@ with tab_elus:
 # ONGLET : LE GUIDE DU CITOYEN VERT
 # ------------------------------------------------------------------------
 with tab_guide:
+    render_tab_header(
+        icon="\U0001F4DA",
+        title_fr="Guide pratique",
+        title_en="Practical Guide",
+        subtitle_fr="Retrouvez les ressources utiles pour agir efficacement sur le terrain.",
+        subtitle_en="Find practical resources to act effectively in the field.",
+        compact=True,
+    )
     show_resources()
 
 # ------------------------------------------------------------------------
 # ONGLET : ACTEURS ENGAGÉS (ASSOCIATIONS & COMMERCES)
 # ------------------------------------------------------------------------
 with tab_partners:
+    render_tab_header(
+        icon="\U0001F91D",
+        title_fr="Partenaires engages",
+        title_en="Engaged Partners",
+        subtitle_fr="Valorisez les structures qui amplifient l'impact local des cleanwalks.",
+        subtitle_en="Highlight organizations that amplify local cleanwalk impact.",
+        compact=True,
+    )
     show_partners()
 
 # ------------------------------------------------------------------------
 # ONGLET : MÉTÉO & ACTION
 # ------------------------------------------------------------------------
 with tab_weather:
-    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
-    st.markdown('<h1 class="hero-title">🌤️ Météo & Planification</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="hero-subtitle">Analysez les conditions idéales pour votre prochaine Clean Walk.</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    render_tab_header(
+        icon="\U0001F324\ufe0f",
+        title_fr="Meteo & planification",
+        title_en="Weather & Planning",
+        subtitle_fr="Identifiez les meilleures fenetres meteo pour planifier des operations efficaces.",
+        subtitle_en="Identify the best weather windows to plan effective operations.",
+        chips=[i18n_text("Prevision", "Forecast"), i18n_text("Timing", "Timing")],
+    )
 
     @st.cache_data(ttl=1800)
     def get_weather_forecast(lat=48.8566, lon=2.3522):
@@ -3529,10 +4063,14 @@ with tab_weather:
 # ONGLET : COMPARAISON TERRITORIALE
 # ------------------------------------------------------------------------
 with tab_compare:
-    st.markdown('<div class="hero-container animate-in">', unsafe_allow_html=True)
-    st.markdown('<h1 class="hero-title">🏙️ Comparaison Territoriale</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="hero-subtitle">Classement des zones : kg/action, mégots/bénévole, Score IPC.</p>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    render_tab_header(
+        icon="\U0001F3D9\ufe0f",
+        title_fr="Comparaison territoriale",
+        title_en="Territorial Comparison",
+        subtitle_fr="Comparez les zones par performance, intensite et recurrence de pollution.",
+        subtitle_en="Compare zones by performance, intensity, and pollution recurrence.",
+        chips=[i18n_text("Benchmark", "Benchmark"), i18n_text("Priorisation", "Prioritization")],
+    )
 
     df_cmp = pd.DataFrame(all_imported_actions + get_submissions_by_status('approved'))
 
@@ -3611,7 +4149,15 @@ with tab_compare:
 # ONGLET : ADMIN
 # ------------------------------------------------------------------------
 with tab_admin:
-    st.subheader("Espace administrateur")
+    render_tab_header(
+        icon="\u2699\ufe0f",
+        title_fr="Espace administrateur",
+        title_en="Admin Workspace",
+        subtitle_fr="Validez les contributions, pilotez la carte publique et exportez les donnees scientifiques.",
+        subtitle_en="Validate submissions, manage the public map, and export scientific datasets.",
+        chips=[i18n_text("Validation", "Moderation"), i18n_text("Donnees", "Data")],
+        compact=True,
+    )
     st.caption("Connexion Google obligatoire pour les administrateurs")
 
 
@@ -3797,7 +4343,10 @@ with tab_admin:
 
     if not ADMIN_SECRET_CODE:
         # Fallback to check st.secrets if os.getenv failed
-        ADMIN_SECRET_CODE = st.secrets.get("CLEANMYMAP_ADMIN_SECRET_CODE", "")
+        try:
+            ADMIN_SECRET_CODE = st.secrets.get("CLEANMYMAP_ADMIN_SECRET_CODE", "")
+        except Exception:
+            ADMIN_SECRET_CODE = ""
     
     if not ADMIN_SECRET_CODE:
         st.error("Mot de passe administrateur non configuré (CLEANMYMAP_ADMIN_SECRET_CODE).")
