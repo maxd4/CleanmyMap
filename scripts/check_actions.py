@@ -7,14 +7,16 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from app import all_imported_actions
+from src.database import init_db, get_submissions_by_status
 
 
 def check_actions() -> None:
     try:
-        print("Total imported actions:", len(all_imported_actions))
+        init_db()
+        approved_actions = get_submissions_by_status("approved")
+        print("Total approved actions:", len(approved_actions))
 
-        df = pd.DataFrame(all_imported_actions)
+        df = pd.DataFrame(approved_actions)
         if not df.empty and "source" in df.columns:
             print(df["source"].value_counts())
         else:

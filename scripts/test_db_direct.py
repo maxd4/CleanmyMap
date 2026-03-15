@@ -5,11 +5,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.database import get_submissions_by_status
+from src.database import init_db, get_submissions_by_status
 
 
 def check_db() -> None:
     try:
+        init_db()
         submissions = get_submissions_by_status("approved")
         print(f"Number of approved submissions: {len(submissions)}")
 
