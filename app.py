@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 import folium
 from folium.plugins import TimestampedGeoJson
+from branca.element import Template, MacroElement
 from streamlit_folium import st_folium
 import osmnx as ox
 import networkx as nx
@@ -1009,6 +1010,285 @@ def calculate_flow_sinks(G, pollution_points_df, threshold_slope=0.03):
 @st.cache_resource(ttl=86400, show_spinner=False)
 def get_osmnx_graph(center_lat, center_lon, dist):
     return ox.graph_from_point((center_lat, center_lon), dist=dist, network_type='walk', simplify=True)
+
+
+def build_interactive_folium_map(map_df: pd.DataFrame) -> folium.Map:
+    """Construit la carte Folium complète (couches, styles, popups, légende, timeline)."""
+    # Fallback sur Paris si vide
+    center_lat, center_lon = 48.8566, 2.3522
+    zoom_start = 12
+
+    if not map_df.empty:
+        center_lat, center_lon = map_df["lat"].mean(), map_df["lon"].mean()
+        zoom_start = 11
+
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start, tiles=None)
+
+    folium.TileLayer('OpenStreetMap', name='Fond Clair (Défaut)').add_to(m)
+    folium.TileLayer(
+        tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        name='Fond Sombre',
+        attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    ).add_to(m)
+    folium.TileLayer(
+        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        name='Vue Satellite',
+        attr='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    ).add_to(m)
+
+    official_bins = get_paris_bins()
+
+    from folium.plugins import MarkerCluster
+    group_pollution = folium.FeatureGroup(name="⚠️ Pollution & Actions", show=True)
+    cluster_pollution = MarkerCluster(name="🟣 Cluster Pollution (dense)", show=False, disableClusteringAtZoom=14)
+    group_clean = folium.FeatureGroup(name="🌿 Zones Propres", show=True)
+    group_business = folium.FeatureGroup(name="⭐ Acteurs Engagés", show=True)
+    group_spots = folium.FeatureGroup(name="📢 Trash Spots (Signalisations)", show=True)
+
+    active_spots = get_active_spots()
+    for s in active_spots:
+        folium.Marker(
+            [s['lat'], s['lon']],
+            popup=f"<b>⚠️ {s['type_dechet']}</b><br>Signalé par {s['reporter_name']}<br><i>Aidez-nous à nettoyer !</i>",
+            icon=folium.Icon(color='red', icon='exclamation-circle', prefix='fa'),
+            tooltip="Spot de pollution actif"
+        ).add_to(group_spots)
+    group_spots.add_to(m)
+
+    for b in official_bins:
+        folium.CircleMarker(
+            location=[b['lat'], b['lon']],
+            radius=3,
+            color='#808080',
+            fill=True,
+            fill_color='#808080',
+            fill_opacity=0.4,
+            popup=f"<b>🗑️ Info Officielle</b><br>Type: {b.get('type')}<br>Propriétaire: Ville de Paris"
+        ).add_to(group_pollution)
+
+    features_timeline = []
+    max_osm_shapes = 80
+    enable_osm_shapes = len(map_df) <= max_osm_shapes
+    if not enable_osm_shapes:
+        st.caption(
+            f"Mode rapide: geometries OSM desactivees au-dela de {max_osm_shapes} points."
+            if st.session_state.lang == "fr"
+            else f"Fast mode: OSM geometries disabled above {max_osm_shapes} points."
+        )
+
+    if not map_df.empty:
+        for _, row in map_df.iterrows():
+            is_clean = row.get('est_propre', False)
+            is_business = row.get('type_lieu') == "Établissement Engagé (Label)"
+            gap_alert = ""
+            if not is_clean and not is_business and row.get('lat') and row.get('lon'):
+                if 48.8 <= row['lat'] <= 48.9 and 2.2 <= row['lon'] <= 2.4:
+                    is_gap, dist = calculate_infrastructure_gap(row['lat'], row['lon'], official_bins)
+                    if is_gap:
+                        gap_alert = f"Besoin d'équipement : poubelle la plus proche à {int(dist)}m"
+
+            score_data = calculate_scores(row)
+            color, radius, icon_type = get_marker_style(row, score_data)
+
+            osm_type = detect_osm_type(row)
+            if enable_osm_shapes and osm_type != 'point':
+                geometry, final_type = fetch_osm_geometry(row['lat'], row['lon'], osm_type)
+            else:
+                geometry, final_type = (None, 'point')
+
+            popup_html = create_premium_popup(row, score_data, gap_alert=gap_alert)
+            place_name = format_google_maps_name(row)
+            target_group = group_business if is_business else group_clean if is_clean else group_pollution
+
+            if final_type == 'park' and geometry:
+                _park_color = color
+                folium.GeoJson(
+                    geometry,
+                    style_function=lambda x, c=_park_color: {
+                        'fillColor': MAP_COLORS['park'],
+                        'color': c,
+                        'weight': 2,
+                        'fillOpacity': 0.3
+                    },
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+            elif final_type == 'street' and geometry:
+                _street_color = color
+                folium.GeoJson(
+                    geometry,
+                    style_function=lambda x, c=_street_color: {
+                        'color': c,
+                        'weight': 5,
+                        'opacity': 0.8
+                    },
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+            elif icon_type == 'star':
+                folium.Marker(
+                    location=[row['lat'], row['lon']],
+                    popup=folium.Popup(popup_html, max_width=300),
+                    tooltip=place_name,
+                    icon=folium.Icon(color='lightgray', icon_color=color, icon='star', prefix='fa')
+                ).add_to(target_group)
+            elif score_data['score_salete'] > 200:
+                icon_char = '🚬' if row.get('megots', 0) > 300 else '🗑️'
+                folium.Marker(
+                    location=[row['lat'], row['lon']],
+                    icon=folium.DivIcon(html=f"""
+                        <div style="background:{color}; width:30px; height:30px; border-radius:15px;
+                        display:flex; align-items:center; justify-content:center; color:white; font-size:16px;
+                        box-shadow:0 0 10px rgba(0,0,0,0.3); border:2px solid white;">{icon_char}</div>
+                    """),
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+            elif is_clean:
+                folium.Marker(
+                    location=[row['lat'], row['lon']],
+                    icon=folium.Icon(color='cadetblue', icon='leaf', prefix='fa'),
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+            else:
+                folium.CircleMarker(
+                    location=[row['lat'], row['lon']],
+                    radius=radius,
+                    color=color,
+                    fill=True,
+                    fill_color=color,
+                    fill_opacity=0.7,
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+
+            raw_date = row.get('date', '')
+            if not raw_date or str(raw_date).lower() in ["nan", "none", ""]:
+                try:
+                    raw_date = row.get('submitted_at', '').split('T')[0]
+                except Exception:
+                    raw_date = datetime.now().strftime('%Y-%m-%d')
+
+            icon_name = 'star' if icon_type == 'star' else 'circle'
+            features_timeline.append({
+                'type': 'Feature',
+                'geometry': {'type': 'Point', 'coordinates': [row['lon'], row['lat']]},
+                'properties': {
+                    'time': raw_date,
+                    'popup': popup_html,
+                    'icon': icon_name,
+                    'iconstyle': {
+                        'color': color,
+                        'fillColor': color,
+                        'fillOpacity': 0.8,
+                        'radius': max(6, min(radius, 14))
+                    },
+                    'style': {'color': color}
+                }
+            })
+
+            if score_data['score_mixte'] > 80 and not is_business:
+                folium.Marker(
+                    location=[row['lat'], row['lon']],
+                    icon=folium.Icon(color='purple', icon='exclamation-triangle', prefix='fa'),
+                    tooltip=f"⚠️ Point Critique: {place_name}",
+                    popup=f"<b>Point critique détecté</b><br>{place_name}<br><small>Priorité élevée pour intervention.</small>"
+                ).add_to(group_pollution)
+
+    group_pollution.add_child(cluster_pollution)
+    group_pollution.add_to(m)
+    group_clean.add_to(m)
+    group_business.add_to(m)
+
+    _nb_actions = len(map_df) if not map_df.empty else 0
+    _nb_megots = int(map_df['megots'].fillna(0).sum()) if not map_df.empty else 0
+    _nb_kg = map_df['dechets_kg'].fillna(0).sum() if not map_df.empty else 0.0
+    _nb_volunteers = int(map_df['benevoles'].fillna(0).sum()) if not map_df.empty else 0
+    _nb_critiques = len(map_df[map_df['score_mixte'] > 80]) if not map_df.empty and 'score_mixte' in map_df.columns else 0
+
+    _impact = calculate_impact(_nb_megots, _nb_kg)
+    _co2 = _impact['co2_kg']
+    _km = int(_co2 / 0.2) if _co2 > 0 else 0
+    _eau = _impact['eau_litres']
+    _douches = int(_eau / 50) if _eau > 0 else 0
+    _current_date = datetime.now().strftime('%d/%m')
+
+    legend_html = f"""
+    {{% macro script(this, kwargs) %}}
+    var legend = L.control({{position: 'bottomleft'}});
+    legend.onAdd = function(map) {{
+        var div = L.DomUtil.create('div', 'info legend');
+        div.style.background = 'rgba(255,255,255,0.95)';
+        div.style.backdropFilter = 'blur(10px)';
+        div.style.padding = '15px';
+        div.style.borderRadius = '20px';
+        div.style.boxShadow = '0 8px 32px rgba(0,0,0,0.15)';
+        div.style.border = '1px solid rgba(16,185,129,0.3)';
+        div.style.fontSize = '12px';
+        div.style.fontFamily = 'Outfit, sans-serif';
+        div.style.lineHeight = '1.5';
+        div.style.minWidth = '200px';
+        div.style.color = '#1e293b';
+        div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
+                <span style="font-size:16px;">🗺️</span>
+                <div style="text-align:right;">
+                    <b style="color:#10b981; font-size:14px; display:block;">BILAN 2026</b>
+                    <small style="color:#94a3b8;">{_current_date}</small>
+                </div>
+            </div>
+            <b style="color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;">📋 ÉTAT DES LIEUX</b><br>
+            <div style="margin:5px 0 10px 0; display:grid; grid-template-columns: 1fr 1fr; gap:2px;">
+                <span><span style="color:#3498db;">●</span> Propres</span>
+                <span><span style="color:#27ae60;">●</span> Nettoyés</span>
+                <span><span style="color:#e67e22;">●</span> À inspecter</span>
+                <span><span style="color:#8e44ad;">●</span> Pollués</span>
+            </div>
+            <div style="margin-bottom:10px;">
+                <span>⚠️ <b>{_nb_critiques}</b> Point critique</span><br>
+                <span>📍 <b>{_nb_actions}</b> Actions</span><br>
+                <span>👥 <b>{_nb_volunteers}</b> Bénévoles</span><br>
+                <span>🚬 <b>{_nb_megots:,}</b> Mégots</span><br>
+                <span>♻️ <b>{_nb_kg:.1f} kg</b> Déchets</span>
+            </div>
+            <b style="color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;">🌍 IMPACT</b><br>
+            <div style="margin-top:5px; background:rgba(16,185,129,0.05); padding:8px; border-radius:12px; border:1px solid rgba(16,185,129,0.1);">
+                <span>💨 <b>{_co2:.1f} kg</b> CO₂ évité</span><br>
+                <small style="color:#64748b; margin-left:18px;">🚗 { _km:,} km voiture</small><br>
+                <span>💧 <b>{_eau:,} L</b> Eau préservée</span><br>
+                <small style="color:#64748b; margin-left:18px;">🚿 {_douches:,} douches</small>
+            </div>
+        `;
+        return div;
+    }};
+    legend.addTo({{{{ this._parent.get_name() }}}});
+    {{% endmacro %}}
+    """
+    legend_element = MacroElement()
+    legend_element._template = Template(legend_html)
+    m.add_child(legend_element)
+
+    heat_data = get_heatmap_data(map_df)
+    if heat_data:
+        from folium.plugins import HeatMap
+        HeatMap(heat_data, name="Heatmap de Saleté (Vue Thermique)", show=False, radius=25, blur=15).add_to(m)
+
+    if features_timeline:
+        TimestampedGeoJson(
+            {'type': 'FeatureCollection', 'features': features_timeline},
+            period='P1D',
+            add_last_point=True,
+            auto_play=False,
+            loop=False,
+            max_speed=1,
+            loop_button=True,
+            date_options='YYYY-MM-DD',
+            time_slider_drag_update=True
+        ).add_to(m)
+
+    folium.LayerControl(position='topright', collapsed=False).add_to(m)
+    return m
 
 
 TYPE_LIEU_OPTIONS = [
@@ -2602,211 +2882,106 @@ with tab_view:
             # 4. Ajout au groupe correspondant
             target_group = group_business if is_business else group_clean if is_clean else group_pollution
             
-            if final_type == 'park' and geometry:
-                # Tracé du polygone du parc (lambda capture color pour éviter closure bug)
-                _park_color = color
-                folium.GeoJson(
-                    geometry,
-                    style_function=lambda x, c=_park_color: {
-                        'fillColor': MAP_COLORS['park'],
-                        'color': c,
-                        'weight': 2,
-                        'fillOpacity': 0.3
-                    },
-                    tooltip=place_name,
-                    popup=folium.Popup(popup_html, max_width=300)
-                ).add_to(target_group)
+            # Génération du QR Code
+            qr = qrcode.QRCode(version=1, box_size=10, border=4)
+            qr.add_data(share_url)
+            qr.make(fit=True)
+            img_qr = qr.make_image(fill_color=color_qr, back_color="white")
             
-            elif final_type == 'street' and geometry:
-                # Tracé de la rue (lambda capture color pour éviter closure bug)
-                _street_color = color
-                folium.GeoJson(
-                    geometry,
-                    style_function=lambda x, c=_street_color: {
-                        'color': c,
-                        'weight': 5,
-                        'opacity': 0.8
-                    },
-                    tooltip=place_name,
-                    popup=folium.Popup(popup_html, max_width=300)
-                ).add_to(target_group)
-                
-            elif icon_type == 'star':
-                folium.Marker(
-                    location=[row['lat'], row['lon']],
-                    popup=folium.Popup(popup_html, max_width=300),
-                    tooltip=place_name,
-                    icon=folium.Icon(color='lightgray', icon_color=color, icon='star', prefix='fa')
-                ).add_to(target_group)
-                
-            # --- PICTOGRAMMES STANDARDISÉS (POINTS CRITIQUES) ---
-            elif score_data['score_salete'] > 200: # Seuil pour icône
-                icon_char = '🚬' if row.get('megots', 0) > 300 else '🗑️'
-                folium.Marker(
-                    location=[row['lat'], row['lon']],
-                    icon=folium.DivIcon(html=f"""
-                        <div style="background:{color}; width:30px; height:30px; border-radius:15px; 
-                        display:flex; align-items:center; justify-content:center; color:white; font-size:16px; 
-                        box-shadow:0 0 10px rgba(0,0,0,0.3); border:2px solid white;">{icon_char}</div>
-                    """),
-                    tooltip=place_name,
-                    popup=folium.Popup(popup_html, max_width=300)
-                ).add_to(target_group)
-                
-            elif is_clean:
-                # Nouveau visuel pour Zone Propre (Feuille)
-                folium.Marker(
-                    location=[row['lat'], row['lon']],
-                    icon=folium.Icon(color='cadetblue', icon='leaf', prefix='fa'),
-                    tooltip=place_name,
-                    popup=folium.Popup(popup_html, max_width=300)
-                ).add_to(target_group)
+            # Conversion pour affichage Streamlit
+            buf = io.BytesIO()
+            img_qr.save(buf, format="PNG")
+            byte_im = buf.getvalue()
             
-            else:
-                folium.CircleMarker(
-                    location=[row['lat'], row['lon']],
-                    radius=radius,
-                    color=color,
-                    fill=True,
-                    fill_color=color,
-                    fill_opacity=0.7,
-                    tooltip=place_name,
-                    popup=folium.Popup(popup_html, max_width=300)
-                ).add_to(target_group)
+            col_qr1, col_qr2 = st.columns([1, 2])
+            with col_qr1:
+                st.image(byte_im, caption="QR Code à scanner sur le terrain", width="stretch")
+            with col_qr2:
+                st.success("✅ Votre QR Code est prêt !")
+                st.write(f"**Lien encodé :** `{share_url}`")
+                st.download_button(
+                    label="⬇️ Télécharger le QR Code (PNG)",
+                    data=byte_im,
+                    file_name=f"qrcode_terrain_{lieu_event.replace(' ', '_')}.png",
+                    mime="image/png",
+                    width="stretch"
+                )
+                st.info("💡 **Conseil :** Imprimez ce code et fixez-le sur votre peson ou sur votre sac de collecte principal pour que chaque bénévole puisse flasher son impact en fin d'action.")
 
-            # --- Préparation Chronologie ---
-            raw_date = row.get('date', '')
-            if not raw_date or str(raw_date).lower() in ["nan", "none", ""]:
-                try:
-                    raw_date = row.get('submitted_at', '').split('T')[0]
-                except:
-                    raw_date = datetime.now().strftime('%Y-%m-%d')
-            
-            icon_name = 'star' if icon_type == 'star' else 'circle'
-            
-            features_timeline.append({
-                'type': 'Feature',
-                'geometry': {'type': 'Point', 'coordinates': [row['lon'], row['lat']]},
-                'properties': {
-                    'time': raw_date,
-                    'popup': popup_html,
-                    'icon': icon_name,
-                    'iconstyle': {
-                        'color': color,
-                        'fillColor': color,
-                        'fillOpacity': 0.7,
-                        'radius': radius
-                    },
-                    'style': {'color': color}
-                }
-            })
+    st.markdown("---")
+    st.subheader("🧾 Templates imprimables & gestion multi-bénévoles")
+    nb_participants = st.number_input("Nombre de bénévoles attendus", min_value=1, value=10, step=1, key="kit_participants")
+    nb_equipes = st.number_input("Nombre d'équipes", min_value=1, value=3, step=1, key="kit_teams")
 
-    group_pollution.add_to(m)
-    cluster_pollution.add_to(m)
-    group_clean.add_to(m)
-    group_business.add_to(m)
+    planner = pd.DataFrame({
+        "equipe": [f"Équipe {((i % nb_equipes) + 1)}" for i in range(nb_participants)],
+        "benevole": [f"Participant {i+1}" for i in range(nb_participants)],
+        "telephone": ["" for _ in range(nb_participants)],
+        "materiel": ["gants, sacs, pinces" for _ in range(nb_participants)],
+    })
+    st.dataframe(planner, width="stretch", hide_index=True)
+    st.download_button(
+        "⬇️ Télécharger template équipes (CSV)",
+        data=planner.to_csv(index=False).encode("utf-8"),
+        file_name="template_equipes_cleanmymap.csv",
+        mime="text/csv",
+        width="stretch",
+    )
 
-    # --- LÉGENDE HTML OVERLAY (BILAN RICHE) ---
-    from branca.element import MacroElement
-    from jinja2 import Template
+with tab_home:
+    render_tab_header(
+        icon="\U0001F4CA",
+        title_fr="Notre Impact",
+        title_en="Our Impact",
+        subtitle_fr="Vue d'ensemble essentielle : indicateurs globaux et carte interactive des actions.",
+        subtitle_en="Essential overview: global indicators and interactive map of actions.",
+        chips=[i18n_text("Essentiel", "Essential"), i18n_text("Carte", "Map")],
+    )
 
-    # Calcul des statistiques en temps réel pour la légende
-    _nb_actions = len(map_df) if not map_df.empty else 0
-    _nb_megots = int(map_df['megots'].fillna(0).sum()) if not map_df.empty else 0
-    _nb_kg = map_df['dechets_kg'].fillna(0).sum() if not map_df.empty else 0.0
-    _nb_volunteers = int(map_df['benevoles'].fillna(0).sum()) if not map_df.empty else 0
-    _nb_critiques = len(map_df[map_df['score_mixte'] > 80]) if not map_df.empty and 'score_mixte' in map_df.columns else 0
+    home_actions_df = all_public_df.dropna(subset=["lat", "lon"]).copy() if not all_public_df.empty else pd.DataFrame()
+
+    if not home_actions_df.empty:
+        home_actions_df = calculate_trends(home_actions_df)
+        home_map = build_interactive_folium_map(home_actions_df)
+    else:
+        st.info(i18n_text("Aucune action géolocalisée à afficher pour le moment.", "No geolocated action to display yet."))
+        home_map = folium.Map(location=[48.8566, 2.3522], zoom_start=12, tiles="CartoDB positron")
+
+    st_folium(home_map, width="stretch", height=520, returned_objects=[])
+
+with tab_view:
+    render_tab_header(
+        icon="\U0001F5FA\ufe0f",
+        title_fr="Carte Interactive des Actions",
+        title_en="Interactive Action Map",
+        subtitle_fr="Explorez les actions validees, les zones sensibles, la chronologie et les couches geographiques en un seul espace.",
+        subtitle_en="Explore validated actions, sensitive zones, timeline, and geographic layers in one workspace.",
+        chips=[i18n_text("Cartographie", "Mapping"), i18n_text("Analyse", "Analytics"), i18n_text("Temps reel", "Live")],
+        compact=True,
+    )
     
-    # Impact environnemental
-    _impact = calculate_impact(_nb_megots, _nb_kg)
-    _co2 = _impact['co2_kg']
-    _km = int(_co2 / 0.2) if _co2 > 0 else 0
-    _eau = _impact['eau_litres']
-    _douches = int(_eau / 50) if _eau > 0 else 0
-    _current_date = datetime.now().strftime('%d/%m')
+    # Chargement DB + imports (Google Sheet et Excel)
+    db_approved = get_submissions_by_status('approved')
+    public_actions = all_imported_actions + db_approved
+    public_df = pd.DataFrame(public_actions)
 
-    legend_html = f"""
-    {{% macro script(this, kwargs) %}}
-    var legend = L.control({{position: 'bottomleft'}});
-    legend.onAdd = function(map) {{
-        var div = L.DomUtil.create('div', 'info legend');
-        div.style.background = 'rgba(255,255,255,0.95)';
-        div.style.backdropFilter = 'blur(10px)';
-        div.style.padding = '15px';
-        div.style.borderRadius = '20px';
-        div.style.boxShadow = '0 8px 32px rgba(0,0,0,0.15)';
-        div.style.border = '1px solid rgba(16,185,129,0.3)';
-        div.style.fontSize = '12px';
-        div.style.fontFamily = 'Outfit, sans-serif';
-        div.style.lineHeight = '1.5';
-        div.style.minWidth = '200px';
-        div.style.color = '#1e293b';
-
-        div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
-                <span style="font-size:16px;">🗺️</span>
-                <div style="text-align:right;">
-                    <b style="color:#10b981; font-size:14px; display:block;">BILAN 2026</b>
-                    <small style="color:#94a3b8;">{_current_date}</small>
-                </div>
-            </div>
-            
-            <b style="color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;">📋 ÉTAT DES LIEUX</b><br>
-            <div style="margin:5px 0 10px 0; display:grid; grid-template-columns: 1fr 1fr; gap:2px;">
-                <span><span style="color:#3498db;">●</span> Propres</span>
-                <span><span style="color:#27ae60;">●</span> Nettoyés</span>
-                <span><span style="color:#e67e22;">●</span> À inspecter</span>
-                <span><span style="color:#8e44ad;">●</span> Pollués</span>
-            </div>
-            
-            <div style="margin-bottom:10px;">
-                <span>⚠️ <b>{_nb_critiques}</b> Point critique</span><br>
-                <span>📍 <b>{_nb_actions}</b> Actions</span><br>
-                <span>👥 <b>{_nb_volunteers}</b> Bénévoles</span><br>
-                <span>🚬 <b>{_nb_megots:,}</b> Mégots</span><br>
-                <span>♻️ <b>{_nb_kg:.1f} kg</b> Déchets</span>
-            </div>
-
-            <b style="color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;">🌍 IMPACT</b><br>
-            <div style="margin-top:5px; background:rgba(16,185,129,0.05); padding:8px; border-radius:12px; border:1px solid rgba(16,185,129,0.1);">
-                <span>💨 <b>{_co2:.1f} kg</b> CO₂ évité</span><br>
-                <small style="color:#64748b; margin-left:18px;">🚗 { _km:,} km voiture</small><br>
-                <span>💧 <b>{_eau:,} L</b> Eau préservée</span><br>
-                <small style="color:#64748b; margin-left:18px;">🚿 {_douches:,} douches</small>
-            </div>
-        `;
-        return div;
-    }};
-    legend.addTo({{{{ this._parent.get_name() }}}});
-    {{% endmacro %}}
-    """
-    legend_element = MacroElement()
-    legend_element._template = Template(legend_html)
-    m.add_child(legend_element)
-
-    # --- COUCHE HEATMAP : Vue Thermique de la Saleté ---
-    heat_data = get_heatmap_data(map_df)
-    if heat_data:
-        from folium.plugins import HeatMap
-        HeatMap(heat_data, name="Heatmap de Saleté (Vue Thermique)", show=False, radius=25, blur=15).add_to(m)
-
-    # --- COUCHE CHRONOLOGIE (Optionnelle) ---
-    if features_timeline:
-        TimestampedGeoJson(
-            {'type': 'FeatureCollection', 'features': features_timeline},
-            period='P1D',
-            add_last_point=True,
-            auto_play=False,
-            loop=False,
-            max_speed=1,
-            loop_button=True,
-            date_options='YYYY-MM-DD',
-            time_slider_drag_update=True
-        ).add_to(m)
-
-    # Ajouter le Layer Control
-    folium.LayerControl(position='topright', collapsed=False).add_to(m)
+    critical_zones = get_critical_zones(public_df) if not public_df.empty else []
     
+    # Fallback sur Paris si vide
+    center_lat, center_lon = 48.8566, 2.3522
+    zoom_start = 12
+    
+    map_df = pd.DataFrame()
+    if not public_df.empty:
+        map_df = public_df.dropna(subset=["lat", "lon"]).copy()
+        if not map_df.empty:
+            # --- ANALYSE DE TENDANCE LOCALE ---
+            map_df = calculate_trends(map_df)
+            center_lat, center_lon = map_df["lat"].mean(), map_df["lon"].mean()
+            zoom_start = 11
+
+    m = build_interactive_folium_map(map_df)
+
     # --- CHOIX DU MODE DE VUE (2D vs 3D) ---
     col_view_opt, col_view_lang = st.columns([3, 1])
     with col_view_opt:
