@@ -2452,102 +2452,35 @@ with tab_home:
         icon="\U0001F4CA",
         title_fr="Notre Impact",
         title_en="Our Impact",
-        subtitle_fr="Visualisez les indicateurs cles, les tendances et l'impact collectif des actions citoyennes.",
-        subtitle_en="Track key indicators, trends, and the collective impact of citizen actions.",
-        chips=[i18n_text("Impact", "Impact"), i18n_text("Tendances", "Trends"), i18n_text("Communaute", "Community")],
+        subtitle_fr="Vue d'ensemble essentielle : indicateurs globaux et carte interactive des actions.",
+        subtitle_en="Essential overview: global indicators and interactive map of actions.",
+        chips=[i18n_text("Essentiel", "Essential"), i18n_text("Carte", "Map")],
     )
-    
-    # Statistiques Globales (Grid de Cartes Premium)
-    # --- PREDICTIVE AI RISK BANNER ---
-    risk_data = calculate_pollution_risk(df_impact)
-    risk_color = "#ef4444" if risk_data['level'] == "Critique" else "#f97316" if risk_data['level'] == "Élevé" else "#eab308" if risk_data['level'] == "Modéré" else "#10b981"
-    
-    st.markdown(f"""
-        <div class="premium-card animate-in stat-glow" style="border-left:8px solid {risk_color}; animation-delay:0.1s;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <h4 style="margin:0; color:{risk_color}; text-transform:uppercase; letter-spacing:1px; font-size:12px;">
-                        { "🤖 ANALYSE PRÉDICTIVE IA" if st.session_state.lang == "fr" else "🤖 AI PREDICTIVE ANALYSIS" }
-                    </h4>
-                    <p style="margin:5px 0 0 0; font-size:16px; font-weight:600;">
-                        { risk_data['message'] if st.session_state.lang == "fr" else risk_data['level'] + " Risk: Pollution levels expected to rise." }
-                    </p>
-                </div>
-                <div style="text-align:right;">
-                    <div style="font-size:24px; font-weight:bold; color:{risk_color};">{risk_data['risk_score']}%</div>
-                    <div style="font-size:10px; color:#64748b;">RISK SCORE</div>
-                </div>
-            </div>
-            <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-                { "".join([f'<span style="background:rgba(0,0,0,0.05); padding:4px 10px; border-radius:10px; font-size:11px;"># {rec}</span>' for rec in get_risk_recommendations(risk_data, lang=st.session_state.lang)]) }
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    if not df_impact.empty:
-        # Conversion dates pour graphique
-        df_impact['date_ts'] = pd.to_datetime(df_impact['date'], errors='coerce')
-        df_impact = df_impact.dropna(subset=['date_ts']).sort_values('date_ts')
-        
-        total_kg = df_impact['dechets_kg'].fillna(0).sum()
-        total_megots = df_impact['megots'].fillna(0).sum()
-        total_volunteers = df_impact['benevoles'].fillna(0).sum()
-        
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.markdown(f'<div class="feature-card animate-in" style="animation-delay:0.2s;"><div class="metric-value" style="color:#10b981">{total_kg:,.1f}</div><div class="metric-label">{t("kg_removed")}</div></div>', unsafe_allow_html=True)
-        with c2:
-            st.markdown(f'<div class="feature-card animate-in" style="animation-delay:0.4s;"><div class="metric-value" style="color:#3b82f6">{int(total_megots):,}</div><div class="metric-label">{t("megots_collected")}</div></div>', unsafe_allow_html=True)
-        with c3:
-            st.markdown(f'<div class="feature-card animate-in" style="animation-delay:0.6s;"><div class="metric-value" style="color:#8b5cf6">{int(total_volunteers):,}</div><div class="metric-label">{t("citizens_engaged")}</div></div>', unsafe_allow_html=True)
-            
-        st.markdown("<br>", unsafe_allow_html=True)
-            
-        # Graphique d'évolution (Design épuré)
-        st.markdown(f'<div class="premium-card animate-in" style="animation-delay:0.8s;"><h3>{t("evolution_title")}</h3>', unsafe_allow_html=True)
-        daily_impact = df_impact.groupby('date_ts')['dechets_kg'].sum().cumsum().reset_index()
-        st.line_chart(daily_impact.set_index('date_ts'), color="#10b981", height=300)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Section Grade Personnel
-        st.markdown(f'<div class="premium-card animate-in" style="animation-delay:1s;"><h3>{t("progression_title")}</h3>', unsafe_allow_html=True)
-        c_p1, c_p2 = st.columns([2, 1])
-        with c_p1:
-            check_pseudo = st.text_input(t("check_grade"), placeholder=t("pseudo_placeholder"), key="top_check_pseudo_v2")
-            st.info(t("check_grade") if st.session_state.lang == "fr" else "Enter your pseudo to see your stats and badge.")
-        with c_p2:
-            if check_pseudo:
-                badge = get_user_badge(check_pseudo.strip(), df_impact)
-                if badge:
-                    st.markdown(f'<div class="badge-card animate-in">{badge}</div>', unsafe_allow_html=True)
-                else:
-                    msg = "Pseudo non trouvé. Commencez votre première action !" if st.session_state.lang == "fr" else "Pseudo not found. Start your first action!"
-                    st.warning(msg)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Équivalences & Impact Réel
-        st.markdown(f'<div class="premium-card animate-in" style="animation-delay:1.2s;"><h3>{t("eco_impact_title")}</h3>', unsafe_allow_html=True)
-        impact = calculate_impact(total_megots, total_kg)
-        eq_cols = st.columns(3)
-        if st.session_state.lang == "fr":
-            with eq_cols[0]:
-                st.info(f"💧 **{impact['eau_litres']/1_000_000:.1f} M** L d'eau préservés.")
-            with eq_cols[1]:
-                st.success(f"🪑 **{int(total_kg/50)}** bancs publics recyclés.")
-            with eq_cols[2]:
-                st.warning(f"🚗 **{int(total_kg*19):,} km** de CO2 évités.")
-        else:
-            with eq_cols[0]:
-                st.info(f"💧 **{impact['eau_litres']/1_000_000:.1f} M** L water protected.")
-            with eq_cols[1]:
-                st.success(f"🪑 **{int(total_kg/50)}** public benches recycled.")
-            with eq_cols[2]:
-                st.warning(f"🚗 **{int(total_kg*19):,} km** CO2 avoided.")
-        st.markdown('</div>', unsafe_allow_html=True)
 
+    home_actions_df = all_public_df.dropna(subset=["lat", "lon"]) if not all_public_df.empty else pd.DataFrame()
+    home_map = folium.Map(location=[48.8566, 2.3522], zoom_start=12, tiles="CartoDB positron")
+
+    if not home_actions_df.empty:
+        center_lat_home = home_actions_df["lat"].mean()
+        center_lon_home = home_actions_df["lon"].mean()
+        home_map.location = [center_lat_home, center_lon_home]
+
+        for _, row in home_actions_df.iterrows():
+            marker_color = "green" if row.get("est_propre", False) else "red"
+            folium.CircleMarker(
+                location=[row["lat"], row["lon"]],
+                radius=6,
+                color=marker_color,
+                fill=True,
+                fill_color=marker_color,
+                fill_opacity=0.75,
+                tooltip=row.get("type_lieu", "Action"),
+                popup=f"<b>{row.get('type_lieu', 'Action')}</b><br>{row.get('adresse', '')}<br>{row.get('dechets_kg', 0)} kg",
+            ).add_to(home_map)
     else:
-        msg = "Aucune donnée d'impact disponible pour le moment." if st.session_state.lang == "fr" else "No impact data available yet."
-        st.info(msg)
+        st.info(i18n_text("Aucune action géolocalisée à afficher pour le moment.", "No geolocated action to display yet."))
+
+    st_folium(home_map, width="stretch", height=520, returned_objects=[])
 
 with tab_view:
     render_tab_header(
