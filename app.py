@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 import folium
 from folium.plugins import TimestampedGeoJson
+from branca.element import Template, MacroElement
 from streamlit_folium import st_folium
 import osmnx as ox
 import networkx as nx
@@ -89,6 +90,9 @@ TRANSLATIONS = {
         "tab_compare": "🏙️ Comparaison",
         "tab_admin": "⚙️ Validation Admin",
         "eco_mode": "Mode basse consommation",
+        "theme_mode": "🎨 Thème",
+        "theme_light": "Clair",
+        "theme_dark": "Sombre",
         "nav_label": "📌 Navigation",
         "nav_action": "🚀 Lancer l'action",
         "nav_stats": "📊 Résultats & Impact",
@@ -136,6 +140,9 @@ TRANSLATIONS = {
         "tab_compare": "🏙️ Territorial Comparison",
         "tab_admin": "⚙️ Admin Validation",
         "eco_mode": "Eco Mode (Data Saver)",
+        "theme_mode": "🎨 Theme",
+        "theme_light": "Light",
+        "theme_dark": "Dark",
         "nav_label": "📌 Navigation",
         "nav_action": "🚀 Start Action",
         "nav_stats": "📊 Results & Impact",
@@ -153,6 +160,9 @@ TRANSLATIONS = {
 # --- GESTION DE LA LANGUE DANS SESSION STATE ---
 if "lang" not in st.session_state:
     st.session_state.lang = "fr"
+
+if "theme_mode" not in st.session_state:
+    st.session_state.theme_mode = "light"
 
 def t(key):
     """Fonction de traduction courte."""
@@ -239,18 +249,8 @@ st.set_page_config(
     page_title=TRANSLATIONS[st.session_state.lang]["title"],
     page_icon="🗺️",
     layout="wide",
+    initial_sidebar_state="collapsed",
 )
-
-# Sélecteur de langue dans la sidebar (en haut)
-with st.sidebar:
-    st.session_state.lang = st.radio(
-        t("lang_select"),
-        options=["fr", "en"],
-        format_func=lambda x: "Français" if x == "fr" else "English",
-        key="lang_radio",
-        horizontal=True
-    )
-    st.markdown("---")
 
 # Custom Professional CSS
 # --- PWA SUPPORT ---
@@ -601,366 +601,405 @@ st.markdown(
 
 
 
-def inject_visual_polish():
+def inject_visual_polish(theme_mode: str):
     """Surcouche visuelle maintenable (sans impact logique metier)."""
-    st.markdown(
-        """
-        <style>
-        :root {
-            --surface-0: #f6f9fc;
-            --surface-1: rgba(255, 255, 255, 0.88);
-            --surface-2: #ffffff;
-            --ink-1: #0f172a;
-            --ink-2: #334155;
-            --ink-3: #64748b;
-            --brand-1: #0ea5a4;
-            --brand-2: #2563eb;
-            --brand-grad: linear-gradient(135deg, #0ea5a4 0%, #2563eb 100%);
-            --ring: rgba(37, 99, 235, 0.24);
-            --edge-soft: rgba(15, 23, 42, 0.08);
-            --space-1: 6px;
-            --space-2: 10px;
-            --space-3: 14px;
-            --space-4: 18px;
-            --space-5: 24px;
-            --space-6: 30px;
-            --radius-sm: 10px;
-            --radius-md: 14px;
-            --radius-lg: 20px;
-            --radius-xl: 28px;
-            --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
-            --shadow-card: 0 14px 32px rgba(15, 23, 42, 0.06);
+    if theme_mode == "dark":
+        palette = {
+            "surface_0": "#08111f",
+            "surface_1": "rgba(15, 23, 42, 0.82)",
+            "surface_2": "#111c31",
+            "ink_1": "#e2e8f0",
+            "ink_2": "#cbd5e1",
+            "ink_3": "#94a3b8",
+            "edge": "rgba(148, 163, 184, 0.28)",
+            "shadow": "0 14px 32px rgba(2, 6, 23, 0.45)",
+            "input_bg": "#0f172a",
+        }
+    else:
+        palette = {
+            "surface_0": "#f6f9fc",
+            "surface_1": "rgba(255, 255, 255, 0.88)",
+            "surface_2": "#ffffff",
+            "ink_1": "#0f172a",
+            "ink_2": "#334155",
+            "ink_3": "#64748b",
+            "edge": "rgba(15, 23, 42, 0.08)",
+            "shadow": "0 14px 32px rgba(15, 23, 42, 0.06)",
+            "input_bg": "#ffffff",
         }
 
-        .stApp {
+    st.markdown(
+        f"""
+        <style>
+        :root {{
+            --surface-0: {palette['surface_0']};
+            --surface-1: {palette['surface_1']};
+            --surface-2: {palette['surface_2']};
+            --ink-1: {palette['ink_1']};
+            --ink-2: {palette['ink_2']};
+            --ink-3: {palette['ink_3']};
+            --edge-soft: {palette['edge']};
+            --shadow-card: {palette['shadow']};
+            --input-bg: {palette['input_bg']};
+            --brand: #14b8a6;
+            --brand-strong: #0ea5a4;
+            --accent: #2563eb;
+        }}
+
+        html, body, [class*="css"], .stApp {{
+            font-family: 'Outfit', 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important;
+        }}
+
+        .stApp {{
             background:
                 radial-gradient(900px 460px at 8% -8%, rgba(14, 165, 164, 0.15), transparent 70%),
                 radial-gradient(760px 420px at 100% 0%, rgba(37, 99, 235, 0.14), transparent 70%),
                 var(--surface-0) !important;
-        }
-
-        .block-container {
-            max-width: 1280px !important;
-            padding-top: 1.25rem !important;
-            padding-bottom: 3.4rem !important;
-        }
-
-        h1, h2, h3 {
-            letter-spacing: -0.02em;
             color: var(--ink-1);
-        }
+        }}
 
+        .main .block-container {{
+            max-width: 1380px !important;
+            padding-top: 0.05rem !important;
+            padding-bottom: 2.1rem !important;
+        }}
+
+        [data-testid="stAppViewContainer"] > .main,
+        [data-testid="stAppViewContainer"] > .main .block-container {{
+            margin-top: 0 !important;
+        }}
+
+        .main .block-container > div:first-child {{
+            margin-top: -0.35rem !important;
+        }}
+
+        [data-testid="stHeader"] {{
+            height: 0 !important;
+            min-height: 0 !important;
+        }}
+
+        [data-testid="stVerticalBlock"] > div:has(> .top-control-shell) {{
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }}
+
+        h1, h2, h3, h4, h5, h6,
         [data-testid="stMarkdownContainer"] p,
         [data-testid="stMarkdownContainer"] li,
-        [data-testid="stMetricLabel"] {
-            color: var(--ink-2);
-        }
+        [data-testid="stMetricLabel"],
+        label,
+        span,
+        small {{
+            color: var(--ink-2) !important;
+        }}
 
-        .app-shell {
-            position: relative;
-            overflow: hidden;
-            border-radius: 28px;
-            padding: 26px 28px;
-            margin: 0 0 20px 0;
-            background: var(--surface-1);
-            border: 1px solid var(--edge-soft);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
-        }
-
-        .app-shell::after {
-            content: "";
-            position: absolute;
-            right: -40px;
-            top: -40px;
-            width: 220px;
-            height: 220px;
-            border-radius: 999px;
-            background: radial-gradient(circle, rgba(14, 165, 164, 0.24), transparent 70%);
-            pointer-events: none;
-        }
-
-        .app-shell-eyebrow {
-            font-size: 0.78rem;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            font-weight: 700;
-            color: #0f766e;
-            margin-bottom: 8px;
-        }
-
-        .app-shell-title {
-            margin: 0 0 6px 0;
-            font-size: 1.7rem;
-            line-height: 1.2;
-            color: var(--ink-1);
-        }
-
-        .app-shell-subtitle {
-            margin: 0;
-            color: var(--ink-3);
-            max-width: 920px;
-            line-height: 1.55;
-        }
-
-        .section-shell {
-            border-radius: var(--radius-xl);
-            border: 1px solid var(--edge-soft);
-            background: linear-gradient(160deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.72));
-            box-shadow: var(--shadow-soft);
-            padding: 28px 24px;
-            margin-bottom: var(--space-5);
-        }
-
-        .section-shell.compact {
-            border-radius: var(--radius-lg);
-            padding: 18px 20px;
-            margin-bottom: var(--space-4);
-        }
-
-        .section-kicker {
-            font-size: 0.75rem;
-            letter-spacing: 0.09em;
-            text-transform: uppercase;
-            font-weight: 800;
-            color: #0f766e;
-            margin-bottom: var(--space-1);
-        }
-
-        .section-title {
-            margin: 0;
-            line-height: 1.15;
-            letter-spacing: -0.02em;
-            font-size: clamp(1.6rem, 2.5vw, 2.4rem);
-            color: var(--ink-1);
-        }
-
-        .section-subtitle {
-            margin: var(--space-2) 0 0 0;
-            max-width: 900px;
-            color: var(--ink-3);
-            line-height: 1.55;
-            font-size: 1.02rem;
-        }
-
-        .section-chip-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: var(--space-3);
-        }
-
-        .section-chip {
-            border-radius: 999px;
-            border: 1px solid var(--edge-soft);
-            background: #fff;
-            padding: 4px 10px;
-            font-size: 0.78rem;
-            color: var(--ink-2);
-            font-weight: 600;
-        }
-
-        .nav-shell {
-            border-radius: 22px;
-            border: 1px solid var(--edge-soft);
-            background: var(--surface-1);
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
-            padding: 16px 18px 12px 18px;
-            margin-bottom: 20px;
-        }
-
-        .nav-shell-caption {
-            margin: 0 0 8px 0;
-            color: var(--ink-3);
-            font-size: 0.9rem;
-        }
-
-        .kpi-chip-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 10px;
-        }
-
-        .kpi-chip {
-            border-radius: 14px;
-            border: 1px solid var(--edge-soft);
-            background: var(--surface-2);
-            padding: 10px 10px 9px;
-            text-align: center;
-        }
-
-        .kpi-chip-label {
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            color: var(--ink-3);
-            font-weight: 700;
-        }
-
-        .kpi-chip-value {
-            font-size: 1.15rem;
-            font-weight: 800;
-            color: var(--ink-1);
-            line-height: 1.05;
-        }
-
-        div[data-baseweb="select"] > div {
-            min-height: 46px !important;
-            border-radius: 12px !important;
-            border: 1px solid var(--edge-soft) !important;
-            background: #fff !important;
-            box-shadow: 0 2px 0 rgba(15, 23, 42, 0.02);
-        }
-
-        div[data-baseweb="select"] > div:focus-within {
-            border-color: #2563eb !important;
-            box-shadow: 0 0 0 4px var(--ring);
-        }
-
-        .hero-container {
-            border: 1px solid var(--edge-soft);
-            background: linear-gradient(160deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72));
-            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.07);
-            padding: 64px 24px !important;
-            margin-bottom: 26px !important;
-            border-radius: 30px !important;
-        }
-
-        .hero-title {
-            font-size: clamp(2.1rem, 4vw, 3.3rem) !important;
-            letter-spacing: -0.025em !important;
-        }
-
-        .hero-subtitle {
-            font-size: clamp(1rem, 1.5vw, 1.2rem) !important;
-            color: var(--ink-3) !important;
-        }
-
-        .premium-card {
-            border-radius: var(--radius-lg) !important;
+        .app-shell, .nav-shell, .premium-card, .section-shell,
+        .metric-card, .kpi-chip, .top-control-shell,
+        .stForm, .stExpander, div[data-testid="stMetric"],
+        .stDataFrame, div[data-testid="stTable"] {{
             background: var(--surface-1) !important;
             border: 1px solid var(--edge-soft) !important;
             box-shadow: var(--shadow-card) !important;
-        }
+        }}
 
-        .metric-grid {
-            gap: 14px !important;
-            margin: 18px 0 28px 0 !important;
-        }
-
-        .metric-card {
-            background: #fff !important;
-            border: 1px solid var(--edge-soft) !important;
+        .top-control-shell,
+        .app-shell,
+        .nav-shell,
+        .section-shell,
+        .premium-card,
+        .metric-card {{
             border-radius: 18px !important;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05) !important;
-        }
+        }}
 
-        .metric-label {
+        .metric-card, .kpi-chip, .stExpander, div[data-testid="stMetric"] {{
+            background: var(--surface-2) !important;
+        }}
+
+        .app-shell-title, .section-title, .kpi-chip-value,
+        [data-testid="stMarkdownContainer"] h1,
+        [data-testid="stMarkdownContainer"] h2,
+        [data-testid="stMarkdownContainer"] h3 {{
+            color: var(--ink-1) !important;
+        }}
+
+        .app-shell-subtitle, .section-subtitle, .nav-shell-caption,
+        .metric-label, .kpi-chip-label, .metric-unit {{
             color: var(--ink-3) !important;
-            font-weight: 700 !important;
-        }
+        }}
 
-        .metric-value {
-            color: #0b8f86 !important;
-        }
+        .app-shell {{
+            padding: 22px 24px !important;
+        }}
+
+        .nav-shell {{
+            padding: 14px 16px 16px !important;
+            margin-top: 6px !important;
+        }}
+
+        .metric-grid {{
+            margin: 14px 0 18px 0 !important;
+            gap: 12px !important;
+        }}
+
+        .metric-card {{
+            min-height: 100px;
+            padding: 16px 18px !important;
+        }}
+
+        .metric-value {{
+            color: var(--brand) !important;
+            letter-spacing: -0.01em;
+        }}
+
+        .section-chip {{
+            background: color-mix(in srgb, var(--brand) 14%, transparent) !important;
+            border-color: color-mix(in srgb, var(--brand) 26%, transparent) !important;
+            color: var(--ink-2) !important;
+        }}
 
         .stButton > button,
-        .stDownloadButton > button {
+        .stDownloadButton > button {{
             border-radius: 12px !important;
-            border: none !important;
-            padding: 0.6rem 1rem !important;
+            border: 1px solid transparent !important;
+            padding: 0.58rem 1rem !important;
+            background: linear-gradient(135deg, var(--brand), var(--accent)) !important;
+            color: white !important;
             font-weight: 700 !important;
-            background: var(--brand-grad) !important;
-            color: #fff !important;
-            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.28);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.22) !important;
+            transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+        }}
 
         .stButton > button:hover,
-        .stDownloadButton > button:hover {
+        .stDownloadButton > button:hover {{
             transform: translateY(-1px);
-            box-shadow: 0 12px 20px rgba(37, 99, 235, 0.32);
-        }
+            opacity: 0.95;
+            box-shadow: 0 12px 24px rgba(37, 99, 235, 0.3) !important;
+        }}
 
+        .stButton > button[kind="secondary"] {{
+            background: var(--surface-2) !important;
+            border-color: var(--edge-soft) !important;
+            color: var(--ink-1) !important;
+            box-shadow: none !important;
+        }}
+
+        .stButton > button:focus,
+        .stDownloadButton > button:focus {{
+            outline: none !important;
+            box-shadow: 0 0 0 0.2rem rgba(20, 184, 166, 0.25) !important;
+        }}
+
+        div[data-baseweb="select"] > div,
+        div[data-baseweb="select"] input,
         .stTextInput > div > div > input,
         .stTextArea textarea,
         .stNumberInput input,
-        .stDateInput input {
-            border-radius: 12px !important;
+        .stDateInput input {{
+            background: var(--input-bg) !important;
+            color: var(--ink-1) !important;
             border: 1px solid var(--edge-soft) !important;
-            background: #fff !important;
-        }
+            border-radius: 12px !important;
+        }}
 
+        div[data-baseweb="select"] > div:focus-within,
+        .stMultiSelect div[data-baseweb="select"] > div:focus-within,
         .stTextInput > div > div > input:focus,
         .stTextArea textarea:focus,
         .stNumberInput input:focus,
-        .stDateInput input:focus {
-            border-color: #2563eb !important;
-            box-shadow: 0 0 0 3px var(--ring) !important;
-        }
+        .stDateInput input:focus {{
+            border-color: color-mix(in srgb, var(--accent) 66%, transparent) !important;
+            box-shadow: 0 0 0 0.18rem rgba(37,99,235,.22) !important;
+        }}
 
-        .stDataFrame, div[data-testid="stTable"] {
-            border-radius: 16px !important;
-            overflow: hidden;
+        .stSlider [data-baseweb="slider"] [role="slider"] {{
+            box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.2);
+            border: 2px solid #fff;
+        }}
+
+        .stSlider [data-baseweb="slider"] > div > div:first-child {{
+            background: linear-gradient(90deg, var(--brand), var(--accent)) !important;
+            height: 6px !important;
+            border-radius: 999px;
+        }}
+
+        section[data-testid="stSidebar"] {{
+            width: 0 !important;
+            min-width: 0 !important;
+            border-right: none !important;
+        }}
+
+        [data-testid="collapsedControl"] {{
+            display: none !important;
+        }}
+
+        .top-control-shell {{
+            border-radius: 18px;
+            padding: 8px 12px;
+            margin-bottom: 12px;
+        }}
+
+        .rubric-caption {{
+            margin: 0 0 8px 0;
+            color: var(--ink-3) !important;
+            font-size: 0.92rem;
+            font-weight: 600;
+        }}
+
+        .nav-dropdown-shell {{
             border: 1px solid var(--edge-soft);
-            background: #fff;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-        }
-
-        .stForm {
-            background: var(--surface-1) !important;
-            border-radius: 22px !important;
-            border: 1px solid var(--edge-soft) !important;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07) !important;
-            padding: 26px !important;
-        }
-
-        .stExpander {
-            border: 1px solid var(--edge-soft) !important;
-            border-radius: 16px !important;
-            background: #fff;
-            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
-        }
-
-        div[data-testid="stMetric"] {
-            background: #fff;
+            background: var(--surface-2);
             border-radius: 14px;
+            padding: 10px 12px;
+        }}
+
+        .nav-dropdown-shell [data-baseweb="select"] > div {{
+            min-height: 48px !important;
+            border-radius: 12px !important;
+            border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent) !important;
+            background: color-mix(in srgb, var(--surface-2) 94%, transparent) !important;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12) !important;
+        }}
+
+        .rubric-buttons .stButton > button {{
+            border: 1px solid var(--edge-soft) !important;
+            background: var(--surface-2) !important;
+            color: var(--ink-1) !important;
+            box-shadow: none !important;
+            border-radius: 12px !important;
+            font-weight: 700 !important;
+        }}
+
+        [data-testid="stNotification"],
+        div[data-baseweb="notification"] {{
+            border-radius: 14px !important;
+            border: 1px solid var(--edge-soft) !important;
+            background: var(--surface-2) !important;
+        }}
+
+        [data-testid="stNotification"] [data-testid="stMarkdownContainer"] p {{
+            color: var(--ink-2) !important;
+        }}
+
+        [data-testid="stMetric"] [data-testid="stMetricValue"] {{
+            color: var(--ink-1) !important;
+        }}
+
+        [data-testid="stMetric"] [data-testid="stMetricDelta"] {{
+            font-weight: 700 !important;
+        }}
+
+        .stTabs [data-baseweb="tab-list"] {{
+            gap: 8px;
+        }}
+
+        .stTabs [data-baseweb="tab"] {{
+            border-radius: 12px !important;
+            border: 1px solid var(--edge-soft) !important;
+            background: var(--surface-2) !important;
+            color: var(--ink-2) !important;
+        }}
+
+        .stTabs [aria-selected="true"] {{
+            background: color-mix(in srgb, var(--brand) 22%, transparent) !important;
+            border-color: color-mix(in srgb, var(--brand) 60%, transparent) !important;
+            color: var(--ink-1) !important;
+        }}
+
+        .stDataFrame, div[data-testid="stTable"] {{
+            border-radius: 14px !important;
+            overflow: hidden !important;
+        }}
+
+        .stDataFrame thead tr th,
+        div[data-testid="stTable"] thead tr th {{
+            background: color-mix(in srgb, var(--brand) 10%, var(--surface-2)) !important;
+            color: var(--ink-1) !important;
+            font-weight: 700 !important;
+        }}
+
+        .stDataFrame tbody tr:hover,
+        div[data-testid="stTable"] tbody tr:hover {{
+            background: color-mix(in srgb, var(--brand) 8%, transparent) !important;
+        }}
+
+        .stPlotlyChart, .stAltairChart, .stVegaLiteChart, .stPyplot, [data-testid="stDeckGlJsonChart"] {{
             border: 1px solid var(--edge-soft);
-            padding: 12px 14px;
-            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
-        }
-
-        section[data-testid="stSidebar"] {
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(245, 250, 255, 0.9)) !important;
-            border-right: 1px solid var(--edge-soft) !important;
-        }
-
-        section[data-testid="stSidebar"] .stRadio [role="radiogroup"] {
-            background: #fff;
+            border-radius: 16px;
+            background: var(--surface-1);
+            box-shadow: var(--shadow-card);
             padding: 8px;
-            border-radius: 12px;
-            border: 1px solid var(--edge-soft);
-        }
+        }}
 
-        @media (max-width: 900px) {
-            .app-shell {
-                padding: 18px;
-            }
-            .kpi-chip-grid {
-                grid-template-columns: 1fr;
-            }
-            .nav-shell {
-                padding: 12px;
-            }
-        }
+        .stExpander details {{
+            border-radius: 14px !important;
+            border: 1px solid var(--edge-soft) !important;
+            background: var(--surface-2) !important;
+        }}
+
+        .stExpander summary {{
+            font-weight: 700 !important;
+            color: var(--ink-1) !important;
+        }}
+
+        @media (max-width: 1100px) {{
+            .main .block-container {{
+                max-width: 100% !important;
+                padding-top: 0.4rem !important;
+            }}
+
+            .metric-grid {{
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }}
+        }}
+
+        @media (max-width: 720px) {{
+            .top-control-shell {{
+                padding: 10px;
+            }}
+
+            .metric-grid {{
+                grid-template-columns: 1fr !important;
+            }}
+
+            .main .block-container > div:first-child {{
+                margin-top: 0 !important;
+            }}
+        }}
         </style>
         """,
         unsafe_allow_html=True,
     )
 
+inject_visual_polish(st.session_state.theme_mode)
 
-inject_visual_polish()
-
-eco_mode = st.sidebar.checkbox("Mode basse consommation", help="Réduit l'usage des données pour une navigation plus sobre.")
+st.markdown('<div class="top-control-shell">', unsafe_allow_html=True)
+lang_col, theme_col, eco_col = st.columns([1.5, 1.2, 1.3], gap="medium")
+with lang_col:
+    st.session_state.lang = st.radio(
+        t("lang_select"),
+        options=["fr", "en"],
+        format_func=lambda x: "Français" if x == "fr" else "English",
+        key="lang_radio_top",
+        horizontal=True,
+    )
+with theme_col:
+    selected_theme = st.radio(
+        t("theme_mode"),
+        options=["light", "dark"],
+        format_func=lambda x: t("theme_light") if x == "light" else t("theme_dark"),
+        key="theme_mode_radio",
+        horizontal=True,
+    )
+    st.session_state.theme_mode = selected_theme
+with eco_col:
+    eco_mode = st.checkbox(
+        t("eco_mode"),
+        value=st.session_state.get("eco_mode", False),
+        help="Réduit l'usage des données pour une navigation plus sobre.",
+        key="eco_mode_checkbox",
+    )
+    st.session_state.eco_mode = eco_mode
+st.markdown('</div>', unsafe_allow_html=True)
 
 @st.cache_resource(ttl=86400, show_spinner=False)
 def add_elevations_to_graph(G):
@@ -1035,6 +1074,285 @@ def calculate_flow_sinks(G, pollution_points_df, threshold_slope=0.03):
 @st.cache_resource(ttl=86400, show_spinner=False)
 def get_osmnx_graph(center_lat, center_lon, dist):
     return ox.graph_from_point((center_lat, center_lon), dist=dist, network_type='walk', simplify=True)
+
+
+def build_interactive_folium_map(map_df: pd.DataFrame) -> folium.Map:
+    """Construit la carte Folium complète (couches, styles, popups, légende, timeline)."""
+    # Fallback sur Paris si vide
+    center_lat, center_lon = 48.8566, 2.3522
+    zoom_start = 12
+
+    if not map_df.empty:
+        center_lat, center_lon = map_df["lat"].mean(), map_df["lon"].mean()
+        zoom_start = 11
+
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start, tiles=None)
+
+    folium.TileLayer('OpenStreetMap', name='Fond Clair (Défaut)').add_to(m)
+    folium.TileLayer(
+        tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        name='Fond Sombre',
+        attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    ).add_to(m)
+    folium.TileLayer(
+        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        name='Vue Satellite',
+        attr='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    ).add_to(m)
+
+    official_bins = get_paris_bins()
+
+    from folium.plugins import MarkerCluster
+    group_pollution = folium.FeatureGroup(name="⚠️ Pollution & Actions", show=True)
+    cluster_pollution = MarkerCluster(name="🟣 Cluster Pollution (dense)", show=False, disableClusteringAtZoom=14)
+    group_clean = folium.FeatureGroup(name="🌿 Zones Propres", show=True)
+    group_business = folium.FeatureGroup(name="⭐ Acteurs Engagés", show=True)
+    group_spots = folium.FeatureGroup(name="📢 Trash Spots (Signalisations)", show=True)
+
+    active_spots = get_active_spots()
+    for s in active_spots:
+        folium.Marker(
+            [s['lat'], s['lon']],
+            popup=f"<b>⚠️ {s['type_dechet']}</b><br>Signalé par {s['reporter_name']}<br><i>Aidez-nous à nettoyer !</i>",
+            icon=folium.Icon(color='red', icon='exclamation-circle', prefix='fa'),
+            tooltip="Spot de pollution actif"
+        ).add_to(group_spots)
+    group_spots.add_to(m)
+
+    for b in official_bins:
+        folium.CircleMarker(
+            location=[b['lat'], b['lon']],
+            radius=3,
+            color='#808080',
+            fill=True,
+            fill_color='#808080',
+            fill_opacity=0.4,
+            popup=f"<b>🗑️ Info Officielle</b><br>Type: {b.get('type')}<br>Propriétaire: Ville de Paris"
+        ).add_to(group_pollution)
+
+    features_timeline = []
+    max_osm_shapes = 80
+    enable_osm_shapes = len(map_df) <= max_osm_shapes
+    if not enable_osm_shapes:
+        st.caption(
+            f"Mode rapide: geometries OSM desactivees au-dela de {max_osm_shapes} points."
+            if st.session_state.lang == "fr"
+            else f"Fast mode: OSM geometries disabled above {max_osm_shapes} points."
+        )
+
+    if not map_df.empty:
+        for _, row in map_df.iterrows():
+            is_clean = row.get('est_propre', False)
+            is_business = row.get('type_lieu') == "Établissement Engagé (Label)"
+            gap_alert = ""
+            if not is_clean and not is_business and row.get('lat') and row.get('lon'):
+                if 48.8 <= row['lat'] <= 48.9 and 2.2 <= row['lon'] <= 2.4:
+                    is_gap, dist = calculate_infrastructure_gap(row['lat'], row['lon'], official_bins)
+                    if is_gap:
+                        gap_alert = f"Besoin d'équipement : poubelle la plus proche à {int(dist)}m"
+
+            score_data = calculate_scores(row)
+            color, radius, icon_type = get_marker_style(row, score_data)
+
+            osm_type = detect_osm_type(row)
+            if enable_osm_shapes and osm_type != 'point':
+                geometry, final_type = fetch_osm_geometry(row['lat'], row['lon'], osm_type)
+            else:
+                geometry, final_type = (None, 'point')
+
+            popup_html = create_premium_popup(row, score_data, gap_alert=gap_alert)
+            place_name = format_google_maps_name(row)
+            target_group = group_business if is_business else group_clean if is_clean else group_pollution
+
+            if final_type == 'park' and geometry:
+                _park_color = color
+                folium.GeoJson(
+                    geometry,
+                    style_function=lambda x, c=_park_color: {
+                        'fillColor': MAP_COLORS['park'],
+                        'color': c,
+                        'weight': 2,
+                        'fillOpacity': 0.3
+                    },
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+            elif final_type == 'street' and geometry:
+                _street_color = color
+                folium.GeoJson(
+                    geometry,
+                    style_function=lambda x, c=_street_color: {
+                        'color': c,
+                        'weight': 5,
+                        'opacity': 0.8
+                    },
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+            elif icon_type == 'star':
+                folium.Marker(
+                    location=[row['lat'], row['lon']],
+                    popup=folium.Popup(popup_html, max_width=300),
+                    tooltip=place_name,
+                    icon=folium.Icon(color='lightgray', icon_color=color, icon='star', prefix='fa')
+                ).add_to(target_group)
+            elif score_data['score_salete'] > 200:
+                icon_char = '🚬' if row.get('megots', 0) > 300 else '🗑️'
+                folium.Marker(
+                    location=[row['lat'], row['lon']],
+                    icon=folium.DivIcon(html=f"""
+                        <div style="background:{color}; width:30px; height:30px; border-radius:15px;
+                        display:flex; align-items:center; justify-content:center; color:white; font-size:16px;
+                        box-shadow:0 0 10px rgba(0,0,0,0.3); border:2px solid white;">{icon_char}</div>
+                    """),
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+            elif is_clean:
+                folium.Marker(
+                    location=[row['lat'], row['lon']],
+                    icon=folium.Icon(color='cadetblue', icon='leaf', prefix='fa'),
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+            else:
+                folium.CircleMarker(
+                    location=[row['lat'], row['lon']],
+                    radius=radius,
+                    color=color,
+                    fill=True,
+                    fill_color=color,
+                    fill_opacity=0.7,
+                    tooltip=place_name,
+                    popup=folium.Popup(popup_html, max_width=300)
+                ).add_to(target_group)
+
+            raw_date = row.get('date', '')
+            if not raw_date or str(raw_date).lower() in ["nan", "none", ""]:
+                try:
+                    raw_date = row.get('submitted_at', '').split('T')[0]
+                except Exception:
+                    raw_date = datetime.now().strftime('%Y-%m-%d')
+
+            icon_name = 'star' if icon_type == 'star' else 'circle'
+            features_timeline.append({
+                'type': 'Feature',
+                'geometry': {'type': 'Point', 'coordinates': [row['lon'], row['lat']]},
+                'properties': {
+                    'time': raw_date,
+                    'popup': popup_html,
+                    'icon': icon_name,
+                    'iconstyle': {
+                        'color': color,
+                        'fillColor': color,
+                        'fillOpacity': 0.8,
+                        'radius': max(6, min(radius, 14))
+                    },
+                    'style': {'color': color}
+                }
+            })
+
+            if score_data['score_mixte'] > 80 and not is_business:
+                folium.Marker(
+                    location=[row['lat'], row['lon']],
+                    icon=folium.Icon(color='purple', icon='exclamation-triangle', prefix='fa'),
+                    tooltip=f"⚠️ Point Critique: {place_name}",
+                    popup=f"<b>Point critique détecté</b><br>{place_name}<br><small>Priorité élevée pour intervention.</small>"
+                ).add_to(group_pollution)
+
+    group_pollution.add_child(cluster_pollution)
+    group_pollution.add_to(m)
+    group_clean.add_to(m)
+    group_business.add_to(m)
+
+    _nb_actions = len(map_df) if not map_df.empty else 0
+    _nb_megots = int(map_df['megots'].fillna(0).sum()) if not map_df.empty else 0
+    _nb_kg = map_df['dechets_kg'].fillna(0).sum() if not map_df.empty else 0.0
+    _nb_volunteers = int(map_df['benevoles'].fillna(0).sum()) if not map_df.empty else 0
+    _nb_critiques = len(map_df[map_df['score_mixte'] > 80]) if not map_df.empty and 'score_mixte' in map_df.columns else 0
+
+    _impact = calculate_impact(_nb_megots, _nb_kg)
+    _co2 = _impact['co2_kg']
+    _km = int(_co2 / 0.2) if _co2 > 0 else 0
+    _eau = _impact['eau_litres']
+    _douches = int(_eau / 50) if _eau > 0 else 0
+    _current_date = datetime.now().strftime('%d/%m')
+
+    legend_html = f"""
+    {{% macro script(this, kwargs) %}}
+    var legend = L.control({{position: 'bottomleft'}});
+    legend.onAdd = function(map) {{
+        var div = L.DomUtil.create('div', 'info legend');
+        div.style.background = 'rgba(255,255,255,0.95)';
+        div.style.backdropFilter = 'blur(10px)';
+        div.style.padding = '15px';
+        div.style.borderRadius = '20px';
+        div.style.boxShadow = '0 8px 32px rgba(0,0,0,0.15)';
+        div.style.border = '1px solid rgba(16,185,129,0.3)';
+        div.style.fontSize = '12px';
+        div.style.fontFamily = 'Outfit, sans-serif';
+        div.style.lineHeight = '1.5';
+        div.style.minWidth = '200px';
+        div.style.color = '#1e293b';
+        div.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
+                <span style="font-size:16px;">🗺️</span>
+                <div style="text-align:right;">
+                    <b style="color:#10b981; font-size:14px; display:block;">BILAN 2026</b>
+                    <small style="color:#94a3b8;">{_current_date}</small>
+                </div>
+            </div>
+            <b style="color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;">📋 ÉTAT DES LIEUX</b><br>
+            <div style="margin:5px 0 10px 0; display:grid; grid-template-columns: 1fr 1fr; gap:2px;">
+                <span><span style="color:#3498db;">●</span> Propres</span>
+                <span><span style="color:#27ae60;">●</span> Nettoyés</span>
+                <span><span style="color:#e67e22;">●</span> À inspecter</span>
+                <span><span style="color:#8e44ad;">●</span> Pollués</span>
+            </div>
+            <div style="margin-bottom:10px;">
+                <span>⚠️ <b>{_nb_critiques}</b> Point critique</span><br>
+                <span>📍 <b>{_nb_actions}</b> Actions</span><br>
+                <span>👥 <b>{_nb_volunteers}</b> Bénévoles</span><br>
+                <span>🚬 <b>{_nb_megots:,}</b> Mégots</span><br>
+                <span>♻️ <b>{_nb_kg:.1f} kg</b> Déchets</span>
+            </div>
+            <b style="color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;">🌍 IMPACT</b><br>
+            <div style="margin-top:5px; background:rgba(16,185,129,0.05); padding:8px; border-radius:12px; border:1px solid rgba(16,185,129,0.1);">
+                <span>💨 <b>{_co2:.1f} kg</b> CO₂ évité</span><br>
+                <small style="color:#64748b; margin-left:18px;">🚗 { _km:,} km voiture</small><br>
+                <span>💧 <b>{_eau:,} L</b> Eau préservée</span><br>
+                <small style="color:#64748b; margin-left:18px;">🚿 {_douches:,} douches</small>
+            </div>
+        `;
+        return div;
+    }};
+    legend.addTo({{{{ this._parent.get_name() }}}});
+    {{% endmacro %}}
+    """
+    legend_element = MacroElement()
+    legend_element._template = Template(legend_html)
+    m.add_child(legend_element)
+
+    heat_data = get_heatmap_data(map_df)
+    if heat_data:
+        from folium.plugins import HeatMap
+        HeatMap(heat_data, name="Heatmap de Saleté (Vue Thermique)", show=False, radius=25, blur=15).add_to(m)
+
+    if features_timeline:
+        TimestampedGeoJson(
+            {'type': 'FeatureCollection', 'features': features_timeline},
+            period='P1D',
+            add_last_point=True,
+            auto_play=False,
+            loop=False,
+            max_speed=1,
+            loop_button=True,
+            date_options='YYYY-MM-DD',
+            time_slider_drag_update=True
+        ).add_to(m)
+
+    folium.LayerControl(position='topright', collapsed=False).add_to(m)
+    return m
 
 
 TYPE_LIEU_OPTIONS = [
@@ -2212,10 +2530,6 @@ else:
 
 eau_litres = total_megots * IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L']
 co2_evite = total_megots * IMPACT_CONSTANTS['CO2_PER_MEGOT_KG']
-pending_count = len(get_submissions_by_status('pending'))
-approved_count = len(get_submissions_by_status('approved'))
-public_count = len(all_public_actions)
-
 st.markdown(
     f"""
     <section class="app-shell animate-in">
@@ -2267,7 +2581,7 @@ st.markdown(
 # Import manuel ou asynchrone pour ne les insérer qu'une seule fois. 
 # Pour l'instant on garde une vue concaténée en lecture
 
-# --- NAVIGATION HORIZONTALE (DROPDOWN) ---
+# --- NAVIGATION PAR RUBRIQUES CLIQUABLES ---
 # Liste des options classées par priorité
 nav_options = [
     t("tab_home"),
@@ -2290,41 +2604,33 @@ nav_options = [
     t("tab_admin"),
 ]
 
-# Affichage du menu de navigation en haut de la page (hub + KPIs)
+if "active_tab" not in st.session_state or st.session_state.active_tab not in nav_options:
+    st.session_state.active_tab = nav_options[0]
+
+active_tab = st.session_state.active_tab
+
+# Affichage du menu de navigation en haut de la page
 st.markdown('<div class="nav-shell">', unsafe_allow_html=True)
 st.markdown(
     f'<p class="nav-shell-caption">{"Navigation principale" if st.session_state.lang == "fr" else "Main navigation"} - {"Selectionnez un espace pour agir ou analyser vos resultats." if st.session_state.lang == "fr" else "Select a workspace to act or analyze your results."}</p>',
     unsafe_allow_html=True,
 )
-nav_col, kpi_col = st.columns([4.5, 2], gap="large")
-with nav_col:
-    active_tab = st.selectbox(
-        t("nav_label"),
-        options=nav_options,
-        index=0,
-        key="nav_selectbox",
-        label_visibility="collapsed"
-    )
-with kpi_col:
-    st.markdown(
-        f"""
-        <div class="kpi-chip-grid">
-            <div class="kpi-chip">
-                <div class="kpi-chip-label">{"Actions" if st.session_state.lang == "fr" else "Actions"}</div>
-                <div class="kpi-chip-value">{public_count}</div>
-            </div>
-            <div class="kpi-chip">
-                <div class="kpi-chip-label">{"A valider" if st.session_state.lang == "fr" else "Pending"}</div>
-                <div class="kpi-chip-value">{pending_count}</div>
-            </div>
-            <div class="kpi-chip">
-                <div class="kpi-chip-label">{"Validees" if st.session_state.lang == "fr" else "Approved"}</div>
-                <div class="kpi-chip-value">{approved_count}</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+st.markdown(
+    f'<p class="rubric-caption">{"Menu des rubriques" if st.session_state.lang == "fr" else "Section menu"}</p>',
+    unsafe_allow_html=True,
+)
+st.markdown('<div class="nav-dropdown-shell">', unsafe_allow_html=True)
+selected_menu_tab = st.selectbox(
+    t("nav_label"),
+    options=nav_options,
+    index=nav_options.index(active_tab),
+    key="main_nav_dropdown",
+    label_visibility="collapsed",
+)
+st.markdown('</div>', unsafe_allow_html=True)
+if selected_menu_tab != active_tab:
+    active_tab = selected_menu_tab
+
 st.markdown('</div>', unsafe_allow_html=True)
 
 # Synchronisation du state
@@ -2467,102 +2773,21 @@ with tab_home:
         icon="\U0001F4CA",
         title_fr="Notre Impact",
         title_en="Our Impact",
-        subtitle_fr="Visualisez les indicateurs cles, les tendances et l'impact collectif des actions citoyennes.",
-        subtitle_en="Track key indicators, trends, and the collective impact of citizen actions.",
-        chips=[i18n_text("Impact", "Impact"), i18n_text("Tendances", "Trends"), i18n_text("Communaute", "Community")],
+        subtitle_fr="Vue d'ensemble essentielle : indicateurs globaux et carte interactive des actions.",
+        subtitle_en="Essential overview: global indicators and interactive map of actions.",
+        chips=[i18n_text("Essentiel", "Essential"), i18n_text("Carte", "Map")],
     )
-    
-    # Statistiques Globales (Grid de Cartes Premium)
-    # --- PREDICTIVE AI RISK BANNER ---
-    risk_data = calculate_pollution_risk(df_impact)
-    risk_color = "#ef4444" if risk_data['level'] == "Critique" else "#f97316" if risk_data['level'] == "Élevé" else "#eab308" if risk_data['level'] == "Modéré" else "#10b981"
-    
-    st.markdown(f"""
-        <div class="premium-card animate-in stat-glow" style="border-left:8px solid {risk_color}; animation-delay:0.1s;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <div>
-                    <h4 style="margin:0; color:{risk_color}; text-transform:uppercase; letter-spacing:1px; font-size:12px;">
-                        { "🤖 ANALYSE PRÉDICTIVE IA" if st.session_state.lang == "fr" else "🤖 AI PREDICTIVE ANALYSIS" }
-                    </h4>
-                    <p style="margin:5px 0 0 0; font-size:16px; font-weight:600;">
-                        { risk_data['message'] if st.session_state.lang == "fr" else risk_data['level'] + " Risk: Pollution levels expected to rise." }
-                    </p>
-                </div>
-                <div style="text-align:right;">
-                    <div style="font-size:24px; font-weight:bold; color:{risk_color};">{risk_data['risk_score']}%</div>
-                    <div style="font-size:10px; color:#64748b;">RISK SCORE</div>
-                </div>
-            </div>
-            <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
-                { "".join([f'<span style="background:rgba(0,0,0,0.05); padding:4px 10px; border-radius:10px; font-size:11px;"># {rec}</span>' for rec in get_risk_recommendations(risk_data, lang=st.session_state.lang)]) }
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    if not df_impact.empty:
-        # Conversion dates pour graphique
-        df_impact['date_ts'] = pd.to_datetime(df_impact['date'], errors='coerce')
-        df_impact = df_impact.dropna(subset=['date_ts']).sort_values('date_ts')
-        
-        total_kg = df_impact['dechets_kg'].fillna(0).sum()
-        total_megots = df_impact['megots'].fillna(0).sum()
-        total_volunteers = df_impact['benevoles'].fillna(0).sum()
-        
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.markdown(f'<div class="feature-card animate-in" style="animation-delay:0.2s;"><div class="metric-value" style="color:#10b981">{total_kg:,.1f}</div><div class="metric-label">{t("kg_removed")}</div></div>', unsafe_allow_html=True)
-        with c2:
-            st.markdown(f'<div class="feature-card animate-in" style="animation-delay:0.4s;"><div class="metric-value" style="color:#3b82f6">{int(total_megots):,}</div><div class="metric-label">{t("megots_collected")}</div></div>', unsafe_allow_html=True)
-        with c3:
-            st.markdown(f'<div class="feature-card animate-in" style="animation-delay:0.6s;"><div class="metric-value" style="color:#8b5cf6">{int(total_volunteers):,}</div><div class="metric-label">{t("citizens_engaged")}</div></div>', unsafe_allow_html=True)
-            
-        st.markdown("<br>", unsafe_allow_html=True)
-            
-        # Graphique d'évolution (Design épuré)
-        st.markdown(f'<div class="premium-card animate-in" style="animation-delay:0.8s;"><h3>{t("evolution_title")}</h3>', unsafe_allow_html=True)
-        daily_impact = df_impact.groupby('date_ts')['dechets_kg'].sum().cumsum().reset_index()
-        st.line_chart(daily_impact.set_index('date_ts'), color="#10b981", height=300)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Section Grade Personnel
-        st.markdown(f'<div class="premium-card animate-in" style="animation-delay:1s;"><h3>{t("progression_title")}</h3>', unsafe_allow_html=True)
-        c_p1, c_p2 = st.columns([2, 1])
-        with c_p1:
-            check_pseudo = st.text_input(t("check_grade"), placeholder=t("pseudo_placeholder"), key="top_check_pseudo_v2")
-            st.info(t("check_grade") if st.session_state.lang == "fr" else "Enter your pseudo to see your stats and badge.")
-        with c_p2:
-            if check_pseudo:
-                badge = get_user_badge(check_pseudo.strip(), df_impact)
-                if badge:
-                    st.markdown(f'<div class="badge-card animate-in">{badge}</div>', unsafe_allow_html=True)
-                else:
-                    msg = "Pseudo non trouvé. Commencez votre première action !" if st.session_state.lang == "fr" else "Pseudo not found. Start your first action!"
-                    st.warning(msg)
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Équivalences & Impact Réel
-        st.markdown(f'<div class="premium-card animate-in" style="animation-delay:1.2s;"><h3>{t("eco_impact_title")}</h3>', unsafe_allow_html=True)
-        impact = calculate_impact(total_megots, total_kg)
-        eq_cols = st.columns(3)
-        if st.session_state.lang == "fr":
-            with eq_cols[0]:
-                st.info(f"💧 **{impact['eau_litres']/1_000_000:.1f} M** L d'eau préservés.")
-            with eq_cols[1]:
-                st.success(f"🪑 **{int(total_kg/50)}** bancs publics recyclés.")
-            with eq_cols[2]:
-                st.warning(f"🚗 **{int(total_kg*19):,} km** de CO2 évités.")
-        else:
-            with eq_cols[0]:
-                st.info(f"💧 **{impact['eau_litres']/1_000_000:.1f} M** L water protected.")
-            with eq_cols[1]:
-                st.success(f"🪑 **{int(total_kg/50)}** public benches recycled.")
-            with eq_cols[2]:
-                st.warning(f"🚗 **{int(total_kg*19):,} km** CO2 avoided.")
-        st.markdown('</div>', unsafe_allow_html=True)
 
+    home_actions_df = all_public_df.dropna(subset=["lat", "lon"]).copy() if not all_public_df.empty else pd.DataFrame()
+
+    if not home_actions_df.empty:
+        home_actions_df = calculate_trends(home_actions_df)
+        home_map = build_interactive_folium_map(home_actions_df)
     else:
-        msg = "Aucune donnée d'impact disponible pour le moment." if st.session_state.lang == "fr" else "No impact data available yet."
-        st.info(msg)
+        st.info(i18n_text("Aucune action géolocalisée à afficher pour le moment.", "No geolocated action to display yet."))
+        home_map = folium.Map(location=[48.8566, 2.3522], zoom_start=12, tiles="CartoDB positron")
+
+    st_folium(home_map, width="stretch", height=520, returned_objects=[])
 
 with tab_view:
     render_tab_header(
@@ -2595,300 +2820,8 @@ with tab_view:
             center_lat, center_lon = map_df["lat"].mean(), map_df["lon"].mean()
             zoom_start = 11
 
-    # --- Configuration des fonds de carte ---
-    m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start, tiles=None)
-    
-    folium.TileLayer('OpenStreetMap', name='Fond Clair (Défaut)').add_to(m)
-    folium.TileLayer(
-        tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-        name='Fond Sombre',
-        attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-    ).add_to(m)
-    folium.TileLayer(
-        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        name='Vue Satellite',
-        attr='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-    ).add_to(m)
+    m = build_interactive_folium_map(map_df)
 
-    # Récupération Open Data (Poubelles de rue)
-    official_bins = get_paris_bins()
-    
-    # --- SEGMENTATION DES COUCHES ---
-    from folium.plugins import MarkerCluster
-    group_pollution = folium.FeatureGroup(name="⚠️ Pollution & Actions", show=True)
-    cluster_pollution = MarkerCluster(name="🟣 Cluster Pollution (dense)", show=False, disableClusteringAtZoom=14)
-    group_clean = folium.FeatureGroup(name="🌿 Zones Propres", show=True)
-    group_business = folium.FeatureGroup(name="⭐ Acteurs Engagés", show=True)
-    group_spots = folium.FeatureGroup(name="📢 Trash Spots (Signalisations)", show=True)
-    
-    # Ajout des Trash Spots (Signalements rapides)
-    active_spots = get_active_spots()
-    for s in active_spots:
-        folium.Marker(
-            [s['lat'], s['lon']],
-            popup=f"<b>⚠️ {s['type_dechet']}</b><br>Signalé par {s['reporter_name']}<br><i>Aidez-nous à nettoyer !</i>",
-            icon=folium.Icon(color='red', icon='exclamation-circle', prefix='fa'),
-            tooltip="Spot de pollution actif"
-        ).add_to(group_spots)
-    group_spots.add_to(m)
-    
-    # Poubelles (Gris)
-    for b in official_bins:
-        folium.CircleMarker(
-            location=[b['lat'], b['lon']],
-            radius=3,
-            color='#808080',
-            fill=True,
-            fill_color='#808080',
-            fill_opacity=0.4,
-            popup=f"<b>🗑️ Info Officielle</b><br>Type: {b.get('type')}<br>Propriétaire: Ville de Paris"
-        ).add_to(group_pollution)
-
-    features_timeline = []
-    max_osm_shapes = 80
-    enable_osm_shapes = len(map_df) <= max_osm_shapes
-    if not enable_osm_shapes:
-        st.caption(
-            f"Mode rapide: geometries OSM desactivees au-dela de {max_osm_shapes} points."
-            if st.session_state.lang == "fr"
-            else f"Fast mode: OSM geometries disabled above {max_osm_shapes} points."
-        )
-
-    if not map_df.empty:
-        for _, row in map_df.iterrows():
-            # 1. Calcul des besoins en équipement (Gap Analysis)
-            is_clean = row.get('est_propre', False)
-            is_business = row.get('type_lieu') == "Établissement Engagé (Label)"
-            gap_alert = ""
-            if not is_clean and not is_business and row.get('lat') and row.get('lon'):
-                if 48.8 <= row['lat'] <= 48.9 and 2.2 <= row['lon'] <= 2.4:
-                    is_gap, dist = calculate_infrastructure_gap(row['lat'], row['lon'], official_bins)
-                    if is_gap:
-                        gap_alert = f"Besoin d'équipement : poubelle la plus proche à {int(dist)}m"
-
-            # 2. Calcul des scores et styles dynamiques
-            score_data = calculate_scores(row)
-            color, radius, icon_type = get_marker_style(row, score_data)
-            
-            # --- GEO-GRAPHISM INTELLIGENT ---
-            osm_type = detect_osm_type(row)
-            if enable_osm_shapes and osm_type != 'point':
-                geometry, final_type = fetch_osm_geometry(row['lat'], row['lon'], osm_type)
-            else:
-                geometry, final_type = (None, 'point')
-            
-            # 3. Génération du popup intelligent
-            popup_html = create_premium_popup(row, score_data, gap_alert=gap_alert)
-            place_name = format_google_maps_name(row)
-            
-            # 4. Ajout au groupe correspondant
-            target_group = group_business if is_business else group_clean if is_clean else group_pollution
-            
-            if final_type == 'park' and geometry:
-                # Tracé du polygone du parc (lambda capture color pour éviter closure bug)
-                _park_color = color
-                folium.GeoJson(
-                    geometry,
-                    style_function=lambda x, c=_park_color: {
-                        'fillColor': MAP_COLORS['park'],
-                        'color': c,
-                        'weight': 2,
-                        'fillOpacity': 0.3
-                    },
-                    tooltip=place_name,
-                    popup=folium.Popup(popup_html, max_width=300)
-                ).add_to(target_group)
-            
-            elif final_type == 'street' and geometry:
-                # Tracé de la rue (lambda capture color pour éviter closure bug)
-                _street_color = color
-                folium.GeoJson(
-                    geometry,
-                    style_function=lambda x, c=_street_color: {
-                        'color': c,
-                        'weight': 5,
-                        'opacity': 0.8
-                    },
-                    tooltip=place_name,
-                    popup=folium.Popup(popup_html, max_width=300)
-                ).add_to(target_group)
-                
-            elif icon_type == 'star':
-                folium.Marker(
-                    location=[row['lat'], row['lon']],
-                    popup=folium.Popup(popup_html, max_width=300),
-                    tooltip=place_name,
-                    icon=folium.Icon(color='lightgray', icon_color=color, icon='star', prefix='fa')
-                ).add_to(target_group)
-                
-            # --- PICTOGRAMMES STANDARDISÉS (POINTS CRITIQUES) ---
-            elif score_data['score_salete'] > 200: # Seuil pour icône
-                icon_char = '🚬' if row.get('megots', 0) > 300 else '🗑️'
-                folium.Marker(
-                    location=[row['lat'], row['lon']],
-                    icon=folium.DivIcon(html=f"""
-                        <div style="background:{color}; width:30px; height:30px; border-radius:15px; 
-                        display:flex; align-items:center; justify-content:center; color:white; font-size:16px; 
-                        box-shadow:0 0 10px rgba(0,0,0,0.3); border:2px solid white;">{icon_char}</div>
-                    """),
-                    tooltip=place_name,
-                    popup=folium.Popup(popup_html, max_width=300)
-                ).add_to(target_group)
-                
-            elif is_clean:
-                # Nouveau visuel pour Zone Propre (Feuille)
-                folium.Marker(
-                    location=[row['lat'], row['lon']],
-                    icon=folium.Icon(color='cadetblue', icon='leaf', prefix='fa'),
-                    tooltip=place_name,
-                    popup=folium.Popup(popup_html, max_width=300)
-                ).add_to(target_group)
-            
-            else:
-                folium.CircleMarker(
-                    location=[row['lat'], row['lon']],
-                    radius=radius,
-                    color=color,
-                    fill=True,
-                    fill_color=color,
-                    fill_opacity=0.7,
-                    tooltip=place_name,
-                    popup=folium.Popup(popup_html, max_width=300)
-                ).add_to(target_group)
-
-            # --- Préparation Chronologie ---
-            raw_date = row.get('date', '')
-            if not raw_date or str(raw_date).lower() in ["nan", "none", ""]:
-                try:
-                    raw_date = row.get('submitted_at', '').split('T')[0]
-                except:
-                    raw_date = datetime.now().strftime('%Y-%m-%d')
-            
-            icon_name = 'star' if icon_type == 'star' else 'circle'
-            
-            features_timeline.append({
-                'type': 'Feature',
-                'geometry': {'type': 'Point', 'coordinates': [row['lon'], row['lat']]},
-                'properties': {
-                    'time': raw_date,
-                    'popup': popup_html,
-                    'icon': icon_name,
-                    'iconstyle': {
-                        'color': color,
-                        'fillColor': color,
-                        'fillOpacity': 0.7,
-                        'radius': radius
-                    },
-                    'style': {'color': color}
-                }
-            })
-
-    group_pollution.add_to(m)
-    cluster_pollution.add_to(m)
-    group_clean.add_to(m)
-    group_business.add_to(m)
-
-    # --- LÉGENDE HTML OVERLAY (BILAN RICHE) ---
-    from branca.element import MacroElement
-    from jinja2 import Template
-
-    # Calcul des statistiques en temps réel pour la légende
-    _nb_actions = len(map_df) if not map_df.empty else 0
-    _nb_megots = int(map_df['megots'].fillna(0).sum()) if not map_df.empty else 0
-    _nb_kg = map_df['dechets_kg'].fillna(0).sum() if not map_df.empty else 0.0
-    _nb_volunteers = int(map_df['benevoles'].fillna(0).sum()) if not map_df.empty else 0
-    _nb_critiques = len(map_df[map_df['score_mixte'] > 80]) if not map_df.empty and 'score_mixte' in map_df.columns else 0
-    
-    # Impact environnemental
-    _impact = calculate_impact(_nb_megots, _nb_kg)
-    _co2 = _impact['co2_kg']
-    _km = int(_co2 / 0.2) if _co2 > 0 else 0
-    _eau = _impact['eau_litres']
-    _douches = int(_eau / 50) if _eau > 0 else 0
-    _current_date = datetime.now().strftime('%d/%m')
-
-    legend_html = f"""
-    {{% macro script(this, kwargs) %}}
-    var legend = L.control({{position: 'bottomleft'}});
-    legend.onAdd = function(map) {{
-        var div = L.DomUtil.create('div', 'info legend');
-        div.style.background = 'rgba(255,255,255,0.95)';
-        div.style.backdropFilter = 'blur(10px)';
-        div.style.padding = '15px';
-        div.style.borderRadius = '20px';
-        div.style.boxShadow = '0 8px 32px rgba(0,0,0,0.15)';
-        div.style.border = '1px solid rgba(16,185,129,0.3)';
-        div.style.fontSize = '12px';
-        div.style.fontFamily = 'Outfit, sans-serif';
-        div.style.lineHeight = '1.5';
-        div.style.minWidth = '200px';
-        div.style.color = '#1e293b';
-
-        div.innerHTML = `
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1px solid #e2e8f0; padding-bottom:5px;">
-                <span style="font-size:16px;">🗺️</span>
-                <div style="text-align:right;">
-                    <b style="color:#10b981; font-size:14px; display:block;">BILAN 2026</b>
-                    <small style="color:#94a3b8;">{_current_date}</small>
-                </div>
-            </div>
-            
-            <b style="color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;">📋 ÉTAT DES LIEUX</b><br>
-            <div style="margin:5px 0 10px 0; display:grid; grid-template-columns: 1fr 1fr; gap:2px;">
-                <span><span style="color:#3498db;">●</span> Propres</span>
-                <span><span style="color:#27ae60;">●</span> Nettoyés</span>
-                <span><span style="color:#e67e22;">●</span> À inspecter</span>
-                <span><span style="color:#8e44ad;">●</span> Pollués</span>
-            </div>
-            
-            <div style="margin-bottom:10px;">
-                <span>⚠️ <b>{_nb_critiques}</b> Point critique</span><br>
-                <span>📍 <b>{_nb_actions}</b> Actions</span><br>
-                <span>👥 <b>{_nb_volunteers}</b> Bénévoles</span><br>
-                <span>🚬 <b>{_nb_megots:,}</b> Mégots</span><br>
-                <span>♻️ <b>{_nb_kg:.1f} kg</b> Déchets</span>
-            </div>
-
-            <b style="color:#475569; font-size:10px; text-transform:uppercase; letter-spacing:0.05em;">🌍 IMPACT</b><br>
-            <div style="margin-top:5px; background:rgba(16,185,129,0.05); padding:8px; border-radius:12px; border:1px solid rgba(16,185,129,0.1);">
-                <span>💨 <b>{_co2:.1f} kg</b> CO₂ évité</span><br>
-                <small style="color:#64748b; margin-left:18px;">🚗 { _km:,} km voiture</small><br>
-                <span>💧 <b>{_eau:,} L</b> Eau préservée</span><br>
-                <small style="color:#64748b; margin-left:18px;">🚿 {_douches:,} douches</small>
-            </div>
-        `;
-        return div;
-    }};
-    legend.addTo({{{{ this._parent.get_name() }}}});
-    {{% endmacro %}}
-    """
-    legend_element = MacroElement()
-    legend_element._template = Template(legend_html)
-    m.add_child(legend_element)
-
-    # --- COUCHE HEATMAP : Vue Thermique de la Saleté ---
-    heat_data = get_heatmap_data(map_df)
-    if heat_data:
-        from folium.plugins import HeatMap
-        HeatMap(heat_data, name="Heatmap de Saleté (Vue Thermique)", show=False, radius=25, blur=15).add_to(m)
-
-    # --- COUCHE CHRONOLOGIE (Optionnelle) ---
-    if features_timeline:
-        TimestampedGeoJson(
-            {'type': 'FeatureCollection', 'features': features_timeline},
-            period='P1D',
-            add_last_point=True,
-            auto_play=False,
-            loop=False,
-            max_speed=1,
-            loop_button=True,
-            date_options='YYYY-MM-DD',
-            time_slider_drag_update=True
-        ).add_to(m)
-
-    # Ajouter le Layer Control
-    folium.LayerControl(position='topright', collapsed=False).add_to(m)
-    
     # --- CHOIX DU MODE DE VUE (2D vs 3D) ---
     col_view_opt, col_view_lang = st.columns([3, 1])
     with col_view_opt:
@@ -4256,7 +4189,7 @@ with tab_admin:
             ).add_to(m_admin)
             
             # --- IA de Flux & Topographie ---
-            show_flow_ai = st.sidebar.checkbox("afficher l'ia de flux (entonnoirs à pollution)", value=False)
+            show_flow_ai = st.checkbox("Afficher l'IA de flux (entonnoirs à pollution)", value=False)
             if show_flow_ai:
                 with st.spinner("analyse des pentes et du ruissellement en cours..."):
                     # On utilise le graphe OSMnx pour la zone moyenne
@@ -4270,7 +4203,7 @@ with tab_admin:
                             icon=folium.Icon(color='purple', icon='bullseye', prefix='fa'),
                             popup=f"<b>{sink['type']}</b><br>{sink['description']}"
                         ).add_to(m_admin)
-                st.sidebar.success(f"{len(sinks)} entonnoirs détectés")
+                st.success(f"{len(sinks)} entonnoirs détectés")
 
             st_folium(m_admin, width=900, height=500, returned_objects=[])
         
