@@ -660,17 +660,8 @@ def inject_visual_polish(theme_mode: str):
 
         .main .block-container {{
             max-width: 1380px !important;
-            padding-top: 0.05rem !important;
+            padding-top: 0.35rem !important;
             padding-bottom: 2.1rem !important;
-        }}
-
-        [data-testid="stAppViewContainer"] > .main,
-        [data-testid="stAppViewContainer"] > .main .block-container {{
-            margin-top: 0 !important;
-        }}
-
-        .main .block-container > div:first-child {{
-            margin-top: -0.35rem !important;
         }}
 
         [data-testid="stHeader"] {{
@@ -783,12 +774,6 @@ def inject_visual_polish(theme_mode: str):
             box-shadow: none !important;
         }}
 
-        .stButton > button:focus,
-        .stDownloadButton > button:focus {{
-            outline: none !important;
-            box-shadow: 0 0 0 0.2rem rgba(20, 184, 166, 0.25) !important;
-        }}
-
         div[data-baseweb="select"] > div,
         div[data-baseweb="select"] input,
         .stTextInput > div > div > input,
@@ -802,24 +787,12 @@ def inject_visual_polish(theme_mode: str):
         }}
 
         div[data-baseweb="select"] > div:focus-within,
-        .stMultiSelect div[data-baseweb="select"] > div:focus-within,
         .stTextInput > div > div > input:focus,
         .stTextArea textarea:focus,
         .stNumberInput input:focus,
         .stDateInput input:focus {{
             border-color: color-mix(in srgb, var(--accent) 66%, transparent) !important;
             box-shadow: 0 0 0 0.18rem rgba(37,99,235,.22) !important;
-        }}
-
-        .stSlider [data-baseweb="slider"] [role="slider"] {{
-            box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.2);
-            border: 2px solid #fff;
-        }}
-
-        .stSlider [data-baseweb="slider"] > div > div:first-child {{
-            background: linear-gradient(90deg, var(--brand), var(--accent)) !important;
-            height: 6px !important;
-            border-radius: 999px;
         }}
 
         section[data-testid="stSidebar"] {{
@@ -845,19 +818,30 @@ def inject_visual_polish(theme_mode: str):
             font-weight: 600;
         }}
 
-        .nav-dropdown-shell {{
+        .right-nav-scroll {{
+            max-height: 320px;
+            overflow-y: auto;
             border: 1px solid var(--edge-soft);
-            background: var(--surface-2);
             border-radius: 14px;
             padding: 10px 12px;
+            background: var(--surface-2);
         }}
 
-        .nav-dropdown-shell [data-baseweb="select"] > div {{
-            min-height: 48px !important;
-            border-radius: 12px !important;
-            border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent) !important;
-            background: color-mix(in srgb, var(--surface-2) 94%, transparent) !important;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12) !important;
+        .right-nav-scroll::-webkit-scrollbar {{
+            width: 10px;
+        }}
+
+        .right-nav-scroll::-webkit-scrollbar-thumb {{
+            background: color-mix(in srgb, var(--ink-3) 45%, transparent);
+            border-radius: 999px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }}
+
+        .right-nav-scroll [data-testid="stRadio"] label p,
+        .right-nav-scroll [data-testid="stRadio"] label span {{
+            color: var(--ink-1) !important;
+            font-weight: 600;
         }}
 
         .rubric-buttons .stButton > button {{
@@ -876,18 +860,6 @@ def inject_visual_polish(theme_mode: str):
             background: var(--surface-2) !important;
         }}
 
-        [data-testid="stNotification"] [data-testid="stMarkdownContainer"] p {{
-            color: var(--ink-2) !important;
-        }}
-
-        [data-testid="stMetric"] [data-testid="stMetricValue"] {{
-            color: var(--ink-1) !important;
-        }}
-
-        [data-testid="stMetric"] [data-testid="stMetricDelta"] {{
-            font-weight: 700 !important;
-        }}
-
         .stTabs [data-baseweb="tab-list"] {{
             gap: 8px;
         }}
@@ -902,42 +874,6 @@ def inject_visual_polish(theme_mode: str):
         .stTabs [aria-selected="true"] {{
             background: color-mix(in srgb, var(--brand) 22%, transparent) !important;
             border-color: color-mix(in srgb, var(--brand) 60%, transparent) !important;
-            color: var(--ink-1) !important;
-        }}
-
-        .stDataFrame, div[data-testid="stTable"] {{
-            border-radius: 14px !important;
-            overflow: hidden !important;
-        }}
-
-        .stDataFrame thead tr th,
-        div[data-testid="stTable"] thead tr th {{
-            background: color-mix(in srgb, var(--brand) 10%, var(--surface-2)) !important;
-            color: var(--ink-1) !important;
-            font-weight: 700 !important;
-        }}
-
-        .stDataFrame tbody tr:hover,
-        div[data-testid="stTable"] tbody tr:hover {{
-            background: color-mix(in srgb, var(--brand) 8%, transparent) !important;
-        }}
-
-        .stPlotlyChart, .stAltairChart, .stVegaLiteChart, .stPyplot, [data-testid="stDeckGlJsonChart"] {{
-            border: 1px solid var(--edge-soft);
-            border-radius: 16px;
-            background: var(--surface-1);
-            box-shadow: var(--shadow-card);
-            padding: 8px;
-        }}
-
-        .stExpander details {{
-            border-radius: 14px !important;
-            border: 1px solid var(--edge-soft) !important;
-            background: var(--surface-2) !important;
-        }}
-
-        .stExpander summary {{
-            font-weight: 700 !important;
             color: var(--ink-1) !important;
         }}
 
@@ -961,8 +897,8 @@ def inject_visual_polish(theme_mode: str):
                 grid-template-columns: 1fr !important;
             }}
 
-            .main .block-container > div:first-child {{
-                margin-top: 0 !important;
+            .right-nav-scroll {{
+                max-height: 240px;
             }}
         }}
         </style>
@@ -2615,21 +2551,44 @@ st.markdown(
     f'<p class="nav-shell-caption">{"Navigation principale" if st.session_state.lang == "fr" else "Main navigation"} - {"Selectionnez un espace pour agir ou analyser vos resultats." if st.session_state.lang == "fr" else "Select a workspace to act or analyze your results."}</p>',
     unsafe_allow_html=True,
 )
-st.markdown(
-    f'<p class="rubric-caption">{"Menu des rubriques" if st.session_state.lang == "fr" else "Section menu"}</p>',
-    unsafe_allow_html=True,
-)
-st.markdown('<div class="nav-dropdown-shell">', unsafe_allow_html=True)
-selected_menu_tab = st.selectbox(
-    t("nav_label"),
-    options=nav_options,
-    index=nav_options.index(active_tab),
-    key="main_nav_dropdown",
-    label_visibility="collapsed",
-)
-st.markdown('</div>', unsafe_allow_html=True)
-if selected_menu_tab != active_tab:
-    active_tab = selected_menu_tab
+nav_col, menu_col = st.columns([4.6, 2.4], gap="large")
+with nav_col:
+    st.markdown(
+        f'<p class="rubric-caption">{"Rubriques rapides" if st.session_state.lang == "fr" else "Quick sections"}</p>',
+        unsafe_allow_html=True,
+    )
+    quick_nav_options = nav_options[:8]
+    st.markdown('<div class="rubric-buttons">', unsafe_allow_html=True)
+    for row_start in range(0, len(quick_nav_options), 4):
+        row_items = quick_nav_options[row_start:row_start + 4]
+        row_cols = st.columns(len(row_items))
+        for col, label in zip(row_cols, row_items):
+            with col:
+                if st.button(
+                    label,
+                    key=f"quick_rubric_{label}",
+                    use_container_width=True,
+                    type="primary" if active_tab == label else "secondary",
+                ):
+                    active_tab = label
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with menu_col:
+    st.markdown(
+        f'<p class="rubric-caption">{"Toutes les rubriques" if st.session_state.lang == "fr" else "All sections"}</p>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="right-nav-scroll">', unsafe_allow_html=True)
+    selected_menu_tab = st.radio(
+        t("nav_label"),
+        options=nav_options,
+        index=nav_options.index(active_tab),
+        key="right_nav_radio",
+        label_visibility="collapsed",
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+    if selected_menu_tab != active_tab:
+        active_tab = selected_menu_tab
 
 st.markdown('</div>', unsafe_allow_html=True)
 
@@ -2721,6 +2680,207 @@ with tab_kit:
             # On utilise STREAMLIT_PUBLIC_URL si définie, sinon une URL générique
             base_url = STREAMLIT_PUBLIC_URL
             share_url = f"{base_url}/?lieu={requests.utils.quote(lieu_event.strip())}"
+            
+            # Génération du QR Code
+            qr = qrcode.QRCode(version=1, box_size=10, border=4)
+            qr.add_data(share_url)
+            qr.make(fit=True)
+            img_qr = qr.make_image(fill_color=color_qr, back_color="white")
+            
+            # Conversion pour affichage Streamlit
+            buf = io.BytesIO()
+            img_qr.save(buf, format="PNG")
+            byte_im = buf.getvalue()
+            
+            col_qr1, col_qr2 = st.columns([1, 2])
+            with col_qr1:
+                st.image(byte_im, caption="QR Code à scanner sur le terrain", width="stretch")
+            with col_qr2:
+                st.success("✅ Votre QR Code est prêt !")
+                st.write(f"**Lien encodé :** `{share_url}`")
+                st.download_button(
+                    label="⬇️ Télécharger le QR Code (PNG)",
+                    data=byte_im,
+                    file_name=f"qrcode_terrain_{lieu_event.replace(' ', '_')}.png",
+                    mime="image/png",
+                    width="stretch"
+                )
+                st.info("💡 **Conseil :** Imprimez ce code et fixez-le sur votre peson ou sur votre sac de collecte principal pour que chaque bénévole puisse flasher son impact en fin d'action.")
+
+    st.markdown("---")
+    st.subheader("🧾 Templates imprimables & gestion multi-bénévoles")
+    nb_participants = st.number_input("Nombre de bénévoles attendus", min_value=1, value=10, step=1, key="kit_participants")
+    nb_equipes = st.number_input("Nombre d'équipes", min_value=1, value=3, step=1, key="kit_teams")
+
+    planner = pd.DataFrame({
+        "equipe": [f"Équipe {((i % nb_equipes) + 1)}" for i in range(nb_participants)],
+        "benevole": [f"Participant {i+1}" for i in range(nb_participants)],
+        "telephone": ["" for _ in range(nb_participants)],
+        "materiel": ["gants, sacs, pinces" for _ in range(nb_participants)],
+    })
+    st.dataframe(planner, width="stretch", hide_index=True)
+    st.download_button(
+        "⬇️ Télécharger template équipes (CSV)",
+        data=planner.to_csv(index=False).encode("utf-8"),
+        file_name="template_equipes_cleanmymap.csv",
+        mime="text/csv",
+        width="stretch",
+    )
+
+with tab_home:
+    render_tab_header(
+        icon="\U0001F4CA",
+        title_fr="Notre Impact",
+        title_en="Our Impact",
+        subtitle_fr="Vue d'ensemble essentielle : indicateurs globaux et carte interactive des actions.",
+        subtitle_en="Essential overview: global indicators and interactive map of actions.",
+        chips=[i18n_text("Essentiel", "Essential"), i18n_text("Carte", "Map")],
+    )
+
+    home_actions_df = all_public_df.dropna(subset=["lat", "lon"]) if not all_public_df.empty else pd.DataFrame()
+    home_map = folium.Map(location=[48.8566, 2.3522], zoom_start=12, tiles="CartoDB positron")
+
+    if not home_actions_df.empty:
+        center_lat_home = home_actions_df["lat"].mean()
+        center_lon_home = home_actions_df["lon"].mean()
+        home_map.location = [center_lat_home, center_lon_home]
+
+        for _, row in home_actions_df.iterrows():
+            marker_color = "green" if row.get("est_propre", False) else "red"
+            folium.CircleMarker(
+                location=[row["lat"], row["lon"]],
+                radius=6,
+                color=marker_color,
+                fill=True,
+                fill_color=marker_color,
+                fill_opacity=0.75,
+                tooltip=row.get("type_lieu", "Action"),
+                popup=f"<b>{row.get('type_lieu', 'Action')}</b><br>{row.get('adresse', '')}<br>{row.get('dechets_kg', 0)} kg",
+            ).add_to(home_map)
+    else:
+        st.info(i18n_text("Aucune action géolocalisée à afficher pour le moment.", "No geolocated action to display yet."))
+
+    st_folium(home_map, width="stretch", height=520, returned_objects=[])
+
+with tab_view:
+    render_tab_header(
+        icon="\U0001F5FA\ufe0f",
+        title_fr="Carte Interactive des Actions",
+        title_en="Interactive Action Map",
+        subtitle_fr="Explorez les actions validees, les zones sensibles, la chronologie et les couches geographiques en un seul espace.",
+        subtitle_en="Explore validated actions, sensitive zones, timeline, and geographic layers in one workspace.",
+        chips=[i18n_text("Cartographie", "Mapping"), i18n_text("Analyse", "Analytics"), i18n_text("Temps reel", "Live")],
+        compact=True,
+    )
+    
+    # Chargement DB + imports (Google Sheet et Excel)
+    db_approved = get_submissions_by_status('approved')
+    public_actions = all_imported_actions + db_approved
+    public_df = pd.DataFrame(public_actions)
+
+    critical_zones = get_critical_zones(public_df) if not public_df.empty else []
+    
+    # Fallback sur Paris si vide
+    center_lat, center_lon = 48.8566, 2.3522
+    zoom_start = 12
+    
+    map_df = pd.DataFrame()
+    if not public_df.empty:
+        map_df = public_df.dropna(subset=["lat", "lon"]).copy()
+        if not map_df.empty:
+            # --- ANALYSE DE TENDANCE LOCALE ---
+            map_df = calculate_trends(map_df)
+            center_lat, center_lon = map_df["lat"].mean(), map_df["lon"].mean()
+            zoom_start = 11
+
+    # --- Configuration des fonds de carte ---
+    m = folium.Map(location=[center_lat, center_lon], zoom_start=zoom_start, tiles=None)
+    
+    folium.TileLayer('OpenStreetMap', name='Fond Clair (Défaut)').add_to(m)
+    folium.TileLayer(
+        tiles='https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        name='Fond Sombre',
+        attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+    ).add_to(m)
+    folium.TileLayer(
+        tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        name='Vue Satellite',
+        attr='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    ).add_to(m)
+
+    # Récupération Open Data (Poubelles de rue)
+    official_bins = get_paris_bins()
+    
+    # --- SEGMENTATION DES COUCHES ---
+    from folium.plugins import MarkerCluster
+    group_pollution = folium.FeatureGroup(name="⚠️ Pollution & Actions", show=True)
+    cluster_pollution = MarkerCluster(name="🟣 Cluster Pollution (dense)", show=False, disableClusteringAtZoom=14)
+    group_clean = folium.FeatureGroup(name="🌿 Zones Propres", show=True)
+    group_business = folium.FeatureGroup(name="⭐ Acteurs Engagés", show=True)
+    group_spots = folium.FeatureGroup(name="📢 Trash Spots (Signalisations)", show=True)
+    
+    # Ajout des Trash Spots (Signalements rapides)
+    active_spots = get_active_spots()
+    for s in active_spots:
+        folium.Marker(
+            [s['lat'], s['lon']],
+            popup=f"<b>⚠️ {s['type_dechet']}</b><br>Signalé par {s['reporter_name']}<br><i>Aidez-nous à nettoyer !</i>",
+            icon=folium.Icon(color='red', icon='exclamation-circle', prefix='fa'),
+            tooltip="Spot de pollution actif"
+        ).add_to(group_spots)
+    group_spots.add_to(m)
+    
+    # Poubelles (Gris)
+    for b in official_bins:
+        folium.CircleMarker(
+            location=[b['lat'], b['lon']],
+            radius=3,
+            color='#808080',
+            fill=True,
+            fill_color='#808080',
+            fill_opacity=0.4,
+            popup=f"<b>🗑️ Info Officielle</b><br>Type: {b.get('type')}<br>Propriétaire: Ville de Paris"
+        ).add_to(group_pollution)
+
+    features_timeline = []
+    max_osm_shapes = 80
+    enable_osm_shapes = len(map_df) <= max_osm_shapes
+    if not enable_osm_shapes:
+        st.caption(
+            f"Mode rapide: geometries OSM desactivees au-dela de {max_osm_shapes} points."
+            if st.session_state.lang == "fr"
+            else f"Fast mode: OSM geometries disabled above {max_osm_shapes} points."
+        )
+
+    if not map_df.empty:
+        for _, row in map_df.iterrows():
+            # 1. Calcul des besoins en équipement (Gap Analysis)
+            is_clean = row.get('est_propre', False)
+            is_business = row.get('type_lieu') == "Établissement Engagé (Label)"
+            gap_alert = ""
+            if not is_clean and not is_business and row.get('lat') and row.get('lon'):
+                if 48.8 <= row['lat'] <= 48.9 and 2.2 <= row['lon'] <= 2.4:
+                    is_gap, dist = calculate_infrastructure_gap(row['lat'], row['lon'], official_bins)
+                    if is_gap:
+                        gap_alert = f"Besoin d'équipement : poubelle la plus proche à {int(dist)}m"
+
+            # 2. Calcul des scores et styles dynamiques
+            score_data = calculate_scores(row)
+            color, radius, icon_type = get_marker_style(row, score_data)
+            
+            # --- GEO-GRAPHISM INTELLIGENT ---
+            osm_type = detect_osm_type(row)
+            if enable_osm_shapes and osm_type != 'point':
+                geometry, final_type = fetch_osm_geometry(row['lat'], row['lon'], osm_type)
+            else:
+                geometry, final_type = (None, 'point')
+            
+            # 3. Génération du popup intelligent
+            popup_html = create_premium_popup(row, score_data, gap_alert=gap_alert)
+            place_name = format_google_maps_name(row)
+            
+            # 4. Ajout au groupe correspondant
+            target_group = group_business if is_business else group_clean if is_clean else group_pollution
             
             # Génération du QR Code
             qr = qrcode.QRCode(version=1, box_size=10, border=4)
