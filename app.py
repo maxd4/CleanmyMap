@@ -659,17 +659,8 @@ def inject_visual_polish(theme_mode: str):
 
         .main .block-container {{
             max-width: 1380px !important;
-            padding-top: 0.05rem !important;
+            padding-top: 0.35rem !important;
             padding-bottom: 2.1rem !important;
-        }}
-
-        [data-testid="stAppViewContainer"] > .main,
-        [data-testid="stAppViewContainer"] > .main .block-container {{
-            margin-top: 0 !important;
-        }}
-
-        .main .block-container > div:first-child {{
-            margin-top: -0.35rem !important;
         }}
 
         [data-testid="stHeader"] {{
@@ -782,12 +773,6 @@ def inject_visual_polish(theme_mode: str):
             box-shadow: none !important;
         }}
 
-        .stButton > button:focus,
-        .stDownloadButton > button:focus {{
-            outline: none !important;
-            box-shadow: 0 0 0 0.2rem rgba(20, 184, 166, 0.25) !important;
-        }}
-
         div[data-baseweb="select"] > div,
         div[data-baseweb="select"] input,
         .stTextInput > div > div > input,
@@ -801,24 +786,12 @@ def inject_visual_polish(theme_mode: str):
         }}
 
         div[data-baseweb="select"] > div:focus-within,
-        .stMultiSelect div[data-baseweb="select"] > div:focus-within,
         .stTextInput > div > div > input:focus,
         .stTextArea textarea:focus,
         .stNumberInput input:focus,
         .stDateInput input:focus {{
             border-color: color-mix(in srgb, var(--accent) 66%, transparent) !important;
             box-shadow: 0 0 0 0.18rem rgba(37,99,235,.22) !important;
-        }}
-
-        .stSlider [data-baseweb="slider"] [role="slider"] {{
-            box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.2);
-            border: 2px solid #fff;
-        }}
-
-        .stSlider [data-baseweb="slider"] > div > div:first-child {{
-            background: linear-gradient(90deg, var(--brand), var(--accent)) !important;
-            height: 6px !important;
-            border-radius: 999px;
         }}
 
         section[data-testid="stSidebar"] {{
@@ -844,19 +817,30 @@ def inject_visual_polish(theme_mode: str):
             font-weight: 600;
         }}
 
-        .nav-dropdown-shell {{
+        .right-nav-scroll {{
+            max-height: 320px;
+            overflow-y: auto;
             border: 1px solid var(--edge-soft);
-            background: var(--surface-2);
             border-radius: 14px;
             padding: 10px 12px;
+            background: var(--surface-2);
         }}
 
-        .nav-dropdown-shell [data-baseweb="select"] > div {{
-            min-height: 48px !important;
-            border-radius: 12px !important;
-            border: 1px solid color-mix(in srgb, var(--accent) 26%, transparent) !important;
-            background: color-mix(in srgb, var(--surface-2) 94%, transparent) !important;
-            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12) !important;
+        .right-nav-scroll::-webkit-scrollbar {{
+            width: 10px;
+        }}
+
+        .right-nav-scroll::-webkit-scrollbar-thumb {{
+            background: color-mix(in srgb, var(--ink-3) 45%, transparent);
+            border-radius: 999px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }}
+
+        .right-nav-scroll [data-testid="stRadio"] label p,
+        .right-nav-scroll [data-testid="stRadio"] label span {{
+            color: var(--ink-1) !important;
+            font-weight: 600;
         }}
 
         .rubric-buttons .stButton > button {{
@@ -875,18 +859,6 @@ def inject_visual_polish(theme_mode: str):
             background: var(--surface-2) !important;
         }}
 
-        [data-testid="stNotification"] [data-testid="stMarkdownContainer"] p {{
-            color: var(--ink-2) !important;
-        }}
-
-        [data-testid="stMetric"] [data-testid="stMetricValue"] {{
-            color: var(--ink-1) !important;
-        }}
-
-        [data-testid="stMetric"] [data-testid="stMetricDelta"] {{
-            font-weight: 700 !important;
-        }}
-
         .stTabs [data-baseweb="tab-list"] {{
             gap: 8px;
         }}
@@ -901,42 +873,6 @@ def inject_visual_polish(theme_mode: str):
         .stTabs [aria-selected="true"] {{
             background: color-mix(in srgb, var(--brand) 22%, transparent) !important;
             border-color: color-mix(in srgb, var(--brand) 60%, transparent) !important;
-            color: var(--ink-1) !important;
-        }}
-
-        .stDataFrame, div[data-testid="stTable"] {{
-            border-radius: 14px !important;
-            overflow: hidden !important;
-        }}
-
-        .stDataFrame thead tr th,
-        div[data-testid="stTable"] thead tr th {{
-            background: color-mix(in srgb, var(--brand) 10%, var(--surface-2)) !important;
-            color: var(--ink-1) !important;
-            font-weight: 700 !important;
-        }}
-
-        .stDataFrame tbody tr:hover,
-        div[data-testid="stTable"] tbody tr:hover {{
-            background: color-mix(in srgb, var(--brand) 8%, transparent) !important;
-        }}
-
-        .stPlotlyChart, .stAltairChart, .stVegaLiteChart, .stPyplot, [data-testid="stDeckGlJsonChart"] {{
-            border: 1px solid var(--edge-soft);
-            border-radius: 16px;
-            background: var(--surface-1);
-            box-shadow: var(--shadow-card);
-            padding: 8px;
-        }}
-
-        .stExpander details {{
-            border-radius: 14px !important;
-            border: 1px solid var(--edge-soft) !important;
-            background: var(--surface-2) !important;
-        }}
-
-        .stExpander summary {{
-            font-weight: 700 !important;
             color: var(--ink-1) !important;
         }}
 
@@ -960,8 +896,8 @@ def inject_visual_polish(theme_mode: str):
                 grid-template-columns: 1fr !important;
             }}
 
-            .main .block-container > div:first-child {{
-                margin-top: 0 !important;
+            .right-nav-scroll {{
+                max-height: 240px;
             }}
         }}
         </style>
@@ -2335,21 +2271,44 @@ st.markdown(
     f'<p class="nav-shell-caption">{"Navigation principale" if st.session_state.lang == "fr" else "Main navigation"} - {"Selectionnez un espace pour agir ou analyser vos resultats." if st.session_state.lang == "fr" else "Select a workspace to act or analyze your results."}</p>',
     unsafe_allow_html=True,
 )
-st.markdown(
-    f'<p class="rubric-caption">{"Menu des rubriques" if st.session_state.lang == "fr" else "Section menu"}</p>',
-    unsafe_allow_html=True,
-)
-st.markdown('<div class="nav-dropdown-shell">', unsafe_allow_html=True)
-selected_menu_tab = st.selectbox(
-    t("nav_label"),
-    options=nav_options,
-    index=nav_options.index(active_tab),
-    key="main_nav_dropdown",
-    label_visibility="collapsed",
-)
-st.markdown('</div>', unsafe_allow_html=True)
-if selected_menu_tab != active_tab:
-    active_tab = selected_menu_tab
+nav_col, menu_col = st.columns([4.6, 2.4], gap="large")
+with nav_col:
+    st.markdown(
+        f'<p class="rubric-caption">{"Rubriques rapides" if st.session_state.lang == "fr" else "Quick sections"}</p>',
+        unsafe_allow_html=True,
+    )
+    quick_nav_options = nav_options[:8]
+    st.markdown('<div class="rubric-buttons">', unsafe_allow_html=True)
+    for row_start in range(0, len(quick_nav_options), 4):
+        row_items = quick_nav_options[row_start:row_start + 4]
+        row_cols = st.columns(len(row_items))
+        for col, label in zip(row_cols, row_items):
+            with col:
+                if st.button(
+                    label,
+                    key=f"quick_rubric_{label}",
+                    use_container_width=True,
+                    type="primary" if active_tab == label else "secondary",
+                ):
+                    active_tab = label
+    st.markdown('</div>', unsafe_allow_html=True)
+
+with menu_col:
+    st.markdown(
+        f'<p class="rubric-caption">{"Toutes les rubriques" if st.session_state.lang == "fr" else "All sections"}</p>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="right-nav-scroll">', unsafe_allow_html=True)
+    selected_menu_tab = st.radio(
+        t("nav_label"),
+        options=nav_options,
+        index=nav_options.index(active_tab),
+        key="right_nav_radio",
+        label_visibility="collapsed",
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+    if selected_menu_tab != active_tab:
+        active_tab = selected_menu_tab
 
 st.markdown('</div>', unsafe_allow_html=True)
 
