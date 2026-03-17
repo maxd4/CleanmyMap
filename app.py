@@ -2518,32 +2518,41 @@ st.markdown(
 # Pour l'instant on garde une vue concaténée en lecture
 
 # --- NAVIGATION PAR RUBRIQUES CLIQUABLES ---
-# Liste des options classées par priorité
-nav_options = [
-    t("tab_home"),
-    t("tab_map"),
-    t("tab_declaration"),
-    t("tab_trash_spotter"),
-    t("tab_gamification"),
-    t("tab_pdf"),
-    t("tab_history"),
-    t("tab_community"),
-    t("tab_actors"),
-    t("tab_route"),
-    t("tab_recycling"),
-    t("tab_climate"),
-    t("tab_elus"),
-    t("tab_weather"),
-    t("tab_compare"),
-    t("tab_kit"),
-    t("tab_sandbox"),
-    t("tab_admin"),
+# IDs stables pour eviter les rubriques vides quand les libelles changent (langue/session)
+tab_specs = [
+    {"id": "home", "key": "tab_home"},
+    {"id": "map", "key": "tab_map"},
+    {"id": "declaration", "key": "tab_declaration"},
+    {"id": "trash_spotter", "key": "tab_trash_spotter"},
+    {"id": "gamification", "key": "tab_gamification"},
+    {"id": "pdf", "key": "tab_pdf"},
+    {"id": "history", "key": "tab_history"},
+    {"id": "community", "key": "tab_community"},
+    {"id": "actors", "key": "tab_actors"},
+    {"id": "route", "key": "tab_route"},
+    {"id": "recycling", "key": "tab_recycling"},
+    {"id": "climate", "key": "tab_climate"},
+    {"id": "guide", "key": "tab_guide"},
+    {"id": "elus", "key": "tab_elus"},
+    {"id": "weather", "key": "tab_weather"},
+    {"id": "compare", "key": "tab_compare"},
+    {"id": "kit", "key": "tab_kit"},
+    {"id": "sandbox", "key": "tab_sandbox"},
+    {"id": "admin", "key": "tab_admin"},
 ]
 
-if "active_tab" not in st.session_state or st.session_state.active_tab not in nav_options:
-    st.session_state.active_tab = nav_options[0]
+nav_ids = [spec["id"] for spec in tab_specs]
+id_to_label = {spec["id"]: t(spec["key"]) for spec in tab_specs}
+label_to_id = {label: tab_id for tab_id, label in id_to_label.items()}
 
-active_tab = st.session_state.active_tab
+if "active_tab_id" not in st.session_state:
+    legacy_active_label = st.session_state.get("active_tab")
+    st.session_state.active_tab_id = label_to_id.get(legacy_active_label, nav_ids[0])
+
+if st.session_state.active_tab_id not in nav_ids:
+    st.session_state.active_tab_id = nav_ids[0]
+
+active_tab_id = st.session_state.active_tab_id
 
 # Affichage du menu de navigation en haut de la page
 st.markdown('<div class="nav-shell">', unsafe_allow_html=True)
@@ -2557,20 +2566,20 @@ with nav_col:
         f'<p class="rubric-caption">{"Rubriques rapides" if st.session_state.lang == "fr" else "Quick sections"}</p>',
         unsafe_allow_html=True,
     )
-    quick_nav_options = nav_options[:8]
+    quick_nav_ids = nav_ids[:8]
     st.markdown('<div class="rubric-buttons">', unsafe_allow_html=True)
-    for row_start in range(0, len(quick_nav_options), 4):
-        row_items = quick_nav_options[row_start:row_start + 4]
+    for row_start in range(0, len(quick_nav_ids), 4):
+        row_items = quick_nav_ids[row_start:row_start + 4]
         row_cols = st.columns(len(row_items))
-        for col, label in zip(row_cols, row_items):
+        for col, tab_id in zip(row_cols, row_items):
             with col:
                 if st.button(
-                    label,
-                    key=f"quick_rubric_{label}",
+                    id_to_label[tab_id],
+                    key=f"quick_rubric_{tab_id}",
                     use_container_width=True,
-                    type="primary" if active_tab == label else "secondary",
+                    type="primary" if active_tab_id == tab_id else "secondary",
                 ):
-                    active_tab = label
+                    active_tab_id = tab_id
     st.markdown('</div>', unsafe_allow_html=True)
 
 with menu_col:
@@ -2579,23 +2588,26 @@ with menu_col:
         unsafe_allow_html=True,
     )
     st.markdown('<div class="right-nav-scroll">', unsafe_allow_html=True)
-    selected_menu_tab = st.radio(
+    nav_labels = [id_to_label[tab_id] for tab_id in nav_ids]
+    selected_menu_label = st.radio(
         t("nav_label"),
-        options=nav_options,
-        index=nav_options.index(active_tab),
+        options=nav_labels,
+        index=nav_ids.index(active_tab_id),
         key="right_nav_radio",
         label_visibility="collapsed",
     )
     st.markdown('</div>', unsafe_allow_html=True)
-    if selected_menu_tab != active_tab:
-        active_tab = selected_menu_tab
+    selected_menu_id = label_to_id[selected_menu_label]
+    if selected_menu_id != active_tab_id:
+        active_tab_id = selected_menu_id
 
 st.markdown('</div>', unsafe_allow_html=True)
 
 # Synchronisation du state
-st.session_state.active_tab = active_tab
+st.session_state.active_tab_id = active_tab_id
+st.session_state.active_tab = id_to_label[active_tab_id]
 
-# Initialisation des containers (pour garder la compatibilité avec le code existant line 1845)
+# Initialisation des containers (pour garder la compatibilite avec le code existant line 1845)
 tab_declaration = st.empty()
 tab_map = st.empty()
 tab_trash_spotter = st.empty()
@@ -2616,29 +2628,29 @@ tab_weather = st.empty()
 tab_compare = st.empty()
 tab_admin = st.empty()
 
-# On active le container correspondant à la sélection
-active = st.session_state.active_tab
-if active == t("tab_declaration"): tab_declaration = st.container()
-elif active == t("tab_map"): tab_map = st.container()
-elif active == t("tab_trash_spotter"): tab_trash_spotter = st.container()
-elif active == t("tab_gamification"): tab_gamification = st.container()
-elif active == t("tab_community"): tab_community = st.container()
-elif active == t("tab_sandbox"): tab_sandbox = st.container()
-elif active == t("tab_pdf"): tab_pdf = st.container()
-elif active == t("tab_guide"): tab_guide = st.container()
-elif active == t("tab_actors"): tab_actors = st.container()
-elif active == t("tab_history"): tab_history = st.container()
-elif active == t("tab_route"): tab_route = st.container()
-elif active == t("tab_recycling"): tab_recycling = st.container()
-elif active == t("tab_climate"): tab_climate = st.container()
-elif active == t("tab_elus"): tab_elus = st.container()
-elif active == t("tab_kit"): tab_kit = st.container()
-elif active == t("tab_home"): tab_home = st.container()
-elif active == t("tab_weather"): tab_weather = st.container()
-elif active == t("tab_compare"): tab_compare = st.container()
-elif active == t("tab_admin"): tab_admin = st.container()
+# Active le container correspondant a la selection
+active = st.session_state.active_tab_id
+if active == "declaration": tab_declaration = st.container()
+elif active == "map": tab_map = st.container()
+elif active == "trash_spotter": tab_trash_spotter = st.container()
+elif active == "gamification": tab_gamification = st.container()
+elif active == "community": tab_community = st.container()
+elif active == "sandbox": tab_sandbox = st.container()
+elif active == "pdf": tab_pdf = st.container()
+elif active == "guide": tab_guide = st.container()
+elif active == "actors": tab_actors = st.container()
+elif active == "history": tab_history = st.container()
+elif active == "route": tab_route = st.container()
+elif active == "recycling": tab_recycling = st.container()
+elif active == "climate": tab_climate = st.container()
+elif active == "elus": tab_elus = st.container()
+elif active == "kit": tab_kit = st.container()
+elif active == "home": tab_home = st.container()
+elif active == "weather": tab_weather = st.container()
+elif active == "compare": tab_compare = st.container()
+elif active == "admin": tab_admin = st.container()
 
-# Alias rétrocompatibles (évite les NameError après renommage d'onglets)
+# Alias retrocompatibles (evite les NameError apres renommage d'onglets)
 tab_view = tab_map
 tab_add = tab_declaration
 tab_report = tab_pdf
