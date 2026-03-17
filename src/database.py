@@ -50,7 +50,7 @@ def init_db():
     
     # Table pour les soumissions (actions de nettoyage et acteurs engagés)
     # status: 'pending', 'approved', 'rejected'
-    # source: 'formulaire', 'google_sheet'
+    # source: 'formulaire', 'google_sheet', 'simulation'
     c.execute('''
         CREATE TABLE IF NOT EXISTS submissions (
             id TEXT PRIMARY KEY,
@@ -72,6 +72,7 @@ def init_db():
             commentaire TEXT,
             est_propre BOOLEAN,
             source TEXT,
+            tags TEXT,
             status TEXT DEFAULT 'pending',
             description TEXT,
             website_url TEXT,
@@ -86,6 +87,10 @@ def init_db():
         pass
     try:
         c.execute("ALTER TABLE submissions ADD COLUMN website_url TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE submissions ADD COLUMN tags TEXT")
     except sqlite3.OperationalError:
         pass
 
@@ -170,6 +175,21 @@ def init_db():
         )
     ''')
 
+    # Journal d'audit des actions administrateur
+    c.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS admin_audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            actor TEXT,
+            action TEXT NOT NULL,
+            submission_id TEXT,
+            before_snapshot TEXT,
+            after_snapshot TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        '''
+    )
+
     # Ajout de la colonne eco_points à submissions si elle n'existe pas
     try:
         c.execute("ALTER TABLE submissions ADD COLUMN eco_points INTEGER DEFAULT 0")
@@ -191,15 +211,15 @@ def insert_submission(data, status='pending'):
         INSERT OR IGNORE INTO submissions (
             id, nom, association, type_lieu, adresse, date, benevoles, temps_min,
             megots, dechets_kg, plastique_kg, verre_kg, metal_kg, gps, lat, lon,
-            commentaire, est_propre, source, status, description, website_url, eco_points, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            commentaire, est_propre, source, tags, status, description, website_url, eco_points, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data.get('id'), data.get('nom'), data.get('association'), data.get('type_lieu'),
         data.get('adresse'), data.get('date'), data.get('benevoles'), data.get('temps_min'),
         data.get('megots'), data.get('dechets_kg'), data.get('plastique_kg', 0.0),
         data.get('verre_kg', 0.0), data.get('metal_kg', 0.0), data.get('gps'),
         data.get('lat'), data.get('lon'), data.get('commentaire'), data.get('est_propre', False),
-        data.get('source', 'formulaire'), status, data.get('description'), 
+        data.get('source', 'formulaire'), data.get('tags', ''), status, data.get('description'),
         data.get('website_url'), data.get('eco_points', 0), data.get('submitted_at', datetime.now().isoformat())
     ))
     conn.commit()
@@ -311,15 +331,61 @@ def get_top_contributors(limit=3):
     rows = c.fetchall()
     conn.close()
     return [dict(row) for row in rows]
-def add_spot(lat, lon, adresse, type_dechet, reporter_name, photo_url=None):
+def add_spot(lat, lon, adresse, type_dechet, reporter_name, photo_url=None, status="new"):
     conn = get_connection()
     c = conn.cursor()
     import uuid
     spot_id = str(uuid.uuid4())
     c.execute('''
-        INSERT INTO spots (id, lat, lon, adresse, type_dechet, reporter_name, photo_url)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ''', (spot_id, lat, lon, adresse, type_dechet, reporter_name, photo_url))
+        INSERT INTO spots (id, lat, lon, adresse, type_dechet, reporter_name, photo_url, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (spot_id, lat, lon, adresse, type_dechet, reporter_name, photo_url, status))
+    conn.commit()
+    conn.close()
+
+
+def update_submission_fields(
+    sub_id,
+    nom=None,
+    association=None,
+    type_lieu=None,
+    adresse=None,
+    benevoles=None,
+    temps_min=None,
+    megots=None,
+    dechets_kg=None,
+    commentaire=None,
+):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        """
+        UPDATE submissions
+        SET
+            nom = ?,
+            association = ?,
+            type_lieu = ?,
+            adresse = ?,
+            benevoles = ?,
+            temps_min = ?,
+            megots = ?,
+            dechets_kg = ?,
+            commentaire = ?
+        WHERE id = ?
+        """,
+        (
+            nom,
+            association,
+            type_lieu,
+            adresse,
+            benevoles,
+            temps_min,
+            megots,
+            dechets_kg,
+            commentaire,
+            sub_id,
+        ),
+    )
     conn.commit()
     conn.close()
     return spot_id
@@ -335,7 +401,13 @@ def get_active_spots():
     conn = get_connection()
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
-    c.execute("SELECT * FROM spots WHERE status = 'active' ORDER BY created_at DESC")
+    c.execute(
+        """
+        SELECT * FROM spots
+        WHERE status IN ('active', 'new', 'in_progress')
+        ORDER BY created_at DESC
+        """
+    )
     rows = c.fetchall()
     conn.close()
     return [dict(row) for row in rows]
@@ -504,3 +576,35 @@ def get_mission_validation_summary(submission_id):
         'down': row[1] or 0,
         'score': row[2] or 0,
     }
+
+
+def add_admin_audit_log(actor, action, submission_id=None, before_snapshot="", after_snapshot=""):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        """
+        INSERT INTO admin_audit_log (actor, action, submission_id, before_snapshot, after_snapshot)
+        VALUES (?, ?, ?, ?, ?)
+        """,
+        (actor, action, submission_id, before_snapshot, after_snapshot),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_admin_audit_logs(limit=150):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT id, actor, action, submission_id, before_snapshot, after_snapshot, created_at
+        FROM admin_audit_log
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    )
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
