@@ -170,7 +170,8 @@ if "theme_mode" not in st.session_state:
 
 def t(key):
     """Fonction de traduction courte."""
-    return TRANSLATIONS[st.session_state.lang].get(key, key)
+    value = TRANSLATIONS[st.session_state.lang].get(key, key)
+    return _repair_mojibake_text(value)
 
 
 def _repair_mojibake_text(value):
@@ -268,7 +269,8 @@ def get_impact_sources():
 
 def i18n_text(fr_text: str, en_text: str) -> str:
     """Retourne le texte FR/EN selon la langue active."""
-    return fr_text if st.session_state.lang == "fr" else en_text
+    text = fr_text if st.session_state.lang == "fr" else en_text
+    return _repair_mojibake_text(text)
 
 
 def render_tab_header(
@@ -292,6 +294,27 @@ def render_tab_header(
             <p class="section-subtitle">{i18n_text(subtitle_fr, subtitle_en)}</p>
             {"<div class='section-chip-row'>" + chip_html + "</div>" if chip_html else ""}
         </section>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_ui_callout(
+    icon: str,
+    title_fr: str,
+    title_en: str,
+    body_fr: str,
+    body_en: str,
+    tone: str = "info",
+) -> None:
+    """Bloc d'information visuel pour améliorer la lisibilité des parcours."""
+    tone_class = f"ux-callout-{tone}" if tone in {"info", "success", "warning"} else "ux-callout-info"
+    st.markdown(
+        f"""
+        <aside class="ux-callout {tone_class}">
+            <div class="ux-callout-title">{icon} {i18n_text(title_fr, title_en)}</div>
+            <p class="ux-callout-body">{i18n_text(body_fr, body_en)}</p>
+        </aside>
         """,
         unsafe_allow_html=True,
     )
@@ -345,8 +368,14 @@ st.markdown(
                     radial-gradient(circle at bottom left, rgba(59,130,246,0.05), transparent 400px);
     }
 
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
+    header, [data-testid="stHeader"] {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+    }
+    footer {
+        display: none !important;
+    }
 
     /* Premium Glass Cards */
     .premium-card {
@@ -696,29 +725,54 @@ def inject_visual_polish(theme_mode: str):
             --brand: #14b8a6;
             --brand-strong: #0ea5a4;
             --accent: #2563eb;
+            --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+            --radius-lg: 18px;
+            --radius-md: 14px;
+            --radius-sm: 10px;
+            --space-1: 0.35rem;
+            --space-2: 0.6rem;
+            --space-3: 0.9rem;
+            --space-4: 1.2rem;
+            --space-5: 1.6rem;
+            --focus-ring: 0 0 0 0.2rem rgba(37, 99, 235, 0.2);
         }}
 
         html, body, [class*="css"], .stApp {{
             font-family: 'Outfit', 'Inter', system-ui, -apple-system, 'Segoe UI', 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', Roboto, sans-serif !important;
         }}
 
+        * {{
+            box-sizing: border-box;
+        }}
+
         .stApp {{
             background:
-                radial-gradient(900px 460px at 8% -8%, rgba(14, 165, 164, 0.15), transparent 70%),
-                radial-gradient(760px 420px at 100% 0%, rgba(37, 99, 235, 0.14), transparent 70%),
+                radial-gradient(900px 460px at 8% -8%, rgba(14, 165, 164, 0.16), transparent 70%),
+                radial-gradient(760px 420px at 100% 0%, rgba(37, 99, 235, 0.13), transparent 70%),
+                linear-gradient(180deg, color-mix(in srgb, var(--surface-0) 94%, #ffffff 6%), var(--surface-0)),
                 var(--surface-0) !important;
             color: var(--ink-1);
         }}
 
         .main .block-container {{
             max-width: 1380px !important;
-            padding-top: 0.35rem !important;
-            padding-bottom: 2.1rem !important;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+            padding-bottom: 2.2rem !important;
+        }}
+
+        .main .block-container > div {{
+            gap: 0.95rem !important;
         }}
 
         [data-testid="stHeader"] {{
             height: 0 !important;
             min-height: 0 !important;
+            display: none !important;
+        }}
+
+        [data-testid="stAppViewContainer"] > .main {{
+            padding-top: 0 !important;
         }}
 
         [data-testid="stVerticalBlock"] > div:has(> .top-control-shell) {{
@@ -734,6 +788,22 @@ def inject_visual_polish(theme_mode: str):
         span,
         small {{
             color: var(--ink-2) !important;
+        }}
+
+        [data-testid="stMarkdownContainer"] p {{
+            line-height: 1.58;
+        }}
+
+        [data-testid="stMarkdownContainer"] h4,
+        [data-testid="stMarkdownContainer"] h5 {{
+            color: var(--ink-1) !important;
+            letter-spacing: -0.01em;
+        }}
+
+        hr {{
+            border: 0 !important;
+            border-top: 1px solid color-mix(in srgb, var(--edge-soft) 72%, transparent) !important;
+            margin: 16px 0 !important;
         }}
 
         .app-shell, .nav-shell, .premium-card, .section-shell,
@@ -758,6 +828,30 @@ def inject_visual_polish(theme_mode: str):
             background: var(--surface-2) !important;
         }}
 
+        .stForm {{
+            border-radius: var(--radius-lg) !important;
+            padding: 18px 18px 10px 18px !important;
+            margin-bottom: 12px !important;
+        }}
+
+        div[data-testid="stMetric"] {{
+            border-radius: var(--radius-md) !important;
+            padding: 10px 12px !important;
+        }}
+
+        div[data-testid="stMetricLabel"] p {{
+            color: var(--ink-3) !important;
+            font-weight: 650 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: 0.74rem !important;
+        }}
+
+        div[data-testid="stMetricValue"] {{
+            color: var(--ink-1) !important;
+            font-weight: 820 !important;
+        }}
+
         .app-shell-title, .section-title, .kpi-chip-value,
         [data-testid="stMarkdownContainer"] h1,
         [data-testid="stMarkdownContainer"] h2,
@@ -765,13 +859,138 @@ def inject_visual_polish(theme_mode: str):
             color: var(--ink-1) !important;
         }}
 
+        [data-testid="stMarkdownContainer"] h2 {{
+            font-size: clamp(1.35rem, 2vw, 1.95rem) !important;
+            letter-spacing: -0.02em;
+            font-weight: 820 !important;
+            margin: 0.2rem 0 0.55rem 0 !important;
+        }}
+
+        [data-testid="stMarkdownContainer"] h3 {{
+            font-size: clamp(1.06rem, 1.5vw, 1.35rem) !important;
+            letter-spacing: -0.01em;
+            font-weight: 770 !important;
+            margin: 0.2rem 0 0.45rem 0 !important;
+        }}
+
         .app-shell-subtitle, .section-subtitle, .nav-shell-caption,
         .metric-label, .kpi-chip-label, .metric-unit {{
             color: var(--ink-3) !important;
         }}
 
+        .section-shell {{
+            position: relative;
+            overflow: hidden;
+            padding: 18px 20px 16px 20px !important;
+            margin: 6px 0 12px 0 !important;
+            border: 1px solid color-mix(in srgb, var(--edge-soft) 78%, var(--brand) 22%) !important;
+            background:
+                linear-gradient(160deg, color-mix(in srgb, var(--surface-2) 90%, var(--brand) 10%), var(--surface-2)) !important;
+        }}
+
+        .section-shell::after {{
+            content: "";
+            position: absolute;
+            inset: auto -80px -72px auto;
+            width: 210px;
+            height: 210px;
+            border-radius: 50%;
+            background: radial-gradient(circle, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%);
+            pointer-events: none;
+        }}
+
+        .section-shell.compact {{
+            padding: 16px 18px 14px 18px !important;
+        }}
+
+        .section-kicker {{
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 7px 0;
+            padding: 5px 10px;
+            border-radius: 999px;
+            border: 1px solid color-mix(in srgb, var(--brand) 34%, transparent);
+            background: color-mix(in srgb, var(--brand) 11%, transparent);
+            font-size: 0.74rem;
+            text-transform: uppercase;
+            letter-spacing: 0.09em;
+            color: var(--brand-strong) !important;
+            font-weight: 800;
+        }}
+
+        .section-title {{
+            margin: 0;
+            font-size: clamp(1.25rem, 2.1vw, 1.75rem);
+            line-height: 1.2;
+            font-weight: 850;
+            letter-spacing: -0.015em;
+            color: var(--ink-1) !important;
+            text-wrap: balance;
+        }}
+
+        .section-subtitle {{
+            margin: 8px 0 0 0;
+            font-size: 0.97rem;
+            line-height: 1.53;
+            color: var(--ink-2) !important;
+            max-width: 88ch;
+        }}
+
+        .section-chip-row {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }}
+
+        .ux-callout {{
+            border-radius: var(--radius-md);
+            border: 1px solid var(--edge-soft);
+            background: var(--surface-2);
+            padding: 12px 14px;
+            margin: 8px 0 14px 0;
+        }}
+
+        .ux-callout-title {{
+            margin: 0;
+            color: var(--ink-1) !important;
+            font-size: 0.92rem;
+            font-weight: 760;
+            letter-spacing: -0.01em;
+        }}
+
+        .ux-callout-body {{
+            margin: 5px 0 0 0 !important;
+            color: var(--ink-2) !important;
+            font-size: 0.91rem;
+            line-height: 1.5;
+        }}
+
+        .ux-callout-info {{
+            border-color: color-mix(in srgb, var(--accent) 34%, var(--edge-soft));
+            background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), var(--surface-2));
+        }}
+
+        .ux-callout-success {{
+            border-color: color-mix(in srgb, var(--brand) 34%, var(--edge-soft));
+            background: linear-gradient(135deg, color-mix(in srgb, var(--brand) 10%, transparent), var(--surface-2));
+        }}
+
+        .ux-callout-warning {{
+            border-color: color-mix(in srgb, #f59e0b 38%, var(--edge-soft));
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), var(--surface-2));
+        }}
+
         .app-shell {{
-            padding: 22px 24px !important;
+            position: relative;
+            overflow: hidden;
+            padding: 28px 30px !important;
+            background:
+                radial-gradient(520px 220px at -8% -20%, color-mix(in srgb, var(--brand) 20%, transparent), transparent 72%),
+                radial-gradient(520px 220px at 108% -30%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 72%),
+                var(--surface-2) !important;
+            border: 1px solid color-mix(in srgb, var(--brand) 18%, var(--edge-soft)) !important;
         }}
 
         .nav-shell {{
@@ -780,27 +999,43 @@ def inject_visual_polish(theme_mode: str):
         }}
 
         .app-shell-eyebrow {{
-            margin: 0 0 8px 0;
-            font-size: 0.79rem;
-            letter-spacing: 0.11em;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 12px 0;
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid color-mix(in srgb, var(--brand) 28%, transparent);
+            background: color-mix(in srgb, var(--brand) 10%, transparent);
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--brand-strong) !important;
         }}
 
         .app-shell-title {{
             margin: 0;
-            font-size: clamp(1.45rem, 2.4vw, 2.2rem);
-            line-height: 1.14;
-            font-weight: 800;
-            letter-spacing: -0.02em;
+            font-size: clamp(2.05rem, 3.9vw, 3.35rem);
+            line-height: 1.08;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            color: var(--ink-1) !important;
+            max-width: 18ch;
+            text-wrap: balance;
+        }}
+
+        .app-shell-title .accent {{
+            color: var(--brand-strong) !important;
         }}
 
         .app-shell-subtitle {{
-            margin: 10px 0 0 0;
-            font-size: 1rem;
-            max-width: 980px;
-            line-height: 1.45;
+            margin: 14px 0 0 0;
+            font-size: clamp(1.01rem, 1.4vw, 1.16rem);
+            max-width: 78ch;
+            line-height: 1.62;
+            color: var(--ink-2) !important;
+            font-weight: 520;
         }}
 
         .rubric-hero-title {{
@@ -818,6 +1053,18 @@ def inject_visual_polish(theme_mode: str):
             font-weight: 500;
         }}
 
+        .nav-shell-caption {{
+            margin: 0 0 10px 0;
+            font-size: 0.83rem;
+            font-weight: 540;
+            color: var(--ink-3) !important;
+        }}
+
+        .nav-shell-caption strong {{
+            color: var(--ink-1) !important;
+            font-weight: 760;
+        }}
+
         .metric-grid {{
             margin: 14px 0 18px 0 !important;
             gap: 12px !important;
@@ -826,14 +1073,38 @@ def inject_visual_polish(theme_mode: str):
         .metric-card {{
             min-height: 100px;
             padding: 16px 18px !important;
+            position: relative;
+            overflow: hidden;
+        }}
+
+        .metric-card::before {{
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--brand), var(--accent));
+            opacity: 0.75;
         }}
 
         .metric-value {{
             color: var(--brand) !important;
             letter-spacing: -0.01em;
+            font-size: clamp(1.65rem, 2.6vw, 2.35rem);
+            font-weight: 820;
+            line-height: 1.08;
         }}
 
         .section-chip {{
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid transparent !important;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.01em;
             background: color-mix(in srgb, var(--brand) 14%, transparent) !important;
             border-color: color-mix(in srgb, var(--brand) 26%, transparent) !important;
             color: var(--ink-2) !important;
@@ -841,7 +1112,8 @@ def inject_visual_polish(theme_mode: str):
 
         .stButton > button,
         .stDownloadButton > button {{
-            border-radius: 12px !important;
+            min-height: 42px;
+            border-radius: var(--radius-md) !important;
             border: 1px solid transparent !important;
             padding: 0.58rem 1rem !important;
             background: linear-gradient(135deg, var(--brand), var(--accent)) !important;
@@ -858,10 +1130,27 @@ def inject_visual_polish(theme_mode: str):
             box-shadow: 0 12px 24px rgba(37, 99, 235, 0.3) !important;
         }}
 
+        .stButton > button:focus,
+        .stDownloadButton > button:focus {{
+            box-shadow: var(--focus-ring) !important;
+        }}
+
         .stButton > button[kind="secondary"] {{
             background: var(--surface-2) !important;
             border-color: var(--edge-soft) !important;
             color: var(--ink-1) !important;
+            box-shadow: none !important;
+        }}
+
+        .stButton > button[kind="secondary"]:hover {{
+            border-color: color-mix(in srgb, var(--brand) 58%, transparent) !important;
+            background: color-mix(in srgb, var(--surface-2) 88%, var(--brand) 12%) !important;
+        }}
+
+        .stButton > button:disabled,
+        .stDownloadButton > button:disabled {{
+            opacity: 0.56 !important;
+            transform: none !important;
             box-shadow: none !important;
         }}
 
@@ -874,7 +1163,9 @@ def inject_visual_polish(theme_mode: str):
             background: var(--input-bg) !important;
             color: var(--ink-1) !important;
             border: 1px solid var(--edge-soft) !important;
-            border-radius: 12px !important;
+            border-radius: var(--radius-sm) !important;
+            min-height: 42px !important;
+            transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
         }}
 
         div[data-baseweb="select"] > div:focus-within,
@@ -883,7 +1174,13 @@ def inject_visual_polish(theme_mode: str):
         .stNumberInput input:focus,
         .stDateInput input:focus {{
             border-color: color-mix(in srgb, var(--accent) 66%, transparent) !important;
-            box-shadow: 0 0 0 0.18rem rgba(37,99,235,.22) !important;
+            box-shadow: var(--focus-ring) !important;
+        }}
+
+        .stTextInput > div > div > input::placeholder,
+        .stTextArea textarea::placeholder {{
+            color: var(--ink-3) !important;
+            opacity: 0.95;
         }}
 
         section[data-testid="stSidebar"] {{
@@ -897,9 +1194,68 @@ def inject_visual_polish(theme_mode: str):
         }}
 
         .top-control-shell {{
-            border-radius: 18px;
-            padding: 8px 12px;
-            margin-bottom: 12px;
+            border-radius: var(--radius-lg);
+            padding: 10px 14px;
+            margin: 0 0 12px 0;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }}
+
+        .top-control-head {{
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 10px;
+            margin: 0 0 8px 0;
+        }}
+
+        .top-control-title {{
+            margin: 0;
+            color: var(--ink-1) !important;
+            font-size: 0.92rem;
+            font-weight: 780;
+            letter-spacing: 0.01em;
+            text-transform: uppercase;
+        }}
+
+        .top-control-subtitle {{
+            margin: 0;
+            color: var(--ink-3) !important;
+            font-size: 0.78rem;
+            font-weight: 520;
+        }}
+
+        div[data-testid="stRadio"] > label,
+        div[data-testid="stSelectbox"] > label,
+        div[data-testid="stNumberInput"] > label,
+        div[data-testid="stTextInput"] > label,
+        div[data-testid="stDateInput"] > label,
+        div[data-testid="stTextArea"] > label {{
+            color: var(--ink-2) !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.01em;
+            margin-bottom: 4px;
+        }}
+
+        div[data-testid="stRadio"] [role="radiogroup"] {{
+            gap: 7px;
+        }}
+
+        div[data-baseweb="radio"] > label {{
+            border: 1px solid var(--edge-soft);
+            border-radius: 999px;
+            padding: 5px 11px;
+            background: var(--surface-2);
+            transition: border-color .14s ease, transform .14s ease, background .14s ease;
+        }}
+
+        div[data-baseweb="radio"] > label:hover {{
+            transform: translateY(-1px);
+            border-color: color-mix(in srgb, var(--brand) 52%, transparent);
+        }}
+
+        div[data-baseweb="radio"] input:checked + div {{
+            color: var(--ink-1) !important;
         }}
 
         .rubric-scroll {{
@@ -909,6 +1265,7 @@ def inject_visual_polish(theme_mode: str):
             padding: 4px 2px 12px 2px;
             scroll-snap-type: x mandatory;
             scrollbar-width: thin;
+            scrollbar-gutter: stable;
         }}
 
         .rubric-scroll::-webkit-scrollbar {{
@@ -987,6 +1344,91 @@ def inject_visual_polish(theme_mode: str):
             background: var(--surface-2) !important;
         }}
 
+        div[data-testid="stAlert"] {{
+            border-radius: var(--radius-md) !important;
+            border: 1px solid var(--edge-soft) !important;
+            background: color-mix(in srgb, var(--surface-2) 92%, white 8%) !important;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+        }}
+
+        div[data-testid="stAlert"] p {{
+            color: var(--ink-2) !important;
+            line-height: 1.5 !important;
+        }}
+
+        div[data-baseweb="checkbox"] > label {{
+            border-radius: var(--radius-sm);
+            padding: 6px 8px 6px 4px;
+        }}
+
+        [data-baseweb="slider"] [role="slider"] {{
+            border: 2px solid #ffffff !important;
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent) !important;
+        }}
+
+        [data-testid="stDataFrame"],
+        [data-testid="stDataEditor"],
+        div[data-testid="stTable"] {{
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            border: 1px solid var(--edge-soft);
+            background: var(--surface-2) !important;
+        }}
+
+        div[data-testid="stTable"] table {{
+            border-collapse: separate !important;
+            border-spacing: 0 !important;
+        }}
+
+        div[data-testid="stTable"] th {{
+            background: color-mix(in srgb, var(--surface-2) 84%, var(--brand) 16%) !important;
+            color: var(--ink-1) !important;
+            font-weight: 700 !important;
+            border-bottom: 1px solid var(--edge-soft) !important;
+        }}
+
+        div[data-testid="stTable"] td {{
+            color: var(--ink-2) !important;
+            border-bottom: 1px solid color-mix(in srgb, var(--edge-soft) 70%, transparent) !important;
+        }}
+
+        [data-testid="stPlotlyChart"],
+        [data-testid="stVegaLiteChart"],
+        [data-testid="stPyplot"] {{
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--edge-soft);
+            background: var(--surface-2) !important;
+            padding: 8px 8px 2px 8px;
+            box-shadow: var(--shadow-card);
+        }}
+
+        iframe[title*="st_folium"],
+        iframe[title*="streamlit_folium"] {{
+            border-radius: var(--radius-lg) !important;
+            border: 1px solid var(--edge-soft) !important;
+            box-shadow: var(--shadow-card) !important;
+            overflow: hidden;
+        }}
+
+        .stExpander {{
+            border-radius: var(--radius-md) !important;
+            overflow: hidden;
+        }}
+
+        .stExpander details summary p {{
+            color: var(--ink-1) !important;
+            font-weight: 730 !important;
+            letter-spacing: -0.01em;
+        }}
+
+        .stProgress > div > div {{
+            border-radius: 999px !important;
+        }}
+
+        .stProgress [role="progressbar"] {{
+            background: linear-gradient(135deg, var(--brand), var(--accent)) !important;
+        }}
+
         .stTabs [data-baseweb="tab-list"] {{
             gap: 8px;
         }}
@@ -1007,7 +1449,8 @@ def inject_visual_polish(theme_mode: str):
         @media (max-width: 1100px) {{
             .main .block-container {{
                 max-width: 100% !important;
-                padding-top: 0.4rem !important;
+                padding-top: 0 !important;
+                margin-top: 0 !important;
             }}
 
             .metric-grid {{
@@ -1020,6 +1463,12 @@ def inject_visual_polish(theme_mode: str):
                 padding: 10px;
             }}
 
+            .top-control-head {{
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+            }}
+
             .metric-grid {{
                 grid-template-columns: 1fr !important;
             }}
@@ -1027,6 +1476,19 @@ def inject_visual_polish(theme_mode: str):
             .rubric-pill {{
                 min-width: 202px;
                 max-width: 230px;
+            }}
+
+            .app-shell {{
+                padding: 18px 16px !important;
+            }}
+
+            .app-shell-title {{
+                max-width: 100%;
+                font-size: clamp(1.7rem, 7vw, 2.2rem);
+            }}
+
+            .section-shell {{
+                padding: 14px 14px 12px 14px !important;
             }}
 
             .rubric-controls .stButton > button {{
@@ -1041,6 +1503,15 @@ def inject_visual_polish(theme_mode: str):
 inject_visual_polish(st.session_state.theme_mode)
 
 st.markdown('<div class="top-control-shell">', unsafe_allow_html=True)
+st.markdown(
+    f"""
+    <div class="top-control-head">
+        <p class="top-control-title">{i18n_text("Préférences d'affichage", "Display preferences")}</p>
+        <p class="top-control-subtitle">{i18n_text("Langue, thème et sobriété de navigation", "Language, theme, and lightweight browsing")}</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 lang_col, theme_col, eco_col = st.columns([1.5, 1.2, 1.3], gap="medium")
 with lang_col:
     st.session_state.lang = st.radio(
@@ -1063,7 +1534,10 @@ with eco_col:
     eco_mode = st.checkbox(
         t("eco_mode"),
         value=st.session_state.get("eco_mode", False),
-        help="Réduit l'usage des données pour une navigation plus sobre.",
+        help=i18n_text(
+            "Réduit l'usage des données pour une navigation plus sobre.",
+            "Reduces data usage for a lighter browsing experience.",
+        ),
         key="eco_mode_checkbox",
     )
     st.session_state.eco_mode = eco_mode
@@ -2783,13 +3257,13 @@ st.markdown(
     f"""
     <section class="app-shell animate-in">
         <div class="app-shell-eyebrow">
-            {"Opérations citoyennes de terrain" if st.session_state.lang == "fr" else "Citizen field operations"}
+            {"Plateforme de pilotage terrain" if st.session_state.lang == "fr" else "Field operations platform"}
         </div>
         <h2 class="app-shell-title">
-            {"Orchestrez vos cleanwalks avec un pilotage clair, fiable et mesurable" if st.session_state.lang == "fr" else "Orchestrate cleanwalks with clear, reliable, measurable operations"}
+            {"Pilotez vos cleanwalks avec une <span class='accent'>vision terrain claire</span>" if st.session_state.lang == "fr" else "Run cleanwalks with a <span class='accent'>clear field vision</span>"}
         </h2>
         <p class="app-shell-subtitle">
-            {"Centralisez les déclarations, suivez l'impact en temps réel, visualisez les zones prioritaires et coordonnez bénévoles, associations et collectivités depuis une interface unique."
+            {"Déclarez les actions, suivez l'impact en temps réel et priorisez les zones à traiter pour coordonner bénévoles, associations et collectivités depuis un cockpit unique."
             if st.session_state.lang == "fr"
             else "Centralize submissions, track impact in real time, map priority zones, and coordinate volunteers, partners, and local authorities from one professional workspace."}
         </p>
@@ -2914,6 +3388,13 @@ for tab_id in nav_ids:
 st.markdown(f'<div class="rubric-scroll">{"".join(rubric_cards)}</div>', unsafe_allow_html=True)
 
 active_index = nav_ids.index(active_tab_id)
+st.markdown(
+    f"<p class='nav-shell-caption'>{i18n_text('Rubrique active', 'Active section')} : "
+    f"<strong>{html.escape(id_to_label[active_tab_id])}</strong> "
+    f"({active_index + 1}/{len(nav_ids)})</p>",
+    unsafe_allow_html=True,
+)
+st.markdown('<div class="rubric-controls">', unsafe_allow_html=True)
 prev_col, next_col = st.columns(2, gap="small")
 with prev_col:
     if st.button(
@@ -2934,6 +3415,7 @@ with next_col:
     ):
         active_tab_id = nav_ids[active_index + 1]
 
+st.markdown('</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
 # Synchronisation du state
@@ -2995,7 +3477,7 @@ with tab_kit:
         icon="\U0001F4F1",
         title_fr="Kit Organisateur",
         title_en="Organizer Kit",
-        subtitle_fr="Generez un QR Code terrain, des templates equipes et des supports pre-remplis pour fluidifier vos cleanwalks.",
+        subtitle_fr="Générez un QR code terrain, des templates équipes et des supports pré-remplis pour fluidifier vos cleanwalks.",
         subtitle_en="Generate field QR codes, team templates, and prefilled materials to streamline your cleanwalk operations.",
         chips=[i18n_text("Terrain", "Field"), i18n_text("QR Code", "QR Code"), i18n_text("Organisation", "Operations")],
         compact=True,
@@ -3147,9 +3629,13 @@ with tab_home:
         compact=True,
     )
 
-    st.markdown(
-        f"**{i18n_text('Parcours recommande', 'Recommended flow')}**: "
-        f"{i18n_text('1) choisissez une rubrique au centre, 2) lancez votre action, 3) revenez ici pour suivre la carte en direct.', '1) choose a section in the center, 2) run your action, 3) come back here to track the live map.')}"
+    render_ui_callout(
+        icon="🧭",
+        title_fr="Parcours recommandé",
+        title_en="Recommended flow",
+        body_fr="1) Choisissez une rubrique dans le carrousel, 2) lancez votre action, 3) revenez ici pour suivre la carte et les indicateurs en direct.",
+        body_en="1) Pick a section in the ribbon, 2) run your action, 3) come back here to follow the map and live indicators.",
+        tone="info",
     )
     top_home_col, resume_col = st.columns([2.4, 1.2], gap="large")
     with top_home_col:
@@ -3231,12 +3717,13 @@ with tab_view:
         chips=[i18n_text("Cartographie", "Mapping"), i18n_text("Analyse", "Analytics"), i18n_text("Temps réel", "Live")],
         compact=True,
     )
-    st.markdown("#### " + i18n_text("Guide visuel (3 étapes)", "Visual guide (3 steps)"))
-    st.info(
-        i18n_text(
-            "1) Choisissez un préréglage\n2) Lisez le résumé et les zones clés\n3) Passez en mission ou partagez la vue",
-            "1) Choose a preset\n2) Read summary and key areas\n3) Switch to mission or share view",
-        )
+    render_ui_callout(
+        icon="🗺️",
+        title_fr="Guide visuel (3 étapes)",
+        title_en="Visual guide (3 steps)",
+        body_fr="1) Choisissez un préréglage. 2) Lisez le résumé et les zones clés. 3) Passez en mission ou partagez la vue.",
+        body_en="1) Choose a preset. 2) Read summary and key areas. 3) Switch to mission or share the view.",
+        tone="info",
     )
     
     # Chargement DB + imports (Google Sheet et Excel)
@@ -3396,9 +3883,9 @@ with tab_trash_spotter:
         icon="\U0001F4E2",
         title_fr="Trash Spotter",
         title_en="Trash Spotter",
-        subtitle_fr="Signalez rapidement les points noirs pour mobiliser la communaute et accelerer les interventions.",
+        subtitle_fr="Signalez rapidement les points noirs pour mobiliser la communauté et accélérer les interventions.",
         subtitle_en="Quickly report black spots to mobilize the community and accelerate interventions.",
-        chips=[i18n_text("Signalement", "Reporting"), i18n_text("Reactivite", "Response")],
+        chips=[i18n_text("Signalement", "Reporting"), i18n_text("Réactivité", "Response")],
     )
 
     col_ts1, col_ts2 = st.columns([1, 1])
@@ -3465,9 +3952,9 @@ with tab_trash_spotter:
 with tab_gamification:
     render_tab_header(
         icon="\U0001F3C6",
-        title_fr="Eco-classement & Recompenses",
+        title_fr="Éco-classement & récompenses",
         title_en="Eco Ranking & Rewards",
-        subtitle_fr="Suivez la dynamique de la communaute, valorisez les efforts et activez les badges de progression.",
+        subtitle_fr="Suivez la dynamique de la communauté, valorisez les efforts et activez les badges de progression.",
         subtitle_en="Track community momentum, reward impact, and unlock progression badges.",
         chips=[i18n_text("Leaderboard", "Leaderboard"), i18n_text("Badges", "Badges")],
     )
@@ -3582,7 +4069,7 @@ with tab_community:
         icon="\U0001F91D",
         title_fr="Rassemblements Citoyens",
         title_en="Community Meetups",
-        subtitle_fr="Coordonnez les sorties, partagez les annonces et engagez les benevoles autour d'actions locales.",
+        subtitle_fr="Coordonnez les sorties, partagez les annonces et engagez les bénévoles autour d'actions locales.",
         subtitle_en="Coordinate outings, publish announcements, and engage volunteers around local actions.",
         chips=[i18n_text("Communaute", "Community"), i18n_text("Coordination", "Coordination")],
     )
@@ -3673,9 +4160,9 @@ with tab_community:
 with tab_sandbox:
     render_tab_header(
         icon="\U0001F9EA",
-        title_fr="Zone d'entrainement",
+        title_fr="Zone d'entraînement",
         title_en="Sandbox",
-        subtitle_fr="Testez des scenarios fictifs sans impacter la base de donnees de production.",
+        subtitle_fr="Testez des scénarios fictifs sans impacter la base de données de production.",
         subtitle_en="Test fictional scenarios without impacting the production database.",
         chips=[i18n_text("Brouillon", "Draft"), i18n_text("Simulation", "Simulation")],
         compact=True,
@@ -3801,12 +4288,20 @@ with tab_sandbox:
 with tab_add:
     render_tab_header(
         icon="\U0001F3AF",
-        title_fr="Declarer une action",
+        title_fr="Déclarer une action",
         title_en="Declare an Action",
-        subtitle_fr="Soumettez une recolte, un lieu propre ou un acteur engage avec un formulaire clair et guide.",
+        subtitle_fr="Soumettez une récolte, un lieu propre ou un acteur engagé via un formulaire structuré et guidé.",
         subtitle_en="Submit a cleanup, a clean area, or an engaged actor using a clear and guided form.",
-        chips=[i18n_text("Formulaire", "Form"), i18n_text("Qualite", "Data quality")],
+        chips=[i18n_text("Formulaire", "Form"), i18n_text("Qualité", "Data quality")],
         compact=True,
+    )
+    render_ui_callout(
+        icon="✅",
+        title_fr="Déclaration en 3 étapes",
+        title_en="3-step submission",
+        body_fr="Renseignez d'abord le profil et le lieu, puis les quantités d'impact, avant une validation finale pour sécuriser la qualité des données.",
+        body_en="Start with profile and location, then impact quantities, and finish with final validation to secure data quality.",
+        tone="success",
     )
     st.divider()
 
@@ -4102,7 +4597,7 @@ with tab_report:
         icon="\U0001F4C4",
         title_fr="Rapport d'impact",
         title_en="Impact Report",
-        subtitle_fr="Generez un rapport PDF exploitable pour le pilotage, la communication et les partenaires.",
+        subtitle_fr="Générez un rapport PDF exploitable pour le pilotage, la communication et les partenaires.",
         subtitle_en="Generate a PDF report for operations, communication, and partners.",
         chips=[i18n_text("PDF", "PDF"), i18n_text("RSE", "ESG")],
     )
@@ -4296,7 +4791,7 @@ with tab_history:
         icon="\U0001F4CB",
         title_fr="Historique des actions",
         title_en="Action History",
-        subtitle_fr="Consultez toutes les actions recensees, leur contexte et les tendances historiques.",
+        subtitle_fr="Consultez toutes les actions recensées, leur contexte et les tendances historiques.",
         subtitle_en="Browse all recorded actions, their context, and historical trends.",
         compact=True,
     )
@@ -4362,9 +4857,9 @@ with tab_history:
 with tab_route:
     render_tab_header(
         icon="\U0001F3AF",
-        title_fr="Generateur d'action citoyenne IA",
+        title_fr="Générateur d'action citoyenne IA",
         title_en="AI Mission Planner",
-        subtitle_fr="Planifiez un parcours strategique avec l'IA selon l'historique de pollution et vos ressources terrain.",
+        subtitle_fr="Planifiez un parcours stratégique avec l'IA selon l'historique de pollution et vos ressources terrain.",
         subtitle_en="Plan a strategic route with AI based on pollution history and field resources.",
         chips=[i18n_text("IA", "AI"), i18n_text("Parcours", "Routing")],
     )
@@ -4490,9 +4985,9 @@ with tab_recycling:
         icon="\u267b\ufe0f",
         title_fr="Seconde vie & sensibilisation",
         title_en="Second Life & Awareness",
-        subtitle_fr="Transformez les donnees terrain en impact concret et en culture ecologique utile.",
+        subtitle_fr="Transformez les données terrain en impact concret et en culture écologique utile.",
         subtitle_en="Turn field data into concrete impact and practical environmental awareness.",
-        chips=[i18n_text("Impact", "Impact"), i18n_text("Pedagogie", "Education")],
+        chips=[i18n_text("Impact", "Impact"), i18n_text("Pédagogie", "Education")],
     )
     
     db_approved = get_submissions_by_status('approved')
@@ -4609,7 +5104,7 @@ with tab_recycling:
 with tab_climate:
     render_tab_header(
         icon="\U0001F30D",
-        title_fr="Comprendre le dereglement climatique",
+        title_fr="Comprendre le dérèglement climatique",
         title_en="Understanding Climate Disruption",
         subtitle_fr="Une base scientifique claire pour renforcer l'action citoyenne locale.",
         subtitle_en="A clear scientific baseline to strengthen local citizen action.",
@@ -4704,7 +5199,7 @@ with tab_elus:
         icon="\U0001F3DB\ufe0f",
         title_fr="Espace Territoires",
         title_en="Territories Dashboard",
-        subtitle_fr="Analysez l'impact local, les zones de vigilance et les leviers de decision pour votre collectivite.",
+        subtitle_fr="Analysez l'impact local, les zones de vigilance et les leviers de décision pour votre collectivité.",
         subtitle_en="Analyze local impact, risk areas, and decision levers for your municipality.",
         chips=[i18n_text("Collectivites", "Municipalities"), i18n_text("Pilotage", "Steering")],
         compact=True,
@@ -5079,7 +5574,7 @@ with tab_guide:
 with tab_partners:
     render_tab_header(
         icon="\U0001F91D",
-        title_fr="Partenaires engages",
+        title_fr="Partenaires engagés",
         title_en="Engaged Partners",
         subtitle_fr="Valorisez les structures qui amplifient l'impact local des cleanwalks.",
         subtitle_en="Highlight organizations that amplify local cleanwalk impact.",
@@ -5112,11 +5607,11 @@ with tab_partners:
 with tab_weather:
     render_tab_header(
         icon="\U0001F324\ufe0f",
-        title_fr="Meteo & planification",
+        title_fr="Météo & planification",
         title_en="Weather & Planning",
-        subtitle_fr="Identifiez les meilleures fenetres meteo pour planifier des operations efficaces.",
+        subtitle_fr="Identifiez les meilleures fenêtres météo pour planifier des opérations efficaces.",
         subtitle_en="Identify the best weather windows to plan effective operations.",
-        chips=[i18n_text("Prevision", "Forecast"), i18n_text("Timing", "Timing")],
+        chips=[i18n_text("Prévision", "Forecast"), i18n_text("Timing", "Timing")],
     )
 
     @st.cache_data(ttl=1800)
@@ -5219,7 +5714,7 @@ with tab_compare:
         icon="\U0001F3D9\ufe0f",
         title_fr="Comparaison territoriale",
         title_en="Territorial Comparison",
-        subtitle_fr="Comparez les zones par performance, intensite et recurrence de pollution.",
+        subtitle_fr="Comparez les zones par performance, intensité et récurrence de pollution.",
         subtitle_en="Compare zones by performance, intensity, and pollution recurrence.",
         chips=[i18n_text("Benchmark", "Benchmark"), i18n_text("Priorisation", "Prioritization")],
     )
@@ -5343,9 +5838,9 @@ with tab_admin:
         icon="\u2699\ufe0f",
         title_fr="Espace administrateur",
         title_en="Admin Workspace",
-        subtitle_fr="Validez les contributions, pilotez la carte publique et exportez les donnees scientifiques.",
+        subtitle_fr="Validez les contributions, pilotez la carte publique et exportez les données scientifiques.",
         subtitle_en="Validate submissions, manage the public map, and export scientific datasets.",
-        chips=[i18n_text("Validation", "Moderation"), i18n_text("Donnees", "Data")],
+        chips=[i18n_text("Validation", "Moderation"), i18n_text("Données", "Data")],
         compact=True,
     )
     st.caption("Connexion Google obligatoire pour les administrateurs")
