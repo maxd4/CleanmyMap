@@ -57,64 +57,225 @@ def detect_osm_type(row):
         return 'street'
     return 'point'
 
-def fetch_osm_geometry(lat, lon, osm_type):
-    """Récupère la géométrie OSM (Polygone ou PolyLine) à partir d'un point."""
+
+def _normalize_street_name(name):
+    if name is None:
+        return ""
+    if isinstance(name, (list, tuple, set)):
+        parts = [str(p) for p in name if p]
+        name = " ".join(parts)
+    text = str(name).strip().lower()
+    text = ''.join(c for c in unicodedata.normalize('NFD', text) if unicodedata.category(c) != 'Mn')
+    text = re.sub(r"[^a-z0-9\s]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _same_street_family(candidate_name, main_name):
+    if not main_name:
+        return False
+    if not candidate_name:
+        return False
+    return (
+        candidate_name == main_name
+        or candidate_name in main_name
+        or main_name in candidate_name
+    )
+
+
+def _as_highway_set(value):
+    if isinstance(value, (list, tuple, set)):
+        return {str(v).lower() for v in value if v}
+    if value:
+        return {str(value).lower()}
+    return set()
+
+
+def _extract_place_keywords(text):
+    raw = _normalize_street_name(text)
+    if not raw:
+        return []
+    stopwords = {
+        "de", "du", "des", "la", "le", "les", "un", "une", "et", "a", "au", "aux",
+        "theatre", "theatre", "jardin", "parc", "square", "bois", "espace", "vert",
+        "rue", "avenue", "boulevard", "quai", "place", "route", "chemin", "voie",
+        "saint", "sainte", "paris", "france"
+    }
+    keywords = []
+    for token in raw.split():
+        if len(token) < 4:
+            continue
+        if token.isdigit():
+            continue
+        if token in stopwords:
+            continue
+        if token not in keywords:
+            keywords.append(token)
+    return keywords[:5]
+
+
+def fetch_osm_geometry(lat, lon, osm_type, target_distance_m=None, place_hint=None):
+    """Récupère la géométrie OSM (Polygone ou PolyLine) à partir d'un point.
+
+    Pour les rues, on étend le tracé selon une distance cible (mètres) pour
+    éviter les segments trop courts visuellement.
+    """
     try:
         if osm_type == 'park':
-            # Recherche de parcs dans un rayon de 300m
-            features = ox.features_from_point((lat, lon), tags=TAGS_PARKS, dist=300)
+            # Rayon élargi pour pouvoir récupérer le parc principal même si le point
+            # est proche d'un sous-espace (ex: théâtre, pelouse annexe, etc.).
+            features = ox.features_from_point((lat, lon), tags=TAGS_PARKS, dist=1000)
             if not features.empty:
-                # On prend le plus proche
                 point_pnt = Point(lon, lat)
-                target = features.loc[features.geometry.distance(point_pnt).idxmin()]
-                return target.geometry, 'park'
-        
+                gdf = features.copy()
+                gdf = gdf[gdf.geometry.notnull()].copy()
+                gdf = gdf[gdf.geometry.geom_type.isin(["Polygon", "MultiPolygon"])].copy()
+
+                if not gdf.empty:
+                    # Priorité aux véritables parcs (leisure=park/garden/recreation_ground)
+                    candidate_pool = gdf
+                    if "leisure" in gdf.columns:
+                        leisure_norm = gdf["leisure"].astype(str).str.lower()
+                        leisure_mask = leisure_norm.isin(["park", "garden", "recreation_ground"])
+                        if leisure_mask.any():
+                            candidate_pool = gdf[leisure_mask].copy()
+
+                    gdf_proj = candidate_pool.to_crs(epsg=3857)
+                    point_proj = ox.projection.project_geometry(point_pnt, to_crs=3857)[0]
+
+                    candidate_pool["distance_m"] = gdf_proj.geometry.distance(point_proj)
+                    candidate_pool["area_m2"] = gdf_proj.geometry.area
+                    candidate_pool["contains_point"] = candidate_pool.geometry.contains(point_pnt)
+
+                    name_cols = [c for c in ["name", "official_name", "alt_name", "short_name"] if c in candidate_pool.columns]
+                    if name_cols:
+                        candidate_pool["name_norm"] = candidate_pool[name_cols].astype(str).agg(" ".join, axis=1).map(_normalize_street_name)
+                    else:
+                        candidate_pool["name_norm"] = ""
+
+                    keywords = _extract_place_keywords(place_hint or "")
+                    if keywords:
+                        candidate_pool["match_score"] = candidate_pool["name_norm"].map(
+                            lambda n: sum(1 for kw in keywords if kw in n)
+                        )
+                        matched = candidate_pool[candidate_pool["match_score"] > 0].copy()
+                        if not matched.empty:
+                            # Parmi les noms qui matchent, on favorise d'abord le nombre de mots
+                            # correspondants, puis les polygones englobants, puis la surface.
+                            target = matched.sort_values(
+                                by=["match_score", "contains_point", "area_m2", "distance_m"],
+                                ascending=[False, False, False, True],
+                            ).iloc[0]
+                            return target.geometry, 'park'
+
+                    # Fallback sans nom: on privilégie un polygone englobant, puis la plus grande surface proche.
+                    containers = candidate_pool[candidate_pool["contains_point"]].copy()
+                    if not containers.empty:
+                        target = containers.sort_values(
+                            by=["area_m2", "distance_m"],
+                            ascending=[False, True],
+                        ).iloc[0]
+                        return target.geometry, 'park'
+
+                    nearby = candidate_pool[candidate_pool["distance_m"] <= 600].copy()
+                    pool = nearby if not nearby.empty else candidate_pool.copy()
+                    target = pool.sort_values(
+                        by=["area_m2", "distance_m"],
+                        ascending=[False, True],
+                    ).iloc[0]
+                    return target.geometry, 'park'
+         
         elif osm_type == 'street':
-            # Recherche de rues dans un rayon de 800m pour avoir de la marge
-            search_dist = 800
+            # Recherche de rues avec rayon adapté à la distance cible.
+            target_distance_m = float(target_distance_m or 700.0)
+            target_distance_m = max(250.0, min(target_distance_m, 2200.0))
+            max_distance_m = max(target_distance_m * 1.35, 180.0)
+            search_dist = int(max(900, min(3200, target_distance_m * 1.7)))
             graph = ox.graph_from_point((lat, lon), dist=search_dist, network_type='all')
             if len(graph) > 0:
                 edges = ox.graph_to_gdfs(graph, nodes=False)
+
+                if edges.empty:
+                    return None, 'point'
+
                 # Trouver l'arête la plus proche pour le point de départ
                 u, v, key = ox.nearest_edges(graph, lon, lat)
-                start_edge = edges.loc[(u, v, key)]
-                main_name = start_edge.get('name')
-                if isinstance(main_name, list): main_name = main_name[0]
-                
-                # --- PARCOURS DE GRAPHE INTELLIGENT ---
-                selected_edge_ids = {(u, v, key)}
-                
-                # Exploration dans les deux directions à partir des nœuds de l'arête de départ
-                nodes_to_visit = [u, v]
+
+                if (u, v, key) in edges.index:
+                    start_edge = edges.loc[(u, v, key)]
+                elif (v, u, key) in edges.index:
+                    start_edge = edges.loc[(v, u, key)]
+                else:
+                    start_edge = edges.iloc[0]
+
+                main_name = _normalize_street_name(start_edge.get('name'))
+                main_highway = _as_highway_set(start_edge.get('highway'))
+
+                graph_ud = nx.MultiGraph(graph)
+                selected_edge_ids = set()
+                visited_edge_ids = set()
+                queue = [u, v]
                 visited_nodes = {u, v}
-                
-                while nodes_to_visit:
-                    curr_node = nodes_to_visit.pop(0)
-                    
-                    # Détection d'intersection majeure : si le degré est >= 4, on s'arrête là
-                    if graph.degree(curr_node) >= 4:
-                        continue
-                        
-                    # Explorer les arêtes adjacentes
-                    for nbr in graph.neighbors(curr_node):
-                        if nbr not in visited_nodes:
-                            # Récupérer l'arête entre curr_node et nbr
-                            edge_data = graph.get_edge_data(curr_node, nbr)
-                            for k, data in edge_data.items():
-                                e_name = data.get('name')
-                                if isinstance(e_name, list): e_name = e_name[0]
-                                
-                                # Condition : même nom de rue
-                                if e_name == main_name:
-                                    selected_edge_ids.add((curr_node, nbr, k))
-                                    visited_nodes.add(nbr)
-                                    nodes_to_visit.append(nbr)
-                
+                total_length_m = 0.0
+
+                def resolve_edge_id(a, b, k):
+                    if (a, b, k) in edges.index:
+                        return (a, b, k)
+                    if (b, a, k) in edges.index:
+                        return (b, a, k)
+                    return None
+
+                while queue and total_length_m < max_distance_m:
+                    curr_node = queue.pop(0)
+                    for nbr in graph_ud.neighbors(curr_node):
+                        edge_variants = graph_ud.get_edge_data(curr_node, nbr) or {}
+                        for k, data in edge_variants.items():
+                            edge_id = resolve_edge_id(curr_node, nbr, k)
+                            if edge_id is None or edge_id in visited_edge_ids:
+                                continue
+
+                            edge_name = _normalize_street_name(data.get('name'))
+                            edge_highway = _as_highway_set(data.get('highway'))
+
+                            # Priorité au même nom de rue; fallback raisonnable si nom absent.
+                            same_name = _same_street_family(edge_name, main_name)
+                            compatible_highway = bool(main_highway & edge_highway) if main_highway else True
+                            allow_connector = (not edge_name) and compatible_highway
+                            if main_name:
+                                if not (same_name or allow_connector):
+                                    continue
+                            elif not compatible_highway:
+                                continue
+
+                            edge_len = float(data.get('length') or edges.loc[edge_id].get('length') or 0.0)
+                            if edge_len <= 0.0:
+                                edge_len = 25.0
+
+                            selected_edge_ids.add(edge_id)
+                            visited_edge_ids.add(edge_id)
+                            total_length_m += edge_len
+
+                            if nbr not in visited_nodes and total_length_m < max_distance_m:
+                                visited_nodes.add(nbr)
+                                queue.append(nbr)
+
+                    # Si le nom de rue n'est pas trouvé dans le voisinage, on garde au moins l'arête de départ.
+                    if not selected_edge_ids:
+                        fallback_id = resolve_edge_id(u, v, key)
+                        if fallback_id is not None:
+                            selected_edge_ids.add(fallback_id)
+                            visited_edge_ids.add(fallback_id)
+                            total_length_m = float(edges.loc[fallback_id].get('length') or 40.0)
+
+                    # Stop dès qu'on a une longueur pertinente.
+                    if total_length_m >= target_distance_m:
+                        break
+
                 if selected_edge_ids:
-                    from shapely.ops import unary_union
                     final_geoms = [edges.loc[eid].geometry for eid in selected_edge_ids if eid in edges.index]
-                    return unary_union(final_geoms), 'street'
-                    
+                    if final_geoms:
+                        return unary_union(final_geoms), 'street'
+                     
     except:
         pass
     return None, 'point'
@@ -296,8 +457,9 @@ def create_premium_popup(row, score_data, gap_alert=""):
     duree = int(row.get('temps_min', 60))
     ben = int(row.get('nb_benevoles', 1))
     
-    # Calcul productivité
-    prod = score_data['score_salete']
+    impact = calculate_impact(megots, dechets)
+    eau_estimee = int(impact.get('eau_litres', 0))
+    score_mixte_display = f"{score_data['score_mixte']:.1f}".replace(".", ",")
     
     # Tendance visuelle
     trend = row.get('tendance', '📝 Premier passage')
@@ -310,7 +472,7 @@ def create_premium_popup(row, score_data, gap_alert=""):
                 <span style="font-size: 14px; font-weight: 700;">{row.get('association', 'Action')[:25]}</span>
                 <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; font-size: 9px; text-transform: uppercase;">{row.get('type_lieu', 'Lieu')[:15]}</span>
             </div>
-            <div style="font-size: 10px; opacity: 0.9;">Dépollution du {pd.to_datetime(row.get('date')).strftime('%d/%m/%Y') if pd.notna(row.get('date')) else 'Inconnu'}</div>
+            <div style="font-size: 10px; opacity: 0.9;">Action du {pd.to_datetime(row.get('date')).strftime('%d/%m/%Y') if pd.notna(row.get('date')) else 'Inconnue'}</div>
         </div>
         
         <div style="padding: 12px; background: white;">
@@ -335,13 +497,13 @@ def create_premium_popup(row, score_data, gap_alert=""):
             </div>
             
             <div style="border-top: 1px solid #f1f5f9; padding-top: 8px; display: flex; justify-content: space-between; align-items: center;">
-                <div style="font-size: 10px; color: #64748b;">Effort: <b>{ben} pers.</b> / <b>{duree}min</b></div>
+                <div style="font-size: 10px; color: #64748b;"><b>{ben} bénévoles</b>, <b>{duree} minutes</b></div>
                 <div style="font-size: 11px; font-weight: 700; color: {color};">
-                    Score: {score_data['score_mixte']:.1f}
+                    Score de saleté : {score_mixte_display}/100
                 </div>
             </div>
-            <div style="margin-top: 8px; text-align: center; background: linear-gradient(135deg, #10b981, #34d399); border-radius: 8px; padding: 5px;">
-                <span style="color: white; font-weight: 700; font-size: 12px;">🌿 {score_data['eco_points']} Éco-Points</span>
+            <div style="margin-top: 8px; text-align: center; background: linear-gradient(135deg, #0284c7, #0ea5e9); border-radius: 8px; padding: 6px 8px;">
+                <span style="color: white; font-weight: 700; font-size: 11px;">💧 Eau préservée estimée: {eau_estimee:,} L</span>
             </div>
             {gap_html}
         </div>

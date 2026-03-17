@@ -7,6 +7,10 @@ D'autres fonctionnalités permettent un engagement et un partage sur l'écologie
 
 Cet outil transforme chaque ramassage bénévole en une donnée scientifique précieuse pour inciter à l'action.
 
+## ✅ Mises à Jour Récentes
+- Les indicateurs **S** et **C** ont été réalignés sur les **fréquences physiques**.
+- L'ancien **historique GMT en table fixe** n'est plus utilisé.
+
 ## 🚀 Vision & Impact
 L'objectif est de rendre visible l'invisible. Un seul mégot pollue 1000 litres d'eau ; **Clean my Map** permet de mesurer précisément l'impact de chaque action citoyenne et d'accompagner les collectivités vers des solutions durables.
 
