@@ -160,22 +160,58 @@ def fetch_osm_geometry(lat, lon, osm_type, target_distance_m=None, place_hint=No
                         )
                         matched = candidate_pool[candidate_pool["match_score"] > 0].copy()
                         if not matched.empty:
-                            # Parmi les noms qui matchent, on favorise d'abord le nombre de mots
-                            # correspondants, puis les polygones englobants, puis la surface.
-                            target = matched.sort_values(
-                                by=["match_score", "contains_point", "area_m2", "distance_m"],
-                                ascending=[False, False, False, True],
-                            ).iloc[0]
+                            # On conserve les meilleurs matchs textuels, puis on évite de choisir
+                            # un micro-polygone local si un grand parc correspondant est proche.
+                            max_score = matched["match_score"].max()
+                            top = matched[matched["match_score"] == max_score].copy()
+
+                            nearby_top = top[top["distance_m"] <= 850].copy()
+                            if not nearby_top.empty:
+                                top = nearby_top
+
+                            top_sorted_area = top.sort_values(
+                                by=["area_m2", "distance_m"],
+                                ascending=[False, True],
+                            )
+                            largest_top = top_sorted_area.iloc[0]
+
+                            top_containers = top[top["contains_point"]].copy()
+                            if not top_containers.empty:
+                                best_container = top_containers.sort_values(
+                                    by=["area_m2", "distance_m"],
+                                    ascending=[False, True],
+                                ).iloc[0]
+                                # Cas type "Parc des Buttes-Chaumont" : si un grand parc proche
+                                # est très dominant, on le préfère au petit sous-espace englobant.
+                                if (
+                                    float(largest_top["area_m2"]) >= float(best_container["area_m2"]) * 2.2
+                                    and float(largest_top["distance_m"]) <= 500.0
+                                ):
+                                    target = largest_top
+                                else:
+                                    target = best_container
+                            else:
+                                target = largest_top
                             return target.geometry, 'park'
 
                     # Fallback sans nom: on privilégie un polygone englobant, puis la plus grande surface proche.
                     containers = candidate_pool[candidate_pool["contains_point"]].copy()
                     if not containers.empty:
-                        target = containers.sort_values(
+                        best_container = containers.sort_values(
                             by=["area_m2", "distance_m"],
                             ascending=[False, True],
                         ).iloc[0]
-                        return target.geometry, 'park'
+
+                        nearby_large = candidate_pool[candidate_pool["distance_m"] <= 500].copy()
+                        if not nearby_large.empty:
+                            largest_near = nearby_large.sort_values(
+                                by=["area_m2", "distance_m"],
+                                ascending=[False, True],
+                            ).iloc[0]
+                            if float(largest_near["area_m2"]) >= float(best_container["area_m2"]) * 2.2:
+                                return largest_near.geometry, 'park'
+
+                        return best_container.geometry, 'park'
 
                     nearby = candidate_pool[candidate_pool["distance_m"] <= 600].copy()
                     pool = nearby if not nearby.empty else candidate_pool.copy()
@@ -431,6 +467,27 @@ def get_marker_style(row, score_data):
         
     return color, radius, 'circle'
 
+
+def _parse_tags(value):
+    if value is None:
+        return []
+    if isinstance(value, (list, tuple, set)):
+        parts = [str(v).strip() for v in value if str(v).strip()]
+    else:
+        parts = [p.strip() for p in re.split(r"[|,;/]+", str(value)) if p.strip()]
+    dedup = []
+    for tag in parts:
+        if tag not in dedup:
+            dedup.append(tag)
+    return dedup
+
+
+def _source_badge(source_value):
+    source_raw = str(source_value or "").strip().lower()
+    if source_raw in {"simulation", "simule", "simulee", "test", "demo"}:
+        return ("DonnÃ©es simulÃ©es", "#ede9fe", "#6d28d9")
+    return ("DonnÃ©es rÃ©elles", "#dcfce7", "#166534")
+
 def create_premium_popup(row, score_data, gap_alert=""):
     """Génère le HTML d'un popup premium glassmorphism avec support optionnel d'alerte infrastructure."""
     is_clean = row.get('est_propre', False)
@@ -496,11 +553,19 @@ def create_premium_popup(row, score_data, gap_alert=""):
     megots = int(row.get('megots', 0))
     dechets = float(row.get('dechets_kg', 0))
     duree = int(row.get('temps_min', 60))
-    ben = int(row.get('nb_benevoles', 1))
+    ben = int(row.get('benevoles', row.get('nb_benevoles', 1)))
     
     impact = calculate_impact(megots, dechets)
     eau_estimee = int(impact.get('eau_litres', 0))
     score_mixte_display = f"{score_data['score_mixte']:.1f}".replace(".", ",")
+    source_label, source_bg, source_fg = _source_badge(row.get("source"))
+    tags = _parse_tags(row.get("tags"))
+    tags_html = "".join(
+        [
+            f'<span style="background:#f1f5f9;border:1px solid #e2e8f0;color:#334155;padding:2px 6px;border-radius:999px;font-size:9px;">{tag}</span>'
+            for tag in tags[:4]
+        ]
+    )
     
     # Tendance visuelle
     trend = row.get('tendance', '📝 Premier passage')
@@ -525,7 +590,11 @@ def create_premium_popup(row, score_data, gap_alert=""):
             <div style="background: #f8fafc; padding: 6px 10px; border-radius: 8px; margin-bottom: 10px; font-size: 11px; color: #475569; display: flex; align-items: center; gap: 5px;">
                 <span>📍</span> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{row.get('adresse', 'Sans adresse')}</span>
             </div>
-            
+            <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
+                <span style="background:{source_bg}; color:{source_fg}; border:1px solid {source_fg}33; padding:2px 8px; border-radius:999px; font-size:9px; font-weight:700;">{source_label}</span>
+                {tags_html}
+            </div>
+             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
                 <div style="background: #f1f5f9; padding: 8px; border-radius: 8px; text-align: center;">
                     <div style="font-size: 18px; font-weight: 800; color: #1e293b;">{megots}</div>
