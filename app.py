@@ -3079,10 +3079,17 @@ with tab_view:
         icon="\U0001F5FA\ufe0f",
         title_fr="Carte Interactive des Actions",
         title_en="Interactive Action Map",
-        subtitle_fr="Explorez les actions validees, les zones sensibles, la chronologie et les couches geographiques en un seul espace.",
+        subtitle_fr="Explorez les actions validées, les zones sensibles, la chronologie et les couches géographiques en un seul espace.",
         subtitle_en="Explore validated actions, sensitive zones, timeline, and geographic layers in one workspace.",
-        chips=[i18n_text("Cartographie", "Mapping"), i18n_text("Analyse", "Analytics"), i18n_text("Temps reel", "Live")],
+        chips=[i18n_text("Cartographie", "Mapping"), i18n_text("Analyse", "Analytics"), i18n_text("Temps réel", "Live")],
         compact=True,
+    )
+    st.markdown("#### " + i18n_text("Guide visuel (3 étapes)", "Visual guide (3 steps)"))
+    st.info(
+        i18n_text(
+            "1) Choisissez un préréglage\n2) Lisez le résumé et les zones clés\n3) Passez en mission ou partagez la vue",
+            "1) Choose a preset\n2) Read summary and key areas\n3) Switch to mission or share view",
+        )
     )
     
     # Chargement DB + imports (Google Sheet et Excel)
@@ -3106,49 +3113,47 @@ with tab_view:
             zoom_start = 11
 
     preset_items = [
-        ("all", i18n_text("Vue complete", "Full view")),
+        ("all", i18n_text("Vue complète", "Full view")),
         ("pollution", i18n_text("Pollution", "Pollution")),
         ("clean", i18n_text("Zones propres", "Clean zones")),
-        ("partners", i18n_text("Partenaires engages", "Engaged partners")),
-        ("recent", i18n_text("Actions recentes (30j)", "Recent actions (30d)")),
+        ("partners", i18n_text("Partenaires engagés", "Engaged partners")),
+        ("recent", i18n_text("Actions récentes (30 j)", "Recent actions (30d)")),
         ("priority", i18n_text("Zones prioritaires", "Priority zones")),
     ]
     preset_to_label = {pid: label for pid, label in preset_items}
     label_to_preset = {label: pid for pid, label in preset_items}
     default_preset = map_preset_prefill if map_preset_prefill in preset_to_label else "all"
 
-    p_col1, p_col2 = st.columns([2.2, 2.8], gap="large")
-    with p_col1:
-        selected_preset_label = st.selectbox(
-            i18n_text("Preset de filtrage", "Filter preset"),
-            options=[label for _, label in preset_items],
-            index=[pid for pid, _ in preset_items].index(default_preset),
-            key="map_preset_select",
-        )
-        selected_preset = label_to_preset[selected_preset_label]
-    with p_col2:
-        share_url = f"{STREAMLIT_PUBLIC_URL}/?tab=map&preset={selected_preset}"
-        st.text_input(
-            i18n_text("Lien partageable du preset", "Shareable preset link"),
-            value=share_url,
-            key=f"map_share_url_{selected_preset}",
-        )
+    selected_preset_label = st.selectbox(
+        i18n_text("Préréglage de filtrage", "Filter preset"),
+        options=[label for _, label in preset_items],
+        index=[pid for pid, _ in preset_items].index(default_preset),
+        key="map_preset_select",
+    )
+    selected_preset = label_to_preset[selected_preset_label]
+    share_url = f"{STREAMLIT_PUBLIC_URL}/?tab=map&preset={selected_preset}"
+    st.text_input(
+        i18n_text("Lien partageable du préréglage", "Shareable preset link"),
+        value=share_url,
+        key=f"map_share_url_{selected_preset}",
+    )
 
     filtered_map_df = apply_map_preset(map_df, selected_preset)
     if filtered_map_df.empty and not map_df.empty:
-        st.info(i18n_text("Aucun resultat pour ce preset. Revenez a la vue complete.", "No result for this preset. Switch to full view."))
+        st.info(i18n_text("Aucun résultat pour ce préréglage. Revenez à la vue complète.", "No result for this preset. Switch to full view."))
     m = build_interactive_folium_map(filtered_map_df)
 
     map_ref_df = filtered_map_df if not filtered_map_df.empty else map_df
-    st.markdown("### " + i18n_text("Insights du preset actif", "Active preset insights"))
-    i1, i2, i3, i4 = st.columns(4)
+    st.markdown("### " + i18n_text("Résumé du préréglage actif", "Active preset insights"))
+    i1, i2 = st.columns(2)
     i1.metric(i18n_text("Actions", "Actions"), int(len(map_ref_df)))
     i2.metric(
-        i18n_text("kg collectes", "kg collected"),
+        i18n_text("kg collectés", "kg collected"),
         f"{float(pd.to_numeric(map_ref_df.get('dechets_kg', 0), errors='coerce').fillna(0).sum()):.1f}",
     )
+    i3, i4 = st.columns(2)
     i3.metric(
-        i18n_text("Megots", "Cigarette butts"),
+        i18n_text("Mégots", "Cigarette butts"),
         f"{int(pd.to_numeric(map_ref_df.get('megots', 0), errors='coerce').fillna(0).sum()):,}",
     )
     i4.metric(
@@ -3168,14 +3173,14 @@ with tab_view:
             .head(5)
             .reset_index()
         )
-        top_hotspots["adresse"] = top_hotspots["adresse"].fillna("").replace("", "Zone non renseignee")
+        top_hotspots["adresse"] = top_hotspots["adresse"].fillna("").replace("", "Zone non renseignée")
         st.dataframe(
             top_hotspots.rename(
                 columns={
                     "adresse": i18n_text("Zone", "Area"),
                     "actions": i18n_text("Actions", "Actions"),
                     "kg": i18n_text("kg", "kg"),
-                    "megots": i18n_text("Megots", "Butts"),
+                    "megots": i18n_text("Mégots", "Butts"),
                 }
             ),
             hide_index=True,
@@ -3183,21 +3188,19 @@ with tab_view:
         )
 
     # --- CHOIX DU MODE DE VUE (2D vs 3D) ---
-    col_view_opt, col_view_lang = st.columns([3, 1])
-    with col_view_opt:
-        view_mode = st.radio(
-            "Mode de visualisation" if st.session_state.lang == "fr" else "Visualization Mode",
-            options=["2D (Standard)", "3D (Immersif)"],
-            horizontal=True,
-            help="Le mode 3D nÃ©cessite plus de ressources mais offre une vue spectaculaire des hotspots." if st.session_state.lang == "fr" else "3D mode requires more resources but offers a spectacular view of hotspots."
-        )
+    view_mode = st.radio(
+        "Mode de visualisation" if st.session_state.lang == "fr" else "Visualization Mode",
+        options=["2D (Standard)", "3D (Immersif)"],
+        horizontal=False,
+        help="Le mode 3D nécessite plus de ressources mais offre une vue spectaculaire des hotspots." if st.session_state.lang == "fr" else "3D mode requires more resources but offers a spectacular view of hotspots."
+    )
 
     if "3D" in view_mode:
         import pydeck as pdk
-        st.info("ðŸ’¡ **Montagnes de MÃ©gots** : La hauteur des colonnes reprÃ©sente la densitÃ© de pollution cumulÃ©e." if st.session_state.lang == "fr" else "ðŸ’¡ **Cigarette Butt Mountains**: Column height represents cumulative pollution density.")
+        st.info("ðŸ’¡ **Montagnes de mégots** : la hauteur des colonnes représente la densité de pollution cumulée." if st.session_state.lang == "fr" else "ðŸ’¡ **Cigarette Butt Mountains**: Column height represents cumulative pollution density.")
         if map_ref_df.empty:
-            st.warning(i18n_text("Aucune donnee geolocalisee pour la vue 3D.", "No geolocated data for 3D view."))
-            st_folium(m, width=900, height=520, returned_objects=[])
+            st.warning(i18n_text("Aucune donnée géolocalisée pour la vue 3D.", "No geolocated data for 3D view."))
+            st_folium(m, width="stretch", height=520, returned_objects=[])
         else:
             # Color scale based on density (Green to Red)
             layer_3d = pdk.Layer(
@@ -3239,7 +3242,7 @@ with tab_view:
             )
             st.pydeck_chart(r, use_container_width=True)
     else:
-        st_folium(m, width=900, height=520, returned_objects=[])
+        st_folium(m, width="stretch", height=520, returned_objects=[])
 
 with tab_trash_spotter:
     render_tab_header(
@@ -3683,69 +3686,87 @@ with tab_add:
     _seed_decl_value("decl_step", "1. Profil & lieu")
     _seed_decl_value("decl_action_date", date.today())
 
-    st.caption("Brouillon auto actif: vos champs sont sauvegardes en continu.")
+    st.caption("Brouillon auto actif : vos champs sont sauvegardés en continu.")
     progress_step = st.radio(
         "Progression",
         ["1. Profil & lieu", "2. Donnees d'impact", "3. Validation"],
-        horizontal=True,
+        horizontal=False,
         key="decl_step",
+        format_func=lambda s: {
+            "1. Profil & lieu": "1. Profil & lieu",
+            "2. Donnees d'impact": "2. Données d'impact",
+            "3. Validation": "3. Validation",
+        }.get(s, s),
     )
+    step_status = {
+        "1. Profil & lieu": "🟢" if progress_step == "1. Profil & lieu" else "⚪",
+        "2. Donnees d'impact": "🟢" if progress_step == "2. Donnees d'impact" else "⚪",
+        "3. Validation": "🟢" if progress_step == "3. Validation" else "⚪",
+    }
+    step2_key = "2. Donnees d'impact"
+    st.caption(f"{step_status['1. Profil & lieu']} Étape 1 : identité, date, lieu")
+    st.caption(f"{step_status[step2_key]} Étape 2 : quantités et contexte")
+    st.caption(f"{step_status['3. Validation']} Étape 3 : vérification finale")
 
     action_type = st.radio(
         "Que souhaitez-vous faire ?",
         ["Ajouter une recolte", "Declarer un lieu propre", "Declarer un acteur engage"],
-        horizontal=True,
+        horizontal=False,
         key="decl_action_type",
+        format_func=lambda s: {
+            "Ajouter une recolte": "Ajouter une récolte",
+            "Declarer un lieu propre": "Déclarer un lieu propre",
+            "Declarer un acteur engage": "Déclarer un acteur engagé",
+        }.get(s, s),
     )
     zone_propre = (action_type == "Declarer un lieu propre")
     acteur_engage = (action_type == "Declarer un acteur engage")
 
     if progress_step == "1. Profil & lieu":
-        c1, c2 = st.columns(2)
-        with c1:
-            st.text_input("Votre prenom / pseudo", key="decl_nom", placeholder="Ex: Sarah")
-            if not zone_propre:
-                st.text_input("Association*", key="decl_association", placeholder="Ex: Clean Walk Paris 10")
-        with c2:
-            st.date_input("Date de l'action*", key="decl_action_date", max_value=date.today())
-            st.text_input(
-                "Emplacement (Adresse ou GPS)*",
-                key="decl_emplacement",
-                placeholder="Ex: 48.8584, 2.2945 ou Tour Eiffel, Paris",
-            )
+        st.text_input("Votre prenom / pseudo", key="decl_nom", placeholder="Ex: Sarah")
+        if not zone_propre:
+            st.text_input("Association*", key="decl_association", placeholder="Ex: Clean Walk Paris 10")
+        st.date_input("Date de l'action*", key="decl_action_date", max_value=date.today())
+        st.text_input(
+            "Emplacement (Adresse ou GPS)*",
+            key="decl_emplacement",
+            placeholder="Ex: 48.8584, 2.2945 ou Tour Eiffel, Paris",
+        )
 
         if acteur_engage:
             st.selectbox(
                 "Type d'acteur*",
                 ["Association ecologique", "Association humanitaire et sociale", "Commercant engage"],
                 key="decl_type_acteur",
+                format_func=lambda s: {
+                    "Association ecologique": "Association écologique",
+                    "Association humanitaire et sociale": "Association humanitaire et sociale",
+                    "Commercant engage": "Commerçant engagé",
+                }.get(s, s),
             )
         elif zone_propre:
-            st.info("Mode lieu propre: les metriques de dechets seront renseignees a zero.")
+            st.info("Mode lieu propre : les métriques de déchets seront renseignées à zéro.")
         else:
             st.selectbox("Type de lieu*", TYPE_LIEU_OPTIONS, key="decl_type_lieu")
 
     elif progress_step == "2. Donnees d'impact":
         if acteur_engage:
-            st.text_area("Actions & Engagement (optionnel)", key="decl_commentaire", placeholder="Decrivez pourquoi cet acteur est engage.")
+            st.text_area("Actions & Engagement (optionnel)", key="decl_commentaire", placeholder="Décrivez pourquoi cet acteur est engagé.")
         elif zone_propre:
-            st.text_area("Commentaire (optionnel)", key="decl_commentaire", placeholder="Precisions sur le lieu propre.")
+            st.text_area("Commentaire (optionnel)", key="decl_commentaire", placeholder="Précisions sur le lieu propre.")
         else:
-            c3, c4 = st.columns(2)
-            with c3:
-                st.number_input("Nombre de benevoles*", min_value=1, step=1, key="decl_benevoles")
-                st.number_input("Duree (minutes)*", min_value=1, step=5, key="decl_temps_min")
-                st.number_input("Poids total megots (grammes)", min_value=0.0, step=10.0, key="decl_m_weight")
-                st.selectbox("Etat des megots", ["Sec", "Mélangé / Impuretés", "Humide"], key="decl_m_condition")
-                coeffs = {"Sec": 0.20, "Mélangé / Impuretés": 0.27, "Humide": 0.35}
-                megots_preview = int(float(st.session_state.get("decl_m_weight", 0.0)) / coeffs[st.session_state.get("decl_m_condition", "Mélangé / Impuretés")]) if float(st.session_state.get("decl_m_weight", 0.0)) > 0 else 0
-                if megots_preview > 0:
-                    st.info(f"Estimation: ~{megots_preview} megots")
-            with c4:
-                st.number_input("Dechets (total kg)", min_value=0.0, step=0.5, key="decl_dechets_kg")
-                hints = get_weight_conversion_hints(float(st.session_state.get("decl_dechets_kg", 0.0)))
-                st.caption(f"≈ {hints['sacs_30l']} sacs 30L • ≈ {hints['bouteilles_1_5l']} bouteilles 1.5L")
-                st.text_area("Commentaire (optionnel)", key="decl_commentaire")
+            st.number_input("Nombre de bénévoles*", min_value=1, step=1, key="decl_benevoles")
+            st.number_input("Durée (minutes)*", min_value=1, step=5, key="decl_temps_min")
+            st.number_input("Poids total mégots (grammes)", min_value=0.0, step=10.0, key="decl_m_weight")
+            st.selectbox("État des mégots", ["Sec", "Mélangé / Impuretés", "Humide"], key="decl_m_condition")
+            coeffs = {"Sec": 0.20, "Mélangé / Impuretés": 0.27, "Humide": 0.35}
+            megots_preview = int(float(st.session_state.get("decl_m_weight", 0.0)) / coeffs[st.session_state.get("decl_m_condition", "Mélangé / Impuretés")]) if float(st.session_state.get("decl_m_weight", 0.0)) > 0 else 0
+            if megots_preview > 0:
+                st.info(f"Estimation : ~{megots_preview} mégots")
+            st.number_input("Déchets (total kg)", min_value=0.0, step=0.5, key="decl_dechets_kg")
+            hints = get_weight_conversion_hints(float(st.session_state.get("decl_dechets_kg", 0.0)))
+            st.caption(f"≈ {hints['sacs_30l']} sacs 30L • ≈ {hints['bouteilles_1_5l']} bouteilles 1.5L")
+            st.text_area("Commentaire (optionnel)", key="decl_commentaire")
 
     else:
         st.subheader("Validation finale")
@@ -3954,7 +3975,7 @@ with tab_report:
             st.markdown('<div class="premium-card">', unsafe_allow_html=True)
             st.write("âš™ï¸ **Options du Rapport**")
             is_rse_mode = st.toggle("Format Corporate RSE", value=False, help="Ajoute des mÃ©triques ESG et une valorisation du mÃ©cÃ©nat pour les bilans RSE d'entreprises.")
-            compare_days = st.selectbox("Comparatif de periode", [30, 60, 90], format_func=lambda x: f"{x} jours")
+            compare_days = st.selectbox("Comparatif de période", [30, 60, 90], format_func=lambda x: f"{x} jours")
             st.markdown('</div>', unsafe_allow_html=True)
             
             if is_rse_mode:
@@ -4002,17 +4023,17 @@ with tab_report:
                     ).sum()
                 )
 
-                highlights.append("Carte interactive avec presets partageables: pollution, zones propres, partenaires, recentes, prioritaires.")
+                highlights.append("Carte interactive avec préréglages partageables : pollution, zones propres, partenaires, récentes, prioritaires.")
                 if recent_count > 0:
-                    highlights.append(f"Preset actions recentes: {recent_count} action(s) sur les 30 derniers jours.")
+                    highlights.append(f"Préréglage actions récentes : {recent_count} action(s) sur les 30 derniers jours.")
                 if partner_count > 0:
-                    highlights.append(f"Preset partenaires engages: {partner_count} point(s) cartographies.")
+                    highlights.append(f"Préréglage partenaires engagés : {partner_count} point(s) cartographiés.")
                 if clean_count > 0:
-                    highlights.append(f"Preset zones propres: {clean_count} point(s) valorises.")
+                    highlights.append(f"Préréglage zones propres : {clean_count} point(s) valorisés.")
                 if pollution_count > 0:
-                    highlights.append(f"Preset pollution/priorite: {pollution_count} point(s) a surveiller.")
+                    highlights.append(f"Préréglage pollution/priorité : {pollution_count} point(s) à surveiller.")
                 if quality_flags > 0:
-                    highlights.append(f"Validation admin en lot et pre-validation: {quality_flags} signalement(s) atypique(s) detecte(s).")
+                    highlights.append(f"Validation admin en lot et pré-validation : {quality_flags} signalement(s) atypique(s) détecté(s).")
                 return highlights
 
             current_stats = _metric_pack(current_period_df)
@@ -4020,19 +4041,20 @@ with tab_report:
             report_highlights = _collect_report_highlights(current_period_df if not current_period_df.empty else report_df)
         
         with c_rep1:
-            st.markdown("### Comparatif periode precedente")
-            cmp1, cmp2, cmp3, cmp4 = st.columns(4)
+            st.markdown("### Comparatif période précédente")
+            cmp1, cmp2 = st.columns(2)
             cmp1.metric("Actions", current_stats["actions"], delta=current_stats["actions"] - previous_stats["actions"])
-            cmp2.metric("kg collectes", f"{current_stats['kg']:.1f}", delta=f"{current_stats['kg'] - previous_stats['kg']:.1f}")
-            cmp3.metric("Megots", f"{current_stats['megots']:,}", delta=f"{current_stats['megots'] - previous_stats['megots']:,}")
-            cmp4.metric("Benevoles", current_stats["benevoles"], delta=current_stats["benevoles"] - previous_stats["benevoles"])
+            cmp2.metric("kg collectés", f"{current_stats['kg']:.1f}", delta=f"{current_stats['kg'] - previous_stats['kg']:.1f}")
+            cmp3, cmp4 = st.columns(2)
+            cmp3.metric("Mégots", f"{current_stats['megots']:,}", delta=f"{current_stats['megots'] - previous_stats['megots']:,}")
+            cmp4.metric("Bénévoles", current_stats["benevoles"], delta=current_stats["benevoles"] - previous_stats["benevoles"])
 
-            st.markdown("### Nouveautes retenues dans ce rapport")
+            st.markdown("### Nouveautés retenues dans ce rapport")
             if report_highlights:
                 for hl in report_highlights[:6]:
                     st.caption(f"- {hl}")
             else:
-                st.caption("- Pas de nouveaute data-driven a afficher sur la periode.")
+                st.caption("- Pas de nouveauté data-driven à afficher sur la période.")
 
             def build_decider_onepager(curr_stats: dict, prev_stats: dict, window_days: int, source_df: pd.DataFrame, highlights: list) -> bytes:
                 pdf = FPDF()
@@ -4083,7 +4105,7 @@ with tab_report:
                 if highlights:
                     pdf.ln(2)
                     pdf.set_font("Helvetica", "B", 11)
-                    pdf.cell(0, 7, _txt("Nouveautes produit visibles (si pertinentes)"), ln=True)
+                    pdf.cell(0, 7, _txt("Nouveautés produit visibles (si pertinentes)"), ln=True)
                     pdf.set_font("Helvetica", "", 9)
                     for line in highlights[:4]:
                         pdf.multi_cell(0, 5, _txt(f"- {line}"))
