@@ -274,7 +274,11 @@ class PDFReport(FPDF):
             "3. COEFFICIENTS D'IMPACT (Source ADEME/OMS/Surfrider) : \n"
             f"- Eau protégée : {IMPACT_CONSTANTS['EAU_PROTEGEE_PER_MEGOT_L']}L par mégot.\n"
             f"- Équivalent CO2 : {IMPACT_CONSTANTS['CO2_PER_MEGOT_KG']*1000:.1f}g par mégot.\n"
-            "- Revalorisation : 80kg de plastique recyclé par banc public."
+            "- Revalorisation : 80kg de plastique recyclé par banc public.\n\n"
+            "4. GAMIFICATION (ÉCO-POINTS) : \n"
+            "- Formule interne de classement : 10 + (temps_min/15)*10 + 5*kg_dechets + (megots/100).\n"
+            "- Cet indicateur sert au pilotage communautaire (badges/classements) et ne remplace pas "
+            "les unités d'impact environnemental."
         )
         self.multi_cell(0, 7, safe_text(text))
 
@@ -701,7 +705,8 @@ class PDFReport(FPDF):
             ("Eau Protégée", "Base Surfrider/INERIS : 500L par mégot non jeté dans le réseau pluvial."),
             ("Emissions CO2", "Facteur ADEME/OMS : 1.4g CO2 par mégot (cycle complet)."),
             ("Coût Traitement", "Moyenne nationale préconisée par le plaidoyer propreté : 150€/tonne."),
-            ("Score IPC", "Indice de Performance Citoyenne (Mégots / Heures de mobilisation).")
+            ("Score IPC", "Indice de Performance Citoyenne (Mégots / Heures de mobilisation)."),
+            ("Éco-Points", "Score de gamification : 10 + (temps_min/15)*10 + 5*kg_dechets + (megots/100).")
         ]
         
         for t, d in data:
