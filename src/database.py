@@ -112,6 +112,43 @@ def init_db():
         )
     ''')
 
+    # Table pour les sorties communautaires
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS community_events (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            event_date TEXT NOT NULL,
+            location TEXT NOT NULL,
+            description TEXT,
+            organizer TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    # RSVP par evenement
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS event_rsvps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL,
+            participant_name TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'yes',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(event_id, participant_name)
+        )
+    ''')
+
+    # Journal des relances J-1, une seule par evenement et par date
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS event_reminders (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_id TEXT NOT NULL,
+            reminder_date TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(event_id, reminder_date)
+        )
+    ''')
+
     # Table pour les récompenses et badges
     c.execute('''
         CREATE TABLE IF NOT EXISTS user_rewards (
@@ -287,6 +324,13 @@ def add_spot(lat, lon, adresse, type_dechet, reporter_name, photo_url=None):
     conn.close()
     return spot_id
 
+def update_spot_status(spot_id, status='cleaned'):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("UPDATE spots SET status = ? WHERE id = ?", (status, spot_id))
+    conn.commit()
+    conn.close()
+
 def get_active_spots():
     conn = get_connection()
     conn.row_factory = sqlite3.Row
@@ -295,6 +339,106 @@ def get_active_spots():
     rows = c.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+def add_community_event(title, event_date, location, description="", organizer=""):
+    conn = get_connection()
+    c = conn.cursor()
+    import uuid
+    event_id = str(uuid.uuid4())
+    c.execute(
+        """
+        INSERT INTO community_events (id, title, event_date, location, description, organizer)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (event_id, title, event_date, location, description, organizer),
+    )
+    conn.commit()
+    conn.close()
+    return event_id
+
+def get_community_events(limit=50, include_past=False):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    if include_past:
+        c.execute(
+            "SELECT * FROM community_events ORDER BY event_date ASC LIMIT ?",
+            (limit,),
+        )
+    else:
+        c.execute(
+            "SELECT * FROM community_events WHERE event_date >= date('now') ORDER BY event_date ASC LIMIT ?",
+            (limit,),
+        )
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def upsert_event_rsvp(event_id, participant_name, status):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        """
+        INSERT INTO event_rsvps (event_id, participant_name, status)
+        VALUES (?, ?, ?)
+        ON CONFLICT(event_id, participant_name) DO UPDATE SET
+            status = excluded.status,
+            updated_at = CURRENT_TIMESTAMP
+        """,
+        (event_id, participant_name, status),
+    )
+    conn.commit()
+    conn.close()
+
+def get_event_rsvp_summary(event_id):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT
+            SUM(CASE WHEN status = 'yes' THEN 1 ELSE 0 END) as yes_count,
+            SUM(CASE WHEN status = 'maybe' THEN 1 ELSE 0 END) as maybe_count,
+            SUM(CASE WHEN status = 'no' THEN 1 ELSE 0 END) as no_count
+        FROM event_rsvps
+        WHERE event_id = ?
+        """,
+        (event_id,),
+    )
+    row = c.fetchone()
+    conn.close()
+    return {
+        "yes": (row["yes_count"] or 0) if row else 0,
+        "maybe": (row["maybe_count"] or 0) if row else 0,
+        "no": (row["no_count"] or 0) if row else 0,
+    }
+
+def get_events_for_date(target_date):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute(
+        "SELECT * FROM community_events WHERE event_date = ? ORDER BY created_at ASC",
+        (target_date,),
+    )
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def mark_event_reminder(event_id, reminder_date):
+    conn = get_connection()
+    c = conn.cursor()
+    try:
+        c.execute(
+            "INSERT INTO event_reminders (event_id, reminder_date) VALUES (?, ?)",
+            (event_id, reminder_date),
+        )
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+    finally:
+        conn.close()
 
 def calculate_user_points(user_name):
     conn = get_connection()
