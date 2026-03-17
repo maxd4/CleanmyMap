@@ -49,6 +49,8 @@ class PDFReport(FPDF):
         self.report_date = datetime.now().strftime("%d/%m/%Y")
         self.version = "v2.0 - Institutionnel"
         self.is_rse = False # Nouveau mode RSE
+        self.map_base_url = "https://cleanmymap.streamlit.app"
+        self.feature_flags = {}
         self.toc_data = []
         self.is_dummy = False
         self.section_links = {} # Stores link IDs for internal navigation
@@ -356,14 +358,18 @@ class PDFReport(FPDF):
         
         # QR Code
         if not self.is_dummy:
-            qr = qrcode.make("https://cleanmymap.org/carte")
+            qr_url = f"{self.map_base_url}/?tab=map&preset=all"
+            qr = qrcode.make(qr_url)
             path = os.path.join(OUTPUT_DIR, f"qr_{city_name}.png")
             qr.save(path)
             self.image(path, x=150, y=self.get_y(), w=40)
             os.remove(path)
         
         self.set_font('Helvetica', 'B', 12); self.cell(0, 10, "ACCÉDER À LA CARTE INTERACTIVE", ln=True)
-        self.set_font('Helvetica', '', 10); self.multi_cell(130, 5, safe_text("Scannez ce QR Code pour visualiser les points d'action, les zones propres et les points chauds en temps réel."))
+        self.set_font('Helvetica', '', 10); self.multi_cell(130, 5, safe_text(
+            "Scannez ce QR Code pour visualiser les points d'action, les zones propres et les points chauds en temps réel. "
+            "Presets partageables inclus: pollution, zones propres, partenaires, recentes et prioritaires."
+        ))
         
         self.ln(20)
         self.add_to_toc("5.1 Typologie des Lieux", is_sub=True)
@@ -373,6 +379,66 @@ class PDFReport(FPDF):
             for t, v in counts.items():
                 self.set_font('Helvetica', 'B', 10); self.cell(40, 8, safe_text(t))
                 self.set_font('Helvetica', '', 10); self.cell(0, 8, f"{v} interventions", ln=True)
+
+    def create_product_updates(self, city_df):
+        self.add_page()
+        link = self.add_to_toc("2. Nouveautes Produit", is_sub=False)
+        self.set_link(link)
+        self.section_header("2. NOUVEAUTES PRODUIT", "Fonctionnalites visibles et activables")
+
+        work_df = city_df.copy()
+        date_col = pd.to_datetime(work_df.get("date"), errors="coerce")
+        if date_col.isna().all() and "submitted_at" in work_df.columns:
+            date_col = pd.to_datetime(work_df.get("submitted_at"), errors="coerce")
+
+        now_ts = pd.Timestamp.now()
+        recent_count = int((date_col >= (now_ts - pd.Timedelta(days=30))).fillna(False).sum()) if len(work_df) else 0
+
+        clean_col = work_df.get("est_propre", pd.Series(dtype=bool)).fillna(False).astype(bool)
+        type_col = work_df.get("type_lieu", pd.Series(dtype=str)).fillna("").astype(str)
+        clean_count = int(clean_col.sum())
+        partner_count = int(type_col.str.contains("Engag", case=False, na=False).sum())
+        pollution_count = int((~clean_col).sum()) if len(clean_col) else 0
+
+        quality_warnings = 0
+        if not work_df.empty:
+            kg_col = pd.to_numeric(work_df.get("dechets_kg", 0), errors="coerce").fillna(0)
+            megot_col = pd.to_numeric(work_df.get("megots", 0), errors="coerce").fillna(0)
+            ben_col = pd.to_numeric(work_df.get("nb_benevoles", work_df.get("benevoles", 0)), errors="coerce").fillna(0)
+            dur_col = pd.to_numeric(work_df.get("temps_min", 0), errors="coerce").fillna(0)
+            quality_warnings = int(((kg_col > 400) | (megot_col > 80000) | (ben_col > 300) | (dur_col > 720)).sum())
+
+        bullets = [
+            "Carte interactive: presets partageables actifs (pollution, zones propres, partenaires, recentes, prioritaires).",
+        ]
+        if recent_count > 0:
+            bullets.append(f"Actions recentes (30 jours): {recent_count} point(s) visibles sur preset dedie.")
+        if pollution_count > 0:
+            bullets.append(f"Zones a traiter en priorite: {pollution_count} points de pollution actifs.")
+        if clean_count > 0:
+            bullets.append(f"Zones propres valorisees: {clean_count} points verifies.")
+        if partner_count > 0:
+            bullets.append(f"Partenaires engages cartographies: {partner_count} point(s) acteurs.")
+        if quality_warnings > 0:
+            bullets.append(f"Validation admin: {quality_warnings} contribution(s) atypique(s) a verifier manuellement.")
+        else:
+            bullets.append("Validation admin: aucune anomalie majeure detectee sur les donnees de reference.")
+
+        self.set_font('Helvetica', '', 11)
+        self.set_text_color(*COLORS['text'])
+        for item in bullets:
+            self.multi_cell(0, 7, safe_text(f"- {item}"))
+
+        self.ln(4)
+        self.set_font('Helvetica', 'B', 11)
+        self.set_text_color(*COLORS['secondary'])
+        self.cell(0, 8, safe_text("Parcours benevole simplifie"), ln=True)
+        self.set_font('Helvetica', '', 10)
+        self.set_text_color(*COLORS['text'])
+        self.multi_cell(0, 6, safe_text(
+            "Le flux recommande est desormais: 1) choisir une rubrique prioritaire, "
+            "2) declarer en formulaire progressif 3 etapes, 3) suivre l'impact et reprendre l'action."
+        ))
 
     def create_waste_typology(self, city_df):
         self.add_to_toc("5.2 Typologie des Déchets", is_sub=True)
@@ -671,28 +737,29 @@ class PDFReport(FPDF):
         # 1. FAITS MARQUANTS & VISION (Impact immédiat)
         self.create_executive_summary(city_df) # P3
         self.create_economic_vision(city_df)    # P4
+        self.create_product_updates(city_df)    # P5
         
         # 2. IMPACT ENVIRONNEMENTAL (Grand Public)
-        self.create_impact_infographic(city_df) # P5
-        self.create_gamification_section()      # P6
+        self.create_impact_infographic(city_df) # P6
+        self.create_gamification_section()      # P7
         
         # 3. ANALYSE SCIENTIFIQUE & TERRITORIALE (Expertise)
-        self.create_spatial_analysis(ville, city_df) # P7
-        self.create_waste_typology(city_df)          # P8
-        self.create_prioritization(city_df)          # P9
-        self.create_performance_analysis(ville, city_df) # P10
-        self.create_trends_analysis(ville, city_df)      # P11
+        self.create_spatial_analysis(ville, city_df) # P8
+        self.create_waste_typology(city_df)          # P9
+        self.create_prioritization(city_df)          # P10
+        self.create_performance_analysis(ville, city_df) # P11
+        self.create_trends_analysis(ville, city_df)      # P12
         
         # 4. RÉSEAU & ACTION (Community)
-        self.create_partners_summary() # P12
-        self.create_guide_summary()    # P13
-        self.create_action_plan()      # P14
+        self.create_partners_summary() # P13
+        self.create_guide_summary()    # P14
+        self.create_action_plan()      # P15
         
         # 5. ANNEXES (Technique)
         if self.is_rse:
             self.create_rse_metrics(city_df) # Section spécifique RSE
             
-        self.create_detailed_registry(city_df) # P15+
+        self.create_detailed_registry(city_df) # P16+
         self.create_glossary()                 # P Final - 2
         self.create_methodology()              # P Final - 1
         self.create_technical_annex()          # Final Page
@@ -728,6 +795,8 @@ class PDFReport(FPDF):
         # --- PASSE 1 : Collecte des numéros de page réels ---
         dummy = PDFReport(self.full_df)
         dummy.is_dummy = True
+        dummy.map_base_url = self.map_base_url
+        dummy.feature_flags = self.feature_flags
         dummy.add_page() # Placeholder for Cover (P1)
         dummy._add_all_content(ville, city_df)
         self.toc_data = dummy.toc_data # Copy exact TOC with page numbers

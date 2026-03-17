@@ -1480,12 +1480,31 @@ def apply_map_preset(map_df: pd.DataFrame, preset_id: str) -> pd.DataFrame:
     clean_col = clean_col.fillna(False).astype(bool)
     type_col = map_df["type_lieu"] if "type_lieu" in map_df.columns else pd.Series([""] * len(map_df), index=map_df.index)
     type_col = type_col.fillna("").astype(str)
+    date_col = pd.to_datetime(map_df.get("date"), errors="coerce")
+    if date_col.isna().all() and "submitted_at" in map_df.columns:
+        date_col = pd.to_datetime(map_df.get("submitted_at"), errors="coerce")
+
     if preset_id == "pollution":
         return map_df[(~clean_col) & (type_col != "Ã‰tablissement EngagÃ© (Label)")].copy()
     if preset_id == "clean":
         return map_df[clean_col].copy()
     if preset_id == "partners":
         return map_df[type_col.astype(str).str.contains("Engag", case=False, na=False)].copy()
+    if preset_id == "recent":
+        cutoff = pd.Timestamp(date.today()) - pd.Timedelta(days=30)
+        recent_mask = date_col >= cutoff
+        return map_df[recent_mask.fillna(False)].copy()
+    if preset_id == "priority":
+        score_col = pd.to_numeric(map_df.get("score_mixte"), errors="coerce")
+        if score_col.isna().all():
+            try:
+                score_col = map_df.apply(
+                    lambda r: float(calculate_scores(r).get("score_mixte", 0)),
+                    axis=1,
+                )
+            except Exception:
+                score_col = pd.Series([0] * len(map_df), index=map_df.index)
+        return map_df[score_col.fillna(0) >= 80].copy()
     return map_df
 
 @st.cache_data(ttl=3600)
@@ -3091,6 +3110,8 @@ with tab_view:
         ("pollution", i18n_text("Pollution", "Pollution")),
         ("clean", i18n_text("Zones propres", "Clean zones")),
         ("partners", i18n_text("Partenaires engages", "Engaged partners")),
+        ("recent", i18n_text("Actions recentes (30j)", "Recent actions (30d)")),
+        ("priority", i18n_text("Zones prioritaires", "Priority zones")),
     ]
     preset_to_label = {pid: label for pid, label in preset_items}
     label_to_preset = {label: pid for pid, label in preset_items}
@@ -3118,6 +3139,49 @@ with tab_view:
         st.info(i18n_text("Aucun resultat pour ce preset. Revenez a la vue complete.", "No result for this preset. Switch to full view."))
     m = build_interactive_folium_map(filtered_map_df)
 
+    map_ref_df = filtered_map_df if not filtered_map_df.empty else map_df
+    st.markdown("### " + i18n_text("Insights du preset actif", "Active preset insights"))
+    i1, i2, i3, i4 = st.columns(4)
+    i1.metric(i18n_text("Actions", "Actions"), int(len(map_ref_df)))
+    i2.metric(
+        i18n_text("kg collectes", "kg collected"),
+        f"{float(pd.to_numeric(map_ref_df.get('dechets_kg', 0), errors='coerce').fillna(0).sum()):.1f}",
+    )
+    i3.metric(
+        i18n_text("Megots", "Cigarette butts"),
+        f"{int(pd.to_numeric(map_ref_df.get('megots', 0), errors='coerce').fillna(0).sum()):,}",
+    )
+    i4.metric(
+        i18n_text("Zones propres", "Clean zones"),
+        int(map_ref_df.get("est_propre", pd.Series(dtype=bool)).fillna(False).astype(bool).sum()),
+    )
+
+    if not map_ref_df.empty and "adresse" in map_ref_df.columns:
+        top_hotspots = (
+            map_ref_df.groupby("adresse", dropna=False)
+            .agg(
+                actions=("adresse", "count"),
+                kg=("dechets_kg", lambda s: float(pd.to_numeric(s, errors="coerce").fillna(0).sum())),
+                megots=("megots", lambda s: int(pd.to_numeric(s, errors="coerce").fillna(0).sum())),
+            )
+            .sort_values(["kg", "megots", "actions"], ascending=False)
+            .head(5)
+            .reset_index()
+        )
+        top_hotspots["adresse"] = top_hotspots["adresse"].fillna("").replace("", "Zone non renseignee")
+        st.dataframe(
+            top_hotspots.rename(
+                columns={
+                    "adresse": i18n_text("Zone", "Area"),
+                    "actions": i18n_text("Actions", "Actions"),
+                    "kg": i18n_text("kg", "kg"),
+                    "megots": i18n_text("Megots", "Butts"),
+                }
+            ),
+            hide_index=True,
+            width="stretch",
+        )
+
     # --- CHOIX DU MODE DE VUE (2D vs 3D) ---
     col_view_opt, col_view_lang = st.columns([3, 1])
     with col_view_opt:
@@ -3131,46 +3195,49 @@ with tab_view:
     if "3D" in view_mode:
         import pydeck as pdk
         st.info("ðŸ’¡ **Montagnes de MÃ©gots** : La hauteur des colonnes reprÃ©sente la densitÃ© de pollution cumulÃ©e." if st.session_state.lang == "fr" else "ðŸ’¡ **Cigarette Butt Mountains**: Column height represents cumulative pollution density.")
-        
-        # Color scale based on density (Green to Red)
-        layer_3d = pdk.Layer(
-            "HexagonLayer",
-            map_df,
-            get_position=["lon", "lat"],
-            auto_highlight=True,
-            elevation_scale=5,
-            elevation_range=[0, 1000],
-            extruded=True,
-            coverage=1,
-            radius=150,
-            pickable=True,
-            get_fill_color="[255, (1 - value/100) * 255, 0, 180]", # Dynamic color simulation
-            color_range=[
-                [16, 185, 129],  # Emerald
-                [59, 130, 246],  # Blue
-                [249, 115, 22],  # Orange
-                [239, 68, 68],   # Red
-            ]
-        )
-        
-        view_state = pdk.ViewState(
-            latitude=center_lat,
-            longitude=center_lon,
-            zoom=12,
-            pitch=45,
-            bearing=0
-        )
-        
-        r = pdk.Deck(
-            layers=[layer_3d],
-            initial_view_state=view_state,
-            map_style="mapbox://styles/mapbox/dark-v10",
-            tooltip={
-                "html": "<b>DensitÃ© :</b> {elevationValue} unitÃ©s" if st.session_state.lang == "fr" else "<b>Density:</b> {elevationValue} units",
-                "style": {"color": "white", "backgroundColor": "#10b981"}
-            }
-        )
-        st.pydeck_chart(r, use_container_width=True)
+        if map_ref_df.empty:
+            st.warning(i18n_text("Aucune donnee geolocalisee pour la vue 3D.", "No geolocated data for 3D view."))
+            st_folium(m, width=900, height=520, returned_objects=[])
+        else:
+            # Color scale based on density (Green to Red)
+            layer_3d = pdk.Layer(
+                "HexagonLayer",
+                map_ref_df,
+                get_position=["lon", "lat"],
+                auto_highlight=True,
+                elevation_scale=5,
+                elevation_range=[0, 1000],
+                extruded=True,
+                coverage=1,
+                radius=150,
+                pickable=True,
+                get_fill_color="[255, (1 - value/100) * 255, 0, 180]", # Dynamic color simulation
+                color_range=[
+                    [16, 185, 129],  # Emerald
+                    [59, 130, 246],  # Blue
+                    [249, 115, 22],  # Orange
+                    [239, 68, 68],   # Red
+                ]
+            )
+            
+            view_state = pdk.ViewState(
+                latitude=center_lat,
+                longitude=center_lon,
+                zoom=12,
+                pitch=45,
+                bearing=0
+            )
+            
+            r = pdk.Deck(
+                layers=[layer_3d],
+                initial_view_state=view_state,
+                map_style="mapbox://styles/mapbox/dark-v10",
+                tooltip={
+                    "html": "<b>DensitÃ© :</b> {elevationValue} unitÃ©s" if st.session_state.lang == "fr" else "<b>Density:</b> {elevationValue} units",
+                    "style": {"color": "white", "backgroundColor": "#10b981"}
+                }
+            )
+            st.pydeck_chart(r, use_container_width=True)
     else:
         st_folium(m, width=900, height=520, returned_objects=[])
 
@@ -3913,8 +3980,44 @@ with tab_report:
                     "benevoles": int(pd.to_numeric(df.get("benevoles", 0), errors="coerce").fillna(0).sum()),
                 }
 
+            def _collect_report_highlights(df):
+                if df.empty:
+                    return []
+                highlights = []
+                type_col = df.get("type_lieu", pd.Series(dtype=str)).fillna("").astype(str)
+                clean_col = df.get("est_propre", pd.Series(dtype=bool)).fillna(False).astype(bool)
+                date_col = pd.to_datetime(df.get("date"), errors="coerce")
+                if date_col.isna().all() and "submitted_at" in df.columns:
+                    date_col = pd.to_datetime(df.get("submitted_at"), errors="coerce")
+                recent_count = int((date_col >= (pd.Timestamp(date.today()) - pd.Timedelta(days=30))).fillna(False).sum())
+                partner_count = int(type_col.str.contains("Engag", case=False, na=False).sum())
+                clean_count = int(clean_col.sum())
+                pollution_count = int((~clean_col).sum())
+                quality_flags = int(
+                    (
+                        (pd.to_numeric(df.get("dechets_kg", 0), errors="coerce").fillna(0) > 400)
+                        | (pd.to_numeric(df.get("megots", 0), errors="coerce").fillna(0) > 80000)
+                        | (pd.to_numeric(df.get("benevoles", 0), errors="coerce").fillna(0) > 300)
+                        | (pd.to_numeric(df.get("temps_min", 0), errors="coerce").fillna(0) > 720)
+                    ).sum()
+                )
+
+                highlights.append("Carte interactive avec presets partageables: pollution, zones propres, partenaires, recentes, prioritaires.")
+                if recent_count > 0:
+                    highlights.append(f"Preset actions recentes: {recent_count} action(s) sur les 30 derniers jours.")
+                if partner_count > 0:
+                    highlights.append(f"Preset partenaires engages: {partner_count} point(s) cartographies.")
+                if clean_count > 0:
+                    highlights.append(f"Preset zones propres: {clean_count} point(s) valorises.")
+                if pollution_count > 0:
+                    highlights.append(f"Preset pollution/priorite: {pollution_count} point(s) a surveiller.")
+                if quality_flags > 0:
+                    highlights.append(f"Validation admin en lot et pre-validation: {quality_flags} signalement(s) atypique(s) detecte(s).")
+                return highlights
+
             current_stats = _metric_pack(current_period_df)
             previous_stats = _metric_pack(previous_period_df)
+            report_highlights = _collect_report_highlights(current_period_df if not current_period_df.empty else report_df)
         
         with c_rep1:
             st.markdown("### Comparatif periode precedente")
@@ -3924,7 +4027,14 @@ with tab_report:
             cmp3.metric("Megots", f"{current_stats['megots']:,}", delta=f"{current_stats['megots'] - previous_stats['megots']:,}")
             cmp4.metric("Benevoles", current_stats["benevoles"], delta=current_stats["benevoles"] - previous_stats["benevoles"])
 
-            def build_decider_onepager(curr_stats: dict, prev_stats: dict, window_days: int, source_df: pd.DataFrame) -> bytes:
+            st.markdown("### Nouveautes retenues dans ce rapport")
+            if report_highlights:
+                for hl in report_highlights[:6]:
+                    st.caption(f"- {hl}")
+            else:
+                st.caption("- Pas de nouveaute data-driven a afficher sur la periode.")
+
+            def build_decider_onepager(curr_stats: dict, prev_stats: dict, window_days: int, source_df: pd.DataFrame, highlights: list) -> bytes:
                 pdf = FPDF()
                 pdf.set_auto_page_break(auto=True, margin=14)
                 pdf.add_page()
@@ -3970,10 +4080,17 @@ with tab_report:
                     "2) Coupler operation terrain + sensibilisation locale sur les points de recidive.\n"
                     "3) Suivre les memes indicateurs tous les mois pour mesurer l'effet des actions."
                 ))
+                if highlights:
+                    pdf.ln(2)
+                    pdf.set_font("Helvetica", "B", 11)
+                    pdf.cell(0, 7, _txt("Nouveautes produit visibles (si pertinentes)"), ln=True)
+                    pdf.set_font("Helvetica", "", 9)
+                    for line in highlights[:4]:
+                        pdf.multi_cell(0, 5, _txt(f"- {line}"))
                 output = pdf.output(dest="S")
                 return output if isinstance(output, bytes) else output.encode("latin-1", "replace")
 
-            onepage_bytes = build_decider_onepager(current_stats, previous_stats, compare_days, current_period_df)
+            onepage_bytes = build_decider_onepager(current_stats, previous_stats, compare_days, current_period_df, report_highlights)
             st.download_button(
                 "Telecharger export decideur 1 page (PDF)",
                 data=onepage_bytes,
@@ -3986,6 +4103,7 @@ with tab_report:
             # PrÃ©paration du gÃ©nÃ©rateur
             report_gen = PDFReport(public_df)
             report_gen.is_rse = is_rse_mode
+            report_gen.map_base_url = STREAMLIT_PUBLIC_URL
             pdf_bytes = report_gen.generate(dest='S')
             
             label_btn = "â¬‡ï¸ TÃ©lÃ©charger le Rapport RSE (PDF)" if is_rse_mode else t("download_pdf")
