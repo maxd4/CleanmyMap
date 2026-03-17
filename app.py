@@ -1277,6 +1277,12 @@ def inject_visual_polish(theme_mode: str):
             border-radius: 999px;
         }}
 
+        .rubric-pill-form {{
+            margin: 0;
+            padding: 0;
+            flex: 0 0 auto;
+        }}
+
         .rubric-pill {{
             min-width: 240px;
             max-width: 280px;
@@ -1291,6 +1297,11 @@ def inject_visual_polish(theme_mode: str):
             gap: 6px;
             scroll-snap-align: start;
             transition: transform .14s ease, border-color .14s ease, box-shadow .14s ease;
+            cursor: pointer;
+            width: 100%;
+            text-align: left;
+            font: inherit;
+            appearance: none;
         }}
 
         .rubric-pill:hover {{
@@ -3208,12 +3219,20 @@ def init_state():
 init_state()
 
 # Lecture des paramètres d'URL (Kit Terrain QR Code)
-lieu_prefill = st.query_params.get("lieu", "")
+def _qp_scalar(key: str, default: str = "") -> str:
+    """Retourne un paramètre d'URL sous forme scalaire, compatible str/list."""
+    value = st.query_params.get(key, default)
+    if isinstance(value, list):
+        return str(value[0]) if value else default
+    return str(value) if value is not None else default
+
+
+lieu_prefill = _qp_scalar("lieu", "")
 if lieu_prefill:
     st.toast(f"📍 Lieu détecté via QR Code : {lieu_prefill}", icon="📱")
 
-tab_prefill = st.query_params.get("tab", "")
-map_preset_prefill = st.query_params.get("preset", "")
+tab_prefill = _qp_scalar("tab", "")
+map_preset_prefill = _qp_scalar("preset", "")
 
 # Initialisation de check_pseudo avant les tabs pour qu'il soit toujours défini
 check_pseudo = ""
@@ -3380,10 +3399,13 @@ for tab_id in nav_ids:
     label = html.escape(id_to_label[tab_id])
     hint = html.escape(rubric_hints.get(tab_id, ""))
     rubric_cards.append(
-        f'<a class="rubric-pill{active_class}" href="?tab={tab_id}" title="{hint}">'
+        f'<form class="rubric-pill-form" method="get">'
+        f'<input type="hidden" name="tab" value="{tab_id}"/>'
+        f'<button class="rubric-pill{active_class}" type="submit" title="{hint}">'
         f'<span class="rubric-pill-label">{label}</span>'
         f'<span class="rubric-pill-hint">{hint}</span>'
-        f"</a>"
+        f"</button>"
+        f"</form>"
     )
 st.markdown(f'<div class="rubric-scroll">{"".join(rubric_cards)}</div>', unsafe_allow_html=True)
 

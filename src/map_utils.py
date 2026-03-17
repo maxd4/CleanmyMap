@@ -271,6 +271,47 @@ def fetch_osm_geometry(lat, lon, osm_type, target_distance_m=None, place_hint=No
                     if total_length_m >= target_distance_m:
                         break
 
+                # Si la portion trouvée reste trop courte, on autorise une extension
+                # contrôlée sur des segments de voirie compatibles pour mieux
+                # représenter une action longue (ex: dépollution de quai).
+                min_required_m = min(target_distance_m * 0.72, 950.0)
+                if selected_edge_ids and total_length_m < min_required_m:
+                    ext_queue = list(visited_nodes) if visited_nodes else [u, v]
+                    ext_seen_nodes = set(ext_queue)
+
+                    while ext_queue and total_length_m < min_required_m and total_length_m < max_distance_m:
+                        curr_node = ext_queue.pop(0)
+                        for nbr in graph_ud.neighbors(curr_node):
+                            edge_variants = graph_ud.get_edge_data(curr_node, nbr) or {}
+                            for k, data in edge_variants.items():
+                                edge_id = resolve_edge_id(curr_node, nbr, k)
+                                if edge_id is None or edge_id in visited_edge_ids:
+                                    continue
+
+                                edge_highway = _as_highway_set(data.get('highway'))
+                                compatible_highway = bool(main_highway & edge_highway) if main_highway else True
+                                if not compatible_highway:
+                                    continue
+
+                                edge_len = float(data.get('length') or edges.loc[edge_id].get('length') or 0.0)
+                                if edge_len <= 0.0:
+                                    edge_len = 25.0
+                                if total_length_m + edge_len > max_distance_m:
+                                    continue
+
+                                selected_edge_ids.add(edge_id)
+                                visited_edge_ids.add(edge_id)
+                                total_length_m += edge_len
+
+                                if nbr not in ext_seen_nodes:
+                                    ext_seen_nodes.add(nbr)
+                                    ext_queue.append(nbr)
+
+                                if total_length_m >= min_required_m:
+                                    break
+                            if total_length_m >= min_required_m:
+                                break
+
                 if selected_edge_ids:
                     final_geoms = [edges.loc[eid].geometry for eid in selected_edge_ids if eid in edges.index]
                     if final_geoms:
