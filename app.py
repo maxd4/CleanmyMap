@@ -22,24 +22,7 @@ import io
 import zipfile
 from thefuzz import fuzz, process
 
-from src.database import (
-    init_db,
-    insert_submission,
-    update_submission_status,
-    update_submission_data,
-    update_submission_fields,
-    get_submissions_by_status,
-    get_total_approved_stats,
-    add_message,
-    get_messages,
-    add_subscriber, get_all_subscribers, get_top_contributors,
-    add_spot, get_active_spots, update_spot_status, calculate_user_points, get_leaderboard,
-    add_mission_validation, get_mission_validation_summary,
-    add_community_event, get_community_events, upsert_event_rsvp,
-    get_event_rsvp_summary, get_events_for_date, mark_event_reminder,
-    add_admin_audit_log, get_admin_audit_logs,
-    add_ux_event, get_ux_events, get_ux_error_stats
-)
+import src.database as db
 from src.config import OUTPUT_DIR, GOOGLE_SHEET_URL, IMPACT_CONSTANTS
 from src.predictive_ai import calculate_pollution_risk, get_risk_recommendations
 from src.pages.resources import show_resources
@@ -54,6 +37,47 @@ from src.map_utils import (
     detect_osm_type, fetch_osm_geometry, format_google_maps_name,
     MAP_COLORS, calculate_trends, get_heatmap_data, generate_ai_route,
     calculate_impact, check_badges
+)
+
+# Rétrocompatibilité d'import (ex: déploiement Cloud avec module database partiellement à jour)
+init_db = db.init_db
+insert_submission = db.insert_submission
+update_submission_status = db.update_submission_status
+update_submission_data = db.update_submission_data
+update_submission_fields = db.update_submission_fields
+get_submissions_by_status = db.get_submissions_by_status
+get_total_approved_stats = db.get_total_approved_stats
+add_message = db.add_message
+get_messages = db.get_messages
+add_subscriber = db.add_subscriber
+get_all_subscribers = db.get_all_subscribers
+get_top_contributors = db.get_top_contributors
+add_spot = db.add_spot
+get_active_spots = db.get_active_spots
+update_spot_status = db.update_spot_status
+calculate_user_points = db.calculate_user_points
+get_leaderboard = db.get_leaderboard
+add_mission_validation = db.add_mission_validation
+get_mission_validation_summary = db.get_mission_validation_summary
+add_community_event = db.add_community_event
+get_community_events = db.get_community_events
+upsert_event_rsvp = db.upsert_event_rsvp
+get_event_rsvp_summary = db.get_event_rsvp_summary
+get_events_for_date = db.get_events_for_date
+mark_event_reminder = db.mark_event_reminder
+add_admin_audit_log = db.add_admin_audit_log
+get_admin_audit_logs = db.get_admin_audit_logs
+add_ux_event = getattr(db, "add_ux_event", lambda *args, **kwargs: None)
+get_ux_events = getattr(db, "get_ux_events", lambda *args, **kwargs: [])
+get_ux_error_stats = getattr(
+    db,
+    "get_ux_error_stats",
+    lambda *args, **kwargs: {
+        "total_events": 0,
+        "invalid_fields": 0,
+        "broken_actions": 0,
+        "top_invalid_fields": [],
+    },
 )
 
 init_db()  # Initialisation de la BDD au démarrage
