@@ -91,3 +91,17 @@ Pour travailler sur une copie locale dédiée, un clone du repo peut être cré�
 ```bash
 git clone /workspace/CleanmyMap /workspace/APPLI
 ```
+
+## Journal de changements, Monitoring UX et E2E
+- Journal de changements produit: visible directement dans l'app (bloc repliable).
+- Monitoring UX: suivi en base des erreurs de validation et des actions cassees.
+- Dashboard admin: indicateurs UX (30 jours) + journal des evenements.
+- Tests E2E Playwright: flux critiques declaration, carte, rapport.
+
+### Lancer les tests E2E
+```bash
+npx.cmd playwright test
+```
+
+Configuration: `playwright.config.cjs`  
+Specs: `e2e/tests/critical-flows.spec.js`

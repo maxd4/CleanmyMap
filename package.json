@@ -1,0 +1,27 @@
+{
+  "name": "cleanmymap-main",
+  "version": "1.0.0",
+  "description": "https://cleanmymap.streamlit.app",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxd4/CleanmyMap.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/maxd4/CleanmyMap/issues"
+  },
+  "homepage": "https://github.com/maxd4/CleanmyMap#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
+}

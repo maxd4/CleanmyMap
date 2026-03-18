@@ -2,3 +2,11 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .DS_Store
+playwright-report/
+test-results/
+node_modules/
+cache/
+app.py.conflict_backup
+.streamlit_pid.txt
+streamlit.out.log
+streamlit.err.log
