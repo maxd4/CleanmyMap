@@ -485,8 +485,8 @@ def _parse_tags(value):
 def _source_badge(source_value):
     source_raw = str(source_value or "").strip().lower()
     if source_raw in {"simulation", "simule", "simulee", "test", "demo"}:
-        return ("DonnÃ©es simulÃ©es", "#ede9fe", "#6d28d9")
-    return ("DonnÃ©es rÃ©elles", "#dcfce7", "#166534")
+        return ("Données simulées", "#ede9fe", "#6d28d9")
+    return ("Données réelles", "#dcfce7", "#166534")
 
 def create_premium_popup(row, score_data, gap_alert=""):
     """Génère le HTML d'un popup premium glassmorphism avec support optionnel d'alerte infrastructure."""
@@ -566,6 +566,17 @@ def create_premium_popup(row, score_data, gap_alert=""):
             for tag in tags[:4]
         ]
     )
+    start_addr = str(row.get("adresse_depart") or row.get("adresse") or "").strip()
+    end_addr = str(row.get("adresse_arrivee") or "").strip()
+    route_html = ""
+    if end_addr and end_addr.lower() != start_addr.lower():
+        route_html = f"""
+            <div style="background:#eff6ff; border:1px solid #bfdbfe; padding:8px 10px; border-radius:8px; margin-bottom:10px; font-size:10px; color:#1e40af;">
+                <div style="font-weight:700; margin-bottom:4px;">🧭 Trajet déclaré</div>
+                <div><b>Départ:</b> {start_addr or "Non renseigné"}</div>
+                <div><b>Arrivée:</b> {end_addr}</div>
+            </div>
+        """
     
     # Tendance visuelle
     trend = row.get('tendance', '📝 Premier passage')
@@ -590,6 +601,7 @@ def create_premium_popup(row, score_data, gap_alert=""):
             <div style="background: #f8fafc; padding: 6px 10px; border-radius: 8px; margin-bottom: 10px; font-size: 11px; color: #475569; display: flex; align-items: center; gap: 5px;">
                 <span>📍</span> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{row.get('adresse', 'Sans adresse')}</span>
             </div>
+            {route_html}
             <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;">
                 <span style="background:{source_bg}; color:{source_fg}; border:1px solid {source_fg}33; padding:2px 8px; border-radius:999px; font-size:9px; font-weight:700;">{source_label}</span>
                 {tags_html}

@@ -58,6 +58,8 @@ def init_db():
             association TEXT,
             type_lieu TEXT,
             adresse TEXT,
+            adresse_depart TEXT,
+            adresse_arrivee TEXT,
             date TEXT,
             benevoles INTEGER,
             temps_min INTEGER,
@@ -69,6 +71,10 @@ def init_db():
             gps TEXT,
             lat REAL,
             lon REAL,
+            lat_depart REAL,
+            lon_depart REAL,
+            lat_arrivee REAL,
+            lon_arrivee REAL,
             commentaire TEXT,
             est_propre BOOLEAN,
             source TEXT,
@@ -91,6 +97,30 @@ def init_db():
         pass
     try:
         c.execute("ALTER TABLE submissions ADD COLUMN tags TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE submissions ADD COLUMN adresse_depart TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE submissions ADD COLUMN adresse_arrivee TEXT")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE submissions ADD COLUMN lat_depart REAL")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE submissions ADD COLUMN lon_depart REAL")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE submissions ADD COLUMN lat_arrivee REAL")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        c.execute("ALTER TABLE submissions ADD COLUMN lon_arrivee REAL")
     except sqlite3.OperationalError:
         pass
 
@@ -190,6 +220,28 @@ def init_db():
         '''
     )
 
+    # Monitoring UX: erreurs de formulaire / actions cassees
+    c.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS ux_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            event_type TEXT NOT NULL, -- invalid_field | broken_action | warning
+            tab_id TEXT,
+            action_name TEXT,
+            field_name TEXT,
+            message TEXT,
+            payload TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        '''
+    )
+    c.execute(
+        '''
+        CREATE INDEX IF NOT EXISTS idx_ux_events_created_at
+        ON ux_events (created_at DESC)
+        '''
+    )
+
     # Ajout de la colonne eco_points à submissions si elle n'existe pas
     try:
         c.execute("ALTER TABLE submissions ADD COLUMN eco_points INTEGER DEFAULT 0")
@@ -209,16 +261,20 @@ def insert_submission(data, status='pending'):
     c = conn.cursor()
     c.execute('''
         INSERT OR IGNORE INTO submissions (
-            id, nom, association, type_lieu, adresse, date, benevoles, temps_min,
-            megots, dechets_kg, plastique_kg, verre_kg, metal_kg, gps, lat, lon,
+            id, nom, association, type_lieu, adresse, adresse_depart, adresse_arrivee, date, benevoles, temps_min,
+            megots, dechets_kg, plastique_kg, verre_kg, metal_kg, gps, lat, lon, lat_depart, lon_depart, lat_arrivee, lon_arrivee,
             commentaire, est_propre, source, tags, status, description, website_url, eco_points, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         data.get('id'), data.get('nom'), data.get('association'), data.get('type_lieu'),
-        data.get('adresse'), data.get('date'), data.get('benevoles'), data.get('temps_min'),
+        data.get('adresse'), data.get('adresse_depart', data.get('adresse')), data.get('adresse_arrivee'),
+        data.get('date'), data.get('benevoles'), data.get('temps_min'),
         data.get('megots'), data.get('dechets_kg'), data.get('plastique_kg', 0.0),
         data.get('verre_kg', 0.0), data.get('metal_kg', 0.0), data.get('gps'),
-        data.get('lat'), data.get('lon'), data.get('commentaire'), data.get('est_propre', False),
+        data.get('lat'), data.get('lon'),
+        data.get('lat_depart', data.get('lat')), data.get('lon_depart', data.get('lon')),
+        data.get('lat_arrivee'), data.get('lon_arrivee'),
+        data.get('commentaire'), data.get('est_propre', False),
         data.get('source', 'formulaire'), data.get('tags', ''), status, data.get('description'),
         data.get('website_url'), data.get('eco_points', 0), data.get('submitted_at', datetime.now().isoformat())
     ))
@@ -388,7 +444,7 @@ def update_submission_fields(
     )
     conn.commit()
     conn.close()
-    return spot_id
+    return True
 
 def update_spot_status(spot_id, status='cleaned'):
     conn = get_connection()
@@ -608,3 +664,76 @@ def get_admin_audit_logs(limit=150):
     rows = c.fetchall()
     conn.close()
     return [dict(row) for row in rows]
+
+
+def add_ux_event(event_type, tab_id="", action_name="", field_name="", message="", payload=""):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        """
+        INSERT INTO ux_events (event_type, tab_id, action_name, field_name, message, payload)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (event_type, tab_id, action_name, field_name, message, payload),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_ux_events(limit=200, days=30):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT id, event_type, tab_id, action_name, field_name, message, payload, created_at
+        FROM ux_events
+        WHERE created_at >= datetime('now', ?)
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?
+        """,
+        (f"-{int(days)} day", int(limit)),
+    )
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+
+def get_ux_error_stats(days=30):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    window = f"-{int(days)} day"
+    c.execute(
+        """
+        SELECT
+            COUNT(*) AS total_events,
+            SUM(CASE WHEN event_type = 'invalid_field' THEN 1 ELSE 0 END) AS invalid_fields,
+            SUM(CASE WHEN event_type = 'broken_action' THEN 1 ELSE 0 END) AS broken_actions
+        FROM ux_events
+        WHERE created_at >= datetime('now', ?)
+        """,
+        (window,),
+    )
+    row = c.fetchone()
+    c.execute(
+        """
+        SELECT field_name, COUNT(*) AS occurrences
+        FROM ux_events
+        WHERE event_type = 'invalid_field'
+          AND created_at >= datetime('now', ?)
+          AND COALESCE(field_name, '') <> ''
+        GROUP BY field_name
+        ORDER BY occurrences DESC
+        LIMIT 10
+        """,
+        (window,),
+    )
+    top_fields = [dict(r) for r in c.fetchall()]
+    conn.close()
+    return {
+        "total_events": int((row["total_events"] or 0) if row else 0),
+        "invalid_fields": int((row["invalid_fields"] or 0) if row else 0),
+        "broken_actions": int((row["broken_actions"] or 0) if row else 0),
+        "top_invalid_fields": top_fields,
+    }
