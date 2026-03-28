@@ -20,14 +20,15 @@ def render_home_tab(ctx):
     build_interactive_folium_map = ctx['build_interactive_folium_map']
 
     render_tab_header(
-        icon="\U0001F4CA",
-        title_fr="Notre Impact",
-        title_en="Our Impact",
-        subtitle_fr="Vue d'ensemble essentielle : indicateurs globaux et carte interactive des actions.",
-        subtitle_en="Essential overview: global indicators and interactive map of actions.",
-        chips=[i18n_text("Essentiel", "Essential"), i18n_text("Carte", "Map")],
-        compact=True,
+        icon="🏠",
+        title_fr="Bienvenue sur CleanMyMap",
+        title_en="Welcome to CleanMyMap",
+        subtitle_fr="L'espace dédié aux brigades citoyennes pour agir, mesurer et partager leur impact sur l'environnement.",
+        subtitle_en="The space for citizen brigades to act, measure, and share their impact on the environment.",
+        chips=[i18n_text("Collectif", "Collective"), i18n_text("Impact", "Impact")],
+        compact=False,
     )
+
 
     render_ui_callout(
         icon="💧",

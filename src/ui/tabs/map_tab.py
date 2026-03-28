@@ -29,14 +29,15 @@ class MapTabContext:
 
 def render_map_tab(ctx: MapTabContext) -> None:
     ctx.render_tab_header(
-        icon="\U0001F5FA\ufe0f",
-        title_fr="Carte Interactive des Actions",
-        title_en="Interactive Action Map",
-        subtitle_fr="Explorez les actions validées, les zones sensibles, la chronologie et les couches géographiques en un seul espace.",
-        subtitle_en="Explore validated actions, sensitive zones, timeline, and geographic layers in one workspace.",
-        chips=[ctx.i18n_text("Cartographie", "Mapping"), ctx.i18n_text("Analyse", "Analytics"), ctx.i18n_text("Temps réel", "Live")],
+        icon="📍",
+        title_fr="Carte de l'impact",
+        title_en="Impact Map",
+        subtitle_fr="Visualisez concrètement les zones nettoyées et les points restant à traiter.",
+        subtitle_en="See cleaned areas and remaining spots to be addressed.",
+        chips=[ctx.i18n_text("Terrain", "Field"), ctx.i18n_text("Impact", "Impact")],
         compact=True,
     )
+
     ctx.render_ui_callout(
         icon="🗺️",
         title_fr="Guide visuel (3 étapes)",

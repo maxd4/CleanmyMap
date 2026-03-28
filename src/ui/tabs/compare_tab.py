@@ -13,13 +13,15 @@ def render_compare_tab(ctx):
     sanitize_html_text = ctx['sanitize_html_text']
 
     render_tab_header(
-        icon="\U0001F3D9\ufe0f",
-        title_fr="Comparaison territoriale",
-        title_en="Territorial Comparison",
-        subtitle_fr="Comparez les zones par performance, intensité et récurrence de pollution.",
-        subtitle_en="Compare zones by performance, intensity, and pollution recurrence.",
-        chips=[i18n_text("Benchmark", "Benchmark"), i18n_text("Priorisation", "Prioritization")],
+        icon="📊",
+        title_fr="Comparateur",
+        title_en="Territory Comparison",
+        subtitle_fr="Analysez les performances et l'intensité de pollution par zone pour prioriser vos actions.",
+        subtitle_en="Analyze performance and pollution intensity by area to prioritize your actions.",
+        chips=[i18n_text("Analyse", "Analysis"), i18n_text("Priorité", "Priority")],
+        compact=True,
     )
+
 
     df_cmp = pd.DataFrame(all_imported_actions + get_submissions_by_status('approved'))
 

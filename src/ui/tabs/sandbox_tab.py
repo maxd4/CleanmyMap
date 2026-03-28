@@ -14,14 +14,15 @@ def render_sandbox_tab(ctx):
     geocode_and_resolve = ctx['geocode_and_resolve']
 
     render_tab_header(
-        icon="\U0001F9EA",
-        title_fr="Zone d'entraînement (Bac à sable)",
-        title_en="Sandbox",
-        subtitle_fr="Testez des scénarios fictifs sans impacter la base de données de production.",
-        subtitle_en="Test fictional scenarios without impacting the production database.",
+        icon="🧪",
+        title_fr="Le Labo",
+        title_en="Sandbox Lab",
+        subtitle_fr="Entrainez-vous et testez des scénarios fictifs sans aucun risque pour les données réelles.",
+        subtitle_en="Train and test fictional scenarios without any risk to real data.",
         chips=[i18n_text("Brouillon", "Draft"), i18n_text("Simulation", "Simulation")],
         compact=True,
     )
+
     st.info("Cette zone est un bac à sable : vous pouvez ajouter des données fictives pour tester l'outil. Elles ne sont **pas enregistrées** dans la base réelle et seront perdues si vous rafraîchissez la page.")
     
     col_sb1, col_sb2 = st.columns([1, 2])

@@ -80,25 +80,87 @@ all_imported_actions, all_public_df = load_public_data_bundle(
 )
 ST_GLOBAL_URL = os.getenv("STREAMLIT_PUBLIC_URL", "http://localhost:8501")
 
-# --- NAVIGATION DEBFINITION ---
-tab_specs = [
-    {"id": "home", "key": "tab_home"}, {"id": "declaration", "key": "tab_declaration"},
-    {"id": "map", "key": "tab_map"}, {"id": "trash_spotter", "key": "tab_trash_spotter"},
-    {"id": "community", "key": "tab_community"}, {"id": "gamification", "key": "tab_gamification"},
-    {"id": "pdf", "key": "tab_pdf"}, {"id": "history", "key": "tab_history"},
-    {"id": "route", "key": "tab_route"}, {"id": "recycling", "key": "tab_recycling"},
-    {"id": "climate", "key": "tab_climate"}, {"id": "weather", "key": "tab_weather"},
-    {"id": "compare", "key": "tab_compare"}, {"id": "kit", "key": "tab_kit"},
-    {"id": "guide", "key": "tab_guide"}, {"id": "actors", "key": "tab_actors"},
-    {"id": "elus", "key": "tab_elus"}, {"id": "sandbox", "key": "tab_sandbox"},
-    {"id": "admin", "key": "tab_admin"}
-]
+# --- PILLAR-BASED NAVIGATION ---
+PILLARS = {
+    "home": {"label": "🏠 Accueil", "tabs": ["home"]},
+    "action": {"label": "💪 Passer à l'action", "tabs": ["declaration", "trash_spotter", "route"]},
+    "map": {"label": "📍 Carte de l'impact", "tabs": ["map"]},
+    "community": {"label": "🏆 Ma Communauté", "tabs": ["community", "gamification", "history", "actors"]},
+    "resources": {"label": "📚 Guide & Outils", "tabs": ["kit", "pdf", "recycling", "climate", "weather", "compare", "guide", "sandbox"]},
+    "pro": {"label": "🛡️ Espace Pro", "tabs": ["elus", "admin"]}
+}
 
-active_tab_id = st.sidebar.selectbox(
-    "Navigation", 
-    options=[s["id"] for s in tab_specs], 
-    format_func=lambda x: t(next(s["key"] for s in tab_specs if s["id"] == x))
+# 1. URL Query Params (Deep Linking)
+# Prioritize URL params over session state defaults
+url_params = st.query_params
+initial_pillar = url_params.get("pillar", "home")
+initial_tab = url_params.get("tab", "home")
+
+# 2. Sidebar Navigation UI
+st.sidebar.markdown("### Navigation")
+pillar_options = list(PILLARS.keys())
+pillar_index = pillar_options.index(initial_pillar) if initial_pillar in pillar_options else 0
+
+selected_pillar_id = st.sidebar.selectbox(
+    "Choisir un univers",
+    options=pillar_options,
+    format_func=lambda x: PILLARS[x]["label"],
+    index=pillar_index,
+    key="nav_pillar"
 )
+
+# Render sub-navigation for pillars with multiple tabs
+pillar_tabs = PILLARS[selected_pillar_id]["tabs"]
+if len(pillar_tabs) > 1:
+    tab_format_map = {
+        "declaration": "✨ J'ai nettoyé !",
+        "trash_spotter": "🚩 Signaler un dépôt",
+        "route": "🗺️ Itinéraire",
+        "community": "🤝 Rassemblements",
+        "gamification": "🏅 Défis & Badges",
+        "history": "📜 Mes Actions",
+        "actors": "🤝 Acteurs Engagés",
+        "kit": "🧰 Outils & Kits",
+        "pdf": "📑 Mon Bilan (PDF)",
+        "recycling": "♻️ Guide de Tri",
+        "climate": "🌍 Climat",
+        "weather": "🌦️ Météo",
+        "compare": "📊 Comparateur",
+        "guide": "📖 Mode d'emploi",
+        "sandbox": "🧪 Labo",
+        "elus": "🏦 Territoires",
+        "admin": "⚙️ Administration"
+    }
+    tab_index = pillar_tabs.index(initial_tab) if initial_tab in pillar_tabs else 0
+    active_tab_id = st.sidebar.radio(
+        "Sélectionnez une action",
+        options=pillar_tabs,
+        format_func=lambda x: tab_format_map.get(x, x.capitalize()),
+        index=tab_index,
+        key="nav_tab"
+    )
+else:
+    active_tab_id = pillar_tabs[0]
+
+# Sync Query Params back to URL
+st.query_params["pillar"] = selected_pillar_id
+st.query_params["tab"] = active_tab_id
+
+# 3. Quick Action Shortcuts (Bottom Sidebar)
+st.sidebar.markdown("---")
+st.sidebar.markdown("### ⚡ Accès Rapide")
+col_q1, col_q2 = st.sidebar.columns(2)
+with col_q1:
+    if st.button("🚩 Signaler", use_container_width=True):
+        st.query_params["pillar"] = "action"
+        st.query_params["tab"] = "trash_spotter"
+        st.rerun()
+with col_q2:
+    if st.button("✨ Déclarer", use_container_width=True):
+        st.query_params["pillar"] = "action"
+        st.query_params["tab"] = "declaration"
+        st.rerun()
+
 
 # --- CONTEXT ASSEMBLY ---
 ctx = {

@@ -19,13 +19,15 @@ def render_trash_spotter_tab(ctx):
     geocode_address = ctx['geocode_address']
 
     render_tab_header(
-        icon="\U0001F4E2",
-        title_fr="Trash Spotter",
-        title_en="Trash Spotter",
-        subtitle_fr="Signalez rapidement les points noirs pour mobiliser la communauté et accélérer les interventions.",
-        subtitle_en="Quickly report black spots to mobilize the community and accelerate interventions.",
-        chips=[i18n_text("Signalement", "Reporting"), i18n_text("Réactivité", "Response")],
+        icon="🚩",
+        title_fr="Signaler un dépôt",
+        title_en="Report a Waste Spot",
+        subtitle_fr="Aidez-nous à cartographier la pollution pour organiser de futurs nettoyages.",
+        subtitle_en="Help us map pollution to organize future cleanups.",
+        chips=[i18n_text("Signalement", "Reporting"), i18n_text("Vigilance", "Vigilance")],
+        compact=True,
     )
+
 
     col_ts1, col_ts2 = st.columns([1, 1])
     with col_ts1:

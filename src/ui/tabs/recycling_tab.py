@@ -13,13 +13,15 @@ def render_recycling_tab(ctx):
     IMPACT_CONSTANTS = ctx['IMPACT_CONSTANTS']
 
     render_tab_header(
-        icon="\u267b\ufe0f",
-        title_fr="Seconde vie & sensibilisation",
-        title_en="Second Life & Awareness",
-        subtitle_fr="Transformez les données terrain en impact concret et en culture écologique utile.",
-        subtitle_en="Turn field data into concrete impact and practical environmental awareness.",
+        icon="♻️",
+        title_fr="Guide de Tri",
+        title_en="Sorting Guide",
+        subtitle_fr="Donnez une seconde vie à vos récoltes et localisez les points de collecte adaptés.",
+        subtitle_en="Give a second life to your collections and locate suitable collection points.",
         chips=[i18n_text("Impact", "Impact"), i18n_text("Pédagogie", "Education")],
+        compact=True,
     )
+
     
     db_approved = get_submissions_by_status('approved')
     public_actions = all_imported_actions + db_approved

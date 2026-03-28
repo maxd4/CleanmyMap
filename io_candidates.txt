@@ -1,0 +1,11 @@
+Found 49 IO operations without explicit encoding:
+.\app.py:2429:with open(save_path, "wb") as f:
+.\app.py:3209:data=planner.to_csv(index=False).encode("utf-8"),
+.\app.py:3239:zf.writestr("02_feuille_equipes.csv", planner.to_csv(index=False))
+.\app.py:5312:st.download_button("⬇️ Exporter (CSV)", data=grp_disp.to_csv(index=False).encode('utf-8'),
+.\src\data_loader.py:20:df = pd.read_csv(csv_url)
+.\src\pages\partner_dashboard.py:69:csv_data = export_df.to_csv(index=False).encode("utf-8")
+.\src\services\maintenance.py:87:with path.open("rb") as stream:
+.\src\services\sheet_actions.py:73:raw = pd.read_csv(sheet_csv_url(sheet_url))
+.\src\ui\admin_components\exports.py:23:eper_df.to_csv(csv_buffer, index=False)
+.\src\ui\admin_components\exports.py:39:data=approved_df.to_csv(index=False).encode("utf-8"),

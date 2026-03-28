@@ -111,12 +111,14 @@ def render_admin_tab(ctx: AdminTabContext) -> None:
     """
     ctx.render_tab_header(
         icon="⚙️",
-        title_fr="Espace administrateur", title_en="Admin Workspace",
-        subtitle_fr="Validez les contributions et pilotez la carte publique.",
-        subtitle_en="Validate submissions and manage the public map.",
+        title_fr="Administration", 
+        title_en="Administration",
+        subtitle_fr="Modération des signalements, monitoring et outils de maintenance.",
+        subtitle_en="Report moderation, monitoring, and maintenance tools.",
         chips=[ctx.i18n_text("Gestion", "Management"), ctx.i18n_text("Sécurité", "Security")],
         compact=True,
     )
+
 
     # Secondary Auth Layer
     render_admin_login_form(

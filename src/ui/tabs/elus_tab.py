@@ -25,14 +25,15 @@ def render_elus_tab(ctx):
     STREAMLIT_PUBLIC_URL = ctx.get('STREAMLIT_PUBLIC_URL', "https://cleanwalk.streamlit.app")
 
     render_tab_header(
-        icon="\U0001F3DB\ufe0f",
-        title_fr="Espace Territoires",
+        icon="🏦",
+        title_fr="Territoires",
         title_en="Territories Dashboard",
         subtitle_fr="Analysez l'impact local, les zones de vigilance et les leviers de décision pour votre collectivité.",
         subtitle_en="Analyze local impact, risk areas, and decision levers for your municipality.",
         chips=[i18n_text("Collectivités", "Municipalities"), i18n_text("Pilotage", "Steering")],
         compact=True,
     )
+
     st.write("Ce portail permet de visualiser l'impact de l'action citoyenne sur votre commune.")
     
     db_approved = get_submissions_by_status('approved')

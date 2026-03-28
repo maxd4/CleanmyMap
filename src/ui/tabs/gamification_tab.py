@@ -12,13 +12,15 @@ def render_gamification_tab(ctx):
     all_public_df = ctx['all_public_df']
 
     render_tab_header(
-        icon="\U0001F3C6",
-        title_fr="Classement & Badges",
-        title_en="Leaderboard & Badges",
-        subtitle_fr="Suivez vos exploits, collectionnez les badges et grimpez dans le classement des citoyens engagés.",
-        subtitle_en="Track your achievements, collect badges, and climb the rankings of engaged citizens.",
-        chips=["Gamification", "Badges", "Leaderboard"],
+        icon="🏅",
+        title_fr="Défis & Badges",
+        title_en="Challenges & Badges",
+        subtitle_fr="Suivez vos exploits, collectionnez les badges et valorisez votre engagement citoyen.",
+        subtitle_en="Track your achievements, collect badges, and showcase your citizen engagement.",
+        chips=["Défis", "Badges", "Classement"],
+        compact=True,
     )
+
 
     # --- 1. PROGRESSION PERSONNELLE ---
     st.subheader("Votre Progression")

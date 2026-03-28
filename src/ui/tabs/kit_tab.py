@@ -16,12 +16,12 @@ def render_kit_tab(ctx):
     STREAMLIT_PUBLIC_URL = ctx.get('STREAMLIT_PUBLIC_URL', "https://cleanwalk.streamlit.app")
 
     render_tab_header(
-        icon="\U0001F4F1",
-        title_fr="Kit Organisateur",
-        title_en="Organizer Kit",
-        subtitle_fr="Générez un QR code terrain, des templates équipes et des supports pré-remplis pour fluidifier vos cleanwalks.",
-        subtitle_en="Generate field QR codes, team templates, and prefilled materials to streamline your cleanwalk operations.",
-        chips=[i18n_text("Terrain", "Field"), i18n_text("QR Code", "QR Code"), i18n_text("Organisation", "Operations")],
+        icon="🧰",
+        title_fr="Outils & Kits",
+        title_en="Tools & Kits",
+        subtitle_fr="Générez vos QR codes terrain et téléchargez les supports pour vos actions collectives.",
+        subtitle_en="Generate field QR codes and download materials for your collective actions.",
+        chips=[i18n_text("Terrain", "Field"), i18n_text("QR Code", "QR Code")],
         compact=True,
     )
     

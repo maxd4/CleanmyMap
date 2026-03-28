@@ -14,13 +14,15 @@ def render_weather_tab(ctx):
     log_exception = ctx['log_exception']
 
     render_tab_header(
-        icon="\U0001F324\ufe0f",
-        title_fr="Météo & planification",
-        title_en="Weather & Planning",
-        subtitle_fr="Identifiez les meilleures fenêtres météo pour planifier des opérations efficaces.",
-        subtitle_en="Identify the best weather windows to plan effective operations.",
-        chips=[i18n_text("Prévision", "Forecast"), i18n_text("Timing", "Timing")],
+        icon="🌦️",
+        title_fr="Météo des sorties",
+        title_en="Weather & Outings",
+        subtitle_fr="Identifiez les meilleures fenêtres météo pour coordonner vos actions terrain.",
+        subtitle_en="Identify the best weather windows to coordinate your field actions.",
+        chips=[i18n_text("Prévision", "Forecast"), i18n_text("Organisation", "Planning")],
+        compact=True,
     )
+
 
     @st.cache_data(ttl=1800)
     def get_weather_forecast(lat=48.8566, lon=2.3522):

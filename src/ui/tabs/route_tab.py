@@ -15,13 +15,15 @@ def render_route_tab(ctx):
     geocode_and_resolve = ctx['geocode_and_resolve']
 
     render_tab_header(
-        icon="\U0001F3AF",
-        title_fr="Générateur d'action citoyenne IA",
-        title_en="AI Mission Planner",
-        subtitle_fr="Planifiez un parcours stratégique avec l'IA selon l'historique de pollution et vos ressources terrain.",
-        subtitle_en="Plan a strategic route with AI based on pollution history and field resources.",
+        icon="🗺️",
+        title_fr="Itinéraire de nettoyage",
+        title_en="Cleanup Route Generator",
+        subtitle_fr="Planifiez un parcours stratégique selon l'historique de pollution et vos ressources terrain.",
+        subtitle_en="Plan a strategic route based on pollution history and field resources.",
         chips=[i18n_text("IA", "AI"), i18n_text("Parcours", "Routing")],
+        compact=True,
     )
+
 
     route_source_df = pd.DataFrame(all_imported_actions + get_submissions_by_status('approved'))
     route_source_df = route_source_df.dropna(subset=["lat", "lon"]) if not route_source_df.empty else pd.DataFrame()
