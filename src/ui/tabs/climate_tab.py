@@ -8,11 +8,11 @@ def render_climate_tab(ctx):
     render_tab_header = ctx['render_tab_header']
     
     render_tab_header(
-        icon="\U0001F30D",
-        title_fr="Comprendre le dérèglement climatique",
-        title_en="Understanding Climate Disruption",
-        subtitle_fr="Une base scientifique claire pour renforcer l'action citoyenne locale.",
-        subtitle_en="A clear scientific baseline to strengthen local citizen action.",
+        icon="🌍",
+        title_fr="Climat & Écologie",
+        title_en="Climate & Ecology",
+        subtitle_fr="Comprendre les enjeux globaux pour mieux agir à l'échelle de votre quartier.",
+        subtitle_en="Understand global issues to better act at your neighborhood scale.",
         compact=True,
     )
     st.write("Parce qu'agir pour la planète commence par comprendre les enjeux. Voici les informations essentielles validées par la science pour construire votre culture écologique.")

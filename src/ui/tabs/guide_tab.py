@@ -7,13 +7,14 @@ def render_guide_tab(ctx):
     render_tab_header = ctx['render_tab_header']
 
     render_tab_header(
-        icon="\U0001F4DA",
-        title_fr="Guide pratique",
-        title_en="Practical Guide",
-        subtitle_fr="Retrouvez les ressources utiles pour agir efficacement sur le terrain.",
-        subtitle_en="Find practical resources to act effectively in the field.",
+        icon="📖",
+        title_fr="Mode d'emploi",
+        title_en="How-to Guide",
+        subtitle_fr="Apprenez à utiliser CleanMyMap efficacement pour maximiser votre impact citoyen.",
+        subtitle_en="Learn how to use CleanMyMap effectively to maximize your citizen impact.",
         compact=True,
     )
+
 
     # --- 1. ONBOARDING ---
     st.subheader("Onboarding nouveau bénévole (2 minutes)")

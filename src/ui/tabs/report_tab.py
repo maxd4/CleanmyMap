@@ -28,12 +28,13 @@ class ReportTabContext:
 
 def render_report_tab(ctx: ReportTabContext) -> None:
     ctx.render_tab_header(
-        icon="\U0001F4C4",
-        title_fr="Rapport d'impact",
-        title_en="Impact Report",
-        subtitle_fr="Générez un rapport PDF exploitable pour le pilotage, la communication et les partenaires.",
-        subtitle_en="Generate a PDF report for operations, communication, and partners.",
-        chips=[ctx.i18n_text("PDF", "PDF"), ctx.i18n_text("RSE", "ESG")],
+        icon="📑",
+        title_fr="Mon Bilan PDF",
+        title_en="My PDF Report",
+        subtitle_fr="Générez un rapport d'impact professionnel pour vos partenaires et votre communication.",
+        subtitle_en="Generate a professional impact report for your partners and communication.",
+        chips=[ctx.i18n_text("Export", "Export"), ctx.i18n_text("Bilan", "Summary")],
+        compact=True,
     )
 
     db_approved = ctx.get_submissions_by_status("approved")

@@ -31,13 +31,15 @@ def render_community_tab(ctx):
     main_user_email = ctx.get('main_user_email', "")
 
     render_tab_header(
-        icon="\U0001F91D",
-        title_fr="Rassemblements Citoyens",
-        title_en="Community Meetups",
-        subtitle_fr="Coordonnez les sorties, partagez les annonces et engagez les bénévoles autour d'actions locales.",
-        subtitle_en="Coordinate outings, publish announcements, and engage volunteers around local actions.",
-        chips=[i18n_text("Communaute", "Community"), i18n_text("Coordination", "Coordination")],
+        icon="🤝",
+        title_fr="Rassemblements",
+        title_en="Meetups & Community",
+        subtitle_fr="Rejoignez des actions locales, coordonnez vos sorties et échangez avec les autres brigades.",
+        subtitle_en="Join local actions, coordinate your outings, and chat with other brigades.",
+        chips=[i18n_text("Collectif", "Collective"), i18n_text("Événements", "Events")],
+        compact=True,
     )
+
 
     st.warning("⚠️ **Important** : Pour une organisation officielle et une visibilité maximale, nous vous recommandons vivement de créer également votre évènement sur [cleanwalk.org](https://www.cleanwalk.org).")
 

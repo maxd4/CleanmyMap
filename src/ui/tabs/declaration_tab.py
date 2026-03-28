@@ -34,14 +34,15 @@ def render_declaration_tab(ctx):
     main_user_email = ctx.get('main_user_email', "")
 
     render_tab_header(
-        icon="\U0001F3AF",
-        title_fr="Déclarer une action",
-        title_en="Declare an Action",
-        subtitle_fr="Soumettez une récolte, un lieu propre ou un acteur engagé via un formulaire structuré et guidé.",
-        subtitle_en="Submit a cleanup, a clean area, or an engaged actor using a clear and guided form.",
+        icon="✨",
+        title_fr="J'ai nettoyé !",
+        title_en="I Cleaned Up!",
+        subtitle_fr="Bravo ! Enregistrez votre action pour valoriser votre impact et inspirer la communauté.",
+        subtitle_en="Well done! Record your action to showcase your impact and inspire the community.",
         chips=[i18n_text("Formulaire", "Form"), i18n_text("Qualité", "Data quality")],
         compact=True,
     )
+
     render_ui_callout(
         icon="✅",
         title_fr="Déclaration en 3 étapes",

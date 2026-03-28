@@ -10,13 +10,15 @@ def render_actors_tab(ctx):
     get_submissions_by_status = ctx['get_submissions_by_status']
 
     render_tab_header(
-        icon="\U0001F91D",
+        icon="🤝",
         title_fr="Acteurs Engagés",
-        title_en="Engaged Partners",
-        subtitle_fr="Découvrez l'annuaire des structures agissant pour le climat et la solidarité à Paris.",
-        subtitle_en="Discover the directory of organizations acting for climate and solidarity in Paris.",
+        title_en="Engaged Actors",
+        subtitle_fr="Découvrez l'annuaire des structures agissant pour le climat et la solidarité.",
+        subtitle_en="Discover the directory of organizations acting for climate and solidarity.",
         chips=["Annuaire", "Partenaires"],
+        compact=True,
     )
+
 
     # --- DONNÉES STATIQUES ---
     DATA = {

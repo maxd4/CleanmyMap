@@ -13,13 +13,14 @@ def render_history_tab(ctx):
     render_historical_rankings = ctx['render_historical_rankings']
 
     render_tab_header(
-        icon="\U0001F4CB",
-        title_fr="Historique des actions",
-        title_en="Action History",
-        subtitle_fr="Consultez toutes les actions recensées, leur contexte et les tendances historiques.",
-        subtitle_en="Browse all recorded actions, their context, and historical trends.",
+        icon="📜",
+        title_fr="Mes Actions",
+        title_en="My Actions",
+        subtitle_fr="Retrouvez l'historique complet des nettoyages et l'impact de toutes les brigades.",
+        subtitle_en="Browse the full cleanup history and the impact of all brigades.",
         compact=True,
     )
+
     db_approved = get_submissions_by_status('approved')
     public_actions = all_imported_actions + db_approved
     public_df = pd.DataFrame(public_actions)
