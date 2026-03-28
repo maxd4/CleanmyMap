@@ -1,8 +1,6 @@
 import streamlit as st
-
-
-import streamlit as st
 import pandas as pd
+from src.security_utils import sanitize_external_url, sanitize_html_text
 
 def show_partners():
     from src.database import get_submissions_by_status
@@ -133,18 +131,25 @@ def show_partners():
             items = [i for i in items if search.lower() in i['name'].lower() or search.lower() in i['desc'].lower()]
         
         if items:
-            st.markdown(f'<h3 style="margin-top: 2rem;">{cat} <span style="font-size: 0.9rem; color: var(--text-soft); font-weight: normal;">({len(items)})</span></h3>', unsafe_allow_html=True)
+            safe_cat = sanitize_html_text(cat, max_len=80)
+            st.markdown(
+                f'<h3 style="margin-top: 2rem;">{safe_cat} <span style="font-size: 0.9rem; color: var(--text-soft); font-weight: normal;">({len(items)})</span></h3>',
+                unsafe_allow_html=True,
+            )
             items = sorted(items, key=lambda x: x['name'])
             
             cols = st.columns(3)
             for idx, item in enumerate(items):
                 with cols[idx % 3]:
+                    safe_name = sanitize_html_text(item.get("name", "Acteur"), max_len=90)
+                    safe_desc = sanitize_html_text(item.get("desc", "Acteur validé"), max_len=240)
+                    safe_url = sanitize_external_url(item.get("url"))
                     st.markdown(
                         f"""
                         <div class="premium-card animate-in" style="padding: 20px; height: 180px; margin-bottom: 20px;">
-                            <h4 style="margin: 0; color: var(--primary); font-size: 1rem;">{item['name']}</h4>
-                            <p style="font-size: 0.8rem; color: var(--text-soft); height: 60px; overflow: hidden; margin: 10px 0;">{item['desc']}</p>
-                            <a href="{item['url']}" target="_blank" style="text-decoration: none; color: var(--secondary); font-size: 0.8rem; font-weight: 700;">VISITER →</a>
+                            <h4 style="margin: 0; color: var(--primary); font-size: 1rem;">{safe_name}</h4>
+                            <p style="font-size: 0.8rem; color: var(--text-soft); height: 60px; overflow: hidden; margin: 10px 0;">{safe_desc}</p>
+                            <a href="{safe_url}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: var(--secondary); font-size: 0.8rem; font-weight: 700;">VISITER →</a>
                         </div>
                         """,
                         unsafe_allow_html=True

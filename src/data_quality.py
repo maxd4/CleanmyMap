@@ -48,6 +48,16 @@ def validate_submission_inputs(data: dict[str, Any]) -> list[str]:
     return errors
 
 
+def validate_feedback_input(feedback_text: Any) -> list[str]:
+    errors: list[str] = []
+    text = str(feedback_text or "").strip()
+    if not text:
+        errors.append("Merci de renseigner votre retour avant l'envoi.")
+    elif len(text) > 4000:
+        errors.append("Votre message est trop long (4000 caractères max).")
+    return errors
+
+
 def get_weight_conversion_hints(dechets_kg: float) -> dict[str, float]:
     return {
         "sacs_30l": round(dechets_kg / 6.0, 1),

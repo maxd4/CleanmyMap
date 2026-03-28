@@ -1,0 +1,63 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "admin.seed@cleanmymap.local",
+      "role": "admin"
+    }
+  ],
+  "messages": [
+    {
+      "id": 1,
+      "author": "Equipe Demo",
+      "content": "Nettoyage de demonstration anonymise",
+      "image_url": "",
+      "created_at": "2026-01-10T09:00:00"
+    }
+  ],
+  "submissions": [
+    {
+      "id": "seed-approved-001",
+      "nom": "Benevole Demo",
+      "association": "Association Demo",
+      "type_lieu": "Parc",
+      "adresse": "Quartier Demo",
+      "date": "2026-01-12",
+      "benevoles": 6,
+      "temps_min": 90,
+      "megots": 850,
+      "dechets_kg": 14.5,
+      "source": "seed",
+      "status": "approved",
+      "lat": 48.8566,
+      "lon": 2.3522,
+      "created_at": "2026-01-12T10:00:00"
+    },
+    {
+      "id": "seed-pending-001",
+      "nom": "Benevole Test",
+      "association": "Collectif Test",
+      "type_lieu": "Rue",
+      "adresse": "Zone Test",
+      "date": "2026-01-13",
+      "benevoles": 3,
+      "temps_min": 45,
+      "megots": 220,
+      "dechets_kg": 3.2,
+      "source": "seed",
+      "status": "pending",
+      "lat": 48.857,
+      "lon": 2.353,
+      "created_at": "2026-01-13T11:00:00"
+    }
+  ],
+  "volunteer_feedback": [
+    {
+      "id": 1,
+      "author": "Volontaire Demo",
+      "category": "suggestion",
+      "content": "Ajouter un filtre arrondissement",
+      "created_at": "2026-01-14T08:00:00"
+    }
+  ]
+}

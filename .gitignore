@@ -10,3 +10,10 @@ app.py.conflict_backup
 .streamlit_pid.txt
 streamlit.out.log
 streamlit.err.log
+artifacts/
+data/cleanmymap.db
+data/cleanmymap.db-wal
+data/cleanmymap.db-shm
+runtime/
+*.db-wal
+*.db-shm
