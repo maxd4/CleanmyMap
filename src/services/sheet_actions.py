@@ -70,7 +70,7 @@ def load_sheet_actions(
 ) -> list[dict]:
     """Load and normalize actions from the public Google Sheet."""
     try:
-        raw = pd.read_csv(sheet_csv_url(sheet_url))
+        raw = pd.read_csv(sheet_csv_url(sheet_url), encoding="utf-8")
         raw.columns = raw.columns.str.strip()
         raw = sanitize_dataframe_text(raw)
     except (pd.errors.ParserError, OSError, ValueError, TypeError) as exc:
@@ -84,14 +84,15 @@ def load_sheet_actions(
         )
         return []
 
-    c_date = find_matching_column(raw, ["date", "jour"])
-    c_addr = find_matching_column(raw, ["adresse", "gps", "lieu", "coordo"])
-    c_type = find_matching_column(raw, ["type", "categorie", "catégorie"])
-    c_assoc = find_matching_column(raw, ["association", "asso"])
-    c_megots = find_matching_column(raw, ["megots", "mégots", "nbr megots"])
-    c_dechets = find_matching_column(raw, ["dechets", "déchets", "kg", "poids"])
-    c_ben = find_matching_column(raw, ["benevoles", "bénévoles", "participants", "nombre benevoles"])
-    c_propre = find_matching_column(raw, ["liste lieux propres", "lieux_propres", "propres"])
+    c_date = find_matching_column(raw, ["date", "jour", "timestamp", "moment"])
+    c_addr = find_matching_column(raw, ["adresse", "gps", "lieu", "coordo", "location", "endroit", "place"])
+    c_type = find_matching_column(raw, ["type", "categorie", "catégorie", "nature"])
+    c_assoc = find_matching_column(raw, ["association", "asso", "org", "structure"])
+    c_megots = find_matching_column(raw, ["megots", "mégots", "nbr megots", "nb megots", "cigarettes"])
+    c_dechets = find_matching_column(raw, ["dechets", "déchets", "kg", "poids", "mass", "masse"])
+    c_ben = find_matching_column(raw, ["benevoles", "bénévoles", "participants", "nombre benevoles", "nb benevoles", "volunteers"])
+    c_propre = find_matching_column(raw, ["liste lieux propres", "lieux_propres", "propres", "clean_zones"])
+
 
     known_pool = [str(a.get("adresse", "")) for a in approved_submissions if a.get("adresse")]
     now_value = datetime.now().isoformat(timespec="seconds")

@@ -5,17 +5,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-TEXT_EXTENSIONS = {".py", ".md", ".txt", ".json", ".yml", ".yaml", ".js", ".cjs", ".toml"}
-IGNORED_DIRS = {
-    ".git",
-    "__pycache__",
-    ".pytest_cache",
-    "node_modules",
-    "playwright-report",
-    "test-results",
-    "output",
-    "CleanmyMap-sync",
-}
+from src.maintenance._common import TEXT_EXTENSIONS, IGNORED_DIRS, iter_text_files
 UTF8_BOM = b"\xef\xbb\xbf"
 
 
@@ -64,16 +54,7 @@ def compute_cooldown_remaining_seconds(
 
 
 def _iter_text_files(root: Path) -> list[Path]:
-    files: list[Path] = []
-    for path in root.rglob("*"):
-        if not path.is_file():
-            continue
-        if path.suffix.lower() not in TEXT_EXTENSIONS:
-            continue
-        if any(part in IGNORED_DIRS for part in path.parts):
-            continue
-        files.append(path)
-    return files
+    return iter_text_files(root)
 
 
 def _rule_runtime_artifacts(root: Path) -> CleanupAuditRuleResult:

@@ -9,20 +9,9 @@ from pathlib import Path
 from typing import Any
 
 from src.maintenance.cleanup_audit import run_cleanup_audit
+from src.maintenance._common import TEXT_EXTENSIONS, IGNORED_DIRS, iter_text_files
 
 DEFAULT_BASELINE_RELATIVE_PATH = Path("docs/wiki/ui_inventory.baseline.json")
-TEXT_EXTENSIONS = {".py", ".md", ".txt", ".json", ".yml", ".yaml", ".js", ".cjs", ".toml"}
-IGNORED_DIRS = {
-    ".git",
-    "__pycache__",
-    ".pytest_cache",
-    "node_modules",
-    "playwright-report",
-    "test-results",
-    "output",
-    "CleanmyMap-sync",
-    "data",
-}
 MOJIBAKE_PATTERNS = (
     "\u00c3",
     "\u00e2\u20ac\u2122",
@@ -91,16 +80,7 @@ def _file_sha256(path: Path) -> str:
 
 
 def _iter_text_files(root: Path) -> list[Path]:
-    files: list[Path] = []
-    for path in root.rglob("*"):
-        if not path.is_file():
-            continue
-        if path.suffix.lower() not in TEXT_EXTENSIONS:
-            continue
-        if any(part in IGNORED_DIRS for part in path.parts):
-            continue
-        files.append(path)
-    return files
+    return iter_text_files(root)
 
 
 def collect_text_quality_issues(root: Path) -> dict[str, int]:
