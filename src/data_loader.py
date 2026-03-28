@@ -1,5 +1,6 @@
 import pandas as pd
 from .config import MAX_RETRIES
+from .logging_utils import log_exception
 
 
 class DataLoader:
@@ -19,6 +20,13 @@ class DataLoader:
                 df = pd.read_csv(csv_url)
                 df.columns = df.columns.str.strip()
                 return df
-            except Exception as exc:  # noqa: BLE001
+            except (pd.errors.ParserError, OSError, ValueError, TypeError) as exc:
+                log_exception(
+                    component="data_loader",
+                    action="load_google_sheet",
+                    exc=exc,
+                    message="Sheet loading retry failed",
+                    severity="warning",
+                )
                 last_error = exc
         raise RuntimeError(f"Impossible de charger la sheet: {last_error}")

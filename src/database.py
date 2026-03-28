@@ -1,11 +1,87 @@
 import sqlite3
 import os
 from datetime import datetime
+from pathlib import Path
+from typing import Mapping
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "cleanmymap.db")
+from src.logging_utils import log_event, log_exception
+
+
+def resolve_db_path(
+    env: Mapping[str, str] | None = None,
+    *,
+    home: Path | None = None,
+    platform_name: str | None = None,
+) -> Path:
+    source = dict(env or os.environ)
+    configured = str(source.get("CLEANMYMAP_DB_PATH", "")).strip()
+    if configured:
+        return Path(configured).expanduser()
+
+    target_home = home or Path.home()
+    platform_key = (platform_name or os.name).lower()
+    if platform_key == "nt":
+        local_app_data = source.get("LOCALAPPDATA", "").strip()
+        base = Path(local_app_data).expanduser() if local_app_data else target_home / "AppData" / "Local"
+        return base / "CleanMyMap" / "runtime" / "cleanmymap.db"
+
+    state_home = source.get("XDG_STATE_HOME", "").strip()
+    base = Path(state_home).expanduser() if state_home else target_home / ".local" / "state"
+    return base / "cleanmymap" / "runtime" / "cleanmymap.db"
+
+
+DB_PATH = str(resolve_db_path())
+_LOGGED_DB_PATH: str | None = None
+
+
+def get_db_path() -> Path:
+    return Path(str(DB_PATH)).expanduser()
+
 
 def get_connection():
-    return sqlite3.connect(DB_PATH)
+    global _LOGGED_DB_PATH
+    db_path = get_db_path()
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    db_path_text = str(db_path)
+    if _LOGGED_DB_PATH != db_path_text:
+        log_event(
+            event="db_path_resolved",
+            severity="info",
+            component="database",
+            action="connect",
+            message="Using SQLite runtime database path",
+            context={"db_path": db_path_text},
+        )
+        _LOGGED_DB_PATH = db_path_text
+    return sqlite3.connect(db_path_text)
+
+
+def _alter_table_add_column(cursor: sqlite3.Cursor, statement: str, column_name: str) -> bool:
+    """Try to add a column and keep duplicate-column migration explicit in logs."""
+    try:
+        cursor.execute(statement)
+        return True
+    except sqlite3.OperationalError as exc:
+        message = str(exc).lower()
+        if "duplicate column name" in message:
+            log_event(
+                event="db_schema_migration",
+                severity="debug",
+                component="database",
+                action="alter_table_add_column",
+                message="Column already present",
+                context={"column": column_name},
+            )
+            return False
+        log_exception(
+            component="database",
+            action="alter_table_add_column",
+            exc=exc,
+            message="Unexpected schema migration error",
+            context={"column": column_name, "statement": statement},
+            severity="error",
+        )
+        raise
 
 def init_db():
     conn = get_connection()
@@ -31,11 +107,11 @@ def init_db():
         )
     ''')
     # Ajout rétrocompatible de la colonne image_url si la table existe déjà sans cette colonne
-    try:
-        c.execute("ALTER TABLE messages ADD COLUMN image_url TEXT")
-    except sqlite3.OperationalError:
-        # Colonne déjà existante, on ignore l'erreur
-        pass
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE messages ADD COLUMN image_url TEXT",
+        "messages.image_url",
+    )
     
     # Table pour les alertes (météo, crues, etc.)
     c.execute('''
@@ -87,42 +163,51 @@ def init_db():
     ''')
     
     # Ajout rétrocompatible des colonnes si nécessaire
-    try:
-        c.execute("ALTER TABLE submissions ADD COLUMN description TEXT")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute("ALTER TABLE submissions ADD COLUMN website_url TEXT")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute("ALTER TABLE submissions ADD COLUMN tags TEXT")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute("ALTER TABLE submissions ADD COLUMN adresse_depart TEXT")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute("ALTER TABLE submissions ADD COLUMN adresse_arrivee TEXT")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute("ALTER TABLE submissions ADD COLUMN lat_depart REAL")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute("ALTER TABLE submissions ADD COLUMN lon_depart REAL")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute("ALTER TABLE submissions ADD COLUMN lat_arrivee REAL")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        c.execute("ALTER TABLE submissions ADD COLUMN lon_arrivee REAL")
-    except sqlite3.OperationalError:
-        pass
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE submissions ADD COLUMN description TEXT",
+        "submissions.description",
+    )
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE submissions ADD COLUMN website_url TEXT",
+        "submissions.website_url",
+    )
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE submissions ADD COLUMN tags TEXT",
+        "submissions.tags",
+    )
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE submissions ADD COLUMN adresse_depart TEXT",
+        "submissions.adresse_depart",
+    )
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE submissions ADD COLUMN adresse_arrivee TEXT",
+        "submissions.adresse_arrivee",
+    )
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE submissions ADD COLUMN lat_depart REAL",
+        "submissions.lat_depart",
+    )
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE submissions ADD COLUMN lon_depart REAL",
+        "submissions.lon_depart",
+    )
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE submissions ADD COLUMN lat_arrivee REAL",
+        "submissions.lat_arrivee",
+    )
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE submissions ADD COLUMN lon_arrivee REAL",
+        "submissions.lon_arrivee",
+    )
 
     # Table pour les abonnés à la newsletter
     c.execute('''
@@ -237,21 +322,59 @@ def init_db():
     )
     c.execute(
         '''
+        CREATE TABLE IF NOT EXISTS volunteer_feedback (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            author TEXT,
+            category TEXT NOT NULL DEFAULT 'suggestion',
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        '''
+    )
+    c.execute(
+        '''
         CREATE INDEX IF NOT EXISTS idx_ux_events_created_at
         ON ux_events (created_at DESC)
         '''
     )
+    c.execute(
+        '''
+        CREATE INDEX IF NOT EXISTS idx_volunteer_feedback_created_at
+        ON volunteer_feedback (created_at DESC)
+        '''
+    )
+    c.execute(
+        '''
+        CREATE INDEX IF NOT EXISTS idx_submissions_status_created_at
+        ON submissions (status, created_at DESC)
+        '''
+    )
+    c.execute(
+        '''
+        CREATE INDEX IF NOT EXISTS idx_submissions_created_at
+        ON submissions (created_at DESC)
+        '''
+    )
+    c.execute(
+        '''
+        CREATE INDEX IF NOT EXISTS idx_submissions_date
+        ON submissions (date)
+        '''
+    )
 
     # Ajout de la colonne eco_points à submissions si elle n'existe pas
-    try:
-        c.execute("ALTER TABLE submissions ADD COLUMN eco_points INTEGER DEFAULT 0")
-    except sqlite3.OperationalError: pass
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE submissions ADD COLUMN eco_points INTEGER DEFAULT 0",
+        "submissions.eco_points",
+    )
 
     # Date de validation (pour KPI de délai de modération)
-    try:
-        c.execute("ALTER TABLE submissions ADD COLUMN validated_at TIMESTAMP")
-    except sqlite3.OperationalError:
-        pass
+    _alter_table_add_column(
+        c,
+        "ALTER TABLE submissions ADD COLUMN validated_at TIMESTAMP",
+        "submissions.validated_at",
+    )
 
     conn.commit()
     conn.close()
@@ -577,6 +700,32 @@ def calculate_user_points(user_name):
     conn.close()
     return points
 
+
+def get_user_impact_stats(user_name):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT
+            COALESCE(SUM(eco_points), 0) AS total_points,
+            COALESCE(SUM(dechets_kg), 0) AS total_kg,
+            COUNT(*) AS nb_actions
+        FROM submissions
+        WHERE status = 'approved' AND LOWER(COALESCE(nom, '')) = LOWER(?)
+        """,
+        (str(user_name or "").strip(),),
+    )
+    row = c.fetchone()
+    conn.close()
+    return {
+        "nom": str(user_name or "").strip(),
+        "total_points": int((row["total_points"] or 0) if row else 0),
+        "total_kg": float((row["total_kg"] or 0.0) if row else 0.0),
+        "nb_actions": int((row["nb_actions"] or 0) if row else 0),
+    }
+
+
 def get_leaderboard(limit=10):
     conn = get_connection()
     conn.row_factory = sqlite3.Row
@@ -737,3 +886,43 @@ def get_ux_error_stats(days=30):
         "broken_actions": int((row["broken_actions"] or 0) if row else 0),
         "top_invalid_fields": top_fields,
     }
+
+
+def add_volunteer_feedback(author, content, category="suggestion"):
+    safe_author = (author or "").strip()
+    safe_content = (content or "").strip()
+    safe_category = (category or "suggestion").strip().lower()
+    if safe_category not in {"suggestion", "bug"}:
+        safe_category = "suggestion"
+
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        """
+        INSERT INTO volunteer_feedback (author, category, content)
+        VALUES (?, ?, ?)
+        """,
+        (safe_author, safe_category, safe_content),
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_volunteer_feedback(limit=200):
+    conn = get_connection()
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute(
+        """
+        SELECT id, author, category, content, created_at
+        FROM volunteer_feedback
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?
+        """,
+        (int(limit),),
+    )
+    rows = c.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+

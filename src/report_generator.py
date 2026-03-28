@@ -7,6 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from fpdf import FPDF
 from .config import OUTPUT_DIR, IMPACT_CONSTANTS
+from .logging_utils import log_exception
 
 # --- CHARTE GRAPHIQUE OFFICIELLE ---
 COLORS = {
@@ -136,8 +137,14 @@ class PDFReport(FPDF):
             d_min = city_df['date'].min().strftime('%d/%m/%Y')
             d_max = city_df['date'].max().strftime('%d/%m/%Y')
             self.cell(0, 10, safe_text(f"PÉRIODE : {d_min} AU {d_max}"), ln=True, align='C')
-        except Exception:
-            pass
+        except (AttributeError, TypeError, ValueError) as exc:
+            log_exception(
+                component="report_generator",
+                action="cover_period_range",
+                exc=exc,
+                message="Unable to compute report period range",
+                severity="warning",
+            )
         assos = ", ".join(city_df['association'].dropna().unique()[:4])
         self.set_font('Helvetica', '', 10); self.set_text_color(*COLORS['text_light'])
         self.cell(0, 8, safe_text(f"Structure porteuse : {assos}"), ln=True, align='C')
@@ -322,18 +329,31 @@ class PDFReport(FPDF):
                 )
             
             plt.title(f"Dynamique Temporelle - {city_name.upper()}", fontsize=14, pad=20, fontweight='bold', color='#1e293b')
-            ax1.set_xticklabels(monthly.index, rotation=0)
+            ax1.tick_params(axis='x', rotation=0)
             
             path = os.path.join(OUTPUT_DIR, f"perf_{city_name}.png")
             plt.tight_layout(); plt.savefig(path, dpi=200, transparent=True); plt.close()
             self.image(path, x=15, w=180); 
             if not self.is_dummy: os.remove(path)
 
+        trend_note = "Données insuffisantes pour établir une tendance robuste."
+        if len(monthly) >= 2:
+            first_megots = float(monthly['megots'].iloc[0] or 0.0)
+            last_megots = float(monthly['megots'].iloc[-1] or 0.0)
+            first_kg = float(monthly['dechets_kg'].iloc[0] or 0.0)
+            last_kg = float(monthly['dechets_kg'].iloc[-1] or 0.0)
+            megots_delta = ((last_megots - first_megots) / max(first_megots, 1.0)) * 100.0
+            kg_delta = ((last_kg - first_kg) / max(first_kg, 1.0)) * 100.0
+            trend_note = (
+                f"Évolution période observée - Mégots: {megots_delta:+.1f}% ; "
+                f"Déchets (kg): {kg_delta:+.1f}%."
+            )
+
         self.ln(10)
         self.set_font('Helvetica', 'B', 12); self.cell(0, 10, "LECTURE DE LA SAISONNALITÉ", ln=True)
         self.set_font('Helvetica', '', 11); self.multi_cell(0, 7, safe_text(
-            "L'analyse montre des pics clairs lors des périodes de forte affluence (printemps/été). "
-            "La performance globale est jugée EXCELLENTE avec une régularité d'action remarquable."
+            "L'analyse met en évidence la dynamique mensuelle observée sur la période. "
+            f"{trend_note}"
         ))
 
     def create_trends_analysis(self, city_name, city_df):
@@ -343,11 +363,39 @@ class PDFReport(FPDF):
         
         self.section_header("4. ANALYSE PRÉDICTIVE", "Courbes de tendance et projections territoriales")
         
-        # Simple Regression simulation
-        self.set_font('Helvetica', '', 11); self.multi_cell(0, 7, safe_text(
-            "Sur la base des 12 derniers mois, nous projetons une augmentation de la charge polluante "
-            "de +15% pour le trimestre suivant si aucun dispositif structurel n'est mis en place."
-        ))
+        work = city_df.copy()
+        work['date'] = pd.to_datetime(work.get('date'), errors='coerce')
+        work = work.dropna(subset=['date'])
+        work['month_yr'] = work['date'].dt.strftime('%Y-%m')
+        monthly = (
+            work.groupby('month_yr', as_index=False)
+            .agg(megots=('megots', 'sum'), dechets_kg=('dechets_kg', 'sum'))
+            .sort_values('month_yr')
+        )
+
+        projection_text = "Données insuffisantes pour proposer une projection fiable."
+        if len(monthly) >= 6:
+            recent = monthly.tail(3)
+            previous = monthly.iloc[-6:-3]
+            recent_megots = float(recent['megots'].mean() or 0.0)
+            previous_megots = float(previous['megots'].mean() or 0.0)
+            delta = ((recent_megots - previous_megots) / max(previous_megots, 1.0)) * 100.0
+            direction = "hausse" if delta > 2 else "baisse" if delta < -2 else "stabilité"
+            projection_text = (
+                "Projection courte (3 prochains mois, extrapolation linéaire simple): "
+                f"{direction} estimée à {delta:+.1f}% sur le volume de mégots collectés. "
+                "Cette estimation doit être confirmée par le contexte terrain."
+            )
+        elif len(monthly) >= 2:
+            prev_val = float(monthly['megots'].iloc[-2] or 0.0)
+            last_val = float(monthly['megots'].iloc[-1] or 0.0)
+            delta = ((last_val - prev_val) / max(prev_val, 1.0)) * 100.0
+            projection_text = (
+                "Projection préliminaire (signal faible): "
+                f"variation mensuelle récente de {delta:+.1f}% sur les mégots."
+            )
+
+        self.set_font('Helvetica', '', 11); self.multi_cell(0, 7, safe_text(projection_text))
         
         self.set_fill_color(254, 242, 242); self.set_draw_color(*COLORS['danger'])
         self.rect(10, self.get_y()+5, 190, 30, 'FD')
@@ -398,7 +446,8 @@ class PDFReport(FPDF):
         now_ts = pd.Timestamp.now()
         recent_count = int((date_col >= (now_ts - pd.Timedelta(days=30))).fillna(False).sum()) if len(work_df) else 0
 
-        clean_col = work_df.get("est_propre", pd.Series(dtype=bool)).fillna(False).astype(bool)
+        clean_raw = work_df.get("est_propre", pd.Series(index=work_df.index, dtype="object"))
+        clean_col = clean_raw.astype("string").str.strip().str.lower().isin({"true", "1", "yes", "oui", "vrai"})
         type_col = work_df.get("type_lieu", pd.Series(dtype=str)).fillna("").astype(str)
         clean_count = int(clean_col.sum())
         partner_count = int(type_col.str.contains("Engag", case=False, na=False).sum())
@@ -503,9 +552,10 @@ class PDFReport(FPDF):
         self.cell(140, 10, "Lieu d'Intervention", 1, 0, 'L', True); self.cell(50, 10, "Indice ICP", 1, 1, 'C', True)
         
         self.set_font('Helvetica', '', 10); self.set_text_color(*COLORS['text'])
+        max_megots = float(top_10.max()) if not top_10.empty else 0.0
         for l, v in top_10.items():
             self.cell(140, 8, safe_text(str(l)[:65]), 1)
-            icp = min(100, int(v/100 + 40)) # Fake ICP formula
+            icp = int(round((float(v) / max(max_megots, 1.0)) * 100))
             self.set_font('Helvetica', 'B', 10); self.cell(50, 8, f"{icp}/100", 1, 1, 'C'); self.set_font('Helvetica', '', 10)
 
     def create_volunteer_analysis(self, city_df):

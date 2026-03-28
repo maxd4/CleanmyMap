@@ -58,7 +58,7 @@ def render_partner_dashboard(all_submissions_df: pd.DataFrame, approved_df: pd.D
     m4.metric("Impact / €", f"{kpis['impact_kg_per_eur']:.2f} kg/€")
 
     st.caption(
-        f"Comparatif période précédente — kg: {prev_kpis['total_kg']:.1f} → {kpis['total_kg']:.1f} | "
+        f"Comparatif période précédente - kg: {prev_kpis['total_kg']:.1f} → {kpis['total_kg']:.1f} | "
         f"mégots: {int(prev_kpis['total_megots'])} → {int(kpis['total_megots'])}"
     )
 
