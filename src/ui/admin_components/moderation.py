@@ -15,6 +15,8 @@ from src.repositories.submissions_repository import fetch_pending_submissions
 class AdminModerationContext:
     auto_enrich_actor: Callable[..., bool]
     check_flood_risk: Callable[..., bool]
+    add_admin_audit_log: Callable[..., Any]
+    admin_user: str
 
 
 def _prevalidate_submission(entry: dict[str, Any]) -> SubmissionPrecheck:
@@ -137,6 +139,7 @@ def render_admin_moderation(ctx: AdminModerationContext) -> None:
         for row in pending:
             if row.get("id") in selected_ids:
                 update_submission_status(row["id"], "approved")
+                ctx.add_admin_audit_log(actor=ctx.admin_user, action="Approbation en lot", submission_id=row.get("id"))
                 if row.get("type_lieu") in actor_types:
                     ctx.auto_enrich_actor(row["id"], row.get("association", ""), row.get("type_lieu", ""), row.get("adresse", ""))
                 approved_count += 1
@@ -148,6 +151,7 @@ def render_admin_moderation(ctx: AdminModerationContext) -> None:
         for row in pending:
             if row.get("id") in selected_ids:
                 update_submission_status(row["id"], "rejected")
+                ctx.add_admin_audit_log(actor=ctx.admin_user, action="Refus en lot", submission_id=row.get("id"))
                 rejected_count += 1
         st.warning(f"{rejected_count} demande(s) refusee(s) en lot.")
         st.rerun()
@@ -187,13 +191,16 @@ def render_admin_moderation(ctx: AdminModerationContext) -> None:
                 st.caption("Raisons: " + " | ".join(row_precheck.reasons))
 
             a, r = st.columns(2)
-            if a.button("✅ Approuver", key=f"approve_{row['id']}", width="stretch"):
+            if a.button("✅ Approuver", key=f"approve_{row['id']}", use_container_width=True):
                 update_submission_status(row["id"], "approved")
+                ctx.add_admin_audit_log(actor=ctx.admin_user, action="Approuver", submission_id=row.get("id"))
                 if row.get("type_lieu") in actor_types:
                     with st.spinner(f"Recherche d'informations pour {row['association']}..."):
                         ctx.auto_enrich_actor(row["id"], row["association"], row["type_lieu"], row["adresse"])
                 st.rerun()
 
-            if r.button("❌ Refuser", key=f"reject_{row['id']}", width="stretch"):
+            if r.button("❌ Refuser", key=f"reject_{row['id']}", use_container_width=True):
                 update_submission_status(row["id"], "rejected")
+                ctx.add_admin_audit_log(actor=ctx.admin_user, action="Refuser", submission_id=row.get("id"))
                 st.rerun()
+

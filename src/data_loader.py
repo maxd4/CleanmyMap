@@ -17,7 +17,7 @@ class DataLoader:
         last_error = None
         for _ in range(MAX_RETRIES):
             try:
-                df = pd.read_csv(csv_url)
+                df = pd.read_csv(csv_url, encoding="utf-8")
                 df.columns = df.columns.str.strip()
                 return df
             except (pd.errors.ParserError, OSError, ValueError, TypeError) as exc:

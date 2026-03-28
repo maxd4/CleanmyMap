@@ -9,28 +9,7 @@ from fpdf import FPDF
 
 from src.config import IMPACT_CONSTANTS, OUTPUT_DIR
 from src.models import CriticalZoneStat
-
-
-def normalize_bool_flag(value) -> bool:
-    """Normalize bool-ish values coming from forms, sheets or DB."""
-    if value is None:
-        return False
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)):
-        return bool(value)
-    return str(value).strip().lower() in {
-        "1",
-        "true",
-        "vrai",
-        "yes",
-        "oui",
-        "y",
-        "clean",
-        "propre",
-        "zone propre",
-        "signalement propre",
-    }
+from src.utils import normalize_bool_flag, _txt
 
 
 def get_impact_sources(lang: str = "fr") -> str:

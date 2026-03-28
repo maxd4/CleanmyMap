@@ -1,132 +1,46 @@
-import sqlite3
 import os
+import sqlite3
+import pandas as pd
 from datetime import datetime
 from pathlib import Path
-from typing import Mapping
 
-from src.logging_utils import log_event, log_exception
+# --- CORE DATABASE SETUP & CONFIGURATION ---
 
+def resolve_db_path():
+    """Détermine le chemin absolu de la base de données."""
+    env_path = os.getenv("SQLITE_DB_PATH")
+    if env_path:
+        return os.path.abspath(env_path)
+    # Fallback par défaut dans le dossier data du projet
+    root = Path(__file__).parent.parent
+    data_dir = root / "data"
+    data_dir.mkdir(exist_ok=True)
+    return str(data_dir / "cleanmymap.db")
 
-def resolve_db_path(
-    env: Mapping[str, str] | None = None,
-    *,
-    home: Path | None = None,
-    platform_name: str | None = None,
-) -> Path:
-    source = dict(env or os.environ)
-    configured = str(source.get("CLEANMYMAP_DB_PATH", "")).strip()
-    if configured:
-        return Path(configured).expanduser()
-
-    target_home = home or Path.home()
-    platform_key = (platform_name or os.name).lower()
-    if platform_key == "nt":
-        local_app_data = source.get("LOCALAPPDATA", "").strip()
-        base = Path(local_app_data).expanduser() if local_app_data else target_home / "AppData" / "Local"
-        return base / "CleanMyMap" / "runtime" / "cleanmymap.db"
-
-    state_home = source.get("XDG_STATE_HOME", "").strip()
-    base = Path(state_home).expanduser() if state_home else target_home / ".local" / "state"
-    return base / "cleanmymap" / "runtime" / "cleanmymap.db"
-
-
-DB_PATH = str(resolve_db_path())
-_LOGGED_DB_PATH: str | None = None
-
-
-def get_db_path() -> Path:
-    return Path(str(DB_PATH)).expanduser()
-
+def get_db_path():
+    return resolve_db_path()
 
 def get_connection():
-    global _LOGGED_DB_PATH
-    db_path = get_db_path()
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    db_path_text = str(db_path)
-    if _LOGGED_DB_PATH != db_path_text:
-        log_event(
-            event="db_path_resolved",
-            severity="info",
-            component="database",
-            action="connect",
-            message="Using SQLite runtime database path",
-            context={"db_path": db_path_text},
-        )
-        _LOGGED_DB_PATH = db_path_text
-    return sqlite3.connect(db_path_text)
+    """Crée une connexion SQLite vers la base de données."""
+    conn = sqlite3.connect(get_db_path())
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
-
-def _alter_table_add_column(cursor: sqlite3.Cursor, statement: str, column_name: str) -> bool:
-    """Try to add a column and keep duplicate-column migration explicit in logs."""
+def _alter_table_add_column(cursor, sql, column_id):
+    """Ajout sécurisé de colonne (évite les erreurs si la colonne existe déjà)."""
     try:
-        cursor.execute(statement)
-        return True
-    except sqlite3.OperationalError as exc:
-        message = str(exc).lower()
-        if "duplicate column name" in message:
-            log_event(
-                event="db_schema_migration",
-                severity="debug",
-                component="database",
-                action="alter_table_add_column",
-                message="Column already present",
-                context={"column": column_name},
-            )
-            return False
-        log_exception(
-            component="database",
-            action="alter_table_add_column",
-            exc=exc,
-            message="Unexpected schema migration error",
-            context={"column": column_name, "statement": statement},
-            severity="error",
-        )
-        raise
+        cursor.execute(sql)
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" not in str(e).lower():
+            from src.logging_utils import log_exception
+            log_exception(component="database", action="migration", exc=e, message=f"Migration error for {column_id}")
 
 def init_db():
+    """Initialise le schéma de la base de données et applique les migrations."""
     conn = get_connection()
     c = conn.cursor()
     
-    # Table pour les utilisateurs administratifs
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            role TEXT DEFAULT 'admin'
-        )
-    ''')
-    
-    # Table pour le mur communautaire (messages)
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            author TEXT NOT NULL,
-            content TEXT NOT NULL,
-            image_url TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    # Ajout rétrocompatible de la colonne image_url si la table existe déjà sans cette colonne
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE messages ADD COLUMN image_url TEXT",
-        "messages.image_url",
-    )
-    
-    # Table pour les alertes (météo, crues, etc.)
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS alerts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            location TEXT NOT NULL,
-            type TEXT NOT NULL,
-            message TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Table pour les soumissions (actions de nettoyage et acteurs engagés)
-    # status: 'pending', 'approved', 'rejected'
-    # source: 'formulaire', 'google_sheet', 'simulation'
+    # Table principale des signalements/nettoyages (Submissions)
     c.execute('''
         CREATE TABLE IF NOT EXISTS submissions (
             id TEXT PRIMARY KEY,
@@ -158,771 +72,72 @@ def init_db():
             status TEXT DEFAULT 'pending',
             description TEXT,
             website_url TEXT,
+            eco_points INTEGER DEFAULT 0,
+            validated_at TIMESTAMP,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
     
-    # Ajout rétrocompatible des colonnes si nécessaire
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE submissions ADD COLUMN description TEXT",
-        "submissions.description",
-    )
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE submissions ADD COLUMN website_url TEXT",
-        "submissions.website_url",
-    )
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE submissions ADD COLUMN tags TEXT",
-        "submissions.tags",
-    )
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE submissions ADD COLUMN adresse_depart TEXT",
-        "submissions.adresse_depart",
-    )
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE submissions ADD COLUMN adresse_arrivee TEXT",
-        "submissions.adresse_arrivee",
-    )
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE submissions ADD COLUMN lat_depart REAL",
-        "submissions.lat_depart",
-    )
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE submissions ADD COLUMN lon_depart REAL",
-        "submissions.lon_depart",
-    )
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE submissions ADD COLUMN lat_arrivee REAL",
-        "submissions.lat_arrivee",
-    )
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE submissions ADD COLUMN lon_arrivee REAL",
-        "submissions.lon_arrivee",
-    )
+    # Migrations incrémentales
+    cols = [
+        ("description", "TEXT"), ("website_url", "TEXT"), ("tags", "TEXT"),
+        ("adresse_depart", "TEXT"), ("adresse_arrivee", "TEXT"),
+        ("lat_depart", "REAL"), ("lon_depart", "REAL"),
+        ("lat_arrivee", "REAL"), ("lon_arrivee", "REAL"),
+        ("eco_points", "INTEGER DEFAULT 0"), ("validated_at", "TIMESTAMP"),
+        ("is_real", "BOOLEAN DEFAULT 1")
+    ]
 
-    # Table pour les abonnés à la newsletter
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS subscribers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    # Table pour les "Spots" (Clone Trash Spotter - Signalement rapide)
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS spots (
-            id TEXT PRIMARY KEY,
-            lat REAL,
-            lon REAL,
-            adresse TEXT,
-            type_dechet TEXT,
-            photo_url TEXT,
-            reporter_name TEXT,
-            status TEXT DEFAULT 'active', -- 'active' ou 'cleaned'
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
+    for col, ctype in cols:
+        _alter_table_add_column(c, f"ALTER TABLE submissions ADD COLUMN {col} {ctype}", f"submissions.{col}")
 
-    # Table pour les sorties communautaires
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS community_events (
-            id TEXT PRIMARY KEY,
-            title TEXT NOT NULL,
-            event_date TEXT NOT NULL,
-            location TEXT NOT NULL,
-            description TEXT,
-            organizer TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-    # RSVP par evenement
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS event_rsvps (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            event_id TEXT NOT NULL,
-            participant_name TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'yes',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(event_id, participant_name)
-        )
-    ''')
-
-    # Journal des relances J-1, une seule par evenement et par date
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS event_reminders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            event_id TEXT NOT NULL,
-            reminder_date TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(event_id, reminder_date)
-        )
-    ''')
-
-    # Table pour les récompenses et badges
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS user_rewards (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_name TEXT,
-            badge_name TEXT,
-            earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS mission_validations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            submission_id TEXT NOT NULL,
-            voter_name TEXT NOT NULL,
-            vote INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(submission_id, voter_name)
-        )
-    ''')
-
-    # Journal d'audit des actions administrateur
-    c.execute(
-        '''
-        CREATE TABLE IF NOT EXISTS admin_audit_log (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            actor TEXT,
-            action TEXT NOT NULL,
-            submission_id TEXT,
-            before_snapshot TEXT,
-            after_snapshot TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        '''
-    )
-
-    # Monitoring UX: erreurs de formulaire / actions cassees
-    c.execute(
-        '''
-        CREATE TABLE IF NOT EXISTS ux_events (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            event_type TEXT NOT NULL, -- invalid_field | broken_action | warning
-            tab_id TEXT,
-            action_name TEXT,
-            field_name TEXT,
-            message TEXT,
-            payload TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        '''
-    )
-    c.execute(
-        '''
-        CREATE TABLE IF NOT EXISTS volunteer_feedback (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            author TEXT,
-            category TEXT NOT NULL DEFAULT 'suggestion',
-            content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        '''
-    )
-    c.execute(
-        '''
-        CREATE INDEX IF NOT EXISTS idx_ux_events_created_at
-        ON ux_events (created_at DESC)
-        '''
-    )
-    c.execute(
-        '''
-        CREATE INDEX IF NOT EXISTS idx_volunteer_feedback_created_at
-        ON volunteer_feedback (created_at DESC)
-        '''
-    )
-    c.execute(
-        '''
-        CREATE INDEX IF NOT EXISTS idx_submissions_status_created_at
-        ON submissions (status, created_at DESC)
-        '''
-    )
-    c.execute(
-        '''
-        CREATE INDEX IF NOT EXISTS idx_submissions_created_at
-        ON submissions (created_at DESC)
-        '''
-    )
-    c.execute(
-        '''
-        CREATE INDEX IF NOT EXISTS idx_submissions_date
-        ON submissions (date)
-        '''
-    )
-
-    # Ajout de la colonne eco_points à submissions si elle n'existe pas
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE submissions ADD COLUMN eco_points INTEGER DEFAULT 0",
-        "submissions.eco_points",
-    )
-
-    # Date de validation (pour KPI de délai de modération)
-    _alter_table_add_column(
-        c,
-        "ALTER TABLE submissions ADD COLUMN validated_at TIMESTAMP",
-        "submissions.validated_at",
-    )
+    # Autres tables (Admin, Community, Spots)
+    c.execute("CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, author TEXT, content TEXT, image_url TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    c.execute("CREATE TABLE IF NOT EXISTS subscribers (id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT UNIQUE NOT NULL, subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    c.execute("CREATE TABLE IF NOT EXISTS spots (id TEXT PRIMARY KEY, lat REAL, lon REAL, adresse TEXT, type_dechet TEXT, photo_url TEXT, reporter_name TEXT, status TEXT DEFAULT 'active', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    c.execute("CREATE TABLE IF NOT EXISTS community_events (id TEXT PRIMARY KEY, title TEXT NOT NULL, event_date TEXT NOT NULL, location TEXT NOT NULL, description TEXT, organizer TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    c.execute("CREATE TABLE IF NOT EXISTS event_rsvps (id INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT NOT NULL, participant_name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'yes', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(event_id, participant_name))")
+    c.execute("CREATE TABLE IF NOT EXISTS admin_audit_log (id INTEGER PRIMARY KEY AUTOINCREMENT, actor TEXT, action TEXT NOT NULL, submission_id TEXT, before_snapshot TEXT, after_snapshot TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    c.execute("CREATE TABLE IF NOT EXISTS ux_events (id INTEGER PRIMARY KEY AUTOINCREMENT, event_type TEXT NOT NULL, tab_id TEXT, action_name TEXT, field_name TEXT, message TEXT, payload TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    c.execute("CREATE TABLE IF NOT EXISTS volunteer_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, author TEXT, category TEXT NOT NULL DEFAULT 'suggestion', content TEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
+    c.execute("CREATE TABLE IF NOT EXISTS mission_validations (id INTEGER PRIMARY KEY AUTOINCREMENT, submission_id TEXT NOT NULL, voter_name TEXT NOT NULL, vote INTEGER NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, UNIQUE(submission_id, voter_name))")
 
     conn.commit()
     conn.close()
 
-def insert_submission(data, status='pending'):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute('''
-        INSERT OR IGNORE INTO submissions (
-            id, nom, association, type_lieu, adresse, adresse_depart, adresse_arrivee, date, benevoles, temps_min,
-            megots, dechets_kg, plastique_kg, verre_kg, metal_kg, gps, lat, lon, lat_depart, lon_depart, lat_arrivee, lon_arrivee,
-            commentaire, est_propre, source, tags, status, description, website_url, eco_points, created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
-        data.get('id'), data.get('nom'), data.get('association'), data.get('type_lieu'),
-        data.get('adresse'), data.get('adresse_depart', data.get('adresse')), data.get('adresse_arrivee'),
-        data.get('date'), data.get('benevoles'), data.get('temps_min'),
-        data.get('megots'), data.get('dechets_kg'), data.get('plastique_kg', 0.0),
-        data.get('verre_kg', 0.0), data.get('metal_kg', 0.0), data.get('gps'),
-        data.get('lat'), data.get('lon'),
-        data.get('lat_depart', data.get('lat')), data.get('lon_depart', data.get('lon')),
-        data.get('lat_arrivee'), data.get('lon_arrivee'),
-        data.get('commentaire'), data.get('est_propre', False),
-        data.get('source', 'formulaire'), data.get('tags', ''), status, data.get('description'),
-        data.get('website_url'), data.get('eco_points', 0), data.get('submitted_at', datetime.now().isoformat())
-    ))
-    conn.commit()
-    conn.close()
+# --- REPOSITORIES PROXY (FACADE) ---
 
-def update_submission_status(sub_id, new_status):
-    conn = get_connection()
-    c = conn.cursor()
-    if new_status in ('approved', 'rejected'):
-        c.execute(
-            "UPDATE submissions SET status = ?, validated_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (new_status, sub_id),
-        )
-    else:
-        c.execute(
-            "UPDATE submissions SET status = ?, validated_at = NULL WHERE id = ?",
-            (new_status, sub_id),
-        )
-    conn.commit()
-    conn.close()
+from src.repositories import submissions_repo, community_repo, admin_repo
 
-def update_submission_data(sub_id, description, website_url):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(
-        "UPDATE submissions SET description = ?, website_url = ? WHERE id = ?",
-        (description, website_url, sub_id)
-    )
-    conn.commit()
-    conn.close()
+# Submissions
+def insert_submission(data, status='pending'): return submissions_repo.insert_submission(get_connection, data, status)
+def update_submission_status(sub_id, status): return submissions_repo.update_submission_status(get_connection, sub_id, status)
+def get_submissions_by_status(status=None): return submissions_repo.get_submissions_by_status(get_connection, status)
+def get_total_approved_stats(): return submissions_repo.get_total_approved_stats(get_connection)
+def get_user_impact_stats(user): return submissions_repo.get_user_impact_stats(get_connection, user)
+def get_leaderboard(limit=10): return submissions_repo.get_leaderboard(get_connection, limit)
 
-def get_submissions_by_status(status=None):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    if status is None:
-        c.execute("SELECT * FROM submissions ORDER BY created_at DESC")
-    else:
-        c.execute("SELECT * FROM submissions WHERE status = ? ORDER BY created_at DESC", (status,))
-    rows = c.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
+# Community
+def add_message(author, content, img=None): return community_repo.add_message(get_connection, author, content, img)
+def get_messages(limit=50): return community_repo.get_messages(get_connection, limit)
+def add_spot(lat, lon, adr, typ, rep, img=None): return community_repo.add_spot(get_connection, lat, lon, adr, typ, rep, img)
+def get_active_spots(): return community_repo.get_active_spots(get_connection)
+def update_spot_status(sid, status): return community_repo.update_spot_status(get_connection, sid, status)
+def add_community_event(t, d, l, desc="", org=""): return community_repo.add_community_event(get_connection, t, d, l, desc, org)
+def get_community_events(limit=50, past=False): return community_repo.get_community_events(get_connection, limit, past)
+def upsert_event_rsvp(eid, pname, status): return community_repo.upsert_event_rsvp(get_connection, eid, pname, status)
+def get_event_rsvp_summary(eid): return community_repo.get_event_rsvp_summary(get_connection, eid)
+def add_mission_validation(sid, vname, vote): return community_repo.add_mission_validation(get_connection, sid, vname, vote)
+def get_mission_validation_summary(sid): return community_repo.get_mission_validation_summary(get_connection, sid)
 
-def get_total_approved_stats():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("""
-        SELECT 
-            SUM(megots) as total_megots, 
-            SUM(dechets_kg) as total_dechets, 
-            SUM(benevoles) as total_benevoles
-        FROM submissions 
-        WHERE status = 'approved' AND est_propre = 0
-    """)
-    row = c.fetchone()
-    conn.close()
-    return {
-        'megots': row[0] or 0,
-        'dechets_kg': row[1] or 0.0,
-        'benevoles': row[2] or 0
-    }
-
-def add_message(author, content, image_url=None):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(
-        "INSERT INTO messages (author, content, image_url) VALUES (?, ?, ?)",
-        (author, content, image_url),
-    )
-    conn.commit()
-    conn.close()
-
-def get_messages():
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("SELECT * FROM messages ORDER BY created_at DESC LIMIT 50")
-    rows = c.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-def add_subscriber(email):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("INSERT OR IGNORE INTO subscribers (email) VALUES (?)", (email.strip().lower(),))
-    conn.commit()
-    conn.close()
-
-def get_all_subscribers():
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("SELECT email FROM subscribers")
-    rows = c.fetchall()
-    conn.close()
-    return [r[0] for r in rows]
-
-def get_top_contributors(limit=3):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("""
-        SELECT nom, COUNT(*) as nb_actions, SUM(dechets_kg) as total_kg 
-        FROM submissions 
-        WHERE status = 'approved' 
-        GROUP BY nom 
-        ORDER BY total_kg DESC 
-        LIMIT ?
-    """, (limit,))
-    rows = c.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-def add_spot(lat, lon, adresse, type_dechet, reporter_name, photo_url=None, status="new"):
-    conn = get_connection()
-    c = conn.cursor()
-    import uuid
-    spot_id = str(uuid.uuid4())
-    c.execute('''
-        INSERT INTO spots (id, lat, lon, adresse, type_dechet, reporter_name, photo_url, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (spot_id, lat, lon, adresse, type_dechet, reporter_name, photo_url, status))
-    conn.commit()
-    conn.close()
+# Admin
+def add_admin_audit_log(actor, action, sid=None, b="", a=""): return admin_repo.add_admin_audit_log(get_connection, actor, action, sid, b, a)
+def get_admin_audit_logs(limit=150): return admin_repo.get_admin_audit_logs(get_connection, limit)
+def add_ux_event(t, tid="", an="", fn="", msg="", pl=""): return admin_repo.add_ux_event(get_connection, t, tid, an, fn, msg, pl)
+def get_ux_error_stats(days=30): return admin_repo.get_ux_error_stats(get_connection, days)
+def get_ux_events_raw(limit=100): return admin_repo.get_ux_events_raw(get_connection, limit)
+def delete_test_data(): return admin_repo.delete_test_data(get_connection)
+def add_subscriber(email): return admin_repo.add_subscriber(get_connection, email)
 
 
-def update_submission_fields(
-    sub_id,
-    nom=None,
-    association=None,
-    type_lieu=None,
-    adresse=None,
-    benevoles=None,
-    temps_min=None,
-    megots=None,
-    dechets_kg=None,
-    commentaire=None,
-):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(
-        """
-        UPDATE submissions
-        SET
-            nom = ?,
-            association = ?,
-            type_lieu = ?,
-            adresse = ?,
-            benevoles = ?,
-            temps_min = ?,
-            megots = ?,
-            dechets_kg = ?,
-            commentaire = ?
-        WHERE id = ?
-        """,
-        (
-            nom,
-            association,
-            type_lieu,
-            adresse,
-            benevoles,
-            temps_min,
-            megots,
-            dechets_kg,
-            commentaire,
-            sub_id,
-        ),
-    )
-    conn.commit()
-    conn.close()
-    return True
-
-def update_spot_status(spot_id, status='cleaned'):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute("UPDATE spots SET status = ? WHERE id = ?", (status, spot_id))
-    conn.commit()
-    conn.close()
-
-def get_active_spots():
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute(
-        """
-        SELECT * FROM spots
-        WHERE status IN ('active', 'new', 'in_progress')
-        ORDER BY created_at DESC
-        """
-    )
-    rows = c.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-def add_community_event(title, event_date, location, description="", organizer=""):
-    conn = get_connection()
-    c = conn.cursor()
-    import uuid
-    event_id = str(uuid.uuid4())
-    c.execute(
-        """
-        INSERT INTO community_events (id, title, event_date, location, description, organizer)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        (event_id, title, event_date, location, description, organizer),
-    )
-    conn.commit()
-    conn.close()
-    return event_id
-
-def get_community_events(limit=50, include_past=False):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    if include_past:
-        c.execute(
-            "SELECT * FROM community_events ORDER BY event_date ASC LIMIT ?",
-            (limit,),
-        )
-    else:
-        c.execute(
-            "SELECT * FROM community_events WHERE event_date >= date('now') ORDER BY event_date ASC LIMIT ?",
-            (limit,),
-        )
-    rows = c.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-def upsert_event_rsvp(event_id, participant_name, status):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(
-        """
-        INSERT INTO event_rsvps (event_id, participant_name, status)
-        VALUES (?, ?, ?)
-        ON CONFLICT(event_id, participant_name) DO UPDATE SET
-            status = excluded.status,
-            updated_at = CURRENT_TIMESTAMP
-        """,
-        (event_id, participant_name, status),
-    )
-    conn.commit()
-    conn.close()
-
-def get_event_rsvp_summary(event_id):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute(
-        """
-        SELECT
-            SUM(CASE WHEN status = 'yes' THEN 1 ELSE 0 END) as yes_count,
-            SUM(CASE WHEN status = 'maybe' THEN 1 ELSE 0 END) as maybe_count,
-            SUM(CASE WHEN status = 'no' THEN 1 ELSE 0 END) as no_count
-        FROM event_rsvps
-        WHERE event_id = ?
-        """,
-        (event_id,),
-    )
-    row = c.fetchone()
-    conn.close()
-    return {
-        "yes": (row["yes_count"] or 0) if row else 0,
-        "maybe": (row["maybe_count"] or 0) if row else 0,
-        "no": (row["no_count"] or 0) if row else 0,
-    }
-
-def get_events_for_date(target_date):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute(
-        "SELECT * FROM community_events WHERE event_date = ? ORDER BY created_at ASC",
-        (target_date,),
-    )
-    rows = c.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-def mark_event_reminder(event_id, reminder_date):
-    conn = get_connection()
-    c = conn.cursor()
-    try:
-        c.execute(
-            "INSERT INTO event_reminders (event_id, reminder_date) VALUES (?, ?)",
-            (event_id, reminder_date),
-        )
-        conn.commit()
-        return True
-    except sqlite3.IntegrityError:
-        return False
-    finally:
-        conn.close()
-
-def calculate_user_points(user_name):
-    conn = get_connection()
-    c = conn.cursor()
-    # Somme des points des actions approuvées
-    c.execute("SELECT SUM(eco_points) FROM submissions WHERE nom = ? AND status = 'approved'", (user_name,))
-    points = c.fetchone()[0] or 0
-    conn.close()
-    return points
-
-
-def get_user_impact_stats(user_name):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute(
-        """
-        SELECT
-            COALESCE(SUM(eco_points), 0) AS total_points,
-            COALESCE(SUM(dechets_kg), 0) AS total_kg,
-            COUNT(*) AS nb_actions
-        FROM submissions
-        WHERE status = 'approved' AND LOWER(COALESCE(nom, '')) = LOWER(?)
-        """,
-        (str(user_name or "").strip(),),
-    )
-    row = c.fetchone()
-    conn.close()
-    return {
-        "nom": str(user_name or "").strip(),
-        "total_points": int((row["total_points"] or 0) if row else 0),
-        "total_kg": float((row["total_kg"] or 0.0) if row else 0.0),
-        "nb_actions": int((row["nb_actions"] or 0) if row else 0),
-    }
-
-
-def get_leaderboard(limit=10):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute("""
-        SELECT nom, SUM(eco_points) as total_points, COUNT(*) as nb_actions
-        FROM submissions 
-        WHERE status = 'approved' 
-        GROUP BY nom 
-        ORDER BY total_points DESC 
-        LIMIT ?
-    """, (limit,))
-    rows = c.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-
-def add_mission_validation(submission_id, voter_name, vote):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(
-        """
-        INSERT INTO mission_validations (submission_id, voter_name, vote)
-        VALUES (?, ?, ?)
-        ON CONFLICT(submission_id, voter_name) DO UPDATE SET
-            vote = excluded.vote,
-            created_at = CURRENT_TIMESTAMP
-        """,
-        (submission_id, voter_name, int(vote)),
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_mission_validation_summary(submission_id):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(
-        """
-        SELECT
-            SUM(CASE WHEN vote > 0 THEN 1 ELSE 0 END) as up,
-            SUM(CASE WHEN vote < 0 THEN 1 ELSE 0 END) as down,
-            COALESCE(SUM(vote), 0) as score
-        FROM mission_validations
-        WHERE submission_id = ?
-        """,
-        (submission_id,),
-    )
-    row = c.fetchone()
-    conn.close()
-    return {
-        'up': row[0] or 0,
-        'down': row[1] or 0,
-        'score': row[2] or 0,
-    }
-
-
-def add_admin_audit_log(actor, action, submission_id=None, before_snapshot="", after_snapshot=""):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(
-        """
-        INSERT INTO admin_audit_log (actor, action, submission_id, before_snapshot, after_snapshot)
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (actor, action, submission_id, before_snapshot, after_snapshot),
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_admin_audit_logs(limit=150):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute(
-        """
-        SELECT id, actor, action, submission_id, before_snapshot, after_snapshot, created_at
-        FROM admin_audit_log
-        ORDER BY created_at DESC, id DESC
-        LIMIT ?
-        """,
-        (limit,),
-    )
-    rows = c.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-
-def add_ux_event(event_type, tab_id="", action_name="", field_name="", message="", payload=""):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(
-        """
-        INSERT INTO ux_events (event_type, tab_id, action_name, field_name, message, payload)
-        VALUES (?, ?, ?, ?, ?, ?)
-        """,
-        (event_type, tab_id, action_name, field_name, message, payload),
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_ux_events(limit=200, days=30):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute(
-        """
-        SELECT id, event_type, tab_id, action_name, field_name, message, payload, created_at
-        FROM ux_events
-        WHERE created_at >= datetime('now', ?)
-        ORDER BY created_at DESC, id DESC
-        LIMIT ?
-        """,
-        (f"-{int(days)} day", int(limit)),
-    )
-    rows = c.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-
-def get_ux_error_stats(days=30):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    window = f"-{int(days)} day"
-    c.execute(
-        """
-        SELECT
-            COUNT(*) AS total_events,
-            SUM(CASE WHEN event_type = 'invalid_field' THEN 1 ELSE 0 END) AS invalid_fields,
-            SUM(CASE WHEN event_type = 'broken_action' THEN 1 ELSE 0 END) AS broken_actions
-        FROM ux_events
-        WHERE created_at >= datetime('now', ?)
-        """,
-        (window,),
-    )
-    row = c.fetchone()
-    c.execute(
-        """
-        SELECT field_name, COUNT(*) AS occurrences
-        FROM ux_events
-        WHERE event_type = 'invalid_field'
-          AND created_at >= datetime('now', ?)
-          AND COALESCE(field_name, '') <> ''
-        GROUP BY field_name
-        ORDER BY occurrences DESC
-        LIMIT 10
-        """,
-        (window,),
-    )
-    top_fields = [dict(r) for r in c.fetchall()]
-    conn.close()
-    return {
-        "total_events": int((row["total_events"] or 0) if row else 0),
-        "invalid_fields": int((row["invalid_fields"] or 0) if row else 0),
-        "broken_actions": int((row["broken_actions"] or 0) if row else 0),
-        "top_invalid_fields": top_fields,
-    }
-
-
-def add_volunteer_feedback(author, content, category="suggestion"):
-    safe_author = (author or "").strip()
-    safe_content = (content or "").strip()
-    safe_category = (category or "suggestion").strip().lower()
-    if safe_category not in {"suggestion", "bug"}:
-        safe_category = "suggestion"
-
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(
-        """
-        INSERT INTO volunteer_feedback (author, category, content)
-        VALUES (?, ?, ?)
-        """,
-        (safe_author, safe_category, safe_content),
-    )
-    conn.commit()
-    conn.close()
-
-
-def get_volunteer_feedback(limit=200):
-    conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute(
-        """
-        SELECT id, author, category, content, created_at
-        FROM volunteer_feedback
-        ORDER BY created_at DESC, id DESC
-        LIMIT ?
-        """,
-        (int(limit),),
-    )
-    rows = c.fetchall()
-    conn.close()
-    return [dict(row) for row in rows]
-
-
+def get_all_subscribers(): return admin_repo.get_all_subscribers(get_connection)
