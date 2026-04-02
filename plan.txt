@@ -1,0 +1,194 @@
+CleanMyMap - Plan d'exécution unifié
+Dernière mise à jour: 2026-04-02 21:55 (Europe/Paris)
+
+OBJECTIF GLOBAL
+- Finaliser la migration vers `apps/web` (Next.js + Supabase + Clerk), sécuriser le cutover production, puis exécuter une roadmap SEO complète orientée acquisition.
+
+REGLES D'EXECUTION
+- Exécuter dans l'ordre strict des sections "NOW" puis "NEXT".
+- Changements minimaux robustes, pas de refactor hors scope.
+- Préserver le comportement attendu sauf correctif justifié.
+- Vérification systématique: lint + tests + build + non-régression Python.
+
+==================================================
+1) ETAT ACTUEL (RESUME RAPIDE)
+==================================================
+
+FAIT
+- Base moderne créée dans `apps/web` (Next.js App Router + TypeScript + Tailwind).
+- Intégrations socle en place: Supabase, Clerk, Sentry, PostHog, Resend, Stripe, Pinecone, Upstash.
+- Parcours migrés:
+  - Déclaration: `/actions/new`
+  - Historique: `/actions/history`
+  - Vue terrain: `/actions/map`
+  - Reporting CSV: `/reports` + `/api/reports/actions.csv`
+- Auth Clerk en place:
+  - `src/proxy.ts` avec `clerkMiddleware()`
+  - `ClerkProvider` dans `app/layout.tsx`
+  - navigation compte avec `Show`, `SignInButton`, `SignUpButton`, `UserButton`
+- Runbooks créés:
+  - `apps/web/ops/runbooks/cloudflare-uptimerobot-checklist.md`
+  - `apps/web/ops/runbooks/streamlit-cutover-rollback.md`
+  - `apps/web/ops/runbooks/pre-cutover-dry-run.md`
+  - `apps/web/ops/runbooks/pre-cutover-dry-run-results.json`
+
+VALIDATIONS DERNIERE PASSE
+- `apps/web`: `npm.cmd run lint` -> PASS
+- `apps/web`: `npm.cmd run test` -> PASS (15 tests)
+- `apps/web`: `npm.cmd run build` -> PASS
+- repo root: `pytest -q` -> PASS (187)
+
+CAVEATS OUVERTS
+- Dry-run local: majoritairement vert, mais `/api/uptime` reste `503` (config partielle observabilité).
+- Tranche externe non faite: Cloudflare DNS + UptimeRobot monitors.
+
+==================================================
+2) NOW (PRIORITE IMMEDIATE)
+==================================================
+
+NOW-1: Cutover externe (bloquant release)
+Statut: TODO
+Actions:
+1. Exécuter runbook Cloudflare:
+   - créer/valider zone DNS
+   - configurer enregistrements vers cible Vercel
+   - activer HTTPS strict + règles cache cohérentes `/api/*`
+2. Exécuter runbook UptimeRobot:
+   - monitors `/api/health`, `/api/uptime`, `/`, `/dashboard`
+   - seuils d’alerte P1/P2 selon runbook
+3. Rédiger résultat de passe dans:
+   - `apps/web/ops/runbooks/pre-cutover-dry-run.md`
+
+Critères de sortie:
+- Monitors actifs et alerting validé.
+- DNS propagation validée.
+- Pas d’erreur critique sur endpoints santé.
+
+NOW-2: Clôture release candidate
+Statut: TODO
+Actions:
+1. Geler notes de release dans ce fichier.
+2. Nommer owner rollback + on-call + procédure d’escalade.
+3. Définir fenêtre de bascule production.
+
+Critères de sortie:
+- RC signée, plan rollback assigné, checklists cochées.
+
+==================================================
+3) ROADMAP SEO INJECTEE (P0/P1/P2 + PHASES A-E)
+==================================================
+
+CONTEXTE
+- Audit SEO basé code repo (pas crawl live).
+- Cible: améliorer indexabilité, qualité sémantique, performance perçue, autorité domaine.
+
+P0 (bloquants SEO)
+1. Architecture SEO cible
+   - option recommandée: hub SEO indexable + app métier protégée selon besoin
+   - clarifier ce qui est indexable vs non-indexable
+2. Encodage/mojibake
+   - corriger labels/texte visibles critiques
+3. Metadata complète
+   - title/description/canonical/OG/Twitter/JSON-LD par page
+4. Indexation technique
+   - robots + sitemap + règles query params cohérentes
+
+P1 (impact fort)
+1. Perf SEO
+   - lazy-load modules lourds
+   - optimisation rendu carte
+2. Contenu intentionnel
+   - pages “intent-first” FR (guides/FAQ/cas d’usage/local)
+3. Internationalisation SEO
+   - FR/EN propre + `hreflang` si multilingue public
+
+P2 (scaling)
+1. Backlinks
+   - programme partenaires/médias/open-data
+2. Pilotage KPI
+   - impressions, clics, pages indexées, referring domains, conversion vers app
+
+--------------------------------------------------
+PHASE A (Semaine 1) - Cadrage SEO technique
+Statut: TODO
+Actions:
+1. Décider stratégie d’indexation:
+   - app noindex partiel vs pages publiques indexables
+2. Lister templates/URLs SEO cibles
+3. Corriger encodage prioritaire (navigation + textes critiques)
+Livrables:
+- matrice d’indexation
+- inventaire URLs cibles
+- patch encodage prioritaire
+
+PHASE B (Semaine 2) - Foundations metadata/indexation
+Statut: PARTIEL (baseline existante), A COMPLETER
+Actions:
+1. Étendre metadata par page (pas seulement global)
+2. Canonical par template + gestion query params
+3. Compléter JSON-LD selon type de page
+4. Vérifier robots/sitemap en cohérence indexation
+Livrables:
+- metadata registry par route
+- canonical policy
+- JSON-LD minimal en prod
+
+PHASE C (Semaine 3) - Performance SEO
+Statut: TODO
+Actions:
+1. Isoler imports lourds (carte/routage) en lazy loading
+2. Réduire coût rendu carte (boucles, calculs, payload)
+3. Mesurer avant/après (LCP/TTFB/INP)
+Livrables:
+- rapport perf avant/après
+- patch perf validé non-régression
+
+PHASE D (Semaines 4-5) - Contenu intentionnel
+Statut: TODO
+Actions:
+1. Produire cluster FR principal (5-10 pages)
+2. Uniformiser H1/H2 + FAQ + preuves d’impact + CTA
+3. Ajouter JSON-LD ciblé (Organization/FAQPage/Article)
+Livrables:
+- pages publiées
+- grille éditoriale
+- schémas structurés validés
+
+PHASE E (Semaine 6) - Backlinks & distribution
+Statut: TODO
+Actions:
+1. Kit partenaires (assets, pages partenaires, guidelines citation)
+2. 2-3 assets “linkables” (études d’impact locales / datasets)
+3. Suivi KPI hebdo et ajustement roadmap
+Livrables:
+- pipeline outreach
+- dashboard KPI SEO
+
+==================================================
+4) BACKLOG TECHNIQUE (HORS NOW, ORDONNE)
+==================================================
+
+B-1: Stabiliser `/api/uptime` pour passer en `200` hors incident réel.
+Statut: TODO
+
+B-2: Vérifier flux CSV protégé en session authentifiée end-to-end.
+Statut: TODO
+
+B-3: Finaliser cutover legacy Streamlit (mode fallback contrôlé puis retrait).
+Statut: TODO
+
+B-4: Phase-2 stack différée:
+- Pinecone (features sémantiques)
+- Stripe (monétisation)
+- Upstash (jobs/rate-limit)
+Statut: DEFERRED
+
+==================================================
+5) JOURNAL EXECUTION (COURT)
+==================================================
+
+2026-04-02
+- Migration parcours métier majeurs effectuée (déclaration/historique/carte/reporting CSV).
+- Dry-run local relancé après configuration env.
+- Roadmap SEO structurée injectée dans ce plan.
+
