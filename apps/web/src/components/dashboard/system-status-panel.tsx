@@ -26,8 +26,8 @@ export function SystemStatusPanel() {
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">État des intégrations</h2>
-          <p className="mt-1 text-sm text-slate-600">Synthèse temps réel des endpoints de supervision (`/api/uptime`, `/api/services`).</p>
+          <h2 className="text-xl font-semibold text-slate-900">Etat des integrations</h2>
+          <p className="mt-1 text-sm text-slate-600">Synthese temps reel des endpoints de supervision (`/api/uptime`, `/api/services`).</p>
         </div>
         <button
           onClick={() => {
@@ -36,7 +36,7 @@ export function SystemStatusPanel() {
           }}
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
         >
-          {isRefreshing ? "Actualisation..." : "Rafraîchir"}
+          {isRefreshing ? "Actualisation..." : "Rafraichir"}
         </button>
       </div>
 
@@ -49,7 +49,7 @@ export function SystemStatusPanel() {
 
       {hasError ? (
         <p className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-          Impossible de charger l&apos;état système. Vérifiez les endpoints de supervision.
+          Impossible de charger l&apos;etat systeme. Verifiez les endpoints de supervision.
         </p>
       ) : null}
 
@@ -57,18 +57,34 @@ export function SystemStatusPanel() {
         <div className="mt-4 space-y-4">
           <div className="grid gap-3 md:grid-cols-3">
             <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">État global</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Etat global</p>
               <p className={`mt-1 text-lg font-semibold ${uptimeSummary?.state === "healthy" ? "text-emerald-700" : "text-amber-700"}`}>
                 {uptimeSummary?.state === "healthy" ? "Healthy" : "Degraded"}
               </p>
             </article>
             <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Checks configurés</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Checks configures</p>
               <p className="mt-1 text-lg font-semibold text-slate-900">{uptimeSummary?.configuredCount ?? 0}</p>
             </article>
             <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs uppercase tracking-wide text-slate-500">Checks manquants</p>
               <p className="mt-1 text-lg font-semibold text-slate-900">{uptimeSummary?.missingCount ?? 0}</p>
+            </article>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Sante critique</p>
+              <p className={`mt-1 text-sm font-semibold ${uptimeSummary?.criticalStatus === "ok" ? "text-emerald-700" : "text-amber-700"}`}>
+                {uptimeSummary?.criticalStatus === "ok" ? "OK" : "Degraded"}
+              </p>
+            </article>
+            <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Integrations optionnelles</p>
+              <p className={`mt-1 text-sm font-semibold ${uptimeSummary?.optionalStatus === "ok" ? "text-emerald-700" : "text-amber-700"}`}>
+                {uptimeSummary?.optionalStatus === "ok" ? "OK" : "Warning"}
+              </p>
+              <p className="mt-1 text-xs text-slate-600">Warnings detectes: {uptimeSummary?.warningCount ?? 0}</p>
             </article>
           </div>
 

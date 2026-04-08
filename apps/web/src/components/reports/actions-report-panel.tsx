@@ -200,7 +200,7 @@ export function ActionsReportPanel() {
       let message = "Erreur inconnue.";
       if (error instanceof ModerationClientError) {
         if (error.code === "permission_denied") {
-          message = `Acces admin requis (${error.message}).`;
+          message = `Accès admin requis (${error.message}).`;
         } else if (error.code === "network_error") {
           message = "Erreur reseau pendant la moderation. Reessaie dans quelques secondes.";
         } else {

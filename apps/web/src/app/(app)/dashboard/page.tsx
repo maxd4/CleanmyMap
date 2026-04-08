@@ -46,34 +46,34 @@ export default async function DashboardPage() {
     <div className="flex w-full flex-col gap-6">
       <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Espace applicatif</p>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">Tableau de bord benevole</h1>
+        <h1 className="mt-2 text-2xl font-semibold text-slate-900">Tableau de bord bénévole</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Session active avec Clerk. Cette zone centralise les workflows benevoles web de CleanMyMap.
+          Session active avec Clerk. Cette zone centralise les workflows bénévoles web de CleanMyMap.
         </p>
         {metrics ? (
           <p className="mt-2 text-xs text-slate-500">
-            Donnees consolidees depuis la source <code>{metrics.source}</code> (actions approuvees sur 12 mois glissants).
+            Données consolidées depuis la source <code>{metrics.source}</code> (actions approuvées sur 12 mois glissants).
           </p>
         ) : (
-          <p className="mt-2 text-xs text-amber-700">Metriques indisponibles temporairement, verifier la connexion Supabase.</p>
+          <p className="mt-2 text-xs text-amber-700">Métriques indisponibles temporairement, vérifier la connexion Supabase.</p>
         )}
       </header>
 
       <section className="grid gap-4 md:grid-cols-4">
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Identite</h2>
+          <h2 className="text-base font-semibold text-slate-900">Identité</h2>
           <p className="mt-2 text-sm text-slate-600">
-            Utilisateur connecte: <span className="font-mono">{userId}</span>
+            Utilisateur connecté: <span className="font-mono">{userId}</span>
           </p>
           <p className="mt-1 text-sm text-slate-600">
-            Role: <span className="font-semibold text-emerald-700">{role === "admin" ? "Admin" : "Benevole"}</span>
+            Rôle: <span className="font-semibold text-emerald-700">{role === "admin" ? "Admin" : "Bénévole"}</span>
           </p>
         </article>
 
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Dechets retires</h2>
+          <h2 className="text-base font-semibold text-slate-900">Déchets retirés</h2>
           <p className="mt-2 text-sm text-slate-600">
-            {metrics ? `${metrics.totalKg.toFixed(1)} kg et ${metrics.totalButts} megots consolides.` : "Donnees en chargement."}
+            {metrics ? `${metrics.totalKg.toFixed(1)} kg et ${metrics.totalButts} mégots consolidés.` : "Données en chargement."}
           </p>
           <Link href="/actions/new" className="mt-3 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-800">
             Ouvrir la declaration
@@ -84,8 +84,8 @@ export default async function DashboardPage() {
           <h2 className="text-base font-semibold text-slate-900">Mobilisation</h2>
           <p className="mt-2 text-sm text-slate-600">
             {metrics
-              ? `${metrics.totalVolunteers} participations, ${metrics.totalHours.toFixed(1)} heures benevoles, ${metrics.zones} zones couvertes.`
-              : "Historique filtrable et lecture cartographique des actions geolocalisees."}
+              ? `${metrics.totalVolunteers} participations, ${metrics.totalHours.toFixed(1)} heures bénévoles, ${metrics.zones} zones couvertes.`
+              : "Historique filtrable et lecture cartographique des actions géolocalisées."}
           </p>
           <Link href="/actions/history" className="mt-3 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-800">
             Ouvrir l&apos;historique
@@ -95,7 +95,7 @@ export default async function DashboardPage() {
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-base font-semibold text-slate-900">Reporting</h2>
           <p className="mt-2 text-sm text-slate-600">
-            {metrics ? `${metrics.count} actions approuvees exploitables pour les exports et analyses.` : "Exports CSV et parcours reporting disponibles."}
+            {metrics ? `${metrics.count} actions approuvées exploitables pour les exports et analyses.` : "Exports CSV et parcours reporting disponibles."}
           </p>
           <Link href="/reports" className="mt-3 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-800">
             Ouvrir le reporting
