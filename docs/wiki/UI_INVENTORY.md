@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The UI inventory baseline captures intended Streamlit UI wiring so drift can be reviewed explicitly.
+The UI inventory baseline captures intended UI wiring so drift can be reviewed explicitly.
 
 ## Inventory schema
 

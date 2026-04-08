@@ -2,6 +2,7 @@
 
 import useSWR from "swr";
 import { serviceLevelLabel, summarizeUptime, type ServicesPayload, type UptimePayload } from "@/lib/dashboard/status";
+import { swrRecentViewOptions } from "@/lib/swr-config";
 
 const fetcher = async <T,>(url: string): Promise<T> => {
   const response = await fetch(url, { method: "GET", cache: "no-store" });
@@ -12,8 +13,8 @@ const fetcher = async <T,>(url: string): Promise<T> => {
 };
 
 export function SystemStatusPanel() {
-  const uptime = useSWR<UptimePayload>("/api/uptime", fetcher, { revalidateOnFocus: false });
-  const services = useSWR<ServicesPayload>("/api/services", fetcher, { revalidateOnFocus: false });
+  const uptime = useSWR<UptimePayload>("/api/uptime", fetcher, swrRecentViewOptions);
+  const services = useSWR<ServicesPayload>("/api/services", fetcher, swrRecentViewOptions);
 
   const isLoading = uptime.isLoading || services.isLoading;
   const isRefreshing = uptime.isValidating || services.isValidating;

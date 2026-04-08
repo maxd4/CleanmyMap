@@ -1,8 +1,14 @@
 "use client";
 
 import { type FormEvent, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { createAction } from "@/lib/actions/http";
-import type { CreateActionPayload } from "@/lib/actions/types";
+import type { ActionDrawing, CreateActionPayload } from "@/lib/actions/types";
+
+const ActionDrawingMap = dynamic(
+  () => import("@/components/actions/action-drawing-map").then((mod) => mod.ActionDrawingMap),
+  { ssr: false },
+);
 
 type FormState = {
   actorName: string;
@@ -46,16 +52,69 @@ function toRequiredNumber(input: string, fallback: number): number {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-export function ActionDeclarationForm() {
-  const [form, setForm] = useState<FormState>(initialState);
+function getDrawingCentroid(drawing: ActionDrawing): { latitude: number; longitude: number } {
+  const points = drawing.coordinates;
+  const total = points.reduce(
+    (acc, [lat, lng]) => ({ latitude: acc.latitude + lat, longitude: acc.longitude + lng }),
+    { latitude: 0, longitude: 0 },
+  );
+  return {
+    latitude: Number((total.latitude / points.length).toFixed(6)),
+    longitude: Number((total.longitude / points.length).toFixed(6)),
+  };
+}
+
+function isDrawingValid(drawing: ActionDrawing | null): drawing is ActionDrawing {
+  if (!drawing) {
+    return false;
+  }
+  const minPoints = drawing.kind === "polygon" ? 3 : 2;
+  return drawing.coordinates.length >= minPoints;
+}
+
+type ActionDeclarationFormProps = {
+  actorNameOptions: string[];
+  defaultActorName: string;
+  clerkIdentityLabel: string;
+  clerkUserId: string;
+};
+
+export function ActionDeclarationForm({
+  actorNameOptions,
+  defaultActorName,
+  clerkIdentityLabel,
+  clerkUserId,
+}: ActionDeclarationFormProps) {
+  const resolvedActorOptions = actorNameOptions;
+  const resolvedDefaultActorName = resolvedActorOptions.includes(defaultActorName)
+    ? defaultActorName
+    : resolvedActorOptions[0] ?? clerkUserId;
+  const [form, setForm] = useState<FormState>({
+    ...initialState,
+    actorName: resolvedDefaultActorName,
+  });
+  const [manualDrawingEnabled, setManualDrawingEnabled] = useState<boolean>(true);
+  const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(null);
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [optimisticLabel, setOptimisticLabel] = useState<string | null>(null);
 
+  const drawingIsValid = isDrawingValid(manualDrawing);
+
   const payload = useMemo<CreateActionPayload>(() => {
-    const latitude = toOptionalNumber(form.latitude);
-    const longitude = toOptionalNumber(form.longitude);
+    const fallbackLatitude = toOptionalNumber(form.latitude);
+    const fallbackLongitude = toOptionalNumber(form.longitude);
+
+    let latitude = fallbackLatitude;
+    let longitude = fallbackLongitude;
+
+    if (manualDrawingEnabled && drawingIsValid) {
+      const centroid = getDrawingCentroid(manualDrawing);
+      latitude = centroid.latitude;
+      longitude = centroid.longitude;
+    }
+
     return {
       actorName: form.actorName.trim() || undefined,
       actionDate: form.actionDate,
@@ -67,10 +126,14 @@ export function ActionDeclarationForm() {
       volunteersCount: Math.max(1, Math.trunc(toRequiredNumber(form.volunteersCount, 1))),
       durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
       notes: form.notes.trim() || undefined,
+      manualDrawing: manualDrawingEnabled && drawingIsValid ? manualDrawing : undefined,
     };
-  }, [form]);
+  }, [drawingIsValid, form, manualDrawing, manualDrawingEnabled]);
 
-  const canSubmit = payload.locationLabel.length >= 2 && payload.actionDate.length === 10;
+  const canSubmit =
+    payload.locationLabel.length >= 2 &&
+    payload.actionDate.length === 10 &&
+    (!manualDrawingEnabled || drawingIsValid);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -92,6 +155,7 @@ export function ActionDeclarationForm() {
       setCreatedId(result.id);
       setSubmissionState("success");
       setOptimisticLabel(null);
+      setManualDrawing(null);
       setForm((prev) => ({
         ...initialState,
         actorName: prev.actorName,
@@ -107,21 +171,32 @@ export function ActionDeclarationForm() {
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-xl font-semibold text-slate-900">Déclarer une action</h2>
+      <h2 className="text-xl font-semibold text-slate-900">Declarer une action</h2>
       <p className="mt-2 text-sm text-slate-600">
-        Enregistrez votre action terrain pour l&apos;historique bénévole. Le statut initial est <span className="font-semibold">pending</span>.
+        Enregistrez votre action terrain pour l&apos;historique benevole. Le statut initial est{" "}
+        <span className="font-semibold">pending</span>.
+      </p>
+      <p className="mt-2 text-xs text-slate-500">
+        Compte Clerk actif: <span className="font-semibold">{clerkIdentityLabel}</span> (<span className="font-mono">{clerkUserId}</span>)
       </p>
 
       <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
         <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Votre prénom / pseudo
-          <input
+          Identite benevole (compte)
+          <select
             className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
             value={form.actorName}
             onChange={(event) => updateField("actorName", event.target.value)}
-            placeholder="Ex: Sarah"
-            maxLength={120}
-          />
+          >
+            {resolvedActorOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-slate-500">
+            Selection issue du compte Clerk (prenom/pseudo). Aucune saisie libre non tracee.
+          </p>
         </label>
 
         <label className="flex flex-col gap-2 text-sm text-slate-700">
@@ -136,44 +211,78 @@ export function ActionDeclarationForm() {
         </label>
 
         <label className="md:col-span-2 flex flex-col gap-2 text-sm text-slate-700">
-          Emplacement (adresse ou libellé) *
+          Emplacement (adresse ou libelle) *
           <input
             className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
             value={form.locationLabel}
             onChange={(event) => updateField("locationLabel", event.target.value)}
-            placeholder="Ex: Place de la République, Paris"
+            placeholder="Ex: Place de la Republique, Paris"
             minLength={2}
             maxLength={200}
             required
           />
         </label>
 
-        <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Latitude (optionnel)
-          <input
-            type="number"
-            step="any"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
-            value={form.latitude}
-            onChange={(event) => updateField("latitude", event.target.value)}
-            placeholder="48.8566"
-          />
-        </label>
+        <div className="md:col-span-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+          <label className="flex items-start gap-3 text-sm text-emerald-900">
+            <input
+              type="checkbox"
+              checked={manualDrawingEnabled}
+              onChange={(event) => setManualDrawingEnabled(event.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-emerald-400 text-emerald-600"
+            />
+            <span>
+              <span className="font-semibold">Option recommandee:</span> tracer a la main le parcours ou le polygone
+              nettoye. Cela evite les hypotheses sur la distance reellement parcourue.
+            </span>
+          </label>
+
+          {manualDrawingEnabled ? (
+            <div className="mt-4 space-y-3">
+              <p className="text-xs text-slate-700">
+                Carte de Paris (fond blanc): utilisez l&apos;outil ligne pour le trace ou polygone pour la zone
+                nettoyee.
+              </p>
+              <ActionDrawingMap value={manualDrawing} onChange={setManualDrawing} />
+              <p className="text-xs text-slate-700">
+                {drawingIsValid
+                  ? `Dessin enregistre (${manualDrawing.kind === "polygon" ? "polygone" : "trace"}, ${manualDrawing.coordinates.length} points).`
+                  : "Aucun dessin valide pour le moment (2 points min pour un trace, 3 pour un polygone)."}
+              </p>
+            </div>
+          ) : null}
+        </div>
+
+        {!manualDrawingEnabled ? (
+          <>
+            <label className="flex flex-col gap-2 text-sm text-slate-700">
+              Latitude (optionnel)
+              <input
+                type="number"
+                step="any"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
+                value={form.latitude}
+                onChange={(event) => updateField("latitude", event.target.value)}
+                placeholder="48.8566"
+              />
+            </label>
+
+            <label className="flex flex-col gap-2 text-sm text-slate-700">
+              Longitude (optionnel)
+              <input
+                type="number"
+                step="any"
+                className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
+                value={form.longitude}
+                onChange={(event) => updateField("longitude", event.target.value)}
+                placeholder="2.3522"
+              />
+            </label>
+          </>
+        ) : null}
 
         <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Longitude (optionnel)
-          <input
-            type="number"
-            step="any"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
-            value={form.longitude}
-            onChange={(event) => updateField("longitude", event.target.value)}
-            placeholder="2.3522"
-          />
-        </label>
-
-        <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Déchets collectés (kg) *
+          Dechets collectes (kg) *
           <input
             type="number"
             step="0.1"
@@ -186,7 +295,7 @@ export function ActionDeclarationForm() {
         </label>
 
         <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Mégots ramassés
+          Megots ramasses
           <input
             type="number"
             min="0"
@@ -197,7 +306,7 @@ export function ActionDeclarationForm() {
         </label>
 
         <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Nombre de bénévoles *
+          Nombre de benevoles *
           <input
             type="number"
             min="1"
@@ -209,7 +318,7 @@ export function ActionDeclarationForm() {
         </label>
 
         <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Durée (minutes)
+          Duree (minutes)
           <input
             type="number"
             min="0"
@@ -226,7 +335,7 @@ export function ActionDeclarationForm() {
             value={form.notes}
             onChange={(event) => updateField("notes", event.target.value)}
             maxLength={1000}
-            placeholder="Ex: présence de nombreux mégots près des bouches de métro."
+            placeholder="Ex: presence de nombreux megots pres des bouches de metro."
           />
         </label>
 
@@ -241,7 +350,7 @@ export function ActionDeclarationForm() {
 
           {submissionState === "success" && createdId ? (
             <p className="text-sm font-medium text-emerald-700">
-              Action enregistrée. Référence: <span className="font-mono">{createdId}</span>
+              Action enregistree. Reference: <span className="font-mono">{createdId}</span>
             </p>
           ) : null}
 
@@ -253,7 +362,7 @@ export function ActionDeclarationForm() {
 
       {optimisticLabel ? (
         <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-          Déclaration en préparation pour <span className="font-semibold">{optimisticLabel}</span>...
+          Declaration en preparation pour <span className="font-semibold">{optimisticLabel}</span>...
         </div>
       ) : null}
     </section>

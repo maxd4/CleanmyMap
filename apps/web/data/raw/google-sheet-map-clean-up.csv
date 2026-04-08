@@ -1,0 +1,22 @@
+adresse precise ou coordo GPS,ville,type,date,nbr megots,kg dechets,nom d'association,temps en min,nombre benevoles,,liste lieux propres
+20 quai Saint Bernard,Paris,Quai/Pont/Port,03/07/2025,100,10,aa,60,1,,Pont de l'Alma
+"48°50'48.3""N 2°20'06.4""E",Paris,Bois/Parc/Jardin/Square/Sentier,07/12/2025,500,10,bb,60,50,,Gare de l'est 
+Esplanade Gaston Monnerville,Paris,Bois/Parc/Jardin/Square/Sentier,02/06/2023,200,20,cc,40,20,,Canal saint martin
+pont d'austerlitz,Paris,Quai/Pont/Port,21/02/2026,2000,100,dd,50,20,,
+jardin des plantes,Paris,Bois/Parc/Jardin/Square/Sentier,22/02/2026,100,5,ff,120,50,,
+Place de la Bataille de Stalingrad,Paris,N° Boulevard/Avenue/Place,23/02/2026,100,5,ff,120,50,,
+"Bois de Vincennes, Paris",Paris,Bois/Parc/Jardin/Square/Sentier,18/02/2024,5000,200,Test Association,120,10,,
+"Rue Maurice Utrillo, Paris",Paris,N° Boulevard/Avenue/Place,18/08/2025,800,50,Test Association,45,3,,
+"Sortie Métro Barbès-Rochechouart, Paris",Paris,N° Boulevard/Avenue/Place,08/02/2026,12000,100,Test Association,20,5,,
+"Rue de Rivoli, Paris",Paris,N° Boulevard/Avenue/Place,01/01/2023,0,0,Test Association,60,2,,
+"Tour Eiffel, Paris",Paris,Monument,15/06/2024,3500,75,Test Association,90,8,,
+"Quai de Valmy, Paris 10e",Paris,Quai/Pont/Port,21/09/2025,4500,180,Clean Walk Paris 10,150,25,,
+"Parc des Buttes-Chaumont, Paris 19e",Paris,Bois/Parc/Jardin/Square/Sentier,29/11/2025,3200,210,Green Friday,180,40,,
+"Place de la République, Paris 3e",Paris,N° Boulevard/Avenue/Place,17/01/2026,6800,290,Collectif Nettoyons Paris,200,55,,
+"Lac Daumesnil, Bois de Vincennes, Paris 12e",Paris,Bois/Parc/Jardin/Square/Sentier,12/10/2025,5200,310,Paris Zéro Déchet,220,35,,
+"Parc Montsouris, Paris 14e",Paris,Bois/Parc/Jardin/Square/Sentier,05/11/2025,1800,95,Étudiants pour la Planète,120,18,,
+"Parc de la Villette, Paris 19e",Paris,Quai/Pont/Port,28/02/2026,4100,195,Green Wednesday,170,30,,
+"Quai de la Tournelle, Paris 5e",Paris,Quai/Pont/Port,15/08/2025,3800,170,Paris Clean Walk,140,22,,
+"Parc André Citroën, Paris 15e",Paris,Bois/Parc/Jardin/Square/Sentier,07/09/2025,2700,140,Green Family,130,28,,
+"Porte de Clignancourt, Paris 18e",Paris,N° Boulevard/Avenue/Place,14/12/2025,5900,420,Les Éco-puces,250,45,,
+"Jardin du Luxembourg, Paris 6e",Paris,Bois/Parc/Jardin/Square/Sentier,22/07/2025,2100,85,Sénat Propre,110,15,,

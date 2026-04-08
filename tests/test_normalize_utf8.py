@@ -7,9 +7,10 @@ from scripts.normalize_utf8 import analyze_file, normalize_repo, repair_mojibake
 
 
 def test_repair_mojibake_text_fixes_common_sequence() -> None:
-    fixed, changed = repair_mojibake_text("Texte ’ propre")
+    mojibake_fragment = b"\xe2\x80\x99".decode("latin-1")
+    fixed, changed = repair_mojibake_text(f"Texte {mojibake_fragment} propre")
     assert changed is True
-    assert "’" not in fixed
+    assert mojibake_fragment not in fixed
     assert "'" in fixed
 
 
@@ -33,9 +34,9 @@ def test_normalize_repo_write_rewrites_text_without_bom(tmp_path: Path) -> None:
 
 
 def test_repair_mojibake_text_recovers_utf8_from_double_encoded_sequence() -> None:
-    fixed, changed = repair_mojibake_text("FranÃ§ais")
+    fixed, changed = repair_mojibake_text("Fran" + b"\xc3\x83\xc2\xa7".decode("latin-1") + "ais")
     assert changed is True
-    assert fixed == "Français"
+    assert fixed == "Fran\u00e7ais"
 
 
 def test_main_check_and_write_modes_with_monkeypatched_git_listing(tmp_path: Path, monkeypatch) -> None:

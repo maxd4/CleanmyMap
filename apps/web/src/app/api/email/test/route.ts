@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from "next/server";
+import { requireAdminAccess } from "@/lib/authz";
 import { env } from "@/lib/env";
 import { getResendClient } from "@/lib/services/resend";
 
@@ -10,8 +11,13 @@ type TestEmailPayload = {
 
 export async function POST(request: Request) {
   const token = request.headers.get("x-admin-token") || "";
-  if (!env.RESEND_TEST_TOKEN || token !== env.RESEND_TEST_TOKEN) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tokenAuthorized = Boolean(env.RESEND_TEST_TOKEN && token === env.RESEND_TEST_TOKEN);
+
+  if (!tokenAuthorized) {
+    const access = await requireAdminAccess();
+    if (!access.ok) {
+      return NextResponse.json({ error: access.error }, { status: access.status });
+    }
   }
 
   const resend = getResendClient();

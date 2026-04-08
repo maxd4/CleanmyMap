@@ -16,6 +16,18 @@ export type ActionCsvRow = Pick<
   | "status"
   | "notes"
 >;
+export type ActionCsvRowWithDrawing = ActionCsvRow & {
+  notes_plain?: string | null;
+  record_type?: "action" | "clean_place" | "spot" | "other" | null;
+  source?: string | null;
+  observed_at?: string | null;
+  geometry_kind?: "point" | "polyline" | "polygon" | null;
+  geometry_geojson?: string | null;
+  manual_drawing_kind?: "polyline" | "polygon" | null;
+  manual_drawing_points?: number | null;
+  manual_drawing_coordinates_json?: string | null;
+  manual_drawing_geojson?: string | null;
+};
 
 export type ReportQuery = {
   status: ActionStatus | null;
@@ -64,7 +76,7 @@ function escapeCsvCell(value: string | number | null): string {
   return `"${raw.replace(/"/g, "\"\"")}"`;
 }
 
-export function buildActionsCsv(rows: ActionCsvRow[]): string {
+export function buildActionsCsv(rows: ActionCsvRowWithDrawing[]): string {
   const header = [
     "id",
     "created_at",
@@ -79,6 +91,16 @@ export function buildActionsCsv(rows: ActionCsvRow[]): string {
     "duration_minutes",
     "status",
     "notes",
+    "notes_plain",
+    "record_type",
+    "source",
+    "observed_at",
+    "geometry_kind",
+    "geometry_geojson",
+    "manual_drawing_kind",
+    "manual_drawing_points",
+    "manual_drawing_coordinates_json",
+    "manual_drawing_geojson",
   ];
 
   const lines = [header.join(",")];
@@ -98,6 +120,16 @@ export function buildActionsCsv(rows: ActionCsvRow[]): string {
         row.duration_minutes,
         row.status,
         row.notes,
+        row.notes_plain ?? null,
+        row.record_type ?? null,
+        row.source ?? null,
+        row.observed_at ?? null,
+        row.geometry_kind ?? null,
+        row.geometry_geojson ?? null,
+        row.manual_drawing_kind ?? null,
+        row.manual_drawing_points ?? null,
+        row.manual_drawing_coordinates_json ?? null,
+        row.manual_drawing_geojson ?? null,
       ]
         .map((cell) => escapeCsvCell(cell as string | number | null))
         .join(","),

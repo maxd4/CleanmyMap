@@ -7,7 +7,7 @@ export default function ActionsMapPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Parcours prioritaire</p>
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">Vue terrain géolocalisée</h1>
         <p className="mt-2 text-sm text-slate-600">
-          Endpoint dédié pour la migration de la carte et de la priorisation des interventions.
+          Vue cartographique des actions géolocalisées et des zones d&apos;intervention.
         </p>
       </section>
 

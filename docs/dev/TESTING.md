@@ -14,7 +14,7 @@
    - `pytest -q`
 
 3. E2E only:
-   - `npx.cmd playwright test`
+   - `npx.cmd playwright test --config tests/e2e/playwright.config.cjs`
 
 ## Scope Covered
 

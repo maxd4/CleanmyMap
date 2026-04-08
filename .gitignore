@@ -15,9 +15,11 @@ htmlcov/
 playwright-report/
 test-results/
 node_modules/
+apps/web/.next/
 cache/
 tmp/
 output/
+legacy/backups/
 *.log
 *.out
 *.err

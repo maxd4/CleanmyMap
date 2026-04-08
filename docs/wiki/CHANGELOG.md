@@ -52,7 +52,7 @@
 
 - **Validation**
   - `py -3 -m pytest -q` passed
-  - `npx.cmd playwright test e2e/tests/critical-flows.spec.js` passed
+  - `npx.cmd playwright test tests/e2e/specs/critical-flows.spec.js` passed
 
 ### P2 robustness, vectorization, encoding, and E2E expansion
 
@@ -82,8 +82,8 @@
     - `scripts/normalize_utf8.py` (`--check`, `--write`)
     - explicit CI gate in `.github/workflows/ci.yml`.
   - Expanded E2E critical flow coverage:
-    - `e2e/tests/critical-flows.spec.js` adds declaration(seed) -> admin moderation -> CSV/PDF export scenario.
-    - `playwright.config.cjs` adds admin test-only env setup:
+    - `tests/e2e/specs/critical-flows.spec.js` adds declaration(seed) -> admin moderation -> CSV/PDF export scenario.
+    - `tests/e2e/playwright.config.cjs` adds admin test-only env setup:
       - `CLEANMYMAP_E2E_MODE=1`
       - `CLEANMYMAP_E2E_ADMIN_EMAIL`
       - admin allowlist/secret test values.
@@ -93,7 +93,7 @@
     - `tests/test_map_utils_vectorization.py`
     - `tests/test_normalize_utf8.py`
   - Updated E2E suite:
-    - `e2e/tests/critical-flows.spec.js`
+    - `tests/e2e/specs/critical-flows.spec.js`
 
 ### P2 completion pass (explicit contracts and residual cleanup)
 
@@ -120,7 +120,7 @@
     - `pytest -q` passed
     - `python scripts/normalize_utf8.py --check` passed
     - `python scripts/ci_cleanup.py --root . --check` passed
-    - `npx.cmd playwright test e2e/tests/critical-flows.spec.js` passed
+    - `npx.cmd playwright test tests/e2e/specs/critical-flows.spec.js` passed
 
 ### P1 security and rerun-cost hardening
 
@@ -152,11 +152,11 @@
     - `tests/test_map_generator_security.py`
     - `tests/test_domain_models.py`
   - E2E suite expanded:
-    - `e2e/tests/critical-flows.spec.js` now covers report flow, map XSS regression, pending redaction, and maintenance diagnostic behavior.
+    - `tests/e2e/specs/critical-flows.spec.js` now covers report flow, map XSS regression, pending redaction, and maintenance diagnostic behavior.
 
 - **Validation**
   - `pytest -q` passed
-  - `npx.cmd playwright test e2e/tests/critical-flows.spec.js` passed
+  - `npx.cmd playwright test tests/e2e/specs/critical-flows.spec.js` passed
 
 - **Compatibility notes**
   - Admin access remains blocked until `CLEANMYMAP_ADMIN_EMAILS` is configured when allowlist enforcement is enabled.
@@ -178,7 +178,7 @@
     - `tests/test_cleanup_audit.py`
     - `tests/test_ci_cleanup_cli.py`
     - updated `tests/test_maintenance_service.py`
-    - E2E coverage added in `e2e/tests/critical-flows.spec.js` (maintenance scenario).
+    - E2E coverage added in `tests/e2e/specs/critical-flows.spec.js` (maintenance scenario).
 
 - **Why**
   - Ensure one diagnostic logic for both CI and UI.
@@ -188,7 +188,7 @@
 - **Validation**
   - `pytest -q tests/test_cleanup_audit.py tests/test_ci_cleanup_cli.py tests/test_maintenance_service.py tests/test_ui_inventory_cli.py` passed
   - `python scripts/ci_cleanup.py --root . --check` passed
-  - `npx.cmd playwright test e2e/tests/critical-flows.spec.js -g \"Flux maintenance\"` skipped in this environment when CTA is not rendered.
+  - `npx.cmd playwright test tests/e2e/specs/critical-flows.spec.js -g \"Flux maintenance\"` skipped in this environment when CTA is not rendered.
 
 ### UI inventory CLI unified + baseline migration + dedicated workflow
 
@@ -373,7 +373,7 @@
   - `src/services/sheet_actions.py`
   - `tests/test_impact_reporting_service.py`
   - `tests/test_sheet_actions_service.py`
-  - `e2e/tests/critical-flows.spec.js` (regex hardened for encoding variants)
+  - `tests/e2e/specs/critical-flows.spec.js` (regex hardened for encoding variants)
 
 - **Validation**
   - `python -m py_compile (rg --files -g \"*.py\")` passed

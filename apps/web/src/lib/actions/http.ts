@@ -1,4 +1,5 @@
 import type { ActionListResponse, ActionMapResponse, ActionStatus, CreateActionPayload } from "@/lib/actions/types";
+import { toContractCreatePayload } from "./data-contract";
 
 type FetchActionsParams = {
   status?: ActionStatus | "all";
@@ -56,10 +57,11 @@ export function buildMapActionsQueryString(params: FetchMapActionsParams = {}): 
 }
 
 export async function createAction(payload: CreateActionPayload): Promise<{ id: string }> {
+  const contractPayload = toContractCreatePayload(payload);
   const response = await fetch("/api/actions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(contractPayload),
   });
 
   const body = await parseJsonSafely(response);
