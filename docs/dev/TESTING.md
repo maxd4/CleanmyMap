@@ -47,3 +47,22 @@ After each production redeploy, verify:
 - `/reports`
 - `/api/health`
 - `/api/uptime`
+
+## Minimal Anti-Regression Protocol
+
+Run this sequence for every incremental patch:
+
+1. Local changed-scope checks:
+   - `npm run checks:changed:quick`
+2. Web app quality gates:
+   - `npm --prefix apps/web run lint`
+   - `npm --prefix apps/web run build`
+3. Production post-redeploy smoke (authenticated):
+   - sign in with a live Clerk account
+   - verify `/dashboard`, `/admin`, `/reports`, `/actions/new`, `/actions/map`
+   - verify export endpoints from admin UI (`CSV` + `JSON`)
+   - verify `/api/uptime` shows `criticalStatus: "ok"` (optional warnings allowed)
+
+Pass criteria:
+- no failing checks in steps 1-2
+- no critical functional gap in step 3

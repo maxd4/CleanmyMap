@@ -55,6 +55,13 @@ Immediate remediation:
 2. Ensure `CLERK_ADMIN_USER_IDS` is correct in Production env.
 3. Redeploy and retest `/admin` + moderation action.
 
+## 3.1) Clerk Live migration note (admin continuity)
+When switching from test to live Clerk instance:
+1. Re-check admin users in Clerk Live (`publicMetadata.role = "admin"`).
+2. Re-check `CLERK_ADMIN_USER_IDS` in Vercel Production env.
+3. Re-test admin access on a fresh browser session.
+4. If user profile fields were recreated, confirm UI fallback still resolves identity from Clerk account data.
+
 ## 4) Export incident
 Symptoms:
 - export buttons fail
@@ -79,3 +86,6 @@ Immediate remediation:
    - `npm --prefix apps/web run lint`
    - `npm --prefix apps/web run build`
    - `npm run checks:changed:quick`
+4. Confirm supervision panel:
+   - `/api/uptime` -> `criticalStatus: "ok"`
+   - optional integrations may stay in warning without blocking runtime.
