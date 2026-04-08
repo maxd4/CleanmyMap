@@ -20,3 +20,14 @@ Date: 2026-04-08
 
 5. **Environment keys**
    - Confirm publishable/secret keys belong to the same Clerk instance (no mixed environments).
+
+6. **Google OAuth on Live instance**
+   - In Clerk Live -> Google OAuth, ensure **Use custom credentials** is enabled.
+   - Ensure Google OAuth `Client ID` / `Client Secret` are set (no empty values).
+   - Ensure Google redirect URI includes:
+     - `https://clerk.cleanmymap.fr/v1/oauth_callback`
+
+7. **Admin role continuity after Live migration**
+   - Verify admin user has either:
+     - `publicMetadata.role = "admin"`, or
+     - user id listed in `CLERK_ADMIN_USER_IDS` (Vercel Production env).

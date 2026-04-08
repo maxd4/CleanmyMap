@@ -833,7 +833,7 @@ function WeatherSection() {
         Brief meteo Paris pour adapter la securite terrain et le materiel des benevoles.
       </div>
       {isLoading ? <p className="text-sm text-slate-500">Chargement meteo...</p> : null}
-      {error ? <p className="text-sm text-rose-700">Meteo indisponible, verifier avant sortie terrain.</p> : null}
+      {error ? <p className="text-sm text-rose-700">Météo indisponible, vérifier avant sortie terrain.</p> : null}
       {!isLoading && !error ? (
         <div className="grid gap-3 md:grid-cols-3">
           <article className="rounded-xl border border-slate-200 bg-white p-3">
@@ -1439,7 +1439,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
       return (
         <SectionShell
           title={{ fr: "Trash Spotter", en: "Trash Spotter" }}
-          subtitle={{ fr: "Signalement, visualisation et priorisation geolocalisee.", en: "Reporting, visualization and geospatial prioritization." }}
+          subtitle={{ fr: "Signalement, visualisation et priorisation géolocalisée.", en: "Reporting, visualization and geospatial prioritization." }}
           links={[
             { href: "/actions/new", label: { fr: "Declarer une action", en: "Declare action" } },
             { href: "/actions/map", label: { fr: "Carte complete", en: "Full map" } },
@@ -1481,7 +1481,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
     case "weather":
       return (
         <SectionShell
-          title={{ fr: "Meteo", en: "Weather" }}
+          title={{ fr: "Météo", en: "Weather" }}
           subtitle={{ fr: "Conditions courantes pour securiser les operations.", en: "Current conditions to secure field operations." }}
           links={[{ href: "/actions/new", label: { fr: "Planifier une action", en: "Plan action" } }]}
         >
@@ -1536,7 +1536,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
         <SectionShell
           title={{ fr: "Collectivites", en: "Local authorities" }}
           subtitle={{ fr: "Observatoire municipal: KPI territoriaux et priorisation des zones.", en: "Municipal observatory: territorial KPIs and area prioritization." }}
-          links={[{ href: "/reports", label: { fr: "Acces reporting", en: "Open reporting" } }]}
+          links={[{ href: "/reports", label: { fr: "Accès reporting", en: "Open reporting" } }]}
         >
           <ElusSection />
         </SectionShell>

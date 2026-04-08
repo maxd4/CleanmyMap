@@ -48,3 +48,5 @@ Read this first, then load only task-relevant files.
 - Clerk production readiness is validated by:
   - live keys (`pk_live_` / `sk_live_`)
   - application-domain redirects (`/sign-in`, `/sign-up`, `/dashboard`).
+- Incident handling quick guide:
+  - `docs/ops/INCIDENT_RUNBOOK_SHORT.md`

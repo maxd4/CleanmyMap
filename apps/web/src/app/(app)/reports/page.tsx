@@ -10,7 +10,7 @@ export default async function ReportsPage() {
   if (!userId) {
     return (
       <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-amber-900">Acces restreint</h1>
+        <h1 className="text-2xl font-semibold text-amber-900">Accès restreint</h1>
         <p className="mt-2 text-sm text-amber-800">Connecte-toi pour acceder au module de reporting.</p>
       </section>
     );
@@ -42,4 +42,3 @@ export default async function ReportsPage() {
     </div>
   );
 }
-

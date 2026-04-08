@@ -1,556 +1,84 @@
 PLAN D EXECUTION CONVERSATIONNEL - CLEANMYMAP
-Date: 2026-04-08
-Version: 1.0
+Date: 2026-04-09
+Version: 2.0 (synthese actionnable)
 
 OBJECTIF
-- Transformer le plan produit en sequence de messages courts, actionnables, a envoyer successivement a ChatGPT Codex.
-- Maximiser les progres utiles a chaque etape, sans surcharge de contexte.
-- Priorite stricte: debloquer architecture -> fiabiliser -> optimiser -> nettoyer/consolider.
-
+- Continuer l amelioration du site avec des messages courts, ordonnes et reutilisables.
+- Eviter le bruit historique; garder uniquement: etat atteint, dette residuelle, prochaine sequence.
 
 ================================================================
-PHASE 1 - AUDIT ET CARTOGRAPHIE (COMPREHENSION LOCALE)
+ETAT ACTUEL (RESUME FIABLE)
 ================================================================
-Objectif phase:
-- Etablir une cartographie fiable avant refactor.
-- Isoler les vrais blocages de structure et de runtime.
+- Phases 1 a 7 executees.
+- Auth Clerk/Google live operationnelle.
+- Navigation/sections unifiees via registre unique.
+- Map/form/export alignes sur un contrat commun.
+- Moderation admin branchee UI -> API.
+- Scripts de verification rapide ajoutes:
+  - scripts/check_changed_quick.ps1
+  - scripts/run_focus.ps1
+- Build/lint passent localement.
 
-historique des réponses : 
-Écarts réels constatés:
-
-Écart de branchement principal: identifiants legacy home et pdf non exposés comme rubriques Next.js.
-Le reste des rubriques legacy métier est migré/branché en Next (souvent avec renommage de route).
-Blocage transverse: toutes les routes sous app/(app) nécessitent authentification Clerk (layout.tsx:11-13,31).
-Route sections/[sectionId] existe pour tout slug mais affiche “Rubrique introuvable” si slug absent du switch (section-renderer.tsx:1341,1493).
-
-Corrections appliquées, sans toucher au code métier legacy (supprimé car obsolète côté fichiers legacy/fallback).
-
-Ce que j’ai corrigé
-
-Remplacement du fallback legacy par un store actions natif Next/Supabase:
-
-Nouveau module: store.ts
-Route API actions: route.ts
-Route API map: route.ts
-Dashboard: page.tsx
-Suppression des artefacts legacy obsolètes:
-
-legacy/ (dossier complet)
-streamlit-cutover-rollback.md
-manifest.streamlit.json
-
-
-Verdict actuel (aujourd’hui)
-
-La carte n’affiche aucune donnée en production locale tant que public.actions est absent sur le projet Supabase connecté.
-Preuve runtime (audit shell): requêtes Supabase retournent
-Could not find the table 'public.actions' in the schema cache
-et
-Could not find the table 'public.spots' in the schema cache.
-Côté code, l’endpoint carte stoppe avant la fusion locale: route.ts, route.ts, route.ts.
-Flux data bout-en-bout
-
-UI carte -> SWR -> /api/actions/map: actions-map-feed.tsx, http.ts
-API /api/actions/map:
-lit actions (Supabase) avec status, days, limit, requireCoordinates=true: route.ts
-lit stores locaux real + validated (pas test): map-records.ts, map-records.ts
-fusionne, filtre coordonnées non nulles, trie date, coupe à limit: route.ts
-Rendu carte:
-marker seulement si lat/lon présents: actions-map-canvas.tsx
-formes (trace/polygone) depuis notes parsées: drawing.ts, route.ts
-Sources localisées et classées (test / réel / validé)
-
-test (non affiché carte):
-fichier: test_records.json
-généré par: build-test-local-store.mjs, build-test-local-store.mjs
-exclu du flux map (seuls real + validated): map-records.ts
-réel:
-DB live: table public.actions (attendue): 20260402_000001_initial_modern_schema.sql
-local backup réel: real_records.json, source Google Sheet: sync-real-data-from-sheet.mjs, sync-real-data-from-sheet.mjs
-raw CSV source: google-sheet-map-clean-up.csv
-validé:
-DB live: actions.status='approved', spots.status in ('validated','cleaned'): 20260402_000001_initial_modern_schema.sql, 20260402_000001_initial_modern_schema.sql
-local validated store: validated_records.json
-alimenté par modération admin: route.ts, local-sync.ts
-sync batch validés: sync-validated-local-store.mjs, sync-validated-local-store.mjs
-État concret des fichiers locaux (audit)
-
-test_records.json: 2 records, 2 géo-affichables.
-real_records.json: 24 records, 22 géo-affichables (2 sans coords).
-validated_records.json: 0 record.
-Mapping attendu vers la carte (ActionMapItem)
-
-Contrat map: types.ts
-Mapping DB actions -> map:
-action_date, location_label, latitude/longitude, waste_kg, cigarette_butts, status, record_type='action': route.ts
-Mapping local store -> map:
-location.latitude/longitude obligatoires sinon drop: map-records.ts
-status local -> status action: local-records.ts
-Mapping tracé:
-sérialisation en notes avec prefix: store.ts
-parsing à la lecture carte: drawing.ts
-Raisons pour lesquelles des données ne s’affichent pas
-
-Bloquant principal: table actions absente -> endpoint carte 500 -> aucune fusion locale exécutée: route.ts, route.ts
-Filtre coordonnées: points sans lat/lon exclus API et canvas: route.ts, actions-map-canvas.tsx
-Filtre temporel days (floorDate) et limit: route.ts, route.ts
-Filtre statut UI/API (all|pending|approved|rejected): actions-map-feed.tsx, http.ts
-Filtre catégories UI par défaut: seules yellow et violet visibles (green/blue cachées): map-marker-categories.ts, actions-map-feed.tsx
-Données test explicitement non branchées à la carte: map-records.ts
-spots DB non lus directement par /api/actions/map (ils passent seulement via validated_records): route.ts, local-sync.ts
-Anomalies de mapping/filtrage identifiées
-
-Rupture de schéma live: migration définit actions/spots mais instance connectée ne les expose pas.
-real_records contient clean_place; ces points tombent souvent en catégorie blue (cachée par défaut), donc “présents mais invisibles”.
-validated_records vide actuellement: aucune donnée “validée locale” n’alimente la carte.
-eventDate local nul est converti à “today” pour la carte: map-records.ts, ce qui peut biaiser la fenêtre days.
-
-
-Constat rapide
-
-Le flux auth est cohérent (ClerkProvider + proxy + garde serveur), mais sensible aux écarts d’environnement/hostname.
-Les warnings env viennent surtout de la validation globale env.ts + checks de santé qui considèrent certaines intégrations comme “manquantes”.
-Causes racines priorisées
-
-P0 — Clés Clerk manquantes/invalides selon l’environnement d’exécution (cause la plus probable des reconnexions)
-Preuve historique explicite: pre-cutover-dry-run.md
-Points d’entrée dépendants:
-layout.tsx
-proxy.ts
-page.tsx
-Inférence: si NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY/CLERK_SECRET_KEY ne sont pas chargées partout (Edge/Server), la session paraît “non persistante”.
-P1 — Cookies/session host-bound sans stratégie de domaine canonique
-Aucune config explicite de domaine/cookies Clerk dans:
-proxy.ts
-layout.tsx
-Inférence: alterner localhost, 127.0.0.1, URL preview, etc. peut donner une impression de déconnexion intermittente.
-P1 — Warnings env bruyants dus à validation URL globale
-Validation stricte URL + log global:
-env.ts
-env.ts
-env.ts est importé à de nombreux endroits serveur/client, donc warning répété si une URL est non vide mais invalide.
-P2 — “Warnings d’environnement” amplifiés par endpoint santé
-uptime passe en dégradé si certaines vars sont absentes:
-route.ts
-Preuve runbook: 503 “degraded” + mention Sentry/Upstash:
-pre-cutover-dry-run.md
-Notes factuelles
-
-Dans l’environnement local actuel, les champs URL principaux sont valides (APP_URL, SUPABASE_URL, POSTHOG_HOST), donc le problème est probablement contextuel (preview/prod/edge) plutôt que purement local.
-Plan de correction minimal (sans casser auth, sans changer secrets)
-
-Durcir le diagnostic auth env dans env.ts:
-ajouter un check explicite de présence/format Clerk (publishable/secret),
-logger une seule fois, avec message ciblé “auth config incomplete”.
-Stabiliser la persistance de session par host canonique
-documenter/forcer un host unique en dev (éviter mix localhost/127.0.0.1),
-optionnel: redirection canonique légère au niveau proxy si host inattendu.
-Réduire le bruit des warnings URL optionnelles
-dans env.ts, distinguer “warning optionnel” vs “erreur bloquante auth”.
-Rendre uptime plus représentatif
-séparer checks “critiques auth/session” de checks “intégrations optionnelles” pour éviter faux 503 perçus comme panne auth.
-
-
-
-**Baseline qualité actuelle (mesurée)**
-Je n’ai pas lancé de batterie E2E lourde. J’ai exécuté uniquement les checks courts.
-
-| Check | Statut | Preuve |
-|---|---|---|
-| `npm --prefix apps/web run lint` | Passe | `eslint` OK |
-| `npm --prefix apps/web run test` | Passe | `vitest`: 7 files, 32 tests passés |
-| `npm --prefix apps/web run build` | Passe avec bruit | Build Next OK, warnings Sentry de dépréciation |
-| `python scripts/check_runtime_db_tracking.py --root .` | Passe | aucun SQLite runtime tracké |
-| `python scripts/ci_cleanup.py --root . --check` | Échoue seul | BOM UTF-8 détecté |
-| `python scripts/normalize_utf8.py --root . --check` | Échoue seul | `README.md: bom, mojibake` |
-| `python -m scripts.ui_inventory check` | Échoue / obsolète | dépend de `app.py` legacy (`tab_specs` absent) |
-| `powershell -File scripts/run_checks.ps1` (scope `changed`) | Passe, mais non read-only | auto-fix encodage (modifie des fichiers), puis 5 tests pytest passés |
-| `npm test` (racine) | Échec intentionnel | script placeholder `Error: no test specified` |
-
-**Inventaire des scripts de vérification**
-- Racine: [package.json](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/package.json) (scripts `test`, `test:e2e`, `ui:inventory:*`).
-- App web: [apps/web/package.json](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/package.json) (scripts `lint`, `test`, `build`).
-- Orchestrateur principal: [scripts/run_checks.ps1](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/scripts/run_checks.ps1) (`changed/full`, `-SkipE2E`, `-SkipEncodingAutofix`, `pytest`, `playwright`).
-- Scripts qualité Python: [scripts/normalize_utf8.py](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/scripts/normalize_utf8.py), [scripts/ci_cleanup.py](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/scripts/ci_cleanup.py), [scripts/check_runtime_db_tracking.py](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/scripts/check_runtime_db_tracking.py), [scripts/ui_inventory.py](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/scripts/ui_inventory.py).
-
-**Bruits / instabilités identifiés**
-- `build` bruité par warnings Sentry (non bloquant).
-- `run_checks.ps1` peut salir le workspace (auto-fix encodage) si `-SkipEncodingAutofix` absent.
-- `ui:inventory:check` est couplé à un flux legacy (`app.py`) et échoue dans l’état actuel.
-- `npm test` racine n’est pas un vrai test gate (placeholder).
-
-**Protocole minimal incrémental recommandé (court, stable, reproductible)**
-1. **À chaque commit local (rapide, ~1-3 min)**  
-   - `python scripts/check_runtime_db_tracking.py --root .`  
-   - `python scripts/ci_cleanup.py --root . --check`  
-   - `npm.cmd --prefix apps/web run lint`  
-   - `npm.cmd --prefix apps/web run test`
-2. **Avant push / merge (moyen, ~2-6 min)**  
-   - `npm.cmd --prefix apps/web run build`  
-   - `powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1 -Scope changed -SkipE2E -SkipEncodingAutofix`
-3. **Gate pré-release uniquement**  
-   - `powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1 -Scope full`  
-   - puis `npm.cmd run test:e2e` si release UI critique
-
-Ce set est le plus court actuellement sans E2E lourde et avec un vrai filet anti-régression.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Points encore ouverts (non bloquants immediats):
+- Warning Sentry release/sourcemaps si SENTRY_AUTH_TOKEN absent.
+- Integrations optionnelles non connectees (sentry, posthog, resend, etc.).
+- Quelques textes FR encore perfectibles dans zones heritagees.
 
 ================================================================
-PHASE 2 - REFACTOR STRUCTUREL CIBLE
+DETTE RESIDUELLE PRIORISEE
 ================================================================
-Objectif phase:
-- Stabiliser les points d architecture qui bloquent la suite.
+CRITIQUE
+- Aucun blocage critique confirme cote code/build/lint.
 
-Refactor structurel effectué avec une source de vérité unique des rubriques, sans ajout de nouvelles rubriques ni changement d’URL métier.
+IMPORTANT
+1. Finaliser signal monitoring prod (uptime critique vs optionnel) et verifier affichage panneau systeme.
+2. Normaliser les derniers textes FR visibles (coherence nomenclature et accents) sur pages prioritaires.
+3. Stabiliser la doc exploitation (auth live, checks minimaux, parcours smoke).
 
-Ce qui a été changé
-
-Registre unique créé: sections-registry.ts
-Validation de disponibilité + route valide centralisée (hasValidRoute, isRubriqueVisible): sections-registry.ts
-Navigation générée depuis le registre (plus de duplication): navigation.ts
-Route dynamique /sections/[sectionId] branchée sur le registre avec validation + notFound() si ID non autorisé: page.tsx
-SectionRenderer typé sur SectionId du registre + garde de visibilité: section-renderer.tsx, section-renderer.tsx
-Effet architecture
-
-La navigation et le renderer lisent désormais la même définition des rubriques.
-Une rubrique n’est visible que si availability = "available" et si sa route est valide.
-Compatibilité des URLs conservée (/dashboard, /reports, /actions/*, /sections/* inchangées).
-
-
-Refactor réalisé avec un contrat de données commun et branchement rétro-compatible map/form/export, sans migration destructive.
-
-Ce que j’ai ajouté
-
-Contrat canonique (action, clean_place, spot) avec champs unifiés id, type, status, source, location, geometry, dates, metadata + mappers:
-apps/web/src/lib/actions/data-contract.ts
-Formulaire / API create (rétro-compatible)
-
-Le client envoie désormais le payload contrat:
-apps/web/src/lib/actions/http.ts
-Le schéma serveur accepte legacy + contrat puis normalise vers le payload existant:
-apps/web/src/lib/validation/action.ts
-Carte
-
-/api/actions/map construit le contrat puis expose les items map via mapper (avec compat legacy conservée):
-apps/web/src/app/api/actions/map/route.ts
-Les sources locales map passent aussi par le contrat:
-apps/web/src/lib/data/map-records.ts
-Le front map lit le contrat (helpers) pour type/coords/metrics:
-apps/web/src/components/actions/actions-map-feed.tsx
-apps/web/src/components/actions/actions-map-canvas.tsx
-apps/web/src/components/actions/map-marker-categories.ts
-Exports
-
-CSV et JSON construits depuis le contrat canonique:
-apps/web/src/app/api/reports/actions.csv/route.ts
-apps/web/src/app/api/reports/actions.json/route.ts
-CSV enrichi avec colonnes contrat (record_type, source, observed_at, geometry_kind, geometry_geojson):
-apps/web/src/lib/reports/csv.ts
-Compatibilité
-
-ActionMapItem accepte spot et embarque contract sans casser les champs legacy:
-apps/web/src/lib/actions/types.ts
-
-
-
-Nettoyage structurel appliqué, avec fallback explicite uniquement pour rubriques non finalisées et sans masquer de rubrique.
-
-Ce qui a changé
-
-Ajout d’un statut d’implémentation dans le registre (finalized / pending) + note optionnelle:
-sections-registry.ts
-Toutes les rubriques actuelles sont marquées explicitement implementation: "finalized":
-sections-registry.ts
-Ajout d’un helper pour lister les rubriques en attente:
-sections-registry.ts
-SectionRenderer:
-fallback dédié PendingSection pour rubriques pending
-plus de fallback implicite “branchee mais vide par erreur”
-section-renderer.tsx
-section-renderer.tsx
-Documentation explicite des restes
-
-Fichier de statut ajouté avec liste finalisées/en attente:
-sections-status.md
-État actuel: aucune rubrique en attente:
-sections-status.md
-
-
-
-
-
-
+UTILE
+1. Brancher SENTRY_AUTH_TOKEN pour release + sourcemaps.
+2. Finaliser branchement PostHog/Resend selon besoin produit.
+3. Ajouter note runbook "migration Clerk live" (roles/admin metadata).
 
 ================================================================
-PHASE 3 - INTEGRATION RUNTIME INCREMENTALE
+MESSAGES PRETS A RENVOYER (PROCHAINE MINI-SEQUENCE)
 ================================================================
-Objectif phase:
-- Livrer des ameliorations utilisateur visibles et robustes.
+Message A
+Type: hardening prod cible
+But: fiabiliser le monitoring runtime
+Message exact:
+"Verifie et finalise /api/uptime + panneau Etat des integrations: status critique lisible, optionnels en warning non bloquant, et coherence UI/API. Fais les patches minimaux puis valide lint/build."
 
+Message B
+Type: qualite UX texte
+But: finir harmonisation FR prioritaire
+Message exact:
+"Passe sur les pages web prioritaires (dashboard, declaration, map, reports, admin) et corrige uniquement les textes FR encore degrad s/incoherents, sans changer le scope metier ni le design."
 
-Implémentation faite: l’identité du formulaire est maintenant pilotée par Clerk, préselectionnée intelligemment, avec fallback traçable et verrouillage côté API.
+Message C
+Type: validation non regression courte
+But: verrouiller un protocole stable
+Message exact:
+"Execute la matrice courte: npm --prefix apps/web run lint, npm --prefix apps/web run build, npm run checks:changed:quick. Donne un rapport court par check avec seulement ecarts reels."
 
-Préselection intelligente (prénom > pseudo > userId) et options construites depuis Clerk:
-authz.ts
-Résolution robuste de l’identité choisie (resolveActorNameFromClerk) + helper serveur (pickTraceableActorName):
-authz.ts
-authz.ts
-Page formulaire: fallback propre sur userId (plus de placeholder générique non traçable):
-new/page.tsx
-Formulaire: identité compte Clerk affichée, sélection bornée aux options Clerk, sans saisie libre non tracée:
-action-declaration-form.tsx
-action-declaration-form.tsx
-API POST /api/actions: normalisation serveur de actorName depuis Clerk (anti-spoofing client):
-route.ts
+Message D
+Type: docs ops minimale
+But: clore proprement la vague technique
+Message exact:
+"Mets a jour la doc ops minimale (architecture/checks/auth live) pour refleter l etat actuel, sans ouvrir de nouveau chantier."
 
-
-
-C’est en place de bout en bout. Le cycle saisie -> persistance -> affichage -> export pour trace/polygone est actif, non obligatoire, et testé.
-
-Formulaire avec option recommandée de trace/polygone sur carte blanche Paris:
-action-declaration-form.tsx
-action-drawing-map.tsx
-Géométrie optionnelle (pas imposée): manualDrawing seulement si activé/valide:
-action-declaration-form.tsx
-Persistance cohérente de la géométrie (notes + payload JSON):
-store.ts
-drawing.ts
-Affichage carte (points existants conservés + polyligne/polygone rendu):
-actions-map-canvas.tsx
-actions-map-feed.tsx
-api/actions/map/route.ts
-Exports CSV/JSON avec géométrie incluse:
-actions.csv/route.ts
-actions.json/route.ts
-csv.ts
-J’ai ajouté des tests ciblés pour verrouiller ce comportement:
-data-contract.test.ts
-csv.test.ts
-
-
-
-
-Flux modération admin branché dans l’UI existante avec gestion d’erreurs robuste et journal minimal.
-
-Ce que j’ai ajouté
-
-Client API dédié pour POST /api/admin/moderation (erreurs réseau, permission, validation, not found, serveur):
-moderation-client.ts
-
-Intégration UI dans l’écran admin existant:
-
-appel via client (postAdminModeration)
-feedback succès/erreur lisible
-journal minimal des actions de modération (session courante)
-actions-report-panel.tsx
-actions-report-panel.tsx
-Contrôle d’accès admin conservé
-
-Garde UI admin:
-admin/page.tsx
-Garde serveur endpoint:
-route.ts
-Tests ajoutés
-
-Tests client modération:
-moderation-client.test.ts
-
-
-
-
-
-
-Correctif appliqué côté app pour réduire les reconnexions Clerk sans relâcher la sécurité.
-
-Ce qui a été changé
-
-Centralisation de la config runtime Clerk (origin/domaine/satellite/allowlist) :
-clerk-session-config.ts
-ClerkProvider renforcé pour persistance session :
-touchSession activé
-dynamic activé
-branchement domain/isSatellite/satelliteAutoSync/allowedRedirectOrigins
-layout.tsx
-Middleware Clerk aligné sur la même config (dont authorizedParties) :
-proxy.ts
-Parsing env durci (booléens Clerk + normalisation URL plus robuste) :
-env.ts
-Variables supportées (optionnelles)
-
-CLERK_ALLOWED_PARTIES
-CLERK_DOMAIN
-CLERK_IS_SATELLITE
-CLERK_SATELLITE_AUTO_SYNC
-Note courte de vérification Dashboard Clerk
-
-Checklist ajoutée ici :
-CLERK_SESSION_DASHBOARD_CHECK.md
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Message E
+Type: pre-phase suivante
+But: preparer la prochaine vague produit
+Message exact:
+"Fais un bilan final compact: changements effectifs, impacts, limites restantes, dette priorisee (critique/important/utile), et propose 3 options de prochaine phase avec effort estime (S/M/L)."
 
 ================================================================
-PHASE 4 - VALIDATION ET NON REGRESSION
+REGLES D EXECUTION
 ================================================================
-Objectif phase:
-- Verifier avant/apres et bloquer les regressions invisibles.
+- Toujours patcher de maniere prudente (pas de suppression agressive non prouvee).
+- Garder compatibilite des routes actives.
+- Ne pas masquer les erreurs reelles dans les scripts/logs.
+- Valider systematiquement lint/build apres modifications structurelles.
 
-
-Les outils à brancher avant mise en prod “sérieuse”:
-
-Sentry (suivi erreurs)
-Resend (emails réels)
-PostHog (analytics produit)
-Le reste (pinecone, stripe, upstash, cloudflare) seulement si tu utilises ces features tout de suite.
-
-
-
-
-Sur Clerk, voici des metadata intéressantes à implémenter pour ton site web
-privateMetadata (besoins serveur internes utiles)
-
-moderation_level: niveau de confiance interne pour prioriser/restreindre certaines actions.
-can_export_full: autorisation fine export complet vs export limité.
-ops_tags: tags support interne (needs_review, high_impact_zone).
-last_sensitive_action_at: date de dernière action sensible (audit simple).
-rate_limit_tier: palier anti-abus par utilisateur.
-legacy_user_mapping: lien vers ancien ID système/migration.
-admin_notes: notes back-office non visibles utilisateur.
-publicMetadata (ajouts utiles visibles côté app)
-
-display_handle: pseudo officiel affiché partout.
-avatar_style: préférence visuelle d’avatar.
-home_city: ville de rattachement pour contextualiser carte/communauté.
-team_name: brigade/groupe principal.
-badges: enrichir avec badges métier (validator, captain, mentor).
-profile_completed: booléen pour guider onboarding.
-impact_summary: petit compteur affichable (actions validées, kg collectés).
-
-
-
-
-Phase 4 est clôturée côté technique.
-
-Validation exécutée
-
-lint ✅
-test ✅ (9 files / 40 tests)
-build ✅
-Smoke prod endpoints critiques: /sign-in, /api/health, /api/uptime ✅
-Auth Clerk live + OAuth Google + redeploy prod ✅
-Lecture des 404 actuels
-
-Les 404 observés hors session sur /dashboard, /admin, /actions/*, /reports, exports sont cohérents avec des routes protégées/middleware (non critique pour la sécurité).
-Aucune régression bloquante introduite par les derniers changements.
-Écarts restants (non bloquants)
-
-Warnings build Sentry (disableLogger deprecated, auth token manquant pour sourcemaps).
-Intégrations optionnelles non branchées (sentry/posthog/resend/...) visibles en WARNING dans le panneau d’état.
-Verdict
-
-Objectif Phase 4 atteint: vérification avant/après faite, pas de régression bloquante ouverte.
-
-
-
-
-
-
-
-
-
-
-
-
-================================================================
-PHASE 5 - OPTIMISATION CONTEXTE ET COUT TOKENS
-================================================================
-Modifications
-Ajout de run_focus.ps1
-Exécute une commande et affiche uniquement les lignes à fort signal (error/warn/pass/status/...).
-Préserve le code de sortie.
-En cas d’échec, affiche la fin brute des logs pour ne pas masquer les vraies erreurs.
-Ajout de check_changed_quick.ps1
-Checks ciblés sur fichiers modifiés:
-lint web uniquement sur fichiers JS/TS modifiés
-tests web uniquement sur fichiers de test modifiés
-py_compile sur fichiers Python modifiés
-build optionnel avec -IncludeBuild
-Ajout de commandes dans package.json:
-checks:changed:quick
-checks:changed:quick:build
-logs:focus:build
-logs:focus:test
-logs:focus:checks
-Validation
-npm run checks:changed:quick ✅
-npm run logs:focus:test ✅ (sortie compacte, signal utile conservé)
-Résultat attendu atteint
-Même signal utile, moins de bruit.
-Compatibilité CI conservée (scripts existants inchangés, ajouts non disruptifs).
-
-
-
-
-
-================================================================
-PHASE 6 - NETTOYAGE FINAL ET CONSOLIDATION
-================================================================
-Objectif phase:
-- Clore proprement la vague et préparer la suivante.
-
-
-
-
-
-
-
-
-
-
-
-
-Ce document est volontairement conversationnel.
-Il sert de guide d envoi progressif de prompts, pas de plan monolithique.
+Ce document est le guide operatoire courant.
