@@ -439,72 +439,59 @@ Objectif phase:
 - Verifier avant/apres et bloquer les regressions invisibles.
 
 
-Rapport court par check (matrice phase 1):
+Les outils à brancher avant mise en prod “sérieuse”:
 
-npm --prefix apps/web run lint
-
-Statut: ✅ PASS
-Note: aucune erreur lint.
-npm --prefix apps/web run build
-
-Statut: ✅ PASS
-Note: build OK. Warnings Sentry de dépréciation non bloquants (disableLogger).
-npm --prefix apps/web run test
-
-Statut: ✅ PASS
-Note: 9 fichiers / 40 tests passés.
-powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1 -Scope changed
-
-Statut: ✅ PASS
-Note: check encodage a auto-corrigé plan.txt (mojibake), puis recheck OK; cleanup/runtime DB OK; smoke tests Python (5) OK; E2E full non exécuté (normal en scope changed).
-Conclusion:
-
-Aucune régression bloquante ouverte.
-Écart résiduel non bloquant: plan.txt modifié automatiquement par la normalisation UTF-8 du check.
+Sentry (suivi erreurs)
+Resend (emails réels)
+PostHog (analytics produit)
+Le reste (pinecone, stripe, upstash, cloudflare) seulement si tu utilises ces features tout de suite.
 
 
 
 
-la console donne déjà la cause principale des erreurs de la rubrique admin du site web
+Sur Clerk, voici des metadata intéressantes à implémenter pour ton site web
+privateMetadata (besoins serveur internes utiles)
 
-Cause critique
-Clerk has been loaded with development keys sur https://cleanmymap.fr
-Donc ton site de prod utilise des clés Clerk de développement.
-Ça peut casser la persistance/session et l’accès admin en production.
-Autres erreurs
-GET /api/uptime 503 en boucle: problème backend/endpoint uptime (pas la cause directe du login).
-/_vercel/insights/script.js 404: non bloquant pour l’auth.
-Ce que tu dois corriger dans Vercel (Production)
-Dans Project Settings > Environment Variables:
+moderation_level: niveau de confiance interne pour prioriser/restreindre certaines actions.
+can_export_full: autorisation fine export complet vs export limité.
+ops_tags: tags support interne (needs_review, high_impact_zone).
+last_sensitive_action_at: date de dernière action sensible (audit simple).
+rate_limit_tier: palier anti-abus par utilisateur.
+legacy_user_mapping: lien vers ancien ID système/migration.
+admin_notes: notes back-office non visibles utilisateur.
+publicMetadata (ajouts utiles visibles côté app)
 
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = clé publishable live (pk_live_...)
-CLERK_SECRET_KEY = clé secret live (sk_live_...)
-ne pas laisser de pk_test_... / sk_test_... en Production
-Puis Redeploy (sans cache de préférence).
-
-Vérification Clerk Dashboard (live instance)
-Dans Clerk (instance live):
-
-Domaines autorisés incluent https://cleanmymap.fr
-Redirect URLs incluent:
-https://cleanmymap.fr/sign-in
-https://cleanmymap.fr/sign-up
-https://cleanmymap.fr/dashboard
-Ensuite reteste /sign-in puis /admin.
+display_handle: pseudo officiel affiché partout.
+avatar_style: préférence visuelle d’avatar.
+home_city: ville de rattachement pour contextualiser carte/communauté.
+team_name: brigade/groupe principal.
+badges: enrichir avec badges métier (validator, captain, mentor).
+profile_completed: booléen pour guider onboarding.
+impact_summary: petit compteur affichable (actions validées, kg collectés).
 
 
 
 
+Phase 4 est clôturée côté technique.
 
+Validation exécutée
 
+lint ✅
+test ✅ (9 files / 40 tests)
+build ✅
+Smoke prod endpoints critiques: /sign-in, /api/health, /api/uptime ✅
+Auth Clerk live + OAuth Google + redeploy prod ✅
+Lecture des 404 actuels
 
+Les 404 observés hors session sur /dashboard, /admin, /actions/*, /reports, exports sont cohérents avec des routes protégées/middleware (non critique pour la sécurité).
+Aucune régression bloquante introduite par les derniers changements.
+Écarts restants (non bloquants)
 
+Warnings build Sentry (disableLogger deprecated, auth token manquant pour sourcemaps).
+Intégrations optionnelles non branchées (sentry/posthog/resend/...) visibles en WARNING dans le panneau d’état.
+Verdict
 
-
-
-
-
-
+Objectif Phase 4 atteint: vérification avant/après faite, pas de régression bloquante ouverte.
 
 
 
@@ -520,79 +507,50 @@ Ensuite reteste /sign-in puis /admin.
 ================================================================
 PHASE 5 - OPTIMISATION CONTEXTE ET COUT TOKENS
 ================================================================
+Modifications
+Ajout de run_focus.ps1
+Exécute une commande et affiche uniquement les lignes à fort signal (error/warn/pass/status/...).
+Préserve le code de sortie.
+En cas d’échec, affiche la fin brute des logs pour ne pas masquer les vraies erreurs.
+Ajout de check_changed_quick.ps1
+Checks ciblés sur fichiers modifiés:
+lint web uniquement sur fichiers JS/TS modifiés
+tests web uniquement sur fichiers de test modifiés
+py_compile sur fichiers Python modifiés
+build optionnel avec -IncludeBuild
+Ajout de commandes dans package.json:
+checks:changed:quick
+checks:changed:quick:build
+logs:focus:build
+logs:focus:test
+logs:focus:checks
+Validation
+npm run checks:changed:quick ✅
+npm run logs:focus:test ✅ (sortie compacte, signal utile conservé)
+Résultat attendu atteint
+Même signal utile, moins de bruit.
+Compatibilité CI conservée (scripts existants inchangés, ajouts non disruptifs).
 
-uniquement après la phase 4 
-Message 15
-- Type: implementation incrementale pilotee par contraintes
-- Niveau de raisonnement: intermediaire
-- But: reduire bruit logs et checks inutiles.
-- Message exact a envoyer a Codex:
-"Ajoute des scripts utilitaires pour filtrer logs/tests (erreurs et lignes utiles seulement), limiter la sortie verbeuse, et faciliter les checks cibles sur fichiers modifies."
-- Codex doit faire:
-  - creer scripts simples et documentes;
-  - conserver compatibilite CI.
-- Codex ne doit pas faire:
-  - masquer des erreurs reelles.
-- Fichiers/zones concernes:
-  - scripts/*
-  - package.json
-- Livrable attendu:
-  - commandes courtes pour verification rapide.
-- Critere de passage:
-  - meme signal utile avec moins de bruit.
+
+
+
 
 ================================================================
 PHASE 6 - NETTOYAGE FINAL ET CONSOLIDATION
 ================================================================
 Objectif phase:
-- Clore proprement la vague et preparer la suivante.
+- Clore proprement la vague et préparer la suivante.
 
-Dependances:
-- PHASE 5 validee.
 
-Message 16
-- Type: nettoyage final / consolidation
-- Niveau de raisonnement: intermediaire
-- But: supprimer dettes techniques visibles sans risque.
-- Message exact a envoyer a Codex:
-"Nettoyage final prudent: supprime chemins morts et references legacy inutiles (notamment Streamlit non utilise), harmonise nomenclature des rubriques, et mets a jour la doc minimale de navigation."
-- Codex doit faire:
-  - nettoyer code mort prouve;
-  - garder backward compatibility des routes actives.
-- Codex ne doit pas faire:
-  - suppression agressive non verifiee.
-- Fichiers/zones concernes:
-  - modules legacy non references
-  - navigation et docs associees
-- Livrable attendu:
-  - codebase plus lisible, moins de bruit legacy.
-- Critere de passage:
-  - lint/build passent apres nettoyage.
 
-Message 17
-- Type: nettoyage final / consolidation
-- Niveau de raisonnement: intermediaire
-- But: produire une cloture exploitable et prioriser la dette residuelle.
-- Message exact a envoyer a Codex:
-"Fais un bilan final de vague: changements effectifs, impacts, limites restantes, dette residuelle priorisee (critique/important/utile), et propose la prochaine mini-sequence de 5 messages max."
-- Codex doit faire:
-  - fournir synthese factuelle et actionnable.
-- Codex ne doit pas faire:
-  - ouvrir un nouveau chantier large.
-- Fichiers/zones concernes:
-  - ensemble des fichiers modifies pendant la vague
-- Livrable attendu:
-  - rapport final + prochaine suite compacte.
-- Critere de passage:
-  - backlog residuel clair et ordonne.
 
-================================================================
-RAPPEL STRATEGIQUE DE PRIORISATION
-================================================================
-1) Architecture et flux de donnees.
-2) Fiabilite runtime (formulaires, carte, moderation, session).
-3) Optimisation cout/contexte et cadence d execution.
-4) Nettoyage et consolidation.
+
+
+
+
+
+
+
 
 Ce document est volontairement conversationnel.
 Il sert de guide d envoi progressif de prompts, pas de plan monolithique.

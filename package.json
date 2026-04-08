@@ -1,7 +1,7 @@
 {
   "name": "cleanmymap-main",
   "version": "1.0.0",
-  "description": "https://cleanmymap.streamlit.app",
+  "description": "https://cleanmymap.fr",
   "main": "index.js",
   "directories": {
     "test": "tests"
@@ -9,6 +9,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:e2e": "npx.cmd playwright test --config tests/e2e/playwright.config.cjs",
+    "checks:changed:quick": "powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1",
+    "checks:changed:quick:build": "powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1 -IncludeBuild",
+    "logs:focus:build": "powershell -ExecutionPolicy Bypass -File scripts/run_focus.ps1 -Command \"npm.cmd --prefix apps/web run build\"",
+    "logs:focus:test": "powershell -ExecutionPolicy Bypass -File scripts/run_focus.ps1 -Command \"npm.cmd --prefix apps/web run test\"",
+    "logs:focus:checks": "powershell -ExecutionPolicy Bypass -File scripts/run_focus.ps1 -Command \"powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1 -Scope changed -SkipE2E\"",
     "ui:inventory:regen": "python -m scripts.ui_inventory regenerate --write-baseline",
     "ui:inventory:check": "python -m scripts.ui_inventory check",
     "ui:inventory:cleanup": "python -m scripts.ui_inventory cleanup --dry-run"

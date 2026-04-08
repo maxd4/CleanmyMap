@@ -37,3 +37,14 @@ Read this first, then load only task-relevant files.
 ## Validation Strategy
 - Default: run targeted checks for changed scope.
 - Full suite only before release or when touching shared core.
+
+## Production Notes (Web)
+- `apps/web/src/app/api/uptime/route.ts` exposes:
+  - `criticalStatus`: health for required dependencies (`app`, `supabase`, `clerk`, `clerk_keys`)
+  - `optionalStatus`: warnings for optional integrations (`sentry`, others if added)
+- Build warnings for Sentry without auth token are non-blocking for runtime:
+  - release creation/source-map upload requires `SENTRY_AUTH_TOKEN`
+  - app build and runtime remain valid without it.
+- Clerk production readiness is validated by:
+  - live keys (`pk_live_` / `sk_live_`)
+  - application-domain redirects (`/sign-in`, `/sign-up`, `/dashboard`).
