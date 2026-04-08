@@ -1,16 +1,18 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { ACTION_STATUSES } from "@/lib/actions/types";
+import { ACTION_STATUSES, type ActionStatus } from "@/lib/actions/types";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { createActionSchema } from "@/lib/validation/action";
+import { createAction, fetchActions } from "@/lib/actions/store";
+import { getCurrentUserIdentity, pickTraceableActorName } from "@/lib/authz";
 
 export const runtime = "nodejs";
 
-function parseStatusParam(raw: string | null): string | null {
+function parseStatusParam(raw: string | null): ActionStatus | null {
   if (!raw) {
     return null;
   }
-  return ACTION_STATUSES.includes(raw as (typeof ACTION_STATUSES)[number]) ? raw : null;
+  return ACTION_STATUSES.includes(raw as ActionStatus) ? (raw as ActionStatus) : null;
 }
 
 function parsePositiveInteger(raw: string | null, min: number, max: number, fallback: number): number {
@@ -31,24 +33,8 @@ export async function GET(request: Request) {
 
   try {
     const supabase = getSupabaseServerClient();
-    let query = supabase
-      .from("actions")
-      .select(
-        "id, created_at, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
-      )
-      .order("action_date", { ascending: false })
-      .limit(limit);
-
-    if (status) {
-      query = query.eq("status", status);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ status: "ok", count: data?.length ?? 0, items: data ?? [] });
+    const items = await fetchActions(supabase, { limit, status });
+    return NextResponse.json({ status: "ok", source: "actions", count: items.length, items });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -81,27 +67,14 @@ export async function POST(request: Request) {
 
   try {
     const supabase = getSupabaseServerClient();
-    const toInsert = {
-      created_by_clerk_id: userId,
-      actor_name: parsed.data.actorName ?? null,
-      action_date: parsed.data.actionDate,
-      location_label: parsed.data.locationLabel,
-      latitude: parsed.data.latitude ?? null,
-      longitude: parsed.data.longitude ?? null,
-      waste_kg: parsed.data.wasteKg,
-      cigarette_butts: parsed.data.cigaretteButts,
-      volunteers_count: parsed.data.volunteersCount,
-      duration_minutes: parsed.data.durationMinutes,
-      notes: parsed.data.notes ?? null,
-      status: "pending",
+    const identity = await getCurrentUserIdentity();
+    const actorName = pickTraceableActorName(identity, parsed.data.actorName);
+    const normalizedPayload = {
+      ...parsed.data,
+      actorName,
     };
-
-    const { data, error } = await supabase.from("actions").insert(toInsert).select("id").single();
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ status: "created", id: data.id }, { status: 201 });
+    const created = await createAction(supabase, { userId, payload: normalizedPayload });
+    return NextResponse.json({ status: "created", id: created.id, source: "actions" }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

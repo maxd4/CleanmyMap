@@ -1,6 +1,14 @@
+import { auth } from "@clerk/nextjs/server";
 import { ActionDeclarationForm } from "@/components/actions/action-declaration-form";
+import { getCurrentUserIdentity } from "@/lib/authz";
 
-export default function NewActionPage() {
+export default async function NewActionPage() {
+  const { userId } = await auth();
+  const identity = await getCurrentUserIdentity();
+  const fallbackActorName = userId ?? "unknown-user";
+  const actorNameOptions =
+    identity?.actorNameOptions && identity.actorNameOptions.length > 0 ? identity.actorNameOptions : [fallbackActorName];
+
   return (
     <div className="space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -11,7 +19,12 @@ export default function NewActionPage() {
         </p>
       </section>
 
-      <ActionDeclarationForm />
+      <ActionDeclarationForm
+        actorNameOptions={actorNameOptions}
+        defaultActorName={actorNameOptions[0]}
+        clerkIdentityLabel={identity?.displayName ?? fallbackActorName}
+        clerkUserId={identity?.userId ?? fallbackActorName}
+      />
     </div>
   );
 }

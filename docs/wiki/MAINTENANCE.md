@@ -57,14 +57,6 @@ Standard exit codes:
 - `3`: drift detected
 - `>=10`: runtime, parsing, or configuration error
 
-## Backward compatibility shim
-
-Legacy command still works and delegates to the new CLI:
-- `python scripts/regenerate_ui_inventory_baseline.py --root .`
-
-Deprecation note is printed and the equivalent command is:
-- `python -m scripts.ui_inventory regenerate --write-baseline`
-
 ## Recommended workflow
 
 - Developers/maintainers run:
@@ -81,7 +73,7 @@ When local tooling reports `Access denied` or files appear locked:
 - Run:
   - `powershell -ExecutionPolicy Bypass -File scripts/unblock_repo_access.ps1 -Root .`
 - The script performs:
-  - optional stop of repo-scoped `python/node/streamlit` processes,
+  - optional stop of repo-scoped `python/node` processes,
   - read-only attribute cleanup outside `.git`,
   - ACL FullControl grant for current user on repo tree,
   - git hardening (`core.longpaths=true`, `safe.directory`),

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
 import type { ActionListItem, ActionStatus } from "@/lib/actions/types";
+import { swrRecentViewOptions } from "@/lib/swr-config";
 
 function formatDate(value: string): string {
   const parsed = new Date(value);
@@ -25,9 +26,7 @@ export function ActionsHistoryList() {
     isLoading,
     isValidating,
     mutate: reload,
-  } = useSWR(swrKey, () => fetchActions({ status: statusFilter, limit }), {
-    revalidateOnFocus: false,
-  });
+  } = useSWR(swrKey, () => fetchActions({ status: statusFilter, limit }), swrRecentViewOptions);
 
   const items = useMemo(() => data?.items ?? [], [data?.items]);
   const filteredItems = useMemo(() => {

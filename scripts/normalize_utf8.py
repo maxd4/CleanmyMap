@@ -202,6 +202,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--root", default=".", help="Project root (default: current directory).")
     parser.add_argument("--check", action="store_true", help="Check mode: fail if normalization would change files.")
     parser.add_argument("--write", action="store_true", help="Write normalized content to files.")
+    parser.add_argument(
+        "--max-report",
+        type=int,
+        default=20,
+        help="Maximum number of changed files printed in stdout (default: 20).",
+    )
     return parser
 
 
@@ -222,7 +228,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[encoding] scanned={len(results)} changed={len(changed)}")
 
     if changed:
-        for result in changed[:100]:
+        max_report = max(0, int(args.max_report))
+        for result in changed[:max_report]:
             rel = result.path.relative_to(root).as_posix()
             reasons = []
             if result.had_bom:
@@ -232,6 +239,9 @@ def main(argv: list[str] | None = None) -> int:
             if result.mojibake_issue:
                 reasons.append("mojibake")
             print(f" - {rel}: {', '.join(reasons) if reasons else 'content_diff'}")
+        remaining = len(changed) - max_report
+        if remaining > 0:
+            print(f"[encoding] ... {remaining} additional changed files omitted (use --max-report to adjust).")
 
     if args.check:
         return 1 if changed else 0

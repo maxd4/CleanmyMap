@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -9,10 +10,7 @@ from difflib import unified_diff
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
-from src.services.maintenance import (
-    DEFAULT_BASELINE_RELATIVE_PATH,
-    collect_ui_inventory,
-)
+from src.services.maintenance import DEFAULT_BASELINE_RELATIVE_PATH
 
 EXIT_OK = 0
 EXIT_DRIFT = 3
@@ -99,6 +97,14 @@ def _discover_renderers(root: Path) -> list[RendererRef]:
             for function_name in _iter_renderer_defs(py_path):
                 renderers.append(RendererRef(module=module, function=function_name, file=rel))
     return sorted(renderers, key=lambda item: (item.module, item.function))
+
+
+def _file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(8192), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _get_name(node: ast.AST | None) -> str | None:
@@ -205,8 +211,10 @@ def build_ui_inventory(root: Path) -> dict[str, Any]:
     if not app_path.exists():
         raise RuntimeError(f"Missing app.py under {root}")
 
-    legacy_inventory = collect_ui_inventory(root)
     tab_specs = _read_literal(app_path, ("tab_specs", "TAB_ITEMS", "tab_items"))
+    translations = _read_literal(app_path, ("TRANSLATIONS", "I18N_TEXTS"))
+    fr_dict = translations.get("fr", {}) if isinstance(translations, dict) else {}
+    en_dict = translations.get("en", {}) if isinstance(translations, dict) else {}
     tab_targets = _extract_tab_targets(app_path)
     local_renderers = _extract_local_renderer_functions(app_path)
     renderers = _discover_renderers(root)
@@ -265,11 +273,22 @@ def build_ui_inventory(root: Path) -> dict[str, Any]:
         "unreferenced_renderers": unreferenced_renderers,
         "missing_references": sorted(missing_references),
         # Legacy keys retained for compatibility with ci_cleanup.py / maintenance service.
-        "app_py_sha256": legacy_inventory.get("app_py_sha256"),
-        "ui_modules": legacy_inventory.get("ui_modules", []),
-        "text_quality_issues": legacy_inventory.get("text_quality_issues", {}),
-        "tabs_legacy": legacy_inventory.get("tabs", []),
-        "admin_components_legacy": legacy_inventory.get("admin_components", []),
+        "app_py_sha256": _file_sha256(app_path),
+        "ui_modules": sorted(
+            [path.stem for path in (root / "src" / "ui").glob("*.py") if path.name != "__init__.py"]
+        ),
+        # Expensive project-wide text scans are intentionally skipped in this command surface.
+        "text_quality_issues": {},
+        "tabs_legacy": [
+            {
+                "id": str(spec.get("id", "")),
+                "key": str(spec.get("key", "")),
+                "label_fr": str(fr_dict.get(str(spec.get("key", "")), "")),
+                "label_en": str(en_dict.get(str(spec.get("key", "")), "")),
+            }
+            for spec in tab_specs
+        ],
+        "admin_components_legacy": [component["id"] for component in admin_components],
     }
     return inventory
 

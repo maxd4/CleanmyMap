@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
-import { ACTION_STATUSES } from "@/lib/actions/types";
+import { ACTION_STATUSES, type ActionStatus } from "@/lib/actions/types";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { fetchActions } from "@/lib/actions/store";
+import { loadLocalMapItems } from "@/lib/data/map-records";
+import { parseDrawingFromNotes, toGeoJsonString } from "@/lib/actions/drawing";
+import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
 
 export const runtime = "nodejs";
 
-function parseStatusParam(raw: string | null): string | null {
+function parseStatusParam(raw: string | null): ActionStatus | null {
   if (!raw) {
     return null;
   }
-  return ACTION_STATUSES.includes(raw as (typeof ACTION_STATUSES)[number]) ? raw : null;
+  return ACTION_STATUSES.includes(raw as ActionStatus) ? (raw as ActionStatus) : null;
 }
 
 function parsePositiveInteger(raw: string | null, min: number, max: number, fallback: number): number {
@@ -29,6 +33,13 @@ function buildDateFloor(daysWindow: number): string {
   return now.toISOString().slice(0, 10);
 }
 
+function normalizeStatus(raw: string): "pending" | "approved" | "rejected" {
+  if (raw === "approved" || raw === "rejected") {
+    return raw;
+  }
+  return "pending";
+}
+
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 300, 80);
@@ -38,29 +49,48 @@ export async function GET(request: Request) {
 
   try {
     const supabase = getSupabaseServerClient();
-    let query = supabase
-      .from("actions")
-      .select("id, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, status")
-      .gte("action_date", floorDate)
-      .not("latitude", "is", null)
-      .not("longitude", "is", null)
-      .order("action_date", { ascending: false })
-      .limit(limit);
-
-    if (status) {
-      query = query.eq("status", status);
-    }
-
-    const { data, error } = await query;
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    const remote = await fetchActions(supabase, {
+      limit,
+      status,
+      floorDate,
+      requireCoordinates: true,
+    });
+    const localItems = await loadLocalMapItems({ status, floorDate, limit });
+    const remoteItems = remote.map((row) => {
+      const parsedNotes = parseDrawingFromNotes(row.notes);
+      const contract = buildActionDataContract({
+        id: row.id,
+        type: "action",
+        status: normalizeStatus(row.status),
+        source: "actions",
+        observedAt: row.action_date,
+        createdAt: row.created_at,
+        locationLabel: row.location_label,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        wasteKg: row.waste_kg,
+        cigaretteButts: row.cigarette_butts,
+        volunteersCount: row.volunteers_count,
+        durationMinutes: row.duration_minutes,
+        actorName: row.actor_name,
+        notes: row.notes,
+        notesPlain: parsedNotes.cleanNotes,
+        manualDrawing: parsedNotes.manualDrawing,
+        manualDrawingGeoJson: toGeoJsonString(parsedNotes.manualDrawing),
+      });
+      return toActionMapItem(contract);
+    });
+    const mergedItems = [...remoteItems, ...localItems]
+      .filter((item) => item.latitude !== null && item.longitude !== null)
+      .sort((a, b) => b.action_date.localeCompare(a.action_date))
+      .slice(0, limit);
 
     return NextResponse.json({
       status: "ok",
-      count: data?.length ?? 0,
+      source: "actions+local",
+      count: mergedItems.length,
       daysWindow: days,
-      items: data ?? [],
+      items: mergedItems,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

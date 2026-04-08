@@ -1,0 +1,14 @@
+# Token and context optimization exclusions
+apps/web/node_modules/
+apps/web/.next/
+**/__pycache__/
+.pytest_cache/
+playwright-report/
+test-results/
+artifacts/
+output/
+legacy/backups/
+**/package-lock.json
+data/cleanmymap.db
+data/cleanmymap.db-wal
+data/cleanmymap.db-shm

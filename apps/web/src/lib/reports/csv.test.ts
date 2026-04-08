@@ -47,12 +47,24 @@ describe("report csv helpers", () => {
         duration_minutes: 60,
         status: "pending",
         notes: "ligne 1\nligne 2",
+        record_type: "action",
+        source: "actions",
+        observed_at: "2026-04-01",
+        geometry_kind: "polygon",
+        geometry_geojson: "{\"type\":\"Polygon\"}",
+        manual_drawing_kind: "polygon",
+        manual_drawing_points: 3,
+        manual_drawing_coordinates_json: "[[48.85,2.35],[48.851,2.351],[48.852,2.352]]",
+        manual_drawing_geojson: "{\"type\":\"Polygon\"}",
       },
     ]);
 
     expect(csv).toContain('"Alice ""Eco"""');
     expect(csv).toContain('"Rue, Paris"');
     expect(csv).toContain("\"ligne 1\nligne 2\"");
+    expect(csv).toContain("geometry_kind");
+    expect(csv).toContain("manual_drawing_geojson");
+    expect(csv).toContain("\"{\"\"type\"\":\"\"Polygon\"\"}\"");
   });
 
   it("builds deterministic filename", () => {

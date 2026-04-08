@@ -1,0 +1,756 @@
+{
+  "version": 1,
+  "updatedAt": "2026-04-08T13:12:26.641Z",
+  "records": [
+    {
+      "id": "real_action_baaa638ed1b880ed",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "20 quai Saint Bernard",
+      "description": "Import Google Sheet (Quai/Pont/Port)",
+      "location": {
+        "label": "20 quai Saint Bernard",
+        "city": "Paris",
+        "latitude": 48.8470316,
+        "longitude": 2.3606848
+      },
+      "eventDate": "2025-07-03",
+      "metrics": {
+        "wasteKg": 10,
+        "cigaretteButts": 100,
+        "volunteersCount": 1,
+        "durationMinutes": 60
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8470316,
+        "lon": 2.3606848
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:01.267Z",
+        "notes": "Association: aa"
+      }
+    },
+    {
+      "id": "real_action_75329fc101a8bd55",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "48°50'48.3\"N 2°20'06.4\"E",
+      "description": "Import Google Sheet (Bois/Parc/Jardin/Square/Sentier)",
+      "location": {
+        "label": "48°50'48.3\"N 2°20'06.4\"E",
+        "city": "Paris",
+        "latitude": 48.84675,
+        "longitude": 2.3351111111111114
+      },
+      "eventDate": "2025-12-07",
+      "metrics": {
+        "wasteKg": 10,
+        "cigaretteButts": 500,
+        "volunteersCount": 50,
+        "durationMinutes": 60
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.84675,
+        "lon": 2.3351111111111114
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:01.270Z",
+        "notes": "Association: bb"
+      }
+    },
+    {
+      "id": "real_action_d0cb422ddc97fdd3",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Esplanade Gaston Monnerville",
+      "description": "Import Google Sheet (Bois/Parc/Jardin/Square/Sentier)",
+      "location": {
+        "label": "Esplanade Gaston Monnerville",
+        "city": "Paris",
+        "latitude": 48.8433952,
+        "longitude": 2.3369741
+      },
+      "eventDate": "2023-06-02",
+      "metrics": {
+        "wasteKg": 20,
+        "cigaretteButts": 200,
+        "volunteersCount": 20,
+        "durationMinutes": 40
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8433952,
+        "lon": 2.3369741
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:02.394Z",
+        "notes": "Association: cc"
+      }
+    },
+    {
+      "id": "real_action_5870a5b58b5eb171",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "pont d'austerlitz",
+      "description": "Import Google Sheet (Quai/Pont/Port)",
+      "location": {
+        "label": "pont d'austerlitz",
+        "city": "Paris",
+        "latitude": 48.8449835,
+        "longitude": 2.3661201
+      },
+      "eventDate": "2026-02-21",
+      "metrics": {
+        "wasteKg": 100,
+        "cigaretteButts": 2000,
+        "volunteersCount": 20,
+        "durationMinutes": 50
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8449835,
+        "lon": 2.3661201
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:03.519Z",
+        "notes": "Association: dd"
+      }
+    },
+    {
+      "id": "real_action_02d10310756aa1db",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "jardin des plantes",
+      "description": "Import Google Sheet (Bois/Parc/Jardin/Square/Sentier)",
+      "location": {
+        "label": "jardin des plantes",
+        "city": "Paris",
+        "latitude": 48.844036,
+        "longitude": 2.3597321
+      },
+      "eventDate": "2026-02-22",
+      "metrics": {
+        "wasteKg": 5,
+        "cigaretteButts": 100,
+        "volunteersCount": 50,
+        "durationMinutes": 120
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.844036,
+        "lon": 2.3597321
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:04.639Z",
+        "notes": "Association: ff"
+      }
+    },
+    {
+      "id": "real_action_4e0b11da13994cef",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Place de la Bataille de Stalingrad",
+      "description": "Import Google Sheet (N° Boulevard/Avenue/Place)",
+      "location": {
+        "label": "Place de la Bataille de Stalingrad",
+        "city": "Paris",
+        "latitude": 48.8837604,
+        "longitude": 2.369661
+      },
+      "eventDate": "2026-02-23",
+      "metrics": {
+        "wasteKg": 5,
+        "cigaretteButts": 100,
+        "volunteersCount": 50,
+        "durationMinutes": 120
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8837604,
+        "lon": 2.369661
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:05.774Z",
+        "notes": "Association: ff"
+      }
+    },
+    {
+      "id": "real_action_659ef9f776a26735",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Bois de Vincennes, Paris",
+      "description": "Import Google Sheet (Bois/Parc/Jardin/Square/Sentier)",
+      "location": {
+        "label": "Bois de Vincennes, Paris",
+        "city": "Paris",
+        "latitude": 48.831548,
+        "longitude": 2.4341479
+      },
+      "eventDate": "2024-02-18",
+      "metrics": {
+        "wasteKg": 200,
+        "cigaretteButts": 5000,
+        "volunteersCount": 10,
+        "durationMinutes": 120
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.831548,
+        "lon": 2.4341479
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:06.898Z",
+        "notes": "Association: Test Association"
+      }
+    },
+    {
+      "id": "real_action_9c7ca0cbd7121580",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Rue Maurice Utrillo, Paris",
+      "description": "Import Google Sheet (N° Boulevard/Avenue/Place)",
+      "location": {
+        "label": "Rue Maurice Utrillo, Paris",
+        "city": "Paris",
+        "latitude": 48.8862433,
+        "longitude": 2.3444881
+      },
+      "eventDate": "2025-08-18",
+      "metrics": {
+        "wasteKg": 50,
+        "cigaretteButts": 800,
+        "volunteersCount": 3,
+        "durationMinutes": 45
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8862433,
+        "lon": 2.3444881
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:08.023Z",
+        "notes": "Association: Test Association"
+      }
+    },
+    {
+      "id": "real_action_53ae77d956a15138",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Sortie Métro Barbès-Rochechouart, Paris",
+      "description": "Import Google Sheet (N° Boulevard/Avenue/Place)",
+      "location": {
+        "label": "Sortie Métro Barbès-Rochechouart, Paris",
+        "city": "Paris",
+        "latitude": null,
+        "longitude": null
+      },
+      "eventDate": "2026-02-08",
+      "metrics": {
+        "wasteKg": 100,
+        "cigaretteButts": 12000,
+        "volunteersCount": 5,
+        "durationMinutes": 20
+      },
+      "map": {
+        "displayable": false,
+        "lat": null,
+        "lon": null
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:09.210Z",
+        "notes": "Association: Test Association"
+      }
+    },
+    {
+      "id": "real_action_38d94fa4abbc7568",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Rue de Rivoli, Paris",
+      "description": "Import Google Sheet (N° Boulevard/Avenue/Place)",
+      "location": {
+        "label": "Rue de Rivoli, Paris",
+        "city": "Paris",
+        "latitude": 48.8576588,
+        "longitude": 2.3510189
+      },
+      "eventDate": "2023-01-01",
+      "metrics": {
+        "wasteKg": 0,
+        "cigaretteButts": 0,
+        "volunteersCount": 2,
+        "durationMinutes": 60
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8576588,
+        "lon": 2.3510189
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:10.337Z",
+        "notes": "Association: Test Association"
+      }
+    },
+    {
+      "id": "real_action_7e539ac09f853305",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Tour Eiffel, Paris",
+      "description": "Import Google Sheet (Monument)",
+      "location": {
+        "label": "Tour Eiffel, Paris",
+        "city": "Paris",
+        "latitude": 48.8582599,
+        "longitude": 2.2945006
+      },
+      "eventDate": "2024-06-15",
+      "metrics": {
+        "wasteKg": 75,
+        "cigaretteButts": 3500,
+        "volunteersCount": 8,
+        "durationMinutes": 90
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8582599,
+        "lon": 2.2945006
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:11.473Z",
+        "notes": "Association: Test Association"
+      }
+    },
+    {
+      "id": "real_action_10acaa46629e9ccf",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Quai de Valmy, Paris 10e",
+      "description": "Import Google Sheet (Quai/Pont/Port)",
+      "location": {
+        "label": "Quai de Valmy, Paris 10e",
+        "city": "Paris",
+        "latitude": 48.8738014,
+        "longitude": 2.3630725
+      },
+      "eventDate": "2025-09-21",
+      "metrics": {
+        "wasteKg": 180,
+        "cigaretteButts": 4500,
+        "volunteersCount": 25,
+        "durationMinutes": 150
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8738014,
+        "lon": 2.3630725
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:12.606Z",
+        "notes": "Association: Clean Walk Paris 10"
+      }
+    },
+    {
+      "id": "real_action_402120bf750dca4b",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Parc des Buttes-Chaumont, Paris 19e",
+      "description": "Import Google Sheet (Bois/Parc/Jardin/Square/Sentier)",
+      "location": {
+        "label": "Parc des Buttes-Chaumont, Paris 19e",
+        "city": "Paris",
+        "latitude": 48.879728,
+        "longitude": 2.3882854
+      },
+      "eventDate": "2025-11-29",
+      "metrics": {
+        "wasteKg": 210,
+        "cigaretteButts": 3200,
+        "volunteersCount": 40,
+        "durationMinutes": 180
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.879728,
+        "lon": 2.3882854
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:13.882Z",
+        "notes": "Association: Green Friday"
+      }
+    },
+    {
+      "id": "real_action_5a8c256b19dff776",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Place de la République, Paris 3e",
+      "description": "Import Google Sheet (N° Boulevard/Avenue/Place)",
+      "location": {
+        "label": "Place de la République, Paris 3e",
+        "city": "Paris",
+        "latitude": 48.8677121,
+        "longitude": 2.3627632
+      },
+      "eventDate": "2026-01-17",
+      "metrics": {
+        "wasteKg": 290,
+        "cigaretteButts": 6800,
+        "volunteersCount": 55,
+        "durationMinutes": 200
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8677121,
+        "lon": 2.3627632
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:15.007Z",
+        "notes": "Association: Collectif Nettoyons Paris"
+      }
+    },
+    {
+      "id": "real_action_343eaa2f7e8268c1",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Lac Daumesnil, Bois de Vincennes, Paris 12e",
+      "description": "Import Google Sheet (Bois/Parc/Jardin/Square/Sentier)",
+      "location": {
+        "label": "Lac Daumesnil, Bois de Vincennes, Paris 12e",
+        "city": "Paris",
+        "latitude": null,
+        "longitude": null
+      },
+      "eventDate": "2025-10-12",
+      "metrics": {
+        "wasteKg": 310,
+        "cigaretteButts": 5200,
+        "volunteersCount": 35,
+        "durationMinutes": 220
+      },
+      "map": {
+        "displayable": false,
+        "lat": null,
+        "lon": null
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:16.134Z",
+        "notes": "Association: Paris Zéro Déchet"
+      }
+    },
+    {
+      "id": "real_action_24fd7131f32961c8",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Parc Montsouris, Paris 14e",
+      "description": "Import Google Sheet (Bois/Parc/Jardin/Square/Sentier)",
+      "location": {
+        "label": "Parc Montsouris, Paris 14e",
+        "city": "Paris",
+        "latitude": 48.8227828,
+        "longitude": 2.3348768
+      },
+      "eventDate": "2025-11-05",
+      "metrics": {
+        "wasteKg": 95,
+        "cigaretteButts": 1800,
+        "volunteersCount": 18,
+        "durationMinutes": 120
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8227828,
+        "lon": 2.3348768
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:17.271Z",
+        "notes": "Association: Étudiants pour la Planète"
+      }
+    },
+    {
+      "id": "real_action_0f3b75d85d781f7b",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Parc de la Villette, Paris 19e",
+      "description": "Import Google Sheet (Quai/Pont/Port)",
+      "location": {
+        "label": "Parc de la Villette, Paris 19e",
+        "city": "Paris",
+        "latitude": 48.8886492,
+        "longitude": 2.3926738
+      },
+      "eventDate": "2026-02-28",
+      "metrics": {
+        "wasteKg": 195,
+        "cigaretteButts": 4100,
+        "volunteersCount": 30,
+        "durationMinutes": 170
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8886492,
+        "lon": 2.3926738
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:18.393Z",
+        "notes": "Association: Green Wednesday"
+      }
+    },
+    {
+      "id": "real_action_537af9873efa337a",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Quai de la Tournelle, Paris 5e",
+      "description": "Import Google Sheet (Quai/Pont/Port)",
+      "location": {
+        "label": "Quai de la Tournelle, Paris 5e",
+        "city": "Paris",
+        "latitude": 48.8512579,
+        "longitude": 2.3508584
+      },
+      "eventDate": "2025-08-15",
+      "metrics": {
+        "wasteKg": 170,
+        "cigaretteButts": 3800,
+        "volunteersCount": 22,
+        "durationMinutes": 140
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8512579,
+        "lon": 2.3508584
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:19.768Z",
+        "notes": "Association: Paris Clean Walk"
+      }
+    },
+    {
+      "id": "real_action_8bb288aeb34c49ed",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Parc André Citroën, Paris 15e",
+      "description": "Import Google Sheet (Bois/Parc/Jardin/Square/Sentier)",
+      "location": {
+        "label": "Parc André Citroën, Paris 15e",
+        "city": "Paris",
+        "latitude": 48.8400351,
+        "longitude": 2.278159
+      },
+      "eventDate": "2025-09-07",
+      "metrics": {
+        "wasteKg": 140,
+        "cigaretteButts": 2700,
+        "volunteersCount": 28,
+        "durationMinutes": 130
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8400351,
+        "lon": 2.278159
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:21.006Z",
+        "notes": "Association: Green Family"
+      }
+    },
+    {
+      "id": "real_action_fefd6a7c3045d115",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Porte de Clignancourt, Paris 18e",
+      "description": "Import Google Sheet (N° Boulevard/Avenue/Place)",
+      "location": {
+        "label": "Porte de Clignancourt, Paris 18e",
+        "city": "Paris",
+        "latitude": 48.8973976,
+        "longitude": 2.3448521
+      },
+      "eventDate": "2025-12-14",
+      "metrics": {
+        "wasteKg": 420,
+        "cigaretteButts": 5900,
+        "volunteersCount": 45,
+        "durationMinutes": 250
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8973976,
+        "lon": 2.3448521
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:22.123Z",
+        "notes": "Association: Les Éco-puces"
+      }
+    },
+    {
+      "id": "real_action_b3ff1836e3e0c6bf",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Jardin du Luxembourg, Paris 6e",
+      "description": "Import Google Sheet (Bois/Parc/Jardin/Square/Sentier)",
+      "location": {
+        "label": "Jardin du Luxembourg, Paris 6e",
+        "city": "Paris",
+        "latitude": 48.8486408,
+        "longitude": 2.3351989
+      },
+      "eventDate": "2025-07-22",
+      "metrics": {
+        "wasteKg": 85,
+        "cigaretteButts": 2100,
+        "volunteersCount": 15,
+        "durationMinutes": 110
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8486408,
+        "lon": 2.3351989
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:23.243Z",
+        "notes": "Association: Sénat Propre"
+      }
+    },
+    {
+      "id": "real_clean_place_8f366d92212df2e9",
+      "recordType": "clean_place",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Pont de l'Alma",
+      "description": "Lieu propre (Google Sheet)",
+      "location": {
+        "label": "Pont de l'Alma",
+        "city": "Paris",
+        "latitude": 48.8625636,
+        "longitude": 2.2999572
+      },
+      "eventDate": null,
+      "map": {
+        "displayable": true,
+        "lat": 48.8625636,
+        "lon": 2.2999572
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:24.364Z",
+        "notes": null
+      }
+    },
+    {
+      "id": "real_clean_place_8d53601868118726",
+      "recordType": "clean_place",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Gare de l'est",
+      "description": "Lieu propre (Google Sheet)",
+      "location": {
+        "label": "Gare de l'est",
+        "city": "Paris",
+        "latitude": 48.8770979,
+        "longitude": 2.3594905
+      },
+      "eventDate": null,
+      "map": {
+        "displayable": true,
+        "lat": 48.8770979,
+        "lon": 2.3594905
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:25.489Z",
+        "notes": null
+      }
+    },
+    {
+      "id": "real_clean_place_a7efa58f1f3b7b82",
+      "recordType": "clean_place",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Canal saint martin",
+      "description": "Lieu propre (Google Sheet)",
+      "location": {
+        "label": "Canal saint martin",
+        "city": "Paris",
+        "latitude": 48.8689561,
+        "longitude": 2.3671691
+      },
+      "eventDate": null,
+      "map": {
+        "displayable": true,
+        "lat": 48.8689561,
+        "lon": 2.3671691
+      },
+      "trace": {
+        "externalId": null,
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-08T13:12:26.641Z",
+        "notes": null
+      }
+    }
+  ]
+}

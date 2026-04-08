@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "updatedAt": "2026-04-08T13:09:09.020Z",
+  "records": [
+    {
+      "id": "test_seed-approved-001",
+      "recordType": "action",
+      "status": "validated",
+      "source": "test_seed",
+      "title": "Quartier Demo",
+      "description": "Seed de test",
+      "location": {
+        "label": "Quartier Demo",
+        "city": "Paris",
+        "latitude": 48.8566,
+        "longitude": 2.3522
+      },
+      "eventDate": "2026-01-12",
+      "metrics": {
+        "wasteKg": 14.5,
+        "cigaretteButts": 850,
+        "volunteersCount": 6,
+        "durationMinutes": 90
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8566,
+        "lon": 2.3522
+      },
+      "trace": {
+        "externalId": "seed-approved-001",
+        "originTable": "runtime_seed",
+        "importedAt": "2026-04-08T13:09:09.017Z",
+        "notes": "Anonymized test seed"
+      }
+    },
+    {
+      "id": "test_seed-pending-001",
+      "recordType": "action",
+      "status": "test",
+      "source": "test_seed",
+      "title": "Zone Test",
+      "description": "Seed de test",
+      "location": {
+        "label": "Zone Test",
+        "city": "Paris",
+        "latitude": 48.857,
+        "longitude": 2.353
+      },
+      "eventDate": "2026-01-13",
+      "metrics": {
+        "wasteKg": 3.2,
+        "cigaretteButts": 220,
+        "volunteersCount": 3,
+        "durationMinutes": 45
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.857,
+        "lon": 2.353
+      },
+      "trace": {
+        "externalId": "seed-pending-001",
+        "originTable": "runtime_seed",
+        "importedAt": "2026-04-08T13:09:09.020Z",
+        "notes": "Anonymized test seed"
+      }
+    }
+  ]
+}

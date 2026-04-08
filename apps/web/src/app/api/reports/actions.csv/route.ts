@@ -1,18 +1,20 @@
-import { auth } from "@clerk/nextjs/server";
 import {
   buildActionsCsv,
   buildActionsCsvFilename,
   buildDateFloor,
   resolveReportQuery,
 } from "@/lib/reports/csv";
+import { requireAdminAccess } from "@/lib/authz";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { parseDrawingFromNotes, toGeoJsonString } from "@/lib/actions/drawing";
+import { buildActionDataContract } from "@/lib/actions/data-contract";
 
 export const runtime = "nodejs";
 
 export async function GET(request: Request) {
-  const { userId } = await auth();
-  if (!userId) {
-    return new Response("Unauthorized", { status: 401 });
+  const access = await requireAdminAccess();
+  if (!access.ok) {
+    return new Response(access.error, { status: access.status });
   }
 
   const url = new URL(request.url);
@@ -39,15 +41,54 @@ export async function GET(request: Request) {
       return new Response(`Export error: ${error.message}`, { status: 500 });
     }
 
-    const rows = (data ?? []).map((item) => ({
-      ...item,
-      waste_kg: Number(item.waste_kg ?? 0),
-      cigarette_butts: Number(item.cigarette_butts ?? 0),
-      volunteers_count: Number(item.volunteers_count ?? 0),
-      duration_minutes: Number(item.duration_minutes ?? 0),
-      latitude: item.latitude === null ? null : Number(item.latitude),
-      longitude: item.longitude === null ? null : Number(item.longitude),
-    }));
+    const rows = (data ?? []).map((item) => {
+      const parsedNotes = parseDrawingFromNotes(item.notes);
+      const contract = buildActionDataContract({
+        id: String(item.id),
+        type: "action",
+        status: item.status,
+        source: "actions",
+        observedAt: item.action_date,
+        createdAt: item.created_at,
+        locationLabel: item.location_label,
+        latitude: item.latitude === null ? null : Number(item.latitude),
+        longitude: item.longitude === null ? null : Number(item.longitude),
+        wasteKg: Number(item.waste_kg ?? 0),
+        cigaretteButts: Number(item.cigarette_butts ?? 0),
+        volunteersCount: Number(item.volunteers_count ?? 0),
+        durationMinutes: Number(item.duration_minutes ?? 0),
+        actorName: item.actor_name,
+        notes: item.notes,
+        notesPlain: parsedNotes.cleanNotes,
+        manualDrawing: parsedNotes.manualDrawing,
+        manualDrawingGeoJson: toGeoJsonString(parsedNotes.manualDrawing),
+      });
+      return {
+        id: contract.id,
+        created_at: contract.dates.createdAt ?? "",
+        action_date: contract.dates.observedAt,
+        actor_name: contract.metadata.actorName,
+        location_label: contract.location.label,
+        latitude: contract.location.latitude,
+        longitude: contract.location.longitude,
+        waste_kg: contract.metadata.wasteKg,
+        cigarette_butts: contract.metadata.cigaretteButts,
+        volunteers_count: contract.metadata.volunteersCount,
+        duration_minutes: contract.metadata.durationMinutes,
+        status: contract.status,
+        notes: contract.metadata.notes,
+        notes_plain: contract.metadata.notesPlain,
+        record_type: contract.type,
+        source: contract.source,
+        observed_at: contract.dates.observedAt,
+        geometry_kind: contract.geometry.kind,
+        geometry_geojson: contract.geometry.geojson,
+        manual_drawing_kind: contract.metadata.manualDrawing?.kind ?? null,
+        manual_drawing_points: contract.metadata.manualDrawing?.coordinates.length ?? null,
+        manual_drawing_coordinates_json: parsedNotes.drawingJson,
+        manual_drawing_geojson: contract.geometry.geojson,
+      };
+    });
 
     const csv = buildActionsCsv(rows);
     const filename = buildActionsCsvFilename();
