@@ -55,20 +55,24 @@ export function SystemStatusPanel() {
 
       {!isLoading && !hasError ? (
         <div className="mt-4 space-y-4">
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-3 md:grid-cols-4">
             <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs uppercase tracking-wide text-slate-500">Etat global</p>
               <p className={`mt-1 text-lg font-semibold ${uptimeSummary?.state === "healthy" ? "text-emerald-700" : "text-amber-700"}`}>
-                {uptimeSummary?.state === "healthy" ? "Healthy" : "Degraded"}
+                {uptimeSummary?.state === "healthy" ? "OK" : "Degrade"}
               </p>
             </article>
             <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Checks configures</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">{uptimeSummary?.configuredCount ?? 0}</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Checks critiques OK</p>
+              <p className="mt-1 text-lg font-semibold text-slate-900">{uptimeSummary?.criticalConfiguredCount ?? 0}</p>
             </article>
             <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Checks manquants</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">{uptimeSummary?.missingCount ?? 0}</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Checks critiques en alerte</p>
+              <p className="mt-1 text-lg font-semibold text-slate-900">{uptimeSummary?.criticalMissingCount ?? 0}</p>
+            </article>
+            <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Optionnels en alerte</p>
+              <p className="mt-1 text-lg font-semibold text-slate-900">{uptimeSummary?.optionalWarningCount ?? 0}</p>
             </article>
           </div>
 
@@ -76,15 +80,15 @@ export function SystemStatusPanel() {
             <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs uppercase tracking-wide text-slate-500">Sante critique</p>
               <p className={`mt-1 text-sm font-semibold ${uptimeSummary?.criticalStatus === "ok" ? "text-emerald-700" : "text-amber-700"}`}>
-                {uptimeSummary?.criticalStatus === "ok" ? "OK" : "Degraded"}
+                {uptimeSummary?.criticalStatus === "ok" ? "OK" : "Degrade"}
               </p>
             </article>
             <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-xs uppercase tracking-wide text-slate-500">Integrations optionnelles</p>
               <p className={`mt-1 text-sm font-semibold ${uptimeSummary?.optionalStatus === "ok" ? "text-emerald-700" : "text-amber-700"}`}>
-                {uptimeSummary?.optionalStatus === "ok" ? "OK" : "Warning"}
+                {uptimeSummary?.optionalStatus === "ok" ? "OK" : "Alerte"}
               </p>
-              <p className="mt-1 text-xs text-slate-600">Warnings detectes: {uptimeSummary?.warningCount ?? 0}</p>
+              <p className="mt-1 text-xs text-slate-600">Alertes detectees: {uptimeSummary?.optionalWarningCount ?? 0}</p>
             </article>
           </div>
 
@@ -94,12 +98,13 @@ export function SystemStatusPanel() {
                 <tr className="border-b border-slate-200 text-slate-500">
                   <th className="px-2 py-2 font-medium">Service</th>
                   <th className="px-2 py-2 font-medium">Niveau</th>
-                  <th className="px-2 py-2 font-medium">Raw</th>
+                  <th className="px-2 py-2 font-medium">Etat brut</th>
                 </tr>
               </thead>
               <tbody>
                 {Object.entries(services.data?.services ?? {}).map(([name, raw]) => {
                   const label = serviceLevelLabel(raw);
+                  const labelText = label === "ok" ? "OK" : "Alerte";
                   return (
                     <tr key={name} className="border-b border-slate-100 text-slate-700">
                       <td className="px-2 py-2">{name}</td>
@@ -109,7 +114,7 @@ export function SystemStatusPanel() {
                             label === "ok" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
                           }`}
                         >
-                          {label}
+                          {labelText}
                         </span>
                       </td>
                       <td className="px-2 py-2 font-mono text-xs">{raw}</td>

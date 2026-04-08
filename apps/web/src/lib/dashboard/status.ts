@@ -23,18 +23,34 @@ export type DashboardHealthSummary = {
   configuredCount: number;
   missingCount: number;
   warningCount: number;
+  criticalConfiguredCount: number;
+  criticalMissingCount: number;
+  optionalConfiguredCount: number;
+  optionalWarningCount: number;
   criticalStatus: "ok" | "degraded";
   optionalStatus: "ok" | "warning";
 };
 
+function isConfiguredState(state: UptimeCheckState): boolean {
+  return state === "configured" || state === "ok";
+}
+
 export function summarizeUptime(payload: UptimePayload): DashboardHealthSummary {
   const states = Object.values(payload.checks ?? {});
-  const configuredCount = states.filter((item) => item === "configured" || item === "ok").length;
+  const criticalStates = Object.values(payload.categories?.critical ?? {});
+  const optionalStates = Object.values(payload.categories?.optional ?? {});
+
+  const configuredCount = states.filter((item) => isConfiguredState(item)).length;
   const missingCount = states.filter((item) => item === "missing" || item === "degraded").length;
-  const warningCount = states.filter((item) => item === "warning").length;
+  const warningCount = states.filter((item) => !isConfiguredState(item) && item !== "missing" && item !== "degraded").length;
+
+  const criticalConfiguredCount = criticalStates.filter((item) => isConfiguredState(item)).length;
+  const criticalMissingCount = criticalStates.filter((item) => !isConfiguredState(item)).length;
+  const optionalConfiguredCount = optionalStates.filter((item) => isConfiguredState(item)).length;
+  const optionalWarningCount = optionalStates.filter((item) => !isConfiguredState(item)).length;
 
   const criticalStatus = payload.criticalStatus ?? payload.status;
-  const optionalStatus = payload.optionalStatus ?? (warningCount > 0 ? "warning" : "ok");
+  const optionalStatus = payload.optionalStatus ?? (optionalWarningCount > 0 ? "warning" : "ok");
   const state = criticalStatus === "ok" ? "healthy" : "degraded";
 
   return {
@@ -42,6 +58,10 @@ export function summarizeUptime(payload: UptimePayload): DashboardHealthSummary 
     configuredCount,
     missingCount,
     warningCount,
+    criticalConfiguredCount,
+    criticalMissingCount,
+    optionalConfiguredCount,
+    optionalWarningCount,
     criticalStatus,
     optionalStatus,
   };

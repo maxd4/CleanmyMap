@@ -1372,13 +1372,13 @@ function PendingSection(props: { label: L10n; note?: L10n }) {
           href="/dashboard"
           className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
         >
-          {locale === "fr" ? "Retour dashboard" : "Back to dashboard"}
+          {locale === "fr" ? "Retour au tableau de bord" : "Back to dashboard"}
         </Link>
         <Link
           href="/reports"
           className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
         >
-          {locale === "fr" ? "Ouvrir reporting" : "Open reporting"}
+          {locale === "fr" ? "Ouvrir le reporting" : "Open reporting"}
         </Link>
       </div>
     </section>
@@ -1526,7 +1526,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
         <SectionShell
           title={{ fr: "Sandbox", en: "Sandbox" }}
           subtitle={{ fr: "Zone de verification technique et supervision instantanee.", en: "Technical verification and supervision workspace." }}
-          links={[{ href: "/dashboard", label: { fr: "Retour dashboard", en: "Back to dashboard" } }]}
+          links={[{ href: "/dashboard", label: { fr: "Retour au tableau de bord", en: "Back to dashboard" } }]}
         >
           <SandboxSection />
         </SectionShell>
@@ -1536,7 +1536,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
         <SectionShell
           title={{ fr: "Collectivites", en: "Local authorities" }}
           subtitle={{ fr: "Observatoire municipal: KPI territoriaux et priorisation des zones.", en: "Municipal observatory: territorial KPIs and area prioritization." }}
-          links={[{ href: "/reports", label: { fr: "Accès reporting", en: "Open reporting" } }]}
+          links={[{ href: "/reports", label: { fr: "Acces au reporting", en: "Open reporting" } }]}
         >
           <ElusSection />
         </SectionShell>
