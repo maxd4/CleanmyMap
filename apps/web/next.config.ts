@@ -12,8 +12,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  silent: !process.env.CI,
-});
+const sentryBuildPluginEnabled = process.env.SENTRY_BUILD_PLUGIN === "1";
+
+export default sentryBuildPluginEnabled
+  ? withSentryConfig(nextConfig, {
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+      silent: !process.env.CI,
+      telemetry: false,
+    })
+  : nextConfig;
