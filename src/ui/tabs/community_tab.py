@@ -49,7 +49,7 @@ def render_community_tab(ctx):
     for ev in get_events_for_date(tomorrow_iso):
         if mark_event_reminder(ev["id"], today_iso):
             add_message(
-                "CleanmyMap Bot",
+                "CleanMyMap Bot",
                 f"Rappel J-1 : {ev.get('title', 'Sortie')} demain ({ev.get('event_date')}) a {ev.get('location', 'lieu a confirmer')}.",
                 None,
             )
