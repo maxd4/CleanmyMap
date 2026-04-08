@@ -298,6 +298,9 @@ sections-status.md
 
 
 
+
+
+
 ================================================================
 PHASE 3 - INTEGRATION RUNTIME INCREMENTALE
 ================================================================
@@ -419,11 +422,94 @@ CLERK_SESSION_DASHBOARD_CHECK.md
 
 
 
+
+
+
+
+
+
+
+
+
+
 ================================================================
 PHASE 4 - VALIDATION ET NON REGRESSION
 ================================================================
 Objectif phase:
 - Verifier avant/apres et bloquer les regressions invisibles.
+
+
+Rapport court par check (matrice phase 1):
+
+npm --prefix apps/web run lint
+
+Statut: ✅ PASS
+Note: aucune erreur lint.
+npm --prefix apps/web run build
+
+Statut: ✅ PASS
+Note: build OK. Warnings Sentry de dépréciation non bloquants (disableLogger).
+npm --prefix apps/web run test
+
+Statut: ✅ PASS
+Note: 9 fichiers / 40 tests passés.
+powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1 -Scope changed
+
+Statut: ✅ PASS
+Note: check encodage a auto-corrigé plan.txt (mojibake), puis recheck OK; cleanup/runtime DB OK; smoke tests Python (5) OK; E2E full non exécuté (normal en scope changed).
+Conclusion:
+
+Aucune régression bloquante ouverte.
+Écart résiduel non bloquant: plan.txt modifié automatiquement par la normalisation UTF-8 du check.
+
+
+
+
+la console donne déjà la cause principale des erreurs de la rubrique admin du site web
+
+Cause critique
+Clerk has been loaded with development keys sur https://cleanmymap.fr
+Donc ton site de prod utilise des clés Clerk de développement.
+Ça peut casser la persistance/session et l’accès admin en production.
+Autres erreurs
+GET /api/uptime 503 en boucle: problème backend/endpoint uptime (pas la cause directe du login).
+/_vercel/insights/script.js 404: non bloquant pour l’auth.
+Ce que tu dois corriger dans Vercel (Production)
+Dans Project Settings > Environment Variables:
+
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = clé publishable live (pk_live_...)
+CLERK_SECRET_KEY = clé secret live (sk_live_...)
+ne pas laisser de pk_test_... / sk_test_... en Production
+Puis Redeploy (sans cache de préférence).
+
+Vérification Clerk Dashboard (live instance)
+Dans Clerk (instance live):
+
+Domaines autorisés incluent https://cleanmymap.fr
+Redirect URLs incluent:
+https://cleanmymap.fr/sign-in
+https://cleanmymap.fr/sign-up
+https://cleanmymap.fr/dashboard
+Ensuite reteste /sign-in puis /admin.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -435,7 +521,7 @@ Objectif phase:
 PHASE 5 - OPTIMISATION CONTEXTE ET COUT TOKENS
 ================================================================
 
-
+uniquement après la phase 4 
 Message 15
 - Type: implementation incrementale pilotee par contraintes
 - Niveau de raisonnement: intermediaire

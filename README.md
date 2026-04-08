@@ -1,6 +1,6 @@
 # ðŸŒ¿ Clean my Map â€¢ Plateforme citoyenne pour les actions bÃ©nÃ©voles de dÃ©pollution
 
-https://github.com/maxd4/CleanmyMap
+https://github.com/maxd4/CleanMyMap
 
 **Clean my Map** est une solution bÃ©nÃ©vole engagÃ©e en faveur de l'environnement. Son objectif principal est de mutualiser les rÃ©sultats des actions bÃ©nÃ©voles de dÃ©pollution des rues (cleanwalk). La visualisation se fait sur une carte interactive.
 D'autres fonctionnalitÃ©s permettent un engagement et un partage sur l'Ã©cologie, mais aussi sur l'aide humanitaire et sociale et le dÃ©veloppement durable.
@@ -89,7 +89,7 @@ Les donnÃ©es de **Clean my Map** sont ouvertes Ã  la communautÃ© scientifiq
 Pour travailler sur une copie locale dÃ©diÃ©e, un clone du repo peut Ãªtre crÃ©Ã© dans `/workspace/APPLI` :
 
 ```bash
-git clone /workspace/CleanmyMap /workspace/APPLI
+git clone /workspace/CleanMyMap /workspace/APPLI
 ```
 
 ## Journal de changements, monitoring UX et E2E
@@ -252,7 +252,7 @@ Documentation is a **deliverable**, not an optional follow-up. A change is not c
 - This step fails if runtime SQLite files are tracked by git.
 =# ðŸŒ¿ Clean my Map â€¢ Plateforme citoyenne pour les actions bÃ©nÃ©voles de dÃ©pollution
 
-https://github.com/maxd4/CleanmyMap
+https://github.com/maxd4/CleanMyMap
 
 **Clean my Map** est une solution bÃ©nÃ©vole engagÃ©e en faveur de l'environnement. Son objectif principal est de mutualiser les rÃ©sultats des actions bÃ©nÃ©voles de dÃ©pollution des rues (cleanwalk). La visualisation se fait sur une carte interactive.
 D'autres fonctionnalitÃ©s permettent un engagement et un partage sur l'Ã©cologie, mais aussi sur l'aide humanitaire et sociale et le dÃ©veloppement durable.
@@ -341,7 +341,7 @@ Les donnÃ©es de **Clean my Map** sont ouvertes Ã  la communautÃ© scientifiq
 Pour travailler sur une copie locale dÃ©diÃ©e, un clone du repo peut Ãªtre crÃ©Ã© dans `/workspace/APPLI` :
 
 ```bash
-git clone /workspace/CleanmyMap /workspace/APPLI
+git clone /workspace/CleanMyMap /workspace/APPLI
 ```
 
 ## Journal de changements, monitoring UX et E2E
@@ -531,7 +531,7 @@ Les donnÃ©es de **Clean my Map** sont ouvertes Ã  la communautÃ© scientifiq
 Pour travailler sur une copie locale dÃ©diÃ©e, un clone du repo peut Ãªtre crÃ©Ã© dans `/workspace/APPLI` :
 
 ```bash
-git clone /workspace/CleanmyMap /workspace/APPLI
+git clone /workspace/CleanMyMap /workspace/APPLI
 ```
 
 ## Journal de changements, monitoring UX et E2E

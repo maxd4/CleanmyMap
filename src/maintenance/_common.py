@@ -27,7 +27,7 @@ IGNORED_DIRS = {
     "artifacts",
     "build",
     "cache",
-    "CleanmyMap-sync",
+    "CleanMyMap-sync",
     "data",
     "legacy",
     "node_modules",
