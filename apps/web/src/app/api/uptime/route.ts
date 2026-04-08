@@ -25,23 +25,39 @@ export async function GET() {
   const isProduction = process.env.NODE_ENV === "production";
   const usesTestKeysInProduction = isProduction && (publishableMode === "test" || secretMode === "test");
 
-  const checks = {
+  const criticalChecks = {
     app: "ok" as CheckState,
     supabase: (isConfigured(env.NEXT_PUBLIC_SUPABASE_URL) && isConfigured(env.NEXT_PUBLIC_SUPABASE_ANON_KEY) ? "configured" : "missing") as CheckState,
     clerk: (clerkConfigured ? "configured" : "missing") as CheckState,
     clerk_keys: (!clerkConfigured ? "missing" : !sameMode || usesTestKeysInProduction ? "warning" : "ok") as CheckState,
+  };
+
+  const optionalChecks = {
     sentry: (isConfigured(env.SENTRY_DSN) || isConfigured(env.NEXT_PUBLIC_SENTRY_DSN) ? "configured" : "missing") as CheckState,
   };
 
-  const criticalChecks: CheckState[] = [checks.app, checks.supabase, checks.clerk, checks.clerk_keys];
-  const status = criticalChecks.every((state) => state === "ok" || state === "configured")
+  const criticalStates: CheckState[] = Object.values(criticalChecks);
+  const optionalStates: CheckState[] = Object.values(optionalChecks);
+  const criticalStatus = criticalStates.every((state) => state === "ok" || state === "configured")
     ? "ok"
     : "degraded";
+  const optionalStatus = optionalStates.every((state) => state === "ok" || state === "configured")
+    ? "ok"
+    : "warning";
 
   return NextResponse.json(
     {
-      status,
-      checks,
+      status: criticalStatus,
+      criticalStatus,
+      optionalStatus,
+      checks: {
+        ...criticalChecks,
+        ...optionalChecks,
+      },
+      categories: {
+        critical: criticalChecks,
+        optional: optionalChecks,
+      },
       diagnostics: {
         clerk_publishable_mode: publishableMode,
         clerk_secret_mode: secretMode,

@@ -13,10 +13,8 @@ export default async function NewActionPage() {
     <div className="space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Parcours prioritaire</p>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">Déclaration de nettoyage</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Cette page remplace le formulaire Streamlit pour le flux principal de saisie bénévole.
-        </p>
+        <h1 className="mt-2 text-2xl font-semibold text-slate-900">Declaration de nettoyage</h1>
+        <p className="mt-2 text-sm text-slate-600">Formulaire principal de saisie benevole pour declarer une action.</p>
       </section>
 
       <ActionDeclarationForm

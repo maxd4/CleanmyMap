@@ -21,7 +21,7 @@ export function AppNavigation() {
     <nav className="mt-4 space-y-3">
       <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{labels.navTitle}</p>
-        <p className="text-xs text-slate-500">{labels.categoryCount}</p>
+        <p className="text-xs text-slate-500">{labels.summary}</p>
       </div>
 
       <div className="hidden gap-3 lg:grid lg:grid-cols-2">

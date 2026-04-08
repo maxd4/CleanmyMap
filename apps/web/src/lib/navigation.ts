@@ -26,8 +26,13 @@ export const NAVIGATION_CATEGORIES: NavigationCategory[] = RUBRIQUE_CATEGORIES.m
 })).filter((category) => category.items.length > 0);
 
 export function getNavigationLabels(locale: Locale) {
+  const rubriqueCount = NAVIGATION_CATEGORIES.reduce((acc, category) => acc + category.items.length, 0);
+  const categoryCount = NAVIGATION_CATEGORIES.length;
   return {
     navTitle: locale === "fr" ? "Navigation du site" : "Site navigation",
-    categoryCount: locale === "fr" ? `${NAVIGATION_CATEGORIES.length} categories` : `${NAVIGATION_CATEGORIES.length} categories`,
+    summary:
+      locale === "fr"
+        ? `${rubriqueCount} rubriques organisees en ${categoryCount} categories`
+        : `${rubriqueCount} sections organized into ${categoryCount} categories`,
   };
 }
