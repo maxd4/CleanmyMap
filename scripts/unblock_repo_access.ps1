@@ -47,7 +47,7 @@ Write-Host "[unblock] git core.longpaths=true and safe.directory added"
 
 # Lightweight write-access probes.
 $targets = @(
-    "app.py",
+    "src/report_generator.py",
     "README.md",
     "docs/wiki/CHANGELOG.md"
 )

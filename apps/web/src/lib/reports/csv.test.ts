@@ -28,6 +28,7 @@ describe("report csv helpers", () => {
       status: null,
       limit: 250,
       days: 90,
+      association: null,
     });
   });
 
@@ -38,6 +39,7 @@ describe("report csv helpers", () => {
         created_at: "2026-04-02T10:00:00Z",
         action_date: "2026-04-01",
         actor_name: 'Alice "Eco"',
+        association_name: "Entreprise",
         location_label: "Rue, Paris",
         latitude: 48.8566,
         longitude: 2.3522,
@@ -51,25 +53,30 @@ describe("report csv helpers", () => {
         source: "actions",
         observed_at: "2026-04-01",
         geometry_kind: "polygon",
-        geometry_geojson: "{\"type\":\"Polygon\"}",
+        geometry_geojson: '{"type":"Polygon"}',
         manual_drawing_kind: "polygon",
         manual_drawing_points: 3,
-        manual_drawing_coordinates_json: "[[48.85,2.35],[48.851,2.351],[48.852,2.352]]",
-        manual_drawing_geojson: "{\"type\":\"Polygon\"}",
+        manual_drawing_coordinates_json:
+          "[[48.85,2.35],[48.851,2.351],[48.852,2.352]]",
+        manual_drawing_geojson: '{"type":"Polygon"}',
       },
     ]);
 
     expect(csv).toContain('"Alice ""Eco"""');
+    expect(csv).toContain("association_name");
+    expect(csv).toContain("Entreprise");
     expect(csv).toContain('"Rue, Paris"');
-    expect(csv).toContain("\"ligne 1\nligne 2\"");
+    expect(csv).toContain('"ligne 1\nligne 2"');
     expect(csv).toContain("geometry_kind");
     expect(csv).toContain("manual_drawing_geojson");
-    expect(csv).toContain("\"{\"\"type\"\":\"\"Polygon\"\"}\"");
+    expect(csv).toContain('"{""type"":""Polygon""}"');
   });
 
   it("builds deterministic filename", () => {
-    const filename = buildActionsCsvFilename(new Date("2026-04-02T15:10:00.000Z"));
-    expect(filename).toBe("cleanmymap_actions_2026-04-02.csv");
+    const filename = buildActionsCsvFilename(
+      new Date("2026-04-02T15:10:00.000Z"),
+    );
+    expect(filename).toBe("export_actions_cmm_02-04-2026.csv");
   });
 
   it("builds date floor in YYYY-MM-DD", () => {

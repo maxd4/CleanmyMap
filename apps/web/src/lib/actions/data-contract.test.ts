@@ -23,6 +23,7 @@ describe("action data contract", () => {
       volunteersCount: 4,
       durationMinutes: 55,
       actorName: "Max",
+      associationName: "Action spontanee",
       notes: "zone dense",
       notesPlain: "zone dense",
       manualDrawing: {
@@ -33,15 +34,17 @@ describe("action data contract", () => {
           [48.872, 2.362],
         ],
       },
-      manualDrawingGeoJson: "{\"type\":\"Polygon\",\"coordinates\":[[[2.36,48.87],[2.361,48.871],[2.362,48.872]]]}",
+      manualDrawingGeoJson:
+        '{"type":"Polygon","coordinates":[[[2.36,48.87],[2.361,48.871],[2.362,48.872]]]}',
     });
 
     const mapItem = toActionMapItem(contract);
     expect(mapItem.latitude).toBe(48.87);
     expect(mapItem.longitude).toBe(2.36);
+    expect(mapItem.contract?.metadata.associationName).toBe("Action spontanee");
     expect(mapItem.manual_drawing?.kind).toBe("polygon");
     expect(mapItem.manual_drawing?.coordinates.length).toBe(3);
-    expect(mapItem.manual_drawing_geojson).toContain("\"Polygon\"");
+    expect(mapItem.manual_drawing_geojson).toContain('"Polygon"');
     expect(mapItem.contract?.geometry.kind).toBe("polygon");
   });
 
@@ -51,16 +54,22 @@ describe("action data contract", () => {
       source: "web_form",
       location: { label: "Paris 11e" },
       dates: { observedAt: "2026-04-08" },
-      metadata: { wasteKg: 2.2, volunteersCount: 1 },
+      metadata: {
+        associationName: "Entreprise",
+        wasteKg: 2.2,
+        volunteersCount: 1,
+      },
     });
 
     expect(normalized.locationLabel).toBe("Paris 11e");
+    expect(normalized.associationName).toBe("Entreprise");
     expect(normalized.manualDrawing).toBeUndefined();
   });
 
   it("builds contract create payload from legacy create payload", () => {
     const contractPayload = toContractCreatePayload({
       actorName: "Max",
+      associationName: "Entreprise",
       actionDate: "2026-04-08",
       locationLabel: "Canal Saint-Martin",
       wasteKg: 5,
@@ -77,6 +86,7 @@ describe("action data contract", () => {
     });
 
     expect(contractPayload.type).toBe("action");
+    expect(contractPayload.metadata.associationName).toBe("Entreprise");
     expect(contractPayload.location.label).toBe("Canal Saint-Martin");
     expect(contractPayload.geometry?.kind).toBe("polyline");
     expect(contractPayload.geometry?.coordinates.length).toBe(2);

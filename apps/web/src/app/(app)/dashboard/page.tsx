@@ -1,112 +1,443 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
+import { BusinessAlertsPanel } from "@/components/dashboard/business-alerts-panel";
+import { FunnelConversionPanel } from "@/components/dashboard/funnel-conversion-panel";
 import { ReportExportSmokeCard } from "@/components/dashboard/report-export-smoke-card";
 import { SystemStatusPanel } from "@/components/dashboard/system-status-panel";
-import { fetchActions } from "@/lib/actions/store";
+import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
+import { KpiComparisonCard } from "@/components/pilotage/kpi-comparison-card";
+import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
+import { OperationalPrioritiesPanel } from "@/components/pilotage/operational-priorities-panel";
+import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
+import { PageReadingTemplate } from "@/components/ui/page-reading-template";
+import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { isFeatureEnabled } from "@/lib/feature-flags";
+import { loadPilotageOverview } from "@/lib/pilotage/overview";
+import {
+  getProfileLabel,
+  getProfilePrimaryAction,
+  getProfileSecondaryAction,
+  toProfile,
+} from "@/lib/profiles";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-function buildDateFloor(days: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  return date.toISOString().slice(0, 10);
-}
-
-async function loadDashboardMetrics() {
+async function loadDashboardOverview() {
   const supabase = getSupabaseServerClient();
-  const items = await fetchActions(supabase, {
-    limit: 400,
-    status: "approved",
-    floorDate: buildDateFloor(365),
+  return loadPilotageOverview({
+    supabase,
+    periodDays: 30,
+    limit: 1800,
   });
-
-  const totalKg = items.reduce((acc, item) => acc + Number(item.waste_kg || 0), 0);
-  const totalButts = items.reduce((acc, item) => acc + Number(item.cigarette_butts || 0), 0);
-  const totalVolunteers = items.reduce((acc, item) => acc + Number(item.volunteers_count || 0), 0);
-  const totalMinutes = items.reduce((acc, item) => acc + Number(item.duration_minutes || 0), 0);
-  const zones = new Set(items.map((item) => item.location_label.trim().toLowerCase())).size;
-
-  return {
-    count: items.length,
-    totalKg,
-    totalButts,
-    totalVolunteers,
-    totalHours: totalMinutes / 60,
-    zones,
-    source: "actions",
-  };
 }
 
 export default async function DashboardPage() {
   const { userId } = await auth();
   const role = await getCurrentUserRoleLabel();
-  const metrics = await loadDashboardMetrics().catch(() => null);
+  const profile = toProfile(role);
+  const roleLabel = getProfileLabel(profile, "fr");
+  const primaryAction = getProfilePrimaryAction(profile);
+  const secondaryAction = getProfileSecondaryAction(profile);
+  const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
+  const overview = await loadDashboardOverview().catch(() => null);
+
+  const kpis = overview
+    ? ([
+        {
+          label: overview.summary.kpis[0].label,
+          value: overview.summary.kpis[0].value,
+          previousValue: overview.summary.kpis[0].previousValue,
+          deltaAbsolute: overview.summary.kpis[0].deltaAbsolute,
+          deltaPercent: overview.summary.kpis[0].deltaPercent,
+          interpretation: overview.summary.kpis[0].interpretation,
+        },
+        {
+          label: overview.summary.kpis[1].label,
+          value: overview.summary.kpis[1].value,
+          previousValue: overview.summary.kpis[1].previousValue,
+          deltaAbsolute: overview.summary.kpis[1].deltaAbsolute,
+          deltaPercent: overview.summary.kpis[1].deltaPercent,
+          interpretation: overview.summary.kpis[1].interpretation,
+        },
+        {
+          label: overview.summary.kpis[2].label,
+          value: overview.summary.kpis[2].value,
+          previousValue: overview.summary.kpis[2].previousValue,
+          deltaAbsolute: overview.summary.kpis[2].deltaAbsolute,
+          deltaPercent: overview.summary.kpis[2].deltaPercent,
+          interpretation: overview.summary.kpis[2].interpretation,
+        },
+      ] as const)
+    : ([
+        {
+          label: "Impact terrain",
+          value: "n/a",
+          previousValue: "n/a",
+          deltaAbsolute: "n/a",
+          deltaPercent: "n/a",
+          interpretation: "neutral",
+        },
+        {
+          label: "Mobilisation",
+          value: "n/a",
+          previousValue: "n/a",
+          deltaAbsolute: "n/a",
+          deltaPercent: "n/a",
+          interpretation: "neutral",
+        },
+        {
+          label: "Qualite data",
+          value: "n/a",
+          previousValue: "n/a",
+          deltaAbsolute: "n/a",
+          deltaPercent: "n/a",
+          interpretation: "neutral",
+        },
+      ] as const);
+
+  if (pageTemplateV2Enabled) {
+    return (
+      <PageReadingTemplate
+        context={`Profil ${roleLabel}`}
+        title="Cockpit transversal"
+        objective="Orienter la priorisation op�rationnelle avec un r�sum� d�cisionnel court, puis des analyses cibl�es sans doublonner Compare, Climate et Reports."
+        summary={
+          <ThirtySecondsSummary
+            kpis={kpis}
+            alert={overview ? overview.summary.alert : undefined}
+            recommendedAction={{
+              href:
+                overview?.summary.recommendedAction.href ?? primaryAction.href,
+              label:
+                overview?.summary.recommendedAction.label ??
+                primaryAction.label.fr,
+            }}
+            recommendedReason={overview?.summary.recommendedAction.reason}
+          />
+        }
+        primaryAction={{
+          href: primaryAction.href,
+          label: primaryAction.label.fr,
+        }}
+        secondaryAction={
+          secondaryAction
+            ? { href: secondaryAction.href, label: secondaryAction.label.fr }
+            : undefined
+        }
+        analysis={
+          <>
+            <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Pilotage m�tier
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                  Synth�se comparative N vs N-1
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Lecture actionnable court terme: impact, qualit�, couverture,
+                  mobilisation, d�lai de mod�ration.
+                </p>
+              </div>
+
+              {overview ? (
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  <KpiComparisonCard
+                    label="Actions approuvees"
+                    value={`${overview.comparison.current.approvedActions}`}
+                    previousValue={`${overview.comparison.previous.approvedActions}`}
+                    deltaAbsolute={`${overview.comparison.metrics.approvedActions.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.approvedActions.deltaAbsolute.toFixed(1)}`}
+                    deltaPercent={`${overview.comparison.metrics.approvedActions.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.approvedActions.deltaPercent.toFixed(1)}%`}
+                    interpretation={
+                      overview.comparison.metrics.approvedActions.interpretation
+                    }
+                  />
+                  <KpiComparisonCard
+                    label="Volume collecte"
+                    value={`${overview.comparison.current.impactVolumeKg.toFixed(1)} kg`}
+                    previousValue={`${overview.comparison.previous.impactVolumeKg.toFixed(1)} kg`}
+                    deltaAbsolute={`${overview.comparison.metrics.impactVolumeKg.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.impactVolumeKg.deltaAbsolute.toFixed(1)} kg`}
+                    deltaPercent={`${overview.comparison.metrics.impactVolumeKg.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.impactVolumeKg.deltaPercent.toFixed(1)}%`}
+                    interpretation={
+                      overview.comparison.metrics.impactVolumeKg.interpretation
+                    }
+                  />
+                  <KpiComparisonCard
+                    label="Qualite data"
+                    value={`${overview.comparison.current.qualityScore.toFixed(1)}/100`}
+                    previousValue={`${overview.comparison.previous.qualityScore.toFixed(1)}/100`}
+                    deltaAbsolute={`${overview.comparison.metrics.qualityScore.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.qualityScore.deltaAbsolute.toFixed(1)}`}
+                    deltaPercent={`${overview.comparison.metrics.qualityScore.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.qualityScore.deltaPercent.toFixed(1)}%`}
+                    interpretation={
+                      overview.comparison.metrics.qualityScore.interpretation
+                    }
+                  />
+                  <KpiComparisonCard
+                    label="Geo-couverture"
+                    value={`${overview.comparison.current.coverageRate.toFixed(1)}%`}
+                    previousValue={`${overview.comparison.previous.coverageRate.toFixed(1)}%`}
+                    deltaAbsolute={`${overview.comparison.metrics.coverageRate.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.coverageRate.deltaAbsolute.toFixed(1)} pt`}
+                    deltaPercent={`${overview.comparison.metrics.coverageRate.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.coverageRate.deltaPercent.toFixed(1)}%`}
+                    interpretation={
+                      overview.comparison.metrics.coverageRate.interpretation
+                    }
+                  />
+                  <KpiComparisonCard
+                    label="Delai moderation"
+                    value={`${overview.comparison.current.moderationDelayDays.toFixed(1)} j`}
+                    previousValue={`${overview.comparison.previous.moderationDelayDays.toFixed(1)} j`}
+                    deltaAbsolute={`${overview.comparison.metrics.moderationDelayDays.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.moderationDelayDays.deltaAbsolute.toFixed(1)} j`}
+                    deltaPercent={`${overview.comparison.metrics.moderationDelayDays.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.moderationDelayDays.deltaPercent.toFixed(1)}%`}
+                    interpretation={
+                      overview.comparison.metrics.moderationDelayDays
+                        .interpretation
+                    }
+                  />
+                  <KpiComparisonCard
+                    label="Mobilisation"
+                    value={`${overview.comparison.current.mobilizationCount}`}
+                    previousValue={`${overview.comparison.previous.mobilizationCount}`}
+                    deltaAbsolute={`${overview.comparison.metrics.mobilizationCount.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.mobilizationCount.deltaAbsolute.toFixed(1)}`}
+                    deltaPercent={`${overview.comparison.metrics.mobilizationCount.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.mobilizationCount.deltaPercent.toFixed(1)}%`}
+                    interpretation={
+                      overview.comparison.metrics.mobilizationCount
+                        .interpretation
+                    }
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-amber-700">
+                  Metriques indisponibles temporairement, verifier la connexion
+                  Supabase.
+                </p>
+              )}
+
+              {overview ? (
+                <OperationalPrioritiesPanel priorities={overview.priorities} />
+              ) : null}
+              <BusinessAlertsPanel />
+            </section>
+
+            <FunnelConversionPanel />
+
+            <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Supervision technique
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                  Sante plateforme et exports critiques
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Etat des services et verification des executions sensibles.
+                </p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <SystemStatusPanel />
+                <ReportExportSmokeCard />
+              </div>
+            </section>
+
+            {overview ? (
+              <KpiMethodBlock
+                methods={overview.methods.slice(0, 3)}
+                title="Methode (KPI cles)"
+              />
+            ) : null}
+          </>
+        }
+        trace={
+          <div className="space-y-2 text-xs text-slate-600">
+            <p>
+              Horodatage:{" "}
+              {overview
+                ? new Date(overview.generatedAt).toLocaleString("fr-FR")
+                : "indisponible"}{" "}
+              | Fiabilite:{" "}
+              {overview
+                ? "moyenne a elevee selon les metriques disponibles"
+                : "faible (donnees absentes)"}
+            </p>
+            <p>
+              Sources: actions validees, module pilotage overview, metriques
+              derivees N/N-1.
+            </p>
+            <p>
+              Methode: deltas absolus et relatifs sur fenetre 30 jours.
+              Perimetre: cockpit transversal.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <RubriquePdfExportButton rubriqueTitle="Tableau de bord pilotage" />
+              <Link
+                href="/reports"
+                className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              >
+                Ouvrir le reporting
+              </Link>
+            </div>
+          </div>
+        }
+      />
+    );
+  }
 
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div data-rubrique-report-root className="flex w-full flex-col gap-6">
+      <ThirtySecondsSummary
+        kpis={kpis}
+        alert={overview ? overview.summary.alert : undefined}
+        recommendedAction={{
+          href: overview?.summary.recommendedAction.href ?? primaryAction.href,
+          label:
+            overview?.summary.recommendedAction.label ?? primaryAction.label.fr,
+        }}
+        recommendedReason={overview?.summary.recommendedAction.reason}
+      />
+
       <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Espace applicatif</p>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">Tableau de bord bénévole</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Session active avec Clerk. Cette zone centralise les workflows bénévoles web de CleanMyMap.
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          Espace applicatif
         </p>
-        {metrics ? (
-          <p className="mt-2 text-xs text-slate-500">
-            Données consolidées depuis la source <code>{metrics.source}</code> (actions approuvées sur 12 mois glissants).
-          </p>
-        ) : (
-          <p className="mt-2 text-xs text-amber-700">Métriques indisponibles temporairement, vérifier la connexion Supabase.</p>
-        )}
-      </header>
-
-      <section className="grid gap-4 md:grid-cols-4">
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Identité</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Utilisateur connecté: <span className="font-mono">{userId}</span>
-          </p>
-          <p className="mt-1 text-sm text-slate-600">
-            Rôle: <span className="font-semibold text-emerald-700">{role === "admin" ? "Admin" : "Bénévole"}</span>
-          </p>
-        </article>
-
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Déchets retirés</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            {metrics ? `${metrics.totalKg.toFixed(1)} kg et ${metrics.totalButts} mégots consolidés.` : "Données en chargement."}
-          </p>
-          <Link href="/actions/new" className="mt-3 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-800">
-            Ouvrir la declaration
-          </Link>
-        </article>
-
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Mobilisation</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            {metrics
-              ? `${metrics.totalVolunteers} participations, ${metrics.totalHours.toFixed(1)} heures bénévoles, ${metrics.zones} zones couvertes.`
-              : "Historique filtrable et lecture cartographique des actions géolocalisées."}
-          </p>
-          <Link href="/actions/history" className="mt-3 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-800">
-            Ouvrir l&apos;historique
-          </Link>
-        </article>
-
-        <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-base font-semibold text-slate-900">Reporting</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            {metrics ? `${metrics.count} actions approuvées exploitables pour les exports et analyses.` : "Exports CSV et parcours reporting disponibles."}
-          </p>
-          <Link href="/reports" className="mt-3 inline-flex text-sm font-semibold text-emerald-700 hover:text-emerald-800">
+        <h1 className="mt-2 text-2xl font-semibold text-slate-900">
+          Tableau de bord {roleLabel.toLowerCase()}
+        </h1>
+        <p className="mt-2 text-sm text-slate-600">
+          Pilotage decisionnel centre sur l&apos;impact terrain, la mobilisation
+          et la fiabilite des donnees.
+        </p>
+        <p className="mt-2 text-xs text-slate-500">
+          Utilisateur connecte: <span className="font-mono">{userId}</span>
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <RubriquePdfExportButton rubriqueTitle="Tableau de bord pilotage" />
+          <Link
+            href="/reports"
+            className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+          >
             Ouvrir le reporting
           </Link>
-        </article>
+        </div>
+      </header>
+
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Bloc A
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-slate-900">
+            Pilotage metier
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Lecture comparative N vs N-1 pour accelerer la decision
+            operationnelle.
+          </p>
+        </div>
+
+        {overview ? (
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            <KpiComparisonCard
+              label="Actions approuvees"
+              value={`${overview.comparison.current.approvedActions}`}
+              previousValue={`${overview.comparison.previous.approvedActions}`}
+              deltaAbsolute={`${overview.comparison.metrics.approvedActions.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.approvedActions.deltaAbsolute.toFixed(1)}`}
+              deltaPercent={`${overview.comparison.metrics.approvedActions.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.approvedActions.deltaPercent.toFixed(1)}%`}
+              interpretation={
+                overview.comparison.metrics.approvedActions.interpretation
+              }
+            />
+            <KpiComparisonCard
+              label="Volume collecte"
+              value={`${overview.comparison.current.impactVolumeKg.toFixed(1)} kg`}
+              previousValue={`${overview.comparison.previous.impactVolumeKg.toFixed(1)} kg`}
+              deltaAbsolute={`${overview.comparison.metrics.impactVolumeKg.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.impactVolumeKg.deltaAbsolute.toFixed(1)} kg`}
+              deltaPercent={`${overview.comparison.metrics.impactVolumeKg.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.impactVolumeKg.deltaPercent.toFixed(1)}%`}
+              interpretation={
+                overview.comparison.metrics.impactVolumeKg.interpretation
+              }
+            />
+            <KpiComparisonCard
+              label="Qualite data"
+              value={`${overview.comparison.current.qualityScore.toFixed(1)}/100`}
+              previousValue={`${overview.comparison.previous.qualityScore.toFixed(1)}/100`}
+              deltaAbsolute={`${overview.comparison.metrics.qualityScore.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.qualityScore.deltaAbsolute.toFixed(1)}`}
+              deltaPercent={`${overview.comparison.metrics.qualityScore.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.qualityScore.deltaPercent.toFixed(1)}%`}
+              interpretation={
+                overview.comparison.metrics.qualityScore.interpretation
+              }
+            />
+            <KpiComparisonCard
+              label="Geo-couverture"
+              value={`${overview.comparison.current.coverageRate.toFixed(1)}%`}
+              previousValue={`${overview.comparison.previous.coverageRate.toFixed(1)}%`}
+              deltaAbsolute={`${overview.comparison.metrics.coverageRate.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.coverageRate.deltaAbsolute.toFixed(1)} pt`}
+              deltaPercent={`${overview.comparison.metrics.coverageRate.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.coverageRate.deltaPercent.toFixed(1)}%`}
+              interpretation={
+                overview.comparison.metrics.coverageRate.interpretation
+              }
+            />
+            <KpiComparisonCard
+              label="Delai moderation"
+              value={`${overview.comparison.current.moderationDelayDays.toFixed(1)} j`}
+              previousValue={`${overview.comparison.previous.moderationDelayDays.toFixed(1)} j`}
+              deltaAbsolute={`${overview.comparison.metrics.moderationDelayDays.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.moderationDelayDays.deltaAbsolute.toFixed(1)} j`}
+              deltaPercent={`${overview.comparison.metrics.moderationDelayDays.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.moderationDelayDays.deltaPercent.toFixed(1)}%`}
+              interpretation={
+                overview.comparison.metrics.moderationDelayDays.interpretation
+              }
+            />
+            <KpiComparisonCard
+              label="Mobilisation"
+              value={`${overview.comparison.current.mobilizationCount}`}
+              previousValue={`${overview.comparison.previous.mobilizationCount}`}
+              deltaAbsolute={`${overview.comparison.metrics.mobilizationCount.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.mobilizationCount.deltaAbsolute.toFixed(1)}`}
+              deltaPercent={`${overview.comparison.metrics.mobilizationCount.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.mobilizationCount.deltaPercent.toFixed(1)}%`}
+              interpretation={
+                overview.comparison.metrics.mobilizationCount.interpretation
+              }
+            />
+          </div>
+        ) : (
+          <p className="text-sm text-amber-700">
+            Metriques indisponibles temporairement, verifier la connexion
+            Supabase.
+          </p>
+        )}
+
+        {overview ? (
+          <OperationalPrioritiesPanel priorities={overview.priorities} />
+        ) : null}
+        <BusinessAlertsPanel />
       </section>
 
-      <section className="grid gap-4 md:grid-cols-2">
-        <ReportExportSmokeCard />
-        <SystemStatusPanel />
+      <FunnelConversionPanel />
+
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Bloc B
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-slate-900">
+            Supervision technique
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Sante API/services, alertes techniques et verification des exports
+            critiques.
+          </p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <SystemStatusPanel />
+          <ReportExportSmokeCard />
+        </div>
       </section>
+
+      {overview ? (
+        <KpiMethodBlock
+          methods={overview.methods.slice(0, 3)}
+          title="Methode (KPI cles)"
+        />
+      ) : null}
+
+      <RolePrimaryActions profile={profile} />
     </div>
   );
 }

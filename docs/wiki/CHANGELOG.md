@@ -1,5 +1,36 @@
 # Change Log
 
+## 2026-04-09
+
+### E09 destructive cleanup: Streamlit legacy removed
+
+- **What changed**
+  - Removed legacy Streamlit runtime surface and related references:
+    - `app.py`
+    - `src/ui/*`
+    - `src/services/*`
+    - legacy helper modules/tests/docs tied to this runtime
+  - Removed obsolete UI inventory tooling/docs:
+    - `scripts/ui_inventory.py`
+    - `scripts/regenerate_ui_inventory_baseline.py`
+    - `docs/wiki/UI_INVENTORY.md`
+    - `docs/wiki/ui_inventory.baseline.json`
+  - Updated active maintenance references to `python scripts/ci_cleanup.py --root . --check`.
+
+- **Why**
+  - Align the repository with the active Next.js runtime and reduce stale maintenance surface.
+  - Eliminate broken references after legacy deletion.
+
+- **Validation**
+  - `pytest -q`
+  - `npm --prefix apps/web run lint`
+  - `npm --prefix apps/web run test`
+  - `npm --prefix apps/web run build`
+
+### Note on historical entries
+
+- Older changelog entries intentionally reference now-deleted legacy files (`app.py`, `src/ui/*`, `src/services/*`) because they describe past changes.
+
 ## 2026-03-28
 
 ### Navigation update: public sandbox moved to section 1

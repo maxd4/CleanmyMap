@@ -1,4 +1,5 @@
 import type { ActionDrawing } from "@/lib/actions/types";
+import { stripEventRefFromNotes } from "./event-link";
 
 export const DRAWING_NOTE_PREFIX = "[DRAWING_GEOJSON]";
 
@@ -32,7 +33,9 @@ function normalizeDrawing(raw: unknown): ActionDrawing | null {
     return null;
   }
   const kind = (raw as { kind?: unknown }).kind;
-  const coordinates = normalizeCoordinates((raw as { coordinates?: unknown }).coordinates);
+  const coordinates = normalizeCoordinates(
+    (raw as { coordinates?: unknown }).coordinates,
+  );
   if (!coordinates || (kind !== "polyline" && kind !== "polygon")) {
     return null;
   }
@@ -46,7 +49,9 @@ function normalizeDrawing(raw: unknown): ActionDrawing | null {
   };
 }
 
-export function parseDrawingFromNotes(notes: string | null | undefined): ParsedDrawingNotes {
+export function parseDrawingFromNotes(
+  notes: string | null | undefined,
+): ParsedDrawingNotes {
   const raw = (notes ?? "").trim();
   if (!raw) {
     return { cleanNotes: null, manualDrawing: null, drawingJson: null };
@@ -54,11 +59,17 @@ export function parseDrawingFromNotes(notes: string | null | undefined): ParsedD
 
   const markerIndex = raw.lastIndexOf(DRAWING_NOTE_PREFIX);
   if (markerIndex < 0) {
-    return { cleanNotes: raw, manualDrawing: null, drawingJson: null };
+    return {
+      cleanNotes: stripEventRefFromNotes(raw),
+      manualDrawing: null,
+      drawingJson: null,
+    };
   }
 
   const body = raw.slice(0, markerIndex).trim();
-  const drawingJson = raw.slice(markerIndex + DRAWING_NOTE_PREFIX.length).trim();
+  const drawingJson = raw
+    .slice(markerIndex + DRAWING_NOTE_PREFIX.length)
+    .trim();
   if (!drawingJson) {
     return { cleanNotes: body || null, manualDrawing: null, drawingJson: null };
   }
@@ -67,13 +78,13 @@ export function parseDrawingFromNotes(notes: string | null | undefined): ParsedD
     const parsed = JSON.parse(drawingJson);
     const manualDrawing = normalizeDrawing(parsed);
     return {
-      cleanNotes: body || null,
+      cleanNotes: stripEventRefFromNotes(body),
       manualDrawing,
       drawingJson: manualDrawing ? drawingJson : null,
     };
   } catch {
     return {
-      cleanNotes: body || null,
+      cleanNotes: stripEventRefFromNotes(body),
       manualDrawing: null,
       drawingJson: null,
     };

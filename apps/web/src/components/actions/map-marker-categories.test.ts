@@ -22,24 +22,36 @@ function buildItem(partial: Partial<ActionMapItem>): ActionMapItem {
 }
 
 describe("map marker categories", () => {
-  it("shows only yellow and violet by default", () => {
+  it("shows all categories by default for exhaustive map", () => {
     expect(DEFAULT_VISIBLE_CATEGORIES.yellow).toBe(true);
     expect(DEFAULT_VISIBLE_CATEGORIES.violet).toBe(true);
-    expect(DEFAULT_VISIBLE_CATEGORIES.green).toBe(false);
-    expect(DEFAULT_VISIBLE_CATEGORIES.blue).toBe(false);
-    expect(DEFAULT_VISIBLE_CATEGORIES.ashtray).toBe(false);
-    expect(DEFAULT_VISIBLE_CATEGORIES.bin).toBe(false);
+    expect(DEFAULT_VISIBLE_CATEGORIES.green).toBe(true);
+    expect(DEFAULT_VISIBLE_CATEGORIES.blue).toBe(true);
+    expect(DEFAULT_VISIBLE_CATEGORIES.ashtray).toBe(true);
+    expect(DEFAULT_VISIBLE_CATEGORIES.bin).toBe(true);
   });
 
   it("classifies pollution color with defined thresholds", () => {
-    expect(classifyPollutionColor(buildItem({ waste_kg: 20, cigarette_butts: 0 }))).toBe("violet");
-    expect(classifyPollutionColor(buildItem({ waste_kg: 4, cigarette_butts: 0 }))).toBe("yellow");
-    expect(classifyPollutionColor(buildItem({ waste_kg: 1, cigarette_butts: 0 }))).toBe("green");
-    expect(classifyPollutionColor(buildItem({ waste_kg: 0, cigarette_butts: 0 }))).toBe("blue");
+    expect(
+      classifyPollutionColor(
+        buildItem({ waste_kg: 40, cigarette_butts: 3000 }),
+      ),
+    ).toBe("violet");
+    expect(
+      classifyPollutionColor(buildItem({ waste_kg: 20, cigarette_butts: 0 })),
+    ).toBe("yellow");
+    expect(
+      classifyPollutionColor(buildItem({ waste_kg: 1, cigarette_butts: 0 })),
+    ).toBe("green");
+    expect(
+      classifyPollutionColor(buildItem({ waste_kg: 0, cigarette_butts: 0 })),
+    ).toBe("blue");
   });
 
   it("adds ashtray/bin markers when relevant", () => {
-    const categories = deriveMarkerCategories(buildItem({ waste_kg: 5, cigarette_butts: 120 }));
+    const categories = deriveMarkerCategories(
+      buildItem({ waste_kg: 20, cigarette_butts: 800 }),
+    );
     expect(categories).toContain("yellow");
     expect(categories).toContain("ashtray");
     expect(categories).toContain("bin");
@@ -47,13 +59,19 @@ describe("map marker categories", () => {
 
   it("applies visibility filter from toggles", () => {
     const greenItem = buildItem({ waste_kg: 1, cigarette_butts: 0 });
-    const visibleByDefault = isVisibleWithCategoryFilter(greenItem, DEFAULT_VISIBLE_CATEGORIES);
-    expect(visibleByDefault).toBe(false);
+    const visibleByDefault = isVisibleWithCategoryFilter(
+      greenItem,
+      DEFAULT_VISIBLE_CATEGORIES,
+    );
+    expect(visibleByDefault).toBe(true);
 
     const withGreenEnabled = {
       ...DEFAULT_VISIBLE_CATEGORIES,
-      green: true,
+      green: false,
+      bin: false,
     };
-    expect(isVisibleWithCategoryFilter(greenItem, withGreenEnabled)).toBe(true);
+    expect(isVisibleWithCategoryFilter(greenItem, withGreenEnabled)).toBe(
+      false,
+    );
   });
 });

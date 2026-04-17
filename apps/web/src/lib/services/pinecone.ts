@@ -1,4 +1,4 @@
-﻿import { Pinecone } from "@pinecone-database/pinecone";
+import { Pinecone } from "@pinecone-database/pinecone";
 import { env } from "@/lib/env";
 
 let client: Pinecone | null = null;

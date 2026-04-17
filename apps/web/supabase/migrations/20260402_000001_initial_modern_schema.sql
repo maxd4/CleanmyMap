@@ -1,4 +1,4 @@
-﻿-- CleanMyMap modern stack baseline schema
+-- CleanMyMap modern stack baseline schema
 -- Run with Supabase SQL editor or migration engine.
 
 create extension if not exists pgcrypto;

@@ -10,11 +10,14 @@ import {
   useState,
 } from "react";
 import {
+  DEFAULT_DISPLAY_MODE,
   DEFAULT_LOCALE,
   DEFAULT_THEME,
+  DISPLAY_MODES,
   LOCALES,
   STORAGE_KEYS,
   THEMES,
+  type DisplayMode,
   type Locale,
   type ThemeMode,
 } from "@/lib/ui/preferences";
@@ -25,9 +28,13 @@ type SitePreferencesContextValue = {
   theme: ThemeMode;
   setTheme: (value: ThemeMode) => void;
   toggleTheme: () => void;
+  displayMode: DisplayMode;
+  setDisplayMode: (value: DisplayMode) => void;
+  isDisplayModeExplicitlySet: boolean;
 };
 
-const SitePreferencesContext = createContext<SitePreferencesContextValue | null>(null);
+const SitePreferencesContext =
+  createContext<SitePreferencesContextValue | null>(null);
 
 function parseLocale(raw: string | null): Locale {
   return LOCALES.includes(raw as Locale) ? (raw as Locale) : DEFAULT_LOCALE;
@@ -35,6 +42,12 @@ function parseLocale(raw: string | null): Locale {
 
 function parseTheme(raw: string | null): ThemeMode {
   return THEMES.includes(raw as ThemeMode) ? (raw as ThemeMode) : DEFAULT_THEME;
+}
+
+function parseDisplayMode(raw: string | null): DisplayMode {
+  return DISPLAY_MODES.includes(raw as DisplayMode)
+    ? (raw as DisplayMode)
+    : DEFAULT_DISPLAY_MODE;
 }
 
 export function SitePreferencesProvider({ children }: { children: ReactNode }) {
@@ -49,9 +62,27 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
       return DEFAULT_THEME;
     }
     const storedThemeRaw = window.localStorage.getItem(STORAGE_KEYS.theme);
-    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)")
+      .matches
+      ? "dark"
+      : "light";
     return parseTheme(storedThemeRaw ?? preferredTheme);
   });
+  const [displayMode, setDisplayModeState] = useState<DisplayMode>(() => {
+    if (typeof window === "undefined") {
+      return DEFAULT_DISPLAY_MODE;
+    }
+    return parseDisplayMode(
+      window.localStorage.getItem(STORAGE_KEYS.displayMode),
+    );
+  });
+  const [isDisplayModeExplicitlySet, setIsDisplayModeExplicitlySet] =
+    useState<boolean>(() => {
+      if (typeof window === "undefined") {
+        return false;
+      }
+      return Boolean(window.localStorage.getItem(STORAGE_KEYS.displayMode));
+    });
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -70,8 +101,25 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (isDisplayModeExplicitlySet) {
+      window.localStorage.setItem(STORAGE_KEYS.displayMode, displayMode);
+      document.cookie = `${STORAGE_KEYS.displayMode}=${displayMode}; Max-Age=31536000; Path=/; SameSite=Lax`;
+      return;
+    }
+    window.localStorage.removeItem(STORAGE_KEYS.displayMode);
+    document.cookie = `${STORAGE_KEYS.displayMode}=; Max-Age=0; Path=/; SameSite=Lax`;
+  }, [displayMode, isDisplayModeExplicitlySet]);
+
   const setLocale = useCallback((value: Locale) => setLocaleState(value), []);
   const setTheme = useCallback((value: ThemeMode) => setThemeState(value), []);
+  const setDisplayMode = useCallback((value: DisplayMode) => {
+    setDisplayModeState(value);
+    setIsDisplayModeExplicitlySet(true);
+  }, []);
   const toggleTheme = useCallback(() => {
     setThemeState((previous) => (previous === "dark" ? "light" : "dark"));
   }, []);
@@ -83,17 +131,35 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
       theme,
       setTheme,
       toggleTheme,
+      displayMode,
+      setDisplayMode,
+      isDisplayModeExplicitlySet,
     }),
-    [locale, setLocale, setTheme, theme, toggleTheme],
+    [
+      displayMode,
+      isDisplayModeExplicitlySet,
+      locale,
+      setDisplayMode,
+      setLocale,
+      setTheme,
+      theme,
+      toggleTheme,
+    ],
   );
 
-  return <SitePreferencesContext.Provider value={value}>{children}</SitePreferencesContext.Provider>;
+  return (
+    <SitePreferencesContext.Provider value={value}>
+      {children}
+    </SitePreferencesContext.Provider>
+  );
 }
 
 export function useSitePreferences(): SitePreferencesContextValue {
   const context = useContext(SitePreferencesContext);
   if (!context) {
-    throw new Error("useSitePreferences must be used inside SitePreferencesProvider");
+    throw new Error(
+      "useSitePreferences must be used inside SitePreferencesProvider",
+    );
   }
   return context;
 }

@@ -1,8 +1,15 @@
 import { z } from "zod";
-import { normalizeCreatePayload, type ActionContractCreatePayload } from "@/lib/actions/data-contract";
+import {
+  normalizeCreatePayload,
+  type ActionContractCreatePayload,
+} from "@/lib/actions/data-contract";
+import { isValidAssociationName } from "@/lib/actions/association-options";
 import type { CreateActionPayload } from "@/lib/actions/types";
 
-const coordinateSchema = z.tuple([z.number().min(-90).max(90), z.number().min(-180).max(180)]);
+const coordinateSchema = z.tuple([
+  z.number().min(-90).max(90),
+  z.number().min(-180).max(180),
+]);
 
 const manualDrawingSchema = z
   .object({
@@ -14,13 +21,32 @@ const manualDrawingSchema = z
     if (value.coordinates.length < minimumPoints) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: value.kind === "polygon" ? "Le polygone doit contenir au moins 3 points." : "Le trace doit contenir au moins 2 points.",
+        message:
+          value.kind === "polygon"
+            ? "Le polygone doit contenir au moins 3 points."
+            : "Le trace doit contenir au moins 2 points.",
       });
     }
   });
 
+const wasteBreakdownSchema = z.object({
+  megotsKg: z.number().min(0).max(100000).optional(),
+  plastiqueKg: z.number().min(0).max(100000).optional(),
+  verreKg: z.number().min(0).max(100000).optional(),
+  metalKg: z.number().min(0).max(100000).optional(),
+  mixteKg: z.number().min(0).max(100000).optional(),
+  triQuality: z.enum(["faible", "moyenne", "elevee"]).optional(),
+});
+
+const associationNameSchema = z
+  .string()
+  .min(1)
+  .max(120)
+  .refine((value) => isValidAssociationName(value), "Association invalide.");
+
 const createActionLegacySchema = z.object({
   actorName: z.string().min(1).max(120).optional(),
+  associationName: associationNameSchema,
   actionDate: z.string().date(),
   locationLabel: z.string().min(2).max(200),
   latitude: z.number().min(-90).max(90).optional(),
@@ -28,9 +54,16 @@ const createActionLegacySchema = z.object({
   wasteKg: z.number().min(0).max(100000),
   cigaretteButts: z.number().int().min(0).max(5000000).default(0),
   volunteersCount: z.number().int().min(1).max(500).default(1),
-  durationMinutes: z.number().int().min(0).max(24 * 60).default(0),
+  durationMinutes: z
+    .number()
+    .int()
+    .min(0)
+    .max(24 * 60)
+    .default(0),
   notes: z.string().max(1000).optional(),
   manualDrawing: manualDrawingSchema.optional(),
+  submissionMode: z.enum(["quick", "complete"]).optional(),
+  wasteBreakdown: wasteBreakdownSchema.optional(),
 });
 
 const createActionContractSchema = z.object({
@@ -47,18 +80,29 @@ const createActionContractSchema = z.object({
   }),
   metadata: z.object({
     actorName: z.string().min(1).max(120).optional(),
+    associationName: associationNameSchema,
     wasteKg: z.number().min(0).max(100000),
     cigaretteButts: z.number().int().min(0).max(5000000).optional(),
     volunteersCount: z.number().int().min(1).max(500).optional(),
-    durationMinutes: z.number().int().min(0).max(24 * 60).optional(),
+    durationMinutes: z
+      .number()
+      .int()
+      .min(0)
+      .max(24 * 60)
+      .optional(),
     notes: z.string().max(1000).optional(),
+    submissionMode: z.enum(["quick", "complete"]).optional(),
+    wasteBreakdown: wasteBreakdownSchema.optional(),
   }),
 });
 
 export const createActionSchema = z
   .union([createActionLegacySchema, createActionContractSchema])
-  .transform((value): CreateActionPayload =>
-    normalizeCreatePayload(value as CreateActionPayload | ActionContractCreatePayload),
+  .transform(
+    (value): CreateActionPayload =>
+      normalizeCreatePayload(
+        value as CreateActionPayload | ActionContractCreatePayload,
+      ),
   );
 
 export type CreateActionInput = z.infer<typeof createActionSchema>;

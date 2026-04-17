@@ -1,0 +1,3 @@
+action_date,location_label,city,latitude,longitude,waste_kg,cigarette_butts,volunteers_count,duration_minutes,association_name,enterprise_name,actor_name,status,notes,type
+2026-03-15,"Quai de Valmy, Paris 10e",Paris,48.872102,2.364874,180,4500,25,150,Clean Walk Paris 10,,Coordination CW10,approved,"Operation canal Saint-Martin",Quai/Pont/Port
+2026-03-20,"Parc Andre Citroen, Paris 15e",Paris,48.842021,2.275412,140,2700,28,130,Entreprise,EcoCorp,Team EcoCorp,approved,"Action RSE trimestrielle",Bois/Parc/Jardin/Square/Sentier

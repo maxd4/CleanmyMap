@@ -1,0 +1,32 @@
+﻿Rubrique: comparaison
+Statut: A completer (non traite dans cette passe)
+
+- a quoi sert la rubrique
+  - A completer.
+
+- pour qui
+  - A completer.
+
+- valeur utilisateur
+  - A completer.
+
+- valeur produit
+  - A completer.
+
+- contenu a afficher
+  - A completer.
+
+- infos essentielles
+  - A completer.
+
+- erreurs a eviter
+  - A completer.
+
+- points UX/UI
+  - A completer.
+
+- pistes d'amelioration
+  - A completer.
+
+- questions ouvertes
+  - A completer.

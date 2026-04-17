@@ -1,0 +1,1036 @@
+﻿BOUCLE A REPETER AVEC MODELE FORT (claude / gemini 3.1)
+Refactorise le repo sans changer le comportement pour qu'il soit plus facilement utilisable par l'agent IA qui développe le projet
+
+Fait un audit des fichiers les plus lourd du repo, explique pourquoi et comment optimiser cela pour améliorer la qualité et l'efficacité du repo avec un plan d'action précis, propre et actionnable.
+
+Exécute cela
+
+De même fait cet audit pour les fichiers monolithique avec une stratégie de divisions propre en fichiers modulaires.
+
+Exécute la modularisation.
+
+
+
+Trouve tous les bugs et régressions puis structure ton audit sous forme d'un plan actionnable
+
+Exécute ce plan
+
+
+Fais un audit global du repo pour récupérer : les problèmes critiques, les risques de régression, les incohérences structurelles, les correctifs recommandés. Structure en un plan actionnable par toi
+
+execute le plan 
+
+
+
+
+
+
+
+
+
+
+
+transforme la partie 2 du document texte DU/economie_token en un ou plusieurs prompt actionnable par toi
+
+execute la première partie du fichier 
+
+etc
+
+
+trouve une solution a cette erreur : Le build direct depuis Google Sheet a renvoyé “Sheet appears empty” dans cet environnement;
+
+
+
+
+
+Privilégie les visuels de type schéma, illustration, diagramme ou représentation structurée plutôt que les explications purement textuelles dès que cela permet une compréhension plus rapide, plus intuitive et plus immédiate pour l’utilisateur. Fait un plan d'implementation structuré executable step by step
+
+
+
+
+Identifie tous les fichiers de documentation du repo, mets-les à jour si nécessaire, puis migre-les proprement dans un dossier `documentation` à la racine du repo.
+
+Consignes :
+- repère tous les fichiers de documentation existants
+- distingue les fichiers réellement utiles, obsolètes, redondants ou incomplets
+- mets à jour leur contenu avant migration si des incohérences, informations périmées ou manques importants sont détectés
+- déplace ensuite les fichiers conservés dans un dossier `documentation` à la base du repo
+- ajuste tous les liens, chemins, références internes, imports éventuels, scripts ou mentions dans le projet qui dépendaient de leur ancien emplacement
+- évite toute casse fonctionnelle liée au déplacement
+
+Retour attendu :
+- liste des fichiers de documentation identifiés
+- fichiers mis à jour
+- fichiers déplacés
+- fichiers supprimés ou fusionnés si nécessaire
+- liens/références corrigés
+- points de vigilance restants
+
+
+
+
+
+dans le fichier texte DU/partenaires.txt tu vas trouver de nouvelles idées pour compléter la rubrique "partenaires" du site web. Implemente cela de la même façon que les autres déjà présent.
+Ensuite dans le fichier texte documentation/audit_rubrique il y a une partie "- contenu affiché :" à compléter avec la liste de tous les nom d'associations, d'entreprises, de commerçants disponible dans la rubrique. Classe les par type d'engagement et type de structure pour que de soit plus facile à lire.
+
+
+envoyer le fichier à charlotte. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Complète le fichier texte `cartographie` dans `documentation/audit_rubrique`.
+
+Contexte :
+- cette rubrique est critique
+- un cartographe va intervenir pour aider à l’améliorer
+- le document doit donc être utile à la fois pour la réflexion produit, UX, logique cartographique et implémentation
+
+Objectif du fichier :
+- expliquer de manière structurée, concrète et exhaustive le rôle de la rubrique cartographie
+- documenter toutes les logiques visibles et implicites de la carte
+- produire une base solide de discussion, d’audit et de brainstorming
+
+Contraintes de forme :
+- structure très claire
+- listes prioritaires
+- phrases courtes
+- pas de longs paragraphes
+- lecture fluide
+- ici tu peux être plus exhaustif que pour les autres rubriques
+- le document doit rester exploitable rapidement malgré sa densité
+
+Le fichier doit couvrir au minimum :
+
+1. rôle global de la rubrique cartographie
+- objectif principal
+- valeur utilisateur
+- valeur produit
+- rôle central dans l’expérience CleanMyMap
+
+2. logique générale de lecture de la carte
+- ce que l’utilisateur comprend en premier
+- hiérarchie visuelle
+- parcours de lecture
+- signaux visuels prioritaires
+- éléments qui guident l’action
+
+3. logique des données affichées
+- types d’objets cartographiques présents ou prévus
+- points
+- regroupements
+- polygones
+- tracés de rues
+- zones
+- couches de données
+- relation entre données brutes, données normalisées et affichage
+
+4. logique des couleurs
+- rôle de chaque famille de couleur
+- signification métier éventuelle
+- distinction entre état, type, priorité, catégorie ou intensité
+- cohérence de la palette
+- lisibilité
+- accessibilité
+- risques de confusion
+- recommandations de clarification
+
+5. logique des calques
+- à quoi servent les calques
+- quels types d’informations doivent être séparés
+- ordre d’affichage
+- visibilité par défaut
+- surcharge visuelle possible
+- interactions entre calques
+- comportement desktop/mobile
+- opportunités d’amélioration
+
+6. logique de légende
+- ce que la légende doit expliquer
+- ce qu’elle ne doit pas surcharger
+- correspondance entre symboles, couleurs, couches et objets
+- lisibilité
+- pédagogie
+- place dans l’interface
+- version minimale vs version avancée
+
+7. logique des points et marqueurs
+- quand utiliser un point
+- signification de la taille, forme, couleur ou icône
+- état normal / hover / sélection / filtré / masqué
+- densité
+- collisions visuelles
+- cluster éventuel
+- priorisation des informations
+
+8. logique des polygones, zones et tracés
+- quand utiliser un polygone plutôt qu’un point
+- cas des rues, secteurs, zones d’action, périmètres
+- lisibilité
+- superposition
+- épaisseur de trait
+- opacité
+- contour
+- remplissage
+- ambiguïtés possibles
+- bonnes pratiques d’affichage
+
+9. logique des infobulles, popups ou panneaux de détail
+- rôle exact
+- déclenchement
+- contenu minimal
+- contenu secondaire
+- hiérarchie d’information
+- call-to-action utiles
+- risques de surcharge
+- lien avec la compréhension de la carte
+- lien avec les fiches détaillées éventuelles
+
+10. logique d’interaction
+- zoom
+- déplacement
+- clic
+- hover
+- sélection
+- filtres
+- recherche
+- recentrage
+- réinitialisation
+- affichage conditionnel
+- feedback visuel
+- états vides
+- états de chargement
+
+11. logique UX cartographique
+- ce qui aide vraiment à comprendre vite
+- ce qui peut perdre l’utilisateur
+- éléments trop techniques ou trop pauvres
+- équilibre entre précision, simplicité et densité d’information
+- friction potentielle
+- ambiguïtés à supprimer
+
+12. logique métier et produit derrière la carte
+- pourquoi la carte existe dans le produit
+- quelles décisions ou actions elle doit permettre
+- quel type de confiance elle doit inspirer
+- ce qu’elle doit faire ressentir
+- ce qu’elle doit rendre concret
+
+13. limites actuelles et points à améliorer
+- zones floues
+- logique incohérente
+- conventions absentes
+- risques UX/UI
+- risques de dette technique
+- risques cartographiques
+- hypothèses implicites à expliciter
+
+14. pistes d’amélioration
+- améliorations rapides
+- améliorations structurantes
+- éléments à arbitrer avec le cartographe
+- points nécessitant une décision produit
+- idées d’évolution moyen terme
+
+15. questions ouvertes
+- tout ce qui doit être tranché avant d’aller plus loin
+
+Consignes supplémentaires :
+- base-toi sur l’état réel du projet
+- n’invente pas des logiques absentes sans les marquer comme hypothèses
+- distingue clairement l’existant, le probable, le souhaitable et le manquant
+- si certains comportements ne sont pas encore implémentés mais semblent nécessaires, note-les comme recommandations et non comme existants.
+
+
+
+
+
+
+
+- propose quels autres sous-dossiers ou fichiers devraient être ajoutés dans `documentation`
+- organise ces recommandations de façon pratique, pas théorique
+- privilégie ce qui aide vraiment au développement, à la maintenance, à l’audit, à l’onboarding et à la cohérence produit
+
+Voici une example d'arborescence pour t'aider :
+Détail utile
+
+audit_rubrique/
+
+un fichier par rubrique du site
+rôle, valeur, risques, UX, contenu, pistes d’évolution
+
+architecture/
+
+structure du projet
+découpage frontend/backend
+modules clés
+flux techniques
+dette technique connue
+conventions de modularisation
+
+data/
+
+source Google Sheet
+schéma de normalisation
+pipeline de récupération
+règles de nettoyage
+mapping des colonnes
+cas limites de données
+
+ux_ui/
+
+principes visuels
+conventions composants
+logique de couleurs
+cartes, filtres, états vides, loaders
+cohérence interface
+
+produit/
+
+logique des rubriques
+objectifs produit
+parcours utilisateur
+priorités fonctionnelles
+arbitrages en attente
+
+securite/
+
+gestion des secrets
+variables d’environnement
+règles frontend/backend
+points de vigilance API
+bonnes pratiques push/deploy
+
+exploitation/
+
+déploiement
+monitoring
+logs
+erreurs fréquentes
+procédures simples de reprise
+
+backlog_structurant/
+
+refactors à faire
+bugs structurants
+migrations importantes
+chantiers techniques prioritaires
+
+
+Attendus pour cette partie :
+- arborescence recommandée
+- rôle de chaque sous-dossier
+- fichiers clés à créer en priorité
+- fichiers facultatifs mais utiles plus tard
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ensuite  :
+- vérifie que les fichiers de base du projet nécessaires à la sécurité et à l’hygiène du repo sont bien présents et correctement configurés, notamment pour éviter toute divulgation de secrets lors des push GitHub
+- mets-les à jour si nécessaire
+
+Vérifications prioritaires :
+- `.gitignore`
+- `.env.example`
+- absence de secrets codés en dur
+- éventuel `.dockerignore` si pertinent
+- éventuels fichiers d’exemple de configuration sans secret
+- documentation minimale sur la gestion des variables d’environnement
+- tout autre fichier racine nécessaire à une base de projet propre et sûre
+
+Pour éviter les fuites de secrets au push GitHub, les plus importants sont :
+
+.gitignore
+.env.example
+.env.local non tracké
+.env non tracké
+.dockerignore si Docker
+README.md avec section variables d’environnement
+éventuellement un fichier de doc type documentation/securite/secrets.md
+Point important
+
+Le .gitignore protège seulement les fichiers non encore suivis.
+Si un secret a déjà été commité une fois, l’ajouter ensuite au .gitignore ne suffit pas. Il faut alors :
+
+retirer le fichier du suivi Git
+faire tourner les secrets exposés
+parfois nettoyer l’historique Git si l’exposition est réelle
+
+Pour cette partie sécurité :
+- signale précisément les risques détectés
+- corrige seulement ce qui est justifié
+- ne casse pas le fonctionnement du projet
+- si un secret semble déjà exposé dans l’historique ou dans le code, signale-le explicitement
+
+Retour attendu :
+2. liste des fichiers racine vérifiés
+3. fichiers créés ou modifiés
+4. risques secrets / GitHub identifiés
+5. actions restantes recommandées
+
+
+
+
+
+
+
+
+
+envoyer audit par mail Charlotte + relance cartographe.
+compatibilité vercel et supabase + optimisé téléphone 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+REPONSE AUDIT PROMPT 001
+**Audit du code réel**
+
+**1) Carte technique actionnable**
+
+- Runtime principal: Next.js App Router dans [apps/web](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web).
+- Entrée auth/navigation: [proxy.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/proxy.ts), [authz.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/authz.ts), [navigation.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/navigation.ts), [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts), [sections-registry.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/sections-registry.ts).
+- Couche métier:
+  - Actions unifiées: [unified-source.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/actions/unified-source.ts), [store.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/actions/store.ts), [data-contract.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/actions/data-contract.ts).
+  - Pilotage/KPI: [overview.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/pilotage/overview.ts), [metrics.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/pilotage/metrics.ts), [prioritization.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/pilotage/prioritization.ts).
+  - Community: [api/community/events](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/community/events/route.ts), [api/community/rsvps](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/community/rsvps/route.ts), [api/community/events/ops](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/community/events/ops/route.ts).
+- Persistance:
+  - Supabase server client: [supabase/server.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/supabase/server.ts).
+  - Stores JSON locaux (runtime): [local-store.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/data/local-store.ts), [funnel-store.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/analytics/funnel-store.ts), [operation-audit.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/admin/operation-audit.ts), [runbook-checks-store.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/sections/runbook-checks-store.ts).
+
+
+**2) Flux navigation (réel)**
+
+- `/` redirige vers `/parcours/<profil>` selon rôle Clerk via [app/page.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/page.tsx).
+- Layout applicatif authentifié via [app/(app)/layout.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/layout.tsx).
+- Flux principal:
+  - Dashboard: [app/(app)/dashboard/page.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/dashboard/page.tsx).
+  - Déclaration: [app/(app)/actions/new/page.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/actions/new/page.tsx) + [action-declaration-form.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/actions/action-declaration-form.tsx).
+  - Reporting: [app/(app)/reports/page.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/reports/page.tsx).
+  - Admin: [app/(app)/admin/page.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/admin/page.tsx).
+  - Sections dynamiques: [app/(app)/sections/[sectionId]/page.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/sections/[sectionId]/page.tsx) + [section-renderer.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/sections/section-renderer.tsx).
+
+
+**3) Rôles, contrôle d’accès, exports, analytics**
+
+- Rôles effectifs: `benevole`, `coordinateur`, `elu`, `admin` via [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts).
+- Contrôle admin centralisé: `requireAdminAccess()` dans [authz.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/authz.ts).
+- Exports:
+  - Admin-only: [actions.csv](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/reports/actions.csv/route.ts), [actions.json](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/reports/actions.json/route.ts), [community/funnel.csv](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/community/funnel.csv/route.ts).
+  - **Auth simple (pas admin)**: [elus-dossier](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/reports/elus-dossier/route.ts).
+- Analytics:
+  - PostHog client: [posthog/client.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/posthog/client.ts).
+  - Vercel analytics/speed: [app/layout.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/layout.tsx).
+  - Funnel interne écrit en JSON local: [api/analytics/funnel](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/api/analytics/funnel/route.ts) + [funnel-store.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/analytics/funnel-store.ts).
+
+
+**4) Points fragiles / dette / risques de régression** DONE
+
+
+
+REPONSE AUDIRT PROMPT 002
+**Règles de base (implémentation actuelle)**
+- Rôles applicatifs: `benevole`, `coordinateur`, `elu`, `admin` dans [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts).
+- `decideur` est un alias de `elu` (normalisation rôle) dans [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts).
+- Source de vérité navigation rôle -> espaces -> rubriques: `PARCOURS_SPACE_PAGE_MAP` dans [navigation.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/navigation.ts).
+- Mapping rubrique -> route: [sections-registry.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/sections-registry.ts).
+
+**Cartographie exhaustive rôle -> rubriques/pages visibles**
+- `benevole`
+1. `execute`: `/actions/new`, `/actions/map`
+2. `supervise`: `/actions/history`, `/sections/trash-spotter`
+3. `decide`: `/dashboard`, `/sections/gamification`
+4. `prepare`: `/sections/guide`, `/sections/kit`, `/sections/community`
+
+- `coordinateur`
+1. `execute`: `/sections/community`, `/actions/new`, `/actions/map`, `/sections/route`
+2. `supervise`: `/actions/history`, `/dashboard`, `/sections/weather`
+3. `decide`: `/reports`, `/sections/compare`, `/sections/climate`, `/sections/elus`
+4. `prepare`: `/sections/guide`, `/sections/kit`, `/sections/actors`, `/sections/recycling`
+
+- `elu` / `decideur`
+1. `execute`: `/sections/elus`
+2. `supervise`: `/dashboard`, `/actions/history`
+3. `decide`: `/reports`, `/sections/compare`, `/sections/climate`, `/sections/weather`
+4. `prepare`: `/sections/guide`
+
+- `admin`
+1. `execute`: `/admin`, `/actions/new`, `/sections/community`
+2. `supervise`: `/dashboard`, `/actions/history`, `/actions/map`, `/sections/sandbox`
+3. `decide`: `/reports`, `/sections/compare`, `/sections/climate`, `/sections/elus`
+4. `prepare`: `/sections/guide`, `/sections/kit`, `/sections/weather`, `/sections/actors`
+
+**CTA visibles (UI)**
+- CTA de navigation (header/nav) par rôle: `primaryCTA` + `secondaryCTA` depuis [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts), affichés dans [app-navigation.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/navigation/app-navigation.tsx) et [app/(app)/layout.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/layout.tsx) (header seulement si feature flag `parcoursNavV2` active).
+- CTA “Actions principales” (inclut aussi `additionalActions`) dans [role-primary-actions.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/navigation/role-primary-actions.tsx).
+- CTA configurés:
+1. `benevole`: `/actions/new`, `/actions/map`, `/actions/history`
+2. `coordinateur`: `/sections/community`, `/dashboard`, `/reports`
+3. `elu`: `/api/reports/elus-dossier?format=pdf`, `/sections/elus`, `/sections/compare`
+4. `admin`: `/admin`, `/reports`, `/dashboard`
+
+
+
+
+
+AUDIT PROMPT 003
+**Cartographie cible (mutualisée, sans silos rôle)**
+
+**Principe directeur**
+- Même socle de pages pour tous les parcours.
+- Le rôle change la priorité, les CTA et les droits d’action, pas l’existence des pages.
+- Une source de données unifiée par domaine (actions, communauté, pilotage, exports).
+
+**1) Parcours -> Espaces stables -> Pages**
+
+| Espace | Pages cibles (routes uniques) | Données mutualisées |
+|---|---|---|
+| `Executer` | `/actions/new`, `/actions/map`, `/sections/community`, `/sections/route` | actions unifiées, spots, événements, recommandations d’itinéraire |
+| `Superviser` | `/dashboard`, `/actions/history`, `/sections/trash-spotter`, `/sections/weather`, `/sections/sandbox` | KPI opérationnels, qualité data, backlog, météo ops, checks techniques |
+| `Decider` | `/reports`, `/sections/elus`, `/sections/compare`, `/sections/climate` | comparatifs N/N-1, priorisation territoriale, exports, méthodes KPI |
+| `Preparer` | `/sections/guide`, `/sections/kit`, `/sections/actors`, `/sections/recycling` | playbooks, checklists, partenaires, tri/valorisation |
+
+**2) Parcours (overlay, pas silo)**
+
+- `benevole`
+1. Priorité: `Executer` -> `Preparer` -> `Superviser` -> `Decider`
+2. CTA par défaut: déclarer, carte, historique
+3. Accès lecture large, actions sensibles limitées
+
+- `coordinateur`
+1. Priorité: `Executer` -> `Superviser` -> `Decider` -> `Preparer`
+2. CTA par défaut: communauté, cockpit, reporting
+3. Droits de pilotage opérationnel renforcés
+
+- `elu/decideur`
+1. Priorité: `Decider` -> `Superviser` -> `Preparer` -> `Executer`
+2. CTA par défaut: dossier décisionnel, priorisation territoriale
+3. Lecture complète, actions terrain directes optionnelles
+
+- `admin`
+1. Priorité: `Superviser` -> `Executer` -> `Decider` -> `Preparer`
+2. CTA par défaut: backlog critique, exports, santé système
+3. Droits critiques: modération, imports, exports sensibles, opérations
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Est ce qu'il existe un espace de communication visible et utilisable par tous les utilisateurs sans validation admin pour que chacun partage des informations, des bugs qu'il a repéré etc limité à 5 messages par jour pour éviter les problèmes.
+
+
+S'assurer que la carte et le formulaire fonctionne complètement et que la carte récupère puis affiche les données du formulaires après validation admin. Verifier que la partie admin fonctionne réellement.
+S'assurer que l'info bulle ou texte de présentation au début d'une rubrique est présent pour expliquer le but de la rubrique même si elle n'est pas encore fonctionnelle.
+
+
+redonne moi la liste des commerçants engagés associations et entreprise qui sont disponibles dans la rubrique partenariat et commerçant. 
+
+PUIS RECUPERER ASSOS fourmilière puis envoyer la liste à charlotte et redemander le contact du cartographe et générer une image avec des actions test et une explication de toutes les logiques de la carte pour l'envoyer à un cartographe afin qu'il m'aide à améliorer la carte interactive.
+
+
+
+
+
+redige un texte que je vais mettre dans une seconde page du fichier Excel partagé à mes collaborateurs pour expliquer le fonctionnement du fichier et ses logiques en insistant sur le fait qu'il ne faut rien modifier sinon l'export des données va échouer. 
+
+
+
+
+
+
+Fait un audit global de tous les texte que tu peux transformer en visuels de type schéma, illustration, graphiques, diagrammes pour une compréhension plus rapide par les utilisateurs.
+
+
+
+
+Que veux tu dire avec cela : 
+Dans notre contexte CLI, Vercel impose un preview par branche Git.
+L’automatisation par défaut sync development + production.
+Pour Preview, utilise: node scripts/vercel-sync-env.mjs --file=.env.local --environments=preview --preview-branch=<ta-branche>
+
+
+Règle de mutualisation à appliquer si possible et si besoin
+- Ne pas créer de pages “par rôle”.
+- Ajouter un “mode de vue” dans les pages existantes (`viewer_profile`) pour adapter contenu/CTA.
+- Gérer la sécurité au niveau des actions/API (RBAC), pas via duplication de routes.
+
+
+
+Créer des badge pour chaque mode, chaque rôle (celui d'admin est déjà créée normalement) et chaque profil pour que les utilisateurs voient qui est qui pour faciliter le ton et le langage qu'ils utilisent dans leurs interactions entre eux. 
+
+
+dans un dossier que tu sembles pertinent, génère un fichier PDF explicatif du site web à envoyer aux organisateurs de l'événement megothon Paris qui se déroule fin mai et qui se concentre sur le ramassage des mégots. Tu dois adapter le fichier pour être axé mégot, mesure d'impact, carte interactive dans le but d'établir un partenariat avec eux.
+
+De même fais un second fichier PDF à envoyer à world cleanup day France pour que cet évènement deviennent partenaire à mon site afin qu'ils utilisent notre site web pendant leurs prochaines actions ou au moins qu'ils me partagent leurs résultats pour mettre a jour le site. Insiste donc sur les rubriques de type chemin IA, carte interactive, formulaire bénévole, commerçants engagés et partenariats, RSE entreprise, rapport PDF pour les élus.
+
+
+passe 2 pour affiner encore le mode sobre (contraste/animation/rythme visuel) sur les pages métier, pas seulement la navigation.
+
+
+connecte toi à mon compte figma, récupère le Template cleanmymap et implémente le à tout le site. On fera des templates spécifiques pour chaque modes plus tard.
+
+message doc DU
+
+supabase et vercel
+
+
+
+PROMPT 068
+Ajoute une rubrique commune à tous les rôles "guide/mode/rôle/profil" pour que les utilisateurs modifient leurs choix facilement. Le guide est une nouveauté. Conçois un mécanisme non intrusif et réversible : première visite, retour après longue absence, après refonte (accompagnement de comprehension des changements apres grosse refonte (message rassurant, clair, reversible)). Le but est de guider les visiteurs selon leur besoin".
+
+
+
+juste après la création du compte clerk il faut choisir son rôle, son profil, son mode. 
+
+
+
+
+
+
+
+
+je n'ai pas compris, explique cela :
+Configuration Clerk/admin à faire
+Pour que les admins Clerk aient le badge automatiquement:
+
+définir CUSTOM_UP_CLERK_SECRET_KEY
+envoyer l’ID Clerk utilisateur au backend via header X-User-Id (et optionnel X-User-Name)
+mettre dans Clerk:
+public_metadata.role = "admin" (ou private_metadata.role = "admin")
+public_metadata.badges pour les autres badges
+Option simple sans Clerk complet: définir CUSTOM_UP_ADMIN_USER_IDS (liste CSV) et CUSTOM_UP_USER_BADGES_JSON.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+PROMPT 005
+"Etablis un plan de migration par lots avec dependances, risques, mitigations et rollback pour chaque lot. L'ordre doit minimiser regressions et refactors inutiles."
+
+
+PROMPT 006
+"Verifie que les regles produit suivantes sont appliquees et explicites dans l'implementation: role choisi a la creation du compte, role modifiable ensuite, role admin attribue uniquement par admin autorise."
+
+
+PROMPT 007
+"Verifie que l'experience ne cree pas de silos: contenus mutualises, differenciation surtout via navigation, hierarchie visuelle, ordre de lecture, CTA, redirections, garde-fous."
+
+
+PROMPT 008
+"Ajoute ou valide les feature flags de refonte (navigation, template pages, dedoublonnage, funnel, exports) pour permettre des rollbacks rapides et propres."
+
+
+PROMPT 015
+"Durcis l'acces admin: aucun contournement, aucune escalation, controles server-side obligatoires, tests d'autorisation et de refus."
+
+
+PROMPT 012
+"Harmonise les routes /parcours/* existantes et corrige les incoherences de patterns URL. Assure un comportement homogene et auditable."
+
+
+PROMPT 013
+"Mets en place les redirections role-aware pour que chaque utilisateur arrive naturellement sur son parcours principal, sans casser les anciens points d'entree."
+
+
+PROMPT 014
+"Distingue explicitement dans le code: role stocke dans le profil, parcours affiche, droits effectifs d'acces. Ajoute des conventions explicites pour eviter toute confusion future."
+
+
+PROMPT 018
+"Ajoute une verification que les utilisateurs peuvent explorer d'autres parcours quand la regle produit l'autorise, sans compromettre les gardes d'acces."
+
+
+PROMPT 009
+"Refactor navigation.ts pour imposer une source de verite unique parcours -> espaces -> pages, typee, lisible, maintenable et extensible. Supprime les conditions dispersees redondantes."
+
+
+PROMPT 011
+"Etends profiles.ts pour chaque role avec primaryCTA unique, secondaryCTA optionnel, et priorite d'espaces si utile. Les CTA doivent etre 100% config-driven."
+
+
+PROMPT 010
+"Refactor app-navigation.tsx pour afficher clairement role actif, espace actif, CTA principal et navigation par espaces stables, avec comportement coherent desktop/mobile."
+
+
+PROMPT 016
+"Instrumente les clics de navigation avec des evenements coherents et exploitables (role, espace, emplacement, destination, contexte)."
+
+
+PROMPT 017
+"Instrumente les clics CTA (principal/secondaire) avec schema d'event stable, sans doublons, et dimensions minimales utiles pour l'analyse produit."
+
+
+PROMPT 019
+"Controle que la navigation V2 ne casse pas la discovery. Propose un plan canary + rollback via flag, sans redeploy si possible."
+
+
+PROMPT 020
+"Fais un audit des pages coeur et prepare l'application du template transversal sans reecriture brutale inutile."
+
+
+PROMPT 029
+"Etends sections-registry.ts avec appartenance a un espace et priorite explicite, pour tri coherent par parcours/espace/priorite."
+
+
+PROMPT 021
+"Cree un template commun de page avec sections: Pourquoi je suis ici, Resumer, Agir, Analyser, Tracer. Il doit etre composable et reutilisable."
+
+
+PROMPT 022
+"Impose dans Resumer un cadre simple: max 3 KPI, 1 alerte prioritaire, 1 recommandation d'action, quand les donnees le permettent."
+
+
+PROMPT 023
+"Impose dans Agir: 1 CTA principal et 1 CTA secondaire maximum, en coherence avec le role et l'objectif de la page."
+
+
+PROMPT 024
+"Normalise les etats degrades (loading, empty, partial data, error) pour les pages coeur, avec UX coherente et non bloquante."
+
+
+PROMPT 025
+"Applique le template au dashboard en le recentrant sur son role de cockpit transversal synthetique."
+
+
+PROMPT 026
+"Applique le template a reports en le recentrant sur synthese multi-horizon, exports et livrables transversaux."
+
+
+PROMPT 027
+"Applique le template aux pages actions pertinentes sans nuire a la rapidite des flux terrain."
+
+
+PROMPT 028
+"Fais evoluer section-renderer.tsx pour porter la structure objectif -> resume -> agir -> analyser -> tracer de maniere standardisee."
+
+
+PROMPT 030
+"Clarifie et documente la responsabilite exclusive de chaque page pour supprimer les confusions fonctionnelles."
+
+
+PROMPT 031
+"Applique la regle: actions/map = operationnel terrain uniquement. Supprime les blocs non proprietaires de cette page."
+
+
+PROMPT 032
+"Applique la regle: sections/compare = comparaison inter-zones normalisee uniquement."
+
+
+PROMPT 033
+"Applique la regle: sections/climate = lecture climat/impact uniquement."
+
+
+PROMPT 034
+"Applique la regle: dashboard = cockpit transversal synthetique, sans duplication des analyses longues."
+
+
+PROMPT 035
+"Applique la regle: reports = exports + synthese multi-horizon, sans recopier les widgets du dashboard."
+
+
+PROMPT 036
+"Remplace la duplication de contenu par des renvois structures inter-pages et des liens contextuels utiles."
+
+
+PROMPT 037
+"Mesure avant/apres la reduction des doublons analytiques entre pages et fournis un bilan factuel avec risques restants."
+
+
+PROMPT 038
+"Audit multi-horizon: compare, climate, reports. Liste les divergences de fenetres, timezone, methodes et interpretation."
+
+
+PROMPT 039
+"Implemente un selecteur temporel unifie 30j/90j/12m partage entre compare, climate et reports."
+
+
+PROMPT 040
+"Garantis un recalcul deterministe multi-horizon avec timezone figee et tests deterministes robustes."
+
+
+PROMPT 041
+"Persiste la preference utilisateur de fenetre temporelle avec fallback propre et comportement coherent entre pages."
+
+
+PROMPT 042
+"Aligne les blocs methode et limites dans compare/climate/reports pour eviter messages contradictoires."
+
+
+PROMPT 043
+"Verifie que reports produit les memes resultats que les sections pour une meme fenetre temporelle. Corrige les ecarts."
+
+
+PROMPT 044
+"Ajoute des tests de non-regression sur multi-horizon et coherence inter-pages."
+
+
+PROMPT 045
+"Definis un modele funnel clair avec etapes view_new, start_form, submit_success et distinction mode rapide vs mode complet."
+
+
+PROMPT 046
+"Fiabilise la collecte funnel: idempotence des events de session, prevention double submit, persistance et rotation robustes du store."
+
+
+PROMPT 047
+"Durcis l'endpoint analytics funnel: validation stricte, schema stable, logs utiles, erreurs explicites."
+
+
+PROMPT 051
+"Controle la coherence stricte submit_success <= start_form <= view_new et remonte toute anomalie de comptage."
+
+
+PROMPT 052
+"Ajoute une validation croisee FE/BE du funnel et fixe un controle automatique de derive de comptage."
+
+
+PROMPT 048
+"Construit ou refond le panneau funnel dans l'interface avec lecture claire des conversions et pertes entre etapes."
+
+
+PROMPT 049
+"Ajoute dans le panneau funnel le mini-bloc baseline J-28 vs periode courante pour suivre start_form -> submit_success."
+
+
+PROMPT 050
+"Ajoute l'export CSV funnel global avec colonnes attendues stables, documentation et controle d'acces coherent."
+
+
+PROMPT 053
+"Ajoute instrumentation pour audit usage funnel et navigation/CTA dans un schema de metriques coherent."
+
+
+PROMPT 054
+"Hardening api/community/funnel.csv: filtres days et eventId, acces admin only, journalisation, garde-fous de perf."
+
+
+PROMPT 055
+"Mesure la performance d'export CSV funnel (p95) sur dataset nominal et propose optimisation si seuil non tenu."
+
+
+PROMPT 056
+"Implemente un endpoint serveur generique d'export PDF par rubrique avec nom de fichier final correct au telechargement HTTP."
+
+
+PROMPT 057
+"Centralise un journal serveur unique des exports avec operationId, rubrique, fichier, acteur, date et statut."
+
+
+PROMPT 058
+"Expose un panneau Historique des livrables pour admin/coordination alimente par API et journal serveur, sans localStorage."
+
+
+PROMPT 059
+"Assure la coherence de bout en bout: export declenche, nom telecharge, entree journalisee, historique UI affiche."
+
+
+PROMPT 060
+"Refactor les flux d'exports pour eviter duplication par rubrique et garder une architecture extensible a de nouveaux livrables."
+
+
+PROMPT 073
+"Ajoute une suite de tests unitaires FE/BE couvrant navigation, CTA, template, multi-horizon, funnel, exports, access control."
+
+
+PROMPT 074
+"Ajoute des API contract tests pour analytics funnel, exports CSV/PDF, historique livrables, redirections role-aware."
+
+
+PROMPT 075
+"Ajoute une couverture E2E des parcours role-based critiques avec verification profondeur d'acces au CTA principal <= 3 clics."
+
+
+PROMPT 076
+"Verifie et securise le flow critique Declarer -> Carte -> Historique -> Export, puis corrige toute regression detectee."
+
+
+PROMPT 077
+"Ajoute des smoke checks pre-prod et post-deploy sur routes critiques, endpoints sensibles, et logs d'erreurs API."
+
+
+PROMPT 096
+"Cree un runbook incident operationnel (auth/admin/export) et une smoke-matrix versionnee par release, executable rapidement et reproductible."
+
+
+PROMPT 078
+"Consolide observabilite: metriques utiles, traces d'erreurs API, temps d'export, clics navigation/CTA, signaux de rollback rapide."
+
+
+PROMPT 079
+"Pour chaque lot livre, fournis les risques effectivement rencontres, les mitigations appliquees et les fragilites restantes."
+
+
+PROMPT 092
+"Implemente un module admin data-quality exploitable: scoring completude/coherence/fraicheur, typologie d'anomalies, priorisation des corrections, historique avant/apres, workflow de correction tracable."
+
+
+PROMPT 093
+"Implemente une observabilite admin centralisee: statut auth/api/export, alertes critiques (severite/impact/owner), timeline incidents et etat de remediation."
+
+
+PROMPT 091
+"Implemente un module admin de campagnes multi-actions: creation campagne (nom, periode, zone, objectifs), rattachement d'actions, suivi progression/statut, export coherent et controle admin strict."
+
+
+PROMPT 097
+"Implemente un rapport hebdomadaire qualite des donnees: completude, geoloc, moderation, anomalies detectees/corrigees, tendance semaine sur semaine."
+
+
+PROMPT 094
+"Implemente un lot partenaires dans la rubrique actors: fiches partenaires, contributions terrain, suivi cofinancement (engage vs consomme) relie aux actions/campagnes."
+
+
+PROMPT 095
+"Implemente un lot training dans gamification: modules de formation, quiz de validation, badge/certificat, et integration du signal de competence dans le classement."
+
+
+PROMPT 061
+"Implémente 4 profils d'utilisateur : bénévoles, coordinateur, décideur, scientifique. A choisir à la création du compte et modifiable dans les paramètre du compte. Chaque profil doit avoir une CTA dédiée. 
+
+
+PROMPT 062
+"Integre la logique de livrables dans les rubriques: quelle rubrique produit quoi, avec quel niveau de detail selon role et contexte."
+
+
+PROMPT 063
+"Ameliore la qualite des livrables: lisibilite, progression logique, sections distinctes, adaptation multi-public, zero duplication inutile."
+
+
+PROMPT 064
+"Rends explicites les limites, hypotheses et risques de chaque livrable pour eviter interpretation excessive."
+
+PROMPT 072
+"Pour chaque proposition UX majeure, documente interet, public cible, benefices, limites, risques et arbitrages avec la richesse fonctionnelle."
+
+
+PROMPT 081
+"Redige un runbook de rollout/rollback: pre-checks, sequence de deploiement, canary 10%, verification post-release, retour immediat via flags."
+
+
+PROMPT 080
+"Prepare une UAT complete orientee roles, lisibilite, charge cognitive, robustesse flux critiques, qualite livrables."
+
+
+PROMPT 082
+"Verifie la configuration finale de tous les feature flags et la reversibilite de chaque chantier majeur."
+
+
+PROMPT 083
+"Execute la stabilisation finale: corrige anomalies restantes, relance tests, confirme etat de production stable, mesurable, reversible."
+
+
+PROMPT 084
+"Fais une verification finale complete: parcours bout-en-bout, coherence rubriques, non-regression, performance, robustesse des flux critiques."
+
+
+PROMPT 098
+"Cree un tableau de tracabilite unique rubrique -> route -> composant -> API -> source de donnee, puis verifie qu'aucune rubrique active n'est manquante."
+
+
+PROMPT 099
+"Ajoute une checklist post-deploiement Clerk/Vercel/Supabase orientee verification metier et securite, avec procedure de rollback rapide."
+
+
+PROMPT 085
+"Fournis la synthese finale de livraison: livrables ameliores, manques couverts, nouveaux livrables ajoutes, rubriques enrichies, prochaines etapes recommandees."
+
+
+PROMPT 086
+"Fournis la synthese finale mapping UX/livrables:
+1) mapping actuel role -> rubriques
+2) mapping optimise propose
+3) ameliorations UX apportees
+4) nouvelle structure livrables
+5) integration livrables dans rubriques
+6) benefices attendus (lisibilite, qualite, adoption, valeur percue)
++ limites, points a affiner, priorites suivantes."
+
+
+PROMPT 087
+"Fais une passe correction continue: liste anomalies restantes par severite, corrige-les, relance tous les tests pertinents, puis fournis risques residuels factuels."
+
+
+PROMPT 088
+"Fais une passe coherence finale: detecte les conflits residuels entre code et intention produit, propose arbitrages A/B avec impacts et recommandation."
+
+
+PROMPT 089
+"Uniformise la documentation technique de la refonte: conventions, schemas d'events, matrice parcours/espaces/pages, checklist QA, runbook."
+
+
+PROMPT 090
+"Propose un backlog post go-live priorise (quick wins, hardening, dettes techniques, instrumentation complementaire) avec impact attendu et ordre recommande."
+
+PROMPT 100
+"Fais une revue finale des prompts executes (001 a 099), detecte les chevauchements ou trous restants, puis propose une sequence finale de cloture sans dette critique ouverte."
+
+
+
+
+METTRE A JOUR petit à petit les doc du dossier DU (en copiant collant le contenu dans codex et qu'il réécrive comme sur chatgpt pas juste qu'il traite tout d'un coup car trop d'info). Notamment : 
+FICHIER TEXTE ATELIER_DU
+LES FICHES PROJET et PDF plus pro
+IMPACT_IA surtout paragraphe final rajouté
+

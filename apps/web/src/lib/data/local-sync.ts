@@ -1,5 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { LocalDataRecord, LocalRecordSource, LocalRecordStatus, LocalRecordType } from "@/lib/data/local-records";
+import type {
+  LocalDataRecord,
+  LocalRecordSource,
+  LocalRecordStatus,
+  LocalRecordType,
+} from "@/lib/data/local-records";
 import { LOCAL_DB_FILES, upsertLocalRecords } from "@/lib/data/local-store";
 import { mapActionStatusToLocalStatus } from "@/lib/data/local-records";
 
@@ -62,7 +67,11 @@ function toLocalRecordStatusFromSpotStatus(status: string): LocalRecordStatus {
   return "pending";
 }
 
-function fromActionRow(row: ActionRow, source: LocalRecordSource, validatedBy: string): LocalDataRecord {
+function fromActionRow(
+  row: ActionRow,
+  source: LocalRecordSource,
+  validatedBy: string,
+): LocalDataRecord {
   const localStatus = mapActionStatusToLocalStatus(row.status);
   return {
     id: `validated-action-${row.id}`,
@@ -95,7 +104,11 @@ function fromActionRow(row: ActionRow, source: LocalRecordSource, validatedBy: s
   };
 }
 
-function fromLegacySubmissionRow(row: LegacySubmissionRow, source: LocalRecordSource, validatedBy: string): LocalDataRecord {
+function fromLegacySubmissionRow(
+  row: LegacySubmissionRow,
+  source: LocalRecordSource,
+  validatedBy: string,
+): LocalDataRecord {
   const recordType: LocalRecordType = row.est_propre ? "clean_place" : "action";
   const localStatus = mapActionStatusToLocalStatus(row.status ?? "pending");
   return {
@@ -131,7 +144,11 @@ function fromLegacySubmissionRow(row: LegacySubmissionRow, source: LocalRecordSo
   };
 }
 
-function fromSpotRow(row: SpotRow, source: LocalRecordSource, validatedBy: string): LocalDataRecord {
+function fromSpotRow(
+  row: SpotRow,
+  source: LocalRecordSource,
+  validatedBy: string,
+): LocalDataRecord {
   return {
     id: `validated-spot-${row.id}`,
     recordType: "clean_place",
@@ -170,7 +187,9 @@ export async function copyValidatedActionToLocalStore(
     .maybeSingle();
 
   if (!primary.error && primary.data) {
-    await upsertLocalRecords(LOCAL_DB_FILES.validated, [fromActionRow(primary.data as ActionRow, "admin_validation", validatedBy)]);
+    await upsertLocalRecords(LOCAL_DB_FILES.validated, [
+      fromActionRow(primary.data as ActionRow, "admin_validation", validatedBy),
+    ]);
     return { source: "actions", copied: true };
   }
 
@@ -187,7 +206,11 @@ export async function copyValidatedActionToLocalStore(
   }
 
   await upsertLocalRecords(LOCAL_DB_FILES.validated, [
-    fromLegacySubmissionRow(legacy.data as LegacySubmissionRow, "admin_validation", validatedBy),
+    fromLegacySubmissionRow(
+      legacy.data as LegacySubmissionRow,
+      "admin_validation",
+      validatedBy,
+    ),
   ]);
   return { source: "submissions", copied: true };
 }
@@ -197,10 +220,16 @@ export async function copyValidatedSpotToLocalStore(
   spotId: string,
   validatedBy: string,
 ): Promise<boolean> {
-  const row = await supabase.from("spots").select("id, created_at, label, latitude, longitude, notes, status").eq("id", spotId).maybeSingle();
+  const row = await supabase
+    .from("spots")
+    .select("id, created_at, label, latitude, longitude, notes, status")
+    .eq("id", spotId)
+    .maybeSingle();
   if (row.error || !row.data) {
     return false;
   }
-  await upsertLocalRecords(LOCAL_DB_FILES.validated, [fromSpotRow(row.data as SpotRow, "admin_validation", validatedBy)]);
+  await upsertLocalRecords(LOCAL_DB_FILES.validated, [
+    fromSpotRow(row.data as SpotRow, "admin_validation", validatedBy),
+  ]);
   return true;
 }

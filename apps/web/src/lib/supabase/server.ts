@@ -1,17 +1,23 @@
-﻿import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 
 export function getSupabaseServerClient() {
-  if (!env.NEXT_PUBLIC_SUPABASE_URL) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL is required");
+  const url = env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !url.startsWith("https://")) {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL is missing or invalid. Check your .env.local or Vercel settings.",
+    );
   }
 
-  const key = env.SUPABASE_SERVICE_ROLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!key) {
-    throw new Error("Missing Supabase key (service role or anon)");
+  if (!key || key.length < 20) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY is missing or invalid. Server-side persistence requires a valid Service Role Key.",
+    );
   }
 
-  return createClient(env.NEXT_PUBLIC_SUPABASE_URL, key, {
+  return createClient(url, key, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,

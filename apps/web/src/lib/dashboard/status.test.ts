@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { serviceLevelLabel, summarizeUptime, type UptimePayload } from "./status";
+import {
+  serviceLevelLabel,
+  summarizeUptime,
+  type UptimePayload,
+} from "./status";
 
 describe("dashboard status helpers", () => {
   it("summarizes healthy payload", () => {

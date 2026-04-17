@@ -22,9 +22,6 @@
 4. Python only:
    - `pytest -q`
 
-5. E2E only:
-   - `npx.cmd playwright test --config tests/e2e/playwright.config.cjs`
-
 ## Scope Covered
 
 - Python syntax/compile checks
@@ -34,7 +31,7 @@
   - CSV export service
   - PDF generation
   - security sanitization helpers
-- Critical E2E flows with Playwright
+- Web lint/test/build gates for `apps/web`
 
 ## Production Smoke (Short)
 

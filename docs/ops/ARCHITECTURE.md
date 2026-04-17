@@ -6,8 +6,8 @@ Read this first, then load only task-relevant files.
 
 ## Active Surfaces
 - Next.js app: `apps/web/src/*` + `apps/web/src/app/api/*`
-- Core services: `src/services/*`
-- Maintenance/tooling: `scripts/*`, `src/maintenance/*`
+- Python support modules: `src/report_generator.py`, `src/database.py`, `src/maintenance/*`
+- Maintenance/tooling: `scripts/*`
 
 ## High-Value Entry Files
 - `apps/web/src/app/(app)/actions/map/page.tsx`
@@ -15,8 +15,6 @@ Read this first, then load only task-relevant files.
 - `apps/web/src/app/api/actions/map/route.ts`
 - `apps/web/src/lib/actions/store.ts`
 - `apps/web/src/lib/data/map-records.ts`
-- `src/services/data_service.py`
-- `src/services/admin_auth.py`
 - `src/report_generator.py`
 
 ## Context Budget Rules

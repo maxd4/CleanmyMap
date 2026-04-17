@@ -1,4 +1,4 @@
-﻿import { PostHog } from "posthog-node";
+import { PostHog } from "posthog-node";
 import { env } from "@/lib/env";
 
 let posthogNode: PostHog | null = null;

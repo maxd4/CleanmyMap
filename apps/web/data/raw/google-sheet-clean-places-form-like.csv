@@ -1,0 +1,4 @@
+type,label,latitude,longitude,status,notes
+clean_place,Pont de l'Alma,48.8625636,2.2999572,validated,Imported from Google Sheet column: lieux propres
+clean_place,Gare de l'est,48.8770979,2.3594905,validated,Imported from Google Sheet column: lieux propres
+clean_place,Canal saint martin,48.8689561,2.3671691,validated,Imported from Google Sheet column: lieux propres

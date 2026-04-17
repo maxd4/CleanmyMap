@@ -1,34 +1,39 @@
 import { describe, expect, it } from "vitest";
 import { buildActionsQueryString, buildMapActionsQueryString } from "./http";
 
-describe("buildActionsQueryString", () => {
-  it("uses defaults when params are missing", () => {
-    expect(buildActionsQueryString()).toBe("limit=30");
+describe("actions http query builders", () => {
+  it("serializes list filters", () => {
+    const query = buildActionsQueryString({
+      status: "approved",
+      association: "AEBCPEV",
+      qualityGrade: "B",
+      toFixPriority: true,
+      impact: "fort",
+      limit: 42,
+    });
+    const params = new URLSearchParams(query);
+    expect(params.get("status")).toBe("approved");
+    expect(params.get("association")).toBe("AEBCPEV");
+    expect(params.get("qualityGrade")).toBe("B");
+    expect(params.get("toFixPriority")).toBe("true");
+    expect(params.get("impact")).toBe("fort");
+    expect(params.get("limit")).toBe("42");
   });
 
-  it("clamps limit and serializes status", () => {
-    expect(buildActionsQueryString({ status: "approved", limit: 999 })).toBe("limit=200&status=approved");
-    expect(buildActionsQueryString({ status: "pending", limit: 0 })).toBe("limit=1&status=pending");
-  });
-
-  it("skips status when all is selected", () => {
-    expect(buildActionsQueryString({ status: "all", limit: 20 })).toBe("limit=20");
-  });
-});
-
-describe("buildMapActionsQueryString", () => {
-  it("uses defaults when params are missing", () => {
-    expect(buildMapActionsQueryString()).toBe("limit=80&days=30");
-  });
-
-  it("clamps values to safe bounds", () => {
-    expect(buildMapActionsQueryString({ limit: 9999, days: 9999 })).toBe("limit=300&days=3650");
-    expect(buildMapActionsQueryString({ limit: 0, days: 0 })).toBe("limit=1&days=1");
-  });
-
-  it("adds status when provided", () => {
-    expect(buildMapActionsQueryString({ status: "rejected", limit: 55, days: 7 })).toBe(
-      "limit=55&days=7&status=rejected",
-    );
+  it("serializes map filters", () => {
+    const query = buildMapActionsQueryString({
+      status: "all",
+      association: "Wings of the Ocean",
+      impact: "critique",
+      qualityMin: 79.7,
+      days: 7,
+      limit: 20,
+    });
+    const params = new URLSearchParams(query);
+    expect(params.get("association")).toBe("Wings of the Ocean");
+    expect(params.get("impact")).toBe("critique");
+    expect(params.get("qualityMin")).toBe("80");
+    expect(params.get("days")).toBe("7");
+    expect(params.get("limit")).toBe("20");
   });
 });

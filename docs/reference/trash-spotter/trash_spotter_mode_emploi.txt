@@ -3,7 +3,7 @@
 --- PAGE 1 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
   
  
  
@@ -41,7 +41,7 @@ Trash = Dechets
 --- PAGE 2 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  
@@ -72,11 +72,11 @@ Mode d’emploi 05- 2022 – Associations
  
   
  ENCOURAGER  
- L’UTILISATION DE  
+ L'UTILISATION DE  
 1 
  TRASH SPOTTE R 
 Pour tirer pleinement profit du dispositif Trash Spotter, la première étape 
-consiste à encourager vos adhérents à télécharger et à utiliser l’appli. 
+consiste à encourager vos adhérents à télécharger et à utiliser l'appli. 
  
  
  
@@ -93,7 +93,7 @@ Back-Office un
 --- PAGE 3 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  
@@ -140,7 +140,7 @@ modifier votre mot de passe.
 --- PAGE 4 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  
@@ -177,7 +177,7 @@ Mode d’emploi 05- 2022 – Associations
  BACK- OFFICE  
 Le TABLEAU DE BORD donne un accès immédiat aux informations clés : 
  
-• Nombre d’utilisateurs affiliés à l’association  
+• Nombre d'utilisateurs affiliés à l'association  
 Les comptes actifs sont les comptes utilisateurs ayant effectué au 
 moins une action depuis les 30 derniers jours. 
 • Spots signalés par les affiliés 
@@ -193,16 +193,16 @@ LISTE DES SPOTS correspondants (total spots, nettoyés, à nettoyer).
 Il est également possible de filtrer par date, types de déchets* et par 
 association/groupe. 
  
-* Lors d’un filtrage par type de déchets, il est affiché le nombre de spots contenant  
-au moins ce type de déchets (et potentiellement d’autres types de déchets aussi).  
-Le volume qui s’affiche est le volume total de tous les types de déchets contenus  
+* Lors d'un filtrage par type de déchets, il est affiché le nombre de spots contenant  
+au moins ce type de déchets (et potentiellement d'autres types de déchets aussi).  
+Le volume qui s'affiche est le volume total de tous les types de déchets contenus  
 dans le spot.  
 
 
 --- PAGE 5 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  
@@ -223,7 +223,7 @@ Mode d’emploi 05- 2022 – Associations
  
  
   
-La LISTE DES SPOTS permet d’afficher tous les spots signalés (nettoyés 
+La LISTE DES SPOTS permet d'afficher tous les spots signalés (nettoyés 
 ou non) par vos affiliés. Elle est accessible :  
  
 • depuis le tableau de bord (en cliquant sur un des blocs de couleur) – La 
@@ -242,7 +242,7 @@ bouton rouge, en haut à droite.
 --- PAGE 6 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  
@@ -274,13 +274,13 @@ Mode d’emploi 05- 2022 – Associations
  
   
 Le menu UTILISATEURS permet de suivre les personnes affiliés à 
-l’association.   
+l'association.   
 
 
 --- PAGE 7 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  
@@ -319,43 +319,43 @@ Spotter permet :
  
 • de proposer à vos adhérents une inscription en 
 ligne depuis leurs smartphones ; 
-• d’animer l’événement avant le jour-J, en proposant à vos adhérents de 
-repérer des lieux à nettoyer à l’avance (en les signalant dans l’appli).  
-Ces actions permettent également d’estimer à l’avance la nature et 
+• d'animer l'événement avant le jour-J, en proposant à vos adhérents de 
+repérer des lieux à nettoyer à l'avance (en les signalant dans l'appli).  
+Ces actions permettent également d'estimer à l'avance la nature et 
 volume des déchets à ramasser le Jour-J ; 
-• communiquer avec les participants inscrits à l’événements par 
+• communiquer avec les participants inscrits à l'événements par 
 message (texte/image) directement par notification « push », dans 
 leurs téléphones. * 
-• d’enregistrer et de centraliser toutes les actions le jour-J ; 
-• de disposer d’un historique des actions de l’association. 
+• d'enregistrer et de centraliser toutes les actions le jour-J ; 
+• de disposer d'un historique des actions de l'association. 
  
-Vous pouvez paramétrer votre événement à l’avance puis le « publier » 
+Vous pouvez paramétrer votre événement à l'avance puis le « publier » 
 lorsque vous souhaitez recevoir des inscriptions.  
  
-Prochainement, vos événements seront visibles à tous via l’appli et le site 
+Prochainement, vos événements seront visibles à tous via l'appli et le site 
 internet de Trash Spotter. Vous pourrez décider si vous souhaitez ou non 
 rendre votre événement « visible à tous ».  
  
  
  
-* L’ENVOI DE MESSAGES aux participants est strictement  
+* L'ENVOI DE MESSAGES aux participants est strictement  
 réservé aux informations et à la communication  
-concernant l’événement.  
+concernant l'événement.  
  
 Le Jour-J, pendant le ramassage, des messages peuvent être envoyés  
 en temps réel pour encourager les participants et les informer des 
 volumes et types de déchets ramassés.  
  
-Compte tenu que les messages « push » s’ affichent directement dans les 
-téléphones des utilisateurs, nous vous conseillons de limiter leur l’utilisation 
-avant l’événement pour ne pas « envahir » les participants (qui pourraient 
+Compte tenu que les messages « push » s' affichent directement dans les 
+téléphones des utilisateurs, nous vous conseillons de limiter leur l'utilisation 
+avant l'événement pour ne pas « envahir » les participants (qui pourraient 
 donc désactiver les notifications/se désinscrire).  
 
 
 --- PAGE 8 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  
@@ -371,7 +371,7 @@ informations obligatoires.
 --- PAGE 9 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  
@@ -381,50 +381,50 @@ Mode d’emploi 05- 2022 – Associations
   
 Les informations à renseigner sont les suivantes (*obligatoires) :  
  
-1. Titre de l’événement * 
+1. Titre de l'événement * 
  
-2. Code d’inscription * 
+2. Code d'inscription * 
 Code simple alphanumérique que les utilisateurs vont saisir dans 
-l’appli pour s’affilier à l’événement. 
+l'appli pour s'affilier à l'événement. 
  
 3. Logo - JPG 280 x 280 px 
-Figure dans l’appli, dans le menu « Mes actions » du profil utilisateur. 
+Figure dans l'appli, dans le menu « Mes actions » du profil utilisateur. 
 Peut être le logo de votre association ou un logo spécifique à 
-l’événement. 
+l'événement. 
  
 4. Bandeau - JPG 800 x 270 px 
 Figure en haut de la fiche événement et sur les messages de 
-remerciements qui s’affichent après chaque action dans l’appli. 
+remerciements qui s'affichent après chaque action dans l'appli. 
  
 5. Description - 320 caractères, espaces compris. 
-Figure sur la fiche événement, dans l’appli. 
+Figure sur la fiche événement, dans l'appli. 
  
 6. Infos lieu de rendez-vous * 
-Texte libre, par exemple « Sur le parking en face de l’entrée du parc ».  
+Texte libre, par exemple « Sur le parking en face de l'entrée du parc ».  
  
 7. Nombre maximum de participants * 
-Précisez le nombre maximum de participants autorisés à s’inscrire. Si 
-le nombre n’est pas limité, vous pouvez indiquer un « grand » chiffre. 
-Cette information n’est pas visible par les utilisateurs mais permet de 
+Précisez le nombre maximum de participants autorisés à s'inscrire. Si 
+le nombre n'est pas limité, vous pouvez indiquer un « grand » chiffre. 
+Cette information n'est pas visible par les utilisateurs mais permet de 
 bloquer les inscriptions en cas de limite.   
  
 8. Adresse exacte du RDV 
-Commencez à saisir l’adresse précise du lieu de rendez-vous. Le 
+Commencez à saisir l'adresse précise du lieu de rendez-vous. Le 
 Back-Office vous proposera une adresse spécifique géolocalisée.  
-Cela permet aux participants d’avoir l’adresse directement dans leur 
+Cela permet aux participants d'avoir l'adresse directement dans leur 
 application GPS (Plans, Maps...) 
  
-9. Horaires de début et fin de l’événement * 
-Possibilité d’ajouter 3 dates que les participants pourraient choisir. 
+9. Horaires de début et fin de l'événement * 
+Possibilité d'ajouter 3 dates que les participants pourraient choisir. 
  
-10. Coordonnées des personnes responsables de l’événement 
-Figurent sur la fiche événement. Possibilité d’indiquer jusqu’à 3 
+10. Coordonnées des personnes responsables de l'événement 
+Figurent sur la fiche événement. Possibilité d'indiquer jusqu'à 3 
 personnes à contacter (nom, prénom, téléphone, email).  
 
 --- PAGE 10 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  
@@ -457,44 +457,44 @@ Mode d’emploi 05- 2022 – Associations
  
   
 11. Matériel fourni et matériel à apporter 
-Choisissez dans la liste (boites à cocher). S’affichent côté appli sous 
-forme d’icônes.  
+Choisissez dans la liste (boites à cocher). S'affichent côté appli sous 
+forme d'icônes.  
  
-12. Message de confirmation d’inscription à l’événement - 70 caractères, 
+12. Message de confirmation d'inscription à l'événement - 70 caractères, 
 espaces compris 
-Message qui s’affiche au moment de l’inscription à l’événement, par 
+Message qui s'affiche au moment de l'inscription à l'événement, par 
 ex. « Merci pour votre inscription - RDV le 21 mai ! » 
  
 13. Message de remerciement personnalisé - 70 caractères, espaces 
 compris 
-Ce message s’affiche après chaque action de signalement ou de 
+Ce message s'affiche après chaque action de signalement ou de 
 ramassage. 
  
 14. Conditions de participation  
-Message qui s’affiche au moment de l’inscription à l’événement. Vous 
+Message qui s'affiche au moment de l'inscription à l'événement. Vous 
 pouvez ajouter votre propre texte (70 caractères, espaces compris) qui 
-s’affichera juste au-dessus de celui de Trash Spotter, à savoir :  
+s'affichera juste au-dessus de celui de Trash Spotter, à savoir :  
  
-« [NOM DE L’ASSOCIATION] est l’organisateur de cet événement.  
-Ni TRASH SPOTTER ni l’ORGANISATEUR ne peuvent, en aucun cas, être 
-tenus responsables de pertes ou dégâts matériels ni d’accidents ou 
+« [NOM DE L'ASSOCIATION] est l'organisateur de cet événement.  
+Ni TRASH SPOTTER ni l'ORGANISATEUR ne peuvent, en aucun cas, être 
+tenus responsables de pertes ou dégâts matériels ni d'accidents ou 
 blessures, qui pourraient survenir pendant la géolocalisation ou le 
 nettoyage de déchets.  
 En participant à cet événement, vous vous engagez à vous comporter de 
-manière respectueuse envers l’environnement où vous allez agir ainsi 
-qu’envers les personnes que vous allez croiser (participants de 
-l’événement ou non). Les organisateurs se réservent le droit de demander 
-à tout participant de quitter l’événement en cas de comportement 
+manière respectueuse envers l'environnement où vous allez agir ainsi 
+qu'envers les personnes que vous allez croiser (participants de 
+l'événement ou non). Les organisateurs se réservent le droit de demander 
+à tout participant de quitter l'événement en cas de comportement 
 dangereux ou inapproprié. 
-En validant votre participation, vous autorisez l’ORGANISATEUR à vous 
-adresser des notifications concernant l’événement directement dans 
-votre téléphone (via l’application TRASH SPOTTER) »   
+En validant votre participation, vous autorisez l'ORGANISATEUR à vous 
+adresser des notifications concernant l'événement directement dans 
+votre téléphone (via l'application TRASH SPOTTER) »   
 
 
 --- PAGE 11 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  
@@ -509,10 +509,10 @@ Mode d’emploi 05- 2022 – Associations
  
  
   
-Une fois l’événement créé, vous pouvez le consulter dans la LISTE DE VOS 
+Une fois l'événement créé, vous pouvez le consulter dans la LISTE DE VOS 
 EVENEMENTS. Il suffit de cliquer sur la ligne pour accéder au tableau de 
-bord dédié à l’événement, via lequel vous pouvez : 
-• consulter toutes les informations le concernant (nombre d’inscrits, 
+bord dédié à l'événement, via lequel vous pouvez : 
+• consulter toutes les informations le concernant (nombre d'inscrits, 
 données déchets).  
 • accéder aux paramètres et les modifier si besoin.  
 • envoyer des notifications aux participants. 
@@ -521,7 +521,7 @@ données déchets).
 --- PAGE 12 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  
@@ -540,7 +540,7 @@ Vous pouvez SUIVRE VOS DONS via votre Back-
 Office. 
  
 Vous allez voir ici la liste des dons reçu au profit de votre 
-association, versés par les utilisateurs de l’appli. 
+association, versés par les utilisateurs de l'appli. 
  
 En haut du tableau, vous pouvez voir le montant total des 
 dons, le total des virements déjà effectués par le fonds 
@@ -556,7 +556,7 @@ profit.
 --- PAGE 13 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
 
@@ -564,7 +564,7 @@ Mode d’emploi 05- 2022 – Associations
 --- PAGE 14 ---
  
  
-Mode d’emploi 05- 2022 – Associations 
+Mode d'emploi 05- 2022 – Associations 
  
  
  

@@ -1,0 +1,116 @@
+﻿Rubrique: partenaires_et_commercants_engages
+Objectif de lecture: vision actionnable en ~5 min
+
+- a quoi sert la rubrique
+  - Rendre visible l'ecosysteme local qui agit deja.
+  - Faciliter les mises en relation rapides: benevoles, associations, commerces, entreprises.
+  - Prouver que le projet est collectif, pas seulement individuel.
+  - Transformer des intentions en collaborations concretes.
+
+- pour qui
+  - Citoyens qui veulent agir pres de chez eux.
+  - Benevoles qui cherchent un point d'appui local.
+  - Associations qui veulent recruter, coordonner, mutualiser.
+  - Commercants engages qui veulent etre identifies et utiles localement.
+  - Entreprises/RSE qui veulent contribuer de facon visible et mesurable.
+  - Elus/collectivites qui veulent voir le tissu d'acteurs mobilisables.
+
+- valeur utilisateur
+  - Trouver "qui fait quoi" sans perdre de temps.
+  - Identifier un contact fiable et un mode d'action concret.
+  - Choisir un acteur proche, compatible avec son besoin.
+  - Comprendre rapidement comment participer (temps, materiel, lieu, frequence).
+  - Se sentir moins seul: effet de preuve sociale locale.
+
+- valeur produit
+  - Augmente la retention: retour utile meme sans nouvelle action a declarer.
+  - Renforce la credibilite de la plateforme (reseau reel visible).
+  - Ouvre des opportunites de partenariats, cofinancement et relais terrain.
+  - Alimente les autres rubriques (actions, carte, reporting, elus).
+  - Cree un actif strategique: base acteur qualifiee et exploitable.
+
+- contenu a afficher
+  - Fiches acteurs standardisees:
+    - nom, type (association/commercant/entreprise/collectif)
+    - zone couverte
+    - niveau d'engagement (initie, actif, referent)
+    - types de contribution (materiel, logistique, accueil, financement, communication)
+    - disponibilite (ponctuelle, mensuelle, evenementielle)
+    - contact et canal prefere
+  - Filtres prioritaires:
+    - distance/zone
+    - type d'acteur
+    - type d'aide proposee
+    - niveau de fiabilite/verification
+    - disponibilite actuelle
+  - Blocs utiles:
+    - "nouveaux partenaires"
+    - "acteurs les plus actifs"
+    - "besoins non couverts"
+    - "partenaires proches de mes actions"
+  - CTA clairs:
+    - "Contacter"
+    - "Proposer un partenariat"
+    - "Devenir commercant engage"
+    - "Signaler une mise a jour"
+
+- contenu affiché :
+
+
+- infos essentielles
+  - Donnees minimales obligatoires par fiche:
+    - identite legale ou associative
+    - perimetre geographique
+    - contribution reelle possible
+    - contact joignable
+    - statut de verification
+    - date de derniere mise a jour
+  - Transparence:
+    - expliquer comment un acteur devient "engage"
+    - afficher les criteres de verification
+    - afficher la fraicheur des donnees
+  - Gouvernance:
+    - qui valide les fiches
+    - qui peut modifier
+    - delai de traitement des demandes
+
+- erreurs a eviter
+  - Annuaire "vitrine" sans preuve d'activite recente.
+  - Fiches trop pauvres ou non verifiees.
+  - Melanger partenaires actifs et simples contacts non qualifies.
+  - Trop de champs, peu de signal utile.
+  - Absence de date de mise a jour.
+  - CTA flous (ex: "en savoir plus") sans action claire.
+  - Aucune distinction entre engagement declare et engagement confirme.
+
+- points UX/UI
+  - Prioriser la recherche et les filtres au-dessus de la ligne de flottaison.
+  - Cartes/fiches compactes, scannables en 3-5 secondes.
+  - Badges visuels simples: type d'acteur, verification, niveau d'engagement.
+  - Afficher toujours:
+    - zone
+    - contribution
+    - disponibilite
+    - contact
+  - Eviter surcharge visuelle; hierarchy nette des informations.
+  - Mobile first: filtres rapides, CTA large, contact direct.
+  - Etats vides utiles: "aucun acteur" -> proposition d'ajout ou extension zone.
+
+- pistes d'amelioration
+  - Score de fiabilite acteur (mise a jour + activite + retours terrain).
+  - Recommandations automatiques selon profil utilisateur et localisation.
+  - Liaison directe avec carte et actions pour voir l'impact concret par acteur.
+  - Parcours d'onboarding specifique "commercant engage" en moins de 3 minutes.
+  - Mecanisme de preuve (photo, recu materiel, co-animation) pour renforcer confiance.
+  - Tableau de bord partenaire: contributions, zones, besoins, prochaines actions.
+
+- questions ouvertes
+  - Quel seuil definit "engage" vs "referent" ?
+  - Quel niveau de verification est requis avant affichage public ?
+  - Quels champs sont publics vs internes (RGPD, securite contact) ?
+  - Comment gerer les acteurs inactifs sans perdre l'historique ?
+  - Quel KPI prioritaire pour piloter la rubrique:
+    - nombre d'acteurs actifs
+    - taux de mise en relation
+    - contributions concretes generees
+  - Quelle frequence de revue qualite des fiches (hebdo, mensuelle) ?

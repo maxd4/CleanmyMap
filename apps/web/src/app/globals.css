@@ -76,3 +76,66 @@ html.dark .border-slate-300,
 html.dark .border-slate-100 {
   border-color: #334155 !important;
 }
+
+/* Leaflet Custom Styles */
+.leaflet-container {
+  font-family: inherit;
+}
+
+/* Glassmorphism Tooltip */
+.glass-tooltip {
+  background: rgba(255, 255, 255, 0.2) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+  padding: 4px 8px !important;
+}
+
+html.dark .glass-tooltip {
+  background: rgba(15, 23, 42, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Pulsating Glow Effect */
+@keyframes cmm-pulsate {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.3; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.cmm-glow-container {
+  position: relative;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+.cmm-glow-ring {
+  position: absolute;
+  border-radius: 50%;
+  animation: cmm-pulsate 2s infinite ease-out;
+  pointer-events: none;
+}
+
+.cmm-glow-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 8px rgba(0,0,0,0.3);
+}
+
+/* Ant-path Animation (Fallback if plugin not available) */
+.leaflet-ant-path {
+  stroke-dasharray: 10, 10;
+  animation: leaflet-ant-path-animation 1s linear infinite;
+}
+
+@keyframes leaflet-ant-path-animation {
+  from { stroke-dashoffset: 20; }
+  to { stroke-dashoffset: 0; }
+}

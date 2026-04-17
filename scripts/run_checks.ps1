@@ -40,9 +40,9 @@ if ($encodingCheckExit -ne 0) {
 
 if ($Scope -eq "full") {
     Write-Host "Running Python static compilation (full tracked set)..."
-    $pythonFiles = @(git ls-files '*.py')
+    $pythonFiles = @(git ls-files 'legacy/src/*.py' 'scripts/*.py')
 } else {
-    $pythonFiles = @($changedFiles | Where-Object { $_ -like '*.py' })
+    $pythonFiles = @($changedFiles | Where-Object { $_ -like 'legacy/src/*.py' -or $_ -like 'scripts/*.py' })
     Write-Host "Running Python static compilation (changed files only)..."
 }
 
@@ -60,22 +60,21 @@ Invoke-Step { python scripts/check_runtime_db_tracking.py --root . } "runtime_db
 
 if ($Scope -eq "full") {
     Write-Host "Running unit tests (full suite)..."
-    Invoke-Step { pytest -q } "pytest_full"
+    Invoke-Step { pytest -q legacy/tests } "pytest_full"
 } else {
-    $changedTestFiles = @($changedFiles | Where-Object { $_ -like 'tests/*.py' })
+    $changedTestFiles = @($changedFiles | Where-Object { $_ -like 'legacy/tests/*.py' })
     if ($changedTestFiles.Count -gt 0) {
         Write-Host "Running unit tests (changed test files only)..."
         Invoke-Step { pytest -q $changedTestFiles } "pytest_changed"
     } else {
         Write-Host "No changed test files detected; running targeted maintenance smoke tests."
-        Invoke-Step { pytest -q tests/test_cleanup_audit.py tests/test_ui_inventory_cli.py tests/test_normalize_utf8.py } "pytest_smoke"
+        Invoke-Step { pytest -q legacy/tests/test_cleanup_audit.py legacy/tests/test_ci_cleanup_cli.py legacy/tests/test_normalize_utf8.py } "pytest_smoke"
     }
 }
 
 if (-not $SkipE2E) {
     if ($Scope -eq "full") {
-        Write-Host "Running E2E tests (full)..."
-        Invoke-Step { npx.cmd playwright test --config tests/e2e/playwright.config.cjs } "playwright"
+        Write-Host "No root E2E suite configured; skipping E2E."
     } else {
         Write-Host "Skipping full E2E in changed scope. Use -Scope full to force."
     }
