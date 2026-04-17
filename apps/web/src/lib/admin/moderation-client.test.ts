@@ -20,7 +20,12 @@ describe("moderation client", () => {
       ),
     );
 
-    const result = await postAdminModeration({ entityType: "action", id: "a1", status: "approved" });
+    const result = await postAdminModeration({
+      entityType: "action",
+      id: "a1",
+      status: "approved",
+      confirmPhrase: "CONFIRMER MODERATION",
+    });
     expect(result.status).toBe("ok");
     expect(result.sourceTable).toBe("actions");
     expect(result.copiedToLocalValidatedStore).toBe(true);
@@ -34,7 +39,14 @@ describe("moderation client", () => {
       }),
     );
 
-    await expect(postAdminModeration({ entityType: "action", id: "a1", status: "approved" })).rejects.toMatchObject({
+    await expect(
+      postAdminModeration({
+        entityType: "action",
+        id: "a1",
+        status: "approved",
+        confirmPhrase: "CONFIRMER MODERATION",
+      }),
+    ).rejects.toMatchObject({
       name: "ModerationClientError",
       code: "permission_denied",
     });
@@ -43,9 +55,46 @@ describe("moderation client", () => {
   it("maps network failure into network_error", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("socket"));
 
-    await expect(postAdminModeration({ entityType: "clean_place", id: "c1", status: "validated" })).rejects.toMatchObject({
+    await expect(
+      postAdminModeration({
+        entityType: "clean_place",
+        id: "c1",
+        status: "validated",
+        confirmPhrase: "CONFIRMER MODERATION",
+      }),
+    ).rejects.toMatchObject({
       name: "ModerationClientError",
       code: "network_error",
+    });
+  });
+
+  it("maps 409 into invalid_payload", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          message: "Explicit confirmation phrase required",
+          hint: "Retry with phrase",
+          operationId: "op-123",
+        }),
+        {
+          status: 409,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
+    );
+
+    await expect(
+      postAdminModeration({
+        entityType: "action",
+        id: "a1",
+        status: "approved",
+        confirmPhrase: "WRONG",
+      }),
+    ).rejects.toMatchObject({
+      name: "ModerationClientError",
+      code: "invalid_payload",
+      hint: "Retry with phrase",
+      operationId: "op-123",
     });
   });
 });

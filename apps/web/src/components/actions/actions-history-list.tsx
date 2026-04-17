@@ -3,7 +3,12 @@
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
-import type { ActionListItem, ActionStatus } from "@/lib/actions/types";
+import { evaluateActionQuality } from "@/lib/actions/quality";
+import type {
+  ActionListItem,
+  ActionQualityGrade,
+  ActionStatus,
+} from "@/lib/actions/types";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 
 function formatDate(value: string): string {
@@ -11,24 +16,87 @@ function formatDate(value: string): string {
   if (Number.isNaN(parsed.getTime())) {
     return value;
   }
-  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(parsed);
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(
+    parsed,
+  );
+}
+
+function formatRecordType(item: ActionListItem): string {
+  if (item.record_type === "clean_place") {
+    return "lieu propre";
+  }
+  if (item.record_type === "other") {
+    return "spot";
+  }
+  return "action";
+}
+
+function qualityTone(grade: "A" | "B" | "C"): string {
+  if (grade === "A") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+  if (grade === "B") {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+  return "border-rose-200 bg-rose-50 text-rose-700";
+}
+
+function rowTone(grade: "A" | "B" | "C" | null): string {
+  if (grade === "A") {
+    return "bg-emerald-50/40";
+  }
+  if (grade === "B") {
+    return "bg-amber-50/40";
+  }
+  if (grade === "C") {
+    return "bg-rose-50/40";
+  }
+  return "";
 }
 
 export function ActionsHistoryList() {
   const [statusFilter, setStatusFilter] = useState<ActionStatus | "all">("all");
+  const [qualityFilter, setQualityFilter] = useState<
+    ActionQualityGrade | "all"
+  >("all");
+  const [toFixOnly, setToFixOnly] = useState<boolean>(false);
   const [limit, setLimit] = useState<number>(30);
   const [search, setSearch] = useState<string>("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const swrKey = useMemo(() => ["actions", statusFilter, String(limit)], [statusFilter, limit]);
+  const swrKey = useMemo(
+    () => [
+      "actions",
+      statusFilter,
+      qualityFilter,
+      String(toFixOnly),
+      String(limit),
+    ],
+    [statusFilter, qualityFilter, toFixOnly, limit],
+  );
   const {
     data,
     error,
     isLoading,
     isValidating,
     mutate: reload,
-  } = useSWR(swrKey, () => fetchActions({ status: statusFilter, limit }), swrRecentViewOptions);
+  } = useSWR(
+    swrKey,
+    () =>
+      fetchActions({
+        status: statusFilter,
+        qualityGrade: qualityFilter === "all" ? undefined : qualityFilter,
+        toFixPriority: toFixOnly ? true : undefined,
+        limit,
+        types: "all",
+      }),
+    swrRecentViewOptions,
+  );
 
   const items = useMemo(() => data?.items ?? [], [data?.items]);
+  const failedSources = data?.sourceHealth?.failedSources ?? [];
+  const partialSourcesLabel =
+    failedSources.length > 0 ? failedSources.join(", ") : "inconnues";
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase();
     if (!query) {
@@ -42,20 +110,68 @@ export function ActionsHistoryList() {
     });
   }, [items, search]);
 
+  const qualityById = useMemo(() => {
+    const output = new Map<string, ReturnType<typeof evaluateActionQuality>>();
+    for (const item of filteredItems) {
+      if (typeof item.quality_score === "number" && item.quality_grade) {
+        output.set(item.id, {
+          score: item.quality_score,
+          grade: item.quality_grade,
+          breakdown:
+            item.quality_breakdown ?? evaluateActionQuality(item).breakdown,
+          flags: item.quality_flags ?? [],
+        });
+      } else {
+        output.set(item.id, evaluateActionQuality(item));
+      }
+    }
+    return output;
+  }, [filteredItems]);
+
+  const selectedItem = useMemo(
+    () =>
+      filteredItems.find((item) => item.id === selectedId) ??
+      filteredItems[0] ??
+      null,
+    [filteredItems, selectedId],
+  );
+  const selectedQuality = selectedItem
+    ? (qualityById.get(selectedItem.id) ?? null)
+    : null;
+  const selectedLostPoints = selectedQuality
+    ? Math.max(0, 100 - selectedQuality.score)
+    : 0;
+  const correctiveAction = selectedQuality
+    ? selectedQuality.breakdown.geoloc < 70
+      ? "Renforcer geo-tracabilite (coordonnees + trace/polygone)."
+      : selectedQuality.breakdown.traceability < 80
+        ? "Completer les champs de traçabilite (auteur/source/dates)."
+        : selectedQuality.breakdown.freshness < 70
+          ? "Prioriser moderation rapide pour reduire la staleness."
+          : "Corriger les champs incomplets et valeurs incoherentes."
+    : null;
+
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">Historique des actions</h2>
+          {data?.partialSource ? (
+            <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-100 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-amber-900">
+              Sources partielles: {partialSourcesLabel}
+            </span>
+          ) : null}
+          <h2 className="text-xl font-semibold text-slate-900">
+            Historique des actions
+          </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Vue filtrable sur les actions déclarées via la nouvelle API Next.js.
+            Vue filtrable avec score qualite par action (A/B/C).
           </p>
         </div>
         <button
           onClick={() => void reload()}
           className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
         >
-          {isValidating ? "Actualisation..." : "Rafraîchir"}
+          {isValidating ? "Actualisation..." : "Rafraichir"}
         </button>
       </div>
 
@@ -64,7 +180,9 @@ export function ActionsHistoryList() {
           Statut
           <select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value as ActionStatus | "all")}
+            onChange={(event) =>
+              setStatusFilter(event.target.value as ActionStatus | "all")
+            }
             className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
           >
             <option value="all">Tous</option>
@@ -89,6 +207,37 @@ export function ActionsHistoryList() {
         </label>
 
         <label className="flex flex-col gap-2 text-sm text-slate-700">
+          Grade qualite
+          <select
+            value={qualityFilter}
+            onChange={(event) =>
+              setQualityFilter(event.target.value as ActionQualityGrade | "all")
+            }
+            className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
+          >
+            <option value="all">Tous</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-2 text-sm text-slate-700">
+          Priorite correction
+          <button
+            type="button"
+            onClick={() => setToFixOnly((prev) => !prev)}
+            className={`rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${
+              toFixOnly
+                ? "border-rose-300 bg-rose-50 text-rose-800"
+                : "border-slate-300 bg-white text-slate-700 hover:bg-slate-100"
+            }`}
+          >
+            {toFixOnly ? "Actif: a corriger" : "Tous les enregistrements"}
+          </button>
+        </label>
+
+        <label className="md:col-span-2 flex flex-col gap-2 text-sm text-slate-700">
           Recherche rapide
           <input
             value={search}
@@ -98,6 +247,29 @@ export function ActionsHistoryList() {
           />
         </label>
       </div>
+
+      {selectedItem && selectedQuality ? (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Detail score qualite
+          </p>
+          <p className="mt-1 text-sm text-slate-700">
+            <span className="font-semibold">
+              {selectedQuality.grade} ({selectedQuality.score}/100)
+            </span>{" "}
+            - points perdus: {selectedLostPoints}
+          </p>
+          <p className="mt-1 text-xs text-slate-600">
+            Facteurs:{" "}
+            {selectedQuality.flags.length > 0
+              ? selectedQuality.flags.join(", ")
+              : "Aucun facteur critique."}
+          </p>
+          <p className="mt-1 text-xs text-slate-600">
+            Action corrective recommandee: {correctiveAction}
+          </p>
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="mt-5 space-y-2">
@@ -119,34 +291,69 @@ export function ActionsHistoryList() {
             <thead>
               <tr className="border-b border-slate-200 text-slate-500">
                 <th className="px-2 py-2 font-medium">Date</th>
-                <th className="px-2 py-2 font-medium">Bénévole</th>
+                <th className="px-2 py-2 font-medium">Benevole</th>
                 <th className="px-2 py-2 font-medium">Lieu</th>
+                <th className="px-2 py-2 font-medium">Type</th>
                 <th className="px-2 py-2 font-medium">Kg</th>
-                <th className="px-2 py-2 font-medium">Mégots</th>
+                <th className="px-2 py-2 font-medium">Megots</th>
                 <th className="px-2 py-2 font-medium">Statut</th>
+                <th className="px-2 py-2 font-medium">Qualite</th>
               </tr>
             </thead>
             <tbody>
-              {filteredItems.map((item: ActionListItem) => (
-                <tr key={item.id} className="border-b border-slate-100 text-slate-700">
-                  <td className="px-2 py-2">{formatDate(item.action_date)}</td>
-                  <td className="px-2 py-2">{item.actor_name || "Anonyme"}</td>
-                  <td className="px-2 py-2">{item.location_label}</td>
-                  <td className="px-2 py-2">{Number(item.waste_kg).toFixed(1)}</td>
-                  <td className="px-2 py-2">{item.cigarette_butts}</td>
-                  <td className="px-2 py-2">
-                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-700">
-                      {item.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {filteredItems.map((item: ActionListItem) => {
+                const quality = qualityById.get(item.id);
+                return (
+                  <tr
+                    key={item.id}
+                    className={`cursor-pointer border-b border-slate-100 text-slate-700 ${rowTone(quality?.grade ?? null)}`}
+                    onClick={() => setSelectedId(item.id)}
+                  >
+                    <td className="px-2 py-2">
+                      {formatDate(item.action_date)}
+                    </td>
+                    <td className="px-2 py-2">
+                      {item.actor_name || "Anonyme"}
+                    </td>
+                    <td className="px-2 py-2">{item.location_label}</td>
+                    <td className="px-2 py-2">{formatRecordType(item)}</td>
+                    <td className="px-2 py-2">
+                      {Number(item.waste_kg).toFixed(1)}
+                    </td>
+                    <td className="px-2 py-2">{item.cigarette_butts}</td>
+                    <td className="px-2 py-2">
+                      <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-700">
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2">
+                      {quality ? (
+                        <div className="space-y-1">
+                          <span
+                            title={quality.flags.join(" | ")}
+                            className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-semibold ${qualityTone(quality.grade)}`}
+                          >
+                            {quality.grade} ({quality.score}/100)
+                          </span>
+                          <p className="max-w-48 truncate text-[11px] text-slate-500">
+                            {quality.flags[0]
+                              ? `Risque: ${quality.flags[0]}`
+                              : "Aucun risque majeur detecte"}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-slate-500">n/a</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
 
           {filteredItems.length === 0 ? (
             <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              Aucun résultat pour ce filtre.
+              Aucun resultat pour ce filtre.
             </p>
           ) : null}
         </div>

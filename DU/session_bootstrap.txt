@@ -1,0 +1,4 @@
+Session bootstrap:
+1) Read AGENTS.md, project_context.md, and DU/latest-session.md.
+2) Confirm constraints and risks in <= 8 bullets.
+3) Propose an execution plan in <= 5 blocks, then execute.

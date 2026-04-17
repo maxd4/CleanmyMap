@@ -1,7 +1,12 @@
 import type { ActionMapItem, ActionStatus } from "@/lib/actions/types";
 import { readAllLocalStores } from "@/lib/data/local-store";
 import { mapLocalStatusToActionStatus } from "@/lib/data/local-records";
-import { buildActionDataContract, toActionMapItem } from "@/lib/actions/data-contract";
+import { allowLocalActionStoreInCurrentRuntime } from "@/lib/persistence/runtime-store";
+import {
+  buildActionDataContract,
+  toActionMapItem,
+} from "@/lib/actions/data-contract";
+import type { ActionDataContract } from "@/lib/actions/data-contract";
 
 function parseIsoDateOrToday(raw: string | null | undefined): string {
   if (!raw) {
@@ -14,57 +19,70 @@ function parseIsoDateOrToday(raw: string | null | undefined): string {
   return date.toISOString().slice(0, 10);
 }
 
-function toLocalMapItem(record: {
-  id: string;
-  eventDate?: string | null;
-  location: { label: string; latitude?: number | null; longitude?: number | null };
-  metrics?: {
-    wasteKg?: number | null;
-    cigaretteButts?: number | null;
-    volunteersCount?: number | null;
-    durationMinutes?: number | null;
-  };
-  status: "test" | "pending" | "validated" | "rejected";
-  recordType: "action" | "clean_place" | "other";
-  source: string;
-  description?: string | null;
-  trace?: { importedAt?: string | null; validatedAt?: string | null; notes?: string | null };
-}): ActionMapItem | null {
+function toLocalContract(
+  record: {
+    id: string;
+    eventDate?: string | null;
+    location: {
+      label: string;
+      latitude?: number | null;
+      longitude?: number | null;
+    };
+    metrics?: {
+      wasteKg?: number | null;
+      cigaretteButts?: number | null;
+      volunteersCount?: number | null;
+      durationMinutes?: number | null;
+    };
+    status: "test" | "pending" | "validated" | "rejected";
+    recordType: "action" | "clean_place" | "other";
+    source: string;
+    description?: string | null;
+    trace?: {
+      externalId?: string | null;
+      importedAt?: string | null;
+      validatedAt?: string | null;
+      notes?: string | null;
+    };
+  },
+  requireCoordinates: boolean,
+): ActionDataContract | null {
+  const canonicalId =
+    record.trace?.externalId && record.trace.externalId.trim().length > 0
+      ? record.trace.externalId.trim()
+      : record.id;
   const latitude = record.location.latitude ?? null;
   const longitude = record.location.longitude ?? null;
-  if (latitude === null || longitude === null) {
+  if (requireCoordinates && (latitude === null || longitude === null)) {
     return null;
   }
 
-  return {
-    ...toActionMapItem(
-      buildActionDataContract({
-        id: record.id,
-        type: record.recordType === "other" ? "spot" : record.recordType,
-        status: mapLocalStatusToActionStatus(record.status),
-        source: record.source,
-        observedAt: parseIsoDateOrToday(record.eventDate),
-        importedAt: record.trace?.importedAt ?? null,
-        validatedAt: record.trace?.validatedAt ?? null,
-        locationLabel: record.location.label,
-        latitude,
-        longitude,
-        wasteKg: Number(record.metrics?.wasteKg ?? 0),
-        cigaretteButts: Number(record.metrics?.cigaretteButts ?? 0),
-        volunteersCount: Number(record.metrics?.volunteersCount ?? 0),
-        durationMinutes: Number(record.metrics?.durationMinutes ?? 0),
-        notes: record.description ?? record.trace?.notes ?? null,
-      }),
-    ),
-    record_type: record.recordType,
-  };
+  return buildActionDataContract({
+    id: canonicalId,
+    type: record.recordType === "other" ? "spot" : record.recordType,
+    status: mapLocalStatusToActionStatus(record.status),
+    source: record.source,
+    observedAt: parseIsoDateOrToday(record.eventDate),
+    importedAt: record.trace?.importedAt ?? null,
+    validatedAt: record.trace?.validatedAt ?? null,
+    locationLabel: record.location.label,
+    latitude,
+    longitude,
+    wasteKg: Number(record.metrics?.wasteKg ?? 0),
+    cigaretteButts: Number(record.metrics?.cigaretteButts ?? 0),
+    volunteersCount: Number(record.metrics?.volunteersCount ?? 0),
+    durationMinutes: Number(record.metrics?.durationMinutes ?? 0),
+    notes: record.description ?? record.trace?.notes ?? null,
+  });
 }
 
-function dedupeByKey(items: ActionMapItem[]): ActionMapItem[] {
+function dedupeContractsByKey(
+  items: ActionDataContract[],
+): ActionDataContract[] {
   const seen = new Set<string>();
-  const output: ActionMapItem[] = [];
+  const output: ActionDataContract[] = [];
   for (const item of items) {
-    const key = `${item.id}::${item.action_date}::${item.location_label}`;
+    const key = `${item.id}::${item.type}::${item.dates.observedAt}::${item.location.label}`;
     if (seen.has(key)) {
       continue;
     }
@@ -74,15 +92,47 @@ function dedupeByKey(items: ActionMapItem[]): ActionMapItem[] {
   return output;
 }
 
-function filterByStatus(items: ActionMapItem[], status: ActionStatus | null): ActionMapItem[] {
+function filterByStatus(
+  items: ActionDataContract[],
+  status: ActionStatus | null,
+): ActionDataContract[] {
   if (!status) {
     return items;
   }
   return items.filter((item) => item.status === status);
 }
 
-function filterByFloorDate(items: ActionMapItem[], floorDate: string): ActionMapItem[] {
-  return items.filter((item) => item.action_date >= floorDate);
+function filterByFloorDate(
+  items: ActionDataContract[],
+  floorDate: string | null,
+): ActionDataContract[] {
+  if (!floorDate) {
+    return items;
+  }
+  return items.filter((item) => item.dates.observedAt >= floorDate);
+}
+
+export async function loadLocalActionContracts(params: {
+  status: ActionStatus | null;
+  floorDate: string | null;
+  limit: number;
+  requireCoordinates: boolean;
+}): Promise<ActionDataContract[]> {
+  if (!allowLocalActionStoreInCurrentRuntime()) {
+    return [];
+  }
+
+  const stores = await readAllLocalStores();
+  const fromStores = [...stores.real.records, ...stores.validated.records]
+    .map((record) => toLocalContract(record, params.requireCoordinates))
+    .filter((item): item is ActionDataContract => Boolean(item));
+
+  return filterByFloorDate(
+    filterByStatus(dedupeContractsByKey(fromStores), params.status),
+    params.floorDate,
+  )
+    .sort((a, b) => b.dates.observedAt.localeCompare(a.dates.observedAt))
+    .slice(0, params.limit);
 }
 
 export async function loadLocalMapItems(params: {
@@ -90,14 +140,11 @@ export async function loadLocalMapItems(params: {
   floorDate: string;
   limit: number;
 }): Promise<ActionMapItem[]> {
-  const stores = await readAllLocalStores();
-  const fromStores = [...stores.real.records, ...stores.validated.records]
-    .map((record) => toLocalMapItem(record))
-    .filter((item): item is ActionMapItem => Boolean(item));
-
-  const filtered = filterByFloorDate(filterByStatus(dedupeByKey(fromStores), params.status), params.floorDate)
-    .sort((a, b) => b.action_date.localeCompare(a.action_date))
-    .slice(0, params.limit);
-
-  return filtered;
+  const contracts = await loadLocalActionContracts({
+    status: params.status,
+    floorDate: params.floorDate,
+    limit: params.limit,
+    requireCoordinates: true,
+  });
+  return contracts.map((contract) => toActionMapItem(contract));
 }

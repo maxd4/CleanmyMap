@@ -64,22 +64,28 @@ const envSchema = z.object({
   SENTRY_PROJECT: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
-  RESEND_TEST_TOKEN: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   PINECONE_API_KEY: z.string().optional(),
   UPSTASH_REDIS_REST_URL: optionalUrl,
   UPSTASH_REDIS_REST_TOKEN: z.string().optional(),
   QSTASH_TOKEN: z.string().optional(),
+  ALLOW_LOCAL_FILE_STORE_FALLBACK: optionalBoolean,
+  ALLOW_LOCAL_ACTION_STORE_IN_PROD: optionalBoolean,
 });
 
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
   // Fail fast in server contexts while keeping local DX understandable.
-  console.error("Invalid environment configuration", parsed.error.flatten().fieldErrors);
+  console.error(
+    "Invalid environment configuration",
+    parsed.error.flatten().fieldErrors,
+  );
 }
 
-export const env = parsed.success ? parsed.data : (process.env as z.infer<typeof envSchema>);
+export const env = parsed.success
+  ? parsed.data
+  : (process.env as z.infer<typeof envSchema>);
 
 export function isConfigured(value: string | undefined): boolean {
   return Boolean(value && value.trim().length > 0);

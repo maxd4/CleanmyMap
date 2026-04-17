@@ -1,4 +1,4 @@
-﻿import { Redis } from "@upstash/redis";
+import { Redis } from "@upstash/redis";
 import { Client as QstashClient } from "@upstash/qstash";
 import { env } from "@/lib/env";
 

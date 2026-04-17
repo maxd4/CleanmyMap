@@ -1,31 +1,33 @@
 {
-  "name": "cleanmymap-main",
+  "name": "cleanmymap-monorepo",
   "version": "1.0.0",
-  "description": "https://cleanmymap.fr",
-  "main": "index.js",
-  "directories": {
-    "test": "tests"
-  },
+  "description": "Monorepo de la plateforme CleanMyMap.fr",
+  "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test:e2e": "npx.cmd playwright test --config tests/e2e/playwright.config.cjs",
-    "checks:changed:quick": "powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1",
-    "checks:changed:quick:build": "powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1 -IncludeBuild",
-    "logs:focus:build": "powershell -ExecutionPolicy Bypass -File scripts/run_focus.ps1 -Command \"npm.cmd --prefix apps/web run build\"",
-    "logs:focus:test": "powershell -ExecutionPolicy Bypass -File scripts/run_focus.ps1 -Command \"npm.cmd --prefix apps/web run test\"",
-    "logs:focus:checks": "powershell -ExecutionPolicy Bypass -File scripts/run_focus.ps1 -Command \"powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1 -Scope changed -SkipE2E\"",
-    "ui:inventory:regen": "python -m scripts.ui_inventory regenerate --write-baseline",
-    "ui:inventory:check": "python -m scripts.ui_inventory check",
-    "ui:inventory:cleanup": "python -m scripts.ui_inventory cleanup --dry-run"
+    "dev": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/web",
+    "lint": "npm run lint -w apps/web",
+    "test": "npm run test -w apps/web",
+    "test:regression-gates": "npm run test:regression-gates -w apps/web",
+    "checks": "powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1",
+    "maintenance:check": "node -e \"console.log('Legacy Python maintenance is archived. Use: npm run checks')\"",
+    "session:bootstrap": "node scripts/session_bootstrap.mjs",
+    "session:close": "node scripts/update_session_memory.mjs"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/maxd4/CleanMyMap.git"
   },
-  "keywords": [],
+  "keywords": [
+    "cleanmymap",
+    "nextjs",
+    "monorepo"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/maxd4/CleanMyMap/issues"
   },

@@ -3,7 +3,12 @@ export const LOCAL_DATA_STORE_VERSION = 1 as const;
 export const RECORD_TYPES = ["action", "clean_place", "other"] as const;
 export type LocalRecordType = (typeof RECORD_TYPES)[number];
 
-export const RECORD_STATUSES = ["test", "pending", "validated", "rejected"] as const;
+export const RECORD_STATUSES = [
+  "test",
+  "pending",
+  "validated",
+  "rejected",
+] as const;
 export type LocalRecordStatus = (typeof RECORD_STATUSES)[number];
 
 export type LocalRecordSource =
@@ -77,7 +82,9 @@ export function mapActionStatusToLocalStatus(value: string): LocalRecordStatus {
   return "pending";
 }
 
-export function mapLocalStatusToActionStatus(value: LocalRecordStatus): "pending" | "approved" | "rejected" {
+export function mapLocalStatusToActionStatus(
+  value: LocalRecordStatus,
+): "pending" | "approved" | "rejected" {
   if (value === "validated") {
     return "approved";
   }

@@ -9,7 +9,7 @@ This wiki is the operational documentation space for both:
 - [Documentation Policy](./DOCUMENTATION_POLICY.md)
 - [Change Log](./CHANGELOG.md)
 - [Maintenance Commands and UI Diagnostic](./MAINTENANCE.md)
-- [UI Inventory Contract](./UI_INVENTORY.md)
+- [Systeme d'Autorisation et Parcours (AUTHZ)](./AUTHZ.md)
 
 ## Update Rule
 

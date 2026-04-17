@@ -4,15 +4,23 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build && node scripts/ensure-deterministic-routes-manifest.mjs",
+    "build": "node scripts/ensure-deterministic-routes-manifest.mjs --prepare && next build && node scripts/ensure-deterministic-routes-manifest.mjs --finalize",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:regression-gates": "vitest run src/lib/actions/contract-regression-gates.test.ts src/lib/sections-registry.invariants.test.ts src/lib/navigation.registry-consistency.test.ts src/proxy.protected-routes.test.ts",
     "backup:actions": "node scripts/export-actions-backup.mjs",
     "import:actions": "node scripts/import-actions-backup.mjs",
     "data:test:build": "node scripts/build-test-local-store.mjs",
     "data:real:sync": "node scripts/sync-real-data-from-sheet.mjs --geocode",
-    "data:validated:sync": "node scripts/sync-validated-local-store.mjs"
+    "data:sheet:build-import": "node scripts/build-admin-import-from-sheet.mjs",
+    "data:sheet:sync-supabase": "node scripts/sync-google-sheet-to-supabase.mjs --geocode",
+    "data:sheet:push": "node scripts/push-google-sheet-from-form-like.mjs",
+    "data:validated:sync": "node scripts/sync-validated-local-store.mjs",
+    "backend:doctor": "node scripts/backend-doctor.mjs",
+    "backend:vercel:env:sync": "node scripts/vercel-sync-env.mjs --file=.env.local --environments=development,production",
+    "backend:supabase:push": "npx supabase db push --workdir . --yes",
+    "backend:bootstrap": "node scripts/backend-bootstrap.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.0.8",
@@ -24,6 +32,7 @@
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "leaflet": "^1.9.4",
+    "lucide-react": "^0.474.0",
     "leaflet-draw": "^1.0.4",
     "next": "16.2.2",
     "posthog-js": "^1.364.6",

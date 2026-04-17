@@ -23,16 +23,25 @@ async function ensureParentDirectory(pathname: string): Promise<void> {
   await mkdir(dirname(pathname), { recursive: true });
 }
 
-export async function readLocalStore(pathname: string): Promise<LocalDataStore> {
+export async function readLocalStore(
+  pathname: string,
+): Promise<LocalDataStore> {
   try {
     const raw = await readFile(pathname, "utf8");
     const parsed = JSON.parse(raw) as LocalDataStore;
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.records)) {
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      !Array.isArray(parsed.records)
+    ) {
       return emptyStore();
     }
     return {
       version: Number(parsed.version) || LOCAL_DATA_STORE_VERSION,
-      updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : new Date().toISOString(),
+      updatedAt:
+        typeof parsed.updatedAt === "string"
+          ? parsed.updatedAt
+          : new Date().toISOString(),
       records: parsed.records,
     };
   } catch {
@@ -40,7 +49,10 @@ export async function readLocalStore(pathname: string): Promise<LocalDataStore> 
   }
 }
 
-export async function writeLocalStore(pathname: string, store: LocalDataStore): Promise<void> {
+export async function writeLocalStore(
+  pathname: string,
+  store: LocalDataStore,
+): Promise<void> {
   const payload: LocalDataStore = {
     version: store.version || LOCAL_DATA_STORE_VERSION,
     updatedAt: new Date().toISOString(),
@@ -54,13 +66,21 @@ function canonicalExternalId(record: LocalDataRecord): string {
   return `${record.recordType}:${record.trace?.externalId ?? ""}`.trim();
 }
 
-function shouldReplace(current: LocalDataRecord, incoming: LocalDataRecord): boolean {
-  const currentDate = current.trace?.validatedAt ?? current.trace?.importedAt ?? "";
-  const incomingDate = incoming.trace?.validatedAt ?? incoming.trace?.importedAt ?? "";
+function shouldReplace(
+  current: LocalDataRecord,
+  incoming: LocalDataRecord,
+): boolean {
+  const currentDate =
+    current.trace?.validatedAt ?? current.trace?.importedAt ?? "";
+  const incomingDate =
+    incoming.trace?.validatedAt ?? incoming.trace?.importedAt ?? "";
   return incomingDate >= currentDate;
 }
 
-export async function upsertLocalRecords(pathname: string, incomingRecords: LocalDataRecord[]): Promise<LocalDataStore> {
+export async function upsertLocalRecords(
+  pathname: string,
+  incomingRecords: LocalDataRecord[],
+): Promise<LocalDataStore> {
   const store = await readLocalStore(pathname);
   const merged = [...store.records];
 

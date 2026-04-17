@@ -56,8 +56,12 @@ export function getClerkRuntimeConfig(): ClerkRuntimeConfig {
     appOrigin,
     domain,
     isSatellite: isSatellite ? true : undefined,
-    satelliteAutoSync: isSatellite ? env.CLERK_SATELLITE_AUTO_SYNC ?? true : undefined,
-    authorizedParties: allowlistedOrigins.length > 0 ? allowlistedOrigins : undefined,
-    allowedRedirectOrigins: allowlistedOrigins.length > 0 ? allowlistedOrigins : undefined,
+    satelliteAutoSync: isSatellite
+      ? (env.CLERK_SATELLITE_AUTO_SYNC ?? true)
+      : undefined,
+    authorizedParties:
+      allowlistedOrigins.length > 0 ? allowlistedOrigins : undefined,
+    allowedRedirectOrigins:
+      allowlistedOrigins.length > 0 ? allowlistedOrigins : undefined,
   };
 }

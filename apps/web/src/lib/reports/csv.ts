@@ -1,4 +1,5 @@
 import type { ActionListItem, ActionStatus } from "@/lib/actions/types";
+import { buildDeliverableFilename } from "./deliverable-name";
 
 export type ActionCsvRow = Pick<
   ActionListItem,
@@ -6,6 +7,7 @@ export type ActionCsvRow = Pick<
   | "created_at"
   | "action_date"
   | "actor_name"
+  | "association_name"
   | "location_label"
   | "latitude"
   | "longitude"
@@ -33,7 +35,19 @@ export type ReportQuery = {
   status: ActionStatus | null;
   limit: number;
   days: number;
+  association: string | null;
 };
+
+function parseAssociationParam(raw: string | null): string | null {
+  if (!raw) {
+    return null;
+  }
+  const value = raw.trim();
+  if (!value) {
+    return null;
+  }
+  return value.slice(0, 120);
+}
 
 export function parseStatusParam(raw: string | null): ActionStatus | null {
   if (raw === "pending" || raw === "approved" || raw === "rejected") {
@@ -42,7 +56,12 @@ export function parseStatusParam(raw: string | null): ActionStatus | null {
   return null;
 }
 
-export function parsePositiveInteger(raw: string | null, min: number, max: number, fallback: number): number {
+export function parsePositiveInteger(
+  raw: string | null,
+  min: number,
+  max: number,
+  fallback: number,
+): number {
   if (raw === null || raw.trim() === "") {
     return fallback;
   }
@@ -58,6 +77,7 @@ export function resolveReportQuery(url: URL): ReportQuery {
     status: parseStatusParam(url.searchParams.get("status")),
     limit: parsePositiveInteger(url.searchParams.get("limit"), 1, 1000, 250),
     days: parsePositiveInteger(url.searchParams.get("days"), 1, 3650, 90),
+    association: parseAssociationParam(url.searchParams.get("association")),
   };
 }
 
@@ -73,7 +93,7 @@ function escapeCsvCell(value: string | number | null): string {
   if (!/[",\r\n]/.test(raw)) {
     return raw;
   }
-  return `"${raw.replace(/"/g, "\"\"")}"`;
+  return `"${raw.replace(/"/g, '""')}"`;
 }
 
 export function buildActionsCsv(rows: ActionCsvRowWithDrawing[]): string {
@@ -82,6 +102,7 @@ export function buildActionsCsv(rows: ActionCsvRowWithDrawing[]): string {
     "created_at",
     "action_date",
     "actor_name",
+    "association_name",
     "location_label",
     "latitude",
     "longitude",
@@ -111,6 +132,7 @@ export function buildActionsCsv(rows: ActionCsvRowWithDrawing[]): string {
         row.created_at,
         row.action_date,
         row.actor_name,
+        row.association_name ?? null,
         row.location_label,
         row.latitude,
         row.longitude,
@@ -139,8 +161,9 @@ export function buildActionsCsv(rows: ActionCsvRowWithDrawing[]): string {
 }
 
 export function buildActionsCsvFilename(now: Date = new Date()): string {
-  const y = now.getUTCFullYear();
-  const m = String(now.getUTCMonth() + 1).padStart(2, "0");
-  const d = String(now.getUTCDate()).padStart(2, "0");
-  return `cleanmymap_actions_${y}-${m}-${d}.csv`;
+  return buildDeliverableFilename({
+    rubrique: "export_actions",
+    extension: "csv",
+    date: now,
+  });
 }

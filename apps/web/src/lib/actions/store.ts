@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionStatus, CreateActionPayload } from "@/lib/actions/types";
 import { DRAWING_NOTE_PREFIX } from "@/lib/actions/drawing";
+import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
+import { findMatchingGeometry } from "@/lib/geo/geometry-reference";
 
 export type StoredAction = {
   id: string;
@@ -19,7 +21,13 @@ export type StoredAction = {
 };
 
 function buildPersistedNotes(payload: CreateActionPayload): string | null {
-  const base = payload.notes?.trim() ?? "";
+  const baseWithMetadata = appendActionMetadataToNotes(payload.notes, {
+    submissionMode: payload.submissionMode,
+    wasteBreakdown: payload.wasteBreakdown,
+    associationName: payload.associationName,
+    placeType: payload.placeType,
+  });
+  const base = baseWithMetadata?.trim() ?? "";
   if (!payload.manualDrawing) {
     return base || null;
   }
@@ -28,7 +36,9 @@ function buildPersistedNotes(payload: CreateActionPayload): string | null {
     kind: payload.manualDrawing.kind,
     coordinates: payload.manualDrawing.coordinates,
   });
-  return base ? `${base}\n${DRAWING_NOTE_PREFIX}${drawingJson}` : `${DRAWING_NOTE_PREFIX}${drawingJson}`;
+  return base
+    ? `${base}\n${DRAWING_NOTE_PREFIX}${drawingJson}`
+    : `${DRAWING_NOTE_PREFIX}${drawingJson}`;
 }
 
 export async function fetchActions(
@@ -71,11 +81,47 @@ export async function fetchActions(
   }));
 }
 
+export async function fetchRecentActionsByUser(
+  supabase: SupabaseClient,
+  params: { userId: string; limit: number },
+): Promise<StoredAction[]> {
+  const result = await supabase
+    .from("actions")
+    .select(
+      "id, created_at, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
+    )
+    .eq("created_by_clerk_id", params.userId)
+    .order("action_date", { ascending: false })
+    .limit(params.limit);
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  return ((result.data as StoredAction[] | null) ?? []).map((row) => ({
+    ...row,
+    waste_kg: Number(row.waste_kg ?? 0),
+    cigarette_butts: Number(row.cigarette_butts ?? 0),
+    volunteers_count: Number(row.volunteers_count ?? 0),
+    duration_minutes: Number(row.duration_minutes ?? 0),
+  }));
+}
+
 export async function createAction(
   supabase: SupabaseClient,
   params: { userId: string; payload: CreateActionPayload },
 ): Promise<{ id: string }> {
   const payload = params.payload;
+
+  // Injection automatique de polygone si aucun dessin n'est fourni mais que le lieu est reconnu
+  let finalDrawing = payload.manualDrawing;
+  if (!finalDrawing || finalDrawing.coordinates.length === 0) {
+    const autoDrawing = findMatchingGeometry(payload.locationLabel);
+    if (autoDrawing) {
+      finalDrawing = autoDrawing;
+    }
+  }
+
   const inserted = await supabase
     .from("actions")
     .insert({
@@ -89,7 +135,7 @@ export async function createAction(
       cigarette_butts: payload.cigaretteButts,
       volunteers_count: payload.volunteersCount,
       duration_minutes: payload.durationMinutes,
-      notes: buildPersistedNotes(payload),
+      notes: buildPersistedNotes({ ...payload, manualDrawing: finalDrawing }),
       status: "pending",
     })
     .select("id")

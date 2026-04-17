@@ -1,4 +1,4 @@
-﻿import { Resend } from "resend";
+import { Resend } from "resend";
 import { env } from "@/lib/env";
 
 export function getResendClient() {

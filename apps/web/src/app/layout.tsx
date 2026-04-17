@@ -1,4 +1,10 @@
-import { ClerkProvider, Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import {
+  ClerkProvider,
+  Show,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
@@ -29,8 +35,8 @@ export default async function RootLayout({
         <ClerkProvider
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
-          signInFallbackRedirectUrl="/dashboard"
-          signUpFallbackRedirectUrl="/dashboard"
+          signInFallbackRedirectUrl="/profil"
+          signUpFallbackRedirectUrl="/profil"
           afterSignOutUrl="/"
           touchSession
           dynamic
@@ -43,7 +49,9 @@ export default async function RootLayout({
             <SitePreferencesProvider>
               <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
                 <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Navigation compte</p>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Navigation compte
+                  </p>
                   <div className="flex items-center gap-2">
                     <SitePreferencesControls />
                     <Show when="signed-out">
@@ -51,7 +59,9 @@ export default async function RootLayout({
                       <SignUpButton />
                     </Show>
                     <Show when="signed-in">
-                      {identity ? <AccountIdentityChip identity={identity} /> : null}
+                      {identity ? (
+                        <AccountIdentityChip identity={identity} />
+                      ) : null}
                       <UserButton />
                     </Show>
                   </div>

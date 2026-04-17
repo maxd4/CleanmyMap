@@ -1,0 +1,87 @@
+﻿# Fiche projet — CleanMyMap (version courte)
+
+**Date :** 9 avril 2026  
+**Version :** 1.2
+
+---
+
+## 1. Résumé exécutif
+
+CleanMyMap est une plateforme web qui transforme les actions bénévoles de dépollution en informations utiles pour le terrain, les associations et les décideurs publics.
+
+---
+
+## 2. Problème traité
+
+Les résultats des actions citoyennes sont souvent dispersés et difficiles à exploiter. Cela freine la priorisation des zones, la mesure d’impact et la mobilisation des partenaires.
+
+---
+
+## 3. Réponse apportée
+
+- **Action terrain :** savoir où, quand et comment intervenir ;
+- **Pilotage associatif :** mieux planifier les opérations ;
+- **Culture citoyenne :** diffuser des contenus pédagogiques ;
+- **Plaidoyer institutionnel :** objectiver l’impact ;
+- **Valorisation des acteurs :** rendre visibles les partenaires engagés.
+
+---
+
+## 4. État réel du projet (09/04/2026)
+
+- Runtime principal : web app Next.js (`apps/web`) ;
+- nettoyage legacy terminé (`app.py`, `src/ui/*`, `src/services/*` supprimés) ;
+- contrôles techniques validés (lint, tests, build, maintenance checks).
+
+Plan d’exécution :
+- E03 à E09 : réalisés ;
+- E10 à E20 : en attente (pause).
+
+Décision de gouvernance actée :
+- niveau `data-quality` retenu : **complet** (scoring, anomalies, règles avancées, workflows de correction, historique, priorisation).
+
+---
+
+## 5. Livrables disponibles
+
+- application web (dashboard, reports, admin, map, history) ;
+- cartographie interactive ;
+- API métier ;
+- exports CSV/JSON ;
+- documentation et scripts de maintenance.
+
+---
+
+## 6. Budget synthétique
+
+- Dépenses engagées : 40 € (Codex, 2 mois) + 10 €/an (domaine) ;
+- en montée en charge : passage progressif à des offres payantes sur certains services techniques.
+
+---
+
+## 7. Calendrier prévisionnel
+
+| Période | Priorité | Livrable attendu |
+|---|---|---|
+| Avril 2026 | Stabilisation post-E09 | Base propre et documentation alignée |
+| Mai–Juin 2026 | Lots E10 à E17 | Fonctions pilotage/terrain/admin renforcées |
+| Juillet 2026 | Lots E18 à E20 | Runbooks, matrice de tests, traçabilité |
+| T4 2026 | Diffusion élargie | Dossier partenarial et institutionnel consolidé |
+
+---
+
+## 8. Risques clés
+
+- qualité de données ;
+- complexité/délai lié au module data-quality complet ;
+- dépendance à des services tiers ;
+- charge de travail élevée ;
+- financement en cas de forte croissance.
+
+Réponse : contrôles automatisés, modération, priorisation stricte, pilotage budgétaire progressif.
+
+---
+
+## 9. Conclusion
+
+CleanMyMap est techniquement solide et orienté usage réel. Le projet est prêt pour une phase de consolidation fonctionnelle et de diffusion grand public.

@@ -1,0 +1,27 @@
+# CleanMyMap - AI Rules
+
+You are an AI assistant helping a developer build CleanMyMap. Follow these strict rules:
+
+## Technology Stack
+- **Framework**: Next.js 15 (App Router)
+- **Styling**: Tailwind CSS 4
+- **Auth**: Clerk (`@clerk/nextjs`)
+- **Database/Backend**: Supabase (PostgreSQL)
+- **Maps**: `react-leaflet` (Leaflet) MUST BE DYNAMICALLY LOADED (`ssr: false`).
+- **Icons**: `lucide-react`
+
+## Project Structure
+- `apps/web/src/app` : Application routes.
+- `apps/web/src/components/ui` : Reusable components.
+- `apps/web/src/components/sections/rubriques` : Core feature modules. When adding a new module here, YOU MUST register it in `apps/web/src/lib/sections-registry.ts`.
+- `apps/web/src/lib/domain-language.ts` : The source of truth for Role/Parcours logic.
+- `scripts/` & `legacy/` : Python scripts for data ingestion and historical code.
+
+## Critical Guidelines
+1. **Never use raw SQL queries**. Use Supabase clients.
+2. Do not mutate `@/lib/domain-language.ts` or `@/lib/profiles.ts` without extreme caution. The distinction between `Role`, `SessionRole`, and `Parcours` is critical.
+3. Keep Client Components (`"use client"`) as thin as possible. Fetch data via SWR or Server Actions.
+4. **Leaflet integration**: Node.js crashes if `window` is accessed during SSR. All map components must use `next/dynamic` with `{ ssr: false }`.
+5. Write in French for all public facing text (`label`, `title`, `description`) unless localized explicitly via `{ fr: "...", en: "..." }`.
+
+When generating or editing code, ALWAYS preserve the semantic meaning and avoid deleting necessary type definitions.

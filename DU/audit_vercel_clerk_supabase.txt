@@ -1,0 +1,40 @@
+Vu ton site Vercel + Supabase + Clerk + plusieurs rubriques, fais un vrai pack d’audit reproductible.
+
+Structure minimale
+audit_artifacts/
+  vercel_build_logs.txt
+  vercel_runtime_logs.txt
+  supabase_schema.sql
+  rls_notes.md
+  auth_flow.md
+  env_template.txt
+
+Contenu
+vercel_build_logs.txt : dernier build cassé ou dernier build suspect
+vercel_runtime_logs.txt : seulement les erreurs d’une rubrique / route
+supabase_schema.sql : dump complet du schéma
+rls_notes.md : tables client-side + but de chaque policy
+auth_flow.md : login, signup, middleware, redirects, protected pages
+env_template.txt : variables présentes, valeurs masquées
+
+Récupère toutes les données dont tu as besoin pour completer ces fichiers
+
+
+
+
+
+Lis audit_artifacts/.
+Audit full-stack du projet en tenant compte de:
+- Vercel build/runtime
+- Supabase schema + RLS
+- Clerk auth flow
+- cohérence des variables d'environnement
+
+Liste :
+1. bugs critiques
+2. failles de sécurité probables
+3. incohérences d'intégration
+4. correctifs prioritaires
+
+Resout tout cela
+

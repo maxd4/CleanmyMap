@@ -1,0 +1,17 @@
+﻿export const PROTECTED_ROUTE_PATTERNS = [
+  "/admin(.*)",
+  "/dashboard(.*)",
+  "/actions(.*)",
+  "/reports(.*)",
+  "/sections(.*)",
+  "/api/admin(.*)",
+  "/api/actions(.*)",
+  "/api/community(.*)",
+  "/api/pilotage(.*)",
+  "/api/recycling(.*)",
+  "/api/reports(.*)",
+  "/api/route(.*)",
+  "/api/spots(.*)",
+  "/api/users(.*)",
+  "/api/email/test(.*)",
+] as const;

@@ -4,6 +4,10 @@ import sys
 import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
+LEGACY_ROOT = PROJECT_ROOT / "legacy"
+if str(LEGACY_ROOT) not in sys.path:
+    sys.path.insert(0, str(LEGACY_ROOT))
+
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 

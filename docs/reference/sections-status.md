@@ -1,8 +1,8 @@
 # Sections Routing Status
 
-Last update: 2026-04-08
+Last update: 2026-04-09
 
-## Finalized Sections (Active + Implemented)
+## Finalized Sections (active + implemented)
 
 - `community`
 - `gamification`
@@ -18,19 +18,19 @@ Last update: 2026-04-08
 - `sandbox`
 - `elus`
 
-## Pending Sections (Active Route + Fallback Screen)
+## Pending Sections (active route + fallback screen)
 
-- None at this time.
+- None.
+
+## Source of truth
+
+- Registry: `apps/web/src/lib/sections-registry.ts`
+- Navigation model: `apps/web/src/lib/navigation.ts`
+- Renderer entrypoint: `apps/web/src/components/sections/section-renderer.tsx`
+- Rubrique submodules: `apps/web/src/components/sections/rubriques/*`
 
 ## Rule
 
-- Every visible section route must be declared in `apps/web/src/lib/sections-registry.ts`.
-- If a section is not finalized, mark `implementation: "pending"` and optionally `pendingNote`.
-- The renderer shows a dedicated "section in progress" fallback for pending sections.
-
-## Navigation Source Of Truth
-
-- Navigation labels and grouping are generated from the same registry via:
-  - `apps/web/src/lib/sections-registry.ts`
-  - `apps/web/src/lib/navigation.ts`
-- Locale-aware navigation summary is handled in `apps/web/src/lib/navigation.ts` (`fr` / `en`).
+- Every visible section route must be declared in `sections-registry.ts`.
+- If a section is not finalized, set `implementation: "pending"` and optional `pendingNote`.
+- Pending sections are rendered through the dedicated fallback UI.

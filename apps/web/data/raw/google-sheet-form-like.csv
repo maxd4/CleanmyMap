@@ -1,0 +1,22 @@
+actor_name,association_name,enterprise_name,action_date,location_label,latitude,longitude,waste_kg,cigarette_butts,volunteers_count,duration_minutes,notes,submission_mode,status
+,Action spontanee,,2025-07-03,20 quai Saint Bernard,48.8470316,2.3606848,10,100,1,60,Type: Quai/Pont/Port | City: Paris || Original association: aa,complete,approved
+,Action spontanee,,2025-12-07,"48°50'48.3""N 2°20'06.4""E",,,10,500,50,60,Type: Bois/Parc/Jardin/Square/Sentier | City: Paris || Original association: bb,complete,approved
+,Action spontanee,,2023-06-02,Esplanade Gaston Monnerville,48.8433952,2.3369741,20,200,20,40,Type: Bois/Parc/Jardin/Square/Sentier | City: Paris || Original association: cc,complete,approved
+,Action spontanee,,2026-02-21,pont d'austerlitz,48.8449835,2.3661201,100,2000,20,50,Type: Quai/Pont/Port | City: Paris || Original association: dd,complete,approved
+,Action spontanee,,2026-02-22,jardin des plantes,48.844036,2.3597321,5,100,50,120,Type: Bois/Parc/Jardin/Square/Sentier | City: Paris || Original association: ff,complete,approved
+,Action spontanee,,2026-02-23,Place de la Bataille de Stalingrad,48.8837604,2.369661,5,100,50,120,Type: N° Boulevard/Avenue/Place | City: Paris || Original association: ff,complete,approved
+,Action spontanee,,2024-02-18,"Bois de Vincennes, Paris",48.831548,2.4341479,200,5000,10,120,Type: Bois/Parc/Jardin/Square/Sentier | City: Paris || Original association: Test Association,complete,approved
+,Action spontanee,,2025-08-18,"Rue Maurice Utrillo, Paris",48.8862433,2.3444881,50,800,3,45,Type: N° Boulevard/Avenue/Place | City: Paris || Original association: Test Association,complete,approved
+,Action spontanee,,2026-02-08,"Sortie Métro Barbès-Rochechouart, Paris",,,100,12000,5,20,Type: N° Boulevard/Avenue/Place | City: Paris || Original association: Test Association,complete,approved
+,Action spontanee,,2023-01-01,"Rue de Rivoli, Paris",48.8576588,2.3510189,0,0,2,60,Type: N° Boulevard/Avenue/Place | City: Paris || Original association: Test Association,complete,approved
+,Action spontanee,,2024-06-15,"Tour Eiffel, Paris",48.8582599,2.2945006,75,3500,8,90,Type: Monument | City: Paris || Original association: Test Association,complete,approved
+,Clean Walk Paris 10,,2025-09-21,"Quai de Valmy, Paris 10e",48.8738014,2.3630725,180,4500,25,150,Type: Quai/Pont/Port | City: Paris,complete,approved
+,Green Friday,,2025-11-29,"Parc des Buttes-Chaumont, Paris 19e",48.879728,2.3882854,210,3200,40,180,Type: Bois/Parc/Jardin/Square/Sentier | City: Paris,complete,approved
+,Collectif Nettoyons Paris,,2026-01-17,"Place de la République, Paris 3e",48.8677121,2.3627632,290,6800,55,200,Type: N° Boulevard/Avenue/Place | City: Paris,complete,approved
+,Action spontanee,,2025-10-12,"Lac Daumesnil, Bois de Vincennes, Paris 12e",,,310,5200,35,220,Type: Bois/Parc/Jardin/Square/Sentier | City: Paris || Original association: Paris Zéro Déchet,complete,approved
+,Action spontanee,,2025-11-05,"Parc Montsouris, Paris 14e",48.8227828,2.3348768,95,1800,18,120,Type: Bois/Parc/Jardin/Square/Sentier | City: Paris || Original association: Étudiants pour la Planète,complete,approved
+,Green Wednesday,,2026-02-28,"Parc de la Villette, Paris 19e",48.8886492,2.3926738,195,4100,30,170,Type: Quai/Pont/Port | City: Paris,complete,approved
+,Paris Clean Walk,,2025-08-15,"Quai de la Tournelle, Paris 5e",48.849492,2.3564719,170,3800,22,140,Type: Quai/Pont/Port | City: Paris,complete,approved
+,Green Family,,2025-09-07,"Parc André Citroën, Paris 15e",48.8400351,2.278159,140,2700,28,130,Type: Bois/Parc/Jardin/Square/Sentier | City: Paris,complete,approved
+,Action spontanee,,2025-12-14,"Porte de Clignancourt, Paris 18e",48.8973976,2.3448521,420,5900,45,250,Type: N° Boulevard/Avenue/Place | City: Paris || Original association: Les Éco-puces,complete,approved
+,Action spontanee,,2025-07-22,"Jardin du Luxembourg, Paris 6e",48.8486408,2.3351989,85,2100,15,110,Type: Bois/Parc/Jardin/Square/Sentier | City: Paris || Original association: Sénat Propre,complete,approved
