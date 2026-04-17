@@ -128,9 +128,8 @@ export async function POST(request: Request) {
   }
 
   const isOrganizer = eventResult.data.organizer_clerk_id === userId;
-  const isAdmin = adminAccess.ok;
-  if (!isOrganizer && !isAdmin) {
-    return adminAccessErrorJsonResponse(adminAccess as any);
+  if (!isOrganizer && !adminAccess.ok) {
+    return adminAccessErrorJsonResponse(adminAccess);
   }
 
   const parsedDescription = parseCommunityEventDescription(

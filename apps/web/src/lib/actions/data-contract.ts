@@ -101,6 +101,7 @@ export type ActionContractCreatePayload = {
   metadata: {
     actorName?: string;
     associationName?: string;
+    placeType?: string;
     wasteKg: number;
     cigaretteButts?: number;
     volunteersCount?: number;
@@ -316,9 +317,19 @@ export function toContractCreatePayload(
       latitude: payload.latitude,
       longitude: payload.longitude,
     },
+    geometry: payload.manualDrawing
+      ? {
+          kind: payload.manualDrawing.kind,
+          coordinates: payload.manualDrawing.coordinates,
+        }
+      : undefined,
+    dates: {
+      observedAt: payload.actionDate,
+    },
     metadata: {
       actorName: payload.actorName,
       associationName: payload.associationName,
+      placeType: payload.placeType,
       wasteKg: payload.wasteKg,
       cigaretteButts: payload.cigaretteButts,
       volunteersCount: payload.volunteersCount,
@@ -326,13 +337,6 @@ export function toContractCreatePayload(
       notes: payload.notes,
       submissionMode: payload.submissionMode,
       wasteBreakdown: payload.wasteBreakdown,
-      placeType: payload.placeType,
-      manualDrawing: payload.manualDrawing
-        ? {
-            kind: payload.manualDrawing.kind,
-            coordinates: payload.manualDrawing.coordinates,
-          }
-        : undefined,
     },
   };
 }

@@ -155,7 +155,7 @@ function DrawingController({
       map.removeLayer(layerGroup);
       layerGroupRef.current = null;
     };
-  }, [map, onChange]);
+  }, [map, onChange, drawColor]);
 
   useEffect(() => {
     const layerGroup = layerGroupRef.current;

@@ -56,9 +56,8 @@ export function ActionsMapFeed({ types = "all" }: ActionsMapFeedProps) {
     "all",
   );
   const [qualityMin, setQualityMin] = useState<number>(0);
-  const [visibleCategories, setVisibleCategories] = useState<
-    Record<MarkerCategory, boolean>
-  >(DEFAULT_VISIBLE_CATEGORIES);
+  const visibleCategories: Record<MarkerCategory, boolean> =
+    DEFAULT_VISIBLE_CATEGORIES;
   const serializedTypes = useMemo(
     () => (types === "all" ? "all" : [...new Set(types)].sort().join(",")),
     [types],
@@ -114,50 +113,6 @@ export function ActionsMapFeed({ types = "all" }: ActionsMapFeedProps) {
   const failedSources = data?.sourceHealth?.failedSources ?? [];
   const partialSourcesLabel =
     failedSources.length > 0 ? failedSources.join(", ") : "inconnues";
-
-  function toggleCategory(category: MarkerCategory): void {
-    setVisibleCategories((previous) => ({
-      ...previous,
-      [category]: !previous[category],
-    }));
-  }
-
-  const categoryButtons: Array<{
-    key: MarkerCategory;
-    label: string;
-    className: string;
-  }> = [
-    {
-      key: "yellow",
-      label: "Actions orange/rouge",
-      className: "border-yellow-300 bg-yellow-50 text-yellow-900",
-    },
-    {
-      key: "violet",
-      label: "Actions violettes (critiques)",
-      className: "border-violet-300 bg-violet-50 text-violet-900",
-    },
-    {
-      key: "green",
-      label: "Actions vertes",
-      className: "border-emerald-300 bg-emerald-50 text-emerald-900",
-    },
-    {
-      key: "blue",
-      label: "Actions bleues",
-      className: "border-sky-300 bg-sky-50 text-sky-900",
-    },
-    {
-      key: "ashtray",
-      label: "Marqueur cendrier",
-      className: "border-amber-300 bg-amber-50 text-amber-900",
-    },
-    {
-      key: "bin",
-      label: "Marqueur poubelle",
-      className: "border-cyan-300 bg-cyan-50 text-cyan-900",
-    },
-  ];
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

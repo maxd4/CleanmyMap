@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import {
   CircleMarker,
+  LayerGroup,
   LayersControl,
   MapContainer,
   Polygon,
@@ -10,7 +11,6 @@ import {
   Tooltip,
   TileLayer,
 } from "react-leaflet";
-import L from "leaflet";
 import type { LatLngExpression, LatLngTuple } from "leaflet";
 import type { ActionMapItem, ActionDrawing } from "@/lib/actions/types";
 import {
@@ -98,7 +98,7 @@ export function ActionsMapCanvas({ items }: { items: ActionMapItem[] }) {
           </LayersControl.BaseLayer>
 
           <LayersControl.Overlay checked name="Signalements">
-            <L.LayerGroup>
+            <LayerGroup>
               {items.map((item) => {
                 const coords = mapItemCoordinates(item);
                 if (coords.latitude === null || coords.longitude === null) return null;
@@ -180,7 +180,7 @@ export function ActionsMapCanvas({ items }: { items: ActionMapItem[] }) {
                   </Polyline>
                 );
               })}
-            </L.LayerGroup>
+            </LayerGroup>
           </LayersControl.Overlay>
         </LayersControl>
       </MapContainer>

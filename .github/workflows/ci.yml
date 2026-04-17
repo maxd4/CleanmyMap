@@ -5,6 +5,33 @@ on:
   pull_request:
 
 jobs:
+  web-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: UTF-8 check for French-sensitive files
+        run: npm run check:utf8-fr
+
+      - name: Web lint
+        run: npm run lint
+
+      - name: Web tests
+        run: npm run test
+
   quality:
     runs-on: ubuntu-latest
     steps:

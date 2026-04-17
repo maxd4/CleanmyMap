@@ -47,6 +47,7 @@ const associationNameSchema = z
 const createActionLegacySchema = z.object({
   actorName: z.string().min(1).max(120).optional(),
   associationName: associationNameSchema,
+  placeType: z.string().max(80).optional(),
   actionDate: z.string().date(),
   locationLabel: z.string().min(2).max(200),
   latitude: z.number().min(-90).max(90).optional(),
@@ -81,6 +82,7 @@ const createActionContractSchema = z.object({
   metadata: z.object({
     actorName: z.string().min(1).max(120).optional(),
     associationName: associationNameSchema,
+    placeType: z.string().max(80).optional(),
     wasteKg: z.number().min(0).max(100000),
     cigaretteButts: z.number().int().min(0).max(5000000).optional(),
     volunteersCount: z.number().int().min(1).max(500).optional(),

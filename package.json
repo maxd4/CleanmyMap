@@ -10,6 +10,8 @@
     "dev": "npm run dev -w apps/web",
     "build": "npm run build -w apps/web",
     "lint": "npm run lint -w apps/web",
+    "typecheck": "npm run typecheck -w apps/web",
+    "check:utf8-fr": "node scripts/check-utf8-fr-files.mjs",
     "test": "npm run test -w apps/web",
     "test:regression-gates": "npm run test:regression-gates -w apps/web",
     "checks": "powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1",
