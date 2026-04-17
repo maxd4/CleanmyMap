@@ -1,4 +1,5 @@
 // CleanMyMap - Figma template generator
+// Source of truth: keep only this implementation file for template generation.
 // Usage: run inside a Figma plugin environment (Code.ts equivalent).
 
 async function loadFonts() {
