@@ -15,7 +15,17 @@ htmlcov/
 playwright-report/
 test-results/
 node_modules/
+# Next.js build caches (workspace + racine monorepo)
+.next/
+apps/.next/
 apps/web/.next/
+# TypeScript incremental caches
+*.tsbuildinfo
+# Common tool caches
+.cache/
+.turbo/
+.eslintcache
+apps/web/package-lock.json
 cache/
 tmp/
 output/
@@ -41,6 +51,7 @@ runtime/
 *.p12
 *.crt
 *.cer
+*.pdf
 *secrets*
 *credentials*
 CleanmyMap-sync/

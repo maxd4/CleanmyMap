@@ -1,4 +1,6 @@
 ﻿BOUCLE A REPETER AVEC MODELE FORT (claude / gemini 3.1)
+fait un commit puis push GitHub et met à jour le git.
+
 Refactorise le repo sans changer le comportement pour qu'il soit plus facilement utilisable par l'agent IA qui développe le projet
 
 Fait un audit des fichiers les plus lourd du repo, explique pourquoi et comment optimiser cela pour améliorer la qualité et l'efficacité du repo avec un plan d'action précis, propre et actionnable.
@@ -7,14 +9,9 @@ Exécute cela
 
 De même fait cet audit pour les fichiers monolithique avec une stratégie de divisions propre en fichiers modulaires.
 
-Exécute la modularisation.
-
-
-
 Trouve tous les bugs et régressions puis structure ton audit sous forme d'un plan actionnable
 
 Exécute ce plan
-
 
 Fais un audit global du repo pour récupérer : les problèmes critiques, les risques de régression, les incohérences structurelles, les correctifs recommandés. Structure en un plan actionnable par toi
 
@@ -26,24 +23,51 @@ execute le plan
 
 
 
+dans le fichier texte DU/partenaires.txt tu vas trouver de nouvelles idées pour compléter la rubrique "partenaires" du site web. Implemente cela de la même façon que les autres déjà présent.
+Ensuite dans le fichier texte documentation/audit_rubrique il y a une partie "- contenu affiché :" à compléter avec la liste de tous les nom d'associations, d'entreprises, de commerçants disponible dans la rubrique. Classe les par type d'engagement et type de structure pour que de soit facile à lire.
+
+
+envoyer le fichier à charlotte. 
 
 
 
+git checkout codex/local-backup-20260403-124632
+git merge main
+
+push les branches PR3 et PR4 puis supprime les pour ne travailler que sur main et fais des push et commit que si je te demande. On travaille surtout en local. 
+
+
+installe CLI gh
+
+git checkout codex/local-backup-20260403-124632
+git merge main
+
+execute PR5: reports-web-document.tsx + model/data hooks + composants + tests analytics.
+
+finis d'executer le plan monolith-split-plan.md, en plusieurs fois si besoin
+
+Trouve tous les bugs et régressions puis structure ton audit sous forme d'un plan actionnable
+
+Exécute ce plan
+
+Fais un audit global du repo pour récupérer : les problèmes critiques, les risques de régression, les incohérences structurelles, les correctifs recommandés. Structure en un plan actionnable par toi
+
+execute le plan 
+
+quels sont les autres plan d'implémentation à actionner, disponible dans le repo ? fais une liste et donne un ordre de priorité.
+
+met a jour DU/latest-session.md
 
 transforme la partie 2 du document texte DU/economie_token en un ou plusieurs prompt actionnable par toi
 
-execute la première partie du fichier 
-
-etc
-
+execute la première partie du fichier
+execute la deuxième partie
+execute la troisème partie
 
 trouve une solution a cette erreur : Le build direct depuis Google Sheet a renvoyé “Sheet appears empty” dans cet environnement;
 
-
-
-
-
 Privilégie les visuels de type schéma, illustration, diagramme ou représentation structurée plutôt que les explications purement textuelles dès que cela permet une compréhension plus rapide, plus intuitive et plus immédiate pour l’utilisateur. Fait un plan d'implementation structuré executable step by step
+
 
 
 
@@ -67,14 +91,6 @@ Retour attendu :
 - points de vigilance restants
 
 
-
-
-
-dans le fichier texte DU/partenaires.txt tu vas trouver de nouvelles idées pour compléter la rubrique "partenaires" du site web. Implemente cela de la même façon que les autres déjà présent.
-Ensuite dans le fichier texte documentation/audit_rubrique il y a une partie "- contenu affiché :" à compléter avec la liste de tous les nom d'associations, d'entreprises, de commerçants disponible dans la rubrique. Classe les par type d'engagement et type de structure pour que de soit plus facile à lire.
-
-
-envoyer le fichier à charlotte. 
 
 
 

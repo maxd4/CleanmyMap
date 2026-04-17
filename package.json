@@ -12,6 +12,8 @@
     "lint": "npm run lint -w apps/web",
     "test": "npm run test -w apps/web",
     "test:regression-gates": "npm run test:regression-gates -w apps/web",
+    "lockfile:policy": "node scripts/check-lockfile-policy.mjs",
+    "quality:top-heavy": "node scripts/check-top-heavy-files.mjs --enforce",
     "checks": "powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1",
     "maintenance:check": "node -e \"console.log('Legacy Python maintenance is archived. Use: npm run checks')\"",
     "session:bootstrap": "node scripts/session_bootstrap.mjs",
