@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { PROTECTED_ROUTE_PATTERNS } from "@/lib/auth/protected-routes";
 
 describe("proxy protected routes", () => {

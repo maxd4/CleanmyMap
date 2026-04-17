@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { RUBRIQUE_REGISTRY } from "@/lib/sections-registry";
 import {
   getNavigationSpacesForProfile,

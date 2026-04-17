@@ -1,4 +1,4 @@
-﻿Rubrique: cartographie
+Rubrique: cartographie
 Statut: A completer (non traite dans cette passe)
 
 - a quoi sert la rubrique

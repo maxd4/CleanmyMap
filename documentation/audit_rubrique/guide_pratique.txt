@@ -1,4 +1,4 @@
-﻿Rubrique: guide_pratique
+Rubrique: guide_pratique
 Statut: A completer (non traite dans cette passe)
 
 - a quoi sert la rubrique

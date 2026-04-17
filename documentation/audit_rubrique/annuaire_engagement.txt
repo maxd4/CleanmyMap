@@ -1,4 +1,4 @@
-﻿Rubrique: annuaire_engagement
+Rubrique: annuaire_engagement
 Statut: A completer (non traite dans cette passe)
 
 - a quoi sert la rubrique

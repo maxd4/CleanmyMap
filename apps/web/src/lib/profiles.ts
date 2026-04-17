@@ -1,4 +1,4 @@
-﻿import type { Locale } from "@/lib/ui/preferences";
+import type { Locale } from "@/lib/ui/preferences";
 import type { RubriqueSpaceId } from "@/lib/sections-registry";
 import type { Parcours, Role, SessionRole } from "@/lib/domain-language";
 

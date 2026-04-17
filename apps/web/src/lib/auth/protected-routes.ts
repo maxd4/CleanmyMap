@@ -1,4 +1,4 @@
-﻿export const PROTECTED_ROUTE_PATTERNS = [
+export const PROTECTED_ROUTE_PATTERNS = [
   "/admin(.*)",
   "/dashboard(.*)",
   "/actions(.*)",

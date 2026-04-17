@@ -1,4 +1,4 @@
-﻿# Fiche projet — CleanMyMap
+# Fiche projet — CleanMyMap
 
 ## 1. Identité du projet
 

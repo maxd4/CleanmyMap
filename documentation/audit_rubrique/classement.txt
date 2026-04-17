@@ -1,4 +1,4 @@
-﻿Rubrique: classement
+Rubrique: classement
 Statut: A completer (non traite dans cette passe)
 
 - a quoi sert la rubrique

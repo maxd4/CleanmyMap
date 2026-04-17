@@ -1,4 +1,4 @@
-﻿# Fiche projet — CleanMyMap (version courte)
+# Fiche projet — CleanMyMap (version courte)
 
 **Date :** 9 avril 2026  
 **Version :** 1.2
