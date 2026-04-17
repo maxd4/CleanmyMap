@@ -675,7 +675,7 @@ export function ActionDeclarationForm({
               >
                 <option value="propre">Propre (Sec, facile à recycler)</option>
                 <option value="humide">Humide / Avec impuretés (Terre, sable)</option>
-                <option value="mouille">Mouillé (Saturé d'eau, après pluie)</option>
+                <option value="mouille">Mouillé (Saturé d&apos;eau, après pluie)</option>
               </select>
             </label>
           </div>

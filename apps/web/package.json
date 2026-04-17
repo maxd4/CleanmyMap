@@ -7,6 +7,7 @@
     "build": "node scripts/ensure-deterministic-routes-manifest.mjs --prepare && next build && node scripts/ensure-deterministic-routes-manifest.mjs --finalize",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit --pretty false",
     "test": "vitest run",
     "test:regression-gates": "vitest run src/lib/actions/contract-regression-gates.test.ts src/lib/sections-registry.invariants.test.ts src/lib/navigation.registry-consistency.test.ts src/proxy.protected-routes.test.ts",
     "backup:actions": "node scripts/export-actions-backup.mjs",

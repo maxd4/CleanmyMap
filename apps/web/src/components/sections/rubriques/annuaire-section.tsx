@@ -3,7 +3,19 @@
 import { useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
-import { ExternalLink, Megaphone, Clock, MapPin, Building2, HeartHandshake, Trees, Building, Map as MapIcon, Users, Calendar } from "lucide-react";
+import {
+  Megaphone,
+  Clock,
+  MapPin,
+  Building2,
+  HeartHandshake,
+  Trees,
+  Building,
+  Map as MapIcon,
+  Users,
+  Calendar,
+  type LucideIcon,
+} from "lucide-react";
 import type { AnnuaireEntry } from "./annuaire-map-canvas";
 
 const AnnuaireMapCanvas = dynamic(
@@ -13,6 +25,11 @@ const AnnuaireMapCanvas = dynamic(
 
 type EngagementType = "environnemental" | "social" | "humanitaire";
 type EntityKind = "association" | "groupe_parole" | "evenement" | "commerce" | "entreprise";
+type FilterOption<T extends string> = {
+  value: T | "all";
+  label: string;
+  icon: LucideIcon;
+};
 
 // Vraies données géolocalisées d'acteurs de l'engagement à Paris
 const INITIAL_ENTRIES: AnnuaireEntry[] = [
@@ -143,14 +160,14 @@ const MICRO_BESOINS = [
   }
 ];
 
-const ENGAGEMENT_FILTERS: { value: EngagementType | "all"; label: string; icon: any }[] = [
+const ENGAGEMENT_FILTERS: FilterOption<EngagementType>[] = [
   { value: "all", label: "Tous", icon: MapIcon },
   { value: "environnemental", label: "Environnemental", icon: Trees },
   { value: "social", label: "Social", icon: Users },
   { value: "humanitaire", label: "Humanitaire", icon: HeartHandshake },
 ];
 
-const KIND_FILTERS: { value: EntityKind | "all"; label: string; icon: any }[] = [
+const KIND_FILTERS: FilterOption<EntityKind>[] = [
   { value: "all", label: "Tout le réseau", icon: MapIcon },
   { value: "association", label: "Associations", icon: Users },
   { value: "entreprise", label: "Entreprises", icon: Building2 },
@@ -171,7 +188,8 @@ export function AnnuaireSection() {
       return matchType && matchKind;
     });
 
-    const rawRole = (user?.publicMetadata?.role || user?.privateMetadata?.role || "benevole") as string;
+    const publicRole = user?.publicMetadata?.role;
+    const rawRole = typeof publicRole === "string" ? publicRole : "benevole";
     const isDecideur = rawRole === "elu" || rawRole === "admin";
 
     return filtered.sort((a, b) => {
@@ -198,7 +216,7 @@ export function AnnuaireSection() {
             return (
               <button
                 key={f.value}
-                onClick={() => setFilterKind(f.value as any)}
+                onClick={() => setFilterKind(f.value)}
                 className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-600 hover:bg-slate-100'}`}
               >
                 <Icon size={16} /> {f.label}
@@ -213,7 +231,7 @@ export function AnnuaireSection() {
             return (
               <button
                 key={`eng-${f.value}`}
-                onClick={() => setFilterType(f.value as any)}
+                onClick={() => setFilterType(f.value)}
                 className={`flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-slate-50 text-slate-600 border border-transparent hover:bg-slate-100'}`}
               >
                 {f.label}

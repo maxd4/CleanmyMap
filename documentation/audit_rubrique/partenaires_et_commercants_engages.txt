@@ -1,11 +1,10 @@
 ﻿Rubrique: partenaires_et_commercants_engages
-Objectif de lecture: vision actionnable en ~5 min
 
 - a quoi sert la rubrique
-  - Rendre visible l'ecosysteme local qui agit deja.
-  - Faciliter les mises en relation rapides: benevoles, associations, commerces, entreprises.
+  - Rendre visible l'ecosysteme Parisien engagé.
+  - Faciliter les mises en relation rapides: bénévoles, associations, commerces, entreprises, élus.
   - Prouver que le projet est collectif, pas seulement individuel.
-  - Transformer des intentions en collaborations concretes.
+  - Transformer des intentions en collaborations concrètes dans le futur.
 
 - pour qui
   - Citoyens qui veulent agir pres de chez eux.
@@ -20,16 +19,16 @@ Objectif de lecture: vision actionnable en ~5 min
   - Identifier un contact fiable et un mode d'action concret.
   - Choisir un acteur proche, compatible avec son besoin.
   - Comprendre rapidement comment participer (temps, materiel, lieu, frequence).
-  - Se sentir moins seul: effet de preuve sociale locale.
+  - Se sentir moins seul ou s'engager : effet de preuve sociale locale.
 
 - valeur produit
   - Augmente la retention: retour utile meme sans nouvelle action a declarer.
   - Renforce la credibilite de la plateforme (reseau reel visible).
   - Ouvre des opportunites de partenariats, cofinancement et relais terrain.
-  - Alimente les autres rubriques (actions, carte, reporting, elus).
+  - Alimente les autres rubriques et rapports écrits (actions, carte, reporting, elus, gamification).
   - Cree un actif strategique: base acteur qualifiee et exploitable.
 
-- contenu a afficher
+- logique metier de la rubrique
   - Fiches acteurs standardisees:
     - nom, type (association/commercant/entreprise/collectif)
     - zone couverte
@@ -54,7 +53,8 @@ Objectif de lecture: vision actionnable en ~5 min
     - "Devenir commercant engage"
     - "Signaler une mise a jour"
 
-- contenu affiché :
+
+- contenu affiché par type d'engagement et de sutructure :
 
   - Engagement: Environnement & Climat
     - Type de structure: Associations / collectifs
@@ -110,7 +110,7 @@ Objectif de lecture: vision actionnable en ~5 min
       - Le Pavillon des Canaux
       - Cafe Joyeux
 
-- infos essentielles
+- infos essentielles de la rubrique
   - Donnees minimales obligatoires par fiche:
     - identite legale ou associative
     - perimetre geographique
@@ -128,42 +128,9 @@ Objectif de lecture: vision actionnable en ~5 min
     - delai de traitement des demandes
 
 - erreurs a eviter
-  - Annuaire "vitrine" sans preuve d'activite recente.
   - Fiches trop pauvres ou non verifiees.
   - Melanger partenaires actifs et simples contacts non qualifies.
   - Trop de champs, peu de signal utile.
   - Absence de date de mise a jour.
   - CTA flous (ex: "en savoir plus") sans action claire.
   - Aucune distinction entre engagement declare et engagement confirme.
-
-- points UX/UI
-  - Prioriser la recherche et les filtres au-dessus de la ligne de flottaison.
-  - Cartes/fiches compactes, scannables en 3-5 secondes.
-  - Badges visuels simples: type d'acteur, verification, niveau d'engagement.
-  - Afficher toujours:
-    - zone
-    - contribution
-    - disponibilite
-    - contact
-  - Eviter surcharge visuelle; hierarchy nette des informations.
-  - Mobile first: filtres rapides, CTA large, contact direct.
-  - Etats vides utiles: "aucun acteur" -> proposition d'ajout ou extension zone.
-
-- pistes d'amelioration
-  - Score de fiabilite acteur (mise a jour + activite + retours terrain).
-  - Recommandations automatiques selon profil utilisateur et localisation.
-  - Liaison directe avec carte et actions pour voir l'impact concret par acteur.
-  - Parcours d'onboarding specifique "commercant engage" en moins de 3 minutes.
-  - Mecanisme de preuve (photo, recu materiel, co-animation) pour renforcer confiance.
-  - Tableau de bord partenaire: contributions, zones, besoins, prochaines actions.
-
-- questions ouvertes
-  - Quel seuil definit "engage" vs "referent" ?
-  - Quel niveau de verification est requis avant affichage public ?
-  - Quels champs sont publics vs internes (RGPD, securite contact) ?
-  - Comment gerer les acteurs inactifs sans perdre l'historique ?
-  - Quel KPI prioritaire pour piloter la rubrique:
-    - nombre d'acteurs actifs
-    - taux de mise en relation
-    - contributions concretes generees
-  - Quelle frequence de revue qualite des fiches (hebdo, mensuelle) ?
