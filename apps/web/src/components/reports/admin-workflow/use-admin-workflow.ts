@@ -4,21 +4,12 @@ import { useMemo } from "react";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
 import { evaluateActionQuality } from "@/lib/actions/quality";
-import {
-  ModerationClientError,
-  postAdminModeration,
-  type ModerationPayload,
-} from "@/lib/admin/moderation-client";
-import { buildDeliverableFilename } from "@/lib/reports/deliverable-name";
 import { swrRecentViewOptions } from "@/lib/swr-config";
+import { createAdminWorkflowActions } from "./actions";
 import type { AdminWorkflowController } from "./types";
 import { buildExportQuery } from "./helpers";
 import {
-  downloadFromUrl,
   fetchAdminOperationAudit,
-  runImportConfirm,
-  runImportDryRun,
-  triggerBrowserDownload,
 } from "./services";
 import { useAdminWorkflowState } from "./state";
 
@@ -93,194 +84,18 @@ export function useAdminWorkflow(): AdminWorkflowController {
     void preview.mutate();
   }
 
-  async function onDownloadCsv() {
-    state.setCsvState("pending");
-    state.setErrorMessage(null);
-    try {
-      const result = await downloadFromUrl(csvExportUrl);
-      triggerBrowserDownload(
-        result.blob,
-        result.filename ??
-          buildDeliverableFilename({
-            rubrique: "export_actions",
-            extension: "csv",
-            date: new Date(),
-          }),
-      );
-      state.setCsvState("success");
-      state.setLastSuccessMessage(
-        `CSV exporte avec succes (${new Date().toLocaleString("fr-FR")}).`,
-      );
-    } catch (error) {
-      state.setCsvState("error");
-      state.setErrorMessage(
-        error instanceof Error ? error.message : "Erreur inconnue.",
-      );
-    }
-  }
-
-  async function onDownloadJson() {
-    state.setJsonState("pending");
-    state.setErrorMessage(null);
-    try {
-      const result = await downloadFromUrl(jsonExportUrl);
-      triggerBrowserDownload(
-        result.blob,
-        result.filename ??
-          buildDeliverableFilename({
-            rubrique: "export_actions",
-            extension: "json",
-            date: new Date(),
-          }),
-      );
-      state.setJsonState("success");
-      state.setLastSuccessMessage(
-        `JSON exporte avec succes (${new Date().toLocaleString("fr-FR")}).`,
-      );
-    } catch (error) {
-      state.setJsonState("error");
-      state.setErrorMessage(
-        error instanceof Error ? error.message : "Erreur inconnue.",
-      );
-    }
-  }
-
-  async function onImportDryRun() {
-    state.setImportDryRunState("pending");
-    state.setErrorMessage(null);
-    state.setImportPreview(null);
-
-    try {
-      const summary = await runImportDryRun({ importPayload: state.importPayload });
-      state.setImportPreview(summary);
-      state.setImportPreviewSignature(state.importPayload);
-      state.setImportConfirmationText("");
-      state.setImportDryRunState("success");
-      state.setLastSuccessMessage("Dry-run valide. Importable apres confirmation.");
-    } catch (error) {
-      state.setImportDryRunState("error");
-      state.setErrorMessage(
-        error instanceof Error ? error.message : "Erreur inconnue.",
-      );
-    }
-  }
-
-  async function onImportPastActions() {
-    if (!state.canConfirmImport) {
-      state.setImportState("error");
-      state.setErrorMessage(
-        "Lance d'abord un dry-run valide avant de confirmer l'import.",
-      );
-      return;
-    }
-
-    state.setImportState("pending");
-    state.setErrorMessage(null);
-
-    try {
-      const data = await runImportConfirm({
-        importPayload: state.importPayload,
-        dryRunProof: state.importPreview?.dryRunProof?.token,
-        confirmPhrase: state.importConfirmationText,
-      });
-      state.setImportState("success");
-      const op = data.operationId ? ` (op ${data.operationId})` : "";
-      state.setLastSuccessMessage(
-        `Import confirme: ${data.count ?? 0} action(s) ajoutee(s).${op}`,
-      );
-      void preview.mutate();
-    } catch (error) {
-      state.setImportState("error");
-      state.setErrorMessage(
-        error instanceof Error ? error.message : "Erreur inconnue.",
-      );
-    }
-  }
-
-  async function onModerateEntity() {
-    const trimmedId = state.moderationId.trim();
-    if (!trimmedId) {
-      state.setModerationState("error");
-      state.setErrorMessage("Renseigne un identifiant d'entite (UUID/ID).");
-      return;
-    }
-    if (!state.moderationConfirmed) {
-      state.setModerationState("error");
-      state.setErrorMessage("Confirme explicitement la moderation avant execution.");
-      return;
-    }
-    if (
-      state.moderationConfirmationText.trim().toUpperCase() !==
-      "CONFIRMER MODERATION"
-    ) {
-      state.setModerationState("error");
-      state.setErrorMessage("Saisis la phrase CONFIRMER MODERATION avant execution.");
-      return;
-    }
-
-    state.setModerationState("pending");
-    state.setErrorMessage(null);
-    state.setModerationResult(null);
-
-    const payload: ModerationPayload =
-      state.moderationEntityType === "action"
-        ? {
-            entityType: "action",
-            id: trimmedId,
-            status: state.actionStatus,
-            confirmPhrase: state.moderationConfirmationText,
-          }
-        : {
-            entityType: "clean_place",
-            id: trimmedId,
-            status: state.cleanPlaceStatus,
-            confirmPhrase: state.moderationConfirmationText,
-          };
-
-    try {
-      const result = await postAdminModeration(payload);
-      state.setModerationState("success");
-      state.setModerationResult(JSON.stringify(result, null, 2));
-      const successMessage = `Moderation appliquee pour ${payload.entityType} (${payload.id}) a ${new Date().toLocaleString("fr-FR")}.`;
-      state.setLastSuccessMessage(successMessage);
-      state.resetModerationConfirmationState();
-      state.pushModerationJournal({
-        at: new Date().toISOString(),
-        entityType: payload.entityType,
-        id: payload.id,
-        targetStatus: payload.status,
-        outcome: "success",
-        message: successMessage,
-        sourceTable: result.sourceTable,
-        copiedToLocalValidatedStore: result.copiedToLocalValidatedStore,
-      });
-      void preview.mutate();
-    } catch (error) {
-      state.setModerationState("error");
-      let message = "Erreur inconnue.";
-      if (error instanceof ModerationClientError) {
-        if (error.code === "permission_denied") {
-          message = `Acces admin requis (${error.message}).`;
-        } else if (error.code === "network_error") {
-          message =
-            "Erreur reseau pendant la moderation. Reessaie dans quelques secondes.";
-        } else {
-          message = error.message;
-        }
-      } else if (error instanceof Error) {
-        message = error.message;
-      }
-      state.setErrorMessage(message);
-      state.pushModerationJournal({
-        at: new Date().toISOString(),
-        entityType: payload.entityType,
-        id: payload.id,
-        targetStatus: payload.status,
-        outcome: "error",
-        message,
-      });
-    }
-  }
+  const {
+    onDownloadCsv,
+    onDownloadJson,
+    onImportDryRun,
+    onImportPastActions,
+    onModerateEntity,
+  } = createAdminWorkflowActions({
+    state,
+    csvExportUrl,
+    jsonExportUrl,
+    mutatePreview: reloadPreview,
+  });
 
   const setImportPayloadWithReset: AdminWorkflowController["setImportPayload"] = (
     value,

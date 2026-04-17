@@ -1,19 +1,22 @@
 # Latest Session
 
-Updated: 2026-04-16
+Updated: 2026-04-17
 
 ## Done
-- Added persistent memory scaffolding
-- Initialized persistent Codex memory workflow files.
+- Completed monolith split for `use-admin-workflow.ts` with extracted action handlers in `admin-workflow/actions.ts`.
+- Added targeted tests for extracted admin workflow actions (`dry-run error`, `missing confirmation`, `moderation error mapping`).
+- Confirmed top-3 monolith targets from the split plan are reduced:
+  - `use-admin-workflow.ts`: 169 lines
+  - `community-section.tsx`: 73 lines
+  - `reports-web-document.tsx`: 82 lines
 
 ## In Progress
 - No active in-progress item.
 
 ## Next
-- Use bootstrap before each coding session
-- Use `npm run session:bootstrap` at session start.
-- Keep this file updated with `npm run session:close -- --next "..."`.
+- Reintroduce/verify repo-level `quality:top-heavy` check on this branch if missing.
+- Continue remaining quality-governance checks (max-lines and CI guards) if not yet merged on `main`.
 
 ## Risks
-- Context files can drift if not updated
-- Memory files can drift if not updated at session end.
+- `quality:top-heavy` script is currently unavailable in this branch/root context.
+- Local unrelated modified docs file can create accidental mixed commits if not staged carefully.
