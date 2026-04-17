@@ -20,6 +20,14 @@ export type AnnuaireEntry = {
   name: string;
   kind: EntityKind;
   types: EngagementType[];
+  zone: string;
+  engagementLevel: "initie" | "actif" | "referent";
+  contributionTypes: Array<
+    "materiel" | "logistique" | "accueil" | "financement" | "communication"
+  >;
+  availability: "ponctuelle" | "mensuelle" | "evenementielle";
+  verificationLevel: "non_verifie" | "auto_declare" | "verifie";
+  preferredChannel: string;
   description: string;
   location: string;
   lat: number;
