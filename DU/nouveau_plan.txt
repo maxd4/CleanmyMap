@@ -1,4 +1,4 @@
-﻿BOUCLE A REPETER AVEC MODELE FORT (claude / gemini 3.1)
+BOUCLE A REPETER AVEC MODELE FORT (claude / gemini 3.1)
 Refactorise le repo sans changer le comportement pour qu'il soit plus facilement utilisable par l'agent IA qui développe le projet
 
 Fait un audit des fichiers les plus lourd du repo, explique pourquoi et comment optimiser cela pour améliorer la qualité et l'efficacité du repo avec un plan d'action précis, propre et actionnable.

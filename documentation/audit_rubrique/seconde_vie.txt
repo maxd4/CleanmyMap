@@ -1,4 +1,4 @@
-﻿Rubrique: seconde_vie
+Rubrique: seconde_vie
 Statut: A completer (non traite dans cette passe)
 
 - a quoi sert la rubrique

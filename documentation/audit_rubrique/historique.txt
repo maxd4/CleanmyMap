@@ -1,4 +1,4 @@
-﻿Rubrique: historique
+Rubrique: historique
 Statut: A completer (non traite dans cette passe)
 
 - a quoi sert la rubrique

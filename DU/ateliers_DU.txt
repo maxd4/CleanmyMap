@@ -1,4 +1,4 @@
-﻿ATELIERS_DU - VERSION CONSOLIDEE ET EXPLOITABLE POUR CLEANMYMAP
+ATELIERS_DU - VERSION CONSOLIDEE ET EXPLOITABLE POUR CLEANMYMAP
 
 CONTEXTE ET OBJECTIF DU DOCUMENT
 Ce document transforme les enseignements des ateliers DU en cadre d'analyse puis en plan d'action concret pour CleanMyMap.

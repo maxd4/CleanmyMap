@@ -1,4 +1,4 @@
-﻿Rubrique: trash_spotter
+Rubrique: trash_spotter
 Statut: A completer (non traite dans cette passe)
 
 - a quoi sert la rubrique

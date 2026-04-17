@@ -1,4 +1,4 @@
-﻿Rubrique: partenaires_et_commercants_engages
+Rubrique: partenaires_et_commercants_engages
 
 - a quoi sert la rubrique
   - Rendre visible l'ecosysteme Parisien engagé.

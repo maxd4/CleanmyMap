@@ -1,4 +1,4 @@
-﻿Rubrique: elus
+Rubrique: elus
 Statut: A completer (non traite dans cette passe)
 
 - a quoi sert la rubrique

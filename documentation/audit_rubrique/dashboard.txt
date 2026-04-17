@@ -1,4 +1,4 @@
-﻿Rubrique: dashboard
+Rubrique: dashboard
 Statut: A completer (non traite dans cette passe)
 
 - a quoi sert la rubrique

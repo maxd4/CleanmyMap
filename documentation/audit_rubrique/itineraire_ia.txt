@@ -1,4 +1,4 @@
-﻿Rubrique: itineraire_ia
+Rubrique: itineraire_ia
 Statut: A completer (non traite dans cette passe)
 
 - a quoi sert la rubrique

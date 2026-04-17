@@ -1,4 +1,4 @@
-﻿import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { PROTECTED_ROUTE_PATTERNS } from "@/lib/auth/protected-routes";
 
