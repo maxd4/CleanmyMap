@@ -56,6 +56,59 @@ Objectif de lecture: vision actionnable en ~5 min
 
 - contenu affiché :
 
+  - Engagement: Environnement & Climat
+    - Type de structure: Associations / collectifs
+      - La SAUGE
+      - Moissons Solidaires
+      - Veni Verdi
+      - AREMACS Ile-de-France
+      - Les Cols Verts IDF
+      - PikPik Environnement
+      - Surfrider Paris
+      - Zero Waste Paris
+      - Recyclerie Sportive
+      - Association Sans Murs
+      - Les Brigades Vertes
+    - Type de structure: Tiers-lieux / structures hybrides
+      - La REcyclerie
+      - Biocycle
+
+  - Engagement: Justice Sociale & Precarite
+    - Type de structure: Associations / ONG
+      - Refugee Food
+      - Utopia 56
+      - La Cloche
+      - ATD Quart Monde
+      - Ordre de Malte France
+      - Action contre la Faim
+      - Emmaus Defi
+      - Emmaus Alternatives
+      - Linkee
+      - Le Chainon Manquant
+      - Dans Ma Rue
+      - CASP
+      - Aurore
+      - Cites Caritas
+      - Les Enfants du Canal
+      - ADSF
+      - Regles Elementaires
+      - Secours Catholique Paris
+      - Armee du Salut
+
+  - Engagement: Mixite & Inclusion
+    - Type de structure: Associations
+      - Le Refuge
+      - Singa
+      - Kabubu
+      - Article 1
+      - Entourage
+
+  - Engagement: Commercants Engages
+    - Type de structure: Commercants / lieux d'accueil
+      - Le Baranoux
+      - La Buvette du Climat
+      - Le Pavillon des Canaux
+      - Cafe Joyeux
 
 - infos essentielles
   - Donnees minimales obligatoires par fiche:
