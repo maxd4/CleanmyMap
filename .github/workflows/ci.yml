@@ -20,11 +20,17 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Lockfile policy
+        run: npm run check:lockfile-policy
+
       - name: TypeScript typecheck
         run: npm run typecheck
 
       - name: UTF-8 check for French-sensitive files
         run: npm run check:utf8-fr
+
+      - name: Heavy files policy
+        run: npm run quality:top-heavy
 
       - name: Web lint
         run: npm run lint
