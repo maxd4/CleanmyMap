@@ -1,4 +1,6 @@
-BOUCLE A REPETER AVEC MODELE FORT (claude / gemini 3.1)
+﻿BOUCLE A REPETER AVEC MODELE FORT (claude / gemini 3.1)
+fait un commit puis push GitHub et met à jour le git.
+
 Refactorise le repo sans changer le comportement pour qu'il soit plus facilement utilisable par l'agent IA qui développe le projet
 
 Fait un audit des fichiers les plus lourd du repo, explique pourquoi et comment optimiser cela pour améliorer la qualité et l'efficacité du repo avec un plan d'action précis, propre et actionnable.
@@ -7,43 +9,156 @@ Exécute cela
 
 De même fait cet audit pour les fichiers monolithique avec une stratégie de divisions propre en fichiers modulaires.
 
-Exécute la modularisation.
-
-
-
 Trouve tous les bugs et régressions puis structure ton audit sous forme d'un plan actionnable
 
 Exécute ce plan
 
-
 Fais un audit global du repo pour récupérer : les problèmes critiques, les risques de régression, les incohérences structurelles, les correctifs recommandés. Structure en un plan actionnable par toi
 
-execute le plan 
+exécute le plan 
+
+
+il reste deux fichiers non commit sur cette branche pourquoi ?
+
+commit et push GitHub puis reviens sur main
+
+met en pause les push GitHub on travaille en local
+
+ajoute lors de l'inscription du compte sur le site le choix du lieu de résidence / travail avec un menu des arrondissements de paris pour pouvoir facilement faire apparaitre en priorités les choses proches de l'utilisateur dans les rubriques comme par exemple les aossications proches dans la rubrique commerçants engagés
+
+
+dans la rubrique commerçants engagés implémente cela : 
+  - Fiches acteurs standardisees:
+    - nom, type (association/commercant/entreprise/collectif)
+    - zone couverte
+    - types de contribution (materiel, logistique, accueil, financement, communication)
+    - disponibilités
+    - contact et canal (lien du site web, du compte instagram ou facebook selon celui qui est le plus actif)
+  - Filtres prioritaires pour le bénévole:
+    - distance/zone
+    - type d'acteur
+    - type d'aide proposee
+  - Blocs utiles:
+    - "acteurs les plus actifs"
+    - "partenaires proches de"
+  - CTA clairs:
+    - "Contacter"
+    - "Proposer un partenariat"
+    - "Devenir commercant engage"
+    - "Signaler une mise a jour sur la fiche partenaire"
+
+
+
+
+
+dans cette rubrique vérifie que les infos essentielles
+  - Donnees minimales obligatoires par fiche:
+    - identite legale ou associative
+    - perimetre geographique
+    - contribution reelle possible
+    - contact joignable
+    - statut de verification
+    - date de derniere mise a jour
+  - Transparence:
+    - expliquer comment un acteur devient "engage"
+    - afficher les criteres de verification
+    - afficher la fraicheur des donnees
+  - Gouvernance:
+    - qui valide les fiches
+    - qui peut modifier
+    - delai de traitement des demandes
+
+- erreurs a eviter
+  - Annuaire "vitrine" sans preuve d'activite recente.
+  - Fiches trop pauvres ou non verifiees.
+  - Melanger partenaires actifs et simples contacts non qualifies.
+  - Trop de champs, peu de signal utile.
+  - Absence de date de mise a jour.
+  - CTA flous (ex: "en savoir plus") sans action claire.
 
 
 
 
 
 
+encore pour cette rubrique : - points UX/UI
+  - Prioriser la recherche et les filtres au-dessus de la ligne de flottaison.
+  - Cartes/fiches compactes, scannables en 3-5 secondes.
+  - Badges visuels simples: type d'acteur, verification, niveau d'engagement.
+  - Afficher toujours:
+    - zone
+    - contribution
+    - disponibilite
+    - contact
+  - Eviter surcharge visuelle; hierarchy nette des informations.
+  - Mobile first: filtres rapides, CTA large, contact direct.
+  - Etats vides utiles: "aucun acteur" -> proposition d'ajout ou extension zone.
+
+- à ajouter :
+  - Recommandations automatiques selon profil utilisateur et localisation.
+  - Liaison directe avec carte et actions pour voir l'impact concret par acteur.
+  - Parcours d'onboarding specifique "commercant engage" en quelques minutes et envoyé aux admin pour être accepté (comme les formulaires bénévoles)
+  - Tableau de bord partenaire: contributions, zones, besoins, prochaines actions
+
+
+
+
+aide moi à répondre à ces questions ouvertes sur la rubrique
+  - Quels champs sont publics vs internes (RGPD, securite contact) ?
+  - Comment gerer les acteurs inactifs sans perdre l'historique ?
+  - Quel KPI prioritaire pour piloter la rubrique:
+    - nombre d'acteurs actifs
+    - taux de mise en relation
+    - contributions concretes generees
 
 
 
 
 
-transforme la partie 2 du document texte DU/economie_token en un ou plusieurs prompt actionnable par toi
 
-execute la première partie du fichier 
+transforme la partie 2 du document texte DU/economie_token en un prompt actionnable par toi
 
-etc
 
+execute la première partie du fichier
+
+execute la deuxième partie 
+
+execute la troisième partie
+
+met a jour la documentation
 
 trouve une solution a cette erreur : Le build direct depuis Google Sheet a renvoyé “Sheet appears empty” dans cet environnement;
 
 
 
 
-
 Privilégie les visuels de type schéma, illustration, diagramme ou représentation structurée plutôt que les explications purement textuelles dès que cela permet une compréhension plus rapide, plus intuitive et plus immédiate pour l’utilisateur. Fait un plan d'implementation structuré executable step by step
+
+
+
+
+
+EN MODE APPROFONDI : 
+Dans le fichier texte DU/nouveau_plan.txt execute puis supprime les prompts
+P0 Fiabilité prod / sécurité
+PROMPT 015, 054, 073, 074, 075, 076, 077, 083, 084, 099
+
+P1 Cohérence navigation/roles
+PROMPT 006, 007, 008, 009, 010, 011, 012, 013, 014, 018, 019
+
+P2 Cohérence analytique multi-horizon + funnel
+PROMPT 038 à 055
+
+P3 Exports et livrables (PDF/CSV/historique)
+PROMPT 056 à 060, 062, 063, 064
+
+P4 Modules métier avancés admin
+PROMPT 091, 092, 093, 094, 095, 097
+
+P5 Clôture gouvernance/documentation
+PROMPT 079, 080, 081, 082, 085, 086, 087, 088, 089, 090, 098, 100
+
+
 
 
 
@@ -68,17 +183,137 @@ Retour attendu :
 
 
 
-
-
-dans le fichier texte DU/partenaires.txt tu vas trouver de nouvelles idées pour compléter la rubrique "partenaires" du site web. Implemente cela de la même façon que les autres déjà présent.
-Ensuite dans le fichier texte documentation/audit_rubrique il y a une partie "- contenu affiché :" à compléter avec la liste de tous les nom d'associations, d'entreprises, de commerçants disponible dans la rubrique. Classe les par type d'engagement et type de structure pour que de soit plus facile à lire.
-
-
-envoyer le fichier à charlotte. 
+met a jour DU/latest-session.md
 
 
 
 
+- propose quels autres sous-dossiers ou fichiers devraient être ajoutés dans `documentation`
+- organise ces recommandations de façon pratique, pas théorique
+- privilégie ce qui aide vraiment au développement, à la maintenance, à l’audit, à l’onboarding et à la cohérence produit
+
+Voici une example d'arborescence pour t'aider :
+Détail utile
+
+audit_rubrique/
+
+un fichier par rubrique du site
+rôle, valeur, risques, UX, contenu, pistes d’évolution
+
+architecture/
+
+structure du projet
+découpage frontend/backend
+modules clés
+flux techniques
+dette technique connue
+conventions de modularisation
+
+data/
+
+source Google Sheet
+schéma de normalisation
+pipeline de récupération
+règles de nettoyage
+mapping des colonnes
+cas limites de données
+
+ux_ui/
+
+principes visuels
+conventions composants
+logique de couleurs
+cartes, filtres, états vides, loaders
+cohérence interface
+
+produit/
+
+logique des rubriques
+objectifs produit
+parcours utilisateur
+priorités fonctionnelles
+arbitrages en attente
+
+securite/
+
+gestion des secrets
+variables d’environnement
+règles frontend/backend
+points de vigilance API
+bonnes pratiques push/deploy
+
+exploitation/
+
+déploiement
+monitoring
+logs
+erreurs fréquentes
+procédures simples de reprise
+
+backlog_structurant/
+
+refactors à faire
+bugs structurants
+migrations importantes
+chantiers techniques prioritaires
+
+
+Attendus pour cette partie :
+- arborescence recommandée
+- rôle de chaque sous-dossier
+- fichiers clés à créer en priorité
+- fichiers facultatifs mais utiles plus tard
+
+
+
+
+
+
+
+
+
+Ensuite  :
+- vérifie que les fichiers de base du projet nécessaires à la sécurité et à l’hygiène du repo sont bien présents et correctement configurés, notamment pour éviter toute divulgation de secrets lors des push GitHub
+- mets-les à jour si nécessaire
+
+Vérifications prioritaires :
+- `.gitignore`
+- `.env.example`
+- absence de secrets codés en dur
+- éventuel `.dockerignore` si pertinent
+- éventuels fichiers d’exemple de configuration sans secret
+- documentation minimale sur la gestion des variables d’environnement
+- tout autre fichier racine nécessaire à une base de projet propre et sûre
+
+Pour éviter les fuites de secrets au push GitHub, les plus importants sont :
+
+.gitignore
+.env.example
+.env.local non tracké
+.env non tracké
+.dockerignore si Docker
+README.md avec section variables d’environnement
+éventuellement un fichier de doc type documentation/securite/secrets.md
+Point important
+
+Le .gitignore protège seulement les fichiers non encore suivis.
+Si un secret a déjà été commité une fois, l’ajouter ensuite au .gitignore ne suffit pas. Il faut alors :
+
+retirer le fichier du suivi Git
+faire tourner les secrets exposés
+parfois nettoyer l’historique Git si l’exposition est réelle
+
+Pour cette partie sécurité :
+- signale précisément les risques détectés
+- corrige seulement ce qui est justifié
+- ne casse pas le fonctionnement du projet
+- si un secret semble déjà exposé dans l’historique ou dans le code, signale-le explicitement
+
+Retour attendu :
+2. liste des fichiers racine vérifiés
+3. fichiers créés ou modifiés
+4. risques secrets / GitHub identifiés
+5. actions restantes recommandées
 
 
 
@@ -255,162 +490,7 @@ Consignes supplémentaires :
 - si certains comportements ne sont pas encore implémentés mais semblent nécessaires, note-les comme recommandations et non comme existants.
 
 
-
-
-
-
-
-- propose quels autres sous-dossiers ou fichiers devraient être ajoutés dans `documentation`
-- organise ces recommandations de façon pratique, pas théorique
-- privilégie ce qui aide vraiment au développement, à la maintenance, à l’audit, à l’onboarding et à la cohérence produit
-
-Voici une example d'arborescence pour t'aider :
-Détail utile
-
-audit_rubrique/
-
-un fichier par rubrique du site
-rôle, valeur, risques, UX, contenu, pistes d’évolution
-
-architecture/
-
-structure du projet
-découpage frontend/backend
-modules clés
-flux techniques
-dette technique connue
-conventions de modularisation
-
-data/
-
-source Google Sheet
-schéma de normalisation
-pipeline de récupération
-règles de nettoyage
-mapping des colonnes
-cas limites de données
-
-ux_ui/
-
-principes visuels
-conventions composants
-logique de couleurs
-cartes, filtres, états vides, loaders
-cohérence interface
-
-produit/
-
-logique des rubriques
-objectifs produit
-parcours utilisateur
-priorités fonctionnelles
-arbitrages en attente
-
-securite/
-
-gestion des secrets
-variables d’environnement
-règles frontend/backend
-points de vigilance API
-bonnes pratiques push/deploy
-
-exploitation/
-
-déploiement
-monitoring
-logs
-erreurs fréquentes
-procédures simples de reprise
-
-backlog_structurant/
-
-refactors à faire
-bugs structurants
-migrations importantes
-chantiers techniques prioritaires
-
-
-Attendus pour cette partie :
-- arborescence recommandée
-- rôle de chaque sous-dossier
-- fichiers clés à créer en priorité
-- fichiers facultatifs mais utiles plus tard
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Ensuite  :
-- vérifie que les fichiers de base du projet nécessaires à la sécurité et à l’hygiène du repo sont bien présents et correctement configurés, notamment pour éviter toute divulgation de secrets lors des push GitHub
-- mets-les à jour si nécessaire
-
-Vérifications prioritaires :
-- `.gitignore`
-- `.env.example`
-- absence de secrets codés en dur
-- éventuel `.dockerignore` si pertinent
-- éventuels fichiers d’exemple de configuration sans secret
-- documentation minimale sur la gestion des variables d’environnement
-- tout autre fichier racine nécessaire à une base de projet propre et sûre
-
-Pour éviter les fuites de secrets au push GitHub, les plus importants sont :
-
-.gitignore
-.env.example
-.env.local non tracké
-.env non tracké
-.dockerignore si Docker
-README.md avec section variables d’environnement
-éventuellement un fichier de doc type documentation/securite/secrets.md
-Point important
-
-Le .gitignore protège seulement les fichiers non encore suivis.
-Si un secret a déjà été commité une fois, l’ajouter ensuite au .gitignore ne suffit pas. Il faut alors :
-
-retirer le fichier du suivi Git
-faire tourner les secrets exposés
-parfois nettoyer l’historique Git si l’exposition est réelle
-
-Pour cette partie sécurité :
-- signale précisément les risques détectés
-- corrige seulement ce qui est justifié
-- ne casse pas le fonctionnement du projet
-- si un secret semble déjà exposé dans l’historique ou dans le code, signale-le explicitement
-
-Retour attendu :
-2. liste des fichiers racine vérifiés
-3. fichiers créés ou modifiés
-4. risques secrets / GitHub identifiés
-5. actions restantes recommandées
-
-
-
-
-
-
-
-
-
-envoyer audit par mail Charlotte + relance cartographe.
-compatibilité vercel et supabase + optimisé téléphone 
+ 
 
 
 
@@ -568,8 +648,7 @@ AUDIT PROMPT 003
 
 
 
-
-Est ce qu'il existe un espace de communication visible et utilisable par tous les utilisateurs sans validation admin pour que chacun partage des informations, des bugs qu'il a repéré etc limité à 5 messages par jour pour éviter les problèmes.
+Est ce qu'il existe un espace de communication visible et utilisable par tous les utilisateurs sans validation admin pour que chacun partage des informations, des actualités, des bugs qu'il a repéré etc. avec des quotas du type maximum 1 message par 30 secondes et maximum 10 messages par jour pour éviter les problèmes.
 
 
 S'assurer que la carte et le formulaire fonctionne complètement et que la carte récupère puis affiche les données du formulaires après validation admin. Verifier que la partie admin fonctionne réellement.
@@ -665,13 +744,8 @@ Option simple sans Clerk complet: définir CUSTOM_UP_ADMIN_USER_IDS (liste CSV) 
 
 
 
-
-PROMPT 005
-"Etablis un plan de migration par lots avec dependances, risques, mitigations et rollback pour chaque lot. L'ordre doit minimiser regressions et refactors inutiles."
-
-
 PROMPT 006
-"Verifie que les regles produit suivantes sont appliquees et explicites dans l'implementation: role choisi a la creation du compte, role modifiable ensuite, role admin attribue uniquement par admin autorise."
+"Verifie que les regles produit suivantes sont appliquees et explicites dans l'implementation: role choisi a la creation du compte, role modifiable ensuite, role admin attribue uniquement par admin autorise sur vercel ou sur supabase."
 
 
 PROMPT 007
@@ -1034,3 +1108,106 @@ FICHIER TEXTE ATELIER_DU
 LES FICHES PROJET et PDF plus pro
 IMPACT_IA surtout paragraphe final rajouté
 
+
+
+
+
+
+
+
+
+
+
+
+Open the repo. Audit current documentation and implement a standard documentation structure in the correct locations.
+
+Requirements:
+- Root README.md must be complete, specific, and grounded in the actual codebase.
+- Add docs/ only where justified by real complexity.
+- Add CONTRIBUTING.md if useful.
+- Add minimal .github templates/docs only if clearly beneficial.
+- Prefer updating existing docs over creating redundant files.
+- Do not invent anything not supported by the repo.
+
+Use evidence from:
+- source tree
+- package manifests
+- env examples
+- CI workflows
+- Docker / infra files
+- test setup
+- existing docs
+
+README should cover when relevant:
+- purpose
+- features
+- stack
+- repo structure
+- install
+- configuration
+- environment variables
+- local run
+- tests
+- build/deploy
+- usage
+- troubleshooting
+
+Quality bar:
+- concise
+- specific
+- scannable
+- actionable
+- no filler
+- no duplication
+- explicit unknowns instead of guesses
+
+At the end, output:
+- Steps identified
+- Steps completed
+- Files created
+- Files updated
+- Documentation decisions
+- Remaining uncertainties
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Use GitDocify as a secondary documentation audit input, not as source of truth.
+
+Instructions:
+- Treat the repository code, config files, manifests, CI files, env examples, and existing docs as the source of truth.
+- Use the GitDocify report only to detect:
+  - missing documentation
+  - unclear architecture
+  - weak README structure
+  - undocumented setup/config/testing/deployment areas
+  - misleading or incomplete explanations
+- Do not copy GitDocify blindly.
+- Verify every claim against the actual repository.
+- Keep what is correct, discard what is vague, false, generic, redundant, or unsupported.
+- Improve documentation in standard locations only.
+
+Deliver:
+- README improvements
+- docs/ additions only if justified
+- CONTRIBUTING.md if useful
+- explicit list of GitDocify claims accepted, corrected, or rejected
+
+Output format:
+- Steps identified
+- Files created
+- Files updated
+- GitDocify points accepted
+- GitDocify points corrected
+- GitDocify points rejected
+- Remaining documentation gaps
