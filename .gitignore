@@ -15,7 +15,10 @@ htmlcov/
 playwright-report/
 test-results/
 node_modules/
+/.next/
+apps/.next/
 apps/web/.next/
+*.tsbuildinfo
 cache/
 tmp/
 output/
