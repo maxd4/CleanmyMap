@@ -25,11 +25,15 @@ Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionR
 - Supabase gère la donnée applicative métier (Actions terrain, déchets).
 - Ne fais jamais de requêtes SQL brutes. L'application utilise typiquement le client Supabase `createClient()` ou des helpers dans `lib/actions/http.ts`.
 
-## 4. Règles d'Architecture
-1. **Pas de logique lourde en Client Components** : Isole la data-fetching côté serveur (Server Actions ou API routes) ou utilise `SWR` sur client de manière restreinte.
-2. **Dynamic Imports pour Leaflet** : Toute utilisation de `react-leaflet` doit se faire dans des composants avec `"use client"` et `next/dynamic({ ssr: false })` (ex: `ActionDrawingMap`, `AnnuaireMapCanvas`). Leaflet plante sur l'environnement Node.js.
-3. **Icons Lucide-React** : Utilise uniquement `lucide-react` (déjà installé) pour les icônes.
-4. **TailwindCSS Intégré** : N'ajoute pas de fichiers CSS isolés, utilise les utilitaires Tailwind existants.
+## 4. Règles d'Architecture & Gouvernance
+1. **Gouvernance Globale** : Avant toute modification structurale, consulte la couche de gouvernance dans `documentation/repo-docs/` :
+   - [Design System](./documentation/repo-docs/design-system.md) (Règles visuelles Premium).
+   - [Data Governance](./documentation/repo-docs/data-governance.md) (Contrats et Ingestion).
+   - [API Standard](./documentation/repo-docs/api-standard.md) (Erreurs et Sécurité).
+2. **Pas de logique lourde en Client Components** : Isole la data-fetching côté serveur.
+3. **Dynamic Imports pour Leaflet** : Obligatoire pour éviter les crashs SSR.
+4. **Icons Lucide-React** : Standard unique pour les icônes.
+5. **Styling Mixte** : Tailwind pour le layout, Vanilla CSS/Variables pour l'esthétique Premium (voir Design System).
 
 ## 5. Scripts et Automatisation
-Les scripts Python de migration/legacy ou d'import de données (ex: Google Sheets) sont situés dans `/scripts/` et `/legacy/`. Ne casse pas ces routines car certaines sont appelées par des CRONs externes.
+Les scripts Python legacy sont dans `/legacy/`. Ne casse pas ces routines car elles sont critiques pour l'historique des données.

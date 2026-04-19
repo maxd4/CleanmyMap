@@ -1,16 +1,41 @@
+Bilan final de la mission avec gemini 3 flash sur antigravity :
+Structure : Monorépo propre (/apps/web, /legacy).
+Sécurité :
+Auth Clerk réparée.
+6 vulnérabilités critiques corrigées.
+Fuite de clé Supabase colmatée (passage au système sb_secret).
+Correctifs CodeQL validés.
+Maintenance : Historique des actions nettoyé.
+Deploy vercel à jour avec page d'acceuil clerk améliorée
 
-Exécute la priorité **P0 — Fiabilité production / sécurité** du plan, c'est-à-dire les prompts **015, 054, 073, 074, 075, 076, 077, 083, 084 et 090** du fichier "CleanmyMap-main\documentation\du\archive\prompt.txt"
+
+
+
+Mermaid Live avec le thème "Neutral", vous obtiendrez des visuels parfaitement cohérents, sérieux et sans aucun effet "artificiel".
+Bilan de la session :
+
+✅ Dashboard réparé : Encodage assaini et structure validée pour le déploiement Vercel.
+✅ Identité visuelle : Intégration du slogan "Agir. Cartographier. Préserver."
+✅ Rapport DU : Réponses prêtes pour vos professeurs.
+✅ Architecture Master : Centralisation de tous les schémas existants et création d'une vue d'ensemble.
+✅ Persistance contextuelle : Mise à jour des "ancres" mémoires pour les prochaines sessions.
+
+
+
+
+
+Exécute la priorité **P0 — Fiabilité production / sécurité** du plan, c’est-à-dire les prompts **015, 054, 073, 074, 075, 076, 077, 083, 084 et 090** du fichier "CleanmyMap-main\documentation\du\archive\prompt.txt"
 
 Instructions strictes :
-- Ce plan provient d'une ancienne version du projet : **ne considère pas ces prompts comme une vérité absolue**, mais comme des **pistes d'implémentation** à réévaluer intelligemment à la lumière de l'architecture et du code actuels.
-- Pour chaque prompt, détermine d'abord :
-  - s'il est encore pertinent ;
-  - s'il doit être adapté ;
-  - s'il est déjà partiellement ou totalement implémenté ;
-  - s'il doit être fusionné avec un autre chantier proche.
+- Ce plan provient d’une ancienne version du projet : **ne considère pas ces prompts comme une vérité absolue**, mais comme des **pistes d’implémentation** à réévaluer intelligemment à la lumière de l’architecture et du code actuels.
+- Pour chaque prompt, détermine d’abord :
+  - s’il est encore pertinent ;
+  - s’il doit être adapté ;
+  - s’il est déjà partiellement ou totalement implémenté ;
+  - s’il doit être fusionné avec un autre chantier proche.
 - Implémente uniquement ce qui reste réellement utile, cohérent et prioritaire pour le projet dans son état actuel.
-- Ne fais pas de changements redondants, obsolètes, régressifs ou incompatibles avec l'architecture actuelle.
-- Si un prompt n'est plus pertinent en l'état, n'applique pas sa formulation littéralement : adapte son intention au code actuel.
+- Ne fais pas de changements redondants, obsolètes, régressifs ou incompatibles avec l’architecture actuelle.
+- Si un prompt n’est plus pertinent en l’état, n’applique pas sa formulation littéralement : adapte son intention au code actuel.
 - Si un prompt est seulement partiellement couvert, ne le supprime pas entièrement : mets-le à jour ou scinde-le clairement selon le travail restant puis execute le.
 - Une fois tous les prompts de la priorité executés ou skipé, supprime les du fichier.
 - Préserve la stabilité du site et évite toute régression.
