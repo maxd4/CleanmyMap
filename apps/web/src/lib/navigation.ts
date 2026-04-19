@@ -206,6 +206,7 @@ function getDisplayModeLabel(displayMode: DisplayMode, locale: Locale): string {
 function getMappedRubriquesForProfile(
   profile: AppProfile,
   displayMode: DisplayMode,
+  locale: Locale = "fr",
 ): Rubrique[] {
   const routeIds = new Set<RouteId>(
     Object.values(PARCOURS_SPACE_PAGE_MAP[profile]).flatMap((ids) => ids),
@@ -216,23 +217,26 @@ function getMappedRubriquesForProfile(
     .filter((rubrique): rubrique is Rubrique => Boolean(rubrique))
     .filter((rubrique) => rubrique.availability === "available")
     .sort(
-      (a, b) => a.priority - b.priority || a.label.fr.localeCompare(b.label.fr),
+      (a, b) =>
+        a.priority - b.priority ||
+        a.label[locale].localeCompare(b.label[locale]),
     );
 }
 
 export function getNavigationCategoriesForProfile(
   profile: AppProfile,
   displayMode: DisplayMode = "exhaustif",
+  locale: Locale = "fr",
 ): NavigationCategory[] {
   const allowedRoutes = new Set(
-    getMappedRubriquesForProfile(profile, displayMode).map(
+    getMappedRubriquesForProfile(profile, displayMode, locale).map(
       (item) => item.route,
     ),
   );
   return RUBRIQUE_CATEGORIES.map((category) => ({
     id: category.id,
     label: category.label,
-    items: getVisibleRubriquesByCategory(category.id)
+    items: getVisibleRubriquesByCategory(category.id, locale)
       .filter((rubrique) => allowedRoutes.has(rubrique.route))
       .map((rubrique) => toNavItem(rubrique)),
   })).filter((category) => category.items.length > 0);
@@ -241,9 +245,10 @@ export function getNavigationCategoriesForProfile(
 export function getNavigationSpacesForProfile(
   profile: AppProfile,
   displayMode: DisplayMode = "exhaustif",
+  locale: Locale = "fr",
 ): NavigationSpace[] {
   const byId = new Map<RouteId, Rubrique>(
-    getMappedRubriquesForProfile(profile, displayMode).map((item) => [
+    getMappedRubriquesForProfile(profile, displayMode, locale).map((item) => [
       item.id,
       item,
     ]),

@@ -89,6 +89,7 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
       return;
     }
     window.localStorage.setItem(STORAGE_KEYS.locale, locale);
+    document.cookie = `${STORAGE_KEYS.locale}=${locale}; Max-Age=31536000; Path=/; SameSite=Lax`;
     document.documentElement.lang = locale;
   }, [locale]);
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { trackRoleCtaClick } from "@/lib/analytics/navigation-client";
 import type { CtaSlot } from "@/lib/domain-language";
 import { getProfileActions, type AppProfile } from "@/lib/profiles";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type RolePrimaryActionsProps = {
   profile: AppProfile;
@@ -14,6 +15,7 @@ export function RolePrimaryActions({
   profile,
   title = "Actions principales",
 }: RolePrimaryActionsProps) {
+  const { locale } = useSitePreferences();
   const actions = getProfileActions(profile);
 
   function resolveCtaSlot(index: number): CtaSlot {
@@ -35,7 +37,7 @@ export function RolePrimaryActions({
                 profile,
                 ctaType: resolveCtaSlot(index),
                 href: action.href,
-                label: action.label.fr,
+                label: action.label[locale],
               })
             }
             className={`rounded-xl border px-4 py-3 transition ${
@@ -44,9 +46,9 @@ export function RolePrimaryActions({
                 : "border-slate-200 bg-white text-slate-800 hover:border-emerald-200 hover:bg-emerald-50"
             }`}
           >
-            <p className="text-sm font-semibold">{action.label.fr}</p>
+            <p className="text-sm font-semibold">{action.label[locale]}</p>
             <p className="mt-1 text-xs text-slate-500">
-              {action.description.fr}
+              {action.description[locale]}
             </p>
           </Link>
         ))}

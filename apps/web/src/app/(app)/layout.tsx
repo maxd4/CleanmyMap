@@ -12,6 +12,7 @@ import {
   getNavigationSpacesForProfile,
 } from "@/lib/navigation";
 import { getProfileLabel, toProfile } from "@/lib/profiles";
+import { getServerLocale } from "@/lib/server-preferences";
 import { STORAGE_KEYS, parseDisplayMode } from "@/lib/ui/preferences";
 
 export default async function AppLayout({
@@ -33,11 +34,12 @@ export default async function AppLayout({
     cookieStore.get(STORAGE_KEYS.displayMode)?.value,
   );
 
+  const locale = await getServerLocale();
   const role = await getCurrentUserRoleLabel();
   const currentProfile = toProfile(role);
   const isAdmin = role === "admin";
-  const profileLabel = getProfileLabel(currentProfile, "fr");
-  const spaces = getNavigationSpacesForProfile(currentProfile, displayMode);
+  const profileLabel = getProfileLabel(currentProfile, locale);
+  const spaces = getNavigationSpacesForProfile(currentProfile, displayMode, locale);
   const categoryCount = spaces.length;
   const rubriqueCount = spaces.reduce(
     (acc, space) => acc + space.items.length,
@@ -59,20 +61,21 @@ export default async function AppLayout({
             CleanMyMap
           </p>
           <h1 className="text-lg font-semibold text-slate-900">
-            Profil {profileLabel.toLowerCase()}
+            {locale === "fr" ? "Profil" : "Profile"} {profileLabel.toLowerCase()}
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-xs text-slate-500">
-            {rubriqueCount} pages prioritaires organisees en {categoryCount}{" "}
-            blocs ({displayMode})
+            {locale === "fr"
+              ? `${rubriqueCount} pages prioritaires organisées en ${categoryCount} blocs (${displayMode})`
+              : `${rubriqueCount} priority pages organized in ${categoryCount} blocks (${displayMode})`}
           </p>
           {parcoursNavV2Enabled ? (
             <Link
               href={profileOverview.primaryCTA.href}
               className="inline-flex rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100"
             >
-              {profileOverview.primaryCTA.label.fr}
+              {profileOverview.primaryCTA.label[locale]}
             </Link>
           ) : null}
           {parcoursNavV2Enabled && profileOverview.secondaryCTA ? (
@@ -80,7 +83,7 @@ export default async function AppLayout({
               href={profileOverview.secondaryCTA.href}
               className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
             >
-              {profileOverview.secondaryCTA.label.fr}
+              {profileOverview.secondaryCTA.label[locale]}
             </Link>
           ) : null}
         </div>

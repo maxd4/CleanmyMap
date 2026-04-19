@@ -23,6 +23,7 @@ import {
   getProfileSecondaryAction,
   toProfile,
 } from "@/lib/profiles";
+import { getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 async function loadDashboardOverview() {
@@ -39,7 +40,8 @@ export default async function DashboardPage() {
   const identity = await getCurrentUserIdentity();
   const role = await getCurrentUserRoleLabel();
   const profile = toProfile(role);
-  const roleLabel = getProfileLabel(profile, "fr");
+  const locale = await getServerLocale();
+  const roleLabel = getProfileLabel(profile, locale);
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
@@ -110,7 +112,7 @@ export default async function DashboardPage() {
   }));
   const adaptiveHref = overview?.summary.recommendedAction.href ?? primaryAction.href;
   const adaptiveLabel =
-    overview?.summary.recommendedAction.label ?? primaryAction.label.fr;
+    overview?.summary.recommendedAction.label ?? primaryAction.label[locale];
   const adaptiveReason = overview?.summary.recommendedAction.reason;
 
   if (pageTemplateV2Enabled) {
@@ -130,18 +132,18 @@ export default async function DashboardPage() {
                   overview?.summary.recommendedAction.href ?? primaryAction.href,
                 label:
                   overview?.summary.recommendedAction.label ??
-                  primaryAction.label.fr,
+                  primaryAction.label[locale],
               }}
               recommendedReason={overview?.summary.recommendedAction.reason}
             />
           }
           primaryAction={{
             href: primaryAction.href,
-            label: primaryAction.label.fr,
+            label: primaryAction.label[locale],
           }}
           secondaryAction={
             secondaryAction
-              ? { href: secondaryAction.href, label: secondaryAction.label.fr }
+              ? { href: secondaryAction.href, label: secondaryAction.label[locale] }
               : undefined
           }
           analysis={
@@ -266,7 +268,7 @@ export default async function DashboardPage() {
         recommendedAction={{
           href: overview?.summary.recommendedAction.href ?? primaryAction.href,
           label:
-            overview?.summary.recommendedAction.label ?? primaryAction.label.fr,
+            overview?.summary.recommendedAction.label ?? primaryAction.label[locale],
         }}
         recommendedReason={overview?.summary.recommendedAction.reason}
       />

@@ -12,6 +12,7 @@ import {
   getProfileSecondaryAction,
   toProfile,
 } from "@/lib/profiles";
+import { getServerLocale } from "@/lib/server-preferences";
 
 type NewActionPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -26,6 +27,7 @@ export default async function NewActionPage({
   const profile = toProfile(role);
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
+  const locale = await getServerLocale();
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const params = searchParams ? await searchParams : undefined;
   const fromEventIdRaw = params?.fromEventId;
@@ -44,7 +46,7 @@ export default async function NewActionPage({
   if (pageTemplateV2Enabled) {
     return (
       <PageReadingTemplate
-        context={`Profil ${getProfileLabel(profile, "fr")}`}
+        context={`Profil ${getProfileLabel(profile, locale)}`}
         title="Déclarer une action"
         objective="Saisir une action terrain fiable avec un mode rapide (<60s) ou un mode complet avec preuve, sans bloquer la saisie avant soumission."
         summary={
@@ -83,7 +85,7 @@ export default async function NewActionPage({
                   Contexte profil
                 </p>
                 <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {getProfileLabel(profile, "fr")}
+                  {getProfileLabel(profile, locale)}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">N-1: meme profil</p>
                 <p className="mt-1 text-xs text-slate-600">
@@ -113,11 +115,11 @@ export default async function NewActionPage({
         }
         primaryAction={{
           href: primaryAction.href,
-          label: primaryAction.label.fr,
+          label: primaryAction.label[locale],
         }}
         secondaryAction={
           secondaryAction
-            ? { href: secondaryAction.href, label: secondaryAction.label.fr }
+            ? { href: secondaryAction.href, label: secondaryAction.label[locale] }
             : undefined
         }
         analysis={
@@ -156,7 +158,7 @@ export default async function NewActionPage({
   return (
     <div data-rubrique-report-root className="space-y-4">
       <DecisionPageHeader
-        context={`Profil ${getProfileLabel(profile, "fr")}`}
+        context={`Profil ${getProfileLabel(profile, locale)}`}
         title="Declaration de nettoyage"
         objective="Saisir rapidement une action fiable (mode rapide) ou complete avec preuve (mode complet)."
         actions={[
