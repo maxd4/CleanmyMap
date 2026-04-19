@@ -1,18 +1,18 @@
-Rubrique: Declarer
+Rubrique: Entraide locale
 Statut: format-audit-unifie-v1
 
 ## Objectif
-- Collecter des declarations fiables avec friction minimale.
+- Faciliter la coordination locale entre benevoles, associations, commercants et entreprises.
 
 ## Flux (schema)
 ```mermaid
 flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Declarer]
+  A[Besoin utilisateur] --> B[Interaction Discussion]
   B --> C[Donnees / validation]
   C --> D[Decision / action locale]
 ```
 Fallback statique:
-![Schema Declarer](../archive/fallback-audit-declarer.png)
+![Schema Discussion](../archive/fallback-audit-annuaire_engagement.png)
 
 ## Risques
 - Donnees incompletes ou mal qualifiees.
@@ -25,7 +25,7 @@ Fallback statique:
 - Impact: actions ou decisions declenchees depuis la rubrique.
 
 ## Impact concret
-- Plus de donnees qualifiees exploitables pour carte, rapports et classement.
+- Plus de mises en relation utiles et de reponses rapides sur les besoins terrain.
 
 ## CTA
-- Declarer une action complete avec geoloc et volume dechets.
+- Publier un besoin concret, puis relancer un acteur local dans les 24h.

@@ -31,10 +31,11 @@ Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionR
    - [Design System](./documentation/repo-docs/design-system.md) (Règles visuelles Premium).
    - [Data Governance](./documentation/repo-docs/data-governance.md) (Contrats et Ingestion).
    - [API Standard](./documentation/repo-docs/api-standard.md) (Erreurs et Sécurité).
-2. **Pas de logique lourde en Client Components** : Isole la data-fetching côté serveur.
-3. **Dynamic Imports pour Leaflet** : Obligatoire pour éviter les crashs SSR.
-4. **Icons Lucide-React** : Standard unique pour les icônes.
-5. **Styling Mixte** : Tailwind pour le layout, Vanilla CSS/Variables pour l'esthétique Premium (voir Design System).
+3. **Nomenclature Utilisateur** : Utilise toujours les noms engageants pour les rubriques FR (ex: "Signalement Déchets" au lieu de "Trash Spotter", "Mon Profil & Impact" au lieu de "Compte", "Entraide Locale" au lieu de "Discussion").
+4. **Pas de logique lourde en Client Components** : Isole la data-fetching côté serveur.
+5. **Dynamic Imports pour Leaflet** : Obligatoire pour éviter les crashs SSR.
+6. **Icons Lucide-React** : Standard unique pour les icônes.
+7. **Styling Mixte** : Tailwind pour le layout, Vanilla CSS/Variables pour l'esthétique Premium (voir Design System).
 
 ## 5. Scripts et Automatisation
 Les scripts Python legacy sont dans `/legacy/`. Ne casse pas ces routines car elles sont critiques pour l'historique des données.

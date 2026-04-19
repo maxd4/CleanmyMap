@@ -1,18 +1,18 @@
-Rubrique: Guide pratique
+Rubrique: Progression & Badges
 Statut: format-audit-unifie-v1
 
 ## Objectif
-- Standardiser les bonnes pratiques terrain et la qualite d execution.
+- Rendre visible la progression individuelle et collective orientee impact reel.
 
 ## Flux (schema)
 ```mermaid
 flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Guide pratique]
+  A[Besoin utilisateur] --> B[Interaction Classement]
   B --> C[Donnees / validation]
   C --> D[Decision / action locale]
 ```
 Fallback statique:
-![Schema Guide pratique](../archive/fallback-audit-guide_pratique.png)
+![Schema Classement](../archive/fallback-audit-classement.png)
 
 ## Risques
 - Donnees incompletes ou mal qualifiees.
@@ -25,7 +25,7 @@ Fallback statique:
 - Impact: actions ou decisions declenchees depuis la rubrique.
 
 ## Impact concret
-- Actions plus efficaces, moins d erreurs operationnelles.
+- Retention durable via feedback clair et motivation non-competitive excessive.
 
 ## CTA
-- Suivre une checklist terrain avant la prochaine sortie.
+- Consulter Ton impact et suivre la prochaine action recommandee.

@@ -1,18 +1,18 @@
-Rubrique: Seconde vie
+Rubrique: Comprendre l'Enjeu
 Statut: format-audit-unifie-v1
 
 ## Objectif
-- Orienter vers reutilisation/recyclage utile des dechets collectes.
+- Relier les actions locales aux enjeux scientifiques et limites planetaires.
 
 ## Flux (schema)
 ```mermaid
 flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Seconde vie]
+  A[Besoin utilisateur] --> B[Interaction Developpement durable]
   B --> C[Donnees / validation]
   C --> D[Decision / action locale]
 ```
 Fallback statique:
-![Schema Seconde vie](../archive/fallback-audit-seconde_vie.png)
+![Schema Developpement durable](../archive/fallback-audit-climat.png)
 
 ## Risques
 - Donnees incompletes ou mal qualifiees.
@@ -25,7 +25,7 @@ Fallback statique:
 - Impact: actions ou decisions declenchees depuis la rubrique.
 
 ## Impact concret
-- Reduction du dechet final et meilleure valorisation des flux.
+- Meilleure comprehension de l effet environnemental des choix quotidiens.
 
 ## CTA
-- Qualifier un flux puis orienter vers la filiere adaptee.
+- Lire une synthese vulgarisee puis appliquer une recommandation locale.

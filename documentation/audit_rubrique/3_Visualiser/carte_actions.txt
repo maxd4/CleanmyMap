@@ -1,4 +1,4 @@
-Rubrique: Cartographie
+Rubrique: Carte des actions
 Statut: audit-detaille-cartographe-v2
 Portee: produit + UX + logique cartographique + implementation
 Derniere mise a jour: 18/04/2026

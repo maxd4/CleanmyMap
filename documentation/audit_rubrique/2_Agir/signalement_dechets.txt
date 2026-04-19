@@ -1,18 +1,19 @@
-Rubrique: Classement
+Rubrique: Signalement Déchets
+Note de conception : Cette rubrique est largement inspirée de la superbe application "Trash Spotter", pionnière du signalement citoyen.
 Statut: format-audit-unifie-v1
 
 ## Objectif
-- Rendre visible la progression individuelle et collective orientee impact reel.
+- Signaler, qualifier et suivre les points de pollution locale.
 
 ## Flux (schema)
 ```mermaid
 flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Classement]
+  A[Besoin utilisateur] --> B[Interaction Trash Spotter]
   B --> C[Donnees / validation]
   C --> D[Decision / action locale]
 ```
 Fallback statique:
-![Schema Classement](../archive/fallback-audit-classement.png)
+![Schema Trash Spotter](../archive/fallback-audit-trash_spotter.png)
 
 ## Risques
 - Donnees incompletes ou mal qualifiees.
@@ -25,7 +26,7 @@ Fallback statique:
 - Impact: actions ou decisions declenchees depuis la rubrique.
 
 ## Impact concret
-- Retention durable via feedback clair et motivation non-competitive excessive.
+- Detection plus rapide des hotspots et meilleure priorisation terrain.
 
 ## CTA
-- Consulter Ton impact et suivre la prochaine action recommandee.
+- Creer un signalement geolocalise avec preuve photo et statut.

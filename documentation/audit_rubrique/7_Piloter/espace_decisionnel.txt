@@ -1,18 +1,18 @@
-Rubrique: Developpement durable
+Rubrique: Espace Décisionnel
 Statut: format-audit-unifie-v1
 
 ## Objectif
-- Relier les actions locales aux enjeux scientifiques et limites planetaires.
+- Fournir une vue lisible des besoins/resultats pour arbitrage public.
 
 ## Flux (schema)
 ```mermaid
 flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Developpement durable]
+  A[Besoin utilisateur] --> B[Interaction Elus  Coordinateur]
   B --> C[Donnees / validation]
   C --> D[Decision / action locale]
 ```
 Fallback statique:
-![Schema Developpement durable](../archive/fallback-audit-climat.png)
+![Schema Elus  Coordinateur](../archive/fallback-audit-elus.png)
 
 ## Risques
 - Donnees incompletes ou mal qualifiees.
@@ -25,7 +25,7 @@ Fallback statique:
 - Impact: actions ou decisions declenchees depuis la rubrique.
 
 ## Impact concret
-- Meilleure comprehension de l effet environnemental des choix quotidiens.
+- Decision publique plus rapide et mieux ciblee localement.
 
 ## CTA
-- Lire une synthese vulgarisee puis appliquer une recommandation locale.
+- Consulter besoins prioritaires puis affecter un plan d action local.
