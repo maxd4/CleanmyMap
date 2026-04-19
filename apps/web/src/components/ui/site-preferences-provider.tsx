@@ -108,10 +108,12 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
     if (isDisplayModeExplicitlySet) {
       window.localStorage.setItem(STORAGE_KEYS.displayMode, displayMode);
       document.cookie = `${STORAGE_KEYS.displayMode}=${displayMode}; Max-Age=31536000; Path=/; SameSite=Lax`;
+      document.documentElement.setAttribute("data-display-mode", displayMode);
       return;
     }
     window.localStorage.removeItem(STORAGE_KEYS.displayMode);
     document.cookie = `${STORAGE_KEYS.displayMode}=; Max-Age=0; Path=/; SameSite=Lax`;
+    document.documentElement.removeAttribute("data-display-mode");
   }, [displayMode, isDisplayModeExplicitlySet]);
 
   const setLocale = useCallback((value: Locale) => setLocaleState(value), []);

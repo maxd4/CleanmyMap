@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { trackRoleCtaClick } from "@/lib/analytics/navigation-client";
 import type { CtaSlot } from "@/lib/domain-language";
