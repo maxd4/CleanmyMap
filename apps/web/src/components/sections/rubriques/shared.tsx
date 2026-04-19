@@ -60,7 +60,7 @@ export function SectionShell(props: {
           <div className="mt-2 flex flex-wrap gap-2">
             {props.links.map((link, index) => (
               <Link
-                key={`${link.href}-${link.label.fr}`}
+                key={`${link.href}-${link.label[locale]}`}
                 href={link.href}
                 className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
                   index === 0

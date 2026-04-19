@@ -9,6 +9,7 @@ import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-but
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { getProfilePrimaryAction, toProfile } from "@/lib/profiles";
+import { getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 async function loadAdminOverview() {
@@ -24,6 +25,7 @@ export default async function AdminPage() {
   const { userId } = await auth();
   const role = await getCurrentUserRoleLabel();
   const profile = toProfile(role);
+  const locale = await getServerLocale();
   const primaryAction = getProfilePrimaryAction(profile);
 
   if (!userId) {
@@ -120,7 +122,7 @@ export default async function AdminPage() {
         recommendedAction={{
           href: overview?.summary.recommendedAction.href ?? primaryAction.href,
           label:
-            overview?.summary.recommendedAction.label ?? primaryAction.label.fr,
+            overview?.summary.recommendedAction.label ?? primaryAction.label[locale],
         }}
         recommendedReason={overview?.summary.recommendedAction.reason}
       />

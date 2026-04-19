@@ -30,7 +30,7 @@ Correctifs CodeQL validés.
 Maintenance : Historique des actions nettoyé.
 
 
-
+poursuivre le lifting sur le formulaire de déclaration (Action Declaration) et l'annuaire de coopération (Discussion / Entraide Locale)
 
 
 

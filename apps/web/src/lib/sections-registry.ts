@@ -349,22 +349,28 @@ export function isRubriqueVisible(rubrique: Rubrique): boolean {
 
 export function getVisibleRubriquesByCategory(
   categoryId: RubriqueCategory["id"],
+  locale: Locale = "fr",
 ): Rubrique[] {
   return RUBRIQUE_REGISTRY.filter(
     (rubrique) =>
       rubrique.categoryId === categoryId && isRubriqueVisible(rubrique),
   ).sort(
-    (a, b) => a.priority - b.priority || a.label.fr.localeCompare(b.label.fr),
+    (a, b) =>
+      a.priority - b.priority ||
+      a.label[locale].localeCompare(b.label[locale]),
   );
 }
 
 export function getVisibleRubriquesBySpace(
   spaceId: RubriqueSpaceId,
+  locale: Locale = "fr",
 ): Rubrique[] {
   return RUBRIQUE_REGISTRY.filter(
     (rubrique) => rubrique.spaceId === spaceId && isRubriqueVisible(rubrique),
   ).sort(
-    (a, b) => a.priority - b.priority || a.label.fr.localeCompare(b.label.fr),
+    (a, b) =>
+      a.priority - b.priority ||
+      a.label[locale].localeCompare(b.label[locale]),
   );
 }
 

@@ -19,6 +19,7 @@ import {
   getProfileLabel,
   toProfile,
 } from "@/lib/profiles";
+import { getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 async function loadReportsOverview() {
@@ -34,9 +35,10 @@ export default async function ReportsPage() {
   const { userId } = await auth();
   const role = await getCurrentUserRoleLabel();
   const profile = toProfile(role);
+  const locale = await getServerLocale();
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
-  const roleLabel = getProfileLabel(profile, "fr");
+  const roleLabel = getProfileLabel(profile, locale);
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const overview = await loadReportsOverview().catch(() => null);
 
@@ -122,18 +124,18 @@ export default async function ReportsPage() {
                 overview?.summary.recommendedAction.href ?? primaryAction.href,
               label:
                 overview?.summary.recommendedAction.label ??
-                primaryAction.label.fr,
+                primaryAction.label[locale],
             }}
             recommendedReason={overview?.summary.recommendedAction.reason}
           />
         }
         primaryAction={{
           href: primaryAction.href,
-          label: primaryAction.label.fr,
+          label: primaryAction.label[locale],
         }}
         secondaryAction={
           secondaryAction
-            ? { href: secondaryAction.href, label: secondaryAction.label.fr }
+            ? { href: secondaryAction.href, label: secondaryAction.label[locale] }
             : undefined
         }
         analysis={
@@ -220,7 +222,7 @@ export default async function ReportsPage() {
         recommendedAction={{
           href: overview?.summary.recommendedAction.href ?? primaryAction.href,
           label:
-            overview?.summary.recommendedAction.label ?? primaryAction.label.fr,
+            overview?.summary.recommendedAction.label ?? primaryAction.label[locale],
         }}
         recommendedReason={overview?.summary.recommendedAction.reason}
       />
