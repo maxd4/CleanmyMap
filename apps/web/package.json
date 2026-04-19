@@ -24,7 +24,7 @@
     "backend:bootstrap": "node scripts/backend-bootstrap.mjs"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.0.8",
+    "@clerk/nextjs": "^7.2.1",
     "@pinecone-database/pinecone": "^7.1.0",
     "@sentry/nextjs": "^10.47.0",
     "@supabase/supabase-js": "^2.101.1",
