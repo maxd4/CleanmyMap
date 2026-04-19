@@ -2,7 +2,9 @@ import path from "path";
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
-const appRoot = path.resolve(__dirname, "../..");
+const appRoot = process.env.VERCEL
+  ? __dirname
+  : path.resolve(__dirname, "../..");
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,

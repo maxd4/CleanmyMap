@@ -1,11 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const candidateNextDirs = [
-  resolve(process.cwd(), ".next"),
-  resolve(process.cwd(), "..", ".next"),
-  resolve(process.cwd(), "..", "..", ".next"),
-];
+const candidateNextDirs = [resolve(process.cwd(), ".next")];
 
 const mode = process.argv.includes("--prepare") ? "prepare" : "finalize";
 
