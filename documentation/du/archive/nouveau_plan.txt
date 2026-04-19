@@ -20,7 +20,7 @@ exécute le plan
 
 
 
-- vérifie que les fichiers de base du projet nécessaires à la sécurité et à l’hygiène du repo sont bien présents et correctement configurés, notamment pour éviter toute divulgation de secrets lors des push GitHub
+- vérifie que les fichiers de base du projet nécessaires à la sécurité et à l'hygiène du repo sont bien présents et correctement configurés, notamment pour éviter toute divulgation de secrets lors des push GitHub
 - mets-les à jour si nécessaire
 
 Vérifications prioritaires :
@@ -28,8 +28,8 @@ Vérifications prioritaires :
 - `.env.example`
 - absence de secrets codés en dur
 - éventuel `.dockerignore` si pertinent
-- éventuels fichiers d’exemple de configuration sans secret
-- documentation minimale sur la gestion des variables d’environnement
+- éventuels fichiers d'exemple de configuration sans secret
+- documentation minimale sur la gestion des variables d'environnement
 - tout autre fichier racine nécessaire à une base de projet propre et sûre
 
 Pour éviter les fuites de secrets au push GitHub, les plus importants sont :
@@ -39,22 +39,22 @@ Pour éviter les fuites de secrets au push GitHub, les plus importants sont :
 .env.local non tracké
 .env non tracké
 .dockerignore si Docker
-README.md avec section variables d’environnement
+README.md avec section variables d'environnement
 éventuellement un fichier de doc type documentation/securite/secrets.md
 Point important
 
 Le .gitignore protège seulement les fichiers non encore suivis.
-Si un secret a déjà été commité une fois, l’ajouter ensuite au .gitignore ne suffit pas. Il faut alors :
+Si un secret a déjà été commité une fois, l'ajouter ensuite au .gitignore ne suffit pas. Il faut alors :
 
 retirer le fichier du suivi Git
 faire tourner les secrets exposés
-parfois nettoyer l’historique Git si l’exposition est réelle
+parfois nettoyer l'historique Git si l'exposition est réelle
 
 Pour cette partie sécurité :
 - signale précisément les risques détectés
 - corrige seulement ce qui est justifié
 - ne casse pas le fonctionnement du projet
-- si un secret semble déjà exposé dans l’historique ou dans le code, signale-le explicitement
+- si un secret semble déjà exposé dans l'historique ou dans le code, signale-le explicitement
 
 Retour attendu :
 2. liste des fichiers racine vérifiés
@@ -124,7 +124,7 @@ REPONSE AUDIRT PROMPT 002
 
 **CTA visibles (UI)**
 - CTA de navigation (header/nav) par rôle: `primaryCTA` + `secondaryCTA` depuis [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts), affichés dans [app-navigation.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/navigation/app-navigation.tsx) et [app/(app)/layout.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/layout.tsx) (header seulement si feature flag `parcoursNavV2` active).
-- CTA “Actions principales” (inclut aussi `additionalActions`) dans [role-primary-actions.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/navigation/role-primary-actions.tsx).
+- CTA "Actions principales" (inclut aussi `additionalActions`) dans [role-primary-actions.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/navigation/role-primary-actions.tsx).
 - CTA configurés:
 1. `benevole`: `/actions/new`, `/actions/map`, `/actions/history`
 2. `coordinateur`: `/sections/community`, `/dashboard`, `/reports`
@@ -140,14 +140,14 @@ AUDIT PROMPT 003
 
 **Principe directeur**
 - Même socle de pages pour tous les parcours.
-- Le rôle change la priorité, les CTA et les droits d’action, pas l’existence des pages.
+- Le rôle change la priorité, les CTA et les droits d'action, pas l'existence des pages.
 - Une source de données unifiée par domaine (actions, communauté, pilotage, exports).
 
 **1) Parcours -> Espaces stables -> Pages**
 
 | Espace | Pages cibles (routes uniques) | Données mutualisées |
 |---|---|---|
-| `Executer` | `/actions/new`, `/actions/map`, `/sections/community`, `/sections/route` | actions unifiées, spots, événements, recommandations d’itinéraire |
+| `Executer` | `/actions/new`, `/actions/map`, `/sections/community`, `/sections/route` | actions unifiées, spots, événements, recommandations d'itinéraire |
 | `Superviser` | `/dashboard`, `/actions/history`, `/sections/trash-spotter`, `/sections/weather`, `/sections/sandbox` | KPI opérationnels, qualité data, backlog, météo ops, checks techniques |
 | `Decider` | `/reports`, `/sections/elus`, `/sections/compare`, `/sections/climate` | comparatifs N/N-1, priorisation territoriale, exports, méthodes KPI |
 | `Preparer` | `/sections/guide`, `/sections/kit`, `/sections/actors`, `/sections/recycling` | playbooks, checklists, partenaires, tri/valorisation |
@@ -180,14 +180,14 @@ AUDIT PROMPT 003
 
 
 
-Dans le fichier texte "prompt.txt" du dossier archive de la documentation, créer un plan de travail priorisé sous forme d’une succession de prompts à envoyer à ChatGPT Codex pour améliorer l’application web Vercel + Supabase.
+Dans le fichier texte "prompt.txt" du dossier archive de la documentation, créer un plan de travail priorisé sous forme d'une succession de prompts à envoyer à ChatGPT Codex pour améliorer l'application web Vercel + Supabase.
 
 Objectif :
-produire une roadmap d’exécution concrète, directement exploitable, pour faire monter le projet vers un niveau production.
+produire une roadmap d'exécution concrète, directement exploitable, pour faire monter le projet vers un niveau production.
 
 Contraintes :
 - crée réellement le fichier
-- ne te contente pas d’expliquer ce que tu ferais
+- ne te contente pas d'expliquer ce que tu ferais
 - contenu en français
 - prompts classés par ordre de priorité
 - prompts courts, denses, impératifs, non redondants
@@ -212,7 +212,7 @@ Pour chaque priorité, écris :
 - 2 à 5 prompts Codex maximum, très ciblés
 
 Chaque prompt doit pousser Codex à :
-- auditer l’existant
+- auditer l'existant
 - identifier précisément les faiblesses
 - corriger ou refactorer proprement
 - éviter les régressions
@@ -274,7 +274,7 @@ Configuration Clerk/admin à faire
 Pour que les admins Clerk aient le badge automatiquement:
 
 définir CUSTOM_UP_CLERK_SECRET_KEY
-envoyer l’ID Clerk utilisateur au backend via header X-User-Id (et optionnel X-User-Name)
+envoyer l'ID Clerk utilisateur au backend via header X-User-Id (et optionnel X-User-Name)
 mettre dans Clerk:
 public_metadata.role = "admin" (ou private_metadata.role = "admin")
 public_metadata.badges pour les autres badges
@@ -296,7 +296,7 @@ Option simple sans Clerk complet: définir CUSTOM_UP_ADMIN_USER_IDS (liste CSV) 
 
 Que veux tu dire avec cela ? 
 Dans notre contexte CLI, Vercel impose un preview par branche Git.
-L’automatisation par défaut sync development + production.
+L'automatisation par défaut sync development + production.
 Pour Preview, utilise: node scripts/vercel-sync-env.mjs --file=.env.local --environments=preview --preview-branch=<ta-branche>. Rédige un plan d'execution puis execute le  
 
 

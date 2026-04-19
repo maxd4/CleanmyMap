@@ -4,7 +4,7 @@ Objectif :
 - identifier les écarts ;
 - proposer des améliorations concrètes ;
 - prioriser les actions à plus fort impact ;
-- préparer une base solide pour la recherche classique, les moteurs de réponse, les interfaces génératives, l’exploitation par IA et l’expérience de recherche.
+- préparer une base solide pour la recherche classique, les moteurs de réponse, les interfaces génératives, l'exploitation par IA et l'expérience de recherche.
 
 Définitions de travail :
 - SEO = Search Engine Optimization ;
@@ -14,7 +14,7 @@ Définitions de travail :
 - SXO = Search Experience Optimization.
 
 Ce que tu dois faire :
-1. Auditer l’existant sur tout le site.
+1. Auditer l'existant sur tout le site.
 2. Pour chaque acronyme, lister :
    - problèmes détectés ;
    - opportunités ;
@@ -42,16 +42,16 @@ Ce que tu dois faire :
    - extractible en réponse directe ;
    - citable par des moteurs génératifs ;
    - compréhensible par des systèmes IA ;
-   - agréable et performant pour l’utilisateur.
+   - agréable et performant pour l'utilisateur.
 5. Proposer les modifications exactes à implémenter dans le code et dans le contenu.
-6. Quand c’est pertinent, générer directement les patchs.
+6. Quand c'est pertinent, générer directement les patchs.
 
 Contraintes :
 - ne fais pas de blabla ;
 - sois concret, précis, priorisé ;
 - évite les recommandations vagues ;
 - conserve le comportement métier existant sauf si une correction est clairement justifiée ;
-- n’ajoute pas de complexité inutile.
+- n'ajoute pas de complexité inutile.
 
 Format de sortie obligatoire :
 - Résumé exécutif

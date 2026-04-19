@@ -14,7 +14,7 @@ Date: 2026-04-17
   - zones sensibles
   - commandes de validation
 
-## Bloc 3 — Protocole d’ouverture de session
+## Bloc 3 — Protocole d'ouverture de session
 - `documentation/du/session/session_bootstrap.txt` normalise en format court de bootstrap session.
 - `scripts/session_bootstrap.mjs` ajuste pour verifier les fichiers obligatoires et limiter le bruit.
 
@@ -39,7 +39,7 @@ Date: 2026-04-17
 - Scripts npm operationnels:
   - `session:bootstrap`
   - `session:close`
-- Cycle d’usage documente dans `README.md`.
+- Cycle d'usage documente dans `README.md`.
 
 ## Validation
 - `npm run session:bootstrap`: OK

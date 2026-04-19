@@ -27,22 +27,22 @@ Write-Host "Scope: $Scope"
 $changedFiles = @(Get-ChangedFiles)
 
 Write-Host "Running UTF-8 normalization check..."
-python scripts/normalize_utf8.py --root . --check --max-report 20
+python legacy/scripts/normalize_utf8.py --root . --check --max-report 20
 $encodingCheckExit = $LASTEXITCODE
 if ($encodingCheckExit -ne 0) {
     if ($SkipEncodingAutofix) {
         throw "normalize_utf8 check failed with exit code $encodingCheckExit (auto-fix disabled)."
     }
     Write-Host "Encoding issues detected; applying automatic UTF-8 normalization..."
-    Invoke-Step { python scripts/normalize_utf8.py --root . --write --max-report 20 } "normalize_utf8_write"
-    Invoke-Step { python scripts/normalize_utf8.py --root . --check --max-report 20 } "normalize_utf8_recheck"
+    Invoke-Step { python legacy/scripts/normalize_utf8.py --root . --write --max-report 20 } "normalize_utf8_write"
+    Invoke-Step { python legacy/scripts/normalize_utf8.py --root . --check --max-report 20 } "normalize_utf8_recheck"
 }
 
 if ($Scope -eq "full") {
     Write-Host "Running Python static compilation (full tracked set)..."
-    $pythonFiles = @(git ls-files 'legacy/src/*.py' 'scripts/*.py')
+    $pythonFiles = @(git ls-files 'legacy/src/*.py' 'legacy/scripts/*.py')
 } else {
-    $pythonFiles = @($changedFiles | Where-Object { $_ -like 'legacy/src/*.py' -or $_ -like 'scripts/*.py' })
+    $pythonFiles = @($changedFiles | Where-Object { $_ -like 'legacy/src/*.py' -or $_ -like 'legacy/scripts/*.py' })
     Write-Host "Running Python static compilation (changed files only)..."
 }
 
@@ -53,10 +53,10 @@ foreach ($f in $pythonFiles) {
 }
 
 Write-Host "Running cleanup diagnostic check (non-destructive)..."
-Invoke-Step { python scripts/ci_cleanup.py --root . --check } "ci_cleanup"
+Invoke-Step { python legacy/scripts/ci_cleanup.py --root . --check } "ci_cleanup"
 
 Write-Host "Running runtime SQLite tracking guardrail..."
-Invoke-Step { python scripts/check_runtime_db_tracking.py --root . } "runtime_db_tracking"
+Invoke-Step { python legacy/scripts/check_runtime_db_tracking.py --root . } "runtime_db_tracking"
 
 Write-Host "Running prioritized documentation visual check..."
 Invoke-Step { npm run check:doc-visuals } "check_doc_visuals"

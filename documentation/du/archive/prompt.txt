@@ -1,17 +1,7 @@
-pourquoi il n'y a pas la branche main ou app de mon repo GitHub mais des branches obsolètes sur mes actives branches vercel mon site web ?
 
-pourquoi EYwEsV4mZ est error mais 7H8UqeUYW est deploy ? pourquoi l'une à la photo de mon compte gihub et l'autre la photo de mon compte vercel ?
 
-pourquoi il y a autant de branches dans mon repo GitHub ? Est ce que je peux les supprimer ? Quelles branches sont utilisées par vercel et supabase ? Je ne comprends rien.
-
-pourquoi il y a 4 action GitHub sur le repo ? A quoi servent t-elles ? Pourquoi elles sont en erreur ? Je ne comprends rien. 
 
 pourquoi le site web me met une page d'erreur après m'etre connecté à mon compte administrateur ?
-
-je crois que mon projet supabase n'est pas connecté avec le site. Aide moi. De quelles informations as tu besoin pour controler le projet supabase tout seul ?
-
-
-
 
 
 est ce que je dois utiliser la rubrique "security and quality" sur GitHub pour mon projet open source maintenant ? Si oui guide moi
@@ -19,20 +9,18 @@ est ce que je dois utiliser la rubrique "security and quality" sur GitHub pour m
 
 
 
-vérifie le deploy vercel et qu'il est bien branché à mon nom de domaine cleanmymap.fr
-
-Exécute la priorité **P0 — Fiabilité production / sécurité** du plan, c’est-à-dire les prompts **015, 054, 073, 074, 075, 076, 077, 083, 084 et 090** du fichier "CleanmyMap-main\documentation\du\archive\prompt.txt"
+Exécute la priorité **P0 — Fiabilité production / sécurité** du plan, c'est-à-dire les prompts **015, 054, 073, 074, 075, 076, 077, 083, 084 et 090** du fichier "CleanmyMap-main\documentation\du\archive\prompt.txt"
 
 Instructions strictes :
-- Ce plan provient d’une ancienne version du projet : **ne considère pas ces prompts comme une vérité absolue**, mais comme des **pistes d’implémentation** à réévaluer intelligemment à la lumière de l’architecture et du code actuels.
-- Pour chaque prompt, détermine d’abord :
-  - s’il est encore pertinent ;
-  - s’il doit être adapté ;
-  - s’il est déjà partiellement ou totalement implémenté ;
-  - s’il doit être fusionné avec un autre chantier proche.
+- Ce plan provient d'une ancienne version du projet : **ne considère pas ces prompts comme une vérité absolue**, mais comme des **pistes d'implémentation** à réévaluer intelligemment à la lumière de l'architecture et du code actuels.
+- Pour chaque prompt, détermine d'abord :
+  - s'il est encore pertinent ;
+  - s'il doit être adapté ;
+  - s'il est déjà partiellement ou totalement implémenté ;
+  - s'il doit être fusionné avec un autre chantier proche.
 - Implémente uniquement ce qui reste réellement utile, cohérent et prioritaire pour le projet dans son état actuel.
-- Ne fais pas de changements redondants, obsolètes, régressifs ou incompatibles avec l’architecture actuelle.
-- Si un prompt n’est plus pertinent en l’état, n’applique pas sa formulation littéralement : adapte son intention au code actuel.
+- Ne fais pas de changements redondants, obsolètes, régressifs ou incompatibles avec l'architecture actuelle.
+- Si un prompt n'est plus pertinent en l'état, n'applique pas sa formulation littéralement : adapte son intention au code actuel.
 - Si un prompt est seulement partiellement couvert, ne le supprime pas entièrement : mets-le à jour ou scinde-le clairement selon le travail restant puis execute le.
 - Une fois tous les prompts de la priorité executés ou skipé, supprime les du fichier.
 - Préserve la stabilité du site et évite toute régression.

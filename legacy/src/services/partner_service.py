@@ -1,4 +1,4 @@
-﻿import pandas as pd
+import pandas as pd
 
 # --- DONNEES STATIQUES (Savoir-faire historique) ---
 STATIC_PARTNERS = {

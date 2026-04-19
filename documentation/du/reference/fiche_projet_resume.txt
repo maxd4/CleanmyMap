@@ -13,7 +13,7 @@ CleanMyMap est une plateforme web qui transforme les actions bénévoles de dép
 
 ## 2. Problème traité
 
-Les résultats des actions citoyennes sont souvent dispersés et difficiles à exploiter. Cela freine la priorisation des zones, la mesure d’impact et la mobilisation des partenaires.
+Les résultats des actions citoyennes sont souvent dispersés et difficiles à exploiter. Cela freine la priorisation des zones, la mesure d'impact et la mobilisation des partenaires.
 
 ---
 
@@ -22,7 +22,7 @@ Les résultats des actions citoyennes sont souvent dispersés et difficiles à e
 - **Action terrain :** savoir où, quand et comment intervenir ;
 - **Pilotage associatif :** mieux planifier les opérations ;
 - **Culture citoyenne :** diffuser des contenus pédagogiques ;
-- **Plaidoyer institutionnel :** objectiver l’impact ;
+- **Plaidoyer institutionnel :** objectiver l'impact ;
 - **Valorisation des acteurs :** rendre visibles les partenaires engagés.
 
 ---
@@ -33,7 +33,7 @@ Les résultats des actions citoyennes sont souvent dispersés et difficiles à e
 - nettoyage legacy terminé (`app.py`, `src/ui/*`, `src/services/*` supprimés) ;
 - contrôles techniques validés (lint, tests, build, maintenance checks).
 
-Plan d’exécution :
+Plan d'exécution :
 - E03 à E09 : réalisés ;
 - E10 à E20 : en attente (pause).
 

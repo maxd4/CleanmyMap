@@ -1,4 +1,4 @@
-Analyse chaque rubrique/page/section du site et choisis le background le plus pertinent pour chacune au lieu d’appliquer un fond global unique. Écrit cet audit au debut de ce fichier texte "background" puis écris une succession de prompt a t'envoyer pour implémenter ton audit proprement.
+Analyse chaque rubrique/page/section du site et choisis le background le plus pertinent pour chacune au lieu d'appliquer un fond global unique. Écrit cet audit au debut de ce fichier texte "background" puis écris une succession de prompt a t'envoyer pour implémenter ton audit proprement.
 
 Options possibles à arbitrer intelligemment :
 - couleur unie sobre
@@ -12,7 +12,7 @@ Options possibles à arbitrer intelligemment :
 - fond fixe avec contenu scrollant
 - halo diffus discret
 - glassmorphism très léger sur certains blocs
-- aucun effet si c’est meilleur pour la lisibilité
+- aucun effet si c'est meilleur pour la lisibilité
 
 Évalue notamment :
 - accueil / hero
@@ -34,7 +34,7 @@ Critères obligatoires :
 - hiérarchie visuelle
 - cohérence avec un produit civic-tech écologique premium
 - présence de carte
-- densité d’information
+- densité d'information
 - performance mobile
 - accessibilité / contraste
 - risque de distraction
@@ -46,7 +46,7 @@ Pour chaque rubrique, donne :
 - animation ou non
 - justification UX / produit
 - risques à éviter
-- priorité d’implémentation
+- priorité d'implémentation
 
 Contraintes :
 - ne jamais gêner la lecture
