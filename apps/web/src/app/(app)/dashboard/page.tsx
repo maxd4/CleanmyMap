@@ -146,7 +146,7 @@ export default async function DashboardPage() {
           }
           analysis={
             <>
-              <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Pilotage metier
@@ -176,7 +176,7 @@ export default async function DashboardPage() {
                 recommendedReason={adaptiveReason}
               />
 
-              <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Supervision technique
@@ -201,7 +201,7 @@ export default async function DashboardPage() {
                 />
               ) : null}
 
-              <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     Exécution terrain
@@ -271,7 +271,7 @@ export default async function DashboardPage() {
         recommendedReason={overview?.summary.recommendedAction.reason}
       />
 
-      <header className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <header className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-6 shadow-xl">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Espace applicatif
         </p>
@@ -295,7 +295,7 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             Bloc A
@@ -318,7 +318,7 @@ export default async function DashboardPage() {
 
       <FunnelConversionPanel />
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             Bloc B
@@ -351,7 +351,7 @@ export default async function DashboardPage() {
         recommendedReason={adaptiveReason}
       />
 
-      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             Bloc D

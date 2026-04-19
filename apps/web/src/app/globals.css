@@ -13,6 +13,20 @@ html.dark {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: #10b981; /* Emerald-500 */
+  --glass-bg: rgba(255, 255, 255, 0.05); /* Version Dark. Pour light: rgba(255, 255, 255, 0.6) */
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: blur(12px);
+}
+
+@layer utilities {
+  .punchy-title {
+    font-family: 'Outfit', sans-serif;
+    background: linear-gradient(135deg, #6ee7b7, #3b82f6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
 }
 
 * {
