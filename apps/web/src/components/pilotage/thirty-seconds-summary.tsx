@@ -72,7 +72,7 @@ export function ThirtySecondsSummary({
               N-1: {kpi.previousValue}
             </p>
             <div
-              className={`mt-2 rounded-lg border px-2 py-1 text-xs font-semibold ${interpretationTone(kpi.interpretation)}`}
+              className={`mt-2 rounded-lg border px-2 py-1 text-xs font-semibold exhaustive-only ${interpretationTone(kpi.interpretation)}`}
             >
               <p>Delta abs: {kpi.deltaAbsolute ?? "n/a"}</p>
               <p>Delta %: {kpi.deltaPercent ?? "n/a"}</p>
@@ -88,14 +88,14 @@ export function ThirtySecondsSummary({
             Alerte prioritaire
           </p>
           <p className="mt-1 text-sm font-semibold">{alert.title}</p>
-          <p className="mt-1 text-xs">{alert.detail}</p>
+          <p className="mt-1 text-xs exhaustive-only">{alert.detail}</p>
         </div>
       ) : null}
       <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-white px-4 py-3">
         <div>
           <p className="text-sm text-slate-700">Action recommandee</p>
           {recommendedReason ? (
-            <p className="text-xs text-slate-500">{recommendedReason}</p>
+            <p className="text-xs text-slate-500 exhaustive-only">{recommendedReason}</p>
           ) : null}
         </div>
         <Link
