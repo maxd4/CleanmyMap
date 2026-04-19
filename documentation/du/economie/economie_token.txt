@@ -111,7 +111,6 @@ F) Gains estimés
 
 
 
-
 PARTIE 3
 Bloc 1 — Audit global rapide (détection macro)
 But: Identifier les risques systémiques et établir une matrice de priorité unique.
