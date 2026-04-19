@@ -7,7 +7,7 @@ from datetime import datetime
 
 # Supabase config
 SUPABASE_URL = "https://mgvmuambbxmmkrjjlryo.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ndm11YW1iYnhtbWtyampscnlvIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NDczMTIxMywiZXhwIjoyMDkwMzA3MjEzfQ.oOnuuC2FrgzHgoXgeVIq1mCyVDJBz7TSYYUPGowwY2Q"
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "PLACEHOLDER_KEY_EXPOSED_AND_REVOKED")
 
 # Google Sheet CSV URL
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1kKkhylwqo10OA-p6CDuNwYihzW0ElwTeFwCwZ6O-rJw/export?format=csv"
