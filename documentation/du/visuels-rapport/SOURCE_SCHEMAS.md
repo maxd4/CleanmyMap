@@ -32,7 +32,8 @@ flowchart TD
 flowchart TD
   A[Utilisateur arrive] --> B{Type de profil}
   B -- Benevole --> C[Complete profil + localisation]
-  C --> D[Reco locale + itineraire IA]
+  C --> CP[Gestion Profil/Compte]
+  CP --> D[Reco locale + itineraire IA]
   D --> E[Declaration action]
   E --> F[Classement + impact personnel]
   B -- Association/Entreprise --> G[Publie besoins/contributions]
@@ -40,6 +41,26 @@ flowchart TD
   B -- Elu/Coordinateur --> I[Lit besoins/resultats]
   I --> J[Arbitre et pilote]
   B -- Admin --> K[Modere + qualifie donnees]
+```
+
+---
+
+## 2. DONNÉES ET IMPACT
+...
+*(Déjà présent)*
+
+---
+
+## 3. RÉSEAU ET ÉCOSYSTÈME
+
+### A. Flux de Coopération Locale
+*Utile pour : Montrer comment les ressources circulent.*
+```mermaid
+flowchart LR
+    PART[Partenaires/Acteurs] <--> COLL[Coordination Locale]
+    COLL <--> DATA[Données Ouvertes / API]
+    DON[Dons / Sponsoring] --> FUND[Financement Projet]
+    FUND --> MAT[Achat Matériel]
 ```
 
 ---
