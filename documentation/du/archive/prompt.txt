@@ -1,10 +1,45 @@
-EN MODE APPROFONDI : 
+pourquoi il n'y a pas la branche main ou app de mon repo GitHub mais des branches obsolètes sur mes actives branches vercel mon site web ?
 
-execute "P0 Fiabilité prod / sécurité 
-PROMPT 015, 054, 073, 074, 075, 076, 077, 083, 084, 90" du fichier texte documentation/du/prompt.txt puis supprime les prompts du fichier une fois qu'ils sont implémentés. Ce plan est issus d'une ancien version du site donc ne prend pas les prompts comme vérité absolu mais comme idée d'implémentation pour le site web dans son état actuel plus avancé.
+pourquoi EYwEsV4mZ est error mais 7H8UqeUYW est deploy ? pourquoi l'une à la photo de mon compte gihub et l'autre la photo de mon compte vercel ?
 
-P1 Cohérence navigation/roles
-PROMPT 006, 007, 008, 009, 010, 011, 012, 013, 014, 018, 019
+pourquoi il y a autant de branches dans mon repo GitHub ? Est ce que je peux les supprimer ? Quelles branches sont utilisées par vercel et supabase ? Je ne comprends rien.
+
+pourquoi il y a 4 action GitHub sur le repo ? A quoi servent t-elles ? Pourquoi elles sont en erreur ? Je ne comprends rien. 
+
+pourquoi le site web me met une page d'erreur après m'etre connecté à mon compte administrateur ?
+
+je crois que mon projet supabase n'est pas connecté avec le site. Aide moi. De quelles informations as tu besoin pour controler le projet supabase tout seul ?
+
+
+
+
+
+est ce que je dois utiliser la rubrique "security and quality" sur GitHub pour mon projet open source maintenant ? Si oui guide moi
+
+
+
+
+vérifie le deploy vercel et qu'il est bien branché à mon nom de domaine cleanmymap.fr
+
+Exécute la priorité **P0 — Fiabilité production / sécurité** du plan, c’est-à-dire les prompts **015, 054, 073, 074, 075, 076, 077, 083, 084 et 090** du fichier "CleanmyMap-main\documentation\du\archive\prompt.txt"
+
+Instructions strictes :
+- Ce plan provient d’une ancienne version du projet : **ne considère pas ces prompts comme une vérité absolue**, mais comme des **pistes d’implémentation** à réévaluer intelligemment à la lumière de l’architecture et du code actuels.
+- Pour chaque prompt, détermine d’abord :
+  - s’il est encore pertinent ;
+  - s’il doit être adapté ;
+  - s’il est déjà partiellement ou totalement implémenté ;
+  - s’il doit être fusionné avec un autre chantier proche.
+- Implémente uniquement ce qui reste réellement utile, cohérent et prioritaire pour le projet dans son état actuel.
+- Ne fais pas de changements redondants, obsolètes, régressifs ou incompatibles avec l’architecture actuelle.
+- Si un prompt n’est plus pertinent en l’état, n’applique pas sa formulation littéralement : adapte son intention au code actuel.
+- Si un prompt est seulement partiellement couvert, ne le supprime pas entièrement : mets-le à jour ou scinde-le clairement selon le travail restant puis execute le.
+- Une fois tous les prompts de la priorité executés ou skipé, supprime les du fichier.
+- Préserve la stabilité du site et évite toute régression.
+
+
+de la même manière, execute P1 Cohérence navigation/roles c'est a dire les PROMPT 006, 007, 008, 009, 010, 011, 012, 013, 014, 018, 019
+
 
 P2 Cohérence analytique multi-horizon + funnel
 PROMPT 038 à 055
@@ -16,7 +51,9 @@ P4 Modules métier avancés admin
 PROMPT 091, 092, 093, 094, 095, 097
 
 P5 Clôture gouvernance/documentation
-PROMPT 079, 080, 081, 082, 085, 086, 087, 088, 089, 090, 098, 100
+PROMPT 079, 080, 081, 082, 085, 087, 088, 089, 090, 098, 100
+
+
 
 
 
@@ -32,9 +69,14 @@ PROMPT 008
 "Ajoute ou valide les feature flags de refonte (navigation, template pages, dedoublonnage, funnel, exports) pour permettre des rollbacks rapides et propres."
 
 
-PROMPT 015
-"Durcis l'acces admin: aucun contournement, aucune escalation, controles server-side obligatoires, tests d'autorisation et de refus."
+PROMPT 009
+"Refactor navigation.ts pour imposer une source de verite unique parcours -> espaces -> pages, typee, lisible, maintenable et extensible. Supprime les conditions dispersees redondantes."
 
+PROMPT 010
+"Refactor app-navigation.tsx pour afficher clairement role actif, espace actif, CTA principal et navigation par espaces stables, avec comportement coherent desktop/mobile."
+
+PROMPT 011
+"Etends profiles.ts pour chaque role avec primaryCTA unique, secondaryCTA optionnel, et priorite d'espaces si utile. Les CTA doivent etre 100% config-driven."
 
 PROMPT 012
 "Harmonise les routes /parcours/* existantes et corrige les incoherences de patterns URL. Assure un comportement homogene et auditable."
@@ -48,21 +90,8 @@ PROMPT 014
 "Distingue explicitement dans le code: role stocke dans le profil, parcours affiche, droits effectifs d'acces. Ajoute des conventions explicites pour eviter toute confusion future."
 
 
-PROMPT 018
-"Ajoute une verification que les utilisateurs peuvent explorer d'autres parcours quand la regle produit l'autorise, sans compromettre les gardes d'acces."
-
-
-PROMPT 009
-"Refactor navigation.ts pour imposer une source de verite unique parcours -> espaces -> pages, typee, lisible, maintenable et extensible. Supprime les conditions dispersees redondantes."
-
-
-PROMPT 011
-"Etends profiles.ts pour chaque role avec primaryCTA unique, secondaryCTA optionnel, et priorite d'espaces si utile. Les CTA doivent etre 100% config-driven."
-
-
-PROMPT 010
-"Refactor app-navigation.tsx pour afficher clairement role actif, espace actif, CTA principal et navigation par espaces stables, avec comportement coherent desktop/mobile."
-
+PROMPT 015
+"Durcis l'acces admin: aucun contournement, aucune escalation, controles server-side obligatoires, tests d'autorisation et de refus."
 
 PROMPT 016
 "Instrumente les clics de navigation avec des evenements coherents et exploitables (role, espace, emplacement, destination, contexte)."
@@ -72,16 +101,15 @@ PROMPT 017
 "Instrumente les clics CTA (principal/secondaire) avec schema d'event stable, sans doublons, et dimensions minimales utiles pour l'analyse produit."
 
 
+PROMPT 018
+"Ajoute une verification que les utilisateurs peuvent explorer d'autres parcours quand la regle produit l'autorise, sans compromettre les gardes d'acces."
+
 PROMPT 019
 "Controle que la navigation V2 ne casse pas la discovery. Propose un plan canary + rollback via flag, sans redeploy si possible."
 
 
 PROMPT 020
 "Fais un audit des pages coeur et prepare l'application du template transversal sans reecriture brutale inutile."
-
-
-PROMPT 029
-"Etends sections-registry.ts avec appartenance a un espace et priorite explicite, pour tri coherent par parcours/espace/priorite."
 
 
 PROMPT 021
@@ -115,6 +143,8 @@ PROMPT 027
 PROMPT 028
 "Fais evoluer section-renderer.tsx pour porter la structure objectif -> resume -> agir -> analyser -> tracer de maniere standardisee."
 
+PROMPT 029
+"Etends sections-registry.ts avec appartenance a un espace et priorite explicite, pour tri coherent par parcours/espace/priorite."
 
 PROMPT 030
 "Clarifie et documente la responsabilite exclusive de chaque page pour supprimer les confusions fonctionnelles."
@@ -187,30 +217,23 @@ PROMPT 046
 PROMPT 047
 "Durcis l'endpoint analytics funnel: validation stricte, schema stable, logs utiles, erreurs explicites."
 
-
-PROMPT 051
-"Controle la coherence stricte submit_success <= start_form <= view_new et remonte toute anomalie de comptage."
-
-
-PROMPT 052
-"Ajoute une validation croisee FE/BE du funnel et fixe un controle automatique de derive de comptage."
-
-
 PROMPT 048
 "Construit ou refond le panneau funnel dans l'interface avec lecture claire des conversions et pertes entre etapes."
-
 
 PROMPT 049
 "Ajoute dans le panneau funnel le mini-bloc baseline J-28 vs periode courante pour suivre start_form -> submit_success."
 
-
 PROMPT 050
 "Ajoute l'export CSV funnel global avec colonnes attendues stables, documentation et controle d'acces coherent."
 
+PROMPT 051
+"Controle la coherence stricte submit_success <= start_form <= view_new et remonte toute anomalie de comptage."
+
+PROMPT 052
+"Ajoute une validation croisee FE/BE du funnel et fixe un controle automatique de derive de comptage."
 
 PROMPT 053
 "Ajoute instrumentation pour audit usage funnel et navigation/CTA dans un schema de metriques coherent."
-
 
 PROMPT 054
 "Hardening api/community/funnel.csv: filtres days et eventId, acces admin only, journalisation, garde-fous de perf."
@@ -239,6 +262,20 @@ PROMPT 059
 PROMPT 060
 "Refactor les flux d'exports pour eviter duplication par rubrique et garder une architecture extensible a de nouveaux livrables."
 
+
+PROMPT 061
+"Implémente 4 profils d'utilisateur : bénévoles, coordinateur, décideur, scientifique. A choisir à la création du compte et modifiable dans les paramètre du compte. Chaque profil doit avoir une CTA dédiée. 
+
+PROMPT 062
+"Integre la logique de livrables dans les rubriques: quelle rubrique produit quoi, avec quel niveau de detail selon role et contexte."
+
+
+PROMPT 063
+"Ameliore la qualite des livrables: lisibilite, progression logique, sections distinctes, adaptation multi-public, zero duplication inutile."
+
+
+PROMPT 064
+"Rends explicites les limites, hypotheses et risques de chaque livrable pour eviter interpretation excessive."
 
 PROMPT 068
 Ajoute une rubrique commune à tous les rôles "guide/mode/rôle/profil" pour que les utilisateurs modifient leurs choix facilement. Le guide est une nouveauté. Conçois un mécanisme non intrusif et réversible : première visite, retour après longue absence, après refonte (accompagnement de comprehension des changements apres grosse refonte (message rassurant, clair, reversible)). Le but est de guider les visiteurs selon leur besoin".
@@ -300,21 +337,6 @@ PROMPT 095
 "Implemente un lot training dans gamification: modules de formation, quiz de validation, badge/certificat, et integration du signal de competence dans le classement."
 
 
-PROMPT 061
-"Implémente 4 profils d'utilisateur : bénévoles, coordinateur, décideur, scientifique. A choisir à la création du compte et modifiable dans les paramètre du compte. Chaque profil doit avoir une CTA dédiée. 
-
-
-PROMPT 062
-"Integre la logique de livrables dans les rubriques: quelle rubrique produit quoi, avec quel niveau de detail selon role et contexte."
-
-
-PROMPT 063
-"Ameliore la qualite des livrables: lisibilite, progression logique, sections distinctes, adaptation multi-public, zero duplication inutile."
-
-
-PROMPT 064
-"Rends explicites les limites, hypotheses et risques de chaque livrable pour eviter interpretation excessive."
-
 PROMPT 072
 "Pour chaque proposition UX majeure, documente interet, public cible, benefices, limites, risques et arbitrages avec la richesse fonctionnelle."
 
@@ -346,33 +368,17 @@ PROMPT 098
 PROMPT 099
 "Ajoute une checklist post-deploiement Clerk/Vercel/Supabase orientee verification metier et securite, avec procedure de rollback rapide."
 
-
 PROMPT 085
 "Fournis la synthese finale de livraison: livrables ameliores, manques couverts, nouveaux livrables ajoutes, rubriques enrichies, prochaines etapes recommandees."
-
-
-PROMPT 086
-"Fournis la synthese finale mapping UX/livrables:
-1) mapping actuel role -> rubriques
-2) mapping optimise propose
-3) ameliorations UX apportees
-4) nouvelle structure livrables
-5) integration livrables dans rubriques
-6) benefices attendus (lisibilite, qualite, adoption, valeur percue)
-+ limites, points a affiner, priorites suivantes."
-
 
 PROMPT 087
 "Fais une passe correction continue: liste anomalies restantes par severite, corrige-les, relance tous les tests pertinents, puis fournis risques residuels factuels."
 
-
 PROMPT 088
 "Fais une passe coherence finale: detecte les conflits residuels entre code et intention produit, propose arbitrages A/B avec impacts et recommandation."
 
-
 PROMPT 089
 "Uniformise la documentation technique de la refonte: conventions, schemas d'events, matrice parcours/espaces/pages, checklist QA, runbook."
-
 
 PROMPT 090
 "Propose un backlog post go-live priorise (quick wins, hardening, dettes techniques, instrumentation complementaire) avec impact attendu et ordre recommande."
