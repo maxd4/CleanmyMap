@@ -21,6 +21,10 @@
   - `apps/web/src/lib/navigation.ts`
   - `apps/web/src/lib/profiles.ts`
   - `apps/web/src/lib/sections-registry.ts`
+- Documentation & Visuals:
+  - Master System Architecture: `documentation/master-architecture.md`
+  - Visual Assets for DU: `documentation/du/visuels-rapport/`
+  - Mermaid Source Codes: `documentation/du/visuels-rapport/SOURCE_SCHEMAS.md`
 
 ## ADR decisions (active)
 - Root lockfile is source of truth; `apps/web/package-lock.json` must remain absent.
