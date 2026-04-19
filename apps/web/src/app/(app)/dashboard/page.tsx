@@ -49,6 +49,7 @@ export default async function DashboardPage() {
     identity?.actorNameOptions && identity.actorNameOptions.length > 0
       ? identity.actorNameOptions
       : [fallbackActorName];
+
   const kpis = overview
     ? ([
         {
@@ -102,6 +103,7 @@ export default async function DashboardPage() {
           interpretation: "neutral",
         },
       ] as const);
+
   const impactKpis = kpis.slice(0, 3).map((kpi) => ({
     label: kpi.label,
     value: kpi.value,
@@ -118,142 +120,139 @@ export default async function DashboardPage() {
         <PageReadingTemplate
           context={`Profil ${roleLabel}`}
           title="Cockpit transversal"
-        objective="Orienter la priorisation op�rationnelle avec un r�sum� d�cisionnel court, puis des analyses cibl�es sans doublonner Compare, Climate et Reports."
-        summary={
-          <ThirtySecondsSummary
-            kpis={kpis}
-            alert={overview ? overview.summary.alert : undefined}
-            recommendedAction={{
-              href:
-                overview?.summary.recommendedAction.href ?? primaryAction.href,
-              label:
-                overview?.summary.recommendedAction.label ??
-                primaryAction.label.fr,
-            }}
-            recommendedReason={overview?.summary.recommendedAction.reason}
-          />
-        }
-        primaryAction={{
-          href: primaryAction.href,
-          label: primaryAction.label.fr,
-        }}
-        secondaryAction={
-          secondaryAction
-            ? { href: secondaryAction.href, label: secondaryAction.label.fr }
-            : undefined
-        }
-        analysis={
-          <>
-            <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  Pilotage m�tier
-                </p>
-                <h2 className="mt-1 text-xl font-semibold text-slate-900">
-                  Synth�se comparative N vs N-1
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Lecture actionnable court terme: impact, qualit�, couverture,
-                  mobilisation, d�lai de mod�ration.
-                </p>
-              </div>
+          objective="Orienter la priorisation opérationnelle avec un résumé décisionnel court, puis des analyses ciblées sans doublonner Compare, Climate et Reports."
+          summary={
+            <ThirtySecondsSummary
+              kpis={kpis}
+              alert={overview ? overview.summary.alert : undefined}
+              recommendedAction={{
+                href:
+                  overview?.summary.recommendedAction.href ?? primaryAction.href,
+                label:
+                  overview?.summary.recommendedAction.label ??
+                  primaryAction.label.fr,
+              }}
+              recommendedReason={overview?.summary.recommendedAction.reason}
+            />
+          }
+          primaryAction={{
+            href: primaryAction.href,
+            label: primaryAction.label.fr,
+          }}
+          secondaryAction={
+            secondaryAction
+              ? { href: secondaryAction.href, label: secondaryAction.label.fr }
+              : undefined
+          }
+          analysis={
+            <>
+              <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Pilotage metier
+                  </p>
+                  <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                    Synthèse comparative N vs N-1
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Lecture actionnable court terme: impact, qualité, couverture,
+                    mobilisation, délai de modération.
+                  </p>
+                </div>
 
-              <DashboardComparisonGrid overview={overview} />
+                <DashboardComparisonGrid overview={overview} />
+
+                {overview ? (
+                  <OperationalPrioritiesPanel priorities={overview.priorities} />
+                ) : null}
+                <BusinessAlertsPanel />
+              </section>
+
+              <FunnelConversionPanel />
+              <ClosedLoopPanel
+                impactKpis={impactKpis}
+                recommendedHref={adaptiveHref}
+                recommendedLabel={adaptiveLabel}
+                recommendedReason={adaptiveReason}
+              />
+
+              <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Supervision technique
+                  </p>
+                  <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                    Santé plateforme et exports critiques
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    État des services et vérification des exécutions sensibles.
+                  </p>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <SystemStatusPanel />
+                  <ReportExportSmokeCard />
+                </div>
+              </section>
 
               {overview ? (
-                <OperationalPrioritiesPanel priorities={overview.priorities} />
+                <KpiMethodBlock
+                  methods={overview.methods.slice(0, 3)}
+                  title="Méthode (KPI clés)"
+                />
               ) : null}
-              <BusinessAlertsPanel />
-            </section>
 
-            <FunnelConversionPanel />
-            <ClosedLoopPanel
-              impactKpis={impactKpis}
-              recommendedHref={adaptiveHref}
-              recommendedLabel={adaptiveLabel}
-              recommendedReason={adaptiveReason}
-            />
-
-            <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  Supervision technique
-                </p>
-                <h2 className="mt-1 text-xl font-semibold text-slate-900">
-                  Sante plateforme et exports critiques
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Etat des services et verification des executions sensibles.
-                </p>
+              <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                    Exécution terrain
+                  </p>
+                  <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                    Formulaire bénévole
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Déclaration rapide d&apos;action directement depuis la page d&apos;accueil.
+                  </p>
+                </div>
+                <ActionDeclarationForm
+                  actorNameOptions={actorNameOptions}
+                  defaultActorName={actorNameOptions[0]}
+                  clerkIdentityLabel={identity?.displayName ?? fallbackActorName}
+                  clerkUserId={identity?.userId ?? fallbackActorName}
+                  initialMode="quick"
+                />
+              </section>
+            </>
+          }
+          trace={
+            <div className="space-y-2 text-xs text-slate-600">
+              <p>
+                Horodatage:{" "}
+                {overview
+                  ? new Date(overview.generatedAt).toLocaleString("fr-FR")
+                  : "indisponible"}{" "}
+                | Fiabilité:{" "}
+                {overview
+                  ? "moyenne à élevée selon les métriques disponibles"
+                  : "faible (données absentes)"}
+              </p>
+              <p>
+                Sources: actions validées, module pilotage overview, métriques dérivées N/N-1.
+              </p>
+              <p>
+                Méthode: deltas absolus et relatifs sur fenêtre 30 jours. Périmètre: cockpit transversal.
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <RubriquePdfExportButton rubriqueTitle="Tableau de bord pilotage" />
+                <Link
+                  href="/reports"
+                  className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  Ouvrir le reporting
+                </Link>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <SystemStatusPanel />
-                <ReportExportSmokeCard />
-              </div>
-            </section>
-
-            {overview ? (
-              <KpiMethodBlock
-                methods={overview.methods.slice(0, 3)}
-                title="Methode (KPI cles)"
-              />
-            ) : null}
-
-            <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                  Execution terrain
-                </p>
-                <h2 className="mt-1 text-xl font-semibold text-slate-900">
-                  Formulaire benevole
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Declaration rapide d&apos;action directement depuis la page
-                  d&apos;accueil.
-                </p>
-              </div>
-              <ActionDeclarationForm
-                actorNameOptions={actorNameOptions}
-                defaultActorName={actorNameOptions[0]}
-                clerkIdentityLabel={identity?.displayName ?? fallbackActorName}
-                clerkUserId={identity?.userId ?? fallbackActorName}
-                initialMode="quick"
-              />
-            </section>
-          </>
-        }
-        trace={
-          <div className="space-y-2 text-xs text-slate-600">
-            <p>
-              Horodatage:{" "}
-              {overview
-                ? new Date(overview.generatedAt).toLocaleString("fr-FR")
-                : "indisponible"}{" "}
-              | Fiabilite:{" "}
-              {overview
-                ? "moyenne a elevee selon les metriques disponibles"
-                : "faible (donnees absentes)"}
-            </p>
-            <p>
-              Sources: actions validees, module pilotage overview, metriques
-              derivees N/N-1.
-            </p>
-            <p>
-              Methode: deltas absolus et relatifs sur fenetre 30 jours.
-              Perimetre: cockpit transversal.
-            </p>
-            <div className="flex flex-wrap gap-2 pt-1">
-              <RubriquePdfExportButton rubriqueTitle="Tableau de bord pilotage" />
-              <Link
-                href="/reports"
-                className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-              >
-                Ouvrir le reporting
-              </Link>
             </div>
-          </div>
-        }
-      />
+          }
+        />
       </div>
     );
   }
@@ -280,11 +279,10 @@ export default async function DashboardPage() {
           Tableau de bord {roleLabel.toLowerCase()}
         </h1>
         <p className="mt-2 text-sm text-slate-600">
-          Pilotage decisionnel centre sur l&apos;impact terrain, la mobilisation
-          et la fiabilite des donnees.
+          Pilotage décisionnel centré sur l&apos;impact terrain, la mobilisation et la fiabilité des données.
         </p>
         <p className="mt-2 text-xs text-slate-500">
-          Utilisateur connecte: <span className="font-mono">{userId}</span>
+          Utilisateur connecté: <span className="font-mono">{userId}</span>
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <RubriquePdfExportButton rubriqueTitle="Tableau de bord pilotage" />
@@ -303,11 +301,10 @@ export default async function DashboardPage() {
             Bloc A
           </p>
           <h2 className="mt-1 text-xl font-semibold text-slate-900">
-            Pilotage metier
+            Pilotage métier
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Lecture comparative N vs N-1 pour accelerer la decision
-            operationnelle.
+            Lecture comparative N vs N-1 pour accélérer la décision opérationnelle.
           </p>
         </div>
 
@@ -330,8 +327,7 @@ export default async function DashboardPage() {
             Supervision technique
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Sante API/services, alertes techniques et verification des exports
-            critiques.
+            Santé API/services, alertes techniques et vérification des exports critiques.
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
@@ -343,7 +339,7 @@ export default async function DashboardPage() {
       {overview ? (
         <KpiMethodBlock
           methods={overview.methods.slice(0, 3)}
-          title="Methode (KPI cles)"
+          title="Méthode (KPI clés)"
         />
       ) : null}
 
@@ -361,11 +357,10 @@ export default async function DashboardPage() {
             Bloc D
           </p>
           <h2 className="mt-1 text-xl font-semibold text-slate-900">
-            Formulaire benevole
+            Formulaire bénévole
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Declaration rapide d&apos;action directement depuis la page
-            d&apos;accueil.
+            Déclaration rapide d&apos;action directement depuis la page d&apos;accueil.
           </p>
         </div>
         <ActionDeclarationForm
