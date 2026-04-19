@@ -38,7 +38,7 @@ export const PROFILE_ORDER: AppProfile[] = [
 export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   benevole: {
     id: "benevole",
-    label: { fr: "BÃ©nÃ©vole", en: "Volunteer" },
+    label: { fr: "Bénévole", en: "Volunteer" },
     subtitle: {
       fr: "Declaration terrain et suivi local",
       en: "Field declaration and local follow-up",
@@ -65,9 +65,9 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   },
   elu: {
     id: "elu",
-    label: { fr: "DÃ©cideur", en: "Decision maker" },
+    label: { fr: "Décideur", en: "Decision maker" },
     subtitle: {
-      fr: "Pilotage institutionnel et dÃ©cisionnel",
+      fr: "Pilotage institutionnel et décisionnel",
       en: "Institutional and decision oversight",
     },
     spacePriority: { decide: 1, supervise: 2, prepare: 3, execute: 4 },
@@ -103,7 +103,7 @@ const ROLE_ALIASES: Record<string, Role> = {
   elu: "elu",
   elue: "elu",
   decideur: "elu",
-  "dÃ©cideur": "elu",
+  "décideur": "elu",
   elected: "elu",
   mayor: "elu",
 };
@@ -112,7 +112,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
   benevole: {
     primaryCTA: {
       href: "/actions/new",
-      label: { fr: "DÃ©clarer une action", en: "Declare action" },
+      label: { fr: "Déclarer une action", en: "Declare action" },
       description: {
         fr: "Saisie terrain rapide en moins d'une minute",
         en: "Fast field capture in under one minute",
@@ -141,7 +141,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     primaryCTA: {
       href: "/sections/community",
       label: {
-        fr: "Lancer / mettre Ã  jour une opÃ©ration communautaire",
+        fr: "Lancer / mettre à jour une opération communautaire",
         en: "Launch or update a community operation",
       },
       description: {

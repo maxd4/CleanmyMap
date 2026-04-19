@@ -34,22 +34,6 @@ poursuivre le lifting sur le formulaire de déclaration (Action Declaration) et 
 
 
 
-Exécute la priorité **P0 — Fiabilité production / sécurité** du plan, c’est-à-dire les prompts **015, 054, 073, 074, 075, 076, 077, 083, 084 et 090** du fichier "CleanmyMap-main\documentation\du\archive\prompt.txt"
-
-Instructions strictes :
-- Ce plan provient d’une ancienne version du projet : **ne considère pas ces prompts comme une vérité absolue**, mais comme des **pistes d’implémentation** à réévaluer intelligemment à la lumière de l’architecture et du code actuels.
-- Pour chaque prompt, détermine d’abord :
-  - s’il est encore pertinent ;
-  - s’il doit être adapté ;
-  - s’il est déjà partiellement ou totalement implémenté ;
-  - s’il doit être fusionné avec un autre chantier proche.
-- Implémente uniquement ce qui reste réellement utile, cohérent et prioritaire pour le projet dans son état actuel.
-- Ne fais pas de changements redondants, obsolètes, régressifs ou incompatibles avec l’architecture actuelle.
-- Si un prompt n’est plus pertinent en l’état, n’applique pas sa formulation littéralement : adapte son intention au code actuel.
-- Si un prompt est seulement partiellement couvert, ne le supprime pas entièrement : mets-le à jour ou scinde-le clairement selon le travail restant puis execute le.
-- Une fois tous les prompts de la priorité executés ou skipé, supprime les du fichier.
-- Préserve la stabilité du site et évite toute régression.
-
 
 de la même manière, execute P1 Cohérence navigation/roles c'est a dire les PROMPT 006, 007, 008, 009, 010, 011, 012, 013, 014, 018, 019
 
