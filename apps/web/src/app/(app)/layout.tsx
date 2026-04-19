@@ -1,16 +1,12 @@
 import { auth } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AppNavigation } from "@/components/navigation/app-navigation";
+import { AppSidebar } from "@/components/navigation/app-sidebar";
+import { AppBreadcrumb } from "@/components/navigation/app-breadcrumb";
+import { BlockSwitcher } from "@/components/navigation/block-switcher";
 import { DisplayModeOnboardingGate } from "@/components/ui/display-mode-onboarding-gate";
 import { getCurrentUserLocationPreference } from "@/lib/auth/user-location";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
-import { isFeatureEnabled } from "@/lib/feature-flags";
-import {
-  getNavigationProfileOverview,
-  getNavigationSpacesForProfile,
-} from "@/lib/navigation";
 import { getProfileLabel, toProfile } from "@/lib/profiles";
 import { getServerLocale } from "@/lib/server-preferences";
 import { STORAGE_KEYS, parseDisplayMode } from "@/lib/ui/preferences";
@@ -21,13 +17,10 @@ export default async function AppLayout({
   children: React.ReactNode;
 }>) {
   const { userId } = await auth();
-  if (!userId) {
-    redirect("/sign-in");
-  }
+  if (!userId) redirect("/sign-in");
+
   const locationPreference = await getCurrentUserLocationPreference();
-  if (!locationPreference) {
-    redirect("/onboarding/localisation");
-  }
+  if (!locationPreference) redirect("/onboarding/localisation");
 
   const cookieStore = await cookies();
   const displayMode = parseDisplayMode(
@@ -37,61 +30,33 @@ export default async function AppLayout({
   const locale = await getServerLocale();
   const role = await getCurrentUserRoleLabel();
   const currentProfile = toProfile(role);
-  const isAdmin = role === "admin";
   const profileLabel = getProfileLabel(currentProfile, locale);
-  const spaces = getNavigationSpacesForProfile(currentProfile, displayMode, locale);
-  const categoryCount = spaces.length;
-  const rubriqueCount = spaces.reduce(
-    (acc, space) => acc + space.items.length,
-    0,
-  );
-  const profileOverview = getNavigationProfileOverview(
-    currentProfile,
-    displayMode,
-  );
-  const parcoursNavV2Enabled = isFeatureEnabled("parcoursNavV2");
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 py-4 sm:px-6 sm:py-6">
+    <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-3 py-3 sm:px-5 sm:py-4">
       <DisplayModeOnboardingGate />
 
-      <header className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
-            CleanMyMap
-          </p>
-          <h1 className="text-lg font-semibold text-slate-900">
-            {locale === "fr" ? "Profil" : "Profile"} {profileLabel.toLowerCase()}
-          </h1>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="text-xs text-slate-500">
-            {locale === "fr"
-              ? `${rubriqueCount} pages prioritaires organisées en ${categoryCount} blocs (${displayMode})`
-              : `${rubriqueCount} priority pages organized in ${categoryCount} blocks (${displayMode})`}
-          </p>
-          {parcoursNavV2Enabled ? (
-            <Link
-              href={profileOverview.primaryCTA.href}
-              className="inline-flex rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100"
-            >
-              {profileOverview.primaryCTA.label[locale]}
-            </Link>
-          ) : null}
-          {parcoursNavV2Enabled && profileOverview.secondaryCTA ? (
-            <Link
-              href={profileOverview.secondaryCTA.href}
-              className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-            >
-              {profileOverview.secondaryCTA.label[locale]}
-            </Link>
-          ) : null}
-        </div>
-      </header>
+      {/* Block Switcher — toujours visible, mobile + desktop */}
+      <div className="mb-2">
+        <BlockSwitcher currentProfile={currentProfile} />
+      </div>
 
-      <AppNavigation currentProfile={currentProfile} isAdmin={isAdmin} />
+      {/* Corps principal : sidebar + contenu */}
+      <div className="flex flex-1 gap-4 min-h-0">
+        {/* Sidebar desktop uniquement */}
+        <AppSidebar currentProfile={currentProfile} />
 
-      <main className="mt-4 flex-1">{children}</main>
+        {/* Zone de contenu */}
+        <div className="flex flex-1 flex-col gap-2 min-w-0">
+          {/* Breadcrumb sticky */}
+          <AppBreadcrumb
+            currentProfile={currentProfile}
+            profileLabel={profileLabel}
+          />
+
+          <main className="flex-1">{children}</main>
+        </div>
+      </div>
     </div>
   );
 }
