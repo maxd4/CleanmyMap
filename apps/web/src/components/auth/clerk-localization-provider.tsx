@@ -7,6 +7,11 @@ import { ReactNode } from "react";
 
 interface ClerkLocalizationProviderProps {
   children: ReactNode;
+  signInUrl?: string;
+  signUpUrl?: string;
+  signInFallbackRedirectUrl?: string;
+  signUpFallbackRedirectUrl?: string;
+  afterSignOutUrl?: string;
   domain?: string;
   isSatellite?: boolean;
   satelliteAutoSync?: boolean;
