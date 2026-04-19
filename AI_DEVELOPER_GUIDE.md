@@ -39,3 +39,10 @@ Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionR
 
 ## 5. Scripts et Automatisation
 Les scripts Python legacy sont dans `/legacy/`. Ne casse pas ces routines car elles sont critiques pour l'historique des données.
+
+## 6. Encodage et Accents Français (CRITIQUE)
+- **Tous les fichiers doivent être encodés en UTF-8 sans BOM.** Le `.editorconfig` à la racine l'impose.
+- **Utilise systématiquement les vrais caractères accentués français** dans les strings visibles : `é`, `è`, `ê`, `à`, `ù`, `ç`, `ô`, `î`, etc.
+- **Interdit** : omettre les accents (ex: "Declarer" au lieu de "Déclarer") ou insérer des séquences mojibake (ex: "DÃ©clarer").
+- **Vérification** : avant tout commit contenant du texte français, lancer `Select-String -Recurse -Pattern "\xC3" apps/web/src` (PowerShell) ou `grep -rn "Ã" apps/web/src` (bash). Zéro résultat = OK.
+- **Règle i18n** : ne jamais utiliser `.label.fr` ou `.description.fr` en dur. Toujours passer par `label[locale]` avec la locale récupérée via `getServerLocale()` (Server) ou `useSitePreferences()` (Client).

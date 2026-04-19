@@ -35,25 +35,6 @@ poursuivre le lifting sur le formulaire de déclaration (Action Declaration) et 
 
 
 
-de la même manière, execute P1 Cohérence navigation/roles c'est a dire les PROMPT 006, 007, 008, 009, 010, 011, 012, 013, 014, 018, 019
-
-
-P2 Cohérence analytique multi-horizon + funnel
-PROMPT 038 à 055
-
-P3 Exports et livrables (PDF/CSV/historique)
-PROMPT 056 à 060, 062, 063, 064
-
-P4 Modules métier avancés admin
-PROMPT 091, 092, 093, 094, 095, 097
-
-P5 Clôture gouvernance/documentation
-PROMPT 079, 080, 081, 082, 085, 087, 088, 089, 090, 098, 100
-
-
-
-
-
 PROMPT 006
 "Verifie que les regles produit suivantes sont appliquees et explicites dans l'implementation: role choisi a la creation du compte, role modifiable ensuite, role admin attribue uniquement par admin autorise sur vercel ou sur supabase."
 

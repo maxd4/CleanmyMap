@@ -119,11 +119,11 @@ export function ActionDeclarationCompleteSection({
 
       <div className="md:col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
         <p className="mb-2 text-sm font-semibold text-slate-700">
-          Extraction de MÃ©gots
+          Extraction de Mégots
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           <label className="flex flex-col gap-2 text-sm text-slate-700">
-            Masse de mÃ©gots (kg ou g)
+            Masse de mégots (kg ou g)
             <input
               type="number"
               step="0.01"
@@ -141,7 +141,7 @@ export function ActionDeclarationCompleteSection({
           </label>
 
           <label className="flex flex-col gap-2 text-sm text-slate-700">
-            QualitÃ© / Ã‰tat des mÃ©gots
+            Qualité / État des mégots
             <select
               className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
               value={form.wasteMegotsCondition}
@@ -149,11 +149,11 @@ export function ActionDeclarationCompleteSection({
                 updateField("wasteMegotsCondition", event.target.value as FormState["wasteMegotsCondition"])
               }
             >
-              <option value="propre">Propre (Sec, facile Ã  recycler)</option>
+              <option value="propre">Propre (Sec, facile à recycler)</option>
               <option value="humide">
-                Humide / Avec impuretÃ©s (Terre, sable)
+                Humide / Avec impuretés (Terre, sable)
               </option>
-              <option value="mouille">MouillÃ© (SaturÃ© d&apos;eau, aprÃ¨s pluie)</option>
+              <option value="mouille">Mouillé (Saturé d&apos;eau, après pluie)</option>
             </select>
           </label>
         </div>
@@ -165,7 +165,7 @@ export function ActionDeclarationCompleteSection({
               toRequiredNumber(form.wasteMegotsKg, 0),
               form.wasteMegotsCondition,
             )}{" "}
-            mÃ©gots estimÃ©s
+            mégots estimés
           </div>
         ) : null}
       </div>

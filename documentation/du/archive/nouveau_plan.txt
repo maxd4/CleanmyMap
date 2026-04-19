@@ -236,15 +236,45 @@ Crée maintenant le fichier complet `documentation/plan_19avril`.
 
 
 
+règle une fois pour toute les problèmes d'accent pour le mode français sur tout le site et sur tout le futur code 
+
+revenons sur des taches de code et d'implémentation. 
+Exécute la priorité **P0 — Fiabilité production / sécurité** du plan, c’est-à-dire les prompts **015, 054, 073, 074, 075, 076, 077, 083, 084 et 090** du fichier "CleanmyMap-main\documentation\du\archive\prompt.txt"
+
+Instructions strictes :
+- Ce plan provient d’une ancienne version du projet : **ne considère pas ces prompts comme une vérité absolue**, mais comme des **pistes d’implémentation** à réévaluer intelligemment à la lumière de l’architecture, du code et du site actuels.
+- Pour chaque prompt, détermine d’abord :
+  - s’il est encore pertinent ;
+  - s’il doit être adapté ;
+  - s’il est déjà partiellement ou totalement implémenté ;
+  - s’il doit être fusionné avec un autre chantier proche.
+- Implémente uniquement ce qui reste réellement utile, cohérent et prioritaire pour le projet dans son état actuel.
+- Ne fais pas de changements redondants, obsolètes, régressifs ou incompatibles avec l’architecture actuelle.
+- Si un prompt n’est plus pertinent en l’état, n’applique pas sa formulation littéralement : adapte son intention au code actuel.
+- Si un prompt est seulement partiellement couvert, ne le supprime pas entièrement : mets-le à jour ou scinde-le clairement selon le travail restant puis execute le.
+- Une fois tous les prompts de la priorité executés ou skipé, supprime les du fichier.
+- Préserve la stabilité du site et évite toute régression.
 
 
 
+de la même manière, execute P1 Cohérence navigation/roles c'est a dire les PROMPT 006, 007, 008, 009, 010, 011, 012, 013, 014, 018, 019
+
+
+P2 Cohérence analytique multi-horizon + funnel
+PROMPT 038 à 055
+
+P3 Exports et livrables (PDF/CSV/historique)
+PROMPT 056 à 060, 062, 063, 064
+
+P4 Modules métier avancés admin
+PROMPT 091, 092, 093, 094, 095, 097
+
+P5 Clôture gouvernance/documentation
+PROMPT 079, 080, 081, 082, 085, 087, 088, 089, 090, 098, 100
 
 
 
-
-
-
+propose une structure pour remplir les fichier texte de "audit-rubrique" pour qu'ils soient à la fois exhaustif et rapide à lire avec des propositions d'ajout et de modifications pour tirer 100% du potentielle de chaque rubrique
 
 de même pour le bloc 2
 
@@ -259,6 +289,34 @@ De même fais un second fichier PDF à envoyer à world cleanup day France pour 
 
 
 passe 2 pour affiner encore le mode sobre (contraste/animation/rythme visuel) sur les pages métier, pas seulement la navigation.
+
+
+
+
+
+
+
+PROFOND
+
+Fully finish the site’s English translation mode.
+
+Problem:
+Long hardcoded French paragraphs still exist in page files and are not translated in English mode.
+
+Task:
+- Audit the whole app for remaining hardcoded user-facing text, especially long paragraphs.
+- Replace them with translation keys.
+- Implement a clean JSON dictionary structure similar to next-intl, with clear namespaces by page/section/component.
+- Keep French as source text and add complete English translations.
+- Eliminate mixed hardcoded/i18n usage.
+- Keep the implementation simple, scalable, and maintainable.
+- Do not break UI, routing, or rendering.
+
+Deliverables:
+- fully migrated long-form page text
+- cleaned i18n structure
+- list of changed files
+- list of any remaining untranslated text
 
 
 
