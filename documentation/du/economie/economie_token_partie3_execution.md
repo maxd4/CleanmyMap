@@ -33,10 +33,10 @@ Updated: 2026-04-17 (final backlog resolved)
 ### Rubrique `community`
 - UX: structure claire en cartes, messages succes/erreur explicites.
 - Bugs: aucun bloquant detecte.
-- Coherence: bon chainage vers creation/suivi d’evenements.
+- Coherence: bon chainage vers creation/suivi d'evenements.
 - Perf: charge potentielle selon volume `ActionsHistoryList` (surveillance).
 - Actions:
-  - conserver l’architecture actuelle.
+  - conserver l'architecture actuelle.
   - ajouter monitoring temps de rendu si volume historique augmente.
 
 ### Rubrique `trash-spotter`
@@ -52,7 +52,7 @@ Updated: 2026-04-17 (final backlog resolved)
 
 Collisions/regressions detectees:
 1. Registry section vs permissions profil non synchronise (`annuaire`) -> corrige.
-2. CTA annuaire dans shell section non aligne sur l’objectif "commercant engage" -> corrige.
+2. CTA annuaire dans shell section non aligne sur l'objectif "commercant engage" -> corrige.
 3. Robustesse persistance heterogene entre stores -> onboarding aligne sur garde runtime.
 
 ## Bloc 4 — Corrections appliquees (critiques puis importantes)

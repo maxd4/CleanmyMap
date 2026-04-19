@@ -1,4 +1,4 @@
-Vu ton site Vercel + Supabase + Clerk + plusieurs rubriques, fais un vrai pack d’audit reproductible.
+Vu ton site Vercel + Supabase + Clerk + plusieurs rubriques, fais un vrai pack d'audit reproductible.
 
 Structure minimale
 audit_artifacts/
@@ -11,7 +11,7 @@ audit_artifacts/
 
 Contenu
 vercel_build_logs.txt : dernier build cassé ou dernier build suspect
-vercel_runtime_logs.txt : seulement les erreurs d’une rubrique / route
+vercel_runtime_logs.txt : seulement les erreurs d'une rubrique / route
 supabase_schema.sql : dump complet du schéma
 rls_notes.md : tables client-side + but de chaque policy
 auth_flow.md : login, signup, middleware, redirects, protected pages

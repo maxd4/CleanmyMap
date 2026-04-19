@@ -1,4 +1,4 @@
-﻿# Regression Gates (ordre d'implementation)
+# Regression Gates (ordre d'implementation)
 
 ## But
 Eviter les regressions quand des chantiers sont menes en parallele sur:

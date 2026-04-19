@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import re
 from pathlib import Path
@@ -220,7 +220,7 @@ def parse_markdown_visual(text: str, styles):
             story.append(Paragraph(fmt_inline(line[3:].strip()), styles["h2"]))
         elif line.startswith("### "):
             story.append(Paragraph(fmt_inline(line[4:].strip()), styles["h3"]))
-        elif line.lower().startswith("plan d’exécution") or line.lower().startswith("plan d'exécution"):
+        elif line.lower().startswith("plan d'exécution") or line.lower().startswith("plan d'exécution"):
             box = Table(
                 [[Paragraph(fmt_inline(line), styles["callout"])]],
                 colWidths=[16.8 * cm],

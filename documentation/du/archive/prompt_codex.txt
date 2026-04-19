@@ -65,9 +65,9 @@ Usage: rendre le repo lisible et professionnel.
 
 Prompt:
 "Rationalise le repo.
-- Renomme en .txt les fichiers texte sans extension quand c’est sûr.
+- Renomme en .txt les fichiers texte sans extension quand c'est sûr.
 - Fusionne les fichiers redondants si cela améliore réellement la clarté.
-- Déplace hors racine tout ce qui n’a pas besoin d’y rester.
+- Déplace hors racine tout ce qui n'a pas besoin d'y rester.
 - Crée des sous-dossiers thématiques explicites.
 - Mets à jour chemins/imports/scripts/CI/tests si nécessaire.
 Objectif: racine simple, claire, professionnelle, sans casser les flux critiques." 
@@ -78,9 +78,9 @@ PHASE 1 — QUALITÉ UI FONCTIONNELLE
 ==================================================
 
 11) Audit UX réel (écran par écran)
-Usage: prioriser les défauts de perception et d’usage.
+Usage: prioriser les défauts de perception et d'usage.
 
-Objectif : Supprimer la perception d’attente. Remplacer par anticipation, fluidité et feedback immédiat.
+Objectif : Supprimer la perception d'attente. Remplacer par anticipation, fluidité et feedback immédiat.
 
 Prompt:
 "Fais un audit UX réel du site avec les 10 critères fournis (hiérarchie, densité, micro-interactions, cohérence, navigation, performance perçue, direction artistique, différenciation, contenu, comportement utilisateur).
@@ -91,7 +91,7 @@ Audit + amélioration UX des états de chargement et interactions.
 Contraintes :
 - Ne pas dégrader perf réelle
 - Préserver cohérence UI
-- Pas d’animations inutiles
+- Pas d'animations inutiles
 - UX prioritaire
 
 Actions obligatoires :
@@ -116,19 +116,19 @@ Actions obligatoires :
 - Durée cohérente (ni trop rapide ni lente)
 
 4. Perception performance
-- Optimiser pour “ressenti rapide” même si temps identique
+- Optimiser pour "ressenti rapide" même si temps identique
 - Réduire zones vides
 - Toujours montrer quelque chose immédiatement
 
 5. Optimistic UI
 - Actions utilisateur instantanées (like, submit, toggle…)
 - Mettre à jour UI immédiatement sans attendre serveur
-- En cas d’erreur → rollback propre et discret
+- En cas d'erreur → rollback propre et discret
 
 6. Feedback utilisateur
 - Chaque action = réponse visuelle immédiate
 - Supprimer toute latence perçue
-- Éviter états “figés” ou ambigus
+- Éviter états "figés" ou ambigus
 
 Méthode :
 - Identifier tous les états de chargement
@@ -159,7 +159,7 @@ Contraintes: critique, concret, séparer faits/inférences, pas de blabla."
 
 
 11.5) Audit UI réel (écran par écran)
-Usage: prioriser les défauts de perception et d’usage.
+Usage: prioriser les défauts de perception et d'usage.
 
 Objectif : 
 Agis comme un expert design system + UI engineer senior. Audite puis refonds mon site web pour corriger toute incohérence visuelle et le faire reposer sur un vrai design system maintenable, cohérent et scalable.
@@ -171,24 +171,24 @@ Prompt:
 Applique strictement ces 5 axes :
 1. Couleurs sémantiques : remplace les couleurs hardcodées par des tokens fonctionnels (background, surface, text, border, brand, success, warning, error, muted, info) avec une échelle cohérente de nuances.
 2. Typographie : remplace les tailles arbitraires par une hiérarchie structurée (display, h1-h4, body, small, caption, label) avec size, weight et line-height explicites.
-3. Spacing : impose un système d’espacement basé sur une unité constante (ex. 4px) pour tous les margin, padding et gaps.
+3. Spacing : impose un système d'espacement basé sur une unité constante (ex. 4px) pour tous les margin, padding et gaps.
 4. Composants : standardise les composants réutilisables et définis tous leurs états (default, hover, active, focus, disabled, loading, error, success).
 5. Motion : rends les animations utiles, sobres, cohérentes, non bloquantes, avec durations adaptées et interactions <= 300ms.
 
 Objectif :
-- supprimer l’aspect aléatoire
+- supprimer l'aspect aléatoire
 - améliorer lisibilité, cohérence, crédibilité, maintenabilité
 - centraliser les règles UI
 - préserver performances, accessibilité, responsivité et clarté fonctionnelle
 
 Méthode :
-- analyse l’existant
+- analyse l'existant
 - détecte incohérences et anti-patterns
 - définis le système cible
 - implémente les tokens et composants
 - refactorise le code pour consommer ce système
 - évite les changements superficiels
-- évite la coexistence d’anciens styles incohérents
+- évite la coexistence d'anciens styles incohérents
 
 
 
@@ -256,7 +256,7 @@ Actions obligatoires :
 - Interdire styles locaux incohérents
 
 6. Cohérence globale
-- Chaque propriété UI doit dériver d’un token
+- Chaque propriété UI doit dériver d'un token
 - Aucun pixel arbitraire
 - Uniformiser tout le produit
 
@@ -278,7 +278,7 @@ Output attendu step by step dans le fichier texte :
 --------------------------------------------------
 
 12) États UX asynchrones et confiance utilisateur
-Usage: supprimer les écrans “morts” et l’incertitude.
+Usage: supprimer les écrans "morts" et l'incertitude.
 
 Prompt:
 "Review website and in the texte file documentation/du/UX.txt wirte a step by step plan to add skeleton/loading/pending/success/error states, optimistic UI, and progress indicators where they materially improve trust and perceived speed.
@@ -291,7 +291,7 @@ Apply selectively, with rollback/error handling for optimistic updates.
 Usage: upgrade visuel fort sans casser le fonctionnel.
 
 Prompt:
-"Améliore nettement l’esthétique globale de CleanMyMap sans casser performances, accessibilité, responsive, clarté fonctionnelle ni parcours existants.
+"Améliore nettement l'esthétique globale de CleanMyMap sans casser performances, accessibilité, responsive, clarté fonctionnelle ni parcours existants.
 Direction: civic-tech écologique premium, minimalisme cartographique chaleureux, carte centrale.
 
 Avant code, donne:
@@ -299,7 +299,7 @@ Avant code, donne:
 - Direction visuelle retenue
 - Zones/composants refondus
 - Choix palette/typo/carte/composants
-- Plan d’implémentation
+- Plan d'implémentation
 
 Réponse finale obligatoire:
 - Résumé changements
@@ -312,11 +312,11 @@ Réponse finale obligatoire:
 --------------------------------------------------
 
 14) Qualité layout (grid/spacing/proximité/Fitts)
-Usage: améliorer scanabilité et rapidité d’action.
+Usage: améliorer scanabilité et rapidité d'action.
 
 Prompt:
 "Rework grid and spacing per page to match content density.
-Apply better column ratios, gap system, micro/macro whitespace, proximity principle, and Fitts’s law.
+Apply better column ratios, gap system, micro/macro whitespace, proximity principle, and Fitts's law.
 
 Output:
 1) Layout issues identified
@@ -431,11 +431,11 @@ Prompt:
 "Audit SEO complet selon 5 piliers: structure, speed, content quality, metadata, backlinks strategy.
 Write a step by step plan in documentation/du/SEO.txt
 
-- SEO (Search Engine Optimization) : optimisation technique et sémantique d’un site pour améliorer son classement dans les moteurs de recherche comme Google.
+- SEO (Search Engine Optimization) : optimisation technique et sémantique d'un site pour améliorer son classement dans les moteurs de recherche comme Google.
 - AEO (Answer Engine Optimization) : optimisation du contenu pour apparaître directement comme réponse dans les moteurs de réponse et assistants vocaux comme ChatGPT ou Google Assistant.
 - GEO (Generative Engine Optimization) : optimisation pour être cité ou utilisé par les IA génératives dans leurs réponses, en structurant le contenu pour les modèles comme ChatGPT.
-- SXO (Search Experience Optimization) : combinaison SEO + UX visant à améliorer à la fois le classement et l’expérience utilisateur pour maximiser conversion et engagement.
-- AIO (AI Optimization) : optimisation globale d’un produit ou site pour l’intégration, l’exploitation et la performance des systèmes d’intelligence artificielle.
+- SXO (Search Experience Optimization) : combinaison SEO + UX visant à améliorer à la fois le classement et l'expérience utilisateur pour maximiser conversion et engagement.
+- AIO (AI Optimization) : optimisation globale d'un produit ou site pour l'intégration, l'exploitation et la performance des systèmes d'intelligence artificielle.
 
 
 Output:
@@ -554,7 +554,7 @@ Never defer docs or leave vague notes."
 --------------------------------------------------
 
 30) Documentation freeze mode (optionnel, explicite)
-Usage: réduire les tokens pendant une phase d’exécution intensive.
+Usage: réduire les tokens pendant une phase d'exécution intensive.
 
 Prompt:
 "Add a temporary policy note in README and wiki: documentation updates paused to save tokens except plan.txt until a defined functional milestone.
@@ -565,7 +565,7 @@ Use this only if explicitly requested."
 
 --------------------------------------------------
 
-31) Quality checklist block (à append dans n’importe quel prompt)
+31) Quality checklist block (à append dans n'importe quel prompt)
 Usage: garde-fous qualité universels.
 
 Prompt:

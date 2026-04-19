@@ -12,7 +12,7 @@ function getSessionId(): string {
   if (existing) {
     return existing;
   }
-  const generated = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const generated = self.crypto.randomUUID();
   window.sessionStorage.setItem(SESSION_KEY, generated);
   return generated;
 }

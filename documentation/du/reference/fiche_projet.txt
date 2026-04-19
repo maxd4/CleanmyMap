@@ -47,7 +47,7 @@ Fallback statique:
 **Date de mise à jour :** 9 avril 2026  
 **Version :** 1.2
 
-CleanMyMap est un projet d’intérêt général local qui transforme des actions bénévoles de nettoyage en informations utiles, lisibles et partageables.
+CleanMyMap est un projet d'intérêt général local qui transforme des actions bénévoles de nettoyage en informations utiles, lisibles et partageables.
 
 ---
 
@@ -57,8 +57,8 @@ Des actions citoyennes de ramassage sont organisées régulièrement, mais les d
 
 - la planification des prochaines actions ;
 - la capacité à comparer les zones dans le temps ;
-- la preuve d’impact auprès des partenaires publics et privés ;
-- l’orientation des budgets vers des aménagements efficaces.
+- la preuve d'impact auprès des partenaires publics et privés ;
+- l'orientation des budgets vers des aménagements efficaces.
 
 CleanMyMap répond à ce besoin en réunissant collecte, cartographie, suivi et restitution dans un seul outil.
 
@@ -70,13 +70,13 @@ CleanMyMap répond à ce besoin en réunissant collecte, cartographie, suivi et 
 Aider les bénévoles à savoir **où**, **quand** et **comment** intervenir, avec des informations concrètes et exploitables.
 
 ### 3.2 Pilotage associatif
-Permettre aux associations de prioriser les zones à traiter, d’organiser les équipes et de suivre la régularité des interventions.
+Permettre aux associations de prioriser les zones à traiter, d'organiser les équipes et de suivre la régularité des interventions.
 
 ### 3.3 Culture citoyenne
 Rendre accessibles des contenus pédagogiques (guides, bonnes pratiques, ressources locales, sensibilisation environnementale).
 
 ### 3.4 Plaidoyer institutionnel
-Produire des indicateurs fiables pour objectiver l’impact des actions et soutenir des décisions d’investissement public (prévention, équipements, propreté, biodiversité).
+Produire des indicateurs fiables pour objectiver l'impact des actions et soutenir des décisions d'investissement public (prévention, équipements, propreté, biodiversité).
 
 ### 3.5 Valorisation des acteurs engagés
 Mettre en avant les associations, commerces, entreprises et collectifs impliqués dans des démarches utiles au territoire.
@@ -86,7 +86,7 @@ Mettre en avant les associations, commerces, entreprises et collectifs impliqué
 ## 4. État réel du projet (au 09/04/2026)
 
 ### 4.1 Socle actif
-Le runtime principal est l’application web Next.js située dans `apps/web`.
+Le runtime principal est l'application web Next.js située dans `apps/web`.
 
 ### 4.2 Nettoyage technique déjà réalisé
 Le nettoyage destructif E09 est terminé : suppression de la couche legacy obsolète (`app.py`, `src/ui/*`, `src/services/*`) et alignement des scripts/tests/docs.
@@ -98,7 +98,7 @@ Le nettoyage destructif E09 est terminé : suppression de la couche legacy obsol
 - `pytest -q` : OK ;
 - `python scripts/ci_cleanup.py --root . --check` : OK.
 
-### 4.4 Plans d’exécution avec des succession de messages à envoyer à codex compilés dans des fichiers texte d'action
+### 4.4 Plans d'exécution avec des succession de messages à envoyer à codex compilés dans des fichiers texte d'action
 Plan.txt :
 	- E03 à E09 : DONE ;
 	- E10 à E20 : PENDING (pause volontaire), ajout de rubriques et enrichissement des autres
@@ -160,7 +160,7 @@ Le niveau retenu pour la qualité de données est **complet** (et non MVP).
 Ce choix couvre un périmètre renforcé :
 
 - scoring qualité global (complétude, cohérence, fraîcheur) ;
-- typologie d’anomalies détaillée ;
+- typologie d'anomalies détaillée ;
 - règles avancées de détection ;
 - workflows de correction (détection -> assignation -> correction -> validation -> clôture) ;
 - historique des corrections (traçabilité) ;
@@ -226,28 +226,28 @@ En cas de dépassement des offres gratuites (hébergement, authentification, bas
 
 ## 11. Conclusion
 
-CleanMyMap dispose d’un socle web stable et d’une utilité claire : transformer l’engagement bénévole en impact mesurable, compréhensible et mobilisable.
+CleanMyMap dispose d'un socle web stable et d'une utilité claire : transformer l'engagement bénévole en impact mesurable, compréhensible et mobilisable.
 
-La priorité n’est plus de « faire de la technique pour la technique », mais d’amplifier l’usage réel et de renforcer la valeur collective pour le territoire.
+La priorité n'est plus de « faire de la technique pour la technique », mais d'amplifier l'usage réel et de renforcer la valeur collective pour le territoire.
 
 ---
 
 ## 12. Glossaire (vulgarisé)
 
 **Action** : intervention de nettoyage réalisée sur le terrain.  
-**API** : passerelle qui permet à deux logiciels d’échanger des informations.  
+**API** : passerelle qui permet à deux logiciels d'échanger des informations.  
 **Architecture technique** : organisation globale du système et de ses composants.  
-**Authentification** : vérification de l’identité d’un utilisateur.  
+**Authentification** : vérification de l'identité d'un utilisateur.  
 **Back-end** : partie invisible qui traite les données et applique les règles.  
 **Base de données** : espace où les informations sont stockées et organisées.  
 **Build** : étape technique qui prépare le site avant publication.  
 **CSV** : format de fichier simple pour exporter des tableaux.  
 **Dashboard** : écran de pilotage avec les indicateurs principaux.  
-**Déploiement** : mise en ligne d’une nouvelle version du site.  
-**Endpoint** : adresse précise d’une API (ex. `/api/actions`).  
+**Déploiement** : mise en ligne d'une nouvelle version du site.  
+**Endpoint** : adresse précise d'une API (ex. `/api/actions`).  
 **Export** : fichier généré pour partage ou analyse.  
 **Front-end** : partie visible du site utilisée par le public.  
-**Géolocalisation** : positionnement d’informations sur une carte.  
+**Géolocalisation** : positionnement d'informations sur une carte.  
 **JSON** : format standard de données lisible par les logiciels.  
 **KPI** : indicateur chiffré pour suivre les résultats.  
 **Legacy** : ancienne partie technique devenue obsolète.  
@@ -255,16 +255,16 @@ La priorité n’est plus de « faire de la technique pour la technique », mais
 **Modération** : vérification des informations avant validation.  
 **Next.js** : technologie web principale utilisée pour CleanMyMap.  
 **PDF** : document prêt à partager ou imprimer.  
-**Quota** : limite d’utilisation d’une offre gratuite.  
+**Quota** : limite d'utilisation d'une offre gratuite.  
 **Reporting** : présentation structurée des résultats.  
-**RLS** : règles de sécurité qui limitent l’accès aux données.  
-**Route** : adresse d’une page (ex. `/reports`).  
+**RLS** : règles de sécurité qui limitent l'accès aux données.  
+**Route** : adresse d'une page (ex. `/reports`).  
 **Runtime** : version active du système en fonctionnement.  
 **Script** : petit programme qui automatise une tâche.  
 **Stack** : ensemble des technologies utilisées.  
-**Supabase** : service de base de données et d’accès aux données.  
+**Supabase** : service de base de données et d'accès aux données.  
 **Test** : vérification automatique du bon fonctionnement.  
 **TypeScript** : langage utilisé pour réduire les erreurs de développement.  
-**Vercel** : plateforme d’hébergement du site web.  
-**Webhook** : message automatique reçu lorsqu’un événement externe survient.  
-**Workflow** : enchaînement d’étapes pour réaliser un processus.
+**Vercel** : plateforme d'hébergement du site web.  
+**Webhook** : message automatique reçu lorsqu'un événement externe survient.  
+**Workflow** : enchaînement d'étapes pour réaliser un processus.
