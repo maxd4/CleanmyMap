@@ -247,8 +247,6 @@ Crée maintenant le fichier complet `documentation/plan_19avril`.
 
 
 
-
-met a jour le dossier rubriques_audit dans la documentation avec la nouvelle structure : 7 dossiers pour les 7 blocs puis un fichier texte par rubrique présente dans le bloc.
 Ensuite complète les fichiers de rubrique du bloc 1
 de même pour le bloc 2
 
