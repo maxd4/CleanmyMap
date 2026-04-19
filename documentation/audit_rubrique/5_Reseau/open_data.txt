@@ -1,0 +1,12 @@
+Rubrique : Données Ouvertes
+ID technique : open-data
+Bloc : 5 - Réseau
+
+DESCRIPTION
+Accès aux données publiques de la plateforme via des exports JSON, des API ouvertes et des jeux de données structurés pour les chercheurs et les collectivités.
+
+UTILITÉ
+Faciliter la réutilisation institutionnelle et scientifique des données de pollution pour accélérer les politiques publiques de nettoyage.
+
+IMPACT CONCRET
+Permet la réplication du modèle dans d'autres villes et fournit une base de données probante pour les analyses environnementales externes (universités, bureaux d'études).

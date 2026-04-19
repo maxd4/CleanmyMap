@@ -246,8 +246,6 @@ Crée maintenant le fichier complet `documentation/plan_19avril`.
 
 
 
-
-Ensuite complète les fichiers de rubrique du bloc 1
 de même pour le bloc 2
 
 

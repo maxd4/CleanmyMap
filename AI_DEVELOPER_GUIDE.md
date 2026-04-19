@@ -23,6 +23,7 @@ Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionR
 ## 3. Données et Intégration (Supabase + Clerk)
 - Clerk gère l'authentification. Les métadonnées rôles sont sur `publicMetadata.role`. 
 - Supabase gère la donnée applicative métier (Actions terrain, déchets).
+- Données sensibles & Gouvernance : Toute modification sur le **Profil** (`profile`), les modules **Open Data** (`open-data`) ou les flux de **Financement** (`funding`) doit respecter scrupuleusement les contrats de données établis.
 - Ne fais jamais de requêtes SQL brutes. L'application utilise typiquement le client Supabase `createClient()` ou des helpers dans `lib/actions/http.ts`.
 
 ## 4. Règles d'Architecture & Gouvernance

@@ -1,0 +1,12 @@
+Rubrique : Profil & Compte
+ID technique : profile
+Bloc : 1 - Accueil
+
+DESCRIPTION
+Gestion des paramètres personnels de l'utilisateur, notamment son rôle métier (bénévole, élu, etc.) et ses préférences de navigation.
+
+UTILITÉ
+Permet de transformer un utilisateur anonyme en un acteur qualifié de la plateforme. C'est le point de départ de la personnalisation du parcours (UX).
+
+IMPACT CONCRET
+Garantit la qualité des données récoltées sur le terrain en rattachant chaque action à un profil vérifié. Augmente l'engagement à long terme via la personnalisation des notifications et du suivi d'impact personnel.

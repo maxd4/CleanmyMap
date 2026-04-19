@@ -1,0 +1,12 @@
+Rubrique : Financement / Sponsoring
+ID technique : funding
+Bloc : 5 - Réseau
+
+DESCRIPTION
+Espace dédié au mécénat écologique, au sponsoring de zones spécifiques par des entreprises et aux appels aux dons pour financer le matériel de nettoyage.
+
+UTILITÉ
+Structurer le modèle économique de la plateforme pour assurer sa pérennité et son indépendance.
+
+IMPACT CONCRET
+Permet de débloquer des moyens financiers pour des actions locales qui seraient restées sans solutions faute de matériel ou de logistique soutenue.
