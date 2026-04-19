@@ -1,18 +1,18 @@
-Rubrique: Partenaires engages
+Rubrique: Mode d'emploi
 Statut: format-audit-unifie-v1
 
 ## Objectif
-- Qualifier les partenaires utiles et activer les contributions locales.
+- Standardiser les bonnes pratiques terrain et la qualite d execution.
 
 ## Flux (schema)
 ```mermaid
 flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Partenaires engages]
+  A[Besoin utilisateur] --> B[Interaction Guide pratique]
   B --> C[Donnees / validation]
   C --> D[Decision / action locale]
 ```
 Fallback statique:
-![Schema Partenaires engages](../archive/fallback-audit-partenaires_et_commercants_engages.png)
+![Schema Guide pratique](../archive/fallback-audit-guide_pratique.png)
 
 ## Risques
 - Donnees incompletes ou mal qualifiees.
@@ -25,7 +25,7 @@ Fallback statique:
 - Impact: actions ou decisions declenchees depuis la rubrique.
 
 ## Impact concret
-- Plus de ressources mobilisees sur les zones prioritaires.
+- Actions plus efficaces, moins d erreurs operationnelles.
 
 ## CTA
-- Contacter un partenaire engage et proposer une action concrete.
+- Suivre une checklist terrain avant la prochaine sortie.

@@ -1,18 +1,18 @@
-Rubrique: Discussion
+Rubrique: Déclarer une action
 Statut: format-audit-unifie-v1
 
 ## Objectif
-- Faciliter la coordination locale entre benevoles, associations, commercants et entreprises.
+- Collecter des declarations fiables avec friction minimale.
 
 ## Flux (schema)
 ```mermaid
 flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Discussion]
+  A[Besoin utilisateur] --> B[Interaction Declarer]
   B --> C[Donnees / validation]
   C --> D[Decision / action locale]
 ```
 Fallback statique:
-![Schema Discussion](../archive/fallback-audit-annuaire_engagement.png)
+![Schema Declarer](../archive/fallback-audit-declarer.png)
 
 ## Risques
 - Donnees incompletes ou mal qualifiees.
@@ -25,7 +25,7 @@ Fallback statique:
 - Impact: actions ou decisions declenchees depuis la rubrique.
 
 ## Impact concret
-- Plus de mises en relation utiles et de reponses rapides sur les besoins terrain.
+- Plus de donnees qualifiees exploitables pour carte, rapports et classement.
 
 ## CTA
-- Publier un besoin concret, puis relancer un acteur local dans les 24h.
+- Declarer une action complete avec geoloc et volume dechets.

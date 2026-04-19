@@ -1,4 +1,4 @@
-Rubrique : Données Ouvertes
+Rubrique : Observatoire Public
 ID technique : open-data
 Bloc : 5 - Réseau
 

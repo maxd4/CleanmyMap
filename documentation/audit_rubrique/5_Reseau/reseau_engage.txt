@@ -1,18 +1,18 @@
-Rubrique: Trash Spotter
+Rubrique: Réseau Engagé
 Statut: format-audit-unifie-v1
 
 ## Objectif
-- Signaler, qualifier et suivre les points de pollution locale.
+- Qualifier les partenaires utiles et activer les contributions locales.
 
 ## Flux (schema)
 ```mermaid
 flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Trash Spotter]
+  A[Besoin utilisateur] --> B[Interaction Partenaires engages]
   B --> C[Donnees / validation]
   C --> D[Decision / action locale]
 ```
 Fallback statique:
-![Schema Trash Spotter](../archive/fallback-audit-trash_spotter.png)
+![Schema Partenaires engages](../archive/fallback-audit-partenaires_et_commercants_engages.png)
 
 ## Risques
 - Donnees incompletes ou mal qualifiees.
@@ -25,7 +25,7 @@ Fallback statique:
 - Impact: actions ou decisions declenchees depuis la rubrique.
 
 ## Impact concret
-- Detection plus rapide des hotspots et meilleure priorisation terrain.
+- Plus de ressources mobilisees sur les zones prioritaires.
 
 ## CTA
-- Creer un signalement geolocalise avec preuve photo et statut.
+- Contacter un partenaire engage et proposer une action concrete.
