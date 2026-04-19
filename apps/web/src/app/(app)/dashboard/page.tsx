@@ -12,6 +12,7 @@ import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { OperationalPrioritiesPanel } from "@/components/pilotage/operational-priorities-panel";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
+import { PunchySlogan } from "@/components/ui/punchy-slogan";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
@@ -112,9 +113,11 @@ export default async function DashboardPage() {
 
   if (pageTemplateV2Enabled) {
     return (
-      <PageReadingTemplate
-        context={`Profil ${roleLabel}`}
-        title="Cockpit transversal"
+      <div className="flex flex-col gap-6">
+        <PunchySlogan />
+        <PageReadingTemplate
+          context={`Profil ${roleLabel}`}
+          title="Cockpit transversal"
         objective="Orienter la priorisation op�rationnelle avec un r�sum� d�cisionnel court, puis des analyses cibl�es sans doublonner Compare, Climate et Reports."
         summary={
           <ThirtySecondsSummary
@@ -256,6 +259,7 @@ export default async function DashboardPage() {
 
   return (
     <div data-rubrique-report-root className="flex w-full flex-col gap-6">
+      <PunchySlogan />
       <ThirtySecondsSummary
         kpis={kpis}
         alert={overview ? overview.summary.alert : undefined}
