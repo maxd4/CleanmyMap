@@ -34,11 +34,39 @@ export type NavigationBlockId =
   | "learn"
   | "pilot";
 
+export type NavigationSpaceMeta = {
+  id: NavigationBlockId;
+  label: LocalizedText;
+  icon: string;
+  color: string; // Tailwind text-* class
+};
+
 export type NavigationSpace = {
   id: NavigationBlockId;
   label: LocalizedText;
+  icon: string;
+  color: string;
   items: NavigationItem[];
 };
+
+const SPACE_DEFINITIONS: Record<NavigationBlockId, NavigationSpaceMeta> = {
+  home:      { id: "home",      label: { fr: "Page d'accueil", en: "Home" },         icon: "🏠", color: "text-slate-600" },
+  act:       { id: "act",       label: { fr: "Agir",           en: "Act" },           icon: "⚡", color: "text-amber-600" },
+  visualize: { id: "visualize", label: { fr: "Visualiser",     en: "Visualize" },     icon: "🗺️", color: "text-sky-600"  },
+  impact:    { id: "impact",    label: { fr: "Impact",         en: "Impact" },        icon: "📊", color: "text-emerald-600" },
+  network:   { id: "network",   label: { fr: "Réseau",         en: "Network" },       icon: "🤝", color: "text-violet-600" },
+  learn:     { id: "learn",     label: { fr: "Apprendre",      en: "Learn" },         icon: "📚", color: "text-rose-600"  },
+  pilot:     { id: "pilot",     label: { fr: "Piloter",        en: "Govern" },        icon: "🎯", color: "text-indigo-600" },
+};
+const FIXED_SPACE_ORDER: NavigationBlockId[] = [
+  "home",
+  "act",
+  "visualize",
+  "impact",
+  "network",
+  "learn",
+  "pilot",
+];
 
 export type NavigationCategory = {
   id: string;
@@ -57,28 +85,6 @@ export type NavigationProfileOverview = {
   primaryCTA: ProfileAction;
   secondaryCTA: ProfileAction | null;
 };
-
-const SPACE_DEFINITIONS: Record<
-  NavigationBlockId,
-  { id: NavigationBlockId; label: LocalizedText }
-> = {
-  home: { id: "home", label: { fr: "Page d'accueil", en: "Home" } },
-  act: { id: "act", label: { fr: "Agir", en: "Act" } },
-  visualize: { id: "visualize", label: { fr: "Visualiser", en: "Visualize" } },
-  impact: { id: "impact", label: { fr: "Impact", en: "Impact" } },
-  network: { id: "network", label: { fr: "Reseau", en: "Network" } },
-  learn: { id: "learn", label: { fr: "Apprendre", en: "Learn" } },
-  pilot: { id: "pilot", label: { fr: "Piloter", en: "Govern" } },
-};
-const FIXED_SPACE_ORDER: NavigationBlockId[] = [
-  "home",
-  "act",
-  "visualize",
-  "impact",
-  "network",
-  "learn",
-  "pilot",
-];
 
 type RouteId = Rubrique["id"];
 type ProfileSpacePageMap = Record<
@@ -260,7 +266,8 @@ export function getNavigationSpacesForProfile(
       .map((id) => byId.get(id))
       .filter((rubrique): rubrique is Rubrique => Boolean(rubrique))
       .map((rubrique) => toNavItem(rubrique));
-    return { id: spaceId, label: SPACE_DEFINITIONS[spaceId].label, items };
+    const def = SPACE_DEFINITIONS[spaceId];
+    return { id: spaceId, label: def.label, icon: def.icon, color: def.color, items };
   });
 
   if (displayMode === "exhaustif") {

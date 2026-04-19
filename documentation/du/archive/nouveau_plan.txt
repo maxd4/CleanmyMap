@@ -233,11 +233,6 @@ Crée maintenant le fichier complet `documentation/plan_19avril`.
 
 
 
-
-
-
-règle une fois pour toute les problèmes d'accent pour le mode français sur tout le site et sur tout le futur code 
-
 revenons sur des taches de code et d'implémentation. 
 Exécute la priorité **P0 — Fiabilité production / sécurité** du plan, c’est-à-dire les prompts **015, 054, 073, 074, 075, 076, 077, 083, 084 et 090** du fichier "CleanmyMap-main\documentation\du\archive\prompt.txt"
 
