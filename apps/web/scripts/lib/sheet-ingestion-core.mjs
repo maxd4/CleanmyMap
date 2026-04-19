@@ -6,7 +6,7 @@ export function fixMojibake(input) {
     .replaceAll("Ãƒâ€š", "")
     .replaceAll("Ã‚°", "°")
     .replaceAll("Ã‚", "")
-    .replaceAll("°", "°")
+
     .replaceAll("ÃƒÆ'Ã‚Â©", "é")
     .replaceAll("ÃƒÆ'Ã‚Â¨", "è")
     .replaceAll("ÃƒÆ'Ã‚Âª", "ê")
