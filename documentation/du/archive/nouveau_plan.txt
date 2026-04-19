@@ -180,6 +180,58 @@ AUDIT PROMPT 003
 
 
 
+Dans le fichier texte "prompt.txt" du dossier archive de la documentation, créer un plan de travail priorisé sous forme d’une succession de prompts à envoyer à ChatGPT Codex pour améliorer l’application web Vercel + Supabase.
+
+Objectif :
+produire une roadmap d’exécution concrète, directement exploitable, pour faire monter le projet vers un niveau production.
+
+Contraintes :
+- crée réellement le fichier
+- ne te contente pas d’expliquer ce que tu ferais
+- contenu en français
+- prompts classés par ordre de priorité
+- prompts courts, denses, impératifs, non redondants
+- chaque prompt doit être autonome et prêt à copier-coller dans Codex
+- chaque prompt doit demander une intervention réelle sur le code, pas une réflexion abstraite
+
+Ordre de priorité obligatoire :
+1. sécurité
+2. bugs bloquants et stabilité
+3. architecture et modularité
+4. Supabase : schéma, requêtes, RLS, auth, performances
+5. UX/UI
+6. performance applicative
+7. logs, erreurs, monitoring
+8. accessibilité et SEO
+9. documentation
+10. finitions produit
+
+Pour chaque priorité, écris :
+- un titre
+- un objectif
+- 2 à 5 prompts Codex maximum, très ciblés
+
+Chaque prompt doit pousser Codex à :
+- auditer l’existant
+- identifier précisément les faiblesses
+- corriger ou refactorer proprement
+- éviter les régressions
+- indiquer les fichiers modifiés
+- lister les tests / validations à effectuer
+- signaler les risques ou limites restantes
+
+Style attendu :
+- ton ferme
+- formulation directive
+- approche senior engineering / audit production
+- pas de généralités
+- pas de remplissage
+
+Crée maintenant le fichier complet `documentation/plan_19avril`.
+
+
+
+
 
 
 

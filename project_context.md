@@ -2,8 +2,7 @@
 
 ## Scope
 - Project: CleanMyMap monorepo.
-- Active runtime: Next.js app in `apps/web`.
-- Legacy Python code is archived in `legacy/` and is not on the active runtime path.
+- Active runtime: Next.js app in `apps/web`. The repository root has been sanitized; all legacy Python code, data, and scripts are archived in `legacy/` and are out of the active runtime path.
 
 ## Stack
 - Frontend/API: Next.js (App Router), React, TypeScript.
