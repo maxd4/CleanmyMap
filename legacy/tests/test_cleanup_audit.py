@@ -24,7 +24,7 @@ def _write_clean_fixture(root: Path) -> None:
         + "\n",
         encoding="utf-8",
     )
-    (root / "README.md").write_text("scripts/ci_cleanup.py\ndocs/wiki\n", encoding="utf-8")
+    (root / "README.md").write_text("scripts/ci_cleanup.py\ndocumentation/repo-docs/wiki\n", encoding="utf-8")
     (root / "docs" / "wiki" / "README.md").write_text("- MAINTENANCE\n", encoding="utf-8")
     (root / "docs" / "wiki" / "MAINTENANCE.md").write_text("ci_cleanup.py\n", encoding="utf-8")
     (root / "docs" / "wiki" / "CHANGELOG.md").write_text("# Changelog\n", encoding="utf-8")

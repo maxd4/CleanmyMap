@@ -23,6 +23,23 @@
   - `apps/web/src/lib/profiles.ts`
   - `apps/web/src/lib/sections-registry.ts`
 
+## ADR decisions (active)
+- Root lockfile is source of truth; `apps/web/package-lock.json` must remain absent.
+- Active runtime is only `apps/web`; `legacy/` is archive and out of runtime scope.
+- Session memory protocol is mandatory (`AGENTS.md` + `project_context.md` + `documentation/du/session/latest-session.md`).
+
+## Sensitive zones
+- Auth and permissions:
+  - `apps/web/src/lib/authz.ts`
+  - `apps/web/src/lib/auth/protected-routes.ts`
+  - `apps/web/src/proxy.ts`
+- Data contracts and ingestion:
+  - `apps/web/src/lib/actions/data-contract.ts`
+  - `apps/web/src/lib/actions/unified-source.ts`
+- Admin and moderation:
+  - `apps/web/src/app/api/admin/moderation/route.ts`
+  - `apps/web/src/lib/admin/operation-audit.ts`
+
 ## Repo conventions
 - Keep user-facing copy in French unless feature requires otherwise.
 - Prefer minimal, localized edits.
@@ -34,5 +51,5 @@
 - Web workspace focused run: `npm -C apps/web run test:regression-gates`
 
 ## Session protocol
-- Start: read this file and `DU/latest-session.md`.
-- End: update `DU/latest-session.md` with done, in-progress, next, and risks.
+- Start: read this file and `documentation/du/session/latest-session.md`.
+- End: update `documentation/du/session/latest-session.md` with done, in-progress, next, and risks.

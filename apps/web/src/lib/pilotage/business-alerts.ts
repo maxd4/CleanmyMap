@@ -180,8 +180,8 @@ export function computeBusinessAlerts(params: {
       severity,
       ageLabel: "Fenetre 120 jours",
       impactLabel: `${criticalArea.actions} actions, ${criticalArea.kg.toFixed(1)} kg`,
-      actionHref: "/sections/compare",
-      actionLabel: "Prioriser la zone",
+      actionHref: "/sections/climate",
+      actionLabel: "Prioriser la zone (durable)",
     });
   }
 

@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { trackCommunityRsvpYes } from "@/lib/gamification/progression";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
@@ -63,6 +64,25 @@ export async function POST(request: Request) {
         { error: upsertedResult.error.message },
         { status: 500 },
       );
+    }
+
+    if (parsed.data.status === "yes") {
+      try {
+        await trackCommunityRsvpYes(supabase, {
+          userId,
+          eventId: parsed.data.eventId,
+          occurredOn: upsertedResult.data.updated_at,
+        });
+      } catch (progressionError) {
+        console.error("Progression tracking failed for RSVP", {
+          userId,
+          eventId: parsed.data.eventId,
+          message:
+            progressionError instanceof Error
+              ? progressionError.message
+              : String(progressionError),
+        });
+      }
     }
 
     return NextResponse.json({

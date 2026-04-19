@@ -3,7 +3,13 @@ import {
   buildTerritorialBenchmark,
   type TerritorialBenchmarkRow,
 } from "@/lib/analytics/territorial-benchmark";
+import { toActionListItem } from "@/lib/actions/data-contract";
+import { evaluateActionQuality } from "@/lib/actions/quality";
 import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
+import {
+  buildPersonalImpactMethodology,
+} from "@/lib/gamification/progression-impact";
+import type { PersonalImpactMethodology } from "@/lib/gamification/progression-types";
 import { buildPilotageOverviewFromContracts } from "@/lib/pilotage/overview";
 import type { ZoneComparisonRow } from "@/lib/pilotage/prioritization";
 import { buildDeliverableFilename } from "@/lib/reports/deliverable-name";
@@ -73,26 +79,30 @@ function buildDecisionPriorities(rows: TerritorialBenchmarkRow[]): Array<{
   });
 }
 
-function buildMethodology() {
+function buildMethodology(shared: PersonalImpactMethodology) {
   return {
-    version: "elus-pack-v2.1",
+    version: "elus-pack-v2.2",
+    proxyVersion: shared.proxyVersion,
+    qualityRulesVersion: shared.qualityRulesVersion,
+    pollutionScoreAverage: shared.pollutionScoreAverage,
     formulas: [
-      "CO2 evite (proxy) = dechets_kg * facteur_co2_versionne",
-      "Fuite plastique evitee (proxy) = dechets_plastique_kg * facteur_fuite_versionne",
-      "Heures citoyennes = somme(duration_minutes * volunteers_count) / 60",
-      "Taux geocouverture = actions_geo_validees / actions_total",
+      ...shared.formulas.map((item) => `${item.label}: ${item.formula}`),
       "Normalisation inter-zones = actions/km2, kg/km2, volunteers/10k hab.",
     ],
     sources: [
+      `Perimetre qualite: ${shared.scope}`,
       "Actions unifiees (action, clean_place, spot) sur fenetre N et N-1.",
       "Geo metadata (latitude/longitude, zone label) issues des contrats normalises.",
       "Reference surface/densite par arrondissement pour normalisation.",
     ],
     limits: [
+      ...shared.approximations,
+      ...shared.hypotheses,
       "Les proxies climat restent des ordres de grandeur, pas des mesures instrumentales.",
       "Les comparaisons de zones sont sensibles a la qualite de geolocalisation.",
       "Le score normalise est un outil d'aide a la decision, non un verdict automatique.",
     ],
+    errorMargins: shared.errorMargins,
   };
 }
 
@@ -166,7 +176,8 @@ function buildMarkdownPack(payload: {
     "```",
     "",
     "## Methode",
-    `Version: ${payload.methodology.version}`,
+    `Version: ${payload.methodology.version} | Proxy: ${payload.methodology.proxyVersion} | Regles qualite: ${payload.methodology.qualityRulesVersion}`,
+    `Score pollution moyen: ${payload.methodology.pollutionScoreAverage.toFixed(1)} / 100`,
     "",
     "Formules:",
     ...payload.methodology.formulas.map((line) => `- ${line}`),
@@ -176,6 +187,12 @@ function buildMarkdownPack(payload: {
     "",
     "Limites:",
     ...payload.methodology.limits.map((line) => `- ${line}`),
+    "",
+    "Marges d'erreur indicatives:",
+    `- Eau sauvee: +/- ${payload.methodology.errorMargins.waterSavedLitersPct}%`,
+    `- CO2 evite: +/- ${payload.methodology.errorMargins.co2AvoidedKgPct}%`,
+    `- Surface nettoyee: +/- ${payload.methodology.errorMargins.surfaceCleanedM2Pct}%`,
+    `- Score pollution moyen: +/- ${payload.methodology.errorMargins.pollutionScoreMeanPoints} points`,
     "",
   ].join("\n");
 }
@@ -361,7 +378,16 @@ export async function GET(request: Request) {
       periodDays: days,
     });
 
-    const methodology = buildMethodology();
+    const qualityScores = approved.map((contract) =>
+      evaluateActionQuality(toActionListItem(contract)).score,
+    );
+    const qualityAverage =
+      qualityScores.length > 0
+        ? qualityScores.reduce((acc, score) => acc + score, 0) /
+          qualityScores.length
+        : 0;
+    const sharedMethodology = buildPersonalImpactMethodology(qualityAverage);
+    const methodology = buildMethodology(sharedMethodology);
     const payload = {
       generatedAt: overview.generatedAt,
       periodDays: days,

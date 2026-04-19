@@ -10,6 +10,7 @@ import { CommunityPostEventLoopCard } from "@/components/sections/rubriques/comm
 import { CommunityRemindersCard } from "@/components/sections/rubriques/community/reminders-card";
 import { CommunityStaffingCard } from "@/components/sections/rubriques/community/staffing-card";
 import { useCommunitySection } from "@/components/sections/rubriques/community/use-community-section";
+import { KitSection } from "@/components/sections/rubriques/kit-section";
 
 function CommunitySection() {
   const model = useCommunitySection();
@@ -17,9 +18,23 @@ function CommunitySection() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-        Rassemblements and agenda: suivi de mobilisation, calendrier terrain et
-        inscriptions partagees entre appareils.
+        Hub unifie inspire de l&apos;approche cleanwalk.org: ressources terrain
+        (materiel, methodes, checklists), coordination des evenements
+        collectifs et trace historique des actions/decisions pour piloter
+        l&apos;impact dans le temps.
       </div>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900">
+          Ressources terrain standardisees
+        </h3>
+        <p className="mt-1 text-xs text-slate-600">
+          Standardiser les pratiques pour professionnaliser les actions locales.
+        </p>
+        <div className="mt-3">
+          <KitSection />
+        </div>
+      </section>
 
       <CommunityCreateEventCard
         createForm={model.createForm}

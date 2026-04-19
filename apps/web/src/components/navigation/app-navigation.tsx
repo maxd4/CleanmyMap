@@ -100,7 +100,7 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
               </span>
             </p>
             <p>
-              Espace actif:{" "}
+              Bloc actif:{" "}
               <span className="font-semibold">
                 {activeSpace
                   ? (renderedSpaces.find((space) => space.id === activeSpace)
@@ -227,8 +227,8 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
                   {space.items.length === 0 ? (
                     <li className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-500">
                       {locale === "fr"
-                        ? "Aucune page rattachee a cet espace."
-                        : "No page assigned to this space."}
+                        ? "Aucune page rattachee a ce bloc."
+                        : "No page assigned to this block."}
                     </li>
                   ) : null}
                 </ul>
@@ -280,8 +280,8 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
                   {space.items.length === 0 ? (
                     <li className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-500">
                       {locale === "fr"
-                        ? "Aucune page rattachee a cet espace."
-                        : "No page assigned to this space."}
+                        ? "Aucune page rattachee a ce bloc."
+                        : "No page assigned to this block."}
                     </li>
                   ) : null}
                 </ul>

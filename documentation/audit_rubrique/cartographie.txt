@@ -1,32 +1,412 @@
-Rubrique: cartographie
-Statut: A completer (non traite dans cette passe)
+Rubrique: Cartographie
+Statut: audit-detaille-cartographe-v2
+Portee: produit + UX + logique cartographique + implementation
+Derniere mise a jour: 18/04/2026
 
-- a quoi sert la rubrique
-  - A completer.
+Convention de lecture:
+- [EXISTANT] implemente et observable dans le code actuel.
+- [PROBABLE] inference forte a confirmer.
+- [SOUHAITABLE] cible recommandee.
+- [MANQUANT] non implemente aujourd hui.
 
-- pour qui
-  - A completer.
+---
 
-- valeur utilisateur
-  - A completer.
+## 1) Role global de la rubrique cartographie
 
-- valeur produit
-  - A completer.
+### Objectif principal
+- [EXISTANT] Donner une lecture geolocalisee des actions/points pour prioriser les interventions terrain.
+- [EXISTANT] Relier impact terrain et fiabilite data dans un meme ecran (`/actions/map`).
 
-- contenu a afficher
-  - A completer.
+### Valeur utilisateur
+- [EXISTANT] Voir vite ou agir (filtres + marqueurs + traces/polygones).
+- [EXISTANT] Comprendre le niveau de pollution d un point via score visuel.
+- [EXISTANT] Verifier la qualite des donnees avant decision.
 
-- infos essentielles
-  - A completer.
+### Valeur produit
+- [EXISTANT] Transformer les declarations en outil d arbitrage operationnel.
+- [EXISTANT] Rendre visible la valeur du formulaire, des validations admin et des rapports.
+- [EXISTANT] Supporter pilotage local, priorisation et communication d impact.
 
-- erreurs a eviter
-  - A completer.
+### Role central dans l experience CleanMyMap
+- [EXISTANT] Rubrique pivot du bloc "Visualiser".
+- [EXISTANT] Connecte "Declarer", "Trash Spotter", "Itineraire IA", "Rapports", "Classement".
+- [EXISTANT] Inclut la logique Sandbox technique fusionnee (checks API/runbook).
 
-- points UX/UI
-  - A completer.
+---
 
-- pistes d'amelioration
-  - A completer.
+## 2) Logique generale de lecture de la carte
 
-- questions ouvertes
-  - A completer.
+### Ce que l utilisateur comprend en premier
+- [EXISTANT] Nombre de points, volume de dechets, volume de megots.
+- [EXISTANT] Legende d impact (faible -> critique).
+- [EXISTANT] Filtres temporels/statut/impact/fiabilite.
+
+### Hierarchie visuelle actuelle
+1. [EXISTANT] Bandeau + filtres.
+2. [EXISTANT] Legende dynamique.
+3. [EXISTANT] Carte Leaflet.
+4. [EXISTANT] Tableau detail des points.
+5. [EXISTANT] Panneau visualisation (totaux, tendances, zones).
+6. [EXISTANT] Sandbox technique.
+
+### Parcours de lecture dominant
+```mermaid
+flowchart LR
+  A[Filtres] --> B[Carte]
+  B --> C[Tooltip score]
+  C --> D[Tableau detail]
+  D --> E[Decision action]
+```
+Fallback statique:
+![Lecture cartographie](../archive/fallback-cartographie-lecture.png)
+
+### Signaux visuels prioritaires
+- [EXISTANT] Couleur du marqueur (score pollution).
+- [EXISTANT] Opacite/couleur dynamique continue.
+- [EXISTANT] Badge impact/qualite dans le tableau.
+- [EXISTANT] Traces animees (`leaflet-ant-path`) sur certains cas.
+
+### Elements qui guident l action
+- [EXISTANT] Filtres impact + qualite.
+- [EXISTANT] Tri implicite par concentration visuelle de marqueurs.
+- [SOUHAITABLE] CTA directs "intervenir ici" depuis carte/popup.
+
+---
+
+## 3) Logique des donnees affichees
+
+### Types d objets cartographiques
+- [EXISTANT] Points (`CircleMarker`) pour items geolocalises.
+- [EXISTANT] Polygones (`Polygon`) si `manual_drawing.kind = polygon`.
+- [EXISTANT] Traces de rue (`Polyline`) si `manual_drawing.kind = polyline`.
+- [MANQUANT] Clusters de points.
+- [MANQUANT] Zones agreges explicites (heatmap, grille, isochrones).
+
+### Couches de donnees metier
+- [EXISTANT] Sources unifiees: `actions`, `spots`, `local`.
+- [EXISTANT] Types metier: `action`, `spot`, `clean_place`.
+- [EXISTANT] Statuts: `pending`, `approved`, `rejected`.
+- [EXISTANT] Insights calcules: `impact_level`, `quality_grade`, `quality_score`.
+
+### Relation donnees brutes -> normalisees -> affichage
+```mermaid
+flowchart LR
+  A[Tables/actions + spots + local] --> B[Unified contracts]
+  B --> C[Insights impact/qualite]
+  C --> D[/api/actions/map]
+  D --> E[ActionsMapFeed + Canvas]
+```
+Fallback statique:
+![Flux donnees cartographie](../archive/fallback-cartographie-dataflow.png)
+
+### Notes implementation
+- [EXISTANT] `/api/actions/map` force `requireCoordinates: true`.
+- [EXISTANT] Fenetre jours + limit + filtres impact/qualite/statut.
+- [EXISTANT] En cas source partielle: warning et header `X-Data-Warning`.
+
+---
+
+## 4) Logique des couleurs
+
+### Familles de couleur et role
+- [EXISTANT] Bleu: point sans pollution (kg=0 et megots=0).
+- [EXISTANT] Vert -> orange -> rouge -> violet: intensite croissante du score pollution.
+- [EXISTANT] Opacite augmente avec le score.
+
+### Signification metier
+- [EXISTANT] Basee sur `computePollutionScore(wasteKg, cigaretteButts)`.
+- [EXISTANT] Score 0-100, references: 20kg et 2000 megots.
+
+### Distinction et risques
+- [EXISTANT] Couleur = intensite pollution.
+- [EXISTANT] `impact_level` est une autre logique (kg, megots, benevoles, duree).
+- [RISQUE] Confusion possible entre "pollution couleur" et "impact_level".
+
+### Cohherence palette / lisibilite / accessibilite
+- [PROBABLE] Bonne lisibilite globale en clair.
+- [RISQUE] Accessibilite daltonisme non documentee.
+- [RISQUE] Violet + rouge + orange peuvent etre confondus sur petits marqueurs.
+
+### Recommandations
+- [SOUHAITABLE] Nommer explicitement "score pollution" vs "impact niveau".
+- [SOUHAITABLE] Ajouter palette testee daltonisme (WCAG + simulation).
+- [SOUHAITABLE] Afficher valeurs seuils directement dans legende persistante.
+
+---
+
+## 5) Logique des calques
+
+### Utilite
+- [EXISTANT] Changer le fond de carte (clair, sombre, satellite).
+- [EXISTANT] Afficher/masquer la couche "Signalements".
+
+### Separation d informations
+- [EXISTANT] Fond cartographique separe des objets metier.
+- [MANQUANT] Calques metier distincts (actions vs spots vs clean_place).
+- [MANQUANT] Calques distincts points vs polygones vs traces.
+
+### Ordre d affichage
+- [EXISTANT] Base layer puis overlay unique "Signalements".
+- [RISQUE] Surcharges visuelles quand points + traces + polygons se superposent.
+
+### Visibilite par defaut
+- [EXISTANT] Mode clair actif.
+- [EXISTANT] Overlay signalements actif.
+- [SOUHAITABLE] Preferences utilisateur memorisees.
+
+### Desktop/mobile
+- [EXISTANT] Meme logique calques.
+- [RISQUE] Controle calques compact en mobile, discoverabilite limitee.
+
+### Opportunites
+- [SOUHAITABLE] Calques metier avec toggles rapides.
+- [SOUHAITABLE] Profils de vue predefinis (lecture rapide / audit qualite / plan action).
+
+---
+
+## 6) Logique de legende
+
+### Ce que la legende explique actuellement
+- [EXISTANT] Gradient impact visuel (faible->critique).
+- [EXISTANT] Cas particulier "lieu propre" en bleu.
+- [EXISTANT] Rappel sur opacite dynamique.
+
+### Ce qu elle ne doit pas surcharger
+- [SOUHAITABLE] Eviter textes longs.
+- [SOUHAITABLE] Eviter doublons avec tableau detail.
+
+### Correspondances a clarifier
+- [MANQUANT] Mapping explicite symbole/couleur/type objet.
+- [MANQUANT] Difference score pollution vs impact metier.
+- [MANQUANT] Difference qualite data vs severite pollution.
+
+### Position UI
+- [EXISTANT] Legende au-dessus de la carte (bloc dedie).
+- [SOUHAITABLE] Legende mini persistante superposee a la carte.
+
+### Version minimale vs avancee
+- [SOUHAITABLE] Mode minimal: 4 niveaux + bleu propre.
+- [SOUHAITABLE] Mode avance: seuils numeriques + methode score + exceptions.
+
+---
+
+## 7) Logique des points et marqueurs
+
+### Quand utiliser un point
+- [EXISTANT] Objet geolocalise standard (action/spot/clean_place).
+
+### Signification visuelle
+- [EXISTANT] Taille fixe (radius=6).
+- [EXISTANT] Couleur/opacite = score pollution.
+- [MANQUANT] Taille proportionnelle au volume ou a la priorite.
+- [MANQUANT] Icones differenciees action vs spot vs clean_place sur la carte.
+
+### Etats interaction
+- [EXISTANT] Hover via tooltip.
+- [MANQUANT] Etat selection persistant.
+- [MANQUANT] Etat filtre "desactive" visible.
+- [MANQUANT] Etat masque explicite.
+
+### Densite et collisions
+- [RISQUE] Collisions en zones denses.
+- [MANQUANT] Cluster dynamique.
+- [MANQUANT] Decluttering auto.
+
+### Priorisation des informations
+- [EXISTANT] Score visible au survol.
+- [MANQUANT] Priorite directe (urgence, recence, fiabilite) au niveau marqueur.
+
+---
+
+## 8) Logique des polygones, zones et traces
+
+### Quand utiliser polygone vs point
+- [EXISTANT] Polygone pour zone nettoyee manuelle.
+- [EXISTANT] Polyline pour trace de passage.
+- [EXISTANT] Point reste present pour l ancrage geographique.
+
+### Cas rues/secteurs/perimetres
+- [EXISTANT] Rues via polylines manuelles.
+- [MANQUANT] Secteurs/polygones systemiques (arrondissements, zones admin).
+- [MANQUANT] Perimetres operationnels predefinis.
+
+### Lisibilite graphique actuelle
+- [EXISTANT] Polygon: fillOpacity 0.25, weight 2, dash si score fort.
+- [EXISTANT] Polyline: weight 4, opacity 0.85, animation si score moyen+.
+- [RISQUE] Superposition difficile en zones multi-actions.
+
+### Bonnes pratiques recommandees
+- [SOUHAITABLE] Regle claire d epaisseur selon zoom.
+- [SOUHAITABLE] Regle opacite selon priorite et recence.
+- [SOUHAITABLE] Contours contrastes pour fonds satellite.
+
+---
+
+## 9) Logique des infobulles / popups / detail
+
+### Role actuel
+- [EXISTANT] Donner un score rapide au survol.
+- [EXISTANT] Tooltip tres court: pourcentage + label zone/trace.
+
+### Declenchement
+- [EXISTANT] Hover/sticky tooltip.
+- [MANQUANT] Click popup riche.
+- [MANQUANT] Panneau lateral detail selection.
+
+### Contenu minimal/secondaire
+- [EXISTANT] Minimal: score.
+- [MANQUANT] Secondaire: date, type, statut, qualite, impact, CTA action.
+
+### Risques
+- [RISQUE] Sur-information reporte dans tableau, pas dans carte.
+- [RISQUE] Pont faible carte -> action immediate.
+
+### Recommandations
+- [SOUHAITABLE] Popup 2 niveaux:
+  - Niveau 1: score + type + recence + fiabilite.
+  - Niveau 2: CTA "agir ici", "ouvrir fiche", "voir historique zone".
+
+---
+
+## 10) Logique d interaction
+
+### Existant
+- [EXISTANT] Zoom / pan natifs Leaflet.
+- [EXISTANT] Clic sur controle calques.
+- [EXISTANT] Hover tooltips.
+- [EXISTANT] Filtres externes: jours, statut, impact, qualite.
+- [EXISTANT] Rafraichir data.
+
+### Manquant
+- [MANQUANT] Recherche geographique.
+- [MANQUANT] Recentrage automatique sur zone critique.
+- [MANQUANT] Reset vue/filtres en un clic.
+- [MANQUANT] Selection multiple.
+- [MANQUANT] Etats vides cartographiques pedagogiques.
+
+### Etats de chargement
+- [EXISTANT] Skeleton liste/table.
+- [PROBABLE] Carte affichee avec items vides pendant chargement.
+- [SOUHAITABLE] Overlay de chargement sur carte.
+
+---
+
+## 11) Logique UX cartographique
+
+### Ce qui aide a comprendre vite
+- [EXISTANT] Filtres simples.
+- [EXISTANT] Legende impact visuelle.
+- [EXISTANT] Tableau detail sous carte.
+- [EXISTANT] Bloc totaux/tendances par zone.
+
+### Ce qui peut perdre
+- [RISQUE] Double logique score pollution vs impact metier.
+- [RISQUE] Manque de CTA directement dans la carte.
+- [RISQUE] Densite visuelle sans clustering.
+- [RISQUE] Vocabulaire mixte (impact, pollution, qualite) peu unifie.
+
+### Equilibre precision/simplicite
+- [EXISTANT] Bonne base pour lecture operationnelle.
+- [SOUHAITABLE] Clarifier la promesse: carte d alerte vs carte d audit.
+
+---
+
+## 12) Logique metier et produit derriere la carte
+
+### Pourquoi la carte existe
+- [EXISTANT] Passer de la collecte de donnees a la decision locale.
+- [EXISTANT] Rendre visible ou agir, avec quel niveau de confiance.
+
+### Decisions/actions que la carte doit permettre
+- [EXISTANT] Prioriser une zone d intervention.
+- [EXISTANT] Verifier la fiabilite avant d engager des ressources.
+- [SOUHAITABLE] Lancer une action directement depuis un point.
+
+### Confiance attendue
+- [EXISTANT] Donnees qualifiees + source health + filtres qualite.
+- [SOUHAITABLE] Trace explicite des hypotheses de score.
+
+### Ce qu elle doit faire ressentir
+- [SOUHAITABLE] Clarte, utilite immediate, confiance methodologique.
+- [RISQUE] Aujourd hui: riche mais parfois dense sans chemin d action direct.
+
+## Impact concret
+- [EXISTANT] La carte permet deja de prioriser des zones en combinant impact et fiabilite.
+- [SOUHAITABLE] Elle doit devenir l outil principal de declenchement d actions locales.
+
+---
+
+## 13) Limites actuelles et points a ameliorer
+
+### Zones floues/incoherences
+- [EXISTANT] Incoherence semantique possible entre `classifyPollutionColor` et couleur dynamique continue.
+- [EXISTANT] Categorie "yellow" couvre moyen + fort dans certains usages.
+- [MANQUANT] Conventions formelles documentees pour points/traces/polygones.
+
+### Risques UX/UI
+- [RISQUE] Surcharge visuelle en zones denses.
+- [RISQUE] Interaction mobile limitee pour controles/layers.
+- [RISQUE] Legende non totalement liee aux objets concrets.
+
+### Risques dette technique/cartographique
+- [RISQUE] Pas de clustering ni generalisation multi-zoom.
+- [RISQUE] Overlay unique "Signalements" limite extensibilite.
+- [RISQUE] Dependance a scores metier non versionnes dans la legende carte.
+
+### Hypotheses implicites a expliciter
+- [PROBABLE] Le score pollution sert proxy de priorite visuelle.
+- [PROBABLE] L utilisateur comprend la difference impact/qualite/pollution.
+
+---
+
+## 14) Pistes d amelioration
+
+### Ameliorations rapides
+- Ajouter bouton "Reset vue + filtres".
+- Ajouter legendaire compact sur la carte.
+- Afficher type objet (action/spot/clean_place) dans tooltip.
+- Afficher qualite grade dans tooltip.
+
+### Ameliorations structurantes
+- Introduire clustering adaptatif selon zoom.
+- Separer calques metier (actions, spots, clean_place, traces, polygons).
+- Ajouter panneau detail selectionne avec CTA.
+- Ajouter recherche d adresse + recentrage.
+
+### A arbitrer avec le cartographe
+- Grammaire visuelle finale (symboles, tailles, contrastes).
+- Seuils visuels par zoom.
+- Strategie de simplification en densite forte.
+- Representation des zones prioritaires (heatmap vs clusters vs grilles).
+
+### Decisions produit necessaires
+- Definir KPI principal de la carte: declenchement action vs audit qualite.
+- Prioriser carte "action immediate" ou carte "analyse experte".
+- Definir niveau de detail par profil (benevole, coordinateur, elu, admin).
+
+### Moyen terme
+- Couches previsionnelles (zone critique proche, anticipation evenements).
+- Historique temporel anime (timeline cartographique).
+- Export cartographique partageable pour elus/partenaires.
+
+---
+
+## 15) Questions ouvertes
+
+1. Faut-il un score unique visible, ou deux scores separes (pollution vs impact) ?
+2. Quel objet doit etre prioritaire visuellement: point critique, zone, ou trace recente ?
+3. Quelle logique de clustering adopter (distance, score, recence, qualite) ?
+4. Quel niveau de detail popup est acceptable sans surcharge ?
+5. Quels calques activer par defaut selon profil utilisateur ?
+6. Comment assurer accessibilite couleur (daltonisme) sans perdre la lisibilite metier ?
+7. Faut-il rendre obligatoire un trace/polygone pour certains types d actions ?
+8. Quel comportement mobile cible pour legende, filtres et calques ?
+9. Quel SLA data pour afficher un point comme fiable en priorite action ?
+10. Quelle convention finale de nommage pour eviter confusion: pollution / impact / priorite / fiabilite ?
+
+---
+
+## CTA (travail equipe)
+- Organiser un atelier cartographe + produit + dev avec ce document comme base.
+- Valider les conventions visuelles cibles.
+- Prioriser un lot P0 implementation: clustering + popup detail + reset/recherche.

@@ -1,0 +1,151 @@
+Les rubriques de CleanMyMap.fr
+Utilite & impact - mise a jour du 18/04/2026
+
+HEATMAP VISUELLE (utilite x impact) PAR RUBRIQUE
+```mermaid
+quadrantChart
+  title Rubriques comparees (utilite x impact)
+  x-axis Utilite faible --> Utilite elevee
+  y-axis Impact faible --> Impact eleve
+  quadrant-1 Priorite strategique
+  quadrant-2 Forte utilite operationnelle
+  quadrant-3 Faible priorite immediate
+  quadrant-4 Impact a confirmer
+  "Accueil": [0.80, 0.82]
+  "Itineraire IA": [0.78, 0.87]
+  "Trash Spotter": [0.75, 0.84]
+  "Cartographie": [0.88, 0.89]
+  "Graphiques": [0.69, 0.72]
+  "Classement": [0.73, 0.77]
+  "Rapports": [0.82, 0.88]
+  "Discussion": [0.67, 0.70]
+  "Partenaires engages": [0.79, 0.83]
+  "Donnees ouvertes": [0.70, 0.81]
+  "Financement": [0.64, 0.78]
+  "Developpement durable": [0.63, 0.74]
+  "Guide pratique": [0.76, 0.79]
+  "Seconde vie": [0.61, 0.68]
+  "Kit terrain / Rassemblements / Historique": [0.81, 0.85]
+  "Admin": [0.85, 0.90]
+  "Elus & Coordinateur": [0.83, 0.88]
+```
+Fallback statique:
+```md
+![Rubriques utilite impact heatmap fallback](./archive/fallback-rubriques-utilite-impact-heatmap.png)
+```
+
+VISUEL RADAR SIMPLIFIE (projection par blocs)
+```mermaid
+flowchart LR
+  A[Accueil<br/>U:4 I:4] --> B[Agir<br/>U:5 I:5]
+  B --> C[Visualiser<br/>U:5 I:5]
+  C --> D[Impact<br/>U:4 I:5]
+  D --> E[Reseau<br/>U:4 I:4]
+  E --> F[Apprendre<br/>U:3 I:4]
+  F --> G[Piloter<br/>U:5 I:5]
+  G --> A
+```
+Fallback statique:
+```md
+![Rubriques utilite impact radar fallback](./archive/fallback-rubriques-utilite-impact-radar.png)
+```
+
+Organisation en 7 blocs produit
+
+1) Accueil (Dashboard)
+- Formulaire benevole + parametres de compte (role, mode, profil).
+- Utilite: transformer une action terrain en donnees exploitables sans friction.
+- Impact concret: plus de declarations qualifiees, meilleure base pour carte, rapports et pilotage.
+
+2) Agir
+
+Itineraire IA
+- Recommandations proactives: "Tu devrais agir ici aujourd'hui", "Zone critique proche", "Action la plus utile".
+- Utilite: passer d'un outil passif a un assistant d'action local.
+- Impact concret: interventions plus ciblees et utiles au bon moment.
+
+Trash Spotter
+- Signalement, qualification et suivi des points de dechets hors action collective.
+- Utilite: detecter vite les hotspots de pollution locale.
+- Impact concret: reduction du delai entre detection et traitement.
+
+3) Visualiser
+
+Cartographie (avec logique Sandbox fusionnee)
+- Carte reelle des actions/points avec lecture terrain (zones, niveaux de pollution, traces/polygones).
+- Utilite: voir ou agir et prioriser les zones.
+- Impact concret: arbitrage local plus fiable, meilleure coordination des sorties.
+
+Graphiques & tableaux dynamiques
+- Totaux d'actions, tendances, repartitions par zones/periodes.
+- Utilite: synthese rapide de l'etat des actions.
+- Impact concret: decisions plus rapides sur les priorites terrain.
+
+4) Impact
+
+Classement
+- Progression durable (XP, niveaux, badges), "Ton impact" (eau/CO2/surface en proxys versionnes), ranking dynamique.
+- Utilite: motiver par l'impact reel et la progression personnelle/collective.
+- Impact concret: retention plus longue et meilleur suivi des contributions qualifiees.
+
+Rapports d'impact
+- Livrables exportables (elus/chercheurs/associations/entreprises), methodologie explicite.
+- Utilite: rendre les resultats lisibles, defendables et partageables.
+- Impact concret: credibilite renforcee pour financement, arbitrage public et partenariats.
+
+5) Reseau
+
+Discussion
+- Espace de coordination benevoles/associations/commercants/entreprises.
+- Les bugs/idees remontent via formulaire dedie, pas directement dans le canal commun.
+- Utilite: accelerer l'entraide locale et la circulation d'information utile.
+- Impact concret: plus de cooperations concretes et moins de bruit.
+
+Partenaires engages
+- Annuaire qualifie des acteurs utiles (avec logique de contribution et disponibilite).
+- Utilite: mobiliser rapidement les bonnes ressources locales.
+- Impact concret: capacite d'action augmentee sur les zones prioritaires.
+
+Donnees ouvertes
+- Open data/API/export JSON, acces chercheurs, integration collectivites.
+- Utilite: faciliter la reutilisation institutionnelle des donnees.
+- Impact concret: replication inter-villes et acceleration des analyses externes.
+
+Financement / sponsoring
+- Sponsoring de zones, mecenat ecologique, appel au don.
+- Utilite: structurer le modele economique.
+- Impact concret: plus de moyens pour actions locales soutenues dans la duree.
+
+6) Apprendre
+
+Developpement durable
+- Vulgarisation des rapports scientifiques, ODD, limites planetaires et lien avec actions locales.
+- Utilite: donner du sens systemique aux actions de depollution.
+- Impact concret: meilleure qualite des choix quotidiens et operationnels.
+
+Guide pratique
+- Consignes terrain, methodes et bonnes pratiques applicables immediatement.
+- Utilite: reduire les erreurs d'execution.
+- Impact concret: actions plus efficaces et plus sures.
+
+Seconde vie
+- Reemploi, tri, valorisation, orientation vers filieres utiles.
+- Utilite: prolonger la valeur des ressources et limiter dechets residuels.
+- Impact concret: reduction du volume final de dechets.
+
+Kit terrain + Rassemblements + Historique (fusion)
+- Ressources standardisees (materiel/checklists), coordination evenementielle et memoire des decisions/actions.
+- Utilite: professionnaliser les operations collectives et conserver la trace.
+- Impact concret: participation citoyenne accrue + transparence + progression mesurable dans le temps.
+
+7) Piloter
+
+Admin
+- Moderation, validation qualite, anti-abus, controle des operations sensibles.
+- Utilite: garantir la fiabilite des donnees et la gouvernance.
+- Impact concret: legitimite renforcee vis-a-vis des elus, chercheurs et partenaires.
+
+Elus & Coordinateur
+- Vue lisible des besoins/resultats pour arbitrage public et coordination locale.
+- Utilite: transformer les donnees en decisions actionnables.
+- Impact concret: allocations plus pertinentes sur les zones a fort besoin.

@@ -28,9 +28,10 @@ describe("navigation display modes", () => {
   it("limits to essential sections in simplifie mode", () => {
     const simplifie = collectRouteIds("coordinateur", "simplifie");
 
-    expect(simplifie).toContain("new");
+    expect(simplifie).toContain("profile");
+    expect(simplifie).toContain("dashboard");
     expect(simplifie).toContain("map");
-    expect(simplifie).toContain("history");
+    expect(simplifie).toContain("community");
     expect(simplifie).not.toContain("climate");
     expect(simplifie).not.toContain("recycling");
   });
@@ -59,7 +60,7 @@ describe("navigation display modes", () => {
     expect(labels.summary).toContain("mode simplifie");
   });
 
-  it("orders spaces using role priority instead of fixed order", () => {
+  it("keeps the 7-block product order", () => {
     const scientifiqueSpaceIds = getNavigationSpacesForProfile(
       "scientifique",
       "exhaustif",
@@ -70,16 +71,22 @@ describe("navigation display modes", () => {
     ).map((space) => space.id);
 
     expect(scientifiqueSpaceIds).toEqual([
-      "decide",
-      "supervise",
-      "prepare",
-      "execute",
+      "home",
+      "act",
+      "visualize",
+      "impact",
+      "network",
+      "learn",
+      "pilot",
     ]);
     expect(adminSpaceIds).toEqual([
-      "supervise",
-      "execute",
-      "decide",
-      "prepare",
+      "home",
+      "act",
+      "visualize",
+      "impact",
+      "network",
+      "learn",
+      "pilot",
     ]);
   });
 

@@ -1,0 +1,360 @@
+BOUCLE A REPETER AVEC MODELE FORT (claude / gemini 3.1)
+fait un commit puis push GitHub et met à jour le git.
+
+Refactorise le repo sans changer le comportement pour qu'il soit plus facilement utilisable par l'agent IA qui développe le projet
+
+Fait un audit des fichiers les plus lourd du repo, explique pourquoi et comment optimiser cela pour améliorer la qualité et l'efficacité du repo avec un plan d'action précis, propre et actionnable.
+
+Exécute cela
+
+De même fait cet audit pour les fichiers monolithique avec une stratégie de divisions propre en fichiers modulaires.
+
+Trouve tous les bugs et régressions puis structure ton audit sous forme d'un plan actionnable
+
+Exécute ce plan
+
+Fais un audit global du repo pour récupérer : les problèmes critiques, les risques de régression, les incohérences structurelles, les correctifs recommandés. Structure en un plan actionnable par toi
+
+exécute le plan 
+
+
+
+
+- vérifie que les fichiers de base du projet nécessaires à la sécurité et à l’hygiène du repo sont bien présents et correctement configurés, notamment pour éviter toute divulgation de secrets lors des push GitHub
+- mets-les à jour si nécessaire
+
+Vérifications prioritaires :
+- `.gitignore`
+- `.env.example`
+- absence de secrets codés en dur
+- éventuel `.dockerignore` si pertinent
+- éventuels fichiers d’exemple de configuration sans secret
+- documentation minimale sur la gestion des variables d’environnement
+- tout autre fichier racine nécessaire à une base de projet propre et sûre
+
+Pour éviter les fuites de secrets au push GitHub, les plus importants sont :
+
+.gitignore
+.env.example
+.env.local non tracké
+.env non tracké
+.dockerignore si Docker
+README.md avec section variables d’environnement
+éventuellement un fichier de doc type documentation/securite/secrets.md
+Point important
+
+Le .gitignore protège seulement les fichiers non encore suivis.
+Si un secret a déjà été commité une fois, l’ajouter ensuite au .gitignore ne suffit pas. Il faut alors :
+
+retirer le fichier du suivi Git
+faire tourner les secrets exposés
+parfois nettoyer l’historique Git si l’exposition est réelle
+
+Pour cette partie sécurité :
+- signale précisément les risques détectés
+- corrige seulement ce qui est justifié
+- ne casse pas le fonctionnement du projet
+- si un secret semble déjà exposé dans l’historique ou dans le code, signale-le explicitement
+
+Retour attendu :
+2. liste des fichiers racine vérifiés
+3. fichiers créés ou modifiés
+4. risques secrets / GitHub identifiés
+5. actions restantes recommandées
+
+
+
+
+
+on va push GitHub pour tester le site web 
+Comment relancer Vercel et Supabase ? Pourquoi il y a des actions GitHub dans le repo ?
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+REPONSE AUDIRT PROMPT 002
+**Règles de base (implémentation actuelle)**
+- Rôles applicatifs: `benevole`, `coordinateur`, `elu`, `admin` dans [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts).
+- `decideur` est un alias de `elu` (normalisation rôle) dans [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts).
+- Source de vérité navigation rôle -> espaces -> rubriques: `PARCOURS_SPACE_PAGE_MAP` dans [navigation.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/navigation.ts).
+- Mapping rubrique -> route: [sections-registry.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/sections-registry.ts).
+
+**Cartographie exhaustive rôle -> rubriques/pages visibles**
+- `benevole`
+1. `execute`: `/actions/new`, `/actions/map`
+2. `supervise`: `/actions/history`, `/sections/trash-spotter`
+3. `decide`: `/dashboard`, `/sections/gamification`
+4. `prepare`: `/sections/guide`, `/sections/kit`, `/sections/community`
+
+- `coordinateur`
+1. `execute`: `/sections/community`, `/actions/new`, `/actions/map`, `/sections/route`
+2. `supervise`: `/actions/history`, `/dashboard`, `/sections/weather`
+3. `decide`: `/reports`, `/sections/compare`, `/sections/climate`, `/sections/elus`
+4. `prepare`: `/sections/guide`, `/sections/kit`, `/sections/actors`, `/sections/recycling`
+
+- `elu` / `decideur`
+1. `execute`: `/sections/elus`
+2. `supervise`: `/dashboard`, `/actions/history`
+3. `decide`: `/reports`, `/sections/compare`, `/sections/climate`, `/sections/weather`
+4. `prepare`: `/sections/guide`
+
+- `admin`
+1. `execute`: `/admin`, `/actions/new`, `/sections/community`
+2. `supervise`: `/dashboard`, `/actions/history`, `/actions/map`, `/sections/sandbox`
+3. `decide`: `/reports`, `/sections/compare`, `/sections/climate`, `/sections/elus`
+4. `prepare`: `/sections/guide`, `/sections/kit`, `/sections/weather`, `/sections/actors`
+
+**CTA visibles (UI)**
+- CTA de navigation (header/nav) par rôle: `primaryCTA` + `secondaryCTA` depuis [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts), affichés dans [app-navigation.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/navigation/app-navigation.tsx) et [app/(app)/layout.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/layout.tsx) (header seulement si feature flag `parcoursNavV2` active).
+- CTA “Actions principales” (inclut aussi `additionalActions`) dans [role-primary-actions.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/navigation/role-primary-actions.tsx).
+- CTA configurés:
+1. `benevole`: `/actions/new`, `/actions/map`, `/actions/history`
+2. `coordinateur`: `/sections/community`, `/dashboard`, `/reports`
+3. `elu`: `/api/reports/elus-dossier?format=pdf`, `/sections/elus`, `/sections/compare`
+4. `admin`: `/admin`, `/reports`, `/dashboard`
+
+
+
+
+
+AUDIT PROMPT 003
+**Cartographie cible (mutualisée, sans silos rôle)**
+
+**Principe directeur**
+- Même socle de pages pour tous les parcours.
+- Le rôle change la priorité, les CTA et les droits d’action, pas l’existence des pages.
+- Une source de données unifiée par domaine (actions, communauté, pilotage, exports).
+
+**1) Parcours -> Espaces stables -> Pages**
+
+| Espace | Pages cibles (routes uniques) | Données mutualisées |
+|---|---|---|
+| `Executer` | `/actions/new`, `/actions/map`, `/sections/community`, `/sections/route` | actions unifiées, spots, événements, recommandations d’itinéraire |
+| `Superviser` | `/dashboard`, `/actions/history`, `/sections/trash-spotter`, `/sections/weather`, `/sections/sandbox` | KPI opérationnels, qualité data, backlog, météo ops, checks techniques |
+| `Decider` | `/reports`, `/sections/elus`, `/sections/compare`, `/sections/climate` | comparatifs N/N-1, priorisation territoriale, exports, méthodes KPI |
+| `Preparer` | `/sections/guide`, `/sections/kit`, `/sections/actors`, `/sections/recycling` | playbooks, checklists, partenaires, tri/valorisation |
+
+**2) Parcours CTA (overlay, pas silo)**
+
+- `benevole`
+1. Priorité: `Executer` -> `Preparer` -> `Superviser` -> `Decider`
+2. CTA par défaut: déclarer, carte, historique
+3. Accès lecture large, actions sensibles limitées
+
+- `coordinateur`
+1. Priorité: `Executer` -> `Superviser` -> `Decider` -> `Preparer`
+2. CTA par défaut: communauté, cockpit, reporting
+3. Droits de pilotage opérationnel renforcés
+
+- `elu/decideur`
+1. Priorité: `Decider` -> `Superviser` -> `Preparer` -> `Executer`
+2. CTA par défaut: dossier décisionnel, priorisation territoriale
+3. Lecture complète, actions terrain directes optionnelles
+
+- `admin`
+1. Priorité: `Superviser` -> `Executer` -> `Decider` -> `Preparer`
+2. CTA par défaut: backlog critique, exports, santé système
+3. Droits critiques: modération, imports, exports sensibles, opérations
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+met a jour le dossier rubriques_audit dans la documentation avec la nouvelle structure : 7 dossiers pour les 7 blocs puis un fichier texte par rubrique présente dans le bloc.
+Ensuite complète les fichiers de rubrique du bloc 1
+de même pour le bloc 2
+
+
+
+redige un texte que je vais mettre dans une seconde page du fichier Excel partagé à mes collaborateurs pour expliquer le fonctionnement du fichier et ses logiques en insistant sur le fait qu'il ne faut pas modifier l'intitulé des colonnes sinon l'export des données vers supabase va échouer.  
+
+
+dans le dossier de documentation, génère un fichier PDF explicatif du site web à envoyer aux organisateurs de l'événement megothon Paris qui se déroule fin mai et qui se concentre sur le ramassage des mégots. Tu dois adapter le fichier pour être axé mégot, mesure d'impact, carte interactive dans le but d'établir un partenariat avec eux.
+
+De même fais un second fichier PDF à envoyer à world cleanup day France pour que cet évènement deviennent partenaire à mon site afin qu'ils utilisent notre site web pendant leurs prochaines actions ou au moins qu'ils me partagent leurs résultats pour mettre a jour le site. Insiste donc sur les rubriques de type chemin IA, carte interactive, formulaire bénévole, commerçants engagés et partenariats, RSE entreprise, rapport PDF pour les élus.
+
+
+passe 2 pour affiner encore le mode sobre (contraste/animation/rythme visuel) sur les pages métier, pas seulement la navigation.
+
+
+
+
+
+
+je n'ai pas compris, explique cela :
+Configuration Clerk/admin à faire
+Pour que les admins Clerk aient le badge automatiquement:
+
+définir CUSTOM_UP_CLERK_SECRET_KEY
+envoyer l’ID Clerk utilisateur au backend via header X-User-Id (et optionnel X-User-Name)
+mettre dans Clerk:
+public_metadata.role = "admin" (ou private_metadata.role = "admin")
+public_metadata.badges pour les autres badges
+Option simple sans Clerk complet: définir CUSTOM_UP_ADMIN_USER_IDS (liste CSV) et CUSTOM_UP_USER_BADGES_JSON.
+
+
+
+
+
+
+
+ vérifie que juste après la création du compte clerk il faut choisir son rôle, son profil, son mode d'affichage.  
+
+
+
+
+
+
+
+Que veux tu dire avec cela ? 
+Dans notre contexte CLI, Vercel impose un preview par branche Git.
+L’automatisation par défaut sync development + production.
+Pour Preview, utilise: node scripts/vercel-sync-env.mjs --file=.env.local --environments=preview --preview-branch=<ta-branche>. Rédige un plan d'execution puis execute le  
+
+
+
+
+
+
+
+Audit current documentation and implement a standard documentation structure in the correct locations.
+
+Requirements:
+- Root README.md must be complete, specific, and grounded in the actual codebase.
+- Add documentation/repo-docs/ only where justified by real complexity.
+- Add CONTRIBUTING.md if useful.
+- Add minimal .github templates/docs only if clearly beneficial.
+- Prefer updating existing docs over creating redundant files.
+- Do not invent anything not supported by the repo.
+
+Use evidence from:
+- source tree
+- package manifests
+- env examples
+- CI workflows
+- Docker / infra files
+- test setup
+- existing docs
+
+README should cover when relevant:
+- purpose
+- features
+- stack
+- repo structure
+- install
+- configuration
+- environment variables
+- local run
+- tests
+- build/deploy
+- usage
+- troubleshooting
+
+Quality bar:
+- concise
+- specific
+- scannable
+- actionable
+- no filler
+- no duplication
+- explicit unknowns instead of guesses
+
+At the end, output:
+- Steps identified
+- Steps completed
+- Files created
+- Files updated
+- Documentation decisions
+- Remaining uncertainties
+
+
+
+
+
+
+
+Use GitDocify as a secondary documentation audit input, not as source of truth.
+
+Instructions:
+- Treat the repository code, config files, manifests, CI files, env examples, and existing docs as the source of truth.
+- Use the GitDocify report only to detect:
+  - missing documentation
+  - unclear architecture
+  - weak README structure
+  - undocumented setup/config/testing/deployment areas
+  - misleading or incomplete explanations
+- Do not copy GitDocify blindly.
+- Verify every claim against the actual repository.
+- Keep what is correct, discard what is vague, false, generic, redundant, or unsupported.
+- Improve documentation in standard locations only.
+
+Deliver:
+- README improvements
+- documentation/repo-docs/ additions only if justified
+- CONTRIBUTING.md if useful
+- explicit list of GitDocify claims accepted, corrected, or rejected
+
+Output format:
+- Steps identified
+- Files created
+- Files updated
+- GitDocify points accepted
+- GitDocify points corrected
+- GitDocify points rejected
+- Remaining documentation gaps
+
+
+
+
+
+
+
+
+
+
+
+connecte toi à mon compte figma, récupère le Template cleanmymap et implémente au site. On fera des templates spécifiques pour chaque modes plus tard.
+
+
+
+METTRE A JOUR petit à petit les doc du dossier DU (en copiant collant le contenu dans codex et qu'il réécrive comme sur chatgpt pas juste qu'il traite tout d'un coup car trop d'info). Notamment : 
+FICHIER TEXTE ATELIER_DU
+LES FICHES PROJET et PDF plus pro
+IMPACT_IA surtout paragraphe final rajouté
+

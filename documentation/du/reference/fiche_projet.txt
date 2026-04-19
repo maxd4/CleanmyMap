@@ -1,0 +1,270 @@
+# Fiche projet — CleanMyMap
+
+Schema-rubrique (lecture en moins de 2 minutes)
+```mermaid
+flowchart TD
+  A[Identite projet] --> B[Contexte et besoin]
+  B --> C[Finalites]
+  C --> D[Etat reel]
+  D --> E[Livrables]
+  E --> F[Publics]
+  F --> G[Gouvernance]
+  G --> H[Budget]
+  H --> I[Calendrier]
+  I --> J[Risques]
+  J --> K[Conclusion]
+```
+Fallback statique:
+```md
+![Fiche projet schema fallback](../../archive/fallback-fiche-projet-schema.png)
+```
+
+Timeline visuelle du projet
+```mermaid
+gantt
+  title Timeline CleanMyMap 2026
+  dateFormat  YYYY-MM-DD
+  section Stabilisation
+  Post-E09 base propre      :done, a1, 2026-04-01, 2026-04-30
+  section Lots prioritaires
+  E10-E12                   :active, a2, 2026-05-01, 2026-05-31
+  E13-E17                   :a3, 2026-06-01, 2026-06-30
+  E18-E20                   :a4, 2026-07-01, 2026-07-31
+  section Consolidation
+  Adoption terrain          :a5, 2026-09-01, 2026-09-30
+  Diffusion elargie         :a6, 2026-10-01, 2026-12-15
+```
+Fallback statique:
+```md
+![Fiche projet timeline fallback](../../archive/fallback-fiche-projet-timeline.png)
+```
+
+## 1. Identité du projet
+
+**Nom du projet :** CleanMyMap  
+**Nature :** Plateforme web de pilotage des actions citoyennes de dépollution  
+**Porteur :** Maxence DEROOME (portage individuel)  
+**Date de mise à jour :** 9 avril 2026  
+**Version :** 1.2
+
+CleanMyMap est un projet d’intérêt général local qui transforme des actions bénévoles de nettoyage en informations utiles, lisibles et partageables.
+
+---
+
+## 2. Contexte et besoin
+
+Des actions citoyennes de ramassage sont organisées régulièrement, mais les données restent souvent dispersées (messages, feuilles de calcul, comptes-rendus non homogènes). Cette dispersion limite :
+
+- la planification des prochaines actions ;
+- la capacité à comparer les zones dans le temps ;
+- la preuve d’impact auprès des partenaires publics et privés ;
+- l’orientation des budgets vers des aménagements efficaces.
+
+CleanMyMap répond à ce besoin en réunissant collecte, cartographie, suivi et restitution dans un seul outil.
+
+---
+
+## 3. Finalités du projet
+
+### 3.1 Action terrain
+Aider les bénévoles à savoir **où**, **quand** et **comment** intervenir, avec des informations concrètes et exploitables.
+
+### 3.2 Pilotage associatif
+Permettre aux associations de prioriser les zones à traiter, d’organiser les équipes et de suivre la régularité des interventions.
+
+### 3.3 Culture citoyenne
+Rendre accessibles des contenus pédagogiques (guides, bonnes pratiques, ressources locales, sensibilisation environnementale).
+
+### 3.4 Plaidoyer institutionnel
+Produire des indicateurs fiables pour objectiver l’impact des actions et soutenir des décisions d’investissement public (prévention, équipements, propreté, biodiversité).
+
+### 3.5 Valorisation des acteurs engagés
+Mettre en avant les associations, commerces, entreprises et collectifs impliqués dans des démarches utiles au territoire.
+
+---
+
+## 4. État réel du projet (au 09/04/2026)
+
+### 4.1 Socle actif
+Le runtime principal est l’application web Next.js située dans `apps/web`.
+
+### 4.2 Nettoyage technique déjà réalisé
+Le nettoyage destructif E09 est terminé : suppression de la couche legacy obsolète (`app.py`, `src/ui/*`, `src/services/*`) et alignement des scripts/tests/docs.
+
+### 4.3 Vérifications techniques validées
+- `npm --prefix apps/web run lint` : OK ;
+- `npm --prefix apps/web run test` : OK ;
+- `npm --prefix apps/web run build` : OK ;
+- `pytest -q` : OK ;
+- `python scripts/ci_cleanup.py --root . --check` : OK.
+
+### 4.4 Plans d’exécution avec des succession de messages à envoyer à codex compilés dans des fichiers texte d'action
+Plan.txt :
+	- E03 à E09 : DONE ;
+	- E10 à E20 : PENDING (pause volontaire), ajout de rubriques et enrichissement des autres
+Update_livrable.txt : 
+	- Mise à jour du rapport PDF global avec les nouveautés DONE
+	- Ajout d'un livrable PDF par rubrique DONE
+	- Ajouts de livrables à la fois backend (pour aider au diagnostic, au développement) et frontend (accessible au public) PENDING
+ateliers_DU.txt:
+	- Améliorations du site web issues des apprentissages pendant les ateliers DU (fiche projet, mode sobriété, guidage pas a pas pour l'accessibilité du site à tous…) 
+A chaque fin de plan : corrections des bugs, tests, scindement des fichiers monolithiques en fichiers modulaires et maintenable.
+
+
+---
+
+## 5. Livrables déjà disponibles
+
+### 5.1 Application web
+Routes principales : `/dashboard`, `/reports`, `/admin`, `/actions/new`, `/actions/map`, `/actions/history`.
+
+### 5.2 Cartographie interactive
+Visualisation des actions et signalements, avec filtres de lecture territoriale.
+
+### 5.3 API métier
+API opérationnelle pour collecte, affichage carte, export, modération et flux communautaires.
+
+### 5.4 Reporting et exports
+Indicateurs clés + exports CSV/JSON pour exploitation externe.
+
+### 5.5 Documentation et maintenance
+Plan de travail versionné, scripts de vérification, documentation technique consolidée.
+
+---
+
+## 6. Publics bénéficiaires
+
+### 6.1 Bénéficiaires directs
+- bénévoles individuels ;
+- collectifs de cleanwalk ;
+- associations environnementales.
+
+### 6.2 Bénéficiaires indirects
+- collectivités territoriales ;
+- habitants ;
+- partenaires institutionnels et économiques.
+
+---
+
+## 7. Gouvernance et méthode de travail
+
+Le pilotage repose sur :
+
+- une priorisation stricte des besoins terrain ;
+- des évolutions par lots pour limiter les régressions ;
+- des validations systématiques (tests, build, checks) ;
+- une documentation continue pour garantir la lisibilité du projet.
+
+### 7.1 Décision actée — Module data-quality
+Le niveau retenu pour la qualité de données est **complet** (et non MVP).  
+Ce choix couvre un périmètre renforcé :
+
+- scoring qualité global (complétude, cohérence, fraîcheur) ;
+- typologie d’anomalies détaillée ;
+- règles avancées de détection ;
+- workflows de correction (détection -> assignation -> correction -> validation -> clôture) ;
+- historique des corrections (traçabilité) ;
+- priorisation des actions de remédiation.
+
+Ce choix améliore la robustesse du pilotage sur la durée, avec un coût assumé : une mise en œuvre plus longue et plus complexe, pouvant décaler des livrables moins prioritaires.
+
+---
+
+## 8. Budget prévisionnel
+
+### 8.1 Dépenses déjà engagées
+- Abonnement Codex : 40 € (2 mois) ;
+- Nom de domaine `.fr` : 10 €/an.
+
+### 8.2 Projection de montée en charge
+En cas de dépassement des offres gratuites (hébergement, authentification, base de données, email), passage progressif vers des offres payantes.
+
+### 8.3 Scénario financier simplifié
+
+| Poste | Niveau actuel | Hypothèse montée en charge |
+|---|---:|---:|
+| Hébergement web | Gratuit / faible coût | ~20 €/mois |
+| Authentification | Gratuit / faible coût | ~20 €/mois |
+| Base de données | Gratuit / faible coût | ~20 €/mois |
+| Email transactionnel | Gratuit / faible coût | ~20 €/mois |
+| Domaine `.fr` | 10 €/an | 10 €/an |
+
+### 8.4 Sources de financement envisagées
+- autofinancement ;
+- contributions de partenaires ;
+- subventions locales ;
+- appels à projets ;
+- cofinancements associatifs/municipaux.
+
+---
+
+## 9. Calendrier prévisionnel
+
+| Période | Objectif principal | Résultat attendu |
+|---|---|---|
+| Avril 2026 | Stabilisation post-E09 | Base technique propre, documentation alignée |
+| Mai 2026 | Lancement des lots E10-E12 | Améliorations visibles côté pilotage et terrain |
+| Juin 2026 | Lots E13-E17 | Fonctions admin avancées (qualité, observabilité, partenariats) |
+| Juillet 2026 | Lots E18-E20 | Runbooks, matrice de tests, traçabilité documentaire |
+| Septembre 2026 | Consolidation usage terrain | Meilleure adoption locale et retours utilisateurs structurés |
+| T4 2026 | Préparation diffusion élargie | Dossier prêt pour partenaires institutionnels et financeurs |
+
+---
+
+## 10. Risques principaux et réponses
+
+| Risque | Impact | Réponse prévue |
+|---|---|---|
+| Qualité de données hétérogène | Décisions moins fiables | Contrôles, modération, routines qualité |
+| Complexité du module data-quality complet | Délai de livraison potentiellement plus long | Séquencement par lots, jalons intermédiaires, arbitrage continu des priorités |
+| Dépendance à des services tiers | Interruption partielle de service | Supervision, procédures de secours |
+| Charge forte sur petite équipe | Ralentissement de la roadmap | Priorisation stricte, automatisation |
+| Financement insuffisant | Limitation du déploiement | Budget par paliers, cofinancement |
+| Adoption terrain trop faible | Impact réduit | Parcours simple, communication ciblée |
+
+---
+
+## 11. Conclusion
+
+CleanMyMap dispose d’un socle web stable et d’une utilité claire : transformer l’engagement bénévole en impact mesurable, compréhensible et mobilisable.
+
+La priorité n’est plus de « faire de la technique pour la technique », mais d’amplifier l’usage réel et de renforcer la valeur collective pour le territoire.
+
+---
+
+## 12. Glossaire (vulgarisé)
+
+**Action** : intervention de nettoyage réalisée sur le terrain.  
+**API** : passerelle qui permet à deux logiciels d’échanger des informations.  
+**Architecture technique** : organisation globale du système et de ses composants.  
+**Authentification** : vérification de l’identité d’un utilisateur.  
+**Back-end** : partie invisible qui traite les données et applique les règles.  
+**Base de données** : espace où les informations sont stockées et organisées.  
+**Build** : étape technique qui prépare le site avant publication.  
+**CSV** : format de fichier simple pour exporter des tableaux.  
+**Dashboard** : écran de pilotage avec les indicateurs principaux.  
+**Déploiement** : mise en ligne d’une nouvelle version du site.  
+**Endpoint** : adresse précise d’une API (ex. `/api/actions`).  
+**Export** : fichier généré pour partage ou analyse.  
+**Front-end** : partie visible du site utilisée par le public.  
+**Géolocalisation** : positionnement d’informations sur une carte.  
+**JSON** : format standard de données lisible par les logiciels.  
+**KPI** : indicateur chiffré pour suivre les résultats.  
+**Legacy** : ancienne partie technique devenue obsolète.  
+**Lint** : contrôle automatique de qualité du code.  
+**Modération** : vérification des informations avant validation.  
+**Next.js** : technologie web principale utilisée pour CleanMyMap.  
+**PDF** : document prêt à partager ou imprimer.  
+**Quota** : limite d’utilisation d’une offre gratuite.  
+**Reporting** : présentation structurée des résultats.  
+**RLS** : règles de sécurité qui limitent l’accès aux données.  
+**Route** : adresse d’une page (ex. `/reports`).  
+**Runtime** : version active du système en fonctionnement.  
+**Script** : petit programme qui automatise une tâche.  
+**Stack** : ensemble des technologies utilisées.  
+**Supabase** : service de base de données et d’accès aux données.  
+**Test** : vérification automatique du bon fonctionnement.  
+**TypeScript** : langage utilisé pour réduire les erreurs de développement.  
+**Vercel** : plateforme d’hébergement du site web.  
+**Webhook** : message automatique reçu lorsqu’un événement externe survient.  
+**Workflow** : enchaînement d’étapes pour réaliser un processus.

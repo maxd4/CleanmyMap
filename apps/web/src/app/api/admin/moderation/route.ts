@@ -7,6 +7,10 @@ import {
 } from "@/lib/data/local-sync";
 import { appendAdminOperationAudit } from "@/lib/admin/operation-audit";
 import {
+  trackActionValidationBonus,
+  trackSpotValidationBonus,
+} from "@/lib/gamification/progression";
+import {
   adminErrorResponse,
   adminSuccessResponse,
   newOperationId,
@@ -202,6 +206,19 @@ export async function POST(request: Request) {
           access.userId,
         );
         copied = syncResult.copied;
+        try {
+          await trackActionValidationBonus(supabase, {
+            actionId: parsed.data.id,
+          });
+        } catch (progressionError) {
+          console.error("Progression tracking failed for action moderation", {
+            actionId: parsed.data.id,
+            message:
+              progressionError instanceof Error
+                ? progressionError.message
+                : String(progressionError),
+          });
+        }
       }
 
       await appendAdminOperationAudit({
@@ -266,6 +283,19 @@ export async function POST(request: Request) {
         parsed.data.id,
         access.userId,
       );
+      try {
+        await trackSpotValidationBonus(supabase, {
+          spotId: parsed.data.id,
+        });
+      } catch (progressionError) {
+        console.error("Progression tracking failed for spot moderation", {
+          spotId: parsed.data.id,
+          message:
+            progressionError instanceof Error
+              ? progressionError.message
+              : String(progressionError),
+        });
+      }
     }
 
     await appendAdminOperationAudit({

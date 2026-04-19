@@ -7,7 +7,6 @@ const ROOT = resolve(".");
 const SENSITIVE_PREFIXES = [
   "apps/web/src/",
   "documentation/",
-  "DU/",
 ];
 const TEXT_EXTENSIONS = new Set([
   ".ts",

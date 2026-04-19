@@ -8,6 +8,7 @@ export const PROTECTED_ROUTE_PATTERNS = [
   "/api/actions(.*)",
   "/api/community(.*)",
   "/api/pilotage(.*)",
+  "/api/partners(.*)",
   "/api/recycling(.*)",
   "/api/reports(.*)",
   "/api/route(.*)",

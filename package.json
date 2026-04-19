@@ -11,6 +11,7 @@
     "build": "npm run build -w apps/web",
     "lint": "npm run lint -w apps/web",
     "typecheck": "npm run typecheck -w apps/web",
+    "check:doc-visuals": "node scripts/check-doc-visuals.mjs",
     "check:utf8-fr": "node scripts/check-utf8-fr-files.mjs",
     "check:lockfile-policy": "node scripts/check-lockfile-policy.mjs",
     "quality:top-heavy": "node scripts/top-heavy-files.mjs",
@@ -19,7 +20,8 @@
     "checks": "powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1",
     "maintenance:check": "node -e \"console.log('Legacy Python maintenance is archived. Use: npm run checks')\"",
     "session:bootstrap": "node scripts/session_bootstrap.mjs",
-    "session:close": "node scripts/update_session_memory.mjs"
+    "session:close": "node scripts/update_session_memory.mjs",
+    "session:budget": "node scripts/context-budget-check.mjs"
   },
   "repository": {
     "type": "git",

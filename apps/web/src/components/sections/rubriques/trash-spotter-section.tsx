@@ -52,14 +52,41 @@ export function TrashSpotterSection() {
       setSpotMessage("Renseigne un libelle de spot (minimum 2 caracteres).");
       return;
     }
+    const latitudeRaw = spotLatitude.trim();
+    const longitudeRaw = spotLongitude.trim();
+    const latitude = toOptionalNumber(spotLatitude);
+    const longitude = toOptionalNumber(spotLongitude);
+    const latitudeDefined = latitude !== undefined;
+    const longitudeDefined = longitude !== undefined;
+
+    if ((latitudeRaw && !latitudeDefined) || (longitudeRaw && !longitudeDefined)) {
+      setSpotState("error");
+      setSpotMessage("Latitude/longitude invalides. Utilise des nombres decimaux.");
+      return;
+    }
+    if (latitudeDefined !== longitudeDefined) {
+      setSpotState("error");
+      setSpotMessage("Renseigne latitude et longitude ensemble.");
+      return;
+    }
+    if (latitudeDefined && (latitude < -90 || latitude > 90)) {
+      setSpotState("error");
+      setSpotMessage("Latitude hors plage (-90 a 90).");
+      return;
+    }
+    if (longitudeDefined && (longitude < -180 || longitude > 180)) {
+      setSpotState("error");
+      setSpotMessage("Longitude hors plage (-180 a 180).");
+      return;
+    }
 
     setSpotState("pending");
     try {
       const result = await createSpot({
         type: spotType,
         label,
-        latitude: toOptionalNumber(spotLatitude),
-        longitude: toOptionalNumber(spotLongitude),
+        latitude,
+        longitude,
         notes: spotNotes.trim() || undefined,
       });
       setSpotState("success");

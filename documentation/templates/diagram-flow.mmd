@@ -1,0 +1,7 @@
+flowchart TD
+  START[Point de depart] --> STEP1[Etape 1]
+  STEP1 --> DECISION{Condition ?}
+  DECISION -- Oui --> STEP2[Etape 2]
+  DECISION -- Non --> STEP3[Etape 3]
+  STEP2 --> END[Resultat]
+  STEP3 --> END[Resultat]

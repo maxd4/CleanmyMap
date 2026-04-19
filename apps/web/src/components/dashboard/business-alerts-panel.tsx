@@ -123,10 +123,10 @@ export function BusinessAlertsPanel() {
               Objectifs de campagne par zone (30 jours)
             </h3>
             <Link
-              href="/sections/compare"
+              href="/sections/climate"
               className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
             >
-              Voir comparaison
+              Voir developpement durable
             </Link>
           </div>
           <ul className="mt-2 space-y-2 text-sm text-slate-700">

@@ -1,4 +1,4 @@
-﻿# CleanMyMap Monorepo
+# CleanMyMap Monorepo
 
 Plateforme citoyenne pour declarer, visualiser et exporter des actions de depollution.
 
@@ -26,7 +26,7 @@ npm run dev
 
 ## Project layout
 - `apps/web/` : Next.js application (frontend + API routes)
-- `docs/` : documentation and runbooks
+- `documentation/repo-docs/` : documentation and runbooks
 - `scripts/` : root maintenance scripts
 - `legacy/` : archived historical Python code
 
@@ -37,9 +37,10 @@ For backend bootstrap, env sync and Supabase operations, see:
 ## Codex Session Memory Workflow
 - Persistent rules: `AGENTS.md`
 - Project context: `project_context.md`
-- Session memory: `DU/latest-session.md`
-- Governance: `docs/ops/codex-memory-governance.md`
+- Session memory: `documentation/du/session/latest-session.md`
+- Governance: `documentation/repo-docs/ops/codex-memory-governance.md`
 
 Commands:
 - `npm run session:bootstrap`
 - `npm run session:close -- --done "..." --next "..." --risk "..."`
+- `npm run session:budget`

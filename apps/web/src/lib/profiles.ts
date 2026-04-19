@@ -178,11 +178,11 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       },
     },
     secondaryCTA: {
-      href: "/sections/compare",
-      label: { fr: "Comparer les zones", en: "Compare areas" },
+      href: "/sections/climate",
+      label: { fr: "Lire le contexte durable", en: "Open sustainability context" },
       description: {
-        fr: "Verifier les ecarts bruts vs normalises",
-        en: "Check raw vs normalized deltas",
+        fr: "Croiser impact local, ODD et limites planetaires",
+        en: "Cross local impact with SDGs and boundaries",
       },
     },
     additionalActions: [
@@ -224,11 +224,11 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     additionalActions: [
       {
-        href: "/sections/compare",
-        label: { fr: "Comparer les zones", en: "Compare areas" },
+        href: "/sections/climate",
+        label: { fr: "Comparer dans Developpement durable", en: "Compare in sustainability" },
         description: {
-          fr: "Lecture normalisee inter-zones",
-          en: "Normalized cross-area reading",
+          fr: "Lecture territoriale comparee integree",
+          en: "Integrated cross-area reading",
         },
       },
     ],
@@ -337,4 +337,3 @@ export function getProfileSpacePriority(
 export function isAppProfile(value: string): value is AppProfile {
   return PROFILE_ORDER.includes(value as AppProfile);
 }
-

@@ -2,6 +2,15 @@ import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
 import { NextResponse } from "next/server";
 import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
+import { getCurrentUserLocationPreference } from "@/lib/auth/user-location";
+import { trackRouteRecommendationUse } from "@/lib/gamification/progression";
+import {
+  buildHotspots,
+  buildProactiveAssistant,
+  defaultRouteAssistantPayload,
+  defaultRouteRecommendationFloorDate,
+  loadEventPressureByArrondissement,
+} from "@/lib/route/recommendation-assistant";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
@@ -24,6 +33,8 @@ type StopCandidate = {
   label: string;
   latitude: number;
   longitude: number;
+  observedAt: string;
+  type: "action" | "clean_place" | "spot";
   wasteKg: number;
   butts: number;
   score: number;
@@ -67,10 +78,14 @@ export async function POST(request: Request) {
 
   try {
     const supabase = getSupabaseServerClient();
+    const [locationPreference, eventPressureContext] = await Promise.all([
+      getCurrentUserLocationPreference(),
+      loadEventPressureByArrondissement(supabase),
+    ]);
     const { items: contracts } = await fetchUnifiedActionContracts(supabase, {
-      limit: 260,
+      limit: 600,
       status: "approved",
-      floorDate: null,
+      floorDate: defaultRouteRecommendationFloorDate(),
       requireCoordinates: true,
       types: ["action", "clean_place", "spot"],
     });
@@ -114,6 +129,8 @@ export async function POST(request: Request) {
           label: item.location.label,
           latitude: Number(item.location.latitude),
           longitude: Number(item.location.longitude),
+          observedAt: item.dates.observedAt,
+          type: item.type,
           wasteKg,
           butts,
           score,
@@ -132,6 +149,9 @@ export async function POST(request: Request) {
         tradeoffs: [
           "Aucun point geolocalise disponible pour les contraintes selectionnees.",
         ],
+        proactiveAssistant: {
+          ...defaultRouteAssistantPayload(),
+        },
       });
     }
 
@@ -192,6 +212,28 @@ export async function POST(request: Request) {
     const global = Math.round(
       averageImpact * 0.5 + distanceScore * 0.25 + constraintsScore * 0.25,
     );
+    const hotspots = buildHotspots({
+      candidates,
+      pressureByArrondissement: eventPressureContext.pressureByArrondissement,
+      userArrondissement: locationPreference?.arrondissement ?? null,
+    });
+    const proactiveAssistant = buildProactiveAssistant({
+      stops: route.map((item) => ({ label: item.label, score: item.score })),
+      hotspots,
+      eventSignals: eventPressureContext.eventSignals,
+    });
+
+    try {
+      await trackRouteRecommendationUse(supabase, { userId });
+    } catch (progressionError) {
+      console.error("Progression tracking failed for route recommendation", {
+        userId,
+        message:
+          progressionError instanceof Error
+            ? progressionError.message
+            : String(progressionError),
+      });
+    }
 
     return NextResponse.json({
       status: "ok",
@@ -209,6 +251,7 @@ export async function POST(request: Request) {
           ? "Pas de contrainte meteo majeure."
           : `Contrainte meteo active: ${constraints.weather}`,
       ],
+      proactiveAssistant,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

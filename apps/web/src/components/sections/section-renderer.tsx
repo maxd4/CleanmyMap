@@ -12,6 +12,8 @@ import {
 } from "@/components/sections/rubriques/engagement-sections";
 import { AnnuaireSection } from "@/components/sections/rubriques/annuaire-section";
 import { ElusSection } from "@/components/sections/rubriques/elus-section";
+import { FundingSection } from "@/components/sections/rubriques/funding-section";
+import { OpenDataSection } from "@/components/sections/rubriques/open-data-section";
 import {
   ClimateSection,
   CompareSection,
@@ -19,7 +21,6 @@ import {
   KitSection,
   RecyclingSection,
   RouteSection,
-  SandboxSection,
   TrashSpotterSection,
   WeatherSection,
 } from "@/components/sections/rubriques/terrain-sections";
@@ -40,6 +41,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
         id: string;
         implementation: "finalized" | "pending";
         label: L10n;
+        description: L10n;
         pendingNote?: L10n;
       }
     | undefined;
@@ -52,6 +54,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
     return (
       <PendingSection
         label={sectionDefinition.label}
+        description={sectionDefinition.description}
         note={sectionDefinition.pendingNote}
       />
     );
@@ -63,15 +66,19 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
     case "community":
       return (
         <SectionShell
-          title={{ fr: "Rassemblements & Agenda", en: "Meetups & Agenda" }}
+          title={{ fr: "Operations collectives", en: "Collective operations" }}
           subtitle={{
-            fr: "Coordination des actions collectives, calendrier et inscriptions.",
-            en: "Collective actions coordination, calendar and sign-ups.",
+            fr: "Ressources terrain, coordination d'evenements collectifs et suivi historique des actions au meme endroit.",
+            en: "Field resources, collective event coordination and action history in one place.",
           }}
           links={[
             {
               href: "/actions/new",
               label: { fr: "Nouvelle action", en: "New action" },
+            },
+            {
+              href: "/actions/history",
+              label: { fr: "Trace historique complete", en: "Full history trace" },
             },
           ]}
         >
@@ -117,19 +124,67 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
     case "annuaire":
       return (
         <SectionShell
-          title={{ fr: "Annuaire de l'Engagement", en: "Engagement Directory" }}
+          title={{ fr: "Discussion", en: "Discussion" }}
           subtitle={{
-            fr: "Découvrez les top associations, commerces et groupes de paroles locaux.",
-            en: "Discover top local associations, businesses, and counseling groups.",
+            fr: "Communication locale entre benevoles, associations, commercants et entreprises pour accelerer l'entraide et les actions concretes.",
+            en: "Local communication between volunteers, associations, businesses and companies.",
           }}
           links={[
             {
-              href: "/actions/new",
-              label: { fr: "Rejoindre", en: "Join in" },
+              href: "/partners/onboarding",
+              label: { fr: "Devenir commercant engage", en: "Become an engaged business" },
+            },
+            {
+              href: "/sections/annuaire#discussion-bug-report-form",
+              label: { fr: "Remonter un bug ou une idee", en: "Report bug or idea" },
             },
           ]}
         >
           <AnnuaireSection />
+        </SectionShell>
+      );
+    case "open-data":
+      return (
+        <SectionShell
+          title={{ fr: "Donnees ouvertes", en: "Open data" }}
+          subtitle={{
+            fr: "Open data, API, export JSON et cadre d'interoperabilite pour chercheurs et collectivites.",
+            en: "Open data, API, JSON export and interoperability for researchers and cities.",
+          }}
+          links={[
+            {
+              href: "/reports",
+              label: { fr: "Exporter les rapports", en: "Export reports" },
+            },
+            {
+              href: "/sections/elus",
+              label: { fr: "Vue institutionnelle", en: "Institutional view" },
+            },
+          ]}
+        >
+          <OpenDataSection />
+        </SectionShell>
+      );
+    case "funding":
+      return (
+        <SectionShell
+          title={{ fr: "Financement / sponsoring", en: "Funding / sponsoring" }}
+          subtitle={{
+            fr: "Sponsoring de zones, mecenat ecologique et appel au don pour consolider le modele economique.",
+            en: "Zone sponsorship, ecological patronage and donations for a sustainable model.",
+          }}
+          links={[
+            {
+              href: "/sections/actors",
+              label: { fr: "Partenaires engages", en: "Engaged partners" },
+            },
+            {
+              href: "/reports",
+              label: { fr: "Suivi d'impact", en: "Impact tracking" },
+            },
+          ]}
+        >
+          <FundingSection />
         </SectionShell>
       );
     case "trash-spotter":
@@ -193,16 +248,33 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
     case "climate":
       return (
         <SectionShell
-          title={{ fr: "Climat", en: "Climate" }}
+          title={{ fr: "Developpement durable", en: "Sustainability" }}
           subtitle={{
-            fr: "Indicateurs derives des actions validees.",
-            en: "Indicators derived from validated actions.",
+            fr: "Vulgarisation des rapports recents, ODD et limites planetaires, avec lien direct entre impact local et enjeux climatiques, incluant la comparaison territoriale.",
+            en: "Scientific briefs, SDGs and planetary boundaries linked to local action impact.",
           }}
           links={[
-            { href: "/reports", label: { fr: "Reporting", en: "Reporting" } },
+            {
+              href: "/reports",
+              label: { fr: "Rapports d'impact", en: "Impact reports" },
+            },
           ]}
         >
-          <ClimateSection />
+          <div className="space-y-6">
+            <ClimateSection />
+            <section className="rounded-xl border border-slate-200 bg-white p-4">
+              <h3 className="text-sm font-semibold text-slate-900">
+                Comparaison territoriale integree
+              </h3>
+              <p className="mt-1 text-xs text-slate-600">
+                Lecture comparee des zones pour prioriser la coordination locale
+                et les arbitrages d&apos;impact.
+              </p>
+              <div className="mt-3">
+                <CompareSection />
+              </div>
+            </section>
+          </div>
         </SectionShell>
       );
     case "weather":
@@ -221,19 +293,6 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
           ]}
         >
           <WeatherSection />
-        </SectionShell>
-      );
-    case "compare":
-      return (
-        <SectionShell
-          title={{ fr: "Comparaison", en: "Comparison" }}
-          subtitle={{
-            fr: "Comparaison des zones selon les actions geolocalisees.",
-            en: "Area comparison from geolocated actions.",
-          }}
-          links={[{ href: "/actions/map", label: { fr: "Carte", en: "Map" } }]}
-        >
-          <CompareSection />
         </SectionShell>
       );
     case "guide":
@@ -273,39 +332,18 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
           <KitSection />
         </SectionShell>
       );
-    case "sandbox":
-      return (
-        <SectionShell
-          title={{ fr: "Sandbox", en: "Sandbox" }}
-          subtitle={{
-            fr: "Zone de verification technique et supervision instantanee.",
-            en: "Technical verification and supervision workspace.",
-          }}
-          links={[
-            {
-              href: "/dashboard",
-              label: {
-                fr: "Retour au tableau de bord",
-                en: "Back to dashboard",
-              },
-            },
-          ]}
-        >
-          <SandboxSection />
-        </SectionShell>
-      );
     case "elus":
       return (
         <SectionShell
-          title={{ fr: "Collectivites", en: "Local authorities" }}
+          title={{ fr: "Elus & Coordinateur", en: "Authorities & Coordinators" }}
           subtitle={{
-            fr: "Observatoire municipal: KPI territoriaux et priorisation des zones.",
-            en: "Municipal observatory: territorial KPIs and area prioritization.",
+            fr: "Vision lisible et exploitable des besoins et resultats pour faciliter l'arbitrage public et la coordination locale.",
+            en: "Readable, actionable needs/results view for public arbitration and local coordination.",
           }}
           links={[
             {
               href: "/reports",
-              label: { fr: "Acces au reporting", en: "Open reporting" },
+              label: { fr: "Acces aux rapports d'impact", en: "Open impact reports" },
             },
           ]}
         >

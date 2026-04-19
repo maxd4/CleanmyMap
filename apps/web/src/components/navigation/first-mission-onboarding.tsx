@@ -75,7 +75,7 @@ const PROFILE_ONBOARDING: Record<AppProfile, OnboardingStep[]> = {
       id: "compare",
       label: "Comparer les zones prioritaires",
       hint: "brut vs normalise",
-      href: "/sections/compare",
+      href: "/sections/climate",
     },
     {
       id: "climate",
@@ -107,7 +107,7 @@ const PROFILE_ONBOARDING: Record<AppProfile, OnboardingStep[]> = {
       id: "compare",
       label: "Comparer les zones",
       hint: "brut vs normalise",
-      href: "/sections/compare",
+      href: "/sections/climate",
     },
     {
       id: "action",

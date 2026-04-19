@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AppNavigation } from "@/components/navigation/app-navigation";
 import { DisplayModeOnboardingGate } from "@/components/ui/display-mode-onboarding-gate";
+import { getCurrentUserLocationPreference } from "@/lib/auth/user-location";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import {
@@ -21,6 +22,10 @@ export default async function AppLayout({
   const { userId } = await auth();
   if (!userId) {
     redirect("/sign-in");
+  }
+  const locationPreference = await getCurrentUserLocationPreference();
+  if (!locationPreference) {
+    redirect("/onboarding/localisation");
   }
 
   const cookieStore = await cookies();
@@ -60,7 +65,7 @@ export default async function AppLayout({
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-xs text-slate-500">
             {rubriqueCount} pages prioritaires organisees en {categoryCount}{" "}
-            espaces ({displayMode})
+            blocs ({displayMode})
           </p>
           {parcoursNavV2Enabled ? (
             <Link

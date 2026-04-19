@@ -14,7 +14,9 @@ function collectRouteIds(spaces: NavigationSpace[]): string[] {
 
 describe("navigation registry consistency", () => {
   it("maps only existing rubriques with matching hrefs", () => {
-    const byId = new Map(RUBRIQUE_REGISTRY.map((rubrique) => [rubrique.id, rubrique]));
+    const byId = new Map<string, (typeof RUBRIQUE_REGISTRY)[number]>(
+      RUBRIQUE_REGISTRY.map((rubrique) => [rubrique.id, rubrique]),
+    );
 
     for (const profile of PROFILES) {
       const spaces = getNavigationSpacesForProfile(profile, "exhaustif");

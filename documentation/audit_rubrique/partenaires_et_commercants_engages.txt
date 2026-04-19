@@ -1,136 +1,31 @@
-Rubrique: partenaires_et_commercants_engages
+Rubrique: Partenaires engages
+Statut: format-audit-unifie-v1
 
-- a quoi sert la rubrique
-  - Rendre visible l'ecosysteme Parisien engagé.
-  - Faciliter les mises en relation rapides: bénévoles, associations, commerces, entreprises, élus.
-  - Prouver que le projet est collectif, pas seulement individuel.
-  - Transformer des intentions en collaborations concrètes dans le futur.
+## Objectif
+- Qualifier les partenaires utiles et activer les contributions locales.
 
-- pour qui
-  - Citoyens qui veulent agir pres de chez eux.
-  - Benevoles qui cherchent un point d'appui local.
-  - Associations qui veulent recruter, coordonner, mutualiser.
-  - Commercants engages qui veulent etre identifies et utiles localement.
-  - Entreprises/RSE qui veulent contribuer de facon visible et mesurable.
-  - Elus/collectivites qui veulent voir le tissu d'acteurs mobilisables.
+## Flux (schema)
+```mermaid
+flowchart LR
+  A[Besoin utilisateur] --> B[Interaction Partenaires engages]
+  B --> C[Donnees / validation]
+  C --> D[Decision / action locale]
+```
+Fallback statique:
+![Schema Partenaires engages](../archive/fallback-audit-partenaires_et_commercants_engages.png)
 
-- valeur utilisateur
-  - Trouver "qui fait quoi" sans perdre de temps.
-  - Identifier un contact fiable et un mode d'action concret.
-  - Choisir un acteur proche, compatible avec son besoin.
-  - Comprendre rapidement comment participer (temps, materiel, lieu, frequence).
-  - Se sentir moins seul ou s'engager : effet de preuve sociale locale.
+## Risques
+- Donnees incompletes ou mal qualifiees.
+- Friction UX qui bloque l adoption.
+- Rupture de parcours entre rubrique et action concrete.
 
-- valeur produit
-  - Augmente la retention: retour utile meme sans nouvelle action a declarer.
-  - Renforce la credibilite de la plateforme (reseau reel visible).
-  - Ouvre des opportunites de partenariats, cofinancement et relais terrain.
-  - Alimente les autres rubriques et rapports écrits (actions, carte, reporting, elus, gamification).
-  - Cree un actif strategique: base acteur qualifiee et exploitable.
+## KPI
+- Adoption: utilisateurs actifs sur la rubrique.
+- Qualite: taux de donnees exploitables.
+- Impact: actions ou decisions declenchees depuis la rubrique.
 
-- logique metier de la rubrique
-  - Fiches acteurs standardisees:
-    - nom, type (association/commercant/entreprise/collectif)
-    - zone couverte
-    - niveau d'engagement (initie, actif, referent)
-    - types de contribution (materiel, logistique, accueil, financement, communication)
-    - disponibilite (ponctuelle, mensuelle, evenementielle)
-    - contact et canal prefere
-  - Filtres prioritaires:
-    - distance/zone
-    - type d'acteur
-    - type d'aide proposee
-    - niveau de fiabilite/verification
-    - disponibilite actuelle
-  - Blocs utiles:
-    - "nouveaux partenaires"
-    - "acteurs les plus actifs"
-    - "besoins non couverts"
-    - "partenaires proches de mes actions"
-  - CTA clairs:
-    - "Contacter"
-    - "Proposer un partenariat"
-    - "Devenir commercant engage"
-    - "Signaler une mise a jour"
+## Impact concret
+- Plus de ressources mobilisees sur les zones prioritaires.
 
-
-- contenu affiché par type d'engagement et de sutructure :
-
-  - Engagement: Environnement & Climat
-    - Type de structure: Associations / collectifs
-      - La SAUGE
-      - Moissons Solidaires
-      - Veni Verdi
-      - AREMACS Ile-de-France
-      - Les Cols Verts IDF
-      - PikPik Environnement
-      - Surfrider Paris
-      - Zero Waste Paris
-      - Recyclerie Sportive
-      - Association Sans Murs
-      - Les Brigades Vertes
-    - Type de structure: Tiers-lieux / structures hybrides
-      - La REcyclerie
-      - Biocycle
-
-  - Engagement: Justice Sociale & Precarite
-    - Type de structure: Associations / ONG
-      - Refugee Food
-      - Utopia 56
-      - La Cloche
-      - ATD Quart Monde
-      - Ordre de Malte France
-      - Action contre la Faim
-      - Emmaus Defi
-      - Emmaus Alternatives
-      - Linkee
-      - Le Chainon Manquant
-      - Dans Ma Rue
-      - CASP
-      - Aurore
-      - Cites Caritas
-      - Les Enfants du Canal
-      - ADSF
-      - Regles Elementaires
-      - Secours Catholique Paris
-      - Armee du Salut
-
-  - Engagement: Mixite & Inclusion
-    - Type de structure: Associations
-      - Le Refuge
-      - Singa
-      - Kabubu
-      - Article 1
-      - Entourage
-
-  - Engagement: Commercants Engages
-    - Type de structure: Commercants / lieux d'accueil
-      - Le Baranoux
-      - La Buvette du Climat
-      - Le Pavillon des Canaux
-      - Cafe Joyeux
-
-- infos essentielles de la rubrique
-  - Donnees minimales obligatoires par fiche:
-    - identite legale ou associative
-    - perimetre geographique
-    - contribution reelle possible
-    - contact joignable
-    - statut de verification
-    - date de derniere mise a jour
-  - Transparence:
-    - expliquer comment un acteur devient "engage"
-    - afficher les criteres de verification
-    - afficher la fraicheur des donnees
-  - Gouvernance:
-    - qui valide les fiches
-    - qui peut modifier
-    - delai de traitement des demandes
-
-- erreurs a eviter
-  - Fiches trop pauvres ou non verifiees.
-  - Melanger partenaires actifs et simples contacts non qualifies.
-  - Trop de champs, peu de signal utile.
-  - Absence de date de mise a jour.
-  - CTA flous (ex: "en savoir plus") sans action claire.
-  - Aucune distinction entre engagement declare et engagement confirme.
+## CTA
+- Contacter un partenaire engage et proposer une action concrete.
