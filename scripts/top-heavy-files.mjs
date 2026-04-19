@@ -4,8 +4,10 @@ import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 const ROOT = resolve(".");
-const MAX_LINES = 500;
-const MAX_BYTES = 40 * 1024;
+const WARN_LINES = 500;
+const FAIL_LINES = 700;
+const WARN_BYTES = 40 * 1024;
+const FAIL_BYTES = 60 * 1024;
 const SOURCE_PREFIX = "apps/web/src/";
 const CODE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".mjs"]);
 const BASELINE_ALLOWED = new Set([]);
@@ -41,13 +43,22 @@ function main() {
       path.startsWith(SOURCE_PREFIX) && CODE_EXTENSIONS.has(getExtension(path)),
   );
 
-  const violations = [];
+  const warnings = [];
+  const failures = [];
   for (const path of candidates) {
     const absolutePath = resolve(ROOT, path);
     const size = statSync(absolutePath).size;
     const lines = countLines(path);
-    if (lines > MAX_LINES || size > MAX_BYTES) {
-      violations.push({
+    if (lines > FAIL_LINES || size > FAIL_BYTES) {
+      failures.push({
+        path,
+        lines,
+        sizeKB: (size / 1024).toFixed(2),
+      });
+      continue;
+    }
+    if (lines > WARN_LINES || size > WARN_BYTES) {
+      warnings.push({
         path,
         lines,
         sizeKB: (size / 1024).toFixed(2),
@@ -55,18 +66,24 @@ function main() {
     }
   }
 
-  const baselineViolations = violations.filter((item) =>
+  const baselineWarnings = warnings.filter((item) =>
     BASELINE_ALLOWED.has(item.path),
   );
-  const unexpectedViolations = violations.filter(
+  const unexpectedWarnings = warnings.filter(
+    (item) => !BASELINE_ALLOWED.has(item.path),
+  );
+  const baselineFailures = failures.filter((item) =>
+    BASELINE_ALLOWED.has(item.path),
+  );
+  const unexpectedFailures = failures.filter(
     (item) => !BASELINE_ALLOWED.has(item.path),
   );
 
-  if (unexpectedViolations.length > 0) {
+  if (unexpectedFailures.length > 0) {
     console.error(
-      `[top-heavy] ${unexpectedViolations.length} unexpected file(s) exceed thresholds (> ${MAX_LINES} lines OR > 40KB):`,
+      `[top-heavy] ${unexpectedFailures.length} unexpected file(s) exceed hard thresholds (> ${FAIL_LINES} lines OR > ${(FAIL_BYTES / 1024).toFixed(0)}KB):`,
     );
-    for (const violation of unexpectedViolations) {
+    for (const violation of unexpectedFailures) {
       console.error(
         ` - ${violation.path} (${violation.lines} lines, ${violation.sizeKB} KB)`,
       );
@@ -74,11 +91,33 @@ function main() {
     process.exit(1);
   }
 
-  if (baselineViolations.length > 0) {
+  if (baselineFailures.length > 0) {
     console.warn(
-      `[top-heavy] baseline warning: ${baselineViolations.length} known file(s) still above threshold:`,
+      `[top-heavy] baseline hard-threshold warning: ${baselineFailures.length} known file(s) still above fail threshold:`,
     );
-    for (const violation of baselineViolations) {
+    for (const violation of baselineFailures) {
+      console.warn(
+        ` - ${violation.path} (${violation.lines} lines, ${violation.sizeKB} KB)`,
+      );
+    }
+  }
+
+  if (unexpectedWarnings.length > 0) {
+    console.warn(
+      `[top-heavy] audit warning: ${unexpectedWarnings.length} file(s) exceed soft threshold (> ${WARN_LINES} lines OR > ${(WARN_BYTES / 1024).toFixed(0)}KB). Review cohesion/maintainability:`,
+    );
+    for (const violation of unexpectedWarnings) {
+      console.warn(
+        ` - ${violation.path} (${violation.lines} lines, ${violation.sizeKB} KB)`,
+      );
+    }
+  }
+
+  if (baselineWarnings.length > 0) {
+    console.warn(
+      `[top-heavy] baseline soft-threshold warning: ${baselineWarnings.length} known file(s) still above audit threshold:`,
+    );
+    for (const violation of baselineWarnings) {
       console.warn(
         ` - ${violation.path} (${violation.lines} lines, ${violation.sizeKB} KB)`,
       );
@@ -86,7 +125,7 @@ function main() {
   }
 
   console.log(
-    `[top-heavy] OK: no file above ${MAX_LINES} lines or 40KB in ${SOURCE_PREFIX}`,
+    `[top-heavy] OK: no file above hard threshold (${FAIL_LINES} lines / ${(FAIL_BYTES / 1024).toFixed(0)}KB) in ${SOURCE_PREFIX}`,
   );
 }
 

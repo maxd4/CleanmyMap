@@ -252,7 +252,8 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
             lines={[
               "Sources: actions validees, carte, evenements communaute, meteo operationnelle.",
               "Definitions: les KPI sont recalcules en direct sur la fenetre de donnees affichee.",
-              "Limites: impacts climat/eau/CO2 sont des proxys d'aide a la decision.",
+              `Version proxy: ${report.impactMethodology.proxyVersion} | Regles qualite: ${report.impactMethodology.qualityRulesVersion}.`,
+              `Score pollution moyen: ${toFrNumber(report.impactMethodology.pollutionScoreAverage)} / 100.`,
               "Regle qualite: publication externe recommandee seulement si completude > 85%.",
             ]}
           />
@@ -266,6 +267,48 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
                 "Equipe CleanMyMap",
               ],
               ["v2.x PDF", "Pipeline back-office", "Rapport PDF institutionnel", "Equipe data"],
+            ]}
+          />
+        </div>
+        <ReportTable
+          headers={["Mesure", "Formule", "Interpretation"]}
+          rows={report.impactMethodology.formulas.map((formula) => [
+            formula.label,
+            formula.formula,
+            formula.interpretation,
+          ])}
+        />
+        <div className="grid gap-3 md:grid-cols-2">
+          <ReportTable
+            headers={["Hypothese", "Detail"]}
+            rows={report.impactMethodology.hypotheses.map((item) => [
+              "Hypothese de calcul",
+              item,
+            ])}
+          />
+          <ReportTable
+            headers={["Marge d'erreur", "Valeur", "Nature"]}
+            rows={[
+              [
+                "Eau sauvee (proxy)",
+                `+/- ${toFrNumber(report.impactMethodology.errorMargins.waterSavedLitersPct, 0)}%`,
+                "Approximation",
+              ],
+              [
+                "CO2 evite (proxy)",
+                `+/- ${toFrNumber(report.impactMethodology.errorMargins.co2AvoidedKgPct, 0)}%`,
+                "Approximation",
+              ],
+              [
+                "Surface nettoyee (proxy)",
+                `+/- ${toFrNumber(report.impactMethodology.errorMargins.surfaceCleanedM2Pct, 0)}%`,
+                "Approximation",
+              ],
+              [
+                "Score pollution moyen",
+                `+/- ${toFrNumber(report.impactMethodology.errorMargins.pollutionScoreMeanPoints, 0)} pts`,
+                "Incertitude de mesure",
+              ],
             ]}
           />
         </div>

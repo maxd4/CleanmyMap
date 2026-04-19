@@ -51,7 +51,9 @@ type ActionsMapFeedProps = {
 
 export function ActionsMapFeed({ types = "all" }: ActionsMapFeedProps) {
   const [days, setDays] = useState<number>(30);
-  const [statusFilter, setStatusFilter] = useState<ActionStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<ActionStatus | "all">(
+    "approved",
+  );
   const [impactFilter, setImpactFilter] = useState<ActionImpactLevel | "all">(
     "all",
   );
@@ -128,7 +130,8 @@ export function ActionsMapFeed({ types = "all" }: ActionsMapFeedProps) {
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             Flux géolocalisé depuis <code>/api/actions/map</code> pour piloter
-            les interventions terrain.
+            les interventions terrain. Par défaut, seules les données validées
+            admin sont affichées.
           </p>
         </div>
         <button

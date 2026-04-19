@@ -36,7 +36,7 @@ export default async function RootLayout({
           signInUrl="/sign-in"
           signUpUrl="/sign-up"
           signInFallbackRedirectUrl="/profil"
-          signUpFallbackRedirectUrl="/profil"
+          signUpFallbackRedirectUrl="/onboarding/localisation"
           afterSignOutUrl="/"
           touchSession
           dynamic

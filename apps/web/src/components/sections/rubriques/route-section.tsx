@@ -45,6 +45,22 @@ export function RouteSection() {
         };
         constraintsApplied: Record<string, unknown>;
         tradeoffs: string[];
+        proactiveAssistant: {
+          actNow: string;
+          criticalNearby: string;
+          mostUsefulAction: string;
+          predictedDirtyZones: string[];
+          eventAnticipation: string[];
+          hotspots: Array<{
+            zoneLabel: string;
+            predictedDirtScore: number;
+            recentActions: number;
+            recentSpots: number;
+            eventPressure: number;
+            distanceKm: number | null;
+            reason: string;
+          }>;
+        };
       };
     },
   );
@@ -190,11 +206,85 @@ export function RouteSection() {
       ) : null}
 
       {!isLoading && !error && data ? (
+        <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-3 text-sm text-cyan-900">
+          <p className="font-semibold">{data.proactiveAssistant.actNow}</p>
+          <p className="mt-1">{data.proactiveAssistant.criticalNearby}</p>
+          <p className="mt-1">{data.proactiveAssistant.mostUsefulAction}</p>
+        </div>
+      ) : null}
+
+      {!isLoading && !error && data ? (
         <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-600">
           <p className="font-semibold text-slate-800">Trade-offs appliques</p>
           <ul className="mt-1 list-disc pl-5">
             {data.tradeoffs.map((line) => (
               <li key={line}>{line}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {!isLoading &&
+      !error &&
+      data &&
+      (data.proactiveAssistant.predictedDirtyZones.length > 0 ||
+        data.proactiveAssistant.eventAnticipation.length > 0) ? (
+        <div className="grid gap-3 md:grid-cols-2">
+          <article className="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
+            <p className="font-semibold text-slate-900">
+              Prediction des zones sales
+            </p>
+            <ul className="mt-1 list-disc space-y-1 pl-5">
+              {data.proactiveAssistant.predictedDirtyZones.length === 0 ? (
+                <li>Pas de signal fort sur la fenetre recente.</li>
+              ) : (
+                data.proactiveAssistant.predictedDirtyZones.map((line) => (
+                  <li key={line}>{line}</li>
+                ))
+              )}
+            </ul>
+          </article>
+          <article className="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
+            <p className="font-semibold text-slate-900">
+              Anticipation des evenements et flux
+            </p>
+            <ul className="mt-1 list-disc space-y-1 pl-5">
+              {data.proactiveAssistant.eventAnticipation.length === 0 ? (
+                <li>Aucun evenement majeur detecte sur les 3 prochaines semaines.</li>
+              ) : (
+                data.proactiveAssistant.eventAnticipation.map((line) => (
+                  <li key={line}>{line}</li>
+                ))
+              )}
+            </ul>
+          </article>
+        </div>
+      ) : null}
+
+      {!isLoading && !error && data && data.proactiveAssistant.hotspots.length > 0 ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-3 text-xs text-slate-700">
+          <p className="font-semibold text-slate-900">
+            Zones critiques proches de toi
+          </p>
+          <ul className="mt-2 space-y-2">
+            {data.proactiveAssistant.hotspots.slice(0, 3).map((hotspot) => (
+              <li
+                key={`${hotspot.zoneLabel}-${hotspot.predictedDirtScore}`}
+                className="rounded-lg border border-slate-200 bg-slate-50 p-2"
+              >
+                <p className="font-semibold text-slate-900">
+                  {hotspot.zoneLabel} - risque {hotspot.predictedDirtScore.toFixed(1)}
+                </p>
+                <p className="mt-1 text-slate-600">
+                  Actions {hotspot.recentActions}, spots {hotspot.recentSpots}, pression evenement{" "}
+                  {hotspot.eventPressure.toFixed(1)}
+                  {hotspot.distanceKm !== null
+                    ? `, distance estimee ${hotspot.distanceKm.toFixed(1)} km`
+                    : ""}
+                  .
+                </p>
+                <p className="mt-1 text-slate-600">{hotspot.reason}</p>
+              </li>
             ))}
           </ul>
         </div>

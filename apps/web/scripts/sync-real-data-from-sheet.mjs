@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,6 +21,81 @@ const OUT_PATH = join(APP_DIR, "data", "local-db", "real_records.json");
 const RAW_PATH = join(APP_DIR, "data", "raw", "google-sheet-map-clean-up.csv");
 const USER_AGENT = "cleanmymap-web-data-sync/1.0 (contact: admin@cleanmymap.local)";
 
+function buildSheetUrlCandidates(sheetUrl) {
+  const candidates = [];
+  const pushUnique = (value) => {
+    if (value && !candidates.includes(value)) {
+      candidates.push(value);
+    }
+  };
+
+  pushUnique(sheetUrl);
+
+  try {
+    const parsed = new URL(sheetUrl);
+    const gid = parsed.searchParams.get("gid") ?? "0";
+    const match = parsed.pathname.match(/\/spreadsheets\/d\/([^/]+)/);
+    const sheetId = match?.[1];
+    if (sheetId) {
+      pushUnique(
+        `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`,
+      );
+      pushUnique(
+        `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`,
+      );
+    }
+  } catch {
+    // Ignore invalid URL parsing here; fetch errors will be surfaced later.
+  }
+
+  return candidates;
+}
+
+function isLikelyHtmlPayload(contentType, bodyText) {
+  const type = String(contentType || "").toLowerCase();
+  const sample = bodyText.trimStart().slice(0, 200).toLowerCase();
+  return (
+    type.includes("text/html") ||
+    sample.startsWith("<!doctype html") ||
+    sample.startsWith("<html")
+  );
+}
+
+async function fetchUsableSheetCsv(sheetUrl) {
+  const attempts = [];
+
+  for (const candidateUrl of buildSheetUrlCandidates(sheetUrl)) {
+    try {
+      const response = await fetch(candidateUrl, {
+        headers: { "User-Agent": USER_AGENT },
+      });
+      if (!response.ok) {
+        attempts.push(`${candidateUrl} -> HTTP ${response.status}`);
+        continue;
+      }
+
+      const bodyText = await response.text();
+      const rows = parseCsv(bodyText);
+      const looksHtml = isLikelyHtmlPayload(response.headers.get("content-type"), bodyText);
+      const hasData = rows.length >= 2;
+
+      if (!looksHtml && hasData) {
+        return { csvText: bodyText, sourceUrl: candidateUrl };
+      }
+
+      attempts.push(
+        `${candidateUrl} -> non exploitable (html=${looksHtml}, rows=${rows.length})`,
+      );
+    } catch (error) {
+      attempts.push(
+        `${candidateUrl} -> ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  return { csvText: null, sourceUrl: null, attempts };
+}
+
 function stableId(prefix, seed) {
   const digest = createHash("sha1").update(seed).digest("hex").slice(0, 16);
   return `${prefix}_${digest}`;
@@ -37,18 +112,44 @@ async function main() {
   const sheetUrl =
     sheetUrlArg || process.env.CLEANMYMAP_SHEET_URL || DEFAULT_SHEET_URL;
 
-  const response = await fetch(sheetUrl, { headers: { "User-Agent": USER_AGENT } });
-  if (!response.ok) {
-    throw new Error(`Unable to fetch Google Sheet (${response.status})`);
+  const fetched = await fetchUsableSheetCsv(sheetUrl);
+  let csvText = fetched.csvText;
+  let rows = csvText ? parseCsv(csvText) : [];
+
+  if (csvText) {
+    await mkdir(dirname(RAW_PATH), { recursive: true });
+    await writeFile(RAW_PATH, csvText, "utf8");
+    if (fetched.sourceUrl && fetched.sourceUrl !== sheetUrl) {
+      console.warn(`Google Sheet import used fallback URL: ${fetched.sourceUrl}`);
+    }
   }
-  const csvText = await response.text();
 
-  await mkdir(dirname(RAW_PATH), { recursive: true });
-  await writeFile(RAW_PATH, csvText, "utf8");
-
-  const rows = parseCsv(csvText);
   if (rows.length < 2) {
-    throw new Error("Google Sheet appears empty");
+    try {
+      const localRaw = await readFile(RAW_PATH, "utf8");
+      const localRows = parseCsv(localRaw);
+      if (localRows.length >= 2) {
+        csvText = localRaw;
+        rows = localRows;
+        console.warn(
+          "Google Sheet unreachable/empty in this environment. Using local snapshot:",
+          RAW_PATH,
+        );
+      }
+    } catch {
+      // No usable local snapshot.
+    }
+  }
+
+  if (rows.length < 2) {
+    const attemptDetails =
+      fetched.attempts && fetched.attempts.length > 0
+        ? ` Attempts: ${fetched.attempts.join(" | ")}`
+        : "";
+    throw new Error(
+      `Google Sheet appears empty or inaccessible in this environment.${attemptDetails} ` +
+        "Tip: ensure sheet sharing/public CSV export, or provide CLEANMYMAP_SHEET_URL.",
+    );
   }
 
   const headers = rows[0];

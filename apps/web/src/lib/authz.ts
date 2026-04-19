@@ -5,6 +5,7 @@ import {
   getEffectiveAccessForSessionRole,
   type EffectiveAccess,
 } from "./domain-language";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 type ClerkMetadata = Record<string, unknown> | null | undefined;
 
@@ -27,6 +28,7 @@ export type UserIdentity = {
   displayName: string;
   firstName: string | null;
   username: string;
+  currentLevel: number;
   actorNameOptions: string[];
   role: AppProfile;
   badges: AccountBadge[];
@@ -34,6 +36,40 @@ export type UserIdentity = {
 
 const BADGE_CATALOG: Record<string, AccountBadge> = {
   admin: { id: "admin", label: "Administrateur", icon: "ADM" },
+  role_admin: { id: "role_admin", label: "Role admin", icon: "RAD" },
+  role_benevole: { id: "role_benevole", label: "Role benevole", icon: "RBV" },
+  role_coordinateur: {
+    id: "role_coordinateur",
+    label: "Role coordinateur",
+    icon: "RCO",
+  },
+  role_scientifique: {
+    id: "role_scientifique",
+    label: "Role scientifique",
+    icon: "RSC",
+  },
+  role_elu: { id: "role_elu", label: "Role elu", icon: "REL" },
+  profile_admin: {
+    id: "profile_admin",
+    label: "Profil admin",
+    icon: "PAD",
+  },
+  profile_benevole: {
+    id: "profile_benevole",
+    label: "Profil benevole",
+    icon: "PBV",
+  },
+  profile_coordinateur: {
+    id: "profile_coordinateur",
+    label: "Profil coordinateur",
+    icon: "PCO",
+  },
+  profile_scientifique: {
+    id: "profile_scientifique",
+    label: "Profil scientifique",
+    icon: "PSC",
+  },
+  profile_elu: { id: "profile_elu", label: "Profil elu", icon: "PEL" },
   pioneer: { id: "pioneer", label: "Pionnier", icon: "PIO" },
   mentor: { id: "mentor", label: "Mentor", icon: "MEN" },
   cleanwalk_10: { id: "cleanwalk_10", label: "10 cleanwalks", icon: "10x" },
@@ -81,6 +117,44 @@ function mapBadgeIdsToBadges(ids: string[]): AccountBadge[] {
         BADGE_CATALOG[id] ?? { id, label: id.replace(/_/g, " "), icon: "BAD" },
     )
     .sort((a, b) => a.label.localeCompare(b.label, "fr"));
+}
+
+async function loadUserCurrentLevel(userId: string): Promise<number> {
+  try {
+    const supabase = getSupabaseServerClient();
+    const result = await supabase
+      .from("progression_profiles")
+      .select("current_level")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (result.error) {
+      return 1;
+    }
+
+    const level = Number(
+      (result.data as { current_level?: unknown } | null)?.current_level ?? 1,
+    );
+    return Number.isFinite(level) && level >= 1 ? Math.trunc(level) : 1;
+  } catch {
+    return 1;
+  }
+}
+
+export function getRoleBadgeId(profile: AppProfile): string {
+  return `role_${profile}`;
+}
+
+export function getProfileBadgeId(profile: AppProfile): string {
+  return `profile_${profile}`;
+}
+
+export function getRoleBadge(profile: AppProfile): AccountBadge {
+  return mapBadgeIdsToBadges([getRoleBadgeId(profile)])[0];
+}
+
+export function getProfileBadge(profile: AppProfile): AccountBadge {
+  return mapBadgeIdsToBadges([getProfileBadgeId(profile)])[0];
 }
 
 function buildActorNameOptions(
@@ -205,7 +279,10 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
 
   try {
     const client = await clerkClient();
-    const user = await client.users.getUser(userId);
+    const [user, currentLevel] = await Promise.all([
+      client.users.getUser(userId),
+      loadUserCurrentLevel(userId),
+    ]);
 
     const isAdmin =
       adminUserIds.has(userId) ||
@@ -238,28 +315,41 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
     const metadataRole =
       extractRole(user.publicMetadata) ?? extractRole(user.privateMetadata);
 
+    const resolvedRole = resolveProfile({ metadataRole, isAdmin });
+
     return {
       userId,
       displayName: fullName || username,
       firstName: firstName || null,
       username,
+      currentLevel,
       actorNameOptions,
-      role: resolveProfile({ metadataRole, isAdmin }),
-      badges: mapBadgeIdsToBadges(badgeIds),
+      role: resolvedRole,
+      badges: mapBadgeIdsToBadges([
+        ...badgeIds,
+        getRoleBadgeId(resolvedRole),
+        getProfileBadgeId(resolvedRole),
+      ]),
     };
   } catch (error) {
     console.error("Current user identity resolution failed", error);
+    const resolvedRole = resolveProfile({
+      metadataRole: null,
+      isAdmin: adminUserIds.has(userId),
+    });
     return {
       userId,
       displayName: userId,
       firstName: null,
       username: userId,
+      currentLevel: 1,
       actorNameOptions: [userId],
-      role: resolveProfile({
-        metadataRole: null,
-        isAdmin: adminUserIds.has(userId),
-      }),
-      badges: mapBadgeIdsToBadges(adminUserIds.has(userId) ? ["admin"] : []),
+      role: resolvedRole,
+      badges: mapBadgeIdsToBadges([
+        ...(adminUserIds.has(userId) ? ["admin"] : []),
+        getRoleBadgeId(resolvedRole),
+        getProfileBadgeId(resolvedRole),
+      ]),
     };
   }
 }

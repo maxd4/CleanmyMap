@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUserIdentity, pickTraceableActorName } from "@/lib/authz";
+import { trackSpotCreated } from "@/lib/gamification/progression";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
@@ -146,6 +147,22 @@ export async function POST(request: Request) {
         { error: inserted.error.message },
         { status: 500 },
       );
+    }
+
+    try {
+      await trackSpotCreated(supabase, {
+        userId,
+        spotId: String(inserted.data.id),
+      });
+    } catch (progressionError) {
+      console.error("Progression tracking failed for spot creation", {
+        userId,
+        spotId: inserted.data.id,
+        message:
+          progressionError instanceof Error
+            ? progressionError.message
+            : String(progressionError),
+      });
     }
 
     return NextResponse.json(

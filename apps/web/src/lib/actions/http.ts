@@ -118,8 +118,9 @@ export function buildMapActionsQueryString(
   query.set("limit", String(clampInteger(params.limit, 1, 300, 80)));
   query.set("days", String(clampInteger(params.days, 1, 3650, 30)));
   query.set("types", serializeTypes(params.types, "all"));
-  if (params.status && params.status !== "all") {
-    query.set("status", params.status);
+  const resolvedStatus = params.status ?? "approved";
+  if (resolvedStatus !== "all") {
+    query.set("status", resolvedStatus);
   }
   if (
     typeof params.association === "string" &&
@@ -145,7 +146,15 @@ export function buildMapActionsQueryString(
 
 export async function createAction(
   payload: CreateActionPayload,
-): Promise<{ id: string }> {
+): Promise<{
+  id: string;
+  retentionLoop?: {
+    summary: string;
+    badge: string;
+    share: { text: string; url: string };
+    nextActionSuggestion: string;
+  } | null;
+}> {
   const contractPayload = toContractCreatePayload(payload);
   const response = await fetch("/api/actions", {
     method: "POST",
@@ -166,7 +175,17 @@ export async function createAction(
     throw new Error("Réponse API invalide après création.");
   }
 
-  return { id: (body as { id: string }).id };
+  const parsedBody = body as {
+    id: string;
+    retentionLoop?: {
+      summary: string;
+      badge: string;
+      share: { text: string; url: string };
+      nextActionSuggestion: string;
+    } | null;
+  };
+
+  return { id: parsedBody.id, retentionLoop: parsedBody.retentionLoop ?? null };
 }
 
 export async function fetchActions(

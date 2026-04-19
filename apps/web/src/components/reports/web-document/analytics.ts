@@ -5,6 +5,8 @@ import {
   mapItemType,
   mapItemWasteKg,
 } from "@/lib/actions/data-contract";
+import { evaluateActionQuality } from "@/lib/actions/quality";
+import { buildPersonalImpactMethodology } from "@/lib/gamification/progression-impact";
 import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
 import { extractArrondissement, monthKey } from "@/components/sections/rubriques/helpers";
 import type { MonthRow, ReportModel, ReportModelInput, RouteStep } from "./types";
@@ -288,6 +290,9 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
       })
       .filter((value): value is number => value !== null && value >= 0),
   );
+  const pollutionScoreAverage = average(
+    approvedActions.map((item) => evaluateActionQuality(item).score),
+  );
 
   const byAreaMap = new Map<string, { actions: number; kg: number; butts: number; labels: Set<string> }>();
   for (const item of mapApprovedActions) {
@@ -486,6 +491,7 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
       badgeExpert,
       sourceBuckets,
     },
+    impactMethodology: buildPersonalImpactMethodology(pollutionScoreAverage),
     annualRows,
     calendar: buildCalendarRows(now),
   };

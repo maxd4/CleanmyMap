@@ -1,4 +1,6 @@
 import { ActionsMapFeed } from "@/components/actions/actions-map-feed";
+import { ActionsVisualizationPanel } from "@/components/actions/actions-visualization-panel";
+import { SandboxSection } from "@/components/sections/rubriques/sandbox-section";
 import { DecisionPageHeader } from "@/components/ui/decision-page-header";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
@@ -84,7 +86,25 @@ export default function ActionsMapPage() {
           href: "/actions/history",
           label: "Vérifier qualité",
         }}
-        analysis={<ActionsMapFeed />}
+        analysis={
+          <div className="space-y-6">
+            <ActionsMapFeed />
+            <ActionsVisualizationPanel />
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="text-xl font-semibold text-slate-900">
+                Verification technique integree
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Le bac a sable est fusionne a la cartographie pour verifier les
+                endpoints, le runbook et la sante plateforme sans changer de
+                rubrique.
+              </p>
+              <div className="mt-4">
+                <SandboxSection />
+              </div>
+            </section>
+          </div>
+        }
         trace={
           <div className="space-y-2 text-xs text-slate-600">
             <p>
@@ -134,6 +154,21 @@ export default function ActionsMapPage() {
       </section>
 
       <ActionsMapFeed />
+      <ActionsVisualizationPanel />
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-xl font-semibold text-slate-900">
+          Verification technique integree
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Le bac a sable est fusionne a la cartographie pour verifier les
+          endpoints, le runbook et la sante plateforme sans changer de
+          rubrique.
+        </p>
+        <div className="mt-4">
+          <SandboxSection />
+        </div>
+      </section>
     </div>
   );
 }

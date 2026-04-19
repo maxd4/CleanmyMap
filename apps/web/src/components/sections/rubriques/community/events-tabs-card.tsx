@@ -14,6 +14,7 @@ import { formatFrDate, toRsvpLabel } from "@/components/sections/rubriques/commu
 import { buildIcsHref } from "@/components/sections/rubriques/community/ics";
 import { formatPct } from "@/components/sections/rubriques/community/kpis";
 import type { CommunityTab, OpsDraft } from "@/components/sections/rubriques/community/types";
+import { IdentityBadge } from "@/components/ui/identity-badge";
 
 type CommunityEventsTabsCardProps = {
   activeTab: CommunityTab;
@@ -61,6 +62,17 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
     isUpdatingEventOpsId,
   } = props;
 
+  function organizerView(event: CommunityEventItem) {
+    return (
+      event.organizer ?? {
+        userId: event.organizerClerkId ?? null,
+        displayName: "Membre",
+        roleBadge: { id: "role_benevole", label: "Role benevole", icon: "RBV" },
+        profileBadge: { id: "profile_benevole", label: "Profil benevole", icon: "PBV" },
+      }
+    );
+  }
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex flex-wrap gap-2">
@@ -100,6 +112,10 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
               key={event.id}
               className="rounded-xl border border-slate-200 bg-slate-50 p-4"
             >
+              {(() => {
+                const organizer = organizerView(event);
+                return (
+                  <>
               <h3 className="text-sm font-semibold text-slate-900">
                 {event.title}
               </h3>
@@ -110,6 +126,21 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
               <p className="mt-2 text-sm text-slate-700">
                 {event.description || "Sans description."}
               </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-semibold text-slate-700">
+                  Organisateur: {organizer.displayName}
+                </span>
+                <IdentityBadge
+                  icon={organizer.roleBadge.icon}
+                  label={organizer.roleBadge.label}
+                  tone="role"
+                />
+                <IdentityBadge
+                  icon={organizer.profileBadge.icon}
+                  label={organizer.profileBadge.label}
+                  tone="profile"
+                />
+              </div>
               <p className="mt-1 text-xs text-slate-500">
                 RSVP: oui {event.rsvpCounts.yes} | peut-etre{" "}
                 {event.rsvpCounts.maybe} | non {event.rsvpCounts.no}
@@ -175,6 +206,9 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
                   Aucun RSVP enregistre pour mon compte.
                 </p>
               )}
+                  </>
+                );
+              })()}
             </article>
           ))}
           {upcomingEvents.length === 0 ? (
@@ -217,6 +251,10 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
               key={event.id}
               className="rounded-xl border border-slate-200 bg-slate-50 p-3"
             >
+              {(() => {
+                const organizer = organizerView(event);
+                return (
+                  <>
               <p className="text-sm font-semibold text-slate-900">{event.title}</p>
               <p className="text-xs text-slate-600">
                 {formatFrDate(event.eventDate)} - {event.locationLabel}
@@ -224,6 +262,21 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
               <p className="text-xs text-slate-600">
                 RSVP total: {event.rsvpCounts.total}
               </p>
+              <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-semibold text-slate-700">
+                  Organisateur: {organizer.displayName}
+                </span>
+                <IdentityBadge
+                  icon={organizer.roleBadge.icon}
+                  label={organizer.roleBadge.label}
+                  tone="role"
+                />
+                <IdentityBadge
+                  icon={organizer.profileBadge.icon}
+                  label={organizer.profileBadge.label}
+                  tone="profile"
+                />
+              </div>
               <p className="text-xs text-slate-600">
                 Conversion evenement: RSVP-&gt;presence{" "}
                 {formatPct(
@@ -281,6 +334,9 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
                   ? "Sauvegarde..."
                   : "Enregistrer suivi evenement"}
               </button>
+                  </>
+                );
+              })()}
             </article>
           ))}
           {pastEvents.length === 0 ? (

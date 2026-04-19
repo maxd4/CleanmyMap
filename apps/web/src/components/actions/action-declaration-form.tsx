@@ -6,7 +6,6 @@ import { appendEventRefToNotes } from "@/lib/actions/event-link";
 import { createAction, fetchActionPrefill } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import {
-  ASSOCIATION_SELECTION_OPTIONS,
   buildEntrepriseAssociationName,
   ENTREPRISE_ASSOCIATION_OPTION,
 } from "@/lib/actions/association-options";
@@ -19,9 +18,11 @@ import {
 } from "./action-declaration-form.sections";
 import { ActionDeclarationFormHeader } from "./action-declaration-form.header";
 import { ActionDeclarationFormFeedback } from "./action-declaration-form.feedback";
+import { ActionDeclarationIdentityFields } from "./action-declaration-form.identity-fields";
 import {
   DeclarationMode,
   FormState,
+  PostActionRetentionLoop,
   ValidationIssue,
   getDrawingCentroid,
   initialState,
@@ -30,7 +31,11 @@ import {
   toOptionalNumber,
   toRequiredNumber,
 } from "./action-declaration-form.model";
-
+import {
+  ActionDeclarationLocationAssist,
+  ActionDeclarationWasteAssist,
+  useActionDeclarationSmartAssist,
+} from "./action-declaration-form.smart-assist";
 const ActionDrawingMap = dynamic(
   () =>
     import("@/components/actions/action-drawing-map").then(
@@ -38,12 +43,6 @@ const ActionDrawingMap = dynamic(
     ),
   { ssr: false },
 );
-
-const associationOptionLabels: Record<string, string> = {
-  "Action spontanee":
-    "Action spontanee - benevole non rattache a une association",
-  Entreprise: "Entreprise - participation dans un cadre RSE",
-};
 
 type ActionDeclarationFormProps = {
   actorNameOptions: string[];
@@ -72,8 +71,7 @@ export function ActionDeclarationForm({
     ...initialState,
     actorName: resolvedDefaultActorName,
   });
-  const [manualDrawingEnabled, setManualDrawingEnabled] =
-    useState<boolean>(true);
+  const [manualDrawingEnabled, setManualDrawingEnabled] = useState<boolean>(true);
   const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(
     null,
   );
@@ -84,11 +82,17 @@ export function ActionDeclarationForm({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [optimisticLabel, setOptimisticLabel] = useState<string | null>(null);
+  const [retentionLoop, setRetentionLoop] =
+    useState<PostActionRetentionLoop | null>(null);
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>(
     [],
   );
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [prefillApplied, setPrefillApplied] = useState<boolean>(false);
+  const [isWasteManuallyEdited, setIsWasteManuallyEdited] =
+    useState<boolean>(false);
+  const [hasAppliedInitialEstimate, setHasAppliedInitialEstimate] =
+    useState<boolean>(false);
   const hasTrackedStartRef = useRef<boolean>(false);
 
   const drawingIsValid = isDrawingValid(manualDrawing);
@@ -168,6 +172,21 @@ export function ActionDeclarationForm({
     linkedEventId,
     manualDrawing,
   ]);
+
+  const {
+    gpsStatus,
+    gpsMessage,
+    estimatedWasteKg,
+    applyEstimatedWaste,
+    autofillGps,
+  } = useActionDeclarationSmartAssist({
+    form,
+    setForm,
+    prefillApplied,
+    isWasteManuallyEdited,
+    hasAppliedInitialEstimate,
+    setHasAppliedInitialEstimate,
+  });
 
   function validateEssentials(): ValidationIssue[] {
     const issues: ValidationIssue[] = [];
@@ -277,6 +296,9 @@ export function ActionDeclarationForm({
       }
     }
 
+    if (key === "wasteKg") {
+      setIsWasteManuallyEdited(true);
+    }
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -297,6 +319,7 @@ export function ActionDeclarationForm({
     setErrorMessage(null);
     setCreatedId(null);
     setOptimisticLabel(payload.locationLabel);
+    setRetentionLoop(null);
 
     try {
       const result = await createAction(payload);
@@ -304,6 +327,7 @@ export function ActionDeclarationForm({
         hasDrawing: Boolean(payload.manualDrawing),
       });
       setCreatedId(result.id);
+      setRetentionLoop(result.retentionLoop ?? null);
       setSubmissionState("success");
       setOptimisticLabel(null);
       setManualDrawing(null);
@@ -321,6 +345,7 @@ export function ActionDeclarationForm({
       setSubmissionState("error");
       setErrorMessage(message);
       setOptimisticLabel(null);
+      setRetentionLoop(null);
     }
   }
 
@@ -335,66 +360,19 @@ export function ActionDeclarationForm({
       />
 
       <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
-        <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Identite benevole (compte)
-          <select
-            className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
-            value={form.actorName}
-            onChange={(event) => updateField("actorName", event.target.value)}
-          >
-            {resolvedActorOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-slate-500">
-            Selection issue du compte Clerk (prenom/pseudo). Aucune saisie libre
-            non tracee.
-          </p>
-        </label>
-
-        <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Association / cadre d&apos;engagement *
-          <select
-            required
-            className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
-            value={form.associationName}
-            onChange={(event) =>
-              updateField("associationName", event.target.value)
-            }
-          >
-            {ASSOCIATION_SELECTION_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {associationOptionLabels[option] ?? option}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-slate-500">
-            Liste normalisee issue de l&apos;historique Cleanwalk Paris, pour
-            des exports et classements homogenes.
-          </p>
-        </label>
-
-        {isEntrepriseMode ? (
-          <label className="flex flex-col gap-2 text-sm text-slate-700">
-            Nom de l&apos;entreprise *
-            <input
-              required
-              className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
-              value={form.enterpriseName}
-              onChange={(event) =>
-                updateField("enterpriseName", event.target.value)
-              }
-              placeholder="Ex: Veolia, BNP Paribas, SNCF..."
-              minLength={2}
-              maxLength={100}
-            />
-            <p className="text-xs text-slate-500">
-              Le rapport enregistrera cette valeur comme: Entreprise - Nom.
-            </p>
-          </label>
-        ) : null}
+        <ActionDeclarationIdentityFields
+          resolvedActorOptions={resolvedActorOptions}
+          actorName={form.actorName}
+          associationName={form.associationName}
+          enterpriseName={form.enterpriseName}
+          onActorNameChange={(value) => updateField("actorName", value)}
+          onAssociationNameChange={(value) =>
+            updateField("associationName", value)
+          }
+          onEnterpriseNameChange={(value) =>
+            updateField("enterpriseName", value)
+          }
+        />
 
         <label className="flex flex-col gap-2 text-sm text-slate-700">
           Date de l&apos;action *
@@ -417,6 +395,11 @@ export function ActionDeclarationForm({
             placeholder="Ex: Place de la Republique, Paris"
             minLength={2}
             maxLength={200}
+          />
+          <ActionDeclarationLocationAssist
+            gpsStatus={gpsStatus}
+            gpsMessage={gpsMessage}
+            onAutofillGps={autofillGps}
           />
         </label>
 
@@ -460,6 +443,10 @@ export function ActionDeclarationForm({
             value={form.wasteKg}
             onChange={(event) => updateField("wasteKg", event.target.value)}
           />
+          <ActionDeclarationWasteAssist
+            estimatedWasteKg={estimatedWasteKg}
+            onApplyEstimatedWaste={applyEstimatedWaste}
+          />
         </label>
 
         <ActionDeclarationMegotsSection form={form} updateField={updateField} />
@@ -484,9 +471,9 @@ export function ActionDeclarationForm({
           hasAttemptedSubmit={hasAttemptedSubmit}
           validationIssues={validationIssues}
           optimisticLabel={optimisticLabel}
+          retentionLoop={retentionLoop}
         />
       </form>
     </section>
   );
 }
-

@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
@@ -8,6 +8,17 @@ import {
 } from "@/lib/community/event-ops";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import {
+  getProfileBadge,
+  getRoleBadge,
+  isAdminRole,
+} from "@/lib/authz";
+import { env } from "@/lib/env";
+import { resolveProfile } from "@/lib/profiles";
+import {
+  reserveDiscussionMessageSlot,
+  toDiscussionRateLimitErrorPayload,
+} from "@/lib/community/discussion-rate-limit";
 
 export const runtime = "nodejs";
 
@@ -37,6 +48,21 @@ type EventRsvpRow = {
   status: "yes" | "maybe" | "no";
 };
 
+type OrganizerIdentity = {
+  userId: string | null;
+  displayName: string;
+  roleBadge: {
+    id: string;
+    label: string;
+    icon: string;
+  };
+  profileBadge: {
+    id: string;
+    label: string;
+    icon: string;
+  };
+};
+
 function parsePositiveInteger(
   raw: string | null,
   min: number,
@@ -57,6 +83,7 @@ function toEventResponseItem(
   event: CommunityEventRow,
   rsvps: EventRsvpRow[],
   userId: string | null,
+  organizerIdentity: OrganizerIdentity,
 ) {
   const parsedDescription = parseCommunityEventDescription(event.description);
   const ops = parsedDescription.ops ?? defaultCommunityEventOps();
@@ -98,7 +125,80 @@ function toEventResponseItem(
       total: yes + maybe + no,
     },
     myRsvpStatus,
+    organizer: organizerIdentity,
   };
+}
+
+function parseAdminUserIds(raw: string | undefined): Set<string> {
+  if (!raw) {
+    return new Set<string>();
+  }
+  return new Set(
+    raw
+      .split(",")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0),
+  );
+}
+
+function extractRole(metadata: Record<string, unknown> | null | undefined): string | null {
+  if (!metadata) {
+    return null;
+  }
+  const role = metadata["role"];
+  return typeof role === "string" ? role.trim().toLowerCase() : null;
+}
+
+async function loadOrganizerIdentities(
+  organizerIds: string[],
+): Promise<Map<string, OrganizerIdentity>> {
+  const output = new Map<string, OrganizerIdentity>();
+  if (organizerIds.length === 0) {
+    return output;
+  }
+
+  const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
+  const client = await clerkClient();
+
+  await Promise.all(
+    organizerIds.map(async (organizerId) => {
+      try {
+        const user = await client.users.getUser(organizerId);
+        const isAdmin =
+          adminUserIds.has(organizerId) ||
+          isAdminRole({
+            publicMetadata: user.publicMetadata,
+            privateMetadata: user.privateMetadata,
+          });
+        const metadataRole =
+          extractRole(user.publicMetadata as Record<string, unknown>) ??
+          extractRole(user.privateMetadata as Record<string, unknown>);
+        const profile = resolveProfile({ metadataRole, isAdmin });
+        const firstName = user.firstName?.trim() ?? "";
+        const lastName = user.lastName?.trim() ?? "";
+        const displayName =
+          `${firstName} ${lastName}`.trim() ||
+          user.username?.trim() ||
+          "Membre";
+
+        output.set(organizerId, {
+          userId: organizerId,
+          displayName,
+          roleBadge: getRoleBadge(profile),
+          profileBadge: getProfileBadge(profile),
+        });
+      } catch {
+        output.set(organizerId, {
+          userId: organizerId,
+          displayName: "Membre",
+          roleBadge: getRoleBadge("benevole"),
+          profileBadge: getProfileBadge("benevole"),
+        });
+      }
+    }),
+  );
+
+  return output;
 }
 
 export async function GET(request: Request) {
@@ -154,9 +254,30 @@ export async function GET(request: Request) {
       grouped.set(row.event_id, previous);
     }
 
-    const items = events.map((event) =>
-      toEventResponseItem(event, grouped.get(event.id) ?? [], userId ?? null),
+    const organizerIds = Array.from(
+      new Set(
+        events
+          .map((event) => event.organizer_clerk_id)
+          .filter((id): id is string => typeof id === "string" && id.length > 0),
+      ),
     );
+    const organizerById = await loadOrganizerIdentities(organizerIds);
+
+    const items = events.map((event) => {
+      const organizer =
+        organizerById.get(event.organizer_clerk_id) ?? {
+          userId: null,
+          displayName: "Membre",
+          roleBadge: getRoleBadge("benevole"),
+          profileBadge: getProfileBadge("benevole"),
+        };
+      return toEventResponseItem(
+        event,
+        grouped.get(event.id) ?? [],
+        userId ?? null,
+        organizer,
+      );
+    });
     return NextResponse.json({ status: "ok", count: items.length, items });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -194,6 +315,14 @@ export async function POST(request: Request) {
   const supabase = getSupabaseServerClient();
 
   try {
+    const quota = await reserveDiscussionMessageSlot(supabase, {
+      userId,
+      channel: "discussion_event",
+    });
+    if (!quota.allowed) {
+      return NextResponse.json(toDiscussionRateLimitErrorPayload(quota), { status: 429 });
+    }
+
     const createdResult = await supabase
       .from("community_events")
       .insert({
@@ -221,10 +350,17 @@ export async function POST(request: Request) {
       );
     }
 
+    const organizerById = await loadOrganizerIdentities([userId]);
     const item = toEventResponseItem(
       createdResult.data as CommunityEventRow,
       [],
       userId,
+      organizerById.get(userId) ?? {
+        userId,
+        displayName: "Vous",
+        roleBadge: getRoleBadge("benevole"),
+        profileBadge: getProfileBadge("benevole"),
+      },
     );
     return NextResponse.json({ status: "created", item }, { status: 201 });
   } catch (error) {

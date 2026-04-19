@@ -1,0 +1,207 @@
+IMPACT DE L'IA DANS LE DEVELOPPEMENT D'UN SITE WEB DE DEVELOPPEMENT DURABLE (CAS CLEANMYMAP)
+
+SCHEMA ARCHITECTURE IMPACT IA (lecture rapide)
+```mermaid
+flowchart LR
+  IA[Assistance IA] --> PROD[Productivite dev]
+  IA --> QUAL[Qualite livrables]
+  IA --> RISK[Risques (hallucination/dette)]
+  PROD --> VALUE[Valeur projet]
+  QUAL --> VALUE
+  RISK --> CTRL[Verification humaine]
+  CTRL --> VALUE
+  VALUE --> ECO[Cohérence ecologique]
+```
+Fallback statique:
+```md
+![Impact IA architecture fallback](../../archive/fallback-impact-ia-architecture.png)
+```
+
+GRAPHIQUE COMPARATIF 1 - valeur vs risque
+```mermaid
+quadrantChart
+  title Usages IA compares (valeur vs risque)
+  x-axis Risque faible --> Risque eleve
+  y-axis Valeur faible --> Valeur elevee
+  quadrant-1 Forte valeur mais encadrement strict
+  quadrant-2 Valeur rapide
+  quadrant-3 Faible priorite
+  quadrant-4 A limiter
+  "Refactor code teste": [0.45, 0.88]
+  "Generation brute non verifiee": [0.85, 0.42]
+  "Documentation structuree": [0.38, 0.81]
+  "Prompt non borne": [0.79, 0.35]
+```
+Fallback statique:
+```md
+![Impact IA comparative chart fallback](../../archive/fallback-impact-ia-comparative.png)
+```
+
+PARTIE 1 - ANALYSE CRITIQUE DU ROLE DE L'IA (bénéfices, compromis, impact écologique)
+
+1. Introduction
+L'usage d'outils d'IA generative (ChatGPT, Codex) dans un projet web environnemental ne peut pas etre evalue uniquement par le gain de vitesse. Il faut analyser en meme temps la qualite technique, la fiabilite des contenus, les risques de dependance, la gouvernance des decisions, et la coherence avec les objectifs ecologiques du projet. Dans le cas de CleanMyMap, l'IA est utile si elle renforce la capacite a agir sur la proprete urbaine, sans degrader la rigueur du produit ni la responsabilite environnementale.
+
+
+2. Apports concrets de l'IA pour le developpement du site
+- Rapidite d'execution: l'IA accelere les taches de cadrage, de redaction technique, de structuration et de prototypage.
+- Productivite technique: generation de premiers jets de code, aide au refactor, proposition de tests, acceleration du debug.
+- Ideation et structuration: transformation de notes brutes en plans exploitables, decomposition en lots, priorisation des dependances.
+- Accessibilite technique: reduction du seuil d'entree sur des sujets complexes (architecture, tests, instrumentation, documentation).
+- Support editorial: reformulation de contenus, clarte des messages, harmonisation de la tonalite entre pages.
+- Appui operationnel: acceleration de la production de docs, checklists, runbooks et syntheses pour coordination equipe/jury.
+
+Applique a CleanMyMap, ces apports sont pertinents lorsque l'IA sert des objectifs concrets: meilleure lisibilite des parcours, meilleure qualite des livrables, meilleure capacite de pilotage et reduction du temps perdu sur des taches repetitives.
+
+
+3. Limites, risques et effets pervers
+- Superficialite: l'IA peut fournir des reponses plausibles mais fragiles, surtout sans verification contextuelle du repo.
+- Hallucinations et erreurs: references techniques, juridiques ou factuelles potentiellement inexactes.
+- Dette technique: generation rapide de code heterogene, couplage excessif, conventions incoherentes.
+- Standardisation excessive: interfaces et formulations trop generiques, perte d'adequation aux usages reels des utilisateurs.
+- Baisse d'esprit critique: risque de valider trop vite des propositions non testees.
+- Risques securite/confidentialite: exposition de donnees sensibles si les prompts incluent des informations personnelles ou internes inutiles.
+- Mauvais arbitrages architecture: optimisation locale rapide au detriment de la maintenabilite globale.
+- Impact environnemental indirect: meme si l'impact unitaire peut paraitre modeste, le volume cumule de requetes, d'iterations et d'agents peut devenir significatif.
+
+Pour CleanMyMap, le risque principal n'est pas seulement "utiliser l'IA", mais "utiliser l'IA sans cadre".
+
+
+4. Compromis a arbitrer
+Compromis 1 - Vitesse vs fiabilite
+L'IA augmente la vitesse de production, mais cette vitesse est utile uniquement si les sorties sont verifiees (tests, revue humaine, coherence produit).
+
+Compromis 2 - Productivite vs qualite architecture
+Un gain de court terme peut fabriquer de la dette long terme si les decisions ne sont pas tracees et rationalisees.
+
+Compromis 3 - Assistance vs dependance
+L'IA doit rester un accelerateur. Elle ne remplace ni la capacite d'analyse de l'equipe ni la prise de décision.
+
+Compromis 4 - Efficacite numerique vs coherence ecologique
+Utiliser intensivement l'IA pour un projet environnemental peut creer une tension de credibilite si la sobriete numerique n'est pas integree (prompts mieux cibles, moins d'iterations inutiles, priorisation des taches a forte valeur).
+
+
+5. Conditions d'un usage responsable et pertinent de l'IA
+- Gouvernance claire: definir ce que l'IA peut proposer et ce que seul l'humain peut valider.
+- Verification systematique: lint/tests/revue code et verification factuelle pour les contenus.
+- Hygiene des donnees: minimisation des donnees envoyees, anonymisation, exclusion des informations sensibles.
+- Tracabilite des decisions: distinguer suggestion IA, decision produit, et validation technique finale.
+- Cadre de qualite: conventions de code, standards UX, schema d'evenements, checklist pre-release.
+- Coherence environnementale: reserver l'IA aux usages a forte valeur (architecture, qualite, documentation critique), eviter les iterations peu utiles.
+- Transparence: expliciter les zones assistees par IA et les controles humains associes.
+
+6. Conclusion synthetique
+L'IA est utile pour CleanMyMap lorsqu'elle sert une logique d'amelioration mesurable: mieux structurer, mieux coder, mieux tester, mieux communiquer. Elle devient contre-productive si elle remplace le jugement critique, degrade la coherence technique, ou affaiblit la responsabilite environnementale du projet. La bonne posture est pragmatique: IA pour accelerer, humain pour arbitrer, verifier et assumer la decision finale.
+
+
+
+
+PARTIE 2 - TRADUCTION EN ACTIONS CONCRETES SUR LE SITE WEB
+
+1. Principes directeurs a retenir
+- Principe 1: toute production assistee IA doit etre verifiable et testable.
+- Principe 2: prioriser les usages IA a forte valeur ajoutee (qualite, architecture, documentation, accessibilite).
+- Principe 3: proteger les donnees et limiter les expositions inutiles.
+- Principe 4: maintenir une coherence ecologique (sobriete numerique + efficacite produit).
+- Principe 5: conserver une responsabilite humaine explicite sur les contenus et le code en production.
+
+2. Actions prioritaires immediates
+Action A - Mettre en place une check-list "sortie IA avant merge"
+- Controle: exactitude technique, conformite aux conventions, tests passes, impact securite, impact UX.
+- Message a envoyer:
+"Cree une checklist pre-merge pour toute contribution assistee IA: verification technique, tests, securite, accessibilite, coherence UX et trace des decisions."
+
+Action B - Renforcer la validation humaine des contenus environnementaux
+- Controle editorial sur chiffres, interpretations, promesses d'impact, niveau de preuve.
+- Message a envoyer:
+"Ajoute un workflow de validation humaine des contenus environnementaux et institutionnels: statut brouillon, revue, publication."
+
+Action C - Standardiser les prompts utiles et limiter les prompts inutiles
+- Objectif: reduire iterations redondantes, augmenter qualite des sorties.
+- Message a envoyer:
+"Cree un guide de prompts internes par cas d'usage (code, doc, UX, debug) avec exemples courts, contraintes et criteres d'acceptation."
+
+Action D - Proteger les donnees sensibles dans l'usage IA
+- Interdire l'envoi de donnees personnelles non necessaires.
+- Message a envoyer:
+"Ajoute une politique d'usage IA du projet: donnees interdites, anonymisation minimale, exemples autorises/interdits, controle avant partage."
+
+Action E - Rendre explicite l'usage IA dans la gouvernance du projet
+- Tracer ce qui est suggere par IA et ce qui est valide humainement.
+- Message a envoyer:
+"Ajoute une section 'Assistance IA et validation humaine' dans la documentation projet et dans les PR templates."
+
+3. Actions d'amelioration a moyen terme
+Action F - Mettre en place des garde-fous qualite automatises
+- Quality gates CI: lint, tests, couverture minimale, checks accessibilite/performance.
+- Message a envoyer:
+"Renforce la CI avec quality gates obligatoires (lint/tests/contract tests/smoke checks) avant merge de code assiste IA."
+
+Action G - Ameliorer la clarte des messages environnementaux sur le site
+- Harmoniser vocabulaire, niveau de preuve, distinction fait/hypothese.
+- Message a envoyer:
+"Fais un audit de clarte des contenus environnementaux et propose une version harmonisee: messages cles, preuves, limites, incertitudes."
+
+Action H - Integrer la sobriete numerique dans les decisions produit
+- Optimiser poids pages, chargements, requetes et composants peu utiles.
+- Message a envoyer:
+"Propose un plan sobriete numerique priorise: performance front, reduction scripts, simplification parcours, impacts attendus."
+
+Action I - Structurer la gouvernance technique/editoriale
+- Roles de validation: technique, contenu, securite, accessibilite.
+- Message a envoyer:
+"Definis une gouvernance legere des validations (qui valide quoi, quand, selon quels criteres) pour les contributions assistees IA."
+
+Action J - Consolider la fiabilite des indicateurs
+- Verifier coherence analytics et interpretation.
+- Message a envoyer:
+"Ajoute des controles de coherence des indicateurs (funnel, engagement, exports) et un protocole de revue mensuelle des metriques."
+
+4. Bonnes pratiques a maintenir dans la duree
+- Pratique 1: toujours verifier avant publication (contenu + code + donnees).
+- Pratique 2: preferer des demandes IA bornees, avec contexte precis et criteres d'acceptation.
+- Pratique 3: documenter les decisions critiques et leurs arbitrages.
+- Pratique 4: surveiller les regressions de qualite et corriger rapidement.
+- Pratique 5: maintenir l'alignement entre efficacite de developpement et finalite environnementale.
+- Pratique 6: revisiter periodiquement le ratio "gain de temps IA" vs "cout de verification".
+
+
+
+RECAPITULATIF FINAL
+
+- L'impact de l'IA doit etre analyse en cycle de vie et non sur un seul chiffre simplifie.
+- Les estimations d'impact varient selon perimetre, infrastructure et hypothese de calcul.
+- Un usage Codex (taches longues, contexte large, agents) peut couter plus qu'un chat simple.
+- L'IA peut etre utile au projet environnemental si elle accelere une valeur reelle et mesurable.
+- La validation humaine reste indispensable (qualite, securite, exactitude).
+- Vigilance RGPD/confidentialite sur les donnees traitees avec l'IA.
+
+- Cadre critique structure en 6 sections, avec compromis explicites.
+- Traduction operationnelle en actions priorisees (immediat, moyen terme, continu).
+- Ajout de messages concrets prets a envoyer pour mise en oeuvre.
+- Clarification de la tension entre performance de developpement et coherence ecologique.
+- Ajout d'une logique de gouvernance IA (roles, traces, quality gates).
+
+- Checklist pre-merge pour sorties IA.
+- Validation humaine systematique des contenus environnementaux.
+- Politique de donnees pour usage IA.
+- Standardisation des prompts internes.
+- Quality gates CI renforces.
+- Plan de sobriete numerique et audit de clarte des messages.
+- Gouvernance technique/editoriale explicite.
+- Controles de coherence metriques et revues periodiques.
+
+
+
+
+
+
+
+
+
+Concrètement sur ce projet avec l'abonnement chatgpt plus :
+3 sessions / semaine de code pour utiliser le quota hebdo du plan codex 20€ = 12h / semaine pour usage dev (donc lourd en tokens)
+En pratique 1 session = ~20 à 80 échanges (message) et chaque échange = 1k à 5k tokens (input + output + contexte)
+Donc moyenne haute à 500k tokens / semaine soit 5€ si on paie en API soit 20€ par mois cohérent avec l'abonnement a 20€.
+Sachant que codex optimise déjà son contexte donc plus fiable que API qui peut parfois dégringoler. Sachant que la modification du code (output) est 5* plus cher que l'input (lecture et réflexion) pour un modèle standard.
+On peut utiliser des modèles Ollama dont l'intelligence dépend du nombre après le "B" par exemple 7B moins intelligent que 24B. Ce modèle est libre d'accès et gratuit car fonctionne sur un terminal de commande type powershell ou CMD d'un ordinateur en utilisant sa puissance de calcul (GPU et RAM). Les ressources de calcul sont locales donc pas d'appel a des serveurs en data center qui coutent cher donc pas d'abonnement ni d'API payante. Le problème c'est que ces modèles gratuits sont casiment impossible a utiliser avec un ordinateur portable car trop lent donc il faut des PC fixe a quelques milliers d'euros avec carte NVIDIA, 32GO ram et ventilateur puissant et si possible fibre optique je pense. Si besoin on peut connecter des clé API déjà payées pour executer des tâches précises ou changer de modèles de langage selon le type de tâches et la complexité (hiérarchie des agents).

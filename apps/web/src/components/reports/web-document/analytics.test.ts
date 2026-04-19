@@ -170,6 +170,8 @@ describe("reports web analytics", () => {
     expect(report.community.sourceBuckets.citoyen).toBe(1);
     expect(report.community.sourceBuckets.associatif).toBe(1);
     expect(report.community.sourceBuckets.institutionnel).toBe(1);
+    expect(report.impactMethodology.formulas).toHaveLength(4);
+    expect(report.impactMethodology.proxyVersion.length).toBeGreaterThan(0);
   });
 
   it("returns weather advice by risk thresholds", () => {

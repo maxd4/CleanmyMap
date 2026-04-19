@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-08T13:12:26.641Z",
+  "updatedAt": "2026-04-17T19:57:29.077Z",
   "records": [
     {
       "id": "real_action_baaa638ed1b880ed",
@@ -12,8 +12,8 @@
       "location": {
         "label": "20 quai Saint Bernard",
         "city": "Paris",
-        "latitude": 48.8470316,
-        "longitude": 2.3606848
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2025-07-03",
       "metrics": {
@@ -23,14 +23,14 @@
         "durationMinutes": 60
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8470316,
-        "lon": 2.3606848
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:01.267Z",
+        "importedAt": "2026-04-17T19:57:29.074Z",
         "notes": "Association: aa"
       }
     },
@@ -62,7 +62,7 @@
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:01.270Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: bb"
       }
     },
@@ -76,8 +76,8 @@
       "location": {
         "label": "Esplanade Gaston Monnerville",
         "city": "Paris",
-        "latitude": 48.8433952,
-        "longitude": 2.3369741
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2023-06-02",
       "metrics": {
@@ -87,14 +87,14 @@
         "durationMinutes": 40
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8433952,
-        "lon": 2.3369741
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:02.394Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: cc"
       }
     },
@@ -108,8 +108,8 @@
       "location": {
         "label": "pont d'austerlitz",
         "city": "Paris",
-        "latitude": 48.8449835,
-        "longitude": 2.3661201
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2026-02-21",
       "metrics": {
@@ -119,14 +119,14 @@
         "durationMinutes": 50
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8449835,
-        "lon": 2.3661201
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:03.519Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: dd"
       }
     },
@@ -140,8 +140,8 @@
       "location": {
         "label": "jardin des plantes",
         "city": "Paris",
-        "latitude": 48.844036,
-        "longitude": 2.3597321
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2026-02-22",
       "metrics": {
@@ -151,14 +151,14 @@
         "durationMinutes": 120
       },
       "map": {
-        "displayable": true,
-        "lat": 48.844036,
-        "lon": 2.3597321
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:04.639Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: ff"
       }
     },
@@ -172,8 +172,8 @@
       "location": {
         "label": "Place de la Bataille de Stalingrad",
         "city": "Paris",
-        "latitude": 48.8837604,
-        "longitude": 2.369661
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2026-02-23",
       "metrics": {
@@ -183,14 +183,14 @@
         "durationMinutes": 120
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8837604,
-        "lon": 2.369661
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:05.774Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: ff"
       }
     },
@@ -204,8 +204,8 @@
       "location": {
         "label": "Bois de Vincennes, Paris",
         "city": "Paris",
-        "latitude": 48.831548,
-        "longitude": 2.4341479
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2024-02-18",
       "metrics": {
@@ -215,14 +215,14 @@
         "durationMinutes": 120
       },
       "map": {
-        "displayable": true,
-        "lat": 48.831548,
-        "lon": 2.4341479
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:06.898Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: Test Association"
       }
     },
@@ -236,8 +236,8 @@
       "location": {
         "label": "Rue Maurice Utrillo, Paris",
         "city": "Paris",
-        "latitude": 48.8862433,
-        "longitude": 2.3444881
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2025-08-18",
       "metrics": {
@@ -247,14 +247,14 @@
         "durationMinutes": 45
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8862433,
-        "lon": 2.3444881
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:08.023Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: Test Association"
       }
     },
@@ -286,7 +286,7 @@
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:09.210Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: Test Association"
       }
     },
@@ -300,8 +300,8 @@
       "location": {
         "label": "Rue de Rivoli, Paris",
         "city": "Paris",
-        "latitude": 48.8576588,
-        "longitude": 2.3510189
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2023-01-01",
       "metrics": {
@@ -311,14 +311,14 @@
         "durationMinutes": 60
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8576588,
-        "lon": 2.3510189
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:10.337Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: Test Association"
       }
     },
@@ -332,8 +332,8 @@
       "location": {
         "label": "Tour Eiffel, Paris",
         "city": "Paris",
-        "latitude": 48.8582599,
-        "longitude": 2.2945006
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2024-06-15",
       "metrics": {
@@ -343,14 +343,14 @@
         "durationMinutes": 90
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8582599,
-        "lon": 2.2945006
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:11.473Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: Test Association"
       }
     },
@@ -364,8 +364,8 @@
       "location": {
         "label": "Quai de Valmy, Paris 10e",
         "city": "Paris",
-        "latitude": 48.8738014,
-        "longitude": 2.3630725
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2025-09-21",
       "metrics": {
@@ -375,14 +375,14 @@
         "durationMinutes": 150
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8738014,
-        "lon": 2.3630725
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:12.606Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: Clean Walk Paris 10"
       }
     },
@@ -396,8 +396,8 @@
       "location": {
         "label": "Parc des Buttes-Chaumont, Paris 19e",
         "city": "Paris",
-        "latitude": 48.879728,
-        "longitude": 2.3882854
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2025-11-29",
       "metrics": {
@@ -407,14 +407,14 @@
         "durationMinutes": 180
       },
       "map": {
-        "displayable": true,
-        "lat": 48.879728,
-        "lon": 2.3882854
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:13.882Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: Green Friday"
       }
     },
@@ -428,8 +428,8 @@
       "location": {
         "label": "Place de la République, Paris 3e",
         "city": "Paris",
-        "latitude": 48.8677121,
-        "longitude": 2.3627632
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2026-01-17",
       "metrics": {
@@ -439,14 +439,14 @@
         "durationMinutes": 200
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8677121,
-        "lon": 2.3627632
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:15.007Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: Collectif Nettoyons Paris"
       }
     },
@@ -478,7 +478,7 @@
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:16.134Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: Paris Zéro Déchet"
       }
     },
@@ -492,8 +492,8 @@
       "location": {
         "label": "Parc Montsouris, Paris 14e",
         "city": "Paris",
-        "latitude": 48.8227828,
-        "longitude": 2.3348768
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2025-11-05",
       "metrics": {
@@ -503,14 +503,14 @@
         "durationMinutes": 120
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8227828,
-        "lon": 2.3348768
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:17.271Z",
+        "importedAt": "2026-04-17T19:57:29.076Z",
         "notes": "Association: Étudiants pour la Planète"
       }
     },
@@ -524,8 +524,8 @@
       "location": {
         "label": "Parc de la Villette, Paris 19e",
         "city": "Paris",
-        "latitude": 48.8886492,
-        "longitude": 2.3926738
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2026-02-28",
       "metrics": {
@@ -535,14 +535,14 @@
         "durationMinutes": 170
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8886492,
-        "lon": 2.3926738
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:18.393Z",
+        "importedAt": "2026-04-17T19:57:29.077Z",
         "notes": "Association: Green Wednesday"
       }
     },
@@ -556,8 +556,8 @@
       "location": {
         "label": "Quai de la Tournelle, Paris 5e",
         "city": "Paris",
-        "latitude": 48.8512579,
-        "longitude": 2.3508584
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2025-08-15",
       "metrics": {
@@ -567,14 +567,14 @@
         "durationMinutes": 140
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8512579,
-        "lon": 2.3508584
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:19.768Z",
+        "importedAt": "2026-04-17T19:57:29.077Z",
         "notes": "Association: Paris Clean Walk"
       }
     },
@@ -588,8 +588,8 @@
       "location": {
         "label": "Parc André Citroën, Paris 15e",
         "city": "Paris",
-        "latitude": 48.8400351,
-        "longitude": 2.278159
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2025-09-07",
       "metrics": {
@@ -599,14 +599,14 @@
         "durationMinutes": 130
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8400351,
-        "lon": 2.278159
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:21.006Z",
+        "importedAt": "2026-04-17T19:57:29.077Z",
         "notes": "Association: Green Family"
       }
     },
@@ -620,8 +620,8 @@
       "location": {
         "label": "Porte de Clignancourt, Paris 18e",
         "city": "Paris",
-        "latitude": 48.8973976,
-        "longitude": 2.3448521
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2025-12-14",
       "metrics": {
@@ -631,14 +631,14 @@
         "durationMinutes": 250
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8973976,
-        "lon": 2.3448521
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:22.123Z",
+        "importedAt": "2026-04-17T19:57:29.077Z",
         "notes": "Association: Les Éco-puces"
       }
     },
@@ -652,8 +652,8 @@
       "location": {
         "label": "Jardin du Luxembourg, Paris 6e",
         "city": "Paris",
-        "latitude": 48.8486408,
-        "longitude": 2.3351989
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": "2025-07-22",
       "metrics": {
@@ -663,14 +663,14 @@
         "durationMinutes": 110
       },
       "map": {
-        "displayable": true,
-        "lat": 48.8486408,
-        "lon": 2.3351989
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:23.243Z",
+        "importedAt": "2026-04-17T19:57:29.077Z",
         "notes": "Association: Sénat Propre"
       }
     },
@@ -684,19 +684,19 @@
       "location": {
         "label": "Pont de l'Alma",
         "city": "Paris",
-        "latitude": 48.8625636,
-        "longitude": 2.2999572
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": null,
       "map": {
-        "displayable": true,
-        "lat": 48.8625636,
-        "lon": 2.2999572
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:24.364Z",
+        "importedAt": "2026-04-17T19:57:29.077Z",
         "notes": null
       }
     },
@@ -710,19 +710,19 @@
       "location": {
         "label": "Gare de l'est",
         "city": "Paris",
-        "latitude": 48.8770979,
-        "longitude": 2.3594905
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": null,
       "map": {
-        "displayable": true,
-        "lat": 48.8770979,
-        "lon": 2.3594905
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:25.489Z",
+        "importedAt": "2026-04-17T19:57:29.077Z",
         "notes": null
       }
     },
@@ -736,19 +736,19 @@
       "location": {
         "label": "Canal saint martin",
         "city": "Paris",
-        "latitude": 48.8689561,
-        "longitude": 2.3671691
+        "latitude": null,
+        "longitude": null
       },
       "eventDate": null,
       "map": {
-        "displayable": true,
-        "lat": 48.8689561,
-        "lon": 2.3671691
+        "displayable": false,
+        "lat": null,
+        "lon": null
       },
       "trace": {
         "externalId": null,
         "originTable": "google_sheet",
-        "importedAt": "2026-04-08T13:12:26.641Z",
+        "importedAt": "2026-04-17T19:57:29.077Z",
         "notes": null
       }
     }

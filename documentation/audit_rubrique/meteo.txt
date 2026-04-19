@@ -1,32 +1,31 @@
-Rubrique: meteo
-Statut: A completer (non traite dans cette passe)
+Rubrique: Meteo
+Statut: format-audit-unifie-v1
 
-- a quoi sert la rubrique
-  - A completer.
+## Objectif
+- Adapter les operations aux conditions meteo et limiter les echecs terrain.
 
-- pour qui
-  - A completer.
+## Flux (schema)
+```mermaid
+flowchart LR
+  A[Besoin utilisateur] --> B[Interaction Meteo]
+  B --> C[Donnees / validation]
+  C --> D[Decision / action locale]
+```
+Fallback statique:
+![Schema Meteo](../archive/fallback-audit-meteo.png)
 
-- valeur utilisateur
-  - A completer.
+## Risques
+- Donnees incompletes ou mal qualifiees.
+- Friction UX qui bloque l adoption.
+- Rupture de parcours entre rubrique et action concrete.
 
-- valeur produit
-  - A completer.
+## KPI
+- Adoption: utilisateurs actifs sur la rubrique.
+- Qualite: taux de donnees exploitables.
+- Impact: actions ou decisions declenchees depuis la rubrique.
 
-- contenu a afficher
-  - A completer.
+## Impact concret
+- Meilleure fiabilite des sorties et securite des benevoles.
 
-- infos essentielles
-  - A completer.
-
-- erreurs a eviter
-  - A completer.
-
-- points UX/UI
-  - A completer.
-
-- pistes d'amelioration
-  - A completer.
-
-- questions ouvertes
-  - A completer.
+## CTA
+- Verifier la fenetre meteo avant de confirmer une intervention.

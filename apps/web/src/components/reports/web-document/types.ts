@@ -1,5 +1,6 @@
 import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
 import type { CommunityEventItem } from "@/lib/community/http";
+import type { PersonalImpactMethodology } from "@/lib/gamification/progression-types";
 
 export type ChapterAudience = "terrain" | "strategie" | "mixte";
 
@@ -98,6 +99,7 @@ export type ReportModel = {
     badgeExpert: number;
     sourceBuckets: { citoyen: number; associatif: number; institutionnel: number };
   };
+  impactMethodology: PersonalImpactMethodology;
   annualRows: string[][];
   calendar: Array<[string, string, string, string]>;
 };

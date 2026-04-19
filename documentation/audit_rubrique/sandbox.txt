@@ -1,32 +1,31 @@
-Rubrique: sandbox
-Statut: A completer (non traite dans cette passe)
+Rubrique: Sandbox (fusionnee)
+Statut: format-audit-unifie-v1
 
-- a quoi sert la rubrique
-  - A completer.
+## Objectif
+- Conserver la logique d experimentation integree a la cartographie reelle.
 
-- pour qui
-  - A completer.
+## Flux (schema)
+```mermaid
+flowchart LR
+  A[Besoin utilisateur] --> B[Interaction Sandbox fusionnee]
+  B --> C[Donnees / validation]
+  C --> D[Decision / action locale]
+```
+Fallback statique:
+![Schema Sandbox fusionnee](../archive/fallback-audit-sandbox.png)
 
-- valeur utilisateur
-  - A completer.
+## Risques
+- Donnees incompletes ou mal qualifiees.
+- Friction UX qui bloque l adoption.
+- Rupture de parcours entre rubrique et action concrete.
 
-- valeur produit
-  - A completer.
+## KPI
+- Adoption: utilisateurs actifs sur la rubrique.
+- Qualite: taux de donnees exploitables.
+- Impact: actions ou decisions declenchees depuis la rubrique.
 
-- contenu a afficher
-  - A completer.
+## Impact concret
+- Tests produit plus rapides sans disperser les usages.
 
-- infos essentielles
-  - A completer.
-
-- erreurs a eviter
-  - A completer.
-
-- points UX/UI
-  - A completer.
-
-- pistes d'amelioration
-  - A completer.
-
-- questions ouvertes
-  - A completer.
+## CTA
+- Utiliser les fonctions sandbox depuis la rubrique Cartographie.

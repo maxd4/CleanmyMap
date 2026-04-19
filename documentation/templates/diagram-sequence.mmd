@@ -1,0 +1,12 @@
+sequenceDiagram
+  participant U as Utilisateur
+  participant UI as Interface
+  participant API as API
+  participant DB as Base
+
+  U->>UI: Action
+  UI->>API: Requete
+  API->>DB: Lecture/Ecriture
+  DB-->>API: Reponse
+  API-->>UI: Resultat
+  UI-->>U: Feedback

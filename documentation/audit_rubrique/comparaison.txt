@@ -1,32 +1,31 @@
-Rubrique: comparaison
-Statut: A completer (non traite dans cette passe)
+Rubrique: Comparaison (fusionnee)
+Statut: format-audit-unifie-v1
 
-- a quoi sert la rubrique
-  - A completer.
+## Objectif
+- Conserver la logique de comparaison integree dans les rubriques fusionnees.
 
-- pour qui
-  - A completer.
+## Flux (schema)
+```mermaid
+flowchart LR
+  A[Besoin utilisateur] --> B[Interaction Comparaison fusionnee]
+  B --> C[Donnees / validation]
+  C --> D[Decision / action locale]
+```
+Fallback statique:
+![Schema Comparaison fusionnee](../archive/fallback-audit-comparaison.png)
 
-- valeur utilisateur
-  - A completer.
+## Risques
+- Donnees incompletes ou mal qualifiees.
+- Friction UX qui bloque l adoption.
+- Rupture de parcours entre rubrique et action concrete.
 
-- valeur produit
-  - A completer.
+## KPI
+- Adoption: utilisateurs actifs sur la rubrique.
+- Qualite: taux de donnees exploitables.
+- Impact: actions ou decisions declenchees depuis la rubrique.
 
-- contenu a afficher
-  - A completer.
+## Impact concret
+- Aide a arbitrer entre options sans multiplier les ecrans.
 
-- infos essentielles
-  - A completer.
-
-- erreurs a eviter
-  - A completer.
-
-- points UX/UI
-  - A completer.
-
-- pistes d'amelioration
-  - A completer.
-
-- questions ouvertes
-  - A completer.
+## CTA
+- Verifier les comparaisons depuis la rubrique cible fusionnee.

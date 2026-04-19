@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminAccess } from "@/lib/authz";
+import { trackCommunityOpsUpdate } from "@/lib/gamification/progression";
 import {
   defaultCommunityEventOps,
   mergeCommunityEventOps,
@@ -175,6 +176,26 @@ export async function POST(request: Request) {
     (rsvpsResult.data ?? []) as EventRsvpRow[],
     userId,
   );
+
+  if (userId) {
+    try {
+      await trackCommunityOpsUpdate(supabase, {
+        userId,
+        eventId: parsed.data.eventId,
+        attendanceCount: item.attendanceCount,
+        hasPostMortem: (item.postMortem ?? "").trim().length >= 20,
+      });
+    } catch (progressionError) {
+      console.error("Progression tracking failed for community ops update", {
+        userId,
+        eventId: parsed.data.eventId,
+        message:
+          progressionError instanceof Error
+            ? progressionError.message
+            : String(progressionError),
+      });
+    }
+  }
 
   return NextResponse.json({ status: "ok", item });
 }

@@ -72,6 +72,11 @@ const envSchema = z.object({
   QSTASH_TOKEN: z.string().optional(),
   ALLOW_LOCAL_FILE_STORE_FALLBACK: optionalBoolean,
   ALLOW_LOCAL_ACTION_STORE_IN_PROD: optionalBoolean,
+  IMPACT_PROXY_VERSION: z.string().optional(),
+  IMPACT_PROXY_WATER_LITERS_PER_CIGARETTE_BUTT: z.string().optional(),
+  IMPACT_PROXY_CO2_KG_PER_WASTE_KG: z.string().optional(),
+  IMPACT_PROXY_SURFACE_M2_PER_WASTE_KG: z.string().optional(),
+  IMPACT_PROXY_SURFACE_M2_PER_VOLUNTEER_MINUTE: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

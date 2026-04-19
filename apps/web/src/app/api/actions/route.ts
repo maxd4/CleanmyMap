@@ -11,6 +11,10 @@ import {
   parseEntityTypesParam,
 } from "@/lib/actions/unified-source";
 import { buildActionInsights } from "@/lib/actions/insights";
+import {
+  buildPostActionRetentionLoop as buildActionRetentionLoop,
+  trackActionCreated,
+} from "@/lib/gamification/progression";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
@@ -211,8 +215,24 @@ export async function POST(request: Request) {
       userId,
       payload: normalizedPayload,
     });
+    try {
+      await trackActionCreated(supabase, { userId, actionId: created.id });
+    } catch (progressionError) {
+      console.error("Progression tracking failed for action creation", {
+        userId,
+        actionId: created.id,
+        message:
+          progressionError instanceof Error
+            ? progressionError.message
+            : String(progressionError),
+      });
+    }
+    const retentionLoop = await buildActionRetentionLoop(supabase, {
+      userId,
+      actionId: created.id,
+    }).catch(() => null);
     return NextResponse.json(
-      { status: "created", id: created.id, source: "actions" },
+      { status: "created", id: created.id, source: "actions", retentionLoop },
       { status: 201 },
     );
   } catch (error) {

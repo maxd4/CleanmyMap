@@ -58,6 +58,9 @@ Invoke-Step { python scripts/ci_cleanup.py --root . --check } "ci_cleanup"
 Write-Host "Running runtime SQLite tracking guardrail..."
 Invoke-Step { python scripts/check_runtime_db_tracking.py --root . } "runtime_db_tracking"
 
+Write-Host "Running prioritized documentation visual check..."
+Invoke-Step { npm run check:doc-visuals } "check_doc_visuals"
+
 if ($Scope -eq "full") {
     Write-Host "Running unit tests (full suite)..."
     Invoke-Step { pytest -q legacy/tests } "pytest_full"

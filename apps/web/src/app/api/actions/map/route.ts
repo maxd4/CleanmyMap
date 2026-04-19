@@ -11,12 +11,15 @@ import { buildActionInsights } from "@/lib/actions/insights";
 export const runtime = "nodejs";
 
 function parseStatusParam(raw: string | null): ActionStatus | null {
-  if (!raw) {
+  if (!raw || raw.trim() === "") {
+    return "approved";
+  }
+  if (raw === "all") {
     return null;
   }
   return ACTION_STATUSES.includes(raw as ActionStatus)
     ? (raw as ActionStatus)
-    : null;
+    : "approved";
 }
 
 function parsePositiveInteger(

@@ -49,7 +49,7 @@ Write-Host "[unblock] git core.longpaths=true and safe.directory added"
 $targets = @(
     "src/report_generator.py",
     "README.md",
-    "docs/wiki/CHANGELOG.md"
+    "documentation/repo-docs/wiki/CHANGELOG.md"
 )
 $ok = 0
 foreach ($target in $targets) {

@@ -47,7 +47,7 @@ export default async function ReportsPage() {
           Acces restreint
         </h1>
         <p className="mt-2 text-sm text-amber-800">
-          Connecte-toi pour acceder au module de reporting.
+          Connecte-toi pour acceder aux rapports d&apos;impact.
         </p>
       </section>
     );
@@ -111,7 +111,7 @@ export default async function ReportsPage() {
     return (
       <PageReadingTemplate
         context={`Profil ${roleLabel}`}
-        title="Reports multi-horizon et exports"
+        title="Rapports d'impact multi-horizon et exports"
         objective="Concentrer les comparatifs 30j/90j/12m, la méthode KPI et les livrables exportables, sans recopier le cockpit."
         summary={
           <ThirtySecondsSummary
@@ -199,7 +199,10 @@ export default async function ReportsPage() {
               Methode: comparatifs N vs N-1, priorisation automatique et limites
               documentées par KPI.
             </p>
-            <p>Perimetre: espace Reports (exports + synthese multi-horizon).</p>
+            <p>
+              Perimetre: espace Rapports d&apos;impact (exports + synthese
+              multi-horizon).
+            </p>
             <div className="pt-1">
               <RubriquePdfExportButton rubriqueTitle="Reporting et pilotage" />
             </div>
@@ -224,7 +227,7 @@ export default async function ReportsPage() {
 
       <DecisionPageHeader
         context="Profil decideur"
-        title="Reporting, methode KPI et priorites operationnelles"
+        title="Rapports d'impact, methode KPI et priorites operationnelles"
         objective="Arbitrer sur 30j/90j/12m avec comparatifs N vs N-1 et priorites auto justifiees."
         actions={[
           { href: "/profil", label: "Retour cockpit" },

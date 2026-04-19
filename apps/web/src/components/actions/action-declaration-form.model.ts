@@ -53,6 +53,16 @@ export const initialState: FormState = {
 export type SubmissionState = "idle" | "pending" | "success" | "error";
 export type DeclarationMode = "quick" | "complete";
 
+export type PostActionRetentionLoop = {
+  summary: string;
+  badge: string;
+  share: {
+    text: string;
+    url: string;
+  };
+  nextActionSuggestion: string;
+};
+
 export function toOptionalNumber(input: string): number | undefined {
   const trimmed = input.trim();
   if (!trimmed) {

@@ -1,19 +1,16 @@
 import type { DisplayMode, Locale } from "./ui/preferences";
-import type { Espace } from "./domain-language";
 import {
   RUBRIQUE_CATEGORIES,
   RUBRIQUE_REGISTRY,
   getVisibleRubriquesByCategory,
   type LocalizedText,
   type Rubrique,
-  type RubriqueSpaceId,
 } from "./sections-registry";
 import {
   PROFILE_ORDER,
   getProfileEntryPath,
   getProfileLabel,
   getProfilePrimaryAction,
-  getProfileSpacePriority,
   getProfileSecondaryAction,
   getProfileSubtitle,
   type AppProfile,
@@ -25,11 +22,20 @@ export type NavigationItem = {
   href: string;
   label: LocalizedText;
   description: LocalizedText;
-  routeId: Rubrique["id"];
+  routeId: string;
 };
 
+export type NavigationBlockId =
+  | "home"
+  | "act"
+  | "visualize"
+  | "impact"
+  | "network"
+  | "learn"
+  | "pilot";
+
 export type NavigationSpace = {
-  id: Espace;
+  id: NavigationBlockId;
   label: LocalizedText;
   items: NavigationItem[];
 };
@@ -53,28 +59,35 @@ export type NavigationProfileOverview = {
 };
 
 const SPACE_DEFINITIONS: Record<
-  RubriqueSpaceId,
-  { id: RubriqueSpaceId; label: LocalizedText }
+  NavigationBlockId,
+  { id: NavigationBlockId; label: LocalizedText }
 > = {
-  execute: { id: "execute", label: { fr: "Executer", en: "Execute" } },
-  supervise: { id: "supervise", label: { fr: "Superviser", en: "Supervise" } },
-  decide: { id: "decide", label: { fr: "Decider", en: "Decide" } },
-  prepare: { id: "prepare", label: { fr: "Preparer", en: "Prepare" } },
+  home: { id: "home", label: { fr: "Page d'accueil", en: "Home" } },
+  act: { id: "act", label: { fr: "Agir", en: "Act" } },
+  visualize: { id: "visualize", label: { fr: "Visualiser", en: "Visualize" } },
+  impact: { id: "impact", label: { fr: "Impact", en: "Impact" } },
+  network: { id: "network", label: { fr: "Reseau", en: "Network" } },
+  learn: { id: "learn", label: { fr: "Apprendre", en: "Learn" } },
+  pilot: { id: "pilot", label: { fr: "Piloter", en: "Govern" } },
 };
-const FIXED_SPACE_ORDER: RubriqueSpaceId[] = [
-  "execute",
-  "supervise",
-  "decide",
-  "prepare",
+const FIXED_SPACE_ORDER: NavigationBlockId[] = [
+  "home",
+  "act",
+  "visualize",
+  "impact",
+  "network",
+  "learn",
+  "pilot",
 ];
 
 type RouteId = Rubrique["id"];
 type ProfileSpacePageMap = Record<
   AppProfile,
-  Record<RubriqueSpaceId, RouteId[]>
+  Record<NavigationBlockId, RouteId[]>
 >;
 
 const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
+  "profile",
   "new",
   "map",
   "history",
@@ -82,55 +95,74 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "guide",
   "kit",
   "community",
+  "annuaire",
+  "open-data",
+  "funding",
   "reports",
-  "compare",
+  "climate",
   "weather",
   "elus",
   "admin",
-  "sandbox",
 ]);
 
 const SIMPLIFIE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
+  "profile",
   "new",
   "map",
   "history",
   "guide",
   "dashboard",
   "community",
+  "annuaire",
   "admin",
 ]);
 
 // Source de verite navigation: profil -> espaces -> pages.
 const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   benevole: {
-    execute: ["new", "map"],
-    supervise: ["history", "trash-spotter"],
-    decide: ["dashboard", "gamification"],
-    prepare: ["guide", "kit", "community"],
+    home: ["dashboard", "profile", "new"],
+    act: ["route", "trash-spotter"],
+    visualize: ["map"],
+    impact: ["reports", "gamification"],
+    network: ["community", "annuaire", "open-data", "funding", "actors"],
+    learn: ["climate", "guide", "recycling", "kit"],
+    pilot: [],
   },
   coordinateur: {
-    execute: ["community", "new", "map", "route"],
-    supervise: ["history", "dashboard", "weather"],
-    decide: ["reports", "compare", "climate", "elus"],
-    prepare: ["guide", "kit", "actors", "recycling"],
+    home: ["dashboard", "profile", "new"],
+    act: ["route", "trash-spotter"],
+    visualize: ["map", "weather"],
+    impact: ["reports", "gamification"],
+    network: ["community", "annuaire", "open-data", "funding", "actors"],
+    learn: ["climate", "guide", "recycling", "kit"],
+    pilot: ["elus"],
   },
   scientifique: {
-    execute: ["map", "history"],
-    supervise: ["dashboard", "weather", "trash-spotter"],
-    decide: ["reports", "compare", "climate", "elus"],
-    prepare: ["guide", "kit", "actors"],
+    home: ["dashboard", "profile", "new"],
+    act: ["route", "trash-spotter"],
+    visualize: ["map", "weather"],
+    impact: ["reports", "gamification"],
+    network: ["community", "annuaire", "open-data", "funding", "actors"],
+    learn: ["climate", "guide", "recycling", "kit"],
+    pilot: ["elus"],
   },
   elu: {
-    execute: ["elus"],
-    supervise: ["dashboard", "history"],
-    decide: ["reports", "compare", "climate", "weather"],
-    prepare: ["guide"],
+    home: ["dashboard", "profile", "new"],
+    act: ["route", "trash-spotter"],
+    visualize: ["map", "weather"],
+    impact: ["reports", "gamification"],
+    network: ["community", "annuaire", "open-data", "funding", "actors"],
+    learn: ["climate", "guide", "recycling", "kit"],
+    pilot: ["elus"],
   },
   admin: {
-    execute: ["admin", "new", "community"],
-    supervise: ["dashboard", "history", "map", "sandbox"],
-    decide: ["reports", "compare", "climate", "elus"],
-    prepare: ["guide", "kit", "weather", "actors"],
+    home: ["dashboard", "profile", "new"],
+    act: ["route", "trash-spotter"],
+    visualize: ["map", "weather"],
+    impact: ["reports", "gamification"],
+    network: ["community", "annuaire", "open-data", "funding", "actors"],
+    learn: ["climate", "guide", "recycling", "kit"],
+    pilot: ["admin", "elus"],
   },
 };
 
@@ -217,14 +249,7 @@ export function getNavigationSpacesForProfile(
     ]),
   );
 
-  // Ordonner les espaces selon la priorité définie pour le profil
-  const prioritizedSpaceOrder = [...FIXED_SPACE_ORDER].sort((a, b) => {
-    const priorityA = getProfileSpacePriority(profile, a);
-    const priorityB = getProfileSpacePriority(profile, b);
-    return priorityA - priorityB;
-  });
-
-  const spaces = prioritizedSpaceOrder.map((spaceId) => {
+  const spaces = FIXED_SPACE_ORDER.map((spaceId) => {
     const items = PARCOURS_SPACE_PAGE_MAP[profile][spaceId]
       .filter((id) => isRouteAllowedByDisplayMode(id, displayMode))
       .map((id) => byId.get(id))
@@ -243,7 +268,7 @@ export function getActiveSpaceForPath(
   profile: AppProfile,
   pathname: string,
   displayMode: DisplayMode = "exhaustif",
-): RubriqueSpaceId | null {
+): NavigationBlockId | null {
   for (const space of getNavigationSpacesForProfile(profile, displayMode)) {
     if (
       space.items.some(
@@ -311,11 +336,11 @@ export function getNavigationLabels(
   const displayModeLabel = getDisplayModeLabel(displayMode, locale);
   return {
     navTitle:
-      locale === "fr" ? "Navigation par profil" : "Profile-based navigation",
+      locale === "fr" ? "Navigation en 7 blocs" : "7-block navigation",
     summary:
       locale === "fr"
-        ? `${rubriqueCount} pages operationnelles pour ${profileLabel} (${spaceCount} espaces, ${displayModeLabel})`
-        : `${rubriqueCount} operational pages for ${profileLabel} (${spaceCount} spaces, ${displayModeLabel})`,
+        ? `${rubriqueCount} pages operationnelles pour ${profileLabel} (${spaceCount} blocs, ${displayModeLabel})`
+        : `${rubriqueCount} operational pages for ${profileLabel} (${spaceCount} blocks, ${displayModeLabel})`,
   };
 }
 

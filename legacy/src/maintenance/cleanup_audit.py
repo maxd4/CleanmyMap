@@ -215,8 +215,8 @@ def _rule_required_docs(root: Path) -> CleanupAuditRuleResult:
     missing_refs: list[str] = []
     if "scripts/ci_cleanup.py" not in readme:
         missing_refs.append("README: reference à scripts/ci_cleanup.py")
-    if "docs/wiki" not in readme:
-        missing_refs.append("README: reference à docs/wiki")
+    if "documentation/repo-docs/wiki" not in readme:
+        missing_refs.append("README: reference à documentation/repo-docs/wiki")
     if "MAINTENANCE" not in wiki_index.upper():
         missing_refs.append("wiki index: lien maintenance")
     if "ci_cleanup.py" not in wiki_maintenance:

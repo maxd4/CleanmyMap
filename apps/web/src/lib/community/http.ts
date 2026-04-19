@@ -18,6 +18,20 @@ export type CommunityEventItem = {
     total: number;
   };
   myRsvpStatus: CommunityRsvpStatus | null;
+  organizer?: {
+    userId: string | null;
+    displayName: string;
+    roleBadge: {
+      id: string;
+      label: string;
+      icon: string;
+    };
+    profileBadge: {
+      id: string;
+      label: string;
+      icon: string;
+    };
+  };
 };
 
 export type CommunityEventsResponse = {

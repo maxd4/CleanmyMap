@@ -1,32 +1,31 @@
-Rubrique: guide_pratique
-Statut: A completer (non traite dans cette passe)
+Rubrique: Guide pratique
+Statut: format-audit-unifie-v1
 
-- a quoi sert la rubrique
-  - A completer.
+## Objectif
+- Standardiser les bonnes pratiques terrain et la qualite d execution.
 
-- pour qui
-  - A completer.
+## Flux (schema)
+```mermaid
+flowchart LR
+  A[Besoin utilisateur] --> B[Interaction Guide pratique]
+  B --> C[Donnees / validation]
+  C --> D[Decision / action locale]
+```
+Fallback statique:
+![Schema Guide pratique](../archive/fallback-audit-guide_pratique.png)
 
-- valeur utilisateur
-  - A completer.
+## Risques
+- Donnees incompletes ou mal qualifiees.
+- Friction UX qui bloque l adoption.
+- Rupture de parcours entre rubrique et action concrete.
 
-- valeur produit
-  - A completer.
+## KPI
+- Adoption: utilisateurs actifs sur la rubrique.
+- Qualite: taux de donnees exploitables.
+- Impact: actions ou decisions declenchees depuis la rubrique.
 
-- contenu a afficher
-  - A completer.
+## Impact concret
+- Actions plus efficaces, moins d erreurs operationnelles.
 
-- infos essentielles
-  - A completer.
-
-- erreurs a eviter
-  - A completer.
-
-- points UX/UI
-  - A completer.
-
-- pistes d'amelioration
-  - A completer.
-
-- questions ouvertes
-  - A completer.
+## CTA
+- Suivre une checklist terrain avant la prochaine sortie.

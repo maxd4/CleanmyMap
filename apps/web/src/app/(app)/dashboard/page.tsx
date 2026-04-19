@@ -1,17 +1,19 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
+import { ActionDeclarationForm } from "@/components/actions/action-declaration-form";
 import { BusinessAlertsPanel } from "@/components/dashboard/business-alerts-panel";
+import { ClosedLoopPanel } from "@/components/dashboard/closed-loop-panel";
+import { DashboardComparisonGrid } from "@/components/dashboard/dashboard-comparison-grid";
 import { FunnelConversionPanel } from "@/components/dashboard/funnel-conversion-panel";
 import { ReportExportSmokeCard } from "@/components/dashboard/report-export-smoke-card";
 import { SystemStatusPanel } from "@/components/dashboard/system-status-panel";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
-import { KpiComparisonCard } from "@/components/pilotage/kpi-comparison-card";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { OperationalPrioritiesPanel } from "@/components/pilotage/operational-priorities-panel";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import {
@@ -33,6 +35,7 @@ async function loadDashboardOverview() {
 
 export default async function DashboardPage() {
   const { userId } = await auth();
+  const identity = await getCurrentUserIdentity();
   const role = await getCurrentUserRoleLabel();
   const profile = toProfile(role);
   const roleLabel = getProfileLabel(profile, "fr");
@@ -40,7 +43,11 @@ export default async function DashboardPage() {
   const secondaryAction = getProfileSecondaryAction(profile);
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const overview = await loadDashboardOverview().catch(() => null);
-
+  const fallbackActorName = userId ?? "unknown-user";
+  const actorNameOptions =
+    identity?.actorNameOptions && identity.actorNameOptions.length > 0
+      ? identity.actorNameOptions
+      : [fallbackActorName];
   const kpis = overview
     ? ([
         {
@@ -94,6 +101,14 @@ export default async function DashboardPage() {
           interpretation: "neutral",
         },
       ] as const);
+  const impactKpis = kpis.slice(0, 3).map((kpi) => ({
+    label: kpi.label,
+    value: kpi.value,
+  }));
+  const adaptiveHref = overview?.summary.recommendedAction.href ?? primaryAction.href;
+  const adaptiveLabel =
+    overview?.summary.recommendedAction.label ?? primaryAction.label.fr;
+  const adaptiveReason = overview?.summary.recommendedAction.reason;
 
   if (pageTemplateV2Enabled) {
     return (
@@ -140,77 +155,7 @@ export default async function DashboardPage() {
                 </p>
               </div>
 
-              {overview ? (
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  <KpiComparisonCard
-                    label="Actions approuvees"
-                    value={`${overview.comparison.current.approvedActions}`}
-                    previousValue={`${overview.comparison.previous.approvedActions}`}
-                    deltaAbsolute={`${overview.comparison.metrics.approvedActions.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.approvedActions.deltaAbsolute.toFixed(1)}`}
-                    deltaPercent={`${overview.comparison.metrics.approvedActions.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.approvedActions.deltaPercent.toFixed(1)}%`}
-                    interpretation={
-                      overview.comparison.metrics.approvedActions.interpretation
-                    }
-                  />
-                  <KpiComparisonCard
-                    label="Volume collecte"
-                    value={`${overview.comparison.current.impactVolumeKg.toFixed(1)} kg`}
-                    previousValue={`${overview.comparison.previous.impactVolumeKg.toFixed(1)} kg`}
-                    deltaAbsolute={`${overview.comparison.metrics.impactVolumeKg.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.impactVolumeKg.deltaAbsolute.toFixed(1)} kg`}
-                    deltaPercent={`${overview.comparison.metrics.impactVolumeKg.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.impactVolumeKg.deltaPercent.toFixed(1)}%`}
-                    interpretation={
-                      overview.comparison.metrics.impactVolumeKg.interpretation
-                    }
-                  />
-                  <KpiComparisonCard
-                    label="Qualite data"
-                    value={`${overview.comparison.current.qualityScore.toFixed(1)}/100`}
-                    previousValue={`${overview.comparison.previous.qualityScore.toFixed(1)}/100`}
-                    deltaAbsolute={`${overview.comparison.metrics.qualityScore.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.qualityScore.deltaAbsolute.toFixed(1)}`}
-                    deltaPercent={`${overview.comparison.metrics.qualityScore.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.qualityScore.deltaPercent.toFixed(1)}%`}
-                    interpretation={
-                      overview.comparison.metrics.qualityScore.interpretation
-                    }
-                  />
-                  <KpiComparisonCard
-                    label="Geo-couverture"
-                    value={`${overview.comparison.current.coverageRate.toFixed(1)}%`}
-                    previousValue={`${overview.comparison.previous.coverageRate.toFixed(1)}%`}
-                    deltaAbsolute={`${overview.comparison.metrics.coverageRate.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.coverageRate.deltaAbsolute.toFixed(1)} pt`}
-                    deltaPercent={`${overview.comparison.metrics.coverageRate.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.coverageRate.deltaPercent.toFixed(1)}%`}
-                    interpretation={
-                      overview.comparison.metrics.coverageRate.interpretation
-                    }
-                  />
-                  <KpiComparisonCard
-                    label="Delai moderation"
-                    value={`${overview.comparison.current.moderationDelayDays.toFixed(1)} j`}
-                    previousValue={`${overview.comparison.previous.moderationDelayDays.toFixed(1)} j`}
-                    deltaAbsolute={`${overview.comparison.metrics.moderationDelayDays.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.moderationDelayDays.deltaAbsolute.toFixed(1)} j`}
-                    deltaPercent={`${overview.comparison.metrics.moderationDelayDays.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.moderationDelayDays.deltaPercent.toFixed(1)}%`}
-                    interpretation={
-                      overview.comparison.metrics.moderationDelayDays
-                        .interpretation
-                    }
-                  />
-                  <KpiComparisonCard
-                    label="Mobilisation"
-                    value={`${overview.comparison.current.mobilizationCount}`}
-                    previousValue={`${overview.comparison.previous.mobilizationCount}`}
-                    deltaAbsolute={`${overview.comparison.metrics.mobilizationCount.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.mobilizationCount.deltaAbsolute.toFixed(1)}`}
-                    deltaPercent={`${overview.comparison.metrics.mobilizationCount.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.mobilizationCount.deltaPercent.toFixed(1)}%`}
-                    interpretation={
-                      overview.comparison.metrics.mobilizationCount
-                        .interpretation
-                    }
-                  />
-                </div>
-              ) : (
-                <p className="text-sm text-amber-700">
-                  Metriques indisponibles temporairement, verifier la connexion
-                  Supabase.
-                </p>
-              )}
+              <DashboardComparisonGrid overview={overview} />
 
               {overview ? (
                 <OperationalPrioritiesPanel priorities={overview.priorities} />
@@ -219,6 +164,12 @@ export default async function DashboardPage() {
             </section>
 
             <FunnelConversionPanel />
+            <ClosedLoopPanel
+              impactKpis={impactKpis}
+              recommendedHref={adaptiveHref}
+              recommendedLabel={adaptiveLabel}
+              recommendedReason={adaptiveReason}
+            />
 
             <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div>
@@ -244,6 +195,28 @@ export default async function DashboardPage() {
                 title="Methode (KPI cles)"
               />
             ) : null}
+
+            <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Execution terrain
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                  Formulaire benevole
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Declaration rapide d&apos;action directement depuis la page
+                  d&apos;accueil.
+                </p>
+              </div>
+              <ActionDeclarationForm
+                actorNameOptions={actorNameOptions}
+                defaultActorName={actorNameOptions[0]}
+                clerkIdentityLabel={identity?.displayName ?? fallbackActorName}
+                clerkUserId={identity?.userId ?? fallbackActorName}
+                initialMode="quick"
+              />
+            </section>
           </>
         }
         trace={
@@ -333,75 +306,7 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {overview ? (
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            <KpiComparisonCard
-              label="Actions approuvees"
-              value={`${overview.comparison.current.approvedActions}`}
-              previousValue={`${overview.comparison.previous.approvedActions}`}
-              deltaAbsolute={`${overview.comparison.metrics.approvedActions.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.approvedActions.deltaAbsolute.toFixed(1)}`}
-              deltaPercent={`${overview.comparison.metrics.approvedActions.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.approvedActions.deltaPercent.toFixed(1)}%`}
-              interpretation={
-                overview.comparison.metrics.approvedActions.interpretation
-              }
-            />
-            <KpiComparisonCard
-              label="Volume collecte"
-              value={`${overview.comparison.current.impactVolumeKg.toFixed(1)} kg`}
-              previousValue={`${overview.comparison.previous.impactVolumeKg.toFixed(1)} kg`}
-              deltaAbsolute={`${overview.comparison.metrics.impactVolumeKg.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.impactVolumeKg.deltaAbsolute.toFixed(1)} kg`}
-              deltaPercent={`${overview.comparison.metrics.impactVolumeKg.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.impactVolumeKg.deltaPercent.toFixed(1)}%`}
-              interpretation={
-                overview.comparison.metrics.impactVolumeKg.interpretation
-              }
-            />
-            <KpiComparisonCard
-              label="Qualite data"
-              value={`${overview.comparison.current.qualityScore.toFixed(1)}/100`}
-              previousValue={`${overview.comparison.previous.qualityScore.toFixed(1)}/100`}
-              deltaAbsolute={`${overview.comparison.metrics.qualityScore.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.qualityScore.deltaAbsolute.toFixed(1)}`}
-              deltaPercent={`${overview.comparison.metrics.qualityScore.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.qualityScore.deltaPercent.toFixed(1)}%`}
-              interpretation={
-                overview.comparison.metrics.qualityScore.interpretation
-              }
-            />
-            <KpiComparisonCard
-              label="Geo-couverture"
-              value={`${overview.comparison.current.coverageRate.toFixed(1)}%`}
-              previousValue={`${overview.comparison.previous.coverageRate.toFixed(1)}%`}
-              deltaAbsolute={`${overview.comparison.metrics.coverageRate.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.coverageRate.deltaAbsolute.toFixed(1)} pt`}
-              deltaPercent={`${overview.comparison.metrics.coverageRate.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.coverageRate.deltaPercent.toFixed(1)}%`}
-              interpretation={
-                overview.comparison.metrics.coverageRate.interpretation
-              }
-            />
-            <KpiComparisonCard
-              label="Delai moderation"
-              value={`${overview.comparison.current.moderationDelayDays.toFixed(1)} j`}
-              previousValue={`${overview.comparison.previous.moderationDelayDays.toFixed(1)} j`}
-              deltaAbsolute={`${overview.comparison.metrics.moderationDelayDays.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.moderationDelayDays.deltaAbsolute.toFixed(1)} j`}
-              deltaPercent={`${overview.comparison.metrics.moderationDelayDays.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.moderationDelayDays.deltaPercent.toFixed(1)}%`}
-              interpretation={
-                overview.comparison.metrics.moderationDelayDays.interpretation
-              }
-            />
-            <KpiComparisonCard
-              label="Mobilisation"
-              value={`${overview.comparison.current.mobilizationCount}`}
-              previousValue={`${overview.comparison.previous.mobilizationCount}`}
-              deltaAbsolute={`${overview.comparison.metrics.mobilizationCount.deltaAbsolute >= 0 ? "+" : ""}${overview.comparison.metrics.mobilizationCount.deltaAbsolute.toFixed(1)}`}
-              deltaPercent={`${overview.comparison.metrics.mobilizationCount.deltaPercent >= 0 ? "+" : ""}${overview.comparison.metrics.mobilizationCount.deltaPercent.toFixed(1)}%`}
-              interpretation={
-                overview.comparison.metrics.mobilizationCount.interpretation
-              }
-            />
-          </div>
-        ) : (
-          <p className="text-sm text-amber-700">
-            Metriques indisponibles temporairement, verifier la connexion
-            Supabase.
-          </p>
-        )}
+        <DashboardComparisonGrid overview={overview} />
 
         {overview ? (
           <OperationalPrioritiesPanel priorities={overview.priorities} />
@@ -438,6 +343,34 @@ export default async function DashboardPage() {
       ) : null}
 
       <RolePrimaryActions profile={profile} />
+      <ClosedLoopPanel
+        impactKpis={impactKpis}
+        recommendedHref={adaptiveHref}
+        recommendedLabel={adaptiveLabel}
+        recommendedReason={adaptiveReason}
+      />
+
+      <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Bloc D
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-slate-900">
+            Formulaire benevole
+          </h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Declaration rapide d&apos;action directement depuis la page
+            d&apos;accueil.
+          </p>
+        </div>
+        <ActionDeclarationForm
+          actorNameOptions={actorNameOptions}
+          defaultActorName={actorNameOptions[0]}
+          clerkIdentityLabel={identity?.displayName ?? fallbackActorName}
+          clerkUserId={identity?.userId ?? fallbackActorName}
+          initialMode="quick"
+        />
+      </section>
     </div>
   );
 }

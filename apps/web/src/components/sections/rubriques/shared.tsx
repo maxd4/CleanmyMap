@@ -133,7 +133,11 @@ export function NotFoundSection() {
   );
 }
 
-export function PendingSection(props: { label: L10n; note?: L10n }) {
+export function PendingSection(props: {
+  label: L10n;
+  description: L10n;
+  note?: L10n;
+}) {
   const { locale } = useSitePreferences();
   return (
     <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
@@ -142,6 +146,10 @@ export function PendingSection(props: { label: L10n; note?: L10n }) {
           ? `Rubrique en attente: ${props.label.fr}`
           : `Section in progress: ${props.label.en}`}
       </h1>
+      <p className="mt-2 text-sm font-medium text-amber-900">
+        {locale === "fr" ? "But de la rubrique" : "Section purpose"}
+      </p>
+      <p className="mt-1 text-sm text-amber-800">{t(locale, props.description)}</p>
       <p className="mt-2 text-sm text-amber-800">
         {props.note
           ? t(locale, props.note)

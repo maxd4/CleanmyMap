@@ -1,32 +1,31 @@
-Rubrique: reports
-Statut: A completer (non traite dans cette passe)
+Rubrique: Rapports d impact
+Statut: format-audit-unifie-v1
 
-- a quoi sert la rubrique
-  - A completer.
+## Objectif
+- Produire une lecture exportable des resultats et de la methodologie.
 
-- pour qui
-  - A completer.
+## Flux (schema)
+```mermaid
+flowchart LR
+  A[Besoin utilisateur] --> B[Interaction Rapports d impact]
+  B --> C[Donnees / validation]
+  C --> D[Decision / action locale]
+```
+Fallback statique:
+![Schema Rapports d impact](../archive/fallback-audit-reports.png)
 
-- valeur utilisateur
-  - A completer.
+## Risques
+- Donnees incompletes ou mal qualifiees.
+- Friction UX qui bloque l adoption.
+- Rupture de parcours entre rubrique et action concrete.
 
-- valeur produit
-  - A completer.
+## KPI
+- Adoption: utilisateurs actifs sur la rubrique.
+- Qualite: taux de donnees exploitables.
+- Impact: actions ou decisions declenchees depuis la rubrique.
 
-- contenu a afficher
-  - A completer.
+## Impact concret
+- Credibilite renforcee pour elus, chercheurs et partenaires.
 
-- infos essentielles
-  - A completer.
-
-- erreurs a eviter
-  - A completer.
-
-- points UX/UI
-  - A completer.
-
-- pistes d'amelioration
-  - A completer.
-
-- questions ouvertes
-  - A completer.
+## CTA
+- Generer un dossier impact puis partager aux parties prenantes.

@@ -66,6 +66,14 @@ export function ClimateSection() {
 
   return (
     <div className="space-y-4">
+      <article className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        Cette rubrique vulgarise les rapports scientifiques recents, les
+        objectifs de developpement durable (ODD) et les limites planetaires.
+        Elle relie l&apos;impact des actions locales de depollution aux enjeux
+        climatiques pour aider benevoles, associations, commercants et
+        entreprises a orienter leurs choix quotidiens.
+      </article>
+
       {isLoading ? (
         <p className="text-sm text-slate-500">Chargement des indicateurs...</p>
       ) : null}
