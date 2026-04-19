@@ -180,7 +180,7 @@ export function AnnuaireSection() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
         <h2 className="text-sm font-semibold text-slate-900">
           Discussion locale et entraide operationnelle
         </h2>
@@ -208,7 +208,7 @@ export function AnnuaireSection() {
         </div>
       ) : null}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <label className="space-y-1">
             <span className="text-xs font-semibold text-slate-700">Recherche</span>
@@ -349,7 +349,7 @@ export function AnnuaireSection() {
         <div className="space-y-6 lg:col-span-2">
           <div
             id="annuaire-map-anchor"
-            className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+            className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl"
           >
             <div className="mb-3 flex items-center justify-between px-1">
               <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
@@ -366,7 +366,7 @@ export function AnnuaireSection() {
             />
           </div>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
             <h3 className="text-sm font-semibold text-slate-900">
               Fiches compactes, scannables en quelques secondes
             </h3>
@@ -411,7 +411,7 @@ export function AnnuaireSection() {
         </div>
 
         <aside className="space-y-6">
-          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
             <h3 className="text-sm font-semibold text-slate-900">
               Acteurs recemment mis a jour
             </h3>
@@ -427,7 +427,7 @@ export function AnnuaireSection() {
             </ul>
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
             <h3 className="text-sm font-semibold text-slate-900">
               Partenaires proches de{" "}
               {targetArrondissement
@@ -450,7 +450,7 @@ export function AnnuaireSection() {
             </ul>
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
             <h3 className="text-sm font-semibold text-slate-900">
               Tableau de bord partenaire
             </h3>
