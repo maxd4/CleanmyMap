@@ -1,6 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
 import { BusinessAlertsPanel } from "@/components/dashboard/business-alerts-panel";
-import { SystemStatusPanel } from "@/components/dashboard/system-status-panel";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { OperationalPrioritiesPanel } from "@/components/pilotage/operational-priorities-panel";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
@@ -148,7 +147,6 @@ export default async function AdminPage() {
       ) : null}
       <BusinessAlertsPanel />
       <ActionsReportPanel />
-      <SystemStatusPanel />
       <RolePrimaryActions profile={profile} />
     </div>
   );
