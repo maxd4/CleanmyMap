@@ -1,7 +1,6 @@
 "use client";
 
 import useSWR from "swr";
-import { SystemStatusPanel } from "@/components/dashboard/system-status-panel";
 import { formatDateTimeShort } from "@/components/sections/rubriques/helpers";
 
 
@@ -207,7 +206,6 @@ export function SandboxSection() {
         </article>
       </div>
 
-      <SystemStatusPanel />
     </div>
   );
 }

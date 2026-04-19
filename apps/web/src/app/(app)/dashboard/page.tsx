@@ -6,7 +6,6 @@ import { ClosedLoopPanel } from "@/components/dashboard/closed-loop-panel";
 import { DashboardComparisonGrid } from "@/components/dashboard/dashboard-comparison-grid";
 import { FunnelConversionPanel } from "@/components/dashboard/funnel-conversion-panel";
 import { ReportExportSmokeCard } from "@/components/dashboard/report-export-smoke-card";
-import { SystemStatusPanel } from "@/components/dashboard/system-status-panel";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { OperationalPrioritiesPanel } from "@/components/pilotage/operational-priorities-panel";
@@ -190,8 +189,7 @@ export default async function DashboardPage() {
                     État des services et vérification des exécutions sensibles.
                   </p>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <SystemStatusPanel />
+                <div className="grid gap-4 md:grid-cols-1">
                   <ReportExportSmokeCard />
                 </div>
               </section>
@@ -332,8 +330,7 @@ export default async function DashboardPage() {
             Santé API/services, alertes techniques et vérification des exports critiques.
           </p>
         </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <SystemStatusPanel />
+        <div className="grid gap-4 md:grid-cols-1">
           <ReportExportSmokeCard />
         </div>
       </section>
