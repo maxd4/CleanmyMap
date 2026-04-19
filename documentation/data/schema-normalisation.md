@@ -26,5 +26,5 @@ Fallback statique:
 
 ## Principes
 - Unifier les champs minimaux (date, localisation, statut, auteur/source)
-- Normaliser les champs de volume/qualite avant agrgation
+- Normaliser les champs de volume/qualite avant aggrégation via `apps/web/src/lib/actions/*`
 - Marquer explicitement les donnees estimees/proxy
