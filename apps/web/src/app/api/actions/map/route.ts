@@ -9,6 +9,7 @@ import {
 import { buildActionInsights } from "@/lib/actions/insights";
 
 export const runtime = "nodejs";
+export const revalidate = 60; // Cache 1 minute for public map
 
 function parseStatusParam(raw: string | null): ActionStatus | null {
   if (!raw || raw.trim() === "") {

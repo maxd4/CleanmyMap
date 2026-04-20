@@ -1,11 +1,9 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { env } from "./env";
 import { resolveProfile, type AppProfile, type AppRoleLabel } from "./profiles";
-import {
-  getEffectiveAccessForSessionRole,
-  type EffectiveAccess,
-} from "./domain-language";
+import { getEffectiveAccessForSessionRole, type EffectiveAccess } from "./domain-language";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 
 type ClerkMetadata = Record<string, unknown> | null | undefined;
 
@@ -283,6 +281,11 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
       client.users.getUser(userId),
       loadUserCurrentLevel(userId),
     ]);
+
+    // Passive sync: avoid blocking UI but ensure data consistency
+    syncClerkUserToSupabase(user).catch(err => 
+      console.error("[Authz] Background sync failure", err)
+    );
 
     const isAdmin =
       adminUserIds.has(userId) ||

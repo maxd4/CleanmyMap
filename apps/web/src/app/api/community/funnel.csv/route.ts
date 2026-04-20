@@ -3,27 +3,13 @@ import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import { computeEventConversions } from "@/lib/community/engagement";
 import { parseCommunityEventDescription } from "@/lib/community/event-ops";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import type { CommunityEventRow, EventRsvpRow } from "@/types/database";
 import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 import { toActionListItem } from "@/lib/actions/data-contract";
 import { buildDeliverableFilename } from "@/lib/reports/deliverable-name";
 
 export const runtime = "nodejs";
 
-type CommunityEventRow = {
-  id: string;
-  created_at: string;
-  organizer_clerk_id: string;
-  title: string;
-  event_date: string;
-  location_label: string;
-  description: string | null;
-};
-
-type EventRsvpRow = {
-  event_id: string;
-  participant_clerk_id: string;
-  status: "yes" | "maybe" | "no";
-};
 
 function parsePositiveInteger(
   raw: string | null,

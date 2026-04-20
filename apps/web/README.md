@@ -27,6 +27,7 @@ Recommended for production:
 - `SENTRY_PROJECT`
 - `NEXT_PUBLIC_POSTHOG_KEY`
 - `NEXT_PUBLIC_POSTHOG_HOST`
+- `NEXT_PUBLIC_SENTRY_DSN`
 
 ## One-command backend bootstrap
 
@@ -76,11 +77,9 @@ npm run data:sheet:sync-supabase
 
 ## Operational safety
 
-- Server Supabase access now requires `SUPABASE_SERVICE_ROLE_KEY` (no anon fallback).
-- Operational stores are persisted in Supabase tables via migration:
-  - `admin_operations_audit`
-  - `funnel_events`
-  - `checklist_progress`
-  - `runbook_checks`
-- Local file fallback is disabled by default (`ALLOW_LOCAL_FILE_STORE_FALLBACK=false`).
-- Local action JSON stores are dev-only by default. Production usage requires explicit opt-in (`ALLOW_LOCAL_ACTION_STORE_IN_PROD=true`).
+- **Hardened RLS**: Core tables (`actions`, `spots`, `events`, `rsvps`) are protected by explicit RLS policies (Owner/Admin access).
+- **Dual Supabase Clients**: Separation between `Anon` (RLS aware) and `Admin` (Service Role) clients.
+- **Service Isolation**: Third-party SDKs (Clerk, Resend, PostHog) are encapsulated in `@/lib/services`.
+- **User Sync**: Clerk profiles are automatically mirrored in Supabase for performant joins.
+- **Monitoring**: Centralized error handling via `handleApiError` with Sentry and PostHog tracking.
+- **Data Integrity**: Explicit check after every Supabase operation to prevent silent failures.

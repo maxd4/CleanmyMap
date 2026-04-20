@@ -1,12 +1,30 @@
+import type { Metadata } from "next";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
-import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Globe, ShieldCheck, Zap } from "lucide-react";
 import { getServerDisplayMode } from "@/lib/server-preferences";
+
+export const revalidate = 60; // 1 minute Cache for public observatory
+
+const AnalyticsCockpit = dynamic(
+  () => import("@/components/reports/analytics-cockpit").then(mod => mod.AnalyticsCockpit),
+  { ssr: false, loading: () => <div className="h-96 w-full animate-pulse bg-slate-800/10 rounded-3xl" /> }
+);
+
+export const metadata: Metadata = {
+  title: "Observatoire Public - CleanMyMap",
+  description: "Accédez en temps réel aux données de dépollution nationale. Un effort collectif mesuré par des protocoles scientifiques rigoureux.",
+  openGraph: {
+    title: "Observatoire Public d'Impact | CleanMyMap",
+    description: "Indicateurs de masse totale, mobilisation et actions validées en temps réel.",
+    type: "website",
+  },
+};
 
 async function loadPublicStats() {
   const supabase = getSupabaseServerClient();

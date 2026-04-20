@@ -80,3 +80,55 @@ export function distanceToParisArrondissementKm(
   }
   return haversineDistanceKm(lat, lng, center.lat, center.lng);
 }
+
+/**
+ * Neighboring Arrondissements Adjacency Map
+ * 1, 2, 3, 4 are considered 'Paris Centre' (mutually neighbors)
+ */
+const PARIS_ARRONDISSEMENT_NEIGHBORS: Record<number, number[]> = {
+  1: [2, 3, 4, 5, 6, 7, 8, 9],
+  2: [1, 3, 4, 9, 10],
+  3: [1, 2, 4, 10, 11],
+  4: [1, 2, 3, 5, 6, 11, 12],
+  5: [1, 4, 6, 13, 14],
+  6: [1, 4, 5, 7, 14, 15],
+  7: [1, 6, 8, 15, 16],
+  8: [1, 7, 9, 16, 17],
+  9: [1, 2, 8, 10, 17, 18],
+  10: [2, 3, 9, 11, 18, 19],
+  11: [3, 4, 10, 12, 19, 20],
+  12: [4, 11, 13, 20],
+  13: [5, 12, 14],
+  14: [5, 6, 13, 15],
+  15: [6, 7, 14, 16],
+  16: [7, 8, 15, 17],
+  17: [8, 9, 16, 18],
+  18: [9, 10, 17, 19],
+  19: [10, 11, 18, 20],
+  20: [11, 12, 19],
+};
+
+/**
+ * Returns the list of arrondissements that should be notified for an event
+ * (Target + Neighbors)
+ */
+export function getAffectedArrondissements(arrondissement: number): number[] {
+  const neighbors = PARIS_ARRONDISSEMENT_NEIGHBORS[arrondissement] || [];
+  return Array.from(new Set([arrondissement, ...neighbors]));
+}
+
+/**
+ * Parse arrondissement from a string label (e.g. "75011 Paris" or "Paris 11e")
+ */
+export function extractArrondissementFromLabel(label: string): number | null {
+  const zipMatch = label.match(/750(\d{2})/);
+  if (zipMatch) return parseInt(zipMatch[1], 10);
+
+  const ordinalMatch = label.match(/(\d{1,2})(?:er|e|eme)?\b/i);
+  if (ordinalMatch) {
+    const val = parseInt(ordinalMatch[1], 10);
+    if (val >= 1 && val <= 20) return val;
+  }
+  
+  return null;
+}
