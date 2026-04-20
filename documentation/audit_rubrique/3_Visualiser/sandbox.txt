@@ -1,31 +1,9 @@
-Rubrique: Sandbox (fusionnee)
-Statut: format-audit-unifie-v1
+### 📋 Audit : Sandbox (Espace Technique Expérimental)
 
-## Objectif
-- Conserver la logique d experimentation integree a la cartographie reelle.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-## Flux (schema)
-```mermaid
-flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Sandbox fusionnee]
-  B --> C[Donnees / validation]
-  C --> D[Decision / action locale]
-```
-Fallback statique:
-![Schema Sandbox fusionnee](../archive/fallback-audit-sandbox.png)
-
-## Risques
-- Donnees incompletes ou mal qualifiees.
-- Friction UX qui bloque l adoption.
-- Rupture de parcours entre rubrique et action concrete.
-
-## KPI
-- Adoption: utilisateurs actifs sur la rubrique.
-- Qualite: taux de donnees exploitables.
-- Impact: actions ou decisions declenchees depuis la rubrique.
-
-## Impact concret
-- Tests produit plus rapides sans disperser les usages.
-
-## CTA
-- Utiliser les fonctions sandbox depuis la rubrique Cartographie.
+- **Mission Principale :** Sanctuariser un dojo de test (Playground) inviolable et privé, fourni exclusivement aux membres certifiés du Back-office technique ou Super-Admin de l'architecture pour éprouver, casser, et tester la plateforme sans conséquences.
+- **Logique de Fonctionnement :** 
+  - **Accès Gardé :** Interface invisible à l'utilisateur lambda, bloquée par des Guards (Clerk + Middleware) ultra restrictives limitant l'accès strict.
+  - **Stress & Healthcheck :** Panneau de tests de tolérance avec boutons d'injection : Simulation de paquets GPS, spoofing de données Supabase lourdes, rendering sur Leaflet massifs et validations critiques (Webhook Clerks, SWR Caching Behavior).
+- **Valeur pour l'utilisateur (Technicien) :** Offre un gain de temps massif et de la bande passante psychologique en Débogage de Production. Permet de certifier localement ("Ce code tourne sur le Runbook") l'opérabilité de l'app si d'aventure Supabase/Leaflet/Next tombe ou qu'une migration massive engendre un bottleneck réseau.

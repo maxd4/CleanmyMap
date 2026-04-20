@@ -1,4 +1,4 @@
-export type DeliverableExtension = "csv" | "json" | "md" | "pdf";
+export type DeliverableExtension = "csv" | "json" | "md" | "pdf" | "xlsx";
 
 function toAsciiLower(value: string): string {
   return value

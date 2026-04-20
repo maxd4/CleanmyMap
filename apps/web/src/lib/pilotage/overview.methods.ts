@@ -5,10 +5,10 @@ export function buildMethods(): MethodDefinition[] {
     {
       id: "impact-volume",
       kpi: "Impact terrain (kg)",
-      formula: "Somme des wasteKg sur actions approuvees de la fenetre.",
-      source: "Unified actions (actions + spots normalises).",
-      recalc: "A chaque chargement de page / API.",
-      limits: "Depend de la qualite de saisie sur le poids collecte.",
+      formula: "Somme des wasteKg sur actions approuvées (validées QC).",
+      source: "Proxys scientifiques CleanMyMap-v1 basés sur ADEME/Ocean Conservancy. Voir page Méthodologie.",
+      recalc: "Temps réel.",
+      limits: "Incertitude liée à l'estimation déclarative (marge +/- 30%).",
     },
     {
       id: "mobilization",

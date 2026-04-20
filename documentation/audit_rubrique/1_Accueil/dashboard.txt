@@ -1,31 +1,10 @@
-Rubrique: Dashboard
-Statut: format-audit-unifie-v1
+### 📋 Audit : Dashboard (Cockpit)
 
-## Objectif
-- Donner un point d entree actionnable: formulaire benevole, compte, alertes utiles.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-## Flux (schema)
-```mermaid
-flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Dashboard]
-  B --> C[Donnees / validation]
-  C --> D[Decision / action locale]
-```
-Fallback statique:
-![Schema Dashboard](../archive/fallback-audit-dashboard.png)
-
-## Risques
-- Donnees incompletes ou mal qualifiees.
-- Friction UX qui bloque l adoption.
-- Rupture de parcours entre rubrique et action concrete.
-
-## KPI
-- Adoption: utilisateurs actifs sur la rubrique.
-- Qualite: taux de donnees exploitables.
-- Impact: actions ou decisions declenchees depuis la rubrique.
-
-## Impact concret
-- Temps de demarrage reduit pour passer de l intention a l action.
-
-## CTA
-- Completer le profil puis declarer ou rejoindre une action.
+- **Mission Principale :** Être le point central et la véritable "tour de contrôle" de l'utilisateur dès sa connexion. Il doit digérer la complexité de toute l'application pour ne présenter que les métriques phares de terrain et les "Next Steps" immédiatement actionnables, selon le rôle de l'utilisateur.
+- **Logique de Fonctionnement :** 
+  - **Agrégation Data :** Centralisation automatique des KPIs récents via Supabase (volume nettoyé par l'utilisateur vs la communauté globale, zones sous tension).
+  - **Mécanique "Quick Actions" :** Call-to-actions dynamiques routés via la taxonomie des rôles (Un bénévole verra "Déclarer", un admin verra "Modérer").
+  - **Souveraineté Temporelle :** Persistance locale forte (`localStorage`) de la fenêtre temporelle choisie (7j, 30j, Année) pour synchroniser la totalité de l'application (cartes, stats, graphes) sans aucun rechargement de page.
+- **Valeur pour l'utilisateur :** Supprimer la charge mentale. L'utilisateur ne cherche pas l'information, elle vient à lui. En trois secondes chrono, il visualise son propre impact psychologique, comprend la dynamique actuelle de la communauté locale, et dispose de gros boutons d'action rapide pour agir sans chercher son chemin dans le menu.

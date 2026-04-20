@@ -1,31 +1,9 @@
-Rubrique: Meteo
-Statut: format-audit-unifie-v1
+### 📋 Audit : Météo & Conditions
 
-## Objectif
-- Adapter les operations aux conditions meteo et limiter les echecs terrain.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-## Flux (schema)
-```mermaid
-flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Meteo]
-  B --> C[Donnees / validation]
-  C --> D[Decision / action locale]
-```
-Fallback statique:
-![Schema Meteo](../archive/fallback-audit-meteo.png)
-
-## Risques
-- Donnees incompletes ou mal qualifiees.
-- Friction UX qui bloque l adoption.
-- Rupture de parcours entre rubrique et action concrete.
-
-## KPI
-- Adoption: utilisateurs actifs sur la rubrique.
-- Qualite: taux de donnees exploitables.
-- Impact: actions ou decisions declenchees depuis la rubrique.
-
-## Impact concret
-- Meilleure fiabilite des sorties et securite des benevoles.
-
-## CTA
-- Verifier la fenetre meteo avant de confirmer une intervention.
+- **Mission Principale :** Contextualiser l'intervention humaine. Avertir structurellement l'auditeur, le bénévole ou le coordinateur d'ONG que l'impact d'un nettoyage est intrinsèquement lié au climat, et que cette donnée météo influence radicalement la méthodologie terrain.
+- **Logique de Fonctionnement :** 
+  - **Superposition Contextuelle :** Intégration en temps réel des métriques climatiques utiles à un nettoyage (Taux de pluie récente, vents, alerte canicule). 
+  - **Prédiction Opérationnelle :** Analyse des conséquences logistiques. Par ex, un sol détrempé faussera totalement le poids mesuré en mégots ; un grand vent dispersera les dépôts et rendra certaines zones dangereuses à collecter.
+- **Valeur pour l'utilisateur :** Permet une anticipation en amont. Évite purement et simplement qu'un ramassage lourdement programmé à l'avance ne se transforme en accident logistique à cause des intempéries, et donne du contexte aux analystes ("Ce ramassage du 12 Février est sous-performant car les conditions de gel ralentissaient l'extraction de déchets").

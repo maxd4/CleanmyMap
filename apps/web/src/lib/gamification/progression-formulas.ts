@@ -48,24 +48,35 @@ export function deriveBadges(params: {
   qualityAverage: number;
   validationRatio: number;
   collectiveEvents: number;
+  totalKg: number;
+  totalButts: number;
 }): string[] {
   const badges: string[] = [];
 
+  // Tiers de Niveau
   for (const levelBadge of NON_GAME_BADGE_LEVELS) {
     if (params.currentLevel >= levelBadge.minLevel) {
       badges.push(levelBadge.label);
     }
   }
 
-  if (params.qualityAverage >= 85) {
-    badges.push("Qualite terrain elevee");
-  }
-  if (params.validationRatio >= 0.8) {
-    badges.push("Fiabilite des preuves");
-  }
-  if (params.collectiveEvents >= 4) {
-    badges.push("Contribution collective");
-  }
+  // Tiers Mégots
+  if (params.totalButts >= 10000) badges.push("Expert Mégots (Or)");
+  else if (params.totalButts >= 2000) badges.push("Chasseur de Mégots (Argent)");
+  else if (params.totalButts >= 500) badges.push("Ramasseur de Mégots (Bronze)");
+
+  // Tiers Poids (Kg)
+  if (params.totalKg >= 500) badges.push("Héros du Nettoyage (Or)");
+  else if (params.totalKg >= 100) badges.push("Force de la Nature (Argent)");
+  else if (params.totalKg >= 10) badges.push("Bras Armé (Bronze)");
+
+  // Qualité
+  if (params.qualityAverage >= 90) badges.push("Sentinelle Exemplaire");
+  else if (params.qualityAverage >= 75) badges.push("Données de Qualité");
+
+  // Collectif
+  if (params.collectiveEvents >= 10) badges.push("Pilier de Communauté");
+  else if (params.collectiveEvents >= 3) badges.push("Esprit d'Équipe");
 
   return badges;
 }

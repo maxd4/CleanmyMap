@@ -1,31 +1,9 @@
-Rubrique: Mode d'emploi
-Statut: format-audit-unifie-v1
+### 📋 Audit : Mode d'Emploi (Logiciel)
 
-## Objectif
-- Standardiser les bonnes pratiques terrain et la qualite d execution.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-## Flux (schema)
-```mermaid
-flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Guide pratique]
-  B --> C[Donnees / validation]
-  C --> D[Decision / action locale]
-```
-Fallback statique:
-![Schema Guide pratique](../archive/fallback-audit-guide_pratique.png)
-
-## Risques
-- Donnees incompletes ou mal qualifiees.
-- Friction UX qui bloque l adoption.
-- Rupture de parcours entre rubrique et action concrete.
-
-## KPI
-- Adoption: utilisateurs actifs sur la rubrique.
-- Qualite: taux de donnees exploitables.
-- Impact: actions ou decisions declenchees depuis la rubrique.
-
-## Impact concret
-- Actions plus efficaces, moins d erreurs operationnelles.
-
-## CTA
-- Suivre une checklist terrain avant la prochaine sortie.
+- **Mission Principale :** S'assurer qu'aucun utilisateur (quel que soit son âge ou son aisance technologique) ne quitte CleanMyMap parce que la plateforme lui parait "Trente fois trop compliquée". C'est le pare-feu anti-Churn (abandon).
+- **Logique de Fonctionnement :** 
+  - **Base de Connaissance Visuelle (Knowledge Base) :** Interface de type documentation technique simplifiée avec des tutos sur l'utilisation du Cockpit, le dessin sur la carte Leaflet, et la compréhension des badges.
+  - **Gifs et Vidéos embarqués :** Explications par l'image, sans avoir à lire d'immenses pavés de texte rébarbatifs.
+- **Valeur pour l'utilisateur :** Sécuriser la courbe d'apprentissage. Un utilisateur "boomer" très motivé pour ramasser devra se familiariser avec l'UX Split-Screen. Mettre ce guide à disposition lève immédiatement sa frustration et évite au passage à l'équipe Dev de passer sa semaine à répondre à des emails de Service Après-Vente.

@@ -69,135 +69,99 @@ export function RecyclingSection() {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-4">
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
-            Volume triable
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">
-            {stats.totalKg.toFixed(1)} kg
-          </p>
-        </article>
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
-            Megots
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">
-            {stats.totalButts}
-          </p>
-        </article>
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
-            Traceabilite geo
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">
-            {stats.withTrace}
-          </p>
-        </article>
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
-            Indice tri propre
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">
-            {stats.mixedIndex}/100
-          </p>
-        </article>
-      </div>
-
-      {isLoading ? (
-        <p className="text-sm text-slate-500">
-          Chargement des indicateurs de tri...
-        </p>
-      ) : null}
-      {hasError ? (
-        <p className="text-sm text-rose-700">Donnees de tri indisponibles.</p>
-      ) : null}
-
-      <div className="grid gap-3 md:grid-cols-2">
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h2 className="text-sm font-semibold text-slate-900">
-            Workflow filiere (trier - qualifier - orienter)
-          </h2>
-          <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">
-            <li>Megots: contenant ferme, etiquette volume, stockage sec.</li>
-            <li>
-              Verre/metal: sacs distincts pour eviter contamination croisee.
-            </li>
-            <li>
-              Plastique: prioriser PET/PEHD separables, limiter les melanges.
-            </li>
-            <li>
-              Mixte: isoler le non triable et documenter la raison terrain.
-            </li>
-            <li>
-              Moyenne actuelle: {stats.avgKg.toFixed(1)} kg par intervention.
-            </li>
-          </ul>
-        </article>
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h2 className="text-sm font-semibold text-slate-900">
-            Exploitation des donnees
-          </h2>
-          <ul className="mt-2 list-disc pl-5 text-sm text-slate-700">
-            <li>Associer categorie de dechet dans les commentaires.</li>
-            <li>Documenter zone de collecte par trace/polygone.</li>
-            <li>Exporter CSV/JSON pour partage collectivites.</li>
-            <li>Verifier moderation avant analyse scientifique.</li>
-          </ul>
-        </article>
-      </div>
-
-      <article className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-slate-900">
-          Pilotage par filiere
-        </h2>
-        {breakdown.isLoading ? (
-          <p className="mt-2 text-sm text-slate-500">
-            Chargement des filieres...
-          </p>
-        ) : null}
-        {breakdown.error ? (
-          <p className="mt-2 text-sm text-rose-700">
-            Aggregation filiere indisponible.
-          </p>
-        ) : null}
-        {breakdown.data ? (
-          <div className="mt-3 space-y-3">
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-500">
-                    <th className="px-2 py-2">Filiere</th>
-                    <th className="px-2 py-2">Volume (kg)</th>
-                    <th className="px-2 py-2">Part</th>
-                    <th className="px-2 py-2">Actions source</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {breakdown.data.lines.map((line) => (
-                    <tr
-                      key={line.category}
-                      className="border-b border-slate-100 text-slate-700"
-                    >
-                      <td className="px-2 py-2 capitalize">{line.category}</td>
-                      <td className="px-2 py-2">{line.kg.toFixed(1)}</td>
-                      <td className="px-2 py-2">
-                        {line.sharePercent.toFixed(1)}%
-                      </td>
-                      <td className="px-2 py-2">{line.entries}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-xs text-slate-600">
-              Qualite de tri: elevee {breakdown.data.triQuality.elevee} -
-              moyenne {breakdown.data.triQuality.moyenne} - faible{" "}
-              {breakdown.data.triQuality.faible}
-            </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* GAUCHE : KPIs et Workflow */}
+        <div className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-2">
+            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Volume triable</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{stats.totalKg.toFixed(1)} kg</p>
+            </article>
+            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Mégots</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{stats.totalButts}</p>
+            </article>
+            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Traçabilité géo</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{stats.withTrace}</p>
+            </article>
+            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Indice tri propre</p>
+              <p className="mt-1 text-2xl font-bold text-slate-900">{stats.mixedIndex}/100</p>
+            </article>
           </div>
-        ) : null}
-      </article>
+
+          <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-900">Workflow filière (trier - qualifier - orienter)</h2>
+            <ul className="mt-2 list-disc pl-5 text-sm text-slate-700 space-y-1">
+              <li>Mégots: contenant fermé, étiquette volume, stockage sec.</li>
+              <li>Verre/métal: sacs distincts pour éviter contamination croisée.</li>
+              <li>Plastique: prioriser PET/PEHD séparables, limiter les mélanges.</li>
+              <li>Mixte: isoler le non triable et documenter la raison terrain.</li>
+              <li className="font-semibold">Moyenne actuelle: {stats.avgKg.toFixed(1)} kg par intervention.</li>
+            </ul>
+          </article>
+          
+          <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-900">Exploitation des données</h2>
+            <ul className="mt-2 list-disc pl-5 text-sm text-slate-700 space-y-1">
+              <li>Associer catégorie de déchet dans les commentaires.</li>
+              <li>Documenter zone de collecte par trace/polygone.</li>
+              <li>Exporter CSV/JSON pour partage collectivités.</li>
+              <li>Vérifier modération avant analyse scientifique.</li>
+            </ul>
+          </article>
+        </div>
+
+        {/* DROITE : Données réelles filières */}
+        <div className="space-y-4">
+          <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 className="text-sm font-semibold text-slate-900">Pilotage par filière</h2>
+            {isLoading ? (<p className="text-sm text-slate-500 mt-2">Chargement des indicateurs de tri...</p>) : null}
+            {hasError ? (<p className="text-sm text-rose-700 mt-2">Données de tri indisponibles.</p>) : null}
+            
+            {breakdown.isLoading ? (<p className="mt-2 text-sm text-slate-500">Chargement des filières...</p>) : null}
+            {breakdown.error ? (<p className="mt-2 text-sm text-rose-700">Agrégation filière indisponible.</p>) : null}
+            
+            {breakdown.data ? (
+              <div className="mt-3 space-y-3">
+                <div className="overflow-x-auto rounded-lg border border-slate-100">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-3 py-2 font-semibold">Filière</th>
+                        <th className="px-3 py-2 font-semibold">Volume (kg)</th>
+                        <th className="px-3 py-2 font-semibold">Part</th>
+                        <th className="px-3 py-2 font-semibold">Actions source</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {breakdown.data.lines.map((line) => (
+                        <tr key={line.category} className="text-slate-700 hover:bg-slate-50 transition-colors">
+                          <td className="px-3 py-2 capitalize font-medium">{line.category}</td>
+                          <td className="px-3 py-2">{line.kg.toFixed(1)}</td>
+                          <td className="px-3 py-2">
+                            <span className="inline-block w-8">{line.sharePercent.toFixed(1)}%</span>
+                          </td>
+                          <td className="px-3 py-2">{line.entries}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <p className="text-xs font-semibold text-slate-600">Qualité de tri signalée :</p>
+                  <p className="text-xs text-slate-700 mt-1">
+                    Élevée: <span className="font-semibold text-emerald-600">{breakdown.data.triQuality.elevee}</span> • 
+                    Moyenne: <span className="font-semibold text-amber-600">{breakdown.data.triQuality.moyenne}</span> • 
+                    Faible: <span className="font-semibold text-rose-600">{breakdown.data.triQuality.faible}</span>
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </article>
+        </div>
+      </div>
     </div>
   );
 }

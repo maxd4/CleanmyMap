@@ -162,7 +162,20 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
             },
           ]}
         >
-          <OpenDataSection />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-2">
+                Données ouvertes
+              </h3>
+              <OpenDataSection />
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-2">
+                Financement & Sponsoring
+              </h3>
+              <FundingSection />
+            </div>
+          </div>
         </SectionShell>
       );
     case "funding":
@@ -184,7 +197,20 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
             },
           ]}
         >
-          <FundingSection />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-2">
+                Financement & Sponsoring
+              </h3>
+              <FundingSection />
+            </div>
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-widest border-b border-slate-200 pb-2">
+                Données ouvertes
+              </h3>
+              <OpenDataSection />
+            </div>
+          </div>
         </SectionShell>
       );
     case "trash-spotter":

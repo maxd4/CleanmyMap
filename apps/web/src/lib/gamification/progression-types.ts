@@ -70,6 +70,8 @@ export type UserProgressionStats = {
   validationRatio: number;
   diversityTypes: number;
   collectiveEvents: number;
+  totalKg: number;
+  totalButts: number;
 };
 
 export type LevelRequirementAssessment = {
@@ -140,6 +142,8 @@ export type PersonalImpactMetrics = {
   waterSavedLiters: number;
   co2AvoidedKg: number;
   surfaceCleanedM2: number;
+  wasteKg: number;
+  cigaretteButts: number;
 };
 
 export type PersonalImpactMethodologyFormula = {
@@ -157,6 +161,7 @@ export type PersonalImpactMethodology = {
   formulas: PersonalImpactMethodologyFormula[];
   approximations: string[];
   hypotheses: string[];
+  sources?: Record<string, string>;
   errorMargins: {
     waterSavedLitersPct: number;
     co2AvoidedKgPct: number;

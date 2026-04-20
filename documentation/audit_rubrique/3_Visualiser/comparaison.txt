@@ -1,31 +1,9 @@
-Rubrique: Comparaison (fusionnee)
-Statut: format-audit-unifie-v1
+### 📋 Audit : Comparaison Analytique
 
-## Objectif
-- Conserver la logique de comparaison integree dans les rubriques fusionnees.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-## Flux (schema)
-```mermaid
-flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Comparaison fusionnee]
-  B --> C[Donnees / validation]
-  C --> D[Decision / action locale]
-```
-Fallback statique:
-![Schema Comparaison fusionnee](../archive/fallback-audit-comparaison.png)
-
-## Risques
-- Donnees incompletes ou mal qualifiees.
-- Friction UX qui bloque l adoption.
-- Rupture de parcours entre rubrique et action concrete.
-
-## KPI
-- Adoption: utilisateurs actifs sur la rubrique.
-- Qualite: taux de donnees exploitables.
-- Impact: actions ou decisions declenchees depuis la rubrique.
-
-## Impact concret
-- Aide a arbitrer entre options sans multiplier les ecrans.
-
-## CTA
-- Verifier les comparaisons depuis la rubrique cible fusionnee.
+- **Mission Principale :** Prouver la science des données. Fournir aux administrateurs réseau et aux décideurs (Mairies, Présidents d'ASSO) un puissant outil de Business Intelligence environnemental comparatif permettant de mesurer les disparités de performances entre les différentes métriques géographiques (Arrondissements, Villes) ou entre diverses fenêtres temporelles.
+- **Logique de Fonctionnement :** 
+  - **Représentation Haute Performance :** Utilisation de charts (Barres, courbes, radar) via des bibliothèques robustes, traitant de grandes quantités de statistiques sans latency UI.
+  - **Synchronisation du Cockpit :** Suivi local d'état global (`localStorage`) qui assure que la timeline analysée ici est exactement la même que celle paramétrée dans les autres rubriques pour éviter la schizophrénie de la data.
+- **Valeur pour l'utilisateur :** La prise de décision stratégique par la donnée (Data-Driven Decisions). Permet de répondre aux grandes questions budgétaires : Où doit s'orienter la prochaine campagne de sensibilisation aux mégots ? Quelle zone géographique est une zone désertique en recrutement bénévole ? Les intempéries d'Hiver causent-t-elle la désertion des ramassages et comment le pallier ?

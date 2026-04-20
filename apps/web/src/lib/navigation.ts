@@ -130,8 +130,8 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     act: ["route", "trash-spotter"],
     visualize: ["map"],
     impact: ["reports", "gamification"],
-    network: ["community", "annuaire", "open-data", "funding", "actors"],
-    learn: ["climate", "guide", "recycling", "kit"],
+    network: ["network", "community", "annuaire", "open-data", "funding", "actors"],
+    learn: ["hub", "climate", "guide", "recycling", "kit"],
     pilot: [],
   },
   coordinateur: {
@@ -140,7 +140,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     visualize: ["map", "weather"],
     impact: ["reports", "gamification"],
     network: ["community", "annuaire", "open-data", "funding", "actors"],
-    learn: ["climate", "guide", "recycling", "kit"],
+    learn: ["hub", "climate", "guide", "recycling", "kit"],
     pilot: ["elus"],
   },
   scientifique: {
@@ -149,7 +149,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     visualize: ["map", "weather"],
     impact: ["reports", "gamification"],
     network: ["community", "annuaire", "open-data", "funding", "actors"],
-    learn: ["climate", "guide", "recycling", "kit"],
+    learn: ["hub", "climate", "guide", "recycling", "kit"],
     pilot: ["elus"],
   },
   elu: {
@@ -157,18 +157,18 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     act: ["route", "trash-spotter"],
     visualize: ["map", "weather"],
     impact: ["reports", "gamification"],
-    network: ["community", "annuaire", "open-data", "funding", "actors"],
-    learn: ["climate", "guide", "recycling", "kit"],
-    pilot: ["elus"],
+    network: ["network", "community", "annuaire", "open-data", "funding", "actors"],
+    learn: ["hub", "climate", "guide", "recycling", "kit"],
+    pilot: ["sponsor", "elus"],
   },
   admin: {
     home: ["dashboard", "profile", "new"],
     act: ["route", "trash-spotter"],
     visualize: ["map", "weather"],
     impact: ["reports", "gamification"],
-    network: ["community", "annuaire", "open-data", "funding", "actors"],
-    learn: ["climate", "guide", "recycling", "kit"],
-    pilot: ["admin", "elus"],
+    network: ["network", "community", "annuaire", "open-data", "funding", "actors"],
+    learn: ["hub", "climate", "guide", "recycling", "kit"],
+    pilot: ["godmode", "admin", "sponsor", "elus"],
   },
 };
 

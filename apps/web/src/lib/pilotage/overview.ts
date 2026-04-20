@@ -57,6 +57,7 @@ export function buildPilotageOverviewFromContracts(
     methods: buildMethods(),
     zones,
     summary: buildSummary(comparison, priorities),
+    contracts: params.contracts,
   };
 }
 

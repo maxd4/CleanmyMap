@@ -1,31 +1,9 @@
-Rubrique: Itineraire IA
-Statut: format-audit-unifie-v1
+### 📋 Audit : Itinéraire IA
 
-## Objectif
-- Transformer la carte en assistant proactif de priorisation terrain.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-## Flux (schema)
-```mermaid
-flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Itineraire IA]
-  B --> C[Donnees / validation]
-  C --> D[Decision / action locale]
-```
-Fallback statique:
-![Schema Itineraire IA](../archive/fallback-audit-itineraire_ia.png)
-
-## Risques
-- Donnees incompletes ou mal qualifiees.
-- Friction UX qui bloque l adoption.
-- Rupture de parcours entre rubrique et action concrete.
-
-## KPI
-- Adoption: utilisateurs actifs sur la rubrique.
-- Qualite: taux de donnees exploitables.
-- Impact: actions ou decisions declenchees depuis la rubrique.
-
-## Impact concret
-- Meilleure utilite des interventions au bon endroit et bon moment.
-
-## CTA
-- Suivre la recommandation Zone critique proche de toi aujourd hui.
+- **Mission Principale :** Révolutionner l'efficacité terrain en transformant le nettoyage aléatoire en une tactique précise guidée par l'Intelligence Artificielle. Optimiser de manière chirurgicale le temps d'un bénévole en le routant vers les pires spots d'une zone.
+- **Logique de Fonctionnement :** 
+  - **Agrégation d'Alertes :** Interrogation live de la base de données (Détection des signalements critiques urgents, priorisation des "spots" historiquement denses mais non nettoyés depuis longtemps).
+  - **Routing Algorithmique :** Génération d'une trace via un graphe topographique prenant en compte la position GPS de l'utilisateur, et surtout, son "Tiroir de temps" disponible (Ex: Optimisation de Knapsack/Route pour "J'ai 1 heure maximum").
+- **Valeur pour l'utilisateur :** Élimine le terrible "Où dois-je aller pour être utile ?". L'utilisateur indique simplement son temps libre et l'application maximise mathématiquement son utilité pour la planète (Gamification du rendement écologique). Fini l'errance, l'action est ciblée et impactante a 100%.

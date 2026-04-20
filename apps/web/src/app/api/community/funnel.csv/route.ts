@@ -62,16 +62,22 @@ export async function GET(request: Request) {
     1000,
     400,
   );
+  const eventId = url.searchParams.get("eventId");
 
   try {
     const supabase = getSupabaseServerClient();
-    const eventsResult = await supabase
-      .from("community_events")
-      .select(
-        "id, created_at, organizer_clerk_id, title, event_date, location_label, description",
-      )
-      .order("event_date", { ascending: false })
-      .limit(limit);
+    
+    let query = supabase.from("community_events").select(
+      "id, created_at, organizer_clerk_id, title, event_date, location_label, description",
+    );
+    
+    if (eventId && eventId.trim() !== "") {
+      query = query.eq("id", eventId.trim());
+    } else {
+      query = query.order("event_date", { ascending: false }).limit(limit);
+    }
+
+    const eventsResult = await query;
 
     if (eventsResult.error) {
       return new Response(`Export error: ${eventsResult.error.message}`, {
@@ -128,6 +134,7 @@ export async function GET(request: Request) {
     const now = new Date();
     const floorMs = now.getTime() - days * 24 * 60 * 60 * 1000;
     const filteredEvents = items.filter((item) => {
+      if (eventId && eventId.trim() !== "") return true; // Bypass date constraint if specific event
       const eventMs = new Date(`${item.eventDate}T12:00:00`).getTime();
       return Number.isFinite(eventMs) && eventMs >= floorMs;
     });

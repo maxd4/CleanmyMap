@@ -62,8 +62,10 @@ export function ReportsKpiSummary() {
         Synthese scientifique rapide
       </h2>
       <p className="mt-2 text-sm text-slate-600">
-        Indicateurs consolides sur les actions approuvees pour preparer les
-        rapports terrain et collectivites.
+        Indicateurs consolides sur les actions approuvees.{" "}
+        <a href="/methodologie" className="text-emerald-600 font-bold hover:underline">
+          Consulter le protocole scientifique CMM-v1 →
+        </a>
       </p>
 
       {isLoading ? (

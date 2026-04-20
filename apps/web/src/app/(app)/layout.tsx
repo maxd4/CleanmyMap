@@ -11,6 +11,8 @@ import { getProfileLabel, toProfile } from "@/lib/profiles";
 import { getServerLocale } from "@/lib/server-preferences";
 import { STORAGE_KEYS, parseDisplayMode } from "@/lib/ui/preferences";
 
+import { WeatherWarningBar } from "@/components/ui/weather-warning-bar";
+
 export default async function AppLayout({
   children,
 }: Readonly<{
@@ -33,29 +35,24 @@ export default async function AppLayout({
   const profileLabel = getProfileLabel(currentProfile, locale);
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-3 py-3 sm:px-5 sm:py-4">
+    <div className="flex min-h-screen w-full flex-col px-4 py-3 sm:px-8 sm:py-4 bg-slate-50/30">
+      <WeatherWarningBar />
       <DisplayModeOnboardingGate />
 
       {/* Block Switcher — toujours visible, mobile + desktop */}
-      <div className="mb-2">
+      <div className="mb-4">
         <BlockSwitcher currentProfile={currentProfile} />
       </div>
 
-      {/* Corps principal : sidebar + contenu */}
-      <div className="flex flex-1 gap-4 min-h-0">
-        {/* Sidebar desktop uniquement */}
-        <AppSidebar currentProfile={currentProfile} />
+      {/* Corps principal : Pleine largeur sans sidebar */}
+      <div className="flex flex-1 flex-col gap-2 min-w-0">
+        {/* Breadcrumb sticky */}
+        <AppBreadcrumb
+          currentProfile={currentProfile}
+          profileLabel={profileLabel}
+        />
 
-        {/* Zone de contenu */}
-        <div className="flex flex-1 flex-col gap-2 min-w-0">
-          {/* Breadcrumb sticky */}
-          <AppBreadcrumb
-            currentProfile={currentProfile}
-            profileLabel={profileLabel}
-          />
-
-          <main className="flex-1">{children}</main>
-        </div>
+        <main className="flex-1">{children}</main>
       </div>
     </div>
   );

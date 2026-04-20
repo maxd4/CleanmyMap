@@ -149,6 +149,8 @@ async function buildIndividualLeaderboard(
                 )
               : 0,
           collectiveEvents: 0,
+          totalKg: impact.wasteKg,
+          totalButts: impact.totalButts,
         }),
       } as IndividualLeaderboardItem;
     })
@@ -225,6 +227,8 @@ export async function getUserProgression(
       qualityAverage: stats.qualityAverage,
       validationRatio: stats.validationRatio,
       collectiveEvents: stats.collectiveEvents,
+      totalKg: stats.totalKg,
+      totalButts: stats.totalButts,
     }),
     impact: computePersonalImpactMetrics(rows),
     impactMethodology: buildPersonalImpactMethodology(stats.qualityAverage),

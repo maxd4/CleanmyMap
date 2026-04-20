@@ -10,6 +10,12 @@ export type ImpactProxyFactors = {
 export type ImpactProxyConfig = {
   version: string;
   factors: ImpactProxyFactors;
+  sources: {
+    water: string;
+    co2: string;
+    surface: string;
+    roi: string;
+  };
 };
 
 const DEFAULT_IMPACT_PROXY_VERSION = "impact-proxy-2026.04-v1";
@@ -19,6 +25,7 @@ const DEFAULT_IMPACT_PROXY_FACTORS: ImpactProxyFactors = {
   co2KgPerWasteKg: 1.2,
   surfaceM2PerWasteKg: 2.5,
   surfaceM2PerVolunteerMinute: 0.12,
+  euroSavedPerWasteKg: 1.5,
 };
 
 const MAX_PROXY_FACTOR = 1_000_000;
@@ -61,6 +68,12 @@ export const IMPACT_PROXY_CONFIG: ImpactProxyConfig = {
       env.IMPACT_PROXY_SURFACE_M2_PER_VOLUNTEER_MINUTE,
       DEFAULT_IMPACT_PROXY_FACTORS.surfaceM2PerVolunteerMinute,
     ),
+  },
+  sources: {
+    water: "Estimation 500L/mégot (Risk assessment proxy - Ocean Conservancy / WHO reports).",
+    co2: "Facteur 1.2kg CO2eq/kg déchets (Moyenne mix de déchets ménagers - Base Empreinte ADEME).",
+    surface: "Modèle opérationnel CleanMyMap basé sur le ratio poids/temps/surface observés.",
+    roi: "Estimation 1.5€/kg évité (Moyenne coûts de nettoyage urbain vs ramassage bénévole - Proxy collectivités).",
   },
 };
 

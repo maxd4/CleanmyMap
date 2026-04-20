@@ -3,13 +3,23 @@ import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
+/**
+ * CleanMyMap - Vercel Env Sync Tool
+ * Version: 1.1.0 (Auto-branch & Dry-run support)
+ */
+
 function parseArgs(argv) {
   const out = {
     file: ".env.local",
     environments: ["development"],
     previewBranch: "",
+    dryRun: false,
   };
   for (const arg of argv) {
+    if (arg === "--dry-run") {
+      out.dryRun = true;
+      continue;
+    }
     if (arg.startsWith("--file=")) {
       out.file = arg.slice("--file=".length);
       continue;
@@ -31,6 +41,18 @@ function parseArgs(argv) {
     }
   }
   return out;
+}
+
+function getGitBranch() {
+  try {
+    const git = spawnSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], { encoding: "utf8" });
+    if (git.status === 0) {
+      return git.stdout.trim();
+    }
+  } catch (e) {
+    // Git not available
+  }
+  return null;
 }
 
 function parseDotEnv(content) {
@@ -63,8 +85,9 @@ function loadAllowedKeysFromExample(examplePath) {
   return keys;
 }
 
-function run(command, args, options = {}) {
+function runCommand(command, args, options = {}) {
   if (process.platform === "win32") {
+    // PowerShell execution logic for Windows
     const quoted = [command, ...args]
       .map((value) => `'${String(value).replace(/'/g, "''")}'`)
       .join(" ");
@@ -80,10 +103,15 @@ function run(command, args, options = {}) {
   });
 }
 
+// MAIN LOGIC
 const args = parseArgs(process.argv.slice(2));
 const cwd = process.cwd();
 const envPath = resolve(cwd, args.file);
 const examplePath = resolve(cwd, ".env.example");
+
+if (args.dryRun) {
+  console.log("--- DRY RUN MODE (No changes will be applied) ---");
+}
 
 if (!existsSync(envPath)) {
   console.error(`[backend] Env source file missing: ${envPath}`);
@@ -100,15 +128,9 @@ if (allowed.size === 0) {
 
 const toSync = [];
 for (const [key, value] of source.entries()) {
-  if (!allowed.has(key)) {
-    continue;
-  }
-  if (!value || value.trim().length === 0) {
-    continue;
-  }
-  if (key === "RESEND_TEST_TOKEN") {
-    continue;
-  }
+  if (!allowed.has(key)) continue;
+  if (!value || value.trim().length === 0) continue;
+  if (key === "RESEND_TEST_TOKEN") continue;
   toSync.push([key, value]);
 }
 
@@ -122,11 +144,22 @@ let synced = 0;
 let skipped = 0;
 
 for (const target of args.environments) {
-  const previewBranch = target === "preview" ? args.previewBranch : "";
+  let previewBranch = target === "preview" ? args.previewBranch : "";
+  
+  // Auto-detect branch if target is preview and no branch provided
   if (target === "preview" && !previewBranch) {
-    skipped += toSync.length;
-    continue;
+    const detected = getGitBranch();
+    if (detected) {
+      previewBranch = detected;
+      console.log(`[backend] Auto-detected git branch for preview: ${previewBranch}`);
+    } else {
+      console.warn(`[backend] Warning: No branch provided for 'preview' environment and Git detection failed. Skipping.`);
+      skipped += toSync.length;
+      continue;
+    }
   }
+
+  console.log(`[backend] Syncing [${target}] ${previewBranch ? `(Branch: ${previewBranch})` : ""}...`);
 
   for (const [key, value] of toSync) {
     if (
@@ -138,11 +171,19 @@ for (const target of args.environments) {
       continue;
     }
 
+    if (args.dryRun) {
+      console.log(`  [DRY] + ${key} (${target})`);
+      synced += 1;
+      continue;
+    }
+
     const addArgs =
       target === "preview"
         ? ["vercel", "env", "add", key, "preview", previewBranch, "--value", value, "--yes", "--force"]
         : ["vercel", "env", "add", key, target, "--value", value, "--yes", "--force"];
-    const add = run("npx", addArgs, { cwd });
+    
+    // Using npx vercel ensures the latest CLI or project local one is used
+    const add = runCommand("npx", addArgs, { cwd });
 
     if (add.status === 0) {
       synced += 1;
@@ -154,6 +195,8 @@ for (const target of args.environments) {
       failures.push(`[${target}] add ${key}: ${add.error.message}`.trim());
       continue;
     }
+    
+    // If it exists, we try to remove and re-add (clean replace)
     if (!/already exists|was found|exists/i.test(addLog)) {
       failures.push(`[${target}] add ${key}: ${addLog}`.trim());
       continue;
@@ -163,9 +206,9 @@ for (const target of args.environments) {
       target === "preview"
         ? ["vercel", "env", "rm", key, "preview", previewBranch, "--yes"]
         : ["vercel", "env", "rm", key, target, "--yes"];
-    run("npx", rmArgs, { cwd });
+    runCommand("npx", rmArgs, { cwd });
 
-    const addAgain = run("npx", addArgs, { cwd });
+    const addAgain = runCommand("npx", addArgs, { cwd });
     if (addAgain.error) {
       failures.push(`[${target}] replace ${key}: ${addAgain.error.message}`.trim());
       continue;
@@ -180,8 +223,9 @@ for (const target of args.environments) {
 
 console.log(`[backend] Vercel env sync done. synced=${synced} skipped=${skipped} failures=${failures.length}`);
 if (failures.length > 0) {
+  console.log("--- Failures (first 20) ---");
   for (const failure of failures.slice(0, 20)) {
-    console.error(failure);
+    console.error(`  - ${failure}`);
   }
   process.exit(1);
 }

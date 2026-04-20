@@ -179,315 +179,275 @@ export function AnnuaireSection() {
   };
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
-        <h2 className="text-sm font-semibold text-slate-900">
-          Discussion locale et entraide operationnelle
-        </h2>
-        <p className="mt-1 text-xs text-slate-700">
-          Espace de communication entre benevoles, associations, commercants et
-          entreprises pour accelerer l&apos;entraide locale, coordonner les actions
-          concretes et partager l&apos;actualite terrain.
-        </p>
-        <p className="mt-2 text-xs text-slate-700">
-          Les bugs et idees de developpement ne doivent pas etre postes dans le
-          canal commun: utilise le formulaire dedie ci-dessous.
-        </p>
-        <DiscussionBadgesPanel />
-      </section>
+    <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 items-start">
+      {/* GAUCHE : Annuaire Explorer (Filtres, Carte, Acteurs) */}
+      <div className="space-y-6">
+        {locationPreference ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-sm">
+            Priorisation de proximite active:{" "}
+            <span className="font-semibold">
+              {getParisArrondissementLabel(locationPreference.arrondissement)}
+            </span>{" "}
+            ({locationPreference.locationType === "work" ? "travail" : "residence"}).
+          </div>
+        ) : null}
 
-      <DiscussionBugReportForm />
-
-      {locationPreference ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-          Priorisation de proximite active:{" "}
-          <span className="font-semibold">
-            {getParisArrondissementLabel(locationPreference.arrondissement)}
-          </span>{" "}
-          ({locationPreference.locationType === "work" ? "travail" : "residence"}).
-        </div>
-      ) : null}
-
-      <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label className="space-y-1">
-            <span className="text-xs font-semibold text-slate-700">Recherche</span>
-            <input
-              value={searchTerm}
-              onChange={(event) => {
-                setActorCardsPage(1);
-                setSearchTerm(event.target.value);
-              }}
-              placeholder="Nom, identite legale, mot-cle..."
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-            />
-          </label>
-
-          <label className="space-y-1">
-            <span className="text-xs font-semibold text-slate-700">Distance / zone</span>
-            <select
-              value={String(zoneFilter)}
-              onChange={(event) => {
-                const raw = event.target.value;
-                if (raw === "all" || raw === "nearby") {
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <label className="space-y-1">
+              <span className="text-xs font-semibold text-slate-700">Recherche</span>
+              <input
+                value={searchTerm}
+                onChange={(event) => {
                   setActorCardsPage(1);
-                  setZoneFilter(raw);
-                  return;
-                }
-                setActorCardsPage(1);
-                setZoneFilter(Number.parseInt(raw, 10) as ParisArrondissement);
-              }}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-            >
-              <option value="all">Tout Paris</option>
-              {targetArrondissement ? <option value="nearby">Proches de moi</option> : null}
-              {PARIS_ARRONDISSEMENTS.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+                  setSearchTerm(event.target.value);
+                }}
+                placeholder="Nom, identite legale, mot-cle..."
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 transition focus:border-emerald-500 focus:outline-none"
+              />
+            </label>
 
-        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-          <label className="space-y-1">
-            <span className="text-xs font-semibold text-slate-700">Type d&apos;acteur</span>
-            <div className="flex flex-wrap gap-2">
-              {KIND_FILTERS.map((item) => (
-                <button
-                  key={item.value}
-                  onClick={() => {
+            <label className="space-y-1">
+              <span className="text-xs font-semibold text-slate-700">Distance / zone</span>
+              <select
+                value={String(zoneFilter)}
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  if (raw === "all" || raw === "nearby") {
                     setActorCardsPage(1);
-                    setFilterKind(item.value);
-                  }}
-                  className={`rounded-lg px-3 py-2 text-xs font-semibold ${
-                    filterKind === item.value
-                      ? "bg-slate-900 text-white"
-                      : "bg-slate-100 text-slate-700"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-          </label>
-
-          <label className="space-y-1">
-            <span className="text-xs font-semibold text-slate-700">
-              Type d&apos;aide proposee
-            </span>
-            <select
-              value={filterContribution}
-              onChange={(event) =>
-                {
+                    setZoneFilter(raw);
+                    return;
+                  }
                   setActorCardsPage(1);
-                  setFilterContribution(event.target.value as ContributionType | "all");
-                }
-              }
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none"
-            >
-              {CONTRIBUTION_FILTERS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </section>
+                  setZoneFilter(Number.parseInt(raw, 10) as ParisArrondissement);
+                }}
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 transition focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="all">Tout Paris</option>
+                {targetArrondissement ? <option value="nearby">Proches de moi</option> : null}
+                {PARIS_ARRONDISSEMENTS.map((item) => (
+                  <option key={item.value} value={item.value}>
+                    {item.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
-      <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
-        Reseau local actif: partenaires verifies avec activite recente uniquement.
-        <span className="ml-1 font-semibold">
-          {pendingOrUnqualifiedEntries.length} fiche(s) a requalifier.
-        </span>
+          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+            <label className="space-y-1">
+              <span className="text-xs font-semibold text-slate-700">Type d&apos;acteur</span>
+              <div className="flex flex-wrap gap-2">
+                {KIND_FILTERS.map((item) => (
+                  <button
+                    key={item.value}
+                    onClick={() => {
+                      setActorCardsPage(1);
+                      setFilterKind(item.value);
+                    }}
+                    className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition ${
+                      filterKind === item.value
+                        ? "bg-slate-900 text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </label>
+
+            <label className="space-y-1">
+              <span className="text-xs font-semibold text-slate-700">
+                Type d&apos;aide proposee
+              </span>
+              <select
+                value={filterContribution}
+                onChange={(event) =>
+                  {
+                    setActorCardsPage(1);
+                    setFilterContribution(event.target.value as ContributionType | "all");
+                  }
+                }
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 transition focus:border-emerald-500 focus:outline-none"
+              >
+                {CONTRIBUTION_FILTERS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 shadow-sm flex items-center justify-between">
+          <span>Reseau local actif: partenaires verifies avec activite recente uniquement.</span>
+          <span className="font-semibold px-2 py-1 bg-sky-100 rounded text-xs">{pendingOrUnqualifiedEntries.length} à requalifier</span>
+        </div>
+
+        {sortedAndFilteredEntries.length === 0 ? (
+          <section className="rounded-xl border border-amber-300 bg-amber-50 p-4 shadow-sm">
+            <p className="text-sm font-semibold text-amber-900">
+              Aucun acteur ne correspond a vos filtres.
+            </p>
+            <p className="mt-1 text-xs text-amber-900">
+              Proposez un nouvel acteur engage ou etendez la zone de recherche.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/partners/onboarding"
+                className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600 shadow-sm"
+              >
+                Ajouter un acteur engage
+              </Link>
+              <button
+                onClick={() => setZoneFilter("all")}
+                className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 shadow-sm"
+              >
+                Etendre a tout Paris
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        <div
+          id="annuaire-map-anchor"
+          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm relative"
+        >
+          <div className="absolute top-4 right-4 z-10 pointer-events-none">
+            <span className="rounded-full bg-slate-900 text-white px-3 py-1 font-semibold text-xs shadow-md">
+              {sortedAndFilteredEntries.length} résultats
+            </span>
+          </div>
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+            <MapPin size={16} className="text-emerald-600" />
+            Carte + impact par acteur
+          </h3>
+          <AnnuaireMapCanvas
+            items={sortedAndFilteredEntries}
+            highlightedItemId={highlightedActorId}
+          />
+        </div>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-900 border-b border-slate-200 pb-2 mb-3">
+            Fiches compactes, scannables en quelques secondes
+          </h3>
+          <div className="space-y-3">
+            {paginatedActorCards.map((entry) => (
+              <AnnuaireActorCard
+                key={entry.id}
+                entry={entry}
+                onFocusMap={handleFocusMap}
+                showInternalContact={showInternalContact}
+              />
+            ))}
+          </div>
+          {sortedAndFilteredEntries.length > ACTOR_CARDS_PAGE_SIZE ? (
+            <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-200 pt-3">
+              <p className="text-xs text-slate-600 font-medium">
+                Page {safeActorCardsPage}/{actorCardsTotalPages} ({sortedAndFilteredEntries.length} fiches)
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setActorCardsPage((current) => Math.max(1, current - 1))}
+                  disabled={safeActorCardsPage <= 1}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Précédent
+                </button>
+                <button
+                  onClick={() =>
+                    setActorCardsPage((current) =>
+                      Math.min(actorCardsTotalPages, current + 1),
+                    )
+                  }
+                  disabled={safeActorCardsPage >= actorCardsTotalPages}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Suivant
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </section>
       </div>
 
-      {recommendations.length > 0 ? (
-        <section className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-indigo-900">
-            Recommandations automatiques (profil + localisation)
+      {/* DROITE : Communication, Contributions et Dashboard */}
+      <div className="space-y-6">
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-900">
+            Discussion locale et entraide operationnelle
+          </h2>
+          <p className="mt-1 text-xs text-slate-700 mb-3">
+            Espace de communication entre benevoles, associations, commercants et
+            entreprises pour accelerer l&apos;entraide locale, coordonner les actions
+            concretes et partager l&apos;actualite terrain.
+          </p>
+          <DiscussionBadgesPanel />
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-900 mb-3">
+            Signaler un bug ou une idee
+          </h2>
+          <DiscussionBugReportForm />
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-900">
+            Tableau de bord partenaire
           </h3>
-          <ul className="mt-2 space-y-2 text-xs text-indigo-900">
-            {recommendations.map((item) => (
-              <li key={`reco-${item.entry.id}`} className="rounded-lg bg-white/70 p-2">
-                <p className="font-semibold">{item.entry.name}</p>
-                <p>{item.reason}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {sortedAndFilteredEntries.length === 0 ? (
-        <section className="rounded-xl border border-amber-300 bg-amber-50 p-4 shadow-sm">
-          <p className="text-sm font-semibold text-amber-900">
-            Aucun acteur ne correspond a vos filtres.
-          </p>
-          <p className="mt-1 text-xs text-amber-900">
-            Proposez un nouvel acteur engage ou etendez la zone de recherche.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Link
-              href="/partners/onboarding"
-              className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-600"
-            >
-              Ajouter un acteur engage
-            </Link>
-            <button
-              onClick={() => setZoneFilter("all")}
-              className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100"
-            >
-              Etendre a tout Paris
-            </button>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded bg-slate-50 p-2 border border-slate-100">
+              <p className="text-slate-500">Acteurs actifs</p>
+              <p className="text-base font-semibold text-slate-900">{dashboardStats.actors}</p>
+            </div>
+            <div className="rounded bg-slate-50 p-2 border border-slate-100">
+              <p className="text-slate-500">Zones couvertes</p>
+              <p className="text-base font-semibold text-slate-900">{dashboardStats.zones}</p>
+            </div>
+            <div className="rounded bg-slate-50 p-2 border border-slate-100">
+              <p className="text-slate-500">Contributions</p>
+              <p className="text-base font-semibold text-slate-900">
+                {dashboardStats.contributions}
+              </p>
+            </div>
+            <div className="rounded bg-slate-50 p-2 border border-slate-100">
+              <p className="text-slate-500">Demandes en attente</p>
+              <p className="text-base font-semibold text-slate-900">{dashboardStats.pending}</p>
+            </div>
           </div>
-        </section>
-      ) : null}
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
-          <div
-            id="annuaire-map-anchor"
-            className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl"
+          <Link
+            href="/partners/dashboard"
+            className="mt-3 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 transition hover:bg-slate-100 shadow-sm"
           >
-            <div className="mb-3 flex items-center justify-between px-1">
-              <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
-                <MapPin size={16} className="text-emerald-600" />
-                Carte + impact par acteur
-              </h3>
-              <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">
-                {sortedAndFilteredEntries.length} resultats
-              </span>
-            </div>
-            <AnnuaireMapCanvas
-              items={sortedAndFilteredEntries}
-              highlightedItemId={highlightedActorId}
-            />
-          </div>
-
-          <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
-            <h3 className="text-sm font-semibold text-slate-900">
-              Fiches compactes, scannables en quelques secondes
+            Ouvrir le dashboard complet
+          </Link>
+        </section>
+        
+        {recommendations.length > 0 ? (
+          <section className="rounded-2xl border border-indigo-200 bg-indigo-50 shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-indigo-900">
+              Recommandations automatiques (profil + localisation)
             </h3>
-            <div className="mt-3 space-y-3">
-              {paginatedActorCards.map((entry) => (
-                <AnnuaireActorCard
-                  key={entry.id}
-                  entry={entry}
-                  onFocusMap={handleFocusMap}
-                  showInternalContact={showInternalContact}
-                />
-              ))}
-            </div>
-            {sortedAndFilteredEntries.length > ACTOR_CARDS_PAGE_SIZE ? (
-              <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-200 pt-3">
-                <p className="text-xs text-slate-600">
-                  Page {safeActorCardsPage}/{actorCardsTotalPages} ({sortedAndFilteredEntries.length} fiches)
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setActorCardsPage((current) => Math.max(1, current - 1))}
-                    disabled={safeActorCardsPage <= 1}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Precedent
-                  </button>
-                  <button
-                    onClick={() =>
-                      setActorCardsPage((current) =>
-                        Math.min(actorCardsTotalPages, current + 1),
-                      )
-                    }
-                    disabled={safeActorCardsPage >= actorCardsTotalPages}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Suivant
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </section>
-        </div>
-
-        <aside className="space-y-6">
-          <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
-            <h3 className="text-sm font-semibold text-slate-900">
-              Acteurs recemment mis a jour
-            </h3>
-            <ul className="mt-3 space-y-2 text-sm">
-              {mostRecentlyUpdatedEntries.map((entry) => (
-                <li key={`active-${entry.id}`} className="rounded-lg bg-slate-50 p-2">
-                  <p className="font-medium text-slate-900">{entry.name}</p>
-                  <p className="text-xs text-slate-600">
-                    Derniere mise a jour: {entry.lastUpdatedAt}
-                  </p>
+            <ul className="mt-3 space-y-2 text-xs text-indigo-900">
+              {recommendations.map((item) => (
+                <li key={`reco-${item.entry.id}`} className="rounded-lg bg-white/70 p-2 shadow-sm border border-indigo-100">
+                  <p className="font-semibold">{item.entry.name}</p>
+                  <p>{item.reason}</p>
                 </li>
               ))}
             </ul>
           </section>
+        ) : null}
 
-          <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
-            <h3 className="text-sm font-semibold text-slate-900">
-              Partenaires proches de{" "}
-              {targetArrondissement
-                ? getParisArrondissementLabel(targetArrondissement)
-                : "vous"}
-            </h3>
-            <ul className="mt-3 space-y-2 text-sm">
-              {(nearbyEntries.length > 0 ? nearbyEntries : sortedAndFilteredEntries.slice(0, 4)).map(
-                (entry) => (
-                  <li key={`near-${entry.id}`} className="rounded-lg bg-slate-50 p-2">
-                    <p className="font-medium text-slate-900">{entry.name}</p>
-                    <p className="text-xs text-slate-600">
-                      {entry.distanceKm !== null
-                        ? `Environ ${entry.distanceKm.toFixed(1)} km`
-                        : VERIFICATION_LABELS[entry.verificationStatus]}
-                    </p>
-                  </li>
-                ),
-              )}
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
-            <h3 className="text-sm font-semibold text-slate-900">
-              Tableau de bord partenaire
-            </h3>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-              <div className="rounded bg-slate-50 p-2">
-                <p className="text-slate-500">Acteurs actifs</p>
-                <p className="text-base font-semibold text-slate-900">{dashboardStats.actors}</p>
-              </div>
-              <div className="rounded bg-slate-50 p-2">
-                <p className="text-slate-500">Zones couvertes</p>
-                <p className="text-base font-semibold text-slate-900">{dashboardStats.zones}</p>
-              </div>
-              <div className="rounded bg-slate-50 p-2">
-                <p className="text-slate-500">Contributions</p>
-                <p className="text-base font-semibold text-slate-900">
-                  {dashboardStats.contributions}
-                </p>
-              </div>
-              <div className="rounded bg-slate-50 p-2">
-                <p className="text-slate-500">Demandes en attente</p>
-                <p className="text-base font-semibold text-slate-900">{dashboardStats.pending}</p>
-              </div>
-            </div>
-            <Link
-              href="/partners/dashboard"
-              className="mt-3 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-100"
-            >
-              Ouvrir le dashboard partenaire
-            </Link>
-          </section>
-
-          <AnnuaireGovernancePanel
-            pendingEntries={pendingOrUnqualifiedEntries}
-            verificationLabels={VERIFICATION_LABELS}
-          />
-        </aside>
+        <AnnuaireGovernancePanel
+          pendingEntries={pendingOrUnqualifiedEntries}
+          verificationLabels={VERIFICATION_LABELS}
+        />
       </div>
-    </div>
+    </div>>
   );
 }

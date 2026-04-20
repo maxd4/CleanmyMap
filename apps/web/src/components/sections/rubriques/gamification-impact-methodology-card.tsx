@@ -91,6 +91,19 @@ export function GamificationImpactMethodologyCard({ methodology }: Props) {
               </li>
             </ul>
           </div>
+
+          {methodology.sources && (
+            <div className="rounded border border-emerald-200 bg-emerald-50 p-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
+                Sources Scientifiques
+              </p>
+              <ul className="mt-1 space-y-1 text-[10px] text-emerald-900 leading-tight">
+                {Object.entries(methodology.sources).map(([key, value]) => (
+                  <li key={key} className="italic">• {value}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>

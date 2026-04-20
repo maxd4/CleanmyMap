@@ -84,7 +84,7 @@ function toLegacyRecordType(type: ActionEntityType): LegacyActionRecordType {
 }
 
 export type ActionContractCreatePayload = {
-  type: "action";
+  type: ActionRecordType;
   source: string;
   location: {
     label: string;
@@ -217,11 +217,10 @@ export function buildActionDataContract(
       notesPlain: params.notesPlain ?? null,
       submissionMode: params.submissionMode ?? null,
       wasteBreakdown: params.wasteBreakdown ?? null,
-      wasteKg: toFiniteNumber(params.wasteKg, 0),
-      cigaretteButts: Math.max(
-        0,
-        Math.trunc(toFiniteNumber(params.cigaretteButts, 0)),
-      ),
+      wasteKg: params.wasteKg === undefined || params.wasteKg === null ? null : toFiniteNumber(params.wasteKg, 0),
+      cigaretteButts: params.cigaretteButts === undefined || params.cigaretteButts === null 
+        ? null 
+        : Math.max(0, Math.trunc(toFiniteNumber(params.cigaretteButts, 0))),
       volunteersCount: Math.max(
         0,
         Math.trunc(toFiniteNumber(params.volunteersCount, 0)),
@@ -310,7 +309,7 @@ export function toContractCreatePayload(
   payload: CreateActionPayload,
 ): ActionContractCreatePayload {
   return {
-    type: "action",
+    type: payload.recordType ?? "action",
     source: "web_form",
     location: {
       label: payload.locationLabel,
@@ -384,14 +383,40 @@ export function mapItemType(item: ActionMapItem): ActionEntityType {
   return "action";
 }
 
-export function mapItemWasteKg(item: ActionMapItem): number {
-  return item.contract?.metadata.wasteKg ?? Number(item.waste_kg ?? 0);
+export function mapItemWasteKg(item: ActionMapItem): number | null {
+  const contract = item.contract;
+  const rawValue = item.waste_kg;
+
+  if (contract) {
+    const provided = (contract.metadata as any).provided as string[] | undefined;
+    if (provided && !provided.includes("waste_kg")) {
+      return null;
+    }
+    return contract.metadata.wasteKg;
+  }
+
+  // Fallback for non-contract items (legacy)
+  if (rawValue === 0 || rawValue === null) {
+      // If we don't have a contract, we assume 0 is a placeholder unless we can prove otherwise
+      // But for regularity with the new system, we'll return 0 if not sure.
+      return rawValue;
+  }
+  return rawValue;
 }
 
-export function mapItemCigaretteButts(item: ActionMapItem): number {
-  return (
-    item.contract?.metadata.cigaretteButts ?? Number(item.cigarette_butts ?? 0)
-  );
+export function mapItemCigaretteButts(item: ActionMapItem): number | null {
+  const contract = item.contract;
+  const rawValue = item.cigarette_butts;
+
+  if (contract) {
+    const provided = (contract.metadata as any).provided as string[] | undefined;
+    if (provided && !provided.includes("cigarette_butts")) {
+      return null;
+    }
+    return contract.metadata.cigaretteButts;
+  }
+
+  return rawValue;
 }
 
 export function mapItemLocationLabel(item: ActionMapItem): string {

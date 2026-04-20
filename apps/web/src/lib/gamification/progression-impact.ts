@@ -42,6 +42,8 @@ export function computePersonalImpactMetrics(
       totalWasteKg * factors.surfaceM2PerWasteKg +
         totalVolunteerMinutes * factors.surfaceM2PerVolunteerMinute,
     ),
+    wasteKg: round1(totalWasteKg),
+    cigaretteButts: totalButts,
   };
 }
 
@@ -102,6 +104,7 @@ export function buildPersonalImpactMethodology(
       "Les declarations validees refletent correctement les quantites et localisations observees.",
       "Le temps benevole cumule est un indicateur raisonnable de couverture d'intervention.",
     ],
+    sources: IMPACT_PROXY_CONFIG.sources,
     errorMargins: {
       waterSavedLitersPct: 35,
       co2AvoidedKgPct: 30,

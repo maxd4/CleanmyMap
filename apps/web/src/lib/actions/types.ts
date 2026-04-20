@@ -27,6 +27,24 @@ export type ActionQualityBreakdown = {
   freshness: number;
 };
 
+export type ActionContractCreatePayload = {
+  type: ActionRecordType;
+  source: string;
+  actor_name: string | null;
+  association_name?: string | null;
+  action_date: string;
+  location_label: string;
+  latitude: number | null;
+  longitude: number | null;
+  waste_kg: number | null;
+  cigarette_butts: number | null;
+  volunteers_count: number;
+  duration_minutes: number;
+  notes: string | null;
+  manual_drawing?: ActionDrawing | null;
+  waste_breakdown?: ActionWasteBreakdown | null;
+};
+
 export type ActionListItem = {
   id: string;
   created_at: string;
@@ -36,8 +54,8 @@ export type ActionListItem = {
   location_label: string;
   latitude: number | null;
   longitude: number | null;
-  waste_kg: number;
-  cigarette_butts: number;
+  waste_kg: number | null;
+  cigarette_butts: number | null;
   volunteers_count: number;
   duration_minutes: number;
   notes: string | null;
@@ -84,8 +102,8 @@ export type ActionListItem = {
       associationName?: string | null;
       notes: string | null;
       notesPlain: string | null;
-      wasteKg: number;
-      cigaretteButts: number;
+      wasteKg: number | null;
+      cigaretteButts: number | null;
       volunteersCount: number;
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;
@@ -129,6 +147,7 @@ export type CreateActionPayload = {
   manualDrawing?: ActionDrawing;
   submissionMode?: ActionSubmissionMode;
   wasteBreakdown?: ActionWasteBreakdown;
+  recordType?: ActionRecordType;
 };
 
 export type ActionMapItem = Pick<
@@ -180,8 +199,8 @@ export type ActionMapItem = Pick<
       associationName?: string | null;
       notes: string | null;
       notesPlain: string | null;
-      wasteKg: number;
-      cigaretteButts: number;
+      wasteKg: number | null;
+      cigaretteButts: number | null;
       volunteersCount: number;
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;

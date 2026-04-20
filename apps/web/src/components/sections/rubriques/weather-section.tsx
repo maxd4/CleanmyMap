@@ -170,18 +170,19 @@ export function WeatherSection() {
         : "border-emerald-300 bg-emerald-50 text-emerald-900";
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="flex min-w-56 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-            Zone operationnelle
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
+      {/* GAUCHE : Paramètres et Alertes */}
+      <div className="space-y-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <label className="flex w-full flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600 mb-3">
+            Zone opérationnelle
             <select
               value={selectedZone.id}
               onChange={(event) => {
                 setZoneMode("manual");
                 setManualZoneId(event.target.value);
               }}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal text-slate-800 outline-none transition focus:border-emerald-500"
+              className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-normal text-slate-800 outline-none transition focus:border-emerald-500"
             >
               {OPERATIONAL_ZONES.map((zone) => (
                 <option key={zone.id} value={zone.id}>
@@ -190,217 +191,206 @@ export function WeatherSection() {
               ))}
             </select>
           </label>
-          <button
-            onClick={() => setZoneMode("auto")}
-            className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-          >
-            Auto-detection zone
-          </button>
-          <p className="text-xs text-slate-500">
-            Mode {zoneMode === "auto" ? "auto" : "manuel"} - zone detectee:{" "}
-            {OPERATIONAL_ZONES.find((zone) => zone.id === inferredZoneId)
-              ?.label ?? "n/a"}
-          </p>
-        </div>
-        <p className="mt-3 text-xs text-slate-500">
-          Horizon utile: nowcasting 0-6h, prevision J+1 a J+3, apercu J+7.
-          Seuils EPI explicites pluie/vent/chaleur/froid.
-        </p>
-      </div>
-      {isLoading ? (
-        <p className="text-sm text-slate-500">Chargement meteo...</p>
-      ) : null}
-      {error ? (
-        <p className="text-sm text-rose-700">
-          Meteo indisponible, verifier avant sortie terrain.
-        </p>
-      ) : null}
-      {!isLoading && !error ? (
-        <>
-          <article className={`rounded-xl border p-4 ${riskTone}`}>
-            <h3 className="text-sm font-semibold">
-              Lecture decisionnelle meteo
-            </h3>
-            <div className="mt-2 grid gap-3 md:grid-cols-3">
-              <div>
-                <p className="text-xs uppercase tracking-wide">
-                  Niveau de risque
-                </p>
-                <p className="mt-1 text-2xl font-semibold">
-                  {currentRisk.level.toUpperCase()}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide">
-                  Equipement conseille
-                </p>
-                <ul className="mt-1 list-disc pl-5 text-sm">
-                  {currentRisk.equipment.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-wide">
-                  Contraintes intervention
-                </p>
-                <ul className="mt-1 list-disc pl-5 text-sm">
-                  {currentRisk.constraints.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-            <p className="mt-3 text-sm">
-              Raisons: {currentRisk.reasons.join(", ")}.
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
+            <button
+              onClick={() => setZoneMode("auto")}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
+                zoneMode === "auto"
+                  ? "border-slate-800 bg-slate-800 text-white"
+                  : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100"
+              }`}
+            >
+              Auto-détection
+            </button>
+            <p className="text-[10px] text-slate-500 text-right">
+              Zone détectée: <span className="font-semibold">{OPERATIONAL_ZONES.find((zone) => zone.id === inferredZoneId)?.label ?? "n/a"}</span>
             </p>
-          </article>
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setActivePeriod("now")}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold ${activePeriod === "now" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
-            >
-              0-6h
-            </button>
-            <button
-              onClick={() => setActivePeriod("j13")}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold ${activePeriod === "j13" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
-            >
-              J+1 a J+3
-            </button>
-            <button
-              onClick={() => setActivePeriod("j7")}
-              className={`rounded-lg px-3 py-1 text-xs font-semibold ${activePeriod === "j7" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-700"}`}
-            >
-              J+7
-            </button>
           </div>
+        </div>
 
-          {activePeriod === "now" ? (
-            <div className="grid gap-2 md:grid-cols-3">
-              {nowcasting.map((point) => {
-                const risk = evaluateWeatherRisk({
-                  temperature: point.temperature,
-                  rain: point.rain,
-                  wind: point.wind,
-                });
-                return (
-                  <article
-                    key={point.time}
-                    className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
-                  >
-                    <p className="font-semibold">
-                      {formatDateTimeShort(point.time)}
-                    </p>
-                    <p>
-                      {point.temperature.toFixed(1)} C - pluie{" "}
-                      {point.rain.toFixed(1)} mm/h - vent{" "}
-                      {point.wind.toFixed(0)} km/h
-                    </p>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                      Risque {risk.level}
-                    </p>
-                  </article>
-                );
-              })}
-            </div>
-          ) : null}
+        {isLoading ? (
+          <p className="text-sm text-slate-500">Chargement météo...</p>
+        ) : null}
+        {error ? (
+          <p className="text-sm text-rose-700 bg-rose-50 p-3 rounded-lg border border-rose-200">
+            Météo indisponible, vérifier l'horizon avant sortie terrain.
+          </p>
+        ) : null}
 
-          {activePeriod === "j13" ? (
-            <div className="grid gap-2 md:grid-cols-3">
-              {j13.map((day) => {
-                const risk = evaluateWeatherRisk({
-                  temperature: day.max,
-                  rain: day.rain / 3,
-                  wind: day.wind,
-                });
-                return (
-                  <article
-                    key={day.day}
-                    className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
-                  >
-                    <p className="font-semibold">{formatDateShort(day.day)}</p>
-                    <p>
-                      {day.min.toFixed(1)} / {day.max.toFixed(1)} C - pluie{" "}
-                      {day.rain.toFixed(1)} mm - vent max {day.wind.toFixed(0)}{" "}
-                      km/h
-                    </p>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                      Risque {risk.level}
-                    </p>
-                  </article>
-                );
-              })}
-            </div>
-          ) : null}
-
-          {activePeriod === "j7" ? (
-            <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-              <p className="font-semibold">
-                Apercu J+7 ({formatDateShort(j7.day)})
-              </p>
-              <p className="mt-1">
-                {j7.min.toFixed(1)} / {j7.max.toFixed(1)} C - pluie{" "}
-                {j7.rain.toFixed(1)} mm - vent max {j7.wind.toFixed(0)} km/h
-              </p>
-            </article>
-          ) : null}
-
-          <div className="grid gap-3 md:grid-cols-2">
-            <article className="rounded-xl border border-slate-200 bg-white p-4">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Fenetres recommandees d&apos;intervention
+        {!isLoading && !error ? (
+          <>
+            <article className={`rounded-xl border shadow-sm p-4 ${riskTone}`}>
+              <h3 className="text-sm font-semibold uppercase tracking-wide">
+                Lecture décisionnelle
               </h3>
-              <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                {windows.recommended.slice(0, 5).map((window) => (
-                  <li
-                    key={`${window.from}-${window.to}`}
-                    className="rounded-lg border border-emerald-200 bg-emerald-50 p-2"
-                  >
-                    {formatDateTimeShort(window.from)} -{" "}
-                    {formatDateTimeShort(window.to)}: {window.reason}
-                  </li>
-                ))}
-                {windows.recommended.length === 0 ? (
-                  <li>Aucune fenetre recommandee detectee.</li>
-                ) : null}
+              <div className="mt-4 flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b pb-3 border-emerald-900/10">
+                  <span className="text-xs font-semibold opacity-70 uppercase">Niveau de risque</span>
+                  <span className="text-2xl font-bold">{currentRisk.level.toUpperCase()}</span>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold opacity-70 uppercase">Équipement conseillé</p>
+                  <ul className="mt-1 list-disc pl-5 text-sm opacity-90 font-medium">
+                    {currentRisk.equipment.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold opacity-70 uppercase">Contraintes</p>
+                  <ul className="mt-1 list-disc pl-5 text-sm opacity-90 font-medium">
+                    {currentRisk.constraints.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="mt-1 border-t pt-3 border-emerald-900/10 text-xs font-medium opacity-80">
+                  Raisons: {currentRisk.reasons.join(", ")}.
+                </div>
+              </div>
+            </article>
+
+            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-xs text-slate-700">
+              <h3 className="font-semibold text-slate-900 text-sm mb-2">Règles EPI</h3>
+              <ul className="list-disc pl-4 space-y-1 text-slate-600">
+                <li>Pluie: <span className="font-medium">orange</span> ≥ 0.8 mm/h, <span className="font-medium text-rose-700">rouge</span> ≥ 3 mm/h.</li>
+                <li>Vent: <span className="font-medium">orange</span> ≥ 30 km/h, <span className="font-medium text-rose-700">rouge</span> ≥ 45 km/h.</li>
+                <li>Chaleur: <span className="font-medium">orange</span> ≥ 28°C, <span className="font-medium text-rose-700">rouge</span> ≥ 33°C.</li>
+                <li>Froid: <span className="font-medium">orange</span> ≤ 4°C, <span className="font-medium text-rose-700">rouge</span> ≤ 0°C.</li>
               </ul>
             </article>
-            <article className="rounded-xl border border-slate-200 bg-white p-4">
-              <h3 className="text-sm font-semibold text-slate-900">
-                Fenetres a eviter
-              </h3>
-              <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                {windows.avoid.slice(0, 5).map((window) => (
-                  <li
-                    key={`${window.from}-${window.to}`}
-                    className="rounded-lg border border-rose-200 bg-rose-50 p-2"
-                  >
-                    {formatDateTimeShort(window.from)} -{" "}
-                    {formatDateTimeShort(window.to)}: {window.reason}
-                  </li>
-                ))}
-                {windows.avoid.length === 0 ? (
-                  <li>Aucune fenetre critique detectee.</li>
-                ) : null}
-              </ul>
-            </article>
-          </div>
+          </>
+        ) : null}
+      </div>
 
-          <article className="rounded-xl border border-slate-200 bg-white p-4">
-            <h3 className="text-sm font-semibold text-slate-900">
-              Regles EPI explicites
-            </h3>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-              <li>Pluie: orange si &gt;=0.8 mm/h, rouge si &gt;=3 mm/h.</li>
-              <li>Vent: orange si &gt;=30 km/h, rouge si &gt;=45 km/h.</li>
-              <li>Chaleur: orange si &gt;=28 C, rouge si &gt;=33 C.</li>
-              <li>Froid: orange si &lt;=4 C, rouge si &lt;=0 C.</li>
-            </ul>
-          </article>
-        </>
-      ) : null}
+      {/* DROITE : Data et Prévisions */}
+      <div className="space-y-4">
+        {!isLoading && !error ? (
+          <>
+            <div className="bg-slate-100 p-1.5 flex gap-1 rounded-lg w-fit">
+              <button
+                onClick={() => setActivePeriod("now")}
+                className={`rounded-md px-4 py-1.5 text-xs font-semibold transition ${activePeriod === "now" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
+              >
+                0-6h (Nowcasting)
+              </button>
+              <button
+                onClick={() => setActivePeriod("j13")}
+                className={`rounded-md px-4 py-1.5 text-xs font-semibold transition ${activePeriod === "j13" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
+              >
+                J+1 à J+3
+              </button>
+              <button
+                onClick={() => setActivePeriod("j7")}
+                className={`rounded-md px-4 py-1.5 text-xs font-semibold transition ${activePeriod === "j7" ? "bg-white text-slate-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}
+              >
+                Horizon J+7
+              </button>
+            </div>
+
+            {activePeriod === "now" ? (
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {nowcasting.map((point) => {
+                  const risk = evaluateWeatherRisk({
+                    temperature: point.temperature,
+                    rain: point.rain,
+                    wind: point.wind,
+                  });
+                  return (
+                    <article key={point.time} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm hover:border-emerald-200 transition">
+                      <p className="font-semibold text-slate-900 text-sm border-b border-slate-100 pb-2 mb-2">
+                        {formatDateTimeShort(point.time)}
+                      </p>
+                      <ul className="text-xs font-medium text-slate-600 space-y-1">
+                        <li>Température: {point.temperature.toFixed(1)}°C</li>
+                        <li>Pluie: {point.rain.toFixed(1)} mm/h</li>
+                        <li>Vent: {point.wind.toFixed(0)} km/h</li>
+                      </ul>
+                      <p className={`mt-3 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${risk.level === 'rouge' ? 'bg-rose-100 text-rose-700' : risk.level === 'orange' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        Risque {risk.level}
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            {activePeriod === "j13" ? (
+              <div className="grid gap-3 md:grid-cols-3">
+                {j13.map((day) => {
+                  const risk = evaluateWeatherRisk({
+                    temperature: day.max,
+                    rain: day.rain / 3,
+                    wind: day.wind,
+                  });
+                  return (
+                    <article key={day.day} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                      <p className="font-semibold text-slate-900 text-sm border-b border-slate-100 pb-2 mb-2">{formatDateShort(day.day)}</p>
+                      <ul className="text-xs font-medium text-slate-600 space-y-1">
+                        <li>Min/Max: {day.min.toFixed(1)} / {day.max.toFixed(1)}°C</li>
+                        <li>Pluie (total): {day.rain.toFixed(1)} mm</li>
+                        <li>Rafales: {day.wind.toFixed(0)} km/h</li>
+                      </ul>
+                      <p className={`mt-3 inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${risk.level === 'rouge' ? 'bg-rose-100 text-rose-700' : risk.level === 'orange' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                        Risque {risk.level}
+                      </p>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : null}
+
+            {activePeriod === "j7" ? (
+              <article className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 text-sm text-indigo-900 shadow-sm max-w-sm">
+                <p className="font-semibold uppercase tracking-wider text-xs opacity-80 mb-1">
+                  Aperçu probabiliste à J+7
+                </p>
+                <p className="text-lg font-bold">{formatDateShort(j7.day)}</p>
+                <ul className="mt-3 text-sm font-medium space-y-1">
+                  <li>Temperatures: {j7.min.toFixed(1)} / {j7.max.toFixed(1)}°C</li>
+                  <li>Précipitations: {j7.rain.toFixed(1)} mm</li>
+                  <li>Vent max: {j7.wind.toFixed(0)} km/h</li>
+                </ul>
+              </article>
+            ) : null}
+
+            <div className="grid gap-4 md:grid-cols-2 pt-2 border-t border-slate-100 mt-2">
+              <article className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-emerald-900 mb-3">
+                  Fenêtres d'intervention recommandées
+                </h3>
+                <ul className="space-y-2 text-sm text-emerald-800">
+                  {windows.recommended.slice(0, 5).map((window) => (
+                    <li key={`${window.from}-${window.to}`} className="flex flex-col rounded bg-white p-2 border border-emerald-100">
+                      <span className="font-semibold text-xs text-emerald-700 uppercase tracking-widest">{formatDateTimeShort(window.from)} <span className="opacity-50">à</span> {formatDateTimeShort(window.to)}</span>
+                      <span className="text-xs mt-1 font-medium">{window.reason}</span>
+                    </li>
+                  ))}
+                  {windows.recommended.length === 0 ? (
+                    <li className="text-xs font-medium text-emerald-700/70 italic">Aucune fenêtre stable détectée en Nowcast.</li>
+                  ) : null}
+                </ul>
+              </article>
+              <article className="rounded-xl border border-rose-200 bg-rose-50/50 p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-rose-900 mb-3">
+                  Fenêtres critiques à éviter
+                </h3>
+                <ul className="space-y-2 text-sm text-rose-800">
+                  {windows.avoid.slice(0, 5).map((window) => (
+                    <li key={`${window.from}-${window.to}`} className="flex flex-col rounded bg-white p-2 border border-rose-100">
+                      <span className="font-semibold text-xs text-rose-700 uppercase tracking-widest">{formatDateTimeShort(window.from)} <span className="opacity-50">à</span> {formatDateTimeShort(window.to)}</span>
+                      <span className="text-xs mt-1 font-medium">{window.reason}</span>
+                    </li>
+                  ))}
+                  {windows.avoid.length === 0 ? (
+                    <li className="text-xs font-medium text-rose-700/70 italic">Aucune alerte rouge imminente.</li>
+                  ) : null}
+                </ul>
+              </article>
+            </div>
+          </>
+        ) : null}
+      </div>
     </div>
   );
 }
