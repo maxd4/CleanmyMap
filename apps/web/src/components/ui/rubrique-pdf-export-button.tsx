@@ -182,55 +182,65 @@ export function RubriquePdfExportButton({
   }
 
   return (
-    <div data-print-ignore="true" className="flex flex-col items-end gap-1">
-      <div className="w-full rounded-lg border border-slate-200 bg-slate-50 p-3 text-left">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-          Generation 1 clic
+    <div data-print-ignore="true" className="flex flex-col gap-3 min-w-80 w-full max-w-sm">
+      <div className="w-full rounded-[1.5rem] border border-white/60 bg-white/70 backdrop-blur-xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+          {/* Decorative Icon BG */}
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        </div>
+        
+        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mb-3 flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          Génération Livrable PDF
         </p>
-        <p className="mt-1 text-xs text-slate-700">
-          Rubrique associee:{" "}
-          <span className="font-semibold">{rubriqueSlug}</span>
-        </p>
-        <p className="mt-1 text-xs text-slate-700">
-          Nom par defaut:{" "}
-          <span className="font-mono">{filename.toLowerCase()}</span>
-        </p>
-        <label className="mt-2 block text-xs text-slate-600">
-          Renommage optionnel (rubrique personnalisee)
-          <input
-            type="text"
-            value={customRubrique}
-            onChange={(event) => setCustomRubrique(event.target.value)}
-            placeholder="ex: reports, audit, analytics"
-            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-800 outline-none focus:border-emerald-500"
-          />
-        </label>
-      </div>
-      <button
-        type="button"
-        onClick={exportRubriquePdf}
-        disabled={state === "pending"}
-        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:bg-slate-200"
-      >
-        {state === "pending"
-          ? "Preparation PDF..."
-          : "Generer le livrable (1 clic)"}
-      </button>
-      {message ? <p className="text-xs text-rose-700">{message}</p> : null}
-      {history.length > 0 ? (
-        <div className="w-full rounded-lg border border-slate-200 bg-white p-3 text-left">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-            Historique livrables
+        
+        <div className="space-y-1 mb-4">
+          <p className="text-xs text-slate-500 flex justify-between">
+            <span>Rubrique:</span> <span className="font-bold text-slate-800">{rubriqueSlug}</span>
           </p>
-          <ul className="mt-2 space-y-1">
-            {history.slice(0, 6).map((item) => (
-              <li key={item.id} className="text-xs text-slate-700">
-                <span className="font-mono">{item.filename}</span> - rubrique{" "}
-                {item.rubrique} -{" "}
-                {new Intl.DateTimeFormat("fr-FR", {
-                  dateStyle: "short",
-                  timeStyle: "short",
-                }).format(new Date(item.generatedAt))}
+          <p className="text-xs text-slate-500 flex justify-between truncate">
+            <span>Fichier:</span> <span className="font-mono bg-slate-100 px-1.5 rounded text-[10px] text-slate-700">{filename.toLowerCase()}</span>
+          </p>
+        </div>
+        
+        <label className="block text-[11px] font-bold text-slate-700 mb-1">
+          Renommer la rubrique (Optionnel)
+        </label>
+        <input
+          type="text"
+          value={customRubrique}
+          onChange={(event) => setCustomRubrique(event.target.value)}
+          placeholder="ex: audits, q3_report..."
+          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner mb-4"
+        />
+
+        <button
+          type="button"
+          onClick={exportRubriquePdf}
+          disabled={state === "pending"}
+          className="w-full relative overflow-hidden group rounded-xl bg-slate-900 px-4 py-3 text-sm font-black text-white transition-all hover:bg-slate-800 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/20 to-emerald-500/0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+          <span className="relative flex items-center justify-center gap-2">
+            {state === "pending" ? "Préparation du document..." : "Générer le rapport officiel"}
+          </span>
+        </button>
+        {message ? <p className="mt-2 text-[10px] font-bold text-rose-500 bg-rose-50 p-2 rounded-lg border border-rose-100 text-center">{message}</p> : null}
+      </div>
+
+      {history.length > 0 ? (
+        <div className="w-full rounded-[1.5rem] border border-slate-200/60 bg-white/50 backdrop-blur-md p-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3 ml-1">
+            Historique 
+          </p>
+          <ul className="space-y-2">
+            {history.slice(0, 4).map((item) => (
+              <li key={item.id} className="flex flex-col gap-0.5 text-[10px] bg-white p-2 rounded-xl border border-slate-100 shadow-sm hover:border-emerald-200 transition-colors">
+                <span className="font-mono font-bold text-slate-700 truncate">{item.filename}</span>
+                <div className="flex justify-between text-slate-400">
+                  <span className="uppercase tracking-wide">{item.rubrique}</span>
+                  <span>{new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(item.generatedAt))}</span>
+                </div>
               </li>
             ))}
           </ul>
