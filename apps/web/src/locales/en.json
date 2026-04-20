@@ -97,5 +97,32 @@
       "cat4_name": "Aluminum",
       "cat4_info": "Cans. 95% energy saved during recycling."
     }
+  },
+  "dashboard": {
+    "title_v2": "Overview Cockpit",
+    "objective_v2": "Guide operational prioritization with a short decision summary, then targeted analytics without duplicating Compare, Climate, and Reports.",
+    "section1_sup": "Business Management",
+    "section1_title": "Comparative summary Y vs Y-1",
+    "section1_desc": "Actionable short-term reading: impact, quality, coverage, mobilization, moderation delay.",
+    "section2_sup": "Technical Supervision",
+    "section2_title": "Platform health and critical exports",
+    "section2_desc": "Service status and verification of sensitive executions.",
+    "section_method": "Method (Key KPIs)",
+    "section3_sup": "Field Execution",
+    "section3_title": "Volunteer Form",
+    "section3_desc": "Quick action declaration directly from the home page.",
+    "trace_time": "Timestamp:",
+    "trace_reliability": "Reliability:",
+    "trace_good": "medium to high depending on available metrics",
+    "trace_bad": "low (missing data)",
+    "trace_source": "Sources: validated actions, pilotage overview module, N/N-1 derived metrics.",
+    "trace_method": "Method: absolute and relative deltas over a 30-day window. Scope: overview cockpit.",
+    "btn_reports": "Open reporting",
+    "title_v1": "Dashboard",
+    "desc_v1": "Decision management focused on field impact, tracking, and data reliability.",
+    "btn_action": "GO CLEAN UP NOW",
+    "btn_signal": "REPORT A DIRTY ZONE",
+    "btn_impact": "MY IMPACT",
+    "btn_eval": "3 QA VALIDATIONS PENDING"
   }
 }

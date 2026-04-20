@@ -25,6 +25,7 @@ import {
 } from "@/lib/profiles";
 import { getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getTranslation } from "@/lib/i18n/server-translation";
 
 async function loadDashboardOverview() {
   const supabase = getSupabaseServerClient();
@@ -46,6 +47,7 @@ export default async function DashboardPage() {
   const secondaryAction = getProfileSecondaryAction(profile);
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const overview = await loadDashboardOverview().catch(() => null);
+  const { t } = getTranslation("dashboard", locale);
   const fallbackActorName = userId ?? "unknown-user";
   const actorNameOptions =
     identity?.actorNameOptions && identity.actorNameOptions.length > 0
@@ -121,8 +123,8 @@ export default async function DashboardPage() {
         <PunchySlogan />
         <PageReadingTemplate
           context={`Profil ${roleLabel}`}
-          title="Cockpit transversal"
-          objective="Orienter la priorisation opérationnelle avec un résumé décisionnel court, puis des analyses ciblées sans doublonner Compare, Climate et Reports."
+          title={t("title_v2")}
+          objective={t("objective_v2")}
           summary={
             <ThirtySecondsSummary
               kpis={kpis}
@@ -151,14 +153,13 @@ export default async function DashboardPage() {
               <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Pilotage metier
+                    {t("section1_sup")}
                   </p>
                   <h2 className="mt-1 text-xl font-semibold text-slate-900">
-                    Synthèse comparative N vs N-1
+                    {t("section1_title")}
                   </h2>
                   <p className="mt-1 text-sm text-slate-600">
-                    Lecture actionnable court terme: impact, qualité, couverture,
-                    mobilisation, délai de modération.
+                    {t("section1_desc")}
                   </p>
                 </div>
 
@@ -181,13 +182,13 @@ export default async function DashboardPage() {
               <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Supervision technique
+                    {t("section2_sup")}
                   </p>
                   <h2 className="mt-1 text-xl font-semibold text-slate-900">
-                    Santé plateforme et exports critiques
+                    {t("section2_title")}
                   </h2>
                   <p className="mt-1 text-sm text-slate-600">
-                    État des services et vérification des exécutions sensibles.
+                    {t("section2_desc")}
                   </p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-1">
@@ -198,20 +199,20 @@ export default async function DashboardPage() {
               {overview ? (
                 <KpiMethodBlock
                   methods={overview.methods.slice(0, 3)}
-                  title="Méthode (KPI clés)"
+                  title={t("section_method")}
                 />
               ) : null}
 
               <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    Exécution terrain
+                    {t("section3_sup")}
                   </p>
                   <h2 className="mt-1 text-xl font-semibold text-slate-900">
-                    Formulaire bénévole
+                    {t("section3_title")}
                   </h2>
                   <p className="mt-1 text-sm text-slate-600">
-                    Déclaration rapide d&apos;action directement depuis la page d&apos;accueil.
+                    {t("section3_desc")}
                   </p>
                 </div>
                 <ActionDeclarationForm
@@ -227,20 +228,20 @@ export default async function DashboardPage() {
           trace={
             <div className="space-y-2 text-xs text-slate-600">
               <p>
-                Horodatage:{" "}
+                {t("trace_time")}{" "}
                 {overview
                   ? new Date(overview.generatedAt).toLocaleString("fr-FR")
                   : "indisponible"}{" "}
-                | Fiabilité:{" "}
+                | {t("trace_reliability")}{" "}
                 {overview
-                  ? "moyenne à élevée selon les métriques disponibles"
-                  : "faible (données absentes)"}
+                  ? t("trace_good")
+                  : t("trace_bad")}
               </p>
               <p>
-                Sources: actions validées, module pilotage overview, métriques dérivées N/N-1.
+                {t("trace_source")}
               </p>
               <p>
-                Méthode: deltas absolus et relatifs sur fenêtre 30 jours. Périmètre: cockpit transversal.
+                {t("trace_method")}
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
                 <RubriquePdfExportButton rubriqueTitle="Tableau de bord pilotage" />
@@ -261,7 +262,7 @@ export default async function DashboardPage() {
                   href="/reports"
                   className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
                 >
-                  Ouvrir le reporting
+                  {t("btn_reports")}
                 </Link>
               </div>
             </div>
@@ -291,10 +292,10 @@ export default async function DashboardPage() {
           Espace applicatif
         </p>
         <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 relative z-10">
-          Tableau de bord {roleLabel.toLowerCase()}
+          {t("title_v1")} {roleLabel.toLowerCase()}
         </h1>
         <p className="mt-2 text-sm text-slate-600 relative z-10">
-          Pilotage décisionnel centré sur l'impact terrain, la mobilisation et la fiabilité des données.
+          {t("desc_v1")}
         </p>
         
         {/* BOUTONS DYNAMIQUES GÉANTS VS ROLE */}
@@ -305,19 +306,19 @@ export default async function DashboardPage() {
                 href="/actions/new" 
                 className="inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
               >
-                <span className="text-2xl">🔥</span> ALLER RAMASSER MAINTENANT
+                <span className="text-2xl">🔥</span> {t("btn_action")}
               </Link>
               <Link 
                 href="/signalement" 
                 className="inline-flex items-center justify-center gap-3 rounded-xl bg-amber-500 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
               >
-                <span className="text-2xl">⚡</span> SIGNALER UNE ZONE SALE
+                <span className="text-2xl">⚡</span> {t("btn_signal")}
               </Link>
               <Link 
                 href="/profil/impact" 
                 className="inline-flex items-center justify-center gap-3 rounded-xl bg-white border-2 border-emerald-500 px-8 py-5 text-lg font-black text-emerald-600 shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
               >
-                <span className="text-2xl">📊</span> MON IMPACT
+                <span className="text-2xl">📊</span> {t("btn_impact")}
               </Link>
             </div>
           ) : role === 'admin' ? (
@@ -326,7 +327,7 @@ export default async function DashboardPage() {
                 href="/admin/validation" 
                 className="inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
               >
-                <span className="text-2xl">🔍</span> 3 VALIDATIONS QA EN ATTENTE
+                <span className="text-2xl">🔍</span> {t("btn_eval")}
               </Link>
             </div>
           ) : null}
@@ -362,10 +363,10 @@ export default async function DashboardPage() {
             Bloc A
           </p>
           <h2 className="mt-1 text-xl font-semibold text-slate-900">
-            Pilotage métier
+            {t("section1_title")}
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Lecture comparative N vs N-1 pour accélérer la décision opérationnelle.
+            {t("section1_desc")}
           </p>
         </div>
 
@@ -385,10 +386,10 @@ export default async function DashboardPage() {
             Bloc B
           </p>
           <h2 className="mt-1 text-xl font-semibold text-slate-900">
-            Supervision technique
+            {t("section2_title")}
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Santé API/services, alertes techniques et vérification des exports critiques.
+            {t("section2_desc")}
           </p>
         </div>
         <div className="grid gap-4 md:grid-cols-1">
@@ -399,7 +400,7 @@ export default async function DashboardPage() {
       {overview ? (
         <KpiMethodBlock
           methods={overview.methods.slice(0, 3)}
-          title="Méthode (KPI clés)"
+          title={t("section_method")}
         />
       ) : null}
 
@@ -417,10 +418,10 @@ export default async function DashboardPage() {
             Bloc D
           </p>
           <h2 className="mt-1 text-xl font-semibold text-slate-900">
-            Formulaire bénévole
+            {t("section3_title")}
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Déclaration rapide d&apos;action directement depuis la page d&apos;accueil.
+            {t("section3_desc")}
           </p>
         </div>
         <ActionDeclarationForm
