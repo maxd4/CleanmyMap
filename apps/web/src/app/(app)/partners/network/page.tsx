@@ -72,47 +72,59 @@ export default function PartnersNetworkPage() {
       </section>
 
       {/* VOLUNTEERS GAUGE */}
-      <section className="grid md:grid-cols-2 gap-8 items-center bg-white p-8 md:p-12 rounded-[3rem] border border-slate-200 shadow-sm">
+      <section className="grid md:grid-cols-2 gap-8 items-center bg-white/70 backdrop-blur-xl p-8 md:p-12 rounded-[3rem] border border-slate-200/50 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)]">
         <div className="space-y-6">
-          <div className="w-16 h-16 rounded-3xl bg-rose-50 flex items-center justify-center text-rose-500">
-            <Heart size={32} />
+          <div className="w-16 h-16 rounded-[2rem] bg-rose-50 flex items-center justify-center text-rose-500 shadow-inner">
+            <Heart size={32} className="animate-pulse" />
           </div>
-          <h2 className="text-4xl font-black text-slate-900 leading-tight">Objectif : 1000<br/>Sentinelles Actives.</h2>
-          <p className="text-slate-600">
+          <h2 className="text-4xl lg:text-5xl font-black text-slate-900 leading-tight tracking-tight">Objectif : 1000<br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-orange-400">Sentinelles Actives.</span></h2>
+          <p className="text-slate-600 text-lg">
             CleanMyMap n'est rien sans ses bénévoles. Nous avons besoin de votre aide pour atteindre la masse critique nécessaire à une cartographie parfaite du territoire.
           </p>
-          <div className="space-y-2">
+          <div className="space-y-3 pt-4">
             <div className="flex justify-between text-sm font-bold">
-              <span className="text-slate-900">{currentVolunteers} collecteurs inscrits</span>
-              <span className="text-slate-400">Objectif {volunteerGoal}</span>
+              <span className="text-slate-900 bg-slate-100 px-3 py-1 rounded-full">{currentVolunteers} collecteurs inscrits</span>
+              <span className="text-slate-400">Palier v2 : {volunteerGoal}</span>
             </div>
-            <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden">
+            <div className="w-full h-6 bg-slate-100 rounded-full overflow-hidden shadow-inner p-1">
               <div 
-                className="h-full bg-rose-500 rounded-full transition-all duration-1000"
+                className="h-full bg-gradient-to-r from-rose-400 to-rose-600 rounded-full transition-all duration-1000 relative overflow-hidden"
                 style={{ width: `${progressPercent}%` }}
-              />
+              >
+                <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]" />
+              </div>
             </div>
-            <p className="text-[10px] text-rose-500 font-bold uppercase tracking-widest text-right">Plus que {volunteerGoal - currentVolunteers} pour le palier v2</p>
+            <p className="text-[10px] text-rose-500 font-bold uppercase tracking-widest text-right">Plus que {volunteerGoal - currentVolunteers} membres</p>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="p-8 bg-slate-50 rounded-3xl space-y-4 border border-slate-100">
-            <h3 className="text-xl font-bold flex items-center gap-2">
-              <Users size={20} className="text-emerald-600" />
+        <div className="space-y-6">
+          <div className="p-8 bg-gradient-to-br from-emerald-50 to-teal-50/20 rounded-[2.5rem] space-y-6 border border-emerald-100 shadow-sm hover:shadow-xl transition-all duration-300 group">
+            <h3 className="text-2xl font-black flex items-center gap-3 text-emerald-950">
+              <div className="p-3 bg-white rounded-2xl shadow-sm text-emerald-600 group-hover:scale-110 transition-transform">
+                <Users size={24} />
+              </div>
               Devenir Référent Local
             </h3>
-            <p className="text-slate-500 text-sm">
-              Vous connaissez votre quartier par cœur ? Devenez le point de contact pour organiser les collectes et valider les signalements.
+            <p className="text-emerald-800/80 leading-relaxed">
+              Vous connaissez votre quartier par cœur ? Devenez le point de contact stratégique pour organiser les collectes, auditer le terrain et valider les signalements.
             </p>
-            <button className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-700 transition flex items-center justify-center gap-2 shadow-lg">
+            <button className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-black hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_-5px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_-5px_rgba(16,185,129,0.6)] hover:-translate-y-1">
               <Mail size={18} /> Postuler à l'équipe
             </button>
           </div>
-          <div className="p-6 flex items-center gap-4 bg-indigo-50 border border-indigo-100 rounded-2xl text-indigo-900">
-             <Handshake size={24} />
-             <p className="text-xs font-bold leading-tight">Vous représentez une ville ? <Link href="/sponsor-portal" className="underline">Accédez à votre portail ROI</Link></p>
-          </div>
+          
+          <Link href="/sponsor-portal" className="block p-6 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100/50 hover:border-indigo-200 rounded-[2rem] text-indigo-900 transition-all duration-300 group">
+             <div className="flex items-center gap-4">
+               <div className="p-3 bg-white rounded-2xl shadow-sm text-indigo-500 group-hover:scale-110 transition-transform">
+                 <Handshake size={24} />
+               </div>
+               <div>
+                 <p className="text-sm font-black leading-tight mb-1">Vous représentez une ville ou entreprise ?</p>
+                 <p className="text-xs text-indigo-600/80 group-hover:underline">Accédez à votre portail Dashboard ROI &rarr;</p>
+               </div>
+             </div>
+          </Link>
         </div>
       </section>
     </div>

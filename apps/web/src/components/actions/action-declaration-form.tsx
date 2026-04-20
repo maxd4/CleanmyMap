@@ -358,7 +358,7 @@ export function ActionDeclarationForm({
     <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6 items-start">
       {/* COLONNE GAUCHE: Carte et Outils Terrain */}
       <div className="space-y-6">
-        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="rounded-[2.5rem] border border-slate-200/60 bg-white/60 backdrop-blur-xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
           <ActionDeclarationFormHeader
             clerkIdentityLabel={clerkIdentityLabel}
             clerkUserId={clerkUserId}
@@ -369,21 +369,22 @@ export function ActionDeclarationForm({
         </section>
 
         {!isQuickMode && (
-          <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm relative overflow-hidden">
-            <h3 className="mb-4 text-sm font-semibold text-emerald-900 border-b border-emerald-200 pb-3 flex items-center gap-2">
-              <span>📍</span> Assistance Cartographique
+          <section className="rounded-[2.5rem] border-2 border-emerald-100 bg-gradient-to-br from-white to-emerald-50/50 p-8 shadow-[0_8px_30px_rgb(16,185,129,0.06)] relative overflow-hidden">
+            <h3 className="mb-6 text-lg font-black text-emerald-950 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl shadow-inner">📍</div> 
+              Assistance Cartographique
             </h3>
             
-            <label className="flex items-start gap-3 text-sm text-emerald-900 mb-5 bg-white/60 p-3 rounded-lg border border-emerald-100 shadow-sm">
+            <label className="flex items-start gap-4 text-sm text-slate-700 mb-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
               <input
                 type="checkbox"
                 checked={manualDrawingEnabled}
                 onChange={(event) => setManualDrawingEnabled(event.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
+                className="mt-1 h-5 w-5 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500 transition-all cursor-pointer"
               />
-              <span>
-                <span className="font-semibold block mb-1">Option recommandee (trace manuel)</span>
-                Tracez ou entourez la zone nettoyee sur la carte. Cela desactive les champs manuels lat/lng a droite et assure un geo-suivi parfait.
+              <span className="flex-1">
+                <span className="font-bold text-emerald-900 block mb-1">Option recommandée (tracé manuel)</span>
+                Tracez ou entourez la zone nettoyée sur la carte. Cela désactive la saisie manuelle et assure un suivi topographique parfait.
               </span>
             </label>
 
@@ -417,9 +418,12 @@ export function ActionDeclarationForm({
       </div>
 
       {/* DROITE : Formulaire de saisie standard */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="rounded-[2.5rem] border border-slate-200/60 bg-white/80 backdrop-blur-xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] relative overflow-hidden">
+      
+      {/* Background Decor */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400 opacity-[0.03] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
-      <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
+      <form className="relative z-10 mt-2 grid gap-6 md:grid-cols-2" onSubmit={onSubmit}>
         <ActionDeclarationIdentityFields
           resolvedActorOptions={resolvedActorOptions}
           actorName={form.actorName}
@@ -434,25 +438,25 @@ export function ActionDeclarationForm({
           }
         />
 
-        <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Date de l&apos;action *
+        <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+          Date de l&apos;action <span className="text-emerald-500">*</span>
           <input
             type="date"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
+            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
             value={form.actionDate}
             onChange={(event) => updateField("actionDate", event.target.value)}
           />
         </label>
 
-        <label className="md:col-span-2 flex flex-col gap-2 text-sm text-slate-700">
-          Emplacement (adresse ou libelle) *
+        <label className="md:col-span-2 flex flex-col gap-2 text-sm font-bold text-slate-700">
+          Emplacement (adresse ou libellé) <span className="text-emerald-500">*</span>
           <input
-            className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
+            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
             value={form.locationLabel}
             onChange={(event) =>
               updateField("locationLabel", event.target.value)
             }
-            placeholder="Ex: Place de la Republique, Paris"
+            placeholder="Ex: Place de la République, Paris"
             minLength={2}
             maxLength={200}
           />
@@ -463,10 +467,10 @@ export function ActionDeclarationForm({
           />
         </label>
 
-        <label className="md:col-span-2 flex flex-col gap-2 text-sm text-slate-700">
-          Type de lieu *
+        <label className="md:col-span-2 flex flex-col gap-2 text-sm font-bold text-slate-700">
+          Type de lieu <span className="text-emerald-500">*</span>
           <select
-            className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
+            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm appearance-none"
             value={form.placeType}
             onChange={(event) => updateField("placeType", event.target.value)}
           >
@@ -476,7 +480,7 @@ export function ActionDeclarationForm({
               </option>
             ))}
           </select>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 font-normal mt-1">
             Cette information permet de mieux classifier la zone et d&apos;ajuster les rapports d&apos;impact.
           </p>
         </label>
@@ -493,13 +497,13 @@ export function ActionDeclarationForm({
           updateField={updateField}
           drawingMapComponent={ActionDrawingMap}
         />
-        <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Dechets collectes (kg) *
+        <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+          Déchets collectés (kg) <span className="text-emerald-500">*</span>
           <input
             type="number"
             step="0.1"
             min="0"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
+            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
             value={form.wasteKg}
             onChange={(event) => updateField("wasteKg", event.target.value)}
           />
@@ -510,12 +514,12 @@ export function ActionDeclarationForm({
         </label>
 
         <ActionDeclarationMegotsSection form={form} updateField={updateField} />
-        <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Nombre de benevoles *
+        <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+          Nombre de bénévoles <span className="text-emerald-500">*</span>
           <input
             type="number"
             min="1"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
+            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
             value={form.volunteersCount}
             onChange={(event) =>
               updateField("volunteersCount", event.target.value)
