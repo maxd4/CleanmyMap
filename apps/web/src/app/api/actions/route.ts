@@ -16,6 +16,7 @@ import {
   trackActionCreated,
 } from "@/lib/gamification/progression";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 
 export const runtime = "nodejs";
 const QUALITY_GRADES = ["A", "B", "C"] as const;
@@ -171,8 +172,7 @@ export async function GET(request: Request) {
         }
       : undefined);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(error, "api/actions");
   }
 }
 
@@ -194,13 +194,7 @@ export async function POST(request: Request) {
 
   const parsed = createActionSchema.safeParse(payload);
   if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "Invalid payload",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 },
-    );
+    return validationErrorResponse(parsed.error.flatten().fieldErrors);
   }
 
   try {
@@ -236,7 +230,6 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(error, "api/actions");
   }
 }

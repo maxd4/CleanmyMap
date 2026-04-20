@@ -11,6 +11,8 @@ import { CommunityRemindersCard } from "@/components/sections/rubriques/communit
 import { CommunityStaffingCard } from "@/components/sections/rubriques/community/staffing-card";
 import { useCommunitySection } from "@/components/sections/rubriques/community/use-community-section";
 import { KitSection } from "@/components/sections/rubriques/kit-section";
+import { NewsletterSignup } from "@/components/newsletter/newsletter-signup";
+import { ChatShell } from "@/components/chat/chat-shell";
 
 function CommunitySection() {
   const model = useCommunitySection();
@@ -18,15 +20,20 @@ function CommunitySection() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-        Hub unifie inspire de l&apos;approche cleanwalk.org: ressources terrain
-        (materiel, methodes, checklists), coordination des evenements
-        collectifs et trace historique des actions/decisions pour piloter
-        l&apos;impact dans le temps.
+        Hub unifié inspiré de l&apos;approche cleanwalk.org : ressources terrain
+        (matériel, méthodes, checklists), coordination des événements
+        collectifs et **Centrale App** pour la discussion en direct.
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 items-start">
         {/* GAUCHE : Coordination et événements */}
-        <div className="space-y-4">
+        <div className="space-y-6">
+          
+          {/* NOUVEAU : Messagerie Pro et Discussion Locale */}
+          <section>
+             <ChatShell initialArrondissement={11} />
+          </section>
+
           <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-900">
               Ressources terrain standardisées
@@ -93,10 +100,14 @@ function CommunitySection() {
               {model.communityErrorMessage}
             </p>
           ) : null}
+
+          <div className="pt-8">
+            <NewsletterSignup />
+          </div>
         </div>
 
         {/* DROITE : Historique des actions */}
-        <div className="space-y-4">
+        <div className="space-y-4 sticky top-4">
           <ActionsHistoryList />
         </div>
       </div>

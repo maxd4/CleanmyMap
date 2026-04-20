@@ -2,8 +2,19 @@ import { createClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 
 /**
+ * Returns true if the core Supabase environment variables are present and look valid.
+ */
+export function isSupabaseConfigured(): boolean {
+  return (
+    !!env.NEXT_PUBLIC_SUPABASE_URL?.startsWith("https://") &&
+    !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 20
+  );
+}
+
+/**
  * Returns a Supabase client for server-side usage.
- * @param useServiceRole If true, uses the SUPABASE_SERVICE_ROLE_KEY (bypasses RLS). Default is currently true to avoid regressions, but should be false for public routes.
+ * @param useServiceRole If true, uses the SUPABASE_SERVICE_ROLE_KEY (bypasses RLS).
  */
 export function getSupabaseServerClient(useServiceRole = true) {
   const url = env.NEXT_PUBLIC_SUPABASE_URL;
@@ -11,8 +22,13 @@ export function getSupabaseServerClient(useServiceRole = true) {
     ? env.SUPABASE_SERVICE_ROLE_KEY
     : env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+  const isProd = process.env.NODE_ENV === "production";
+
   if (!url || !url.startsWith("https://")) {
-    console.error("CRITICAL: NEXT_PUBLIC_SUPABASE_URL is missing or invalid.");
+    const errorMsg = "CRITICAL: NEXT_PUBLIC_SUPABASE_URL is missing or invalid.";
+    if (isProd) throw new Error(errorMsg);
+    
+    console.warn(`[Supabase Dev Fallback] ${errorMsg}`);
     return createClient(
       "https://placeholder-url.supabase.co",
       "placeholder-key",
@@ -20,9 +36,10 @@ export function getSupabaseServerClient(useServiceRole = true) {
   }
 
   if (!key || key.length < 20) {
-    console.error(
-      `CRITICAL: Supabase ${useServiceRole ? "service role" : "anon"} key is missing or invalid.`,
-    );
+    const errorMsg = `CRITICAL: Supabase ${useServiceRole ? "service role" : "anon"} key is missing or invalid.`;
+    if (isProd) throw new Error(errorMsg);
+    
+    console.warn(`[Supabase Dev Fallback] ${errorMsg}`);
     return createClient(url, "placeholder-key");
   }
 

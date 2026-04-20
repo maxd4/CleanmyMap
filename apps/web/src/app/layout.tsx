@@ -13,6 +13,7 @@ import { ClerkLocalizationProvider } from "@/components/auth/clerk-localization-
 import { VibrantBackground } from "@/components/ui/vibrant-background";
 import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
+import { NotificationBell } from "@/components/navigation/notification-bell";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { metadata as appMetadata } from "@/lib/metadata";
@@ -21,6 +22,8 @@ import "leaflet-draw/dist/leaflet.draw.css";
 import "./globals.css";
 
 export const metadata: Metadata = appMetadata;
+
+export const revalidate = 3600; // 1 hour Cache for public landing page
 
 export default async function RootLayout({
   children,
@@ -50,7 +53,7 @@ export default async function RootLayout({
               <header className="sticky top-0 z-30 border-b border-white/10 bg-white/60 dark:bg-slate-950/60 backdrop-blur-xl shadow-sm transition-all duration-300">
                 <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-8">
                   <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-600/20">C</div>
+                    <div className="h-8 w-12 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-black text-[10px] shadow-lg shadow-emerald-600/20">CMM</div>
                     <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase">
                       CleanmyMap
                     </h1>
@@ -77,6 +80,7 @@ export default async function RootLayout({
                         {identity ? (
                           <AccountIdentityChip identity={identity} />
                         ) : null}
+                        <NotificationBell />
                         <UserButton 
                           appearance={{
                             elements: {

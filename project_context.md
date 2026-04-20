@@ -25,6 +25,11 @@
   - Master System Architecture: `documentation/technical/master-architecture.md`
   - Visual Assets for DU: `documentation/sessions/assets/`
   - Mermaid Source Codes: `documentation/sessions/assets/SOURCE_SCHEMAS.md`
+- Messaging & Engagement (PRO):
+  - In-App Chat: `apps/web/src/components/chat/chat-shell.tsx`
+  - Chat API: `apps/web/src/app/api/chat/route.ts`
+  - Notifications: `apps/web/src/components/navigation/notification-bell.tsx`
+  - Newsletter: `apps/web/src/app/api/newsletter/subscribe/route.ts`
 
 ## ADR decisions (active)
 - Root lockfile is source of truth; `apps/web/package-lock.json` must remain absent.
@@ -42,6 +47,10 @@
 - Admin and moderation:
   - `apps/web/src/app/api/admin/moderation/route.ts`
   - `apps/web/src/lib/admin/operation-audit.ts`
+- Messaging & Security Hardening:
+  - Rate Limiting: `apps/web/src/lib/community/discussion-rate-limit.ts`
+  - Message Pruning: `apps/web/supabase/migrations/20260420_000015_advanced_chat_core.sql`
+  - Authorized Access: `apps/web/src/lib/authz.ts`
 
 ## Repo conventions
 - Keep user-facing copy in French unless feature requires otherwise.

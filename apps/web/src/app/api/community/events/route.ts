@@ -1,4 +1,4 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import {
@@ -7,61 +7,19 @@ import {
   serializeCommunityEventDescription,
 } from "@/lib/community/event-ops";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import type { CommunityEventRow, EventRsvpRow } from "@/types/database";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
-import {
-  getProfileBadge,
-  getRoleBadge,
-  isAdminRole,
-} from "@/lib/authz";
-import { env } from "@/lib/env";
-import { resolveProfile } from "@/lib/profiles";
+import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import { getRoleBadge, getProfileBadge } from "@/lib/authz";
 import {
   reserveDiscussionMessageSlot,
   toDiscussionRateLimitErrorPayload,
 } from "@/lib/community/discussion-rate-limit";
-
-export const runtime = "nodejs";
-
-const createCommunityEventSchema = z.object({
-  title: z.string().trim().min(2).max(200),
-  eventDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Date attendue au format YYYY-MM-DD"),
-  locationLabel: z.string().trim().min(2).max(255),
-  description: z.string().trim().max(2000).optional(),
-  capacityTarget: z.number().int().min(1).max(200000).optional(),
-});
-
-type CommunityEventRow = {
-  id: string;
-  created_at: string;
-  organizer_clerk_id: string;
-  title: string;
-  event_date: string;
-  location_label: string;
-  description: string | null;
-};
-
-type EventRsvpRow = {
-  event_id: string;
-  participant_clerk_id: string;
-  status: "yes" | "maybe" | "no";
-};
-
-type OrganizerIdentity = {
-  userId: string | null;
-  displayName: string;
-  roleBadge: {
-    id: string;
-    label: string;
-    icon: string;
-  };
-  profileBadge: {
-    id: string;
-    label: string;
-    icon: string;
-  };
-};
+import { getClerkService, type ClerkUserIdentity as OrganizerIdentity } from "@/lib/services/clerk";
+import { 
+  extractArrondissementFromLabel, 
+  getAffectedArrondissements 
+} from "@/lib/geo/paris-arrondissements";
 
 function parsePositiveInteger(
   raw: string | null,
@@ -129,77 +87,17 @@ function toEventResponseItem(
   };
 }
 
-function parseAdminUserIds(raw: string | undefined): Set<string> {
-  if (!raw) {
-    return new Set<string>();
-  }
-  return new Set(
-    raw
-      .split(",")
-      .map((value) => value.trim())
-      .filter((value) => value.length > 0),
-  );
-}
+const createCommunityEventSchema = z.object({
+  title: z.string().trim().min(2).max(200),
+  eventDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Date attendue au format YYYY-MM-DD"),
+  locationLabel: z.string().trim().min(2).max(255),
+  description: z.string().trim().max(2000).optional(),
+  capacityTarget: z.number().int().min(1).max(200000).optional(),
+});
 
-function extractRole(metadata: Record<string, unknown> | null | undefined): string | null {
-  if (!metadata) {
-    return null;
-  }
-  const role = metadata["role"];
-  return typeof role === "string" ? role.trim().toLowerCase() : null;
-}
 
-async function loadOrganizerIdentities(
-  organizerIds: string[],
-): Promise<Map<string, OrganizerIdentity>> {
-  const output = new Map<string, OrganizerIdentity>();
-  if (organizerIds.length === 0) {
-    return output;
-  }
-
-  const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
-  const client = await clerkClient();
-
-  await Promise.all(
-    organizerIds.map(async (organizerId) => {
-      try {
-        const user = await client.users.getUser(organizerId);
-        const isAdmin =
-          adminUserIds.has(organizerId) ||
-          isAdminRole({
-            publicMetadata: user.publicMetadata,
-            privateMetadata: user.privateMetadata,
-          });
-        const metadataRole =
-          extractRole(user.publicMetadata as Record<string, unknown>) ??
-          extractRole(user.privateMetadata as Record<string, unknown>);
-        const profile = resolveProfile({ metadataRole, isAdmin });
-        const firstName = user.firstName?.trim() ?? "";
-        const lastName = user.lastName?.trim() ?? "";
-        const displayName =
-          `${firstName} ${lastName}`.trim() ||
-          user.username?.trim() ||
-          "Membre";
-
-        output.set(organizerId, {
-          userId: organizerId,
-          displayName,
-          roleBadge: getRoleBadge(profile),
-          profileBadge: getProfileBadge(profile),
-        });
-      } catch {
-        output.set(organizerId, {
-          userId: organizerId,
-          displayName: "Membre",
-          roleBadge: getRoleBadge("benevole"),
-          profileBadge: getProfileBadge("benevole"),
-        });
-      }
-    }),
-  );
-
-  return output;
-}
 
 export async function GET(request: Request) {
   const { userId } = await auth();
@@ -223,10 +121,7 @@ export async function GET(request: Request) {
       .limit(limit);
 
     if (eventsResult.error) {
-      return NextResponse.json(
-        { error: eventsResult.error.message },
-        { status: 500 },
-      );
+      return handleApiError(eventsResult.error, "GET /api/community/events (query)");
     }
 
     const events = (eventsResult.data ?? []) as CommunityEventRow[];
@@ -241,10 +136,7 @@ export async function GET(request: Request) {
       .in("event_id", eventIds);
 
     if (rsvpsResult.error) {
-      return NextResponse.json(
-        { error: rsvpsResult.error.message },
-        { status: 500 },
-      );
+      return handleApiError(rsvpsResult.error, "GET /api/community/events (rsvps)");
     }
 
     const grouped = new Map<string, EventRsvpRow[]>();
@@ -261,7 +153,8 @@ export async function GET(request: Request) {
           .filter((id): id is string => typeof id === "string" && id.length > 0),
       ),
     );
-    const organizerById = await loadOrganizerIdentities(organizerIds);
+    const clerk = await getClerkService();
+    const organizerById = await clerk.resolveUsers(organizerIds);
 
     const items = events.map((event) => {
       const organizer =
@@ -303,13 +196,7 @@ export async function POST(request: Request) {
 
   const parsed = createCommunityEventSchema.safeParse(payload);
   if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "Invalid payload",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 },
-    );
+    return validationErrorResponse(parsed.error.flatten().fieldErrors);
   }
 
   const supabase = getSupabaseServerClient();
@@ -344,24 +231,45 @@ export async function POST(request: Request) {
       .single();
 
     if (createdResult.error) {
+      return handleApiError(createdResult.error, "POST /api/community/events (insert)");
+    }
+    if (!createdResult.data) {
       return NextResponse.json(
-        { error: createdResult.error.message },
+        { error: "Event creation failed - no data returned" },
         { status: 500 },
       );
     }
 
-    const organizerById = await loadOrganizerIdentities([userId]);
-    const item = toEventResponseItem(
-      createdResult.data as CommunityEventRow,
-      [],
-      userId,
-      organizerById.get(userId) ?? {
-        userId,
-        displayName: "Vous",
-        roleBadge: getRoleBadge("benevole"),
-        profileBadge: getProfileBadge("benevole"),
-      },
-    );
+    // --- Start: In-App Notifications for Local Community ---
+    try {
+      const eventArrondissement = extractArrondissementFromLabel(parsed.data.locationLabel);
+      if (eventArrondissement) {
+        const affectedArrondissements = getAffectedArrondissements(eventArrondissement);
+        
+        // Find users in these arrondissements (excluding the organizer)
+        const { data: nearbyProfiles } = await supabase
+          .from("profiles")
+          .select("id")
+          .in("paris_arrondissement", affectedArrondissements)
+          .not("id", "eq", userId);
+
+        if (nearbyProfiles && nearbyProfiles.length > 0) {
+          const notifications = nearbyProfiles.map((profile) => ({
+            user_id: profile.id,
+            type: "community",
+            title: "Appel au collectif ! 📣",
+            content: `Un nouvel événement est organisé près de chez vous : "${parsed.data.title}" (${parsed.data.locationLabel}).`,
+            payload: { entityType: "event", id: createdResult.data.id },
+          }));
+
+          await supabase.from("app_notifications").insert(notifications);
+        }
+      }
+    } catch (notifError) {
+      console.error("[Event Notif] Silent failure:", notifError);
+    }
+    // --- End: In-App Notifications ---
+
     return NextResponse.json({ status: "created", item }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

@@ -1,24 +1,11 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionStatus, CreateActionPayload } from "@/lib/actions/types";
+import type { ActionRow } from "@/types/database";
 import { DRAWING_NOTE_PREFIX } from "@/lib/actions/drawing";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { findMatchingGeometry } from "@/lib/geo/geometry-reference";
 
-export type StoredAction = {
-  id: string;
-  created_at: string;
-  actor_name: string | null;
-  action_date: string;
-  location_label: string;
-  latitude: number | null;
-  longitude: number | null;
-  waste_kg: number;
-  cigarette_butts: number;
-  volunteers_count: number;
-  duration_minutes: number;
-  notes: string | null;
-  status: ActionStatus;
-};
+/** @deprecated Use ActionRow from @/types/database */
+export type StoredAction = ActionRow;
 
 function buildPersistedNotes(payload: CreateActionPayload): string | null {
   const baseWithMetadata = appendActionMetadataToNotes(payload.notes, {

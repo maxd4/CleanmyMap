@@ -5,20 +5,20 @@ import React from "react";
 export function VibrantBackground() {
   return (
     <div className="fixed inset-0 -z-10 overflow-hidden bg-background">
-      {/* Mesh Gradient Bloom 1 */}
+      {/* Mesh Gradient Bloom 1 - Emerald/Green */}
       <div 
-        className="absolute -top-[10%] -left-[10%] h-[60%] w-[60%] rounded-full bg-emerald-200/40 blur-[120px] animate-pulse" 
-        style={{ animationDuration: '8s' }}
+        className="absolute -top-[20%] -left-[10%] h-[80%] w-[80%] rounded-full bg-emerald-400/20 blur-[140px] mix-blend-multiply dark:mix-blend-soft-light animate-pulse" 
+        style={{ animationDuration: '12s' }}
       />
-      {/* Mesh Gradient Bloom 2 */}
+      {/* Mesh Gradient Bloom 2 - Indigo/Blue */}
       <div 
-        className="absolute top-[20%] -right-[10%] h-[50%] w-[50%] rounded-full bg-indigo-200/30 blur-[100px] animate-pulse" 
-        style={{ animationDuration: '12s', animationDelay: '2s' }}
+        className="absolute top-[10%] -right-[15%] h-[70%] w-[70%] rounded-full bg-indigo-500/20 blur-[130px] mix-blend-multiply dark:mix-blend-soft-light animate-pulse" 
+        style={{ animationDuration: '18s', animationDelay: '3s' }}
       />
-      {/* Mesh Gradient Bloom 3 */}
+      {/* Mesh Gradient Bloom 3 - Cyan/Teal */}
       <div 
-        className="absolute -bottom-[10%] left-[20%] h-[45%] w-[45%] rounded-full bg-sky-200/40 blur-[110px] animate-pulse" 
-        style={{ animationDuration: '10s', animationDelay: '1s' }}
+        className="absolute -bottom-[20%] left-[10%] h-[60%] w-[60%] rounded-full bg-cyan-400/20 blur-[120px] mix-blend-multiply dark:mix-blend-soft-light animate-pulse" 
+        style={{ animationDuration: '15s', animationDelay: '1s' }}
       />
       
       {/* Subtle Grain Overlay */}

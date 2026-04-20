@@ -66,6 +66,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!upsertedResult.data) {
+      return NextResponse.json(
+        { error: "RSVP update failed - no data returned" },
+        { status: 500 },
+      );
+    }
+
     if (parsed.data.status === "yes") {
       try {
         await trackCommunityRsvpYes(supabase, {

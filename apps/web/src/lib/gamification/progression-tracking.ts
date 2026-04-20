@@ -56,6 +56,30 @@ export async function refreshProgressionProfile(
   const potentialLevel = computePotentialLevel(xpTotal);
   const currentLevel = computeCurrentLevel(xpTotal, stats);
 
+  // --- Level Up Detection ---
+  try {
+    const { data: existingProfile } = await supabase
+      .from("progression_profiles")
+      .select("current_level")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    const previousLevel = (existingProfile as any)?.current_level ?? 1;
+
+    if (currentLevel > previousLevel) {
+      await supabase.from("app_notifications").insert({
+        user_id: userId,
+        type: "system",
+        title: "Niveau Supérieur ! 🏆",
+        content: `Félicitations ! Vous avez atteint le niveau ${currentLevel}. Votre impact sur CleanMyMap grandit !`,
+        payload: { oldLevel: previousLevel, newLevel: currentLevel },
+      });
+    }
+  } catch (notifError) {
+    console.error("[LevelUp Notif] Silent failure:", notifError);
+  }
+  // --- End Level Up Detection ---
+
   const upsert = await supabase.from("progression_profiles").upsert(
     {
       user_id: userId,

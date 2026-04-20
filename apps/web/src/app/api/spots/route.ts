@@ -5,6 +5,8 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentUserIdentity, pickTraceableActorName } from "@/lib/authz";
 import { trackSpotCreated } from "@/lib/gamification/progression";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import { trackServerEvent } from "@/lib/analytics.server";
 
 export const runtime = "nodejs";
 
@@ -73,10 +75,7 @@ export async function GET(request: Request) {
 
     const result = await query;
     if (result.error) {
-      return NextResponse.json(
-        { error: result.error.message },
-        { status: 500 },
-      );
+      return handleApiError(result.error, "GET /api/spots (query)");
     }
 
     return NextResponse.json({
@@ -85,8 +84,7 @@ export async function GET(request: Request) {
       items: result.data ?? [],
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(error, "api/spots");
   }
 }
 
@@ -108,13 +106,7 @@ export async function POST(request: Request) {
 
   const parsed = createSpotSchema.safeParse(payload);
   if (!parsed.success) {
-    return NextResponse.json(
-      {
-        error: "Invalid payload",
-        details: parsed.error.flatten().fieldErrors,
-      },
-      { status: 400 },
-    );
+    return validationErrorResponse(parsed.error.flatten().fieldErrors);
   }
 
   try {
@@ -143,10 +135,7 @@ export async function POST(request: Request) {
       .single();
 
     if (inserted.error) {
-      return NextResponse.json(
-        { error: inserted.error.message },
-        { status: 500 },
-      );
+      return handleApiError(inserted.error, "POST /api/spots (insert)");
     }
 
     try {
@@ -165,12 +154,17 @@ export async function POST(request: Request) {
       });
     }
 
+    // Business Tracking
+    await trackServerEvent(userId, "spot_created", {
+      waste_type: inserted.data.waste_type,
+      location: inserted.data.label
+    });
+
     return NextResponse.json(
       { status: "created", source: "spots", item: inserted.data },
       { status: 201 },
     );
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleApiError(error, "POST /api/spots");
   }
 }

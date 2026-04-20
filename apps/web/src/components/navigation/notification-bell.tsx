@@ -1,0 +1,171 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Bell, ShieldCheck, UserCheck, AlertTriangle, MessageSquare, Check } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
+
+type AppNotification = {
+  id: string;
+  type: 'validation' | 'community' | 'system' | 'security';
+  title: string;
+  content: string;
+  read_at: string | null;
+  created_at: string;
+};
+
+export function NotificationBell() {
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/notifications");
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch notifications", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    // In a real app, you might use Supabase Realtime here
+    const interval = setInterval(fetchNotifications, 60000); // Poll every minute
+    return () => clearInterval(interval);
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.read_at).length;
+
+  // Haptic feedback on new notification
+  useEffect(() => {
+    if (unreadCount > 0 && typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
+      const latest = notifications.filter(n => !n.read_at)[0];
+      const isMajor = latest?.type === 'system' && latest?.title.includes('Niveau Supérieur');
+
+      try {
+        if (isMajor) {
+          // Double pulse for Level Up
+          navigator.vibrate([20, 50, 20]);
+        } else {
+          // Soft single pulse for regular notifications
+          navigator.vibrate(15);
+        }
+      } catch (e) {
+        // Silent fail
+      }
+    }
+  }, [unreadCount, notifications]);
+
+  const markAsRead = async (id: string) => {
+    try {
+      const res = await fetch("/api/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        setNotifications(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n));
+      }
+    } catch (err) {
+      console.error("Failed to mark as read", err);
+    }
+  };
+
+  const getTypeIcon = (type: AppNotification['type']) => {
+    switch (type) {
+      case 'validation': return <ShieldCheck className="text-emerald-500" size={16} />;
+      case 'security': return <AlertTriangle className="text-rose-500" size={16} />;
+      case 'community': return <UserCheck className="text-blue-500" size={16} />;
+      default: return <MessageSquare className="text-slate-500" size={16} />;
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+      >
+        <Bell className={`w-5 h-5 ${unreadCount > 0 ? 'text-emerald-500 animate-swing' : 'text-slate-400 dark:text-slate-500'}`} />
+        {unreadCount > 0 && (
+          <span className="absolute top-1.5 right-1.5 flex h-4 w-4">
+             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+             <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500 text-[10px] items-center justify-center text-white font-bold">
+               {unreadCount}
+             </span>
+          </span>
+        )}
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div className="absolute right-0 mt-2 w-80 max-h-[32rem] overflow-hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h3 className="font-black text-xs uppercase tracking-widest text-slate-900 dark:text-white">Centrale App</h3>
+              {loading && <div className="w-4 h-4 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />}
+            </div>
+
+            <div className="overflow-y-auto max-h-96 custom-scrollbar">
+              {notifications.length === 0 ? (
+                <div className="p-12 text-center space-y-2">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-slate-50 dark:bg-slate-800 rounded-full text-slate-300">
+                    <Check size={24} />
+                  </div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Tout est à jour !</p>
+                </div>
+              ) : (
+                notifications.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`p-4 border-b border-slate-50 dark:border-slate-800 flex group/item transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 ${!n.read_at ? 'bg-emerald-500/5' : ''}`}
+                  >
+                    <div className="mt-1 mr-3 flex-shrink-0">
+                      <div className={`p-2 rounded-xl ${!n.read_at ? 'bg-white dark:bg-slate-800 shadow-sm' : 'bg-slate-50 dark:bg-slate-900/50 opacity-60'}`}>
+                        {getTypeIcon(n.type)}
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs font-black tracking-tight ${!n.read_at ? 'text-slate-900 dark:text-white' : 'text-slate-500'}`}>
+                          {n.title}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                           {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: fr })}
+                        </span>
+                      </div>
+                      <p className={`text-[11px] leading-relaxed ${!n.read_at ? 'text-slate-600 dark:text-slate-400' : 'text-slate-500 opacity-80'}`}>
+                        {n.content}
+                      </p>
+                      {!n.read_at && (
+                        <button
+                          onClick={() => markAsRead(n.id)}
+                          className="mt-2 text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                        >
+                          Marquer comme lu
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="p-4 bg-slate-50/50 dark:bg-slate-800/20 text-center">
+               <button className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                 Toutes les notifications
+               </button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
