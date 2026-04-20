@@ -217,9 +217,9 @@ export function buildActionDataContract(
       notesPlain: params.notesPlain ?? null,
       submissionMode: params.submissionMode ?? null,
       wasteBreakdown: params.wasteBreakdown ?? null,
-      wasteKg: params.wasteKg === undefined || params.wasteKg === null ? null : toFiniteNumber(params.wasteKg, 0),
+      wasteKg: params.wasteKg === undefined || params.wasteKg === null ? 0 : toFiniteNumber(params.wasteKg, 0),
       cigaretteButts: params.cigaretteButts === undefined || params.cigaretteButts === null 
-        ? null 
+        ? 0 
         : Math.max(0, Math.trunc(toFiniteNumber(params.cigaretteButts, 0))),
       volunteersCount: Math.max(
         0,

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
+import Link from "next/link";
 import useSWR from "swr";
 import { ActionsMapFeed } from "@/components/actions/actions-map-feed";
 import { ActionsMapTable } from "@/components/actions/actions-map-table";
@@ -67,8 +68,8 @@ export default function ActionsMapPage() {
     const items = mapDataQuery.data?.items ?? [];
     const actionItems = actionsDataQuery.data?.items ?? [];
 
-    const totalKg = items.reduce((acc, item) => acc + mapItemWasteKg(item), 0);
-    const totalButts = items.reduce((acc, item) => acc + mapItemCigaretteButts(item), 0);
+    const totalKg = items.reduce((acc, item) => acc + (mapItemWasteKg(item) ?? 0), 0);
+    const totalButts = items.reduce((acc, item) => acc + (mapItemCigaretteButts(item) ?? 0), 0);
     
     let volunteers = 0;
     let citizenHours = 0;
@@ -211,8 +212,8 @@ export default function ActionsMapPage() {
             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
           >
             <option value="0">Toutes qualités</option>
-            <option value="60">Grade B et + (>=60)</option>
-            <option value="80">Grade A (>=80)</option>
+            <option value="60">Grade B et + (&gt;=60)</option>
+            <option value="80">Grade A (&gt;=80)</option>
           </select>
         </label>
 

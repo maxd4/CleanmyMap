@@ -12,7 +12,6 @@ import Link from "next/link";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
-import { Swiper, SwiperSlide } from "swiper/react"; // Assuming common libs or just keeping it simple
 
 async function loadSponsorOverview() {
   const supabase = getSupabaseServerClient();
@@ -28,10 +27,10 @@ export default async function SponsorPortalPage() {
   const factors = IMPACT_PROXY_CONFIG.factors;
 
   // Calculs ROI
-  const totalKg = overview.comparison.current.wasteKgSum;
+  const totalKg = overview.comparison.current.impactVolumeKg;
   const totalEuroSaved = Math.round(totalKg * factors.euroSavedPerWasteKg);
   const totalCo2 = Math.round(totalKg * factors.co2KgPerWasteKg);
-  const totalVolunteers = overview.comparison.current.volunteersSum;
+  const totalVolunteers = overview.comparison.current.mobilizationCount;
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 bg-slate-50 min-h-screen">

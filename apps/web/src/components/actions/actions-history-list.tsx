@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
 import { evaluateActionQuality } from "@/lib/actions/quality";
+import { mapItemWasteKg, mapItemCigaretteButts } from "@/lib/actions/data-contract";
 import type {
   ActionListItem,
   ActionQualityGrade,

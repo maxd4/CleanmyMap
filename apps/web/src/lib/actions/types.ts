@@ -107,6 +107,7 @@ export type ActionListItem = {
       volunteersCount: number;
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;
+      placeType?: string | null;
     };
   };
 };
@@ -204,6 +205,7 @@ export type ActionMapItem = Pick<
       volunteersCount: number;
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;
+      placeType?: string | null;
     };
   };
 };

@@ -57,8 +57,6 @@ export function ActionsMapFeed({
   // États locaux supprimés (remontés au parent)
   const visibleCategories: Record<MarkerCategory, boolean> =
     DEFAULT_VISIBLE_CATEGORIES;
-  const visibleCategories: Record<MarkerCategory, boolean> =
-    DEFAULT_VISIBLE_CATEGORIES;
   const serializedTypes = useMemo(
     () => (types === "all" ? "all" : [...new Set(types)].sort().join(",")),
     [types],
@@ -104,9 +102,9 @@ export function ActionsMapFeed({
     [allItems, visibleCategories],
   );
   const summary = useMemo(() => {
-    const totalKg = items.reduce((acc, item) => acc + mapItemWasteKg(item), 0);
+    const totalKg = items.reduce((acc, item) => acc + (mapItemWasteKg(item) ?? 0), 0);
     const totalButts = items.reduce(
-      (acc, item) => acc + mapItemCigaretteButts(item),
+      (acc, item) => acc + (mapItemCigaretteButts(item) ?? 0),
       0,
     );
     const summaryData = { totalKg, totalButts };

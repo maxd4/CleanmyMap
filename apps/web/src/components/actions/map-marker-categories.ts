@@ -85,7 +85,7 @@ export function classifyPollutionColor(
 
   if (score >= SCORE_THRESHOLDS.CRITICAL) return "violet";
   if (score >= SCORE_THRESHOLDS.MEDIUM) return "yellow";
-  if (wasteKg <= 0 && butts <= 0) return "blue";
+  if ((wasteKg ?? 0) <= 0 && (butts ?? 0) <= 0) return "blue";
   return "green";
 }
 
@@ -94,10 +94,10 @@ export function deriveMarkerCategories(item: ActionMapItem): MarkerCategory[] {
   const wasteKg = mapItemWasteKg(item);
   const butts = mapItemCigaretteButts(item);
 
-  if (butts > 0) {
+  if ((butts ?? 0) > 0) {
     categories.push("ashtray");
   }
-  if (wasteKg > 0) {
+  if ((wasteKg ?? 0) > 0) {
     categories.push("bin");
   }
 

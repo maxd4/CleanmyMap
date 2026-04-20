@@ -19,6 +19,7 @@ type ImpactMethodology = {
     surfaceCleanedM2Pct: number;
     pollutionScoreMeanPoints: number;
   };
+  sources?: Record<string, string>;
 };
 
 type Props = {

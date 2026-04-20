@@ -20,6 +20,9 @@ exécute le plan
 
 
 
+
+
+
 - vérifie que les fichiers de base du projet nécessaires à la sécurité et à l'hygiène du repo sont bien présents et correctement configurés, notamment pour éviter toute divulgation de secrets lors des push GitHub
 - mets-les à jour si nécessaire
 
@@ -66,121 +69,12 @@ Retour attendu :
 
 
 
-on va push GitHub pour tester le site web 
-Comment relancer Vercel et Supabase ? Pourquoi il y a des actions GitHub dans le repo ?
 
 
 
 
 
-
-
-
-
- 
-
-
-
-
-
-
-
-
-
-
-
-
-REPONSE AUDIRT PROMPT 002
-**Règles de base (implémentation actuelle)**
-- Rôles applicatifs: `benevole`, `coordinateur`, `elu`, `admin` dans [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts).
-- `decideur` est un alias de `elu` (normalisation rôle) dans [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts).
-- Source de vérité navigation rôle -> espaces -> rubriques: `PARCOURS_SPACE_PAGE_MAP` dans [navigation.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/navigation.ts).
-- Mapping rubrique -> route: [sections-registry.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/sections-registry.ts).
-
-**Cartographie exhaustive rôle -> rubriques/pages visibles**
-- `benevole`
-1. `execute`: `/actions/new`, `/actions/map`
-2. `supervise`: `/actions/history`, `/sections/trash-spotter`
-3. `decide`: `/dashboard`, `/sections/gamification`
-4. `prepare`: `/sections/guide`, `/sections/kit`, `/sections/community`
-
-- `coordinateur`
-1. `execute`: `/sections/community`, `/actions/new`, `/actions/map`, `/sections/route`
-2. `supervise`: `/actions/history`, `/dashboard`, `/sections/weather`
-3. `decide`: `/reports`, `/sections/compare`, `/sections/climate`, `/sections/elus`
-4. `prepare`: `/sections/guide`, `/sections/kit`, `/sections/actors`, `/sections/recycling`
-
-- `elu` / `decideur`
-1. `execute`: `/sections/elus`
-2. `supervise`: `/dashboard`, `/actions/history`
-3. `decide`: `/reports`, `/sections/compare`, `/sections/climate`, `/sections/weather`
-4. `prepare`: `/sections/guide`
-
-- `admin`
-1. `execute`: `/admin`, `/actions/new`, `/sections/community`
-2. `supervise`: `/dashboard`, `/actions/history`, `/actions/map`, `/sections/sandbox`
-3. `decide`: `/reports`, `/sections/compare`, `/sections/climate`, `/sections/elus`
-4. `prepare`: `/sections/guide`, `/sections/kit`, `/sections/weather`, `/sections/actors`
-
-**CTA visibles (UI)**
-- CTA de navigation (header/nav) par rôle: `primaryCTA` + `secondaryCTA` depuis [profiles.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/profiles.ts), affichés dans [app-navigation.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/navigation/app-navigation.tsx) et [app/(app)/layout.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/(app)/layout.tsx) (header seulement si feature flag `parcoursNavV2` active).
-- CTA "Actions principales" (inclut aussi `additionalActions`) dans [role-primary-actions.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/navigation/role-primary-actions.tsx).
-- CTA configurés:
-1. `benevole`: `/actions/new`, `/actions/map`, `/actions/history`
-2. `coordinateur`: `/sections/community`, `/dashboard`, `/reports`
-3. `elu`: `/api/reports/elus-dossier?format=pdf`, `/sections/elus`, `/sections/compare`
-4. `admin`: `/admin`, `/reports`, `/dashboard`
-
-
-
-
-
-AUDIT PROMPT 003
-**Cartographie cible (mutualisée, sans silos rôle)**
-
-**Principe directeur**
-- Même socle de pages pour tous les parcours.
-- Le rôle change la priorité, les CTA et les droits d'action, pas l'existence des pages.
-- Une source de données unifiée par domaine (actions, communauté, pilotage, exports).
-
-**1) Parcours -> Espaces stables -> Pages**
-
-| Espace | Pages cibles (routes uniques) | Données mutualisées |
-|---|---|---|
-| `Executer` | `/actions/new`, `/actions/map`, `/sections/community`, `/sections/route` | actions unifiées, spots, événements, recommandations d'itinéraire |
-| `Superviser` | `/dashboard`, `/actions/history`, `/sections/trash-spotter`, `/sections/weather`, `/sections/sandbox` | KPI opérationnels, qualité data, backlog, météo ops, checks techniques |
-| `Decider` | `/reports`, `/sections/elus`, `/sections/compare`, `/sections/climate` | comparatifs N/N-1, priorisation territoriale, exports, méthodes KPI |
-| `Preparer` | `/sections/guide`, `/sections/kit`, `/sections/actors`, `/sections/recycling` | playbooks, checklists, partenaires, tri/valorisation |
-
-**2) Parcours CTA (overlay, pas silo)**
-
-- `benevole`
-1. Priorité: `Executer` -> `Preparer` -> `Superviser` -> `Decider`
-2. CTA par défaut: déclarer, carte, historique
-3. Accès lecture large, actions sensibles limitées
-
-- `coordinateur`
-1. Priorité: `Executer` -> `Superviser` -> `Decider` -> `Preparer`
-2. CTA par défaut: communauté, cockpit, reporting
-3. Droits de pilotage opérationnel renforcés
-
-- `elu/decideur`
-1. Priorité: `Decider` -> `Superviser` -> `Preparer` -> `Executer`
-2. CTA par défaut: dossier décisionnel, priorisation territoriale
-3. Lecture complète, actions terrain directes optionnelles
-
-- `admin`
-1. Priorité: `Superviser` -> `Executer` -> `Decider` -> `Preparer`
-2. CTA par défaut: backlog critique, exports, santé système
-3. Droits critiques: modération, imports, exports sensibles, opérations
-
-
-
-
-
-
-
-Dans le fichier texte "prompt.txt" du dossier archive de la documentation, créer un plan de travail priorisé sous forme d'une succession de prompts à envoyer à ChatGPT Codex pour améliorer l'application web Vercel + Supabase.
+Dans le fichier texte "prompt.txt" du dossier archive de la documentation, créer un plan de travail priorisé sous forme d'une succession de prompts à envoyer à ChatGPT Codex pour améliorer notre application web Vercel + Supabase + clerk
 
 Objectif :
 produire une roadmap d'exécution concrète, directement exploitable, pour faire monter le projet vers un niveau production.
@@ -227,17 +121,10 @@ Style attendu :
 - pas de généralités
 - pas de remplissage
 
-Crée maintenant le fichier complet `documentation/plan_19avril`.
+Crée maintenant le fichier complet `documentation/plan_20avril`.
 
 
 
-
-
-
-
-propose une structure pour remplir les fichier texte de "audit-rubrique" pour qu'ils soient à la fois exhaustif et rapide à lire avec des propositions d'ajout et de modifications pour tirer 100% du potentielle de chaque rubrique
-
-de même pour le bloc 2
 
 
 
@@ -352,45 +239,6 @@ At the end, output:
 - Files updated
 - Documentation decisions
 - Remaining uncertainties
-
-
-
-
-
-
-
-Use GitDocify as a secondary documentation audit input, not as source of truth.
-
-Instructions:
-- Treat the repository code, config files, manifests, CI files, env examples, and existing docs as the source of truth.
-- Use the GitDocify report only to detect:
-  - missing documentation
-  - unclear architecture
-  - weak README structure
-  - undocumented setup/config/testing/deployment areas
-  - misleading or incomplete explanations
-- Do not copy GitDocify blindly.
-- Verify every claim against the actual repository.
-- Keep what is correct, discard what is vague, false, generic, redundant, or unsupported.
-- Improve documentation in standard locations only.
-
-Deliver:
-- README improvements
-- documentation/repo-docs/ additions only if justified
-- CONTRIBUTING.md if useful
-- explicit list of GitDocify claims accepted, corrected, or rejected
-
-Output format:
-- Steps identified
-- Files created
-- Files updated
-- GitDocify points accepted
-- GitDocify points corrected
-- GitDocify points rejected
-- Remaining documentation gaps
-
-
-
 
 
 

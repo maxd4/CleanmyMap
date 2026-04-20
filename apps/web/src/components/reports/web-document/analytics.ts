@@ -65,8 +65,8 @@ export function buildRouteSteps(items: ActionMapItem[], maxStops: number): Route
       return {
         item,
         label: mapItemLocationLabel(item),
-        kg: mapItemWasteKg(item),
-        butts: mapItemCigaretteButts(item),
+        kg: (mapItemWasteKg(item) ?? 0),
+        butts: (mapItemCigaretteButts(item) ?? 0),
         latitude: coordinates.latitude,
         longitude: coordinates.longitude,
       };
@@ -304,8 +304,8 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
       labels: new Set<string>(),
     };
     previous.actions += 1;
-    previous.kg += mapItemWasteKg(item);
-    previous.butts += mapItemCigaretteButts(item);
+    previous.kg += (mapItemWasteKg(item) ?? 0);
+    previous.butts += (mapItemCigaretteButts(item) ?? 0);
     previous.labels.add(mapItemLocationLabel(item).trim().toLowerCase());
     byAreaMap.set(area, previous);
   }
