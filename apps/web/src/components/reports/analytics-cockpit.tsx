@@ -14,12 +14,15 @@ import {
   ComposedChart
 } from "recharts";
 import type { MonthlyAnalyticsPoint } from "@/lib/pilotage/analytics-data-utils";
+import { useSitePreferences } from "../ui/site-preferences-provider";
 
 type AnalyticsCockpitProps = {
   data: MonthlyAnalyticsPoint[];
 };
 
 export function AnalyticsCockpit({ data }: AnalyticsCockpitProps) {
+  const { displayMode } = useSitePreferences();
+  const isSober = displayMode === "sobre";
   if (!data || data.length === 0) {
     return (
       <div className="flex h-64 items-center justify-center rounded-xl bg-slate-50 border border-dashed border-slate-200 text-slate-400">
@@ -60,34 +63,34 @@ export function AnalyticsCockpit({ data }: AnalyticsCockpitProps) {
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    borderRadius: "12px", 
-                    border: "none", 
-                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
+                    borderRadius: isSober ? "4px" : "12px", 
+                    border: isSober ? "1px solid #cbd5e1" : "none", 
+                    boxShadow: isSober ? "none" : "0 10px 15px -3px rgb(0 0 0 / 0.1)",
                     backgroundColor: "#fff"
                   }} 
                 />
                 <Legend 
                   verticalAlign="top" 
                   align="right" 
-                  iconType="circle"
+                  iconType={isSober ? "rect" : "circle"}
                   wrapperStyle={{ paddingBottom: "20px" }}
                 />
                 <Bar 
                   yAxisId="left" 
                   dataKey="kg" 
                   name="Masse (kg)" 
-                  fill="#10b981" 
-                  radius={[4, 4, 0, 0]} 
-                  barSize={40}
+                  fill={isSober ? "#475569" : "#10b981"} 
+                  radius={isSober ? [0, 0, 0, 0] : [4, 4, 0, 0]} 
+                  barSize={isSober ? 30 : 40}
                 />
                 <Line 
                   yAxisId="right" 
                   type="monotone" 
                   dataKey="volunteers" 
                   name="Bénévoles" 
-                  stroke="#3b82f6" 
-                  strokeWidth={3} 
-                  dot={{ r: 4, fill: "#3b82f6", strokeWidth: 2, stroke: "#fff" }}
+                  stroke={isSober ? "#0f172a" : "#3b82f6"} 
+                  strokeWidth={isSober ? 2 : 3} 
+                  dot={isSober ? false : { r: 4, fill: "#3b82f6", strokeWidth: 2, stroke: "#fff" }}
                   activeDot={{ r: 6 }}
                 />
               </ComposedChart>

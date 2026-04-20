@@ -159,14 +159,61 @@ html.dark .glass-tooltip {
   display: none !important;
 }
 
-[data-display-mode="sobre"] .rounded-2xl {
-  border-width: 0.5px;
-  background-color: var(--background);
-  box-shadow: none;
+[data-display-mode="sobre"] body {
+  background: var(--background) !important;
 }
 
-[data-display-mode="sobre"] .animate-pulse {
+[data-display-mode="sobre"] .rounded-2xl,
+[data-display-mode="sobre"] .rounded-3xl,
+[data-display-mode="sobre"] .rounded-\[2\.5rem\],
+[data-display-mode="sobre"] .rounded-\[3rem\],
+[data-display-mode="sobre"] .rounded-\[4rem\],
+[data-display-mode="sobre"] .rounded-\[6rem\] {
+  border-radius: 0.75rem !important;
+  border-width: 1px !important;
+  background-color: var(--background) !important;
+  box-shadow: none !important;
+  border-color: #cbd5e1 !important; /* Higher contrast border */
+}
+
+html.dark[data-display-mode="sobre"] .rounded-2xl,
+html.dark[data-display-mode="sobre"] .rounded-3xl,
+html.dark[data-display-mode="sobre"] .rounded-\[2\.5rem\],
+html.dark[data-display-mode="sobre"] .rounded-\[3rem\] {
+  border-color: #334155 !important;
+  background-color: #0b1220 !important;
+}
+
+[data-display-mode="sobre"] .punchy-title,
+[data-display-mode="sobre"] .text-transparent,
+[data-display-mode="sobre"] .bg-clip-text {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: inherit !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+[data-display-mode="sobre"] .animate-pulse,
+[data-display-mode="sobre"] .animate-marquee,
+[data-display-mode="sobre"] .animate-in {
   animation: none !important;
+  transition: opacity 0.1s ease-out !important;
+}
+
+[data-display-mode="sobre"] .blur-3xl,
+[data-display-mode="sobre"] .blur-\[100px\] {
+  display: none !important;
+}
+
+[data-display-mode="sobre"] .shadow-2xl,
+[data-display-mode="sobre"] .shadow-xl,
+[data-display-mode="sobre"] .shadow-lg {
+  box-shadow: none !important;
+}
+
+[data-display-mode="sobre"] .group:hover {
+  transform: none !important;
 }
 
 /* Marker Cluster Basic Styles */

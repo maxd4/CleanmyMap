@@ -14,3 +14,17 @@ export async function getServerLocale(): Promise<Locale> {
 
   return DEFAULT_LOCALE;
 }
+
+/**
+ * Recupere le mode d'affichage de l'utilisateur cote serveur via les cookies.
+ */
+export async function getServerDisplayMode() {
+  const cookieStore = await cookies();
+  const modeCookie = cookieStore.get(STORAGE_KEYS.displayMode)?.value;
+  
+  if (modeCookie && (modeCookie === "sobre" || modeCookie === "exhaustif" || modeCookie === "simplifie")) {
+    return modeCookie;
+  }
+
+  return "exhaustif";
+}
