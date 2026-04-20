@@ -58,57 +58,57 @@ export default async function DashboardPage() {
 
   const kpis = overview
     ? ([
-        {
-          label: overview.summary.kpis[0].label,
-          value: overview.summary.kpis[0].value,
-          previousValue: overview.summary.kpis[0].previousValue,
-          deltaAbsolute: overview.summary.kpis[0].deltaAbsolute,
-          deltaPercent: overview.summary.kpis[0].deltaPercent,
-          interpretation: overview.summary.kpis[0].interpretation,
-        },
-        {
-          label: overview.summary.kpis[1].label,
-          value: overview.summary.kpis[1].value,
-          previousValue: overview.summary.kpis[1].previousValue,
-          deltaAbsolute: overview.summary.kpis[1].deltaAbsolute,
-          deltaPercent: overview.summary.kpis[1].deltaPercent,
-          interpretation: overview.summary.kpis[1].interpretation,
-        },
-        {
-          label: overview.summary.kpis[2].label,
-          value: overview.summary.kpis[2].value,
-          previousValue: overview.summary.kpis[2].previousValue,
-          deltaAbsolute: overview.summary.kpis[2].deltaAbsolute,
-          deltaPercent: overview.summary.kpis[2].deltaPercent,
-          interpretation: overview.summary.kpis[2].interpretation,
-        },
-      ] as const)
+      {
+        label: overview.summary.kpis[0].label,
+        value: overview.summary.kpis[0].value,
+        previousValue: overview.summary.kpis[0].previousValue,
+        deltaAbsolute: overview.summary.kpis[0].deltaAbsolute,
+        deltaPercent: overview.summary.kpis[0].deltaPercent,
+        interpretation: overview.summary.kpis[0].interpretation,
+      },
+      {
+        label: overview.summary.kpis[1].label,
+        value: overview.summary.kpis[1].value,
+        previousValue: overview.summary.kpis[1].previousValue,
+        deltaAbsolute: overview.summary.kpis[1].deltaAbsolute,
+        deltaPercent: overview.summary.kpis[1].deltaPercent,
+        interpretation: overview.summary.kpis[1].interpretation,
+      },
+      {
+        label: overview.summary.kpis[2].label,
+        value: overview.summary.kpis[2].value,
+        previousValue: overview.summary.kpis[2].previousValue,
+        deltaAbsolute: overview.summary.kpis[2].deltaAbsolute,
+        deltaPercent: overview.summary.kpis[2].deltaPercent,
+        interpretation: overview.summary.kpis[2].interpretation,
+      },
+    ] as const)
     : ([
-        {
-          label: "Impact terrain",
-          value: "n/a",
-          previousValue: "n/a",
-          deltaAbsolute: "n/a",
-          deltaPercent: "n/a",
-          interpretation: "neutral",
-        },
-        {
-          label: "Mobilisation",
-          value: "n/a",
-          previousValue: "n/a",
-          deltaAbsolute: "n/a",
-          deltaPercent: "n/a",
-          interpretation: "neutral",
-        },
-        {
-          label: "Qualite data",
-          value: "n/a",
-          previousValue: "n/a",
-          deltaAbsolute: "n/a",
-          deltaPercent: "n/a",
-          interpretation: "neutral",
-        },
-      ] as const);
+      {
+        label: "Impact terrain",
+        value: "n/a",
+        previousValue: "n/a",
+        deltaAbsolute: "n/a",
+        deltaPercent: "n/a",
+        interpretation: "neutral",
+      },
+      {
+        label: "Mobilisation",
+        value: "n/a",
+        previousValue: "n/a",
+        deltaAbsolute: "n/a",
+        deltaPercent: "n/a",
+        interpretation: "neutral",
+      },
+      {
+        label: "Qualite data",
+        value: "n/a",
+        previousValue: "n/a",
+        deltaAbsolute: "n/a",
+        deltaPercent: "n/a",
+        interpretation: "neutral",
+      },
+    ] as const);
 
   const impactKpis = kpis.slice(0, 3).map((kpi) => ({
     label: kpi.label,
@@ -248,8 +248,8 @@ export default async function DashboardPage() {
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
                 <RubriquePdfExportButton rubriqueTitle="Tableau de bord pilotage" />
-                <RubriqueExcelExportButton 
-                  rubriqueTitle="Tableau de bord pilotage" 
+                <RubriqueExcelExportButton
+                  rubriqueTitle="Tableau de bord pilotage"
                   data={overview?.contracts.map(c => ({
                     Date: c.dates.observedAt,
                     Lieu: c.location.label,
@@ -300,25 +300,25 @@ export default async function DashboardPage() {
         <p className="mt-2 text-sm text-slate-600 relative z-10">
           {t("desc_v1")}
         </p>
-        
+
         {/* BOUTONS DYNAMIQUES GÉANTS VS ROLE */}
         <div className="mt-8 relative z-10">
           {role === 'benevole' ? (
             <div className="flex flex-wrap gap-4">
-              <Link 
-                href="/actions/new" 
+              <Link
+                href="/actions/new"
                 className="inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
               >
                 <span className="text-2xl">🔥</span> {t("btn_action")}
               </Link>
-              <Link 
-                href="/signalement" 
+              <Link
+                href="/signalement"
                 className="inline-flex items-center justify-center gap-3 rounded-xl bg-amber-500 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
               >
                 <span className="text-2xl">⚡</span> {t("btn_signal")}
               </Link>
-              <Link 
-                href="/profil/impact" 
+              <Link
+                href="/profil/impact"
                 className="inline-flex items-center justify-center gap-3 rounded-xl bg-white border-2 border-emerald-500 px-8 py-5 text-lg font-black text-emerald-600 shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
               >
                 <span className="text-2xl">📊</span> {t("btn_impact")}
@@ -326,8 +326,8 @@ export default async function DashboardPage() {
             </div>
           ) : role === 'admin' ? (
             <div className="flex flex-wrap gap-4">
-              <Link 
-                href="/admin/validation" 
+              <Link
+                href="/admin/validation"
                 className="inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
               >
                 <span className="text-2xl">🔍</span> {t("btn_eval")}
@@ -338,8 +338,8 @@ export default async function DashboardPage() {
 
         <div className="mt-2 flex gap-2">
           <RubriquePdfExportButton rubriqueTitle="Cockpit decisionnel" />
-          <RubriqueExcelExportButton 
-            rubriqueTitle="Cockpit decisionnel" 
+          <RubriqueExcelExportButton
+            rubriqueTitle="Cockpit decisionnel"
             data={overview?.contracts.map(c => ({
               Date: c.dates.observedAt,
               Lieu: c.location.label,
