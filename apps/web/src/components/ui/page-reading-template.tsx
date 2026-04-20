@@ -21,28 +21,28 @@ type PageReadingTemplateProps = {
 export function PageReadingTemplate(props: PageReadingTemplateProps) {
   return (
     <div data-rubrique-report-root className="space-y-4">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm core-feature">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 [data-display-mode='simplifie']_&:hidden">
           Pourquoi je suis ici
         </p>
-        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 [data-display-mode='simplifie']_&:text-slate-900">
           {props.context}
         </p>
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">
           {props.title}
         </h1>
-        <p className="mt-2 text-sm text-slate-600">{props.objective}</p>
+        <p className="mt-2 text-sm text-slate-600 font-medium">{props.objective}</p>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm [data-display-mode='simplifie']_&:hidden">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           Résumer
         </p>
         <div className="mt-2">{props.summary}</div>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm core-feature">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 [data-display-mode='simplifie']_&:hidden">
           Agir
         </p>
         <div className="mt-2 flex flex-wrap gap-2">

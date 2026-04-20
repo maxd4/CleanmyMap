@@ -216,6 +216,72 @@ html.dark[data-display-mode="sobre"] .rounded-\[3rem\] {
   transform: none !important;
 }
 
+/* Mode Simplifie : Radical & Accessible */
+[data-display-mode="simplifie"] body {
+  background: white !important;
+  font-size: 110%; /* General boost */
+}
+
+[data-display-mode="simplifie"] .exhaustive-only,
+[data-display-mode="simplifie"] .sober-only,
+[data-display-mode="simplifie"] section:not(.core-feature) {
+  display: none !important;
+}
+
+[data-display-mode="simplifie"] .core-feature {
+  border: 4px solid #0f172a !important; /* Ultra high contrast */
+  border-radius: 0 !important; /* Functional over aesthetic */
+  margin-bottom: 2rem !important;
+  padding: 2.5rem !important;
+}
+
+[data-display-mode="simplifie"] button,
+[data-display-mode="simplifie"] .btn-primary {
+  font-size: 1.5rem !important;
+  padding: 1.5rem 2rem !important;
+  border-radius: 4px !important;
+}
+
+[data-display-mode="simplifie"] h1 {
+  font-size: 3rem !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.05em !important;
+}
+
+/* Profile-Specific Theming */
+:root {
+  --profile-primary: 16 185 129; /* Default Emerald */
+}
+
+[data-user-profile="scientifique"] {
+  --profile-primary: 79 70 229; /* Indigo */
+}
+
+[data-user-profile="elu"] {
+  --profile-primary: 217 119 6; /* Amber */
+}
+
+[data-user-profile="admin"] {
+  --profile-primary: 225 29 72; /* Rose */
+}
+
+[data-user-profile="coordinateur"] {
+  --profile-primary: 8 145 178; /* Cyan */
+}
+
+/* Global Override of Emerald-500 using the profile theme for brand elements */
+[data-user-profile] .bg-emerald-500 {
+  background-color: rgb(var(--profile-primary)) !important;
+}
+
+[data-user-profile] .text-emerald-700 {
+  color: rgb(var(--profile-primary)) !important;
+}
+
+[data-user-profile] .border-emerald-500 {
+  border-color: rgb(var(--profile-primary)) !important;
+}
+
 /* Marker Cluster Basic Styles */
 .marker-cluster-small { background-color: rgba(181, 226, 140, 0.6); }
 .marker-cluster-small div { background-color: rgba(110, 204, 57, 0.6); }
