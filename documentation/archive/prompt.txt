@@ -1,0 +1,409 @@
+==============================================================================
+ROADMAP D'EXÉCUTION — CLEANMYMAP
+PROMPTS CODEX CLASSÉS PAR PRIORITÉ
+Générée le 20 avril 2026
+==============================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRIORITÉ 1 — SÉCURITÉ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PROMPT 1.1 — MIDDLEWARE CLERK + RATE LIMITING
+─────────────────────────────────────────────
+Contexte : L'application Next.js (App Router) utilise Clerk pour l'auth et n'a AUCUN fichier middleware.ts à la racine de apps/web/src/. Les routes API sous apps/web/src/app/api/ ne sont protégées que manuellement via requireAdminAccess() ou requireAuthenticatedAccess() dans chaque route handler. Il n'y a aucun rate limiting.
+
+Tâche :
+1. Crée un fichier apps/web/src/middleware.ts utilisant clerkMiddleware() de @clerk/nextjs/server.
+2. Configure le matcher pour protéger toutes les routes /api/* (sauf /api/health et /api/actions/map qui sont publiques) et toutes les routes /(app)/*.
+3. Implémente un rate limiting basique en mémoire (Map<string, {count, timestamp}>) sur les routes POST /api/* : max 30 requêtes/minute par IP. Retourne 429 si dépassé.
+4. Assure-toi que les routes publiques (/sign-in, /sign-up, /observatoire, la page d'accueil /) restent accessibles sans auth.
+
+Fichiers à modifier : apps/web/src/middleware.ts (création), éventuellement next.config.ts pour le matcher.
+Validation : npm run typecheck doit passer. Tester manuellement GET /api/health (200 sans auth) et POST /api/actions (401 sans auth).
+Risques : vérifier que Clerk publishable key est bien exposée côté client via NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY dans env.ts.
+
+
+PROMPT 1.2 — AUDIT DES ROUTES API NON PROTÉGÉES
+────────────────────────────────────────────────
+Contexte : Stack Next.js App Router + Clerk + Supabase. Les routes API sont dans apps/web/src/app/api/. Deux guards existent dans apps/web/src/lib/authz.ts : requireAdminAccess() et requireAuthenticatedAccess().
+
+Tâche :
+1. Liste exhaustivement CHAQUE fichier route.ts sous apps/web/src/app/api/.
+2. Pour chaque route, vérifie si elle appelle requireAdminAccess(), requireAuthenticatedAccess(), ou aucun guard.
+3. Classe chaque route en : PUBLIQUE légitime, PROTÉGÉE correctement, ou EXPOSÉE (manque un guard).
+4. Pour chaque route EXPOSÉE, ajoute le guard approprié (requireAuthenticatedAccess pour les routes utilisateur, requireAdminAccess pour /api/admin/*).
+5. Uniformise le format de réponse d'erreur : toujours { error: string } avec le bon status code (401/403).
+
+Fichiers à modifier : chaque route.ts non protégée identifiée.
+Validation : le test existant apps/web/src/app/api/api-auth.test.ts doit toujours passer. npm run typecheck OK.
+Risques : ne pas casser les routes GET publiques légitimes (map, health, observatoire).
+
+
+PROMPT 1.3 — VALIDATION ET SANITISATION DES ENTRÉES
+────────────────────────────────────────────────────
+Contexte : L'app utilise Zod (déjà en dépendance) pour valider env.ts, mais les routes API POST/PUT reçoivent des données utilisateur sans validation systématique.
+
+Tâche :
+1. Audite chaque route POST/PUT/PATCH sous apps/web/src/app/api/ et identifie celles qui font un await request.json() sans validation Zod.
+2. Pour chaque route identifiée, crée un schéma Zod strict dans le même fichier ou dans un fichier schema.ts adjacent.
+3. Parse le body avec schema.safeParse(). Si échec, retourne 400 avec { error: "Invalid input", details: result.error.flatten() }.
+4. Assure-toi qu'aucune donnée utilisateur n'est interpolée directement dans une requête Supabase sans être passée par le schéma.
+
+Fichiers à modifier : routes API POST/PUT identifiées.
+Validation : npm run typecheck. Envoyer un POST avec un body invalide doit retourner 400.
+Risques : les schémas doivent être permissifs sur les champs optionnels pour ne pas casser les clients existants.
+
+
+PROMPT 1.4 — AUDIT SUPABASE SERVICE ROLE KEY
+─────────────────────────────────────────────
+Contexte : Le client Supabase serveur (apps/web/src/lib/supabase/server.ts) utilise SUPABASE_SERVICE_ROLE_KEY, ce qui bypasse toutes les RLS policies. Le client est instancié via getSupabaseServerClient() et utilisé partout côté serveur.
+
+Tâche :
+1. Recherche toutes les utilisations de getSupabaseServerClient() dans le codebase.
+2. Vérifie qu'AUCUN appel ne se fait depuis un composant client ("use client") ou depuis un contexte exposé au navigateur.
+3. Vérifie que SUPABASE_SERVICE_ROLE_KEY n'est jamais exposée dans une variable NEXT_PUBLIC_*.
+4. Documente dans un commentaire en haut de server.ts pourquoi le service role key est utilisé et quelles sont les alternatives (anon key + RLS pour les lectures publiques).
+5. Si tu trouves des lectures publiques (carte, observatoire) qui utilisent le service role key alors qu'elles pourraient utiliser l'anon key, crée un second client getSupabaseAnonClient() pour ces cas.
+
+Fichiers à modifier : apps/web/src/lib/supabase/server.ts, potentiellement création de apps/web/src/lib/supabase/anon.ts.
+Validation : npm run typecheck. Grep sur SUPABASE_SERVICE_ROLE dans les fichiers "use client" doit retourner 0 résultats.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRIORITÉ 2 — BUGS BLOQUANTS ET STABILITÉ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PROMPT 2.1 — GESTION DES ERREURS SUPABASE
+──────────────────────────────────────────
+Contexte : Les appels Supabase dans le codebase ne gèrent pas systématiquement les erreurs. Le pattern courant est : const { data } = await supabase.from(...).select(...) sans vérifier .error, ce qui provoque des data=null silencieux.
+
+Tâche :
+1. Recherche tous les appels supabase.from() dans apps/web/src/.
+2. Identifie ceux qui n'ont pas de vérification de .error après la requête.
+3. Ajoute une gestion d'erreur explicite : if (result.error) { console.error(...); return valeur_par_defaut_ou_throw }.
+4. Ne masque jamais une erreur silencieusement. Log toujours avec console.error et un contexte suffisant (nom de la table, opération, userId si disponible).
+
+Fichiers à modifier : tous les fichiers contenant des appels Supabase sans gestion d'erreur.
+Validation : npm run typecheck. Grep "supabase.from" et vérifier que chaque occurrence a une gestion d'erreur à proximité.
+Risques : ne pas transformer un comportement graceful-degradation existant en crash.
+
+
+PROMPT 2.2 — CLIENT SUPABASE PLACEHOLDER
+─────────────────────────────────────────
+Contexte : Dans apps/web/src/lib/supabase/server.ts, quand les env vars sont manquantes, un client "placeholder" est retourné : createClient("https://placeholder-url.supabase.co", "placeholder-key"). Ce client va produire des erreurs réseau silencieuses à chaque appel.
+
+Tâche :
+1. Remplace le fallback placeholder par un throw explicite en production (process.env.NODE_ENV === "production").
+2. En développement, garde le fallback mais ajoute un warning console.warn() sur CHAQUE appel au client, pas seulement à la création.
+3. Ajoute un helper isSupabaseConfigured(): boolean exporté, basé sur la présence des deux env vars.
+4. Dans les Server Components critiques (dashboard, observatoire), utilise ce helper pour afficher un message d'erreur propre au lieu de crasher.
+
+Fichiers à modifier : apps/web/src/lib/supabase/server.ts, pages serveur critiques.
+Validation : npm run typecheck. En local sans env vars Supabase, le dashboard doit afficher un message lisible, pas un crash.
+
+
+PROMPT 2.3 — TYPAGE SUPABASE GÉNÉRÉ
+────────────────────────────────────
+Contexte : Le client Supabase est créé via createClient() sans types générés. Toutes les requêtes retournent any, ce qui annule les bénéfices de TypeScript.
+
+Tâche :
+1. Vérifie si un fichier de types Supabase existe déjà (database.types.ts ou similaire).
+2. Si non, documente la commande pour le générer : npx supabase gen types typescript --project-id <PROJECT_ID> > apps/web/src/lib/supabase/database.types.ts.
+3. Crée un fichier placeholder apps/web/src/lib/supabase/database.types.ts avec les tables connues du codebase (actions, progression_profiles, etc.) en typant manuellement les colonnes les plus utilisées.
+4. Modifie getSupabaseServerClient() pour passer le type : createClient<Database>(url, key, ...).
+5. Corrige les erreurs de type qui apparaissent dans les requêtes existantes.
+
+Fichiers à modifier : apps/web/src/lib/supabase/server.ts, nouveau fichier database.types.ts.
+Validation : npm run typecheck strict. Les requêtes Supabase doivent montrer des types au lieu de any.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRIORITÉ 3 — ARCHITECTURE ET MODULARITÉ
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PROMPT 3.1 — COUCHE SERVICE ENTRE API ET SUPABASE
+─────────────────────────────────────────────────
+Contexte : Les routes API (apps/web/src/app/api/*/route.ts) appellent directement Supabase dans le handler. Pas de couche service intermédiaire. La logique métier est mélangée avec le parsing HTTP.
+
+Tâche :
+1. Pour les 3 routes les plus complexes (actions/route.ts, admin/moderation/route.ts, community/events/route.ts), extrais la logique Supabase dans un fichier service dédié dans apps/web/src/lib/services/.
+2. Chaque service exporte des fonctions pures (ex: createAction(data), listPendingModerations(filters)) qui prennent des paramètres métier et retournent des résultats typés.
+3. Le route handler ne fait plus que : parse le body, appelle le service, formate la réponse HTTP.
+4. Le service gère les erreurs Supabase et les propage sous forme d'exceptions ou de résultats typés (Result<T, E>).
+
+Fichiers à créer : apps/web/src/lib/services/actions-service.ts, moderation-service.ts, events-service.ts.
+Fichiers à modifier : les 3 route.ts correspondantes.
+Validation : npm run typecheck. Les tests existants passent. Le comportement HTTP est identique.
+
+
+PROMPT 3.2 — NETTOYAGE DES IMPORTS CIRCULAIRES
+───────────────────────────────────────────────
+Contexte : Monorepo Next.js avec beaucoup de fichiers dans apps/web/src/lib/ qui s'importent mutuellement (profiles.ts ↔ navigation.ts ↔ sections-registry.ts ↔ domain-language.ts).
+
+Tâche :
+1. Analyse le graphe d'imports entre les fichiers de apps/web/src/lib/ (tu peux utiliser grep sur les import from).
+2. Identifie les cycles (A importe B qui importe A).
+3. Pour chaque cycle, propose et applique une solution : extraction des types partagés dans un fichier types.ts dédié, ou inversion de dépendance.
+4. Le fichier domain-language.ts doit être un leaf (importé par les autres, n'importe rien du projet).
+
+Fichiers à modifier : fichiers impliqués dans les cycles.
+Validation : npm run typecheck. npm run build ne doit pas afficher de warnings de circular dependency.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRIORITÉ 4 — SUPABASE : SCHÉMA, REQUÊTES, RLS, PERFORMANCES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PROMPT 4.1 — AUDIT RLS POLICIES
+───────────────────────────────
+Contexte : L'app utilise SUPABASE_SERVICE_ROLE_KEY qui bypasse RLS. Si un jour on passe à l'anon key côté client ou si un bug expose le client, les données sont ouvertes.
+
+Tâche :
+1. Liste toutes les tables Supabase référencées dans le codebase (grep sur .from("...")).
+2. Pour chaque table, documente les opérations effectuées (SELECT, INSERT, UPDATE, DELETE) et par qui (public, authenticated, admin).
+3. Rédige les SQL CREATE POLICY recommandées pour chaque table dans un fichier apps/web/supabase/policies.sql.
+4. Indique quelles policies sont critiques (tables avec données utilisateur) vs. nice-to-have.
+
+Fichiers à créer : apps/web/supabase/policies.sql.
+Validation : relire manuellement les policies. Le fichier doit être exécutable dans Supabase SQL Editor.
+Risques : ne pas activer RLS sans avoir vérifié que le service role key est bien utilisé côté serveur partout.
+
+
+PROMPT 4.2 — OPTIMISATION DES REQUÊTES N+1
+───────────────────────────────────────────
+Contexte : Certaines pages serveur (dashboard, reports) chargent des données avec plusieurs appels Supabase séquentiels au lieu de faire des jointures ou des requêtes batch.
+
+Tâche :
+1. Audite les fonctions suivantes : loadPilotageOverview() dans apps/web/src/lib/pilotage/overview.ts et fetchUnifiedActionContracts() dans apps/web/src/lib/actions/unified-source.ts.
+2. Identifie les appels Supabase qui pourraient être parallélisés avec Promise.all() ou fusionnés en une seule requête avec des jointures (.select("*, related_table(*)")).
+3. Applique les optimisations identifiées.
+4. Si une requête retourne plus de 1000 lignes sans pagination, ajoute un .range() ou un .limit() explicite.
+
+Fichiers à modifier : les fichiers identifiés ci-dessus.
+Validation : npm run typecheck. Mesurer le temps de chargement du dashboard avant/après si possible.
+
+
+PROMPT 4.3 — SCHÉMA DE MIGRATION DOCUMENTÉ
+──────────────────────────────────────────
+Contexte : Il n'y a aucun fichier de migration SQL dans le repo. Le schéma Supabase n'est documenté nulle part dans le code.
+
+Tâche :
+1. Crée un dossier apps/web/supabase/migrations/.
+2. En te basant sur toutes les requêtes Supabase du codebase, reconstitue le schéma actuel dans un fichier 001_initial_schema.sql.
+3. Inclus : CREATE TABLE, colonnes, types, contraintes NOT NULL, valeurs par défaut, index sur les colonnes utilisées dans les .eq() et .order().
+4. Ajoute des commentaires SQL expliquant le rôle de chaque table.
+
+Fichiers à créer : apps/web/supabase/migrations/001_initial_schema.sql.
+Validation : le SQL doit être syntaxiquement correct. Comparer avec le schéma réel dans Supabase Dashboard.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRIORITÉ 5 — UX/UI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PROMPT 5.1 — ÉTATS DE CHARGEMENT ET D'ERREUR
+────────────────────────────────────────────
+Contexte : Les pages serveur qui chargent des données Supabase (dashboard, observatoire, reports) n'ont pas d'états d'erreur visuels. Si Supabase est lent ou en panne, l'utilisateur voit un crash ou un écran vide.
+
+Tâche :
+1. Crée un composant apps/web/src/components/ui/data-error-fallback.tsx qui prend un message et affiche un cadre sobre avec une icône d'alerte et un bouton "Réessayer" (window.location.reload).
+2. Dans les Server Components critiques (DashboardPage, ObservatoirePage), wrap les appels data dans un try/catch et affiche le fallback en cas d'erreur.
+3. Crée un composant loading.tsx dans les dossiers (app)/dashboard/ et (app)/observatoire/ pour le Suspense de Next.js, avec un skeleton sobre.
+
+Fichiers à créer : data-error-fallback.tsx, loading.tsx (x2).
+Fichiers à modifier : dashboard/page.tsx, observatoire/page.tsx.
+Validation : couper temporairement l'env var Supabase et vérifier que les pages affichent le fallback.
+
+
+PROMPT 5.2 — RESPONSIVE MOBILE
+───────────────────────────────
+Contexte : Le site utilise Tailwind CSS. Certaines pages ont des grilles (grid-cols-3) et des tailles de texte (text-6xl) qui ne sont pas adaptées au mobile.
+
+Tâche :
+1. Audite les pages principales : page.tsx (landing), dashboard/page.tsx, observatoire/page.tsx, partners/network/page.tsx.
+2. Identifie les breakpoints manquants : grilles qui ne passent pas en colonne unique sur mobile, textes trop grands, paddings excessifs.
+3. Corrige avec les classes responsive Tailwind : sm:, md:, lg:.
+4. Vérifie que la sidebar/navigation est utilisable sur mobile (hamburger ou collapse).
+
+Fichiers à modifier : pages identifiées ci-dessus.
+Validation : tester dans Chrome DevTools en mode responsive (iPhone SE, iPad).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRIORITÉ 6 — PERFORMANCE APPLICATIVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PROMPT 6.1 — CACHE ET REVALIDATION
+───────────────────────────────────
+Contexte : Les Server Components font des appels Supabase à chaque rendu. Aucun cache Next.js n'est configuré. Les pages publiques (observatoire, carte) refetch les mêmes données à chaque visiteur.
+
+Tâche :
+1. Identifie les pages/routes qui servent des données publiques et stables (observatoire, /api/actions/map).
+2. Ajoute export const revalidate = 60 (ou 300 pour les moins critiques) dans les pages Server Component appropriées.
+3. Pour les routes API publiques, ajoute les headers Cache-Control appropriés : public, s-maxage=60, stale-while-revalidate=300.
+4. Pour les routes authentifiées, assure-toi que le cache est désactivé : Cache-Control: private, no-store.
+
+Fichiers à modifier : pages publiques et routes API.
+Validation : vérifier les headers de réponse avec curl -I.
+
+
+PROMPT 6.2 — BUNDLE SIZE ET LAZY LOADING
+────────────────────────────────────────
+Contexte : L'app importe recharts, framer-motion, lucide-react et leaflet. Ces bibliothèques sont lourdes et probablement chargées même quand pas nécessaires.
+
+Tâche :
+1. Identifie les composants qui utilisent recharts (AnalyticsCockpit) et framer-motion (PunchySlogan, etc.).
+2. Wrap ces composants dans un dynamic(() => import(...), { ssr: false }) de next/dynamic pour les exclure du bundle serveur.
+3. Vérifie que les icônes Lucide sont importées en tree-shaking (import { Icon } from "lucide-react" et non import * as Icons).
+4. Si Leaflet est importé statiquement, passe-le en dynamic import avec ssr: false.
+
+Fichiers à modifier : composants identifiés, leurs parents qui les importent.
+Validation : npm run build et comparer la taille du bundle JS client avant/après.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRIORITÉ 7 — LOGS, ERREURS, MONITORING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PROMPT 7.1 — LOGGER STRUCTURÉ
+─────────────────────────────
+Contexte : Le codebase utilise console.error() et console.warn() partout, sans structure. En production sur Vercel, ces logs sont difficiles à filtrer.
+
+Tâche :
+1. Crée un module apps/web/src/lib/logger.ts exportant un objet logger avec les méthodes : info, warn, error, debug.
+2. Chaque méthode prend un message string et un objet context optionnel.
+3. En production, formate en JSON structuré : { level, message, timestamp, ...context }.
+4. En développement, garde le format lisible humainement.
+5. Remplace les 10 console.error() les plus critiques du codebase (authz.ts, supabase/server.ts, routes API admin) par des appels au logger.
+
+Fichiers à créer : apps/web/src/lib/logger.ts.
+Fichiers à modifier : les fichiers avec les console.error critiques.
+Validation : npm run typecheck. En dev, les logs doivent être lisibles. En prod (NODE_ENV=production), ils doivent être en JSON.
+
+
+PROMPT 7.2 — HEALTH CHECK ENRICHI
+──────────────────────────────────
+Contexte : La route /api/health existe mais ne vérifie probablement pas la connectivité réelle aux services externes.
+
+Tâche :
+1. Modifie apps/web/src/app/api/health/route.ts pour vérifier :
+   - Connectivité Supabase : un SELECT 1 ou un .from("actions").select("id").limit(1).
+   - Présence des env vars critiques : SUPABASE_SERVICE_ROLE_KEY, CLERK_SECRET_KEY.
+2. Retourne un JSON structuré : { status: "healthy"|"degraded"|"unhealthy", checks: { supabase: "ok"|"error", clerk: "ok"|"missing", env: "ok"|"incomplete" }, timestamp }.
+3. Si un check échoue, le status global est "degraded", pas "unhealthy" (sauf si Supabase est down).
+
+Fichiers à modifier : apps/web/src/app/api/health/route.ts.
+Validation : appeler GET /api/health et vérifier la structure de la réponse.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRIORITÉ 8 — ACCESSIBILITÉ ET SEO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PROMPT 8.1 — MÉTA-DONNÉES ET OPEN GRAPH
+───────────────────────────────────────
+Contexte : L'app Next.js utilise le App Router. Les metadata doivent être exportées via export const metadata ou generateMetadata() dans chaque page.
+
+Tâche :
+1. Vérifie que chaque page sous apps/web/src/app/ exporte des metadata avec au minimum : title, description.
+2. Ajoute les tags Open Graph (og:title, og:description, og:image) pour les pages publiques (landing, observatoire).
+3. Crée un fichier apps/web/src/app/opengraph-image.tsx ou un fichier statique public/og-image.png pour l'image OG par défaut.
+4. Dans le layout racine, ajoute les metadata de base : metadataBase, title template, description globale.
+
+Fichiers à modifier : apps/web/src/app/layout.tsx, pages publiques.
+Validation : utiliser https://opengraph.xyz ou les devtools pour vérifier les tags.
+
+
+PROMPT 8.2 — ACCESSIBILITÉ WCAG BASIQUE
+────────────────────────────────────────
+Contexte : L'interface utilise beaucoup de couleurs (emerald, slate) et de petits textes (text-[10px], text-xs). Les ratios de contraste ne sont pas vérifiés.
+
+Tâche :
+1. Audite les 5 composants les plus utilisés : ThirtySecondsSummary, PageReadingTemplate, RolePrimaryActions, IdentityProfileBanner, ActionDeclarationForm.
+2. Pour chaque composant, vérifie : attributs aria-label sur les éléments interactifs, rôles ARIA sur les sections, labels sur les inputs de formulaire, contraste des petits textes.
+3. Remplace les text-[10px] par text-xs minimum (12px) pour la lisibilité.
+4. Ajoute des aria-label descriptifs sur les Link et Button sans texte visible.
+
+Fichiers à modifier : les 5 composants listés.
+Validation : exécuter un audit Lighthouse Accessibility sur les pages principales. Score cible > 80.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRIORITÉ 9 — DOCUMENTATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PROMPT 9.1 — .ENV.EXAMPLE EXHAUSTIF
+───────────────────────────────────
+Contexte : Le fichier env.ts (apps/web/src/lib/env.ts) définit un schéma Zod avec ~30 variables d'environnement. Il n'y a probablement pas de fichier .env.example à jour.
+
+Tâche :
+1. Lis le schéma envSchema dans apps/web/src/lib/env.ts.
+2. Génère un fichier apps/web/.env.example contenant CHAQUE variable du schéma, avec une valeur placeholder et un commentaire explicatif.
+3. Indique clairement lesquelles sont obligatoires vs optionnelles.
+4. Groupe par service : Supabase, Clerk, Sentry, Stripe, Resend, etc.
+
+Fichiers à créer : apps/web/.env.example.
+Validation : comparer avec le schéma Zod et s'assurer qu'aucune variable ne manque.
+
+
+PROMPT 9.2 — ADR : DÉCISIONS D'ARCHITECTURE
+────────────────────────────────────────────
+Contexte : Plusieurs décisions architecturales sont mentionnées dans project_context.md mais pas documentées formellement (pourquoi service role key, pourquoi pas de middleware jusqu'ici, pourquoi Clerk plutôt que Supabase Auth).
+
+Tâche :
+1. Crée un dossier documentation/technical/adr/.
+2. Rédige 3 ADR (Architecture Decision Records) courts en français :
+   - ADR-001 : Choix de Clerk pour l'authentification (vs Supabase Auth / NextAuth).
+   - ADR-002 : Utilisation du service role key Supabase côté serveur.
+   - ADR-003 : Monorepo npm workspaces et structure apps/web.
+3. Format : Contexte, Décision, Conséquences, Statut (accepté).
+
+Fichiers à créer : 3 fichiers dans documentation/technical/adr/.
+Validation : relecture humaine pour vérifier la cohérence avec le code.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ PRIORITÉ 10 — FINITIONS PRODUIT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+PROMPT 10.1 — PAGE 404 ET GESTION DES ROUTES INEXISTANTES
+─────────────────────────────────────────────────────────
+Contexte : L'app Next.js n'a probablement pas de page not-found.tsx custom. Les 404 montrent la page par défaut Next.js.
+
+Tâche :
+1. Crée apps/web/src/app/not-found.tsx avec un design cohérent avec le reste du site (même typographie, même palette).
+2. Inclus : un message clair en français, un lien "Retour à l'accueil", et un lien "Signaler un problème" pointant vers le formulaire de bug report si existant.
+3. Crée aussi apps/web/src/app/error.tsx (Error Boundary global) qui catch les erreurs runtime et affiche un message propre au lieu d'un crash blanc.
+
+Fichiers à créer : not-found.tsx, error.tsx.
+Validation : naviguer vers /une-page-qui-nexiste-pas et vérifier le rendu.
+
+
+PROMPT 10.2 — FAVICON ET MANIFEST PWA
+─────────────────────────────────────
+Contexte : Le site est principalement utilisé sur mobile (bénévoles sur le terrain). Un manifest PWA permettrait l'ajout à l'écran d'accueil.
+
+Tâche :
+1. Vérifie la présence d'un favicon dans apps/web/public/. Si absent ou générique, crée un favicon simple (lettre C verte sur fond blanc, en SVG).
+2. Crée un fichier apps/web/public/manifest.json avec : name "CleanMyMap", short_name "CleanMyMap", start_url "/dashboard", display "standalone", theme_color "#10b981", background_color "#ffffff".
+3. Référence le manifest dans le layout racine via <link rel="manifest">.
+4. Ajoute les balises <meta name="theme-color"> et <meta name="apple-mobile-web-app-capable">.
+
+Fichiers à créer/modifier : manifest.json, favicon, layout.tsx.
+Validation : ouvrir le site sur Chrome Android > menu > "Ajouter à l'écran d'accueil" doit fonctionner.
+
+
+==============================================================================
+FIN DU PLAN — 18 PROMPTS — 10 NIVEAUX DE PRIORITÉ
+==============================================================================
