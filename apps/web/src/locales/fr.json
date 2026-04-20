@@ -1,0 +1,101 @@
+{
+  "methodologie": {
+    "header_suptitle": "TRANSFERENCE & CRÉDIBILITÉ SCIENTIFIQUE",
+    "header_title": "Méthodologie de Calcul d'Impact.",
+    "header_desc": "Toutes nos métriques sont fondées sur des rapports officiels et des protocoles de calcul documentés.",
+    "cards": {
+      "water": {
+        "title": "Eau préservée de la pollution",
+        "formula": "Impact = [Mégots collectés] × {val} L",
+        "desc": "Un seul mégot peut polluer jusqu'à 500 à 1000 litres d'eau en libérant des métaux lourds et des microplastiques (Source: WHO/Tobacco and its environmental impact, 2017). Nous utilisons la borne basse ({val}L) pour garantir une estimation prudente.",
+        "source": "SOURCE: {src}"
+      },
+      "co2": {
+        "title": "Émissions CO2 évitées",
+        "formula": "Impact = [Masse déchets (kg)] × {val} kg CO2eq",
+        "desc": "Ce facteur correspond à la moyenne d'émissions évitées par la collecte et le traitement contrôlé par rapport à l'abandon en nature (fermentation, microplastiques). Ce chiffre est dérivé de la base de données Empreinte de l'ADEME pour le mix de déchets urbains standards.",
+        "source": "SOURCE: {src}"
+      },
+      "surface": {
+        "title": "Surface d'impact opérationnelle",
+        "formula": "Surface (m²) = [Masse(kg)] × {valkg} + [Minutes] × {valmin}",
+        "desc": "Contrairement aux métriques physiques directes, notre calcul de surface est un index de \"pénétration terrain\". Il combine la densité de nettoyage (poids récolté) et l'effort de prospection (temps passé) pour simuler la zone d'influence d'une action.",
+        "source": "SOURCE: {src}"
+      },
+      "map": {
+        "title": "L'Indice de Pollution Terrain (Carte)",
+        "formula": "Score % = ([Poids/20kg] × 65) + ([Mégots/2000] × 35)",
+        "desc": "Utilisé pour colorer la carte interactive, ce score normalise la pollution observée sur une échelle de 0 à 100%. Un score de 100% (Violet) représente une zone nécessitant une intervention d'envergure (ex: 20kg de déchets ou 2000 mégots concentrés). L'interpolation des couleurs (Vert → Jaune → Rouge → Violet) suit une logique de criticité opérationnelle.",
+        "source": "SOURCE: Algorithme de calibration terrain CleanMyMap v1."
+      },
+      "roi": {
+        "title": "Économies de voirie pour la ville (ROI)",
+        "formula": "Économies (€) = [Poids collecté (kg)] × 1.5€",
+        "desc": "Ce proxy économique estime le coût évité pour les services de voirie municipaux. Sur la base des rapports de coûts de propreté urbaine, la collecte citoyenne permet d'économiser environ 1,50€ par kilogramme retiré (incluant logistique, main d'œuvre urbaine et frais de traitement).",
+        "source": "SOURCE: Estimation basée sur les coûts de propreté urbaine moyens (Moyenne observée : 1500€ / tonne)."
+      }
+    },
+    "footer": {
+      "version": "Protocol Version: {version}",
+      "copyright": "© 2026 CleanMyMap Scientific Committee.",
+      "partner": "PARTENAIRE ADEME <br/> SOON"
+    }
+  },
+  "learnHub": {
+    "header_suptitle": "UNIVERSITÉ CLEANMYMAP",
+    "header_title": "Le Hub Éducatif.",
+    "header_desc": "Apprenez, organisez et agissez. Tout ce qu'il faut savoir pour devenir un ambassadeur du changement.",
+    "tabs": {
+      "enjeux": "Enjeux",
+      "usage": "Mode d'Emploi",
+      "events": "Rassemblements",
+      "kit": "Kit Terrain",
+      "waste": "Guide Déchets"
+    },
+    "enjeux": {
+      "title": "Le 7ème Continent.",
+      "desc": "Chaque minute, l'équivalent d'un camion poubelle plastique est jeté dans l'océan. Sur CleanMyMap, nous cartographions cette pollution invisible pour forcer l'action publique.",
+      "stat1_val": "8M",
+      "stat1_label": "Tonnes de plastique / an",
+      "stat2_val": "450",
+      "stat2_label": "Années de décomposition",
+      "quote": "\"On ne peut protéger que ce que l'on comprend.\""
+    },
+    "usage": {
+      "step1_title": "Observez",
+      "step1_desc": "En marchant, signalez un hotspot de pollution via le bouton 'Signalement Express'.",
+      "step2_title": "Agissez",
+      "step2_desc": "Collectez les déchets, seul ou en groupe, et photographiez le résultat.",
+      "step3_title": "Tracez",
+      "step3_desc": "Déclarer votre action pour transformer vos kilos en points d'impact réels.",
+      "step4_title": "Analysez",
+      "step4_desc": "Consultez vos statistiques et téléchargez votre certificat d'impact."
+    },
+    "events": {
+      "next": "Suivant",
+      "previous": "Précédent",
+      "today": "Aujourd'hui",
+      "month": "Mois",
+      "week": "Semaine",
+      "day": "Jour"
+    },
+    "kit": {
+      "doc1_title": "Protocole de Sécurité",
+      "doc2_title": "Guide du Référent Local",
+      "doc3_title": "Flyer Sensibilisation",
+      "doc4_title": "Checklist de Sortie",
+      "type_size": "{type} • {size}"
+    },
+    "waste": {
+      "title": "L'Encyclopédie du Tri.",
+      "cat1_name": "Verre",
+      "cat1_info": "Infini recyclable. Toujours sans bouchon.",
+      "cat2_name": "Plastique PET",
+      "cat2_info": "Bouteilles d'eau, flacons transparents.",
+      "cat3_name": "Mégots",
+      "cat3_info": "Déchets toxiques. Filière de recyclage spécifique.",
+      "cat4_name": "Aluminium",
+      "cat4_info": "Canettes. 95% d'énergie économisée au recyclage."
+    }
+  }
+}

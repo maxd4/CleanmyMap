@@ -1,0 +1,101 @@
+{
+  "methodologie": {
+    "header_suptitle": "TRANSFERENCE & SCIENTIFIC CREDIBILITY",
+    "header_title": "Impact Calculation Methodology.",
+    "header_desc": "All our metrics are based on official reports and documented calculation protocols.",
+    "cards": {
+      "water": {
+        "title": "Water preserved from pollution",
+        "formula": "Impact = [Cigarette butts collected] × {val} L",
+        "desc": "A single cigarette butt can pollute up to 500 to 1000 liters of water by releasing heavy metals and microplastics (Source: WHO/Tobacco and its environmental impact, 2017). We use the lower bound ({val}L) to ensure a conservative estimate.",
+        "source": "SOURCE: {src}"
+      },
+      "co2": {
+        "title": "CO2 Emissions avoided",
+        "formula": "Impact = [Waste mass (kg)] × {val} kg CO2eq",
+        "desc": "This factor corresponds to the average emissions avoided by collection and controlled treatment compared to leaving it in nature (fermentation, microplastics). This figure is derived from the ADEME Empreinte database for the standard urban waste mix.",
+        "source": "SOURCE: {src}"
+      },
+      "surface": {
+        "title": "Operational impact area",
+        "formula": "Area (m²) = [Mass(kg)] × {valkg} + [Minutes] × {valmin}",
+        "desc": "Unlike direct physical metrics, our area calculation is a \"field penetration\" index. It combines cleaning density (collected weight) and prospecting effort (time spent) to simulate the influence zone of an action.",
+        "source": "SOURCE: {src}"
+      },
+      "map": {
+        "title": "Field Pollution Index (Map)",
+        "formula": "Score % = ([Weight/20kg] × 65) + ([Butts/2000] × 35)",
+        "desc": "Used to color the interactive map, this score normalizes the observed pollution on a scale of 0 to 100%. A score of 100% (Purple) represents an area requiring a major intervention (e.g., 20kg of waste or 2000 concentrated butts). The color interpolation (Green → Yellow → Red → Purple) follows a logic of operational criticality.",
+        "source": "SOURCE: CleanMyMap v1 field calibration algorithm."
+      },
+      "roi": {
+        "title": "Street-cleaning savings for the city (ROI)",
+        "formula": "Savings (€) = [Collected weight (kg)] × 1.5€",
+        "desc": "This economic proxy estimates the cost avoided for municipal street-cleaning services. Based on urban cleanliness cost reports, citizen collection saves about €1.50 per kilogram removed (including logistics, urban labor, and treatment costs).",
+        "source": "SOURCE: Estimate based on average urban cleanliness costs (Observed average: €1500 / ton)."
+      }
+    },
+    "footer": {
+      "version": "Protocol Version: {version}",
+      "copyright": "© 2026 CleanMyMap Scientific Committee.",
+      "partner": "PARTENAIRE ADEME <br/> SOON"
+    }
+  },
+  "learnHub": {
+    "header_suptitle": "CLEANMYMAP UNIVERSITY",
+    "header_title": "The Educational Hub.",
+    "header_desc": "Learn, organize, and act. Everything you need to know to become an ambassador of change.",
+    "tabs": {
+      "enjeux": "Challenges",
+      "usage": "User Guide",
+      "events": "Gatherings",
+      "kit": "Field Kit",
+      "waste": "Waste Guide"
+    },
+    "enjeux": {
+      "title": "The 7th Continent.",
+      "desc": "Every minute, the equivalent of a plastic garbage truck is dumped into the ocean. On CleanMyMap, we map this invisible pollution to force public action.",
+      "stat1_val": "8M",
+      "stat1_label": "Tons of plastic / year",
+      "stat2_val": "450",
+      "stat2_label": "Years to decompose",
+      "quote": "\"We can only protect what we understand.\""
+    },
+    "usage": {
+      "step1_title": "Observe",
+      "step1_desc": "While walking, report a pollution hotspot using the 'Express Report' button.",
+      "step2_title": "Act",
+      "step2_desc": "Collect waste, alone or in a group, and photograph the result.",
+      "step3_title": "Track",
+      "step3_desc": "Declare your action to turn your kilos into real impact points.",
+      "step4_title": "Analyze",
+      "step4_desc": "Check your statistics and download your impact certificate."
+    },
+    "events": {
+      "next": "Next",
+      "previous": "Previous",
+      "today": "Today",
+      "month": "Month",
+      "week": "Week",
+      "day": "Day"
+    },
+    "kit": {
+      "doc1_title": "Safety Protocol",
+      "doc2_title": "Local Coordinator Guide",
+      "doc3_title": "Awareness Flyer",
+      "doc4_title": "Departure Checklist",
+      "type_size": "{type} • {size}"
+    },
+    "waste": {
+      "title": "The Recycling Encyclopedia.",
+      "cat1_name": "Glass",
+      "cat1_info": "Infinitely recyclable. Always without caps.",
+      "cat2_name": "PET Plastic",
+      "cat2_info": "Water bottles, transparent flasks.",
+      "cat3_name": "Cigarette butts",
+      "cat3_info": "Toxic waste. Specific recycling channel.",
+      "cat4_name": "Aluminum",
+      "cat4_info": "Cans. 95% energy saved during recycling."
+    }
+  }
+}
