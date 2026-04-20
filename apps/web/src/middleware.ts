@@ -11,12 +11,14 @@ import { NextResponse } from "next/server";
 
 // Définition des matchers
 const isPublicRoute = createRouteMatcher([
-  "/",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/observatoire(.*)",
-  "/api/health",
-  "/api/actions/map",
+  "/",                          // Landing page
+  "/sign-in(.*)",               // Auth Clerk
+  "/sign-up(.*)",               // Auth Clerk
+  "/observatoire(.*)",          // Page publique de données
+  "/api/health",                // Healthcheck — utilisé par Vercel et monitoring
+  "/api/uptime",                // Vérifié par UptimeRobot sans auth
+  "/api/actions/map",           // Données publiques de la carte
+  "/api/stripe/webhook",        // Webhook Stripe — auth par signature HMAC, pas Clerk
 ]);
 
 const isProtectedRoute = createRouteMatcher([
