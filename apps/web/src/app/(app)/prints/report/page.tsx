@@ -52,10 +52,10 @@ export default async function PrintReportPage() {
       {/* CORE STATS GRID */}
       <section className="grid grid-cols-4 gap-px bg-slate-200 border border-slate-200 mb-12 overflow-hidden rounded-lg">
         {[
-          { label: "Masse Récoltée", value: overview.comparison.current.totalKg.toFixed(1) + " kg" },
-          { label: "Bénévoles", value: overview.comparison.current.volunteersCount },
+          { label: "Masse Récoltée", value: overview.comparison.current.impactVolumeKg.toFixed(1) + " kg" },
+          { label: "Bénévoles", value: overview.comparison.current.mobilizationCount },
           { label: "Score Qualité", value: "AA" },
-          { label: "Zones Couvertes", value: overview.zones.items.length }
+          { label: "Zones Couvertes", value: overview.zones.length }
         ].map((stat, i) => (
           <div key={i} className="bg-white p-6 space-y-1">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stat.label}</p>

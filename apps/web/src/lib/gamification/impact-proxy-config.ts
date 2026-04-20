@@ -5,6 +5,7 @@ export type ImpactProxyFactors = {
   co2KgPerWasteKg: number;
   surfaceM2PerWasteKg: number;
   surfaceM2PerVolunteerMinute: number;
+  euroSavedPerWasteKg: number;
 };
 
 export type ImpactProxyConfig = {
@@ -68,6 +69,7 @@ export const IMPACT_PROXY_CONFIG: ImpactProxyConfig = {
       env.IMPACT_PROXY_SURFACE_M2_PER_VOLUNTEER_MINUTE,
       DEFAULT_IMPACT_PROXY_FACTORS.surfaceM2PerVolunteerMinute,
     ),
+    euroSavedPerWasteKg: 1.5, // Reference calculation for cities
   },
   sources: {
     water: "Estimation 500L/mégot (Risk assessment proxy - Ocean Conservancy / WHO reports).",

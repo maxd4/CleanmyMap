@@ -32,9 +32,9 @@ export default async function ObservatoirePage() {
   const monthlyData = data ? aggregateMonthlyAnalytics(data.contracts) : [];
 
   const kpis = overview ? [
-    { label: "Masse Totale (kg)", value: overview.comparison.current.totalKg.toLocaleString() },
-    { label: "Bénévoles Mobilisés", value: overview.comparison.current.volunteersCount.toLocaleString() },
-    { label: "Actions Validées", value: overview.comparison.current.actionsCount.toLocaleString() },
+    { label: "Masse Totale (kg)", value: overview.comparison.current.impactVolumeKg.toLocaleString() },
+    { label: "Bénévoles Mobilisés", value: overview.comparison.current.mobilizationCount.toLocaleString() },
+    { label: "Actions Validées", value: overview.comparison.current.approvedActions.toLocaleString() },
   ] : [];
 
   return (

@@ -210,6 +210,7 @@ export async function loadUserImpactStats(
       qualityAverage: number;
       validatedActions: number;
       wasteKg: number;
+      totalButts: number;
     }
   >
 > {
@@ -231,6 +232,7 @@ export async function loadUserImpactStats(
       qualitySum: number;
       validatedActions: number;
       wasteKg: number;
+      totalButts: number;
     }
   >();
 

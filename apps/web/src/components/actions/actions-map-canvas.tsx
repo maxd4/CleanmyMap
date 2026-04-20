@@ -98,7 +98,7 @@ function getPollutionScore(item: ActionMapItem): number {
 
 function resolvePointColor(item: ActionMapItem): string {
   const score = getPollutionScore(item);
-  if (mapItemWasteKg(item) <= 0 && mapItemCigaretteButts(item) <= 0) {
+  if ((mapItemWasteKg(item) ?? 0) <= 0 && (mapItemCigaretteButts(item) ?? 0) <= 0) {
     return "#0284c7"; // Bleu propre
   }
   return resolveDynamicColor(score);

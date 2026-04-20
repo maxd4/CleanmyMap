@@ -126,6 +126,10 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         en: "Confirm nearby field priorities",
       },
     },
+    additionalActions: [
+      {
+        href: "/actions/history",
+        label: { fr: "Historique", en: "History" },
         description: {
           fr: "Suivre les actions validees",
           en: "Track validated actions",

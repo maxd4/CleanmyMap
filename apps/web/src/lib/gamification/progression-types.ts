@@ -125,6 +125,7 @@ export type IndividualLeaderboardItem = {
   qualityAverage: number;
   validatedActions: number;
   wasteKg: number;
+  totalButts: number;
   badges: string[];
 };
 

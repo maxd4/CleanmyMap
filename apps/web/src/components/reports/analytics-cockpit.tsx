@@ -46,13 +46,13 @@ export function AnalyticsCockpit({ data }: AnalyticsCockpitProps) {
                   dy={10}
                 />
                 <YAxis 
-                  yId="left" 
+                  yAxisId="left" 
                   axisLine={false} 
                   tickLine={false} 
                   tick={{ fill: "#64748b", fontSize: 12 }} 
                 />
                 <YAxis 
-                  yId="right" 
+                  yAxisId="right" 
                   orientation="right" 
                   axisLine={false} 
                   tickLine={false} 
@@ -73,7 +73,7 @@ export function AnalyticsCockpit({ data }: AnalyticsCockpitProps) {
                   wrapperStyle={{ paddingBottom: "20px" }}
                 />
                 <Bar 
-                  yId="left" 
+                  yAxisId="left" 
                   dataKey="kg" 
                   name="Masse (kg)" 
                   fill="#10b981" 
@@ -81,7 +81,7 @@ export function AnalyticsCockpit({ data }: AnalyticsCockpitProps) {
                   barSize={40}
                 />
                 <Line 
-                  yId="right" 
+                  yAxisId="right" 
                   type="monotone" 
                   dataKey="volunteers" 
                   name="Bénévoles" 

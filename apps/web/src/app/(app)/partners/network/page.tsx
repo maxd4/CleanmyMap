@@ -1,6 +1,7 @@
 "use client";
 
 import { Handshake, Heart, ShieldCheck, Users, Mail } from "lucide-react";
+import Link from "next/link";
 
 export default function PartnersNetworkPage() {
   const volunteerGoal = 1000;

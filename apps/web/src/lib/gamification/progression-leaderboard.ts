@@ -117,6 +117,7 @@ async function buildIndividualLeaderboard(
         qualityAverage: 0,
         validatedActions: 0,
         wasteKg: 0,
+        totalButts: 0,
       };
 
       const score =

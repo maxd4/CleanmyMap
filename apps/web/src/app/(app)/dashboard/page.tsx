@@ -299,7 +299,7 @@ export default async function DashboardPage() {
         
         {/* BOUTONS DYNAMIQUES GÉANTS VS ROLE */}
         <div className="mt-8 relative z-10">
-          {role === 'volunteer' ? (
+          {role === 'benevole' ? (
             <div className="flex flex-wrap gap-4">
               <Link 
                 href="/actions/new" 

@@ -448,6 +448,6 @@ export function AnnuaireSection() {
           verificationLabels={VERIFICATION_LABELS}
         />
       </div>
-    </div>>
+    </div>
   );
 }
