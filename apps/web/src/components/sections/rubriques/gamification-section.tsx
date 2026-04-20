@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
+import { BadgeShowcase } from "@/components/gamification/badge-showcase";
 import { GamificationImpactMethodologyCard } from "@/components/sections/rubriques/gamification-impact-methodology-card";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import type { ActionMapItem } from "@/lib/actions/types";
@@ -211,288 +212,218 @@ export function GamificationSection() {
         contribution collective sont privilegies sur le simple volume.
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-900">
-          {locale === "fr" ? "Ta progression" : "Your progression"}
-        </h3>
-        {meLoading ? (
-          <p className="mt-2 text-sm text-slate-500">Chargement progression...</p>
-        ) : null}
-        {meError ? (
-          <p className="mt-2 text-sm text-rose-700">
-            Progression indisponible pour le moment.
-          </p>
-        ) : null}
-        {progression ? (
-          <div className="mt-3 space-y-3">
-            <div className="grid gap-3 md:grid-cols-4">
-              <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Niveau actuel</p>
-                <p className="mt-1 text-2xl font-semibold text-slate-900">
-                  {progression.currentLevel}
-                </p>
-              </article>
-              <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Niveau potentiel
-                </p>
-                <p className="mt-1 text-2xl font-semibold text-slate-900">
-                  {progression.potentialLevel}
-                </p>
-              </article>
-              <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">XP validee</p>
-                <p className="mt-1 text-2xl font-semibold text-slate-900">
-                  {progression.xpValidated}
-                </p>
-              </article>
-              <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">XP en attente</p>
-                <p className="mt-1 text-2xl font-semibold text-slate-900">
-                  {progression.xpPending}
-                </p>
-              </article>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-4">
-              <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Ton impact - eau</p>
-                <p className="mt-1 text-xl font-semibold text-slate-900">
-                  {progression.impact.waterSavedLiters.toLocaleString("fr-FR")} L
-                </p>
-              </article>
-              <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Ton impact - CO2</p>
-                <p className="mt-1 text-xl font-semibold text-slate-900">
-                  {progression.impact.co2AvoidedKg.toLocaleString("fr-FR")} kg
-                </p>
-              </article>
-              <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Ton impact - surface
-                </p>
-                <p className="mt-1 text-xl font-semibold text-slate-900">
-                  {progression.impact.surfaceCleanedM2.toLocaleString("fr-FR")} m2
-                </p>
-              </article>
-              <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Ranking dynamique</p>
-                <p className="mt-1 text-xl font-semibold text-slate-900">
-                  {progression.dynamicRanking.rank ? `#${progression.dynamicRanking.rank}` : "n/a"}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {progression.dynamicRanking.percentile
-                    ? `Top ${progression.dynamicRanking.percentile}%`
-                    : "Classement en cours"}
-                </p>
-              </article>
-            </div>
-
-            <GamificationImpactMethodologyCard
-              methodology={progression.impactMethodology}
-            />
-
-            <div>
-              <p className="text-xs text-slate-600">
-                Progression vers le niveau {progression.nextLevel.level}:{" "}
-                {progression.nextLevel.xpRemaining} XP restantes.
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
+        {/* GAUCHE : Progression personnelle */}
+        <div className="space-y-4">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <h3 className="text-sm font-semibold text-slate-900">
+              {locale === "fr" ? "Ta progression" : "Your progression"}
+            </h3>
+            {meLoading ? (
+              <p className="mt-2 text-sm text-slate-500">Chargement progression...</p>
+            ) : null}
+            {meError ? (
+              <p className="mt-2 text-sm text-rose-700">
+                Progression indisponible pour le moment.
               </p>
-              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-slate-200">
-                <div
-                  className="h-full rounded-full bg-emerald-600 transition-all"
-                  style={{ width: `${progressToNext}%` }}
+            ) : null}
+            {progression ? (
+              <div className="mt-3 space-y-4">
+                <div className="grid gap-3 grid-cols-2">
+                  <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Niveau actuel</p>
+                    <p className="mt-1 text-2xl font-semibold text-slate-900">
+                      {progression.currentLevel}
+                    </p>
+                    {progression.potentialLevel > progression.currentLevel ? (
+                      <p className="text-[10px] text-amber-700 mt-1">Potentiel: {progression.potentialLevel}</p>
+                    ) : null}
+                  </article>
+                  <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-500">Ranking</p>
+                    <p className="mt-1 text-2xl font-semibold text-slate-900">
+                      {progression.dynamicRanking.rank ? `#${progression.dynamicRanking.rank}` : "n/a"}
+                    </p>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      {progression.dynamicRanking.percentile
+                        ? `Top ${progression.dynamicRanking.percentile}%`
+                        : "En cours"}
+                    </p>
+                  </article>
+                </div>
+
+                <div className="grid gap-3 grid-cols-2">
+                  <article className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 shadow-sm">
+                    <p className="text-xs uppercase tracking-wide text-emerald-700">XP validée</p>
+                    <p className="mt-1 text-xl font-bold text-emerald-900">
+                      {progression.xpValidated}
+                    </p>
+                  </article>
+                  <article className="rounded-lg border border-amber-100 bg-amber-50 p-3 shadow-sm">
+                    <p className="text-xs uppercase tracking-wide text-amber-700">XP en attente</p>
+                    <p className="mt-1 text-xl font-bold text-amber-900">
+                      {progression.xpPending}
+                    </p>
+                  </article>
+                </div>
+
+                <GamificationImpactMethodologyCard
+                  methodology={progression.impactMethodology}
                 />
-              </div>
-              {progression.nextLevel.frozen ? (
-                <p className="mt-2 text-xs text-amber-700">
-                  Niveau gele: tes XP continuent de s&apos;accumuler, il manque des
-                  prerequis pour debloquer le palier.
-                </p>
-              ) : null}
-            </div>
 
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Prerequis restants
-                </p>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-                  {progression.nextLevel.requirements.missing.length === 0 ? (
-                    <li>Prerequis valides pour le prochain niveau.</li>
-                  ) : (
-                    progression.nextLevel.requirements.missing.map((missing) => (
-                      <li key={missing}>{missing}</li>
-                    ))
-                  )}
-                </ul>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Badges</p>
-                <ul className="mt-2 space-y-1 text-sm text-slate-700">
-                  {progression.badges.length === 0 ? (
-                    <li>Aucun badge pour le moment.</li>
-                  ) : (
-                    progression.badges.map((badge) => <li key={badge}>{badge}</li>)
-                  )}
-                </ul>
-              </div>
-            </div>
-
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Timeline personnelle
-                </p>
-                <ul className="mt-2 space-y-2 text-sm text-slate-700">
-                  {progression.history.timeline.length === 0 ? (
-                    <li>Aucune action personnelle enregistree.</li>
-                  ) : (
-                    progression.history.timeline.slice(0, 8).map((item) => (
-                      <li key={item.id} className="rounded-md border border-slate-200 bg-white p-2">
-                        <p className="font-semibold text-slate-800">
-                          {formatDate(item.actionDate)} - {item.locationLabel}
-                        </p>
-                        <p className="text-xs text-slate-600">
-                          {item.wasteKg.toFixed(1)} kg, {item.cigaretteButts} megots, qualite{" "}
-                          {item.qualityGrade} ({item.qualityScore}/100)
-                        </p>
-                      </li>
-                    ))
-                  )}
-                </ul>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Carte personnelle
-                </p>
-                {personalMapItems.length === 0 ? (
-                  <p className="mt-2 text-sm text-slate-600">
-                    Ajoute des actions geolocalisees pour afficher ta carte personnelle.
-                  </p>
-                ) : (
-                  <div className="mt-2 overflow-hidden rounded-lg border border-slate-200">
-                    <ActionsMapCanvas items={personalMapItems.slice(0, 50)} />
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs font-semibold text-slate-700">Objectif niveau {progression.nextLevel.level}</p>
+                  <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                    <div
+                      className="h-full rounded-full bg-emerald-600 transition-all"
+                      style={{ width: `${progressToNext}%` }}
+                    />
                   </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
+                  <p className="mt-2 text-xs text-slate-600">
+                    Reste {progression.nextLevel.xpRemaining} XP.
+                  </p>
+                  
+                  {progression.nextLevel.frozen ? (
+                    <p className="mt-2 text-xs font-semibold text-amber-700">
+                      Niveau gelé : des prérequis bloquent le passage.
+                    </p>
+                  ) : null}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            className={`rounded-lg px-3 py-2 text-sm font-semibold ${
-              scope === "individual"
-                ? "bg-emerald-600 text-white"
-                : "bg-slate-100 text-slate-700"
-            }`}
-            onClick={() => setScope("individual")}
-          >
-            Contributeurs
-          </button>
-          <button
-            className={`rounded-lg px-3 py-2 text-sm font-semibold ${
-              scope === "collective"
-                ? "bg-emerald-600 text-white"
-                : "bg-slate-100 text-slate-700"
-            }`}
-            onClick={() => setScope("collective")}
-          >
-            Collectifs / associations
-          </button>
+                  {progression.nextLevel.requirements.missing.length > 0 ? (
+                    <ul className="mt-2 list-disc pl-4 text-xs text-amber-800">
+                      {progression.nextLevel.requirements.missing.map((missing) => (
+                        <li key={missing}>{missing}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">Badges et récompenses</p>
+                  <BadgeShowcase badges={progression.badges} />
+                </div>
+              </div>
+            ) : null}
+          </div>
         </div>
 
-        {leaderboardLoading ? (
-          <p className="mt-3 text-sm text-slate-500">Chargement du classement...</p>
-        ) : null}
-        {leaderboardError ? (
-          <p className="mt-3 text-sm text-rose-700">
-            Impossible de charger le classement durable.
-          </p>
-        ) : null}
+        {/* DROITE : Classements et Cartographie */}
+        <div className="space-y-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <button
+                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  scope === "individual"
+                    ? "bg-emerald-600 text-white shadow-md"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+                onClick={() => setScope("individual")}
+              >
+                Classement contributeurs
+              </button>
+              <button
+                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  scope === "collective"
+                    ? "bg-emerald-600 text-white shadow-md"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+                onClick={() => setScope("collective")}
+              >
+                Classement collectifs
+              </button>
+            </div>
 
-        {!leaderboardLoading && !leaderboardError ? (
-          <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-600">
-                {scope === "individual" ? (
-                  <tr>
-                    <th className="px-3 py-2">#</th>
-                    <th className="px-3 py-2">Contributeur</th>
-                    <th className="px-3 py-2">Association</th>
-                    <th className="px-3 py-2">Niveau</th>
-                    <th className="px-3 py-2">XP validee</th>
-                    <th className="px-3 py-2">Qualite</th>
-                    <th className="px-3 py-2">Impact (kg)</th>
-                    <th className="px-3 py-2">Score durable</th>
-                  </tr>
-                ) : (
-                  <tr>
-                    <th className="px-3 py-2">#</th>
-                    <th className="px-3 py-2">Collectif</th>
-                    <th className="px-3 py-2">Membres</th>
-                    <th className="px-3 py-2">Qualite</th>
-                    <th className="px-3 py-2">Actions validees</th>
-                    <th className="px-3 py-2">Impact (kg)</th>
-                    <th className="px-3 py-2">Score durable</th>
-                  </tr>
-                )}
-              </thead>
-              <tbody>
-                {scope === "individual"
-                  ? individualRows.map((row) => (
-                      <tr
-                        key={`${row.userId}-${row.rank}`}
-                        className="border-t border-slate-100 text-slate-700"
-                      >
-                        <td className="px-3 py-2 font-semibold">{row.rank}</td>
-                        <td className="px-3 py-2">{row.actorName}</td>
-                        <td className="px-3 py-2">{row.associationName}</td>
-                        <td className="px-3 py-2">
-                          {row.currentLevel}
-                          {row.potentialLevel > row.currentLevel ? (
-                            <span className="text-xs text-amber-700">
-                              {" "}
-                              (pot. {row.potentialLevel})
-                            </span>
-                          ) : null}
+            {leaderboardLoading ? (
+              <p className="text-sm text-slate-500">Synchronisation du classement global...</p>
+            ) : null}
+            {leaderboardError ? (
+              <p className="text-sm text-rose-700">
+                Moteur de classement indisponible.
+              </p>
+            ) : null}
+
+            {!leaderboardLoading && !leaderboardError ? (
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-slate-50 text-slate-600">
+                    {scope === "individual" ? (
+                      <tr>
+                        <th className="px-3 py-2 w-10 text-center">#</th>
+                        <th className="px-3 py-2">Identité</th>
+                        <th className="px-3 py-2 text-center">Niv.</th>
+                        <th className="px-3 py-2 text-right">XP</th>
+                        <th className="px-3 py-2 text-right">Qualité</th>
+                        <th className="px-3 py-2 text-right">Durable</th>
+                      </tr>
+                    ) : (
+                      <tr>
+                        <th className="px-3 py-2 w-10 text-center">#</th>
+                        <th className="px-3 py-2">Collectif</th>
+                        <th className="px-3 py-2 text-center">Membres</th>
+                        <th className="px-3 py-2 text-center">Actions</th>
+                        <th className="px-3 py-2 text-right">Qualité</th>
+                        <th className="px-3 py-2 text-right">Durable</th>
+                      </tr>
+                    )}
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {scope === "individual"
+                      ? individualRows.map((row) => (
+                          <tr
+                            key={`${row.userId}-${row.rank}`}
+                            className="bg-white hover:bg-slate-50 transition-colors"
+                          >
+                            <td className="px-3 py-2 font-bold text-slate-400 text-center">{row.rank}</td>
+                            <td className="px-3 py-2 font-semibold text-slate-800">
+                              {row.actorName}
+                              {row.associationName ? <span className="block font-normal text-[10px] text-slate-500">{row.associationName}</span> : null}
+                            </td>
+                            <td className="px-3 py-2 text-center font-medium">
+                              {row.currentLevel}
+                            </td>
+                            <td className="px-3 py-2 text-right text-emerald-700 font-medium">{row.xpValidated}</td>
+                            <td className="px-3 py-2 text-right text-xs">A {row.qualityAverage}/100</td>
+                            <td className="px-3 py-2 text-right font-bold text-slate-900">{row.score.toFixed(0)}</td>
+                          </tr>
+                        ))
+                      : collectiveRows.map((row) => (
+                          <tr
+                            key={`${row.associationName}-${row.rank}`}
+                            className="bg-white hover:bg-slate-50 transition-colors"
+                          >
+                            <td className="px-3 py-2 font-bold text-slate-400 text-center">{row.rank}</td>
+                            <td className="px-3 py-2 font-semibold text-slate-800">{row.associationName}</td>
+                            <td className="px-3 py-2 text-center">{row.members}</td>
+                            <td className="px-3 py-2 text-center">{row.validatedActions}</td>
+                            <td className="px-3 py-2 text-right text-xs">A {row.qualityAverage}/100</td>
+                            <td className="px-3 py-2 text-right font-bold text-slate-900">{row.score.toFixed(0)}</td>
+                          </tr>
+                        ))}
+                    {rows.length === 0 ? (
+                      <tr>
+                        <td
+                          className="px-3 py-8 text-center text-slate-500 italic"
+                          colSpan={6}
+                        >
+                          Aucune donnée qualifiée pour cette catégorie.
                         </td>
-                        <td className="px-3 py-2">{row.xpValidated}</td>
-                        <td className="px-3 py-2">{row.qualityAverage}/100</td>
-                        <td className="px-3 py-2">{row.wasteKg.toFixed(1)}</td>
-                        <td className="px-3 py-2">{row.score.toFixed(1)}</td>
                       </tr>
-                    ))
-                  : collectiveRows.map((row) => (
-                      <tr
-                        key={`${row.associationName}-${row.rank}`}
-                        className="border-t border-slate-100 text-slate-700"
-                      >
-                        <td className="px-3 py-2 font-semibold">{row.rank}</td>
-                        <td className="px-3 py-2">{row.associationName}</td>
-                        <td className="px-3 py-2">{row.members}</td>
-                        <td className="px-3 py-2">{row.qualityAverage}/100</td>
-                        <td className="px-3 py-2">{row.validatedActions}</td>
-                        <td className="px-3 py-2">{row.wasteKg.toFixed(1)}</td>
-                        <td className="px-3 py-2">{row.score.toFixed(1)}</td>
-                      </tr>
-                    ))}
-                {rows.length === 0 ? (
-                  <tr>
-                    <td
-                      className="px-3 py-3 text-slate-500"
-                      colSpan={scope === "individual" ? 8 : 7}
-                    >
-                      Aucun resultat disponible.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
           </div>
-        ) : null}
+
+          {progression && personalMapItems.length > 0 ? (
+             <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">Carte personnelle</h3>
+              <div className="overflow-hidden rounded-lg border border-slate-200 h-[300px]">
+                <ActionsMapCanvas items={personalMapItems.slice(0, 50)} />
+              </div>
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
   );

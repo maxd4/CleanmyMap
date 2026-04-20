@@ -62,9 +62,18 @@ export function ThirtySecondsSummary({
             key={kpi.label}
             className="rounded-xl border border-emerald-200 bg-white px-4 py-3"
           >
-            <p className="text-xs uppercase tracking-wide text-slate-500">
-              {kpi.label}
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-wide text-slate-500">
+                {kpi.label}
+              </p>
+              <Link 
+                href="/methodologie" 
+                className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 opacity-60 hover:opacity-100 transition"
+                title="Consulter la méthodologie scientifique"
+              >
+                ⓘ INFO
+              </Link>
+            </div>
             <p className="mt-1 text-lg font-semibold text-slate-900">
               {kpi.value}
             </p>

@@ -349,15 +349,75 @@ export function ActionDeclarationForm({
     }
   }
 
+  const drawingSummary =
+    drawingIsValid && manualDrawing
+      ? `Dessin enregistre (${manualDrawing.kind === "polygon" ? "polygone" : "trace"}, ${manualDrawing.coordinates.length} points).`
+      : "Aucun dessin valide pour le moment (2 points min pour un trace, 3 pour un polygone).";
+
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-      <ActionDeclarationFormHeader
-        clerkIdentityLabel={clerkIdentityLabel}
-        clerkUserId={clerkUserId}
-        linkedEventId={linkedEventId}
-        isQuickMode={isQuickMode}
-        onModeChange={setDeclarationMode}
-      />
+    <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6 items-start">
+      {/* COLONNE GAUCHE: Carte et Outils Terrain */}
+      <div className="space-y-6">
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <ActionDeclarationFormHeader
+            clerkIdentityLabel={clerkIdentityLabel}
+            clerkUserId={clerkUserId}
+            linkedEventId={linkedEventId}
+            isQuickMode={isQuickMode}
+            onModeChange={setDeclarationMode}
+          />
+        </section>
+
+        {!isQuickMode && (
+          <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm relative overflow-hidden">
+            <h3 className="mb-4 text-sm font-semibold text-emerald-900 border-b border-emerald-200 pb-3 flex items-center gap-2">
+              <span>📍</span> Assistance Cartographique
+            </h3>
+            
+            <label className="flex items-start gap-3 text-sm text-emerald-900 mb-5 bg-white/60 p-3 rounded-lg border border-emerald-100 shadow-sm">
+              <input
+                type="checkbox"
+                checked={manualDrawingEnabled}
+                onChange={(event) => setManualDrawingEnabled(event.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-emerald-400 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span>
+                <span className="font-semibold block mb-1">Option recommandee (trace manuel)</span>
+                Tracez ou entourez la zone nettoyee sur la carte. Cela desactive les champs manuels lat/lng a droite et assure un geo-suivi parfait.
+              </span>
+            </label>
+
+            {effectiveManualDrawingEnabled ? (
+              <div className="space-y-3">
+                <div className="bg-white p-2 rounded-xl border border-emerald-200 shadow-inner overflow-hidden isolate relative z-0">
+                  <ActionDrawingMap
+                    value={manualDrawing}
+                    onChange={setManualDrawing}
+                    wasteKg={toRequiredNumber(form.wasteKg, 0)}
+                    butts={Math.max(
+                      0,
+                      Math.trunc(toRequiredNumber(form.cigaretteButts, 0)),
+                    )}
+                    isCleanPlace={false}
+                  />
+                </div>
+                <div className="flex items-center justify-between text-xs text-emerald-900 bg-emerald-100/50 px-3 py-2 rounded-lg">
+                  <span className="opacity-80">Statut du trace :</span>
+                  <span className="font-semibold">{drawingSummary}</span>
+                </div>
+              </div>
+            ) : (
+                <div className="text-center p-6 text-emerald-800/60 text-sm border-2 border-dashed border-emerald-200 rounded-xl">
+                    Trace manuel desactive.
+                    <br/>Veuillez renseigner la Latitude/Longitude exactes dans le formulaire ou activer l'assistance.
+                </div>
+            )}
+          </section>
+        )}
+      </div>
+
+      {/* DROITE : Formulaire de saisie standard */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
 
       <form className="mt-6 grid gap-4 md:grid-cols-2" onSubmit={onSubmit}>
         <ActionDeclarationIdentityFields
@@ -474,6 +534,7 @@ export function ActionDeclarationForm({
           retentionLoop={retentionLoop}
         />
       </form>
-    </section>
+      </section>
+    </div>
   );
 }

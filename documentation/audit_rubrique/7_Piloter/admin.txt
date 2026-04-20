@@ -1,31 +1,9 @@
-Rubrique: Admin
-Statut: format-audit-unifie-v1
+### 📋 Audit : Panel Administrateur
 
-## Objectif
-- Piloter la moderation, la qualite des donnees et la gouvernance operationnelle.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-## Flux (schema)
-```mermaid
-flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Admin]
-  B --> C[Donnees / validation]
-  C --> D[Decision / action locale]
-```
-Fallback statique:
-![Schema Admin](../archive/fallback-audit-admin.png)
-
-## Risques
-- Donnees incompletes ou mal qualifiees.
-- Friction UX qui bloque l adoption.
-- Rupture de parcours entre rubrique et action concrete.
-
-## KPI
-- Adoption: utilisateurs actifs sur la rubrique.
-- Qualite: taux de donnees exploitables.
-- Impact: actions ou decisions declenchees depuis la rubrique.
-
-## Impact concret
-- Moins de fraudes/spam, meilleure qualite des donnees pour toutes les rubriques.
-
-## CTA
-- Traiter les signalements prioritaires et verifier les operations sensibles.
+- **Mission Principale :** L'Espace "God-Mode". Sécuriser l'application en donnant les pleins pouvoirs à la core-team pour gérer au laser le trafic, la qualité des déclarations et prévenir toute corruption de la cause par des acteurs malveillants.
+- **Logique de Fonctionnement :** 
+  - **Data-Grid Haute Performance :** Dashboards techniques à multi-filtres (React-Table/Ag-grid) pour auditer chaque utilisateur, modifier manuellement leur rôle Clerk (passer quelqu'un de `volunteer` à `mod_admin`).
+  - **Tooling de Modération QA :** Outils de soft-delete, bannissement direct via webhooks, et workflow de validation de lieux propres (Clean Places) pour nettoyer les abus avant qu'ils ne polluent la carte publique.
+- **Valeur pour l'utilisateur (Core Team Admin) :** La survie du produit. Sans ce panneau de modération, la base de données Supabase pourrait être submergée de dessins obscènes ou de faux signalements toxiques (Vandalisme Digital). L'admin y trouve la réponse à tous les problèmes humains du réseau, centralisés en un lieu sûr.

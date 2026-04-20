@@ -183,7 +183,7 @@ export function GuideSection() {
   }, [resourceVariant]);
 
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
       <article className="rounded-xl border border-slate-200 bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-slate-900">
@@ -207,7 +207,7 @@ export function GuideSection() {
             </select>
           </label>
         </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
+        <div className="mt-4 grid gap-3">
           {sop.map((step) => (
             <article
               key={step.phase}
@@ -220,7 +220,7 @@ export function GuideSection() {
             </article>
           ))}
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Link
             href="/actions/new"
             className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
@@ -251,57 +251,57 @@ export function GuideSection() {
             Progression {progress}%
           </p>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+        <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200 mb-4">
           <div
             className="h-full rounded-full bg-emerald-600 transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>
-        <ul className="space-y-2">
-          <li className="flex items-start gap-2">
+        <ul className="space-y-4">
+          <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
             <input
               type="checkbox"
               checked={checks.briefing}
               onChange={() => toggleCheck("briefing")}
-              className="mt-1"
+              className="mt-1 flex-shrink-0"
             />
-            <span>Briefing equipe, meteo et securite valides.</span>
+            <span className="font-medium text-slate-800">Briefing equipe, meteo et securite valides.</span>
           </li>
-          <li className="flex items-start gap-2">
+          <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
             <input
               type="checkbox"
               checked={checks.declaration}
               onChange={() => toggleCheck("declaration")}
-              className="mt-1"
+              className="mt-1 flex-shrink-0"
             />
-            <span>Declaration creee avec lieu, date, quantites.</span>
+            <span className="font-medium text-slate-800">Declaration creee avec lieu, date, quantites.</span>
           </li>
-          <li className="flex items-start gap-2">
+          <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
             <input
               type="checkbox"
               checked={checks.tracing}
               onChange={() => toggleCheck("tracing")}
-              className="mt-1"
+              className="mt-1 flex-shrink-0"
             />
-            <span>Trace ou polygone captures pour la zone nettoyee.</span>
+            <span className="font-medium text-slate-800">Trace ou polygone captures pour la zone nettoyee.</span>
           </li>
-          <li className="flex items-start gap-2">
+          <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
             <input
               type="checkbox"
               checked={checks.moderation}
               onChange={() => toggleCheck("moderation")}
-              className="mt-1"
+              className="mt-1 flex-shrink-0"
             />
-            <span>Moderation suivie pour fiabiliser la donnee.</span>
+            <span className="font-medium text-slate-800">Moderation suivie pour fiabiliser la donnee.</span>
           </li>
-          <li className="flex items-start gap-2">
+          <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
             <input
               type="checkbox"
               checked={checks.export}
               onChange={() => toggleCheck("export")}
-              className="mt-1"
+              className="mt-1 flex-shrink-0"
             />
-            <span>
+            <span className="font-medium text-slate-800">
               Export CSV/JSON realise pour exploitation terrain/collectivites.
             </span>
           </li>

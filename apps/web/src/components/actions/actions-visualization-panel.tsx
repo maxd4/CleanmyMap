@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import useSWR from "swr";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
 import { extractArrondissement, monthKey } from "@/components/sections/rubriques/helpers";
+import type { ActionStatus } from "@/lib/actions/types";
 
 type ZoneStats = {
   zone: string;
@@ -12,16 +13,20 @@ type ZoneStats = {
   butts: number;
 };
 
-type ImpactLevel = "faible" | "moyen" | "fort" | "critique";
+type ActionsVisualizationPanelProps = {
+  days: number;
+  status: ActionStatus | "all";
+};
 
+type ImpactLevel = "faible" | "moyen" | "fort" | "critique";
 const IMPACT_LEVELS: ImpactLevel[] = ["faible", "moyen", "fort", "critique"];
 
-export function ActionsVisualizationPanel() {
-  const mapQuery = useSWR(["visualization-map", "365d"], () =>
-    fetchMapActions({ status: "approved", days: 365, limit: 300, types: "all" }),
+export function ActionsVisualizationPanel({ days, status }: ActionsVisualizationPanelProps) {
+  const mapQuery = useSWR(["visualization-map", String(days), status], () =>
+    fetchMapActions({ status, days, limit: 300, types: "all" }),
   );
-  const actionsQuery = useSWR(["visualization-actions", "365d"], () =>
-    fetchActions({ status: "approved", days: 365, limit: 200, types: "all" }),
+  const actionsQuery = useSWR(["visualization-actions", String(days), status], () =>
+    fetchActions({ status, days, limit: 200, types: "all" }),
   );
 
   const loading = mapQuery.isLoading || actionsQuery.isLoading;
@@ -111,17 +116,16 @@ export function ActionsVisualizationPanel() {
   }, [actionsQuery.data?.items, mapQuery.data?.items]);
 
   return (
-    <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          Visualiser
-        </p>
-        <h2 className="mt-1 text-xl font-semibold text-slate-900">
-          Graphiques et tableaux dynamiques des totaux d&apos;action
-        </h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Lecture consolidee 365 jours (echantillon live API).
-        </p>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 p-1">
+        <div>
+          <h2 className="text-xl font-semibold text-slate-900">
+            Graphiques et tableaux dynamiques
+          </h2>
+          <p className="text-sm text-slate-600">
+            Lecture consolidée (échantillon live API).
+          </p>
+        </div>
       </div>
 
       {loading ? (
@@ -133,47 +137,10 @@ export function ActionsVisualizationPanel() {
 
       {!loading && !error ? (
         <>
-          <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
-            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Actions</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">
-                {model.totals.actions}
-              </p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Dechets (kg)</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">
-                {model.totals.wasteKg.toFixed(1)}
-              </p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Megots</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">
-                {Math.round(model.totals.butts)}
-              </p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Benevoles</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">
-                {Math.round(model.totals.volunteers)}
-              </p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Heures citoyennes</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">
-                {model.totals.citizenHours.toFixed(1)} h
-              </p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Geocouverture</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">
-                {model.totals.geocoveragePct}%
-              </p>
-            </article>
-          </div>
-
+          {/* Les compteurs globaux ont ete remontes dans le Dashboard Global, 
+              mais on garde ici les graphiques specifiques. */}
           <div className="grid gap-4 lg:grid-cols-2">
-            <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
               <h3 className="text-sm font-semibold text-slate-900">Tendance 6 derniers mois</h3>
               <div className="mt-3 space-y-2">
                 {model.monthRows.map((row) => (
@@ -182,7 +149,7 @@ export function ActionsVisualizationPanel() {
                       <span>{row.label}</span>
                       <span>{row.actions} actions</span>
                     </div>
-                    <div className="mt-1 h-2 w-full rounded-full bg-slate-200">
+                    <div className="mt-1 h-2 w-full rounded-full bg-slate-100">
                       <div
                         className="h-full rounded-full bg-emerald-600"
                         style={{ width: `${Math.max(6, (row.actions / model.maxMonth) * 100)}%` }}
@@ -193,8 +160,8 @@ export function ActionsVisualizationPanel() {
               </div>
             </article>
 
-            <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-              <h3 className="text-sm font-semibold text-slate-900">Repartition impact</h3>
+            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-slate-900">Répartition impact</h3>
               <div className="mt-3 space-y-2">
                 {model.impactRows.map((row) => (
                   <div key={row.level}>
@@ -202,7 +169,7 @@ export function ActionsVisualizationPanel() {
                       <span className="capitalize">{row.level}</span>
                       <span>{row.count}</span>
                     </div>
-                    <div className="mt-1 h-2 w-full rounded-full bg-slate-200">
+                    <div className="mt-1 h-2 w-full rounded-full bg-slate-100">
                       <div
                         className={`h-full rounded-full ${
                           row.level === "critique"
@@ -222,31 +189,31 @@ export function ActionsVisualizationPanel() {
             </article>
           </div>
 
-          <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-900">Tableau dynamique par zone</h3>
-            <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
               <table className="min-w-full text-left text-sm">
                 <thead className="bg-slate-50 text-slate-600">
                   <tr>
                     <th className="px-3 py-2">Zone</th>
-                    <th className="px-3 py-2">Actions</th>
-                    <th className="px-3 py-2">Dechets (kg)</th>
-                    <th className="px-3 py-2">Megots</th>
+                    <th className="px-3 py-2 text-right">Actions</th>
+                    <th className="px-3 py-2 text-right">Déchets (kg)</th>
+                    <th className="px-3 py-2 text-right">Mégots</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y divide-slate-100">
                   {model.zoneRows.map((row) => (
-                    <tr key={row.zone} className="border-t border-slate-100 text-slate-700">
-                      <td className="px-3 py-2">{row.zone}</td>
-                      <td className="px-3 py-2">{row.actions}</td>
-                      <td className="px-3 py-2">{row.wasteKg.toFixed(1)}</td>
-                      <td className="px-3 py-2">{Math.round(row.butts)}</td>
+                    <tr key={row.zone} className="text-slate-700 hover:bg-slate-50 transition-colors">
+                      <td className="px-3 py-2 font-medium">{row.zone}</td>
+                      <td className="px-3 py-2 text-right">{row.actions}</td>
+                      <td className="px-3 py-2 text-right">{row.wasteKg.toFixed(1)}</td>
+                      <td className="px-3 py-2 text-right">{Math.round(row.butts)}</td>
                     </tr>
                   ))}
                   {model.zoneRows.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="px-3 py-3 text-slate-500">
-                        Aucune donnee disponible.
+                      <td colSpan={4} className="px-3 py-8 text-center text-slate-500 italic">
+                        Aucune donnée disponible pour cette période.
                       </td>
                     </tr>
                   ) : null}
@@ -256,6 +223,6 @@ export function ActionsVisualizationPanel() {
           </article>
         </>
       ) : null}
-    </section>
+    </div>
   );
 }

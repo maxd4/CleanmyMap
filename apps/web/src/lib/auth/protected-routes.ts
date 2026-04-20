@@ -15,4 +15,7 @@ export const PROTECTED_ROUTE_PATTERNS = [
   "/api/spots(.*)",
   "/api/users(.*)",
   "/api/email/test(.*)",
+  "/prints(.*)",
+  "/sponsor-portal(.*)",
+  "/learn(.*)",
 ] as const;

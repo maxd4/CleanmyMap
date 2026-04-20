@@ -41,72 +41,65 @@ export function ActorsSection() {
   }, [actions.data?.items]);
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-        <h3 className="text-sm font-semibold text-slate-900">
-           Pression territoriale (12 mois)
-        </h3>
-        <ul className="mt-2 space-y-1 text-sm text-slate-700">
-          {hotspots.map(([area, count]) => (
-             <li key={area}>
-              {area}: <span className="font-semibold">{count}</span> signalement(s)
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
+      {/* GAUCHE : Pression territoriale */}
+      <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h3 className="text-sm font-semibold text-slate-900">Pression territoriale (12 mois)</h3>
+        <ul className="mt-3 space-y-2">
+          {hotspots.map(([area, count], index) => (
+            <li key={area} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 flex items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700">{index + 1}</span>
+                <span className="font-medium text-slate-800">{area}</span>
+              </div>
+              <span className="text-sm font-bold text-slate-700">{count} signalement{count > 1 ? "s" : ""}</span>
             </li>
           ))}
           {hotspots.length === 0 ? (
-             <li>Aucune donnee map disponible pour le moment.</li>
+            <li className="text-sm text-slate-500 italic">Aucune donnée disponible.</li>
           ) : null}
         </ul>
-      </div>
+      </article>
 
+      {/* DROITE : Fiches partenaires */}
       <div className="grid gap-3 md:grid-cols-2">
         {partnerCards.map((card) => (
-           <article
-            key={card.actor}
-            className="rounded-xl border border-slate-200 bg-white p-4"
-          >
+          <article key={card.actor} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold text-slate-900">
-                   {card.actor}
-                </h3>
+                <h3 className="text-sm font-semibold text-slate-900">{card.actor}</h3>
                 <p className="text-xs text-slate-500">{card.role}</p>
               </div>
               {hotspotSet.has(card.zone) ? (
-                 <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
-                  Zone prioritaire
-                </span>
+                <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">Zone prioritaire</span>
               ) : null}
             </div>
-            <dl className="mt-3 space-y-1 text-sm text-slate-700">
-               <div className="flex justify-between gap-2">
+            <dl className="mt-3 space-y-1 text-sm divide-y divide-slate-100">
+              <div className="flex justify-between gap-2 py-1">
                 <dt className="text-slate-500">Zone principale</dt>
                 <dd className="font-semibold">{card.zone}</dd>
               </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-slate-500">Contact</dt>
-                <dd className="font-semibold">{card.contact}</dd>
-              </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-slate-500">Capacite</dt>
+              <div className="flex justify-between gap-2 py-1">
+                <dt className="text-slate-500">Capacité</dt>
                 <dd className="font-semibold">{card.capacity}</dd>
               </div>
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-between gap-2 py-1">
                 <dt className="text-slate-500">Actions annuelles</dt>
                 <dd className="font-semibold">{card.actions}</dd>
               </div>
-              <div className="flex justify-between gap-2">
-                <dt className="text-slate-500">Qualite moyenne</dt>
+              <div className="flex justify-between gap-2 py-1">
+                <dt className="text-slate-500">Qualité moy.</dt>
                 <dd className="font-semibold">{card.avgQuality}/100</dd>
               </div>
             </dl>
             <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
-               Prochaine action: {card.nextAction}
+              Prochaine action: {card.nextAction}
             </p>
           </article>
         ))}
         {partnerCards.length === 0 ? (
-           <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            Aucune fiche partenaire disponible pour le moment.
+          <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+            Aucune fiche partenaire disponible.
           </p>
         ) : null}
       </div>

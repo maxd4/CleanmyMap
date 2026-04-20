@@ -127,18 +127,42 @@ export function TrashSpotterSection() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        Le flux Trash Spotter est migre dans Next.js: lecture carte, filtrage et
-        declaration rapide depuis l&apos;interface web.
+        Flux Trash Spotter : signalement rapide et carte live des zones identifiées.
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <h2 className="text-sm font-semibold text-slate-900">
-          Nouveau signalement clean_place / spot
-        </h2>
-        <p className="mt-1 text-xs text-slate-600">
-          Creation publique via <code>POST /api/spots</code>. Le statut initial
-          est <span className="font-semibold">new</span>, puis moderation admin.
-        </p>
+      {/* KPI RAPIDES */}
+      {!isLoading && !error ? (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <article className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Signalements</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">{quality.total}</p>
+          </article>
+          <article className="rounded-xl border border-amber-100 bg-amber-50 p-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600">En attente</p>
+            <p className="mt-1 text-2xl font-bold text-amber-700">{quality.pending}</p>
+          </article>
+          <article className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Validés</p>
+            <p className="mt-1 text-2xl font-bold text-emerald-700">{quality.approved}</p>
+          </article>
+          <article className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Géo-couverture</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">
+              {quality.total > 0 ? `${Math.round((quality.withCoords / quality.total) * 100)}%` : "n/a"}
+            </p>
+          </article>
+        </div>
+      ) : null}
+
+      {/* SPLIT: Formulaire (gauche) + Carte + Récents (droite) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
+
+        {/* GAUCHE : Formulaire de signalement */}
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Nouveau signalement</h2>
+            <p className="mt-1 text-xs text-slate-600">Type <code>clean_place</code> ou <code>spot</code>. Statut initial : moderation admin.</p>
+          </div>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
             Type
@@ -212,73 +236,39 @@ export function TrashSpotterSection() {
           </p>
         ) : null}
       </div>
-
-      <div className="grid gap-3 md:grid-cols-4">
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
-            Signalements
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">
-            {quality.total}
-          </p>
-        </article>
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
-            En attente
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-amber-700">
-            {quality.pending}
-          </p>
-        </article>
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
-            Valides
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-emerald-700">
-            {quality.approved}
-          </p>
-        </article>
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">
-            Geo-couverture
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">
-            {quality.total > 0
-              ? `${Math.round((quality.withCoords / quality.total) * 100)}%`
-              : "n/a"}
-          </p>
-        </article>
-      </div>
-      {isLoading ? (
-        <p className="text-sm text-slate-500">
-          Chargement des indicateurs Spotter...
-        </p>
-      ) : null}
-      {error ? (
-        <p className="text-sm text-rose-700">
-          Indicateurs Spotter indisponibles.
-        </p>
-      ) : null}
-      {!isLoading && !error ? (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-semibold text-slate-900">
-            Derniers signalements
-          </h3>
-          <ul className="mt-2 space-y-1 text-sm text-slate-700">
-            {quality.recent.map((item) => (
-              <li key={item.id}>
-                {item.action_date} - {item.location_label} (
-                {mapItemType(item) === "clean_place" ? "lieu propre" : "spot"})
-                - {item.status}
-              </li>
-            ))}
-            {quality.recent.length === 0 ? (
-              <li>Aucun signalement recent.</li>
-            ) : null}
-          </ul>
+        {/* DROITE : Carte + Détails */}
+        <div className="space-y-4">
+          {isLoading ? (<p className="text-sm text-slate-500">Chargement des indicateurs Spotter...</p>) : null}
+          {error ? (<p className="text-sm text-rose-700">Indicateurs Spotter indisponibles.</p>) : null}
+          {!isLoading && !error ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-slate-900 mb-3">Derniers signalements</h3>
+              <ul className="space-y-2 text-sm text-slate-700">
+                {quality.recent.map((item) => (
+                  <li key={item.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+                    <div>
+                      <p className="font-medium">{item.location_label}</p>
+                      <p className="text-xs text-slate-500">{item.action_date}</p>
+                    </div>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                      item.status === "approved" ? "bg-emerald-50 text-emerald-700" :
+                      item.status === "pending" ? "bg-amber-50 text-amber-700" : "bg-rose-50 text-rose-700"
+                    }`}>{item.status}</span>
+                  </li>
+                ))}
+                {quality.recent.length === 0 ? (<li className="text-slate-500 italic">Aucun signalement récent.</li>) : null}
+              </ul>
+            </div>
+          ) : null}
+          <ActionsMapFeed
+            types={["clean_place", "spot"]}
+            days={180}
+            statusFilter="all"
+            impactFilter="all"
+            qualityMin={0}
+          />
         </div>
-      ) : null}
-      <ActionsMapFeed types={["clean_place", "spot"]} />
+      </div>
     </div>
   );
 }

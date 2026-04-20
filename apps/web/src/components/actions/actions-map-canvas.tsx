@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   CircleMarker,
   LayerGroup,
@@ -10,7 +10,10 @@ import {
   Polyline,
   Tooltip,
   TileLayer,
+  Popup,
+  useMap
 } from "react-leaflet";
+import MarkerClusterGroup from "react-leaflet-cluster";
 import type { LatLngExpression, LatLngTuple } from "leaflet";
 import type { ActionMapItem, ActionDrawing } from "@/lib/actions/types";
 import {
@@ -23,6 +26,66 @@ import {
   mapItemWasteKg,
 } from "../../lib/actions/data-contract";
 import { computePollutionScore } from "@/lib/actions/pollution-score";
+
+function MapControls({ center }: { center: LatLngTuple }) {
+  const map = useMap();
+  const [search, setSearch] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+
+  async function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    if (!search.trim()) return;
+    
+    setIsSearching(true);
+    try {
+      const resp = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(search)}&limit=1`);
+      const data = await resp.json();
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        map.flyTo([parseFloat(lat), parseFloat(lon)], 15);
+      }
+    } catch (err) {
+      console.error("Geocoding error", err);
+    } finally {
+      setIsSearching(false);
+    }
+  }
+
+  return (
+    <div className="absolute top-20 left-3 z-[1000] flex flex-col gap-2">
+      <form onSubmit={handleSearch} className="flex overflow-hidden rounded-lg border border-slate-300 bg-white/90 shadow-lg backdrop-blur-sm">
+        <input 
+          type="text" 
+          placeholder="Rechercher une adresse..." 
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-48 px-3 py-1.5 text-xs outline-none bg-transparent"
+        />
+        <button 
+          type="submit" 
+          disabled={isSearching}
+          className="bg-emerald-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-600 disabled:opacity-50"
+        >
+          {isSearching ? "..." : "🔍"}
+        </button>
+      </form>
+      
+      <button 
+        onClick={() => map.flyTo(center, 12)}
+        className="flex w-fit items-center gap-2 rounded-lg border border-slate-300 bg-white/90 px-3 py-1.5 text-[10px] font-bold text-slate-700 shadow-lg backdrop-blur-sm transition hover:bg-slate-50"
+      >
+        <span>📍</span> Reset Vue
+      </button>
+
+      <a 
+        href="/methodologie"
+        className="flex w-fit items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50/90 px-3 py-1.5 text-[10px] font-bold text-emerald-700 shadow-lg backdrop-blur-sm transition hover:bg-emerald-100"
+      >
+        <span>🔬</span> Méthodologie
+      </a>
+    </div>
+  );
+}
 
 const PARIS_CENTER: [number, number] = [48.8566, 2.3522];
 
@@ -77,6 +140,7 @@ export function ActionsMapCanvas({ items }: { items: ActionMapItem[] }) {
         scrollWheelZoom
         className="h-[460px] w-full bg-white transition-colors duration-500"
       >
+        <MapControls center={center} />
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Mode Clair">
             <TileLayer
@@ -97,41 +161,77 @@ export function ActionsMapCanvas({ items }: { items: ActionMapItem[] }) {
             />
           </LayersControl.BaseLayer>
 
-          <LayersControl.Overlay checked name="Signalements">
-            <LayerGroup>
-              {items.map((item) => {
-                const coords = mapItemCoordinates(item);
-                if (coords.latitude === null || coords.longitude === null) return null;
-                
-                const score = getPollutionScore(item);
-                const color = resolvePointColor(item);
+            <LayersControl.Overlay checked name="Signalements">
+              <LayerGroup>
+                <MarkerClusterGroup
+                  chunkedLoading
+                  maxClusterRadius={50}
+                  spiderfyOnMaxZoom={true}
+                >
+                  {items.map((item) => {
+                    const coords = mapItemCoordinates(item);
+                    if (coords.latitude === null || coords.longitude === null) return null;
+                    
+                    const score = getPollutionScore(item);
+                    const color = resolvePointColor(item);
 
-                return (
-                  <CircleMarker
-                    key={`point-${item.id}`}
-                    center={[coords.latitude, coords.longitude]}
-                    radius={6}
-                    pathOptions={{
-                      color: color,
-                      fillColor: color,
-                      fillOpacity: 0.85,
-                      weight: 2,
-                    }}
-                  >
-                    <Tooltip className="glass-tooltip" direction="top" offset={[0, -10]}>
-                      <div className="text-center">
-                        <p className="text-[10px] uppercase opacity-70">Encaissé</p>
-                        <p className="text-lg font-bold leading-tight">
-                          {Math.min(100, Math.round(score))}%
-                        </p>
-                        <p className="text-[9px] font-medium leading-none opacity-80">
-                          Pol. / Impact
-                        </p>
-                      </div>
-                    </Tooltip>
-                  </CircleMarker>
-                );
-              })}
+                    return (
+                      <CircleMarker
+                        key={`point-${item.id}`}
+                        center={[coords.latitude, coords.longitude]}
+                        radius={6}
+                        pathOptions={{
+                          color: color,
+                          fillColor: color,
+                          fillOpacity: 0.85,
+                          weight: 2,
+                        }}
+                      >
+                        <Popup className="glass-popup custom-popup">
+                          <div className="text-center p-1 min-w-[140px]">
+                            {score > 0 ? (
+                              <>
+                                <p className="text-[10px] uppercase font-bold text-slate-500 mb-1">
+                                  {item.contract?.metadata.placeType || "Zone Polluée"}
+                                </p>
+                                <p className="text-2xl font-black leading-tight" style={{ color }}>
+                                  {Math.min(100, Math.round(score))}%
+                                </p>
+                                <p className="text-[10px] font-medium opacity-80 mt-0.5 mb-3">
+                                  Score de Pollution
+                                </p>
+                                <a 
+                                  href={`/actions/new?lat=${coords.latitude}&lng=${coords.longitude}`}
+                                  className="block w-full rounded-md bg-rose-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-rose-700 shadow-sm"
+                                >
+                                  Dépolluer ici
+                                </a>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-sm font-bold text-sky-700 mb-1">Lieu Propre</p>
+                                {item.contract?.metadata.placeType && (
+                                  <p className="text-[9px] uppercase font-medium opacity-70 mb-2">
+                                    {item.contract.metadata.placeType}
+                                  </p>
+                                )}
+                                <p className="text-[9px] font-medium leading-none opacity-80 mb-2">
+                                  Zone vérifiée
+                                </p>
+                                <a 
+                                  href={`/actions/new?lat=${coords.latitude}&lng=${coords.longitude}&mode=propre`}
+                                  className="block w-full rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-bold text-sky-700 transition hover:bg-sky-100"
+                                >
+                                  Mettre à jour
+                                </a>
+                              </>
+                            )}
+                          </div>
+                        </Popup>
+                      </CircleMarker>
+                    );
+                  })}
+                </MarkerClusterGroup>
 
               {items.map((item) => {
                 const coordinates = drawingCoordinates(item.manual_drawing);

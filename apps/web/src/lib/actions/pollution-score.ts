@@ -1,14 +1,14 @@
 type PollutionScoreInputs = {
-  wasteKg: number;
-  cigaretteButts: number;
+  wasteKg: number | null;
+  cigaretteButts: number | null;
 };
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function safeNumber(value: number): number {
-  if (!Number.isFinite(value)) {
+function safeNumber(value: number | null | undefined): number {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
     return 0;
   }
   return Math.max(0, value);

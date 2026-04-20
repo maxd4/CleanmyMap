@@ -44,6 +44,7 @@ export type PilotageOverview = {
   methods: MethodDefinition[];
   zones: ZoneComparisonRow[];
   summary: DecisionSummary;
+  contracts: any[]; // Raw contracts for exports
 };
 
 export type LoadPilotageOverviewParams = {

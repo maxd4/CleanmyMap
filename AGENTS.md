@@ -15,6 +15,7 @@
 - Do not hide errors; state blockers explicitly.
 - Run targeted validations for modified logic.
 - Preserve existing behavior unless change is required by the task.
+- **Règle Scientifique** : Toujours sourcer et faire apparaître toutes les données, hypothèses et formules de calcul sur le site web à l'endroit dédié (page Méthodologie ou Tooltips).
 
 ## Response style
 - Short, structured, and action-oriented.

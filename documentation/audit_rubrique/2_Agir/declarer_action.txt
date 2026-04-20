@@ -1,31 +1,9 @@
-Rubrique: Déclarer une action
-Statut: format-audit-unifie-v1
+### 📋 Audit : Déclarer Action
 
-## Objectif
-- Collecter des declarations fiables avec friction minimale.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-## Flux (schema)
-```mermaid
-flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Declarer]
-  B --> C[Donnees / validation]
-  C --> D[Decision / action locale]
-```
-Fallback statique:
-![Schema Declarer](../archive/fallback-audit-declarer.png)
-
-## Risques
-- Donnees incompletes ou mal qualifiees.
-- Friction UX qui bloque l adoption.
-- Rupture de parcours entre rubrique et action concrete.
-
-## KPI
-- Adoption: utilisateurs actifs sur la rubrique.
-- Qualite: taux de donnees exploitables.
-- Impact: actions ou decisions declenchees depuis la rubrique.
-
-## Impact concret
-- Plus de donnees qualifiees exploitables pour carte, rapports et classement.
-
-## CTA
-- Declarer une action complete avec geoloc et volume dechets.
+- **Mission Principale :** C'est le cœur d'acquisition de données du produit ! Permettre l'enregistrement rapide, ultra-précis et extrêmement intuitif d'une opération terrain pour alimenter la base de données de CleanMyMap (Supabase) sans démotiver l'utilisateur par une paperasserie digitale.
+- **Logique de Fonctionnement :** 
+  - **UX Split-Screen Dynamique :** Vue divisée ergonomique (1.2fr/1fr). Assistance cartographique interactive (Dessin direct de polygones ou tracés via Leaflet) à gauche pour un géo-référencement hyper qualitatif sans saisie fastidieuse de coordonnées GPS manuelles.
+  - **Formulaire Granulaire :** Inputs séparés logiquement à droite. Choix stratégique entre "Mode Rapide" (minimaliste) ou "Mode Complet" incluant une ventilation détaillée par poids de déchets (kg), nombre de mégots (via algorithme d'estimation de conversion Masse->Quantité), types de tri, et durée.
+- **Valeur pour l'utilisateur :** Transformer un processus administratif lourd en un acte final gratifiant. La fluidité du dessin sur carte, croisée au feedback instantané chiffré ("Vous venez de sauver l'équivalent de 15 000 litres d'eau avec ces mégots") crée une boucle vertueuse qui incite le bénévole à reporter *100%* des actions qu'il entreprend.

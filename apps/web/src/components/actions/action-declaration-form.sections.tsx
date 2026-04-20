@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { motion } from "framer-motion";
 import { computeButtsCount } from "@/lib/actions/data-contract";
 import type { ActionDrawing, ActionMegotsCondition } from "@/lib/actions/types";
 import type { FormState } from "./action-declaration-form.model";
@@ -83,14 +84,28 @@ export function ActionDeclarationMegotsSection({
       </div>
 
       {toRequiredNumber(form.wasteMegotsKg, 0) > 0 ? (
-        <div className="mt-2 inline-block rounded border border-emerald-100 bg-white p-2 text-xs font-medium text-emerald-700">
-          Estimation : ~
-          {computeButtsCount(
-            toRequiredNumber(form.wasteMegotsKg, 0),
-            form.wasteMegotsCondition,
-          )}{" "}
-          mégots estimés
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 shadow-md p-[2px]"
+        >
+          <div className="bg-white rounded-[10px] p-3 text-center">
+            <h4 className="text-[10px] uppercase tracking-wider font-bold text-slate-500 mb-1">Impact Ecologique</h4>
+            <div className="flex items-center justify-center gap-2 text-emerald-700 font-bold text-lg">
+              <span>💧</span>
+              <span>
+                {(computeButtsCount(
+                  toRequiredNumber(form.wasteMegotsKg, 0),
+                  form.wasteMegotsCondition,
+                ) * 500).toLocaleString("fr-FR")} L d'eau préservés
+              </span>
+            </div>
+            <p className="text-[10px] mt-1 text-slate-400 font-medium">Basé sur ~{computeButtsCount(
+                  toRequiredNumber(form.wasteMegotsKg, 0),
+                  form.wasteMegotsCondition,
+                ).toLocaleString("fr-FR")} mégots extraits</p>
+          </div>
+        </motion.div>
       ) : null}
     </div>
   );
@@ -112,53 +127,10 @@ export function ActionDeclarationCompleteModeFields({
     return null;
   }
 
-  const drawingSummary =
-    drawingIsValid && manualDrawing
-      ? `Dessin enregistre (${manualDrawing.kind === "polygon" ? "polygone" : "trace"}, ${manualDrawing.coordinates.length} points).`
-      : "Aucun dessin valide pour le moment (2 points min pour un trace, 3 pour un polygone).";
+
 
   return (
     <>
-      <div className="md:col-span-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-        <label className="flex items-start gap-3 text-sm text-emerald-900">
-          <input
-            type="checkbox"
-            checked={manualDrawingEnabled}
-            onChange={(event) => setManualDrawingEnabled(event.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-emerald-400 text-emerald-600"
-          />
-          <span>
-            <span className="font-semibold">Option recommandee:</span> tracer a
-            la main le parcours ou le polygone nettoye. Cela evite les
-            hypotheses sur la distance reellement parcourue.
-          </span>
-        </label>
-
-        {effectiveManualDrawingEnabled ? (
-          <div className="mt-4 space-y-3">
-            <p className="text-xs text-slate-700">
-              Carte de Paris (fond blanc): utilisez l&apos;outil ligne pour le
-              trace ou polygone pour la zone nettoyee.
-            </p>
-            <DrawingMapComponent
-              value={manualDrawing}
-              onChange={setManualDrawing}
-              wasteKg={toRequiredNumber(form.wasteKg, 0)}
-              butts={Math.max(
-                0,
-                Math.trunc(toRequiredNumber(form.cigaretteButts, 0)),
-              )}
-              isCleanPlace={false}
-            />
-            <p className="text-xs text-slate-700">
-              {drawingSummary}
-            </p>
-          </div>
-        ) : null}
-      </div>
-
-      {!effectiveManualDrawingEnabled ? (
-        <>
           <label className="flex flex-col gap-2 text-sm text-slate-700">
             Latitude (optionnel)
             <input
@@ -182,8 +154,7 @@ export function ActionDeclarationCompleteModeFields({
               placeholder="2.3522"
             />
           </label>
-        </>
-      ) : null}
+
 
       <label className="flex flex-col gap-2 text-sm text-slate-700">
         Duree (minutes)

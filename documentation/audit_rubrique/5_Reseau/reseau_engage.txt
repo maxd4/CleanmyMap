@@ -1,31 +1,9 @@
-Rubrique: Réseau Engagé
-Statut: format-audit-unifie-v1
+### 📋 Audit : Réseau Engagé
 
-## Objectif
-- Qualifier les partenaires utiles et activer les contributions locales.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-## Flux (schema)
-```mermaid
-flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Partenaires engages]
-  B --> C[Donnees / validation]
-  C --> D[Decision / action locale]
-```
-Fallback statique:
-![Schema Partenaires engages](../archive/fallback-audit-partenaires_et_commercants_engages.png)
-
-## Risques
-- Donnees incompletes ou mal qualifiees.
-- Friction UX qui bloque l adoption.
-- Rupture de parcours entre rubrique et action concrete.
-
-## KPI
-- Adoption: utilisateurs actifs sur la rubrique.
-- Qualite: taux de donnees exploitables.
-- Impact: actions ou decisions declenchees depuis la rubrique.
-
-## Impact concret
-- Plus de ressources mobilisees sur les zones prioritaires.
-
-## CTA
-- Contacter un partenaire engage et proposer une action concrete.
+- **Mission Principale :** Mettre en lumière et valoriser institutionnellement la responsabilité sociétale (RSE) des entreprises, des mairies partenaires et des méga-associations qui sont le socle de CleanMyMap.
+- **Logique de Fonctionnement :** 
+  - **Wall of Fame Dynamique :** Grille architecturée exposant les labels officiels décernés, les badges certifiés, et les partenaires vérifiés avec un système de tags pertinents (Financeur / Fournisseur Matériel / Mairie Partenaire).
+  - **Moteur de Recherche Partenaire :** Filtres puissants pour trouver "Qui fait quoi" dans la coalition et quelles entités morales participent le plus à l'effort écologique local.
+- **Valeur pour l'utilisateur :** C'est le moteur de B2B. L'utilisateur (Citoyen) est rassuré de voir que son "petit" supermarché local ou que sa mairie est officiellement impliquée. L'entreprise, elle, justifie son label écologique publiquement (Ce qui attire d'autres entreprises à vouloir y figurer sous la pression sociale positive).

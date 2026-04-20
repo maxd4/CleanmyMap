@@ -1,12 +1,9 @@
-Rubrique : Observatoire Public
-ID technique : open-data
-Bloc : 5 - Réseau
+### 📋 Audit : Observatoire Public
 
-DESCRIPTION
-Accès aux données publiques de la plateforme via des exports JSON, des API ouvertes et des jeux de données structurés pour les chercheurs et les collectivités.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-UTILITÉ
-Faciliter la réutilisation institutionnelle et scientifique des données de pollution pour accélérer les politiques publiques de nettoyage.
-
-IMPACT CONCRET
-Permet la réplication du modèle dans d'autres villes et fournit une base de données probante pour les analyses environnementales externes (universités, bureaux d'études).
+- **Mission Principale :** Être le porte-voix souverain de la vérité environnementale. Donner une vitrine transparente, sourcée et irréfutable à toute la population sur l'état réel de la propreté de leurs villes, agissant comme l'outil majeur de plaidoyer citoyen.
+- **Logique de Fonctionnement :** 
+  - **Open Data & Accessibilité :** Affichage de métriques brutes et bilans consolidés 100% publics, sans aucune barrière de connexion ni de compte nécessaire.
+  - **Cartographie Grand Public :** Mappage et scoring de la "Santé des écosystèmes" (Rues, Fleuves, Forêts) via des gradients facilement compréhensibles.
+- **Valeur pour l'utilisateur :** Sensibiliser massivement. Un visiteur non-inscrit prend sa "claque" écologique immédiatement. D'autre part, cela permet aux journalistes locaux, écoles ou associations de sourcer leurs articles avec des chiffres "Live" et inattaquables, plaçant l'application au cœur du débat public.

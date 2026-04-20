@@ -105,87 +105,93 @@ export function KitSection() {
 
   return (
     <div className="space-y-4">
-      <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-        {variantTip}
-      </p>
-      <div className="max-w-sm">
-        <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Type de kit
-          <select
-            value={packType}
-            onChange={(event) =>
-              setPackType(event.target.value as "solo" | "team" | "school")
-            }
-            className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
-          >
-            <option value="solo">Solo</option>
-            <option value="team">Equipe</option>
-            <option value="school">Scolaire</option>
-          </select>
-        </label>
-      </div>
-      <div className="grid gap-3 md:grid-cols-2">
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h2 className="text-sm font-semibold text-slate-900">
-            Materiel recommande
-          </h2>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
-            {packItems.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-          <button
-            onClick={copyPack}
-            className="mt-3 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
-          >
-            Copier la checklist
-          </button>
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
+      {/* Colonne Gauche : Configuration et Matériel */}
+      <div className="space-y-4">
+        <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 shadow-sm">
+          {variantTip}
+        </p>
+        <article className="rounded-xl border border-slate-200 bg-white p-4">
+          <label className="flex flex-col gap-2 text-sm font-medium text-slate-900 mb-4">
+            Configuration du kit
+            <select
+              value={packType}
+              onChange={(event) =>
+                setPackType(event.target.value as "solo" | "team" | "school")
+              }
+              className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none transition focus:border-emerald-500 font-normal mt-1"
+            >
+              <option value="solo">Solo</option>
+              <option value="team">Equipe</option>
+              <option value="school">Scolaire</option>
+            </select>
+          </label>
+          <div className="pt-2 border-t border-slate-100">
+            <h2 className="text-sm font-semibold text-slate-900 mb-2">
+              Materiel recommande
+            </h2>
+            <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
+              {packItems.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            <button
+              onClick={copyPack}
+              className="mt-4 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-sm"
+            >
+              Copier au presse-papier
+            </button>
+          </div>
         </article>
+      </div>
+
+      {/* Colonne Droite : Checklist Opérationnelle */}
+      <div className="space-y-4">
         <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <h2 className="text-sm font-semibold text-slate-900">
-            Checklist avant depart
-          </h2>
-          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-slate-700">
-            <li>Verifier meteo et parcours.</li>
-            <li>Confirmer l&apos;heure, la zone, les roles.</li>
-            <li>Preparer la declaration action dans le site.</li>
-            <li>Activer trace/polygone si besoin terrain.</li>
-          </ol>
-          <p className="mt-2 text-xs font-semibold uppercase tracking-wide text-emerald-700">
-            Progression kit: {kitProgress}%
-          </p>
-          <div className="mt-2 space-y-1 text-xs text-slate-700">
-            <label className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Checklist avant depart
+            </h2>
+            <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-100/50 px-2 py-1 rounded">
+              Progression kit: {kitProgress}%
+            </p>
+          </div>
+
+          <div className="mb-4 space-y-3">
+            <label className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
               <input
                 type="checkbox"
                 checked={kitChecks.ppe}
                 onChange={() =>
                   setKitChecks((prev) => ({ ...prev, ppe: !prev.ppe }))
                 }
+                className="flex-shrink-0"
               />
-              EPI verifies
+              <span className="text-sm font-medium text-slate-800">EPI verifies et adaptes a la zone</span>
             </label>
-            <label className="flex items-center gap-2">
+            <label className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
               <input
                 type="checkbox"
                 checked={kitChecks.bags}
                 onChange={() =>
                   setKitChecks((prev) => ({ ...prev, bags: !prev.bags }))
                 }
+                className="flex-shrink-0"
               />
-              Sacs differencies prets
+              <span className="text-sm font-medium text-slate-800">Sacs differencies prepares (recyclable/tout-venant)</span>
             </label>
-            <label className="flex items-center gap-2">
+            <label className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
               <input
                 type="checkbox"
                 checked={kitChecks.tools}
                 onChange={() =>
                   setKitChecks((prev) => ({ ...prev, tools: !prev.tools }))
                 }
+                className="flex-shrink-0"
               />
-              Outils operationnels
+              <span className="text-sm font-medium text-slate-800">Outils de collecte (pinces, cendriers)</span>
             </label>
-            <label className="flex items-center gap-2">
+            <label className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
               <input
                 type="checkbox"
                 checked={kitChecks.briefing}
@@ -195,26 +201,37 @@ export function KitSection() {
                     briefing: !prev.briefing,
                   }))
                 }
+                className="flex-shrink-0"
               />
-              Briefing fait
+              <span className="text-sm font-medium text-slate-800">Briefing securite et parcours diffuse</span>
             </label>
+          </div>
+
+          <div className="pt-4 border-t border-slate-200">
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Actions logistiques</h3>
+            <ol className="list-decimal space-y-1 pl-5 text-xs text-slate-600 mb-4">
+              <li>Verifier l&apos;etat de la meteo en temps reel.</li>
+              <li>Confirmer l&apos;heure, la zone et le lieu de dechargement.</li>
+              <li>Ouvrir la carte de priorisation avant depart.</li>
+            </ol>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/actions/new"
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-emerald-700"
+              >
+                Declarer l'action
+              </Link>
+              <Link
+                href="/actions/map"
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              >
+                Ouvrir la roadmap
+              </Link>
+            </div>
           </div>
         </article>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <Link
-          href="/actions/new"
-          className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
-        >
-          Demarrer une action
-        </Link>
-        <Link
-          href="/actions/map"
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-        >
-          Ouvrir la carte
-        </Link>
-      </div>
+    </div>
     </div>
   );
 }

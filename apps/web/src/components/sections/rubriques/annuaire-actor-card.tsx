@@ -91,11 +91,19 @@ export function AnnuaireActorCard({
         >
           Contacter
         </a>
+        <button
+          onClick={() => {
+            alert(`Demande de matching envoyée à ${entry.name} ! Un administrateur va faciliter la mise en relation.`);
+          }}
+          className="w-full rounded-lg bg-gradient-to-r from-orange-500 to-rose-600 px-3 py-2 text-center text-xs font-black text-white hover:scale-[1.02] transition shadow-md"
+        >
+          🤝 MATCHER (ENTRAIDE)
+        </button>
         <a
           href={`mailto:partenaires@cleanmymap.fr?subject=Proposer un partenariat - ${encodeURIComponent(entry.name)}`}
           className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-100"
         >
-          Proposer un partenariat
+          Devenir partenaire
         </a>
       </div>
     </article>

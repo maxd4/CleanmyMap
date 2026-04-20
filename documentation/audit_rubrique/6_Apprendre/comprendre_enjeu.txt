@@ -1,31 +1,9 @@
-Rubrique: Comprendre l'Enjeu
-Statut: format-audit-unifie-v1
+### 📋 Audit : Comprendre l'Enjeu
 
-## Objectif
-- Relier les actions locales aux enjeux scientifiques et limites planetaires.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-## Flux (schema)
-```mermaid
-flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Developpement durable]
-  B --> C[Donnees / validation]
-  C --> D[Decision / action locale]
-```
-Fallback statique:
-![Schema Developpement durable](../archive/fallback-audit-climat.png)
-
-## Risques
-- Donnees incompletes ou mal qualifiees.
-- Friction UX qui bloque l adoption.
-- Rupture de parcours entre rubrique et action concrete.
-
-## KPI
-- Adoption: utilisateurs actifs sur la rubrique.
-- Qualite: taux de donnees exploitables.
-- Impact: actions ou decisions declenchees depuis la rubrique.
-
-## Impact concret
-- Meilleure comprehension de l effet environnemental des choix quotidiens.
-
-## CTA
-- Lire une synthese vulgarisee puis appliquer une recommandation locale.
+- **Mission Principale :** Donner l'Électrochoc. Éduquer brutalement et de façon mémorable tout citoyen sur l'impact cataclysmique d'un plastique ou d'un mégot sur la destruction lente de l'eau douce et des écosystèmes, pour initier sa transformation en bénévole.
+- **Logique de Fonctionnement :** 
+  - **UX Choc et Visuelle :** Très peu de textes denses. Utilisation d'infographies impactantes, de dataviz effrayantes ("Un mégot = 500L d'eau toxique") et de vulgarisation scientifique irréfutable.
+  - **Hub Pédagogique Partageable :** Fourniture de kits d'articles de blog et de données prêtes à être repartagées d'un clic sur WhatsApp/X/Facebook pour déclencher la viralité.
+- **Valeur pour l'utilisateur :** Il reçoit les armes intellectuelles pour se défendre en société. Il obtient des « Punchlines » écologiques prêtes-à-l'emploi pour convaincre ses amis, sa famille ou ses collègues lors d'un débat. C'est l'étincelle qui change le visiteur passif en activiste éveillé.

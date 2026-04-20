@@ -12,6 +12,7 @@ import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import {
   getProfilePrimaryAction,
@@ -22,13 +23,24 @@ import {
 import { getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-async function loadReportsOverview() {
+async function loadReportsData() {
   const supabase = getSupabaseServerClient();
-  return loadPilotageOverview({
+  const overview = await loadPilotageOverview({
     supabase,
     periodDays: 90,
     limit: 2200,
   });
+
+  const { fetchUnifiedActionContracts } = await import("@/lib/actions/unified-source");
+  const { items: contracts } = await fetchUnifiedActionContracts(supabase, {
+    limit: 1000,
+    status: "approved",
+    floorDate: null,
+    requireCoordinates: false,
+    types: null,
+  });
+
+  return { overview, contracts };
 }
 
 export default async function ReportsPage() {
@@ -40,7 +52,13 @@ export default async function ReportsPage() {
   const secondaryAction = getProfileSecondaryAction(profile);
   const roleLabel = getProfileLabel(profile, locale);
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
-  const overview = await loadReportsOverview().catch(() => null);
+  const data = await loadReportsData().catch(() => null);
+  const overview = data?.overview ?? null;
+  const contracts = data?.contracts ?? [];
+
+  const { aggregateMonthlyAnalytics } = await import("@/lib/pilotage/analytics-data-utils");
+  const { AnalyticsCockpit } = await import("@/components/reports/analytics-cockpit");
+  const monthlyData = aggregateMonthlyAnalytics(contracts);
 
   if (!userId) {
     return (
@@ -159,6 +177,9 @@ export default async function ReportsPage() {
             {overview ? (
               <KpiMethodBlock methods={overview.methods} title="Methode" />
             ) : null}
+            
+            <AnalyticsCockpit data={monthlyData} />
+            
             <ReportsWebDocument />
             <ReportsKpiSummary />
 
@@ -205,8 +226,21 @@ export default async function ReportsPage() {
               Perimetre: espace Rapports d&apos;impact (exports + synthese
               multi-horizon).
             </p>
-            <div className="pt-1">
+            <div className="pt-2 flex gap-2">
               <RubriquePdfExportButton rubriqueTitle="Reporting et pilotage" />
+              <RubriqueExcelExportButton 
+                rubriqueTitle="Reporting et pilotage" 
+                data={contracts.map(c => ({
+                  Date: c.dates.observedAt,
+                  Lieu: c.location.label,
+                  Masse_Kg: c.metadata.wasteKg || 0,
+                  Megots: c.metadata.cigaretteButts || 0,
+                  Benevoles: c.metadata.volunteersCount,
+                  Duree_Min: c.metadata.durationMinutes,
+                  Type: c.type,
+                  Source: c.source
+                }))}
+              />
             </div>
           </div>
         }
@@ -241,8 +275,12 @@ export default async function ReportsPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           Tracer
         </p>
-        <div className="mt-2">
+        <div className="mt-2 flex gap-2">
           <RubriquePdfExportButton rubriqueTitle="Reporting et pilotage" />
+          <RubriqueExcelExportButton 
+            rubriqueTitle="Reporting et pilotage" 
+            targetTableSelector="[data-rubrique-report-root]" 
+          />
         </div>
       </section>
 

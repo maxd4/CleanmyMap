@@ -126,13 +126,17 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         en: "Confirm nearby field priorities",
       },
     },
-    additionalActions: [
-      {
-        href: "/actions/history",
-        label: { fr: "Consulter l'historique", en: "Open history" },
         description: {
           fr: "Suivre les actions validees",
           en: "Track validated actions",
+        },
+      },
+      {
+        href: "/learn/hub",
+        label: { fr: "Apprendre & Progresser", en: "Learn & Progress" },
+        description: {
+          fr: "Hub éducatif et kit du bénévole",
+          en: "Educational hub and volunteer kit",
         },
       },
     ],
@@ -201,14 +205,14 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
   },
   elu: {
     primaryCTA: {
-      href: "/sections/elus",
+      href: "/sponsor-portal",
       label: {
-        fr: "Priorisation territoriale",
-        en: "Territorial prioritization",
+        fr: "Portail Décideur & ROI",
+        en: "Decision Maker & ROI Portal",
       },
       description: {
-        fr: "Voir les zones a traiter en priorite",
-        en: "View top zones to address",
+        fr: "Pilotage budgétaire et impact territorial",
+        en: "Budget oversight and territorial impact",
       },
     },
     secondaryCTA: {
@@ -224,8 +228,16 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     additionalActions: [
       {
+        href: "/actions/map",
+        label: { fr: "Priorisation terrain", en: "Territorial prioritization" },
+        description: {
+          fr: "Voir les zones a traiter en priorite",
+          en: "View top zones to address",
+        },
+      },
+      {
         href: "/sections/climate",
-        label: { fr: "Comparer dans Developpement durable", en: "Compare in sustainability" },
+        label: { fr: "Développement durable", en: "Sustainability" },
         description: {
           fr: "Lecture territoriale comparee integree",
           en: "Integrated cross-area reading",
@@ -254,6 +266,14 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       },
     },
     additionalActions: [
+      {
+        href: "/admin/godmode",
+        label: { fr: "God Mode", en: "God Mode" },
+        description: {
+          fr: "Accès root et sandbox admin",
+          en: "Root access and admin sandbox",
+        },
+      },
       {
         href: "/dashboard",
         label: { fr: "Verifier l'etat systeme", en: "Check system health" },

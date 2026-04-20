@@ -3,11 +3,13 @@ import requests
 import json
 import uuid
 import os
+import re
+import time
 from datetime import datetime
 
 # Supabase config
 SUPABASE_URL = "https://mgvmuambbxmmkrjjlryo.supabase.co"
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "PLACEHOLDER_KEY_EXPOSED_AND_REVOKED")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
 
 # Google Sheet CSV URL
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1kKkhylwqo10OA-p6CDuNwYihzW0ElwTeFwCwZ6O-rJw/export?format=csv"
@@ -34,145 +36,162 @@ def find_col(columns, key):
             return col
     return None
 
+def extract_coords(text):
+    if not text or pd.isna(text): return None, None
+    match = re.search(r'([-+]?\d*\.\d+|\d+)\s*[,;]\s*([-+]?\d*\.\d+|\d+)', str(text))
+    if match:
+        try:
+            return float(match.group(1)), float(match.group(2))
+        except:
+            pass
+    return None, None
+
+def geocode_location(text):
+    if not text or pd.isna(text) or text == "Lieu non spécifié": return None, None
+    query = str(text).strip()
+    
+    # Nettoyage basique (typos courantes)
+    query_clean = query.lower().replace("jaridn", "jardin").replace("quuai", "quai").replace("st ", "saint ")
+    
+    search_query = query_clean if "paris" in query_clean else f"{query_clean}, Paris, France"
+    try:
+        headers = {'User-Agent': 'CleanMyMap-Import-Script/1.0'}
+        url = "https://nominatim.openstreetmap.org/search"
+        params = {'q': search_query, 'format': 'json', 'limit': 1}
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            if data:
+                return float(data[0]['lat']), float(data[0]['lon'])
+    except Exception as e:
+        print(f"  [!] Erreur geocodage pour '{query}': {e}")
+    
+    print(f"  [X] ECHEC de localisation pour : '{query}' (Vérifiez l'orthographe dans le Google Sheet)")
+    return None, None
+
 def run():
     print("Telechargement de la Google Sheet...")
-    raw_df = pd.read_csv(SHEET_URL, encoding="utf-8")
-    raw_df.columns = raw_df.columns.str.strip()
+    try:
+        raw_df = pd.read_csv(SHEET_URL, encoding="utf-8")
+    except Exception as e:
+        print(f"Erreur telechargement: {e}")
+        return
 
+    raw_df.columns = raw_df.columns.str.strip()
     cols = {k: find_col(raw_df.columns, k) for k in COLUMN_KEYWORDS}
     
     actions = []
+    print("Normalisation et injection intelligente des metadonnees...")
     
-    print("Normalisation et filtrage...")
     for index, row in raw_df.iterrows():
         date_val = row[cols['date']] if cols['date'] else None
         
+        is_propre = False
+        if cols['propre'] and pd.notna(row[cols['propre']]):
+            val = str(row[cols['propre']]).lower().strip()
+            if val == 'oui': is_propre = True
+
+        date_str = None
         try:
-            action_date = pd.to_datetime(date_val, dayfirst=True)
-            if pd.isna(action_date):
+            action_date = pd.to_datetime(date_val, dayfirst=True, errors='coerce', format='mixed')
+            if pd.notna(action_date):
+                date_str = action_date.strftime("%Y-%m-%d")
+            elif is_propre or pd.isna(date_val):
+                date_str = datetime.now().strftime("%Y-%m-%d")
+        except:
+            if is_propre:
+                date_str = datetime.now().strftime("%Y-%m-%d")
+            else:
                 continue
-            date_str = action_date.strftime("%Y-%m-%d")
-        except Exception:
-            continue
+
+        if not date_str: continue
 
         lieu = str(row[cols['gps']]) if cols['gps'] and pd.notna(row[cols['gps']]) else "Lieu non spécifié"
-        try:
-            kg = float(row[cols['poids']]) if cols['poids'] and pd.notna(row[cols['poids']]) else 0.0
-        except:
-            kg = 0.0
+        lat, lon = extract_coords(lieu)
+        if lat is None:
+            print(f"  [~] Geocodage de '{lieu}'...")
+            lat, lon = geocode_location(lieu)
+            time.sleep(0.5)
+
+        # GESTION METADONNEES (Flags de presence)
+        provided_fields = []
+        
+        # Poids Déchets
+        kg = 0.0
+        if cols['poids'] and pd.notna(row[cols['poids']]):
+            try:
+                val = str(row[cols['poids']]).replace(',', '.').strip()
+                if val:
+                    kg = float(val)
+                    provided_fields.append("waste_kg")
+            except: pass
             
-        try:
-            # Gestion de la conversion Masse -> Nombre pour les mégots
-            megots_kg = float(row[cols['megots']]) if cols['megots'] and pd.notna(row[cols['megots']]) else 0.0
-            qualite = str(row[cols['megots_qualite']]).lower() if cols['megots_qualite'] and pd.notna(row[cols['megots_qualite']]) else "propre"
-            
-            # Coefficients de conversion (Masse -> Nombre estimé)
-            # Réference ~4400 mégots par kg à sec (0.22g/unité)
-            factor = 1.0
-            if "mouill" in qualite: factor = 0.4
-            elif "humid" in qualite: factor = 0.65
-            
-            butts = int(megots_kg * 4400 * factor)
-        except:
-            butts = 0
+        # Mégots
+        butts = 0
+        megots_kg_val = None
+        if cols['megots'] and pd.notna(row[cols['megots']]):
+            try:
+                val = str(row[cols['megots']]).replace(',', '.').strip()
+                if val:
+                    megots_kg_val = float(val)
+                    provided_fields.append("cigarette_butts")
+                    qualite = str(row[cols['megots_qualite']]).lower() if cols['megots_qualite'] and pd.notna(row[cols['megots_qualite']]) else "propre"
+                    factor = 1.0
+                    if "mouill" in qualite: factor = 0.4
+                    elif "humid" in qualite: factor = 0.65
+                    butts = int(megots_kg_val * 4400 * factor)
+            except: pass
 
         try:
             vols = int(row[cols['benevoles']]) if cols['benevoles'] and pd.notna(row[cols['benevoles']]) else 1
-        except:
-            vols = 1
+        except: vols = 1
 
         try:
             mins = int(row[cols['temps']]) if cols['temps'] and pd.notna(row[cols['temps']]) else 60
-        except:
-            mins = 60
+        except: mins = 60
 
         asso = str(row[cols['association']]) if cols['association'] and pd.notna(row[cols['association']]) else ""
         type_lieu = str(row[cols['type']]) if cols['type'] and pd.notna(row[cols['type']]) else ""
 
-        # Auto-détection du type de lieu si vide
-        if not type_lieu:
-            lower_lieu = lieu.lower()
-            if any(k in lower_lieu for k in ["luxembourg", "vincennes", "boulogne", "chaumont", "tuileries", "parc", "jardin", "square"]):
-                type_lieu = "Bois/Parc/Jardin/Square/Sentier"
-            elif any(k in lower_lieu for k in ["rue", "allée", "villa", "ruelle", "impasse"]):
-                type_lieu = "N° Rue/Allée/Villa/Ruelle/Impasse"
-            elif any(k in lower_lieu for k in ["quai", "pont", "port"]):
-                type_lieu = "Quai/Pont/Port"
-            elif any(k in lower_lieu for k in ["boulevard", "avenue", "place"]):
-                type_lieu = "N° Boulevard/Avenue/Place"
-            elif any(k in lower_lieu for k in ["gare", "station", "portique"]):
-                type_lieu = "Gare/Station/Portique"
-
-        # Decouverte si lieu propre (clean_place)
-        is_propre = False
-        if cols['propre'] and pd.notna(row[cols['propre']]):
-            val = str(row[cols['propre']]).lower().strip()
-            # Seul le choix explicite 'oui' déclenche le mode lieu propre.
-            # Un menu déroulant non renseigné ou un 'non' est ignoré.
-            if val == 'oui':
-                is_propre = True
-
-        if is_propre:
-            kg = 0.0
-            butts = 0
-
-        # Notes avec métadonnées JSON standard (cmm-meta)
-        meta = {}
-        if asso and asso != "nan":
-            meta["associationName"] = asso
-        if type_lieu:
-            meta["placeType"] = type_lieu
-        
-        # Sauvegarde de la masse et condition réelle pour le breakdown
-        if 'megots_kg' in locals() and megots_kg > 0:
+        # Meta JSON construction
+        meta = {"provided": provided_fields}
+        if asso and asso != "nan": meta["associationName"] = asso
+        if type_lieu and type_lieu != "nan": meta["placeType"] = type_lieu
+        if megots_kg_val is not None:
             cond = "propre"
-            if "mouill" in qualite: cond = "mouille"
-            elif "humid" in qualite: cond = "humide"
-            meta["wasteBreakdown"] = {
-                "megotsKg": megots_kg,
-                "megotsCondition": cond
-            }
+            if "mouille" in str(row.get(cols['megots_qualite'], "")).lower(): cond = "mouille"
+            elif "humide" in str(row.get(cols['megots_qualite'], "")).lower(): cond = "humide"
+            meta["wasteBreakdown"] = {"megotsKg": megots_kg_val, "megotsCondition": cond}
         
-        notes = ""
-        if meta:
-            notes = f"[cmm-meta]{json.dumps(meta)}"
+        notes = f"[cmm-meta]{json.dumps(meta)}" if meta else None
 
         action = {
             "created_by_clerk_id": "legacy_import",
             "action_date": date_str,
             "location_label": lieu,
-            "latitude": None,
-            "longitude": None,
+            "latitude": lat,
+            "longitude": lon,
             "waste_kg": kg,
             "cigarette_butts": butts,
             "volunteers_count": max(1, vols),
             "duration_minutes": max(1, mins),
-            "notes": notes if notes else None,
+            "notes": notes,
             "status": "approved",
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now().isoformat()
         }
         actions.append(action)
 
-    print(f"{len(actions)} actions validees pour import.")
     if not actions:
+        print("Fin: aucune action a importer.")
         return
 
-    # Delete previous legacy_import to avoid duplicates if re-run
-    print("Nettoyage des anciens imports legacy...")
+    print(f"Injection de {len(actions)} actions dans Supabase (Hack Metadonnees)...")
     try:
         delete_url = f"{SUPABASE_URL}/rest/v1/actions?created_by_clerk_id=eq.legacy_import"
-        requests.delete(
-            delete_url,
-            headers={
-                "apikey": SUPABASE_KEY,
-                "Authorization": f"Bearer {SUPABASE_KEY}"
-            }
-        )
+        requests.delete(delete_url, headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"})
     except Exception as e:
         print(f"Erreur purge: {e}")
 
-    # Insert into Supabase
-    print("Insertion dans Supabase...")
     headers = {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -180,15 +199,14 @@ def run():
         "Prefer": "return=minimal"
     }
 
-    # BATCH INSERT by 100
     batch_size = 100
     for i in range(0, len(actions), batch_size):
         batch = actions[i:i+batch_size]
         res = requests.post(f"{SUPABASE_URL}/rest/v1/actions", headers=headers, json=batch)
         if res.status_code not in (200, 201):
-            print(f"Erreur HTTP {res.status_code} sur lot {i}: {res.text}")
+            print(f"Erreur HTTP {res.status_code}: {res.text}")
         else:
-            print(f"Lot {i}-{i+len(batch)} injecte avec succes.")
+            print(f"Lot {i}-{i+len(batch)} injecte.")
 
     print("Import termine.")
 

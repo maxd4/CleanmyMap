@@ -13,6 +13,7 @@ import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summa
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { PunchySlogan } from "@/components/ui/punchy-slogan";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
+import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
@@ -243,6 +244,19 @@ export default async function DashboardPage() {
               </p>
               <div className="flex flex-wrap gap-2 pt-1">
                 <RubriquePdfExportButton rubriqueTitle="Tableau de bord pilotage" />
+                <RubriqueExcelExportButton 
+                  rubriqueTitle="Tableau de bord pilotage" 
+                  data={overview?.contracts.map(c => ({
+                    Date: c.dates.observedAt,
+                    Lieu: c.location.label,
+                    Masse_Kg: c.metadata.wasteKg || 0,
+                    Megots: c.metadata.cigaretteButts || 0,
+                    Benevoles: c.metadata.volunteersCount,
+                    Duree_Min: c.metadata.durationMinutes,
+                    Type: c.type,
+                    Source: c.source
+                  }))}
+                />
                 <Link
                   href="/reports"
                   className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
@@ -271,26 +285,73 @@ export default async function DashboardPage() {
         recommendedReason={overview?.summary.recommendedAction.reason}
       />
 
-      <header className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-6 shadow-xl">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <header className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 pointer-events-none animate-pulse"></div>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 relative z-10">
           Espace applicatif
         </p>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">
+        <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 relative z-10">
           Tableau de bord {roleLabel.toLowerCase()}
         </h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Pilotage décisionnel centré sur l&apos;impact terrain, la mobilisation et la fiabilité des données.
+        <p className="mt-2 text-sm text-slate-600 relative z-10">
+          Pilotage décisionnel centré sur l'impact terrain, la mobilisation et la fiabilité des données.
         </p>
-        <p className="mt-2 text-xs text-slate-500">
-          Utilisateur connecté: <span className="font-mono">{userId}</span>
-        </p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <RubriquePdfExportButton rubriqueTitle="Tableau de bord pilotage" />
+        
+        {/* BOUTONS DYNAMIQUES GÉANTS VS ROLE */}
+        <div className="mt-8 relative z-10">
+          {role === 'volunteer' ? (
+            <div className="flex flex-wrap gap-4">
+              <Link 
+                href="/actions/new" 
+                className="inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
+              >
+                <span className="text-2xl">🔥</span> ALLER RAMASSER MAINTENANT
+              </Link>
+              <Link 
+                href="/signalement" 
+                className="inline-flex items-center justify-center gap-3 rounded-xl bg-amber-500 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
+              >
+                <span className="text-2xl">⚡</span> SIGNALER UNE ZONE SALE
+              </Link>
+              <Link 
+                href="/profil/impact" 
+                className="inline-flex items-center justify-center gap-3 rounded-xl bg-white border-2 border-emerald-500 px-8 py-5 text-lg font-black text-emerald-600 shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
+              >
+                <span className="text-2xl">📊</span> MON IMPACT
+              </Link>
+            </div>
+          ) : role === 'admin' ? (
+            <div className="flex flex-wrap gap-4">
+              <Link 
+                href="/admin/validation" 
+                className="inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
+              >
+                <span className="text-2xl">🔍</span> 3 VALIDATIONS QA EN ATTENTE
+              </Link>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="mt-2 flex gap-2">
+          <RubriquePdfExportButton rubriqueTitle="Cockpit decisionnel" />
+          <RubriqueExcelExportButton 
+            rubriqueTitle="Cockpit decisionnel" 
+            data={overview?.contracts.map(c => ({
+              Date: c.dates.observedAt,
+              Lieu: c.location.label,
+              Masse_Kg: c.metadata.wasteKg || 0,
+              Megots: c.metadata.cigaretteButts || 0,
+              Benevoles: c.metadata.volunteersCount,
+              Duree_Min: c.metadata.durationMinutes,
+              Type: c.type,
+              Source: c.source
+            }))}
+          />
           <Link
             href="/reports"
-            className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+            className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
           >
-            Ouvrir le reporting
+            📊 Ouvrir le reporting
           </Link>
         </div>
       </header>

@@ -1,31 +1,9 @@
-Rubrique: Rassemblements
-Statut: format-audit-unifie-v1
+### 📋 Audit : Rassemblements (Événements)
 
-## Objectif
-- Coordonner les evenements collectifs pour augmenter participation et impact.
+## Partie 1 : Logiques clés et utilité (Ce que fait la rubrique)
 
-## Flux (schema)
-```mermaid
-flowchart LR
-  A[Besoin utilisateur] --> B[Interaction Rassemblements]
-  B --> C[Donnees / validation]
-  C --> D[Decision / action locale]
-```
-Fallback statique:
-![Schema Rassemblements](../archive/fallback-audit-rassemblements.png)
-
-## Risques
-- Donnees incompletes ou mal qualifiees.
-- Friction UX qui bloque l adoption.
-- Rupture de parcours entre rubrique et action concrete.
-
-## KPI
-- Adoption: utilisateurs actifs sur la rubrique.
-- Qualite: taux de donnees exploitables.
-- Impact: actions ou decisions declenchees depuis la rubrique.
-
-## Impact concret
-- Effet d echelle sur les zones a nettoyer.
-
-## CTA
-- Publier un rassemblement et suivre les confirmations de presence.
+- **Mission Principale :** Incarner le passage du Numérique au Réel. Créer la "Rencontre" en connectant le backend de CleanMyMap aux grandes messes de nettoyage localisées (Eventbrite-style) pour transformer la corvée en rassemblement festif et militant.
+- **Logique de Fonctionnement :** 
+  - **Agenda Collectif / Map Event :** Visualisation des World Cleanup Days, des marches écologiques, ou des simples "Rendez-vous du Dimanche de l'Asso du quartier" sous forme chronologique et géocentrée.
+  - **Tunnels d'Engagement Push (Bouton RSVP/Click to Join) :** Inscription directe et validation de la jauge (ex: "Nous sommes déjà 7 sur 10 requis, rejoins-nous").
+- **Valeur pour l'utilisateur :** C'est la promesse de ne jamais nettoyer seul. Cette rubrique déploie toute la sociabilité du projet. Pour les nouveaux arrivants, intégrer une sortie de groupe est beaucoup moins risqué (et terrifiant) socialement que de prendre sa pince seul dans un parc fréquenté. C'est l'hameçon de conversion idéal.
