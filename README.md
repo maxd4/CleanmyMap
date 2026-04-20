@@ -1,6 +1,6 @@
 # CleanMyMap Monorepo
 
-Plateforme citoyenne pour declarer, visualiser et exporter des actions de depollution.
+Plateforme citoyenne pour déclarer, visualiser et exporter des actions de dépollution.
 
 ## Scope
 - Active runtime: Next.js app in `apps/web`.
@@ -26,7 +26,7 @@ npm run dev
 
 ## Project layout
 - `apps/web/` : Next.js application (frontend + API routes)
-- `documentation/repo-docs/` : documentation and runbooks
+- `documentation/` : Architecture, produit, historique sessions IA ([voir le README de doc](./documentation/README.md))
 - `scripts/` : root maintenance scripts
 - `legacy/` : archived historical Python code
 
@@ -37,10 +37,13 @@ For backend bootstrap, env sync and Supabase operations, see:
 ## Codex Session Memory Workflow
 - Persistent rules: `AGENTS.md`
 - Project context: `project_context.md`
-- Session memory: `documentation/du/session/latest-session.md`
-- Governance: `documentation/repo-docs/ops/codex-memory-governance.md`
+- Session memory: `documentation/sessions/history/latest-session.md`
+- Governance: `documentation/technical/codex-memory-governance.md`
 
 Commands:
 - `npm run session:bootstrap`
 - `npm run session:close -- --done "..." --next "..." --risk "..."`
 - `npm run session:budget`
+
+## Contributing
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for full setup, branching, and testing guides.
