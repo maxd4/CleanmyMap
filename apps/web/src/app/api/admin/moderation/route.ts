@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { requireAdminAccess } from "@/lib/authz";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase/server";
 import {
   copyValidatedActionToLocalStore,
   copyValidatedSpotToLocalStore,
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
     });
   }
 
-  const supabase = getSupabaseServerClient();
+  const supabase = getSupabaseAdminClient();
 
   try {
     if (parsed.data.entityType === "action") {
