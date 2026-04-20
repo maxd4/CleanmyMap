@@ -2,48 +2,48 @@
 
 Plateforme citoyenne pour déclarer, visualiser et exporter des actions de dépollution.
 
-## Scope
-- Active runtime: Next.js app in `apps/web`.
-- Legacy Python code is archived under `legacy/` and is not part of the active runtime path.
+## Périmètre (Scope)
+- Code actif (runtime) : Application Next.js dans `apps/web`.
+- Le code historique en Python est archivé dans `legacy/` et ne fait plus partie du runtime actif.
 
-## Prerequisites
+## Prérequis
 - Node.js 20+
 - npm 9+
 
-## Quick start
+## Démarrage rapide
 ```bash
 npm install
 npm run dev
 ```
 
-## Main commands
-- `npm run dev` : start web app (workspace `apps/web`)
-- `npm run build` : production build
-- `npm run lint` : eslint checks
-- `npm run test` : vitest suite
-- `npm run test:regression-gates` : critical regression gates
-- `npm run checks` : project checks script
+## Commandes principales
+- `npm run dev` : Démarrer l'application web (workspace `apps/web`)
+- `npm run build` : Build de production
+- `npm run lint` : Vérifications ESLint
+- `npm run test` : Tests vitest
+- `npm run test:regression-gates` : Tests de non-régression critiques
+- `npm run checks` : Script global de validation du projet
 
-## Project layout
-- `apps/web/` : Next.js application (frontend + API routes)
-- `documentation/` : Architecture, produit, historique sessions IA ([voir le README de doc](./documentation/README.md))
-- `scripts/` : root maintenance scripts
-- `legacy/` : archived historical Python code
+## Structure du projet
+- `apps/web/` : Application Next.js (frontend + routes API)
+- `documentation/` : Architecture, produit, historique des sessions IA ([voir le README documentaire](./documentation/README.md))
+- `scripts/` : Scripts de maintenance à la racine
+- `legacy/` : Historique du code Python archivé
 
-## Backend and ops
-For backend bootstrap, env sync and Supabase operations, see:
+## Backend et Ops
+Pour l'initialisation du backend, la synchronisation des variables d'environnement et les opérations Supabase, voir :
 - `apps/web/README.md`
 
-## Codex Session Memory Workflow
-- Persistent rules: `AGENTS.md`
-- Project context: `project_context.md`
-- Session memory: `documentation/sessions/history/latest-session.md`
-- Governance: `documentation/technical/codex-memory-governance.md`
+## Workflow Codex / Mémoire de Session
+- Règles globales persistantes : `AGENTS.md`
+- Contexte du projet : `project_context.md`
+- Mémoire de session en cours : `documentation/sessions/history/latest-session.md`
+- Gouvernance mémoire IA : `documentation/technical/codex-memory-governance.md`
 
-Commands:
+Commandes IA :
 - `npm run session:bootstrap`
 - `npm run session:close -- --done "..." --next "..." --risk "..."`
 - `npm run session:budget`
 
-## Contributing
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for full setup, branching, and testing guides.
+## Contribuer
+Consultez le fichier [CONTRIBUTING.md](./CONTRIBUTING.md) pour lire les guides complets d'installation, de contribution et de tests.
