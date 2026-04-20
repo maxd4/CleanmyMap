@@ -14,12 +14,14 @@ import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
 
-const updateEventOpsSchema = z.object({
-  eventId: z.string().trim().min(1),
-  capacityTarget: z.number().int().min(1).max(200000).nullable().optional(),
-  attendanceCount: z.number().int().min(0).max(200000).nullable().optional(),
-  postMortem: z.string().trim().max(6000).nullable().optional(),
-});
+const updateEventOpsSchema = z
+  .object({
+    eventId: z.string().trim().min(1).max(120),
+    capacityTarget: z.number().int().min(1).max(200000).nullable().optional(),
+    attendanceCount: z.number().int().min(0).max(200000).nullable().optional(),
+    postMortem: z.string().trim().max(6000).nullable().optional(),
+  })
+  .strict();
 
 type CommunityEventRow = {
   id: string;

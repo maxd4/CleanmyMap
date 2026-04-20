@@ -407,3 +407,14 @@ Validation : ouvrir le site sur Chrome Android > menu > "Ajouter Ã  l'Ã©cran d'a
 ==============================================================================
 FIN DU PLAN â€” 18 PROMPTS â€” 10 NIVEAUX DE PRIORITÃ‰
 ==============================================================================
+
+==================================================
+DÉMARCHE POUR LES SERVICES FUTURS (CLÉS API)
+==================================================
+Pour chaque service identifié (Sentry, Posthog, Stripe, Pinecone, Resend, Upstash, UptimeRobot), suivre cette procédure :
+1. Créer un compte sur la plateforme correspondante.
+2. Générer une clé API (Secret Key).
+3. Ajouter la clé dans le fichier .env.local de l'ordinateur local (sophi).
+4. Ajouter le nom de la variable (sans la valeur) dans .env.example.
+5. Mettre à jour pps/web/src/lib/env.ts pour que l'application valide la présence de la clé.
+6. Vérifier l'état dans /api/services (depuis un compte admin).
