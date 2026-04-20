@@ -22,14 +22,14 @@
   - `apps/web/src/lib/profiles.ts`
   - `apps/web/src/lib/sections-registry.ts`
 - Documentation & Visuals:
-  - Master System Architecture: `documentation/master-architecture.md`
-  - Visual Assets for DU: `documentation/du/visuels-rapport/`
-  - Mermaid Source Codes: `documentation/du/visuels-rapport/SOURCE_SCHEMAS.md`
+  - Master System Architecture: `documentation/technical/master-architecture.md`
+  - Visual Assets for DU: `documentation/sessions/assets/`
+  - Mermaid Source Codes: `documentation/sessions/assets/SOURCE_SCHEMAS.md`
 
 ## ADR decisions (active)
 - Root lockfile is source of truth; `apps/web/package-lock.json` must remain absent.
 - Active runtime is only `apps/web`; `legacy/` is archive and out of runtime scope.
-- Session memory protocol is mandatory (`AGENTS.md` + `project_context.md` + `documentation/du/session/latest-session.md`).
+- Session memory protocol is mandatory (`AGENTS.md` + `project_context.md` + `documentation/sessions/history/latest-session.md`).
 
 ## Sensitive zones
 - Auth and permissions:
@@ -54,5 +54,5 @@
 - Web workspace focused run: `npm -C apps/web run test:regression-gates`
 
 ## Session protocol
-- Start: read this file and `documentation/du/session/latest-session.md`.
-- End: update `documentation/du/session/latest-session.md` with done, in-progress, next, and risks.
+- Start: read this file and `documentation/sessions/history/latest-session.md`.
+- End: update `documentation/sessions/history/latest-session.md` with done, in-progress, next, and risks.

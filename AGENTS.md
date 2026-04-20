@@ -8,7 +8,7 @@
 
 ## Mandatory startup context
 - Read `project_context.md` before substantial work.
-- Read `documentation/du/session/latest-session.md` to continue from the latest state.
+- Read `documentation/sessions/history/latest-session.md` to continue from the latest state.
 
 ## Execution rules
 - Keep changes scoped to the requested task.

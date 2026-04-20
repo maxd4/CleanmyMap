@@ -1,50 +1,47 @@
 # Documentation CleanMyMap
 
-Ce dossier est le point d'entree unique de la documentation produit, technique et exploitation.
+Ce dossier est le point d'entrée unique de la documentation produit, technique et exploitation.
+L'arborescence a été simplifiée pour une meilleure maintenabilité.
 
-## Schema de navigation documentaire (lecture 30s)
+## Schéma de navigation (lecture 30s)
 ```mermaid
-flowchart LR
-  ROOT[documentation/README.md] --> IDX[index-par-objectif]
-  ROOT --> ARCH[architecture]
-  ROOT --> PROD[produit]
-  ROOT --> DATA[data]
-  ROOT --> UX[ux_ui]
-  ROOT --> SECU[securite]
-  ROOT --> OPS[exploitation]
-  ROOT --> BACKLOG[backlog_structurant]
-  ROOT --> DU[du]
-  ROOT --> ARCHIVE[archive/repo-docs]
-```
-Fallback statique:
-```md
-![Navigation documentaire fallback](./archive/fallback-documentation-navigation.png)
+flowchart TD
+  ROOT[documentation/README.md] --> TECH[technical/]
+  ROOT --> PROD[product/]
+  ROOT --> SESS[sessions/]
+  ROOT --> ARCHIVE[archive/]
+
+  TECH --> ARCH[Architecture & Tech Rules]
+  TECH --> SECU[Sécurité & Secrets]
+  TECH --> OPS[CI/CD & Exploitation]
+  TECH --> DATA[Data Schemas & Pipelines]
+
+  PROD --> VIS[Vision & Roadmap]
+  PROD --> UX[UX/UI & Design System]
+  PROD --> AUDIT[Audit par Rubrique]
+
+  SESS --> HIST[Historique des Sessions]
+  SESS --> CTX[Contexte & Économie]
+  SESS --> AST[Assets & Mermaid Sources]
 ```
 
 ## Parcours rapide
-- [Index par objectif](./index-par-objectif.md)
-- [Architecture](./architecture/system-overview.md)
-- [Produit](./produit/vision-et-objectifs.md)
-- [Data](./data/sources.md)
-- [UX/UI](./ux_ui/principes-visuels.md)
-- [Securite](./securite/gestion-secrets-et-env.md)
-- [Exploitation](./exploitation/runbook-deploiement.md)
-- [Backlog structurant](./backlog_structurant/refactors-prioritaires.md)
-- [Audit par rubrique](./audit_rubrique)
-- [Memoire DU/session](./du)
+- **[Technique](./technical/)** : 
+  - [Architecture Globale](./technical/system-overview.md)
+  - [Sécurité & Secrets](./technical/gestion-secrets-et-env.md)
+  - [Déploiement (Runbook)](./technical/runbook-deploiement.md)
+  - [Data Pipeline](./technical/pipeline-import.md)
+- **[Produit](./product/)** :
+  - [Vision & Objectifs](./product/vision-et-objectifs.md)
+  - [Roadmap Priorisée](./product/roadmap-priorisee.md)
+  - [Design System](./product/design-system.md)
+  - [Audit par Rubrique](./product/audit/)
+- **[Sessions & IA](./sessions/)** :
+  - [Dernière Session IA](./sessions/history/latest-session.md)
+  - [Contexte Projet](./sessions/context/fiche_projet.txt)
+  - [Templates](./sessions/templates/)
 
-## Statut de transition
-- Les contenus historiques sont conserves dans `documentation/repo-docs/` pendant la transition.
-- Les nouveaux contenus doivent etre crees et maintenus prioritairement dans l'arborescence courante.
-
-## Quand remplacer du texte par un visuel
-- Appliquer la regle unique `visual-first`: des qu'un contenu depasse 5 lignes explicatives sur un processus, une interaction, une architecture ou un arbitrage, remplacer le bloc texte principal par un visuel.
-- Formats autorises par defaut: `flowchart`, `sequence`, `architecture`, `decision tree` (voir `documentation/ux_ui/standards-visuels.md`).
-- Garder le texte uniquement pour:
-  - contexte court (objectif, hypothese, risque),
-  - legendes de lecture (max 3 points),
-  - decisions finales et impacts.
-- Chaque visuel doit avoir:
-  - un titre explicite,
-  - un fallback image statique reference dans le meme document,
-  - une source editable (`.mmd` ou bloc Mermaid) pour maintenance.
+## Principes de Documentation
+- **Visual-First** : Remplacez tout texte > 5 lignes par un schéma Mermaid si possible.
+- **Maintenance** : Gardez les sources Mermaid (`.mmd`) proches des documents.
+- **Référentiel** : `project_context.md` et `AGENTS.md` à la racine du repo pilotent le comportement des agents.
