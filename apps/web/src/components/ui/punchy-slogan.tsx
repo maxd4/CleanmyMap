@@ -1,9 +1,29 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useSitePreferences } from "./site-preferences-provider";
 
 export function PunchySlogan() {
+  const { displayMode } = useSitePreferences();
+  const isSober = displayMode === "sobre";
   const words = ["Agir.", "Cartographier.", "Préserver."];
+
+  if (isSober) {
+    return (
+      <header className="mb-4 mt-2 px-2 border-l-4 border-emerald-500 pl-6">
+        <div className="flex flex-col gap-0.5">
+          {words.map((word) => (
+            <span
+              key={word}
+              className="text-4xl font-black leading-[0.85] tracking-tighter text-slate-900 md:text-6xl"
+            >
+              {word}
+            </span>
+          ))}
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="mb-8 mt-4 px-2">
