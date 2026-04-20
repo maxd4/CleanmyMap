@@ -93,7 +93,7 @@ export async function GET(request: Request) {
   const floorDate = buildDateFloor(days);
 
   try {
-    const supabase = getSupabaseServerClient();
+    const supabase = getSupabaseServerClient(false);
     const result = await fetchUnifiedActionContracts(supabase, {
       limit: Math.max(limit * 4, limit),
       status,

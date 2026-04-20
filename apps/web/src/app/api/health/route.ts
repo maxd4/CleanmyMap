@@ -34,7 +34,7 @@ export async function GET() {
     supabaseError = "Supabase server config missing";
   } else {
     try {
-      const supabase = getSupabaseServerClient();
+      const supabase = getSupabaseServerClient(false);
       const result = await supabase
         .from("actions")
         .select("id", { count: "exact", head: true })
