@@ -97,5 +97,32 @@
       "cat4_name": "Aluminium",
       "cat4_info": "Canettes. 95% d'énergie économisée au recyclage."
     }
+  },
+  "dashboard": {
+    "title_v2": "Cockpit transversal",
+    "objective_v2": "Orienter la priorisation opérationnelle avec un résumé décisionnel court, puis des analyses ciblées sans doublonner Compare, Climate et Reports.",
+    "section1_sup": "Pilotage metier",
+    "section1_title": "Synthèse comparative N vs N-1",
+    "section1_desc": "Lecture actionnable court terme: impact, qualité, couverture, mobilisation, délai de modération.",
+    "section2_sup": "Supervision technique",
+    "section2_title": "Santé plateforme et exports critiques",
+    "section2_desc": "État des services et vérification des exécutions sensibles.",
+    "section_method": "Méthode (KPI clés)",
+    "section3_sup": "Exécution terrain",
+    "section3_title": "Formulaire bénévole",
+    "section3_desc": "Déclaration rapide d'action directement depuis la page d'accueil.",
+    "trace_time": "Horodatage:",
+    "trace_reliability": "Fiabilité:",
+    "trace_good": "moyenne à élevée selon les métriques disponibles",
+    "trace_bad": "faible (données absentes)",
+    "trace_source": "Sources: actions validées, module pilotage overview, métriques dérivées N/N-1.",
+    "trace_method": "Méthode: deltas absolus et relatifs sur fenêtre 30 jours. Périmètre: cockpit transversal.",
+    "btn_reports": "Ouvrir le reporting",
+    "title_v1": "Tableau de bord",
+    "desc_v1": "Pilotage décisionnel centré sur l'impact terrain, la mobilisation et la fiabilité des données.",
+    "btn_action": "ALLER RAMASSER MAINTENANT",
+    "btn_signal": "SIGNALER UNE ZONE SALE",
+    "btn_impact": "MON IMPACT",
+    "btn_eval": "3 VALIDATIONS QA EN ATTENTE"
   }
 }
