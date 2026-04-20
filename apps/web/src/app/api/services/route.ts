@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 import { env, isConfigured } from "@/lib/env";
+import { requireAdminAccess } from "@/lib/authz";
+import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 
 export const runtime = "nodejs";
 
 type ServiceState = "ready" | "missing" | "defer" | "external";
 
 export async function GET() {
+  const access = await requireAdminAccess();
+  if (!access.ok) {
+    return adminAccessErrorJsonResponse(access);
+  }
+
   const services: Record<string, ServiceState> = {
     supabase:
       isConfigured(env.NEXT_PUBLIC_SUPABASE_URL) &&
