@@ -23,9 +23,10 @@ import {
   getProfileSecondaryAction,
   toProfile,
 } from "@/lib/profiles";
-import { getServerLocale } from "@/lib/server-preferences";
+import { getServerLocale, getServerDisplayMode } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/lib/i18n/server-translation";
+import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
 
 async function loadDashboardOverview() {
   const supabase = getSupabaseServerClient();
@@ -42,6 +43,7 @@ export default async function DashboardPage() {
   const role = await getCurrentUserRoleLabel();
   const profile = toProfile(role);
   const locale = await getServerLocale();
+  const displayMode = await getServerDisplayMode();
   const roleLabel = getProfileLabel(profile, locale);
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
@@ -119,8 +121,9 @@ export default async function DashboardPage() {
 
   if (pageTemplateV2Enabled) {
     return (
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-6" data-display-mode={displayMode}>
         <PunchySlogan />
+        <IdentityProfileBanner profile={profile} />
         <PageReadingTemplate
           context={`Profil ${roleLabel}`}
           title={t("title_v2")}
@@ -150,7 +153,7 @@ export default async function DashboardPage() {
           }
           analysis={
             <>
-              <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
+              <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl core-feature">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                     {t("section1_sup")}

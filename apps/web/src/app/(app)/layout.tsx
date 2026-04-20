@@ -35,7 +35,11 @@ export default async function AppLayout({
   const profileLabel = getProfileLabel(currentProfile, locale);
 
   return (
-    <div className="flex min-h-screen w-full flex-col px-4 py-3 sm:px-8 sm:py-4 bg-slate-50/30">
+    <div 
+      className="flex min-h-screen w-full flex-col px-4 py-3 sm:px-8 sm:py-4 bg-slate-50/30 transition-all duration-300"
+      data-display-mode={displayMode}
+      data-user-profile={currentProfile}
+    >
       <WeatherWarningBar />
       <DisplayModeOnboardingGate />
 
