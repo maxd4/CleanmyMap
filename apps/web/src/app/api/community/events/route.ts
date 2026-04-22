@@ -270,7 +270,7 @@ export async function POST(request: Request) {
     }
     // --- End: In-App Notifications ---
 
-    return NextResponse.json({ status: "created", item }, { status: 201 });
+    return NextResponse.json({ status: "created", item: createdResult.data }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });

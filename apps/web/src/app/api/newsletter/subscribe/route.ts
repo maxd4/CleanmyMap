@@ -4,9 +4,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 
 const subscribeSchema = z.object({
   email: z.string().email("Format d'email invalide"),
-  gdprConsent: z.literal(true, {
-    errorMap: () => ({ message: "Le consentement RGPD est obligatoire" }),
-  }),
+  gdprConsent: z.literal(true, "Le consentement RGPD est obligatoire"),
   source: z.string().optional().default("landing"),
 });
 

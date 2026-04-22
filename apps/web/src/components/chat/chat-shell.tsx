@@ -5,6 +5,8 @@ import useSWR from "swr";
 import { MessageSquare, Shield, Users, Lock, Send, Paperclip, X, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useUser } from "@clerk/nextjs";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type ChatMessage = {
   id: string;
@@ -44,6 +46,11 @@ export function ChatShell({ initialArrondissement }: { initialArrondissement?: n
     showMentions ? `/api/chat/users?q=${mentionQuery}` : null,
     fetcher
   );
+
+  // Clerk user
+  const { user } = useUser();
+  const userId = user?.id;
+  const supabase = getSupabaseBrowserClient();
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;

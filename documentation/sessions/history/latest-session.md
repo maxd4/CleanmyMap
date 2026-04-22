@@ -1,6 +1,6 @@
 # Latest Session
 
-Updated: 2026-04-20
+Updated: 2026-04-22
 
 ## Done
 - **Messagerie PRO** : Implémentation du `ChatShell` (DMs, Mentions `@user`, Salons Régionaux par voisinage).
@@ -11,6 +11,7 @@ Updated: 2026-04-20
 - **Newsletter** : Table de souscription Supabase et API opt-in fonctionnelle.
 - **Gamification** : Logique de détection de "Level Up" et notifications d'engagement automatiques.
 - **Profils** : Synchronisation des `@handle` uniques depuis Clerk vers Supabase avec support de modification.
+- **CI/CD Fixes** : Résolution des erreurs GitHub Actions (fichiers lourds, TypeScript, middleware/proxy migration, vulnérabilités npm).
 
 ## In Progress
 - Intégration API Cleanwalk.org (Message type envoyé, en attente de réponse).
