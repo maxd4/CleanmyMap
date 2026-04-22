@@ -13,7 +13,7 @@ export const revalidate = 60; // 1 minute Cache for public observatory
 
 const AnalyticsCockpit = dynamic(
   () => import("@/components/reports/analytics-cockpit").then(mod => mod.AnalyticsCockpit),
-  { ssr: false, loading: () => <div className="h-96 w-full animate-pulse bg-slate-800/10 rounded-3xl" /> }
+  { loading: () => <div className="h-96 w-full animate-pulse bg-slate-800/10 rounded-3xl" /> }
 );
 
 export const metadata: Metadata = {

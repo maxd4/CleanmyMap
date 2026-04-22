@@ -1,5 +1,6 @@
 import type { ActionStatus, CreateActionPayload } from "@/lib/actions/types";
 import type { ActionRow } from "@/types/database";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { DRAWING_NOTE_PREFIX } from "@/lib/actions/drawing";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { findMatchingGeometry } from "@/lib/geo/geometry-reference";
