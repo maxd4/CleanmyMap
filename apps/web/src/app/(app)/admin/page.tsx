@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { BusinessAlertsPanel } from "@/components/dashboard/business-alerts-panel";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
-import { OperationalPrioritiesPanel } from "@/components/pilotage/operational-priorities-panel";
+
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
@@ -142,9 +142,6 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      {overview ? (
-        <OperationalPrioritiesPanel priorities={overview.priorities} />
-      ) : null}
       <BusinessAlertsPanel />
       <ActionsReportPanel />
       <RolePrimaryActions profile={profile} />

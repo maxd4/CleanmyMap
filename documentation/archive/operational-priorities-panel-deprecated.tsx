@@ -1,3 +1,7 @@
+// DEPRECATED: Ce composant a été supprimé de la page d'accueil et des pages principales
+// Archives uniquement à titre historique
+// Date de suppression: 2026-04-22
+
 import Link from "next/link";
 import type { OperationalPriority } from "@/lib/pilotage/prioritization";
 

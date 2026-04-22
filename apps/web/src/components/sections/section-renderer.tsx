@@ -358,6 +358,34 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
           <KitSection />
         </SectionShell>
       );
+    case "messagerie":
+      return (
+        <SectionShell
+          title={{ fr: "Messagerie Pro", en: "Pro Messaging" }}
+          subtitle={{
+            fr: "Canal de discussion et messagerie communautaire pour la coordination des actions.",
+            en: "Community chat and messaging channel for action coordination.",
+          }}
+          links={[
+            {
+              href: "/sections/community",
+              label: { fr: "Voir la section communautaire", en: "Open community section" },
+            },
+          ]}
+        >
+          <div className="text-center py-12">
+            <p className="text-slate-600 mb-4">
+              La messagerie est intégrée dans la section communautaire.
+            </p>
+            <a
+              href="/sections/community#messagerie"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors"
+            >
+              Accéder à la messagerie
+            </a>
+          </div>
+        </SectionShell>
+      );
     case "elus":
       return (
         <SectionShell

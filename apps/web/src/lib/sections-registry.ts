@@ -290,6 +290,21 @@ export const RUBRIQUE_REGISTRY = [
     implementation: "finalized",
   },
   {
+    id: "messagerie",
+    categoryId: "community",
+    spaceId: "execute",
+    priority: 42,
+    kind: "section",
+    route: "/sections/community#messagerie",
+    label: { fr: "Messagerie Pro", en: "Pro Messaging" },
+    description: {
+      fr: "Canal de discussion et messagerie communautaire",
+      en: "Community chat and messaging",
+    },
+    availability: "available",
+    implementation: "finalized",
+  },
+  {
     id: "open-data",
     categoryId: "community",
     spaceId: "decide",

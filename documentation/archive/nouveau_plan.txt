@@ -23,47 +23,7 @@ exécute le plan
 
 
 
-- vérifie que les fichiers de base du projet nécessaires à la sécurité et à l'hygiène du repo sont bien présents et correctement configurés, notamment pour éviter toute divulgation de secrets lors des push GitHub
-- mets-les à jour si nécessaire
 
-Vérifications prioritaires :
-- `.gitignore`
-- `.env.example`
-- absence de secrets codés en dur
-- éventuel `.dockerignore` si pertinent
-- éventuels fichiers d'exemple de configuration sans secret
-- documentation minimale sur la gestion des variables d'environnement
-- tout autre fichier racine nécessaire à une base de projet propre et sûre
-
-Pour éviter les fuites de secrets au push GitHub, les plus importants sont :
-
-.gitignore
-.env.example
-.env.local non tracké
-.env non tracké
-.dockerignore si Docker
-README.md avec section variables d'environnement
-éventuellement un fichier de doc type documentation/securite/secrets.md
-Point important
-
-Le .gitignore protège seulement les fichiers non encore suivis.
-Si un secret a déjà été commité une fois, l'ajouter ensuite au .gitignore ne suffit pas. Il faut alors :
-
-retirer le fichier du suivi Git
-faire tourner les secrets exposés
-parfois nettoyer l'historique Git si l'exposition est réelle
-
-Pour cette partie sécurité :
-- signale précisément les risques détectés
-- corrige seulement ce qui est justifié
-- ne casse pas le fonctionnement du projet
-- si un secret semble déjà exposé dans l'historique ou dans le code, signale-le explicitement
-
-Retour attendu :
-2. liste des fichiers racine vérifiés
-3. fichiers créés ou modifiés
-4. risques secrets / GitHub identifiés
-5. actions restantes recommandées
 
 
 
@@ -92,6 +52,42 @@ Resend	RESEND_API_KEY / RESEND_FROM_EMAIL	Envoi d'emails transactionnels
 
 
 
+
+
+
+
+
+
+
+
+sur la page d'acceuil, les chiffres doivent être réeels, pas inventés. De fausses infomrations sont à d'autres endroits du site, corrige cela
+
+
+
+Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+A server/client branch if (typeof window !== 'undefined').
+Variable input such as Date.now() or Math.random() which changes each time it's called.
+Date formatting in a user's locale which doesn't match the server.
+External changing data without sending a snapshot of it along with the HTML.
+Invalid HTML tag nesting.
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+
+
+Améliore la séparation visuelle entre les différentes parties d’une même rubrique. Actuellement, plusieurs sous-sections se confondent car elles partagent le même fond blanc et des contours trop clairs. Revois la hiérarchie visuelle pour que chaque bloc soit immédiatement identifiable : différencie mieux les sections d’une même rubrique avec des cartes ou conteneurs distincts, des fonds légèrement contrastés, des bordures plus lisibles, des espacements plus nets et une structure plus claire. L’objectif est qu’on comprenne instantanément où commence et où finit chaque sous-partie.
+
+
+
+
+
+
+
+
+
+
+
+
 filtre paris + banlieux + arrondissement.
 même présentation que cleanwak.org et si l'utilsiateur clique sur "s'inscire" alors il est envoyésur la page de cleanwalk.org utilsie la méthode redirect de next.js vers l'url de l'action. l'action a typiquement cette forme : https://www.cleanwalk.org/cleanwalk/21/aebcpev-ramassage-de-dechets-metro-buttes-chaumont-aebcpev. issus de la base de donnée de l'action.
 
@@ -99,25 +95,6 @@ même présentation que cleanwak.org et si l'utilsiateur clique sur "s'inscire" 
 API publique, flux RSS, JSON à interroger pour afficher un claque à jour des futures cleanwalks parisiennes en temps réel sur notre carte. Il faut aussi que le contenu de la fiche d'action réelle sur cleanwalk.org soit affiché sur mon site pour que si l'utilisateur est intéressé il clique et cela l'envoi directement sur la page d'inscription de l'évènement.
 L'objectif est de créer une synergie entre nos deux outils pour maximiser l'impact environnemental sur le terrain.
 
-
-
-
-
-
-
-
-
-résout les erreurs de Runner job GitHub action et les Dependabot alerts.
-
-
-
-
-
-
-
-
-
-vérifie que le texte du site web est inclusif 
 
 
 
@@ -205,24 +182,11 @@ Deliver:
 fait un plan exhaustif pour étendre complètement le site web aux banlieus de Paris en plus des arrondissements pour couvrir Paris grande couronne.
 
 
-Erreur run local du site
-> web@0.1.0 dev
-> next dev
+exécute ce plan
 
-▲ Next.js 16.2.3 (Turbopack)
-- Local:         http://localhost:3000
-- Network:       http://192.168.0.3:3000
-- Environments: .env.local
-✓ Ready in 1209ms
-⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-Unhandled Rejection: Error: Both middleware file "./src\middleware.ts" and proxy file "./src\proxy.ts" are detected. Please use "./src\proxy.ts" only. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-    at ignore-listed frames
-Unhandled Rejection: Error: Both middleware file "./src\middleware.ts" and proxy file "./src\proxy.ts" are detected. Please use "./src\proxy.ts" only. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-    at ignore-listed frames
-Unhandled Rejection: Error: Both middleware file "./src\middleware.ts" and proxy file "./src\proxy.ts" are detected. Please use "./src\proxy.ts" only. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-    at ignore-listed frames
-Unhandled Rejection: Error: Both middleware file "./src\middleware.ts" and proxy file "./src\proxy.ts" are detected. Please use "./src\proxy.ts" only. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-    at ignore-listed frames
+vérifie le PR Vercel Web Analytics Configuration sur le repo GitHub puis copie le sur le repo local 
+
+
 
 
 
@@ -230,7 +194,7 @@ Unhandled Rejection: Error: Both middleware file "./src\middleware.ts" and proxy
 
 vérifie que le formulaire bénévole du site web est bien connecté à supabase et à la carte interactive.
 
-le formulaire est trop bas, il faut qu'il soit tout en haut de la page d'aceuil car c'est la logique métier la plus utilisée du site
+le formulaire bénévole du sire est affiché trop bas, il faut qu'il soit tout en haut de la page d'accueil car c'est la fonctionnalité la plus utilisée du site
 
 
 ajouter un menu déroulant avec les rubriques et pas juste le nom des blocs sur le bandeau en haut du site
@@ -240,26 +204,24 @@ Agir.Cartographier.Préserver. doit avoir des tirets et pas des points entre les
 Le bandeau avec le choix des blocs et des rubriques doit aussi être statique pour facilement cliquer même si on scroll plus bas sur le site.
 
 
-Les changements de mode et de role doivent se faire directement en cliquant sur le badge actif. 
+Les changements de mode et de rôle doivent se faire directement en cliquant sur le badge actif. 
 
-Certains textes de rubriques restent en français quand je selectionne anglais
-
-Ou est le canal de discussion ?
-Ou est la messagerie dans le bandeau statique en haut de page ?
-
-Divise mieux les différentes partie d'une même sinon on ne comprend rien, tout appartient au même fond blanc, les contours sont trop clairs
-
-sur la page d'acceuil, "Priorites operationnelles automatiques" n'a rien à faire sur le site web, supprime cela.
+Certains textes de rubriques restent en français quand je sélectionne anglais
 
 
 
 
 
-Resorber le backlog de moderation
-Le delai de moderation et le volume pending degradent la fiabilite de publication.
-Impact estime: Publication plus rapide des donnees et baisse du risque de pilotage en retard.
-Owner suggere: Admin moderation
-Traiter la file admin
+
+
+
+
+
+
+a ajouter aux partenaires et commerçants engagés : https://www.klindoeil.com/carte-bas-belleville
+
+
+
 
 
 "Méthode (KPI clés)" sur la page d'acceuil n'est pas au bon endroit du site web. Trouve un autre endroit 
@@ -279,36 +241,13 @@ Le formulaire doit prendre toute la larguer de la page pour ne pas avoir besoin 
 
 
 
-Complète la rubrique “Apprendre” pour en faire un vrai module pédagogique interactif et ludique de culture générale environnementale.
-
-À ajouter :
-- de vrais contenus vulgarisés issus des rapports du GIEC
-- données clés, résultats majeurs, schémas explicatifs et résumés pédagogiques
-- un schéma interactif des 9 limites planétaires, avec une explication dédiée pour chacune
-- un schéma interactif des 17 objectifs de développement durable, avec une fiche claire pour chacun
-- une partie quiz ludique : flash cards, phrases à trous, éventuellement QCM
-- une structure claire, visuelle, engageante, sans gros pavés de texte
-
-Design :
-- rendu premium, moderne, immersif
-- belles transitions
-- style glassmorphism + morphisme léger, propre et lisible
-- animations subtiles et utiles
-
-Contraintes :
-- cohérent avec l’identité du site
-- très pédagogique, vulgarisé, accessible au grand public
-- pas de rendu scolaire fade
-- pas de simple texte brut
-
-Objectif :
-Créer une vraie rubrique “Apprendre” riche, belle, interactive et utile.
 
 
 
 
 
 
+oblige la connexion à un compte clerk uniquement si l'utilisateur veut utilsier une fonctionnalité qui oblige d'avoir des informations sur son profil. C'est le cas pour remplir le formulaire bénévole mais ce n'est pas le cas pour utiliser la rubrique "apprendre" ni la rubrique "générer un livrable" par exemple. Ne pas imposer la connexion a un compte améliore la rétention et l'expérience utilisateur.
 
 
 corriger les fichiers de collab .html (ouvrir sur bloc note et modifier le texte) puis imprimer .pdf et les envoyer.

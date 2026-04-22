@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
-import { OperationalPrioritiesPanel } from "@/components/pilotage/operational-priorities-panel";
+
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { ReportsKpiSummary } from "@/components/reports/reports-kpi-summary";
@@ -172,9 +172,6 @@ export default async function ReportsPage() {
             )}
 
             {overview ? (
-              <OperationalPrioritiesPanel priorities={overview.priorities} />
-            ) : null}
-            {overview ? (
               <KpiMethodBlock methods={overview.methods} title="Methode" />
             ) : null}
             
@@ -288,10 +285,6 @@ export default async function ReportsPage() {
         <ReportsWindowComparisonsSection
           comparisonsByWindow={overview.comparisonsByWindow}
         />
-      ) : null}
-
-      {overview ? (
-        <OperationalPrioritiesPanel priorities={overview.priorities} />
       ) : null}
 
       {overview ? (

@@ -30,7 +30,7 @@ function CommunitySection() {
         <div className="space-y-6">
           
           {/* NOUVEAU : Messagerie Pro et Discussion Locale */}
-          <section>
+          <section id="messagerie">
              <ChatShell initialArrondissement={11} />
           </section>
 

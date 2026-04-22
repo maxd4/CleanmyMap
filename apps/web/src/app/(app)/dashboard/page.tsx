@@ -8,7 +8,7 @@ import { FunnelConversionPanel } from "@/components/dashboard/funnel-conversion-
 import { ReportExportSmokeCard } from "@/components/dashboard/report-export-smoke-card";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
-import { OperationalPrioritiesPanel } from "@/components/pilotage/operational-priorities-panel";
+
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { PunchySlogan } from "@/components/ui/punchy-slogan";
@@ -168,9 +168,6 @@ export default async function DashboardPage() {
 
                 <DashboardComparisonGrid overview={overview} />
 
-                {overview ? (
-                  <OperationalPrioritiesPanel priorities={overview.priorities} />
-                ) : null}
                 <BusinessAlertsPanel />
               </section>
 
@@ -375,9 +372,6 @@ export default async function DashboardPage() {
 
         <DashboardComparisonGrid overview={overview} />
 
-        {overview ? (
-          <OperationalPrioritiesPanel priorities={overview.priorities} />
-        ) : null}
         <BusinessAlertsPanel />
       </section>
 
