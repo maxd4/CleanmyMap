@@ -4,7 +4,7 @@ import {
   SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
-import { Analytics } from "@vercel/analytics/react";
+import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { AccountIdentityChip } from "@/components/account/account-identity-chip";
