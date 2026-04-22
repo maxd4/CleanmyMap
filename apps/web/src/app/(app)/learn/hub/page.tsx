@@ -2,14 +2,19 @@
 
 import { useState } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
-import { 
-  BookOpen, 
-  Calendar as CalendarIcon, 
-  FileText, 
-  Info, 
-  Trash2, 
+import {
+  BookOpen,
+  Calendar as CalendarIcon,
+  FileText,
+  Info,
+  Trash2,
   GraduationCap,
-  ArrowRight
+  ArrowRight,
+  Globe,
+  Target,
+  Brain,
+  FileText as FileTextIcon,
+  Sparkles
 } from "lucide-react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { useTranslation } from "@/lib/i18n/use-translation";
@@ -17,6 +22,10 @@ import { format, parse, startOfWeek, getDay } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { PlanetaryBoundariesInteractive } from "@/components/learn/planetary-boundaries";
+import { SustainableGoalsInteractive } from "@/components/learn/sustainable-goals";
+import { EnvironmentalQuiz } from "@/components/learn/environmental-quiz";
+import { GIECContent } from "@/components/learn/giac-content";
 
 const locales = {
   "fr": fr,
@@ -53,78 +62,112 @@ export default function LearnHubPage() {
   const { locale } = useSitePreferences();
 
   return (
-    <div className="max-w-6xl mx-auto p-4 md:p-8 space-y-8">
-      <header className="space-y-4">
-        <div className="flex items-center gap-2 text-emerald-600 font-bold uppercase tracking-widest text-xs">
-          <GraduationCap size={16} />
-          {t("header_suptitle")}
+    <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+      {/* Enhanced Header */}
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 p-8 md:p-12 text-white">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-4 right-4">
+            <Sparkles size={120} />
+          </div>
+          <div className="absolute bottom-4 left-4">
+            <Globe size={80} />
+          </div>
         </div>
-        <h1 className="text-4xl md:text-5xl font-black tracking-tight text-slate-900 leading-none">
-          {t("header_title")}
-        </h1>
-        <p className="text-lg text-slate-600 max-w-2xl">
-          {t("header_desc")}
-        </p>
+
+        <div className="relative space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+              <GraduationCap size={32} />
+            </div>
+            <div>
+              <div className="text-emerald-100 font-bold uppercase tracking-widest text-sm">
+                {t("header_suptitle")}
+              </div>
+              <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-none">
+                {t("header_title")}
+              </h1>
+            </div>
+          </div>
+
+          <p className="text-xl md:text-2xl text-blue-100 max-w-3xl leading-relaxed">
+            {t("header_desc")}
+          </p>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+              <div className="text-2xl font-black">9</div>
+              <div className="text-sm text-blue-100">Limites planétaires</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+              <div className="text-2xl font-black">17</div>
+              <div className="text-sm text-blue-100">Objectifs mondiaux</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+              <div className="text-2xl font-black">+1.1°C</div>
+              <div className="text-sm text-blue-100">Réchauffement actuel</div>
+            </div>
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
+              <div className="text-2xl font-black">2030</div>
+              <div className="text-sm text-blue-100">Échéance critique</div>
+            </div>
+          </div>
+        </div>
       </header>
 
       <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-8">
-        <Tabs.List className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+        <Tabs.List className="flex flex-wrap gap-3 border-b border-slate-200 pb-4">
           {[
-            { id: "enjeux", label: t("tabs.enjeux"), icon: Info },
-            { id: "usage", label: t("tabs.usage"), icon: BookOpen },
-            { id: "events", label: t("tabs.events"), icon: CalendarIcon },
-            { id: "kit", label: t("tabs.kit"), icon: FileText },
-            { id: "waste", label: t("tabs.waste"), icon: Trash2 },
+            { id: "enjeux", label: "Rapports GIEC", icon: FileText, color: "text-blue-600" },
+            { id: "limites", label: "Limites Planétaires", icon: Globe, color: "text-red-600" },
+            { id: "odd", label: "Objectifs Mondiaux", icon: Target, color: "text-emerald-600" },
+            { id: "quiz", label: "Quiz Interactif", icon: Brain, color: "text-purple-600" },
+            { id: "usage", label: "Mode d'Emploi", icon: BookOpen, color: "text-slate-600" },
+            { id: "events", label: "Rassemblements", icon: CalendarIcon, color: "text-orange-600" },
+            { id: "kit", label: "Kit Terrain", icon: FileTextIcon, color: "text-indigo-600" },
+            { id: "waste", label: "Guide Déchets", icon: Trash2, color: "text-slate-600" },
           ].map((tab) => (
             <Tabs.Trigger
               key={tab.id}
               value={tab.id}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-bold transition-all rounded-t-xl
-                ${activeTab === tab.id 
-                  ? "bg-slate-900 text-white translate-y-[1px]" 
-                  : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              className={`group flex items-center gap-3 px-6 py-4 text-sm font-bold transition-all rounded-2xl border-2
+                ${activeTab === tab.id
+                  ? 'bg-slate-900 text-white border-slate-900 translate-y-[1px] shadow-lg'
+                  : 'text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-md'
                 }`}
             >
-              <tab.icon size={16} />
+              <tab.icon size={18} className={activeTab === tab.id ? 'text-white' : tab.color} />
               {tab.label}
+              {activeTab !== tab.id && (
+                <ArrowRight size={14} className="text-slate-300 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
+              )}
             </Tabs.Trigger>
           ))}
         </Tabs.List>
 
-        <div className="min-h-[500px]">
-          {/* Section: Enjeux */}
-          <Tabs.Content value="enjeux" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-emerald-50 p-8 rounded-3xl space-y-6">
-                <h3 className="text-2xl font-black text-emerald-950">{t("enjeux.title")}</h3>
-                <p className="text-emerald-800 leading-relaxed">
-                  {t("enjeux.desc")}
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white p-4 rounded-2xl shadow-sm">
-                    <p className="text-3xl font-black text-emerald-600">{t("enjeux.stat1_val")}</p>
-                    <p className="text-[10px] uppercase font-bold text-slate-400">{t("enjeux.stat1_label")}</p>
-                  </div>
-                  <div className="bg-white p-4 rounded-2xl shadow-sm">
-                    <p className="text-3xl font-black text-emerald-600">{t("enjeux.stat2_val")}</p>
-                    <p className="text-[10px] uppercase font-bold text-slate-400">{t("enjeux.stat2_label")}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="relative aspect-video rounded-3xl overflow-hidden shadow-2xl">
-                <div className="absolute inset-0 bg-slate-900/40 flex items-center justify-center p-8 text-center">
-                  <p className="text-white font-bold italic">{t("enjeux.quote")}</p>
-                </div>
-                <img 
-                  src="https://images.unsplash.com/photo-1618477402246-935300bb3e3b?auto=format&fit=crop&q=80&w=800" 
-                  alt="Plastic pollution"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            </div>
+        <div className="min-h-[600px]">
+          {/* Section: Rapports GIEC */}
+          <Tabs.Content value="enjeux" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <GIECContent />
           </Tabs.Content>
 
-          {/* Section: Mode d'emploi */}
+          {/* Section: Limites Planétaires */}
+          <Tabs.Content value="limites" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <PlanetaryBoundariesInteractive />
+          </Tabs.Content>
+
+          {/* Section: Objectifs de Développement Durable */}
+          <Tabs.Content value="odd" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <SustainableGoalsInteractive />
+          </Tabs.Content>
+
+          {/* Section: Quiz Interactif */}
+          <Tabs.Content value="quiz" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <EnvironmentalQuiz />
+          </Tabs.Content>
+
+          {/* Section: Mode d'emploi (Original) */}
           <Tabs.Content value="usage" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="grid gap-4">
               {[

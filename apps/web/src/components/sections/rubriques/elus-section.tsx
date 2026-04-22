@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
-import { OperationalPrioritiesPanel } from "@/components/pilotage/operational-priorities-panel";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { PRIORITIZATION_RULESET } from "@/lib/pilotage/constants";
 
@@ -241,12 +240,6 @@ function ElusSection() {
 
       {/* DROITE : Priorités et Data */}
       <div className="space-y-4">
-        {data ? (
-          <OperationalPrioritiesPanel
-            priorities={data.priorities}
-            title="Top priorités actionnables"
-          />
-        ) : null}
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
