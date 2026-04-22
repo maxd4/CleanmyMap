@@ -7,14 +7,13 @@ PHASE 0 — FONDATIONS (URGENT)
 02) Repository baseline audit (diagnostic technique priorisé)
 Usage: rétablir la vérité technique avant tout chantier.
 
-Prompt:
-"Analyze the entire repository and produce an actionable technical diagnosis.
+Analyze the entire repository and produce an actionable technical diagnosis.
 Do not modify code.
 Prioritize: functional/product blockers first, then architecture, then maintainability.
 Include precise file references.
 
 Output format:
-1) Issues ranked by phases (P0, P1, P2...)
+1) Executable prompt to fix issues pranked by phases (P0, P1, P2...) in a texte file in root repo
 2) Likely root cause for each issue
 3) Prioritized execution plan (step-by-step)
 4) Regression risks and required tests per step
@@ -24,8 +23,7 @@ Output format:
 03) Exécution stricte du plan
 Usage: implémenter sans dériver.
 
-Prompt:
-"Open plan.txt file and execute steps in strict order.
+Open this file texte ans execute steps in strict order.
 Do not skip/reorder without explicit technical justification.
 
 Rules:
@@ -36,7 +34,7 @@ Rules:
 
 Report each run:
 1) Remaining steps/blockers/risks
-2) Update plan.txt continuously." 
+2) Update the plan continuously.
 
 --------------------------------------------------
 
@@ -165,8 +163,7 @@ Objectif :
 Agis comme un expert design system + UI engineer senior. Audite puis refonds mon site web pour corriger toute incohérence visuelle et le faire reposer sur un vrai design system maintenable, cohérent et scalable.
 
 Prompt:
-"Fais un audit UI réel du site et écris le dans le fichier texte documentation/du/UI.txt avec un plan step by step d'implémentation.
-
+"Fais un audit UI réel du site et écris le dans un fichier texte à la base du repo avec un plan step by step d'implémentation executable.
 
 Applique strictement ces 5 axes :
 1. Couleurs sémantiques : remplace les couleurs hardcodées par des tokens fonctionnels (background, surface, text, border, brand, success, warning, error, muted, info) avec une échelle cohérente de nuances.
@@ -196,7 +193,7 @@ Méthode :
 
 
 
-Voici la suite de l'audit à réaliser et donc le contenu dout être écirt à la suite du précédent dans le fichier texte documentation/du/UI.txt au meme format step by step.
+Voici la suite de l'audit à réaliser et donc le contenu doit être écrit à la suite du précédent dans son fichier texte associé à la base du repo au meme format step by step.
 
 Usage : Construire ou refactorer un design system complet basé sur tokens.
 
@@ -428,8 +425,8 @@ Output:
 Usage: structurer une trajectoire SEO complète.
 
 Prompt:
-"Audit SEO complet selon 5 piliers: structure, speed, content quality, metadata, backlinks strategy.
-Write a step by step plan in documentation/du/SEO.txt
+"Audit SEO complet selon 5 piliers: structure, speed, content quality, metadata, backlinks strateg et les 5 axes de visibilité web de façon structurée : SEO, AEO, GEO, AIO, SXO.
+Dans un fichier texte à la base du repo. 
 
 - SEO (Search Engine Optimization) : optimisation technique et sémantique d'un site pour améliorer son classement dans les moteurs de recherche comme Google.
 - AEO (Answer Engine Optimization) : optimisation du contenu pour apparaître directement comme réponse dans les moteurs de réponse et assistants vocaux comme ChatGPT ou Google Assistant.
@@ -437,13 +434,54 @@ Write a step by step plan in documentation/du/SEO.txt
 - SXO (Search Experience Optimization) : combinaison SEO + UX visant à améliorer à la fois le classement et l'expérience utilisateur pour maximiser conversion et engagement.
 - AIO (AI Optimization) : optimisation globale d'un produit ou site pour l'intégration, l'exploitation et la performance des systèmes d'intelligence artificielle.
 
+Objectif :
+- identifier les écarts ;
+- proposer des améliorations concrètes ;
+- prioriser les actions à plus fort impact ;
+- préparer une base solide pour la recherche classique, les moteurs de réponse, les interfaces génératives, l'exploitation par IA et l'expérience de recherche.
 
-Output:
-1) Diagnosis by pillar
-2) Weak points + root causes
-3) Prioritized corrections
-4) Concrete implementation plan
-Then transform audit into a series of Codex prompts to execute fixes." 
+Ce que tu dois faire :
+1. Auditer l'existant sur tout le site.
+2. Pour chaque acronyme, lister :
+   - problèmes détectés ;
+   - opportunités ;
+   - correctifs concrets ;
+   - quick wins ;
+   - chantiers structurels.
+3. Produire des recommandations actionnables sur :
+   - structure HTML ;
+   - balisage sémantique ;
+   - métadonnées ;
+   - schema markup ;
+   - hiérarchie Hn ;
+   - FAQ et blocs de réponses courtes ;
+   - pages piliers et clusters ;
+   - maillage interne ;
+   - autorité et signaux de confiance ;
+   - lisibilité ;
+   - citations, sources, données vérifiables ;
+   - performance ;
+   - mobile ;
+   - accessibilité ;
+   - UX de recherche et de conversion.
+4. Vérifier si le contenu est facilement :
+   - indexable par les moteurs ;
+   - extractible en réponse directe ;
+   - citable par des moteurs génératifs ;
+   - compréhensible par des systèmes IA ;
+   - agréable et performant pour l'utilisateur.
+5. Proposer les modifications exactes à implémenter dans le code et dans le contenu.
+6. Quand c'est pertinent, générer directement les patchs.
+
+Contraintes :
+- ne fais pas de blabla ;
+- sois concret, précis, priorisé ;
+- évite les recommandations vagues ;
+- conserve le comportement métier existant sauf si une correction est clairement justifiée ;
+- n'ajoute pas de complexité inutile.
+- transforme ton audit en une série de prompt à exécuter par ordre de priorité dans le fichier texte
+
+
 
 
 ==================================================

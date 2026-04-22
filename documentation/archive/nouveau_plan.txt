@@ -1,0 +1,323 @@
+BOUCLE A REPETER AVEC MODELE FORT (claude / gemini 3.1)
+fait un commit puis push GitHub et met à jour le git.
+
+Refactorise le repo sans changer le comportement pour qu'il soit plus facilement utilisable par l'agent IA qui développe le projet
+
+Fait un audit des fichiers les plus lourd du repo, explique pourquoi et comment optimiser cela pour améliorer la qualité et l'efficacité du repo avec un plan d'action précis, propre et actionnable.
+
+Exécute cela
+
+De même fait cet audit pour les fichiers monolithique avec une stratégie de divisions propre en fichiers modulaires.
+
+Trouve tous les bugs et régressions puis structure ton audit sous forme d'un plan actionnable
+
+Exécute ce plan
+
+Fais un audit global du repo pour récupérer : les problèmes critiques, les risques de régression, les incohérences structurelles, les correctifs recommandés. Structure en un plan actionnable par toi
+
+exécute le plan 
+
+
+
+
+
+
+
+- vérifie que les fichiers de base du projet nécessaires à la sécurité et à l'hygiène du repo sont bien présents et correctement configurés, notamment pour éviter toute divulgation de secrets lors des push GitHub
+- mets-les à jour si nécessaire
+
+Vérifications prioritaires :
+- `.gitignore`
+- `.env.example`
+- absence de secrets codés en dur
+- éventuel `.dockerignore` si pertinent
+- éventuels fichiers d'exemple de configuration sans secret
+- documentation minimale sur la gestion des variables d'environnement
+- tout autre fichier racine nécessaire à une base de projet propre et sûre
+
+Pour éviter les fuites de secrets au push GitHub, les plus importants sont :
+
+.gitignore
+.env.example
+.env.local non tracké
+.env non tracké
+.dockerignore si Docker
+README.md avec section variables d'environnement
+éventuellement un fichier de doc type documentation/securite/secrets.md
+Point important
+
+Le .gitignore protège seulement les fichiers non encore suivis.
+Si un secret a déjà été commité une fois, l'ajouter ensuite au .gitignore ne suffit pas. Il faut alors :
+
+retirer le fichier du suivi Git
+faire tourner les secrets exposés
+parfois nettoyer l'historique Git si l'exposition est réelle
+
+Pour cette partie sécurité :
+- signale précisément les risques détectés
+- corrige seulement ce qui est justifié
+- ne casse pas le fonctionnement du projet
+- si un secret semble déjà exposé dans l'historique ou dans le code, signale-le explicitement
+
+Retour attendu :
+2. liste des fichiers racine vérifiés
+3. fichiers créés ou modifiés
+4. risques secrets / GitHub identifiés
+5. actions restantes recommandées
+
+
+
+==================================================
+DeMARCHE POUR LES SERVICES FUTURS (CL S API)
+==================================================
+Pour chaque service identifie  (Sentry, Posthog, Stripe, Pinecone, Resend, Upstash, UptimeRobot), suivre cette procedure :
+1. Creer un compte sur la plateforme correspondante.
+2. Generer une cle  API (Secret Key).
+3. Ajouter la cle  dans le fichier .env.local de l'ordinateur local (sophi).
+4. Ajouter le nom de la variable (sans la valeur) dans .env.example.
+5. Mettre  à jour  pps/web/src/lib/env.ts pour que l'application valide la presence de la cle.
+6. Verifier l' tat dans /api/services (depuis un compte admin).
+
+Pour finaliser l'installation en production, assurez-vous que les variables suivantes sont configurées dans votre tableau de bord Vercel :
+
+Monitoring : SENTRY_DSN, NEXT_PUBLIC_SENTRY_DSN, NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST.
+Services : RESEND_API_KEY, CLERK_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY.
+
+
+Supabase	NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY	Base de données (Admin/Server)
+Clerk	NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY / CLERK_SECRET_KEY	Authentification & Profils
+Sentry	NEXT_PUBLIC_SENTRY_DSN / SENTRY_DSN	Monitoring d'erreurs (Frontend & API)
+PostHog	NEXT_PUBLIC_POSTHOG_KEY / NEXT_PUBLIC_POSTHOG_HOST	Analytics produit & Tracking serveur
+Resend	RESEND_API_KEY / RESEND_FROM_EMAIL	Envoi d'emails transactionnels
+
+
+
+filtre paris + banlieux + arrondissement.
+même présentation que cleanwak.org et si l'utilsiateur clique sur "s'inscire" alors il est envoyésur la page de cleanwalk.org utilsie la méthode redirect de next.js vers l'url de l'action. l'action a typiquement cette forme : https://www.cleanwalk.org/cleanwalk/21/aebcpev-ramassage-de-dechets-metro-buttes-chaumont-aebcpev. issus de la base de donnée de l'action.
+
+
+API publique, flux RSS, JSON à interroger pour afficher un claque à jour des futures cleanwalks parisiennes en temps réel sur notre carte. Il faut aussi que le contenu de la fiche d'action réelle sur cleanwalk.org soit affiché sur mon site pour que si l'utilisateur est intéressé il clique et cela l'envoi directement sur la page d'inscription de l'évènement.
+L'objectif est de créer une synergie entre nos deux outils pour maximiser l'impact environnemental sur le terrain.
+
+
+
+
+
+
+
+
+
+résout les erreurs de Runner job GitHub action et les Dependabot alerts.
+
+
+
+
+
+
+
+
+
+vérifie que le texte du site web est inclusif 
+
+
+
+
+
+
+
+patch universel pour une écriture inclusive sur le site web
+1. Modifications inclusives à appliquer (exemples principaux)
+a) Navigation et sections
+Remplacer « Page d’accueil » par « Accueil » (neutre, collectif)
+« Agir », « Visualiser », « Impact », « Réseau », « Apprendre », « Piloter », « Guide & outils », restent inclusifs.
+Préférer « Compte » ou « Profil & impact » pour les sections de paramétrage personnel, plutôt que « Mon Profil & Impact ».
+« Mes paramètres et mon impact personnel » → « Paramètres du compte et impact ».
+Éviter « Espace Décisionnel », utiliser « Gouvernance » ou « Espace coordination/autorités » (plus englobant).
+Tous les titres ou descriptions en double flexion si pertinent : Exemple français : « Membre/Participante·e », anglais : « Member/Participant ».
+« Déclarer une action » → « Déclarer une action » (reste inclusif), mais attention à d’autres verbes ou instructions potentiellement marquées.
+b) Filtres annuaire et formulaires
+« Tous les acteurs » → « Tous les acteurs et actrices » ou « Toutes les personnes/structures ».
+« Commerçants » → « Commerçant·e·s ».
+« Associations », « Entreprises », « Collectifs » : inclusif.
+Pour « Accueil »: rien à modifier.
+Placeholder, label d’input et boutons : préférer les formulations neutres : « Nom/prénom », « Votre structure », « Contact », « Ajouter », « Rechercher ».
+c) Badges, rôles, gamification
+« Role bénévole » → « Bénévole »
+« Role coordinateur » → « Coordination » ou « Coordinateur·rice »
+« Role élu » → « Autorité locale » ou « Élu·e »
+« Profil admin » → « Profil administration »
+Pour tout rôle : recherche systématique d’équivalents épicènes ou usages de point médian.
+Panel : « Badges d’interaction: mode, rôle, profil » → « Badges d’interaction : mode, rôle et profil » (fluidifier). Description reformulée pour éviter « coordinateurs », « élus », etc., remplacer par formulations collectives.
+d) Feedback utilisateur & accessibilité
+Bouton d’annulation : « Annuler le tracé » → « Annuler ».
+Messages d’erreur : éviter « veuillez », préférer « Merci de », ou « Renseignez un champ ».
+ARIA/alt : explicites, non genrés, tenir compte des déficiences visuelles (« Carte visuelle des actions », « Photo de profil »).
+e) Exemples d’optimisation d’états et microcopies
+« Niveau » (dans gamification) : « Niveau actuel » ou simplement « Niveau ».
+« Badges gamification » → « Badges d’engagement ».
+Balisage HTML : pour les boutons sans texte, aria-label explicite : « Ouvrir le menu principal », « Fermer la fenêtre », « Valider la sélection ».
+2. Récapitulatif des changements effectués ou à effectuer
+Réécriture des libellés, titres et descriptions pour neutralité de genre et ton accueillant : sections, navigation, badges, états utilisateurs.
+Harmonisation des filtres et catégories avec point médian et termes englobants.
+Accessibilité améliorée : aria-labels descriptifs, alt-text inclusifs, clarification des boutons et états.
+Microcopies : instructions, placeholders, titres d’états vides ou d’erreur reformulés de façon épicène et claire.
+Suppression des formulations genrées ou stéréotypées : usages de double flexion, point médian, ou collectif selon le contexte, maintien d’un ton professionnel et fluide.
+
+
+
+
+
+
+
+
+
+
+Create real custom-designed icons for all badges across the site.
+
+Goal:
+Replace placeholder, shortcut-like, or generic badge icons with high-quality, visually coherent icons that feel intentional, polished, and production-ready.
+
+Requirements:
+- redesign all badge icons
+- make them unique, clear, and aesthetically strong
+- keep full consistency with the site’s branding and visual system
+- ensure each icon matches the meaning of its badge
+- avoid cheap, default, emoji-like, or shortcut-looking visuals
+- make icons clean, readable, and scalable at small sizes
+- keep style consistent across the whole site
+
+Constraints:
+- no generic icon set feel
+- no mismatched styles between badges
+- no overcomplicated details that hurt readability
+- preserve clarity and premium feel
+
+Deliver:
+- updated badge icon system
+- clean implementation across the site
+- consistent visual language for all badges
+
+
+
+
+
+
+fait un plan exhaustif pour étendre complètement le site web aux banlieus de Paris en plus des arrondissements pour couvrir Paris grande couronne.
+
+
+Erreur run local du site
+> web@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.3 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.3:3000
+- Environments: .env.local
+✓ Ready in 1209ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+Unhandled Rejection: Error: Both middleware file "./src\middleware.ts" and proxy file "./src\proxy.ts" are detected. Please use "./src\proxy.ts" only. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+    at ignore-listed frames
+Unhandled Rejection: Error: Both middleware file "./src\middleware.ts" and proxy file "./src\proxy.ts" are detected. Please use "./src\proxy.ts" only. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+    at ignore-listed frames
+Unhandled Rejection: Error: Both middleware file "./src\middleware.ts" and proxy file "./src\proxy.ts" are detected. Please use "./src\proxy.ts" only. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+    at ignore-listed frames
+Unhandled Rejection: Error: Both middleware file "./src\middleware.ts" and proxy file "./src\proxy.ts" are detected. Please use "./src\proxy.ts" only. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+    at ignore-listed frames
+
+
+
+
+
+vérifie que le formulaire bénévole du site web est bien connecté à supabase et à la carte interactive.
+
+le formulaire est trop bas, il faut qu'il soit tout en haut de la page d'aceuil car c'est la logique métier la plus utilisée du site
+
+
+ajouter un menu déroulant avec les rubriques et pas juste le nom des blocs sur le bandeau en haut du site
+
+Agir.Cartographier.Préserver. doit avoir des tirets et pas des points entre les mots. Les mots doivent être sur une même ligne pour gagner de la place à la place du titre "cleanmymap" sur le bandeau statique en haut du site.
+
+Le bandeau avec le choix des blocs et des rubriques doit aussi être statique pour facilement cliquer même si on scroll plus bas sur le site.
+
+
+Les changements de mode et de role doivent se faire directement en cliquant sur le badge actif. 
+
+Certains textes de rubriques restent en français quand je selectionne anglais
+
+Ou est le canal de discussion ?
+Ou est la messagerie dans le bandeau statique en haut de page ?
+
+Divise mieux les différentes partie d'une même sinon on ne comprend rien, tout appartient au même fond blanc, les contours sont trop clairs
+
+sur la page d'acceuil, "Priorites operationnelles automatiques" n'a rien à faire sur le site web, supprime cela.
+
+
+
+
+
+Resorber le backlog de moderation
+Le delai de moderation et le volume pending degradent la fiabilite de publication.
+Impact estime: Publication plus rapide des donnees et baisse du risque de pilotage en retard.
+Owner suggere: Admin moderation
+Traiter la file admin
+
+
+"Méthode (KPI clés)" sur la page d'acceuil n'est pas au bon endroit du site web. Trouve un autre endroit 
+
+j'ai créer le bucket chat-attachments sur supabase en public pour la logique de messagerie du site.
+
+
+
+Dashboard Gouvernance : I'm focusing now on enhancing the Governance Dashboard, since I was given the green light to continue working. I've updated and pushed existing documentation already. Now, I'm examining ways to enhance the dashboard.
+
+
+enlève l'Assistance Cartographique c'est trop compliqué à utiliser. 
+
+Le formulaire doit prendre toute la larguer de la page pour ne pas avoir besoin de scroller pour le compléter en entier.
+
+
+
+
+
+Complète la rubrique “Apprendre” pour en faire un vrai module pédagogique interactif et ludique de culture générale environnementale.
+
+À ajouter :
+- de vrais contenus vulgarisés issus des rapports du GIEC
+- données clés, résultats majeurs, schémas explicatifs et résumés pédagogiques
+- un schéma interactif des 9 limites planétaires, avec une explication dédiée pour chacune
+- un schéma interactif des 17 objectifs de développement durable, avec une fiche claire pour chacun
+- une partie quiz ludique : flash cards, phrases à trous, éventuellement QCM
+- une structure claire, visuelle, engageante, sans gros pavés de texte
+
+Design :
+- rendu premium, moderne, immersif
+- belles transitions
+- style glassmorphism + morphisme léger, propre et lisible
+- animations subtiles et utiles
+
+Contraintes :
+- cohérent avec l’identité du site
+- très pédagogique, vulgarisé, accessible au grand public
+- pas de rendu scolaire fade
+- pas de simple texte brut
+
+Objectif :
+Créer une vraie rubrique “Apprendre” riche, belle, interactive et utile.
+
+
+
+
+
+
+
+
+corriger les fichiers de collab .html (ouvrir sur bloc note et modifier le texte) puis imprimer .pdf et les envoyer.
+
+
+METTRE A JOUR petit à petit les doc du dossier DU (en copiant collant le contenu dans codex et qu'il réécrive comme sur chatgpt pas juste qu'il traite tout d'un coup car trop d'info). Notamment : 
+FICHIER TEXTE ATELIER_DU
+LES FICHES PROJET et PDF plus pro
+IMPACT_IA surtout paragraphe final rajouté
+
+connecte toi à mon compte figma, récupère le Template cleanmymap et implémente au site. On fera des templates spécifiques pour chaque modes plus tard.
+
