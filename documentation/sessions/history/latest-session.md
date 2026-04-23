@@ -4,6 +4,8 @@ Updated: 2026-04-23
 Status: CLOSED
 
 ## Done
+- **Supabase - passe nettoyage test** : audit et suppression ciblee executes sur `actions` et `spots` (marqueurs seed/demo/test explicites), aucun enregistrement test detecte/supprime en base a cette date.
+- **Purge des actions de test (runtime repo)** : suppression du dataset `apps/web/data/local-db/test_records.json`, retrait du store `test` du loader local et filtrage défensif des contrats “test-like” dans la source unifiée pour éviter tout affichage parasite à côté des données Google Sheet.
 - **PostHog vérifié de bout en bout** : correction de la lecture des variables côté client (`process.env.NEXT_PUBLIC_*`), initialisation stable du provider, déploiement Vercel production relancé, interaction navigateur automatisée sur `https://cleanmymap.fr` et envoi d’un event de validation `cmm_posthog_installation_check` vers l’instance EU.
 - **PostHog stabilisé (local + Vercel)** : suppression des doublons serveur, configuration unifiée clé/hôte/région, compatibilité temporaire `NEXT_PUBLIC_POSTHOG_TOKEN` (déprécié), check `/api/services` aligné, test dédié de capture d’event serveur ajouté et validé.
 - **Priorité 1 - fiabilité du socle et sécurité**

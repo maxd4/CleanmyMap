@@ -150,6 +150,30 @@ function filterByTypes(
   return contracts.filter((contract) => allowed.has(contract.type));
 }
 
+const TEST_MARKERS = [
+  "seed de test",
+  "anonymized test seed",
+  "runtime_seed",
+  "quartier demo",
+  "zone test",
+  "lieu test",
+  "test_seed",
+] as const;
+
+function isTestLikeContract(contract: ActionDataContract): boolean {
+  const haystack = [
+    contract.id,
+    contract.source,
+    contract.location.label,
+    contract.metadata.notes ?? "",
+    contract.metadata.notesPlain ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+
+  return TEST_MARKERS.some((marker) => haystack.includes(marker));
+}
+
 export function parseEntityTypesParam(
   raw: string | null,
 ): ActionEntityType[] | null {
@@ -277,7 +301,7 @@ export async function fetchUnifiedActionContracts(
       ...resolvedLocalContracts,
     ]),
     params.types,
-  );
+  ).filter((contract) => !isTestLikeContract(contract));
 
   // Détection de la troncature : si on a trouvé plus d'éléments que la limite demandée
   // avant le slice final.
