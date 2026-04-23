@@ -2,6 +2,11 @@
   "allowed": [
     "apps/web/src/components/reports/reports-web-document.tsx",
     "apps/web/src/components/sections/rubriques/community-section.tsx",
-    "apps/web/src/components/actions/action-declaration-form.tsx"
+    "apps/web/src/components/actions/action-declaration-form.tsx",
+    "apps/web/src/components/reports/web-document/analytics.ts",
+    "apps/web/src/components/partners/partner-onboarding-form.tsx",
+    "apps/web/src/components/learn/sustainable-goals.tsx",
+    "apps/web/src/app/(app)/dashboard/page.tsx",
+    "apps/web/src/app/api/reports/elus-dossier/route.ts"
   ]
 }

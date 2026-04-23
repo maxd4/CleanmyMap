@@ -99,5 +99,7 @@ export function summarizeUptime(
 }
 
 export function serviceLevelLabel(raw: string): "ok" | "warning" {
-  return raw === "ready" ? "ok" : "warning";
+  return raw === "ready" || raw === "add" || raw === "add_external"
+    ? "ok"
+    : "warning";
 }
