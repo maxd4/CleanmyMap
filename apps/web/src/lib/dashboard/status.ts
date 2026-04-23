@@ -17,9 +17,17 @@ export type UptimePayload = {
   timestamp: string;
 };
 
+export type ServiceStatusInfo = {
+  state: "ready" | "missing" | "defer" | "external";
+  label: string;
+  description: string;
+  category: "critical" | "optional" | "external";
+};
+
 export type ServicesPayload = {
   status: "ok";
-  services: Record<string, string>;
+  services: Record<string, ServiceStatusInfo>;
+  missing: string[];
   timestamp: string;
 };
 
@@ -91,5 +99,5 @@ export function summarizeUptime(
 }
 
 export function serviceLevelLabel(raw: string): "ok" | "warning" {
-  return raw === "add" || raw === "add_external" ? "ok" : "warning";
+  return raw === "ready" ? "ok" : "warning";
 }

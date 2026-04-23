@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createClient } from "@supabase/supabase-js";
 import { toContractCreatePayload } from "@/lib/actions/data-contract";
 import { createInitialFormState } from "@/components/actions/action-declaration/payload";
 
@@ -8,6 +7,8 @@ const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const pickTraceableActorNameMock = vi.hoisted(() => vi.fn());
 const trackActionCreatedMock = vi.hoisted(() => vi.fn());
 const buildPostActionRetentionLoopMock = vi.hoisted(() => vi.fn());
+const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
+const createActionMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -23,8 +24,19 @@ vi.mock("@/lib/gamification/progression", () => ({
   buildPostActionRetentionLoop: buildPostActionRetentionLoopMock,
 }));
 
+vi.mock("@/lib/supabase/server", () => ({
+  getSupabaseServerClient: getSupabaseServerClientMock,
+}));
+
+vi.mock("@/lib/actions/store", () => ({
+  createAction: createActionMock,
+}));
+
 describe("POST /api/actions", () => {
   beforeEach(() => {
+    vi.resetModules();
+    getSupabaseServerClientMock.mockReturnValue({});
+    createActionMock.mockResolvedValue({ id: "action-test-1" });
     authMock.mockResolvedValue({ userId: "user-test-1" });
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "user-test-1",
@@ -43,17 +55,6 @@ describe("POST /api/actions", () => {
 
   it("creates an action from the dashboard form payload", async () => {
     const { POST } = await import("./route");
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-      process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
-      {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false,
-        },
-      },
-    );
 
     const form = createInitialFormState("Test User");
     form.locationLabel = "Test lieu action";
@@ -85,14 +86,11 @@ describe("POST /api/actions", () => {
 
     const body = (await response.json()) as { id?: string; error?: string };
     expect(response.status).toBe(201);
-    expect(body.id).toEqual(expect.any(String));
-
-    if (body.id) {
-      const { error } = await supabase
-        .from("actions")
-        .delete()
-        .eq("id", body.id);
-      expect(error).toBeNull();
-    }
+    expect(body.id).toBe("action-test-1");
+    expect(createActionMock).toHaveBeenCalledTimes(1);
+    expect(trackActionCreatedMock).toHaveBeenCalledWith({}, {
+      userId: "user-test-1",
+      actionId: "action-test-1",
+    });
   });
 });

@@ -11,6 +11,28 @@ const isProtectedRoute = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS]);
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const LIMIT = 30; // requêtes
 const WINDOW = 60 * 1000; // 1 minute en ms
+export const APP_SHELL_ROUTE_PREFIXES = [
+  "/actions",
+  "/admin",
+  "/dashboard",
+  "/learn",
+  "/methodologie",
+  "/observatoire",
+  "/parcours",
+  "/partners",
+  "/prints",
+  "/profil",
+  "/reports",
+  "/sections",
+  "/signalement",
+  "/sponsor-portal",
+] as const;
+
+export function isAppShellRoute(pathname: string): boolean {
+  return APP_SHELL_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
 
 const clerkRuntime = getClerkRuntimeConfig();
 
@@ -48,6 +70,14 @@ const clerkProxy = clerkMiddleware(
     if (isProtectedRoute(req)) {
       await auth.protect();
     }
+
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-cleanmymap-app-shell", isAppShellRoute(pathname) ? "1" : "0");
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   },
   {
     domain: clerkRuntime.domain,

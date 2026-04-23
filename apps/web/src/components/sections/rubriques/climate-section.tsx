@@ -155,7 +155,7 @@ export function ClimateSection() {
                   </ul>
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-900">{fr ? "Limites d'interprétation" : "Interpretation limits"}</h3>
+                  <h3 className="text-sm font-semibold text-slate-900">{fr ? "Limites d'interprétation" : "Reading limits"}</h3>
                   <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
                     {context.interpretationLimits.map((limit) => (
                       <li key={limit}>{limit}</li>

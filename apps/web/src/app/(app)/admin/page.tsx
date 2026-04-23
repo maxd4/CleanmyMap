@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { BusinessAlertsPanel } from "@/components/dashboard/business-alerts-panel";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
@@ -187,15 +188,25 @@ export default async function AdminPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           Workflow admin guide
         </p>
-        <h1 className="mt-2 text-2xl font-semibold text-slate-900">
-          Administration
-        </h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Modération, import/export et supervision des opérations critiques avec
-          garde-fous explicites.
-        </p>
-        <div className="mt-4">
-          <RubriquePdfExportButton rubriqueTitle="Administration" />
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="mt-2 text-2xl font-semibold text-slate-900">
+              Administration
+            </h1>
+            <p className="mt-2 text-sm text-slate-600">
+              Modération, import/export et supervision des opérations critiques avec
+              garde-fous explicites.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <RubriquePdfExportButton rubriqueTitle="Administration" />
+            <Link
+              href="/admin/services"
+              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
+            >
+              Supervision des services
+            </Link>
+          </div>
         </div>
       </section>
 

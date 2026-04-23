@@ -4,6 +4,7 @@ import useSWR from "swr";
 import {
   serviceLevelLabel,
   summarizeUptime,
+  type ServiceStatusInfo,
   type ServicesPayload,
   type UptimePayload,
 } from "@/lib/dashboard/status";
@@ -142,21 +143,25 @@ export function SystemStatusPanel() {
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500">
                   <th className="px-2 py-2 font-medium">Service</th>
+                  <th className="px-2 py-2 font-medium">Description</th>
                   <th className="px-2 py-2 font-medium">Niveau</th>
                   <th className="px-2 py-2 font-medium">Etat brut</th>
                 </tr>
               </thead>
               <tbody>
                 {Object.entries(services.data?.services ?? {}).map(
-                  ([name, raw]) => {
-                    const label = serviceLevelLabel(raw);
+                  ([name, service]) => {
+                    const label = serviceLevelLabel(service.state);
                     const labelText = label === "ok" ? "OK" : "Alerte";
                     return (
                       <tr
                         key={name}
                         className="border-b border-slate-100 text-slate-700"
                       >
-                        <td className="px-2 py-2">{name}</td>
+                        <td className="px-2 py-2 font-semibold">{service.label}</td>
+                        <td className="px-2 py-2 text-xs text-slate-600">
+                          {service.description}
+                        </td>
                         <td className="px-2 py-2">
                           <span
                             className={`rounded-full px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${
@@ -168,7 +173,7 @@ export function SystemStatusPanel() {
                             {labelText}
                           </span>
                         </td>
-                        <td className="px-2 py-2 font-mono text-xs">{raw}</td>
+                        <td className="px-2 py-2 font-mono text-xs">{service.state}</td>
                       </tr>
                     );
                   },

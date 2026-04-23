@@ -79,6 +79,12 @@ body {
   font-family: "Outfit", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
+@media (min-width: 1024px) {
+  html {
+    font-size: 90%;
+  }
+}
+
 html.dark body {
   background: radial-gradient(circle at top right, #0f172a 0%, transparent 40%), var(--background);
   color: var(--foreground);
