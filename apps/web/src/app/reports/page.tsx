@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 
@@ -11,6 +10,7 @@ import { DecisionPageHeader } from "@/components/ui/decision-page-header";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
@@ -44,8 +44,11 @@ async function loadReportsData() {
 }
 
 export default async function ReportsPage() {
-  const { userId } = await auth();
-  const role = userId ? await getCurrentUserRoleLabel() : "anonymous";
+  const { userId, clerkReachable } = await getSafeAuthSession();
+  const role =
+    userId && clerkReachable
+      ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)
+      : ("anonymous" as const);
   const profile = toProfile(role);
   const locale = await getServerLocale();
   const primaryAction = getProfilePrimaryAction(profile);

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import {
   buildReportScopeOptions,
+  computeReportAccountScopeCoverage,
   filterActionContractsByScope,
   filterCommunityEventsByScope,
   formatReportScopeLabel,
@@ -116,5 +117,38 @@ describe("report scope helpers", () => {
         { kind: "account", value: "user-1" },
       ),
     ).toHaveLength(1);
+  });
+
+  it("computes account coverage for created_by_clerk_id", () => {
+    const coverage = computeReportAccountScopeCoverage([
+      {
+        created_by_clerk_id: "user-1",
+        actor_name: "Alice",
+      },
+      {
+        created_by_clerk_id: null,
+        actor_name: "Bob",
+      },
+      {
+        contract: { createdByClerkId: "user-3" },
+        actor_name: "Charlie",
+      },
+    ]);
+
+    expect(coverage.total).toBe(3);
+    expect(coverage.withCreatedByClerkId).toBe(2);
+    expect(coverage.missingCreatedByClerkId).toBe(1);
+    expect(coverage.coveragePercent).toBeCloseTo(66.67, 1);
+    expect(coverage.hasMeasurableBase).toBe(true);
+  });
+
+  it("marks coverage as not measurable when dataset is empty", () => {
+    const coverage = computeReportAccountScopeCoverage([]);
+
+    expect(coverage.total).toBe(0);
+    expect(coverage.withCreatedByClerkId).toBe(0);
+    expect(coverage.missingCreatedByClerkId).toBe(0);
+    expect(coverage.coveragePercent).toBe(0);
+    expect(coverage.hasMeasurableBase).toBe(false);
   });
 });

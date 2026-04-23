@@ -1,18 +1,22 @@
-import { auth } from "@clerk/nextjs/server";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { redirect } from "next/navigation";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { toProfile } from "@/lib/profiles";
 
 export default async function ParcoursRootPage() {
-  const { userId } = await auth();
+  const { userId, clerkReachable } = await getSafeAuthSession();
   if (!userId) {
     return (
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
         title="Parcours"
-        description="Le parcours personnalisé s'ouvre après connexion au compte Clerk."
+        description={
+          clerkReachable
+            ? "Le parcours personnalisé s'ouvre après connexion au compte Clerk."
+            : "Connexion Clerk temporairement indisponible. La vue reste lisible."
+        }
         lockedPreview={
           <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
             <div className="grid gap-3 md:grid-cols-3">
@@ -49,7 +53,7 @@ export default async function ParcoursRootPage() {
     );
   }
 
-  const role = await getCurrentUserRoleLabel();
+  const role = await getCurrentUserRoleLabel().catch(() => "anonymous" as const);
   const profile = toProfile(role);
   redirect(`/parcours/${profile}`);
 }

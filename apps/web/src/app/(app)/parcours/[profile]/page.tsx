@@ -1,7 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
 import { notFound, redirect } from "next/navigation";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { isAppProfile, toProfile } from "@/lib/profiles";
 
 type ParcoursProfilePageProps = {
@@ -17,14 +17,18 @@ export default async function ParcoursProfilePage({
     notFound();
   }
 
-  const { userId } = await auth();
+  const { userId, clerkReachable } = await getSafeAuthSession();
   if (!userId) {
     return (
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
         title="Parcours"
-        description="Cette fonctionnalité nécessite une connexion Clerk."
+        description={
+          clerkReachable
+            ? "Cette fonctionnalité nécessite une connexion Clerk."
+            : "Connexion Clerk temporairement indisponible. La vue reste lisible."
+        }
         lockedPreview={
           <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
             <div className="grid gap-3 md:grid-cols-3">
@@ -61,7 +65,9 @@ export default async function ParcoursProfilePage({
     );
   }
 
-  const activeRole = await getCurrentUserRoleLabel();
+  const activeRole = await getCurrentUserRoleLabel().catch(
+    () => "anonymous" as const,
+  );
   const activeProfile = toProfile(activeRole);
   const isAdmin = activeRole === "admin";
 

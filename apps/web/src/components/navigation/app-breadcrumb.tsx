@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
@@ -29,7 +30,17 @@ export function AppBreadcrumb({ currentProfile, profileLabel }: AppBreadcrumbPro
       aria-label="Breadcrumb"
       className="sticky top-0 z-20 flex items-center gap-1.5 rounded-xl border border-white/30 bg-white/70 backdrop-blur-lg px-3 py-2 text-xs text-slate-500 shadow-sm"
     >
-      <Link href="/dashboard" className="hover:text-emerald-700 transition font-medium">
+      <Link
+        href="/dashboard"
+        className="inline-flex items-center gap-1.5 hover:text-emerald-700 transition font-medium"
+      >
+        <Image
+          src="/brand/nouveau-logo.png"
+          alt="Logo CleanMyMap"
+          width={18}
+          height={10}
+          className="h-3 w-auto"
+        />
         CleanMyMap
       </Link>
 

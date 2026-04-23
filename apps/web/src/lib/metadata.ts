@@ -36,6 +36,11 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: "/brand/nouveau-logo.png",
+    apple: "/brand/nouveau-logo.png",
+    shortcut: "/brand/nouveau-logo.png",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,

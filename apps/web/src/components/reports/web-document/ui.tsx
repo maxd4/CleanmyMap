@@ -55,7 +55,7 @@ export function MetricCard(props: {
         : "border-slate-200 bg-[#f8fafc]";
 
   return (
-    <article className={`rounded-2xl border p-4 ${toneClass}`}>
+    <article className={`print-break-inside-avoid rounded-2xl border p-4 ${toneClass}`}>
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
         {props.label}
       </p>
@@ -67,7 +67,7 @@ export function MetricCard(props: {
 
 export function InsightBox(props: { title: string; lines: string[] }) {
   return (
-    <article className="rounded-2xl border border-slate-200 bg-[#f8fafc] p-4">
+    <article className="print-break-inside-avoid rounded-2xl border border-slate-200 bg-[#f8fafc] p-4">
       <h3 className="text-sm font-semibold text-slate-900">{props.title}</h3>
       <ul className="mt-2 space-y-1.5 text-sm text-slate-700">
         {props.lines.map((line) => (
@@ -80,7 +80,7 @@ export function InsightBox(props: { title: string; lines: string[] }) {
 
 export function ReportTable(props: { headers: string[]; rows: string[][] }) {
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200">
+    <div className="print-break-inside-avoid overflow-x-auto rounded-2xl border border-slate-200">
       <table className="min-w-full text-left text-sm">
         <thead className="bg-[#1e3a67] text-slate-100">
           <tr>
@@ -118,7 +118,7 @@ export function ReportTable(props: { headers: string[]; rows: string[][] }) {
 export function MonthlyBars(props: { rows: MonthRow[] }) {
   const maxKg = Math.max(1, ...props.rows.map((row) => row.kg));
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+    <div className="print-break-inside-avoid rounded-2xl border border-slate-200 bg-white p-4">
       <h3 className="text-sm font-semibold text-slate-900">Série mensuelle (kg collectés)</h3>
       <div className="mt-3 space-y-2">
         {props.rows.map((row) => (
@@ -147,7 +147,7 @@ export function GeoCoverageRing(props: { coveragePercent: number; tracePercent: 
   const dash = (pct / 100) * circumference;
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-4">
+    <article className="print-break-inside-avoid rounded-2xl border border-slate-200 bg-white p-4">
       <h3 className="text-sm font-semibold text-slate-900">Couverture spatiale</h3>
       <div className="mt-3 flex items-center gap-4">
         <svg width="116" height="116" viewBox="0 0 116 116" role="img" aria-label="Couverture géographique">

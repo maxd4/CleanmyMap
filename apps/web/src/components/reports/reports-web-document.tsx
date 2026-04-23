@@ -15,6 +15,11 @@ export function ReportsWebDocument() {
       : model.scopeKind === "association"
         ? model.scopeOptions.associations
         : model.scopeOptions.arrondissements;
+  const accountCoverage = model.accountScopeCoverage;
+  const hasAccountCoverageGap =
+    accountCoverage.hasMeasurableBase &&
+    accountCoverage.missingCreatedByClerkId > 0;
+  const hasAccountCoverageBase = accountCoverage.hasMeasurableBase;
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-gradient-to-b from-white via-[#f7fafd] to-white shadow-sm">
@@ -73,6 +78,29 @@ export function ReportsWebDocument() {
         <p className="mt-2 text-xs text-slate-600">
           Contexte du rapport:{" "}
           <span className="font-semibold">Perimetre: {model.activeScopeLabel}</span>
+        </p>
+        <p
+          className={`mt-1 text-xs ${
+            hasAccountCoverageGap ? "text-amber-700" : "text-slate-500"
+          }`}
+        >
+          Couverture filtre compte (`created_by_clerk_id`):{" "}
+          {hasAccountCoverageBase ? (
+            <>
+              <span className="font-semibold">
+                {accountCoverage.coveragePercent.toFixed(1)}%
+              </span>{" "}
+              ({accountCoverage.withCreatedByClerkId}/{accountCoverage.total}).
+              {hasAccountCoverageGap
+                ? ` ${accountCoverage.missingCreatedByClerkId} entrée(s) restent sans clé stable.`
+                : " Couverture complète."}
+            </>
+          ) : (
+            <>
+              <span className="font-semibold">n/a</span> (0/0).
+              Données insuffisantes pour mesurer la couverture compte.
+            </>
+          )}
         </p>
         <p className="mt-2 text-xs text-slate-500">
           Derniere generation: {model.report.generatedAt}

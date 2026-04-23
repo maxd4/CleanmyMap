@@ -386,10 +386,29 @@ html.dark[data-display-mode="sobre"] .rounded-\[3rem\] {
     break-inside: avoid;
   }
   
-  /* Avoid page breaks inside components */
-  article, section, tr {
+  /* Keep dense blocks intact, but allow sections to flow on long reports */
+  article, tr {
     page-break-inside: avoid;
     break-inside: avoid;
+  }
+  section {
+    page-break-inside: auto;
+    break-inside: auto;
+  }
+
+  .print-break-inside-avoid {
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
+
+  .print-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  .print-break-after {
+    page-break-after: always !important;
+    break-after: page !important;
   }
 
   /* Force grid-columns to stack normally or stay readable on A4 */

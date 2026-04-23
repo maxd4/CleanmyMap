@@ -6,8 +6,11 @@ import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summa
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
+import { listAdminOperationAudit } from "@/lib/admin/operation-audit";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
+import { listPartnerOnboardingRequests } from "@/lib/partners/onboarding-requests-store";
+import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
 import { getProfilePrimaryAction, toProfile } from "@/lib/profiles";
 import { getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -87,6 +90,31 @@ export default async function AdminPage() {
   }
 
   const overview = await loadAdminOverview().catch(() => null);
+  const onboardingRequests = await listPartnerOnboardingRequests(500).catch(() => []);
+  const publishedEntries = await listPublishedPartnerAnnuaireEntries().catch(() => []);
+  const adminAudit = await listAdminOperationAudit(25).catch(() => []);
+
+  const onboardingStatus = {
+    pending: onboardingRequests.filter((item) => item.status === "pending_admin_review")
+      .length,
+    accepted: onboardingRequests.filter((item) => item.status === "accepted").length,
+    rejected: onboardingRequests.filter((item) => item.status === "rejected").length,
+  };
+
+  const publicationStatus = {
+    pending: publishedEntries.filter(
+      (item) => item.publicationStatus === "pending_admin_review",
+    ).length,
+    accepted: publishedEntries.filter((item) => item.publicationStatus === "accepted")
+      .length,
+    rejected: publishedEntries.filter((item) => item.publicationStatus === "rejected")
+      .length,
+  };
+
+  const moderationAudit = {
+    success: adminAudit.filter((item) => item.outcome === "success").length,
+    error: adminAudit.filter((item) => item.outcome === "error").length,
+  };
 
   const kpis = overview
     ? ([
@@ -168,6 +196,67 @@ export default async function AdminPage() {
         </p>
         <div className="mt-4">
           <RubriquePdfExportButton rubriqueTitle="Administration" />
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+          Vues gouvernance
+        </p>
+        <h2 className="mt-2 text-xl font-semibold text-slate-900">
+          Etats metier relies au pilotage
+        </h2>
+        <p className="mt-2 text-sm text-slate-600">
+          Les compteurs ci-dessous reprennent les cycles de decision actifs:
+          onboarding partenaire, revue de publication et execution des operations
+          admin.
+        </p>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-900">
+              Onboarding partenaires
+            </p>
+            <p className="mt-2 text-xs text-slate-600">Etat: pending / accepted / rejected</p>
+            <p className="mt-3 text-xs text-slate-700">
+              pending: <span className="font-semibold">{onboardingStatus.pending}</span>
+            </p>
+            <p className="text-xs text-slate-700">
+              accepted: <span className="font-semibold">{onboardingStatus.accepted}</span>
+            </p>
+            <p className="text-xs text-slate-700">
+              rejected: <span className="font-semibold">{onboardingStatus.rejected}</span>
+            </p>
+          </article>
+
+          <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-900">
+              Publication annuaire
+            </p>
+            <p className="mt-2 text-xs text-slate-600">Etat: pending / accepted / rejected</p>
+            <p className="mt-3 text-xs text-slate-700">
+              pending: <span className="font-semibold">{publicationStatus.pending}</span>
+            </p>
+            <p className="text-xs text-slate-700">
+              accepted: <span className="font-semibold">{publicationStatus.accepted}</span>
+            </p>
+            <p className="text-xs text-slate-700">
+              rejected: <span className="font-semibold">{publicationStatus.rejected}</span>
+            </p>
+          </article>
+
+          <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <p className="text-sm font-semibold text-slate-900">
+              Journal operations admin (25)
+            </p>
+            <p className="mt-2 text-xs text-slate-600">Etat: success / error</p>
+            <p className="mt-3 text-xs text-slate-700">
+              success: <span className="font-semibold">{moderationAudit.success}</span>
+            </p>
+            <p className="text-xs text-slate-700">
+              error: <span className="font-semibold">{moderationAudit.error}</span>
+            </p>
+          </article>
         </div>
       </section>
 

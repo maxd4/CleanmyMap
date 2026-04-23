@@ -25,6 +25,14 @@ export type ReportScopeOptions = {
   arrondissements: ReportScopeChoice[];
 };
 
+export type ReportAccountScopeCoverage = {
+  total: number;
+  withCreatedByClerkId: number;
+  missingCreatedByClerkId: number;
+  coveragePercent: number;
+  hasMeasurableBase: boolean;
+};
+
 export type ReportScopeSource = {
   created_by_clerk_id?: string | null;
   actor_name?: string | null;
@@ -165,6 +173,28 @@ export function buildReportScopeOptions(
         return arrondissement ? `Paris ${arrondissement}e` : "Hors arrondissement";
       },
     ),
+  };
+}
+
+export function computeReportAccountScopeCoverage(
+  items: ReportScopeSource[],
+): ReportAccountScopeCoverage {
+  const total = items.length;
+  const hasMeasurableBase = total > 0;
+  const withCreatedByClerkId = items.filter(
+    (item) => getScopeAccountId(item) !== null,
+  ).length;
+  const missingCreatedByClerkId = Math.max(0, total - withCreatedByClerkId);
+  const coveragePercent = hasMeasurableBase
+    ? (withCreatedByClerkId / total) * 100
+    : 0;
+
+  return {
+    total,
+    withCreatedByClerkId,
+    missingCreatedByClerkId,
+    coveragePercent,
+    hasMeasurableBase,
   };
 }
 

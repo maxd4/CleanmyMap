@@ -96,5 +96,58 @@ describe("POST /api/account/display-mode", () => {
     expect(response.status).toBe(401);
     expect(body.error).toBe("Unauthorized");
   });
-});
 
+  it("returns 503 when auth provider is unavailable", async () => {
+    authMock.mockRejectedValueOnce(new Error("clerk_down"));
+    clerkClientMock.mockResolvedValue({
+      users: {
+        getUser: vi.fn(),
+        updateUser: vi.fn(),
+      },
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/account/display-mode", {
+        method: "POST",
+        body: JSON.stringify({ displayMode: "sobre" }),
+      }),
+    );
+
+    const body = (await response.json()) as { error?: string };
+    expect(response.status).toBe(503);
+    expect(body.error).toBe(
+      "Service d'authentification temporairement indisponible.",
+    );
+  });
+
+  it("returns 503 when Clerk update fails", async () => {
+    const getUser = vi.fn().mockResolvedValue({
+      id: "user-1",
+      unsafeMetadata: { displayMode: "exhaustif" },
+      publicMetadata: {},
+      privateMetadata: {},
+    });
+    const updateUser = vi.fn().mockRejectedValueOnce(new Error("clerk_timeout"));
+    clerkClientMock.mockResolvedValue({
+      users: { getUser, updateUser },
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/account/display-mode", {
+        method: "POST",
+        body: JSON.stringify({ displayMode: "sobre" }),
+      }),
+    );
+
+    const body = (await response.json()) as { error?: string };
+    expect(response.status).toBe(503);
+    expect(body.error).toBe(
+      "Impossible de synchroniser le mode d'affichage pour le moment.",
+    );
+    expect(updateUser).toHaveBeenCalledWith("user-1", {
+      unsafeMetadata: { displayMode: "sobre" },
+    });
+  });
+});

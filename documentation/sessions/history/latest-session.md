@@ -1,8 +1,24 @@
 # Latest Session
 
 Updated: 2026-04-23
+Status: FROZEN (do not update until explicit unfreeze)
 
 ## Done
+- **Next exécuté - QA visuelle ruban mobile (320/375/390)** : validation headless sur `/parcours` avec captures dédiées (`documentation/sessions/assets/qa/ribbon-parcours-320.png`, `...-375.png`, `...-390.png`) ; le ruban reste compact (`navHeight=146`, `navBottom=202`) et une action principale reste visible au premier écran sur les 3 largeurs.
+- **Next exécuté - export PDF A4 court/long** : génération et contrôle des exports `report-global-long.pdf` et `report-account-short.pdf` dans `documentation/sessions/assets/qa/`, avec vérification des blocs `print-break-inside-avoid` après ajustement de la couverture (max bloc 479px < 1047px utile A4, pagination lisible sur 19 pages).
+- **Next exécuté - quantification `created_by_clerk_id`** : métrique de couverture publiée dans le rapport web avec gestion explicite du cas non mesurable (`n/a (0/0)`), et quantification locale complémentaire sur stores (`0/6` avec clé, `6/6` manquants, couverture `0%`).
+- **Risks - Clerk fallback durci** : ajout d’un accès auth tolérant aux pannes Clerk sur les pages publiques sensibles (`reports`, `parcours`, `sections`, `prints/report`, `sponsor-portal`, layout app), pour éviter les états bloquants en cas d’indisponibilité temporaire.
+- **Risks - persistance mode d’affichage résiliente** : ajout d’une file locale de resynchronisation (`display_mode_pending_sync`) et replay automatique au retour `online`/`visibilitychange`, avec route API renforcée et tests des cas `auth down`/`mutation Clerk en erreur`.
+- **Risks - ruban mobile compacté** : réduction des hauteurs, paddings et tailles du ruban + ajustement du `pt` layout pour préserver l’accès aux actions prioritaires sur petits écrans.
+- **Risks - inférence photo isolée** : extraction d’un point d’entrée vision dédié (`runActionVisionEstimate`) et d’un helper de suggestion explicite (`vision` vs `fallback heuristique`), avec test unitaire ciblé.
+- **Risks - pagination PDF sécurisée** : ajout de classes print dédiées pour laisser les sections longues se répartir sur plusieurs pages tout en protégeant les blocs denses (`print-break-inside-avoid`).
+- **Risks - périmètre compte mesuré** : ajout d’une métrique de couverture `created_by_clerk_id` (total, couverts, manquants, %) dans le modèle et l’UI des rapports, avec test unitaire.
+- **Risks - portail sponsors contextualisé** : affichage explicite de la fenêtre d’observation (`730 jours`, dates de début/fin) et avertissement de comparabilité temporelle au-dessus des KPI.
+- **Dashboard Admin - vues gouvernance reliées aux états métier** : ajout d’un bloc `Vues gouvernance` dans `/admin` avec compteurs `pending / accepted / rejected` pour l’onboarding partenaire, la publication annuaire, et le journal des opérations admin (`success / error`) sur les 25 dernières opérations.
+- **Mode Science - formules exposées en tooltips** : ajout de tooltips dédiés sur les KPI du grid décisionnel (`volume`, `qualité`, `géocouverture`, `délai`, `mobilisation`) avec formule, source, fréquence et limites, directement visibles depuis le dashboard.
+- **Parcours Mobilisation + chat - nominal / dégradé / vide** : durcissement de `ChatShell` avec états explicites (`loading`, `empty`, `degraded`), gestion d’erreurs API lisibles, mode lecture seule non-connecté avec lien de connexion, blocage des actions d’envoi sans session, et test unitaire couvrant les 3 scénarios.
+- **Purge Vercel étendue** : suppression du dernier déploiement preview non-production encore présent dans le projet `web`, puis vérification qu’il ne restait ni `CANCELED` ni preview `READY` hors production.
+- **Nettoyage historique Vercel** : suppression de 22 déploiements `ERROR` du projet `web`, avec relecture jusqu’à obtenir une liste vide.
 - **Nettoyage historique GitHub Actions** : suppression de tous les runs en échec visibles via l’API pour `maxd4/CleanmyMap`, avec vérification finale qu’aucun run `failure` ou `cancelled` ne restait listé.
 - **Académie du Climat - ateliers structurés** : ajout d’un espace dédié dans l’annuaire pour les prochains ateliers, classés par type `social / humanitaire / environnemental`, avec masquage automatique des catégories vides, tri par date à venir et sources officielles reliées à chaque atelier.
 - **Académie du Climat - social renforcé** : seconde passe sur les ateliers officiels avec ajout d’entrées plus ciblées pour la catégorie `social`, dont `Inventons nos CHOUETTES vies bas carbone – dès 9 ans !` et `Atelier 2tonnes : comment agir pour le climat ?`, afin d’étoffer les ateliers collectifs et d’éducation à l’action.
@@ -74,17 +90,6 @@ Updated: 2026-04-23
 - Intégration API Cleanwalk.org (Message type envoyé, en attente de réponse).
 
 ## Next
-- Finaliser le Dashboard de pilotage Administrateur avec les vues "Gouvernance".
-- Enrichir le mode "Science" avec les formules de calcul d'impact affichées en tooltips.
-- Validation finale du parcours utilisateur "Mobilisation" avec les nouveaux outils de chat.
+- Alimenter un lot de données avec `created_by_clerk_id` pour réactiver un vrai scénario `scope=compte` (options non vides), puis rejouer l’export PDF `compte` avec un jeu court distinct du global.
 
 ## Risks
-- Le nettoyage Vercel n’a pas pu être exécuté depuis cet environnement faute de jeton/API CLI Vercel disponible; seul le dossier `.vercel` local du projet a confirmé le rattachement du projet.
-- Les parcours personnalisés et le formulaire bénévole restent volontairement protégés; les visiteurs publics peuvent explorer et générer des livrables, mais la bascule vers l’action continue de dépendre de Clerk.
-- La persistance du mode d’affichage dépend de Clerk pour les comptes connectés ; si la mutation échoue, l’UI garde le fallback local/cookie mais la synchronisation serveur peut manquer jusqu’au prochain changement.
-- La hauteur du ruban est volontairement augmentée pour afficher les rubriques du bloc actif ; surveiller uniquement le rendu sur très petits écrans.
-- L'inférence photo est actuellement hybride/heuristique côté web, avec un pipeline remplaçable prévu pour un vrai modèle vision plus tard.
-- Le portail sponsors affiche une fenêtre analytique plus large, donc les volumes peuvent paraître plus élevés qu’avant lors des comparaisons visuelles.
-- Les profils `admin` et `elu` sont volontairement exclus de la mutation self-service; tout besoin de bascule sur ces rôles doit rester géré côté back-office.
-- La couverture PDF ajoute un bloc plus dense en haut de page; surveiller le saut de page et la lisibilité sur impressions A4 très chargées.
-- Le périmètre par compte dépend des identifiants `created_by_clerk_id`; quelques contrats locaux restent sans clé compte stable et retombent donc sur un filtrage partiel pour ce mode.
