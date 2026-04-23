@@ -8,6 +8,7 @@ import { trackNavigationClick } from "@/lib/analytics/navigation-client";
 import {
   getActiveSpaceForPath,
   getNavigationSpacesForProfile,
+  getPilotFallbackItems,
   type NavigationBlockId,
 } from "@/lib/navigation";
 import type { AppProfile } from "@/lib/profiles";
@@ -38,6 +39,13 @@ export function AppSidebar({ currentProfile }: AppSidebarProps) {
       else next.add(id);
       return next;
     });
+  }
+
+  function getSpaceItems(space: (typeof spaces)[number]) {
+    if (space.id === "pilot" && space.items.length === 0) {
+      return getPilotFallbackItems(locale);
+    }
+    return space.items;
   }
 
   return (
@@ -85,7 +93,7 @@ export function AppSidebar({ currentProfile }: AppSidebarProps) {
               {/* Rubriques */}
               {!collapsed && isOpen && (
                 <ul className="ml-2 mt-0.5 flex flex-col gap-0.5 border-l border-emerald-100 pl-2">
-                  {space.items.map((item) => {
+                  {getSpaceItems(space).map((item) => {
                     const active = isActive(pathname, item.href);
                     return (
                       <li key={item.id}>
@@ -110,7 +118,7 @@ export function AppSidebar({ currentProfile }: AppSidebarProps) {
                       </li>
                     );
                   })}
-                  {space.items.length === 0 && (
+                  {space.items.length === 0 && space.id !== "pilot" && (
                     <li className="text-[10px] italic text-slate-400 px-2 py-1">
                       {locale === "fr" ? "Aucune page" : "No pages"}
                     </li>

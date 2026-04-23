@@ -40,7 +40,7 @@ export function UserLocationOnboardingForm({
 
     const parsedArrondissement = parseParisArrondissement(arrondissement);
     if (!parsedArrondissement) {
-      setErrorMessage("Selectionnez un arrondissement parisien.");
+      setErrorMessage("Sélectionnez un arrondissement parisien.");
       return;
     }
     if (!user) {
@@ -61,7 +61,7 @@ export function UserLocationOnboardingForm({
       router.refresh();
     } catch (error) {
       console.error("User location preference update failed", error);
-      setErrorMessage("Impossible d'enregistrer le lieu. Reessayez.");
+      setErrorMessage("Impossible d'enregistrer le lieu. Réessayez.");
     } finally {
       setIsSaving(false);
     }
@@ -82,17 +82,17 @@ export function UserLocationOnboardingForm({
     >
       <div>
         <h1 className="text-lg font-semibold text-slate-900">
-          Votre zone prioritaire a Paris
+          Votre zone prioritaire à Paris
         </h1>
         <p className="mt-2 text-sm text-slate-600">
           Indiquez votre lieu principal pour prioriser les associations et
-          commercants proches dans les rubriques.
+          commerçant·e·s proches dans les rubriques.
         </p>
       </div>
 
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium text-slate-800">
-          Ce lieu correspond a :
+          Ce lieu correspond à :
         </legend>
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input
@@ -102,7 +102,7 @@ export function UserLocationOnboardingForm({
             checked={locationType === "residence"}
             onChange={() => setLocationType("residence")}
           />
-          Mon arrondissement de residence
+          Mon arrondissement de résidence
         </label>
         <label className="flex items-center gap-2 text-sm text-slate-700">
           <input
@@ -125,7 +125,7 @@ export function UserLocationOnboardingForm({
           value={arrondissement}
           onChange={(event) => setArrondissement(Number(event.target.value))}
         >
-          <option value={0}>Selectionner un arrondissement</option>
+          <option value={0}>Sélectionner un arrondissement</option>
           {PARIS_ARRONDISSEMENTS.map((item) => (
             <option key={item.value} value={item.value}>
               {getParisArrondissementLabel(item.value)}

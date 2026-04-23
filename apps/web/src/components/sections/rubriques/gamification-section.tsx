@@ -132,7 +132,7 @@ async function fetchJson<T>(url: string): Promise<T> {
     const message =
       body && typeof body === "object" && "error" in body
         ? String((body as { error: unknown }).error)
-        : "Requete API impossible.";
+        : "Requête API impossible.";
     throw new Error(message);
   }
   return body as T;
@@ -208,8 +208,8 @@ export function GamificationSection() {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-        Progression durable: l&apos;impact verifie, la qualite des donnees et la
-        contribution collective sont privilegies sur le simple volume.
+        Progression durable: l&apos;impact vérifié, la qualité des données et la
+        contribution collective sont privilégiés sur le simple volume.
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
@@ -267,9 +267,16 @@ export function GamificationSection() {
                   </article>
                 </div>
 
-                <GamificationImpactMethodologyCard
-                  methodology={progression.impactMethodology}
-                />
+                <details className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Méthodologie d&apos;impact
+                  </summary>
+                  <div className="mt-3">
+                    <GamificationImpactMethodologyCard
+                      methodology={progression.impactMethodology}
+                    />
+                  </div>
+                </details>
 
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                   <p className="text-xs font-semibold text-slate-700">Objectif niveau {progression.nextLevel.level}</p>

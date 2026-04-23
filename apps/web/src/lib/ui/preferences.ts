@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   locale: "cleanmymap.locale",
   theme: "cleanmymap.theme",
   displayMode: "cleanmymap.display_mode",
+  displayModePendingSync: "cleanmymap.display_mode_pending_sync",
 } as const;
 
 export const DEFAULT_LOCALE: Locale = "fr";

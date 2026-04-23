@@ -1,5 +1,6 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { 
   ShieldAlert, 
   Users, 
@@ -14,6 +15,12 @@ import {
 export default async function GodModeAdminPage() {
   const user = await currentUser();
   const role = user?.publicMetadata?.role;
+  const displayName =
+    user?.fullName?.trim() ||
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+    user?.username ||
+    "Super Admin";
+  const primaryEmail = user?.emailAddresses?.[0]?.emailAddress ?? "non disponible";
 
   // Sécurité : 404 pour cacher l'existence de la route aux non-admins
   if (role !== "super_admin") {
@@ -27,7 +34,7 @@ export default async function GodModeAdminPage() {
         <div className="space-y-2 relative z-10">
           <div className="flex items-center gap-2 text-rose-500 font-bold uppercase tracking-widest text-xs">
             <ShieldAlert size={16} />
-            Système d'Exploitation Master
+            Système d&apos;Exploitation Master
           </div>
           <h1 className="text-4xl font-black tracking-tight text-white flex items-center gap-4">
             God Mode. <span className="text-rose-600 px-2 py-1 bg-rose-600/10 rounded-lg text-xs uppercase tracking-widest">SuperAdmin</span>
@@ -52,7 +59,7 @@ export default async function GodModeAdminPage() {
         <section className="lg:col-span-2 space-y-6">
           <div className="bg-slate-900 rounded-3xl border border-slate-800 p-8 space-y-6 shadow-xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold flex items-center gap-2">
+          <h3 className="text-xl font-bold flex items-center gap-2">
                 <Users className="text-rose-500" size={20} />
                 Explorateur Utilisateurs
               </h3>
@@ -70,7 +77,7 @@ export default async function GodModeAdminPage() {
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-500 uppercase text-[10px] font-bold tracking-widest">
                     <th className="pb-4 pt-0 px-2">Acteur</th>
-                    <th className="pb-4 pt-0 px-2">Rôle Actuel</th>
+                    <th className="pb-4 pt-0 px-2">Profil actif</th>
                     <th className="pb-4 pt-0 px-2">Dernière Connexion</th>
                     <th className="pb-4 pt-0 px-2">Actions</th>
                   </tr>
@@ -78,8 +85,8 @@ export default async function GodModeAdminPage() {
                 <tbody className="divide-y divide-slate-800/50">
                   <tr className="hover:bg-slate-800/20 transition-colors">
                     <td className="py-4 px-2">
-                      <p className="font-bold text-white">Maxence D.</p>
-                      <p className="text-xs text-slate-500 italic">maxence@cleanmymap.io</p>
+                      <p className="font-bold text-white">{displayName}</p>
+                      <p className="text-xs text-slate-500 italic">{primaryEmail}</p>
                     </td>
                     <td className="py-4 px-2">
                       <span className="px-2 py-0.5 bg-rose-600/20 text-rose-500 rounded-full text-[10px] font-bold uppercase tracking-tighter border border-rose-600/30">
@@ -88,31 +95,15 @@ export default async function GodModeAdminPage() {
                     </td>
                     <td className="py-4 px-2 text-slate-500 text-xs">Il y a 2 min</td>
                     <td className="py-4 px-2">
-                      <button className="text-slate-500 hover:text-white transition">Modifier</button>
+                      <span className="text-slate-400 text-xs">Session active</span>
                     </td>
                   </tr>
-                  {/* Mock rows for UI */}
-                  {[1, 2, 3].map((i) => (
-                    <tr key={i} className="hover:bg-slate-800/20 transition-colors">
-                      <td className="py-4 px-2">
-                        <p className="font-bold text-white">Citoyen_{i}</p>
-                        <p className="text-xs text-slate-500 italic">user_{i}@example.com</p>
-                      </td>
-                      <td className="py-4 px-2">
-                        <span className="px-2 py-0.5 bg-sky-600/20 text-sky-500 rounded-full text-[10px] font-bold uppercase tracking-tighter border border-sky-600/30">
-                          Bénévole
-                        </span>
-                      </td>
-                      <td className="py-4 px-2 text-slate-500 text-xs">Il y a {i*2}h</td>
-                      <td className="py-4 px-2">
-                        <button className="text-slate-500 hover:text-white transition">Modifier</button>
-                      </td>
-                    </tr>
-                  ))}
                 </tbody>
               </table>
             </div>
-            <p className="text-[10px] text-slate-500 text-center italic">Plus de 1,240 utilisateurs indexés.</p>
+            <p className="text-[10px] text-slate-500 text-center italic">
+              Vue restreinte: ce panneau affiche uniquement les informations de session courante.
+            </p>
           </div>
         </section>
 
@@ -124,38 +115,38 @@ export default async function GodModeAdminPage() {
             </div>
             <h3 className="text-xl font-bold flex items-center gap-2 relative z-10 text-rose-500">
               <Database size={20} />
-              Sandbox & Tests
+              Outils de supervision
             </h3>
             <div className="space-y-4 relative z-10">
-              <button className="w-full flex items-center gap-3 p-4 bg-slate-950 border border-slate-800 rounded-2xl text-left hover:border-emerald-500 transition-all group/btn">
+              <Link href="/admin" className="w-full flex items-center gap-3 p-4 bg-slate-950 border border-slate-800 rounded-2xl text-left hover:border-emerald-500 transition-all group/btn">
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover/btn:bg-emerald-500 group-hover/btn:text-white transition-colors">
                   <Zap size={20} />
                 </div>
                 <div>
-                  <p className="text-sm font-bold">Générer Actions de Test</p>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Injecte 50 points d'impact IA</p>
+                  <p className="text-sm font-bold">Administration opérationnelle</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Modération, gouvernance, audit</p>
                 </div>
-              </button>
+              </Link>
 
-              <button className="w-full flex items-center gap-3 p-4 bg-slate-950 border border-slate-800 rounded-2xl text-left hover:border-amber-500 transition-all group/btn">
+              <Link href="/reports" className="w-full flex items-center gap-3 p-4 bg-slate-950 border border-slate-800 rounded-2xl text-left hover:border-amber-500 transition-all group/btn">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover/btn:bg-amber-500 group-hover/btn:text-white transition-colors">
                   <Flame size={20} />
                 </div>
                 <div>
-                  <p className="text-sm font-bold">Simuler Pic Participation</p>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">+200 RSVP collectives fictifs</p>
+                  <p className="text-sm font-bold">Rapports d&apos;impact</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Exports et lecture décideur</p>
                 </div>
-              </button>
+              </Link>
 
-              <button className="w-full flex items-center gap-3 p-4 bg-slate-950 border border-slate-800 rounded-2xl text-left hover:border-rose-500 transition-all group/btn outline-none">
+              <a href="/api/health" className="w-full flex items-center gap-3 p-4 bg-slate-950 border border-slate-800 rounded-2xl text-left hover:border-rose-500 transition-all group/btn outline-none">
                 <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500 group-hover/btn:bg-rose-500 group-hover/btn:text-white transition-colors">
                   <RotateCcw size={20} />
                 </div>
                 <div>
-                  <p className="text-sm font-bold">Reconstruction MatVues</p>
-                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Force Supabase Refresh</p>
+                  <p className="text-sm font-bold">Santé des services</p>
+                  <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Endpoint /api/health</p>
                 </div>
-              </button>
+              </a>
             </div>
           </div>
 

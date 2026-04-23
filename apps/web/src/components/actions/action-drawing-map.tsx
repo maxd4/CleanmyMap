@@ -39,10 +39,12 @@ function DrawingController({
   value,
   onChange,
   drawColor = COLOR_BLUE,
+  readOnly = false,
 }: {
   value: ActionDrawing | null;
   onChange: (drawing: ActionDrawing | null) => void;
   drawColor?: string;
+  readOnly?: boolean;
 }) {
   const map = useMap();
   const layerGroupRef = useRef<L.FeatureGroup | null>(null);
@@ -52,51 +54,59 @@ function DrawingController({
     layerGroupRef.current = layerGroup;
     map.addLayer(layerGroup);
 
-    const drawControl = new L.Control.Draw({
-      position: "topright",
-      draw: {
-        marker: false,
-        rectangle: false,
-        circle: false,
-        circlemarker: false,
-        polyline: {
-          metric: true,
-          shapeOptions: { color: drawColor, weight: 4 },
-        },
-        polygon: {
-          allowIntersection: false,
-          showArea: true,
-          shapeOptions: { color: drawColor, weight: 3, fillOpacity: 0.25 },
-        },
-      },
-      edit: {
-        featureGroup: layerGroup,
-        remove: true,
-      },
-    });
-
-    const undoButton = new (L.Control.extend({
-      options: { position: "topright" },
-      onAdd: function() {
-        const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-        const button = L.DomUtil.create('a', 'cmm-undo-btn', container);
-        button.innerHTML = "↩";
-        button.title = "Annuler le tracé";
-        button.style.cursor = "pointer";
-        button.style.fontSize = "18px";
-        button.style.backgroundColor = "white";
-        
-        L.DomEvent.on(button, 'click', (e) => {
-          L.DomEvent.stop(e);
-          layerGroup.clearLayers();
-          onChange(null);
+    const drawControl = readOnly
+      ? null
+      : new L.Control.Draw({
+          position: "topright",
+          draw: {
+            marker: false,
+            rectangle: false,
+            circle: false,
+            circlemarker: false,
+            polyline: {
+              metric: true,
+              shapeOptions: { color: drawColor, weight: 4 },
+            },
+            polygon: {
+              allowIntersection: false,
+              showArea: true,
+              shapeOptions: { color: drawColor, weight: 3, fillOpacity: 0.25 },
+            },
+          },
+          edit: {
+            featureGroup: layerGroup,
+            remove: true,
+          },
         });
-        return container;
-      }
-    }))();
 
-    map.addControl(drawControl);
-    map.addControl(undoButton);
+    const undoButton = readOnly
+      ? null
+      : new (L.Control.extend({
+          options: { position: "topright" },
+          onAdd: function() {
+            const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+            const button = L.DomUtil.create('a', 'cmm-undo-btn', container);
+            button.innerHTML = "↩";
+            button.title = "Annuler";
+            button.style.cursor = "pointer";
+            button.style.fontSize = "18px";
+            button.style.backgroundColor = "white";
+
+            L.DomEvent.on(button, 'click', (e) => {
+              L.DomEvent.stop(e);
+              layerGroup.clearLayers();
+              onChange(null);
+            });
+            return container;
+          }
+        }))();
+
+    if (drawControl) {
+      map.addControl(drawControl);
+    }
+    if (undoButton) {
+      map.addControl(undoButton);
+    }
 
     async function normalizeAndEmit(layer: DrawingLayer) {
       if (layer instanceof L.Polygon) {
@@ -150,12 +160,16 @@ function DrawingController({
       map.off(L.Draw.Event.CREATED, handleCreated);
       map.off(L.Draw.Event.EDITED, handleEdited);
       map.off(L.Draw.Event.DELETED, handleDeleted);
-      map.removeControl(drawControl);
-      map.removeControl(undoButton);
+      if (drawControl) {
+        map.removeControl(drawControl);
+      }
+      if (undoButton) {
+        map.removeControl(undoButton);
+      }
       map.removeLayer(layerGroup);
       layerGroupRef.current = null;
     };
-  }, [map, onChange, drawColor]);
+  }, [map, onChange, drawColor, readOnly]);
 
   useEffect(() => {
     const layerGroup = layerGroupRef.current;
@@ -192,12 +206,14 @@ export function ActionDrawingMap({
   wasteKg = 0,
   butts = 0,
   isCleanPlace = false,
+  readOnly = false,
 }: {
   value: ActionDrawing | null;
   onChange: (drawing: ActionDrawing | null) => void;
   wasteKg?: number;
   butts?: number;
   isCleanPlace?: boolean;
+  readOnly?: boolean;
 }) {
   const mapStyle = useMemo(() => ({ height: "360px", width: "100%" }), []);
 
@@ -231,7 +247,12 @@ export function ActionDrawingMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
           url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
         />
-        <DrawingController value={value} onChange={onChange} drawColor={drawColor} />
+        <DrawingController
+          value={value}
+          onChange={onChange}
+          drawColor={drawColor}
+          readOnly={readOnly}
+        />
       </MapContainer>
     </div>
   );

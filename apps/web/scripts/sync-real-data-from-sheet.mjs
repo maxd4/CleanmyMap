@@ -5,9 +5,13 @@ import { fileURLToPath } from "node:url";
 import {
   computeButtsFromMegotsKg,
   createGeocodeResolver,
+  buildMidpointFromCoordinates,
+  buildRouteDrawingFromCoordinates,
+  buildRouteLocationLabel,
   findColumnIndex,
   fixMojibake,
   parseBooleanDropdown,
+  parseCoordinates,
   parseCoordsFromText,
   parseCsv,
   parseIsoDateFlexible,
@@ -101,8 +105,76 @@ function stableId(prefix, seed) {
   return `${prefix}_${digest}`;
 }
 
-function toRecordStatus() {
+function normalizeLocalStatus(raw) {
+  const value = fixMojibake(String(raw || "")).trim().toLowerCase();
+  if (value === "pending" || value === "new") {
+    return "pending";
+  }
+  if (value === "rejected" || value === "refuse") {
+    return "rejected";
+  }
+  if (value === "test") {
+    return "test";
+  }
   return "validated";
+}
+
+function serializeTechnicalMeta(item) {
+  const payload = {};
+  if (item.associationName) {
+    payload.associationName = item.associationName;
+  }
+  if (item.placeType) {
+    payload.placeType = item.placeType;
+  }
+  if (item.departureLocationLabel) {
+    payload.departureLocationLabel = item.departureLocationLabel;
+  }
+  if (item.arrivalLocationLabel) {
+    payload.arrivalLocationLabel = item.arrivalLocationLabel;
+  }
+  if (item.routeStyle) {
+    payload.routeStyle = item.routeStyle;
+  }
+  if (item.routeAdjustmentMessage) {
+    payload.routeAdjustmentMessage = item.routeAdjustmentMessage;
+  }
+  return Object.keys(payload).length > 0
+    ? `[cmm-meta]${JSON.stringify(payload)}`
+    : null;
+}
+
+function serializeDrawing(item) {
+  const drawing = item.manualDrawing;
+  if (
+    !drawing ||
+    !Array.isArray(drawing.coordinates) ||
+    (drawing.kind !== "polyline" && drawing.kind !== "polygon")
+  ) {
+    return null;
+  }
+  return `[DRAWING_GEOJSON]${JSON.stringify({
+    kind: drawing.kind,
+    coordinates: drawing.coordinates,
+  })}`;
+}
+
+function composeActionNotes(item) {
+  const parts = [];
+  const baseNotes = typeof item.notes === "string" ? item.notes.trim() : "";
+  if (baseNotes) {
+    parts.push(baseNotes);
+  }
+  const meta = serializeTechnicalMeta(item);
+  if (meta) {
+    parts.push(meta);
+  }
+  const drawing = serializeDrawing(item);
+  if (drawing) {
+    parts.push(drawing);
+  }
+  parts.push("[google-sheet-sync]");
+  return parts.join("\n");
 }
 
 async function main() {
@@ -154,51 +226,109 @@ async function main() {
 
   const headers = rows[0];
   const dataRows = rows.slice(1);
+  const index = {
+    actionDate: findColumnIndex(headers, ["action_date", "date_action", "date"]),
+    locationLabel: findColumnIndex(headers, [
+      "location_label",
+      "adresse",
+      "lieu",
+      "address",
+      "coordo",
+      "gps",
+      "depart",
+    ]),
+    departureLocationLabel: findColumnIndex(headers, [
+      "depart",
+      "départ",
+      "departure",
+      "origine",
+    ]),
+    arrivalLocationLabel: findColumnIndex(headers, [
+      "arrivee",
+      "arrivée",
+      "arrival",
+      "destination",
+    ]),
+    placeType: findColumnIndex(headers, [
+      "type de lieu",
+      "type du lieu",
+      "lieu type",
+      "place type",
+    ]),
+    city: findColumnIndex(headers, ["city", "ville"]),
+    latitude: findColumnIndex(headers, ["latitude", "lat"]),
+    longitude: findColumnIndex(headers, ["longitude", "lng", "lon"]),
+    wasteKg: findColumnIndex(headers, [
+      "waste_kg",
+      "kg dechets",
+      "dechets(kg)",
+      "dechets kg",
+      "déchets(kg)",
+    ]),
+    cigaretteButts: findColumnIndex(headers, [
+      "cigarette_butts",
+      "nbr megots",
+      "nombre megots",
+    ]),
+    megotsKg: findColumnIndex(headers, [
+      "megots(kg)",
+      "megots kg",
+      "mégots(kg)",
+      "megot(kg)",
+    ]),
+    megotsQuality: findColumnIndex(headers, [
+      "qualite megots",
+      "qualité mégots",
+      "qualite mego",
+      "qualité mego",
+    ]),
+    volunteersCount: findColumnIndex(headers, [
+      "volunteers_count",
+      "nombre benevoles",
+      "benevoles",
+      "participants",
+    ]),
+    durationMinutes: findColumnIndex(headers, [
+      "duration_minutes",
+      "temps en min",
+      "duree",
+      "minute",
+    ]),
+    associationName: findColumnIndex(headers, [
+      "association_name",
+      "nom d'association",
+      "association",
+      "asso",
+    ]),
+    enterpriseName: findColumnIndex(headers, [
+      "enterprise_name",
+      "nom_entreprise",
+      "entreprise",
+    ]),
+    actorName: findColumnIndex(headers, ["actor_name", "nom benevole", "acteur", "actor"]),
+    status: findColumnIndex(headers, ["status", "statut"]),
+    notes: findColumnIndex(headers, ["notes", "commentaire", "description"]),
+    cleanPlaces: findColumnIndex(headers, [
+      "clean_place_label",
+      "liste lieux propres",
+      "lieux propres",
+      "lieu propre",
+    ]),
+    cleanPlaceFlag: findColumnIndex(headers, [
+      "lieu propre ?",
+      "lieu propre",
+      "clean place",
+      "clean_place",
+    ]),
+  };
 
-  const addressIndex = findColumnIndex(headers, ["adresse", "coordo", "gps", "lieu"]);
-  const cityIndex = findColumnIndex(headers, ["ville"]);
-  const typeIndex = findColumnIndex(headers, ["type"]);
-  const dateIndex = findColumnIndex(headers, ["date"]);
-  const buttsCountIndex = findColumnIndex(headers, [
-    "cigarette_butts",
-    "nombre megots",
-    "nbr megots",
-  ]);
-  const megotsKgIndex = findColumnIndex(headers, [
-    "megots(kg)",
-    "megots kg",
-    "mégots(kg)",
-    "megot(kg)",
-  ]);
-  const megotsQualityIndex = findColumnIndex(headers, [
-    "qualite megots",
-    "qualité mégots",
-    "qualite mego",
-    "qualité mego",
-  ]);
-  const wasteIndex = findColumnIndex(headers, [
-    "dechets(kg)",
-    "dechets kg",
-    "déchets(kg)",
-    "waste_kg",
-    "kg dechets",
-  ]);
-  const assocIndex = findColumnIndex(headers, ["association", "asso"]);
-  const durationIndex = findColumnIndex(headers, ["temps", "duree", "minute"]);
-  const volunteersIndex = findColumnIndex(headers, ["benevole", "participant"]);
-  const cleanPlacesIndex = findColumnIndex(headers, [
-    "liste lieux propres",
-    "lieux propres",
-  ]);
-  const cleanPlaceFlagIndex = findColumnIndex(headers, [
-    "lieu propre ?",
-    "lieu propre",
-    "clean place",
-    "clean_place",
-  ]);
-
-  if (addressIndex < 0) {
-    throw new Error("No address/location column detected in sheet");
+  if (
+    index.actionDate < 0 &&
+    index.locationLabel < 0 &&
+    index.departureLocationLabel < 0 &&
+    index.arrivalLocationLabel < 0
+  ) {
+    throw new Error("No usable route/location columns detected in sheet");
   }
 
   const resolveGeocode = createGeocodeResolver({
@@ -207,61 +337,167 @@ async function main() {
     acceptLanguage: "fr",
   });
 
-  const actionRecords = [];
+  const records = [];
   const cleanPlaceSet = new Set();
+  const importedAt = new Date().toISOString();
 
   for (const row of dataRows) {
-    const rawAddress = fixMojibake(row[addressIndex] || "");
-    if (!rawAddress) {
+    const rawFallbackLocationLabel =
+      index.locationLabel >= 0 ? fixMojibake(row[index.locationLabel] || "") : "";
+    const departureLocationLabel =
+      index.departureLocationLabel >= 0
+        ? fixMojibake(row[index.departureLocationLabel] || "")
+        : "";
+    const arrivalLocationLabel =
+      index.arrivalLocationLabel >= 0
+        ? fixMojibake(row[index.arrivalLocationLabel] || "")
+        : "";
+    const locationLabel = buildRouteLocationLabel(
+      departureLocationLabel,
+      arrivalLocationLabel,
+      rawFallbackLocationLabel,
+    );
+    const actionDate = index.actionDate >= 0 ? parseIsoDateFlexible(row[index.actionDate]) : null;
+    if (!locationLabel || !actionDate) {
       continue;
     }
 
-    const city = cityIndex >= 0 ? fixMojibake(row[cityIndex] || "") : "Paris";
-    const typeLabel =
-      typeIndex >= 0 ? fixMojibake(row[typeIndex] || "") : "Non specifie";
-    const eventDate =
-      dateIndex >= 0 ? parseIsoDateFlexible(row[dateIndex]) : null;
-    const association = assocIndex >= 0 ? fixMojibake(row[assocIndex] || "") : "";
-    const wasteKg = wasteIndex >= 0 ? toNumber(row[wasteIndex], 0) : 0;
+    const city = index.city >= 0 ? fixMojibake(row[index.city] || "") : "Paris";
+    const placeType =
+      index.placeType >= 0 ? fixMojibake(row[index.placeType] || "") : "";
+    const association = index.associationName >= 0 ? fixMojibake(row[index.associationName] || "") : "";
+    const enterpriseName =
+      index.enterpriseName >= 0 ? fixMojibake(row[index.enterpriseName] || "") : "";
+    const actorName =
+      index.actorName >= 0 ? fixMojibake(row[index.actorName] || "") : "";
+    const rawNotes = index.notes >= 0 ? fixMojibake(row[index.notes] || "") : "";
+    const cleanPlaceFlag =
+      index.cleanPlaceFlag >= 0 ? parseBooleanDropdown(row[index.cleanPlaceFlag]) : false;
+    const megotsQuality =
+      index.megotsQuality >= 0 ? fixMojibake(row[index.megotsQuality] || "") : "";
+    const associationName = enterpriseName
+      ? `Entreprise - ${enterpriseName}`
+      : association || null;
+    const baseNotes = composeActionNotes({
+      notes: rawNotes,
+      associationName,
+      placeType: placeType || null,
+      departureLocationLabel: departureLocationLabel || null,
+      arrivalLocationLabel: arrivalLocationLabel || null,
+      routeStyle: departureLocationLabel && arrivalLocationLabel ? "souple" : null,
+      routeAdjustmentMessage:
+        departureLocationLabel && arrivalLocationLabel
+          ? "Itinéraire reconstitué depuis les colonnes Départ / Arrivée"
+          : null,
+      manualDrawing: null,
+    });
+
+    let departureCoordinates = { latitude: null, longitude: null };
+    let arrivalCoordinates = { latitude: null, longitude: null };
+    if (index.latitude >= 0 && index.longitude >= 0) {
+      departureCoordinates = parseCoordinates(row[index.latitude], row[index.longitude]);
+    }
+    if (
+      departureCoordinates.latitude === null ||
+      departureCoordinates.longitude === null
+    ) {
+      departureCoordinates = parseCoordsFromText(
+        departureLocationLabel || rawFallbackLocationLabel || locationLabel,
+      );
+    }
+    if (arrivalLocationLabel) {
+      arrivalCoordinates = parseCoordsFromText(arrivalLocationLabel);
+      if (
+        (arrivalCoordinates.latitude === null ||
+          arrivalCoordinates.longitude === null) &&
+        geocodeEnabled
+      ) {
+        arrivalCoordinates = await resolveGeocode(arrivalLocationLabel);
+      }
+    }
+    if (
+      (departureCoordinates.latitude === null ||
+        departureCoordinates.longitude === null) &&
+      geocodeEnabled
+    ) {
+      departureCoordinates = await resolveGeocode(
+        departureLocationLabel || rawFallbackLocationLabel || locationLabel,
+      );
+    }
+
+    const hasRoute = Boolean(departureLocationLabel && arrivalLocationLabel);
+    const routeDrawing =
+      hasRoute &&
+      departureCoordinates.latitude !== null &&
+      departureCoordinates.longitude !== null &&
+      arrivalCoordinates.latitude !== null &&
+      arrivalCoordinates.longitude !== null
+        ? buildRouteDrawingFromCoordinates(
+            departureCoordinates,
+            arrivalCoordinates,
+            "souple",
+          )
+        : null;
+    const representativeCoordinates =
+      hasRoute &&
+      departureCoordinates.latitude !== null &&
+      departureCoordinates.longitude !== null &&
+      arrivalCoordinates.latitude !== null &&
+      arrivalCoordinates.longitude !== null
+        ? buildMidpointFromCoordinates(
+            departureCoordinates,
+            arrivalCoordinates,
+          )
+        : departureCoordinates.latitude !== null &&
+            departureCoordinates.longitude !== null
+          ? departureCoordinates
+          : arrivalCoordinates.latitude !== null &&
+              arrivalCoordinates.longitude !== null
+            ? arrivalCoordinates
+            : { latitude: null, longitude: null };
+
+    const wasteKg = index.wasteKg >= 0 ? toNumber(row[index.wasteKg], 0) : 0;
     const cigaretteButts =
-      buttsCountIndex >= 0
-        ? Math.max(0, Math.trunc(toNumber(row[buttsCountIndex], 0)))
-        : megotsKgIndex >= 0
+      index.cigaretteButts >= 0
+        ? Math.max(0, Math.trunc(toNumber(row[index.cigaretteButts], 0)))
+        : index.megotsKg >= 0
           ? computeButtsFromMegotsKg(
-              row[megotsKgIndex],
-              megotsQualityIndex >= 0 ? row[megotsQualityIndex] : "",
+              row[index.megotsKg],
+              index.megotsQuality >= 0 ? row[index.megotsQuality] : "",
             )
           : 0;
     const volunteersCount =
-      volunteersIndex >= 0
-        ? Math.max(1, Math.trunc(toNumber(row[volunteersIndex], 1)))
+      index.volunteersCount >= 0
+        ? Math.max(1, Math.trunc(toNumber(row[index.volunteersCount], 1)))
         : 1;
     const durationMinutes =
-      durationIndex >= 0
-        ? Math.max(0, Math.trunc(toNumber(row[durationIndex], 0)))
-        : 0;
+      index.durationMinutes >= 0
+        ? Math.max(1, Math.trunc(toNumber(row[index.durationMinutes], 60)))
+        : 60;
+    const status = normalizeLocalStatus(index.status >= 0 ? row[index.status] : "validated");
+    const recordIdSeed = `${locationLabel}|${actionDate}|${associationName || actorName || ""}`;
+    const recordId = stableId("real_action", recordIdSeed);
+    const fullNotes = routeDrawing
+      ? `${baseNotes}\n[DRAWING_GEOJSON]${JSON.stringify({
+          kind: routeDrawing.kind,
+          coordinates: routeDrawing.coordinates,
+        })}`
+      : baseNotes;
 
-    let { latitude, longitude } = parseCoordsFromText(rawAddress);
-    if ((latitude === null || longitude === null) && geocodeEnabled) {
-      const resolved = await resolveGeocode(rawAddress);
-      latitude = resolved.latitude;
-      longitude = resolved.longitude;
-    }
-
-    actionRecords.push({
-      id: stableId("real_action", `${rawAddress}|${eventDate || ""}|${association}`),
+    records.push({
+      id: recordId,
       recordType: "action",
-      status: toRecordStatus(),
+      status,
       source: "google_sheet",
-      title: rawAddress,
-      description: `Import Google Sheet (${typeLabel})`,
+      title: locationLabel,
+      description: fullNotes,
       location: {
-        label: rawAddress,
+        label: locationLabel,
         city: city || "Paris",
-        latitude,
-        longitude,
+        latitude: representativeCoordinates.latitude,
+        longitude: representativeCoordinates.longitude,
       },
-      eventDate,
+      eventDate: actionDate,
       metrics: {
         wasteKg,
         cigaretteButts,
@@ -269,80 +505,84 @@ async function main() {
         durationMinutes,
       },
       map: {
-        displayable: latitude !== null && longitude !== null,
-        lat: latitude,
-        lon: longitude,
+        displayable:
+          representativeCoordinates.latitude !== null &&
+          representativeCoordinates.longitude !== null,
+        lat: representativeCoordinates.latitude,
+        lon: representativeCoordinates.longitude,
       },
       trace: {
-        externalId: null,
+        externalId: recordId,
         originTable: "google_sheet",
-        importedAt: new Date().toISOString(),
-        notes: association ? `Association: ${association}` : null,
+        importedAt,
+        notes: fullNotes,
       },
     });
 
-    if (cleanPlacesIndex >= 0) {
-      const cleanPlace = fixMojibake(row[cleanPlacesIndex] || "");
-      if (cleanPlace) {
-        cleanPlaceSet.add(cleanPlace);
+    if (index.cleanPlaces >= 0) {
+      const cleanPlacesRaw = fixMojibake(row[index.cleanPlaces] || "");
+      if (cleanPlacesRaw) {
+        for (const place of cleanPlacesRaw
+          .split(/[;|\n]/)
+          .map((part) => fixMojibake(part))
+          .filter(Boolean)) {
+          cleanPlaceSet.add(place);
+        }
       }
     }
-    if (
-      cleanPlaceFlagIndex >= 0 &&
-      parseBooleanDropdown(row[cleanPlaceFlagIndex])
-    ) {
-      cleanPlaceSet.add(rawAddress);
+    if (index.cleanPlaceFlag >= 0 && cleanPlaceFlag) {
+      cleanPlaceSet.add(locationLabel);
     }
   }
 
   const cleanPlaceRecords = [];
   for (const place of Array.from(cleanPlaceSet)) {
-    let { latitude, longitude } = parseCoordsFromText(place);
-    if ((latitude === null || longitude === null) && geocodeEnabled) {
-      const resolved = await resolveGeocode(place);
-      latitude = resolved.latitude;
-      longitude = resolved.longitude;
+    let coordinates = parseCoordsFromText(place);
+    if ((coordinates.latitude === null || coordinates.longitude === null) && geocodeEnabled) {
+      coordinates = await resolveGeocode(place);
     }
 
+    const recordId = stableId("real_clean_place", place);
     cleanPlaceRecords.push({
-      id: stableId("real_clean_place", place),
+      id: recordId,
       recordType: "clean_place",
-      status: toRecordStatus(),
+      status: "validated",
       source: "google_sheet",
       title: place,
       description: "Lieu propre (Google Sheet)",
       location: {
         label: place,
         city: "Paris",
-        latitude,
-        longitude,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
       },
       eventDate: null,
       map: {
-        displayable: latitude !== null && longitude !== null,
-        lat: latitude,
-        lon: longitude,
+        displayable:
+          coordinates.latitude !== null && coordinates.longitude !== null,
+        lat: coordinates.latitude,
+        lon: coordinates.longitude,
       },
       trace: {
-        externalId: null,
+        externalId: recordId,
         originTable: "google_sheet",
-        importedAt: new Date().toISOString(),
-        notes: null,
+        importedAt,
+        notes: "Imported from Google Sheet column: lieux propres\n[google-sheet-sync]",
       },
     });
   }
 
   const output = {
     version: 1,
-    updatedAt: new Date().toISOString(),
-    records: [...actionRecords, ...cleanPlaceRecords],
+    updatedAt: importedAt,
+    records: [...records, ...cleanPlaceRecords],
   };
 
   await mkdir(dirname(OUT_PATH), { recursive: true });
   await writeFile(OUT_PATH, `${JSON.stringify(output, null, 2)}\n`, "utf8");
 
   console.log(`Real dataset updated: ${OUT_PATH}`);
-  console.log(`Actions: ${actionRecords.length}`);
+  console.log(`Actions: ${records.length}`);
   console.log(`Clean places: ${cleanPlaceRecords.length}`);
   console.log(
     `Displayable map points: ${

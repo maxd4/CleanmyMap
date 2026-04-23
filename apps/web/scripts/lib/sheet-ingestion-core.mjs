@@ -287,3 +287,92 @@ export function createGeocodeResolver(params) {
     return cache.get(address) ?? { latitude: null, longitude: null };
   };
 }
+
+export function buildRouteLocationLabel(
+  departureLabel,
+  arrivalLabel,
+  fallbackLabel = "",
+) {
+  const departure = fixMojibake(String(departureLabel || "")).trim();
+  const arrival = fixMojibake(String(arrivalLabel || "")).trim();
+  const fallback = fixMojibake(String(fallbackLabel || "")).trim();
+
+  if (departure && arrival) {
+    return `${departure} → ${arrival}`;
+  }
+  if (departure) {
+    return departure;
+  }
+  if (arrival) {
+    return arrival;
+  }
+  return fallback;
+}
+
+function buildFlexibleRoutePoints(start, end) {
+  const midLatitude = (start.latitude + end.latitude) / 2;
+  const midLongitude = (start.longitude + end.longitude) / 2;
+  const deltaLat = end.latitude - start.latitude;
+  const deltaLng = end.longitude - start.longitude;
+  const distance = Math.max(Math.abs(deltaLat), Math.abs(deltaLng));
+  const offset = Math.min(0.0012, Math.max(0.0002, distance * 0.18));
+  const perpendicularLat = -deltaLng * offset;
+  const perpendicularLng = deltaLat * offset;
+  const detourPoint = [
+    Number((midLatitude + perpendicularLat).toFixed(6)),
+    Number((midLongitude + perpendicularLng).toFixed(6)),
+  ];
+  return [
+    [start.latitude, start.longitude],
+    detourPoint,
+    [end.latitude, end.longitude],
+  ];
+}
+
+export function buildRouteDrawingFromCoordinates(
+  start,
+  end,
+  routeStyle = "souple",
+) {
+  if (
+    !start ||
+    !end ||
+    !Number.isFinite(start.latitude) ||
+    !Number.isFinite(start.longitude) ||
+    !Number.isFinite(end.latitude) ||
+    !Number.isFinite(end.longitude)
+  ) {
+    return null;
+  }
+
+  const coordinates =
+    routeStyle === "direct"
+      ? [
+          [start.latitude, start.longitude],
+          [end.latitude, end.longitude],
+        ]
+      : buildFlexibleRoutePoints(start, end);
+
+  return {
+    kind: "polyline",
+    coordinates,
+  };
+}
+
+export function buildMidpointFromCoordinates(start, end) {
+  if (
+    !start ||
+    !end ||
+    !Number.isFinite(start.latitude) ||
+    !Number.isFinite(start.longitude) ||
+    !Number.isFinite(end.latitude) ||
+    !Number.isFinite(end.longitude)
+  ) {
+    return { latitude: null, longitude: null };
+  }
+
+  return {
+    latitude: Number(((start.latitude + end.latitude) / 2).toFixed(6)),
+    longitude: Number(((start.longitude + end.longitude) / 2).toFixed(6)),
+  };
+}

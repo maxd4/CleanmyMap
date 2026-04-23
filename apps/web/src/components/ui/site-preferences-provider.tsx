@@ -33,6 +33,12 @@ type SitePreferencesContextValue = {
   isDisplayModeExplicitlySet: boolean;
 };
 
+type SitePreferencesProviderProps = {
+  children: ReactNode;
+  initialDisplayMode?: DisplayMode;
+  initialDisplayModeExplicit?: boolean;
+};
+
 const SitePreferencesContext =
   createContext<SitePreferencesContextValue | null>(null);
 
@@ -50,7 +56,18 @@ function parseDisplayMode(raw: string | null): DisplayMode {
     : DEFAULT_DISPLAY_MODE;
 }
 
-export function SitePreferencesProvider({ children }: { children: ReactNode }) {
+function parseOptionalDisplayMode(raw: string | null): DisplayMode | null {
+  if (!raw) {
+    return null;
+  }
+  return DISPLAY_MODES.includes(raw as DisplayMode) ? (raw as DisplayMode) : null;
+}
+
+export function SitePreferencesProvider({
+  children,
+  initialDisplayMode,
+  initialDisplayModeExplicit = false,
+}: SitePreferencesProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(() => {
     if (typeof window === "undefined") {
       return DEFAULT_LOCALE;
@@ -70,7 +87,10 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
   });
   const [displayMode, setDisplayModeState] = useState<DisplayMode>(() => {
     if (typeof window === "undefined") {
-      return DEFAULT_DISPLAY_MODE;
+      return initialDisplayMode ?? DEFAULT_DISPLAY_MODE;
+    }
+    if (initialDisplayModeExplicit) {
+      return initialDisplayMode ?? DEFAULT_DISPLAY_MODE;
     }
     return parseDisplayMode(
       window.localStorage.getItem(STORAGE_KEYS.displayMode),
@@ -79,7 +99,10 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
   const [isDisplayModeExplicitlySet, setIsDisplayModeExplicitlySet] =
     useState<boolean>(() => {
       if (typeof window === "undefined") {
-        return false;
+        return initialDisplayModeExplicit ?? false;
+      }
+      if (initialDisplayModeExplicit) {
+        return true;
       }
       return Boolean(window.localStorage.getItem(STORAGE_KEYS.displayMode));
     });
@@ -117,15 +140,72 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
     document.documentElement.removeAttribute("data-display-mode");
   }, [displayMode, isDisplayModeExplicitlySet]);
 
+  const persistDisplayMode = useCallback(async (value: DisplayMode) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    try {
+      const response = await fetch("/api/account/display-mode", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ displayMode: value }),
+      });
+      if (!response.ok) {
+        throw new Error(`display_mode_sync_failed_${response.status}`);
+      }
+      window.localStorage.removeItem(STORAGE_KEYS.displayModePendingSync);
+    } catch (error: unknown) {
+      window.localStorage.setItem(STORAGE_KEYS.displayModePendingSync, value);
+      console.error("Failed to persist display mode preference", error);
+    }
+  }, []);
+
   const setLocale = useCallback((value: Locale) => setLocaleState(value), []);
   const setTheme = useCallback((value: ThemeMode) => setThemeState(value), []);
   const setDisplayMode = useCallback((value: DisplayMode) => {
     setDisplayModeState(value);
     setIsDisplayModeExplicitlySet(true);
-  }, []);
+    void persistDisplayMode(value);
+  }, [persistDisplayMode]);
   const toggleTheme = useCallback(() => {
     setThemeState((previous) => (previous === "dark" ? "light" : "dark"));
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const replayPendingSync = () => {
+      const pendingRaw = window.localStorage.getItem(
+        STORAGE_KEYS.displayModePendingSync,
+      );
+      const pendingMode = parseOptionalDisplayMode(pendingRaw);
+      if (!pendingMode) {
+        if (pendingRaw) {
+          window.localStorage.removeItem(STORAGE_KEYS.displayModePendingSync);
+        }
+        return;
+      }
+      void persistDisplayMode(pendingMode);
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        replayPendingSync();
+      }
+    };
+
+    replayPendingSync();
+    window.addEventListener("online", replayPendingSync);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("online", replayPendingSync);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [persistDisplayMode]);
 
   const value = useMemo<SitePreferencesContextValue>(
     () => ({

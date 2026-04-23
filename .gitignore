@@ -47,3 +47,5 @@ runtime/
 *secrets*
 *credentials*
 CleanmyMap-sync/
+
+.vercel

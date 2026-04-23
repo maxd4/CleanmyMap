@@ -5,13 +5,16 @@ describe("proxy protected routes", () => {
   it("keeps critical business routes protected", () => {
     const required = [
       "/admin(.*)",
+      "/dashboard(.*)",
       "/actions(.*)",
+      "/prints(.*)",
+      "/sponsor-portal(.*)",
       "/api/community(.*)",
+      "/api/account(.*)",
       "/api/pilotage(.*)",
       "/api/recycling(.*)",
       "/api/route(.*)",
       "/api/spots(.*)",
-      "/reports(.*)",
       "/sections(.*)",
       "/api/admin(.*)",
       "/api/actions(.*)",

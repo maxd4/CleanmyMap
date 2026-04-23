@@ -9,6 +9,9 @@ describe("action metadata notes", () => {
     const notes = appendActionMetadataToNotes("Observation terrain", {
       submissionMode: "complete",
       associationName: "Collectif Nettoyons Paris",
+      placeType: "Bois/Parc/Jardin/Square/Sentier",
+      routeStyle: "souple",
+      routeAdjustmentMessage: "Contourner l'avenue principale",
       wasteBreakdown: { plastiqueKg: 2.4, triQuality: "elevee" },
     });
     const parsed = extractActionMetadataFromNotes(notes);
@@ -16,6 +19,9 @@ describe("action metadata notes", () => {
     expect(parsed.cleanNotes).toBe("Observation terrain");
     expect(parsed.submissionMode).toBe("complete");
     expect(parsed.associationName).toBe("Collectif Nettoyons Paris");
+    expect(parsed.placeType).toBe("Bois/Parc/Jardin/Square/Sentier");
+    expect(parsed.routeStyle).toBe("souple");
+    expect(parsed.routeAdjustmentMessage).toBe("Contourner l'avenue principale");
     expect(parsed.wasteBreakdown?.plastiqueKg).toBe(2.4);
     expect(parsed.wasteBreakdown?.triQuality).toBe("elevee");
   });
@@ -36,5 +42,12 @@ describe("action metadata notes", () => {
     );
     expect(parsed.cleanNotes).toBe("Observation locale");
     expect(parsed.associationName).toBe("AEBCPEV");
+  });
+
+  it("drops the ingestion sync marker from clean notes", () => {
+    const parsed = extractActionMetadataFromNotes(
+      "Observation locale\n[google-sheet-sync]",
+    );
+    expect(parsed.cleanNotes).toBe("Observation locale");
   });
 });

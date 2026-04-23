@@ -4,7 +4,7 @@ import { parseDrawingFromNotes, toGeoJsonString } from "./drawing";
 describe("drawing notes parser", () => {
   it("extracts clean notes and drawing payload", () => {
     const notes =
-      'Commentaire terrain\n[DRAWING_GEOJSON]{"kind":"polyline","coordinates":[[48.85,2.35],[48.851,2.351]]}';
+      'Commentaire terrain\n[DRAWING_GEOJSON]{"kind":"polyline","coordinates":[[48.85,2.35],[48.851,2.351]]}\n[google-sheet-sync]';
     const parsed = parseDrawingFromNotes(notes);
 
     expect(parsed.cleanNotes).toBe("Commentaire terrain");
@@ -17,6 +17,15 @@ describe("drawing notes parser", () => {
     const parsed = parseDrawingFromNotes('[DRAWING_GEOJSON]{"foo":"bar"}');
     expect(parsed.manualDrawing).toBeNull();
     expect(parsed.cleanNotes).toBeNull();
+  });
+
+  it("ignores the sync marker when it trails the drawing payload", () => {
+    const parsed = parseDrawingFromNotes(
+      'Note utile\n[DRAWING_GEOJSON]{"kind":"polyline","coordinates":[[48.85,2.35],[48.851,2.351]]}\n[google-sheet-sync]',
+    );
+
+    expect(parsed.cleanNotes).toBe("Note utile");
+    expect(parsed.manualDrawing?.kind).toBe("polyline");
   });
 
   it("builds geojson from polygon", () => {

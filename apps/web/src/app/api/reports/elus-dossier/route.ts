@@ -13,6 +13,7 @@ import type { PersonalImpactMethodology } from "@/lib/gamification/progression-t
 import { buildPilotageOverviewFromContracts } from "@/lib/pilotage/overview";
 import type { ZoneComparisonRow } from "@/lib/pilotage/prioritization";
 import { buildDeliverableFilename } from "@/lib/reports/deliverable-name";
+import { filterActionContractsByScope } from "@/lib/reports/scope";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -322,13 +323,16 @@ export async function GET(request: Request) {
   );
   const format = parseExportFormat(url.searchParams.get("format"));
   const floorDate = buildDateFloor(days * 2);
+  const scopeKind = url.searchParams.get("scopeKind");
+  const scopeValue = url.searchParams.get("scopeValue");
+  const legacyAssociation = url.searchParams.get("association");
 
   try {
     const supabase = getSupabaseServerClient();
     const { items: contracts, isTruncated } = await fetchUnifiedActionContracts(
       supabase,
       {
-        limit,
+        limit: Math.max(limit * 2, limit),
         status: null,
         floorDate,
         requireCoordinates: false,
@@ -336,9 +340,22 @@ export async function GET(request: Request) {
       },
     );
 
-    const approved = contracts.filter(
-      (contract) => contract.status === "approved",
-    );
+    const scope = filterActionContractsByScope(contracts, {
+      kind:
+        scopeKind === "account" ||
+        scopeKind === "association" ||
+        scopeKind === "arrondissement"
+          ? scopeKind
+          : legacyAssociation
+            ? "association"
+            : "global",
+      value:
+        scopeValue ??
+        (scopeKind === "association" ? legacyAssociation : null) ??
+        legacyAssociation,
+    });
+
+    const approved = scope.filter((contract) => contract.status === "approved");
     const totalKg = approved.reduce(
       (acc, contract) => acc + Number(contract.metadata.wasteKg || 0),
       0,
@@ -355,7 +372,7 @@ export async function GET(request: Request) {
     ).length;
 
     const comparison = computePeriodComparison(
-      contracts.map((contract) => ({
+      scope.map((contract) => ({
         status: contract.status,
         observedAt: contract.dates.observedAt,
         createdAt: contract.dates.createdAt ?? contract.dates.importedAt,
@@ -374,7 +391,7 @@ export async function GET(request: Request) {
       })),
     );
     const overview = buildPilotageOverviewFromContracts({
-      contracts,
+      contracts: scope,
       periodDays: days,
     });
 

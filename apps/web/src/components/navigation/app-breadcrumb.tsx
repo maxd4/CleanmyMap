@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
@@ -27,21 +28,31 @@ export function AppBreadcrumb({ currentProfile, profileLabel }: AppBreadcrumbPro
   return (
     <nav
       aria-label="Breadcrumb"
-      className="sticky top-0 z-20 flex items-center gap-1.5 rounded-xl border border-white/30 bg-white/70 backdrop-blur-lg px-3 py-2 text-xs text-slate-500 shadow-sm"
+      className="mx-auto flex w-full max-w-7xl items-center gap-1.5 rounded-2xl border border-white/40 bg-white/80 px-3 py-2 text-xs text-slate-500 shadow-sm backdrop-blur-md"
     >
-      <Link href="/dashboard" className="hover:text-emerald-700 transition font-medium">
+      <Link
+        href="/dashboard"
+        className="inline-flex shrink-0 items-center gap-1.5 font-medium transition hover:text-emerald-700"
+      >
+        <Image
+          src="/brand/nouveau-logo.png"
+          alt="Logo CleanMyMap"
+          width={18}
+          height={10}
+          className="h-3 w-auto shrink-0"
+        />
         CleanMyMap
       </Link>
 
       <span className="text-slate-300">/</span>
 
-      <span className="text-slate-400 truncate max-w-[80px]">{profileLabel}</span>
+      <span className="max-w-[80px] truncate text-slate-400">{profileLabel}</span>
 
       {activeSpace && (
         <>
           <span className="text-slate-300">/</span>
           <span className="text-base leading-none">{activeSpace.icon}</span>
-          <span className="font-medium text-slate-700 truncate max-w-[90px]">
+          <span className="max-w-[90px] truncate font-medium text-slate-700">
             {activeSpace.label[locale]}
           </span>
         </>
@@ -50,7 +61,7 @@ export function AppBreadcrumb({ currentProfile, profileLabel }: AppBreadcrumbPro
       {activeItem && (
         <>
           <span className="text-slate-300">/</span>
-          <span className="font-semibold text-emerald-800 truncate max-w-[120px]">
+          <span className="max-w-[120px] truncate font-semibold text-emerald-800">
             {activeItem.label[locale]}
           </span>
         </>

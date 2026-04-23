@@ -7,6 +7,7 @@ import confetti from "canvas-confetti";
 import { Download, Share2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { ImpactCard } from "@/components/profil/impact-card";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { useUser } from "@clerk/nextjs";
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -33,7 +34,7 @@ export default function ImpactProfilePage() {
         backgroundColor: "#064e3b" // Emerald-900 background for export
       });
       const link = document.createElement("a");
-      link.download = `CMM-Impact-${user?.firstName || "Contributeur"}.png`;
+      link.download = `CleanMyMap-Impact-${user?.firstName || "Contributeur"}.png`;
       link.href = dataUrl;
       link.click();
       confetti({
@@ -52,6 +53,50 @@ export default function ImpactProfilePage() {
   if (isLoading) return <div className="flex items-center justify-center min-h-[400px]">Chargement de ton impact...</div>;
 
   const prog = meData?.progression;
+
+  if (!user) {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="blur"
+        title="Ma carte d'impact"
+        description="La carte personnelle, le téléchargement et le partage sont réservés aux comptes Clerk connectés."
+        lockedPreview={
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                Aperçu
+              </p>
+              <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-sm text-slate-600">
+                  La carte d'impact montre tes actions validées, ton niveau et
+                  tes badges après connexion.
+                </p>
+              </div>
+            </div>
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                Actions
+              </p>
+              <div className="mt-3 space-y-3">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                  Télécharger le certificat
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                  Copier le lien de profil
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+                  Consulter la méthodologie
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      >
+        <div />
+      </ClerkRequiredGate>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">

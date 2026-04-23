@@ -7,20 +7,20 @@ export type ZoneFilter = "all" | "nearby" | ParisArrondissement;
 
 export const KIND_FILTERS: Array<{ value: EntityKind | "all"; label: string }> =
   [
-    { value: "all", label: "Tous les acteurs" },
+    { value: "all", label: "Toutes les structures" },
     { value: "association", label: "Associations" },
-    { value: "commerce", label: "Commercants" },
+    { value: "commerce", label: "Commerçant·e·s" },
     { value: "entreprise", label: "Entreprises" },
     { value: "groupe_parole", label: "Collectifs" },
-    { value: "evenement", label: "Collectifs evenement" },
+    { value: "evenement", label: "Collectifs événementiels" },
   ];
 
 export const CONTRIBUTION_FILTERS: Array<{
   value: ContributionType | "all";
   label: string;
 }> = [
-  { value: "all", label: "Toutes les aides" },
-  { value: "materiel", label: "Materiel" },
+    { value: "all", label: "Toutes les aides" },
+  { value: "materiel", label: "Matériel" },
   { value: "logistique", label: "Logistique" },
   { value: "accueil", label: "Accueil" },
   { value: "financement", label: "Financement" },

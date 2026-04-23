@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import type { NextFetchEvent, NextRequest } from "next/server";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { PROTECTED_ROUTE_PATTERNS } from "@/lib/auth/protected-routes";
 
@@ -10,10 +11,32 @@ const isProtectedRoute = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS]);
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const LIMIT = 30; // requêtes
 const WINDOW = 60 * 1000; // 1 minute en ms
+export const APP_SHELL_ROUTE_PREFIXES = [
+  "/actions",
+  "/admin",
+  "/dashboard",
+  "/learn",
+  "/methodologie",
+  "/observatoire",
+  "/parcours",
+  "/partners",
+  "/prints",
+  "/profil",
+  "/reports",
+  "/sections",
+  "/signalement",
+  "/sponsor-portal",
+] as const;
+
+export function isAppShellRoute(pathname: string): boolean {
+  return APP_SHELL_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
 
 const clerkRuntime = getClerkRuntimeConfig();
 
-export default clerkMiddleware(
+const clerkProxy = clerkMiddleware(
   async (auth, req) => {
     const { pathname } = req.nextUrl;
 
@@ -47,6 +70,14 @@ export default clerkMiddleware(
     if (isProtectedRoute(req)) {
       await auth.protect();
     }
+
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-cleanmymap-app-shell", isAppShellRoute(pathname) ? "1" : "0");
+    return NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
   },
   {
     domain: clerkRuntime.domain,
@@ -55,6 +86,30 @@ export default clerkMiddleware(
     authorizedParties: clerkRuntime.authorizedParties,
   },
 );
+
+export default async function proxy(req: NextRequest, evt: NextFetchEvent) {
+  try {
+    const response = await clerkProxy(req, evt);
+    const clerkReason = response?.headers.get("x-clerk-auth-reason");
+    if (response?.status === 500 && clerkReason === "dev-browser-missing") {
+      if (isProtectedRoute(req)) {
+        const signInUrl = new URL("/sign-in", req.url);
+        signInUrl.searchParams.set("redirect_url", req.url);
+        return NextResponse.redirect(signInUrl);
+      }
+      return NextResponse.next();
+    }
+    return response;
+  } catch (error) {
+    console.error("Proxy fallback: Clerk middleware failure", error);
+    if (isProtectedRoute(req)) {
+      const signInUrl = new URL("/sign-in", req.url);
+      signInUrl.searchParams.set("redirect_url", req.url);
+      return NextResponse.redirect(signInUrl);
+    }
+    return NextResponse.next();
+  }
+}
 
 export const config = {
   matcher: [

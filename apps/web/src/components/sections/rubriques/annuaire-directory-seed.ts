@@ -8,7 +8,7 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
     kind: "association",
     types: ["environnemental", "social"],
     description:
-      "Accompagne les franciliens a la transition ecologique avec des ateliers terrain.",
+      "Accompagne les Francilien·ne·s dans la transition écologique avec des ateliers terrain.",
     location: "Issy-les-Moulineaux",
     lat: 48.825,
     lng: 2.27,
@@ -39,7 +39,7 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
     kind: "association",
     types: ["social", "humanitaire"],
     description:
-      "Reseau solidaire de commercants engages pour aider les personnes sans domicile.",
+      "Réseau solidaire de commerçant·e·s engagé·e·s pour aider les personnes sans domicile.",
     location: "Paris Centre",
     lat: 48.86,
     lng: 2.35,
@@ -60,7 +60,7 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
     internalAdminContact: {
       referentName: "Valerie Fayard",
       email: "valerie.fayard@lacloche.org",
-      phone: "Non publie",
+      phone: "Non publié",
     },
   },
   {
@@ -70,7 +70,7 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
     kind: "commerce",
     types: ["environnemental", "social"],
     description:
-      "Tiers-lieu mode responsable: friperie, couture, ateliers de sensibilisation.",
+      "Tiers-lieu mode responsable : friperie, couture, ateliers de sensibilisation.",
     location: "Paris 10e",
     lat: 48.875,
     lng: 2.36,
@@ -101,7 +101,7 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
     kind: "association",
     types: ["social", "environnemental"],
     description:
-      "Inclusion sociale et reemploi via demenagements a velo et logistique locale.",
+      "Inclusion sociale et réemploi via déménagements à vélo et logistique locale.",
     location: "Paris 11e / 18e",
     lat: 48.89,
     lng: 2.355,
@@ -109,7 +109,7 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
     instagramUrl: "https://www.instagram.com/cartonplein_org/",
     coveredArrondissements: [11, 18, 19, 20],
     contributionTypes: ["logistique", "materiel", "accueil"],
-    availability: "Sur demande + creneaux hebdo",
+    availability: "Sur demande + créneaux hebdomadaires",
     primaryChannel: {
       platform: "site web",
       label: "Site officiel",
@@ -128,11 +128,11 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
   {
     id: "asso-4",
     name: "Academie du Climat",
-    legalIdentity: "Ville de Paris - Academie du Climat (equipement municipal)",
+    legalIdentity: "Ville de Paris - Académie du Climat (équipement municipal)",
     kind: "association",
     types: ["environnemental", "social"],
     description:
-      "Lieu d'engagement climat ouvert au public: ateliers, debats, formations et reseau citoyen.",
+      "Lieu d'engagement climat ouvert au public: ateliers, débats, formations, programmation régulière et réseau citoyen.",
     location: "Paris 4e",
     lat: 48.8569,
     lng: 2.3564,
@@ -140,7 +140,7 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
     instagramUrl: "https://www.instagram.com/academieduclimat/",
     coveredArrondissements: [1, 2, 3, 4, 11, 12],
     contributionTypes: ["accueil", "logistique", "communication"],
-    availability: "Lundi au samedi, 9h-fin de soiree",
+    availability: "Lundi au samedi, 9h-fin de soiree, agenda ateliers mis à jour régulièrement",
     primaryChannel: {
       platform: "site web",
       label: "Site officiel",
@@ -158,23 +158,18 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
   },
   {
     id: "collectif-1",
-    name: "Cercle de parole - Eco-anxiete",
-    legalIdentity: "Collectif eco-anxiete Paris (declaration en cours)",
+    name: "Cercle de parole - Eco-anxiété",
+    legalIdentity: "Collectif eco-anxiété Paris (déclaration en cours)",
     kind: "groupe_parole",
     types: ["social", "environnemental"],
     description:
-      "Collectif itinerant pour echanger sur les emotions liees a la crise climatique.",
-    location: "Paris itinerant",
+      "Collectif itinérant pour échanger sur les émotions liées à la crise climatique.",
+    location: "Paris itinérant",
     lat: 48.865,
     lng: 2.34,
     coveredArrondissements: [5, 6, 11, 12, 13],
     contributionTypes: ["accueil", "communication"],
-    availability: "1 fois par semaine, en soiree",
-    primaryChannel: {
-      platform: "facebook",
-      label: "Page Facebook",
-      url: "https://www.facebook.com/",
-    },
+    availability: "1 fois par semaine, en soirée",
     verificationStatus: "en_cours",
     qualificationStatus: "contact_non_qualifie",
     lastUpdatedAt: "2026-03-02",
@@ -187,7 +182,7 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
     kind: "commerce",
     types: ["environnemental", "social"],
     description:
-      "Ressourcerie locale avec ateliers de reemploi et collecte de materiel.",
+      "Ressourcerie locale avec ateliers de réemploi et collecte de matériel.",
     location: "Montreuil",
     lat: 48.86,
     lng: 2.43,
@@ -207,13 +202,38 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
     recentActivityAt: "2026-04-05",
   },
   {
+    id: "com-3",
+    name: "Klin d'oeil",
+    legalIdentity: "Klin d'oeil, boutique de createurs et ateliers artistiques (Bas Belleville, rue Deguerry, Paris 11e)",
+    kind: "commerce",
+    types: ["social"],
+    description:
+      "Boutique de createurs et lieu d'activites artistiques implante a Bas Belleville, au croisement des 11e, 19e et 20e arrondissements, avec une carte des bonnes adresses pour valoriser le quartier.",
+    location: "Bas Belleville, rue Deguerry, Paris 11e",
+    lat: 48.8667,
+    lng: 2.3788,
+    websiteUrl: "https://klindoeil.com",
+    coveredArrondissements: [11, 19, 20],
+    contributionTypes: ["accueil", "communication"],
+    availability: "Selon programmation des ateliers et temps boutique",
+    primaryChannel: {
+      platform: "site web",
+      label: "Site officiel",
+      url: "https://klindoeil.com",
+    },
+    verificationStatus: "verifie",
+    qualificationStatus: "partenaire_actif",
+    lastUpdatedAt: "2026-04-23",
+    recentActivityAt: "2026-04-22",
+  },
+  {
     id: "evt-1",
     name: "La REcyclerie - Ateliers",
     legalIdentity: "SAS Sinny&Ooko - site La REcyclerie (SIREN 801 782 744)",
     kind: "evenement",
     types: ["environnemental"],
     description:
-      "Programmation ateliers, reparation, potager urbain et evenements citoyens.",
+      "Programmation ateliers, réparation, potager urbain et événements citoyens.",
     location: "Paris 18e",
     lat: 48.896,
     lng: 2.344,
@@ -239,7 +259,7 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
     kind: "entreprise",
     types: ["environnemental"],
     description:
-      "Accompagne les entreprises pour financer et operer des actions locales.",
+      "Accompagne les entreprises pour financer et opérer des actions locales.",
     location: "Paris 9e",
     lat: 48.874,
     lng: 2.333,
@@ -249,11 +269,11 @@ export const INITIAL_ANNUAIRE_ENTRIES: AnnuaireEntry[] = [
     primaryChannel: {
       platform: "site web",
       label: "Site officiel",
-      url: "https://example.com/green-flex",
+      url: "https://www.greenflex.com/",
     },
     verificationStatus: "a_revalider",
     qualificationStatus: "contact_non_qualifie",
-    lastUpdatedAt: "2025-12-18",
-    recentActivityAt: "2025-11-25",
+    lastUpdatedAt: "2026-04-23",
+    recentActivityAt: "2026-04-22",
   },
 ];

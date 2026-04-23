@@ -46,6 +46,15 @@ export function getParisArrondissementLabel(
   return ARRONDISSEMENT_LOOKUP.get(arrondissement)?.label ?? `Paris ${arrondissement}e`;
 }
 
+export function getParisArrondissementCenter(
+  arrondissement: ParisArrondissement,
+): { lat: number; lng: number } {
+  return ARRONDISSEMENT_LOOKUP.get(arrondissement)?.center ?? {
+    lat: 48.8566,
+    lng: 2.3522,
+  };
+}
+
 function toRadians(value: number): number {
   return (value * Math.PI) / 180;
 }

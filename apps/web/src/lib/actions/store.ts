@@ -1,9 +1,17 @@
-import type { ActionStatus, CreateActionPayload } from "@/lib/actions/types";
+import type {
+  ActionDrawing,
+  ActionStatus,
+  CreateActionPayload,
+} from "@/lib/actions/types";
 import type { ActionRow } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DRAWING_NOTE_PREFIX } from "@/lib/actions/drawing";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
-import { findMatchingGeometry } from "@/lib/geo/geometry-reference";
+import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
+import {
+  buildTrainingExampleInsert,
+  recordTrainingExample,
+} from "@/lib/actions/training";
 
 /** @deprecated Use ActionRow from @/types/database */
 export type StoredAction = ActionRow;
@@ -14,6 +22,12 @@ function buildPersistedNotes(payload: CreateActionPayload): string | null {
     wasteBreakdown: payload.wasteBreakdown,
     associationName: payload.associationName,
     placeType: payload.placeType,
+    departureLocationLabel: payload.departureLocationLabel,
+    arrivalLocationLabel: payload.arrivalLocationLabel,
+    routeStyle: payload.routeStyle,
+    routeAdjustmentMessage: payload.routeAdjustmentMessage,
+    photos: payload.photos,
+    visionEstimate: payload.visionEstimate,
   });
   const base = baseWithMetadata?.trim() ?? "";
   if (!payload.manualDrawing) {
@@ -41,7 +55,7 @@ export async function fetchActions(
   let query = supabase
     .from("actions")
     .select(
-      "id, created_at, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
+      "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
     )
     .order("action_date", { ascending: false })
     .limit(params.limit);
@@ -76,7 +90,7 @@ export async function fetchRecentActionsByUser(
   const result = await supabase
     .from("actions")
     .select(
-      "id, created_at, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
+      "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
     )
     .eq("created_by_clerk_id", params.userId)
     .order("action_date", { ascending: false })
@@ -101,13 +115,16 @@ export async function createAction(
 ): Promise<{ id: string }> {
   const payload = params.payload;
 
-  // Injection automatique de polygone si aucun dessin n'est fourni mais que le lieu est reconnu
-  let finalDrawing = payload.manualDrawing;
+  // Injection automatique de géométrie si aucun dessin manuel n'est fourni.
+  let finalDrawing: ActionDrawing | null = payload.manualDrawing ?? null;
   if (!finalDrawing || finalDrawing.coordinates.length === 0) {
-    const autoDrawing = findMatchingGeometry(payload.locationLabel);
-    if (autoDrawing) {
-      finalDrawing = autoDrawing;
-    }
+    finalDrawing =
+      (await deriveAutoDrawingFromLocation({
+        locationLabel: payload.locationLabel,
+        departureLocationLabel: payload.departureLocationLabel,
+        arrivalLocationLabel: payload.arrivalLocationLabel,
+        routeStyle: payload.routeStyle,
+      })) ?? null;
   }
 
   const inserted = await supabase
@@ -123,7 +140,10 @@ export async function createAction(
       cigarette_butts: payload.cigaretteButts,
       volunteers_count: payload.volunteersCount,
       duration_minutes: payload.durationMinutes,
-      notes: buildPersistedNotes({ ...payload, manualDrawing: finalDrawing }),
+      notes: buildPersistedNotes({
+        ...payload,
+        manualDrawing: finalDrawing ?? undefined,
+      }),
       status: "pending",
     })
     .select("id")
@@ -132,5 +152,20 @@ export async function createAction(
   if (inserted.error) {
     throw inserted.error;
   }
+
+  const trainingExample = buildTrainingExampleInsert({
+    actionId: String(inserted.data.id),
+    photos: payload.photos ?? null,
+    realWeightKg: payload.wasteKg ?? null,
+    visionEstimate: payload.visionEstimate ?? null,
+    metadata: {
+      departureLocationLabel: payload.departureLocationLabel ?? null,
+      arrivalLocationLabel: payload.arrivalLocationLabel ?? null,
+      placeType: payload.placeType ?? null,
+      submissionMode: payload.submissionMode ?? null,
+    },
+  });
+  await recordTrainingExample(supabase, trainingExample);
+
   return { id: String(inserted.data.id) };
 }

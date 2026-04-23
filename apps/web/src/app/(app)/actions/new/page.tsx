@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { ActionDeclarationForm } from "@/components/actions/action-declaration-form";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { DecisionPageHeader } from "@/components/ui/decision-page-header";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
@@ -22,12 +23,70 @@ export default async function NewActionPage({
   searchParams,
 }: NewActionPageProps) {
   const { userId } = await auth();
+  const locale = await getServerLocale();
+  if (!userId) {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="blur"
+        title={locale === "fr" ? "Déclarer une action" : "Declare an action"}
+        description={
+          locale === "fr"
+            ? "Cette fonctionnalité nécessite une connexion Clerk."
+            : "This feature requires Clerk sign-in."
+        }
+        lockedPreview={
+          <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+            <div className="grid gap-3 md:grid-cols-3">
+              <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  {locale === "fr" ? "1. Localiser" : "1. Locate"}
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {locale === "fr"
+                    ? "Repérer le lieu et préparer la déclaration."
+                    : "Find the place and prepare the submission."}
+                </p>
+              </article>
+              <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  {locale === "fr" ? "2. Tracer" : "2. Trace"}
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {locale === "fr"
+                    ? "Tracer la zone sur la carte avec l'assistance."
+                    : "Trace the area on the map with assistance."}
+                </p>
+              </article>
+              <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  {locale === "fr" ? "3. Valider" : "3. Validate"}
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {locale === "fr"
+                    ? "Finaliser l'envoi avec ton profil connecté."
+                    : "Finalize submission with your signed-in profile."}
+                </p>
+              </article>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+              {locale === "fr"
+                ? "Se connecter pour ouvrir le formulaire et rattacher la déclaration au compte."
+                : "Sign in to open the form and attach the submission to the account."}
+            </div>
+          </section>
+        }
+      >
+        <div />
+      </ClerkRequiredGate>
+    );
+  }
+
   const identity = await getCurrentUserIdentity();
   const role = await getCurrentUserRoleLabel();
   const profile = toProfile(role);
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
-  const locale = await getServerLocale();
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const params = searchParams ? await searchParams : undefined;
   const fromEventIdRaw = params?.fromEventId;
@@ -68,13 +127,13 @@ export default async function NewActionPage({
               </article>
               <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Préfill acteur
+                  Préremplissage structure
                 </p>
                 <p className="mt-1 text-lg font-semibold text-slate-900">
                   {actorNameOptions[0]}
                 </p>
                 <p className="mt-1 text-xs text-slate-500">
-                  N-1: dernier acteur connu
+                  N-1: dernière structure connue
                 </p>
                 <p className="mt-1 text-xs text-slate-600">
                   Delta abs: n/a | Delta %: n/a
@@ -87,7 +146,7 @@ export default async function NewActionPage({
                 <p className="mt-1 text-lg font-semibold text-slate-900">
                   {getProfileLabel(profile, locale)}
                 </p>
-                <p className="mt-1 text-xs text-slate-500">N-1: meme profil</p>
+                <p className="mt-1 text-xs text-slate-500">N-1: même profil</p>
                 <p className="mt-1 text-xs text-slate-600">
                   Delta abs: 0 | Delta %: 0%
                 </p>

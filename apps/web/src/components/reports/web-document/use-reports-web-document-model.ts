@@ -1,48 +1,55 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
 import { fetchCommunityEvents } from "@/lib/community/http";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { computeReportModel, getWeatherAdvice } from "./analytics";
+import {
+  buildReportScopeOptions,
+  computeReportAccountScopeCoverage,
+  filterCommunityEventsByScope,
+  filterReportScopeItems,
+  formatReportScopeLabel,
+  normalizeReportScope,
+  type ReportScopeKind,
+} from "@/lib/reports/scope";
 
 export function useReportsWebDocumentModel() {
-  const [associationFilter, setAssociationFilter] = useState<string>("all");
+  const [scopeKind, setScopeKind] = useState<ReportScopeKind>("global");
+  const [scopeValue, setScopeValue] = useState<string>("");
 
   const actionsAll = useSWR(
-    ["report-web-actions-all", associationFilter],
+    ["report-web-actions-all"],
     () =>
       fetchActions({
         status: "all",
         limit: 200,
         days: 365,
         types: "all",
-        association: associationFilter,
       }),
     swrRecentViewOptions,
   );
   const actionsApproved = useSWR(
-    ["report-web-actions-approved", associationFilter],
+    ["report-web-actions-approved"],
     () =>
       fetchActions({
         status: "approved",
         limit: 200,
         days: 365,
         types: "all",
-        association: associationFilter,
       }),
     swrRecentViewOptions,
   );
   const mapAll = useSWR(
-    ["report-web-map-all", associationFilter],
+    ["report-web-map-all"],
     () =>
       fetchMapActions({
         status: "all",
         limit: 300,
         days: 365,
         types: "all",
-        association: associationFilter,
       }),
     swrRecentViewOptions,
   );
@@ -75,29 +82,93 @@ export function useReportsWebDocumentModel() {
     actionsAll.error || actionsApproved.error || mapAll.error || community.error,
   );
 
-  const associationOptions = useMemo(() => {
-    const names = new Set<string>();
-    for (const item of actionsAll.data?.items ?? []) {
-      const value = item.association_name?.trim();
-      if (value) names.add(value);
+  const scopeOptions = useMemo(
+    () =>
+      buildReportScopeOptions([
+        ...(actionsAll.data?.items ?? []),
+        ...(mapAll.data?.items ?? []),
+      ]),
+    [actionsAll.data?.items, mapAll.data?.items],
+  );
+
+  const accountScopeCoverage = useMemo(
+    () => computeReportAccountScopeCoverage(actionsAll.data?.items ?? []),
+    [actionsAll.data?.items],
+  );
+
+  useEffect(() => {
+    if (scopeKind === "global") {
+      if (scopeValue !== "") {
+        setScopeValue("");
+      }
+      return;
     }
-    return [...names].sort((a, b) => a.localeCompare(b, "fr"));
-  }, [actionsAll.data?.items]);
+    const options =
+      scopeKind === "account"
+        ? scopeOptions.accounts
+        : scopeKind === "association"
+          ? scopeOptions.associations
+          : scopeOptions.arrondissements;
+    if (options.length === 0) {
+      if (scopeValue !== "") {
+        setScopeValue("");
+      }
+      return;
+    }
+    const hasValue = options.some((option) => option.value === scopeValue);
+    if (!hasValue) {
+      setScopeValue(options[0].value);
+    }
+  }, [scopeKind, scopeOptions, scopeValue]);
+
+  const scope = useMemo(
+    () => normalizeReportScope({ kind: scopeKind, value: scopeValue }),
+    [scopeKind, scopeValue],
+  );
+
+  const scopedActionsAll = useMemo(
+    () => filterReportScopeItems(actionsAll.data?.items ?? [], scope),
+    [actionsAll.data?.items, scope],
+  );
+  const scopedActionsApproved = useMemo(
+    () => filterReportScopeItems(actionsApproved.data?.items ?? [], scope),
+    [actionsApproved.data?.items, scope],
+  );
+  const scopedMapAll = useMemo(
+    () => filterReportScopeItems(mapAll.data?.items ?? [], scope),
+    [mapAll.data?.items, scope],
+  );
+  const scopedCommunity = useMemo(
+    () => filterCommunityEventsByScope(community.data?.items ?? [], scope),
+    [community.data?.items, scope],
+  );
 
   const report = useMemo(
     () =>
       computeReportModel({
-        allItems: actionsAll.data?.items ?? [],
-        approvedItems: actionsApproved.data?.items ?? [],
-        mapItems: mapAll.data?.items ?? [],
-        events: community.data?.items ?? [],
+        allItems: scopedActionsAll,
+        approvedItems: scopedActionsApproved,
+        mapItems: scopedMapAll,
+        events: scopedCommunity,
       }),
-    [
-      actionsAll.data?.items,
-      actionsApproved.data?.items,
-      community.data?.items,
-      mapAll.data?.items,
-    ],
+    [scopedActionsAll, scopedActionsApproved, scopedCommunity, scopedMapAll],
+  );
+
+  const exportRows = useMemo(
+    () =>
+      scopedActionsApproved.map((item) => ({
+        Date: item.action_date,
+        Lieu: item.location_label,
+        Compte: item.created_by_clerk_id ?? item.actor_name ?? "Inconnu",
+        Association: item.association_name ?? "Sans association",
+        Masse_Kg: Number(item.waste_kg ?? 0),
+        Megots: Number(item.cigarette_butts ?? 0),
+        Bénévoles: Number(item.volunteers_count ?? 0),
+        Durée_Min: Number(item.duration_minutes ?? 0),
+        Type: item.record_type ?? item.contract?.type ?? "action",
+        Source: item.source ?? item.contract?.source ?? "web_form",
+      })),
+    [scopedActionsApproved],
   );
 
   const weatherAdvice = useMemo(() => {
@@ -107,16 +178,17 @@ export function useReportsWebDocumentModel() {
     return getWeatherAdvice({ temperature, rain, wind });
   }, [weather.data]);
 
-  const activeScopeLabel =
-    associationFilter === "all"
-      ? "Global (toutes associations)"
-      : associationFilter;
+  const activeScopeLabel = formatReportScopeLabel(scope, scopeOptions);
 
   return {
-    associationFilter,
-    setAssociationFilter,
-    associationOptions,
+    scopeKind,
+    setScopeKind,
+    scopeValue,
+    setScopeValue,
+    scopeOptions,
+    exportRows,
     activeScopeLabel,
+    accountScopeCoverage,
     report,
     weather,
     weatherAdvice,

@@ -6,7 +6,6 @@ import { LOCAL_DATA_STORE_VERSION } from "@/lib/data/local-records";
 const LOCAL_DB_DIR = join(process.cwd(), "data", "local-db");
 
 export const LOCAL_DB_FILES = {
-  test: join(LOCAL_DB_DIR, "test_records.json"),
   real: join(LOCAL_DB_DIR, "real_records.json"),
   validated: join(LOCAL_DB_DIR, "validated_records.json"),
 } as const;
@@ -112,14 +111,12 @@ export async function upsertLocalRecords(
 }
 
 export async function readAllLocalStores(): Promise<{
-  test: LocalDataStore;
   real: LocalDataStore;
   validated: LocalDataStore;
 }> {
-  const [test, real, validated] = await Promise.all([
-    readLocalStore(LOCAL_DB_FILES.test),
+  const [real, validated] = await Promise.all([
     readLocalStore(LOCAL_DB_FILES.real),
     readLocalStore(LOCAL_DB_FILES.validated),
   ]);
-  return { test, real, validated };
+  return { real, validated };
 }

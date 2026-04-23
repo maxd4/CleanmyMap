@@ -13,11 +13,14 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const isSentryConfigured = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN);
+
   useEffect(() => {
-    // Capture the error to Sentry if available
-    Sentry.captureException(error);
+    if (isSentryConfigured) {
+      Sentry.captureException(error);
+    }
     console.error("[Runtime Error]", error);
-  }, [error]);
+  }, [error, isSentryConfigured]);
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center p-6 text-center overflow-hidden font-outfit">
@@ -37,7 +40,11 @@ export default function Error({
             Oops ! Un imprévu <br />scientifique.
           </h1>
           <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-            Une erreur inattendue est survenue lors de l'exécution de l'application. Nos équipes ont été alertées via Sentry.
+            Une erreur inattendue est survenue lors de l'exécution de l'application.
+            {" "}
+            {isSentryConfigured
+              ? "Nos équipes ont été alertées via Sentry."
+              : "Le monitoring Sentry n'est pas configuré sur cet environnement."}
           </p>
           {error.digest && (
             <code className="block mt-4 text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-600 font-mono">

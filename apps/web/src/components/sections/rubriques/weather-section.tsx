@@ -11,10 +11,13 @@ import {
 } from "@/lib/weather/ops-weather";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { extractArrondissement, formatDateTimeShort, formatDateShort } from "@/components/sections/rubriques/helpers";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 
 
 export function WeatherSection() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   const [zoneMode, setZoneMode] = useState<"auto" | "manual">("auto");
   const [manualZoneId, setManualZoneId] = useState<string>(
     OPERATIONAL_ZONES[0]?.id ?? "centre",
@@ -175,7 +178,7 @@ export function WeatherSection() {
       <div className="space-y-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <label className="flex w-full flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-slate-600 mb-3">
-            Zone opérationnelle
+            {fr ? "Zone opérationnelle" : "Operational zone"}
             <select
               value={selectedZone.id}
               onChange={(event) => {
@@ -200,20 +203,20 @@ export function WeatherSection() {
                   : "border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100"
               }`}
             >
-              Auto-détection
+              {fr ? "Auto-détection" : "Auto-detect"}
             </button>
             <p className="text-[10px] text-slate-500 text-right">
-              Zone détectée: <span className="font-semibold">{OPERATIONAL_ZONES.find((zone) => zone.id === inferredZoneId)?.label ?? "n/a"}</span>
+              {fr ? "Zone détectée" : "Detected zone"}: <span className="font-semibold">{OPERATIONAL_ZONES.find((zone) => zone.id === inferredZoneId)?.label ?? "n/a"}</span>
             </p>
           </div>
         </div>
 
         {isLoading ? (
-          <p className="text-sm text-slate-500">Chargement météo...</p>
+          <p className="text-sm text-slate-500">{fr ? "Chargement météo..." : "Loading weather..."}</p>
         ) : null}
         {error ? (
           <p className="text-sm text-rose-700 bg-rose-50 p-3 rounded-lg border border-rose-200">
-            Météo indisponible, vérifier l'horizon avant sortie terrain.
+            {fr ? "Météo indisponible, vérifier l'horizon avant sortie terrain." : "Weather unavailable, check the horizon before field work."}
           </p>
         ) : null}
 
@@ -221,15 +224,15 @@ export function WeatherSection() {
           <>
             <article className={`rounded-xl border shadow-sm p-4 ${riskTone}`}>
               <h3 className="text-sm font-semibold uppercase tracking-wide">
-                Lecture décisionnelle
+                {fr ? "Lecture décisionnelle" : "Decision reading"}
               </h3>
               <div className="mt-4 flex flex-col gap-4">
                 <div className="flex items-center justify-between border-b pb-3 border-emerald-900/10">
-                  <span className="text-xs font-semibold opacity-70 uppercase">Niveau de risque</span>
+                  <span className="text-xs font-semibold opacity-70 uppercase">{fr ? "Niveau de risque" : "Risk level"}</span>
                   <span className="text-2xl font-bold">{currentRisk.level.toUpperCase()}</span>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold opacity-70 uppercase">Équipement conseillé</p>
+                  <p className="text-xs font-semibold opacity-70 uppercase">{fr ? "Équipement conseillé" : "Recommended gear"}</p>
                   <ul className="mt-1 list-disc pl-5 text-sm opacity-90 font-medium">
                     {currentRisk.equipment.map((item) => (
                       <li key={item}>{item}</li>
@@ -237,7 +240,7 @@ export function WeatherSection() {
                   </ul>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold opacity-70 uppercase">Contraintes</p>
+                  <p className="text-xs font-semibold opacity-70 uppercase">{fr ? "Contraintes" : "Constraints"}</p>
                   <ul className="mt-1 list-disc pl-5 text-sm opacity-90 font-medium">
                     {currentRisk.constraints.map((item) => (
                       <li key={item}>{item}</li>
@@ -245,20 +248,31 @@ export function WeatherSection() {
                   </ul>
                 </div>
                 <div className="mt-1 border-t pt-3 border-emerald-900/10 text-xs font-medium opacity-80">
-                  Raisons: {currentRisk.reasons.join(", ")}.
+                  {fr ? "Raisons" : "Reasons"}: {currentRisk.reasons.join(", ")}.
                 </div>
               </div>
             </article>
 
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-xs text-slate-700">
-              <h3 className="font-semibold text-slate-900 text-sm mb-2">Règles EPI</h3>
-              <ul className="list-disc pl-4 space-y-1 text-slate-600">
-                <li>Pluie: <span className="font-medium">orange</span> ≥ 0.8 mm/h, <span className="font-medium text-rose-700">rouge</span> ≥ 3 mm/h.</li>
-                <li>Vent: <span className="font-medium">orange</span> ≥ 30 km/h, <span className="font-medium text-rose-700">rouge</span> ≥ 45 km/h.</li>
-                <li>Chaleur: <span className="font-medium">orange</span> ≥ 28°C, <span className="font-medium text-rose-700">rouge</span> ≥ 33°C.</li>
-                <li>Froid: <span className="font-medium">orange</span> ≤ 4°C, <span className="font-medium text-rose-700">rouge</span> ≤ 0°C.</li>
-              </ul>
-            </article>
+            <details className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-xs text-slate-700">
+              <summary className="cursor-pointer font-semibold text-slate-900 text-sm">
+                {fr ? "Méthodologie météo" : "Weather methodology"}
+              </summary>
+              <div className="mt-3 space-y-2">
+                <p className="text-sm text-slate-600">
+                  Lecture opérationnelle fondée sur Open-Meteo, avec seuils de décision
+                  conservés ici pour ne pas encombrer l&apos;alerte principale.
+                </p>
+                <div>
+                  <p className="font-semibold text-slate-900 text-sm mb-2">Règles EPI</p>
+                  <ul className="list-disc pl-4 space-y-1 text-slate-600">
+                    <li>Pluie: <span className="font-medium">orange</span> ≥ 0.8 mm/h, <span className="font-medium text-rose-700">rouge</span> ≥ 3 mm/h.</li>
+                    <li>Vent: <span className="font-medium">orange</span> ≥ 30 km/h, <span className="font-medium text-rose-700">rouge</span> ≥ 45 km/h.</li>
+                    <li>Chaleur: <span className="font-medium">orange</span> ≥ 28°C, <span className="font-medium text-rose-700">rouge</span> ≥ 33°C.</li>
+                    <li>Froid: <span className="font-medium">orange</span> ≤ 4°C, <span className="font-medium text-rose-700">rouge</span> ≤ 0°C.</li>
+                  </ul>
+                </div>
+              </div>
+            </details>
           </>
         ) : null}
       </div>
