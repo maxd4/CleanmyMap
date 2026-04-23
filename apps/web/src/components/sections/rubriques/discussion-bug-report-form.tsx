@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
 export function DiscussionBugReportForm() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   const [reportType, setReportType] = useState<"bug" | "idea">("bug");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -67,11 +70,12 @@ export function DiscussionBugReportForm() {
       className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm"
     >
       <h3 className="text-sm font-semibold text-amber-900">
-        Remonter un bug ou une idee produit
+        {fr ? "Remonter un bug ou une idée produit" : "Report a bug or product idea"}
       </h3>
       <p className="mt-1 text-xs text-amber-900">
-        Les bugs et idees de developpement ne passent pas par le canal commun:
-        utilisez ce formulaire dedie.
+        {fr
+          ? "Les bugs et idées de développement ne passent pas par le canal commun: utilisez ce formulaire dédié."
+          : "Bugs and development ideas do not go through the common channel: use this dedicated form."}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-3 space-y-3">
@@ -82,28 +86,28 @@ export function DiscussionBugReportForm() {
             onChange={(event) => setReportType(event.target.value as "bug" | "idea")}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
           >
-            <option value="bug">Bug</option>
-            <option value="idea">Idee de developpement</option>
+            <option value="bug">{fr ? "Bug" : "Bug"}</option>
+            <option value="idea">{fr ? "Idée de développement" : "Development idea"}</option>
           </select>
         </label>
 
         <label className="block space-y-1">
-          <span className="text-xs font-semibold text-slate-700">Sujet</span>
+          <span className="text-xs font-semibold text-slate-700">{fr ? "Sujet" : "Subject"}</span>
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="Ex: Carte qui ne charge pas sur mobile"
+            placeholder={fr ? "Ex: Carte qui ne charge pas sur mobile" : "E.g. Map does not load on mobile"}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
             maxLength={160}
           />
         </label>
 
         <label className="block space-y-1">
-          <span className="text-xs font-semibold text-slate-700">Description</span>
+          <span className="text-xs font-semibold text-slate-700">{fr ? "Description" : "Description"}</span>
           <textarea
             value={description}
             onChange={(event) => setDescription(event.target.value)}
-            placeholder="Contexte, etapes, resultat observe, resultat attendu."
+            placeholder={fr ? "Contexte, étapes, résultat observé, résultat attendu." : "Context, steps, observed result, expected result."}
             className="min-h-[120px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-amber-500 focus:outline-none"
             maxLength={3000}
           />
@@ -111,25 +115,25 @@ export function DiscussionBugReportForm() {
 
         <div className="flex items-center justify-between gap-2">
           <p className="text-[11px] text-slate-600">
-            Page concernee: <span className="font-semibold">{pagePath}</span>
+            {fr ? "Page concernée" : "Affected page"}: <span className="font-semibold">{pagePath}</span>
           </p>
           <button
             type="submit"
             disabled={!canSubmit}
             className="rounded-lg bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitState === "submitting" ? "Envoi..." : "Envoyer"}
+            {submitState === "submitting" ? (fr ? "Envoi..." : "Sending...") : (fr ? "Envoyer" : "Send")}
           </button>
         </div>
 
         {submitState === "success" ? (
           <p className="text-xs font-medium text-emerald-700">
-            Merci, ta remontée a bien ete envoyee.
+            {fr ? "Merci, ta remontée a bien été envoyée." : "Thanks, your report has been sent."}
           </p>
         ) : null}
         {submitState === "error" ? (
           <p className="text-xs font-medium text-rose-700">
-            {errorMessage ?? "Impossible d'envoyer la demande."}
+            {errorMessage ?? (fr ? "Impossible d'envoyer la demande." : "Unable to send the request.")}
           </p>
         ) : null}
       </form>

@@ -2,9 +2,12 @@
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 
 export function RouteSection() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   const [constraints, setConstraints] = useState({
     availableMinutes: 180,
     volunteers: 4,
@@ -24,7 +27,7 @@ export function RouteSection() {
         body: JSON.stringify(constraints),
       });
       if (!response.ok) {
-        throw new Error("Route indisponible");
+        throw new Error(fr ? "Route indisponible" : "Route unavailable");
       }
       return (await response.json()) as {
         stops: Array<{
@@ -82,11 +85,11 @@ export function RouteSection() {
       <div className="space-y-4">
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-900 mb-3 border-b border-slate-100 pb-2">
-            Paramètres du circuit
+            {fr ? "Paramètres du circuit" : "Route settings"}
           </h3>
           <div className="grid gap-4 md:grid-cols-2">
             <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
-              Temps dispo (min)
+              {fr ? "Temps dispo (min)" : "Time available (min)"}
               <input
                 type="number"
                 min={30}
@@ -102,7 +105,7 @@ export function RouteSection() {
               />
             </label>
             <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
-              Bénévoles
+              {fr ? "Bénévoles" : "Volunteers"}
               <input
                 type="number"
                 min={1}
@@ -118,7 +121,7 @@ export function RouteSection() {
               />
             </label>
             <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
-              Accessibilité
+              {fr ? "Accessibilité" : "Accessibility"}
               <select
                 value={constraints.accessibility}
                 onChange={(event) =>
@@ -129,13 +132,13 @@ export function RouteSection() {
                 }
                 className="rounded-lg border border-slate-300 px-3 py-2 font-normal outline-none transition focus:border-emerald-500"
               >
-                <option value="standard">Standard</option>
-                <option value="accessible">Accessible</option>
-                <option value="strict">Strict</option>
+                <option value="standard">{fr ? "Standard" : "Standard"}</option>
+                <option value="accessible">{fr ? "Accessible" : "Accessible"}</option>
+                <option value="strict">{fr ? "Strict" : "Strict"}</option>
               </select>
             </label>
             <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700">
-              Sécurité / Météo
+              {fr ? "Sécurité / Météo" : "Safety / Weather"}
               <select
                 value={constraints.weather}
                 onChange={(event) =>
@@ -146,13 +149,13 @@ export function RouteSection() {
                 }
                 className="rounded-lg border border-slate-300 px-3 py-2 font-normal outline-none transition focus:border-emerald-500"
               >
-                <option value="ok">Temps stable</option>
-                <option value="rain">Pluie modérée</option>
-                <option value="wind">Vent fort</option>
+                <option value="ok">{fr ? "Temps stable" : "Stable weather"}</option>
+                <option value="rain">{fr ? "Pluie modérée" : "Moderate rain"}</option>
+                <option value="wind">{fr ? "Vent fort" : "Strong wind"}</option>
               </select>
             </label>
             <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700 md:col-span-2">
-              Arbitrage impact vs distance
+              {fr ? "Arbitrage impact vs distance" : "Impact vs distance trade-off"}
               <input
                 type="range"
                 min={0}
@@ -167,8 +170,9 @@ export function RouteSection() {
                 className="mt-2"
               />
               <span className="text-xs text-slate-500 mt-1">
-                {constraints.impactVsDistance}% impact privilégié /{" "}
-                {100 - constraints.impactVsDistance}% distance privilégiée
+                {fr
+                  ? `${constraints.impactVsDistance}% impact privilégié / ${100 - constraints.impactVsDistance}% distance privilégiée`
+                  : `${constraints.impactVsDistance}% impact weighted / ${100 - constraints.impactVsDistance}% distance weighted`}
               </span>
             </label>
           </div>
@@ -178,7 +182,7 @@ export function RouteSection() {
           <div className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-900 shadow-sm">
             <h3 className="font-bold mb-2 flex items-center gap-2">
               <span className="animate-pulse h-2 w-2 bg-cyan-600 rounded-full"></span>
-              Assistant Proactif
+              {fr ? "Assistant Proactif" : "Proactive assistant"}
             </h3>
             <p className="font-semibold">{data.proactiveAssistant.actNow}</p>
             <p className="mt-1 opacity-90">{data.proactiveAssistant.criticalNearby}</p>
@@ -189,7 +193,7 @@ export function RouteSection() {
         {!isLoading && !error && data && data.proactiveAssistant.hotspots.length > 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-xs text-slate-700">
             <p className="font-semibold text-slate-900 mb-3 border-b border-slate-100 pb-2">
-              Hotspots détectés dans le périmètre
+              {fr ? "Hotspots détectés dans le périmètre" : "Hotspots detected in the area"}
             </p>
             <ul className="space-y-2">
               {data.proactiveAssistant.hotspots.slice(0, 3).map((hotspot) => (
@@ -201,7 +205,9 @@ export function RouteSection() {
                     {hotspot.zoneLabel} - urgence {hotspot.predictedDirtScore.toFixed(1)}/10
                   </p>
                   <p className="mt-1 text-slate-600">
-                    Actions récentes: {hotspot.recentActions} | Spots: {hotspot.recentSpots} | Pression évent.: {hotspot.eventPressure.toFixed(1)}
+                    {fr
+                      ? `Actions récentes: ${hotspot.recentActions} | Spots: ${hotspot.recentSpots} | Pression évent.: ${hotspot.eventPressure.toFixed(1)}`
+                      : `Recent actions: ${hotspot.recentActions} | Spots: ${hotspot.recentSpots} | Event pressure: ${hotspot.eventPressure.toFixed(1)}`}
                   </p>
                   <p className="mt-1 font-medium text-slate-700">{hotspot.reason}</p>
                 </li>
@@ -215,26 +221,34 @@ export function RouteSection() {
       <div className="space-y-4">
         {isLoading ? (
           <div className="p-8 text-center text-slate-500 rounded-xl border border-slate-200 bg-slate-50">
-            <span className="animate-pulse">Calcul de la route optimale en cours...</span>
+            <span className="animate-pulse">
+              {fr ? "Calcul de la route optimale en cours..." : "Calculating the optimal route..."}
+            </span>
           </div>
         ) : null}
         
         {error ? (
           <div className="p-4 text-rose-700 bg-rose-50 border border-rose-200 rounded-xl">
-            Impossible de calculer les points prioritaires. Vérifiez les paramètres de géolocalisation.
+            {fr
+              ? "Impossible de calculer les points prioritaires. Vérifiez les paramètres de géolocalisation."
+              : "Unable to compute priority stops. Check location settings."}
           </div>
         ) : null}
         
         {!isLoading && !error && picks.length > 0 ? (
           <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm text-sm">
             <div>
-              <p className="text-emerald-900 font-semibold uppercase tracking-wider text-xs opacity-80">Parcours estimé</p>
+              <p className="text-emerald-900 font-semibold uppercase tracking-wider text-xs opacity-80">
+                {fr ? "Parcours estimé" : "Estimated route"}
+              </p>
               <p className="text-xl font-bold text-emerald-950 mt-1">
                 {totalKm.toFixed(2)} km <span className="opacity-40 px-1">|</span> {totalMinutes} min
               </p>
             </div>
             <div className="text-right">
-              <p className="text-emerald-900 font-semibold uppercase tracking-wider text-xs opacity-80">Score IA global</p>
+              <p className="text-emerald-900 font-semibold uppercase tracking-wider text-xs opacity-80">
+                {fr ? "Score IA global" : "Overall AI score"}
+              </p>
               <p className="text-xl font-bold text-emerald-950 mt-1">
                 {data?.scoreBreakdown.global ?? 0}
               </p>
@@ -244,12 +258,18 @@ export function RouteSection() {
 
         {!isLoading && !error && data ? (
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-xs text-slate-600">
-            <p className="font-semibold text-slate-800 mb-2">Ajustements automatiques appliqués (Trade-offs)</p>
+            <p className="font-semibold text-slate-800 mb-2">
+              {fr ? "Ajustements automatiques appliqués (Trade-offs)" : "Automatic adjustments applied (trade-offs)"}
+            </p>
             <ul className="list-disc pl-5 space-y-1">
               {data.tradeoffs.map((line) => (
                 <li key={line}>{line}</li>
               ))}
-              {data.tradeoffs.length === 0 && <li className="italic text-slate-400">Aucun ajustement majeur nécessaire.</li>}
+              {data.tradeoffs.length === 0 && (
+                <li className="italic text-slate-400">
+                  {fr ? "Aucun ajustement majeur nécessaire." : "No major adjustment needed."}
+                </li>
+              )}
             </ul>
           </div>
         ) : null}
@@ -282,7 +302,7 @@ export function RouteSection() {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Ouvrir GPS
+                        {fr ? "Ouvrir GPS" : "Open GPS"}
                       </a>
                     ) : null}
                   </div>
@@ -290,7 +310,9 @@ export function RouteSection() {
               ))}
               {picks.length === 0 ? (
                 <li className="p-8 text-center text-sm text-slate-500 italic">
-                  Aucun point de collecte ne correspond à vos critères actuels.
+                  {fr
+                    ? "Aucun point de collecte ne correspond à vos critères actuels."
+                    : "No collection point matches your current criteria."}
                 </li>
               ) : null}
             </ol>

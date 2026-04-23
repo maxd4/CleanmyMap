@@ -15,11 +15,11 @@ const MODE_CARDS: ModeCard[] = [
     id: "exhaustif",
     title: { fr: "Exhaustif", en: "Exhaustive" },
     recommendation: {
-      fr: "Recommande pour les utilisateurs reguliers",
+      fr: "Recommandé pour les utilisateurs réguliers",
       en: "Recommended for regular users",
     },
     description: {
-      fr: "Navigation complete, analyses detaillees, acces maximal aux rubriques selon votre profil.",
+      fr: "Navigation complète, analyses détaillées, accès maximal aux rubriques selon votre profil.",
       en: "Full navigation, detailed analytics, broadest section access for your profile.",
     },
   },
@@ -27,23 +27,23 @@ const MODE_CARDS: ModeCard[] = [
     id: "sobre",
     title: { fr: "Sobre", en: "Calm" },
     recommendation: {
-      fr: "Recommande pour les personnes sensibles",
+      fr: "Recommandé pour les personnes sensibles",
       en: "Recommended for sensitive users",
     },
     description: {
-      fr: "Interface apaisee, moins de stimuli, navigation recentree sur l'essentiel.",
+      fr: "Interface apaisée, moins de stimuli, navigation recentrée sur l'essentiel.",
       en: "Calmer interface, reduced stimuli, focused essential navigation.",
     },
   },
   {
     id: "simplifie",
-    title: { fr: "Simplifie", en: "Simplified" },
+    title: { fr: "Simplifié", en: "Simplified" },
     recommendation: {
-      fr: "Recommande pour les nouveaux utilisateurs",
+      fr: "Recommandé pour les nouveaux utilisateurs",
       en: "Recommended for new users",
     },
     description: {
-      fr: "Parcours guide, vocabulaire simplifie, acces progressif aux rubriques avancees.",
+      fr: "Parcours guidé, vocabulaire simplifié, accès progressif aux rubriques avancées.",
       en: "Guided flow, simplified wording, progressive access to advanced sections.",
     },
   },
@@ -70,7 +70,7 @@ export function DisplayModeOnboardingGate() {
         </h2>
         <p className="mt-2 text-sm text-slate-600">
           {locale === "fr"
-            ? "Ce choix est modifiable a tout moment dans les parametres."
+            ? "Ce choix est modifiable à tout moment dans les paramètres."
             : "This choice can be changed at any time in settings."}
         </p>
 

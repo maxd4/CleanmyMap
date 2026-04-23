@@ -4,6 +4,7 @@ import { RolePrimaryActions } from "@/components/navigation/role-primary-actions
 
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
@@ -22,23 +23,51 @@ async function loadAdminOverview() {
 
 export default async function AdminPage() {
   const { userId } = await auth();
+  if (!userId) {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="blur"
+        title="Administration"
+        description="Cette fonctionnalité nécessite une connexion Clerk."
+        lockedPreview={
+          <section className="grid gap-3 md:grid-cols-3 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+            <article className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-500">
+                Supervision
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Alertes et priorités de l'administration.
+              </p>
+            </article>
+            <article className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-500">
+                Modération
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Actions réservées au back-office connecté.
+              </p>
+            </article>
+            <article className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-500">
+                Export
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Les livrables d'administration nécessitent un compte autorisé.
+              </p>
+            </article>
+          </section>
+        }
+      >
+        <div />
+      </ClerkRequiredGate>
+    );
+  }
+
   const role = await getCurrentUserRoleLabel();
   const profile = toProfile(role);
   const locale = await getServerLocale();
   const primaryAction = getProfilePrimaryAction(profile);
-
-  if (!userId) {
-    return (
-      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-        <h1 className="text-2xl font-semibold text-amber-900">
-          Acces restreint
-        </h1>
-        <p className="mt-2 text-sm text-amber-800">
-          Connecte-toi pour acceder a l&apos;administration.
-        </p>
-      </section>
-    );
-  }
 
   if (role !== "admin") {
     return (
@@ -47,10 +76,10 @@ export default async function AdminPage() {
           Admin requis
         </p>
         <h1 className="mt-2 text-2xl font-semibold text-amber-900">
-          Administration reservee aux admins
+          Administration réservée aux admins
         </h1>
         <p className="mt-2 text-sm text-amber-800">
-          Demande l&apos;attribution du role{" "}
+          Demande l&apos;attribution du rôle{" "}
           <span className="font-semibold">admin</span> dans Clerk.
         </p>
       </section>
@@ -104,7 +133,7 @@ export default async function AdminPage() {
           interpretation: "neutral",
         },
         {
-          label: "Qualite data",
+          label: "Qualité data",
           value: "n/a",
           previousValue: "n/a",
           deltaAbsolute: "n/a",
@@ -134,7 +163,7 @@ export default async function AdminPage() {
           Administration
         </h1>
         <p className="mt-2 text-sm text-slate-600">
-          Moderation, import/export et supervision des operations critiques avec
+          Modération, import/export et supervision des opérations critiques avec
           garde-fous explicites.
         </p>
         <div className="mt-4">

@@ -1,9 +1,12 @@
 import type { ActionStatus } from "@/lib/actions/types";
+import type { ReportScopeKind } from "@/lib/reports/scope";
 
 export function buildExportQuery(params: {
   status: ActionStatus | "all";
   days: number;
   limit: number;
+  scopeKind: ReportScopeKind;
+  scopeValue: string;
   association: string | "all";
 }): string {
   const query = new URLSearchParams();
@@ -13,7 +16,10 @@ export function buildExportQuery(params: {
   if (params.status !== "all") {
     query.set("status", params.status);
   }
-  if (params.association !== "all") {
+  if (params.scopeKind !== "global" && params.scopeValue.trim().length > 0) {
+    query.set("scopeKind", params.scopeKind);
+    query.set("scopeValue", params.scopeValue.trim());
+  } else if (params.association !== "all") {
     query.set("association", params.association);
   }
   return query.toString();

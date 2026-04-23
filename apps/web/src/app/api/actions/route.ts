@@ -11,12 +11,14 @@ import {
   parseEntityTypesParam,
 } from "@/lib/actions/unified-source";
 import { buildActionInsights } from "@/lib/actions/insights";
+import { filterActionContractsByScope, type ReportScope } from "@/lib/reports/scope";
 import {
   buildPostActionRetentionLoop as buildActionRetentionLoop,
   trackActionCreated,
 } from "@/lib/gamification/progression";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
+import { resolveReportQuery } from "@/lib/reports/csv";
 
 export const runtime = "nodejs";
 const QUALITY_GRADES = ["A", "B", "C"] as const;
@@ -90,19 +92,9 @@ function parseImpactParam(
     : null;
 }
 
-function parseAssociationParam(raw: string | null): string | null {
-  if (!raw) {
-    return null;
-  }
-  const value = raw.trim();
-  if (!value) {
-    return null;
-  }
-  return value.slice(0, 120);
-}
-
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const reportQuery = resolveReportQuery(url);
   const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 200, 30);
   const status = parseStatusParam(url.searchParams.get("status"));
   const daysRaw = url.searchParams.get("days");
@@ -115,9 +107,6 @@ export async function GET(request: Request) {
   );
   const toFixPriority = parseBooleanFlag(url.searchParams.get("toFixPriority"));
   const impact = parseImpactParam(url.searchParams.get("impact"));
-  const association = parseAssociationParam(
-    url.searchParams.get("association"),
-  );
 
   try {
     const supabase = getSupabaseServerClient();
@@ -129,7 +118,14 @@ export async function GET(request: Request) {
       types,
     });
     const now = new Date();
-    const items = result.items
+    const scope: ReportScope = {
+      kind: reportQuery.scopeKind,
+      value:
+        reportQuery.scopeKind === "association"
+          ? reportQuery.scopeValue ?? reportQuery.association
+          : reportQuery.scopeValue,
+    };
+    const items = filterActionContractsByScope(result.items, scope)
       .map((contract) => {
         const insights = buildActionInsights(contract, now);
         return toActionListItem(contract, insights);
@@ -146,13 +142,6 @@ export async function GET(request: Request) {
         }
         if (impact && item.impact_level !== impact) {
           return false;
-        }
-        if (association) {
-          const itemAssociation =
-            item.association_name?.trim().toLowerCase() ?? "";
-          if (itemAssociation !== association.toLowerCase()) {
-            return false;
-          }
         }
         return true;
       })

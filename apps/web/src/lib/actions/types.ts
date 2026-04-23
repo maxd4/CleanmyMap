@@ -6,6 +6,34 @@ export type LegacyActionRecordType = "action" | "clean_place" | "other";
 export type ActionSubmissionMode = "quick" | "complete";
 export type ActionQualityGrade = "A" | "B" | "C";
 export type ActionImpactLevel = "faible" | "moyen" | "fort" | "critique";
+export type ActionVisionSource = "heuristic" | "hybrid" | "vision";
+export type ActionVisionDensity = "sec" | "humide_dense" | "mouille";
+
+export type ActionPhotoAsset = {
+  id: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+  dataUrl: string;
+};
+
+export type ActionVisionConfidence<T> = {
+  value: T;
+  confidence: number;
+  interval?: [number, number] | null;
+};
+
+export type ActionVisionEstimate = {
+  modelVersion: string;
+  source: ActionVisionSource;
+  provisional: boolean;
+  bagsCount: ActionVisionConfidence<number>;
+  fillLevel: ActionVisionConfidence<number>;
+  density: ActionVisionConfidence<ActionVisionDensity>;
+  wasteKg: ActionVisionConfidence<number>;
+};
 
 export type ActionMegotsCondition = "propre" | "humide" | "mouille";
 
@@ -36,6 +64,10 @@ export type ActionContractCreatePayload = {
   location_label: string;
   latitude: number | null;
   longitude: number | null;
+  departure_location_label?: string | null;
+  arrival_location_label?: string | null;
+  route_style?: "direct" | "souple" | null;
+  route_adjustment_message?: string | null;
   waste_kg: number | null;
   cigarette_butts: number | null;
   volunteers_count: number;
@@ -43,11 +75,14 @@ export type ActionContractCreatePayload = {
   notes: string | null;
   manual_drawing?: ActionDrawing | null;
   waste_breakdown?: ActionWasteBreakdown | null;
+  photos?: ActionPhotoAsset[] | null;
+  vision_estimate?: ActionVisionEstimate | null;
 };
 
 export type ActionListItem = {
   id: string;
   created_at: string;
+  created_by_clerk_id?: string | null;
   actor_name: string | null;
   association_name?: string | null;
   action_date: string;
@@ -108,6 +143,12 @@ export type ActionListItem = {
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;
       placeType?: string | null;
+      departureLocationLabel?: string | null;
+      arrivalLocationLabel?: string | null;
+      routeStyle?: "direct" | "souple" | null;
+      routeAdjustmentMessage?: string | null;
+      photos?: ActionPhotoAsset[] | null;
+      visionEstimate?: ActionVisionEstimate | null;
     };
   };
 };
@@ -137,6 +178,10 @@ export type CreateActionPayload = {
   associationName?: string;
   actionDate: string;
   locationLabel: string;
+  departureLocationLabel?: string;
+  arrivalLocationLabel?: string;
+  routeStyle?: "direct" | "souple";
+  routeAdjustmentMessage?: string;
   latitude?: number;
   longitude?: number;
   wasteKg: number;
@@ -149,6 +194,8 @@ export type CreateActionPayload = {
   submissionMode?: ActionSubmissionMode;
   wasteBreakdown?: ActionWasteBreakdown;
   recordType?: ActionRecordType;
+  photos?: ActionPhotoAsset[];
+  visionEstimate?: ActionVisionEstimate | null;
 };
 
 export type ActionMapItem = Pick<
@@ -161,6 +208,7 @@ export type ActionMapItem = Pick<
   | "waste_kg"
   | "cigarette_butts"
   | "status"
+  | "created_by_clerk_id"
 > & {
   record_type?: ActionRecordType | LegacyActionRecordType;
   source?: string;
@@ -198,6 +246,8 @@ export type ActionMapItem = Pick<
     metadata: {
       actorName: string | null;
       associationName?: string | null;
+      departureLocationLabel?: string | null;
+      arrivalLocationLabel?: string | null;
       notes: string | null;
       notesPlain: string | null;
       wasteKg: number | null;
@@ -206,6 +256,8 @@ export type ActionMapItem = Pick<
       durationMinutes: number;
       manualDrawing: ActionDrawing | null;
       placeType?: string | null;
+      photos?: ActionPhotoAsset[] | null;
+      visionEstimate?: ActionVisionEstimate | null;
     };
   };
 };

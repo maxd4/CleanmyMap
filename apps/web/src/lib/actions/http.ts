@@ -8,6 +8,7 @@ import type {
   CreateActionPayload,
 } from "@/lib/actions/types";
 import { toContractCreatePayload } from "./data-contract";
+import type { ReportScopeKind } from "@/lib/reports/scope";
 
 type ActionTypeFilter = ActionRecordType | "all" | ActionRecordType[];
 
@@ -17,6 +18,8 @@ type FetchActionsParams = {
   days?: number;
   types?: ActionTypeFilter;
   association?: string | "all";
+  scopeKind?: ReportScopeKind;
+  scopeValue?: string | null;
   qualityGrade?: ActionQualityGrade;
   toFixPriority?: boolean;
   impact?: ActionImpactLevel;
@@ -28,9 +31,35 @@ type FetchMapActionsParams = {
   days?: number;
   types?: ActionTypeFilter;
   association?: string | "all";
+  scopeKind?: ReportScopeKind;
+  scopeValue?: string | null;
   impact?: ActionImpactLevel;
   qualityMin?: number;
 };
+
+function setScopeQueryParams(
+  query: URLSearchParams,
+  params: {
+    association?: string | "all";
+    scopeKind?: ReportScopeKind;
+    scopeValue?: string | null;
+  },
+): void {
+  if (params.scopeKind && params.scopeKind !== "global") {
+    query.set("scopeKind", params.scopeKind);
+    if (typeof params.scopeValue === "string" && params.scopeValue.trim()) {
+      query.set("scopeValue", params.scopeValue.trim());
+    }
+    return;
+  }
+  if (
+    typeof params.association === "string" &&
+    params.association !== "all" &&
+    params.association.trim().length > 0
+  ) {
+    query.set("association", params.association.trim());
+  }
+}
 
 function clampInteger(
   value: number | undefined,
@@ -92,13 +121,7 @@ export function buildActionsQueryString(
   if (params.status && params.status !== "all") {
     query.set("status", params.status);
   }
-  if (
-    typeof params.association === "string" &&
-    params.association !== "all" &&
-    params.association.trim().length > 0
-  ) {
-    query.set("association", params.association.trim());
-  }
+  setScopeQueryParams(query, params);
   if (params.qualityGrade) {
     query.set("qualityGrade", params.qualityGrade);
   }
@@ -122,13 +145,7 @@ export function buildMapActionsQueryString(
   if (resolvedStatus !== "all") {
     query.set("status", resolvedStatus);
   }
-  if (
-    typeof params.association === "string" &&
-    params.association !== "all" &&
-    params.association.trim().length > 0
-  ) {
-    query.set("association", params.association.trim());
-  }
+  setScopeQueryParams(query, params);
   if (params.impact) {
     query.set("impact", params.impact);
   }
@@ -155,23 +172,68 @@ export async function createAction(
     nextActionSuggestion: string;
   } | null;
 }> {
-  const contractPayload = toContractCreatePayload(payload);
-  const response = await fetch("/api/actions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(contractPayload),
-  });
+  const postPayload = async (bodyPayload: unknown) => {
+    const response = await fetch("/api/actions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bodyPayload),
+    });
+    const body = await parseJsonSafely(response);
+    return { response, body };
+  };
 
-  const body = await parseJsonSafely(response);
-  if (!response.ok) {
-    throw new Error(parseErrorMessage(body, "Impossible de créer l'action."));
+  const contractPayload = toContractCreatePayload(payload);
+  const contractResult = await postPayload(contractPayload);
+  const contractError = parseErrorMessage(
+    contractResult.body,
+    "Impossible de créer l'action.",
+  );
+
+  if (!contractResult.response.ok) {
+    if (
+      contractResult.response.status === 400 ||
+      contractResult.response.status === 422
+    ) {
+      const legacyResult = await postPayload(payload);
+      if (legacyResult.response.ok) {
+        const legacyBody = legacyResult.body;
+        if (
+          !legacyBody ||
+          typeof legacyBody !== "object" ||
+          typeof (legacyBody as { id?: unknown }).id !== "string"
+        ) {
+          throw new Error("Réponse API invalide après création.");
+        }
+
+        const parsedBody = legacyBody as {
+          id: string;
+          retentionLoop?: {
+            summary: string;
+            badge: string;
+            share: { text: string; url: string };
+            nextActionSuggestion: string;
+          } | null;
+        };
+
+        return {
+          id: parsedBody.id,
+          retentionLoop: parsedBody.retentionLoop ?? null,
+        };
+      }
+
+      throw new Error(
+        parseErrorMessage(
+          legacyResult.body,
+          contractError || "Impossible de créer l'action.",
+        ),
+      );
+    }
+
+    throw new Error(contractError);
   }
 
-  if (
-    !body ||
-    typeof body !== "object" ||
-    typeof (body as { id?: unknown }).id !== "string"
-  ) {
+  const body = contractResult.body;
+  if (!body || typeof body !== "object" || typeof (body as { id?: unknown }).id !== "string") {
     throw new Error("Réponse API invalide après création.");
   }
 

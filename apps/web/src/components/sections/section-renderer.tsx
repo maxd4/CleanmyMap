@@ -21,9 +21,11 @@ import {
   KitSection,
   RecyclingSection,
   RouteSection,
+  SandboxSection,
   TrashSpotterSection,
   WeatherSection,
 } from "@/components/sections/rubriques/terrain-sections";
+import { ChatShell } from "@/components/chat/chat-shell";
 import {
   NotFoundSection,
   PendingSection,
@@ -66,9 +68,9 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
     case "community":
       return (
         <SectionShell
-          title={{ fr: "Operations collectives", en: "Collective operations" }}
+          title={{ fr: "Opérations collectives", en: "Collective operations" }}
           subtitle={{
-            fr: "Ressources terrain, coordination d'evenements collectifs et suivi historique des actions au meme endroit.",
+            fr: "Ressources terrain, coordination d'événements collectifs et suivi historique des actions au même endroit.",
             en: "Field resources, collective event coordination and action history in one place.",
           }}
           links={[
@@ -78,7 +80,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
             },
             {
               href: "/actions/history",
-              label: { fr: "Trace historique complete", en: "Full history trace" },
+              label: { fr: "Trace historique complète", en: "Full history trace" },
             },
           ]}
         >
@@ -90,7 +92,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
         <SectionShell
           title={{ fr: "Classement", en: "Leaderboard" }}
           subtitle={{
-            fr: "Classement benevole base sur les actions validees.",
+            fr: "Classement bénévole basé sur les actions validées.",
             en: "Volunteer ranking based on validated actions.",
           }}
           links={[
@@ -108,13 +110,13 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
         <SectionShell
           title={{ fr: "Partenaires", en: "Partners" }}
           subtitle={{
-            fr: "Vue du reseau local et des zones prioritaires.",
+            fr: "Vue du réseau local et des zones prioritaires.",
             en: "Local partner network and priority areas.",
           }}
           links={[
             {
               href: "/sections/elus",
-              label: { fr: "Vue collectivites", en: "Authorities view" },
+              label: { fr: "Vue collectivités", en: "Authorities view" },
             },
           ]}
         >
@@ -124,19 +126,19 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
     case "annuaire":
       return (
         <SectionShell
-          title={{ fr: "Discussion", en: "Discussion" }}
+          title={{ fr: "Découvrir le réseau", en: "Discover the network" }}
           subtitle={{
-            fr: "Communication locale entre benevoles, associations, commercants et entreprises pour accelerer l'entraide et les actions concretes.",
-            en: "Local communication between volunteers, associations, businesses and companies.",
+            fr: "Carte, fiches et repères pour lire le réseau local sans mélange avec le pilotage.",
+            en: "Map, cards and reference points to read the local network without mixing in governance.",
           }}
           links={[
             {
-              href: "/partners/onboarding",
-              label: { fr: "Devenir commercant engage", en: "Become an engaged business" },
+              href: "/partners/network",
+              label: { fr: "Ouvrir la vue réseau", en: "Open network view" },
             },
             {
-              href: "/sections/annuaire#discussion-bug-report-form",
-              label: { fr: "Remonter un bug ou une idee", en: "Report bug or idea" },
+              href: "/partners/onboarding",
+              label: { fr: "Rejoindre le réseau", en: "Join the network" },
             },
           ]}
         >
@@ -146,9 +148,9 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
     case "open-data":
       return (
         <SectionShell
-          title={{ fr: "Donnees ouvertes", en: "Open data" }}
+          title={{ fr: "Données ouvertes", en: "Open data" }}
           subtitle={{
-            fr: "Open data, API, export JSON et cadre d'interoperabilite pour chercheurs et collectivites.",
+            fr: "Open data, API, export JSON et cadre d'interopérabilité pour chercheurs et collectivités.",
             en: "Open data, API, JSON export and interoperability for researchers and cities.",
           }}
           links={[
@@ -183,13 +185,13 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
         <SectionShell
           title={{ fr: "Financement / sponsoring", en: "Funding / sponsoring" }}
           subtitle={{
-            fr: "Sponsoring de zones, mecenat ecologique et appel au don pour consolider le modele economique.",
+            fr: "Sponsoring de zones, mécénat écologique et appel au don pour consolider le modèle économique.",
             en: "Zone sponsorship, ecological patronage and donations for a sustainable model.",
           }}
           links={[
             {
               href: "/sections/actors",
-              label: { fr: "Partenaires engages", en: "Engaged partners" },
+              label: { fr: "Partenaires engagés", en: "Engaged partners" },
             },
             {
               href: "/reports",
@@ -218,17 +220,17 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
         <SectionShell
           title={{ fr: "Trash Spotter", en: "Trash Spotter" }}
           subtitle={{
-            fr: "Signalement, visualisation et priorisation geolocalisee.",
+            fr: "Signalement, visualisation et priorisation géolocalisée.",
             en: "Reporting, visualization and geospatial prioritization.",
           }}
           links={[
             {
               href: "/actions/new",
-              label: { fr: "Declarer une action", en: "Declare action" },
+              label: { fr: "Déclarer une action", en: "Declare action" },
             },
             {
               href: "/actions/map",
-              label: { fr: "Carte complete", en: "Full map" },
+              label: { fr: "Carte complète", en: "Full map" },
             },
           ]}
         >
@@ -238,15 +240,15 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
     case "route":
       return (
         <SectionShell
-          title={{ fr: "Itineraire IA", en: "AI routing" }}
+          title={{ fr: "Itinéraire IA", en: "AI routing" }}
           subtitle={{
-            fr: "Preparation d'un plan de passage priorise par impact.",
+            fr: "Préparation d'un plan de passage priorisé par impact.",
             en: "Prepare an impact-prioritized route.",
           }}
           links={[
             {
               href: "/actions/map",
-              label: { fr: "Verifier sur la carte", en: "Check on map" },
+              label: { fr: "Vérifier sur la carte", en: "Check on map" },
             },
           ]}
         >
@@ -264,7 +266,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
           links={[
             {
               href: "/reports",
-              label: { fr: "Exporter les donnees", en: "Export data" },
+              label: { fr: "Exporter les données", en: "Export data" },
             },
           ]}
         >
@@ -274,9 +276,9 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
     case "climate":
       return (
         <SectionShell
-          title={{ fr: "Developpement durable", en: "Sustainability" }}
+          title={{ fr: "Développement durable", en: "Sustainability" }}
           subtitle={{
-            fr: "Vulgarisation des rapports recents, ODD et limites planetaires, avec lien direct entre impact local et enjeux climatiques, incluant la comparaison territoriale.",
+            fr: "Vulgarisation des rapports récents, ODD et limites planétaires, avec lien direct entre impact local et enjeux climatiques, incluant la comparaison territoriale.",
             en: "Scientific briefs, SDGs and planetary boundaries linked to local action impact.",
           }}
           links={[
@@ -290,10 +292,10 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
             <ClimateSection />
             <section className="rounded-xl border border-slate-200 bg-white p-4">
               <h3 className="text-sm font-semibold text-slate-900">
-                Comparaison territoriale integree
+                Comparaison territoriale intégrée
               </h3>
               <p className="mt-1 text-xs text-slate-600">
-                Lecture comparee des zones pour prioriser la coordination locale
+                Lecture comparée des zones pour prioriser la coordination locale
                 et les arbitrages d&apos;impact.
               </p>
               <div className="mt-3">
@@ -306,9 +308,9 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
     case "weather":
       return (
         <SectionShell
-          title={{ fr: "Meteo", en: "Weather" }}
+          title={{ fr: "Météo", en: "Weather" }}
           subtitle={{
-            fr: "Conditions courantes pour securiser les operations.",
+            fr: "Conditions courantes pour sécuriser les opérations.",
             en: "Current conditions to secure field operations.",
           }}
           links={[
@@ -321,19 +323,41 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
           <WeatherSection />
         </SectionShell>
       );
+    case "sandbox":
+      return (
+        <SectionShell
+          title={{ fr: "Visualiser la carte", en: "Map sandbox" }}
+          subtitle={{
+            fr: "Tester la carte, les filtres et la santé technique avant de commencer une action.",
+            en: "Test the map, filters and technical health before starting an action.",
+          }}
+          links={[
+            {
+              href: "/actions/map",
+              label: { fr: "Ouvrir la carte", en: "Open map" },
+            },
+            {
+              href: "/actions/new",
+              label: { fr: "Déclarer une action", en: "Declare action" },
+            },
+          ]}
+        >
+          <SandboxSection />
+        </SectionShell>
+      );
     case "guide":
       return (
         <SectionShell
           title={{ fr: "Guide pratique", en: "Practical guide" }}
           subtitle={{
-            fr: "Workflow web conseille pour une collecte fiable.",
+            fr: "Workflow web conseillé pour une collecte fiable.",
             en: "Recommended workflow for reliable data collection.",
           }}
           links={[
             { href: "/actions/new", label: { fr: "Commencer", en: "Start" } },
             {
               href: "/actions/history",
-              label: { fr: "Verifier", en: "Review" },
+              label: { fr: "Vérifier", en: "Review" },
             },
           ]}
         >
@@ -345,7 +369,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
         <SectionShell
           title={{ fr: "Kit terrain", en: "Field kit" }}
           subtitle={{
-            fr: "Preparation materiel et checklist operationnelle benevole.",
+            fr: "Préparation matériel et checklist opérationnelle bénévole.",
             en: "Volunteer equipment and operational checklist.",
           }}
           links={[
@@ -373,31 +397,26 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
             },
           ]}
         >
-          <div className="text-center py-12">
-            <p className="text-slate-600 mb-4">
-              La messagerie est intégrée dans la section communautaire.
-            </p>
-            <a
-              href="/sections/community#messagerie"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition-colors"
-            >
-              Accéder à la messagerie
-            </a>
+          <div className="space-y-4">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+              Messagerie dédiée au voisinage, à la gouvernance et à la coordination des actions.
+            </div>
+            <ChatShell initialArrondissement={11} />
           </div>
         </SectionShell>
       );
     case "elus":
       return (
         <SectionShell
-          title={{ fr: "Elus & Coordinateur", en: "Authorities & Coordinators" }}
+          title={{ fr: "Autorités locales & coordination", en: "Local authorities & coordination" }}
           subtitle={{
-            fr: "Vision lisible et exploitable des besoins et resultats pour faciliter l'arbitrage public et la coordination locale.",
+            fr: "Vision lisible et exploitable des besoins et résultats pour faciliter l'arbitrage public et la coordination locale.",
             en: "Readable, actionable needs/results view for public arbitration and local coordination.",
           }}
           links={[
             {
               href: "/reports",
-              label: { fr: "Acces aux rapports d'impact", en: "Open impact reports" },
+              label: { fr: "Accès aux rapports d'impact", en: "Open impact reports" },
             },
           ]}
         >

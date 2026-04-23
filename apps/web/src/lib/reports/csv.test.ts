@@ -4,6 +4,8 @@ import {
   buildActionsCsvFilename,
   buildDateFloor,
   parsePositiveInteger,
+  parseReportScopeKindParam,
+  parseReportScopeValueParam,
   parseStatusParam,
   resolveReportQuery,
 } from "./csv";
@@ -28,8 +30,20 @@ describe("report csv helpers", () => {
       status: null,
       limit: 250,
       days: 90,
+      scopeKind: "global",
+      scopeValue: null,
       association: null,
     });
+  });
+
+  it("parses scope kind and value safely", () => {
+    expect(parseReportScopeKindParam("account")).toBe("account");
+    expect(parseReportScopeKindParam("association")).toBe("association");
+    expect(parseReportScopeKindParam("arrondissement")).toBe("arrondissement");
+    expect(parseReportScopeKindParam("global")).toBe("global");
+    expect(parseReportScopeKindParam("nope")).toBeNull();
+    expect(parseReportScopeValueParam("  Alice  ")).toBe("Alice");
+    expect(parseReportScopeValueParam("   ")).toBeNull();
   });
 
   it("builds csv and escapes cells", () => {

@@ -20,6 +20,7 @@ function buildBaseForm() {
   form.volunteersCount = "5";
   form.durationMinutes = "75";
   form.notes = "Collecte de test";
+  form.routeAdjustmentMessage = "Éviter l'avenue principale";
   return form;
 }
 
@@ -83,12 +84,16 @@ describe("action declaration payload helpers", () => {
     expect(payload.longitude).toBeCloseTo(2.36, 6);
     expect(payload.manualDrawing).toEqual(drawing);
     expect(payload.wasteBreakdown).toBeDefined();
+    expect(payload.routeStyle).toBe("souple");
+    expect(payload.routeAdjustmentMessage).toBe("Éviter l'avenue principale");
     expect(payload.notes).toContain("Collecte de test");
     expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
   });
 
   it("builds quick mode payload without geo/breakdown and with butts reset", () => {
     const form = buildBaseForm();
+    form.departureLocationLabel = "Place des Vosges";
+    form.arrivalLocationLabel = "";
 
     const payload = buildCreateActionPayload({
       form,
@@ -98,10 +103,14 @@ describe("action declaration payload helpers", () => {
       manualDrawing: null,
       isEntrepriseMode: false,
       linkedEventId: "EVENT-12345",
+      photos: [],
+      visionEstimate: null,
     });
 
     expect(payload.latitude).toBeUndefined();
     expect(payload.longitude).toBeUndefined();
+    expect(payload.departureLocationLabel).toBe("Place des Vosges");
+    expect(payload.arrivalLocationLabel).toBeUndefined();
     expect(payload.cigaretteButts).toBe(0);
     expect(payload.durationMinutes).toBe(0);
     expect(payload.wasteBreakdown).toBeUndefined();

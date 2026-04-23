@@ -1,13 +1,15 @@
 import { notFound } from "next/navigation";
+import { auth } from "@clerk/nextjs/server";
 import { SectionRenderer } from "@/components/sections/section-renderer";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import {
+  RUBRIQUE_REGISTRY,
   getSectionRouteParams,
-  isSectionRouteEnabled,
   normalizeSectionId,
+  type SectionId,
 } from "@/lib/sections-registry";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
-import { toProfile } from "@/lib/profiles";
-import { isSectionAllowedForProfile } from "@/lib/navigation";
+import { getSectionClerkAccessMode } from "@/lib/clerk-access";
+import { getServerLocale } from "@/lib/server-preferences";
 
 type SectionPageProps = {
   params: Promise<{ sectionId: string }>;
@@ -20,17 +22,100 @@ export function generateStaticParams() {
 export default async function SectionPage({ params }: SectionPageProps) {
   const { sectionId } = await params;
   const normalizedSectionId = normalizeSectionId(sectionId);
+  const section = RUBRIQUE_REGISTRY.find(
+    (item) => item.kind === "section" && item.id === normalizedSectionId,
+  );
 
-  if (!isSectionRouteEnabled(normalizedSectionId)) {
+  if (!section) {
     notFound();
   }
 
-  // Guard: vérifier que la section est autorisée pour le profil de l'utilisateur.
-  const activeRole = await getCurrentUserRoleLabel();
-  const activeProfile = toProfile(activeRole);
-  if (!isSectionAllowedForProfile(normalizedSectionId, activeProfile)) {
-    notFound();
+  const sectionIdTyped = normalizedSectionId as SectionId;
+
+  const accessMode = getSectionClerkAccessMode(normalizedSectionId);
+  const { userId } = await auth();
+  const locale = await getServerLocale();
+
+  if (!userId && accessMode === "blur") {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="blur"
+        title={locale === "fr" ? section.label.fr : section.label.en}
+        description={
+          locale === "fr"
+            ? "Cette fonctionnalité nécessite une connexion Clerk."
+            : "This feature requires Clerk sign-in."
+        }
+        lockedPreview={
+          <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {locale === "fr" ? "Pourquoi je suis ici" : "Why am I here"}
+              </p>
+              <h1 className="mt-2 text-2xl font-semibold text-slate-900">
+                {locale === "fr" ? section.label.fr : section.label.en}
+              </h1>
+              <p className="mt-2 text-sm text-slate-600">
+                {locale === "fr" ? section.description.fr : section.description.en}
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {locale === "fr" ? "Résumer" : "Summarize"}
+                </p>
+                <p className="mt-2 text-sm text-slate-700">
+                  {locale === "fr"
+                    ? "Aperçu public conservé pour la découverte."
+                    : "Public preview kept for discovery."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {locale === "fr" ? "Agir" : "Act"}
+                </p>
+                <p className="mt-2 text-sm text-slate-700">
+                  {locale === "fr"
+                    ? "Les fonctions interactives se déverrouillent après connexion."
+                    : "Interactive features unlock after sign-in."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {locale === "fr" ? "Analyser" : "Analyze"}
+                </p>
+                <p className="mt-2 text-sm text-slate-700">
+                  {locale === "fr"
+                    ? "Le contenu complet se déverrouille après connexion."
+                    : "Full content unlocks after sign-in."}
+                </p>
+              </div>
+            </div>
+          </section>
+        }
+      >
+        <SectionRenderer sectionId={sectionIdTyped} />
+      </ClerkRequiredGate>
+    );
   }
 
-  return <SectionRenderer sectionId={normalizedSectionId} />;
+  if (!userId && accessMode === "disabled") {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="disabled"
+        title={locale === "fr" ? section.label.fr : section.label.en}
+        description={
+          locale === "fr"
+            ? "Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
+            : "This view stays readable, but actions are reserved for signed-in accounts."
+        }
+      >
+        <SectionRenderer sectionId={sectionIdTyped} />
+      </ClerkRequiredGate>
+    );
+  }
+
+  return <SectionRenderer sectionId={sectionIdTyped} />;
 }

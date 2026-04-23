@@ -1,35 +1,42 @@
+ "use client";
+
+import { IdentityBadge } from "@/components/ui/identity-badge";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+
 const MODE_BADGES = [
-  { id: "mode_exhaustif", label: "Mode exhaustif", icon: "MEX" },
-  { id: "mode_sobre", label: "Mode sobre", icon: "MSO" },
-  { id: "mode_simplifie", label: "Mode simplifie", icon: "MSI" },
+  { id: "mode_exhaustif", label: "Mode exhaustif", icon: "sparkles" },
+  { id: "mode_sobre", label: "Mode sobre", icon: "leaf" },
+  { id: "mode_simplifie", label: "Mode simplifié", icon: "sliders-horizontal" },
 ] as const;
 
 const ROLE_BADGES = [
-  { id: "role_benevole", label: "Role benevole", icon: "RBV" },
-  { id: "role_coordinateur", label: "Role coordinateur", icon: "RCO" },
-  { id: "role_scientifique", label: "Role scientifique", icon: "RSC" },
-  { id: "role_elu", label: "Role elu", icon: "REL" },
-  { id: "role_admin", label: "Role admin", icon: "RAD" },
+  { id: "role_benevole", label: "Bénévole", icon: "users" },
+  { id: "role_coordinateur", label: "Coordination", icon: "target" },
+  { id: "role_scientifique", label: "Scientifique", icon: "sparkles" },
+  { id: "role_elu", label: "Autorité locale", icon: "badge-check" },
+  { id: "role_admin", label: "Administration", icon: "shield" },
 ] as const;
 
 const PROFILE_BADGES = [
-  { id: "profile_benevole", label: "Profil benevole", icon: "PBV" },
-  { id: "profile_coordinateur", label: "Profil coordinateur", icon: "PCO" },
-  { id: "profile_scientifique", label: "Profil scientifique", icon: "PSC" },
-  { id: "profile_elu", label: "Profil elu", icon: "PEL" },
-  { id: "profile_admin", label: "Profil admin", icon: "PAD" },
+  { id: "profile_benevole", label: "Profil bénévole", icon: "users" },
+  { id: "profile_coordinateur", label: "Profil coordination", icon: "target" },
+  { id: "profile_scientifique", label: "Profil scientifique", icon: "sparkles" },
+  { id: "profile_elu", label: "Profil autorité locale", icon: "badge-check" },
+  { id: "profile_admin", label: "Profil administration", icon: "shield" },
 ] as const;
 
 export function DiscussionBadgesPanel() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   return (
     <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-        Badges d&apos;interaction: mode, role, profil
+        {fr ? "Badges d'interaction : mode, rôle et profil" : "Interaction badges: mode, role and profile"}
       </p>
       <p className="mt-1 text-xs text-slate-600">
-        Ces badges aident a adapter le ton: coordination factuelle avec les
-        coordinateurs, synthese avec les elus, detail technique avec les
-        scientifiques, et moderation explicite avec les admins.
+        {fr
+          ? "Ces badges aident à adapter le ton : coordination factuelle pour les équipes de terrain, synthèse pour les décideur·euse·s, détail technique pour les profils scientifiques, et modération explicite pour l'administration."
+          : "These badges help adapt the tone: factual coordination for field teams, concise summaries for decision-makers, technical detail for scientific profiles, and explicit moderation for administration."}
       </p>
       <div className="mt-2 flex flex-wrap gap-2">
         {MODE_BADGES.map((badge) => (
@@ -64,5 +71,3 @@ export function DiscussionBadgesPanel() {
     </div>
   );
 }
-import { IdentityBadge } from "@/components/ui/identity-badge";
-

@@ -10,6 +10,8 @@ describe("useAdminWorkflow helpers", () => {
       status: "approved",
       days: 90,
       limit: 250,
+      scopeKind: "association",
+      scopeValue: "Association Test",
       association: "Association Test",
     });
 
@@ -18,17 +20,23 @@ describe("useAdminWorkflow helpers", () => {
     expect(params.get("limit")).toBe("250");
     expect(params.get("types")).toBe("all");
     expect(params.get("status")).toBe("approved");
-    expect(params.get("association")).toBe("Association Test");
+    expect(params.get("scopeKind")).toBe("association");
+    expect(params.get("scopeValue")).toBe("Association Test");
+    expect(params.get("association")).toBeNull();
 
     const queryWithoutOptional = buildExportQuery({
       status: "all",
       days: 30,
       limit: 120,
+      scopeKind: "global",
+      scopeValue: "",
       association: "all",
     });
     const withoutOptional = new URLSearchParams(queryWithoutOptional);
     expect(withoutOptional.get("status")).toBeNull();
     expect(withoutOptional.get("association")).toBeNull();
+    expect(withoutOptional.get("scopeKind")).toBeNull();
+    expect(withoutOptional.get("scopeValue")).toBeNull();
   });
 
   it("parseAdminApiError builds a detailed message when structured payload is present", () => {

@@ -1,8 +1,10 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { User, Shield, Droplets, Target, Award } from "lucide-react";
-import Image from "next/image";
+import { User, Shield, Droplets } from "lucide-react";
+import {
+  BadgePictogram,
+  getGamificationBadgeIconName,
+} from "@/components/gamification/badge-icon";
 
 type ImpactCardProps = {
   userName: string;
@@ -66,8 +68,12 @@ export function ImpactCard({
         <p className="text-[10px] uppercase font-bold text-emerald-200 tracking-widest mb-3 text-center">Badges principaux</p>
         <div className="flex justify-center gap-3">
           {topBadges.slice(0, 3).map((badge, i) => (
-            <div key={i} className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner" title={badge}>
-              <Award size={20} className="text-white" />
+            <div key={i} className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner" title={badge} aria-label={badge}>
+              <BadgePictogram
+                name={getGamificationBadgeIconName(badge)}
+                size={20}
+                className="text-white"
+              />
             </div>
           ))}
           {topBadges.length === 0 && <p className="text-xs italic opacity-40">En cours d'obtention...</p>}

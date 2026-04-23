@@ -1,5 +1,8 @@
+ "use client";
+
 import type { AnnuaireEntry } from "./annuaire-map-canvas";
 import Link from "next/link";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type AnnuaireGovernancePanelProps = {
   pendingEntries: AnnuaireEntry[];
@@ -10,74 +13,79 @@ export function AnnuaireGovernancePanel({
   pendingEntries,
   verificationLabels,
 }: AnnuaireGovernancePanelProps) {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   return (
     <>
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-900">Actions partenaires</h3>
+        <h3 className="text-sm font-semibold text-slate-900">{fr ? "Actions partenaires" : "Partner actions"}</h3>
         <div className="mt-3 space-y-2">
           <Link
             href="/partners/onboarding"
             className="block rounded-lg bg-emerald-600 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-emerald-700"
           >
-            Onboarding commercant engage (5 min)
+            {fr ? "Parcours partenaire (5 min)" : "Partner flow (5 min)"}
           </Link>
           <a
-            href="mailto:partenaires@cleanmymap.fr?subject=Devenir commercant engage"
+            href="mailto:partenaires@cleanmymap.fr?subject=Rejoindre le réseau partenaire"
             className="block rounded-lg bg-amber-500 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-amber-600"
           >
-            Devenir commercant engage
+            {fr ? "Rejoindre le réseau partenaire" : "Join the partner network"}
           </a>
           <a
-            href="mailto:partenaires@cleanmymap.fr?subject=Signaler une mise a jour sur la fiche partenaire"
+            href="mailto:partenaires@cleanmymap.fr?subject=Signaler une mise à jour sur la fiche partenaire"
             className="block rounded-lg border border-slate-300 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 hover:bg-slate-100"
           >
-            Signaler une mise a jour sur la fiche partenaire
+            {fr ? "Signaler une mise à jour sur la fiche partenaire" : "Report an update to a partner profile"}
           </a>
         </div>
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-900">Transparence</h3>
+        <h3 className="text-sm font-semibold text-slate-900">{fr ? "Transparence" : "Transparency"}</h3>
         <ul className="mt-3 space-y-2 text-xs text-slate-700">
           <li>
-            Champs publics vs internes: toutes les fiches sont publiques par
-            defaut (logique open source benevole). En interne admin/elus, on
-            affiche aussi referent (nom/prenom) + email + telephone.
+            {fr
+              ? "Champs publics vs internes : toutes les fiches sont publiques par défaut (logique open source bénévole). En interne administration / autorités locales, on affiche aussi référent (nom/prénom) + email + téléphone."
+              : "Public vs internal fields: all profiles are public by default (open-source volunteer logic). In administration / local authority views, the contact owner name, email and phone are also shown."}
           </li>
           <li>
-            Comment devenir &quot;engage&quot;: fournir identite legale/associative,
-            contribution concrete et canal de contact joignable.
+            {fr
+              ? "Comment rejoindre le réseau : fournir identité légale/associative, contribution concrète et canal de contact joignable."
+              : "How to join the network: provide legal/association identity, concrete contribution and a reachable contact channel."}
           </li>
           <li>
-            Criteres de verification: preuve d&apos;activite recente (&lt;120j),
-            perimetre geographique explicite, validation equipe partenariats.
+            {fr
+              ? "Critères de vérification: preuve d'activité récente (<120j), périmètre géographique explicite, validation équipe partenariats."
+              : "Verification criteria: recent activity evidence (<120 days), explicit geographic scope and partner-team validation."}
           </li>
           <li>
-            Fraicheur des donnees: chaque fiche affiche une date de mise a jour
-            et un indicateur de recence.
+            {fr
+              ? "Fraîcheur des données: chaque fiche affiche une date de mise à jour et un indicateur de récence."
+              : "Data freshness: each profile shows an update date and recency indicator."}
           </li>
         </ul>
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-900">Gouvernance</h3>
+        <h3 className="text-sm font-semibold text-slate-900">{fr ? "Gouvernance" : "Governance"}</h3>
         <ul className="mt-3 space-y-2 text-xs text-slate-700">
           <li>
-            Validation des fiches: equipe partenariats CleanMyMap + relecture
-            operationnelle locale.
+            {fr
+              ? "Validation des fiches : équipe partenariats CleanMyMap + relecture opérationnelle locale."
+              : "Profile validation: CleanMyMap partner team + local operational review."}
           </li>
           <li>
-            Modification autorisee: administrateurs plateforme et responsables
-            partenaires identifies.
+            {fr
+              ? "Modification autorisée : administration de la plateforme et responsables partenaires identifiés."
+              : "Authorized edits: platform administration and identified partner leads."}
           </li>
-          <li>Delai de traitement cible des demandes: 72h ouvrées.</li>
+          <li>{fr ? "Délai de traitement cible des demandes : 72h ouvrées." : "Target request handling time: 72 business hours."}</li>
         </ul>
       </section>
 
       <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-amber-900">
-          Contacts non qualifies (hors annuaire actif)
-        </h3>
+        <h3 className="text-sm font-semibold text-amber-900">{fr ? "Contacts à qualifier (hors annuaire actif)" : "Contacts to qualify (outside active directory)"}</h3>
         <ul className="mt-3 space-y-2 text-xs text-amber-900">
           {pendingEntries.map((entry) => (
             <li key={`pending-${entry.id}`} className="rounded bg-white/70 p-2">
@@ -90,7 +98,7 @@ export function AnnuaireGovernancePanel({
           ))}
           {pendingEntries.length === 0 ? (
             <li className="rounded bg-white/70 p-2">
-              Aucun contact non qualifie.
+              {fr ? "Aucun contact à qualifier." : "No contacts to qualify."}
             </li>
           ) : null}
         </ul>

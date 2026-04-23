@@ -2,10 +2,10 @@ export const PROTECTED_ROUTE_PATTERNS = [
   "/admin(.*)",
   "/dashboard(.*)",
   "/actions(.*)",
-  "/reports(.*)",
   "/sections(.*)",
   "/api/admin(.*)",
   "/api/actions(.*)",
+  "/api/account(.*)",
   "/api/community(.*)",
   "/api/pilotage(.*)",
   "/api/partners(.*)",
@@ -17,5 +17,4 @@ export const PROTECTED_ROUTE_PATTERNS = [
   "/api/email/test(.*)",
   "/prints(.*)",
   "/sponsor-portal(.*)",
-  "/learn(.*)",
 ] as const;

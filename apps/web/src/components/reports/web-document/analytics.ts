@@ -153,7 +153,7 @@ export function buildCalendarRows(now: Date): Array<[string, string, string, str
       entries.push([
         `Sprint 2 - ${monthLabel}`,
         slot,
-        "Acceleration terrain (itineraires, zones recurrence, couverture tracee).",
+        "Accélération terrain (itinéraires, zones récurrence, couverture tracée).",
         "Ops terrain",
       ]);
       continue;
@@ -183,15 +183,15 @@ export function getWeatherAdvice(params: {
   wind: number;
 }): string {
   if (params.rain >= 3 || params.wind >= 40) {
-    return "Niveau meteo prudent: renforcer EPI, reduire duree et securiser les points d'appui.";
+    return "Niveau météo prudent: renforcer EPI, réduire durée et sécuriser les points d'appui.";
   }
   if (params.temperature >= 28) {
-    return "Niveau meteo chaud: prevoir eau, pauses et roulement de l'equipe.";
+    return "Niveau météo chaud: prévoir eau, pauses et roulement de l'équipe.";
   }
   if (params.temperature <= 3) {
-    return "Niveau meteo froid: cycles courts et protection renforcee des mains.";
+    return "Niveau météo froid: cycles courts et protection renforcée des mains.";
   }
-  return "Niveau meteo favorable: fenetre operationnelle standard.";
+  return "Niveau météo favorable: fenêtre opérationnelle standard.";
 }
 
 export function computeReportModel(input: ReportModelInput): ReportModel {
@@ -494,5 +494,64 @@ export function computeReportModel(input: ReportModelInput): ReportModel {
     impactMethodology: buildPersonalImpactMethodology(pollutionScoreAverage),
     annualRows,
     calendar: buildCalendarRows(now),
+  };
+}
+
+export type ExecutiveNarrative = {
+  readinessScore: number;
+  readinessLabel: string;
+  headline: string;
+  summary: string;
+  evidence: string[];
+  budgetUseCases: string[];
+  watchouts: string[];
+};
+
+export function buildExecutiveNarrative(report: ReportModel): ExecutiveNarrative {
+  const readinessScore = average([
+    report.quality.completenessScore,
+    report.quality.coherenceScore,
+    report.map.geoCoverage,
+    report.moderation.conversion,
+  ]);
+
+  const readinessLabel =
+    readinessScore >= 85
+      ? "Lecture budgétaire solide"
+      : readinessScore >= 70
+        ? "Lecture crédible avec vigilance"
+        : "Lecture à consolider";
+
+  const topArea = report.areas[0];
+  const topAreaSummary = topArea
+    ? `${topArea.area} concentre ${toFrNumber(topArea.kg)} kg sur ${toFrInt(topArea.actions)} actions et reste la zone la plus sensible.`
+    : "Aucune zone prioritaire n'est ressortie sur la fenêtre analysée.";
+
+  const summary = [
+    topAreaSummary,
+    `La géolocalisation atteint ${toFrNumber(report.map.geoCoverage)}%, la qualité de données ${toFrNumber(report.quality.completenessScore)}% et la conversion de modération ${toFrNumber(report.moderation.conversion)}%.`,
+  ].join(" ");
+
+  return {
+    readinessScore: Math.round(readinessScore * 10) / 10,
+    readinessLabel,
+    headline: "Rapport d'impact institutionnel prêt à diffuser",
+    summary,
+    evidence: [
+      `${toFrInt(report.totals.actions)} actions validées`,
+      `${toFrNumber(report.totals.kg)} kg collectés`,
+      `${toFrNumber(report.map.geoCoverage)}% de géolocalisation`,
+      `${toFrNumber(report.quality.coherenceScore)}% de cohérence`,
+    ],
+    budgetUseCases: [
+      "Appuyer une demande de budget par la preuve territoriale.",
+      "Prioriser les zones de récurrence et les renforts de terrain.",
+      "Documenter la crédibilité des indicateurs avant diffusion institutionnelle.",
+    ],
+    watchouts: [
+      `Délai de modération moyen: ${toFrNumber(report.moderation.delayDays)} jours.`,
+      `Taux de traces/polygones: ${toFrNumber(report.map.traceCoverage)}%.`,
+      "Les montants restent des proxies de décision et doivent être lus avec la méthodologie jointe.",
+    ],
   };
 }

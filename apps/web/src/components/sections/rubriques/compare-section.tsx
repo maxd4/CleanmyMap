@@ -53,7 +53,7 @@ export function CompareSection() {
               <h3 className="text-sm font-semibold text-slate-900">
                 Analyse comparative inter-zones ({periodDays === 365 ? "12 mois" : `${periodDays} jours`})
               </h3>
-              <p className="text-xs text-slate-500 mt-1">Normalisation par surface, recurrence et volume d&apos;activité.</p>
+              <p className="text-xs text-slate-500 mt-1">Lecture opérationnelle par zone.</p>
             </div>
             <div className="flex gap-2">
               {[30, 90, 365].map((value) => (
@@ -71,6 +71,26 @@ export function CompareSection() {
               ))}
             </div>
           </div>
+
+          <details className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <summary className="cursor-pointer text-sm font-semibold text-slate-900">
+              Méthodologie
+            </summary>
+            <div className="mt-3 space-y-2 text-sm text-slate-600">
+              <p>
+                Comparaison calculée sur les actions approuvées du périmètre courant, sur
+                {periodDays === 365 ? " 12 mois" : ` ${periodDays} jours`}.
+              </p>
+              <p>
+                Les classements sont normalisés par surface, récurrence et volume
+                d&apos;activité pour rendre la lecture territoriale plus stable.
+              </p>
+              <p>
+                Le bloc « Effort » signale le levier attendu, tandis que les zones
+                prioritaires synthétisent l&apos;écart le plus utile à traiter.
+              </p>
+            </div>
+          </details>
 
           {/* SPLIT : Classements (gauche) + Zones prioritaires (droite) */}
           <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6 items-start">

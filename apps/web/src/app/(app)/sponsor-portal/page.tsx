@@ -12,17 +12,19 @@ import Link from "next/link";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 
 async function loadSponsorOverview() {
   const supabase = getSupabaseServerClient();
   return loadPilotageOverview({
     supabase,
-    periodDays: 365, // Long term view for sponsors
+    periodDays: 730, // Wider default view for sponsors
     limit: 5000,
   });
 }
 
 export default async function SponsorPortalPage() {
+  const { userId } = await auth();
   const overview = await loadSponsorOverview();
   const factors = IMPACT_PROXY_CONFIG.factors;
 
@@ -31,14 +33,15 @@ export default async function SponsorPortalPage() {
   const totalEuroSaved = Math.round(totalKg * factors.euroSavedPerWasteKg);
   const totalCo2 = Math.round(totalKg * factors.co2KgPerWasteKg);
   const totalVolunteers = overview.comparison.current.mobilizationCount;
+  const observedZones = overview.zones.slice(0, 3);
 
-  return (
+  const page = (
     <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 bg-slate-50 min-h-screen">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-amber-600 font-bold uppercase tracking-widest text-xs">
             <TrendingUp size={16} />
-            Espace Décisionnel / Sponsors
+            Gouvernance / sponsors
           </div>
           <h1 className="text-4xl font-black tracking-tight text-slate-900">
             Impact Territorial & ROI.
@@ -89,6 +92,56 @@ export default async function SponsorPortalPage() {
         </div>
       </section>
 
+      <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+          <div className="flex items-center gap-2 text-slate-900 font-bold uppercase tracking-widest text-xs">
+            <Info size={16} className="text-amber-500" />
+            Réseau observé
+          </div>
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Le portail affiche maintenant un périmètre plus large pour éviter une lecture trop
+            promotionnelle du réseau. La fenêtre d&apos;observation couvre deux ans, avec les
+            zones les plus actives mises en avant ci-dessous.
+          </p>
+          <div className="grid sm:grid-cols-3 gap-3 text-sm">
+            <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-400">Fenêtre</p>
+              <p className="mt-1 font-semibold text-slate-900">730 jours</p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-400">Contrats chargés</p>
+              <p className="mt-1 font-semibold text-slate-900">{overview.contracts.length}</p>
+            </div>
+            <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
+              <p className="text-xs uppercase tracking-wide text-slate-400">Zones analysées</p>
+              <p className="mt-1 font-semibold text-slate-900">{overview.zones.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-slate-900 rounded-3xl p-8 text-white space-y-4 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl" />
+          <h3 className="text-xl font-bold relative z-10">Zones à suivre</h3>
+          <ul className="space-y-3 relative z-10">
+            {observedZones.length > 0 ? (
+              observedZones.map((zone) => (
+                <li key={zone.area} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="font-semibold text-white">{zone.area}</p>
+                  <p className="mt-1 text-sm text-slate-300">
+                    Score {zone.normalizedScore.toFixed(1)} | priorité {zone.urgency}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-400">{zone.recommendedAction}</p>
+                </li>
+              ))
+            ) : (
+              <li className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
+                Aucune zone prioritaire détectée sur la fenêtre courante.
+              </li>
+            )}
+          </ul>
+        </div>
+      </section>
+
       {/* DETAILS GRID */}
       <div className="grid lg:grid-cols-3 gap-8">
         {/* ROI Explanation */}
@@ -127,5 +180,16 @@ export default async function SponsorPortalPage() {
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <ClerkRequiredGate
+      isAuthenticated={Boolean(userId)}
+      mode="disabled"
+      title="Portail décideur"
+      description="Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
+    >
+      {page}
+    </ClerkRequiredGate>
   );
 }
