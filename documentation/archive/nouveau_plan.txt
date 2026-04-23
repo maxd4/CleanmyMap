@@ -1,54 +1,188 @@
 BOUCLE A REPETER AVEC MODELE FORT (claude / gemini 3.1)
+
+Ajouter la cle  dans le fichier .env.local de l'ordinateur local (sophi).
+Ajouter le nom de la variable (sans la valeur) dans .env.example.
+Mettre à jour  pps/web/src/lib/env.ts pour que l'application valide la presence de la cle.
+Vérifier l'etat dans /api/services (depuis un compte admin).
+
+
+
+
+
+
+RESEND 
+API re_aKA5ED7n_Gi4327DZ1epz1a2jkjRC5sah
+domain mail.cleanmymap.fr
+Le from: doit utiliser ton domaine validé (@mail.cleanmymap.fr)
+RESEND_FROM_EMAIL=contact@mail.cleanmymap.fr
+appelle /api/send
+vérifie que tu reçois l’email
+Si OK → on branche ça dans ton produit (notifications, etc)
+
+
+
+I'm using the Resend API. Help me add this code to my project.
+
+Ask the user to replace `re_xxxxxxxxx` with their real API key.
+
+```javascript
+import { Resend } from 'resend';
+
+const resend = new Resend('re_xxxxxxxxx');
+
+resend.emails.send({
+  from: 'onboarding@resend.dev',
+  to: 'maxence.deroome@gmail.com',
+  subject: 'Hello World',
+  html: '<p>Congrats on sending your <strong>first email</strong>!</p>'
+});
+```
+
+
+// app/api/send/route.ts
+import { Resend } from 'resend'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+export async function POST() {
+  await resend.emails.send({
+    from: 'CleanMyMap <contact@mail.cleanmymap.fr>',
+    to: 'ton@email.com',
+    subject: 'Test',
+    html: '<p>Test OK</p>',
+  })
+
+  return Response.json({ ok: true })
+}
+
+
+
+
+
+Ajoute la possibilité pour les utilisateurs de répondre directement aux emails depuis leur boîte mail, et que ces réponses arrivent sur mon email professionnel. J'ai configuré resend les DNS sont vérifié mais pas les fichiers de documentation du repo ni les variables vercel je crois.
+
+Implémentation :
+- utiliser Resend
+- ajouter le champ `reply_to` dans l’envoi d’email
+- valeur : une adresse email professionnelle (ex: contact@cleanmymap.fr ou Gmail)
+- ne pas utiliser le receiving Resend
+- garder une implémentation simple (pas de webhook)
+
+Exemple attendu :
+resend.emails.send({
+  from: 'CleanMyMap <contact@mail.cleanmymap.fr>',
+  to: user.email,
+  subject: '...',
+  html: '...',
+  reply_to: 'maxence.drmgmail.com'
+})
+
+Contraintes :
+- ne rien casser dans l’existant
+- ajouter proprement dans la logique d’envoi actuelle
+- rendre configurable via variable d’environnement (ex: RESEND_REPLY_TO)
+
+Livrable :
+- code modifié
+- variable env ajoutée
+- explication rapide
+
+
+
+
+
+
+
+
+uptimerobot configuré avec le nom de domaine https
+chatgpt me conseille d'Ajouter un monitor API 
+👉 Clique sur Add new monitor → HTTP
+
+Mets une route critique :
+
+https://cleanmymap.fr/api/health
+
+(si tu ne l’as pas encore → on la crée après)
+
+👉 Ça permet de détecter :
+
+backend cassé
+Supabase down
+API bug
+
+
+Ajoute une route `/api/health` utilisée pour le monitoring UptimeRobot.
+
+Exigences :
+- répondre en GET ;
+- retourner `200` avec un JSON simple si l’app est opérationnelle ;
+- format recommandé :
+  `{ "ok": true, "service": "cleanmymap", "timestamp": "..." }`
+- route légère, rapide, sans logique inutile ;
+- si pertinent, vérifier aussi les dépendances critiques (ex. base de données) sans rendre la route fragile ;
+- ne rien casser dans l’existant ;
+- intégrer proprement à l’architecture actuelle du projet.
+
+Livrable :
+- route implémentée ;
+- fichiers modifiés ;
+- URL exacte à surveiller dans UptimeRobot.
+
+
+
+
+
+dans un fichier de documentation, ajoute ou met a jour les services web pas encore utilisés : 
+Stripe paiements en ligne dons, à ajouter plus tard
+
+Pinecone pour faire des vecteur image (retrovuer facilement des clenawalk dans la base de donnée grace à l'IA
+
+Upstash se positionne justement sur Redis serverless, rate limiting, QStash et Workflow. N’ajoute Upstash que le jour où tu dis :
+“je dois limiter les abus sur mes API”
+ou “j’ai besoin de cache/queues maintenant”
+
+
+
+
+
+
+
+supprime les actions de test qui s'affiche en plus des données réelles du google sheet, on en a pas besoin. 
+
+
+
 fait un commit puis push GitHub et met à jour le git.
 
-Refactorise le repo sans changer le comportement pour qu'il soit plus facilement utilisable par l'agent IA qui développe le projet
 
-Fait un audit des fichiers les plus lourd du repo, explique pourquoi et comment optimiser cela pour améliorer la qualité et l'efficacité du repo avec un plan d'action précis, propre et actionnable.
+commit et push toutes les branches GitHub sur main puis supprime les autres branches. Tu es obligé de toujours travailler sur main. Corrige ensuite les verification et run job en erreur.
+
+
+vérifie un par un les action DONE et si elles sont complètes et propre alors supprime les du fichier latest-session si applique les corrections
+
+
+
+propose un plan de refactorisation du repo si besoin sans changer le comportement pour qu'il soit plus facilement utilisable par l'agent IA qui développe le projet.
+
+exécute cela 
+
+Fait un audit des fichiers de code les plus lourd du repo et les fichiers monolithique ayant besoin d'une division propre et modulaire. Fait ensuite un plan pour les optimiser afin d'améliorer la qualité et l'efficacité du repo avec un plan d'action précis, propre et actionnable step by step.
 
 Exécute cela
-
-De même fait cet audit pour les fichiers monolithique avec une stratégie de divisions propre en fichiers modulaires.
 
 Trouve tous les bugs et régressions puis structure ton audit sous forme d'un plan actionnable
 
 Exécute ce plan
 
-Fais un audit global du repo pour récupérer : les problèmes critiques, les risques de régression, les incohérences structurelles, les correctifs recommandés. Structure en un plan actionnable par toi
+Fais un audit global du repo pour récupérer : les problèmes critiques, les risques de régression, les incohérences structurelles, les correctifs recommandés. Structure en un plan actionnable et executable par étapes de priorité
 
 exécute le plan 
 
 
 
+fusionne toutes les branches sur main. Tu dois toujours travailler sur main.
 
 
 
-
-
-
-
-
-==================================================
-DeMARCHE POUR LES SERVICES FUTURS (CL S API)
-==================================================
-Pour chaque service identifie  (Sentry, Posthog, Stripe, Pinecone, Resend, Upstash, UptimeRobot), suivre cette procedure :
-1. Creer un compte sur la plateforme correspondante.
-2. Generer une cle  API (Secret Key).
-3. Ajouter la cle  dans le fichier .env.local de l'ordinateur local (sophi).
-4. Ajouter le nom de la variable (sans la valeur) dans .env.example.
-5. Mettre  à jour  pps/web/src/lib/env.ts pour que l'application valide la presence de la cle.
-6. Verifier l' tat dans /api/services (depuis un compte admin).
-
-Pour finaliser l'installation en production, assurez-vous que les variables suivantes sont configurées dans votre tableau de bord Vercel :
-
-Monitoring : SENTRY_DSN, NEXT_PUBLIC_SENTRY_DSN, NEXT_PUBLIC_POSTHOG_KEY, NEXT_PUBLIC_POSTHOG_HOST.
-Services : RESEND_API_KEY, CLERK_SECRET_KEY, SUPABASE_SERVICE_ROLE_KEY.
-
-
-Supabase	NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY	Base de données (Admin/Server)
-Clerk	NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY / CLERK_SECRET_KEY	Authentification & Profils
-Sentry	NEXT_PUBLIC_SENTRY_DSN / SENTRY_DSN	Monitoring d'erreurs (Frontend & API)
-PostHog	NEXT_PUBLIC_POSTHOG_KEY / NEXT_PUBLIC_POSTHOG_HOST	Analytics produit & Tracking serveur
-Resend	RESEND_API_KEY / RESEND_FROM_EMAIL	Envoi d'emails transactionnels
 
 
 
@@ -63,45 +197,12 @@ Resend	RESEND_API_KEY / RESEND_FROM_EMAIL	Envoi d'emails transactionnels
 
 
 
-
-Hydration failed because the server rendered HTML didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
-
-A server/client branch if (typeof window !== 'undefined').
-Variable input such as Date.now() or Math.random() which changes each time it's called.
-Date formatting in a user's locale which doesn't match the server.
-External changing data without sending a snapshot of it along with the HTML.
-Invalid HTML tag nesting.
-It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 filtre paris + banlieux + arrondissement.
 même présentation que cleanwak.org et si l'utilsiateur clique sur "s'inscire" alors il est envoyésur la page de cleanwalk.org utilsie la méthode redirect de next.js vers l'url de l'action. l'action a typiquement cette forme : https://www.cleanwalk.org/cleanwalk/21/aebcpev-ramassage-de-dechets-metro-buttes-chaumont-aebcpev. issus de la base de donnée de l'action.
 
 
 API publique, flux RSS, JSON à interroger pour afficher un claque à jour des futures cleanwalks parisiennes en temps réel sur notre carte. Il faut aussi que le contenu de la fiche d'action réelle sur cleanwalk.org soit affiché sur mon site pour que si l'utilisateur est intéressé il clique et cela l'envoi directement sur la page d'inscription de l'évènement.
 L'objectif est de créer une synergie entre nos deux outils pour maximiser l'impact environnemental sur le terrain.
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -141,12 +242,7 @@ Deliver:
 
 fait un plan exhaustif pour étendre complètement le site web aux banlieues de Paris en plus des arrondissements pour couvrir Paris grande couronne.
 
-
 exécute ce plan
-
-
-
-
 
 
 
@@ -155,102 +251,11 @@ explique : "Les sélecteurs de scope de génération des livrables côté UI dé
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 "Méthode (KPI clés)" sur la page d'acceuil n'est pas au bon endroit du site web. Trouve un autre endroit 
-
 j'ai créer le bucket chat-attachments sur supabase en public pour la logique de messagerie du site.
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-il y a deux boutons pour choisir le mode de navigation. Garde seulement celui à coté du badge de rôle car il est plus beau. Attention qund je passe la souris sur certains boutons ils deviennent flou, enlève cela. C'est simplement le fond qui doit devenir flou, pas le texte
-
-la page d'accueil est trop zoomé sur ordinateur corrige cela en réduisant toutes les tailles de 10% par exemple .
-
-
-les trois boutons en dessous du titre doivent être "se connecter", "visiter le site en tant qu'invité", "déclarer une action", "générer un rapport d'impact".
-
-
-
-supprime la partie "visiter le site" car elle fait doublon et c'est trop long a lire.
-
-
-La présentation du formulaire bénévole est un peu maladroite sur la page d'acceuil. Cela prend trop de place pour rien. Quelques phrases devraient suffir pour expliquer la logique d'inviter, de connexion, de formulaire, de rap 
-réorganise intelligemment la partie DONE du fichier en regroupant les points similaires puis en les classant par ordre de priorité à vérifier.
-
-
-
-
-pour l'Agrégat réel du dernier rapport public, affiche la masse des déchets récoltés, le nombre de mégots, le nombre de bénévoles, le CO2 évité / eau préservée, l'argent économisée. Ajoute un bouton "voir méthodologie" pour renvoyer à la page qui justifie ces différents calculs.
-
-
-
-le bouton de la page d'accueil "visiter le site" doit amener au vrai site mais avec certaines rubriques floutées. Cette règle est déjà codée.
-
-
-
-
-
-
-
-Reprenons avec le fichier last-session. La partie DONE est la source de vérité des actions réalisées récemment par un modèle moins performant.
-
-Pour le premier point : 
-1. Vérifie que l’implémentation est complète fonctionnellement
-2. Identifie tout ce qui manque (logique, routes, erreurs, edge cases, intégration)
-3. Corrige et complète le code jusqu’à ce que la feature soit pleinement opérationnelle
-4. Assure la cohérence avec le reste du projet
-5. Supprime tous les TODO, placeholders ou implémentations partielles 
-6. Vérifie que les informations visible par l'utilisateur sont pertinentes et conforme à la logique du site open source et pour aider les bénévoles.
-
-Contraintes :
-- ne te limite pas à améliorer le style
-- complète réellement les fonctionnalités
-- ne laisse aucune partie implicite
-- assure une implémentation production-ready
-- explique les points de vigilance restants si besoin d'exécuter une seconde passe
-- mettre à jour si besoin la partie "risks" du fichier
-
-
-continu avec le point suivant de la partie DONE  
-
-
-
-
-propose un plan de refactorisation du repo si besoin
-
-de même pour les fichiers monolithiques ayant besoin d'une modularisation fonctionnelle sans perte.
-
-
-le ruban fixe en haut du site doit tenir sur une seule ligne avec un fond flou qui s'adapte à la couleur du site pour ne pas remarquer la délimitation.
 
 corriger les fichiers de collab .html (ouvrir sur bloc note et modifier le texte) puis imprimer .pdf et les envoyer.
 

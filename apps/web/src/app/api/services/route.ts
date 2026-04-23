@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { env, isConfigured } from "@/lib/env";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
+import { isPostHogConfigured } from "@/lib/posthog/config";
 import { SERVICE_DEFINITIONS, type ServiceHealthState } from "@/lib/services/registry";
 
 export const runtime = "nodejs";
@@ -41,7 +42,7 @@ function getServiceState(id: string): ServiceHealthState {
         ? "ready"
         : "missing";
     case "posthog":
-      return isConfigured(env.NEXT_PUBLIC_POSTHOG_KEY) ? "ready" : "missing";
+      return isPostHogConfigured() ? "ready" : "missing";
     case "pinecone":
       return isConfigured(env.PINECONE_API_KEY) ? "ready" : "defer";
     case "stripe":

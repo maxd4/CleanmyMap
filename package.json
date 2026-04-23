@@ -43,6 +43,11 @@
   },
   "overrides": {
     "dompurify": "3.4.0",
-    "protobufjs": "7.5.5"
+    "protobufjs": "7.5.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "dependencies": {
+    "posthog-js": "^1.371.2",
+    "posthog-node": "^5.29.7"
   }
 }

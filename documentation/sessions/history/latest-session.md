@@ -1,95 +1,115 @@
 # Latest Session
 
 Updated: 2026-04-23
-Status: FROZEN (do not update until explicit unfreeze)
+Status: CLOSED
 
 ## Done
-- **Next exécuté - QA visuelle ruban mobile (320/375/390)** : validation headless sur `/parcours` avec captures dédiées (`documentation/sessions/assets/qa/ribbon-parcours-320.png`, `...-375.png`, `...-390.png`) ; le ruban reste compact (`navHeight=146`, `navBottom=202`) et une action principale reste visible au premier écran sur les 3 largeurs.
-- **Next exécuté - export PDF A4 court/long** : génération et contrôle des exports `report-global-long.pdf` et `report-account-short.pdf` dans `documentation/sessions/assets/qa/`, avec vérification des blocs `print-break-inside-avoid` après ajustement de la couverture (max bloc 479px < 1047px utile A4, pagination lisible sur 19 pages).
-- **Next exécuté - quantification `created_by_clerk_id`** : métrique de couverture publiée dans le rapport web avec gestion explicite du cas non mesurable (`n/a (0/0)`), et quantification locale complémentaire sur stores (`0/6` avec clé, `6/6` manquants, couverture `0%`).
-- **Risks - Clerk fallback durci** : ajout d’un accès auth tolérant aux pannes Clerk sur les pages publiques sensibles (`reports`, `parcours`, `sections`, `prints/report`, `sponsor-portal`, layout app), pour éviter les états bloquants en cas d’indisponibilité temporaire.
-- **Risks - persistance mode d’affichage résiliente** : ajout d’une file locale de resynchronisation (`display_mode_pending_sync`) et replay automatique au retour `online`/`visibilitychange`, avec route API renforcée et tests des cas `auth down`/`mutation Clerk en erreur`.
-- **Risks - ruban mobile compacté** : réduction des hauteurs, paddings et tailles du ruban + ajustement du `pt` layout pour préserver l’accès aux actions prioritaires sur petits écrans.
-- **Risks - inférence photo isolée** : extraction d’un point d’entrée vision dédié (`runActionVisionEstimate`) et d’un helper de suggestion explicite (`vision` vs `fallback heuristique`), avec test unitaire ciblé.
-- **Risks - pagination PDF sécurisée** : ajout de classes print dédiées pour laisser les sections longues se répartir sur plusieurs pages tout en protégeant les blocs denses (`print-break-inside-avoid`).
-- **Risks - périmètre compte mesuré** : ajout d’une métrique de couverture `created_by_clerk_id` (total, couverts, manquants, %) dans le modèle et l’UI des rapports, avec test unitaire.
-- **Risks - portail sponsors contextualisé** : affichage explicite de la fenêtre d’observation (`730 jours`, dates de début/fin) et avertissement de comparabilité temporelle au-dessus des KPI.
-- **Dashboard Admin - vues gouvernance reliées aux états métier** : ajout d’un bloc `Vues gouvernance` dans `/admin` avec compteurs `pending / accepted / rejected` pour l’onboarding partenaire, la publication annuaire, et le journal des opérations admin (`success / error`) sur les 25 dernières opérations.
-- **Mode Science - formules exposées en tooltips** : ajout de tooltips dédiés sur les KPI du grid décisionnel (`volume`, `qualité`, `géocouverture`, `délai`, `mobilisation`) avec formule, source, fréquence et limites, directement visibles depuis le dashboard.
-- **Parcours Mobilisation + chat - nominal / dégradé / vide** : durcissement de `ChatShell` avec états explicites (`loading`, `empty`, `degraded`), gestion d’erreurs API lisibles, mode lecture seule non-connecté avec lien de connexion, blocage des actions d’envoi sans session, et test unitaire couvrant les 3 scénarios.
-- **Purge Vercel étendue** : suppression du dernier déploiement preview non-production encore présent dans le projet `web`, puis vérification qu’il ne restait ni `CANCELED` ni preview `READY` hors production.
-- **Nettoyage historique Vercel** : suppression de 22 déploiements `ERROR` du projet `web`, avec relecture jusqu’à obtenir une liste vide.
-- **Nettoyage historique GitHub Actions** : suppression de tous les runs en échec visibles via l’API pour `maxd4/CleanmyMap`, avec vérification finale qu’aucun run `failure` ou `cancelled` ne restait listé.
-- **Académie du Climat - ateliers structurés** : ajout d’un espace dédié dans l’annuaire pour les prochains ateliers, classés par type `social / humanitaire / environnemental`, avec masquage automatique des catégories vides, tri par date à venir et sources officielles reliées à chaque atelier.
-- **Académie du Climat - social renforcé** : seconde passe sur les ateliers officiels avec ajout d’entrées plus ciblées pour la catégorie `social`, dont `Inventons nos CHOUETTES vies bas carbone – dès 9 ans !` et `Atelier 2tonnes : comment agir pour le climat ?`, afin d’étoffer les ateliers collectifs et d’éducation à l’action.
-- **Navigation plus claire** : le bandeau garde sa structure actuelle, le breadcrumb applicatif est devenu plus explicite sur desktop avec la hiérarchie bloc/rubrique, et un bouton `Explorer` ouvre désormais un plan du site dédié.
-- **Bandeau compact** : le titre statique du site affiche désormais `Agir-Cartographier-Préserver` sur une seule ligne, et le slogan réutilisé dans les pages concernées a été harmonisé avec ce format sans points.
-- **Annuaire partenaires - tests de contenu et crédibilité locale** : ajout de tests qui interdisent les liens `example.com`, vérifient la présence d’au moins un commerce partenaire réellement engagé, et valident la relecture des demandes onboarding avec un chemin de publication vers l’annuaire; les fiches partenaires actives affichent aussi désormais une phrase explicite sur leur utilité locale.
-- **Annuaire partenaires - UX resserrée** : les fiches n’exposent plus que deux actions principales au maximum, la carte a perdu les CTA secondaires redondants, et le dashboard utilise des libellés plus courts pour éviter les répétitions entre répertoire, fiches et vue réseau.
-- **Annuaire partenaires - crédibilité renforcée** : les fiches publiques refusent désormais les liens placeholders, les commerces/partenaires doivent rester complets avec canal public, zone et fraîcheur minimale, et les fiches non confirmées par un humain sont visuellement distinguées des partenaires vérifiés.
-- **Sync réel carte aligné** : `sync-real-data-from-sheet.mjs` suit maintenant le même schéma que l’import structuré, avec `Départ / Arrivée / Type de Lieu / Qualité Mégots`, des métadonnées de trajet sérialisées dans les notes et un store local `real_records.json` compatible avec la carte du site.
-- **Onboarding partenaire structuré** : les champs `coverage` et `availability` du formulaire partenaire passent maintenant en objets normalisés, avec arrondissements/quartiers pour le périmètre et créneaux/plages pour la disponibilité, tout en conservant une compatibilité de lecture pour les anciennes demandes texte.
-- **Réseau séparé en 3 usages** : la vue `Découvrir le réseau` est désormais publique et centrée sur la carte et les fiches, la vue `Gouvernance / pilotage` reste dédiée aux stats et aux demandes, et la vue `Rejoindre le réseau` conserve uniquement l’onboarding.
-- **Import Google Sheet - nouvelle structure** : le builder d’import accepte maintenant les colonnes `Départ / Arrivée / Type de Lieu / Qualité Mégots`, reconstitue un trajet géocodé avec polyline dans les notes techniques, et le pipeline Supabase / carte relit ces métadonnées pour afficher les actions sur le plan.
-- **Onboarding partenaire → fiche publiée** : chaque demande partenaire crée désormais aussi une fiche publiée “à revalider” dans l’annuaire via un store dédié, puis la rubrique `annuaire` et les vues réseau fusionnent le seed avec ces fiches publiées pour éviter que la collecte reste invisible côté publication.
-- **Annuaire partenaires - fiche Green Flex** : remplacement du lien placeholder `example.com/green-flex` par le site officiel `greenflex.com` dans le seed de l’annuaire, afin de garder le réseau crédible.
-- **Blocages harmonisés** : les écrans de connexion utilisent maintenant la même formulation de base partout, avec `Connexion requise`, `Cette fonctionnalité nécessite une connexion Clerk.` pour les écrans floutés et `Cette vue reste lisible, mais les actions sont réservées aux comptes connectés.` pour les écrans désactivés.
-- **Rubriques bilingues - seconde passe** : les rubriques elles-mêmes ont été repassées en `fr/en` sur les derniers libellés isolés, avec les écrans `guide`, `sandbox`, `élus`, `annuaire`, `community`, `trash-spotter` et `route` branchés sur `useSitePreferences` pour éviter les textes français restants quand la langue du site passe en anglais.
-- **Texte inclusif harmonisé** : les libellés de l’annuaire et des rubriques ont été réécrits avec une forme inclusive cohérente là où c’était pertinent, afin d’éviter les formulations genrées ou trop neutres dans les fiches publiques.
-- **Clôture de la matrice d'accès Clerk** : la seconde passe a harmonisé les états de blocage, renforcé le garde générique avec un `aria-hidden` sur les contenus verrouillés, et validé le typage après les derniers ajustements des écrans protégés.
-- **Matrice d'accès Clerk appliquée** : les routes privées sont maintenant classées page par page en `visible`, `visible mais désactivé` ou `flou + accès Clerk requis`, avec un helper centralisé et des gardes d'écran adaptés sur le dashboard, le formulaire bénévole, les profils, le parcours, le partenaire onboarding, les partenaires réseau, le sponsor portal et les rubriques sensibles.
-- **Accueil public et navigation ouverte** : la page d’accueil n’est plus un portail d’authentification, elle propose un bouton `Visiter le site` vers un bloc de découverte avec aperçu dashboard et rappel du formulaire bénévole, tandis que `Apprendre` et `Générer un livrable` restent accessibles sans compte.
-- **Accueil - formulaire en premier plan** : le bloc bénévole a été remonté dans le hero de la page d’accueil pour le rendre visible dès le premier écran, avec une carte d’accès directe au formulaire et un rappel clair du passage à Clerk seulement au moment de déclarer.
-- **Accueil - hero mobile compact** : le hero a été raccourci sur petits écrans, avec typo, boutons et carte bénévole allégés et les statistiques secondaires masquées sur mobile pour limiter le scroll avant l’accès au formulaire.
-- **Annuaire partenaires** : ajout de Klin d'oeil (`klindoeil.com`) dans les partenaires/commerçants engagés, avec ancrage Bas Belleville, rue Deguerry, et mention de leur carte des bonnes adresses.
-- **Annuaire partenaires - second balayage** : suppression du faux canal public Facebook du collectif `Eco-anxiété`, avec rendu tolérant quand une fiche n'a pas encore de contact public vérifiable.
-- **Annuaire partenaires - revue admin** : remplacement du faux statut `draft_published` par un vrai cycle de revue `pending_admin_review / accepted / rejected`, avec filtrage public sur les fiches acceptées et une route admin de validation dédiée.
-- **Annuaire partenaires - découpage lisible** : la rubrique a été séparée en zones distinctes pour la découverte, le pilotage et la gouvernance, afin d’éviter un seul écran trop dense avec recherche, carte, cartes compactes, recommandations, dashboard et retours.
-- **Partenaires - séparation vitrine / décision** : la page `network` a été recentrée sur la découverte du réseau et les points de repère publics, tandis que `dashboard` a été recentrée sur la supervision, les décisions et la revue des fiches publiées.
-- **Mode d'affichage persistant** : le mode d'affichage est maintenant relu depuis Clerk côté serveur, initialisé au démarrage du shell, et persiste via une mutation `/api/account/display-mode` sans ajout de garde-fou métier.
-- **Exports livrables par périmètre** : le rapport web et les exports admin acceptent désormais `global`, `compte`, `association` et `arrondissement`, avec un scope unique branché sur les routes de consultation et les boutons d’export.
-- **Rapport d'impact PDF renforcé** : ajout d'une couverture institutionnelle en tête du rapport web, avec narration budgétaire, indicateurs de crédibilité, messages pour élus, et export print plus formel pour les livrables PDF.
-- **Mutation de rôle Clerk verrouillée** : le badge rôle déclenche maintenant une mutation serveur vers Clerk pour les profils self-service uniquement (`benevole`, `coordinateur`, `scientifique`), avec synchro Supabase après update, refus explicite des rôles `admin`/`elu`, et protection middleware dédiée sur `/api/account`.
-- **Élargissement par défaut des vues partenaires** : le tableau de bord réseau s’appuie désormais sur l’annuaire complet pour ses compteurs de base, les pages `partners/dashboard` et `partners/network` calculent la couverture territoriale sur l’ensemble du répertoire, et le portail sponsors affiche maintenant un périmètre observé plus large avec un rappel concret des zones suivies.
-- **Déclarer - expérience mobile** : le formulaire a été réordonné pour mobile-first avec la colonne de saisie prioritaire, des boutons plus larges, des cartes plus compactes et un feedback après envoi plus lisible sur petit écran.
-- **Déclarer - poids et photos** : le bloc poids a été rendu plus central avec une saisie prioritaire, une aide vision non intrusive et un marquage d’écart suspect; le bloc photos reste optionnel, replié par défaut, et n’alimente l’entraînement que si des images sont fournies.
-- **Déclarer - base + lieu/tracé** : suppression de la duplication des champs de parcours dans le composant secondaire, avec un bloc `Lieu / tracé` unifié dans le formulaire principal, aperçu live conservé, coordonnées et message d’ajustement relégués en secondaire.
-- **Déclarer - largeur de formulaire** : le formulaire bénévole a été remis en flux plein largeur en supprimant la séparation en deux colonnes, afin que l’assistance cartographique ne réduise plus la place disponible pour la saisie principale.
-- **Déclarer - parcours simplifié** : ajout d’un chemin visible `1. Localiser / 2. Tracer / 3. Valider`, renommage de l’assistance cartographique en `Tracer la zone sur la carte`, et repli des options avancées derrière un seul pliage plus lisible.
-- **Rubriques bilingues** : les gabarits communs `DecisionPageHeader` et `PageReadingTemplate` basculent maintenant leurs libellés de section en anglais quand la langue du site passe à `en`, ce qui évite les intitulés de surface restés en français.
-- **Formulaire bénévole** : le lieu de parcours est maintenant saisi via deux champs distincts `départ` / `arrivée`, avec libellé de route dérivé en arrière-plan et logique de boucle si `arrivée` est vide.
-- **Cas d'apprentissage clarifié** : les photos concernent désormais explicitement les sacs de déchets collectés, et la masse réelle saisie dans le formulaire est le label d'entraînement pour la future prédiction IA.
-- **Vision de terrain** : le formulaire bénévole accepte désormais des photos, infère des variables intermédiaires éditables (`nombre de sacs`, `taille`, `remplissage`, `catégorie`, `mégots`) et pré-remplit le poids avec intervalle + confiance quand le signal est suffisant.
-- **Boucle d’apprentissage** : ajout de la table `training_examples`, persistance best-effort des exemples photo/poids, et métriques de dataset sur le dashboard (`MAE`, `RMSE`, version modèle, warning dataset faible).
-- **Tracé auto** : la création d’action dérive maintenant une géométrie automatique depuis départ/arrivée ou un fallback de zone quand pertinent, sans perturber le flux simple sans départ/arrivée.
-- **Sandbox de visualisation** : la sandbox est désormais une rubrique dédiée du bloc `Visualiser`, avec route sectionnée et lien de découverte depuis la page carte.
-- **Niveaux de confiance** : suppression des libellés visibles de confiance/fiabilité dans les rubriques, avec déplacement de la méthode dans des panneaux repliables sur `climate`, `weather`, `compare` et `gamification`.
-- **Rubriques au-dessus du fold** : déplacement du contenu secondaire sous la première zone visible sur `dashboard`, `reports`, `community`, `annuaire` et `learn/hub`.
-- **Formulaire bénévole** : le composant visible réutilise maintenant le builder de payload testé et le client HTTP retente en format legacy si le payload contractuel est rejeté.
-- **Validation** : ajout d’un test de route `POST /api/actions` et d’un test de fallback HTTP, avec `typecheck` et `test:regression-gates` au vert.
-- **Navigation mobile** : Le ruban fixe du bas affiche désormais les blocs et les rubriques du bloc actif, avec accès direct aux pages et tracking conservé.
-- **Bloc Piloter** : ajout d’un fallback visuel pour éviter un bloc vide dans la navigation quand aucun item métier n’est disponible pour un profil, sans dupliquer les routes dans le mapping source de vérité.
-- **Aperçu trajet live** : le formulaire bénévole calcule maintenant le tracé dès la saisie départ/arrivée, propose un mode de route `souple` par défaut, et ajoute un message d’ajustement transmis avec l’action pour affiner le trajet avant validation.
-- **Vision sans auto-remplissage** : les photos des sacs servent à prédire la masse et à comparer cette prédiction à la masse réelle saisie, mais le formulaire ne remplit plus automatiquement les réponses; il affiche seulement des valeurs conseillées en fond gris.
-- **Précisions d'entraînement simplifiées** : le formulaire bénévole ne conserve plus que `masse`, `nombre de sacs`, `remplissage` et `densité`; les précisions restent facultatives derrière une case dédiée, avec remplissage limité à 25/50/75/100 et densité `sec / humide dense / mouillé`.
-- **Photos facultatives** : les photos des sacs collectés sont maintenant explicitement marquées comme optionnelles dans le formulaire; sans photo, la soumission reste possible et aucun exemple d'entraînement n'est créé.
-- **Écart suspect** : ajout d'un marquage visuel sur la masse, le nombre de sacs, le remplissage et la densité quand la saisie humaine s'éloigne nettement de la suggestion vision, sans bloquer la soumission.
-- **Badges gamification** : les badges de progression et d’identité utilisent maintenant de vrais pictogrammes Lucide cohérents avec leur sens, au lieu d’acronymes textuels.
-- **Déclarer, couche 1** : le formulaire bénévole a été remis en hiérarchie mobile-first avec le poids avant les enrichissements, et les photos + précisions IA repliées par défaut pour laisser le parcours rapide au premier écran.
-- **Messagerie PRO** : Implémentation du `ChatShell` (DMs, Mentions `@user`, Salons Régionaux par voisinage).
-- **Notifications In-App** : Création de la "Centrale App" (`NotificationBell`) intégrant tous les types d'alertes et supprimant les emails automatiques (Sobriété Numérique).
-- **Retour Haptique** : Ajout de vibrations (standards et succès majeurs) pour améliorer l'expérience mobile-first.
-- **Sécurité Hardening** : API rate-limiting (quotas de messages), standardisation des erreurs 401/403 et isolation des rôles (Admins, Élus, Coordinateurs).
-- **Rétention de Données** : Procédure SQL de purge automatique (messages 6 mois, médias 1 mois).
-- **Newsletter** : Table de souscription Supabase et API opt-in fonctionnelle.
-- **Gamification** : Logique de détection de "Level Up" et notifications d'engagement automatiques.
-- **Profils** : Synchronisation des `@handle` uniques depuis Clerk vers Supabase avec support de modification.
-- **CI/CD Fixes** : Résolution des erreurs GitHub Actions (fichiers lourds, TypeScript, middleware/proxy migration, vulnérabilités npm).
+- **PostHog vérifié de bout en bout** : correction de la lecture des variables côté client (`process.env.NEXT_PUBLIC_*`), initialisation stable du provider, déploiement Vercel production relancé, interaction navigateur automatisée sur `https://cleanmymap.fr` et envoi d’un event de validation `cmm_posthog_installation_check` vers l’instance EU.
+- **PostHog stabilisé (local + Vercel)** : suppression des doublons serveur, configuration unifiée clé/hôte/région, compatibilité temporaire `NEXT_PUBLIC_POSTHOG_TOKEN` (déprécié), check `/api/services` aligné, test dédié de capture d’event serveur ajouté et validé.
+- **Priorité 1 - fiabilité du socle et sécurité**
+  - **Vérification complète exécutée** : `typecheck`, `test:regression-gates`, `test` complet et `build` production relancés avec succès après corrections.
+  - **Régressions de tests corrigées** : alignement des routes protégées, libellés KPI communautaires, garde accents FR et test `POST /api/actions` rendu déterministe (sans dépendance réseau).
+  - **Auth fallback build-safe** : suppression du bruit `DYNAMIC_SERVER_USAGE` dans le fallback auth pour éviter les faux positifs en build.
+  - **Supabase fallback fail-fast** : suppression des clients placeholder silencieux au profit d’un fallback explicite qui échoue immédiatement avec message clair.
+  - **Sentry vérifié côté code** : chaînage client / serveur / edge confirmé, activation conditionnelle au DSN et build plugin piloté par `SENTRY_BUILD_PLUGIN`.
+  - **Supervision services web enrichie** : `GET /api/services` étendu avec un registre central `src/lib/services/registry.ts`, métadonnées de service (`label`, `description`, `category`) et affichage amélioré dans `SystemStatusPanel`.
+  - **SheetJS corrigé** : remplacement de `xlsx` par la tarball corrigée `0.20.3` via dépendance directe et `overrides`.
+  - **CI/CD Fixes** : correction des erreurs GitHub Actions, des soucis TypeScript, de la migration middleware/proxy et des vulnérabilités npm.
+  - **Purge Vercel étendue** : suppression du dernier preview non-production encore présent.
+  - **Nettoyage historique Vercel** : suppression de 22 déploiements `ERROR`.
+  - **Nettoyage historique GitHub Actions** : suppression de tous les runs en échec visibles via l’API.
+  - **Mode d'affichage persistant** : lecture serveur depuis Clerk et persistance via `/api/account/display-mode`.
+  - **Mutation de rôle Clerk verrouillée** : mutation serveur limitée aux profils self-service, synchro Supabase et refus des rôles admin/elu.
+  - **Blocages harmonisés** : formulation commune des écrans de connexion, floutés ou désactivés.
+  - **Clôture de la matrice d'accès Clerk** : harmonisation des états de blocage et garde générique renforcé.
+  - **Matrice d'accès Clerk appliquée** : classification page par page en visible, désactivé ou flou + accès Clerk requis.
+
+- **Priorité 2 - navigation et premier écran**
+  - **Ruban app unifié pleine largeur** : refonte du header applicatif en ruban global plein écran.
+  - **Navigation plus claire** : breadcrumb plus explicite et bouton `Explorer` vers le plan du site.
+  - **Bandeau compact** : titre du site harmonisé en `Agir-Cartographier-Préserver`.
+  - **Navigation mobile** : ruban fixe du bas pour blocs et rubriques du bloc actif.
+  - **Ruban mobile compacté** : réduction des hauteurs et paddings pour petits écrans.
+  - **Ruban masqué par défaut** : ouverture uniquement au survol du haut de page sur desktop, avec bouton explicite d’affichage/masquage sur mobile.
+  - **Navigation plus lisible sur desktop** : emoji par défaut, nom du bloc au survol ou sur le bloc actif.
+  - **Zoom desktop réduit** : taille globale abaissée d’environ 10% sur ordinateur via la base typographique.
+  - **Accueil public et navigation ouverte** : page d’accueil centrée sur l’accès libre, avec compte seulement quand nécessaire.
+  - **Accueil - formulaire en premier plan** : bloc bénévole remonté dans le hero.
+  - **Accueil - hero mobile compact** : hero raccourci sur petits écrans.
+  - **Accueil - présentation du formulaire resserrée** : section `Visiter le site` supprimée pour enlever le doublon.
+  - **Accueil - CTA clarifiés** : les boutons du hero ont été recentrés sur `Se connecter`, `Visiter le site en tant qu'invité`, `Déclarer une action` et `Générer un rapport d'impact`.
+
+- **Priorité 3 - déclaration, carte et parcours**
+  - **Déclarer - expérience mobile** : formulaire réordonné mobile-first.
+  - **Déclarer - poids et photos** : bloc poids central, photos optionnelles, marquage d’écart suspect.
+  - **Déclarer - base + lieu/tracé** : bloc `Lieu / tracé` unifié dans le formulaire principal.
+  - **Déclarer - largeur de formulaire** : formulaire remis en flux plein largeur.
+  - **Déclarer - parcours simplifié** : chemin visible `1. Localiser / 2. Tracer / 3. Valider`.
+  - **Formulaire bénévole** : saisie `départ` / `arrivée` avec route dérivée.
+  - **Cas d'apprentissage clarifié** : photos limitées aux sacs collectés et masse utilisée comme label d’entraînement.
+  - **Vision de terrain** : variables intermédiaires éditables et préremplissage du poids quand le signal est suffisant.
+  - **Boucle d’apprentissage** : `training_examples`, persistance best-effort et métriques de dataset.
+  - **Aperçu trajet live** : tracé calculé dès la saisie et message d’ajustement transmis à l’action.
+  - **Vision sans auto-remplissage** : valeurs conseillées affichées sans remplissage automatique.
+  - **Précisions d'entraînement simplifiées** : masse, sacs, remplissage et densité seulement.
+  - **Photos facultatives** : soumission possible sans photo.
+  - **Écart suspect** : signal visuel sans blocage.
+  - **Tracé auto** : géométrie automatique depuis départ/arrivée ou fallback zone.
+  - **Sandbox de visualisation** : rubrique dédiée du bloc `Visualiser`.
+
+- **Priorité 4 - rapports, méthode et pilotage**
+  - **Next exécuté - QA visuelle ruban mobile (320/375/390)** : captures headless et validation du premier écran sur les 3 largeurs.
+  - **Next exécuté - export PDF A4 court/long** : exports contrôlés avec pagination lisible.
+  - **Next exécuté - quantification `created_by_clerk_id`** : métrique de couverture publiée avec cas `n/a` géré.
+  - **Risks - pagination PDF sécurisée** : classes print dédiées pour les blocs denses.
+  - **Risks - périmètre compte mesuré** : couverture `created_by_clerk_id` exposée dans le modèle et l’UI.
+  - **Risks - portail sponsors contextualisé** : fenêtre d’observation et comparabilité temporelle explicites.
+  - **Dashboard Admin - vues gouvernance reliées aux états métier** : compteurs `pending / accepted / rejected` et journal des opérations.
+  - **Mode Science - formules exposées en tooltips** : formules, sources, fréquence et limites visibles sur les KPI.
+  - **Rapport d'impact PDF renforcé** : couverture institutionnelle et narration budgétaire.
+  - **Exports livrables par périmètre** : scopes `global`, `compte`, `association`, `arrondissement`.
+  - **Rubriques bilingues** : `DecisionPageHeader` et `PageReadingTemplate` gèrent l’anglais.
+
+- **Priorité 5 - réseau, annuaire et collaboration**
+  - **Godmode admin nettoyé** : suppression des lignes utilisateurs factices (`example.com`) et remplacement des boutons non branchés par des accès opérationnels réels (`/admin`, `/reports`, `/api/health`).
+  - **Académie du Climat - ateliers structurés** : espace dédié classé par type et relié aux sources officielles.
+  - **Académie du Climat - social renforcé** : ajouts ciblés sur la catégorie `social`.
+  - **Annuaire partenaires - tests de contenu et crédibilité locale** : liens placeholders interdits, partenaires engagés exigés.
+  - **Annuaire partenaires - UX resserrée** : moins d’actions, moins de redondance.
+  - **Annuaire partenaires - crédibilité renforcée** : canaux, zones et fraîcheur minimale vérifiés.
+  - **Sync réel carte aligné** : import structuré et store local compatibles carte.
+  - **Onboarding partenaire structuré** : `coverage` et `availability` normalisés.
+  - **Réseau séparé en 3 usages** : découverte, pilotage et onboarding isolés.
+  - **Import Google Sheet - nouvelle structure** : colonnes `Départ / Arrivée / Type de Lieu / Qualité Mégots`.
+  - **Onboarding partenaire → fiche publiée** : fiche “à revalider” publiée via store dédié.
+  - **Annuaire partenaires - fiche Green Flex** : remplacement du lien placeholder.
+  - **Annuaire partenaires** : ajout de Klin d'oeil dans les partenaires engagés.
+  - **Annuaire partenaires - second balayage** : suppression du faux canal public Facebook.
+  - **Annuaire partenaires - revue admin** : cycle `pending_admin_review / accepted / rejected`.
+  - **Partenaires - séparation vitrine / décision** : `network` pour la découverte, `dashboard` pour la supervision.
+  - **Bloc Piloter** : fallback visuel pour éviter un bloc vide.
+  - **Parcours Mobilisation + chat - nominal / dégradé / vide** : `ChatShell` durci avec états explicites et tests.
+  - **Notifications In-App** : `NotificationBell` et suppression des emails automatiques.
+  - **Retour Haptique** : vibrations standards et succès majeurs.
+  - **Gamification** : détection de `Level Up` et notifications d’engagement.
+  - **Profils** : synchronisation des `@handle` Clerk vers Supabase.
+
+- **Priorité 6 - documentation et audit produit**
+  - **Audit rubriques bénévoles** : vérification de la visibilité des sections `guide`, `kit`, `route`, `trash-spotter`, `messagerie` dans le ruban de navigation et confirmation de leur accessibilité via les routes `/sections/[sectionId]`.
+  - **Audit utilité-impact rubriques** : comparaison du fichier `documentation/product/rubriques_utilite_impact_.txt` avec l'état actuel du site, identification des fonctionnalités manquantes (heatmap/radar visuel) et mise à jour de la documentation pour refléter les changements récents.
+  - **Infobulles rubriques ruban** : ajout d'infobulles explicatives sur chaque rubrique du ruban de navigation justifiant leur utilité et impact pour les utilisateurs, avec séparation maintenue entre `sandbox` et `carte`, ainsi que pour les trois autres rubriques distinctes.
+  - **Mise à jour résumé rubriques** : restructuration du fichier `documentation/product/rubriques_utilite_impact_.txt` par blocs et rubriques selon l'état actuel du dépôt, ajout de la page d'accueil et précisions sur la visibilité par rôle (ex: `Météo` réservée aux profils `coordinateur`, `scientifique`, `elu`, `admin`).
+  - **Complétion infobulles navigation** : ajout d'infobulles descriptives pour les blocs de navigation (indiquant le nombre de rubriques par bloc) et amélioration des infobulles rubriques avec label + description, validation sans erreurs TypeScript.
 
 ## In Progress
 - Intégration API Cleanwalk.org (Message type envoyé, en attente de réponse).
 
 ## Next
-- Alimenter un lot de données avec `created_by_clerk_id` pour réactiver un vrai scénario `scope=compte` (options non vides), puis rejouer l’export PDF `compte` avec un jeu court distinct du global.
+- Migrer définitivement les environnements restants vers `NEXT_PUBLIC_POSTHOG_KEY` (retirer `NEXT_PUBLIC_POSTHOG_TOKEN` après validation Preview + Production).
+- Validation des infobulles en production : tester l'affichage des tooltips sur différents navigateurs et appareils pour confirmer l'accessibilité et la lisibilité.
+- Audit UX des infobulles : recueillir feedback utilisateur sur la pertinence et la clarté des descriptions d'utilité/impact.
+- Extension des infobulles : envisager l'ajout d'infobulles sur d'autres éléments de navigation ou d'interface pour améliorer la découvrabilité globale.
 
 ## Risks
+- **Migration PostHog incomplète** : si certains environnements utilisent encore `NEXT_PUBLIC_POSTHOG_TOKEN`, l’intégration reste fonctionnelle mais en mode compatibilité déprécié (à retirer après bascule complète).
+- **Dette lint historique** : `npm run lint` global reste en échec avec des erreurs antérieures hors périmètre de cette passe (principalement `react/no-unescaped-entities`, `no-explicit-any` et règles hooks). Runtime, tests et build sont verts, mais la conformité lint complète nécessite une passe dédiée.

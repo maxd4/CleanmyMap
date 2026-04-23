@@ -49,7 +49,9 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().optional(),
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
   NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
+  NEXT_PUBLIC_POSTHOG_TOKEN: z.string().optional(),
   NEXT_PUBLIC_POSTHOG_HOST: optionalUrl,
+  NEXT_PUBLIC_POSTHOG_REGION: z.enum(["eu", "us"]).optional(),
   NEXT_PUBLIC_SENTRY_DSN: optionalUrl,
 
   CLERK_SECRET_KEY: z.string().optional(),
