@@ -30,15 +30,15 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
           <InsightBox
             title="Lecture terrain"
             lines={[
-              "Priorites operationnelles, itineraires, meteo et checklists lisibles en moins de 2 minutes.",
-              "Zones a traiter, volumes estimes et points de vigilance directement exploitables.",
+              "Priorités opérationnelles, itinéraires, météo et checklists lisibles en moins de 2 minutes.",
+              "Zones à traiter, volumes estimés et points de vigilance directement exploitables.",
             ]}
           />
           <InsightBox
-            title="Lecture decideur"
+            title="Lecture décideur"
             lines={[
-              "KPI consolides, qualite des donnees, tendances et priorisation territoriale.",
-              "Bloc gouvernance + annexes pour arbitrage budgetaire et diffusion institutionnelle.",
+              "KPI consolidés, qualité des données, tendances et priorisation territoriale.",
+              "Bloc gouvernance + annexes pour arbitrage budgétaire et diffusion institutionnelle.",
             ]}
           />
         </div>
@@ -48,9 +48,9 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
             chapter.title,
             chapter.subtitle,
             chapter.audience === "terrain"
-              ? "Benevoles"
+              ? "Bénévoles"
               : chapter.audience === "strategie"
-                ? "Decideurs"
+                ? "Décideurs"
                 : "Mixte",
           ])}
         />
@@ -59,18 +59,18 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
       <ReportPage {...CHAPTERS[1]}>
         <div className="grid gap-3 md:grid-cols-3">
           <MetricCard
-            label="Actions validees"
+            label="Actions validées"
             value={toFrInt(report.totals.actions)}
-            hint="Perimetre: 12 derniers mois"
+            hint="Périmètre: 12 derniers mois"
           />
           <MetricCard label="Volume collecte" value={`${toFrNumber(report.totals.kg)} kg`} tone="accent" />
-          <MetricCard label="Megots retires" value={toFrInt(report.totals.butts)} tone="accent" />
-          <MetricCard label="Benevoles mobilises" value={toFrInt(report.totals.volunteers)} />
-          <MetricCard label="Heures benevoles" value={`${toFrNumber(report.totals.hours)} h`} />
+          <MetricCard label="Mégots retirés" value={toFrInt(report.totals.butts)} tone="accent" />
+          <MetricCard label="Bénévoles mobilisés" value={toFrInt(report.totals.volunteers)} />
+          <MetricCard label="Heures bénévoles" value={`${toFrNumber(report.totals.hours)} h`} />
           <MetricCard
             label="Tendance 30j"
             value={`${report.trendPercent >= 0 ? "+" : ""}${toFrNumber(report.trendPercent)}%`}
-            hint="vs periode precedente"
+            hint="vs période précédente"
             tone={report.trendPercent > 0 ? "danger" : "base"}
           />
         </div>
@@ -83,26 +83,26 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
           <MetricCard label="Approved" value={toFrInt(report.moderation.approved)} />
           <MetricCard label="Rejected" value={toFrInt(report.moderation.rejected)} />
           <MetricCard
-            label="Conversion moderation"
+            label="Conversion modération"
             value={`${toFrNumber(report.moderation.conversion)}%`}
             tone="accent"
           />
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           <InsightBox
-            title="Qualite de donnees"
+            title="Qualité de données"
             lines={[
-              `Completude: ${toFrNumber(report.quality.completenessScore)}%`,
-              `Coherence: ${toFrNumber(report.quality.coherenceScore)}%`,
-              `Fraicheur mediane: ${toFrNumber(report.quality.freshnessDays)} jours`,
-              `Taux de geolocalisation: ${toFrNumber(report.quality.geolocRate)}%`,
+              `Complétude: ${toFrNumber(report.quality.completenessScore)}%`,
+              `Cohérence: ${toFrNumber(report.quality.coherenceScore)}%`,
+              `Fraîcheur médiane: ${toFrNumber(report.quality.freshnessDays)} jours`,
+              `Taux de géolocalisation: ${toFrNumber(report.quality.geolocRate)}%`,
             ]}
           />
           <InsightBox
-            title="Priorites decisionnelles"
+            title="Priorités décisionnelles"
             lines={[
-              "Cibler en priorite les 3 zones avec score de recurrence le plus eleve.",
-              "Stabiliser un delai de moderation court pour fiabiliser la publication.",
+              "Cibler en priorité les 3 zones avec score de récurrence le plus élevé.",
+              "Stabiliser un délai de modération court pour fiabiliser la publication.",
               "Exploiter la tendance glissante 30 jours pour arbitrage hebdomadaire.",
             ]}
           />
@@ -122,23 +122,23 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
       <ReportPage {...CHAPTERS[3]}>
         <div className="grid gap-3 md:grid-cols-4">
           <MetricCard label="Actions terrain" value={toFrInt(report.terrain.actionCount)} />
-          <MetricCard label="Spots signales" value={toFrInt(report.terrain.spotCount)} />
+          <MetricCard label="Spots signalés" value={toFrInt(report.terrain.spotCount)} />
           <MetricCard label="Lieux propres" value={toFrInt(report.terrain.cleanPlaceCount)} />
-          <MetricCard label="Distance itineraire" value={`${toFrNumber(report.routeDistance)} km`} tone="accent" />
+          <MetricCard label="Distance itinéraire" value={`${toFrNumber(report.routeDistance)} km`} tone="accent" />
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           <GeoCoverageRing coveragePercent={report.map.geoCoverage} tracePercent={report.map.traceCoverage} />
           <InsightBox
-            title="Recommandations operationnelles"
+            title="Recommandations opérationnelles"
             lines={[
-              "Passer en priorite par les etapes a score kg+megots le plus eleve.",
+              "Passer en priorité par les étapes à score kg+mégots le plus élevé.",
               "Capturer une trace/polygone quand l'action couvre plusieurs segments.",
-              "Documenter les zones de tri des la collecte pour accelerer la valorisation.",
+              "Documenter les zones de tri dès la collecte pour accélérer la valorisation.",
             ]}
           />
         </div>
         <ReportTable
-          headers={["Etape", "Zone", "Kg", "Megots", "Segment", "Navigation"]}
+          headers={["Étape", "Zone", "Kg", "Mégots", "Segment", "Navigation"]}
           rows={
             report.routeSteps.length > 0
               ? report.routeSteps.map((step) => [
@@ -149,7 +149,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
                   `${toFrNumber(step.segmentKm)} km`,
                   `${toFrNumber(step.latitude, 4)}, ${toFrNumber(step.longitude, 4)}`,
                 ])
-              : [["-", "Aucune etape calculable", "-", "-", "-", "-"]]
+              : [["-", "Aucune étape calculable", "-", "-", "-", "-"]]
           }
         />
       </ReportPage>
@@ -163,35 +163,35 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           <InsightBox
-            title="Impacts estimes"
+            title="Impacts estimés"
             lines={[
-              `Eau potentiellement protegee: ${toFrInt(report.climate.waterProtectedLiters)} L`,
-              `CO2e evite (proxy): ${toFrNumber(report.climate.co2AvoidedKg)} kg`,
+              `Eau potentiellement protégée: ${toFrInt(report.climate.waterProtectedLiters)} L`,
+              `CO2e évité (proxy): ${toFrNumber(report.climate.co2AvoidedKg)} kg`,
               `Indice de tri propre: ${toFrNumber(report.recycling.triIndex)} / 100`,
               `Volume triable (proxy): ${toFrNumber(report.recycling.recyclableKg)} kg`,
             ]}
           />
           <InsightBox
-            title="Meteo operationnelle"
+            title="Météo opérationnelle"
             lines={[
               weatherAdvice,
-              `Temperature: ${weather.current?.temperature_2m ?? "n/a"} °C`,
-              `Precipitations: ${weather.current?.precipitation ?? "n/a"} mm`,
+              `Température: ${weather.current?.temperature_2m ?? "n/a"} °C`,
+              `Précipitations: ${weather.current?.precipitation ?? "n/a"} mm`,
               `Vent: ${weather.current?.wind_speed_10m ?? "n/a"} km/h`,
             ]}
           />
         </div>
         <ReportTable
-          headers={["Zone", "Actions", "Kg", "Megots", "Kg/action"]}
+          headers={["Zone", "Actions", "Kg", "Mégots", "Kg/action"]}
           rows={report.annualRows.length > 0 ? report.annualRows : [["n/a", "0", "0", "0", "0"]]}
         />
       </ReportPage>
 
       <ReportPage {...CHAPTERS[5]}>
         <div className="grid gap-3 md:grid-cols-4">
-          <MetricCard label="Evenements crees" value={toFrInt(report.community.totalEvents)} />
-          <MetricCard label="A venir" value={toFrInt(report.community.upcomingEvents)} />
-          <MetricCard label="Passes" value={toFrInt(report.community.pastEvents)} />
+          <MetricCard label="Événements créés" value={toFrInt(report.community.totalEvents)} />
+          <MetricCard label="À venir" value={toFrInt(report.community.upcomingEvents)} />
+          <MetricCard label="Passés" value={toFrInt(report.community.pastEvents)} />
           <MetricCard label="Taux RSVP oui" value={`${toFrNumber(report.community.participationRate)}%`} tone="accent" />
         </div>
         <div className="grid gap-3 md:grid-cols-2">
@@ -201,36 +201,36 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
               [
                 "RSVP oui / maybe / non",
                 `${toFrInt(report.community.rsvp.yes)} / ${toFrInt(report.community.rsvp.maybe)} / ${toFrInt(report.community.rsvp.no)}`,
-                "Niveau d'engagement des evenements",
+                "Niveau d'engagement des événements",
               ],
               [
-                "Badges confirmes (5+)",
+                "Badges confirmés (5+)",
                 toFrInt(report.community.badgeConfirmed),
-                "Progression reguliere des contributeurs",
+                "Progression régulière des contributeurs",
               ],
               [
                 "Badges experts (10+)",
                 toFrInt(report.community.badgeExpert),
-                "Noyau benevole structurant",
+                "Noyau bénévole structurant",
               ],
               [
-                "Repartition citoyen/asso/institution",
+                "Répartition citoyen/asso/institution",
                 `${toFrInt(report.community.sourceBuckets.citoyen)} / ${toFrInt(report.community.sourceBuckets.associatif)} / ${toFrInt(report.community.sourceBuckets.institutionnel)}`,
-                "Equilibre de l'ecosysteme",
+                "Équilibre de l'écosystème",
               ],
             ]}
           />
           <InsightBox
-            title="Actions recommandees"
+            title="Actions recommandées"
             lines={[
-              "Caler les campagnes terrain sur les evenements a plus fort RSVP oui.",
-              "Rendre les paliers de badges visibles dans les parcours benevoles.",
-              "Activer des partenariats commercants/entreprises sur les zones de recurrence.",
+              "Caler les campagnes terrain sur les événements à plus fort RSVP oui.",
+              "Rendre les paliers de badges visibles dans les parcours bénévoles.",
+              "Activer des partenariats commerçants/entreprises sur les zones de récurrence.",
             ]}
           />
         </div>
         <ReportTable
-          headers={["Rang", "Contributeur", "Actions", "Kg", "Megots"]}
+          headers={["Rang", "Contributeur", "Actions", "Kg", "Mégots"]}
           rows={
             report.community.topLeaderboard.length > 0
               ? report.community.topLeaderboard.map((entry, index) => [
@@ -240,7 +240,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
                   toFrNumber(entry.kg),
                   toFrInt(entry.butts),
                 ])
-              : [["-", "Aucune donnee", "0", "0", "0"]]
+              : [["-", "Aucune donnée", "0", "0", "0"]]
           }
         />
       </ReportPage>
@@ -248,30 +248,30 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
       <ReportPage {...CHAPTERS[6]}>
         <div className="grid gap-3 md:grid-cols-2">
           <InsightBox
-            title="Encadre methodologie"
+            title="Encadré méthodologie"
             lines={[
-              "Sources: actions validees, carte, evenements communaute, meteo operationnelle.",
-              "Definitions: les KPI sont recalcules en direct sur la fenetre de donnees affichee.",
-              `Version proxy: ${report.impactMethodology.proxyVersion} | Regles qualite: ${report.impactMethodology.qualityRulesVersion}.`,
+              "Sources: actions validées, carte, événements communauté, météo opérationnelle.",
+              "Définitions: les KPI sont recalculés en direct sur la fenêtre de données affichée.",
+              `Version proxy: ${report.impactMethodology.proxyVersion} | Règles qualité: ${report.impactMethodology.qualityRulesVersion}.`,
               `Score pollution moyen: ${toFrNumber(report.impactMethodology.pollutionScoreAverage)} / 100.`,
-              "Regle qualite: publication externe recommandee seulement si completude > 85%.",
+              "Règle qualité: publication externe recommandée seulement si complétude > 85%.",
             ]}
           />
           <ReportTable
-            headers={["Version", "Date", "Perimetre", "Auteur"]}
+            headers={["Version", "Date", "Périmètre", "Auteur"]}
             rows={[
               [
                 "v3.0 web-report",
                 report.generatedAt,
                 "Rubrique reports (web native exhaustive)",
-                "Equipe CleanMyMap",
+                "Équipe CleanMyMap",
               ],
-              ["v2.x PDF", "Pipeline back-office", "Rapport PDF institutionnel", "Equipe data"],
+              ["v2.x PDF", "Pipeline back-office", "Rapport PDF institutionnel", "Équipe data"],
             ]}
           />
         </div>
         <ReportTable
-          headers={["Mesure", "Formule", "Interpretation"]}
+          headers={["Mesure", "Formule", "Interprétation"]}
           rows={report.impactMethodology.formulas.map((formula) => [
             formula.label,
             formula.formula,
@@ -280,9 +280,9 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         />
         <div className="grid gap-3 md:grid-cols-2">
           <ReportTable
-            headers={["Hypothese", "Detail"]}
+            headers={["Hypothèse", "Détail"]}
             rows={report.impactMethodology.hypotheses.map((item) => [
-              "Hypothese de calcul",
+              "Hypothèse de calcul",
               item,
             ])}
           />
@@ -290,17 +290,17 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
             headers={["Marge d'erreur", "Valeur", "Nature"]}
             rows={[
               [
-                "Eau sauvee (proxy)",
+                "Eau sauvée (proxy)",
                 `+/- ${toFrNumber(report.impactMethodology.errorMargins.waterSavedLitersPct, 0)}%`,
                 "Approximation",
               ],
               [
-                "CO2 evite (proxy)",
+                "CO2 évité (proxy)",
                 `+/- ${toFrNumber(report.impactMethodology.errorMargins.co2AvoidedKgPct, 0)}%`,
                 "Approximation",
               ],
               [
-                "Surface nettoyee (proxy)",
+                "Surface nettoyée (proxy)",
                 `+/- ${toFrNumber(report.impactMethodology.errorMargins.surfaceCleanedM2Pct, 0)}%`,
                 "Approximation",
               ],
@@ -313,34 +313,34 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
           />
         </div>
         <ReportTable
-          headers={["Controle", "Valeur", "Interpretation"]}
+          headers={["Contrôle", "Valeur", "Interprétation"]}
           rows={[
-            ["Completude", `${toFrNumber(report.quality.completenessScore)}%`, "Presence des champs cles"],
-            ["Coherence", `${toFrNumber(report.quality.coherenceScore)}%`, "Valeurs plausibles et non negatives"],
-            ["Fraicheur mediane", `${toFrNumber(report.quality.freshnessDays)} j`, "Delai median entre action et consultation"],
-            ["Geolocalisation", `${toFrNumber(report.quality.geolocRate)}%`, "Taux de preuves spatiales exploitables"],
-            ["Delai moderation moyen", `${toFrNumber(report.moderation.delayDays)} j`, "Vitesse de publication validee"],
+            ["Complétude", `${toFrNumber(report.quality.completenessScore)}%`, "Présence des champs clés"],
+            ["Cohérence", `${toFrNumber(report.quality.coherenceScore)}%`, "Valeurs plausibles et non négatives"],
+            ["Fraîcheur médiane", `${toFrNumber(report.quality.freshnessDays)} j`, "Délai médian entre action et consultation"],
+            ["Géolocalisation", `${toFrNumber(report.quality.geolocRate)}%`, "Taux de preuves spatiales exploitables"],
+            ["Délai modération moyen", `${toFrNumber(report.moderation.delayDays)} j`, "Vitesse de publication validée"],
           ]}
         />
       </ReportPage>
 
       <ReportPage {...CHAPTERS[7]}>
         <ReportTable
-          headers={["Sprint", "Periode", "Objectif principal", "Responsables"]}
+          headers={["Sprint", "Période", "Objectif principal", "Responsables"]}
           rows={report.calendar}
         />
         <div className="grid gap-3 md:grid-cols-2">
           <InsightBox
-            title="Lecture benevoles"
+            title="Lecture bénévoles"
             lines={[
-              "Sprint 2 priorise la lisibilite des zones, parcours et checklists operationnelles.",
-              "Sprint 4 diffuse les bonnes pratiques pour montee en charge nationale.",
+              "Sprint 2 priorise la lisibilité des zones, parcours et checklists opérationnelles.",
+              "Sprint 4 diffuse les bonnes pratiques pour montée en charge nationale.",
             ]}
           />
           <InsightBox
-            title="Lecture decideurs"
+            title="Lecture décideurs"
             lines={[
-              "Sprint 1 securise la fiabilite data avant tout arbitrage public.",
+              "Sprint 1 sécurise la fiabilité data avant tout arbitrage public.",
               "Sprint 3 structure la preuve d'impact pour les budgets et infrastructures environnementales.",
             ]}
           />
@@ -349,7 +349,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
 
       <ReportPage {...CHAPTERS[8]}>
         <ReportTable
-          headers={["Terme", "Definition claire"]}
+          headers={["Terme", "Définition claire"]}
           rows={GLOSSARY_ROWS.map((row) => [...row])}
         />
       </ReportPage>
@@ -357,30 +357,30 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
       <ReportPage {...CHAPTERS[9]}>
         <div className="grid gap-3 md:grid-cols-2">
           <ReportTable
-            headers={["Bloc", "Donnee cle", "Usage"]}
+            headers={["Bloc", "Donnée clé", "Usage"]}
             rows={[
               [
                 "Pilotage",
                 `${toFrInt(report.totals.actions)} actions / ${toFrNumber(report.totals.kg)} kg`,
-                "Arbitrage de priorites et suivi des performances",
+                "Arbitrage de priorités et suivi des performances",
               ],
-              ["Terrain", `${toFrNumber(report.routeDistance)} km de circuit recommande`, "Preparation operationnelle des equipes"],
+              ["Terrain", `${toFrNumber(report.routeDistance)} km de circuit recommandé`, "Préparation opérationnelle des équipes"],
               [
                 "Contexte",
-                `${toFrInt(report.climate.waterProtectedLiters)} L eau protegee (proxy)`,
+                `${toFrInt(report.climate.waterProtectedLiters)} L eau protégée (proxy)`,
                 "Plaidoyer et communication institutionnelle",
               ],
-              ["Communaute", `${toFrInt(report.community.totalEvents)} evenements`, "Activation reseau benevole et partenaires"],
+              ["Communauté", `${toFrInt(report.community.totalEvents)} événements`, "Activation réseau bénévole et partenaires"],
             ]}
           />
           <article className="rounded-2xl border border-slate-200 bg-[#f8fafc] p-4">
-            <h3 className="text-sm font-semibold text-slate-900">Liens d&apos;action immediate</h3>
+            <h3 className="text-sm font-semibold text-slate-900">Liens d&apos;action immédiate</h3>
             <div className="mt-3 flex flex-wrap gap-2">
               <Link
                 href="/actions/new"
                 className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100"
               >
-                Declarer une action
+                Déclarer une action
               </Link>
               <Link
                 href="/actions/map"
@@ -402,7 +402,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
               </a>
             </div>
             <p className="mt-3 text-xs text-slate-500">
-              Les exports CSV/JSON et la moderation admin restent disponibles dans le panneau operationnel en bas
+              Les exports CSV/JSON et la modération admin restent disponibles dans le panneau opérationnel en bas
               de page.
             </p>
           </article>
@@ -411,12 +411,12 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
 
       {isLoading ? (
         <p className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-500">
-          Mise a jour du rapport web en cours...
+          Mise à jour du rapport web en cours...
         </p>
       ) : null}
       {hasError ? (
         <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
-          Certaines sources n&apos;ont pas pu etre chargees. Le rapport reste visible avec les donnees disponibles.
+          Certaines sources n&apos;ont pas pu être chargées. Le rapport reste visible avec les données disponibles.
         </p>
       ) : null}
     </div>

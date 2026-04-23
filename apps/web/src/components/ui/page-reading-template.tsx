@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type TemplateAction = {
   href: string;
@@ -19,11 +20,14 @@ type PageReadingTemplateProps = {
 };
 
 export function PageReadingTemplate(props: PageReadingTemplateProps) {
+  const { locale } = useSitePreferences();
+  const isFrench = locale === "fr";
+
   return (
     <div data-rubrique-report-root className="space-y-4">
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm core-feature">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 [data-display-mode='simplifie']_&:hidden">
-          Pourquoi je suis ici
+          {isFrench ? "Pourquoi je suis ici" : "Why am I here"}
         </p>
         <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 [data-display-mode='simplifie']_&:text-slate-900">
           {props.context}
@@ -36,14 +40,14 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm [data-display-mode='simplifie']_&:hidden">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          Résumer
+          {isFrench ? "Résumer" : "Summarize"}
         </p>
         <div className="mt-2">{props.summary}</div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm core-feature">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 [data-display-mode='simplifie']_&:hidden">
-          Agir
+          {isFrench ? "Agir" : "Act"}
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
           <Link
@@ -65,14 +69,14 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          Analyser
+          {isFrench ? "Analyser" : "Analyze"}
         </p>
         <div className="mt-2 space-y-4">{props.analysis}</div>
       </section>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          Tracer
+          {isFrench ? "Tracer" : "Trace"}
         </p>
         <div className="mt-2">{props.trace}</div>
       </section>

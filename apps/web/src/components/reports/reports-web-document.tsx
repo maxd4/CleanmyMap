@@ -3,9 +3,18 @@
 import { CHAPTERS } from "@/components/reports/web-document/constants";
 import { ReportsWebSections } from "@/components/reports/web-document/sections";
 import { useReportsWebDocumentModel } from "@/components/reports/web-document/use-reports-web-document-model";
+import { ReportCover } from "@/components/reports/web-document/report-cover";
+import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
+import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 
 export function ReportsWebDocument() {
   const model = useReportsWebDocumentModel();
+  const scopeChoices =
+    model.scopeKind === "account"
+      ? model.scopeOptions.accounts
+      : model.scopeKind === "association"
+        ? model.scopeOptions.associations
+        : model.scopeOptions.arrondissements;
 
   return (
     <section className="rounded-3xl border border-slate-200 bg-gradient-to-b from-white via-[#f7fafd] to-white shadow-sm">
@@ -22,26 +31,44 @@ export function ReportsWebDocument() {
           PDF et optimisee pour une double lecture: operationnelle terrain et
           pilotage strategique.
         </p>
-        <div className="mt-4 grid max-w-md gap-1">
+        <div className="mt-4 grid max-w-2xl gap-3 md:grid-cols-[10rem_minmax(0,1fr)]">
           <label
-            htmlFor="report-web-association-filter"
+            htmlFor="report-web-scope-kind"
             className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
           >
             Perimetre
           </label>
           <select
-            id="report-web-association-filter"
-            value={model.associationFilter}
-            onChange={(event) => model.setAssociationFilter(event.target.value)}
+            id="report-web-scope-kind"
+            value={model.scopeKind}
+            onChange={(event) =>
+              model.setScopeKind(event.target.value as typeof model.scopeKind)
+            }
             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-emerald-500"
           >
-            <option value="all">Global (toutes associations)</option>
-            {model.associationOptions.map((association) => (
-              <option key={association} value={association}>
-                {association}
-              </option>
-            ))}
+            <option value="global">Global</option>
+            <option value="account">Compte</option>
+            <option value="association">Association</option>
+            <option value="arrondissement">Arrondissement</option>
           </select>
+          {model.scopeKind !== "global" ? (
+            <select
+              aria-label="Valeur du perimetre"
+              value={model.scopeValue}
+              onChange={(event) => model.setScopeValue(event.target.value)}
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none transition focus:border-emerald-500"
+            >
+              {scopeChoices.map((choice) => (
+                <option key={choice.value} value={choice.value}>
+                  {choice.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
+              Aucun sous-filtre requis en mode global.
+            </div>
+          )}
         </div>
         <p className="mt-2 text-xs text-slate-600">
           Contexte du rapport:{" "}
@@ -50,6 +77,27 @@ export function ReportsWebDocument() {
         <p className="mt-2 text-xs text-slate-500">
           Derniere generation: {model.report.generatedAt}
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <RubriquePdfExportButton
+            rubriqueTitle={`Reporting - ${model.activeScopeLabel}`}
+          />
+          <RubriqueExcelExportButton
+            rubriqueTitle={`Reporting - ${model.activeScopeLabel}`}
+            data={model.exportRows}
+            columns={[
+              { key: "Date", label: "Date" },
+              { key: "Lieu", label: "Lieu" },
+              { key: "Compte", label: "Compte" },
+              { key: "Association", label: "Association" },
+              { key: "Masse_Kg", label: "Masse (kg)" },
+              { key: "Megots", label: "Megots" },
+              { key: "Bénévoles", label: "Benevoles" },
+              { key: "Durée_Min", label: "Duree (min)" },
+              { key: "Type", label: "Type" },
+              { key: "Source", label: "Source" },
+            ]}
+          />
+        </div>
       </header>
 
       <div className="grid gap-5 p-4 lg:grid-cols-[18rem_minmax(0,1fr)] lg:p-6">
@@ -74,13 +122,21 @@ export function ReportsWebDocument() {
           </div>
         </aside>
 
-        <ReportsWebSections
-          report={model.report}
-          weather={model.weather.data ?? {}}
-          weatherAdvice={model.weatherAdvice}
-          isLoading={model.isLoading}
-          hasError={model.hasError}
-        />
+        <div className="space-y-6">
+          <ReportCover
+            report={model.report}
+            activeScopeLabel={model.activeScopeLabel}
+            weatherAdvice={model.weatherAdvice}
+          />
+
+          <ReportsWebSections
+            report={model.report}
+            weather={model.weather.data ?? {}}
+            weatherAdvice={model.weatherAdvice}
+            isLoading={model.isLoading}
+            hasError={model.hasError}
+          />
+        </div>
       </div>
     </section>
   );

@@ -7,6 +7,8 @@ import {
   parseEntityTypesParam,
 } from "@/lib/actions/unified-source";
 import { buildActionInsights } from "@/lib/actions/insights";
+import { filterActionContractsByScope, type ReportScope } from "@/lib/reports/scope";
+import { resolveReportQuery } from "@/lib/reports/csv";
 
 export const runtime = "nodejs";
 export const revalidate = 60; // Cache 1 minute for public map
@@ -57,17 +59,6 @@ function parseQualityMin(raw: string | null): number | null {
   return Math.min(100, Math.max(0, Math.round(parsed)));
 }
 
-function parseAssociationParam(raw: string | null): string | null {
-  if (!raw) {
-    return null;
-  }
-  const value = raw.trim();
-  if (!value) {
-    return null;
-  }
-  return value.slice(0, 120);
-}
-
 const IMPACT_LEVELS = ["faible", "moyen", "fort", "critique"] as const;
 function parseImpactParam(
   raw: string | null,
@@ -82,15 +73,13 @@ function parseImpactParam(
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
+  const reportQuery = resolveReportQuery(url);
   const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 300, 80);
   const days = parsePositiveInteger(url.searchParams.get("days"), 1, 3650, 30);
   const status = parseStatusParam(url.searchParams.get("status"));
   const types = parseEntityTypesParam(url.searchParams.get("types"));
   const qualityMin = parseQualityMin(url.searchParams.get("qualityMin"));
   const impact = parseImpactParam(url.searchParams.get("impact"));
-  const association = parseAssociationParam(
-    url.searchParams.get("association"),
-  );
   const floorDate = buildDateFloor(days);
 
   try {
@@ -103,19 +92,19 @@ export async function GET(request: Request) {
       types,
     });
     const now = new Date();
-    const items = result.items
+    const scope: ReportScope = {
+      kind: reportQuery.scopeKind,
+      value:
+        reportQuery.scopeKind === "association"
+          ? reportQuery.scopeValue ?? reportQuery.association
+          : reportQuery.scopeValue,
+    };
+    const items = filterActionContractsByScope(result.items, scope)
       .map((contract) => {
         const insights = buildActionInsights(contract, now);
         return toActionMapItem(contract, insights);
       })
       .filter((item) => {
-        if (association) {
-          const itemAssociation =
-            item.contract?.metadata.associationName?.trim().toLowerCase() ?? "";
-          if (itemAssociation !== association.toLowerCase()) {
-            return false;
-          }
-        }
         if (impact && item.impact_level !== impact) {
           return false;
         }

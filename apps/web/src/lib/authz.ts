@@ -33,46 +33,46 @@ export type UserIdentity = {
 };
 
 const BADGE_CATALOG: Record<string, AccountBadge> = {
-  admin: { id: "admin", label: "Administrateur", icon: "ADM" },
-  role_admin: { id: "role_admin", label: "Role admin", icon: "RAD" },
-  role_benevole: { id: "role_benevole", label: "Role benevole", icon: "RBV" },
+  admin: { id: "admin", label: "Administrateur", icon: "shield" },
+  role_admin: { id: "role_admin", label: "Administration", icon: "crown" },
+  role_benevole: { id: "role_benevole", label: "Bénévole", icon: "users" },
   role_coordinateur: {
     id: "role_coordinateur",
-    label: "Role coordinateur",
-    icon: "RCO",
+    label: "Coordination",
+    icon: "target",
   },
   role_scientifique: {
     id: "role_scientifique",
-    label: "Role scientifique",
-    icon: "RSC",
+    label: "Scientifique",
+    icon: "sparkles",
   },
-  role_elu: { id: "role_elu", label: "Role elu", icon: "REL" },
+  role_elu: { id: "role_elu", label: "Autorité locale", icon: "badge-check" },
   profile_admin: {
     id: "profile_admin",
-    label: "Profil admin",
-    icon: "PAD",
+    label: "Profil administration",
+    icon: "shield",
   },
   profile_benevole: {
     id: "profile_benevole",
-    label: "Profil benevole",
-    icon: "PBV",
+    label: "Profil bénévole",
+    icon: "users",
   },
   profile_coordinateur: {
     id: "profile_coordinateur",
-    label: "Profil coordinateur",
-    icon: "PCO",
+    label: "Profil coordination",
+    icon: "target",
   },
   profile_scientifique: {
     id: "profile_scientifique",
     label: "Profil scientifique",
-    icon: "PSC",
+    icon: "sparkles",
   },
-  profile_elu: { id: "profile_elu", label: "Profil elu", icon: "PEL" },
-  pioneer: { id: "pioneer", label: "Pionnier", icon: "PIO" },
-  mentor: { id: "mentor", label: "Mentor", icon: "MEN" },
-  cleanwalk_10: { id: "cleanwalk_10", label: "10 cleanwalks", icon: "10x" },
-  cleanwalk_50: { id: "cleanwalk_50", label: "50 cleanwalks", icon: "50x" },
-  impact_100kg: { id: "impact_100kg", label: "100 kg collectes", icon: "100K" },
+  profile_elu: { id: "profile_elu", label: "Profil autorité locale", icon: "badge-check" },
+  pioneer: { id: "pioneer", label: "Pionnier", icon: "zap" },
+  mentor: { id: "mentor", label: "Mentor", icon: "award" },
+  cleanwalk_10: { id: "cleanwalk_10", label: "10 cleanwalks", icon: "medal" },
+  cleanwalk_50: { id: "cleanwalk_50", label: "50 cleanwalks", icon: "trophy" },
+  impact_100kg: { id: "impact_100kg", label: "100 kg collectes", icon: "droplets" },
 };
 
 function parseAdminUserIds(raw: string | undefined): Set<string> {

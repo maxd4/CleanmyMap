@@ -1,28 +1,3 @@
 {
-  "items": [
-    {
-      "type": "clean_place",
-      "label": "Pont de l'Alma",
-      "latitude": 48.8625636,
-      "longitude": 2.2999572,
-      "status": "validated",
-      "notes": "Imported from Google Sheet column: lieux propres"
-    },
-    {
-      "type": "clean_place",
-      "label": "Gare de l'est",
-      "latitude": 48.8770979,
-      "longitude": 2.3594905,
-      "status": "validated",
-      "notes": "Imported from Google Sheet column: lieux propres"
-    },
-    {
-      "type": "clean_place",
-      "label": "Canal saint martin",
-      "latitude": 48.8689561,
-      "longitude": 2.3671691,
-      "status": "validated",
-      "notes": "Imported from Google Sheet column: lieux propres"
-    }
-  ]
+  "items": []
 }

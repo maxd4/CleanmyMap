@@ -6,10 +6,12 @@ import { ClosedLoopPanel } from "@/components/dashboard/closed-loop-panel";
 import { DashboardComparisonGrid } from "@/components/dashboard/dashboard-comparison-grid";
 import { FunnelConversionPanel } from "@/components/dashboard/funnel-conversion-panel";
 import { ReportExportSmokeCard } from "@/components/dashboard/report-export-smoke-card";
+import { VisionTrainingPanel } from "@/components/dashboard/vision-training-panel";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { PunchySlogan } from "@/components/ui/punchy-slogan";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
@@ -17,6 +19,7 @@ import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
+import { loadVisionTrainingMetrics } from "@/lib/actions/training";
 import {
   getProfileLabel,
   getProfilePrimaryAction,
@@ -37,18 +40,91 @@ async function loadDashboardOverview() {
   });
 }
 
+async function loadDashboardVisionMetrics() {
+  const supabase = getSupabaseServerClient();
+  return loadVisionTrainingMetrics(supabase).catch(() => null);
+}
+
 export default async function DashboardPage() {
   const { userId } = await auth();
+  const locale = await getServerLocale();
+  if (!userId) {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="blur"
+        title={locale === "fr" ? "Tableau de bord" : "Dashboard"}
+        description={
+          locale === "fr"
+            ? "Cette fonctionnalité nécessite une connexion Clerk."
+            : "This feature requires Clerk sign-in."
+        }
+        lockedPreview={
+          <div className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+            <div className="grid gap-3 md:grid-cols-3">
+              <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  {locale === "fr" ? "Pilotage" : "Operations"}
+                </p>
+                <p className="mt-2 text-lg font-semibold text-slate-900">
+                  {locale === "fr" ? "Vue globale" : "Global overview"}
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {locale === "fr"
+                    ? "Indicateurs et alertes disponibles après connexion."
+                    : "Metrics and alerts unlock after sign-in."}
+                </p>
+              </article>
+              <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  {locale === "fr" ? "Terrain" : "Field"}
+                </p>
+                <p className="mt-2 text-lg font-semibold text-slate-900">
+                  {locale === "fr" ? "Déclarer" : "Declare"}
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {locale === "fr"
+                    ? "Le formulaire bénévole s'ouvre après connexion."
+                    : "The volunteer form opens after sign-in."}
+                </p>
+              </article>
+              <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  {locale === "fr" ? "Rapports" : "Reports"}
+                </p>
+                <p className="mt-2 text-lg font-semibold text-slate-900">
+                  {locale === "fr" ? "Exporter" : "Export"}
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  {locale === "fr"
+                    ? "Les livrables complets s'ouvrent après connexion."
+                    : "Full deliverables unlock after sign-in."}
+                </p>
+              </article>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+              {locale === "fr"
+                ? "En visite libre, consulte Apprendre ou Générer un livrable depuis la page d'accueil."
+                : "In public browsing, use Learn or Generate a deliverable from the home page."}
+            </div>
+          </div>
+        }
+      >
+        <div />
+      </ClerkRequiredGate>
+    );
+  }
+
   const identity = await getCurrentUserIdentity();
   const role = await getCurrentUserRoleLabel();
   const profile = toProfile(role);
-  const locale = await getServerLocale();
   const displayMode = await getServerDisplayMode();
   const roleLabel = getProfileLabel(profile, locale);
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const overview = await loadDashboardOverview().catch(() => null);
+  const visionMetrics = await loadDashboardVisionMetrics();
   const { t } = getTranslation("dashboard", locale);
   const fallbackActorName = userId ?? "unknown-user";
   const actorNameOptions =
@@ -101,7 +177,7 @@ export default async function DashboardPage() {
         interpretation: "neutral",
       },
       {
-        label: "Qualite data",
+        label: "Qualité data",
         value: "n/a",
         previousValue: "n/a",
         deltaAbsolute: "n/a",
@@ -152,78 +228,21 @@ export default async function DashboardPage() {
               : undefined
           }
           analysis={
-            <>
-              <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl core-feature">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("section1_sup")}
-                  </p>
-                  <h2 className="mt-1 text-xl font-semibold text-slate-900">
-                    {t("section1_title")}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {t("section1_desc")}
-                  </p>
-                </div>
+            <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl core-feature">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  {t("section1_sup")}
+                </p>
+                <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                  {t("section1_title")}
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  {t("section1_desc")}
+                </p>
+              </div>
 
-                <DashboardComparisonGrid overview={overview} />
-
-                <BusinessAlertsPanel />
-              </section>
-
-              <FunnelConversionPanel />
-              <ClosedLoopPanel
-                impactKpis={impactKpis}
-                recommendedHref={adaptiveHref}
-                recommendedLabel={adaptiveLabel}
-                recommendedReason={adaptiveReason}
-              />
-
-              <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("section2_sup")}
-                  </p>
-                  <h2 className="mt-1 text-xl font-semibold text-slate-900">
-                    {t("section2_title")}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {t("section2_desc")}
-                  </p>
-                </div>
-                <div className="grid gap-4 md:grid-cols-1">
-                  <ReportExportSmokeCard />
-                </div>
-              </section>
-
-              {overview ? (
-                <KpiMethodBlock
-                  methods={overview.methods.slice(0, 3)}
-                  title={t("section_method")}
-                />
-              ) : null}
-
-              <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                    {t("section3_sup")}
-                  </p>
-                  <h2 className="mt-1 text-xl font-semibold text-slate-900">
-                    {t("section3_title")}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {t("section3_desc")}
-                  </p>
-                </div>
-                <ActionDeclarationForm
-                  actorNameOptions={actorNameOptions}
-                  defaultActorName={actorNameOptions[0]}
-                  clerkIdentityLabel={identity?.displayName ?? fallbackActorName}
-                  clerkUserId={identity?.userId ?? fallbackActorName}
-                  initialMode="quick"
-                />
-              </section>
-            </>
+              <DashboardComparisonGrid overview={overview} />
+            </section>
           }
           trace={
             <div className="space-y-2 text-xs text-slate-600">
@@ -231,11 +250,7 @@ export default async function DashboardPage() {
                 {t("trace_time")}{" "}
                 {overview
                   ? new Date(overview.generatedAt).toLocaleString("fr-FR")
-                  : "indisponible"}{" "}
-                | {t("trace_reliability")}{" "}
-                {overview
-                  ? t("trace_good")
-                  : t("trace_bad")}
+                  : "indisponible"}
               </p>
               <p>
                 {t("trace_source")}
@@ -252,8 +267,8 @@ export default async function DashboardPage() {
                     Lieu: c.location.label,
                     Masse_Kg: c.metadata.wasteKg || 0,
                     Megots: c.metadata.cigaretteButts || 0,
-                    Benevoles: c.metadata.volunteersCount,
-                    Duree_Min: c.metadata.durationMinutes,
+                    Bénévoles: c.metadata.volunteersCount,
+                    Durée_Min: c.metadata.durationMinutes,
                     Type: c.type,
                     Source: c.source
                   }))}
@@ -267,7 +282,79 @@ export default async function DashboardPage() {
               </div>
             </div>
           }
-        />
+          />
+
+        <div className="space-y-4">
+          <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {t("section2_sup")}
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                {t("section2_title")}
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                {t("section2_desc")}
+              </p>
+            </div>
+            <BusinessAlertsPanel />
+            <FunnelConversionPanel />
+          </section>
+
+          <ClosedLoopPanel
+            impactKpis={impactKpis}
+            recommendedHref={adaptiveHref}
+            recommendedLabel={adaptiveLabel}
+            recommendedReason={adaptiveReason}
+          />
+
+          <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {t("section2_sup")}
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                {t("section2_title")}
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                {t("section2_desc")}
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-1">
+              <ReportExportSmokeCard />
+            </div>
+          </section>
+
+          {overview ? (
+            <KpiMethodBlock
+              methods={overview.methods.slice(0, 3)}
+              title={t("section_method")}
+            />
+          ) : null}
+
+          <VisionTrainingPanel metrics={visionMetrics} />
+
+          <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-5 shadow-xl">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                {t("section3_sup")}
+              </p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-900">
+                {t("section3_title")}
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                {t("section3_desc")}
+              </p>
+            </div>
+            <ActionDeclarationForm
+              actorNameOptions={actorNameOptions}
+              defaultActorName={actorNameOptions[0]}
+              clerkIdentityLabel={identity?.displayName ?? fallbackActorName}
+              clerkUserId={identity?.userId ?? fallbackActorName}
+              initialMode="quick"
+            />
+          </section>
+        </div>
       </div>
     );
   }
@@ -285,6 +372,8 @@ export default async function DashboardPage() {
         }}
         recommendedReason={overview?.summary.recommendedAction.reason}
       />
+
+      <VisionTrainingPanel metrics={visionMetrics} />
 
       <header className="space-y-4 rounded-2xl border border-white/40 bg-white/60 backdrop-blur-md p-6 shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 pointer-events-none animate-pulse"></div>
@@ -334,16 +423,16 @@ export default async function DashboardPage() {
         </div>
 
         <div className="mt-2 flex gap-2">
-          <RubriquePdfExportButton rubriqueTitle="Cockpit decisionnel" />
+          <RubriquePdfExportButton rubriqueTitle="Cockpit décisionnel" />
           <RubriqueExcelExportButton
-            rubriqueTitle="Cockpit decisionnel"
+            rubriqueTitle="Cockpit décisionnel"
             data={overview?.contracts.map(c => ({
               Date: c.dates.observedAt,
               Lieu: c.location.label,
               Masse_Kg: c.metadata.wasteKg || 0,
               Megots: c.metadata.cigaretteButts || 0,
-              Benevoles: c.metadata.volunteersCount,
-              Duree_Min: c.metadata.durationMinutes,
+              Bénévoles: c.metadata.volunteersCount,
+              Durée_Min: c.metadata.durationMinutes,
               Type: c.type,
               Source: c.source
             }))}

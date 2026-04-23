@@ -8,7 +8,7 @@ const PROFILE_CONTEXT_MESSAGES: Record<AppProfile, string> = {
   benevole: "Interface optimisée pour la déclaration terrain et le suivi de proximité.",
   coordinateur: "Vue de pilotage opérationnel pour la gestion des équipes et événements.",
   scientifique: "Console d'analyse avancée axée sur l'intégrité des données et les statistiques.",
-  elu: "Portail décisionnel avec indicateurs de ROI et impact territorial global.",
+  elu: "Portail de gouvernance avec indicateurs de ROI et impact territorial global.",
   admin: "Espace de supervision système et modération critique.",
 };
 
@@ -36,15 +36,15 @@ export function IdentityProfileBanner({ profile }: IdentityProfileBannerProps) {
         <Icon size={20} strokeWidth={2.5} />
       </div>
       <div className="flex-1">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Expérience de Navigation</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Expérience de navigation</p>
         <p className="text-sm font-bold text-slate-800 leading-tight mt-1">
           {PROFILE_CONTEXT_MESSAGES[profile]}
         </p>
       </div>
       <div className="hidden sm:block text-right">
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type de Vue</p>
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Type de vue</p>
         <p className="text-[11px] font-black text-slate-600 uppercase mt-0.5" style={{ color: 'rgb(var(--profile-primary))' }}>
-          {profile} (Optimized)
+          {profile} (Optimisé)
         </p>
       </div>
     </div>

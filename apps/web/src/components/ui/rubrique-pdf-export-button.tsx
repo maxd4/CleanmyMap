@@ -152,10 +152,40 @@ export function RubriquePdfExportButton({
     ${styles}
     <style>
       @page { size: A4; margin: 14mm; }
-      body { background: #ffffff; color: #0f172a; }
-      .rubrique-print-header { margin-bottom: 16px; border-bottom: 1px solid #cbd5e1; padding-bottom: 8px; }
-      .rubrique-print-header h1 { margin: 0; font-size: 20px; line-height: 1.2; }
-      .rubrique-print-header p { margin: 4px 0 0; color: #475569; font-size: 12px; }
+      body { background: #ffffff; color: #0f172a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .rubrique-print-header {
+        margin-bottom: 16px;
+        border: 1px solid #cbd5e1;
+        border-radius: 18px;
+        padding: 14px 16px;
+        background: linear-gradient(135deg, #0f4c5c 0%, #1f5d7f 100%);
+        color: #f8fafc;
+      }
+      .rubrique-print-header h1 { margin: 0; font-size: 22px; line-height: 1.15; }
+      .rubrique-print-header p { margin: 4px 0 0; color: rgba(248, 250, 252, 0.92); font-size: 12px; }
+      .rubrique-print-header .rubrique-print-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+        font-size: 11px;
+      }
+      .rubrique-print-header .rubrique-print-meta span {
+        border: 1px solid rgba(255,255,255,0.18);
+        background: rgba(255,255,255,0.08);
+        border-radius: 999px;
+        padding: 4px 8px;
+      }
+      .rubrique-print-note {
+        margin: 0 0 14px;
+        padding: 10px 12px;
+        border-radius: 14px;
+        border: 1px solid #dbeafe;
+        background: #eff6ff;
+        color: #1e3a8a;
+        font-size: 12px;
+      }
+      section, article, table, .rounded-2xl, .rounded-3xl { break-inside: avoid; }
       [data-print-ignore="true"] { display: none !important; }
     </style>
   </head>
@@ -163,7 +193,13 @@ export function RubriquePdfExportButton({
     <header class="rubrique-print-header">
       <h1>${safeTitle}</h1>
       <p>Generation: ${escapeHtml(generatedAt)} | Rubrique: ${escapeHtml(rubriqueSlug)} | Fichier suggere: ${escapeHtml(fullFilename)}</p>
+      <div class="rubrique-print-meta">
+        <span>Document officiel</span>
+        <span>Lecture décideur</span>
+        <span>Version print-friendly</span>
+      </div>
     </header>
+    <p class="rubrique-print-note">Ce livrable privilégie la preuve utile à la décision: sources, méthode, lecture territoriale et actions exploitables.</p>
     ${clonedTarget.outerHTML}
     <script>
       window.addEventListener("afterprint", () => window.close());

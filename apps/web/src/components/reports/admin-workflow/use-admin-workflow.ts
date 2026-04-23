@@ -1,22 +1,32 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
 import { evaluateActionQuality } from "@/lib/actions/quality";
 import { swrRecentViewOptions } from "@/lib/swr-config";
+import {
+  buildReportScopeOptions,
+  filterReportScopeItems,
+  normalizeReportScope,
+} from "@/lib/reports/scope";
 import { createAdminWorkflowActions } from "./actions";
-import type { AdminWorkflowController } from "./types";
 import { buildExportQuery } from "./helpers";
 import {
   fetchAdminOperationAudit,
 } from "./services";
 import { useAdminWorkflowState } from "./state";
+import type { AdminWorkflowController } from "./types";
 
 export { buildExportQuery, parseAdminApiError } from "./helpers";
 
 export function useAdminWorkflow(): AdminWorkflowController {
   const state = useAdminWorkflowState();
+
+  const scope = useMemo(
+    () => normalizeReportScope({ kind: state.scopeKind, value: state.scopeValue }),
+    [state.scopeKind, state.scopeValue],
+  );
 
   const query = useMemo(
     () =>
@@ -24,9 +34,18 @@ export function useAdminWorkflow(): AdminWorkflowController {
         status: state.status,
         days: state.days,
         limit: state.limit,
+        scopeKind: state.scopeKind,
+        scopeValue: state.scopeValue,
         association: state.association,
       }),
-    [state.status, state.days, state.limit, state.association],
+    [
+      state.status,
+      state.days,
+      state.limit,
+      state.scopeKind,
+      state.scopeValue,
+      state.association,
+    ],
   );
   const csvExportUrl = `/api/reports/actions.csv?${query}`;
   const jsonExportUrl = `/api/reports/actions.json?${query}`;
@@ -37,6 +56,8 @@ export function useAdminWorkflow(): AdminWorkflowController {
       state.status,
       String(state.days),
       String(state.limit),
+      state.scopeKind,
+      state.scopeValue,
       state.association,
     ],
     () =>
@@ -45,6 +66,8 @@ export function useAdminWorkflow(): AdminWorkflowController {
         days: state.days,
         limit: state.limit,
         types: "all",
+        scopeKind: state.scopeKind,
+        scopeValue: state.scopeValue,
         association: state.association,
       }),
     swrRecentViewOptions,
@@ -56,23 +79,43 @@ export function useAdminWorkflow(): AdminWorkflowController {
     swrRecentViewOptions,
   );
 
-  const previewRows = useMemo(() => {
-    return (preview.data?.items ?? []).slice(0, 12).map((item) => ({
-      item,
-      quality: evaluateActionQuality(item),
-    }));
-  }, [preview.data?.items]);
+  const scopeOptions = useMemo(
+    () => buildReportScopeOptions(preview.data?.items ?? []),
+    [preview.data?.items],
+  );
 
-  const associationOptions = useMemo(() => {
-    const names = new Set<string>();
-    for (const item of preview.data?.items ?? []) {
-      const value = item.association_name?.trim();
-      if (value) {
-        names.add(value);
+  useEffect(() => {
+    if (state.scopeKind === "global") {
+      if (state.scopeValue !== "") {
+        state.setScopeValue("");
       }
+      return;
     }
-    return [...names].sort((a, b) => a.localeCompare(b, "fr"));
-  }, [preview.data?.items]);
+    const options =
+      state.scopeKind === "account"
+        ? scopeOptions.accounts
+        : state.scopeKind === "association"
+          ? scopeOptions.associations
+          : scopeOptions.arrondissements;
+    if (options.length === 0) {
+      if (state.scopeValue !== "") {
+        state.setScopeValue("");
+      }
+      return;
+    }
+    if (!options.some((option) => option.value === state.scopeValue)) {
+      state.setScopeValue(options[0].value);
+    }
+  }, [scopeOptions, state.scopeKind, state.scopeValue]);
+
+  const previewRows = useMemo(() => {
+    return filterReportScopeItems(preview.data?.items ?? [], scope)
+      .slice(0, 12)
+      .map((item) => ({
+        item,
+        quality: evaluateActionQuality(item),
+      }));
+  }, [preview.data?.items, scope]);
 
   function selectActionForModeration(actionId: string) {
     state.setModerationEntityType("action");
@@ -130,12 +173,17 @@ export function useAdminWorkflow(): AdminWorkflowController {
     status: state.status,
     days: state.days,
     limit: state.limit,
+    scopeKind: state.scopeKind,
+    scopeValue: state.scopeValue,
     association: state.association,
     setStatus: state.setStatus,
     setDays: state.setDays,
     setLimit: state.setLimit,
+    setScopeKind: state.setScopeKind,
+    setScopeValue: state.setScopeValue,
     setAssociation: state.setAssociation,
-    associationOptions,
+    scopeOptions,
+    associationOptions: scopeOptions.associations.map((item) => item.label),
     csvState: state.csvState,
     jsonState: state.jsonState,
     importState: state.importState,

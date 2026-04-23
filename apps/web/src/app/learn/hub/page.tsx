@@ -93,26 +93,6 @@ export default function LearnHubPage() {
           <p className="text-xl md:text-2xl text-blue-100 max-w-3xl leading-relaxed">
             {t("header_desc")}
           </p>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-              <div className="text-2xl font-black">9</div>
-              <div className="text-sm text-blue-100">Limites planétaires</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-              <div className="text-2xl font-black">17</div>
-              <div className="text-sm text-blue-100">Objectifs mondiaux</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-              <div className="text-2xl font-black">+1.1°C</div>
-              <div className="text-sm text-blue-100">Réchauffement actuel</div>
-            </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center">
-              <div className="text-2xl font-black">2030</div>
-              <div className="text-sm text-blue-100">Échéance critique</div>
-            </div>
-          </div>
         </div>
       </header>
 
@@ -143,8 +123,27 @@ export default function LearnHubPage() {
                 <ArrowRight size={14} className="text-slate-300 group-hover:text-slate-600 group-hover:translate-x-1 transition-all" />
               )}
             </Tabs.Trigger>
-          ))}
+            ))}
         </Tabs.List>
+
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="rounded-2xl bg-slate-50 p-4 text-center">
+            <div className="text-2xl font-black">9</div>
+            <div className="text-sm text-slate-600">Limites planétaires</div>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4 text-center">
+            <div className="text-2xl font-black">17</div>
+            <div className="text-sm text-slate-600">Objectifs mondiaux</div>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4 text-center">
+            <div className="text-2xl font-black">+1.1°C</div>
+            <div className="text-sm text-slate-600">Réchauffement actuel</div>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4 text-center">
+            <div className="text-2xl font-black">2030</div>
+            <div className="text-sm text-slate-600">Échéance critique</div>
+          </div>
+        </section>
 
         <div className="min-h-[600px]">
           {/* Section: Rapports GIEC */}

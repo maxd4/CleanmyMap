@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 
 export function GuideSection() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   const [resourceVariant, setResourceVariant] = useState<
     "solo" | "team" | "school" | "weather"
   >("team");
@@ -95,102 +98,124 @@ export function GuideSection() {
     if (resourceVariant === "solo") {
       return [
         {
-          phase: "Avant sortie",
-          content: "Brief securite, meteo et zone ciblee valides.",
+          phase: fr ? "Avant sortie" : "Before outing",
+          content: fr
+            ? "Brief sécurité, météo et zone ciblée validés."
+            : "Safety, weather and target zone briefing validated.",
         },
         {
-          phase: "Pendant collecte",
-          content:
-            "Declencher mode declaration rapide, capturer 1 preuve geo minimale.",
+          phase: fr ? "Pendant collecte" : "During collection",
+          content: fr
+            ? "Déclencher mode déclaration rapide, capturer 1 preuve géo minimale."
+            : "Trigger quick-declare mode, capture 1 minimal geo proof.",
         },
         {
-          phase: "Apres action",
-          content:
-            "Completer les champs manquants et publier le recap 5 lignes.",
+          phase: fr ? "Après action" : "After action",
+          content: fr
+            ? "Compléter les champs manquants et publier le récap 5 lignes."
+            : "Fill missing fields and publish a 5-line recap.",
         },
         {
-          phase: "Qualite / export",
-          content: "Verifier score qualite et exporter CSV pour suivi local.",
+          phase: fr ? "Qualité / export" : "Quality / export",
+          content: fr
+            ? "Vérifier score qualité et exporter CSV pour suivi local."
+            : "Check quality score and export CSV for local follow-up.",
         },
       ];
     }
     if (resourceVariant === "school") {
       return [
         {
-          phase: "Avant sortie",
-          content:
-            "Repartition des roles eleves/adultes + rappel EPI obligatoire.",
+          phase: fr ? "Avant sortie" : "Before outing",
+          content: fr
+            ? "Répartition des rôles élèves/adultes + rappel EPI obligatoire."
+            : "Split roles between students/adults + mandatory PPE reminder.",
         },
         {
-          phase: "Pendant collecte",
-          content: "Progression par binomes, pauses cadencees, zone delimitee.",
+          phase: fr ? "Pendant collecte" : "During collection",
+          content: fr
+            ? "Progression par binômes, pauses cadencées, zone délimitée."
+            : "Move in pairs, paced breaks, defined area.",
         },
         {
-          phase: "Apres action",
-          content: "Debrief classe + no-show + incidents securite.",
+          phase: fr ? "Après action" : "After action",
+          content: fr
+            ? "Débrief classe + no-show + incidents sécurité."
+            : "Class debrief + no-show + safety incidents.",
         },
         {
-          phase: "Qualite / export",
-          content:
-            "Exporter bilan pedagogique + geocouverture + volumes tries.",
+          phase: fr ? "Qualité / export" : "Quality / export",
+          content: fr
+            ? "Exporter bilan pédagogique + géocouverture + volumes triés."
+            : "Export pedagogical summary + geo coverage + sorted volumes.",
         },
       ];
     }
     if (resourceVariant === "weather") {
       return [
         {
-          phase: "Avant sortie",
-          content:
-            "Confirmer niveau risque meteo et equipements EPI renforces.",
+          phase: fr ? "Avant sortie" : "Before outing",
+          content: fr
+            ? "Confirmer niveau risque météo et équipements EPI renforcés."
+            : "Confirm weather risk level and reinforced PPE.",
         },
         {
-          phase: "Pendant collecte",
-          content:
-            "Limiter duree de rotation, pauses imposees, binomes obligatoires.",
+          phase: fr ? "Pendant collecte" : "During collection",
+          content: fr
+            ? "Limiter durée de rotation, pauses imposées, binômes obligatoires."
+            : "Limit rotation time, enforced breaks, mandatory pairs.",
         },
         {
-          phase: "Apres action",
-          content:
-            "Tracer contraintes terrain subies (pluie, vent, chaleur, froid).",
+          phase: fr ? "Après action" : "After action",
+          content: fr
+            ? "Tracer contraintes terrain subies (pluie, vent, chaleur, froid)."
+            : "Record weather-related constraints (rain, wind, heat, cold).",
         },
         {
-          phase: "Qualite / export",
-          content:
-            "Tagger l'action meteo-defavorable pour lecture KPI robuste.",
+          phase: fr ? "Qualité / export" : "Quality / export",
+          content: fr
+            ? "Tagger l'action météo-défavorable pour lecture KPI robuste."
+            : "Tag the weather-disrupted action for robust KPI reading.",
         },
       ];
     }
     return [
       {
-        phase: "Avant sortie",
-        content:
-          "Assignation des roles equipe, verification kit, rappel securite.",
+        phase: fr ? "Avant sortie" : "Before outing",
+        content: fr
+          ? "Assignation des rôles équipe, vérification kit, rappel sécurité."
+          : "Assign team roles, verify kit, safety reminder.",
       },
       {
-        phase: "Pendant collecte",
-        content: "Declaration rapide sur mobile + trace/polygone par zone.",
+        phase: fr ? "Pendant collecte" : "During collection",
+        content: fr
+          ? "Déclaration rapide sur mobile + trace/polygone par zone."
+          : "Quick mobile declaration + trace/polygon per area.",
       },
       {
-        phase: "Apres action",
-        content:
-          "Consolidation des volumes, controle coherence et relance corrections.",
+        phase: fr ? "Après action" : "After action",
+        content: fr
+          ? "Consolidation des volumes, contrôle cohérence et relance corrections."
+          : "Consolidate volumes, check consistency, chase corrections.",
       },
       {
-        phase: "Qualite / export",
-        content: "Validation score qualite et export partenaire/collectivite.",
+        phase: fr ? "Qualité / export" : "Quality / export",
+        content: fr
+          ? "Validation score qualité et export partenaire/collectivité."
+          : "Validate quality score and export partner/local-authority report.",
       },
     ];
   }, [resourceVariant]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
-      <article className="rounded-xl border border-slate-200 bg-white p-4">
+      <article className="rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-md">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-sm font-semibold text-slate-900">
-            Bibliotheque ressources terrain
+            {fr ? "Bibliothèque ressources terrain" : "Field resource library"}
           </h2>
           <label className="flex items-center gap-2 text-xs text-slate-700">
-            Variante
+            {fr ? "Variante" : "Variant"}
             <select
               value={resourceVariant}
               onChange={(event) =>
@@ -201,9 +226,9 @@ export function GuideSection() {
               className="rounded-lg border border-slate-300 px-2 py-1 text-xs outline-none transition focus:border-emerald-500"
             >
               <option value="solo">Solo</option>
-              <option value="team">Equipe</option>
-              <option value="school">Scolaire</option>
-              <option value="weather">Meteo defavorable</option>
+              <option value="team">{fr ? "Equipe" : "Team"}</option>
+              <option value="school">{fr ? "Scolaire" : "School"}</option>
+              <option value="weather">{fr ? "Météo défavorable" : "Bad weather"}</option>
             </select>
           </label>
         </div>
@@ -223,32 +248,32 @@ export function GuideSection() {
         <div className="mt-4 flex flex-wrap gap-2">
           <Link
             href="/actions/new"
-            className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
+          className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100"
           >
-            Declarer une action
+            {fr ? "Déclarer une action" : "Declare an action"}
           </Link>
           <Link
             href="/actions/history"
             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
           >
-            Corriger qualite
+            {fr ? "Corriger qualité" : "Fix quality"}
           </Link>
           <Link
             href="/reports"
             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
           >
-            Exporter reporting
+            {fr ? "Exporter reporting" : "Export reporting"}
           </Link>
         </div>
       </article>
 
-      <article className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+      <article className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 text-sm text-slate-700 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="font-semibold text-slate-900">
-            Mode operatoire benevole (web)
+            {fr ? "Mode opératoire bénévole (web)" : "Volunteer playbook (web)"}
           </p>
           <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-            Progression {progress}%
+            {fr ? "Progression" : "Progress"} {progress}%
           </p>
         </div>
         <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200 mb-4">
@@ -265,7 +290,11 @@ export function GuideSection() {
               onChange={() => toggleCheck("briefing")}
               className="mt-1 flex-shrink-0"
             />
-            <span className="font-medium text-slate-800">Briefing equipe, meteo et securite valides.</span>
+            <span className="font-medium text-slate-800">
+              {fr
+                ? "Briefing équipe, météo et sécurité validés."
+                : "Team, weather and safety briefing validated."}
+            </span>
           </li>
           <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
             <input
@@ -274,7 +303,11 @@ export function GuideSection() {
               onChange={() => toggleCheck("declaration")}
               className="mt-1 flex-shrink-0"
             />
-            <span className="font-medium text-slate-800">Declaration creee avec lieu, date, quantites.</span>
+            <span className="font-medium text-slate-800">
+              {fr
+                ? "Déclaration créée avec lieu, date, quantités."
+                : "Declaration created with place, date and quantities."}
+            </span>
           </li>
           <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
             <input
@@ -283,7 +316,11 @@ export function GuideSection() {
               onChange={() => toggleCheck("tracing")}
               className="mt-1 flex-shrink-0"
             />
-            <span className="font-medium text-slate-800">Trace ou polygone captures pour la zone nettoyee.</span>
+            <span className="font-medium text-slate-800">
+              {fr
+                ? "Trace ou polygone capturés pour la zone nettoyée."
+                : "Trace or polygon captured for the cleaned area."}
+            </span>
           </li>
           <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
             <input
@@ -292,7 +329,11 @@ export function GuideSection() {
               onChange={() => toggleCheck("moderation")}
               className="mt-1 flex-shrink-0"
             />
-            <span className="font-medium text-slate-800">Moderation suivie pour fiabiliser la donnee.</span>
+            <span className="font-medium text-slate-800">
+              {fr
+                ? "Modération suivie pour fiabiliser la donnée."
+                : "Moderation followed to make the data reliable."}
+            </span>
           </li>
           <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
             <input
@@ -302,7 +343,9 @@ export function GuideSection() {
               className="mt-1 flex-shrink-0"
             />
             <span className="font-medium text-slate-800">
-              Export CSV/JSON realise pour exploitation terrain/collectivites.
+              {fr
+                ? "Export CSV/JSON réalisé pour exploitation terrain/collectivités."
+                : "CSV/JSON export produced for field use and local authorities."}
             </span>
           </li>
         </ul>

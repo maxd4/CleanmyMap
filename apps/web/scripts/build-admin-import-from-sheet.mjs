@@ -4,6 +4,9 @@ import { fileURLToPath } from "node:url";
 import {
   computeButtsFromMegotsKg,
   createGeocodeResolver,
+  buildMidpointFromCoordinates,
+  buildRouteDrawingFromCoordinates,
+  buildRouteLocationLabel,
   findColumnIndex,
   fixMojibake,
   parseBooleanDropdown,
@@ -126,6 +129,49 @@ async function readAssociationOptions() {
     match = literalRegex.exec(block[1]);
   }
   return names;
+}
+
+function normalizeSheetText(raw) {
+  return fixMojibake(String(raw || "")).trim();
+}
+
+function serializeActionMeta(meta) {
+  const payload = {};
+  if (meta.associationName) {
+    payload.associationName = meta.associationName;
+  }
+  if (meta.placeType) {
+    payload.placeType = meta.placeType;
+  }
+  if (meta.departureLocationLabel) {
+    payload.departureLocationLabel = meta.departureLocationLabel;
+  }
+  if (meta.arrivalLocationLabel) {
+    payload.arrivalLocationLabel = meta.arrivalLocationLabel;
+  }
+  if (meta.routeStyle) {
+    payload.routeStyle = meta.routeStyle;
+  }
+  if (meta.routeAdjustmentMessage) {
+    payload.routeAdjustmentMessage = meta.routeAdjustmentMessage;
+  }
+  return Object.keys(payload).length > 0
+    ? `[cmm-meta]${JSON.stringify(payload)}`
+    : null;
+}
+
+function buildRouteNotes({ placeType, cleanPlaceFlag, megotsQuality }) {
+  const parts = [];
+  if (placeType) {
+    parts.push(`Type de lieu: ${placeType}`);
+  }
+  if (typeof cleanPlaceFlag === "boolean") {
+    parts.push(`Lieu propre: ${cleanPlaceFlag ? "oui" : "non"}`);
+  }
+  if (megotsQuality) {
+    parts.push(`Qualite megots: ${megotsQuality}`);
+  }
+  return parts.join(" | ");
 }
 
 function normalizeAssociation(associationName, enterpriseName, knownAssociations) {
@@ -259,6 +305,24 @@ async function main() {
       "coordo",
       "gps",
     ]),
+    departureLocationLabel: findColumnIndex(headers, [
+      "depart",
+      "départ",
+      "departure",
+      "origine",
+    ]),
+    arrivalLocationLabel: findColumnIndex(headers, [
+      "arrivee",
+      "arrivée",
+      "arrival",
+      "destination",
+    ]),
+    placeType: findColumnIndex(headers, [
+      "type de lieu",
+      "type du lieu",
+      "lieu type",
+      "place type",
+    ]),
     city: findColumnIndex(headers, ["city", "ville"]),
     latitude: findColumnIndex(headers, ["latitude", "lat"]),
     longitude: findColumnIndex(headers, ["longitude", "lng", "lon"]),
@@ -312,7 +376,7 @@ async function main() {
     actorName: findColumnIndex(headers, ["actor_name", "nom benevole", "acteur", "actor"]),
     status: findColumnIndex(headers, ["status", "statut"]),
     notes: findColumnIndex(headers, ["notes", "commentaire", "description"]),
-    type: findColumnIndex(headers, ["type"]),
+    legacyType: findColumnIndex(headers, ["type"]),
     cleanPlaces: findColumnIndex(headers, [
       "clean_place_label",
       "liste lieux propres",
@@ -327,8 +391,8 @@ async function main() {
     ]),
   };
 
-  if (index.actionDate < 0 || index.locationLabel < 0) {
-    throw new Error("Missing required columns: action_date and/or location_label");
+  if (index.actionDate < 0) {
+    throw new Error("Missing required columns: action_date/date");
   }
 
   const resolveGeocode = createGeocodeResolver({
@@ -343,21 +407,58 @@ async function main() {
 
   for (const row of dataRows) {
     const actionDate = parseIsoDateFlexible(row[index.actionDate]);
-    const locationLabel = fixMojibake(String(row[index.locationLabel] || ""));
+    const rawFallbackLocationLabel =
+      index.locationLabel >= 0 ? normalizeSheetText(row[index.locationLabel]) : "";
+    const departureLocationLabel =
+      index.departureLocationLabel >= 0
+        ? normalizeSheetText(row[index.departureLocationLabel])
+        : "";
+    const arrivalLocationLabel =
+      index.arrivalLocationLabel >= 0
+        ? normalizeSheetText(row[index.arrivalLocationLabel])
+        : "";
+    const locationLabel = buildRouteLocationLabel(
+      departureLocationLabel,
+      arrivalLocationLabel,
+      rawFallbackLocationLabel,
+    );
     if (!actionDate || !locationLabel) {
       skipped += 1;
       continue;
     }
 
-    let coordinates = { latitude: null, longitude: null };
+    let departureCoordinates = { latitude: null, longitude: null };
+    let arrivalCoordinates = { latitude: null, longitude: null };
     if (index.latitude >= 0 && index.longitude >= 0) {
-      coordinates = parseCoordinates(row[index.latitude], row[index.longitude]);
+      const parsed = parseCoordinates(row[index.latitude], row[index.longitude]);
+      departureCoordinates = parsed;
     }
-    if (coordinates.latitude === null || coordinates.longitude === null) {
-      coordinates = parseCoordsFromText(locationLabel);
+    if (
+      departureCoordinates.latitude === null ||
+      departureCoordinates.longitude === null
+    ) {
+      departureCoordinates = parseCoordsFromText(
+        departureLocationLabel || rawFallbackLocationLabel || locationLabel,
+      );
     }
-    if ((coordinates.latitude === null || coordinates.longitude === null) && geocodeEnabled) {
-      coordinates = await resolveGeocode(locationLabel);
+    if (arrivalLocationLabel) {
+      arrivalCoordinates = parseCoordsFromText(arrivalLocationLabel);
+      if (
+        (arrivalCoordinates.latitude === null ||
+          arrivalCoordinates.longitude === null) &&
+        geocodeEnabled
+      ) {
+        arrivalCoordinates = await resolveGeocode(arrivalLocationLabel);
+      }
+    }
+    if (
+      (departureCoordinates.latitude === null ||
+        departureCoordinates.longitude === null) &&
+      geocodeEnabled
+    ) {
+      departureCoordinates = await resolveGeocode(
+        departureLocationLabel || rawFallbackLocationLabel || locationLabel,
+      );
     }
 
     const associationNormalized = normalizeAssociation(
@@ -367,18 +468,71 @@ async function main() {
     );
     const associationName = associationNormalized.associationName ?? undefined;
 
-    const type = index.type >= 0 ? fixMojibake(String(row[index.type] || "")) : "";
+    const placeType =
+      index.placeType >= 0
+        ? normalizeSheetText(row[index.placeType])
+        : index.legacyType >= 0
+          ? normalizeSheetText(row[index.legacyType])
+          : "";
     const city = index.city >= 0 ? fixMojibake(String(row[index.city] || "")) : "";
     const rawNotes = index.notes >= 0 ? fixMojibake(String(row[index.notes] || "")) : "";
-    const systemNotes = [type ? `Type: ${type}` : "", city ? `City: ${city}` : ""]
+    const cleanPlaceFlag =
+      index.cleanPlaceFlag >= 0
+        ? parseBooleanDropdown(row[index.cleanPlaceFlag])
+        : false;
+    const megotsQuality =
+      index.megotsQuality >= 0 ? normalizeSheetText(row[index.megotsQuality]) : "";
+    const megotsKg =
+      index.megotsKg >= 0 ? toNumber(row[index.megotsKg], 0) : null;
+    const systemNotes = [
+      placeType ? `Type de lieu: ${placeType}` : "",
+      city ? `Ville: ${city}` : "",
+      index.cleanPlaceFlag >= 0
+        ? `Lieu propre: ${cleanPlaceFlag ? "oui" : "non"}`
+        : "",
+      megotsQuality ? `Qualité mégots: ${megotsQuality}` : "",
+    ]
       .filter(Boolean)
       .join(" | ");
     const associationFallbackNote = associationNormalized.originalAssociationName
       ? `Original association: ${associationNormalized.originalAssociationName}`
       : "";
     const notes =
-      [rawNotes, systemNotes, associationFallbackNote].filter(Boolean).join(" || ") ||
-      undefined;
+      [rawNotes, systemNotes, associationFallbackNote]
+        .filter(Boolean)
+        .join(" || ") || undefined;
+
+    const hasRoute = Boolean(departureLocationLabel && arrivalLocationLabel);
+    const routeStyle = hasRoute ? "souple" : null;
+    const routeDrawing =
+      hasRoute &&
+      departureCoordinates.latitude !== null &&
+      departureCoordinates.longitude !== null &&
+      arrivalCoordinates.latitude !== null &&
+      arrivalCoordinates.longitude !== null
+        ? buildRouteDrawingFromCoordinates(
+            departureCoordinates,
+            arrivalCoordinates,
+            routeStyle,
+          )
+        : null;
+    const representativeCoordinates =
+      hasRoute &&
+      departureCoordinates.latitude !== null &&
+      departureCoordinates.longitude !== null &&
+      arrivalCoordinates.latitude !== null &&
+      arrivalCoordinates.longitude !== null
+        ? buildMidpointFromCoordinates(
+            departureCoordinates,
+            arrivalCoordinates,
+          )
+        : departureCoordinates.latitude !== null &&
+            departureCoordinates.longitude !== null
+          ? departureCoordinates
+          : arrivalCoordinates.latitude !== null &&
+              arrivalCoordinates.longitude !== null
+            ? arrivalCoordinates
+            : { latitude: null, longitude: null };
 
     items.push({
       actorName:
@@ -388,8 +542,19 @@ async function main() {
       associationName,
       actionDate,
       locationLabel,
-      latitude: coordinates.latitude,
-      longitude: coordinates.longitude,
+      departureLocationLabel: departureLocationLabel || undefined,
+      arrivalLocationLabel: arrivalLocationLabel || undefined,
+      routeStyle: routeStyle ?? undefined,
+      routeAdjustmentMessage: hasRoute
+        ? "Itinéraire reconstitué depuis les colonnes Départ / Arrivée"
+        : undefined,
+      manualDrawing: routeDrawing ?? undefined,
+      placeType: placeType || undefined,
+      cleanPlaceFlag,
+      megotsKg,
+      megotsQuality: megotsQuality || undefined,
+      latitude: representativeCoordinates.latitude,
+      longitude: representativeCoordinates.longitude,
       wasteKg: Math.max(0, toNumber(index.wasteKg >= 0 ? row[index.wasteKg] : 0, 0)),
       cigaretteButts: Math.max(
         0,
@@ -427,7 +592,7 @@ async function main() {
     }
     if (
       index.cleanPlaceFlag >= 0 &&
-      parseBooleanDropdown(row[index.cleanPlaceFlag])
+      cleanPlaceFlag
     ) {
       cleanPlaceLabels.add(locationLabel);
     }
@@ -438,38 +603,31 @@ async function main() {
 
   const formLikeRows = [
     [
-      "actor_name",
-      "association_name",
-      "enterprise_name",
-      "action_date",
-      "location_label",
-      "latitude",
-      "longitude",
-      "waste_kg",
-      "cigarette_butts",
-      "volunteers_count",
-      "duration_minutes",
-      "notes",
-      "submission_mode",
-      "status",
+      "Départ",
+      "Arrivée",
+      "Lieu Propre ?",
+      "Association",
+      "Nombre de bénévoles",
+      "Durée (min)",
+      "Date",
+      "Type de Lieu",
+      "Déchets (kg)",
+      "Mégots (kg)",
+      "Qualité Mégots",
     ],
     ...items.map((item) => {
-      const associationSplit = splitEnterpriseAssociation(item.associationName ?? "");
       return [
-        item.actorName ?? "",
-        associationSplit.associationName,
-        associationSplit.enterpriseName,
-        item.actionDate,
-        item.locationLabel,
-        item.latitude ?? "",
-        item.longitude ?? "",
-        item.wasteKg,
-        item.cigaretteButts,
+        item.departureLocationLabel ?? item.locationLabel,
+        item.arrivalLocationLabel ?? "",
+        item.cleanPlaceFlag ? "Oui" : "",
+        item.associationName ?? "",
         item.volunteersCount,
         item.durationMinutes,
-        item.notes ?? "",
-        "complete",
-        item.status ?? "approved",
+        item.actionDate,
+        item.placeType ?? "",
+        item.wasteKg,
+        item.megotsKg ?? "",
+        item.megotsQuality ?? "",
       ];
     }),
   ];

@@ -68,21 +68,22 @@ Importer des historiques d'actions depuis Google Sheet sans passer par les formu
 Utiliser le template: `apps/web/data/raw/google-sheet-admin-template.csv`
 
 Colonnes:
-- `action_date` (YYYY-MM-DD, requis)
-- `location_label` (requis)
-- `city` (optionnel)
-- `latitude` (optionnel)
-- `longitude` (optionnel)
-- `waste_kg`
-- `cigarette_butts`
-- `volunteers_count`
-- `duration_minutes`
-- `association_name` (optionnel)
-- `enterprise_name` (optionnel, converti en `Entreprise - <Nom>`)
-- `actor_name` (optionnel)
-- `status` (`approved`/`pending`/`rejected`)
-- `notes` (optionnel)
-- `type` (optionnel, copié en notes système)
+- `Depart` (requis avec `Arrivee`, sert à reconstituer le trajet)
+- `Arrivee` (requis avec `Depart` pour les parcours)
+- `Lieu Propre ?` (optionnel, oui/non)
+- `Association`
+- `Nombre de benevoles`
+- `Duree (min)`
+- `Date` (YYYY-MM-DD ou `DD/MM/YYYY`, requis)
+- `Type de Lieu`
+- `Dechets (kg)`
+- `Megots (kg)`
+- `Qualite Megots`
+
+Le builder conserve aussi une compatibilite retroactive avec les anciennes colonnes
+`action_date`, `location_label`, `latitude`, `longitude`, `cigarette_butts`,
+`volunteers_count`, `duration_minutes`, `association_name`, `enterprise_name`,
+`actor_name`, `status`, `notes` et `type`.
 
 ## Générer un payload JSON d'import admin
 Depuis la racine du repo:
@@ -106,18 +107,23 @@ npm --prefix apps/web run data:sheet:build-import -- --geocode
 Sorties:
 - CSV brut récupéré: `apps/web/data/raw/google-sheet-admin-actions.csv`
 - Payload admin prêt à l'emploi: `apps/web/data/raw/google-sheet-admin-import.json`
-- CSV "mode formulaire web": `apps/web/data/raw/google-sheet-form-like.csv`
+- CSV "mode formulaire web" aligne sur la nouvelle structure du sheet: `apps/web/data/raw/google-sheet-form-like.csv`
 - Payload lieux propres: `apps/web/data/raw/google-sheet-clean-places-import.json`
 - CSV lieux propres (logique `clean_place`): `apps/web/data/raw/google-sheet-clean-places-form-like.csv`
 
 ## Import vers le backend admin
-Le payload généré est compatible avec `/api/actions/import` (dry-run puis confirmation).
+Le payload généré est compatible avec `/api/actions/import` (dry-run puis confirmation)
+et conserve les métadonnees de trajet dans `notes` pour que la carte puisse
+reconstruire une polyline lorsqu'un trajet Depart/Arrivee est present.
 
 Remarque:
 - `association_name` est persisté avec la même normalisation que le formulaire.
 - Pour les lignes entreprise: renseigner `enterprise_name` pour éviter de fusionner tous les cas RSE.
 - Les associations hors référentiel sont automatiquement rabattues sur `Action spontanee` avec traçabilité dans `notes` (`Original association: ...`).
 - La colonne `liste lieux propres` est traitée séparément et exportée en objets `clean_place` (logique site dédiée, distincte des actions).
+- Les trajets `Depart / Arrivee` sont géocodés puis stockés avec une géométrie
+  de ligne dans les notes techniques, ce qui permet d'afficher les actions sur la
+  carte du site meme sans colonnes lat/lon dans le sheet.
 
 ## Sync direct vers Supabase (carte web)
 Commande unique (rebuild depuis Google Sheet + import en base):

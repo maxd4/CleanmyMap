@@ -50,7 +50,7 @@ export type NavigationSpace = {
 };
 
 const SPACE_DEFINITIONS: Record<NavigationBlockId, NavigationSpaceMeta> = {
-  home:      { id: "home",      label: { fr: "Page d'accueil", en: "Home" },         icon: "🏠", color: "text-slate-600" },
+  home:      { id: "home",      label: { fr: "Accueil", en: "Home" },                icon: "🏠", color: "text-slate-600" },
   act:       { id: "act",       label: { fr: "Agir",           en: "Act" },           icon: "⚡", color: "text-amber-600" },
   visualize: { id: "visualize", label: { fr: "Visualiser",     en: "Visualize" },     icon: "🗺️", color: "text-sky-600"  },
   impact:    { id: "impact",    label: { fr: "Impact",         en: "Impact" },        icon: "📊", color: "text-emerald-600" },
@@ -100,6 +100,7 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "dashboard",
   "guide",
   "kit",
+  "sandbox",
   "community",
   "messagerie",
   "annuaire",
@@ -119,18 +120,19 @@ const SIMPLIFIE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "history",
   "guide",
   "dashboard",
+  "sandbox",
   "community",
   "messagerie",
   "annuaire",
   "admin",
 ]);
 
-// Source de verite navigation: profil -> espaces -> pages.
+// Source de vérité navigation: profil -> espaces -> pages.
 const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   benevole: {
     home: ["dashboard", "profile", "new"],
     act: ["route", "trash-spotter"],
-    visualize: ["map"],
+    visualize: ["map", "sandbox"],
     impact: ["reports", "gamification"],
     network: ["network", "community", "messagerie", "annuaire", "open-data", "funding", "actors"],
     learn: ["hub", "climate", "guide", "recycling", "kit"],
@@ -139,7 +141,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   coordinateur: {
     home: ["dashboard", "profile", "new"],
     act: ["route", "trash-spotter"],
-    visualize: ["map", "weather"],
+    visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
     network: ["community", "messagerie", "annuaire", "open-data", "funding", "actors"],
     learn: ["hub", "climate", "guide", "recycling", "kit"],
@@ -148,7 +150,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   scientifique: {
     home: ["dashboard", "profile", "new"],
     act: ["route", "trash-spotter"],
-    visualize: ["map", "weather"],
+    visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
     network: ["community", "messagerie", "annuaire", "open-data", "funding", "actors"],
     learn: ["hub", "climate", "guide", "recycling", "kit"],
@@ -157,7 +159,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   elu: {
     home: ["dashboard", "profile", "new"],
     act: ["route", "trash-spotter"],
-    visualize: ["map", "weather"],
+    visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
     network: ["network", "community", "messagerie", "annuaire", "open-data", "funding", "actors"],
     learn: ["hub", "climate", "guide", "recycling", "kit"],
@@ -166,7 +168,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   admin: {
     home: ["dashboard", "profile", "new"],
     act: ["route", "trash-spotter"],
-    visualize: ["map", "weather"],
+    visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
     network: ["network", "community", "messagerie", "annuaire", "open-data", "funding", "actors"],
     learn: ["hub", "climate", "guide", "recycling", "kit"],
@@ -188,6 +190,37 @@ function toNavItem(rubrique: Rubrique): NavigationItem {
   };
 }
 
+export function getPilotFallbackItems(locale: Locale): NavigationItem[] {
+  const fallbackRouteIds: RouteId[] = ["dashboard", "reports"];
+  return fallbackRouteIds
+    .map((routeId) => RUBRIQUE_BY_ID.get(routeId))
+    .filter((rubrique): rubrique is Rubrique => Boolean(rubrique))
+    .map((rubrique) => toNavItem(rubrique))
+    .map((item) => ({
+      ...item,
+      description: {
+        fr:
+          item.routeId === "dashboard"
+            ? "Vue synthèse du pilotage"
+            : "Synthèse d'impact, exports et contrôle",
+        en:
+          item.routeId === "dashboard"
+            ? "Operational overview"
+            : "Impact synthesis, exports and control",
+      },
+      label: {
+        fr:
+          item.routeId === "dashboard"
+            ? "Tableau de bord"
+            : "Rapports d'impact",
+        en:
+          item.routeId === "dashboard"
+            ? "Dashboard"
+            : "Impact reports",
+      },
+    }));
+}
+
 function isRouteAllowedByDisplayMode(
   routeId: RouteId,
   displayMode: DisplayMode,
@@ -206,7 +239,7 @@ function getDisplayModeLabel(displayMode: DisplayMode, locale: Locale): string {
     return locale === "fr" ? "mode sobre" : "calm mode";
   }
   if (displayMode === "simplifie") {
-    return locale === "fr" ? "mode simplifie" : "simplified mode";
+    return locale === "fr" ? "mode simplifié" : "simplified mode";
   }
   return locale === "fr" ? "mode exhaustif" : "exhaustive mode";
 }
@@ -353,7 +386,7 @@ export function getNavigationLabels(
       locale === "fr" ? "Navigation en 7 blocs" : "7-block navigation",
     summary:
       locale === "fr"
-        ? `${rubriqueCount} pages operationnelles pour ${profileLabel} (${spaceCount} blocs, ${displayModeLabel})`
+        ? `${rubriqueCount} pages opérationnelles pour ${profileLabel} (${spaceCount} blocs, ${displayModeLabel})`
         : `${rubriqueCount} operational pages for ${profileLabel} (${spaceCount} blocks, ${displayModeLabel})`,
   };
 }

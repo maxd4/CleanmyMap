@@ -7,6 +7,7 @@ describe("proxy protected routes", () => {
       "/admin(.*)",
       "/actions(.*)",
       "/api/community(.*)",
+      "/api/account(.*)",
       "/api/pilotage(.*)",
       "/api/recycling(.*)",
       "/api/route(.*)",

@@ -3,6 +3,7 @@ import {
   getNavigationLabels,
   getNavigationProfileOverview,
   getNavigationSpacesForProfile,
+  getPilotFallbackItems,
   getProfileNavigationEntries,
 } from "./navigation";
 
@@ -57,7 +58,7 @@ describe("navigation display modes", () => {
       isAdmin: false,
       displayMode: "simplifie",
     });
-    expect(labels.summary).toContain("mode simplifie");
+    expect(labels.summary).toContain("mode simplifié");
   });
 
   it("keeps the 7-block product order", () => {
@@ -88,6 +89,17 @@ describe("navigation display modes", () => {
       "learn",
       "pilot",
     ]);
+  });
+
+  it("provides fallback pilot items for empty pilot blocks", () => {
+    const fallback = getPilotFallbackItems("fr");
+
+    expect(fallback.map((item) => item.routeId)).toEqual([
+      "dashboard",
+      "reports",
+    ]);
+    expect(fallback[0]?.label.fr).toBe("Tableau de bord");
+    expect(fallback[1]?.label.fr).toBe("Rapports d'impact");
   });
 
   it("limits profile switch entries to active profile for non-admin users", () => {

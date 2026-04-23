@@ -2,6 +2,7 @@ import type { ActionDrawing } from "@/lib/actions/types";
 import { stripEventRefFromNotes } from "./event-link";
 
 export const DRAWING_NOTE_PREFIX = "[DRAWING_GEOJSON]";
+const INGESTION_SYNC_MARKER = "[google-sheet-sync]";
 
 export type ParsedDrawingNotes = {
   cleanNotes: string | null;
@@ -57,17 +58,25 @@ export function parseDrawingFromNotes(
     return { cleanNotes: null, manualDrawing: null, drawingJson: null };
   }
 
-  const markerIndex = raw.lastIndexOf(DRAWING_NOTE_PREFIX);
+  const lines = raw.split(/\r?\n/);
+  while (
+    lines.length > 0 &&
+    lines[lines.length - 1].trim() === INGESTION_SYNC_MARKER
+  ) {
+    lines.pop();
+  }
+  const normalizedRaw = lines.join("\n").trim();
+  const markerIndex = normalizedRaw.lastIndexOf(DRAWING_NOTE_PREFIX);
   if (markerIndex < 0) {
     return {
-      cleanNotes: stripEventRefFromNotes(raw),
+      cleanNotes: stripEventRefFromNotes(normalizedRaw),
       manualDrawing: null,
       drawingJson: null,
     };
   }
 
-  const body = raw.slice(0, markerIndex).trim();
-  const drawingJson = raw
+  const body = normalizedRaw.slice(0, markerIndex).trim();
+  const drawingJson = normalizedRaw
     .slice(markerIndex + DRAWING_NOTE_PREFIX.length)
     .trim();
   if (!drawingJson) {

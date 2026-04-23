@@ -6,6 +6,7 @@ import type {
   ActionSubmissionMode,
   ActionWasteBreakdown,
 } from "@/lib/actions/types";
+import type { ReportScopeChoice, ReportScopeKind } from "@/lib/reports/scope";
 import type {
   ModerationActionStatus,
   ModerationCleanPlaceStatus,
@@ -63,12 +64,21 @@ export type AdminWorkflowController = {
   status: ActionStatus | "all";
   days: number;
   limit: number;
+  scopeKind: ReportScopeKind;
+  scopeValue: string;
   association: string | "all";
   setStatus: Dispatch<SetStateAction<ActionStatus | "all">>;
   setDays: Dispatch<SetStateAction<number>>;
   setLimit: Dispatch<SetStateAction<number>>;
+  setScopeKind: Dispatch<SetStateAction<ReportScopeKind>>;
+  setScopeValue: Dispatch<SetStateAction<string>>;
   setAssociation: Dispatch<SetStateAction<string | "all">>;
   associationOptions: string[];
+  scopeOptions: {
+    accounts: ReportScopeChoice[];
+    associations: ReportScopeChoice[];
+    arrondissements: ReportScopeChoice[];
+  };
 
   csvState: AsyncState;
   jsonState: AsyncState;

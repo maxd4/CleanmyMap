@@ -1,11 +1,57 @@
+import { auth } from "@clerk/nextjs/server";
 import { ActionsHistoryList } from "@/components/actions/actions-history-list";
 import { DecisionPageHeader } from "@/components/ui/decision-page-header";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 
-export default function ActionsHistoryPage() {
+export default async function ActionsHistoryPage() {
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
+  const { userId } = await auth();
+
+  if (!userId) {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="blur"
+        title="Historique des actions"
+        description="Cette fonctionnalité nécessite une connexion Clerk."
+        lockedPreview={
+          <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+            <div className="grid gap-3 md:grid-cols-3">
+              <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Qualité
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  Score et grade se déverrouillent après connexion.
+                </p>
+              </article>
+              <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Corrections
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  Les lignes à corriger restent cachées tant que tu n'es pas connecté.
+                </p>
+              </article>
+              <article className="rounded-2xl border border-slate-200 bg-white p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Traçabilité
+                </p>
+                <p className="mt-2 text-sm text-slate-600">
+                  La méthode complète s'affiche après connexion.
+                </p>
+              </article>
+            </div>
+          </section>
+        }
+      >
+        <div />
+      </ClerkRequiredGate>
+    );
+  }
 
   if (pageTemplateV2Enabled) {
     return (
@@ -97,7 +143,7 @@ export default function ActionsHistoryPage() {
               fraîcheur). Périmètre: /actions/history.
             </p>
             <div className="pt-1">
-              <RubriquePdfExportButton rubriqueTitle="Historique benevole" />
+              <RubriquePdfExportButton rubriqueTitle="Historique bénévole" />
             </div>
           </div>
         }
@@ -109,12 +155,12 @@ export default function ActionsHistoryPage() {
     <div data-rubrique-report-root className="space-y-4">
       <DecisionPageHeader
         context="Profil supervision"
-        title="Historique benevole"
-        objective="Identifier les fiches a corriger en priorite et fiabiliser les donnees historisees."
+        title="Historique bénévole"
+        objective="Identifier les fiches à corriger en priorité et fiabiliser les données historisées."
         actions={[
           {
             href: "/actions/new",
-            label: "Nouvelle declaration",
+            label: "Nouvelle déclaration",
             tone: "primary",
           },
           { href: "/reports", label: "Ouvrir reporting" },
@@ -126,7 +172,7 @@ export default function ActionsHistoryPage() {
           Tracer
         </p>
         <div className="mt-2">
-          <RubriquePdfExportButton rubriqueTitle="Historique benevole" />
+          <RubriquePdfExportButton rubriqueTitle="Historique bénévole" />
         </div>
       </section>
 

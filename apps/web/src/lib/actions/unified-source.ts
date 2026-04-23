@@ -33,6 +33,7 @@ export type UnifiedSourceHealth = {
 type SpotRow = {
   id: string;
   created_at: string;
+  created_by_clerk_id?: string | null;
   label: string;
   waste_type: string | null;
   latitude: number | null;
@@ -49,6 +50,7 @@ function toActionContractFromRow(row: StoredAction): ActionDataContract {
     type: "action",
     status: row.status,
     source: "actions",
+    createdByClerkId: row.created_by_clerk_id,
     observedAt: row.action_date,
     createdAt: row.created_at,
     locationLabel: row.location_label,
@@ -60,6 +62,11 @@ function toActionContractFromRow(row: StoredAction): ActionDataContract {
     durationMinutes: row.duration_minutes,
     actorName: row.actor_name,
     associationName: parsedMetadata.associationName,
+    placeType: parsedMetadata.placeType,
+    departureLocationLabel: parsedMetadata.departureLocationLabel,
+    arrivalLocationLabel: parsedMetadata.arrivalLocationLabel,
+    routeStyle: parsedMetadata.routeStyle,
+    routeAdjustmentMessage: parsedMetadata.routeAdjustmentMessage,
     notes: parsedMetadata.cleanNotes,
     notesPlain: parsedMetadata.cleanNotes,
     submissionMode: parsedMetadata.submissionMode,
@@ -106,6 +113,7 @@ function toSpotContractFromRow(row: SpotRow): ActionDataContract {
     type: mapSpotWasteTypeToEntityType(row.waste_type),
     status: mapSpotStatusToActionStatus(row.status),
     source: "spots",
+    createdByClerkId: row.created_by_clerk_id,
     observedAt: row.created_at,
     createdAt: row.created_at,
     locationLabel: row.label,

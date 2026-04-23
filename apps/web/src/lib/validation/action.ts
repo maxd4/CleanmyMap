@@ -38,6 +38,42 @@ const wasteBreakdownSchema = z.object({
   triQuality: z.enum(["faible", "moyenne", "elevee"]).optional(),
 });
 
+const photoAssetSchema = z.object({
+  id: z.string().min(1).max(120),
+  name: z.string().min(1).max(200),
+  mimeType: z.string().min(1).max(80),
+  size: z.number().int().min(0).max(25_000_000),
+  width: z.number().int().min(0).max(20_000).nullable().optional(),
+  height: z.number().int().min(0).max(20_000).nullable().optional(),
+  dataUrl: z.string().min(8).max(10_000_000),
+});
+
+const visionEstimateSchema = z.object({
+  modelVersion: z.string().min(1).max(80),
+  source: z.enum(["heuristic", "hybrid", "vision"]),
+  provisional: z.boolean(),
+  bagsCount: z.object({
+    value: z.number().int().min(0).max(1000),
+    confidence: z.number().min(0).max(1),
+    interval: z.tuple([z.number(), z.number()]).nullable().optional(),
+  }),
+  fillLevel: z.object({
+    value: z.number().min(0).max(100),
+    confidence: z.number().min(0).max(1),
+    interval: z.tuple([z.number(), z.number()]).nullable().optional(),
+  }),
+  density: z.object({
+    value: z.enum(["sec", "humide_dense", "mouille"]),
+    confidence: z.number().min(0).max(1),
+    interval: z.tuple([z.number(), z.number()]).nullable().optional(),
+  }),
+  wasteKg: z.object({
+    value: z.number().min(0).max(100000),
+    confidence: z.number().min(0).max(1),
+    interval: z.tuple([z.number(), z.number()]).nullable().optional(),
+  }),
+});
+
 const associationNameSchema = z
   .string()
   .min(1)
@@ -50,6 +86,10 @@ const createActionLegacySchema = z.object({
   placeType: z.string().max(80).optional(),
   actionDate: z.string().date(),
   locationLabel: z.string().min(2).max(200),
+  departureLocationLabel: z.string().min(2).max(200).optional(),
+  arrivalLocationLabel: z.string().min(2).max(200).optional(),
+  routeStyle: z.enum(["direct", "souple"]).optional(),
+  routeAdjustmentMessage: z.string().max(500).optional(),
   latitude: z.number().min(-90).max(90).optional(),
   longitude: z.number().min(-180).max(180).optional(),
   wasteKg: z.number().min(0).max(100000),
@@ -65,6 +105,8 @@ const createActionLegacySchema = z.object({
   manualDrawing: manualDrawingSchema.optional(),
   submissionMode: z.enum(["quick", "complete"]).optional(),
   wasteBreakdown: wasteBreakdownSchema.optional(),
+  photos: z.array(photoAssetSchema).max(3).optional(),
+  visionEstimate: visionEstimateSchema.nullable().optional(),
 });
 
 const createActionContractSchema = z.object({
@@ -75,6 +117,10 @@ const createActionContractSchema = z.object({
     latitude: z.number().min(-90).max(90).optional(),
     longitude: z.number().min(-180).max(180).optional(),
   }),
+  departureLocationLabel: z.string().min(2).max(200).optional(),
+  arrivalLocationLabel: z.string().min(2).max(200).optional(),
+  routeStyle: z.enum(["direct", "souple"]).optional(),
+  routeAdjustmentMessage: z.string().max(500).optional(),
   geometry: manualDrawingSchema.optional(),
   dates: z.object({
     observedAt: z.string().date(),
@@ -93,8 +139,12 @@ const createActionContractSchema = z.object({
       .max(24 * 60)
       .optional(),
     notes: z.string().max(1000).optional(),
+    routeStyle: z.enum(["direct", "souple"]).optional(),
+    routeAdjustmentMessage: z.string().max(500).optional(),
     submissionMode: z.enum(["quick", "complete"]).optional(),
     wasteBreakdown: wasteBreakdownSchema.optional(),
+    photos: z.array(photoAssetSchema).max(3).optional(),
+    visionEstimate: visionEstimateSchema.nullable().optional(),
   }),
 });
 

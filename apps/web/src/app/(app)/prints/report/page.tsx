@@ -1,9 +1,11 @@
+import { auth } from "@clerk/nextjs/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
 import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
 import { Shell } from "lucide-react";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 
 async function loadFullAuditData() {
   const supabase = getSupabaseServerClient();
@@ -23,6 +25,44 @@ async function loadFullAuditData() {
 }
 
 export default async function PrintReportPage() {
+  const { userId } = await auth();
+  if (!userId) {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="blur"
+        title="Rapport imprimable"
+        description="Cette fonctionnalité nécessite une connexion Clerk."
+        lockedPreview={
+          <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+            <div className="grid gap-3 md:grid-cols-4">
+              {[
+                "Masse récoltée",
+                "Bénévoles",
+                "Score qualité",
+                "Zones couvertes",
+              ].map((label) => (
+                <article
+                  key={label}
+                  className="rounded-2xl border border-slate-200 bg-white p-4"
+                >
+                  <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+                  <p className="mt-2 text-lg font-semibold text-slate-900">n/a</p>
+                </article>
+              ))}
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+              Le rapport complet, les exportations et la méthodologie détaillée
+              se déverrouillent après connexion.
+            </div>
+          </section>
+        }
+      >
+        <div />
+      </ClerkRequiredGate>
+    );
+  }
+
   const data = await loadFullAuditData().catch(() => null);
   const overview = data?.overview;
   const monthlyData = data ? aggregateMonthlyAnalytics(data.contracts) : [];

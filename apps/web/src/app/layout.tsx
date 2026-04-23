@@ -6,6 +6,7 @@ import {
 } from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Link from "next/link";
 import type { Metadata } from "next";
 import { AccountIdentityChip } from "@/components/account/account-identity-chip";
 import { PostHogProvider } from "@/components/posthog-provider";
@@ -16,6 +17,7 @@ import { SitePreferencesProvider } from "@/components/ui/site-preferences-provid
 import { NotificationBell } from "@/components/navigation/notification-bell";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
+import { getServerDisplayModePreference } from "@/lib/server-preferences";
 import { metadata as appMetadata } from "@/lib/metadata";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
@@ -32,11 +34,15 @@ export default async function RootLayout({
 }>) {
   const identity = await getCurrentUserIdentity();
   const clerkRuntime = getClerkRuntimeConfig();
+  const displayModePreference = await getServerDisplayModePreference();
 
   return (
     <html className="h-full antialiased" suppressHydrationWarning>
       <body className="min-h-full bg-background text-foreground font-sans">
-        <SitePreferencesProvider>
+        <SitePreferencesProvider
+          initialDisplayMode={displayModePreference.displayMode}
+          initialDisplayModeExplicit={displayModePreference.isExplicit}
+        >
           <ClerkLocalizationProvider
             signInUrl="/sign-in"
             signUpUrl="/sign-up"
@@ -54,11 +60,17 @@ export default async function RootLayout({
                 <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-8">
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-12 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-black text-[10px] shadow-lg shadow-emerald-600/20">CMM</div>
-                    <h1 className="text-sm font-bold tracking-tight text-slate-900 dark:text-white uppercase">
-                      CleanmyMap
+                    <h1 className="whitespace-nowrap text-[11px] font-bold tracking-[0.18em] text-slate-900 dark:text-white uppercase sm:text-sm">
+                      Agir-Cartographier-Préserver
                     </h1>
                   </div>
                   <div className="flex items-center gap-4">
+                    <Link
+                      href="/explorer"
+                      className="hidden rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 sm:inline-flex"
+                    >
+                      Explorer
+                    </Link>
                     <SitePreferencesControls />
                     <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
                     <Show when="signed-out">

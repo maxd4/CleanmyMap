@@ -21,7 +21,7 @@ export function ActionDeclarationCommonFields({
   return (
     <>
       <label className="flex flex-col gap-2 text-sm text-slate-700">
-        Identite benevole (compte)
+        Nom / prénom ou compte
         <select
           className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
           value={form.actorName}
@@ -34,13 +34,13 @@ export function ActionDeclarationCommonFields({
           ))}
         </select>
         <p className="text-xs text-slate-500">
-          Selection issue du compte Clerk (prenom/pseudo). Aucune saisie libre
-          non tracee.
+          Sélection issue du compte Clerk (prénom/pseudo). Aucune saisie libre
+          non tracée.
         </p>
       </label>
 
       <label className="flex flex-col gap-2 text-sm text-slate-700">
-        Association / cadre d&apos;engagement *
+        Structure / cadre d&apos;engagement *
         <select
           required
           className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
@@ -54,14 +54,14 @@ export function ActionDeclarationCommonFields({
           ))}
         </select>
         <p className="text-xs text-slate-500">
-          Liste normalisee issue de l&apos;historique Cleanwalk Paris, pour des
-          exports et classements homogenes.
+          Liste normalisée issue de l&apos;historique Cleanwalk Paris, pour des
+          exports et classements homogènes.
         </p>
       </label>
 
       {isEntrepriseMode ? (
         <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Nom de l&apos;entreprise *
+          Nom de la structure *
           <input
             required
             className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
@@ -72,7 +72,7 @@ export function ActionDeclarationCommonFields({
             maxLength={100}
           />
           <p className="text-xs text-slate-500">
-            Le rapport enregistrera cette valeur comme: Entreprise - Nom.
+            Le rapport enregistrera cette valeur comme : Structure - Nom.
           </p>
         </label>
       ) : null}
@@ -88,12 +88,12 @@ export function ActionDeclarationCommonFields({
       </label>
 
       <label className="md:col-span-2 flex flex-col gap-2 text-sm text-slate-700">
-        Emplacement (adresse ou libelle) *
+        Emplacement (adresse ou libellé) *
         <input
           className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
           value={form.locationLabel}
           onChange={(event) => updateField("locationLabel", event.target.value)}
-          placeholder="Ex: Place de la Republique, Paris"
+          placeholder="Ex: Place de la République, Paris"
           minLength={2}
           maxLength={200}
         />

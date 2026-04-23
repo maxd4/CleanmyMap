@@ -29,9 +29,9 @@ type Props = {
 export function GamificationImpactMethodologyCard({ methodology }: Props) {
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-      <p className="text-xs uppercase tracking-wide text-slate-500">Methodologie</p>
+      <p className="text-xs uppercase tracking-wide text-slate-500">Méthodologie</p>
       <p className="mt-1 text-sm text-slate-700">
-        Proxy {methodology.proxyVersion} | Qualite {methodology.qualityRulesVersion}
+        Proxy {methodology.proxyVersion} | Qualité {methodology.qualityRulesVersion}
       </p>
       <p className="mt-1 text-xs text-slate-600">{methodology.scope}</p>
       <p className="mt-2 text-sm text-slate-700">
@@ -83,9 +83,9 @@ export function GamificationImpactMethodologyCard({ methodology }: Props) {
               Marges d&apos;erreur indicatives
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-slate-700">
-              <li>Eau sauvee: +/- {methodology.errorMargins.waterSavedLitersPct}%</li>
-              <li>CO2 evite: +/- {methodology.errorMargins.co2AvoidedKgPct}%</li>
-              <li>Surface nettoyee: +/- {methodology.errorMargins.surfaceCleanedM2Pct}%</li>
+              <li>Eau sauvée: +/- {methodology.errorMargins.waterSavedLitersPct}%</li>
+              <li>CO2 évité: +/- {methodology.errorMargins.co2AvoidedKgPct}%</li>
+              <li>Surface nettoyée: +/- {methodology.errorMargins.surfaceCleanedM2Pct}%</li>
               <li>
                 Score pollution moyen: +/-{" "}
                 {methodology.errorMargins.pollutionScoreMeanPoints} points
@@ -110,4 +110,3 @@ export function GamificationImpactMethodologyCard({ methodology }: Props) {
     </div>
   );
 }
-

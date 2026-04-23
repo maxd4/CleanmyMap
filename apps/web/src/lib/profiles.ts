@@ -2,7 +2,7 @@ import type { Locale } from "@/lib/ui/preferences";
 import type { RubriqueSpaceId } from "@/lib/sections-registry";
 import type { Parcours, Role, SessionRole } from "@/lib/domain-language";
 
-// Alias legacy conserves pour compatibilite; vocabulaire canonique: Role/Parcours/SessionRole.
+// Alias legacy conservés pour compatibilité; vocabulaire canonique: Role/Parcours/SessionRole.
 export type AppProfile = Parcours;
 export type AppRoleLabel = SessionRole;
 
@@ -35,19 +35,27 @@ export const PROFILE_ORDER: AppProfile[] = [
   "admin",
 ];
 
+export const SELF_SERVICE_PROFILE_ORDER = [
+  "benevole",
+  "coordinateur",
+  "scientifique",
+] as const satisfies readonly AppProfile[];
+
+export type SelfServiceProfile = (typeof SELF_SERVICE_PROFILE_ORDER)[number];
+
 export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   benevole: {
     id: "benevole",
     label: { fr: "Bénévole", en: "Volunteer" },
     subtitle: {
-      fr: "Declaration terrain et suivi local",
+      fr: "Déclaration terrain et suivi local",
       en: "Field declaration and local follow-up",
     },
     spacePriority: { execute: 1, supervise: 2, decide: 3, prepare: 4 },
   },
   coordinateur: {
     id: "coordinateur",
-    label: { fr: "Coordinateur", en: "Coordinator" },
+    label: { fr: "Coordination", en: "Coordination" },
     subtitle: {
       fr: "Organisation des actions collectives",
       en: "Collective action coordination",
@@ -58,14 +66,14 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
     id: "scientifique",
     label: { fr: "Scientifique", en: "Scientist" },
     subtitle: {
-      fr: "Analyse des donnees et evidence statistique",
+      fr: "Analyse des données et évidence statistique",
       en: "Data analysis and statistical evidence",
     },
     spacePriority: { decide: 1, supervise: 2, prepare: 3, execute: 4 },
   },
   elu: {
     id: "elu",
-    label: { fr: "Décideur", en: "Decision maker" },
+    label: { fr: "Autorité locale", en: "Local authority" },
     subtitle: {
       fr: "Pilotage institutionnel et décisionnel",
       en: "Institutional and decision oversight",
@@ -74,9 +82,9 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
   },
   admin: {
     id: "admin",
-    label: { fr: "Admin", en: "Admin" },
+    label: { fr: "Administration", en: "Administration" },
     subtitle: {
-      fr: "Moderation et supervision",
+      fr: "Modération et supervision",
       en: "Moderation and supervision",
     },
     spacePriority: { supervise: 1, execute: 2, decide: 3, prepare: 4 },
@@ -120,9 +128,9 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     secondaryCTA: {
       href: "/actions/map",
-      label: { fr: "Verifier la carte", en: "Check map" },
+      label: { fr: "Vérifier la carte", en: "Check map" },
       description: {
-        fr: "Confirmer la priorite terrain autour de vous",
+        fr: "Confirmer la priorité terrain autour de vous",
         en: "Confirm nearby field priorities",
       },
     },
@@ -131,7 +139,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         href: "/actions/history",
         label: { fr: "Historique", en: "History" },
         description: {
-          fr: "Suivre les actions validees",
+          fr: "Suivre les actions validées",
           en: "Track validated actions",
         },
       },
@@ -161,7 +169,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       href: "/dashboard",
       label: { fr: "Suivre le cockpit", en: "Open cockpit" },
       description: {
-        fr: "Voir les alertes et priorites du jour",
+        fr: "Voir les alertes et priorités du jour",
         en: "See daily alerts and priorities",
       },
     },
@@ -170,7 +178,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         href: "/reports",
         label: { fr: "Consulter les rapports", en: "Open reports" },
         description: {
-          fr: "Synthese exportable multi-horizon",
+          fr: "Synthèse exportable multi-horizon",
           en: "Exportable multi-horizon synthesis",
         },
       },
@@ -181,7 +189,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       href: "/reports",
       label: { fr: "Analyser les indicateurs", en: "Analyze indicators" },
       description: {
-        fr: "Consolider les tendances et KPI utiles a la decision",
+        fr: "Consolider les tendances et KPI utiles à la décision",
         en: "Consolidate trends and decision-grade KPIs",
       },
     },
@@ -189,7 +197,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       href: "/sections/climate",
       label: { fr: "Lire le contexte durable", en: "Open sustainability context" },
       description: {
-        fr: "Croiser impact local, ODD et limites planetaires",
+        fr: "Croiser impact local, ODD et limites planétaires",
         en: "Cross local impact with SDGs and boundaries",
       },
     },
@@ -201,7 +209,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
           en: "Cross-check climate context",
         },
         description: {
-          fr: "Ajouter les signaux meteo-climat a l'analyse",
+          fr: "Ajouter les signaux météo-climat à l'analyse",
           en: "Add weather-climate signals to analysis",
         },
       },
@@ -226,7 +234,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         en: "Open reports",
       },
       description: {
-        fr: "Lecture synthetique des indicateurs",
+        fr: "Lecture synthétique des indicateurs",
         en: "Read synthesized indicators",
       },
     },
@@ -235,7 +243,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         href: "/actions/map",
         label: { fr: "Priorisation terrain", en: "Territorial prioritization" },
         description: {
-          fr: "Voir les zones a traiter en priorite",
+          fr: "Voir les zones à traiter en priorité",
           en: "View top zones to address",
         },
       },
@@ -243,7 +251,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         href: "/sections/climate",
         label: { fr: "Développement durable", en: "Sustainability" },
         description: {
-          fr: "Lecture territoriale comparee integree",
+          fr: "Lecture territoriale comparée intégrée",
           en: "Integrated cross-area reading",
         },
       },
@@ -257,15 +265,15 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         en: "Process critical backlog",
       },
       description: {
-        fr: "Prioriser moderation/imports sensibles",
+        fr: "Prioriser modération/imports sensibles",
         en: "Prioritize moderation and sensitive imports",
       },
     },
     secondaryCTA: {
       href: "/reports",
-      label: { fr: "Exporter les donnees", en: "Export data" },
+      label: { fr: "Exporter les données", en: "Export data" },
       description: {
-        fr: "CSV/JSON et suivi des operations",
+        fr: "CSV/JSON et suivi des opérations",
         en: "CSV/JSON and operations tracking",
       },
     },
@@ -280,9 +288,9 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       },
       {
         href: "/dashboard",
-        label: { fr: "Verifier l'etat systeme", en: "Check system health" },
+        label: { fr: "Vérifier l'état système", en: "Check system health" },
         description: {
-          fr: "Integrations et uptime",
+          fr: "Intégrations et uptime",
           en: "Integrations and uptime",
         },
       },
@@ -319,6 +327,25 @@ export function toProfile(role: AppRoleLabel): AppProfile {
 
 export function getProfileEntryPath(profile: AppProfile): string {
   return `/profil/${profile}`;
+}
+
+export function isSelfServiceProfile(
+  profile: string,
+): profile is SelfServiceProfile {
+  return (SELF_SERVICE_PROFILE_ORDER as readonly string[]).includes(profile);
+}
+
+export function cycleSelfServiceProfile(
+  current: AppProfile,
+): SelfServiceProfile {
+  const index = SELF_SERVICE_PROFILE_ORDER.indexOf(
+    current as SelfServiceProfile,
+  );
+  return (
+    SELF_SERVICE_PROFILE_ORDER[
+      (index + 1) % SELF_SERVICE_PROFILE_ORDER.length
+    ] ?? SELF_SERVICE_PROFILE_ORDER[0]
+  );
 }
 
 export function getProfileLabel(profile: AppProfile, locale: Locale): string {

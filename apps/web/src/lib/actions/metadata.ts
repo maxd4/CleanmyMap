@@ -1,15 +1,24 @@
 import type {
   ActionSubmissionMode,
   ActionWasteBreakdown,
+  ActionPhotoAsset,
+  ActionVisionEstimate,
 } from "@/lib/actions/types";
 
 const META_PREFIX = "[cmm-meta]";
+const INGESTION_SYNC_MARKER = "[google-sheet-sync]";
 
 type ActionNotesMeta = {
   submissionMode?: ActionSubmissionMode;
   wasteBreakdown?: ActionWasteBreakdown;
   associationName?: string;
   placeType?: string;
+  departureLocationLabel?: string;
+  arrivalLocationLabel?: string;
+  routeStyle?: "direct" | "souple";
+  routeAdjustmentMessage?: string;
+  photos?: Pick<ActionPhotoAsset, "id" | "name" | "mimeType" | "size" | "width" | "height">[];
+  visionEstimate?: ActionVisionEstimate;
 };
 
 function safeParseMeta(raw: string): ActionNotesMeta | null {
@@ -31,6 +40,12 @@ export function appendActionMetadataToNotes(
     wasteBreakdown?: ActionWasteBreakdown;
     associationName?: string;
     placeType?: string;
+    departureLocationLabel?: string;
+    arrivalLocationLabel?: string;
+    routeStyle?: "direct" | "souple";
+    routeAdjustmentMessage?: string;
+    photos?: ActionNotesMeta["photos"];
+    visionEstimate?: ActionVisionEstimate | null;
   },
 ): string | null {
   const trimmedBase = (baseNotes ?? "").trim();
@@ -44,7 +59,13 @@ export function appendActionMetadataToNotes(
     metadata.submissionMode ||
     hasWasteBreakdown ||
     associationName ||
-    metadata.placeType;
+    metadata.placeType ||
+    metadata.departureLocationLabel ||
+    metadata.arrivalLocationLabel ||
+    metadata.routeStyle ||
+    Boolean(metadata.routeAdjustmentMessage?.trim()) ||
+    Boolean(metadata.photos?.length) ||
+    Boolean(metadata.visionEstimate);
   if (!hasMetadata) {
     return trimmedBase || null;
   }
@@ -62,6 +83,24 @@ export function appendActionMetadataToNotes(
   if (metadata.placeType) {
     metaPayload.placeType = metadata.placeType;
   }
+  if (metadata.departureLocationLabel) {
+    metaPayload.departureLocationLabel = metadata.departureLocationLabel;
+  }
+  if (metadata.arrivalLocationLabel) {
+    metaPayload.arrivalLocationLabel = metadata.arrivalLocationLabel;
+  }
+  if (metadata.routeStyle) {
+    metaPayload.routeStyle = metadata.routeStyle;
+  }
+  if (metadata.routeAdjustmentMessage?.trim()) {
+    metaPayload.routeAdjustmentMessage = metadata.routeAdjustmentMessage.trim();
+  }
+  if (metadata.photos?.length) {
+    metaPayload.photos = metadata.photos;
+  }
+  if (metadata.visionEstimate) {
+    metaPayload.visionEstimate = metadata.visionEstimate;
+  }
 
   const encoded = `${META_PREFIX}${JSON.stringify(metaPayload)}`;
   return trimmedBase ? `${trimmedBase}\n${encoded}` : encoded;
@@ -75,6 +114,12 @@ export function extractActionMetadataFromNotes(
   wasteBreakdown: ActionWasteBreakdown | null;
   associationName: string | null;
   placeType: string | null;
+  departureLocationLabel: string | null;
+  arrivalLocationLabel: string | null;
+  routeStyle: "direct" | "souple" | null;
+  routeAdjustmentMessage: string | null;
+  photos: ActionNotesMeta["photos"] | null;
+  visionEstimate: ActionVisionEstimate | null;
 } {
   if (!notes) {
     return {
@@ -83,6 +128,12 @@ export function extractActionMetadataFromNotes(
       wasteBreakdown: null,
       associationName: null,
       placeType: null,
+      departureLocationLabel: null,
+      arrivalLocationLabel: null,
+      routeStyle: null,
+      routeAdjustmentMessage: null,
+      photos: null,
+      visionEstimate: null,
     };
   }
 
@@ -90,7 +141,13 @@ export function extractActionMetadataFromNotes(
   let submissionMode: ActionSubmissionMode | null = null;
   let wasteBreakdown: ActionWasteBreakdown | null = null;
   let associationName: string | null = null;
-  const placeType: string | null = null;
+  let placeType: string | null = null;
+  let departureLocationLabel: string | null = null;
+  let arrivalLocationLabel: string | null = null;
+  let routeStyle: "direct" | "souple" | null = null;
+  let routeAdjustmentMessage: string | null = null;
+  let photos: ActionNotesMeta["photos"] | null = null;
+  let visionEstimate: ActionVisionEstimate | null = null;
   const cleanLines: string[] = [];
 
   for (const line of lines) {
@@ -126,14 +183,57 @@ export function extractActionMetadataFromNotes(
     ) {
       associationName = parsed.associationName.trim();
     }
+    if (
+      typeof parsed.departureLocationLabel === "string" &&
+      parsed.departureLocationLabel.trim().length > 0
+    ) {
+      departureLocationLabel = parsed.departureLocationLabel.trim();
+    }
+    if (
+      typeof parsed.arrivalLocationLabel === "string" &&
+      parsed.arrivalLocationLabel.trim().length > 0
+    ) {
+      arrivalLocationLabel = parsed.arrivalLocationLabel.trim();
+    }
+    if (parsed.routeStyle === "direct" || parsed.routeStyle === "souple") {
+      routeStyle = parsed.routeStyle;
+    }
+    if (
+      typeof parsed.routeAdjustmentMessage === "string" &&
+      parsed.routeAdjustmentMessage.trim().length > 0
+    ) {
+      routeAdjustmentMessage = parsed.routeAdjustmentMessage.trim();
+    }
+    if (
+      typeof parsed.placeType === "string" &&
+      parsed.placeType.trim().length > 0
+    ) {
+      placeType = parsed.placeType.trim();
+    }
+    if (Array.isArray(parsed.photos)) {
+      photos = parsed.photos;
+    }
+    if (parsed.visionEstimate && typeof parsed.visionEstimate === "object") {
+      visionEstimate = parsed.visionEstimate;
+    }
   }
 
-  const cleanNotes = cleanLines.join("\n").trim();
+  const cleanNotes = cleanLines
+    .map((line) => line.trim() === INGESTION_SYNC_MARKER ? "" : line)
+    .filter((line) => line.trim().length > 0)
+    .join("\n")
+    .trim();
   return {
     cleanNotes: cleanNotes.length > 0 ? cleanNotes : null,
     submissionMode,
     wasteBreakdown,
     associationName,
     placeType,
+    departureLocationLabel,
+    arrivalLocationLabel,
+    routeStyle,
+    routeAdjustmentMessage,
+    photos,
+    visionEstimate,
   };
 }

@@ -6,12 +6,19 @@ type StepFilterProps = {
 };
 
 export function StepFilter({ workflow }: StepFilterProps) {
+  const scopeItems =
+    workflow.scopeKind === "account"
+      ? workflow.scopeOptions.accounts
+      : workflow.scopeKind === "association"
+        ? workflow.scopeOptions.associations
+        : workflow.scopeOptions.arrondissements;
+
   return (
     <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         Etape 1 - Filtrer
       </p>
-      <div className="mt-3 grid gap-3 md:grid-cols-4">
+      <div className="mt-3 grid gap-3 md:grid-cols-5">
         <label className="flex flex-col gap-2 text-sm text-slate-700">
           Statut
           <select
@@ -54,18 +61,38 @@ export function StepFilter({ workflow }: StepFilterProps) {
           </select>
         </label>
         <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Association
+          Périmètre
           <select
-            value={workflow.association}
-            onChange={(event) => workflow.setAssociation(event.target.value)}
+            value={workflow.scopeKind}
+            onChange={(event) =>
+              workflow.setScopeKind(
+                event.target.value as typeof workflow.scopeKind,
+              )
+            }
             className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
           >
-            <option value="all">Global (toutes associations)</option>
-            {workflow.associationOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
+            <option value="global">Global</option>
+            <option value="account">Compte</option>
+            <option value="association">Association</option>
+            <option value="arrondissement">Arrondissement</option>
+          </select>
+        </label>
+        <label className="flex flex-col gap-2 text-sm text-slate-700">
+          Valeur
+          <select
+            value={workflow.scopeValue}
+            onChange={(event) => workflow.setScopeValue(event.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
+          >
+            {workflow.scopeKind === "global" ? (
+              <option value="">Aucun filtre</option>
+            ) : (
+              scopeItems.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))
+            )}
           </select>
         </label>
       </div>

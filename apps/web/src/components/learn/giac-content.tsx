@@ -180,7 +180,7 @@ const GIEC_REPORTS: GIECReport[] = [
     solutions: [
       "Ambition climatique multipliée par 5-10",
       "Justice et équité dans la transition",
-      "Mobilisation de tous les acteurs",
+      "Mobilisation de toutes les structures",
       "Accélération technologique et sociale"
     ]
   }

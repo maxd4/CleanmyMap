@@ -3,6 +3,7 @@ import type { ActionListItem, ActionMapItem } from "@/lib/actions/types";
 import type { CommunityEventItem } from "@/lib/community/http";
 import {
   buildMonthRows,
+  buildExecutiveNarrative,
   buildRouteSteps,
   computeReportModel,
   getWeatherAdvice,
@@ -178,5 +179,23 @@ describe("reports web analytics", () => {
     expect(getWeatherAdvice({ temperature: 20, rain: 4, wind: 10 })).toContain("prudent");
     expect(getWeatherAdvice({ temperature: 30, rain: 0, wind: 10 })).toContain("chaud");
     expect(getWeatherAdvice({ temperature: 1, rain: 0, wind: 10 })).toContain("froid");
+  });
+
+  it("builds a narrative suitable for an institutional cover", () => {
+    const report = computeReportModel({
+      allItems: [makeListItem({ id: "all-1", status: "approved" })],
+      approvedItems: [makeListItem({ id: "approved-1", status: "approved" })],
+      mapItems: [makeMapItem({ id: "map-1" })],
+      events: [makeEvent()],
+      now: new Date("2026-03-25T12:00:00.000Z"),
+    });
+
+    const narrative = buildExecutiveNarrative(report);
+
+    expect(narrative.headline.length).toBeGreaterThan(0);
+    expect(narrative.summary).toContain("géolocalisation");
+    expect(narrative.evidence).toHaveLength(4);
+    expect(narrative.budgetUseCases).toHaveLength(3);
+    expect(narrative.watchouts.length).toBeGreaterThan(0);
   });
 });

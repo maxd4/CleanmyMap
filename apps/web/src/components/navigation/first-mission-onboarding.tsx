@@ -15,25 +15,25 @@ const PROFILE_ONBOARDING: Record<AppProfile, OnboardingStep[]> = {
   benevole: [
     {
       id: "brief",
-      label: "Lire le brief mission",
-      hint: "2 min - objectifs + securite",
+      label: "Lire le brief de mission",
+      hint: "2 min - objectifs + sécurité",
       href: "/sections/guide",
     },
     {
       id: "kit",
-      label: "Verifier le kit terrain",
+      label: "Vérifier le kit terrain",
       hint: "1 min - gants, sacs, pince",
       href: "/sections/kit",
     },
     {
       id: "declare",
-      label: "Creer la declaration rapide",
+      label: "Créer la déclaration",
       hint: "moins de 60 sec",
       href: "/actions/new?mode=quick",
     },
     {
       id: "map",
-      label: "Verifier la carte avant sortie",
+      label: "Vérifier la carte avant sortie",
       hint: "zone + points prioritaires",
       href: "/actions/map",
     },
@@ -41,72 +41,72 @@ const PROFILE_ONBOARDING: Record<AppProfile, OnboardingStep[]> = {
   coordinateur: [
     {
       id: "agenda",
-      label: "Verifier les evenements a venir",
+      label: "Vérifier les événements à venir",
       hint: "capacite + RSVP",
       href: "/sections/community",
     },
     {
       id: "zones",
-      label: "Definir les zones de campagne",
-      hint: "priorites 30 jours",
+      label: "Définir les zones de campagne",
+      hint: "priorités 30 jours",
       href: "/sections/actors",
     },
     {
       id: "dashboard",
-      label: "Valider les alertes metier",
+      label: "Valider les alertes métier",
       hint: "zones critiques + backlog",
       href: "/dashboard",
     },
     {
       id: "launch",
       label: "Lancer la mission",
-      hint: "communiquer le plan a l'equipe",
+      hint: "communiquer le plan à l'équipe",
       href: "/actions/new?mode=quick",
     },
   ],
   scientifique: [
     {
       id: "baseline",
-      label: "Verifier la baseline de donnees",
-      hint: "qualite et couverture",
+      label: "Vérifier la base de données",
+      hint: "qualité et couverture",
       href: "/reports",
     },
     {
       id: "compare",
       label: "Comparer les zones prioritaires",
-      hint: "brut vs normalise",
+      hint: "brut vs normalisé",
       href: "/sections/climate",
     },
     {
       id: "climate",
       label: "Croiser avec le contexte climat",
-      hint: "signal meteo-climat",
+      hint: "signal météo-climat",
       href: "/sections/climate",
     },
     {
       id: "insight",
-      label: "Partager un insight actionnable",
-      hint: "1 recommandation argumentee",
+      label: "Partager une observation actionnable",
+      hint: "1 recommandation argumentée",
       href: "/dashboard",
     },
   ],
   elu: [
     {
       id: "overview",
-      label: "Ouvrir la synthese decisionnelle",
+      label: "Ouvrir la synthèse de gouvernance",
       hint: "3 KPI + alerte",
       href: "/reports",
     },
     {
       id: "zones",
-      label: "Verifier priorites territoriales",
-      hint: "zones a traiter",
+      label: "Vérifier les priorités territoriales",
+      hint: "zones à traiter",
       href: "/sections/elus",
     },
     {
       id: "compare",
       label: "Comparer les zones",
-      hint: "brut vs normalise",
+      hint: "brut vs normalisé",
       href: "/sections/climate",
     },
     {
@@ -119,26 +119,26 @@ const PROFILE_ONBOARDING: Record<AppProfile, OnboardingStep[]> = {
   admin: [
     {
       id: "alerts",
-      label: "Analyser les alertes metier",
+      label: "Analyser les alertes métier",
       hint: "backlog + zones critiques",
       href: "/admin",
     },
     {
       id: "moderation",
-      label: "Traiter le backlog moderation",
-      hint: "priorite haute d'abord",
+      label: "Traiter le backlog de modération",
+      hint: "priorité haute d'abord",
       href: "/reports",
     },
     {
       id: "quality",
-      label: "Verifier fiabilite data",
-      hint: "scores A/B/C + incoherences",
+      label: "Vérifier la fiabilité des données",
+      hint: "scores A/B/C + incohérences",
       href: "/actions/history",
     },
     {
       id: "journal",
-      label: "Journaliser les operations",
-      hint: "traceabilite admin",
+      label: "Journaliser les opérations",
+      hint: "traçabilité admin",
       href: "/admin",
     },
   ],
@@ -189,14 +189,14 @@ export function FirstMissionOnboarding({ profile }: { profile: AppProfile }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
-            Premiere mission
+            Première mission
           </p>
           <h2 className="mt-1 text-base font-semibold text-emerald-900">
-            Onboarding court (moins de 10 minutes)
+          Parcours d'accueil court (moins de 10 minutes)
           </h2>
         </div>
         <p className="text-xs font-semibold uppercase tracking-wide text-emerald-800">
-          {progress.done}/{progress.total} etapes
+          {progress.done}/{progress.total} étapes
         </p>
       </div>
 
@@ -235,7 +235,7 @@ export function FirstMissionOnboarding({ profile }: { profile: AppProfile }) {
               href={step.href}
               className="mt-2 inline-flex text-xs font-semibold text-emerald-700 hover:text-emerald-800"
             >
-              Ouvrir l&apos;etape
+              Ouvrir l&apos;étape
             </Link>
           </li>
         ))}
@@ -243,12 +243,12 @@ export function FirstMissionOnboarding({ profile }: { profile: AppProfile }) {
 
       {progress.next ? (
         <div className="mt-3 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm text-emerald-900">
-          Prochaine etape recommandee:{" "}
+          Prochaine étape recommandée:{" "}
           <span className="font-semibold">{progress.next.label}</span>.
         </div>
       ) : (
         <div className="mt-3 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-900">
-          Mission prete a lancer.
+          Mission prête à lancer.
         </div>
       )}
     </section>

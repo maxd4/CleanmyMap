@@ -1,36 +1,43 @@
+import { auth } from "@clerk/nextjs/server";
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire-directory-seed";
-import {
-  CONTRIBUTION_LABELS,
-  formatCoverage,
-  hasRecentActivity,
-  VERIFICATION_LABELS,
-} from "@/components/sections/rubriques/annuaire-helpers";
+import { hasRecentActivity } from "@/components/sections/rubriques/annuaire-helpers";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { PublishedAnnuaireReviewPanel } from "@/components/partners/published-annuaire-review-panel";
+import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { countPartnerOnboardingRequests } from "@/lib/partners/onboarding-requests-store";
-
-function topContributionRows() {
-  const counter = new Map<string, number>();
-  for (const entry of INITIAL_ANNUAIRE_ENTRIES) {
-    for (const contribution of entry.contributionTypes) {
-      counter.set(contribution, (counter.get(contribution) ?? 0) + 1);
-    }
-  }
-  return [...counter.entries()]
-    .map(([key, count]) => ({
-      key,
-      label: CONTRIBUTION_LABELS[key as keyof typeof CONTRIBUTION_LABELS],
-      count,
-    }))
-    .sort((a, b) => b.count - a.count);
-}
+import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
 
 export default async function PartnersDashboardPage() {
-  const activeEntries = INITIAL_ANNUAIRE_ENTRIES.filter(
+  const { userId } = await auth();
+  const publishedEntries = await listPublishedPartnerAnnuaireEntries().catch(() => []);
+  const currentRole = userId ? await getCurrentUserRoleLabel().catch(() => null) : null;
+  const acceptedPublishedEntries = publishedEntries.filter(
+    (entry) => entry.publicationStatus === "accepted",
+  );
+  const reviewPublishedEntries = publishedEntries.filter(
+    (entry) => entry.publicationStatus !== "accepted",
+  );
+  const allEntries = (() => {
+    const seen = new Set<string>();
+    const output = [...INITIAL_ANNUAIRE_ENTRIES.slice(0, 0)];
+    for (const entry of [...INITIAL_ANNUAIRE_ENTRIES, ...acceptedPublishedEntries]) {
+      const key = `${entry.name.trim().toLowerCase()}::${entry.legalIdentity.trim().toLowerCase()}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      output.push(entry);
+    }
+    return output;
+  })();
+  const totalEntries = allEntries.length;
+  const activeEntries = allEntries.filter(
     (entry) =>
       entry.qualificationStatus === "partenaire_actif" &&
       entry.verificationStatus === "verifie" &&
       hasRecentActivity(entry.recentActivityAt),
   );
-  const staleEntries = INITIAL_ANNUAIRE_ENTRIES.filter(
+  const staleEntries = allEntries.filter(
     (entry) =>
       entry.verificationStatus !== "verifie" || !hasRecentActivity(entry.recentActivityAt),
   );
@@ -43,23 +50,27 @@ export default async function PartnersDashboardPage() {
     onboardingLoadError =
       "Demandes onboarding indisponibles (configuration persistance).";
   }
-  const contributionRows = topContributionRows();
-  const coveredZones = new Set(
-    activeEntries.flatMap((entry) => entry.coveredArrondissements),
-  );
+  const coveredZones = new Set(allEntries.flatMap((entry) => entry.coveredArrondissements));
 
-  return (
+  const page = (
     <div className="space-y-4">
       <header className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h1 className="text-lg font-semibold text-slate-900">Tableau de bord partenaire</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+          Décision / supervision
+        </p>
+        <h1 className="mt-1 text-lg font-semibold text-slate-900">Tableau de bord partenaires</h1>
         <p className="mt-1 text-sm text-slate-600">
-          Vue synthese contributions, zones, besoins et prochaines actions.
+          Vue de pilotage: arbitrer, valider et suivre les demandes.
         </p>
       </header>
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <article className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs text-slate-500">Acteurs actifs</p>
+          <p className="text-xs text-slate-500">Fiches publiées</p>
+          <p className="text-xl font-semibold text-slate-900">{totalEntries}</p>
+        </article>
+        <article className="rounded-lg border border-slate-200 bg-white p-3">
+          <p className="text-xs text-slate-500">Partenaires actifs</p>
           <p className="text-xl font-semibold text-slate-900">{activeEntries.length}</p>
         </article>
         <article className="rounded-lg border border-slate-200 bg-white p-3">
@@ -67,13 +78,17 @@ export default async function PartnersDashboardPage() {
           <p className="text-xl font-semibold text-slate-900">{coveredZones.size}</p>
         </article>
         <article className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs text-slate-500">Demandes onboarding</p>
+          <p className="text-xs text-slate-500">Demandes en attente</p>
           <p className="text-xl font-semibold text-slate-900">
             {onboardingRequestCount ?? "n/a"}
           </p>
         </article>
         <article className="rounded-lg border border-slate-200 bg-white p-3">
-          <p className="text-xs text-slate-500">Besoins prioritaires</p>
+          <p className="text-xs text-slate-500">Fiches à revoir</p>
+          <p className="text-xl font-semibold text-slate-900">{reviewPublishedEntries.length}</p>
+        </article>
+        <article className="rounded-lg border border-slate-200 bg-white p-3 md:col-span-2">
+          <p className="text-xs text-slate-500">Fiches à confirmer</p>
           <p className="text-xl font-semibold text-slate-900">{staleEntries.length}</p>
         </article>
       </section>
@@ -84,44 +99,30 @@ export default async function PartnersDashboardPage() {
         </section>
       ) : null}
 
-      <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">Contributions (réseau)</h2>
-          <ul className="mt-3 space-y-2 text-sm">
-            {contributionRows.map((row) => (
-              <li key={row.key} className="flex items-center justify-between rounded bg-slate-50 px-3 py-2">
-                <span>{row.label}</span>
-                <span className="font-semibold text-slate-900">{row.count}</span>
-              </li>
-            ))}
-          </ul>
-        </article>
-
-        <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">Besoins / points d&apos;attention</h2>
-          <ul className="mt-3 space-y-2 text-sm">
-            {staleEntries.slice(0, 6).map((entry) => (
-              <li key={`stale-${entry.id}`} className="rounded bg-amber-50 px-3 py-2 text-amber-900">
-                <p className="font-semibold">{entry.name}</p>
-                <p className="text-xs">
-                  {VERIFICATION_LABELS[entry.verificationStatus]} | zone{" "}
-                  {formatCoverage(entry.coveredArrondissements, entry.location)}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </article>
-      </section>
-
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">Prochaines actions</h2>
+        <h2 className="text-sm font-semibold text-slate-900">Prochaines décisions</h2>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm text-slate-700">
-          <li>Traiter les demandes onboarding en attente sous 72h ouvrées.</li>
-          <li>Revalider les fiches marquées &quot;a revalider&quot;.</li>
+          <li>Traiter les demandes de partenariat en attente sous 72h ouvrées.</li>
+          <li>Revoir les fiches publiées en attente d&apos;acceptation ou de rejet.</li>
           <li>Renforcer les contributions en zones sous-couvertes.</li>
           <li>Publier les mises à jour de fiches partenaires cette semaine.</li>
         </ol>
       </section>
+
+      {currentRole === "admin" && reviewPublishedEntries.length > 0 ? (
+        <PublishedAnnuaireReviewPanel items={reviewPublishedEntries} />
+      ) : null}
     </div>
+  );
+
+  return (
+    <ClerkRequiredGate
+      isAuthenticated={Boolean(userId)}
+      mode="disabled"
+      title="Tableau de bord du réseau"
+      description="Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
+    >
+      {page}
+    </ClerkRequiredGate>
   );
 }

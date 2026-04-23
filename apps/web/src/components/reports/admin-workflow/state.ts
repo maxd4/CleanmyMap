@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { ActionStatus } from "@/lib/actions/types";
+import type { ReportScopeKind } from "@/lib/reports/scope";
 import type {
   ModerationActionStatus,
   ModerationCleanPlaceStatus,
@@ -40,6 +41,8 @@ export function useAdminWorkflowState() {
   const [status, setStatus] = useState<ActionStatus | "all">("all");
   const [days, setDays] = useState<number>(90);
   const [limit, setLimit] = useState<number>(250);
+  const [scopeKind, setScopeKind] = useState<ReportScopeKind>("global");
+  const [scopeValue, setScopeValue] = useState<string>("");
   const [association, setAssociation] = useState<string | "all">("all");
 
   const [csvState, setCsvState] = useState<AsyncState>("idle");
@@ -117,6 +120,10 @@ export function useAdminWorkflowState() {
     setDays,
     limit,
     setLimit,
+    scopeKind,
+    setScopeKind,
+    scopeValue,
+    setScopeValue,
     association,
     setAssociation,
     csvState,

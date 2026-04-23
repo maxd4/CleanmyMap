@@ -1,5 +1,14 @@
 import type { ParisArrondissement } from "@/lib/geo/paris-arrondissements";
 import { getParisArrondissementLabel } from "@/lib/geo/paris-arrondissements";
+import {
+  buildPartnerWhyThisStructureMatters,
+  getPartnerTrustState,
+  hasPublicChannel,
+  hasRecentUpdate,
+  isCompletePartnerEntry,
+  isPlaceholderUrl,
+  type PartnerTrustState,
+} from "@/lib/partners/onboarding-types";
 import type { AnnuaireEntry } from "./annuaire-map-canvas";
 
 export type EnrichedAnnuaireEntry = AnnuaireEntry & { distanceKm: number | null };
@@ -8,7 +17,7 @@ export const ENTITY_LABELS: Record<AnnuaireEntry["kind"], string> = {
   association: "Association",
   groupe_parole: "Collectif",
   evenement: "Collectif",
-  commerce: "Commercant",
+  commerce: "Commerçant·e",
   entreprise: "Entreprise",
 };
 
@@ -16,7 +25,7 @@ export const CONTRIBUTION_LABELS: Record<
   AnnuaireEntry["contributionTypes"][number],
   string
 > = {
-  materiel: "Materiel",
+  materiel: "Matériel",
   logistique: "Logistique",
   accueil: "Accueil",
   financement: "Financement",
@@ -25,10 +34,16 @@ export const CONTRIBUTION_LABELS: Record<
 
 export const VERIFICATION_LABELS: Record<AnnuaireEntry["verificationStatus"], string> =
   {
-    verifie: "Verifiee",
-    en_cours: "Verification en cours",
-    a_revalider: "A revalider",
+    verifie: "Vérifiée",
+    en_cours: "Vérification en cours",
+    a_revalider: "À revalider",
   };
+
+export const TRUST_LABELS: Record<PartnerTrustState, string> = {
+  trusted: "Confirmée",
+  pending: "Non confirmée",
+  incomplete: "À compléter",
+};
 
 export function formatCoverage(
   coveredArrondissements: number[],
@@ -57,12 +72,12 @@ export function formatFreshness(lastUpdatedAt: string): string {
     return "Date invalide";
   }
   if (days <= 30) {
-    return `Mise a jour recente (${days}j)`;
+    return `Mise à jour récente (${days}j)`;
   }
   if (days <= 90) {
-    return `Mise a jour a surveiller (${days}j)`;
+    return `Mise à jour à surveiller (${days}j)`;
   }
-  return `Mise a jour ancienne (${days}j)`;
+  return `Mise à jour ancienne (${days}j)`;
 }
 
 export function hasRecentActivity(activityDate: string): boolean {
@@ -103,22 +118,41 @@ export function sanitizeRole(rawRole: unknown): string {
   return rawRole.trim().toLowerCase() || "benevole";
 }
 
-export function buildDashboardStats(
-  activeQualifiedEntries: AnnuaireEntry[],
-  pendingCount: number,
-) {
-  const allContributions = activeQualifiedEntries.flatMap(
+export function buildDashboardStats(entries: AnnuaireEntry[], pendingCount: number) {
+  const allContributions = entries.flatMap(
     (entry) => entry.contributionTypes,
   );
-  const uniqueZones = new Set(
-    activeQualifiedEntries.flatMap((entry) => entry.coveredArrondissements),
-  );
+  const uniqueZones = new Set(entries.flatMap((entry) => entry.coveredArrondissements));
   return {
-    actors: activeQualifiedEntries.length,
+    actors: entries.length,
     zones: uniqueZones.size,
     contributions: allContributions.length,
     pending: pendingCount,
   };
+}
+
+export function hasValidPublicChannel(entry: AnnuaireEntry): boolean {
+  return hasPublicChannel(entry);
+}
+
+export function hasRecentPartnerUpdate(entry: AnnuaireEntry): boolean {
+  return hasRecentUpdate(entry.lastUpdatedAt, 90);
+}
+
+export function isCompletePublicPartner(entry: AnnuaireEntry): boolean {
+  return isCompletePartnerEntry(entry);
+}
+
+export function getEntryTrustState(entry: AnnuaireEntry): PartnerTrustState {
+  return getPartnerTrustState(entry);
+}
+
+export function isPlaceholderPublicUrl(url: string): boolean {
+  return isPlaceholderUrl(url);
+}
+
+export function getPartnerWhyThisStructureMatters(entry: AnnuaireEntry): string {
+  return buildPartnerWhyThisStructureMatters(entry);
 }
 
 function profileBonus(entry: EnrichedAnnuaireEntry, profile: string): number {

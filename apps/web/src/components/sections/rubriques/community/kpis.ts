@@ -20,21 +20,21 @@ export function buildConversionKpiCards(
   return [
     {
       id: "rsvp_to_attendance",
-      title: "Conversion RSVP -> presence",
+      title: "Conversion RSVP -> présence",
       value: formatPct(summary.rsvpToAttendanceRate),
-      subtitle: `${summary.rsvpYesTotal} RSVP oui / ${summary.attendanceTotalKnown} presences connues`,
+      subtitle: `${summary.rsvpYesTotal} RSVP oui / ${summary.attendanceTotalKnown} présences connues`,
     },
     {
       id: "attendance_to_action",
-      title: "Conversion presence -> action",
+      title: "Conversion présence -> action",
       value: formatPct(summary.attendanceToActionRate),
-      subtitle: `${summary.linkedActionsTotal} actions liees a des evenements`,
+      subtitle: `${summary.linkedActionsTotal} actions liées à des événements`,
     },
     {
       id: "rsvp_to_action",
       title: "Conversion RSVP -> action",
       value: formatPct(summary.rsvpToActionRate),
-      subtitle: `${summary.eventsCount} evenement(s) suivis`,
+      subtitle: `${summary.eventsCount} événement(s) suivis`,
     },
   ];
 }

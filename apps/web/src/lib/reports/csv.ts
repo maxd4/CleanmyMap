@@ -1,5 +1,6 @@
 import type { ActionListItem, ActionStatus } from "@/lib/actions/types";
 import { buildDeliverableFilename } from "./deliverable-name";
+import type { ReportScope, ReportScopeKind } from "./scope";
 
 export type ActionCsvRow = Pick<
   ActionListItem,
@@ -35,6 +36,8 @@ export type ReportQuery = {
   status: ActionStatus | null;
   limit: number;
   days: number;
+  scopeKind: ReportScopeKind;
+  scopeValue: string | null;
   association: string | null;
 };
 
@@ -56,6 +59,44 @@ export function parseStatusParam(raw: string | null): ActionStatus | null {
   return null;
 }
 
+export function parseReportScopeKindParam(
+  raw: string | null,
+): ReportScopeKind | null {
+  if (raw === "global" || raw === "account" || raw === "association" || raw === "arrondissement") {
+    return raw;
+  }
+  return null;
+}
+
+export function parseReportScopeValueParam(raw: string | null): string | null {
+  if (!raw) {
+    return null;
+  }
+  const value = raw.trim();
+  return value.length > 0 ? value.slice(0, 120) : null;
+}
+
+export function resolveReportScopeFromQuery(url: URL): ReportScope {
+  const scopeKind = (
+    parseReportScopeKindParam(url.searchParams.get("scopeKind")) ??
+    parseReportScopeKindParam(url.searchParams.get("scope")) ??
+    (url.searchParams.get("arrondissement") ? "arrondissement" : null) ??
+    (url.searchParams.get("account") ? "account" : null) ??
+    (url.searchParams.get("association") ? "association" : null) ??
+    "global"
+  ) as ReportScopeKind;
+
+  const scopeValue =
+    parseReportScopeValueParam(url.searchParams.get("scopeValue")) ??
+    parseReportScopeValueParam(url.searchParams.get(scopeKind)) ??
+    parseReportScopeValueParam(url.searchParams.get("association")) ??
+    null;
+
+  return scopeKind === "global"
+    ? { kind: "global", value: null }
+    : { kind: scopeKind, value: scopeValue };
+}
+
 export function parsePositiveInteger(
   raw: string | null,
   min: number,
@@ -73,10 +114,13 @@ export function parsePositiveInteger(
 }
 
 export function resolveReportQuery(url: URL): ReportQuery {
+  const scope = resolveReportScopeFromQuery(url);
   return {
     status: parseStatusParam(url.searchParams.get("status")),
     limit: parsePositiveInteger(url.searchParams.get("limit"), 1, 1000, 250),
     days: parsePositiveInteger(url.searchParams.get("days"), 1, 3650, 90),
+    scopeKind: scope.kind,
+    scopeValue: scope.value,
     association: parseAssociationParam(url.searchParams.get("association")),
   };
 }

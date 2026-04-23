@@ -52,7 +52,7 @@ export default async function GodModeAdminPage() {
         <section className="lg:col-span-2 space-y-6">
           <div className="bg-slate-900 rounded-3xl border border-slate-800 p-8 space-y-6 shadow-xl">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold flex items-center gap-2">
+          <h3 className="text-xl font-bold flex items-center gap-2">
                 <Users className="text-rose-500" size={20} />
                 Explorateur Utilisateurs
               </h3>
@@ -70,7 +70,7 @@ export default async function GodModeAdminPage() {
                 <thead>
                   <tr className="border-b border-slate-800 text-slate-500 uppercase text-[10px] font-bold tracking-widest">
                     <th className="pb-4 pt-0 px-2">Acteur</th>
-                    <th className="pb-4 pt-0 px-2">Rôle Actuel</th>
+                    <th className="pb-4 pt-0 px-2">Profil actif</th>
                     <th className="pb-4 pt-0 px-2">Dernière Connexion</th>
                     <th className="pb-4 pt-0 px-2">Actions</th>
                   </tr>

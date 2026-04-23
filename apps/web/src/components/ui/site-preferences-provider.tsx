@@ -33,6 +33,12 @@ type SitePreferencesContextValue = {
   isDisplayModeExplicitlySet: boolean;
 };
 
+type SitePreferencesProviderProps = {
+  children: ReactNode;
+  initialDisplayMode?: DisplayMode;
+  initialDisplayModeExplicit?: boolean;
+};
+
 const SitePreferencesContext =
   createContext<SitePreferencesContextValue | null>(null);
 
@@ -50,7 +56,11 @@ function parseDisplayMode(raw: string | null): DisplayMode {
     : DEFAULT_DISPLAY_MODE;
 }
 
-export function SitePreferencesProvider({ children }: { children: ReactNode }) {
+export function SitePreferencesProvider({
+  children,
+  initialDisplayMode,
+  initialDisplayModeExplicit = false,
+}: SitePreferencesProviderProps) {
   const [locale, setLocaleState] = useState<Locale>(() => {
     if (typeof window === "undefined") {
       return DEFAULT_LOCALE;
@@ -70,7 +80,10 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
   });
   const [displayMode, setDisplayModeState] = useState<DisplayMode>(() => {
     if (typeof window === "undefined") {
-      return DEFAULT_DISPLAY_MODE;
+      return initialDisplayMode ?? DEFAULT_DISPLAY_MODE;
+    }
+    if (initialDisplayModeExplicit) {
+      return initialDisplayMode ?? DEFAULT_DISPLAY_MODE;
     }
     return parseDisplayMode(
       window.localStorage.getItem(STORAGE_KEYS.displayMode),
@@ -79,7 +92,10 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
   const [isDisplayModeExplicitlySet, setIsDisplayModeExplicitlySet] =
     useState<boolean>(() => {
       if (typeof window === "undefined") {
-        return false;
+        return initialDisplayModeExplicit ?? false;
+      }
+      if (initialDisplayModeExplicit) {
+        return true;
       }
       return Boolean(window.localStorage.getItem(STORAGE_KEYS.displayMode));
     });
@@ -122,6 +138,15 @@ export function SitePreferencesProvider({ children }: { children: ReactNode }) {
   const setDisplayMode = useCallback((value: DisplayMode) => {
     setDisplayModeState(value);
     setIsDisplayModeExplicitlySet(true);
+    void fetch("/api/account/display-mode", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ displayMode: value }),
+    }).catch((error: unknown) => {
+      console.error("Failed to persist display mode preference", error);
+    });
   }, []);
   const toggleTheme = useCallback(() => {
     setThemeState((previous) => (previous === "dark" ? "light" : "dark"));
