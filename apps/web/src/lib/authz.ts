@@ -188,6 +188,22 @@ function resolveActorNameFromClerk(
   return normalizedOptions[0];
 }
 
+function describeBackgroundSyncError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message || error.name;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return String(error);
+  }
+}
+
 export function isAdminRole(metadata: {
   publicMetadata?: ClerkMetadata;
   privateMetadata?: ClerkMetadata;
@@ -283,9 +299,11 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
     ]);
 
     // Passive sync: avoid blocking UI but ensure data consistency
-    syncClerkUserToSupabase(user).catch(err => 
-      console.error("[Authz] Background sync failure", err)
-    );
+    syncClerkUserToSupabase(user).catch((err) => {
+      console.warn(
+        `[Authz] Background sync skipped for ${userId}: ${describeBackgroundSyncError(err)}`,
+      );
+    });
 
     const isAdmin =
       adminUserIds.has(userId) ||

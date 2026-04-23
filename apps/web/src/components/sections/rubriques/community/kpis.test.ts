@@ -28,11 +28,11 @@ describe("community KPI helpers", () => {
       "rsvp_to_action",
     ]);
     expect(cards[0]).toMatchObject({
-      title: "Conversion RSVP -> presence",
+      title: "Conversion RSVP -> présence",
       value: "70.0%",
     });
     expect(cards[1]).toMatchObject({
-      title: "Conversion presence -> action",
+      title: "Conversion présence -> action",
       value: "42.9%",
     });
   });

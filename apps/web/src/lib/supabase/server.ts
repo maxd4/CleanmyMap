@@ -23,24 +23,34 @@ export function getSupabaseServerClient(useServiceRole = true) {
     : env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   const isProd = process.env.NODE_ENV === "production";
+  const failFastClient = (reason: string) =>
+    createClient("https://invalid.supabase.local", "invalid-key-for-dev", {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+      global: {
+        fetch: async () => {
+          throw new Error(reason);
+        },
+      },
+    });
 
   if (!url || !url.startsWith("https://")) {
     const errorMsg = "CRITICAL: NEXT_PUBLIC_SUPABASE_URL is missing or invalid.";
     if (isProd) throw new Error(errorMsg);
-    
+
     console.warn(`[Supabase Dev Fallback] ${errorMsg}`);
-    return createClient(
-      "https://placeholder-url.supabase.co",
-      "placeholder-key",
-    );
+    return failFastClient(errorMsg);
   }
 
   if (!key || key.length < 20) {
     const errorMsg = `CRITICAL: Supabase ${useServiceRole ? "service role" : "anon"} key is missing or invalid.`;
     if (isProd) throw new Error(errorMsg);
-    
+
     console.warn(`[Supabase Dev Fallback] ${errorMsg}`);
-    return createClient(url, "placeholder-key");
+    return failFastClient(errorMsg);
   }
 
   return createClient(url, key, {

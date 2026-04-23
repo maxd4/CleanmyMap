@@ -21,7 +21,7 @@ export function OpenDataSection() {
         <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
           <li>{fr ? "Exports JSON/CSV pour analyses externes et auditabilité." : "JSON/CSV exports for external analysis and auditability."}</li>
           <li>{fr ? "Jeu de données standardisé: actions, qualité, géolocalisation, temporalité." : "Standardized dataset: actions, quality, geolocation and time context."}</li>
-          <li>{fr ? "Métadonnées de version (modèle proxy, règles qualité) pour une interprétation rigoureuse." : "Version metadata (proxy model, quality rules) for rigorous interpretation."}</li>
+          <li>{fr ? "Métadonnées de version (modèle proxy, règles qualité) pour une interprétation rigoureuse." : "Version metadata (proxy model, quality rules) for rigorous reading."}</li>
         </ul>
       </section>
 

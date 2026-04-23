@@ -1,6 +1,6 @@
 import { AppNavigationRibbon } from "@/components/navigation/app-navigation-ribbon";
 import { DisplayModeOnboardingGate } from "@/components/ui/display-mode-onboarding-gate";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getProfileLabel, toProfile } from "@/lib/profiles";
 import {
@@ -17,6 +17,7 @@ export default async function AppLayout({
 }>) {
   const { userId, clerkReachable } = await getSafeAuthSession();
 
+  const identity = await getCurrentUserIdentity();
   const { displayMode } = await getServerDisplayModePreference();
 
   const locale = await getServerLocale();
@@ -32,21 +33,22 @@ export default async function AppLayout({
 
   return (
     <div
-      className="flex min-h-screen w-full flex-col bg-slate-50/30 px-4 py-3 pb-12 transition-all duration-300 sm:px-8 sm:py-4 sm:pb-16"
+      className="flex min-h-screen w-full flex-col bg-slate-50/30 transition-all duration-300"
       data-display-mode={displayMode}
       data-user-profile={currentProfile}
     >
       <WeatherWarningBar />
       {userId ? <DisplayModeOnboardingGate /> : null}
 
-      {/* Corps principal : Pleine largeur sans sidebar */}
-      <div className="flex min-w-0 flex-1 flex-col gap-2 pt-24 sm:pt-28 lg:pt-32">
-        {/* Navigation fixe fusionnée */}
-        <AppNavigationRibbon
-          currentProfile={currentProfile}
-          profileLabel={profileLabel}
-        />
+      <AppNavigationRibbon
+        currentProfile={currentProfile}
+        profileLabel={profileLabel}
+        identity={identity}
+      />
 
+      <div
+        className="mx-auto flex min-w-0 w-full max-w-7xl flex-1 flex-col gap-2 px-4 py-3 pb-12 sm:px-8 sm:py-4 sm:pb-16"
+      >
         <main className="flex-1">{children}</main>
       </div>
     </div>
