@@ -10,6 +10,10 @@ export type FormState = {
   enterpriseName: string;
   actionDate: string;
   locationLabel: string;
+  departureLocationLabel: string;
+  arrivalLocationLabel: string;
+  routeStyle: "direct" | "souple";
+  routeAdjustmentMessage: string;
   latitude: string;
   longitude: string;
   wasteKg: string;
@@ -25,6 +29,9 @@ export type FormState = {
   wasteMixteKg: string;
   triQuality: "faible" | "moyenne" | "elevee";
   placeType: string;
+  visionBagsCount: string;
+  visionFillLevel: "" | "25" | "50" | "75" | "100";
+  visionDensity: "" | "sec" | "humide_dense" | "mouille";
 };
 
 export const initialState: FormState = {
@@ -33,6 +40,10 @@ export const initialState: FormState = {
   enterpriseName: "",
   actionDate: new Date().toISOString().slice(0, 10),
   locationLabel: "",
+  departureLocationLabel: "",
+  arrivalLocationLabel: "",
+  routeStyle: "souple",
+  routeAdjustmentMessage: "",
   latitude: "",
   longitude: "",
   wasteKg: "0",
@@ -48,6 +59,9 @@ export const initialState: FormState = {
   wasteMixteKg: "",
   triQuality: "moyenne",
   placeType: PLACE_TYPE_OPTIONS[0],
+  visionBagsCount: "",
+  visionFillLevel: "",
+  visionDensity: "",
 };
 
 export type SubmissionState = "idle" | "pending" | "success" | "error";

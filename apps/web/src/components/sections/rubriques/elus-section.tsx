@@ -6,6 +6,7 @@ import useSWR from "swr";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { PRIORITIZATION_RULESET } from "@/lib/pilotage/constants";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type PilotageOverviewResponse = {
   status: "ok";
@@ -92,6 +93,8 @@ function signedValue(value: number, suffix = ""): string {
 }
 
 function ElusSection() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   const [periodDays, setPeriodDays] = useState<number>(30);
   const { data, isLoading, error } = useSWR(
     `/api/pilotage/overview?days=${periodDays}&limit=2000`,
@@ -131,7 +134,7 @@ function ElusSection() {
 
     return [
       {
-        label: "Impact terrain",
+        label: fr ? "Impact terrain" : "Field impact",
         value: "n/a",
         previousValue: "n/a",
         deltaAbsolute: "n/a",
@@ -139,7 +142,7 @@ function ElusSection() {
         interpretation: "neutral",
       },
       {
-        label: "Mobilisation",
+        label: fr ? "Mobilisation" : "Mobilization",
         value: "n/a",
         previousValue: "n/a",
         deltaAbsolute: "n/a",
@@ -147,7 +150,7 @@ function ElusSection() {
         interpretation: "neutral",
       },
       {
-        label: "Qualite data",
+        label: fr ? "Qualite data" : "Data quality",
         value: "n/a",
         previousValue: "n/a",
         deltaAbsolute: "n/a",
@@ -163,16 +166,16 @@ function ElusSection() {
       <div className="space-y-4">
         <div className="max-w-xs">
           <label className="flex flex-col gap-2 text-sm text-slate-700">
-            Fenêtre d&apos;observation
+            {fr ? "Fenêtre d&apos;observation" : "Observation window"}
             <select
               value={String(periodDays)}
               onChange={(event) => setPeriodDays(Number(event.target.value))}
               className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
             >
-              <option value="7">7 jours</option>
-              <option value="30">30 jours</option>
-              <option value="90">90 jours</option>
-              <option value="180">180 jours</option>
+              <option value="7">{fr ? "7 jours" : "7 days"}</option>
+              <option value="30">{fr ? "30 jours" : "30 days"}</option>
+              <option value="90">{fr ? "90 jours" : "90 days"}</option>
+              <option value="180">{fr ? "180 jours" : "180 days"}</option>
             </select>
           </label>
         </div>
@@ -182,59 +185,68 @@ function ElusSection() {
           alert={data?.summary.alert}
           recommendedAction={{
             href: data?.summary.recommendedAction.href ?? "/reports",
-            label: data?.summary.recommendedAction.label ?? "Ouvrir le reporting",
+            label:
+              data?.summary.recommendedAction.label ??
+              (fr ? "Ouvrir le reporting" : "Open reporting"),
           }}
           recommendedReason={data?.summary.recommendedAction.reason}
         />
 
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <h3 className="text-sm font-semibold text-slate-900">
-            Dossier élu 1-clic
+            {fr ? "Dossier élu 1-clic" : "One-click elected official pack"}
           </h3>
           <p className="mt-1 text-sm text-slate-600">
-            Pack institutionnel prêt à partager: KPI clés, comparatifs N-1,
-            priorités territoriales et méthode.
+            {fr
+              ? "Pack institutionnel prêt à partager: KPI clés, comparatifs N-1, priorités territoriales et méthode."
+              : "Institutional pack ready to share: key KPIs, year-over-year comparisons, territorial priorities and method."}
           </p>
           <div className="mt-3 flex flex-col gap-2">
             <a
               href={`/api/reports/elus-dossier?days=${periodDays}&format=pdf`}
-              className="rounded-lg border border-emerald-300 bg-emerald-600 px-3 py-2 text-sm font-semibold text-white text-center transition hover:bg-emerald-700"
-            >
-              Télécharger le dossier PDF
+            className="rounded-lg border border-emerald-300 bg-emerald-600 px-3 py-2 text-sm font-semibold text-white text-center transition hover:bg-emerald-700"
+          >
+              {fr ? "Télécharger le dossier PDF" : "Download PDF pack"}
             </a>
             <a
               href={`/api/reports/elus-dossier?days=${periodDays}&format=md`}
-              className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 text-center transition hover:bg-emerald-100"
-            >
-              Télécharger le dossier partageable
+            className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800 text-center transition hover:bg-emerald-100"
+          >
+              {fr ? "Télécharger le dossier partageable" : "Download shareable pack"}
             </a>
             <a
               href={`/api/reports/elus-dossier?days=${periodDays}&format=json`}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 text-center transition hover:bg-slate-100"
-            >
-              Télécharger les données JSON
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 text-center transition hover:bg-slate-100"
+          >
+              {fr ? "Télécharger les données JSON" : "Download JSON data"}
             </a>
             <Link
               href="/reports"
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 text-center transition hover:bg-slate-100"
-            >
-              Ouvrir le rapport web complet
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 text-center transition hover:bg-slate-100"
+          >
+              {fr ? "Ouvrir le rapport web complet" : "Open full web report"}
             </Link>
           </div>
           <p className="mt-3 text-xs text-slate-500">
-            Export 1-clic: inclut la méthode technique et la justification des interprétations.
+            {fr
+              ? "Export 1-clic: inclut la méthode technique et la justification des interprétations."
+              : "One-click export: includes the technical method and interpretation rationale."}
           </p>
         </div>
         
         {data ? (
-          <KpiMethodBlock methods={data.methods} title="Méthode KPI" />
+          <KpiMethodBlock methods={data.methods} title={fr ? "Méthode KPI" : "KPI method"} />
         ) : null}
 
         {isLoading ? (
-          <p className="text-sm text-slate-500">Chargement des KPI...</p>
+          <p className="text-sm text-slate-500">
+            {fr ? "Chargement des KPI..." : "Loading KPIs..."}
+          </p>
         ) : null}
         {error ? (
-          <p className="text-sm text-rose-700">KPI indisponibles.</p>
+          <p className="text-sm text-rose-700">
+            {fr ? "KPI indisponibles." : "KPIs unavailable."}
+          </p>
         ) : null}
       </div>
 
@@ -244,10 +256,10 @@ function ElusSection() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-900">
-              Top zones à traiter
+              {fr ? "Top zones à traiter" : "Top zones to address"}
             </h3>
             <p className="mt-1 text-xs text-slate-600">
-              Urgences et justifications terrain.
+              {fr ? "Urgences et justifications terrain." : "Urgencies and field justifications."}
             </p>
             <ul className="mt-3 space-y-2 text-sm text-slate-700">
               {(data?.zones ?? []).slice(0, 5).map((zone) => (
@@ -256,18 +268,22 @@ function ElusSection() {
                   className="rounded-lg border border-slate-200 bg-slate-50 p-3"
                 >
                   <p className="font-semibold text-slate-900">
-                    {zone.area} - urgence {zone.urgency.toUpperCase()}
+                    {zone.area} - {fr ? "urgence" : "urgency"} {zone.urgency.toUpperCase()}
                   </p>
                   <p className="text-xs text-slate-600 mt-1">{zone.justification}</p>
                   <p className="mt-1 text-xs">
-                    <span className="font-semibold text-slate-700">Recommandation:</span>{" "}
+                    <span className="font-semibold text-slate-700">
+                      {fr ? "Recommandation:" : "Recommendation:"}
+                    </span>{" "}
                     {zone.recommendedAction}
                   </p>
                 </li>
               ))}
               {!isLoading && !error && (data?.zones ?? []).length === 0 ? (
                 <li className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-slate-600">
-                  Aucune zone prioritaire exploitable sur cette fenêtre.
+                  {fr
+                    ? "Aucune zone prioritaire exploitable sur cette fenêtre."
+                    : "No priority zone can be used on this window."}
                 </li>
               ) : null}
             </ul>
@@ -275,33 +291,43 @@ function ElusSection() {
 
           <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-900">
-              Méthode de priorisation
+              {fr ? "Méthode de priorisation" : "Prioritization method"}
             </h3>
             <ul className="mt-3 list-disc space-y-2 pl-5 text-xs text-slate-700">
-              <li>Variables: actions/km2, kg/km2, participation.</li>
-              <li>Pondérations: impact 35%, volume 35%, participation 20%, pression 10%.</li>
-              <li>Fréquence: calculé sur chaque rafraichissement.</li>
-              <li>Modèle de ciblage v.{PRIORITIZATION_RULESET.version}.</li>
-              <li>Dernier passage: {data ? new Date(data.generatedAt).toLocaleString("fr-FR") : "n/a"}.</li>
+              <li>{fr ? "Variables: actions/km2, kg/km2, participation." : "Variables: actions/km2, kg/km2, participation."}</li>
+              <li>
+                {fr
+                  ? "Pondérations: impact 35%, volume 35%, participation 20%, pression 10%."
+                  : "Weights: impact 35%, volume 35%, participation 20%, pressure 10%."}
+              </li>
+              <li>{fr ? "Fréquence: calculé sur chaque rafraichissement." : "Frequency: recalculated on every refresh."}</li>
+              <li>
+                {fr ? "Modèle de ciblage" : "Targeting model"} v.{PRIORITIZATION_RULESET.version}.
+              </li>
+              <li>
+                {fr ? "Dernier passage" : "Last run"}: {data ? new Date(data.generatedAt).toLocaleString(fr ? "fr-FR" : "en-GB") : "n/a"}.
+              </li>
             </ul>
           </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm overflow-hidden">
           <h3 className="text-sm font-semibold text-slate-900 mb-3">
-            Comparaison par zone: période courante vs précédente
+            {fr
+              ? "Comparaison par zone: période courante vs précédente"
+              : "Zone comparison: current period vs previous"}
           </h3>
           <div className="overflow-x-auto rounded-lg border border-slate-100">
             <table className="min-w-full text-left text-xs whitespace-nowrap">
               <thead className="bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="px-3 py-2 font-semibold">Zone</th>
-                  <th className="px-3 py-2 font-semibold">Urgence</th>
-                  <th className="px-3 py-2 font-semibold">Actions (N)</th>
-                  <th className="px-3 py-2 font-semibold">Delta actions</th>
-                  <th className="px-3 py-2 font-semibold">Kg (N)</th>
-                  <th className="px-3 py-2 font-semibold">Delta kg</th>
-                  <th className="px-3 py-2 font-semibold">Score</th>
+                  <th className="px-3 py-2 font-semibold">{fr ? "Zone" : "Area"}</th>
+                  <th className="px-3 py-2 font-semibold">{fr ? "Urgence" : "Urgency"}</th>
+                  <th className="px-3 py-2 font-semibold">{fr ? "Actions (N)" : "Actions (N)"}</th>
+                  <th className="px-3 py-2 font-semibold">{fr ? "Delta actions" : "Action delta"}</th>
+                  <th className="px-3 py-2 font-semibold">{fr ? "Kg (N)" : "Kg (N)"}</th>
+                  <th className="px-3 py-2 font-semibold">{fr ? "Delta kg" : "Kg delta"}</th>
+                  <th className="px-3 py-2 font-semibold">{fr ? "Score" : "Score"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -323,7 +349,7 @@ function ElusSection() {
                 {!isLoading && !error && (data?.zones ?? []).length === 0 ? (
                   <tr className="text-slate-600">
                     <td className="px-3 py-3 text-center" colSpan={7}>
-                      Aucune zone détectée.
+                      {fr ? "Aucune zone détectée." : "No zone detected."}
                     </td>
                   </tr>
                 ) : null}

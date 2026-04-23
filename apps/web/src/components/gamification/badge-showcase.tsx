@@ -1,34 +1,39 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Award, Shield, Zap, Droplets, Target, Users } from "lucide-react";
+import {
+  getGamificationBadgeIconName,
+} from "./badge-icon";
+import { BadgeSurface } from "./badge-surface";
 
-const BADGE_CONFIG: Record<string, { icon: any; color: string; description: string }> = {
-  "Contributeur regulier": { icon: Zap, color: "text-blue-500 bg-blue-50", description: "Atteindre le niveau 3" },
-  "Contributeur confirme": { icon: Shield, color: "text-indigo-500 bg-indigo-50", description: "Atteindre le niveau 6" },
-  "Pilier terrain": { icon: Award, color: "text-purple-500 bg-purple-50", description: "Atteindre le niveau 10" },
-  "Referent impact": { icon: Target, color: "text-rose-500 bg-rose-50", description: "Atteindre le niveau 14" },
-  "Expert Mégots (Or)": { icon: Droplets, color: "text-amber-600 bg-amber-50", description: "10 000+ mégots retirés" },
-  "Chasseur de Mégots (Argent)": { icon: Droplets, color: "text-slate-400 bg-slate-50", description: "2 000+ mégots retirés" },
-  "Ramasseur de Mégots (Bronze)": { icon: Droplets, color: "text-amber-700 bg-orange-50", description: "500+ mégots retirés" },
-  "Héros du Nettoyage (Or)": { icon: Target, color: "text-emerald-600 bg-emerald-50", description: "500kg+ récoltés" },
-  "Force de la Nature (Argent)": { icon: Target, color: "text-slate-400 bg-slate-50", description: "100kg+ récoltés" },
-  "Bras Armé (Bronze)": { icon: Target, color: "text-amber-700 bg-orange-50", description: "10kg+ récoltés" },
-  "Sentinelle Exemplaire": { icon: Shield, color: "text-emerald-500 bg-emerald-50", description: "Qualité moyenne > 90%" },
-  "Esprit d'Équipe": { icon: Users, color: "text-sky-500 bg-sky-50", description: "Participé à 3+ actions collectives" },
+const BADGE_CONFIG: Record<string, { tone: "admin" | "role" | "profile" | "mode" | "gamification" | "neutral"; description: string }> = {
+  "Contributeur regulier": { tone: "gamification", description: "Atteindre le niveau 3" },
+  "Contributeur confirme": { tone: "gamification", description: "Atteindre le niveau 6" },
+  "Pilier terrain": { tone: "gamification", description: "Atteindre le niveau 10" },
+  "Referent impact": { tone: "gamification", description: "Atteindre le niveau 14" },
+  "Expert Mégots (Or)": { tone: "gamification", description: "10 000+ mégots retirés" },
+  "Chasseur de Mégots (Argent)": { tone: "gamification", description: "2 000+ mégots retirés" },
+  "Ramasseur de Mégots (Bronze)": { tone: "gamification", description: "500+ mégots retirés" },
+  "Héros du Nettoyage (Or)": { tone: "gamification", description: "500kg+ récoltés" },
+  "Force de la Nature (Argent)": { tone: "gamification", description: "100kg+ récoltés" },
+  "Bras Armé (Bronze)": { tone: "gamification", description: "10kg+ récoltés" },
+  "Sentinelle Exemplaire": { tone: "gamification", description: "Qualité moyenne > 90%" },
+  "Esprit d'Équipe": { tone: "gamification", description: "Participé à 3+ actions collectives" },
 };
 
 export function BadgeShowcase({ badges }: { badges: string[] }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {badges.length === 0 ? (
-        <p className="col-span-full text-xs italic text-slate-500 text-center py-4">
+        <p className="col-span-full py-4 text-center text-xs italic text-slate-500">
           Réalise tes premières actions pour débloquer des badges !
         </p>
       ) : (
         badges.map((badge, index) => {
-          const config = BADGE_CONFIG[badge] || { icon: Award, color: "text-slate-500 bg-slate-50", description: "Badge spécial" };
-          const Icon = config.icon;
+          const config = BADGE_CONFIG[badge] || {
+            tone: "neutral" as const,
+            description: "Badge spécial",
+          };
           
           return (
             <motion.div
@@ -36,14 +41,22 @@ export function BadgeShowcase({ badges }: { badges: string[] }) {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: index * 0.1 }}
-              className={`flex flex-col items-center gap-2 p-3 rounded-xl border border-white/50 shadow-sm ${config.color} backdrop-blur-sm group hover:scale-105 transition-transform cursor-help`}
+              className="group flex cursor-help flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white/85 p-3 shadow-sm backdrop-blur-sm transition-transform hover:scale-105"
               title={config.description}
+              aria-label={badge}
             >
-              <div className="p-2 rounded-full bg-white shadow-inner">
-                <Icon size={20} className="group-hover:rotate-12 transition-transform" />
-              </div>
-              <span className="text-[10px] font-bold text-center leading-tight uppercase tracking-tight">
+              <BadgeSurface
+                icon={getGamificationBadgeIconName(badge)}
+                label={badge}
+                tone={config.tone}
+                variant="orb"
+                className="border-slate-200/70 bg-white/90 shadow-sm"
+              />
+              <span className="mt-2 text-center text-[11px] font-semibold text-slate-600">
                 {badge}
+              </span>
+              <span className="mt-0.5 text-center text-[10px] text-slate-500">
+                {config.description}
               </span>
             </motion.div>
           );

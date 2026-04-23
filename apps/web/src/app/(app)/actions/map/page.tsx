@@ -7,7 +7,7 @@ import useSWR from "swr";
 import { ActionsMapFeed } from "@/components/actions/actions-map-feed";
 import { ActionsMapTable } from "@/components/actions/actions-map-table";
 import { ActionsVisualizationPanel } from "@/components/actions/actions-visualization-panel";
-import { SandboxSection } from "@/components/sections/rubriques/sandbox-section";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { DecisionPageHeader } from "@/components/ui/decision-page-header";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
@@ -234,7 +234,7 @@ export default function ActionsMapPage() {
     </section>
   );
 
-  return (
+  const page = (
     <div data-rubrique-report-root className="space-y-6">
       <DecisionPageHeader
         context="Profil terrain"
@@ -290,12 +290,33 @@ export default function ActionsMapPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">Vérification technique intégrée</h2>
-            <p className="text-sm text-slate-600">Santé plateforme et sandbox technique.</p>
+            <h2 className="text-xl font-semibold text-slate-900">Visualiser la carte</h2>
+            <p className="text-sm text-slate-600">
+              Espace dédié pour tester la carte et retrouver la sandbox de découverte.
+            </p>
           </div>
           <RubriquePdfExportButton rubriqueTitle="Cockpit terrain complet" />
         </div>
-        <SandboxSection />
+        <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+          <p className="text-sm text-sky-900">
+            La sandbox complète est maintenant disponible dans la rubrique dédiée du
+            bloc Visualiser.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/sections/sandbox"
+              className="rounded-lg border border-sky-300 bg-white px-3 py-2 text-sm font-semibold text-sky-900 transition hover:bg-sky-100"
+            >
+              Ouvrir la sandbox
+            </Link>
+            <Link
+              href="/actions/new"
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+            >
+              Déclarer une action
+            </Link>
+          </div>
+        </div>
       </section>
 
       <footer className="pt-6 border-t border-slate-200">
@@ -309,5 +330,16 @@ export default function ActionsMapPage() {
         </div>
       </footer>
     </div>
+  );
+
+  return (
+    <ClerkRequiredGate
+      isAuthenticated={Boolean(user?.id)}
+      mode="disabled"
+      title="Carte des actions"
+      description="Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
+    >
+      {page}
+    </ClerkRequiredGate>
   );
 }

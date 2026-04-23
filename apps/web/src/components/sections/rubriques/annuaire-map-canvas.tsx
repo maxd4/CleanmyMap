@@ -10,6 +10,7 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import { ExternalLink, Instagram, Globe } from "lucide-react";
+import { getEntryTrustState, getPartnerWhyThisStructureMatters } from "./annuaire-helpers";
 
 // Types needed for integration
 type EngagementType = "environnemental" | "social" | "humanitaire";
@@ -39,7 +40,7 @@ export type AnnuaireEntry = {
   coveredArrondissements: number[];
   contributionTypes: ContributionType[];
   availability: string;
-  primaryChannel: {
+  primaryChannel?: {
     platform: "site web" | "instagram" | "facebook";
     label: string;
     url: string;
@@ -58,15 +59,27 @@ export type AnnuaireEntry = {
 const PARIS_CENTER: [number, number] = [48.8566, 2.3522];
 
 // Custom icons based on entity kind
-const createCustomIcon = (kind: EntityKind, highlighted = false) => {
+const createCustomIcon = (
+  kind: EntityKind,
+  trustState: "trusted" | "pending" | "incomplete",
+  highlighted = false,
+) => {
   let color = "#10b981"; // emerald default (association)
   if (kind === "commerce" || kind === "entreprise") color = "#f59e0b"; // amber
   if (kind === "evenement") color = "#3b82f6"; // blue
   if (kind === "groupe_parole") color = "#8b5cf6"; // violet
+  const outline =
+    trustState === "incomplete"
+      ? "#fb7185"
+      : trustState === "pending"
+        ? "#f59e0b"
+        : highlighted
+          ? "#1d4ed8"
+          : "transparent";
 
   return L.divIcon({
     className: "custom-leaflet-icon",
-    html: `<div style="background-color: ${color}; width: ${highlighted ? "18px" : "14px"}; height: ${highlighted ? "18px" : "14px"}; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.4); outline: ${highlighted ? "3px solid #1d4ed8" : "none"};"></div>`,
+    html: `<div style="background-color: ${color}; width: ${highlighted ? "18px" : "14px"}; height: ${highlighted ? "18px" : "14px"}; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.4); outline: ${outline === "transparent" ? "none" : `3px solid ${outline}`}; opacity: ${trustState === "trusted" ? 1 : 0.82};"></div>`,
     iconSize: [highlighted ? 18 : 14, highlighted ? 18 : 14],
     iconAnchor: [highlighted ? 9 : 7, highlighted ? 9 : 7],
   });
@@ -106,55 +119,98 @@ export function AnnuaireMapCanvas({
           </LayersControl.BaseLayer>
         </LayersControl>
 
-        {items.map((entry) => (
-          <Marker
-            key={entry.id}
-            position={[entry.lat, entry.lng]}
-            icon={createCustomIcon(entry.kind, highlightedItemId === entry.id)}
-          >
-            <Popup className="rounded-xl">
-              <div className="w-64 space-y-2 p-1">
-                <h4 className="font-semibold text-slate-900 leading-tight">{entry.name}</h4>
-                <div className="flex flex-wrap gap-1">
-                  {entry.types.map(t => (
-                    <span key={t} className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] uppercase font-semibold">
-                      {t}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-xs text-slate-600 line-clamp-3 leading-relaxed mt-1">{entry.description}</p>
-                <p className="text-[11px] text-slate-500">
-                  Zone couverte: {entry.coveredArrondissements.length > 0 ? `Paris ${entry.coveredArrondissements.join(", ")}` : entry.location}
-                </p>
-                <p className="text-[11px] text-slate-500">
-                  Statut: {entry.verificationStatus === "verifie" ? "verifie" : entry.verificationStatus === "en_cours" ? "en cours" : "a revalider"} | MAJ: {entry.lastUpdatedAt}
-                </p>
-                <div className="pt-2 border-t border-slate-100 mt-2 flex items-center justify-between">
-                  <div className="flex gap-2">
-                    {entry.websiteUrl && (
-                      <a href={entry.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-emerald-600">
-                        <Globe size={14} />
-                      </a>
-                    )}
-                    {entry.instagramUrl && (
-                      <a href={entry.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-rose-600">
-                        <Instagram size={14} />
-                      </a>
-                    )}
+        {items.map((entry) => {
+          const trustState = getEntryTrustState(entry);
+          return (
+            <Marker
+              key={entry.id}
+              position={[entry.lat, entry.lng]}
+              icon={createCustomIcon(
+                entry.kind,
+                trustState,
+                highlightedItemId === entry.id,
+              )}
+            >
+              <Popup className="rounded-xl">
+                <div className="w-64 space-y-2 p-1">
+                  <h4 className="font-semibold leading-tight text-slate-900">{entry.name}</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {entry.types.map((t) => (
+                      <span
+                        key={t}
+                        className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-slate-600"
+                      >
+                        {t}
+                      </span>
+                    ))}
                   </div>
-                  <a
-                    href={entry.primaryChannel.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
-                  >
-                    Contacter ({entry.primaryChannel.platform}) <ExternalLink size={10} />
-                  </a>
+                  <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-slate-600">
+                    {entry.description}
+                  </p>
+                  {trustState !== "trusted" ? (
+                    <p
+                      className={`text-[11px] font-semibold ${
+                        trustState === "incomplete"
+                          ? "text-rose-700"
+                          : "text-amber-700"
+                      }`}
+                    >
+                      {trustState === "incomplete"
+                        ? "Fiche à compléter"
+                        : "Fiche non confirmée"}
+                    </p>
+                  ) : null}
+                  <p className="text-[11px] text-slate-500">
+                    Zone couverte:{" "}
+                    {entry.coveredArrondissements.length > 0
+                      ? `Paris ${entry.coveredArrondissements.join(", ")}`
+                      : entry.location}
+                  </p>
+                  <p className="text-[11px] text-slate-500">
+                    Statut:{" "}
+                    {entry.verificationStatus === "verifie"
+                      ? "vérifiée"
+                      : entry.verificationStatus === "en_cours"
+                        ? "en cours"
+                        : "à revalider"}{" "}
+                    | MAJ: {entry.lastUpdatedAt}
+                  </p>
+                  {trustState === "trusted" ? (
+                    <p className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] text-emerald-900">
+                      {getPartnerWhyThisStructureMatters(entry)}
+                    </p>
+                  ) : null}
+                  <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-100 pt-2">
+                    {entry.primaryChannel ? (
+                      <a
+                        href={entry.primaryChannel.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-700"
+                      >
+                        Contacter <ExternalLink size={10} />
+                      </a>
+                    ) : (
+                      <span className="rounded-full border border-dashed border-slate-300 px-3 py-1.5 text-[10px] font-semibold text-slate-500">
+                        Canal public à confirmer
+                      </span>
+                    )}
+                    {entry.websiteUrl ? (
+                      <a
+                        href={entry.websiteUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-100"
+                      >
+                        Site officiel <Globe size={10} />
+                      </a>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );

@@ -8,10 +8,10 @@ export function SitePreferencesControls() {
     useSitePreferences();
 
   return (
-    <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 backdrop-blur-sm">
+    <div className="flex items-center gap-1.5 rounded-xl border border-slate-200/60 bg-slate-100/85 p-1 dark:border-slate-700/60 dark:bg-slate-800/85">
       {/* Language Selector */}
       <div className="relative group">
-        <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-slate-400 group-hover:text-emerald-500 transition-colors">
+        <div className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-slate-400 transition-colors group-hover:text-emerald-500">
           <Languages size={14} />
         </div>
         <select
@@ -20,7 +20,7 @@ export function SitePreferencesControls() {
           onChange={(event) =>
             setLocale(event.target.value === "en" ? "en" : "fr")
           }
-          className="appearance-none rounded-lg bg-transparent pl-7 pr-2 py-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer focus:outline-none"
+          className="cursor-pointer appearance-none rounded-lg bg-transparent px-2 py-1.5 pl-7 text-[11px] font-bold text-slate-600 transition-colors hover:bg-white/80 dark:text-slate-300 dark:hover:bg-slate-700/80 focus:outline-none"
           aria-label={locale === "fr" ? "Choisir la langue" : "Choose language"}
         >
           <option value="fr">FR</option>
@@ -34,7 +34,7 @@ export function SitePreferencesControls() {
       <button
         type="button"
         onClick={toggleTheme}
-        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all"
+        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] font-bold text-slate-600 transition-colors hover:bg-white/80 dark:text-slate-300 dark:hover:bg-slate-700/80"
         aria-label={locale === "fr" ? "Changer le thème" : "Toggle theme"}
       >
         {theme === "dark" ? (
@@ -53,7 +53,7 @@ export function SitePreferencesControls() {
 
       {/* Display Mode Selector */}
       <div className="relative group">
-        <div className="absolute inset-y-0 left-2 flex items-center pointer-events-none text-slate-400 group-hover:text-emerald-500 transition-colors">
+        <div className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-slate-400 transition-colors group-hover:text-emerald-500">
           <LayoutPanelLeft size={14} />
         </div>
         <select
@@ -67,7 +67,7 @@ export function SitePreferencesControls() {
                 : "exhaustif",
             );
           }}
-          className="appearance-none rounded-lg bg-transparent pl-7 pr-2 py-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-all cursor-pointer focus:outline-none"
+          className="cursor-pointer appearance-none rounded-lg bg-transparent px-2 py-1.5 pl-7 text-[11px] font-bold text-slate-600 transition-colors hover:bg-white/80 dark:text-slate-300 dark:hover:bg-slate-700/80 focus:outline-none"
           aria-label={
             locale === "fr"
               ? "Choisir le mode d'affichage"

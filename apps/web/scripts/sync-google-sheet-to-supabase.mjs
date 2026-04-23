@@ -22,6 +22,7 @@ const ENV_LOCAL_PATH = join(APP_DIR, ".env.local");
 
 const SYNC_MARKER = "[google-sheet-sync]";
 const META_PREFIX = "[cmm-meta]";
+const DRAWING_NOTE_PREFIX = "[DRAWING_GEOJSON]";
 const SYSTEM_USER_ID_DEFAULT = "system:google_sheet_sync";
 const ALLOWED_ACTION_STATUSES = new Set(["pending", "approved", "rejected"]);
 const ALLOWED_SPOT_STATUSES = new Set(["new", "validated", "cleaned"]);
@@ -151,14 +152,56 @@ function dedupeCleanPlaces(items) {
 }
 
 function stringifyMetaAssociation(associationName) {
-  if (!associationName || typeof associationName !== "string") {
+  const trimmed = typeof associationName === "string" ? associationName.trim() : "";
+  return trimmed ? trimmed : null;
+}
+
+function serializeTechnicalMeta(item) {
+  const meta = {};
+  const associationName = stringifyMetaAssociation(item.associationName);
+  if (associationName) {
+    meta.associationName = associationName;
+  }
+  if (typeof item.placeType === "string" && item.placeType.trim()) {
+    meta.placeType = item.placeType.trim();
+  }
+  if (
+    typeof item.departureLocationLabel === "string" &&
+    item.departureLocationLabel.trim()
+  ) {
+    meta.departureLocationLabel = item.departureLocationLabel.trim();
+  }
+  if (
+    typeof item.arrivalLocationLabel === "string" &&
+    item.arrivalLocationLabel.trim()
+  ) {
+    meta.arrivalLocationLabel = item.arrivalLocationLabel.trim();
+  }
+  if (item.routeStyle === "direct" || item.routeStyle === "souple") {
+    meta.routeStyle = item.routeStyle;
+  }
+  if (
+    typeof item.routeAdjustmentMessage === "string" &&
+    item.routeAdjustmentMessage.trim()
+  ) {
+    meta.routeAdjustmentMessage = item.routeAdjustmentMessage.trim();
+  }
+  return Object.keys(meta).length > 0 ? `${META_PREFIX}${JSON.stringify(meta)}` : null;
+}
+
+function serializeDrawing(item) {
+  const drawing = item.manualDrawing;
+  if (
+    !drawing ||
+    !Array.isArray(drawing.coordinates) ||
+    (drawing.kind !== "polyline" && drawing.kind !== "polygon")
+  ) {
     return null;
   }
-  const trimmed = associationName.trim();
-  if (!trimmed) {
-    return null;
-  }
-  return `${META_PREFIX}${JSON.stringify({ associationName: trimmed })}`;
+  return `${DRAWING_NOTE_PREFIX}${JSON.stringify({
+    kind: drawing.kind,
+    coordinates: drawing.coordinates,
+  })}`;
 }
 
 function composeActionNotes(item) {
@@ -167,9 +210,13 @@ function composeActionNotes(item) {
   if (base) {
     parts.push(base);
   }
-  const meta = stringifyMetaAssociation(item.associationName);
+  const meta = serializeTechnicalMeta(item);
   if (meta) {
     parts.push(meta);
+  }
+  const drawing = serializeDrawing(item);
+  if (drawing) {
+    parts.push(drawing);
   }
   parts.push(SYNC_MARKER);
   return parts.join("\n");

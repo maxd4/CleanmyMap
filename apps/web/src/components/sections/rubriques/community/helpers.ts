@@ -30,7 +30,7 @@ export function toRsvpLabel(status: CommunityRsvpStatus): string {
     return "Je participe";
   }
   if (status === "maybe") {
-    return "Peut-etre";
+    return "Peut-être";
   }
   return "Je ne participe pas";
 }

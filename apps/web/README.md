@@ -27,6 +27,7 @@ Recommended for production:
 - `SENTRY_PROJECT`
 - `NEXT_PUBLIC_POSTHOG_KEY`
 - `NEXT_PUBLIC_POSTHOG_HOST`
+- `NEXT_PUBLIC_POSTHOG_REGION` (`eu` by default, `us` if your PostHog project is in US)
 - `NEXT_PUBLIC_SENTRY_DSN`
 
 ## One-command backend bootstrap
@@ -83,3 +84,18 @@ npm run data:sheet:sync-supabase
 - **User Sync**: Clerk profiles are automatically mirrored in Supabase for performant joins.
 - **Monitoring**: Centralized error handling via `handleApiError` with Sentry and PostHog tracking.
 - **Data Integrity**: Explicit check after every Supabase operation to prevent silent failures.
+
+## PostHog quick setup (local + Vercel)
+
+- Standard env variables:
+  - `NEXT_PUBLIC_POSTHOG_KEY` (required)
+  - `NEXT_PUBLIC_POSTHOG_HOST` (optional, defaults from region)
+  - `NEXT_PUBLIC_POSTHOG_REGION` (`eu` or `us`, default `eu`)
+- Backward compatibility:
+  - `NEXT_PUBLIC_POSTHOG_TOKEN` is still accepted but deprecated.
+- Local verification:
+  - Run `npm run dev`, open the app, then trigger a tracked action (e.g. navigation click).
+  - In PostHog Live Events, confirm events such as `cmm_navigation_click`.
+- Vercel verification:
+  - Set the same variables in Vercel for Preview and Production.
+  - Redeploy, open the deployment URL, trigger an action, and check Live Events.

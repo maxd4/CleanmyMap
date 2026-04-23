@@ -1,6 +1,7 @@
 import type {
   ActionDrawing,
   ActionImpactLevel,
+  ActionPhotoAsset,
   ActionListItem,
   ActionMapItem,
   ActionQualityBreakdown,
@@ -8,6 +9,7 @@ import type {
   ActionRecordType,
   ActionSubmissionMode,
   ActionStatus,
+  ActionVisionEstimate,
   CreateActionPayload,
   LegacyActionRecordType,
   ActionWasteBreakdown,
@@ -54,10 +56,17 @@ export type ActionDataDates = {
 export type ActionDataMetadata = {
   actorName: string | null;
   associationName: string | null;
+  placeType: string | null;
+  departureLocationLabel: string | null;
+  arrivalLocationLabel: string | null;
+  routeStyle: "direct" | "souple" | null;
+  routeAdjustmentMessage: string | null;
   notes: string | null;
   notesPlain: string | null;
   submissionMode: ActionSubmissionMode | null;
   wasteBreakdown: ActionWasteBreakdown | null;
+  photos: ActionPhotoAsset[] | null;
+  visionEstimate: ActionVisionEstimate | null;
   wasteKg: number;
   cigaretteButts: number;
   volunteersCount: number;
@@ -70,6 +79,7 @@ export type ActionDataContract = {
   type: ActionEntityType;
   status: ActionStatus;
   source: string;
+  createdByClerkId?: string | null;
   location: ActionDataLocation;
   geometry: ActionDataGeometry;
   dates: ActionDataDates;
@@ -86,11 +96,16 @@ function toLegacyRecordType(type: ActionEntityType): LegacyActionRecordType {
 export type ActionContractCreatePayload = {
   type: ActionRecordType;
   source: string;
+  createdByClerkId?: string | null;
   location: {
     label: string;
     latitude?: number;
     longitude?: number;
   };
+  departureLocationLabel?: string;
+  arrivalLocationLabel?: string;
+  routeStyle?: "direct" | "souple";
+  routeAdjustmentMessage?: string;
   geometry?: {
     kind: "polyline" | "polygon";
     coordinates: [number, number][];
@@ -107,8 +122,14 @@ export type ActionContractCreatePayload = {
     volunteersCount?: number;
     durationMinutes?: number;
     notes?: string;
+    routeStyle?: "direct" | "souple";
+    routeAdjustmentMessage?: string;
     submissionMode?: ActionSubmissionMode;
     wasteBreakdown?: ActionWasteBreakdown;
+    departureLocationLabel?: string;
+    arrivalLocationLabel?: string;
+    photos?: ActionPhotoAsset[];
+    visionEstimate?: ActionVisionEstimate | null;
   };
 };
 
@@ -117,6 +138,7 @@ type BuildActionContractParams = {
   type: ActionEntityType;
   status: ActionStatus;
   source: string;
+  createdByClerkId?: string | null;
   observedAt: string;
   createdAt?: string | null;
   importedAt?: string | null;
@@ -130,10 +152,17 @@ type BuildActionContractParams = {
   durationMinutes?: number | null;
   actorName?: string | null;
   associationName?: string | null;
+  placeType?: string | null;
+  departureLocationLabel?: string | null;
+  arrivalLocationLabel?: string | null;
+  routeStyle?: "direct" | "souple" | null;
+  routeAdjustmentMessage?: string | null;
   notes?: string | null;
   notesPlain?: string | null;
   submissionMode?: ActionSubmissionMode | null;
   wasteBreakdown?: ActionWasteBreakdown | null;
+  photos?: ActionPhotoAsset[] | null;
+  visionEstimate?: ActionVisionEstimate | null;
   manualDrawing?: ActionDrawing | null;
   manualDrawingGeoJson?: string | null;
 };
@@ -188,6 +217,7 @@ export function buildActionDataContract(
     type: params.type,
     status: params.status,
     source: params.source,
+    createdByClerkId: params.createdByClerkId ?? null,
     location: {
       label: params.locationLabel,
       latitude,
@@ -213,10 +243,17 @@ export function buildActionDataContract(
     metadata: {
       actorName: params.actorName ?? null,
       associationName: params.associationName ?? null,
+      placeType: params.placeType ?? null,
+      departureLocationLabel: params.departureLocationLabel ?? null,
+      arrivalLocationLabel: params.arrivalLocationLabel ?? null,
+      routeStyle: params.routeStyle ?? null,
+      routeAdjustmentMessage: params.routeAdjustmentMessage ?? null,
       notes: params.notes ?? null,
       notesPlain: params.notesPlain ?? null,
       submissionMode: params.submissionMode ?? null,
       wasteBreakdown: params.wasteBreakdown ?? null,
+      photos: params.photos ?? null,
+      visionEstimate: params.visionEstimate ?? null,
       wasteKg: params.wasteKg === undefined || params.wasteKg === null ? 0 : toFiniteNumber(params.wasteKg, 0),
       cigaretteButts: params.cigaretteButts === undefined || params.cigaretteButts === null 
         ? 0 
@@ -249,6 +286,7 @@ export function toActionMapItem(
     status: contract.status,
     record_type: toLegacyRecordType(contract.type),
     source: contract.source,
+    created_by_clerk_id: contract.createdByClerkId ?? null,
     manual_drawing: contract.metadata.manualDrawing,
     manual_drawing_geojson: contract.geometry.geojson,
     submission_mode: contract.metadata.submissionMode,
@@ -287,6 +325,7 @@ export function toActionListItem(
     status: contract.status,
     record_type: toLegacyRecordType(contract.type),
     source: contract.source,
+    created_by_clerk_id: contract.createdByClerkId ?? null,
     notes_plain: contract.metadata.notesPlain,
     observed_at: contract.dates.observedAt,
     geometry_kind: contract.geometry.kind,
@@ -316,6 +355,10 @@ export function toContractCreatePayload(
       latitude: payload.latitude,
       longitude: payload.longitude,
     },
+    departureLocationLabel: payload.departureLocationLabel,
+    arrivalLocationLabel: payload.arrivalLocationLabel,
+    routeStyle: payload.routeStyle,
+    routeAdjustmentMessage: payload.routeAdjustmentMessage,
     geometry: payload.manualDrawing
       ? {
           kind: payload.manualDrawing.kind,
@@ -334,8 +377,12 @@ export function toContractCreatePayload(
       volunteersCount: payload.volunteersCount,
       durationMinutes: payload.durationMinutes,
       notes: payload.notes,
+      routeStyle: payload.routeStyle,
+      routeAdjustmentMessage: payload.routeAdjustmentMessage,
       submissionMode: payload.submissionMode,
       wasteBreakdown: payload.wasteBreakdown,
+      photos: payload.photos,
+      visionEstimate: payload.visionEstimate,
     },
   };
 }
@@ -351,6 +398,13 @@ export function normalizeCreatePayload(
     associationName: payload.metadata.associationName,
     actionDate: payload.dates.observedAt,
     locationLabel: payload.location.label,
+    departureLocationLabel:
+      payload.departureLocationLabel ?? payload.metadata.departureLocationLabel ?? "",
+    arrivalLocationLabel:
+      payload.arrivalLocationLabel ?? payload.metadata.arrivalLocationLabel ?? "",
+    routeStyle: payload.routeStyle ?? payload.metadata.routeStyle ?? undefined,
+    routeAdjustmentMessage:
+      payload.routeAdjustmentMessage ?? payload.metadata.routeAdjustmentMessage ?? undefined,
     latitude: payload.location.latitude,
     longitude: payload.location.longitude,
     wasteKg: payload.metadata.wasteKg,
@@ -360,6 +414,8 @@ export function normalizeCreatePayload(
     notes: payload.metadata.notes,
     submissionMode: payload.metadata.submissionMode ?? "complete",
     wasteBreakdown: payload.metadata.wasteBreakdown,
+    photos: payload.metadata.photos ?? undefined,
+    visionEstimate: payload.metadata.visionEstimate ?? undefined,
     manualDrawing: payload.geometry
       ? {
           kind: payload.geometry.kind,

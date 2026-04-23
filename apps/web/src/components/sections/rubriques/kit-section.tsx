@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 
 export function KitSection() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   const [packType, setPackType] = useState<"solo" | "team" | "school">("team");
   const [kitChecks, setKitChecks] = useState<Record<string, boolean>>({
     ppe: false,
@@ -19,39 +22,39 @@ export function KitSection() {
   const packItems = useMemo(() => {
     if (packType === "solo") {
       return [
-        "1 paire de gants",
-        "2 sacs differencies",
-        "1 pince",
-        "1 bouteille d'eau",
-        "telephone charge",
+        fr ? "1 paire de gants" : "1 pair of gloves",
+        fr ? "2 sacs différenciés" : "2 separate bags",
+        fr ? "1 pince" : "1 picker",
+        fr ? "1 bouteille d'eau" : "1 water bottle",
+        fr ? "téléphone chargé" : "charged phone",
       ];
     }
     if (packType === "school") {
       return [
-        "20 paires de gants",
-        "40 sacs differencies",
-        "6 pinces",
-        "kit signaletique",
-        "briefing securite imprime",
+        fr ? "20 paires de gants" : "20 pairs of gloves",
+        fr ? "40 sacs différenciés" : "40 separate bags",
+        fr ? "6 pinces" : "6 pickers",
+        fr ? "kit signalétique" : "signage kit",
+        fr ? "briefing sécurité imprimé" : "printed safety briefing",
       ];
     }
     return [
-      "10 paires de gants",
-      "20 sacs differencies",
-      "4 pinces",
-      "2 contenants megots",
-      "gilet haute visibilite x5",
+      fr ? "10 paires de gants" : "10 pairs of gloves",
+      fr ? "20 sacs différenciés" : "20 separate bags",
+      fr ? "4 pinces" : "4 pickers",
+      fr ? "2 contenants mégots" : "2 butt containers",
+      fr ? "gilet haute visibilité x5" : "5 high-visibility vests",
     ];
   }, [packType]);
 
   const variantTip = useMemo(() => {
     if (resourceVariant === "solo") {
-      return "Mode solo: privilegier des sorties courtes et des zones compactes.";
+      return fr ? "Mode solo: privilégier des sorties courtes et des zones compactes." : "Solo mode: favor short outings and compact areas.";
     }
     if (resourceVariant === "school") {
-      return "Mode scolaire: renforcer supervision adulte et balisage de zone.";
+      return fr ? "Mode scolaire: renforcer supervision adulte et balisage de zone." : "School mode: strengthen adult supervision and area marking.";
     }
-    return "Mode equipe: structurer les binomes pour maximiser couverture + qualite.";
+    return fr ? "Mode équipe: structurer les binômes pour maximiser couverture + qualité." : "Team mode: structure pairs to maximize coverage and quality.";
   }, [resourceVariant]);
 
   function copyPack(): void {
@@ -105,15 +108,15 @@ export function KitSection() {
 
   return (
     <div className="space-y-4">
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
       {/* Colonne Gauche : Configuration et Matériel */}
       <div className="space-y-4">
-        <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 shadow-sm">
+        <p className="rounded-2xl border border-slate-200 bg-slate-50/80 px-3 py-2 text-sm text-slate-700 shadow-sm">
           {variantTip}
         </p>
-        <article className="rounded-xl border border-slate-200 bg-white p-4">
+        <article className="rounded-3xl border border-slate-200 bg-white/90 p-4 shadow-md">
           <label className="flex flex-col gap-2 text-sm font-medium text-slate-900 mb-4">
-            Configuration du kit
+            {fr ? "Configuration du kit" : "Kit configuration"}
             <select
               value={packType}
               onChange={(event) =>
@@ -121,14 +124,14 @@ export function KitSection() {
               }
               className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 outline-none transition focus:border-emerald-500 font-normal mt-1"
             >
-              <option value="solo">Solo</option>
-              <option value="team">Equipe</option>
-              <option value="school">Scolaire</option>
+              <option value="solo">{fr ? "Solo" : "Solo"}</option>
+              <option value="team">{fr ? "Équipe" : "Team"}</option>
+              <option value="school">{fr ? "Scolaire" : "School"}</option>
             </select>
           </label>
-          <div className="pt-2 border-t border-slate-100">
+          <div className="pt-2 border-t border-slate-200">
             <h2 className="text-sm font-semibold text-slate-900 mb-2">
-              Materiel recommande
+              {fr ? "Matériel recommandé" : "Recommended equipment"}
             </h2>
             <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700">
               {packItems.map((item) => (
@@ -139,7 +142,7 @@ export function KitSection() {
               onClick={copyPack}
               className="mt-4 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 shadow-sm"
             >
-              Copier au presse-papier
+              {fr ? "Copier au presse-papier" : "Copy to clipboard"}
             </button>
           </div>
         </article>
@@ -147,18 +150,18 @@ export function KitSection() {
 
       {/* Colonne Droite : Checklist Opérationnelle */}
       <div className="space-y-4">
-        <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <article className="rounded-3xl border border-slate-200 bg-slate-50/80 p-4 shadow-sm">
           <div className="flex flex-wrap items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-slate-900">
-              Checklist avant depart
+              {fr ? "Checklist avant départ" : "Pre-departure checklist"}
             </h2>
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700 bg-emerald-100/50 px-2 py-1 rounded">
-              Progression kit: {kitProgress}%
+              {fr ? "Progression kit" : "Kit progress"}: {kitProgress}%
             </p>
           </div>
 
           <div className="mb-4 space-y-3">
-            <label className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
+            <label className="flex items-center gap-3 bg-white/90 p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
               <input
                 type="checkbox"
                 checked={kitChecks.ppe}
@@ -167,9 +170,9 @@ export function KitSection() {
                 }
                 className="flex-shrink-0"
               />
-              <span className="text-sm font-medium text-slate-800">EPI verifies et adaptes a la zone</span>
+              <span className="text-sm font-medium text-slate-800">{fr ? "EPI vérifiés et adaptés à la zone" : "PPE checked and adapted to the area"}</span>
             </label>
-            <label className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
+            <label className="flex items-center gap-3 bg-white/90 p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
               <input
                 type="checkbox"
                 checked={kitChecks.bags}
@@ -178,9 +181,9 @@ export function KitSection() {
                 }
                 className="flex-shrink-0"
               />
-              <span className="text-sm font-medium text-slate-800">Sacs differencies prepares (recyclable/tout-venant)</span>
+              <span className="text-sm font-medium text-slate-800">{fr ? "Sacs différenciés préparés (recyclable/tout-venant)" : "Separate bags prepared (recyclables/general waste)"}</span>
             </label>
-            <label className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
+            <label className="flex items-center gap-3 bg-white/90 p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
               <input
                 type="checkbox"
                 checked={kitChecks.tools}
@@ -189,9 +192,9 @@ export function KitSection() {
                 }
                 className="flex-shrink-0"
               />
-              <span className="text-sm font-medium text-slate-800">Outils de collecte (pinces, cendriers)</span>
+              <span className="text-sm font-medium text-slate-800">{fr ? "Outils de collecte (pinces, cendriers)" : "Collection tools (pickers, ashtrays)"}</span>
             </label>
-            <label className="flex items-center gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
+            <label className="flex items-center gap-3 bg-white/90 p-3 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-300 transition-colors">
               <input
                 type="checkbox"
                 checked={kitChecks.briefing}
@@ -203,29 +206,29 @@ export function KitSection() {
                 }
                 className="flex-shrink-0"
               />
-              <span className="text-sm font-medium text-slate-800">Briefing securite et parcours diffuse</span>
+              <span className="text-sm font-medium text-slate-800">{fr ? "Briefing sécurité et parcours diffusé" : "Safety briefing and route shared"}</span>
             </label>
           </div>
 
           <div className="pt-4 border-t border-slate-200">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Actions logistiques</h3>
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{fr ? "Actions logistiques" : "Logistics actions"}</h3>
             <ol className="list-decimal space-y-1 pl-5 text-xs text-slate-600 mb-4">
-              <li>Verifier l&apos;etat de la meteo en temps reel.</li>
-              <li>Confirmer l&apos;heure, la zone et le lieu de dechargement.</li>
-              <li>Ouvrir la carte de priorisation avant depart.</li>
+              <li>{fr ? "Vérifier l'état de la météo en temps réel." : "Check the weather status in real time."}</li>
+              <li>{fr ? "Confirmer l'heure, la zone et le lieu de déchargement." : "Confirm time, zone and drop-off point."}</li>
+              <li>{fr ? "Ouvrir la carte de priorisation avant départ." : "Open the prioritization map before departure."}</li>
             </ol>
             <div className="flex flex-wrap gap-2">
               <Link
                 href="/actions/new"
                 className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-emerald-700"
               >
-                Declarer l'action
+                {fr ? "Déclarer l'action" : "Declare action"}
               </Link>
               <Link
                 href="/actions/map"
                 className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
               >
-                Ouvrir la roadmap
+                {fr ? "Ouvrir la roadmap" : "Open roadmap"}
               </Link>
             </div>
           </div>

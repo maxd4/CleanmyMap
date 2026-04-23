@@ -1,15 +1,12 @@
-import { auth } from "@clerk/nextjs/server";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { AppSidebar } from "@/components/navigation/app-sidebar";
-import { AppBreadcrumb } from "@/components/navigation/app-breadcrumb";
-import { BlockSwitcher } from "@/components/navigation/block-switcher";
+import { AppNavigationRibbon } from "@/components/navigation/app-navigation-ribbon";
 import { DisplayModeOnboardingGate } from "@/components/ui/display-mode-onboarding-gate";
-import { getCurrentUserLocationPreference } from "@/lib/auth/user-location";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getProfileLabel, toProfile } from "@/lib/profiles";
-import { getServerLocale } from "@/lib/server-preferences";
-import { STORAGE_KEYS, parseDisplayMode } from "@/lib/ui/preferences";
+import {
+  getServerDisplayModePreference,
+  getServerLocale,
+} from "@/lib/server-preferences";
 
 import { WeatherWarningBar } from "@/components/ui/weather-warning-bar";
 
@@ -18,44 +15,40 @@ export default async function AppLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  const { userId, clerkReachable } = await getSafeAuthSession();
 
-  const locationPreference = await getCurrentUserLocationPreference();
-  if (!locationPreference) redirect("/onboarding/localisation");
-
-  const cookieStore = await cookies();
-  const displayMode = parseDisplayMode(
-    cookieStore.get(STORAGE_KEYS.displayMode)?.value,
-  );
+  const identity = await getCurrentUserIdentity();
+  const { displayMode } = await getServerDisplayModePreference();
 
   const locale = await getServerLocale();
-  const role = await getCurrentUserRoleLabel();
+  const role = clerkReachable
+    ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)
+    : ("anonymous" as const);
   const currentProfile = toProfile(role);
-  const profileLabel = getProfileLabel(currentProfile, locale);
+  const profileLabel = userId
+    ? getProfileLabel(currentProfile, locale)
+    : locale === "fr"
+      ? "Visiteur"
+      : "Visitor";
 
   return (
-    <div 
-      className="flex min-h-screen w-full flex-col px-4 py-3 sm:px-8 sm:py-4 bg-slate-50/30 transition-all duration-300"
+    <div
+      className="flex min-h-screen w-full flex-col bg-slate-50/30 transition-all duration-300"
       data-display-mode={displayMode}
       data-user-profile={currentProfile}
     >
       <WeatherWarningBar />
-      <DisplayModeOnboardingGate />
+      {userId ? <DisplayModeOnboardingGate /> : null}
 
-      {/* Block Switcher — toujours visible, mobile + desktop */}
-      <div className="mb-4">
-        <BlockSwitcher currentProfile={currentProfile} />
-      </div>
+      <AppNavigationRibbon
+        currentProfile={currentProfile}
+        profileLabel={profileLabel}
+        identity={identity}
+      />
 
-      {/* Corps principal : Pleine largeur sans sidebar */}
-      <div className="flex flex-1 flex-col gap-2 min-w-0">
-        {/* Breadcrumb sticky */}
-        <AppBreadcrumb
-          currentProfile={currentProfile}
-          profileLabel={profileLabel}
-        />
-
+      <div
+        className="mx-auto flex min-w-0 w-full max-w-7xl flex-1 flex-col gap-2 px-4 py-3 pb-12 sm:px-8 sm:py-4 sm:pb-16"
+      >
         <main className="flex-1">{children}</main>
       </div>
     </div>

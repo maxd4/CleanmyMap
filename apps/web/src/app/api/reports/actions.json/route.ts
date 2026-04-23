@@ -1,5 +1,6 @@
 import { buildDateFloor, resolveReportQuery } from "@/lib/reports/csv";
 import { buildDeliverableFilename } from "@/lib/reports/deliverable-name";
+import { filterActionContractsByScope } from "@/lib/reports/scope";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -27,20 +28,20 @@ export async function GET(request: Request) {
       await fetchUnifiedActionContracts(
       supabase,
       {
-        limit: query.limit,
+        limit: Math.max(query.limit * 4, query.limit),
         status: query.status,
         floorDate,
         requireCoordinates: false,
         types,
       },
     );
-    const filteredContracts = query.association
-      ? contracts.filter(
-          (contract) =>
-            (contract.metadata.associationName ?? "").trim().toLowerCase() ===
-            query.association?.toLowerCase(),
-        )
-      : contracts;
+    const filteredContracts = filterActionContractsByScope(contracts, {
+      kind: query.scopeKind,
+      value:
+        query.scopeKind === "association"
+          ? query.scopeValue ?? query.association
+          : query.scopeValue,
+    });
     const enrichedItems = filteredContracts.map((contract) => ({
       id: contract.id,
       created_at: contract.dates.createdAt,

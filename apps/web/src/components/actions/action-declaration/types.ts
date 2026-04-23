@@ -1,4 +1,4 @@
-import type { ActionDrawing, ActionMegotsCondition } from "@/lib/actions/types";
+import type { ActionMegotsCondition } from "@/lib/actions/types";
 
 export type FormState = {
   actorName: string;
@@ -6,6 +6,10 @@ export type FormState = {
   enterpriseName: string;
   actionDate: string;
   locationLabel: string;
+  departureLocationLabel: string;
+  arrivalLocationLabel: string;
+  routeStyle: "direct" | "souple";
+  routeAdjustmentMessage: string;
   latitude: string;
   longitude: string;
   wasteKg: string;
@@ -21,6 +25,9 @@ export type FormState = {
   wasteMixteKg: string;
   triQuality: "faible" | "moyenne" | "elevee";
   placeType: string;
+  visionBagsCount: string;
+  visionFillLevel: "" | "25" | "50" | "75" | "100";
+  visionDensity: "" | "sec" | "humide_dense" | "mouille";
 };
 
 export type SubmissionState = "idle" | "pending" | "success" | "error";
@@ -50,10 +57,3 @@ export type UpdateFormField = <K extends keyof FormState>(
   key: K,
   value: FormState[K],
 ) => void;
-
-export type DrawingState = {
-  enabled: boolean;
-  value: ActionDrawing | null;
-  isValid: boolean;
-  effectiveEnabled: boolean;
-};

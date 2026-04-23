@@ -3,7 +3,9 @@ import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
 import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
-import { Shell } from "lucide-react";
+import Image from "next/image";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 
 async function loadFullAuditData() {
   const supabase = getSupabaseServerClient();
@@ -23,6 +25,48 @@ async function loadFullAuditData() {
 }
 
 export default async function PrintReportPage() {
+  const { userId, clerkReachable } = await getSafeAuthSession();
+  if (!userId) {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="blur"
+        title="Rapport imprimable"
+        description={
+          clerkReachable
+            ? "Cette fonctionnalité nécessite une connexion Clerk."
+            : "Connexion Clerk temporairement indisponible. La vue reste lisible."
+        }
+        lockedPreview={
+          <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+            <div className="grid gap-3 md:grid-cols-4">
+              {[
+                "Masse récoltée",
+                "Bénévoles",
+                "Score qualité",
+                "Zones couvertes",
+              ].map((label) => (
+                <article
+                  key={label}
+                  className="rounded-2xl border border-slate-200 bg-white p-4"
+                >
+                  <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
+                  <p className="mt-2 text-lg font-semibold text-slate-900">n/a</p>
+                </article>
+              ))}
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+              Le rapport complet, les exportations et la méthodologie détaillée
+              se déverrouillent après connexion.
+            </div>
+          </section>
+        }
+      >
+        <div />
+      </ClerkRequiredGate>
+    );
+  }
+
   const data = await loadFullAuditData().catch(() => null);
   const overview = data?.overview;
   const monthlyData = data ? aggregateMonthlyAnalytics(data.contracts) : [];
@@ -34,8 +78,15 @@ export default async function PrintReportPage() {
       {/* HEADER PROFESSIONNEL */}
       <header className="flex justify-between items-start border-b-2 border-slate-900 pb-8 mb-12">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-slate-900 font-black text-2xl tracking-tighter">
-            <Shell size={28} className="text-emerald-600" />
+          <div className="flex items-center gap-3 text-slate-900 font-black text-2xl tracking-tighter">
+            <Image
+              src="/brand/nouveau-logo.png"
+              alt="Logo CleanMyMap"
+              width={62}
+              height={35}
+              className="h-8 w-auto"
+              priority
+            />
             CLEANMYMAP <span className="text-slate-400 font-light">AUDIT</span>
           </div>
           <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
@@ -95,7 +146,16 @@ export default async function PrintReportPage() {
       {/* FOOTER */}
       <footer className="mt-auto pt-12 border-t border-slate-100 flex justify-between items-end">
         <div className="space-y-2">
-          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">CleanMyMap.io - Intelligence Environnementale</p>
+          <div className="flex items-center gap-2">
+            <Image
+              src="/brand/nouveau-logo.png"
+              alt="Logo CleanMyMap"
+              width={50}
+              height={28}
+              className="h-5 w-auto opacity-70"
+            />
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">CleanMyMap - Intelligence Environnementale</p>
+          </div>
           <div className="flex gap-4 text-[9px] text-slate-300 font-mono">
             <span>RFC-6749 COMPLIANT</span>
             <span>GDPR CERTIFIED</span>

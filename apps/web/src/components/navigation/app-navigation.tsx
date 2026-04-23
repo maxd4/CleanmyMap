@@ -14,6 +14,7 @@ import {
   getNavigationCategoriesForProfile,
   getNavigationLabels,
   getNavigationProfileOverview,
+  getPilotFallbackItems,
   getNavigationSpacesForProfile,
   getProfileNavigationEntries,
 } from "@/lib/navigation";
@@ -60,6 +61,10 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
     displayMode === "simplifie"
       ? spaces.map((space) => ({ ...space, items: space.items.slice(0, 2) }))
       : spaces;
+  const getRenderedSpaceItems = (space: (typeof renderedSpaces)[number]) =>
+    space.id === "pilot" && space.items.length === 0
+      ? getPilotFallbackItems(locale)
+      : space.items;
 
   function onTrackNavigation(
     href: string,
@@ -93,7 +98,7 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
         {parcoursNavV2Enabled ? (
           <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-2 text-xs text-emerald-900">
             <p>
-              Role actif:{" "}
+              Profil actif:{" "}
               <span className="font-semibold">
                 {profileEntries.find((item) => item.id === currentProfile)
                   ?.label[locale] ?? currentProfile}
@@ -193,7 +198,7 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
                   {space.label[locale]}
                 </h2>
                 <ul className="mt-2 space-y-2">
-                  {space.items.map((item) => {
+                  {getRenderedSpaceItems(space).map((item) => {
                     const active = isActive(pathname, item.href);
                     return (
                       <li key={item.id}>
@@ -224,7 +229,7 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
                       </li>
                     );
                   })}
-                  {space.items.length === 0 ? (
+                  {space.items.length === 0 && space.id !== "pilot" ? (
                     <li className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-500">
                       {locale === "fr"
                         ? "Aucune page rattachee a ce bloc."
@@ -246,7 +251,7 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
                   {space.label[locale]}
                 </summary>
                 <ul className="mt-2 space-y-2">
-                  {space.items.map((item) => {
+                  {getRenderedSpaceItems(space).map((item) => {
                     const active = isActive(pathname, item.href);
                     return (
                       <li key={item.id}>
@@ -277,7 +282,7 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
                       </li>
                     );
                   })}
-                  {space.items.length === 0 ? (
+                  {space.items.length === 0 && space.id !== "pilot" ? (
                     <li className="rounded-lg border border-dashed border-slate-300 px-3 py-2 text-xs text-slate-500">
                       {locale === "fr"
                         ? "Aucune page rattachee a ce bloc."

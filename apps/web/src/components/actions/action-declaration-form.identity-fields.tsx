@@ -33,29 +33,32 @@ export function ActionDeclarationIdentityFields({
   return (
     <>
       <label className="flex flex-col gap-2 text-sm text-slate-700">
-        Identite benevole (compte)
+        Nom / prénom ou compte
         <select
-          className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
+          name="actorName"
+          autoComplete="name"
+          className="rounded-xl border border-slate-300 px-3 py-3 text-slate-900 outline-none transition focus:border-emerald-500"
           value={actorName}
           onChange={(event) => onActorNameChange(event.target.value)}
         >
-          {resolvedActorOptions.map((option) => (
+        {resolvedActorOptions.map((option) => (
             <option key={option} value={option}>
               {option}
             </option>
           ))}
         </select>
         <p className="text-xs text-slate-500">
-          Selection issue du compte Clerk (prenom/pseudo). Aucune saisie libre
-          non tracee.
+          Compte Clerk ou nom enregistré.
         </p>
       </label>
 
       <label className="flex flex-col gap-2 text-sm text-slate-700">
-        Association / cadre d&apos;engagement *
+        Structure / cadre d&apos;engagement *
         <select
           required
-          className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
+          name="associationName"
+          autoComplete="organization"
+          className="rounded-xl border border-slate-300 px-3 py-3 text-slate-900 outline-none transition focus:border-emerald-500"
           value={associationName}
           onChange={(event) => onAssociationNameChange(event.target.value)}
         >
@@ -66,17 +69,18 @@ export function ActionDeclarationIdentityFields({
           ))}
         </select>
         <p className="text-xs text-slate-500">
-          Liste normalisee issue de l&apos;historique Cleanwalk Paris, pour des
-          exports et classements homogenes.
+          Normalisé pour les exports.
         </p>
       </label>
 
       {isEntrepriseMode ? (
         <label className="flex flex-col gap-2 text-sm text-slate-700">
-          Nom de l&apos;entreprise *
+          Nom de la structure *
           <input
             required
-            className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
+            name="enterpriseName"
+            autoComplete="organization"
+            className="rounded-xl border border-slate-300 px-3 py-3 text-slate-900 outline-none transition focus:border-emerald-500"
             value={enterpriseName}
             onChange={(event) => onEnterpriseNameChange(event.target.value)}
             placeholder="Ex: Veolia, BNP Paribas, SNCF..."
@@ -84,7 +88,7 @@ export function ActionDeclarationIdentityFields({
             maxLength={100}
           />
           <p className="text-xs text-slate-500">
-            Le rapport enregistrera cette valeur comme: Entreprise - Nom.
+            Enregistré comme Structure - Nom.
           </p>
         </label>
       ) : null}

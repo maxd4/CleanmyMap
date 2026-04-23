@@ -3,9 +3,12 @@
 import { useMemo } from "react";
 import useSWR from "swr";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 
 export function RecyclingSection() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   const actions = useSWR(["section-recycling-actions"], () =>
     fetchActions({ status: "approved", limit: 350 }),
   );
@@ -74,7 +77,7 @@ export function RecyclingSection() {
         <div className="space-y-4">
           <div className="grid gap-3 md:grid-cols-2">
             <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Volume triable</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{fr ? "Volume triable" : "Sortable volume"}</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{stats.totalKg.toFixed(1)} kg</p>
             </article>
             <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
@@ -82,17 +85,17 @@ export function RecyclingSection() {
               <p className="mt-1 text-2xl font-bold text-slate-900">{stats.totalButts}</p>
             </article>
             <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Traçabilité géo</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{fr ? "Traçabilité géo" : "Geo traceability"}</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{stats.withTrace}</p>
             </article>
             <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Indice tri propre</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{fr ? "Indice tri propre" : "Clean sorting index"}</p>
               <p className="mt-1 text-2xl font-bold text-slate-900">{stats.mixedIndex}/100</p>
             </article>
           </div>
 
           <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-900">Workflow filière (trier - qualifier - orienter)</h2>
+            <h2 className="text-sm font-semibold text-slate-900">{fr ? "Workflow filière (trier - qualifier - orienter)" : "Sorting workflow (sort - qualify - route)"}</h2>
             <ul className="mt-2 list-disc pl-5 text-sm text-slate-700 space-y-1">
               <li>Mégots: contenant fermé, étiquette volume, stockage sec.</li>
               <li>Verre/métal: sacs distincts pour éviter contamination croisée.</li>
@@ -103,7 +106,7 @@ export function RecyclingSection() {
           </article>
           
           <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-900">Exploitation des données</h2>
+            <h2 className="text-sm font-semibold text-slate-900">{fr ? "Exploitation des données" : "Data use"}</h2>
             <ul className="mt-2 list-disc pl-5 text-sm text-slate-700 space-y-1">
               <li>Associer catégorie de déchet dans les commentaires.</li>
               <li>Documenter zone de collecte par trace/polygone.</li>
@@ -116,12 +119,12 @@ export function RecyclingSection() {
         {/* DROITE : Données réelles filières */}
         <div className="space-y-4">
           <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-900">Pilotage par filière</h2>
-            {isLoading ? (<p className="text-sm text-slate-500 mt-2">Chargement des indicateurs de tri...</p>) : null}
-            {hasError ? (<p className="text-sm text-rose-700 mt-2">Données de tri indisponibles.</p>) : null}
+            <h2 className="text-sm font-semibold text-slate-900">{fr ? "Pilotage par filière" : "Line management"}</h2>
+            {isLoading ? (<p className="text-sm text-slate-500 mt-2">{fr ? "Chargement des indicateurs de tri..." : "Loading sorting indicators..."}</p>) : null}
+            {hasError ? (<p className="text-sm text-rose-700 mt-2">{fr ? "Données de tri indisponibles." : "Sorting data unavailable."}</p>) : null}
             
-            {breakdown.isLoading ? (<p className="mt-2 text-sm text-slate-500">Chargement des filières...</p>) : null}
-            {breakdown.error ? (<p className="mt-2 text-sm text-rose-700">Agrégation filière indisponible.</p>) : null}
+            {breakdown.isLoading ? (<p className="mt-2 text-sm text-slate-500">{fr ? "Chargement des filières..." : "Loading sorting streams..."}</p>) : null}
+            {breakdown.error ? (<p className="mt-2 text-sm text-rose-700">{fr ? "Agrégation filière indisponible." : "Sorting aggregation unavailable."}</p>) : null}
             
             {breakdown.data ? (
               <div className="mt-3 space-y-3">
@@ -129,10 +132,10 @@ export function RecyclingSection() {
                   <table className="min-w-full text-left text-sm">
                     <thead className="bg-slate-50 text-slate-600">
                       <tr>
-                        <th className="px-3 py-2 font-semibold">Filière</th>
-                        <th className="px-3 py-2 font-semibold">Volume (kg)</th>
-                        <th className="px-3 py-2 font-semibold">Part</th>
-                        <th className="px-3 py-2 font-semibold">Actions source</th>
+                        <th className="px-3 py-2 font-semibold">{fr ? "Filière" : "Stream"}</th>
+                        <th className="px-3 py-2 font-semibold">{fr ? "Volume (kg)" : "Volume (kg)"}</th>
+                        <th className="px-3 py-2 font-semibold">{fr ? "Part" : "Share"}</th>
+                        <th className="px-3 py-2 font-semibold">{fr ? "Actions source" : "Source actions"}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -150,11 +153,11 @@ export function RecyclingSection() {
                   </table>
                 </div>
                 <div className="rounded-lg bg-slate-50 p-3">
-                  <p className="text-xs font-semibold text-slate-600">Qualité de tri signalée :</p>
+                  <p className="text-xs font-semibold text-slate-600">{fr ? "Qualité de tri signalée :" : "Reported sorting quality:"}</p>
                   <p className="text-xs text-slate-700 mt-1">
-                    Élevée: <span className="font-semibold text-emerald-600">{breakdown.data.triQuality.elevee}</span> • 
-                    Moyenne: <span className="font-semibold text-amber-600">{breakdown.data.triQuality.moyenne}</span> • 
-                    Faible: <span className="font-semibold text-rose-600">{breakdown.data.triQuality.faible}</span>
+                    {fr ? "Élevée" : "High"}: <span className="font-semibold text-emerald-600">{breakdown.data.triQuality.elevee}</span> •
+                    {fr ? "Moyenne" : "Medium"}: <span className="font-semibold text-amber-600">{breakdown.data.triQuality.moyenne}</span> •
+                    {fr ? "Faible" : "Low"}: <span className="font-semibold text-rose-600">{breakdown.data.triQuality.faible}</span>
                   </p>
                 </div>
               </div>
@@ -165,4 +168,3 @@ export function RecyclingSection() {
     </div>
   );
 }
-

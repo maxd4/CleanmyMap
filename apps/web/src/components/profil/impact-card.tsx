@@ -1,8 +1,11 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { User, Shield, Droplets, Target, Award } from "lucide-react";
+import { User, Shield, Droplets } from "lucide-react";
 import Image from "next/image";
+import {
+  BadgePictogram,
+  getGamificationBadgeIconName,
+} from "@/components/gamification/badge-icon";
 
 type ImpactCardProps = {
   userName: string;
@@ -66,8 +69,12 @@ export function ImpactCard({
         <p className="text-[10px] uppercase font-bold text-emerald-200 tracking-widest mb-3 text-center">Badges principaux</p>
         <div className="flex justify-center gap-3">
           {topBadges.slice(0, 3).map((badge, i) => (
-            <div key={i} className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner" title={badge}>
-              <Award size={20} className="text-white" />
+            <div key={i} className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-inner" title={badge} aria-label={badge}>
+              <BadgePictogram
+                name={getGamificationBadgeIconName(badge)}
+                size={20}
+                className="text-white"
+              />
             </div>
           ))}
           {topBadges.length === 0 && <p className="text-xs italic opacity-40">En cours d'obtention...</p>}
@@ -75,9 +82,17 @@ export function ImpactCard({
       </footer>
 
       {/* Logo footer */}
-      <div className="absolute bottom-6 left-0 right-0 text-center space-y-1">
+      <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center space-y-1">
+        <Image
+          src="/brand/nouveau-logo.png"
+          alt="Logo CleanMyMap"
+          width={54}
+          height={30}
+          className="h-6 w-auto opacity-55"
+          priority
+        />
         <p className="text-[8px] font-bold tracking-widest uppercase opacity-40">Méthodologie CMM-v1 Scientifique</p>
-        <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-40">CleanMyMap.IO</p>
+        <p className="text-[10px] font-bold tracking-[0.2em] uppercase opacity-40">CleanMyMap</p>
       </div>
     </div>
   );

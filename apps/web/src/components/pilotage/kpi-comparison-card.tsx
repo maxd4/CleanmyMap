@@ -1,5 +1,7 @@
+import type { ReactNode } from "react";
+
 type KpiComparisonCardProps = {
-  label: string;
+  label: ReactNode;
   value: string;
   previousValue?: string;
   deltaAbsolute?: string;

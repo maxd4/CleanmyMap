@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import useSWR from "swr";
 import { MapPin } from "lucide-react";
 import {
   PARIS_ARRONDISSEMENTS,
@@ -12,11 +13,11 @@ import {
   type ParisArrondissement,
 } from "@/lib/geo/paris-arrondissements";
 import { extractUserLocationPreferenceFromMetadata } from "@/lib/user-location-preference";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { AcademieClimatWorkshopsPanel } from "./academie-climat-workshops-panel";
 import { INITIAL_ANNUAIRE_ENTRIES } from "./annuaire-directory-seed";
-import { AnnuaireGovernancePanel } from "./annuaire-governance-panel";
 import { AnnuaireActorCard } from "./annuaire-actor-card";
-import { DiscussionBugReportForm } from "./discussion-bug-report-form";
-import { DiscussionBadgesPanel } from "./discussion-badges-panel";
+import type { AnnuaireEntry } from "./annuaire-map-canvas";
 import {
   ACTOR_CARDS_PAGE_SIZE,
   CONTRIBUTION_FILTERS,
@@ -26,9 +27,7 @@ import {
   type ZoneFilter,
 } from "./annuaire-filters";
 import {
-  buildDashboardStats,
-  VERIFICATION_LABELS,
-  buildAutomaticRecommendations,
+  getEntryTrustState,
   hasRecentActivity,
   isNearbyEntry,
   sanitizeRole,
@@ -41,13 +40,20 @@ const AnnuaireMapCanvas = dynamic(
     ssr: false,
     loading: () => (
       <div className="h-[500px] w-full animate-pulse rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center">
-        Chargement de la carte...
+        Loading map...
       </div>
     ),
   },
 );
 
+type PublishedDirectoryResponse = {
+  status: "ok";
+  items: AnnuaireEntry[];
+};
+
 export function AnnuaireSection() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   const { user } = useUser();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterKind, setFilterKind] = useState<EntityKind | "all">("all");
@@ -58,6 +64,34 @@ export function AnnuaireSection() {
   const [highlightedActorId, setHighlightedActorId] = useState<string | null>(null);
   const [actorCardsPage, setActorCardsPage] = useState(1);
 
+  const publishedEntriesQuery = useSWR<PublishedDirectoryResponse>(
+    "/api/partners/published-directory",
+    async (url: string) => {
+      const response = await fetch(url, { method: "GET", cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("published_directory_unavailable");
+      }
+      return (await response.json()) as PublishedDirectoryResponse;
+    },
+  );
+  const publishedEntries = publishedEntriesQuery.data?.items ?? [];
+  const allEntries = useMemo(
+    () => {
+      const seen = new Set<string>();
+      const output: AnnuaireEntry[] = [];
+      for (const entry of [...INITIAL_ANNUAIRE_ENTRIES, ...publishedEntries]) {
+        const key = `${entry.name.trim().toLowerCase()}::${entry.legalIdentity.trim().toLowerCase()}`;
+        if (seen.has(key)) {
+          continue;
+        }
+        seen.add(key);
+        output.push(entry);
+      }
+      return output;
+    },
+    [publishedEntries],
+  );
+
   const locationPreference = extractUserLocationPreferenceFromMetadata(
     user?.unsafeMetadata as Record<string, unknown> | undefined,
   );
@@ -65,23 +99,9 @@ export function AnnuaireSection() {
   const currentProfile = sanitizeRole(user?.publicMetadata?.role);
   const showInternalContact = currentProfile === "admin" || currentProfile === "elu";
 
-  const activeQualifiedEntries = INITIAL_ANNUAIRE_ENTRIES.filter(
-    (entry) =>
-      entry.qualificationStatus === "partenaire_actif" &&
-      entry.verificationStatus === "verifie" &&
-      hasRecentActivity(entry.recentActivityAt),
-  );
-
-  const pendingOrUnqualifiedEntries = INITIAL_ANNUAIRE_ENTRIES.filter(
-    (entry) =>
-      entry.qualificationStatus !== "partenaire_actif" ||
-      entry.verificationStatus !== "verifie" ||
-      !hasRecentActivity(entry.recentActivityAt),
-  );
-
   const sortedAndFilteredEntries: EnrichedAnnuaireEntry[] = (() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
-    const entriesWithDistance: EnrichedAnnuaireEntry[] = activeQualifiedEntries.map(
+    const entriesWithDistance: EnrichedAnnuaireEntry[] = allEntries.map(
       (entry) => ({
         ...entry,
         distanceKm: targetArrondissement
@@ -115,10 +135,42 @@ export function AnnuaireSection() {
 
     const isDecideur = currentProfile === "elu" || currentProfile === "admin";
 
-      return filtered.sort((a, b) => {
-        if (a.distanceKm !== null && b.distanceKm !== null) {
-          if (Math.abs(a.distanceKm - b.distanceKm) > 0.05) {
-            return a.distanceKm - b.distanceKm;
+    const trustWeight = (entry: EnrichedAnnuaireEntry) => {
+      const trustState = getEntryTrustState(entry);
+      if (entry.qualificationStatus === "partenaire_actif" && entry.verificationStatus === "verifie" && hasRecentActivity(entry.recentActivityAt) && trustState === "trusted") {
+        return 0;
+      }
+      if (trustState === "trusted") {
+        return 1;
+      }
+      if (trustState === "pending") {
+        return 2;
+      }
+      return 3;
+    };
+
+    return filtered.sort((a, b) => {
+      const aIsActive =
+        a.qualificationStatus === "partenaire_actif" &&
+        a.verificationStatus === "verifie" &&
+        hasRecentActivity(a.recentActivityAt);
+      const bIsActive =
+        b.qualificationStatus === "partenaire_actif" &&
+        b.verificationStatus === "verifie" &&
+        hasRecentActivity(b.recentActivityAt);
+      if (aIsActive !== bIsActive) {
+        return aIsActive ? -1 : 1;
+      }
+
+      const aTrust = trustWeight(a);
+      const bTrust = trustWeight(b);
+      if (aTrust !== bTrust) {
+        return aTrust - bTrust;
+      }
+
+      if (a.distanceKm !== null && b.distanceKm !== null) {
+        if (Math.abs(a.distanceKm - b.distanceKm) > 0.05) {
+          return a.distanceKm - b.distanceKm;
         }
       }
 
@@ -146,32 +198,6 @@ export function AnnuaireSection() {
     actorCardsStart + ACTOR_CARDS_PAGE_SIZE,
   );
 
-  const recommendations = buildAutomaticRecommendations({
-    entries: sortedAndFilteredEntries,
-    profile: currentProfile,
-    arrondissement: targetArrondissement,
-  });
-
-  const mostRecentlyUpdatedEntries = [...sortedAndFilteredEntries]
-    .sort((a, b) => b.lastUpdatedAt.localeCompare(a.lastUpdatedAt))
-    .slice(0, 4);
-
-  const nearbyEntries = (() => {
-    if (!targetArrondissement) {
-      return [] as EnrichedAnnuaireEntry[];
-    }
-    return [...sortedAndFilteredEntries]
-      .filter((entry) =>
-        isNearbyEntry(entry, targetArrondissement, entry.distanceKm),
-      )
-      .slice(0, 4);
-  })();
-
-  const dashboardStats = buildDashboardStats(
-    activeQualifiedEntries,
-    pendingOrUnqualifiedEntries.length,
-  );
-
   const handleFocusMap = (entryId: string) => {
     setHighlightedActorId(entryId);
     const mapAnchor = document.getElementById("annuaire-map-anchor");
@@ -179,275 +205,217 @@ export function AnnuaireSection() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 items-start">
-      {/* GAUCHE : Annuaire Explorer (Filtres, Carte, Acteurs) */}
-      <div className="space-y-6">
-        {locationPreference ? (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-sm">
-            Priorisation de proximite active:{" "}
-            <span className="font-semibold">
-              {getParisArrondissementLabel(locationPreference.arrondissement)}
-            </span>{" "}
-            ({locationPreference.locationType === "work" ? "travail" : "residence"}).
+    <div className="space-y-6">
+      <AcademieClimatWorkshopsPanel />
+
+      {locationPreference ? (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-sm text-emerald-900 shadow-sm">
+          {fr ? "Priorisation de proximité active:" : "Active proximity prioritization:"}{" "}
+          <span className="font-semibold">
+            {getParisArrondissementLabel(locationPreference.arrondissement)}
+          </span>{" "}
+          ({locationPreference.locationType === "work" ? (fr ? "travail" : "work") : (fr ? "résidence" : "home")}).
+        </div>
+      ) : null}
+
+      <section className="space-y-3 rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-md">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+              {fr ? "Découverte" : "Discovery"}
+            </p>
+            <h2 className="mt-1 text-lg font-semibold text-slate-900">
+              {fr ? "Chercher et visualiser les partenaires" : "Search and visualize partners"}
+            </h2>
           </div>
-        ) : null}
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700">Recherche</span>
-              <input
-                value={searchTerm}
-                onChange={(event) => {
-                  setActorCardsPage(1);
-                  setSearchTerm(event.target.value);
-                }}
-                placeholder="Nom, identite legale, mot-cle..."
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 transition focus:border-emerald-500 focus:outline-none"
-              />
-            </label>
-
-            <label className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700">Distance / zone</span>
-              <select
-                value={String(zoneFilter)}
-                onChange={(event) => {
-                  const raw = event.target.value;
-                  if (raw === "all" || raw === "nearby") {
-                    setActorCardsPage(1);
-                    setZoneFilter(raw);
-                    return;
-                  }
-                  setActorCardsPage(1);
-                  setZoneFilter(Number.parseInt(raw, 10) as ParisArrondissement);
-                }}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 transition focus:border-emerald-500 focus:outline-none"
-              >
-                <option value="all">Tout Paris</option>
-                {targetArrondissement ? <option value="nearby">Proches de moi</option> : null}
-                {PARIS_ARRONDISSEMENTS.map((item) => (
-                  <option key={item.value} value={item.value}>
-                    {item.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2 text-xs text-sky-900 shadow-sm">
+            {fr
+              ? "La carte et les fiches compactes sont la lecture principale de cette rubrique."
+              : "The map and compact cards are the main reading layer for this section."}
           </div>
+        </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700">Type d&apos;acteur</span>
-              <div className="flex flex-wrap gap-2">
-                {KIND_FILTERS.map((item) => (
-                  <button
-                    key={item.value}
-                    onClick={() => {
-                      setActorCardsPage(1);
-                      setFilterKind(item.value);
-                    }}
-                    className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition ${
-                      filterKind === item.value
-                        ? "bg-slate-900 text-white"
-                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-            </label>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-xs font-semibold text-slate-700">{fr ? "Recherche" : "Search"}</span>
+            <input
+              value={searchTerm}
+              onChange={(event) => {
+                setActorCardsPage(1);
+                setSearchTerm(event.target.value);
+              }}
+              placeholder={fr ? "Nom, identité légale, mot-clé..." : "Name, legal identity, keyword..."}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 transition focus:border-emerald-500 focus:outline-none"
+            />
+          </label>
 
-            <label className="space-y-1">
-              <span className="text-xs font-semibold text-slate-700">
-                Type d&apos;aide proposee
-              </span>
-              <select
-                value={filterContribution}
-                onChange={(event) =>
-                  {
-                    setActorCardsPage(1);
-                    setFilterContribution(event.target.value as ContributionType | "all");
-                  }
+          <label className="space-y-1">
+            <span className="text-xs font-semibold text-slate-700">{fr ? "Distance / zone" : "Distance / area"}</span>
+            <select
+              value={String(zoneFilter)}
+              onChange={(event) => {
+                const raw = event.target.value;
+                if (raw === "all" || raw === "nearby") {
+                  setActorCardsPage(1);
+                  setZoneFilter(raw);
+                  return;
                 }
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 transition focus:border-emerald-500 focus:outline-none"
-              >
-                {CONTRIBUTION_FILTERS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        </section>
+                setActorCardsPage(1);
+                setZoneFilter(Number.parseInt(raw, 10) as ParisArrondissement);
+              }}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 transition focus:border-emerald-500 focus:outline-none"
+            >
+              <option value="all">{fr ? "Tout Paris" : "All Paris"}</option>
+              {targetArrondissement ? <option value="nearby">{fr ? "Proches de moi" : "Nearby"}</option> : null}
+              {PARIS_ARRONDISSEMENTS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
 
-        <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 shadow-sm flex items-center justify-between">
-          <span>Reseau local actif: partenaires verifies avec activite recente uniquement.</span>
-          <span className="font-semibold px-2 py-1 bg-sky-100 rounded text-xs">{pendingOrUnqualifiedEntries.length} à requalifier</span>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-xs font-semibold text-slate-700">{fr ? "Type de structure" : "Structure type"}</span>
+            <div className="flex flex-wrap gap-2">
+              {KIND_FILTERS.map((item) => (
+                <button
+                  key={item.value}
+                  onClick={() => {
+                    setActorCardsPage(1);
+                    setFilterKind(item.value);
+                  }}
+                  className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition ${
+                    filterKind === item.value
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </label>
+
+          <label className="space-y-1">
+            <span className="text-xs font-semibold text-slate-700">
+              {fr ? "Type d&apos;aide proposée" : "Type of help offered"}
+            </span>
+            <select
+              value={filterContribution}
+              onChange={(event) => {
+                setActorCardsPage(1);
+                setFilterContribution(event.target.value as ContributionType | "all");
+              }}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 transition focus:border-emerald-500 focus:outline-none"
+            >
+              {CONTRIBUTION_FILTERS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
 
         {sortedAndFilteredEntries.length === 0 ? (
-          <section className="rounded-xl border border-amber-300 bg-amber-50 p-4 shadow-sm">
+          <section className="rounded-2xl border border-amber-300 bg-amber-50/80 p-4 shadow-sm">
             <p className="text-sm font-semibold text-amber-900">
-              Aucun acteur ne correspond a vos filtres.
+              {fr ? "Aucune structure ne correspond à vos filtres." : "No structure matches your filters."}
             </p>
             <p className="mt-1 text-xs text-amber-900">
-              Proposez un nouvel acteur engage ou etendez la zone de recherche.
+              {fr
+                ? "Proposez une nouvelle structure ou étendez la zone de recherche."
+                : "Suggest a new structure or widen the search area."}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Link
                 href="/partners/onboarding"
                 className="rounded-lg bg-amber-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-amber-600 shadow-sm"
               >
-                Ajouter un acteur engage
+                {fr ? "Ajouter une structure" : "Add a structure"}
               </Link>
               <button
                 onClick={() => setZoneFilter("all")}
                 className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 shadow-sm"
               >
-                Etendre a tout Paris
+                {fr ? "Étendre à tout Paris" : "Expand to all Paris"}
               </button>
             </div>
           </section>
         ) : null}
+      </section>
 
-        <div
-          id="annuaire-map-anchor"
-          className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm relative"
-        >
-          <div className="absolute top-4 right-4 z-10 pointer-events-none">
-            <span className="rounded-full bg-slate-900 text-white px-3 py-1 font-semibold text-xs shadow-md">
-              {sortedAndFilteredEntries.length} résultats
-            </span>
-          </div>
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
+      <section
+        id="annuaire-map-anchor"
+        className="space-y-4 rounded-3xl border border-slate-200 bg-white/90 p-5 shadow-md"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
             <MapPin size={16} className="text-emerald-600" />
-            Carte + impact par acteur
+            {fr ? "Carte et impact par structure" : "Map and impact by structure"}
           </h3>
-          <AnnuaireMapCanvas
-            items={sortedAndFilteredEntries}
-            highlightedItemId={highlightedActorId}
-          />
+          <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white shadow-md">
+            {sortedAndFilteredEntries.length} {fr ? "résultats" : "results"}
+          </span>
         </div>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-900 border-b border-slate-200 pb-2 mb-3">
-            Fiches compactes, scannables en quelques secondes
-          </h3>
-          <div className="space-y-3">
-            {paginatedActorCards.map((entry) => (
-              <AnnuaireActorCard
-                key={entry.id}
-                entry={entry}
-                onFocusMap={handleFocusMap}
-                showInternalContact={showInternalContact}
-              />
-            ))}
-          </div>
-          {sortedAndFilteredEntries.length > ACTOR_CARDS_PAGE_SIZE ? (
-            <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-200 pt-3">
-              <p className="text-xs text-slate-600 font-medium">
-                Page {safeActorCardsPage}/{actorCardsTotalPages} ({sortedAndFilteredEntries.length} fiches)
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setActorCardsPage((current) => Math.max(1, current - 1))}
-                  disabled={safeActorCardsPage <= 1}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Précédent
-                </button>
-                <button
-                  onClick={() =>
-                    setActorCardsPage((current) =>
-                      Math.min(actorCardsTotalPages, current + 1),
-                    )
-                  }
-                  disabled={safeActorCardsPage >= actorCardsTotalPages}
-                  className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Suivant
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </section>
-      </div>
-
-      {/* DROITE : Communication, Contributions et Dashboard */}
-      <div className="space-y-6">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">
-            Discussion locale et entraide operationnelle
-          </h2>
-          <p className="mt-1 text-xs text-slate-700 mb-3">
-            Espace de communication entre benevoles, associations, commercants et
-            entreprises pour accelerer l&apos;entraide locale, coordonner les actions
-            concretes et partager l&apos;actualite terrain.
-          </p>
-          <DiscussionBadgesPanel />
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900 mb-3">
-            Signaler un bug ou une idee
-          </h2>
-          <DiscussionBugReportForm />
-        </section>
-
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h3 className="text-sm font-semibold text-slate-900">
-            Tableau de bord partenaire
-          </h3>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-            <div className="rounded bg-slate-50 p-2 border border-slate-100">
-              <p className="text-slate-500">Acteurs actifs</p>
-              <p className="text-base font-semibold text-slate-900">{dashboardStats.actors}</p>
-            </div>
-            <div className="rounded bg-slate-50 p-2 border border-slate-100">
-              <p className="text-slate-500">Zones couvertes</p>
-              <p className="text-base font-semibold text-slate-900">{dashboardStats.zones}</p>
-            </div>
-            <div className="rounded bg-slate-50 p-2 border border-slate-100">
-              <p className="text-slate-500">Contributions</p>
-              <p className="text-base font-semibold text-slate-900">
-                {dashboardStats.contributions}
-              </p>
-            </div>
-            <div className="rounded bg-slate-50 p-2 border border-slate-100">
-              <p className="text-slate-500">Demandes en attente</p>
-              <p className="text-base font-semibold text-slate-900">{dashboardStats.pending}</p>
-            </div>
-          </div>
-          <Link
-            href="/partners/dashboard"
-            className="mt-3 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-center text-xs font-semibold text-slate-700 transition hover:bg-slate-100 shadow-sm"
-          >
-            Ouvrir le dashboard complet
-          </Link>
-        </section>
-        
-        {recommendations.length > 0 ? (
-          <section className="rounded-2xl border border-indigo-200 bg-indigo-50 shadow-sm p-5">
-            <h3 className="text-sm font-semibold text-indigo-900">
-              Recommandations automatiques (profil + localisation)
-            </h3>
-            <ul className="mt-3 space-y-2 text-xs text-indigo-900">
-              {recommendations.map((item) => (
-                <li key={`reco-${item.entry.id}`} className="rounded-lg bg-white/70 p-2 shadow-sm border border-indigo-100">
-                  <p className="font-semibold">{item.entry.name}</p>
-                  <p>{item.reason}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        <AnnuaireGovernancePanel
-          pendingEntries={pendingOrUnqualifiedEntries}
-          verificationLabels={VERIFICATION_LABELS}
+        <AnnuaireMapCanvas
+          items={sortedAndFilteredEntries}
+          highlightedItemId={highlightedActorId}
         />
-      </div>
+      </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-slate-50/70 p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-2 mb-3">
+          <h3 className="text-sm font-semibold text-slate-900">
+            {fr ? "Fiches compactes" : "Compact cards"}
+          </h3>
+          <p className="text-xs text-slate-600">
+            {fr ? "Lisibles en quelques secondes" : "Readable in a few seconds"}
+          </p>
+        </div>
+        <div className="space-y-3">
+          {paginatedActorCards.map((entry) => (
+            <AnnuaireActorCard
+              key={entry.id}
+              entry={entry}
+              onFocusMap={handleFocusMap}
+              showInternalContact={showInternalContact}
+            />
+          ))}
+        </div>
+        {sortedAndFilteredEntries.length > ACTOR_CARDS_PAGE_SIZE ? (
+          <div className="mt-4 flex items-center justify-between gap-2 border-t border-slate-200 pt-3">
+            <p className="text-xs text-slate-600 font-medium">
+              {fr
+                ? `Page ${safeActorCardsPage}/${actorCardsTotalPages} (${sortedAndFilteredEntries.length} fiches)`
+                : `Page ${safeActorCardsPage}/${actorCardsTotalPages} (${sortedAndFilteredEntries.length} records)`}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setActorCardsPage((current) => Math.max(1, current - 1))}
+                disabled={safeActorCardsPage <= 1}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {fr ? "Précédent" : "Previous"}
+              </button>
+              <button
+                onClick={() =>
+                  setActorCardsPage((current) =>
+                    Math.min(actorCardsTotalPages, current + 1),
+                  )
+                }
+                disabled={safeActorCardsPage >= actorCardsTotalPages}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {fr ? "Suivant" : "Next"}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </section>
     </div>
   );
 }

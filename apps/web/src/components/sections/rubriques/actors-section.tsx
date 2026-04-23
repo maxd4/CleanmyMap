@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import useSWR from "swr";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
 import { buildPartnerCards } from "@/lib/community/engagement";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 function extractArea(label: string): string {
   const normalized = label.toLowerCase();
@@ -15,6 +16,8 @@ function extractArea(label: string): string {
 }
 
 export function ActorsSection() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   const { data } = useSWR(["section-actors-map"], () =>
     fetchMapActions({ limit: 220, days: 365, status: "approved" }),
   );
@@ -44,7 +47,7 @@ export function ActorsSection() {
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
       {/* GAUCHE : Pression territoriale */}
       <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h3 className="text-sm font-semibold text-slate-900">Pression territoriale (12 mois)</h3>
+        <h3 className="text-sm font-semibold text-slate-900">{fr ? "Pression territoriale (12 mois)" : "Territorial pressure (12 months)"}</h3>
         <ul className="mt-3 space-y-2">
           {hotspots.map(([area, count], index) => (
             <li key={area} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
@@ -52,11 +55,11 @@ export function ActorsSection() {
                 <span className="w-6 h-6 flex items-center justify-center rounded-full bg-emerald-100 text-[10px] font-bold text-emerald-700">{index + 1}</span>
                 <span className="font-medium text-slate-800">{area}</span>
               </div>
-              <span className="text-sm font-bold text-slate-700">{count} signalement{count > 1 ? "s" : ""}</span>
+              <span className="text-sm font-bold text-slate-700">{count} {fr ? `signalement${count > 1 ? "s" : ""}` : `report${count > 1 ? "s" : ""}`}</span>
             </li>
           ))}
           {hotspots.length === 0 ? (
-            <li className="text-sm text-slate-500 italic">Aucune donnée disponible.</li>
+            <li className="text-sm text-slate-500 italic">{fr ? "Aucune donnée disponible." : "No data available."}</li>
           ) : null}
         </ul>
       </article>
@@ -71,35 +74,35 @@ export function ActorsSection() {
                 <p className="text-xs text-slate-500">{card.role}</p>
               </div>
               {hotspotSet.has(card.zone) ? (
-                <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">Zone prioritaire</span>
+                <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold uppercase text-amber-700">{fr ? "Zone prioritaire" : "Priority zone"}</span>
               ) : null}
             </div>
             <dl className="mt-3 space-y-1 text-sm divide-y divide-slate-100">
               <div className="flex justify-between gap-2 py-1">
-                <dt className="text-slate-500">Zone principale</dt>
+                <dt className="text-slate-500">{fr ? "Zone principale" : "Primary zone"}</dt>
                 <dd className="font-semibold">{card.zone}</dd>
               </div>
               <div className="flex justify-between gap-2 py-1">
-                <dt className="text-slate-500">Capacité</dt>
+                <dt className="text-slate-500">{fr ? "Capacité" : "Capacity"}</dt>
                 <dd className="font-semibold">{card.capacity}</dd>
               </div>
               <div className="flex justify-between gap-2 py-1">
-                <dt className="text-slate-500">Actions annuelles</dt>
+                <dt className="text-slate-500">{fr ? "Actions annuelles" : "Annual actions"}</dt>
                 <dd className="font-semibold">{card.actions}</dd>
               </div>
               <div className="flex justify-between gap-2 py-1">
-                <dt className="text-slate-500">Qualité moy.</dt>
+                <dt className="text-slate-500">{fr ? "Qualité moy." : "Avg. quality"}</dt>
                 <dd className="font-semibold">{card.avgQuality}/100</dd>
               </div>
             </dl>
             <p className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-700">
-              Prochaine action: {card.nextAction}
+              {fr ? "Prochaine action" : "Next action"}: {card.nextAction}
             </p>
           </article>
         ))}
         {partnerCards.length === 0 ? (
           <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-            Aucune fiche partenaire disponible.
+            {fr ? "Aucune fiche partenaire disponible." : "No partner profile available."}
           </p>
         ) : null}
       </div>

@@ -1,11 +1,16 @@
-import { appendEventRefToNotes } from "@/lib/actions/event-link";
+import { appendEventRefToNotes } from "../../../lib/actions/event-link";
 import {
   ASSOCIATION_SELECTION_OPTIONS,
   buildEntrepriseAssociationName,
-} from "@/lib/actions/association-options";
-import { PLACE_TYPE_OPTIONS } from "@/lib/actions/place-type-options";
-import type { ActionDrawing, CreateActionPayload } from "@/lib/actions/types";
-import { computeButtsCount } from "@/lib/actions/data-contract";
+} from "../../../lib/actions/association-options";
+import { PLACE_TYPE_OPTIONS } from "../../../lib/actions/place-type-options";
+import type {
+  ActionDrawing,
+  ActionPhotoAsset,
+  ActionVisionEstimate,
+  CreateActionPayload,
+} from "../../../lib/actions/types";
+import { computeButtsCount } from "../../../lib/actions/data-contract";
 import type { DeclarationMode, FormState } from "./types";
 
 export const PARK_PLACE_TYPE = "Bois/Parc/Jardin/Square/Sentier";
@@ -22,6 +27,10 @@ const BASE_FORM_STATE: FormState = {
   enterpriseName: "",
   actionDate: new Date().toISOString().slice(0, 10),
   locationLabel: "",
+  departureLocationLabel: "",
+  arrivalLocationLabel: "",
+  routeStyle: "souple",
+  routeAdjustmentMessage: "",
   latitude: "",
   longitude: "",
   wasteKg: "0",
@@ -37,6 +46,9 @@ const BASE_FORM_STATE: FormState = {
   wasteMixteKg: "",
   triQuality: "moyenne",
   placeType: PLACE_TYPE_OPTIONS[0],
+  visionBagsCount: "",
+  visionFillLevel: "",
+  visionDensity: "",
 };
 
 export function createInitialFormState(actorName: string): FormState {
@@ -116,6 +128,8 @@ export function buildCreateActionPayload(params: {
   manualDrawing: ActionDrawing | null;
   isEntrepriseMode: boolean;
   linkedEventId?: string;
+  photos?: ActionPhotoAsset[];
+  visionEstimate?: ActionVisionEstimate | null;
 }): CreateActionPayload {
   const {
     form,
@@ -127,6 +141,13 @@ export function buildCreateActionPayload(params: {
     linkedEventId,
   } = params;
   const quickMode = declarationMode === "quick";
+
+  const departureLocationLabel = form.departureLocationLabel.trim();
+  const arrivalLocationLabel = form.arrivalLocationLabel.trim();
+  const routeLocationLabel =
+    departureLocationLabel && arrivalLocationLabel
+      ? `${departureLocationLabel} → ${arrivalLocationLabel}`
+      : departureLocationLabel || form.locationLabel.trim();
 
   const fallbackLatitude = toOptionalNumber(form.latitude);
   const fallbackLongitude = toOptionalNumber(form.longitude);
@@ -148,7 +169,11 @@ export function buildCreateActionPayload(params: {
     actorName: form.actorName.trim() || undefined,
     associationName,
     actionDate: form.actionDate,
-    locationLabel: form.locationLabel.trim(),
+    locationLabel: routeLocationLabel,
+    departureLocationLabel: departureLocationLabel || undefined,
+    arrivalLocationLabel: arrivalLocationLabel || undefined,
+    routeStyle: form.routeStyle,
+    routeAdjustmentMessage: form.routeAdjustmentMessage.trim() || undefined,
     latitude: quickMode ? undefined : latitude,
     longitude: quickMode ? undefined : longitude,
     wasteKg: toRequiredNumber(form.wasteKg, 0),
@@ -186,5 +211,7 @@ export function buildCreateActionPayload(params: {
           mixteKg: toOptionalNumber(form.wasteMixteKg),
           triQuality: form.triQuality,
         },
+    photos: params.photos ?? [],
+    visionEstimate: params.visionEstimate ?? null,
   };
 }

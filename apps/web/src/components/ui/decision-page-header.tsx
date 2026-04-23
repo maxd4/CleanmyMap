@@ -1,3 +1,4 @@
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import Link from "next/link";
 
 type HeaderAction = {
@@ -19,10 +20,13 @@ export function DecisionPageHeader({
   objective,
   actions = [],
 }: DecisionPageHeaderProps) {
+  const { locale } = useSitePreferences();
+  const isFrench = locale === "fr";
+
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-        Pourquoi
+        {isFrench ? "Pourquoi" : "Why"}
       </p>
       <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
         {context}
@@ -32,13 +36,13 @@ export function DecisionPageHeader({
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-700">
-          Agir
+          {isFrench ? "Agir" : "Act"}
         </span>
         <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-700">
-          Analyser
+          {isFrench ? "Analyser" : "Analyze"}
         </span>
         <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-700">
-          Tracer
+          {isFrench ? "Tracer" : "Trace"}
         </span>
       </div>
 

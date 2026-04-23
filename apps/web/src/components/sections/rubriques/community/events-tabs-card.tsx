@@ -67,8 +67,8 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
       event.organizer ?? {
         userId: event.organizerClerkId ?? null,
         displayName: "Membre",
-        roleBadge: { id: "role_benevole", label: "Role benevole", icon: "RBV" },
-        profileBadge: { id: "profile_benevole", label: "Profil benevole", icon: "PBV" },
+        roleBadge: { id: "role_benevole", label: "Bénévole", icon: "RBV" },
+        profileBadge: { id: "profile_benevole", label: "Profil bénévole", icon: "PBV" },
       }
     );
   }
@@ -80,7 +80,7 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
           onClick={() => setActiveTab("upcoming")}
           className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${tabTone(activeTab, "upcoming")}`}
         >
-          A venir
+          À venir
         </button>
         <button
           onClick={() => setActiveTab("mine")}
@@ -92,7 +92,7 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
           onClick={() => setActiveTab("past")}
           className={`rounded-lg border px-3 py-2 text-sm font-semibold transition ${tabTone(activeTab, "past")}`}
         >
-          Passe
+          Passé
         </button>
       </div>
 
@@ -179,7 +179,7 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
                   disabled={rsvpLoadingEventId === event.id}
                   className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
                 >
-                  Peut-etre
+                  Peut-être
                 </button>
                 <button
                   onClick={() => void onRsvp(event.id, "no")}
@@ -293,7 +293,7 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
                 href={`/actions/new?fromEventId=${event.id}`}
                 className="mt-2 inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
               >
-                Declarer une action post-evenement
+                Déclarer une action post-événement
               </Link>
 
               <div className="mt-3 grid gap-2 md:grid-cols-2">

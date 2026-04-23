@@ -47,3 +47,16 @@ export type ActionRow = {
   notes: string | null;
   status: "pending" | "approved" | "rejected";
 };
+
+export type TrainingExampleRow = {
+  action_id: string;
+  created_at: string;
+  photos: unknown;
+  poids_reel: number | null;
+  poids_estime: number | null;
+  intervalle: unknown;
+  confiance: number | null;
+  metadata: Record<string, unknown>;
+  model_version: string;
+  status: "pending_label" | "labelled" | "needs_review" | "no_photo";
+};
