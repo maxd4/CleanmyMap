@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
         "warn",
         { max: 500, skipBlankLines: true, skipComments: true },
       ],
+      "@typescript-eslint/no-explicit-any": "warn",
+      "react/no-unescaped-entities": "warn",
+      "react-hooks/purity": "warn",
+      "react-hooks/set-state-in-effect": "warn",
     },
   },
   // Override default ignores of eslint-config-next.

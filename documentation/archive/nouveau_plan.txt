@@ -10,52 +10,6 @@ Vérifier l'etat dans /api/services (depuis un compte admin).
 
 
 
-RESEND 
-API re_aKA5ED7n_Gi4327DZ1epz1a2jkjRC5sah
-domain mail.cleanmymap.fr
-Le from: doit utiliser ton domaine validé (@mail.cleanmymap.fr)
-RESEND_FROM_EMAIL=contact@mail.cleanmymap.fr
-appelle /api/send
-vérifie que tu reçois l’email
-Si OK → on branche ça dans ton produit (notifications, etc)
-
-
-
-I'm using the Resend API. Help me add this code to my project.
-
-Ask the user to replace `re_xxxxxxxxx` with their real API key.
-
-```javascript
-import { Resend } from 'resend';
-
-const resend = new Resend('re_xxxxxxxxx');
-
-resend.emails.send({
-  from: 'onboarding@resend.dev',
-  to: 'maxence.deroome@gmail.com',
-  subject: 'Hello World',
-  html: '<p>Congrats on sending your <strong>first email</strong>!</p>'
-});
-```
-
-
-// app/api/send/route.ts
-import { Resend } from 'resend'
-
-const resend = new Resend(process.env.RESEND_API_KEY)
-
-export async function POST() {
-  await resend.emails.send({
-    from: 'CleanMyMap <contact@mail.cleanmymap.fr>',
-    to: 'ton@email.com',
-    subject: 'Test',
-    html: '<p>Test OK</p>',
-  })
-
-  return Response.json({ ok: true })
-}
-
-
 
 
 
@@ -132,29 +86,6 @@ Livrable :
 
 
 
-dans un fichier de documentation, ajoute ou met a jour les services web pas encore utilisés : 
-Stripe paiements en ligne dons, à ajouter plus tard
-
-Pinecone pour faire des vecteur image (retrovuer facilement des clenawalk dans la base de donnée grace à l'IA
-
-Upstash se positionne justement sur Redis serverless, rate limiting, QStash et Workflow. N’ajoute Upstash que le jour où tu dis :
-“je dois limiter les abus sur mes API”
-ou “j’ai besoin de cache/queues maintenant”
-
-
-
-
-
-
-
-supprime les actions de test qui s'affiche en plus des données réelles du google sheet, on en a pas besoin. 
-
-
-
-fait un commit puis push GitHub et met à jour le git.
-
-
-commit et push toutes les branches GitHub sur main puis supprime les autres branches. Tu es obligé de toujours travailler sur main. Corrige ensuite les verification et run job en erreur.
 
 
 vérifie un par un les action DONE et si elles sont complètes et propre alors supprime les du fichier latest-session si applique les corrections
@@ -191,6 +122,31 @@ fusionne toutes les branches sur main. Tu dois toujours travailler sur main.
 
 
  
+
+
+pour eviter les bug de lancement local du site, vider les caches : 
+Chrome/Edge (Windows) :
+
+Ouvre http://localhost:3000 (ou ton port local).
+F12 pour ouvrir DevTools.
+Onglet Application (ou Storage).
+Dans Storage à gauche :
+Local Storage → supprime http://localhost:xxxx
+Session Storage → supprime http://localhost:xxxx
+Cookies → supprime http://localhost:xxxx
+Pour Clerk:
+Dans Cookies, sélectionne aussi https://proper-cowbird-54.clerk.accounts.dev (ou ton domaine Clerk exact) et supprime tout.
+Recharge la page avec Ctrl+Shift+R.
+Option rapide (navigateur) :
+
+Ouvre chrome://settings/siteData (ou edge://settings/siteData)
+Cherche localhost puis supprime.
+Cherche clerk.accounts.dev puis supprime.
+Option la plus propre :
+
+Ouvre une fenêtre Navigation privée/InPrivate et teste dedans (stockage vierge).
+
+
 
 
 
