@@ -1,7 +1,7 @@
-import { auth } from "@clerk/nextjs/server";
 import { AppNavigationRibbon } from "@/components/navigation/app-navigation-ribbon";
 import { DisplayModeOnboardingGate } from "@/components/ui/display-mode-onboarding-gate";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getProfileLabel, toProfile } from "@/lib/profiles";
 import {
   getServerDisplayModePreference,
@@ -15,12 +15,14 @@ export default async function AppLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { userId } = await auth();
+  const { userId, clerkReachable } = await getSafeAuthSession();
 
   const { displayMode } = await getServerDisplayModePreference();
 
   const locale = await getServerLocale();
-  const role = await getCurrentUserRoleLabel();
+  const role = clerkReachable
+    ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)
+    : ("anonymous" as const);
   const currentProfile = toProfile(role);
   const profileLabel = userId
     ? getProfileLabel(currentProfile, locale)
@@ -38,7 +40,7 @@ export default async function AppLayout({
       {userId ? <DisplayModeOnboardingGate /> : null}
 
       {/* Corps principal : Pleine largeur sans sidebar */}
-      <div className="flex flex-1 flex-col gap-2 min-w-0 pt-28 sm:pt-32 lg:pt-36">
+      <div className="flex min-w-0 flex-1 flex-col gap-2 pt-24 sm:pt-28 lg:pt-32">
         {/* Navigation fixe fusionnée */}
         <AppNavigationRibbon
           currentProfile={currentProfile}

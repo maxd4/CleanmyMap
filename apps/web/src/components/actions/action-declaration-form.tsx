@@ -40,10 +40,8 @@ import {
   ActionDeclarationWasteAssist,
   useActionDeclarationSmartAssist,
 } from "./action-declaration-form.smart-assist";
-import {
-  inferActionVisionEstimate,
-  normalizeActionPhotos,
-} from "@/lib/actions/vision";
+import { runActionVisionEstimate } from "./action-declaration-form.vision-engine";
+import { normalizeActionPhotos } from "@/lib/actions/vision";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 const ActionDrawingMap = dynamic(
   () =>
@@ -149,6 +147,7 @@ export function ActionDeclarationForm({
     estimatedWasteKg,
     estimatedWasteKgInterval,
     estimatedWasteKgConfidence,
+    wasteSuggestionSource,
     autofillGps,
   } = useActionDeclarationSmartAssist({
     form,
@@ -277,7 +276,7 @@ export function ActionDeclarationForm({
     setVisionStatus("processing");
     setVisionMessage("Analyse visuelle en cours...");
 
-    void inferActionVisionEstimate(photoAssets, {
+    void runActionVisionEstimate(photoAssets, {
       locationLabel: form.locationLabel,
       departureLocationLabel: form.departureLocationLabel,
       arrivalLocationLabel: form.arrivalLocationLabel,
@@ -846,6 +845,7 @@ export function ActionDeclarationForm({
             estimatedWasteKg={estimatedWasteKg}
             estimatedWasteKgInterval={estimatedWasteKgInterval}
             estimatedWasteKgConfidence={estimatedWasteKgConfidence}
+            wasteSuggestionSource={wasteSuggestionSource}
             currentWasteKg={form.wasteKg}
             visionEstimate={visionEstimate}
           />

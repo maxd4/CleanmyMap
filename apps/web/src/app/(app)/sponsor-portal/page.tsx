@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import { 
   TrendingUp, 
   Euro, 
@@ -13,20 +12,27 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
+
+const SPONSOR_WINDOW_DAYS = 730;
 
 async function loadSponsorOverview() {
   const supabase = getSupabaseServerClient();
   return loadPilotageOverview({
-    supabase,
-    periodDays: 730, // Wider default view for sponsors
+    supabase, // Wider default view for sponsors
+    periodDays: SPONSOR_WINDOW_DAYS,
     limit: 5000,
   });
 }
 
 export default async function SponsorPortalPage() {
-  const { userId } = await auth();
+  const { userId, clerkReachable } = await getSafeAuthSession();
   const overview = await loadSponsorOverview();
   const factors = IMPACT_PROXY_CONFIG.factors;
+  const observedUntil = new Date();
+  const observedFrom = new Date(observedUntil);
+  observedFrom.setDate(observedFrom.getDate() - SPONSOR_WINDOW_DAYS + 1);
+  const observationWindowLabel = `${observedFrom.toLocaleDateString("fr-FR")} -> ${observedUntil.toLocaleDateString("fr-FR")}`;
 
   // Calculs ROI
   const totalKg = overview.comparison.current.impactVolumeKg;
@@ -49,6 +55,9 @@ export default async function SponsorPortalPage() {
           <p className="text-slate-500 max-w-xl">
             Visualisez la valeur générée par la mobilisation citoyenne pour votre ville et votre stratégie ESG.
           </p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Fenêtre d&apos;observation: {observationWindowLabel} ({SPONSOR_WINDOW_DAYS} jours glissants)
+          </p>
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800">
@@ -56,6 +65,11 @@ export default async function SponsorPortalPage() {
           </button>
         </div>
       </header>
+
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        Les KPI ci-dessous agrègent une fenêtre longue pour la lecture stratégique.
+        Pour comparer avec des vues 30/90 jours, utilisez le même périmètre temporel.
+      </section>
 
       {/* ROI CARDS */}
       <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -106,7 +120,7 @@ export default async function SponsorPortalPage() {
           <div className="grid sm:grid-cols-3 gap-3 text-sm">
             <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
               <p className="text-xs uppercase tracking-wide text-slate-400">Fenêtre</p>
-              <p className="mt-1 font-semibold text-slate-900">730 jours</p>
+              <p className="mt-1 font-semibold text-slate-900">{SPONSOR_WINDOW_DAYS} jours</p>
             </div>
             <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
               <p className="text-xs uppercase tracking-wide text-slate-400">Contrats chargés</p>
@@ -187,7 +201,11 @@ export default async function SponsorPortalPage() {
       isAuthenticated={Boolean(userId)}
       mode="disabled"
       title="Portail décideur"
-      description="Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
+      description={
+        clerkReachable
+          ? "Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
+          : "Connexion Clerk temporairement indisponible. La vue reste lisible, les actions restent désactivées."
+      }
     >
       {page}
     </ClerkRequiredGate>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { trackNavigationClick } from "@/lib/analytics/navigation-client";
@@ -55,12 +56,22 @@ export function AppNavigationRibbon({
   return (
     <nav
       aria-label="Navigation principale"
-      className="fixed left-1/2 top-16 z-50 w-[calc(100vw-0.75rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/40 bg-white/90 shadow-xl backdrop-blur-md sm:w-[calc(100vw-1.5rem)] lg:w-[min(1200px,calc(100vw-2rem))]"
+      className="fixed left-1/2 top-14 z-50 w-[calc(100vw-0.75rem)] -translate-x-1/2 overflow-hidden rounded-2xl border border-white/40 bg-white/90 shadow-xl backdrop-blur-md sm:top-16 sm:w-[calc(100vw-1.5rem)] lg:w-[min(1200px,calc(100vw-2rem))]"
     >
-      <div className="border-b border-slate-200/80 px-3 py-2">
+      <div className="border-b border-slate-200/80 px-2.5 py-1.5 sm:px-3 sm:py-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-slate-500 sm:text-xs">
-            <Link href="/dashboard" className="font-semibold text-slate-700 hover:text-emerald-700">
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 font-semibold text-slate-700 hover:text-emerald-700"
+            >
+              <Image
+                src="/brand/nouveau-logo.png"
+                alt="Logo CleanMyMap"
+                width={18}
+                height={10}
+                className="h-3 w-auto"
+              />
               CleanMyMap
             </Link>
             <span className="text-slate-300">/</span>
@@ -93,14 +104,14 @@ export function AppNavigationRibbon({
           </div>
           <Link
             href="/explorer"
-            className="hidden shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 sm:inline-flex"
+            className="hidden shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 sm:inline-flex sm:px-3 sm:py-1.5 sm:text-[11px]"
           >
             Explorer
           </Link>
         </div>
       </div>
 
-      <div className="grid gap-2 px-3 py-3">
+      <div className="grid gap-1.5 px-2.5 py-2 sm:gap-2 sm:px-3 sm:py-3">
         <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none">
           {spaces.map((space) => {
             const firstHref = space.items[0]?.href ?? "/dashboard";
@@ -113,13 +124,13 @@ export function AppNavigationRibbon({
                 onClick={() =>
                   onTrackNavigation(firstHref, space.label[locale], space.id)
                 }
-                className={`flex min-h-11 min-w-11 shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition sm:min-w-28 ${
+                className={`flex min-h-10 min-w-10 shrink-0 items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[11px] font-semibold transition sm:min-w-28 sm:gap-2 sm:px-3 sm:py-2 sm:text-xs ${
                   isSpaceActive
                     ? "border-emerald-300 bg-emerald-100 text-emerald-900"
                     : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-slate-800"
                 }`}
               >
-                <span className="text-lg leading-none">{space.icon}</span>
+                <span className="text-base leading-none sm:text-lg">{space.icon}</span>
                 <span className="hidden min-w-0 truncate sm:block">
                   {space.label[locale].split(" ")[0]}
                 </span>
@@ -129,7 +140,7 @@ export function AppNavigationRibbon({
         </div>
 
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-slate-500 sm:text-[10px] sm:tracking-[0.16em]">
             {locale === "fr" ? "Rubriques du bloc actif" : "Active block pages"}
           </p>
           {activeSpace ? (
@@ -151,7 +162,7 @@ export function AppNavigationRibbon({
                   onTrackNavigation(item.href, item.label[locale], activeSpace?.id ?? null)
                 }
                 title={item.description[locale]}
-                className={`inline-flex shrink-0 items-center rounded-full border px-3 py-1.5 text-[11px] font-medium transition sm:text-xs ${
+                className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[10px] font-medium transition sm:px-3 sm:py-1.5 sm:text-xs ${
                   isItemActive
                     ? "border-emerald-300 bg-emerald-50 text-emerald-900"
                     : "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-slate-800"
@@ -162,7 +173,7 @@ export function AppNavigationRibbon({
             );
           })}
           {activeSpaceItems.length === 0 ? (
-            <span className="inline-flex shrink-0 items-center rounded-full border border-dashed border-slate-300 px-3 py-1.5 text-[11px] text-slate-500 sm:text-xs">
+            <span className="inline-flex shrink-0 items-center rounded-full border border-dashed border-slate-300 px-2.5 py-1 text-[10px] text-slate-500 sm:px-3 sm:py-1.5 sm:text-xs">
               {locale === "fr"
                 ? "Aucune rubrique dans ce bloc"
                 : "No page in this block"}

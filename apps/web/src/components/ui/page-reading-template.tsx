@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";

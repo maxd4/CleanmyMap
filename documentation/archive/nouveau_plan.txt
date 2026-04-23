@@ -56,11 +56,11 @@ Resend	RESEND_API_KEY / RESEND_FROM_EMAIL	Envoi d'emails transactionnels
 
 
 
+ 
 
 
 
 
-sur la page d'acceuil, les chiffres doivent être réeels, pas inventés. De fausses infomrations sont à d'autres endroits du site, corrige cela
 
 
 
@@ -74,8 +74,6 @@ Invalid HTML tag nesting.
 It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
 
 
-
-Améliore la séparation visuelle entre les différentes parties d’une même rubrique. Actuellement, plusieurs sous-sections se confondent car elles partagent le même fond blanc et des contours trop clairs. Revois la hiérarchie visuelle pour que chaque bloc soit immédiatement identifiable : différencie mieux les sections d’une même rubrique avec des cartes ou conteneurs distincts, des fonds légèrement contrastés, des bordures plus lisibles, des espacements plus nets et une structure plus claire. L’objectif est qu’on comprenne instantanément où commence et où finit chaque sous-partie.
 
 
 
@@ -101,44 +99,6 @@ L'objectif est de créer une synergie entre nos deux outils pour maximiser l'imp
 
 
 
-
-patch universel pour une écriture inclusive sur le site web
-1. Modifications inclusives à appliquer (exemples principaux)
-a) Navigation et sections
-Remplacer « Page d’accueil » par « Accueil » (neutre, collectif)
-« Agir », « Visualiser », « Impact », « Réseau », « Apprendre », « Piloter », « Guide & outils », restent inclusifs.
-Préférer « Compte » ou « Profil & impact » pour les sections de paramétrage personnel, plutôt que « Mon Profil & Impact ».
-« Mes paramètres et mon impact personnel » → « Paramètres du compte et impact ».
-Éviter « Espace Décisionnel », utiliser « Gouvernance » ou « Espace coordination/autorités » (plus englobant).
-Tous les titres ou descriptions en double flexion si pertinent : Exemple français : « Membre/Participante·e », anglais : « Member/Participant ».
-« Déclarer une action » → « Déclarer une action » (reste inclusif), mais attention à d’autres verbes ou instructions potentiellement marquées.
-b) Filtres annuaire et formulaires
-« Tous les acteurs » → « Tous les acteurs et actrices » ou « Toutes les personnes/structures ».
-« Commerçants » → « Commerçant·e·s ».
-« Associations », « Entreprises », « Collectifs » : inclusif.
-Pour « Accueil »: rien à modifier.
-Placeholder, label d’input et boutons : préférer les formulations neutres : « Nom/prénom », « Votre structure », « Contact », « Ajouter », « Rechercher ».
-c) Badges, rôles, gamification
-« Role bénévole » → « Bénévole »
-« Role coordinateur » → « Coordination » ou « Coordinateur·rice »
-« Role élu » → « Autorité locale » ou « Élu·e »
-« Profil admin » → « Profil administration »
-Pour tout rôle : recherche systématique d’équivalents épicènes ou usages de point médian.
-Panel : « Badges d’interaction: mode, rôle, profil » → « Badges d’interaction : mode, rôle et profil » (fluidifier). Description reformulée pour éviter « coordinateurs », « élus », etc., remplacer par formulations collectives.
-d) Feedback utilisateur & accessibilité
-Bouton d’annulation : « Annuler le tracé » → « Annuler ».
-Messages d’erreur : éviter « veuillez », préférer « Merci de », ou « Renseignez un champ ».
-ARIA/alt : explicites, non genrés, tenir compte des déficiences visuelles (« Carte visuelle des actions », « Photo de profil »).
-e) Exemples d’optimisation d’états et microcopies
-« Niveau » (dans gamification) : « Niveau actuel » ou simplement « Niveau ».
-« Badges gamification » → « Badges d’engagement ».
-Balisage HTML : pour les boutons sans texte, aria-label explicite : « Ouvrir le menu principal », « Fermer la fenêtre », « Valider la sélection ».
-2. Récapitulatif des changements effectués ou à effectuer
-Réécriture des libellés, titres et descriptions pour neutralité de genre et ton accueillant : sections, navigation, badges, états utilisateurs.
-Harmonisation des filtres et catégories avec point médian et termes englobants.
-Accessibilité améliorée : aria-labels descriptifs, alt-text inclusifs, clarification des boutons et états.
-Microcopies : instructions, placeholders, titres d’états vides ou d’erreur reformulés de façon épicène et claire.
-Suppression des formulations genrées ou stéréotypées : usages de double flexion, point médian, ou collectif selon le contexte, maintien d’un ton professionnel et fluide.
 
 
 
@@ -179,12 +139,11 @@ Deliver:
 
 
 
-fait un plan exhaustif pour étendre complètement le site web aux banlieus de Paris en plus des arrondissements pour couvrir Paris grande couronne.
+fait un plan exhaustif pour étendre complètement le site web aux banlieues de Paris en plus des arrondissements pour couvrir Paris grande couronne.
 
 
 exécute ce plan
 
-vérifie le PR Vercel Web Analytics Configuration sur le repo GitHub puis copie le sur le repo local 
 
 
 
@@ -192,21 +151,7 @@ vérifie le PR Vercel Web Analytics Configuration sur le repo GitHub puis copie 
 
 
 
-vérifie que le formulaire bénévole du site web est bien connecté à supabase et à la carte interactive.
-
-le formulaire bénévole du sire est affiché trop bas, il faut qu'il soit tout en haut de la page d'accueil car c'est la fonctionnalité la plus utilisée du site
-
-
-ajouter un menu déroulant avec les rubriques et pas juste le nom des blocs sur le bandeau en haut du site
-
-Agir.Cartographier.Préserver. doit avoir des tirets et pas des points entre les mots. Les mots doivent être sur une même ligne pour gagner de la place à la place du titre "cleanmymap" sur le bandeau statique en haut du site.
-
-Le bandeau avec le choix des blocs et des rubriques doit aussi être statique pour facilement cliquer même si on scroll plus bas sur le site.
-
-
-Les changements de mode et de rôle doivent se faire directement en cliquant sur le badge actif. 
-
-Certains textes de rubriques restent en français quand je sélectionne anglais
+explique : "Les sélecteurs de scope de génération des livrables côté UI dépendent encore des données chargées côté client, donc sur de très gros volumes la liste d’options peut rester partielle. Les exports serveur, eux, sont désormais branchés sur le bon périmètre."
 
 
 
@@ -218,7 +163,8 @@ Certains textes de rubriques restent en français quand je sélectionne anglais
 
 
 
-a ajouter aux partenaires et commerçants engagés : https://www.klindoeil.com/carte-bas-belleville
+
+
 
 
 
@@ -230,12 +176,6 @@ j'ai créer le bucket chat-attachments sur supabase en public pour la logique de
 
 
 
-Dashboard Gouvernance : I'm focusing now on enhancing the Governance Dashboard, since I was given the green light to continue working. I've updated and pushed existing documentation already. Now, I'm examining ways to enhance the dashboard.
-
-
-enlève l'Assistance Cartographique c'est trop compliqué à utiliser. 
-
-Le formulaire doit prendre toute la larguer de la page pour ne pas avoir besoin de scroller pour le compléter en entier.
 
 
 
@@ -247,8 +187,70 @@ Le formulaire doit prendre toute la larguer de la page pour ne pas avoir besoin 
 
 
 
-oblige la connexion à un compte clerk uniquement si l'utilisateur veut utilsier une fonctionnalité qui oblige d'avoir des informations sur son profil. C'est le cas pour remplir le formulaire bénévole mais ce n'est pas le cas pour utiliser la rubrique "apprendre" ni la rubrique "générer un livrable" par exemple. Ne pas imposer la connexion a un compte améliore la rétention et l'expérience utilisateur.
 
+
+
+
+il y a deux boutons pour choisir le mode de navigation. Garde seulement celui à coté du badge de rôle car il est plus beau. Attention qund je passe la souris sur certains boutons ils deviennent flou, enlève cela. C'est simplement le fond qui doit devenir flou, pas le texte
+
+la page d'accueil est trop zoomé sur ordinateur corrige cela en réduisant toutes les tailles de 10% par exemple .
+
+
+les trois boutons en dessous du titre doivent être "se connecter", "visiter le site en tant qu'invité", "déclarer une action", "générer un rapport d'impact".
+
+
+
+supprime la partie "visiter le site" car elle fait doublon et c'est trop long a lire.
+
+
+La présentation du formulaire bénévole est un peu maladroite sur la page d'acceuil. Cela prend trop de place pour rien. Quelques phrases devraient suffir pour expliquer la logique d'inviter, de connexion, de formulaire, de rap 
+réorganise intelligemment la partie DONE du fichier en regroupant les points similaires puis en les classant par ordre de priorité à vérifier.
+
+
+
+
+pour l'Agrégat réel du dernier rapport public, affiche la masse des déchets récoltés, le nombre de mégots, le nombre de bénévoles, le CO2 évité / eau préservée, l'argent économisée. Ajoute un bouton "voir méthodologie" pour renvoyer à la page qui justifie ces différents calculs.
+
+
+
+le bouton de la page d'accueil "visiter le site" doit amener au vrai site mais avec certaines rubriques floutées. Cette règle est déjà codée.
+
+
+
+
+
+
+
+Reprenons avec le fichier last-session. La partie DONE est la source de vérité des actions réalisées récemment par un modèle moins performant.
+
+Pour le premier point : 
+1. Vérifie que l’implémentation est complète fonctionnellement
+2. Identifie tout ce qui manque (logique, routes, erreurs, edge cases, intégration)
+3. Corrige et complète le code jusqu’à ce que la feature soit pleinement opérationnelle
+4. Assure la cohérence avec le reste du projet
+5. Supprime tous les TODO, placeholders ou implémentations partielles 
+6. Vérifie que les informations visible par l'utilisateur sont pertinentes et conforme à la logique du site open source et pour aider les bénévoles.
+
+Contraintes :
+- ne te limite pas à améliorer le style
+- complète réellement les fonctionnalités
+- ne laisse aucune partie implicite
+- assure une implémentation production-ready
+- explique les points de vigilance restants si besoin d'exécuter une seconde passe
+- mettre à jour si besoin la partie "risks" du fichier
+
+
+continu avec le point suivant de la partie DONE  
+
+
+
+
+propose un plan de refactorisation du repo si besoin
+
+de même pour les fichiers monolithiques ayant besoin d'une modularisation fonctionnelle sans perte.
+
+
+le ruban fixe en haut du site doit tenir sur une seule ligne avec un fond flou qui s'adapte à la couleur du site pour ne pas remarquer la délimitation.
 
 corriger les fichiers de collab .html (ouvrir sur bloc note et modifier le texte) puis imprimer .pdf et les envoyer.
 

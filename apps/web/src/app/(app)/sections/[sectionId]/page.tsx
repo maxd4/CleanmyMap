@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
 import { SectionRenderer } from "@/components/sections/section-renderer";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
   RUBRIQUE_REGISTRY,
   getSectionRouteParams,
@@ -33,7 +33,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
   const sectionIdTyped = normalizedSectionId as SectionId;
 
   const accessMode = getSectionClerkAccessMode(normalizedSectionId);
-  const { userId } = await auth();
+  const { userId, clerkReachable } = await getSafeAuthSession();
   const locale = await getServerLocale();
 
   if (!userId && accessMode === "blur") {
@@ -44,8 +44,12 @@ export default async function SectionPage({ params }: SectionPageProps) {
         title={locale === "fr" ? section.label.fr : section.label.en}
         description={
           locale === "fr"
-            ? "Cette fonctionnalité nécessite une connexion Clerk."
-            : "This feature requires Clerk sign-in."
+            ? clerkReachable
+              ? "Cette fonctionnalité nécessite une connexion Clerk."
+              : "Connexion Clerk temporairement indisponible. La vue reste lisible."
+            : clerkReachable
+              ? "This feature requires Clerk sign-in."
+              : "Clerk sign-in is temporarily unavailable. This view stays readable."
         }
         lockedPreview={
           <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">

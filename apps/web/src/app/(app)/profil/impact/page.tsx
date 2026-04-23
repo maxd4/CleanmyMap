@@ -34,7 +34,7 @@ export default function ImpactProfilePage() {
         backgroundColor: "#064e3b" // Emerald-900 background for export
       });
       const link = document.createElement("a");
-      link.download = `CMM-Impact-${user?.firstName || "Contributeur"}.png`;
+      link.download = `CleanMyMap-Impact-${user?.firstName || "Contributeur"}.png`;
       link.href = dataUrl;
       link.click();
       confetti({

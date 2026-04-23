@@ -4,6 +4,10 @@ import { estimateWasteKg } from "./action-declaration-form.estimation";
 import type { ActionVisionEstimate } from "@/lib/actions/types";
 import type { FormState } from "./action-declaration-form.model";
 import { getWasteWeightSuspicion } from "./action-declaration-form.suspicion";
+import {
+  resolveWasteSuggestion,
+  type WasteSuggestionSource,
+} from "./action-declaration-form.vision-suggestion";
 
 type SetFormState = Dispatch<SetStateAction<FormState>>;
 
@@ -38,12 +42,14 @@ export function useActionDeclarationSmartAssist({
       form.wasteMegotsKg,
     ],
   );
-  const estimatedWasteKg =
-    visionEstimate && visionEstimate.wasteKg.confidence >= 0.55
-      ? visionEstimate.wasteKg.value
-      : fallbackEstimatedWasteKg;
-  const estimatedWasteKgInterval = visionEstimate?.wasteKg.interval ?? null;
-  const estimatedWasteKgConfidence = visionEstimate?.wasteKg.confidence ?? null;
+  const wasteSuggestion = resolveWasteSuggestion({
+    heuristicEstimateKg: fallbackEstimatedWasteKg,
+    visionEstimate,
+  });
+  const estimatedWasteKg = wasteSuggestion.estimatedWasteKg;
+  const estimatedWasteKgInterval = wasteSuggestion.estimatedWasteKgInterval;
+  const estimatedWasteKgConfidence = wasteSuggestion.estimatedWasteKgConfidence;
+  const wasteSuggestionSource = wasteSuggestion.source;
 
   function autofillGps() {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -91,6 +97,7 @@ export function useActionDeclarationSmartAssist({
     estimatedWasteKg,
     estimatedWasteKgInterval,
     estimatedWasteKgConfidence,
+    wasteSuggestionSource,
     visionEstimate,
     autofillGps,
   };
@@ -136,6 +143,7 @@ export function ActionDeclarationWasteAssist({
   estimatedWasteKg,
   estimatedWasteKgInterval,
   estimatedWasteKgConfidence,
+  wasteSuggestionSource,
   currentWasteKg,
   visionEstimate,
   suggestionLabel = "Valeur conseillée",
@@ -143,6 +151,7 @@ export function ActionDeclarationWasteAssist({
   estimatedWasteKg: number;
   estimatedWasteKgInterval: [number, number] | null;
   estimatedWasteKgConfidence: number | null;
+  wasteSuggestionSource: WasteSuggestionSource;
   currentWasteKg?: string;
   visionEstimate?: ActionVisionEstimate | null;
   suggestionLabel?: string;
@@ -157,6 +166,11 @@ export function ActionDeclarationWasteAssist({
         <p className="font-semibold uppercase tracking-wide text-slate-500">
           {suggestionLabel}
         </p>
+        <span className="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+          {wasteSuggestionSource === "vision"
+            ? "Source vision"
+            : "Fallback heuristique"}
+        </span>
         {suspicion.isSuspect ? (
           <span className="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">
             Écart suspect
@@ -177,7 +191,7 @@ export function ActionDeclarationWasteAssist({
         ) : null}
       </p>
       <p className="mt-1 text-[10px] text-slate-500">
-        La valeur reste a saisir a la main.
+        La valeur reste a saisir et corriger a la main.
       </p>
       {suspicion.message ? (
         <p className="mt-1 text-[10px] font-semibold text-amber-700">

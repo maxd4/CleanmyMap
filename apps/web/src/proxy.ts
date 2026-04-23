@@ -1,5 +1,6 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import type { NextFetchEvent, NextRequest } from "next/server";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { PROTECTED_ROUTE_PATTERNS } from "@/lib/auth/protected-routes";
 
@@ -13,7 +14,7 @@ const WINDOW = 60 * 1000; // 1 minute en ms
 
 const clerkRuntime = getClerkRuntimeConfig();
 
-export default clerkMiddleware(
+const clerkProxy = clerkMiddleware(
   async (auth, req) => {
     const { pathname } = req.nextUrl;
 
@@ -55,6 +56,30 @@ export default clerkMiddleware(
     authorizedParties: clerkRuntime.authorizedParties,
   },
 );
+
+export default async function proxy(req: NextRequest, evt: NextFetchEvent) {
+  try {
+    const response = await clerkProxy(req, evt);
+    const clerkReason = response?.headers.get("x-clerk-auth-reason");
+    if (response?.status === 500 && clerkReason === "dev-browser-missing") {
+      if (isProtectedRoute(req)) {
+        const signInUrl = new URL("/sign-in", req.url);
+        signInUrl.searchParams.set("redirect_url", req.url);
+        return NextResponse.redirect(signInUrl);
+      }
+      return NextResponse.next();
+    }
+    return response;
+  } catch (error) {
+    console.error("Proxy fallback: Clerk middleware failure", error);
+    if (isProtectedRoute(req)) {
+      const signInUrl = new URL("/sign-in", req.url);
+      signInUrl.searchParams.set("redirect_url", req.url);
+      return NextResponse.redirect(signInUrl);
+    }
+    return NextResponse.next();
+  }
+}
 
 export const config = {
   matcher: [

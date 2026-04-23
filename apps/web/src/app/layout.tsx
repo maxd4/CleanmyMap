@@ -6,6 +6,7 @@ import {
 } from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { AccountIdentityChip } from "@/components/account/account-identity-chip";
@@ -58,12 +59,19 @@ export default async function RootLayout({
               <VibrantBackground />
               <header className="sticky top-0 z-30 border-b border-white/10 bg-white/60 dark:bg-slate-950/60 backdrop-blur-xl shadow-sm transition-all duration-300">
                 <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-8">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-12 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-black text-[10px] shadow-lg shadow-emerald-600/20">CMM</div>
+                  <Link href="/" className="flex items-center gap-2 hover:opacity-95 transition-opacity">
+                    <Image
+                      src="/brand/nouveau-logo.png"
+                      alt="Logo CleanMyMap"
+                      width={42}
+                      height={24}
+                      className="h-6 w-auto sm:h-7"
+                      priority
+                    />
                     <h1 className="whitespace-nowrap text-[11px] font-bold tracking-[0.18em] text-slate-900 dark:text-white uppercase sm:text-sm">
                       Agir-Cartographier-Préserver
                     </h1>
-                  </div>
+                  </Link>
                   <div className="flex items-center gap-4">
                     <Link
                       href="/explorer"
@@ -75,16 +83,8 @@ export default async function RootLayout({
                     <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
                     <Show when="signed-out">
                       <div className="flex items-center gap-2">
-                        <SignInButton mode="modal">
-                          <button className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-                            Sign in
-                          </button>
-                        </SignInButton>
-                        <SignUpButton mode="modal">
-                          <button className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/10">
-                            Sign up
-                          </button>
-                        </SignUpButton>
+                        <SignInButton mode="modal"><button className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">Sign in</button></SignInButton>
+                        <SignUpButton mode="modal"><button className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/10">Sign up</button></SignUpButton>
                       </div>
                     </Show>
                     <Show when="signed-in">

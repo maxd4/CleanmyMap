@@ -161,6 +161,15 @@ export function RubriquePdfExportButton({
         background: linear-gradient(135deg, #0f4c5c 0%, #1f5d7f 100%);
         color: #f8fafc;
       }
+      .rubrique-print-header .rubrique-print-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .rubrique-print-header .rubrique-print-brand img {
+        height: 26px;
+        width: auto;
+      }
       .rubrique-print-header h1 { margin: 0; font-size: 22px; line-height: 1.15; }
       .rubrique-print-header p { margin: 4px 0 0; color: rgba(248, 250, 252, 0.92); font-size: 12px; }
       .rubrique-print-header .rubrique-print-meta {
@@ -191,6 +200,9 @@ export function RubriquePdfExportButton({
   </head>
   <body>
     <header class="rubrique-print-header">
+      <div class="rubrique-print-brand">
+        <img src="/brand/nouveau-logo.png" alt="Logo CleanMyMap" />
+      </div>
       <h1>${safeTitle}</h1>
       <p>Generation: ${escapeHtml(generatedAt)} | Rubrique: ${escapeHtml(rubriqueSlug)} | Fichier suggere: ${escapeHtml(fullFilename)}</p>
       <div class="rubrique-print-meta">

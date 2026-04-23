@@ -8,6 +8,7 @@ import { swrRecentViewOptions } from "@/lib/swr-config";
 import { computeReportModel, getWeatherAdvice } from "./analytics";
 import {
   buildReportScopeOptions,
+  computeReportAccountScopeCoverage,
   filterCommunityEventsByScope,
   filterReportScopeItems,
   formatReportScopeLabel,
@@ -88,6 +89,11 @@ export function useReportsWebDocumentModel() {
         ...(mapAll.data?.items ?? []),
       ]),
     [actionsAll.data?.items, mapAll.data?.items],
+  );
+
+  const accountScopeCoverage = useMemo(
+    () => computeReportAccountScopeCoverage(actionsAll.data?.items ?? []),
+    [actionsAll.data?.items],
   );
 
   useEffect(() => {
@@ -182,6 +188,7 @@ export function useReportsWebDocumentModel() {
     scopeOptions,
     exportRows,
     activeScopeLabel,
+    accountScopeCoverage,
     report,
     weather,
     weatherAdvice,

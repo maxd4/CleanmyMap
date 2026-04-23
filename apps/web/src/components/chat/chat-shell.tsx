@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import useSWR from "swr";
+import Link from "next/link";
 import { MessageSquare, Shield, Users, Lock, Send, Paperclip, X, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useUser } from "@clerk/nextjs";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { getChatFeedState } from "./chat-feed-state";
 
 type ChatMessage = {
   id: string;
@@ -21,7 +23,20 @@ type ChatMessage = {
   };
 };
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const fetcher = async (url: string) => {
+  const response = await fetch(url);
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message =
+      typeof payload?.hint === "string"
+        ? payload.hint
+        : typeof payload?.message === "string"
+          ? payload.message
+          : "Discussion indisponible";
+    throw new Error(message);
+  }
+  return payload;
+};
 
 export function ChatShell({ initialArrondissement }: { initialArrondissement?: number }) {
   const [activeChannel, setActiveChannel] = useState<{
@@ -36,6 +51,7 @@ export function ChatShell({ initialArrondissement }: { initialArrondissement?: n
   const [mentionQuery, setMentionQuery] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const [isEditingHandle, setIsEditingHandle] = useState(false);
   const [newHandle, setNewHandle] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,13 +92,18 @@ export function ChatShell({ initialArrondissement }: { initialArrondissement?: n
   };
 
   // Polling every 30s as requested
-  const { data, mutate } = useSWR(
+  const { data, error, isLoading, mutate } = useSWR(
     `/api/chat?channelType=${activeChannel.type}${activeChannel.type === 'neighborhood' ? `&arrondissementId=${initialArrondissement || 11}` : ''}`,
     fetcher,
     { refreshInterval: 30000 }
   );
 
   const messages: ChatMessage[] = data?.messages || [];
+  const feedState = getChatFeedState({
+    isLoading,
+    hasMessages: messages.length > 0,
+    hasError: Boolean(error),
+  });
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -92,6 +113,10 @@ export function ChatShell({ initialArrondissement }: { initialArrondissement?: n
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!userId) {
+      setSendError("Connecte-toi pour envoyer un message.");
+      return;
+    }
     if ((!message.trim() && !file) || isSending || isUploading) return;
 
     setIsSending(true);
@@ -120,6 +145,8 @@ export function ChatShell({ initialArrondissement }: { initialArrondissement?: n
         attachmentType = file.type;
       }
 
+      setSendError(null);
+
       // 2. Send Message
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -137,9 +164,19 @@ export function ChatShell({ initialArrondissement }: { initialArrondissement?: n
         setMessage("");
         setFile(null);
         mutate();
+      } else {
+        const payload = await res.json().catch(() => ({}));
+        const messageFromApi =
+          typeof payload?.hint === "string"
+            ? payload.hint
+            : typeof payload?.message === "string"
+              ? payload.message
+              : "Envoi impossible pour le moment.";
+        setSendError(messageFromApi);
       }
     } catch (err) {
       console.error("Failed to send message", err);
+      setSendError("Envoi impossible pour le moment.");
     } finally {
       setIsSending(false);
       setIsUploading(false);
@@ -212,6 +249,16 @@ export function ChatShell({ initialArrondissement }: { initialArrondissement?: n
         </div>
       )}
 
+      {!userId ? (
+        <div className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+          Discussion en lecture seule.{" "}
+          <Link href="/sign-in" className="font-semibold underline">
+            Se connecter
+          </Link>{" "}
+          pour publier et reagir.
+        </div>
+      ) : null}
+
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Channels */}
         <div className="w-16 md:w-56 border-r border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/50 flex flex-col p-2 space-y-2">
@@ -241,18 +288,27 @@ export function ChatShell({ initialArrondissement }: { initialArrondissement?: n
             ref={scrollRef}
             className="flex-1 p-4 overflow-y-auto space-y-6 custom-scrollbar"
           >
-            {messages.length === 0 && !data && (
+            {feedState === "loading" ? (
                 <div className="flex items-center justify-center h-full">
                     <div className="w-6 h-6 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
                 </div>
-            )}
+            ) : null}
 
-            {messages.length === 0 && data && (
+            {feedState === "degraded" ? (
+                <div className="h-full flex items-center">
+                    <div className="w-full rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                      <p className="font-semibold">Discussion temporairement indisponible.</p>
+                      <p className="mt-1">{error instanceof Error ? error.message : "Reconnexion necessaire pour charger les messages."}</p>
+                    </div>
+                </div>
+            ) : null}
+
+            {feedState === "empty" ? (
                 <div className="h-full flex flex-col items-center justify-center opacity-40 grayscale space-y-2">
                     <MessageSquare size={48} />
                     <p className="text-xs font-black uppercase tracking-widest">Pas encore de message</p>
                 </div>
-            )}
+            ) : null}
 
             {messages.map((msg) => (
                 <div key={msg.id} className="flex items-start group">
@@ -307,6 +363,11 @@ export function ChatShell({ initialArrondissement }: { initialArrondissement?: n
 
           {/* Input */}
           <form onSubmit={handleSend} className="p-4 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+             {sendError ? (
+                <div className="mb-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                  {sendError}
+                </div>
+              ) : null}
              {file && (
                 <div className="mb-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center gap-2 border border-slate-200 dark:border-slate-700 animate-in fade-in">
                     <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-lg flex items-center justify-center text-emerald-500 border border-slate-200 dark:border-slate-800">
@@ -337,8 +398,9 @@ export function ChatShell({ initialArrondissement }: { initialArrondissement?: n
                 />
                 <button 
                   type="button" 
+                  disabled={!userId}
                   onClick={() => fileInputRef.current?.click()}
-                  className="p-2 text-slate-400 hover:text-emerald-500 transition-colors"
+                  className="p-2 text-slate-400 hover:text-emerald-500 transition-colors disabled:opacity-50"
                 >
                     <Paperclip size={18} />
                 </button>
@@ -346,11 +408,12 @@ export function ChatShell({ initialArrondissement }: { initialArrondissement?: n
                    rows={1}
                    value={message}
                    onChange={handleTextChange}
+                   disabled={!userId}
                    className="flex-1 bg-transparent border-none focus:ring-0 text-xs py-2 px-1 max-h-32 resize-none placeholder:text-slate-400 font-medium"
                    placeholder="Tapez un message... (@handle pour taguer)"
                 />
                 <button 
-                  disabled={(!message.trim() && !file) || isSending || isUploading}
+                  disabled={!userId || (!message.trim() && !file) || isSending || isUploading}
                   type="submit" 
                   className="p-2 bg-emerald-500 text-white rounded-xl shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale"
                 >
