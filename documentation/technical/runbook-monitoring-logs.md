@@ -40,3 +40,11 @@ Fallback statique:
 
 ## Escalade
 - Si incident critique: appliquer le runbook `incidents-frequents-et-reprise.md`.
+
+## Services web non utilises pour l'instant
+- Stripe (paiements en ligne / dons): a ajouter plus tard, quand le tunnel de don est priorise.
+- Pinecone (vecteurs image): a activer quand on lance la recherche IA pour retrouver facilement des cleanwalks dans la base.
+- Upstash (Redis serverless, rate limiting, QStash, Workflow): ne pas ajouter tant qu'il n'y a pas un besoin explicite.
+- Ajouter Upstash uniquement le jour ou l'on dit:
+  - "je dois limiter les abus sur mes API"
+  - "j'ai besoin de cache/queues maintenant"

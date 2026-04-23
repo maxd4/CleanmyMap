@@ -1,7 +1,5 @@
 import {
   Show,
-  SignInButton,
-  SignUpButton,
   UserButton,
 } from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/next";
@@ -85,16 +83,18 @@ export default async function RootLayout({
                       <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
                       <Show when="signed-out">
                         <div className="flex items-center gap-2">
-                          <SignInButton mode="modal">
-                            <button className="text-xs font-bold text-slate-600 transition-colors hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400">
-                              Sign in
-                            </button>
-                          </SignInButton>
-                          <SignUpButton mode="modal">
-                            <button className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-600/10 transition-all hover:bg-emerald-700">
-                              Sign up
-                            </button>
-                          </SignUpButton>
+                          <Link
+                            href="/sign-in"
+                            className="text-xs font-bold text-slate-600 transition-colors hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400"
+                          >
+                            Sign in
+                          </Link>
+                          <Link
+                            href="/sign-up"
+                            className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-600/10 transition-all hover:bg-emerald-700"
+                          >
+                            Sign up
+                          </Link>
                         </div>
                       </Show>
                       <Show when="signed-in">
