@@ -31,5 +31,12 @@ Fallback statique:
 - erreurs auth/session
 - erreurs import/export
 
+## Controle hebdomadaire recommande
+- Verifier les 3 derniers incidents Sentry et qualifier les nouveaux digestes.
+- Verifier les derniers runs GitHub Actions en echec ou annules.
+- Verifier les derniers deploiements Vercel et les erreurs de build.
+- Verifier les alertes Dependabot et les PR de mise a jour de dependances.
+- N'agir que sur les signaux nouveaux ou persistants, puis consigner le resultat dans la session.
+
 ## Escalade
 - Si incident critique: appliquer le runbook `incidents-frequents-et-reprise.md`.

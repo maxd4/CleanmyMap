@@ -1,19 +1,33 @@
 "use client";
 
 import posthog from "posthog-js";
-import { env } from "@/lib/env";
+import {
+  getPostHogDeprecatedEnvWarnings,
+  getPostHogHost,
+  getPostHogKey,
+} from "@/lib/posthog/config";
 
 let initialized = false;
+let envWarningLogged = false;
 
 export function initPostHogClient() {
   if (initialized) return posthog;
 
-  if (!env.NEXT_PUBLIC_POSTHOG_KEY) {
+  const key = getPostHogKey();
+  if (!key) {
     return null;
   }
 
-  posthog.init(env.NEXT_PUBLIC_POSTHOG_KEY, {
-    api_host: env.NEXT_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
+  if (!envWarningLogged) {
+    const warnings = getPostHogDeprecatedEnvWarnings();
+    for (const warning of warnings) {
+      console.warn(`[PostHog] ${warning}`);
+    }
+    envWarningLogged = true;
+  }
+
+  posthog.init(key, {
+    api_host: getPostHogHost(),
     capture_pageview: true,
     capture_pageleave: true,
     loaded: () => {

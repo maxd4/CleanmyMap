@@ -1,5 +1,5 @@
 Les rubriques de CleanMyMap.fr
-Utilite & impact - mise a jour du 18/04/2026
+Utilite & impact - mise a jour du 23/04/2026
 
 HEATMAP VISUELLE (utilite x impact) PAR RUBRIQUE
 ```mermaid
@@ -14,20 +14,21 @@ quadrantChart
   "Accueil": [0.80, 0.82]
   "Itineraire IA": [0.78, 0.87]
   "Trash Spotter": [0.75, 0.84]
-  "Cartographie": [0.88, 0.89]
-  "Graphiques": [0.69, 0.72]
-  "Classement": [0.73, 0.77]
-  "Rapports": [0.82, 0.88]
-  "Discussion": [0.67, 0.70]
-  "Partenaires engages": [0.79, 0.83]
-  "Donnees ouvertes": [0.70, 0.81]
-  "Financement": [0.64, 0.78]
-  "Developpement durable": [0.63, 0.74]
-  "Guide pratique": [0.76, 0.79]
-  "Seconde vie": [0.61, 0.68]
-  "Kit terrain / Rassemblements / Historique": [0.81, 0.85]
-  "Admin": [0.85, 0.90]
-  "Elus & Coordinateur": [0.83, 0.88]
+  "Carte des actions": [0.88, 0.89]
+  "Sandbox carte": [0.82, 0.82]
+  "Rapports d'impact": [0.82, 0.88]
+  "Progression & Badges": [0.73, 0.77]
+  "Messagerie Pro": [0.67, 0.70]
+  "Annuaire partenaires": [0.79, 0.83]
+  "Open data": [0.70, 0.81]
+  "Funding / Sponsoring": [0.64, 0.78]
+  "Hub educatif": [0.81, 0.85]
+  "Mode d'emploi": [0.76, 0.79]
+  "Kit terrain": [0.61, 0.68]
+  "Comprendre l'Enjeu": [0.63, 0.74]
+  "Meteo": [0.68, 0.73]
+  "Gouvernance": [0.83, 0.88]
+  "Administration": [0.85, 0.90]
 ```
 Fallback statique:
 ```md
@@ -41,7 +42,7 @@ flowchart LR
   B --> C[Visualiser<br/>U:5 I:5]
   C --> D[Impact<br/>U:4 I:5]
   D --> E[Reseau<br/>U:4 I:4]
-  E --> F[Apprendre<br/>U:3 I:4]
+  E --> F[Apprendre<br/>U:4 I:4]
   F --> G[Piloter<br/>U:5 I:5]
   G --> A
 ```
@@ -50,102 +51,163 @@ Fallback statique:
 ![Rubriques utilite impact radar fallback](./archive/fallback-rubriques-utilite-impact-radar.png)
 ```
 
-Organisation en 7 blocs produit
+Organisation par blocs et rubriques
 
-1) Accueil (Dashboard)
-- Formulaire benevole + parametres de compte (role, mode, profil).
-- Utilite: transformer une action terrain en donnees exploitables sans friction.
-- Impact concret: plus de declarations qualifiees, meilleure base pour carte, rapports et pilotage.
+1) Accueil
+- Page racine `/`.
+- Contenu utilisateur : hero, chiffres d'impact, call-to-action "Se connecter", "Visiter le site en tant qu'invité", "Déclarer une action" et accès aux rapports.
+- Utilite : premier point d'entrée public pour comprendre le projet, tester le parcours et conduire le visiteur vers l'engagement citoyen.
+- Impact : augmente la conversion des visiteurs en déclarants, améliore l'adoption des pages clefs et donne une entrée claire vers les rubriques sign-in / guest.
 
 2) Agir
 
-Itineraire IA
-- Recommandations proactives: "Tu devrais agir ici aujourd'hui", "Zone critique proche", "Action la plus utile".
-- Utilite: passer d'un outil passif a un assistant d'action local.
-- Impact concret: interventions plus ciblees et utiles au bon moment.
+Déclarer une action `/actions/new`
+- Formulaire terrain prioritaire, Clerk intervient uniquement à la validation.
+- Utilite : capter rapidement une action de depollution.
+- Impact : accélère l'augmentation du volume de données terrain et alimente la carte, les rapports et le pilotage.
 
-Trash Spotter
-- Signalement, qualification et suivi des points de dechets hors action collective.
-- Utilite: detecter vite les hotspots de pollution locale.
-- Impact concret: reduction du delai entre detection et traitement.
+Carte des actions `/actions/map`
+- Carte géolocalisée des actions et hotspots.
+- Utilite : visualiser les lieux d'intervention fiables.
+- Impact : améliore la priorisation locale et réduit les doublons.
+
+Visualiser la carte `/sections/sandbox`
+- Sandbox séparée pour tester filtres, couches et navigation cartographique.
+- Utilite : explorer sans engagement et valider les comportements de la carte.
+- Impact : réduit les erreurs d'utilisation de l'outil cartographique.
+
+Itinéraire IA `/sections/route`
+- Recommandations dynamiques : où agir aujourd'hui.
+- Utilite : transformer la data en parcours d'action.
+- Impact : rend les sorties plus efficaces et ciblées.
+
+Que faire des déchets ? `/sections/recycling`
+- Guide de tri, valorisation et filières.
+- Utilite : prolonger la valeur des ressources collectées.
+- Impact : réduit le volume de déchets finaux.
+
+Signalement Déchets `/sections/trash-spotter`
+- Rapport de hotspots de pollution.
+- Utilite : détecter rapidement les zones critiques.
+- Impact : raccourcit le délai entre observation et traitement.
+
+Historique `/actions/history`
+- Route existante mais `availability: hidden` dans le registre.
+- Note : pas exposée dans le ruban standard, accessible via chemin direct ou certaines pages internes.
 
 3) Visualiser
 
-Cartographie (avec logique Sandbox fusionnee)
-- Carte reelle des actions/points avec lecture terrain (zones, niveaux de pollution, traces/polygones).
-- Utilite: voir ou agir et prioriser les zones.
-- Impact concret: arbitrage local plus fiable, meilleure coordination des sorties.
-
-Graphiques & tableaux dynamiques
-- Totaux d'actions, tendances, repartitions par zones/periodes.
-- Utilite: synthese rapide de l'etat des actions.
-- Impact concret: decisions plus rapides sur les priorites terrain.
+Météo `/sections/weather`
+- Conditions terrain et prévisions.
+- Disponibilité : visible seulement pour `coordinateur`, `scientifique`, `elu` et `admin`.
+- Utilite : décider quand agir selon les conditions.
+- Impact : limite les sorties improductives liées à des conditions défavorables.
 
 4) Impact
 
-Classement
-- Progression durable (XP, niveaux, badges), "Ton impact" (eau/CO2/surface en proxys versionnes), ranking dynamique.
-- Utilite: motiver par l'impact reel et la progression personnelle/collective.
-- Impact concret: retention plus longue et meilleur suivi des contributions qualifiees.
+Rapports d'impact `/reports`
+- Synthèses et exports pour élus, chercheurs et partenaires.
+- Utilite : rendre les résultats partageables et défendables.
+- Impact : crédibilité renforcée pour financement et arbitrage.
 
-Rapports d'impact
-- Livrables exportables (elus/chercheurs/associations/entreprises), methodologie explicite.
-- Utilite: rendre les resultats lisibles, defendables et partageables.
-- Impact concret: credibilite renforcee pour financement, arbitrage public et partenariats.
+Progression & Badges `/sections/gamification`
+- Indicateurs personnels, niveaux et badges.
+- Utilite : motiver par la progression individuelle et collective.
+- Impact : fidélisation et retour utilisateur accrus.
 
-5) Reseau
+5) Réseau
 
-Discussion
-- Espace de coordination benevoles/associations/commercants/entreprises.
-- Les bugs/idees remontent via formulaire dedie, pas directement dans le canal commun.
-- Utilite: accelerer l'entraide locale et la circulation d'information utile.
-- Impact concret: plus de cooperations concretes et moins de bruit.
+Opérations collectives `/sections/community`
+- Organisation des actions de groupe.
+- Utilite : réduire l'isolement des bénévoles.
+- Impact : plus d'actions locales coordonnées.
 
-Partenaires engages
-- Annuaire qualifie des acteurs utiles (avec logique de contribution et disponibilite).
-- Utilite: mobiliser rapidement les bonnes ressources locales.
-- Impact concret: capacite d'action augmentee sur les zones prioritaires.
+Messagerie Pro `/sections/messagerie`
+- Canal de coordination.
+- Utilite : fluidifier l'entraide.
+- Impact : moins de frictions organisationnelles.
 
-Donnees ouvertes
-- Open data/API/export JSON, acces chercheurs, integration collectivites.
-- Utilite: faciliter la reutilisation institutionnelle des donnees.
-- Impact concret: replication inter-villes et acceleration des analyses externes.
+Annuaire partenaires `/sections/annuaire`
+- Fiches et contacts de partenaires.
+- Utilite : trouver les bons acteurs locaux.
+- Impact : accélère les mises en relation.
 
-Financement / sponsoring
-- Sponsoring de zones, mecenat ecologique, appel au don.
-- Utilite: structurer le modele economique.
-- Impact concret: plus de moyens pour actions locales soutenues dans la duree.
+Découvrir le réseau `/partners/network`
+- Vue du réseau engagé.
+- Utilite : cartographier les partenaires mobilisés.
+- Impact : facilite la collaboration institutionnelle.
+
+Observatoire Public `/sections/open-data`
+- Données ouvertes, API et exports.
+- Utilite : ouvrir les données aux chercheurs et collectivités.
+- Impact : favorise la réutilisation et la transparence.
+
+Soutenir le Projet `/sections/funding`
+- Sponsoring de zones et mécénat.
+- Utilite : structurer le modèle économique.
+- Impact : finance durable des actions citoyennes.
 
 6) Apprendre
 
-Developpement durable
-- Vulgarisation des rapports scientifiques, ODD, limites planetaires et lien avec actions locales.
-- Utilite: donner du sens systemique aux actions de depollution.
-- Impact concret: meilleure qualite des choix quotidiens et operationnels.
+Hub Éducatif `/learn/hub`
+- Ressources et parcours pédagogiques.
+- Utilite : centraliser l'apprentissage bénévole.
+- Impact : améliore la qualité des interventions.
 
-Guide pratique
-- Consignes terrain, methodes et bonnes pratiques applicables immediatement.
-- Utilite: reduire les erreurs d'execution.
-- Impact concret: actions plus efficaces et plus sures.
+Comprendre l'Enjeu `/sections/climate`
+- Contexte climat et enjeux durables.
+- Utilite : relier l'action locale aux ODD.
+- Impact : meilleures décisions et compréhension partagée.
 
-Seconde vie
-- Reemploi, tri, valorisation, orientation vers filieres utiles.
-- Utilite: prolonger la valeur des ressources et limiter dechets residuels.
-- Impact concret: reduction du volume final de dechets.
+Mode d'emploi `/sections/guide`
+- Bonnes pratiques terrain.
+- Utilite : réduire les erreurs.
+- Impact : opérations plus sûres et efficaces.
 
-Kit terrain + Rassemblements + Historique (fusion)
-- Ressources standardisees (materiel/checklists), coordination evenementielle et memoire des decisions/actions.
-- Utilite: professionnaliser les operations collectives et conserver la trace.
-- Impact concret: participation citoyenne accrue + transparence + progression mesurable dans le temps.
+Kit terrain `/sections/kit`
+- Checklist et matériel.
+- Utilite : standardiser la préparation.
+- Impact : moins d'oublis et plus de fluidité.
 
 7) Piloter
 
-Admin
-- Moderation, validation qualite, anti-abus, controle des operations sensibles.
-- Utilite: garantir la fiabilite des donnees et la gouvernance.
-- Impact concret: legitimite renforcee vis-a-vis des elus, chercheurs et partenaires.
+Profil & impact `/profil`
+- Paramètres de compte et visibilité des données.
+- Utilite : point central de gestion utilisateur.
+- Impact : personnalisation du parcours et confiance.
 
-Elus & Coordinateur
-- Vue lisible des besoins/resultats pour arbitrage public et coordination locale.
-- Utilite: transformer les donnees en decisions actionnables.
-- Impact concret: allocations plus pertinentes sur les zones a fort besoin.
+Tableau de bord `/dashboard`
+- Vue synthèse des indicateurs.
+- Utilite : piloter l'activité.
+- Impact : décisions plus rapides.
+
+Gouvernance `/sections/elus`
+- Résultats pour les décideurs publics.
+- Disponibilité : `coordinateur`, `scientifique`, `elu`, `admin`.
+- Utilite : transformer la donnée en arbitrage.
+- Impact : allocations plus pertinentes.
+
+Portail Décideur `/sponsor-portal`
+- Espace ROI et impact territorial.
+- Disponibilité : `elu` et `admin`.
+- Utilite : donner un outil dédié aux décideurs.
+- Impact : facilite le pilotage institutionnel.
+
+Administration `/admin`
+- Modération et supervision.
+- Disponibilité : `admin` uniquement.
+- Utilite : garantir la fiabilité des données.
+- Impact : protection contre les abus.
+
+God Mode `/admin/godmode`
+- Supervision master admin.
+- Disponibilité : `admin` uniquement.
+- Utilite : outils avancés de maintenance.
+- Impact : support technique et gouvernance renforcés.
+
+Notes sur les rôles
+- Le bloc `pilot` n’est activé que pour certains profils ; les bénévoles ne voient pas les rubriques de gouvernance et d’administration dans le ruban standard.
+- `Météo` est réservée aux profils de coordination/analyse/décision (`coordinateur`, `scientifique`, `elu`, `admin`).
+- `Portail Décideur` et `Gouvernance` sont exposés différemment selon le rôle : `elu` et `admin` ont un accès plus large, tandis que `coordinateur` et `scientifique` voient principalement `Gouvernance`.
+- `Administration` et `God Mode` sont des rubriques strictement `admin`.
+- `Historique` existe mais reste `hidden` dans le registre ; il n’est pas proposé dans le ruban principal.
