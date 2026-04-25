@@ -1,3 +1,75 @@
+
+applique les correction proposées dans le plan GitHub Actions, Dependabot & Security.md
+
+ne fais pas de push, travaille seulement en local maintenant
+
+
+
+
+Perform a post-refactor design-system and typography verification audit.
+
+Context:
+Cursor has already done a major UI/UX refactor, centralized the new CleanMyMap graphic charter, removed obsolete design documents, and aligned the project around the homepage as the most advanced UI reference.
+The product has 3 display modes. Do not restart the design-system work from scratch.
+
+Goal:
+Verify that the new design system is now coherent, correctly documented, usable by AI coding agents, and consistently applicable across all pages and the 3 display modes.
+
+Audit only. Do not modify files.
+
+Check:
+- Locate the current canonical design-system/graphic-charter documents.
+- Verify that old obsolete design docs were actually removed or clearly deprecated.
+- Verify that AGENTS.md or equivalent root-level instructions point to the correct canonical design docs.
+- Verify that the homepage is clearly identified as the most advanced UI reference.
+- Verify that the 3 display modes are documented and visually coherent.
+- Inspect global CSS, Tailwind config, theme tokens, shared components, layout wrappers, buttons, cards, navigation, forms, typography and responsive utilities.
+- Compare the new documentation against the actual implementation.
+- Identify remaining inconsistencies, duplicates, obsolete references or conflicting rules.
+- Identify pages/components that still do not follow the new CleanMyMap visual identity.
+- Check whether future agents like Codex, Gemini Code Assist, Claude Code or Cursor can reliably find and apply the design rules.
+- Check whether each block/rubric can keep its own accent/style while still belonging to one coherent product.
+- Check accessibility basics: contrast, focus states, readable typography, responsive behavior.
+
+Important:
+- Do not propose a full redesign.
+- Do not propose moving files unless there is a clear problem.
+- Do not recreate deleted obsolete docs.
+- Do not change routes, logic or data.
+- Treat Cursor’s new design system as the baseline.
+- Focus on validation, gaps and small corrective actions.
+
+Output:
+1. Executive diagnosis.
+2. Current canonical design-system files.
+3. Confirmation of obsolete docs removed/deprecated.
+4. Summary of the current CleanMyMap visual system.
+5. Assessment of the 3 display modes.
+6. Remaining inconsistencies between docs and code.
+7. AI-agent-readiness score /10.
+8. Risks of future visual drift.
+9. Minimal corrective actions only.
+10. Exact files likely requiring small updates.
+11. Proposed AGENTS.md improvements if needed.
+12. Prioritized action plan:
+   - P0: blockers
+   - P1: consistency fixes
+   - P2: polish
+
+
+
+
+
+
+
+
+applique cela a tous le site 
+
+
+
+
+
+
 Prompt 1 — Audit ciblé du formulaire
 Audite uniquement la rubrique / page du formulaire de déclaration d’action.
 

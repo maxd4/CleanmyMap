@@ -44,7 +44,9 @@
   "overrides": {
     "dompurify": "3.4.0",
     "protobufjs": "7.5.5",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "uuid": "^11.0.0",
+    "postcss": "^8.5.0"
   },
   "dependencies": {
     "posthog-js": "^1.371.2",
