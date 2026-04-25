@@ -117,7 +117,6 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "new",
   "map",
   "history",
-  "help",
   "dashboard",
   "sandbox",
   "community",
