@@ -27,7 +27,7 @@ describe("server preferences", () => {
 
   it("prefers Clerk display mode metadata over cookies", async () => {
     const getUser = vi.fn().mockResolvedValue({
-      unsafeMetadata: { displayMode: "simplifie" },
+      unsafeMetadata: { displayMode: "minimaliste" },
       publicMetadata: { displayMode: "sobre" },
       privateMetadata: { displayMode: "exhaustif" },
     });
@@ -37,7 +37,7 @@ describe("server preferences", () => {
 
     const { getServerDisplayModePreference } = await import("./server-preferences");
     await expect(getServerDisplayModePreference()).resolves.toEqual({
-      displayMode: "simplifie",
+      displayMode: "minimaliste",
       isExplicit: true,
     });
   });

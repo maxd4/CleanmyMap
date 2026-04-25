@@ -58,7 +58,7 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
   const secondaryCTA = profileOverview.secondaryCTA;
   const compactMode = displayMode !== "exhaustif";
   const renderedSpaces =
-    displayMode === "simplifie"
+    displayMode === "minimaliste"
       ? spaces.map((space) => ({ ...space, items: space.items.slice(0, 2) }))
       : spaces;
   const getRenderedSpaceItems = (space: (typeof renderedSpaces)[number]) =>

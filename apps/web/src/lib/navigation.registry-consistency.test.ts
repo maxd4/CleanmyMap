@@ -6,7 +6,7 @@ import {
 } from "@/lib/navigation";
 
 const PROFILES = ["benevole", "coordinateur", "scientifique", "elu", "admin"] as const;
-const MODES = ["exhaustif", "sobre", "simplifie"] as const;
+const MODES = ["exhaustif", "sobre", "minimaliste"] as const;
 
 function collectRouteIds(spaces: NavigationSpace[]): string[] {
   return spaces.flatMap((space) => space.items.map((item) => item.routeId));

@@ -26,7 +26,7 @@ describe("POST /api/account/display-mode", () => {
     });
     const updateUser = vi.fn().mockResolvedValue({
       id: "user-1",
-      unsafeMetadata: { displayMode: "simplifie" },
+      unsafeMetadata: { displayMode: "minimaliste" },
       publicMetadata: {},
       privateMetadata: {},
     });
@@ -38,7 +38,7 @@ describe("POST /api/account/display-mode", () => {
     const response = await POST(
       new Request("http://localhost/api/account/display-mode", {
         method: "POST",
-        body: JSON.stringify({ displayMode: "simplifie" }),
+        body: JSON.stringify({ displayMode: "minimaliste" }),
       }),
     );
 
@@ -48,9 +48,9 @@ describe("POST /api/account/display-mode", () => {
     };
 
     expect(response.status).toBe(200);
-    expect(body.displayMode).toBe("simplifie");
+    expect(body.displayMode).toBe("minimaliste");
     expect(updateUser).toHaveBeenCalledWith("user-1", {
-      unsafeMetadata: { displayMode: "simplifie" },
+      unsafeMetadata: { displayMode: "minimaliste" },
     });
   });
 
