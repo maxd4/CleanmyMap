@@ -28,17 +28,17 @@ export function AppBreadcrumb({ currentProfile, profileLabel }: AppBreadcrumbPro
   return (
     <nav
       aria-label="Breadcrumb"
-      className="mx-auto flex w-full max-w-7xl items-center gap-1.5 rounded-2xl border border-white/40 bg-white/80 px-3 py-2 text-xs text-slate-500 shadow-sm backdrop-blur-md"
+      className="flex w-full items-center gap-1.5 rounded-2xl border border-white/40 bg-white/80 px-3 py-2 text-xs text-slate-500 shadow-sm backdrop-blur-md"
     >
       <Link
         href="/dashboard"
         className="inline-flex shrink-0 items-center gap-1.5 font-medium transition hover:text-emerald-700"
       >
         <Image
-          src="/brand/nouveau-logo.png"
+          src="/brand/pictogramme-cleanmymap.svg"
           alt="Logo CleanMyMap"
-          width={18}
-          height={10}
+          width={24}
+          height={24}
           className="h-3 w-auto shrink-0"
         />
         CleanMyMap

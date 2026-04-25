@@ -34,11 +34,11 @@ npm run dev
 Pour l'initialisation du backend, la synchronisation des variables d'environnement et les opérations Supabase, voir :
 - `apps/web/README.md`
 
-## Workflow Codex / Mémoire de Session
+## Workflow Agent / Mémoire de Session
 - Règles globales persistantes : `AGENTS.md`
 - Contexte du projet : `project_context.md`
 - Mémoire de session en cours : `documentation/sessions/history/latest-session.md`
-- Gouvernance mémoire IA : `documentation/technical/codex-memory-governance.md`
+- Gouvernance mémoire IA : `documentation/technical/agent-memory-governance.md`
 
 Commandes IA :
 - `npm run session:bootstrap`

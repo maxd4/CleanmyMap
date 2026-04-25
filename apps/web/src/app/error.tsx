@@ -40,11 +40,11 @@ export default function Error({
             Oops ! Un imprévu <br />scientifique.
           </h1>
           <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-            Une erreur inattendue est survenue lors de l'exécution de l'application.
+            Une erreur inattendue est survenue lors de l&apos;exécution de l&apos;application.
             {" "}
             {isSentryConfigured
               ? "Nos équipes ont été alertées via Sentry."
-              : "Le monitoring Sentry n'est pas configuré sur cet environnement."}
+              : "Le monitoring Sentry n&apos;est pas configuré sur cet environnement."}
           </p>
           {error.digest && (
             <code className="block mt-4 text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-600 font-mono">

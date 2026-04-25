@@ -1,5 +1,11 @@
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
+import { 
+  ShieldCheck, 
+  FileSearch, 
+  Settings,
+  AlertTriangle,
+} from "lucide-react";
 import { BusinessAlertsPanel } from "@/components/dashboard/business-alerts-panel";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 
@@ -15,6 +21,7 @@ import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-an
 import { getProfilePrimaryAction, toProfile } from "@/lib/profiles";
 import { getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigation-grid";
 
 async function loadAdminOverview() {
   const supabase = getSupabaseServerClient();
@@ -41,7 +48,7 @@ export default async function AdminPage() {
                 Supervision
               </p>
               <p className="mt-2 text-sm text-slate-600">
-                Alertes et priorités de l'administration.
+                Alertes et priorités de l&apos;administration.
               </p>
             </article>
             <article className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -57,7 +64,7 @@ export default async function AdminPage() {
                 Export
               </p>
               <p className="mt-2 text-sm text-slate-600">
-                Les livrables d'administration nécessitent un compte autorisé.
+                Les livrables d&apos;administration nécessitent un compte autorisé.
               </p>
             </article>
           </section>
@@ -116,6 +123,53 @@ export default async function AdminPage() {
     success: adminAudit.filter((item) => item.outcome === "success").length,
     error: adminAudit.filter((item) => item.outcome === "error").length,
   };
+
+  const navigationItems: NavigationGridItem[] = [
+    {
+      icon: ShieldCheck,
+      title: "Gouvernance",
+      desc: "Suivi des statuts métier et décisions stratégiques.",
+      iconBg: "bg-blue-500/20",
+      iconColor: "text-blue-400",
+      accent: "from-blue-600/20 to-blue-900/40",
+      ring: "ring-blue-500/30",
+      dot: "bg-blue-400",
+      href: "#governance",
+    },
+    {
+      icon: AlertTriangle,
+      title: "Alertes",
+      desc: "Points d'attention et écarts critiques à traiter.",
+      iconBg: "bg-amber-500/20",
+      iconColor: "text-amber-400",
+      accent: "from-amber-600/20 to-amber-900/40",
+      ring: "ring-amber-500/30",
+      dot: "bg-amber-400",
+      href: "#alerts",
+    },
+    {
+      icon: FileSearch,
+      title: "Modération",
+      desc: "Validation des actions et gestion des preuves.",
+      iconBg: "bg-emerald-500/20",
+      iconColor: "text-emerald-400",
+      accent: "from-emerald-600/20 to-emerald-900/40",
+      ring: "ring-emerald-500/30",
+      dot: "bg-emerald-400",
+      href: "#moderation",
+    },
+    {
+      icon: Settings,
+      title: "Services",
+      desc: "État de santé des API et infrastructures.",
+      iconBg: "bg-slate-500/20",
+      iconColor: "text-slate-400",
+      accent: "from-slate-600/20 to-slate-900/40",
+      ring: "ring-slate-500/30",
+      dot: "bg-slate-400",
+      href: "/admin/services",
+    },
+  ];
 
   const kpis = overview
     ? ([
@@ -200,79 +254,82 @@ export default async function AdminPage() {
           </div>
           <div className="flex flex-wrap gap-3">
             <RubriquePdfExportButton rubriqueTitle="Administration" />
-            <Link
-              href="/admin/services"
-              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800"
-            >
-              Supervision des services
-            </Link>
           </div>
         </div>
-      </section>
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          Vues gouvernance
-        </p>
-        <h2 className="mt-2 text-xl font-semibold text-slate-900">
-          Etats metier relies au pilotage
-        </h2>
-        <p className="mt-2 text-sm text-slate-600">
-          Les compteurs ci-dessous reprennent les cycles de decision actifs:
-          onboarding partenaire, revue de publication et execution des operations
-          admin.
-        </p>
-
-        <div className="mt-4 grid gap-4 md:grid-cols-3">
-          <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-semibold text-slate-900">
-              Onboarding partenaires
-            </p>
-            <p className="mt-2 text-xs text-slate-600">Etat: pending / accepted / rejected</p>
-            <p className="mt-3 text-xs text-slate-700">
-              pending: <span className="font-semibold">{onboardingStatus.pending}</span>
-            </p>
-            <p className="text-xs text-slate-700">
-              accepted: <span className="font-semibold">{onboardingStatus.accepted}</span>
-            </p>
-            <p className="text-xs text-slate-700">
-              rejected: <span className="font-semibold">{onboardingStatus.rejected}</span>
-            </p>
-          </article>
-
-          <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-semibold text-slate-900">
-              Publication annuaire
-            </p>
-            <p className="mt-2 text-xs text-slate-600">Etat: pending / accepted / rejected</p>
-            <p className="mt-3 text-xs text-slate-700">
-              pending: <span className="font-semibold">{publicationStatus.pending}</span>
-            </p>
-            <p className="text-xs text-slate-700">
-              accepted: <span className="font-semibold">{publicationStatus.accepted}</span>
-            </p>
-            <p className="text-xs text-slate-700">
-              rejected: <span className="font-semibold">{publicationStatus.rejected}</span>
-            </p>
-          </article>
-
-          <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-semibold text-slate-900">
-              Journal operations admin (25)
-            </p>
-            <p className="mt-2 text-xs text-slate-600">Etat: success / error</p>
-            <p className="mt-3 text-xs text-slate-700">
-              success: <span className="font-semibold">{moderationAudit.success}</span>
-            </p>
-            <p className="text-xs text-slate-700">
-              error: <span className="font-semibold">{moderationAudit.error}</span>
-            </p>
-          </article>
+        <div className="mt-6">
+          <NavigationGrid items={navigationItems} columns={{ default: 1, sm: 2, md: 4, xl: 4 }} />
         </div>
       </section>
 
-      <BusinessAlertsPanel />
-      <ActionsReportPanel />
+      <div id="governance">
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Vues gouvernance
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-slate-900">
+            Etats metier relies au pilotage
+          </h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Les compteurs ci-dessous reprennent les cycles de decision actifs:
+            onboarding partenaire, revue de publication et execution des operations
+            admin.
+          </p>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-900">
+                Onboarding partenaires
+              </p>
+              <p className="mt-2 text-xs text-slate-600">Etat: pending / accepted / rejected</p>
+              <p className="mt-3 text-xs text-slate-700">
+                pending: <span className="font-semibold">{onboardingStatus.pending}</span>
+              </p>
+              <p className="text-xs text-slate-700">
+                accepted: <span className="font-semibold">{onboardingStatus.accepted}</span>
+              </p>
+              <p className="text-xs text-slate-700">
+                rejected: <span className="font-semibold">{onboardingStatus.rejected}</span>
+              </p>
+            </article>
+
+            <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-900">
+                Publication annuaire
+              </p>
+              <p className="mt-2 text-xs text-slate-600">Etat: pending / accepted / rejected</p>
+              <p className="mt-3 text-xs text-slate-700">
+                pending: <span className="font-semibold">{publicationStatus.pending}</span>
+              </p>
+              <p className="text-xs text-slate-700">
+                accepted: <span className="font-semibold">{publicationStatus.accepted}</span>
+              </p>
+              <p className="text-xs text-slate-700">
+                rejected: <span className="font-semibold">{publicationStatus.rejected}</span>
+              </p>
+            </article>
+
+            <article className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-900">
+                Journal operations admin (25)
+              </p>
+              <p className="mt-2 text-xs text-slate-600">Etat: success / error</p>
+              <p className="mt-3 text-xs text-slate-700">
+                success: <span className="font-semibold">{moderationAudit.success}</span>
+              </p>
+              <p className="text-xs text-slate-700">
+                error: <span className="font-semibold">{moderationAudit.error}</span>
+              </p>
+            </article>
+          </div>
+        </section>
+      </div>
+
+      <div id="alerts">
+        <BusinessAlertsPanel />
+      </div>
+      <div id="moderation">
+        <ActionsReportPanel />
+      </div>
       <RolePrimaryActions profile={profile} />
     </div>
   );

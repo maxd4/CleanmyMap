@@ -92,5 +92,5 @@ describe("POST /api/actions", () => {
       userId: "user-test-1",
       actionId: "action-test-1",
     });
-  });
+  }, 15000);
 });

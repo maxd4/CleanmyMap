@@ -1,15 +1,25 @@
 import type { Metadata } from "next";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cleanmymap.app";
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://cleanmymap.fr";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "CleanMyMap | Plateforme bénévoles de dépollution",
-    template: "%s | CleanMyMap",
+    default: "CleanMyMap | Cartographie Citoyenne et Dépollution Urbaine",
+    template: "%s | CleanMyMap - Agir pour l'environnement",
   },
   description:
-    "Plateforme citoyenne pour signaler, déclarer et coordonner les actions de dépollution urbaine.",
+    "La plateforme citoyenne pour cartographier la pollution, organiser des collectes de déchets et coordonner les actions de dépollution bénévole en France.",
+  keywords: [
+    "CleanMyMap",
+    "dépollution urbaine",
+    "cartographie citoyenne",
+    "collecte de déchets",
+    "écologie participative",
+    "signalement pollution",
+    "bénévolat environnement",
+    "nettoyage planète",
+  ],
   alternates: {
     canonical: "/",
     languages: {
@@ -21,25 +31,34 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fr_FR",
     url: "/",
-    siteName: "CleanMyMap",
-    title: "CleanMyMap | Agir contre la pollution urbaine",
+    siteName: "CleanMyMap - Protection de l'environnement",
+    title: "CleanMyMap | Cartographie Citoyenne et Dépollution",
     description:
-      "Signalez les points noirs, déclarez vos actions et pilotez votre impact collectif.",
+      "Rejoignez le mouvement : signalez les points noirs de pollution et participez à des actions de nettoyage collectif partout en France.",
+    images: [
+      {
+        url: "/brand/nouveau-logo.png",
+        width: 1200,
+        height: 630,
+        alt: "CleanMyMap - Agir ensemble pour une ville propre",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "CleanMyMap",
+    title: "CleanMyMap - L'appli pour dépolluer nos villes",
     description:
-      "Plateforme bénévoles pour la dépollution urbaine et la coordination terrain.",
+      "Plateforme de coordination pour les bénévoles engagés dans la dépollution urbaine.",
+    images: ["/brand/nouveau-logo.png"],
   },
   robots: {
     index: true,
     follow: true,
   },
   icons: {
-    icon: "/brand/nouveau-logo.png",
-    apple: "/brand/nouveau-logo.png",
-    shortcut: "/brand/nouveau-logo.png",
+    icon: "/brand/pictogramme-cleanmymap.svg",
+    apple: "/brand/pictogramme-cleanmymap.svg",
+    shortcut: "/brand/pictogramme-cleanmymap.svg",
   },
   manifest: "/manifest.json",
   appleWebApp: {

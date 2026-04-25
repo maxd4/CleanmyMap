@@ -39,6 +39,7 @@ describe("actions contract regression gates", () => {
     expect(mapItem.waste_kg).toBe(7.5);
     expect(mapItem.cigarette_butts).toBe(120);
     expect(mapItem.status).toBe("approved");
+    expect(mapItem.geometry_source).toBe("estimated_area");
     expect(mapItem.contract?.metadata.volunteersCount).toBe(3);
 
     const listItem = toActionListItem(contract);

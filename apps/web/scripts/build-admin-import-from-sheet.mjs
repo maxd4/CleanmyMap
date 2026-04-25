@@ -18,6 +18,7 @@ import {
   toInteger,
   toNumber,
 } from "./lib/sheet-ingestion-core.mjs";
+import { resolveBestGeometry } from "../src/lib/actions/geometry-resolution.ts";
 
 const DEFAULT_SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1kKkhylwqo10OA-p6CDuNwYihzW0ElwTeFwCwZ6O-rJw/export?format=csv&gid=0";
@@ -534,6 +535,24 @@ async function main() {
             ? arrivalCoordinates
             : { latitude: null, longitude: null };
 
+    const resolvedGeometry = resolveBestGeometry({
+      drawing: routeDrawing ?? null,
+      geojson: routeDrawing
+        ? JSON.stringify({
+            type: "LineString",
+            coordinates: routeDrawing.coordinates.map(([lat, lng]) => [lng, lat]),
+          })
+        : null,
+      confidence: routeDrawing ? 0.78 : null,
+      geometrySourceHint: routeDrawing ? "routed" : null,
+      latitude: representativeCoordinates.latitude,
+      longitude: representativeCoordinates.longitude,
+      locationLabel,
+      departureLocationLabel: departureLocationLabel || null,
+      arrivalLocationLabel: arrivalLocationLabel || null,
+      routeStyle,
+    });
+
     items.push({
       actorName:
         index.actorName >= 0
@@ -548,7 +567,17 @@ async function main() {
       routeAdjustmentMessage: hasRoute
         ? "Itinéraire reconstitué depuis les colonnes Départ / Arrivée"
         : undefined,
-      manualDrawing: routeDrawing ?? undefined,
+      manualDrawing:
+        resolvedGeometry.kind === "point"
+          ? undefined
+          : {
+              kind: resolvedGeometry.kind,
+              coordinates: resolvedGeometry.coordinates,
+            },
+      derivedGeometryKind: resolvedGeometry.kind,
+      derivedGeometryGeoJson: resolvedGeometry.geojson,
+      geometryConfidence: resolvedGeometry.confidence,
+      geometrySource: resolvedGeometry.geometrySource,
       placeType: placeType || undefined,
       cleanPlaceFlag,
       megotsKg,

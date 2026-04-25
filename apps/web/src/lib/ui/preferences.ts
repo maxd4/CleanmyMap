@@ -4,7 +4,13 @@ export type Locale = (typeof LOCALES)[number];
 export const THEMES = ["light", "dark"] as const;
 export type ThemeMode = (typeof THEMES)[number];
 
-export const DISPLAY_MODES = ["exhaustif", "sobre", "simplifie"] as const;
+/**
+ * Modes d'affichage:
+ * - exhaustif: Charte premium complète (gradient, glassmorphism, animations)
+ * - minimaliste: Essentiel stylé (fond uni, ombres soft, pas de blur)
+ * - sobre: Accessibilité cognitive (aucun effet, statique, contrastes élevés)
+ */
+export const DISPLAY_MODES = ["exhaustif", "minimaliste", "sobre"] as const;
 export type DisplayMode = (typeof DISPLAY_MODES)[number];
 
 export const STORAGE_KEYS = {

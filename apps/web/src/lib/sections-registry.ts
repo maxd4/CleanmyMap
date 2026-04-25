@@ -227,18 +227,6 @@ export const RUBRIQUE_REGISTRY = [
     implementation: "finalized",
   },
   {
-    id: "kit",
-    categoryId: "resources",
-    spaceId: "prepare",
-    priority: 20,
-    kind: "section",
-    route: "/sections/kit",
-    label: { fr: "Kit terrain", en: "Field kit" },
-    description: { fr: "Checklist et matériel", en: "Checklist and equipment" },
-    availability: "available",
-    implementation: "finalized",
-  },
-  {
     id: "community",
     categoryId: "community",
     spaceId: "execute",

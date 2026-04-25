@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
+import { CmmCard, type CardTone } from "@/components/ui/cmm-card";
+import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 
 export type L10n = { fr: string; en: string };
 
@@ -14,27 +15,17 @@ export function t(locale: "fr" | "en", value: L10n): string {
 function RubriqueBlock(props: {
   title: string;
   children: ReactNode;
-  tone?: "slate" | "emerald" | "sky" | "amber" | "violet";
+  tone?: CardTone;
 }) {
-  const toneClasses = {
-    slate: "border-slate-200 bg-white/90 shadow-sm shadow-slate-200/50",
-    emerald: "border-emerald-200 bg-emerald-50/70 shadow-sm shadow-emerald-100/60",
-    sky: "border-sky-200 bg-sky-50/70 shadow-sm shadow-sky-100/60",
-    amber: "border-amber-200 bg-amber-50/70 shadow-sm shadow-amber-100/60",
-    violet: "border-violet-200 bg-violet-50/70 shadow-sm shadow-violet-100/60",
-  }[props.tone ?? "slate"];
-
   return (
-    <section
-      className={`overflow-hidden rounded-3xl border ${toneClasses} ring-1 ring-black/5`}
+    <CmmCard
+      tone={props.tone ?? "slate"}
+      variant="default"
+      size="md"
+      header={props.title}
     >
-      <div className="border-b border-black/5 bg-white/60 px-4 py-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
-          {props.title}
-        </p>
-      </div>
-      <div className="px-4 py-4">{props.children}</div>
-    </section>
+      {props.children}
+    </CmmCard>
   );
 }
 
@@ -50,24 +41,19 @@ export function SectionShell(props: {
   return (
     <section
       data-rubrique-report-root
-      className="space-y-5 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm sm:p-6"
+      className="space-y-5"
     >
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white/90 shadow-sm">
-        <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-4 sm:px-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-            {locale === "fr" ? "Pourquoi je suis ici" : "Why am I here"}
-          </p>
-          <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
-            <h1 className="text-2xl font-semibold text-slate-900">
-              {t(locale, props.title)}
-            </h1>
-            <RubriquePdfExportButton rubriqueTitle={t(locale, props.title)} />
-          </div>
-          <p className="mt-2 text-sm text-slate-600">
-            {t(locale, props.subtitle)}
-          </p>
+      <CmmCard tone="slate" variant="default" size="lg" className="rounded-3xl">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <h1 className="text-2xl font-semibold text-slate-900">
+            {t(locale, props.title)}
+          </h1>
+          <RubriquePdfExportButton rubriqueTitle={t(locale, props.title)} />
         </div>
-      </div>
+        <p className="mt-2 text-sm text-slate-600">
+          {t(locale, props.subtitle)}
+        </p>
+      </CmmCard>
 
       <div className="grid gap-4">
         <RubriqueBlock
@@ -84,21 +70,18 @@ export function SectionShell(props: {
 
         <RubriqueBlock title={locale === "fr" ? "Agir" : "Act"} tone="emerald">
           {props.links ? (
-            <div className="flex flex-wrap gap-2">
+            <CmmButtonGroup>
               {props.links.map((link, index) => (
-                <Link
+                <CmmButton
                   key={`${link.href}-${link.label[locale]}`}
                   href={link.href}
-                  className={`rounded-full border px-3 py-2 text-sm font-medium transition ${
-                    index === 0
-                      ? "border-emerald-300 bg-emerald-600 text-white shadow-sm hover:bg-emerald-700"
-                      : "border-emerald-200 bg-white text-emerald-900 hover:border-emerald-300 hover:bg-emerald-50"
-                  }`}
+                  tone={index === 0 ? "primary" : "secondary"}
+                  variant="pill"
                 >
                   {t(locale, link.label)}
-                </Link>
+                </CmmButton>
               ))}
-            </div>
+            </CmmButtonGroup>
           ) : (
             <p className="text-sm text-slate-600">
               {locale === "fr"
@@ -146,7 +129,7 @@ export function SectionShell(props: {
 export function NotFoundSection() {
   const { locale } = useSitePreferences();
   return (
-    <section className="rounded-3xl border border-rose-200 bg-rose-50/80 p-6 shadow-sm">
+    <CmmCard tone="rose" size="lg">
       <h1 className="text-xl font-semibold text-rose-800">
         {locale === "fr" ? "Rubrique introuvable" : "Section not found"}
       </h1>
@@ -155,7 +138,7 @@ export function NotFoundSection() {
           ? "La rubrique demandée n'est pas définie dans la navigation Next.js."
           : "The requested section is not defined in Next.js navigation."}
       </p>
-    </section>
+    </CmmCard>
   );
 }
 
@@ -166,7 +149,7 @@ export function PendingSection(props: {
 }) {
   const { locale } = useSitePreferences();
   return (
-    <section className="rounded-3xl border border-amber-200 bg-amber-50/80 p-6 shadow-sm">
+    <CmmCard tone="amber" size="lg">
       <h1 className="text-xl font-semibold text-amber-900">
         {locale === "fr"
           ? `Rubrique en attente: ${props.label.fr}`
@@ -183,20 +166,14 @@ export function PendingSection(props: {
             ? "La route est active, mais le contenu final n'est pas encore livré."
             : "The route is active, but the final content is not delivered yet."}
       </p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href="/dashboard"
-          className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
-        >
+      <CmmButtonGroup className="mt-4">
+        <CmmButton href="/dashboard" tone="secondary">
           {locale === "fr" ? "Retour au tableau de bord" : "Back to dashboard"}
-        </Link>
-        <Link
-          href="/reports"
-          className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100"
-        >
+        </CmmButton>
+        <CmmButton href="/reports" tone="secondary">
           {locale === "fr" ? "Ouvrir le reporting" : "Open reporting"}
-        </Link>
-      </div>
-    </section>
+        </CmmButton>
+      </CmmButtonGroup>
+    </CmmCard>
   );
 }

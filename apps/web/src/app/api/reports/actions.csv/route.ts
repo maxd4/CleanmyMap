@@ -67,13 +67,32 @@ export async function GET(request: Request) {
       observed_at: contract.dates.observedAt,
       geometry_kind: contract.geometry.kind,
       geometry_geojson: contract.geometry.geojson,
+      geometry_confidence: contract.geometry.confidence,
       manual_drawing_kind: contract.metadata.manualDrawing?.kind ?? null,
       manual_drawing_points:
         contract.metadata.manualDrawing?.coordinates.length ?? null,
       manual_drawing_coordinates_json: contract.metadata.manualDrawing
         ? JSON.stringify(contract.metadata.manualDrawing)
         : null,
-      manual_drawing_geojson: contract.geometry.geojson,
+      manual_drawing_geojson: contract.metadata.manualDrawing
+        ? JSON.stringify(
+            contract.metadata.manualDrawing.kind === "polyline"
+              ? {
+                  type: "LineString",
+                  coordinates: contract.metadata.manualDrawing.coordinates.map(
+                    ([lat, lng]) => [lng, lat],
+                  ),
+                }
+              : {
+                  type: "Polygon",
+                  coordinates: [
+                    contract.metadata.manualDrawing.coordinates.map(
+                      ([lat, lng]) => [lng, lat],
+                    ),
+                  ],
+                },
+          )
+        : null,
     }));
 
     const csv = buildActionsCsv(rows);

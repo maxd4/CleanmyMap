@@ -3,7 +3,11 @@ import {
   mapItemCigaretteButts,
   mapItemWasteKg,
 } from "../../lib/actions/data-contract";
-import { computePollutionScore } from "@/lib/actions/pollution-score";
+import {
+  computeButtsContributionScore,
+  computePollutionScore,
+  computeWasteContributionScore,
+} from "@/lib/actions/pollution-score";
 
 export type MarkerCategory =
   | "yellow"
@@ -11,7 +15,11 @@ export type MarkerCategory =
   | "green"
   | "blue"
   | "ashtray"
-  | "bin";
+  | "bin"
+  | "combo";
+
+export type InfrastructureNeed = "ashtray" | "bin" | "combo";
+export const INFRASTRUCTURE_ALERT_THRESHOLD = 75;
 
 export const SCORE_THRESHOLDS = {
   CRITICAL: 80,
@@ -33,6 +41,7 @@ export const DEFAULT_VISIBLE_CATEGORIES: Record<MarkerCategory, boolean> = {
   blue: true,
   ashtray: true,
   bin: true,
+  combo: true,
 };
 
 export function resolveDynamicOpacity(score: number): number {
@@ -91,17 +100,47 @@ export function classifyPollutionColor(
 
 export function deriveMarkerCategories(item: ActionMapItem): MarkerCategory[] {
   const categories: MarkerCategory[] = [classifyPollutionColor(item)];
-  const wasteKg = mapItemWasteKg(item);
-  const butts = mapItemCigaretteButts(item);
+  const infrastructureNeed = resolveInfrastructureNeed(item);
 
-  if ((butts ?? 0) > 0) {
-    categories.push("ashtray");
-  }
-  if ((wasteKg ?? 0) > 0) {
-    categories.push("bin");
+  if (infrastructureNeed) {
+    categories.push(infrastructureNeed);
   }
 
   return categories;
+}
+
+export function resolveInfrastructureNeed(
+  item: ActionMapItem,
+): InfrastructureNeed | null {
+  const wasteScore = computeWasteContributionScore(mapItemWasteKg(item));
+  const buttsScore = computeButtsContributionScore(mapItemCigaretteButts(item));
+  const needsBin = wasteScore >= INFRASTRUCTURE_ALERT_THRESHOLD;
+  const needsAshtray = buttsScore >= INFRASTRUCTURE_ALERT_THRESHOLD;
+
+  if (needsBin && needsAshtray) {
+    return "combo";
+  }
+  if (needsAshtray) {
+    return "ashtray";
+  }
+  if (needsBin) {
+    return "bin";
+  }
+  return null;
+}
+
+export function resolveInfrastructureEmoji(item: ActionMapItem): string | null {
+  const need = resolveInfrastructureNeed(item);
+  if (need === "combo") {
+    return "💰";
+  }
+  if (need === "ashtray") {
+    return "🚬";
+  }
+  if (need === "bin") {
+    return "🗑️";
+  }
+  return null;
 }
 
 export function isVisibleWithCategoryFilter(

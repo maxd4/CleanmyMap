@@ -66,6 +66,7 @@ async function tryNotifyAdmins(payload: z.infer<typeof onboardingSchema>) {
   }
 
   const to = "partenaires@cleanmymap.fr";
+  const replyTo = env.RESEND_REPLY_TO || env.RESEND_FROM_EMAIL;
   const html = `
     <h2>Nouvelle demande onboarding commercant engage</h2>
     <p><strong>Organisation:</strong> ${payload.organizationName}</p>
@@ -83,6 +84,7 @@ async function tryNotifyAdmins(payload: z.infer<typeof onboardingSchema>) {
     to,
     subject: `[CleanMyMap] Demande onboarding partenaire - ${payload.organizationName}`,
     html,
+    replyTo,
   });
 }
 

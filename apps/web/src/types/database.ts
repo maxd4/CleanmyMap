@@ -1,3 +1,5 @@
+import type { ActionGeometrySource } from "@/lib/actions/types";
+
 /**
  * Raw Row Types from Supabase (matching database schema)
  */
@@ -27,6 +29,10 @@ export type SpotRow = {
   waste_type: "clean_place" | "spot";
   latitude: number | null;
   longitude: number | null;
+  derived_geometry_kind: "point" | "polyline" | "polygon" | null;
+  derived_geometry_geojson: string | null;
+  geometry_confidence: number | null;
+  geometry_source?: ActionGeometrySource | null;
   status: "new" | "validated" | "cleaned";
   notes: string | null;
 };
@@ -34,18 +40,23 @@ export type SpotRow = {
 export type ActionRow = {
   id: string;
   created_at: string;
+  updated_at?: string;
   created_by_clerk_id: string;
   actor_name: string | null;
   action_date: string;
   location_label: string;
   latitude: number | null;
   longitude: number | null;
+  derived_geometry_kind: "point" | "polyline" | "polygon" | null;
+  derived_geometry_geojson: string | null;
+  geometry_confidence: number | null;
   waste_kg: number;
   cigarette_butts: number;
   volunteers_count: number;
   duration_minutes: number;
   notes: string | null;
   status: "pending" | "approved" | "rejected";
+  geometry_source?: ActionGeometrySource | null;
 };
 
 export type TrainingExampleRow = {

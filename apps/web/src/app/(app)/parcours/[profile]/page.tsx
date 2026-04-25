@@ -37,7 +37,7 @@ export default async function ParcoursProfilePage({
                   1. Découvrir
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  Comprendre le parcours avant d'agir.
+                  Comprendre le parcours avant d&apos;agir.
                 </p>
               </article>
               <article className="rounded-2xl border border-slate-200 bg-white p-4">

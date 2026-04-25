@@ -11,6 +11,7 @@ import {
   isDrawingValid,
   isLocationLikelyPark,
   PARK_PLACE_TYPE,
+  prepareCreateActionPayload,
 } from "./payload";
 import type {
   ActionDeclarationFormProps,
@@ -254,9 +255,18 @@ export function useActionDeclarationForm(
     setOptimisticLabel(payload.locationLabel);
 
     try {
-      const result = await createAction(payload);
+      const submissionPayload = await prepareCreateActionPayload({
+        form,
+        declarationMode,
+        effectiveManualDrawingEnabled,
+        drawingIsValid,
+        manualDrawing,
+        isEntrepriseMode,
+        linkedEventId,
+      });
+      const result = await createAction(submissionPayload);
       void trackFunnel("submit_success", declarationMode, {
-        hasDrawing: Boolean(payload.manualDrawing),
+        hasDrawing: Boolean(submissionPayload.manualDrawing),
       });
       setCreatedId(result.id);
       setSubmissionState("success");

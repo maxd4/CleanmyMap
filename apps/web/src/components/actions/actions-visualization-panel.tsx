@@ -16,12 +16,13 @@ type ZoneStats = {
 type ActionsVisualizationPanelProps = {
   days: number;
   status: ActionStatus | "all";
+  compact?: boolean;
 };
 
 type ImpactLevel = "faible" | "moyen" | "fort" | "critique";
 const IMPACT_LEVELS: ImpactLevel[] = ["faible", "moyen", "fort", "critique"];
 
-export function ActionsVisualizationPanel({ days, status }: ActionsVisualizationPanelProps) {
+export function ActionsVisualizationPanel({ days, status, compact = false }: ActionsVisualizationPanelProps) {
   const mapQuery = useSWR(["visualization-map", String(days), status], () =>
     fetchMapActions({ status, days, limit: 300, types: "all" }),
   );
@@ -116,23 +117,23 @@ export function ActionsVisualizationPanel({ days, status }: ActionsVisualization
   }, [actionsQuery.data?.items, mapQuery.data?.items]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 p-1">
+    <div className={compact ? "space-y-3" : "space-y-4"}>
+      <div className={`flex flex-wrap items-center justify-between gap-3 ${compact ? "p-0" : "p-1"}`}>
         <div>
-          <h2 className="text-xl font-semibold text-slate-900">
+          <h2 className={compact ? "text-lg font-semibold text-slate-900" : "text-xl font-semibold text-slate-900"}>
             Graphiques et tableaux dynamiques
           </h2>
-          <p className="text-sm text-slate-600">
+          <p className={compact ? "text-xs text-slate-600" : "text-sm text-slate-600"}>
             Lecture consolidée (échantillon live API).
           </p>
         </div>
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-500">Chargement des indicateurs dynamiques...</p>
+        <p className={compact ? "text-xs text-slate-500" : "text-sm text-slate-500"}>Chargement des indicateurs dynamiques...</p>
       ) : null}
       {error ? (
-        <p className="text-sm text-rose-700">Indicateurs dynamiques indisponibles.</p>
+        <p className={compact ? "text-xs text-rose-700" : "text-sm text-rose-700"}>Indicateurs dynamiques indisponibles.</p>
       ) : null}
 
       {!loading && !error ? (
@@ -140,8 +141,8 @@ export function ActionsVisualizationPanel({ days, status }: ActionsVisualization
           {/* Les compteurs globaux ont ete remontes dans le Dashboard Global, 
               mais on garde ici les graphiques specifiques. */}
           <div className="grid gap-4 lg:grid-cols-2">
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h3 className="text-sm font-semibold text-slate-900">Tendance 6 derniers mois</h3>
+            <article className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ? "p-3" : "p-4"}`}>
+              <h3 className={compact ? "text-xs font-semibold text-slate-900" : "text-sm font-semibold text-slate-900"}>Tendance 6 derniers mois</h3>
               <div className="mt-3 space-y-2">
                 {model.monthRows.map((row) => (
                   <div key={row.label}>
@@ -160,8 +161,8 @@ export function ActionsVisualizationPanel({ days, status }: ActionsVisualization
               </div>
             </article>
 
-            <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h3 className="text-sm font-semibold text-slate-900">Répartition impact</h3>
+            <article className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ? "p-3" : "p-4"}`}>
+              <h3 className={compact ? "text-xs font-semibold text-slate-900" : "text-sm font-semibold text-slate-900"}>Répartition impact</h3>
               <div className="mt-3 space-y-2">
                 {model.impactRows.map((row) => (
                   <div key={row.level}>
@@ -189,8 +190,8 @@ export function ActionsVisualizationPanel({ days, status }: ActionsVisualization
             </article>
           </div>
 
-          <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <h3 className="text-sm font-semibold text-slate-900">Tableau dynamique par zone</h3>
+          <article className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ? "p-3" : "p-4"}`}>
+            <h3 className={compact ? "text-xs font-semibold text-slate-900" : "text-sm font-semibold text-slate-900"}>Tableau dynamique par zone</h3>
             <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
               <table className="min-w-full text-left text-sm">
                 <thead className="bg-slate-50 text-slate-600">

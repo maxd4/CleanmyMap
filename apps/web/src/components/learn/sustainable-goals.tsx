@@ -370,8 +370,8 @@ export function SustainableGoalsInteractive() {
       <div className="text-center space-y-4">
         <h2 className="text-3xl font-black text-slate-900">Les 17 Objectifs de Développement Durable</h2>
         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Adoptés par l'ONU en 2015, les ODD constituent un plan d'action universel pour éradiquer la pauvreté,
-          protéger la planète et assurer la prospérité pour tous d'ici 2030.
+          Adoptés par l&apos;ONU en 2015, les ODD constituent un plan d&apos;action universel pour éradiquer la pauvreté,
+          protéger la planète et assurer la prospérité pour tous d&apos;ici 2030.
         </p>
       </div>
 

@@ -1,6 +1,50 @@
 Les rubriques de CleanMyMap.fr
 Utilite & impact - mise a jour du 23/04/2026
 
+Liste complete des rubriques et pages disponibles du site (ordre d'importance)
+
+1. Accueil
+2. Declarer une action
+3. Carte des actions
+4. Tableau de bord
+5. Profil & impact
+6. Rapports d'impact
+7. Methodologie
+8. Itineraire IA
+9. Signalement Dechets
+10. Visualiser la carte
+11. Hub Educatif
+12. Guide
+13. Annuaire partenaires
+14. Operations collectives
+15. Messagerie Pro
+16. Gouvernance
+17. Administration
+18. Observatoire Public
+19. Decouvrir le reseau
+20. Progression & Badges
+21. Meteo
+22. Que faire des dechets ?
+23. Comprendre l'Enjeu
+24. Kit terrain
+25. Soutenir le Projet
+26. Explorer
+27. Profil public
+28. Parcours
+29. Parcours par profil
+30. Impact profil
+31. Portail Decideur
+32. Partenaires - onboarding
+33. Partenaires - dashboard
+34. Impression rapport
+35. Sections - plan de route
+36. Historique des actions
+37. Services admin
+38. God Mode
+39. Connexion
+40. Inscription
+41. Onboarding localisation
+
 HEATMAP VISUELLE (utilite x impact) PAR RUBRIQUE
 ```mermaid
 quadrantChart
@@ -206,8 +250,8 @@ God Mode `/admin/godmode`
 - Impact : support technique et gouvernance renforcés.
 
 Notes sur les rôles
-- Le bloc `pilot` n’est activé que pour certains profils ; les bénévoles ne voient pas les rubriques de gouvernance et d’administration dans le ruban standard.
+- Le bloc `pilot` n'est activé que pour certains profils ; les bénévoles ne voient pas les rubriques de gouvernance et d'administration dans le ruban standard.
 - `Météo` est réservée aux profils de coordination/analyse/décision (`coordinateur`, `scientifique`, `elu`, `admin`).
 - `Portail Décideur` et `Gouvernance` sont exposés différemment selon le rôle : `elu` et `admin` ont un accès plus large, tandis que `coordinateur` et `scientifique` voient principalement `Gouvernance`.
 - `Administration` et `God Mode` sont des rubriques strictement `admin`.
-- `Historique` existe mais reste `hidden` dans le registre ; il n’est pas proposé dans le ruban principal.
+- `Historique` existe mais reste `hidden` dans le registre ; il n'est pas proposé dans le ruban principal.

@@ -10,7 +10,7 @@ import { CommunityPostEventLoopCard } from "@/components/sections/rubriques/comm
 import { CommunityRemindersCard } from "@/components/sections/rubriques/community/reminders-card";
 import { CommunityStaffingCard } from "@/components/sections/rubriques/community/staffing-card";
 import { useCommunitySection } from "@/components/sections/rubriques/community/use-community-section";
-import { KitSection } from "@/components/sections/rubriques/kit-section";
+import { WeatherSection } from "@/components/sections/rubriques/weather-section";
 import { NewsletterSignup } from "@/components/newsletter/newsletter-signup";
 import { ChatShell } from "@/components/chat/chat-shell";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -118,7 +118,7 @@ function CommunitySection() {
                 : "Standardize practices to professionalize local actions."}
             </p>
             <div className="mt-3">
-              <KitSection />
+              <WeatherSection />
             </div>
           </section>
 

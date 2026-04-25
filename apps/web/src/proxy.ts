@@ -5,6 +5,28 @@ import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { PROTECTED_ROUTE_PATTERNS } from "@/lib/auth/protected-routes";
 
 const isProtectedRoute = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS]);
+const PUBLIC_ROUTE_EXCEPTIONS = ["/actions/map", "/api/actions/map"] as const;
+
+function isPublicException(pathname: string): boolean {
+  return PUBLIC_ROUTE_EXCEPTIONS.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+function nextWithAppHeaders(req: NextRequest): NextResponse {
+  const pathname = req.nextUrl.pathname;
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-cleanmymap-app-shell", isAppShellRoute(pathname) ? "1" : "0");
+  requestHeaders.set(
+    "x-cleanmymap-hide-global-header",
+    pathname === "/" ? "1" : "0",
+  );
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+}
 
 // Rate limiting basique en mémoire
 // Note : Sur Vercel, ceci est instancié par "Edge Function instance".
@@ -15,6 +37,7 @@ export const APP_SHELL_ROUTE_PREFIXES = [
   "/actions",
   "/admin",
   "/dashboard",
+  "/explorer",
   "/learn",
   "/methodologie",
   "/observatoire",
@@ -67,17 +90,11 @@ const clerkProxy = clerkMiddleware(
       }
     }
 
-    if (isProtectedRoute(req)) {
+    if (isProtectedRoute(req) && !isPublicException(pathname)) {
       await auth.protect();
     }
 
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.set("x-cleanmymap-app-shell", isAppShellRoute(pathname) ? "1" : "0");
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
+    return nextWithAppHeaders(req);
   },
   {
     domain: clerkRuntime.domain,
@@ -91,23 +108,25 @@ export default async function proxy(req: NextRequest, evt: NextFetchEvent) {
   try {
     const response = await clerkProxy(req, evt);
     const clerkReason = response?.headers.get("x-clerk-auth-reason");
-    if (response?.status === 500 && clerkReason === "dev-browser-missing") {
-      if (isProtectedRoute(req)) {
+    const isDevBrowserMissing = clerkReason?.includes("dev-browser-missing") ?? false;
+
+    if (isDevBrowserMissing) {
+      if (isProtectedRoute(req) && !isPublicException(req.nextUrl.pathname)) {
         const signInUrl = new URL("/sign-in", req.url);
         signInUrl.searchParams.set("redirect_url", req.url);
         return NextResponse.redirect(signInUrl);
       }
-      return NextResponse.next();
+      return response;
     }
     return response;
   } catch (error) {
     console.error("Proxy fallback: Clerk middleware failure", error);
-    if (isProtectedRoute(req)) {
+    if (isProtectedRoute(req) && !isPublicException(req.nextUrl.pathname)) {
       const signInUrl = new URL("/sign-in", req.url);
       signInUrl.searchParams.set("redirect_url", req.url);
       return NextResponse.redirect(signInUrl);
     }
-    return NextResponse.next();
+    return nextWithAppHeaders(req);
   }
 }
 

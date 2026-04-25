@@ -19,6 +19,7 @@ import {
   isDrawingValid,
   isLocationLikelyPark,
   PARK_PLACE_TYPE,
+  prepareCreateActionPayload,
 } from "./action-declaration/payload";
 import {
   ActionDeclarationCompleteModeFields,
@@ -40,6 +41,8 @@ import {
   ActionDeclarationWasteAssist,
   useActionDeclarationSmartAssist,
 } from "./action-declaration-form.smart-assist";
+import { computeActionDataQuality } from "./action-declaration-form.quality";
+import { estimateWasteKg } from "./action-declaration-form.estimation";
 import { runActionVisionEstimate } from "./action-declaration-form.vision-engine";
 import { normalizeActionPhotos } from "@/lib/actions/vision";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
@@ -108,12 +111,39 @@ export function ActionDeclarationForm({
   const [prefillApplied, setPrefillApplied] = useState<boolean>(false);
   const hasTrackedStartRef = useRef<boolean>(false);
 
+  // Persistence locale (Draft)
+  useEffect(() => {
+    const saved = localStorage.getItem("cmm_action_draft");
+    if (saved) {
+      try {
+        const draft = JSON.parse(saved);
+        setForm((prev) => ({ ...prev, ...draft }));
+      } catch {
+        // Ignorer les erreurs de parsing
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (submissionState !== "success") {
+      localStorage.setItem("cmm_action_draft", JSON.stringify(form));
+    } else {
+      localStorage.removeItem("cmm_action_draft");
+    }
+  }, [form, submissionState]);
+
   const drawingIsValid = isDrawingValid(manualDrawing);
   const isQuickMode = declarationMode === "quick";
   const effectiveManualDrawingEnabled =
     declarationMode === "complete" && manualDrawingEnabled;
   const isEntrepriseMode =
     form.associationName === ENTREPRISE_ASSOCIATION_OPTION;
+
+  const displayDrawing = effectiveManualDrawingEnabled
+    ? manualDrawing ?? routePreviewDrawing
+    : routePreviewDrawing;
+  const drawingMapReadOnly = !effectiveManualDrawingEnabled;
+  const hasExplicitDeparture = form.departureLocationLabel.trim().length > 0;
 
   const payload = useMemo<CreateActionPayload>(
     () =>
@@ -141,6 +171,27 @@ export function ActionDeclarationForm({
     ],
   );
 
+  const dataQuality = useMemo(
+    () =>
+      computeActionDataQuality({
+        form,
+        declarationMode,
+        hasLocationProof:
+          form.latitude.trim().length > 0 && form.longitude.trim().length > 0,
+        hasDrawingProof: drawingIsValid || Boolean(routePreviewDrawing),
+        photoAssets,
+        visionEstimate,
+      }),
+    [
+      declarationMode,
+      drawingIsValid,
+      form,
+      photoAssets,
+      routePreviewDrawing,
+      visionEstimate,
+    ],
+  );
+
   const {
     gpsStatus,
     gpsMessage,
@@ -157,7 +208,7 @@ export function ActionDeclarationForm({
 
   useEffect(() => {
     let active = true;
-    const departure = form.departureLocationLabel.trim();
+    const departure = form.departureLocationLabel.trim() || form.locationLabel.trim();
     const arrival = form.arrivalLocationLabel.trim();
 
     if (!departure) {
@@ -176,7 +227,9 @@ export function ActionDeclarationForm({
           ? form.routeStyle === "direct"
             ? "Aperçu d'un itinéraire direct."
             : "Aperçu d'un itinéraire souple avec petits détours possibles."
-          : "Aperçu d'une boucle autour du point de départ.",
+          : hasExplicitDeparture
+            ? "Aperçu d'une boucle autour du point de départ."
+            : "Aperçu d'une zone autour du lieu indiqué.",
       );
 
       void deriveAutoDrawingFromLocation({
@@ -346,6 +399,12 @@ export function ActionDeclarationForm({
         message: "Le poids doit etre un nombre >= 0.",
       });
     }
+    if (payload.wasteKg <= 0) {
+      issues.push({
+        field: "wasteKg",
+        message: "Le poids collecte doit etre superieur a 0 kg.",
+      });
+    }
     if (
       !Number.isFinite(payload.volunteersCount) ||
       payload.volunteersCount < 1
@@ -355,6 +414,40 @@ export function ActionDeclarationForm({
         message: "Le nombre de benevoles doit etre >= 1.",
       });
     }
+    if (
+      !Number.isFinite(payload.durationMinutes) ||
+      payload.durationMinutes < 5
+    ) {
+      issues.push({
+        field: "durationMinutes",
+        message: "La duree doit etre de 5 minutes ou plus.",
+      });
+    }
+
+    if (
+      Number.isFinite(payload.wasteKg) &&
+      payload.wasteKg > 0 &&
+      Number.isFinite(payload.volunteersCount) &&
+      payload.volunteersCount >= 1 &&
+      Number.isFinite(payload.durationMinutes) &&
+      payload.durationMinutes >= 5
+    ) {
+      const estimatedWaste = estimateWasteKg({
+        volunteersCount: String(payload.volunteersCount),
+        durationMinutes: String(payload.durationMinutes),
+        placeType: form.placeType,
+        wasteMegotsKg: form.wasteMegotsKg,
+      });
+      const ratio = payload.wasteKg / Math.max(1, estimatedWaste);
+      if (ratio > 5 || ratio < 0.2) {
+        issues.push({
+          field: "wasteKg",
+          message:
+            "Le poids declare semble tres incoherent par rapport aux benevoles et a la duree.",
+        });
+      }
+    }
+
     if (effectiveManualDrawingEnabled && !drawingIsValid) {
       issues.push({
         field: "locationLabel",
@@ -499,9 +592,21 @@ export function ActionDeclarationForm({
     setRetentionLoop(null);
 
     try {
-      const result = await createAction(payload);
+      const submissionPayload = await prepareCreateActionPayload({
+        form,
+        declarationMode,
+        effectiveManualDrawingEnabled,
+        drawingIsValid,
+        manualDrawing,
+        routePreviewDrawing,
+        isEntrepriseMode,
+        linkedEventId,
+        photos: photoAssets,
+        visionEstimate,
+      });
+      const result = await createAction(submissionPayload);
       void trackFunnel("submit_success", declarationMode, {
-        hasDrawing: Boolean(payload.manualDrawing),
+        hasDrawing: Boolean(submissionPayload.manualDrawing),
       });
       setCreatedId(result.id);
       setRetentionLoop(result.retentionLoop ?? null);
@@ -567,90 +672,66 @@ export function ActionDeclarationForm({
         />
       </section>
 
-      {!isQuickMode && (
-        <section className="relative overflow-hidden rounded-[1.5rem] border-2 border-emerald-100 bg-gradient-to-br from-white to-emerald-50/50 p-5 shadow-[0_8px_30px_rgb(16,185,129,0.06)] md:rounded-[2.5rem] md:p-8">
-          <h3 className="mb-5 flex items-center gap-3 text-lg font-black text-emerald-950 md:mb-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-xl text-emerald-600 shadow-inner">
-              📍
-            </div>
-            Tracer la zone sur la carte
-          </h3>
-
-          <label className="mb-5 flex cursor-pointer items-start gap-4 rounded-2xl border border-slate-100 bg-white p-4 text-sm text-slate-700 shadow-sm transition-colors hover:border-emerald-300">
-            <input
-              type="checkbox"
-              checked={manualDrawingEnabled}
-              onChange={(event) => setManualDrawingEnabled(event.target.checked)}
-              className="mt-1 h-5 w-5 cursor-pointer rounded border-emerald-400 text-emerald-600 transition-all focus:ring-emerald-500"
-            />
-            <span className="flex-1">
-              <span className="mb-1 block font-bold text-emerald-900">
-                Tracé manuel recommandé
-              </span>
-              Tracez ou entourez la zone nettoyée sur la carte. Cela garde la
-              saisie simple et plus précise.
-            </span>
-          </label>
-
-          {effectiveManualDrawingEnabled ? (
-            <div className="space-y-3">
-              <div className="isolate relative z-0 overflow-hidden rounded-xl border border-emerald-200 bg-white p-2 shadow-inner">
-                <ActionDrawingMap
-                  value={manualDrawing}
-                  onChange={setManualDrawing}
-                  wasteKg={toRequiredNumber(form.wasteKg, 0)}
-                  butts={Math.max(
-                    0,
-                    Math.trunc(toRequiredNumber(form.cigaretteButts, 0)),
-                  )}
-                  isCleanPlace={false}
-                />
-              </div>
-              <div className="flex items-center justify-between rounded-lg bg-emerald-100/50 px-3 py-2 text-xs text-emerald-900">
-                <span className="opacity-80">État du tracé :</span>
-                <span className="font-semibold">{drawingSummary}</span>
-              </div>
-            </div>
-          ) : (
-            <div className="rounded-xl border-2 border-dashed border-emerald-200 p-6 text-center text-sm text-emerald-800/60">
-              Tracé masqué.
-              <br />
-              Renseignez un départ dans le formulaire ou activez le tracé.
-            </div>
-          )}
-        </section>
-      )}
-
       <section className="relative overflow-hidden rounded-[1.5rem] border border-slate-200/60 bg-white/80 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] backdrop-blur-xl md:rounded-[2.5rem] md:p-8">
         {/* Background Decor */}
         <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 -translate-y-1/2 translate-x-1/2 rounded-full bg-emerald-400 opacity-[0.03] blur-3xl" />
 
         <form className="relative z-10 mt-2 grid gap-4 md:grid-cols-2 md:gap-6" onSubmit={onSubmit}>
-        <ActionDeclarationIdentityFields
-          resolvedActorOptions={resolvedActorOptions}
-          actorName={form.actorName}
-          associationName={form.associationName}
-          enterpriseName={form.enterpriseName}
-          onActorNameChange={(value) => updateField("actorName", value)}
-          onAssociationNameChange={(value) =>
-            updateField("associationName", value)
-          }
-          onEnterpriseNameChange={(value) =>
-            updateField("enterpriseName", value)
-          }
-        />
+          <section className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 shadow-sm">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
+                  Identité / acteur
+                </p>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Qui a réalisé l&apos;action ?
+                </h3>
+              </div>
+              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900">
+                1. Localiser
+              </span>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <ActionDeclarationIdentityFields
+                resolvedActorOptions={resolvedActorOptions}
+                actorName={form.actorName}
+                associationName={form.associationName}
+                enterpriseName={form.enterpriseName}
+                onActorNameChange={(value) => updateField("actorName", value)}
+                onAssociationNameChange={(value) =>
+                  updateField("associationName", value)
+                }
+                onEnterpriseNameChange={(value) =>
+                  updateField("enterpriseName", value)
+                }
+              />
 
-        <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
-          Date de l&apos;action <span className="text-emerald-500">*</span>
-          <input
-            type="date"
-            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
-            value={form.actionDate}
-            onChange={(event) => updateField("actionDate", event.target.value)}
-          />
-        </label>
+              <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+                Date de l&apos;action <span className="text-emerald-500">*</span>
+                <input
+                  type="date"
+                  className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
+                  value={form.actionDate}
+                  onChange={(event) => updateField("actionDate", event.target.value)}
+                />
+              </label>
+            </div>
+          </section>
 
-        <section className="md:col-span-2 rounded-2xl border border-sky-200 bg-sky-50/70 px-4 py-4 shadow-sm">
+          <section className="md:col-span-2 rounded-2xl border border-sky-200 bg-sky-50/70 px-4 py-4 shadow-sm">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.14em] text-sky-500">
+                  Localisation
+                </p>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Indique où la collecte a eu lieu
+                </h3>
+              </div>
+              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">
+                2. Tracer
+              </span>
+            </div>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">
               <p className="text-sm font-bold text-sky-900">
@@ -721,34 +802,68 @@ export function ActionDeclarationForm({
             </label>
           </div>
 
-          <div className="mt-4 overflow-hidden rounded-xl border border-sky-200 bg-white">
-            {routePreviewDrawing ? (
-              <ActionDrawingMap
-                value={routePreviewDrawing}
-                onChange={() => undefined}
-                readOnly
-              />
-            ) : (
-              <div className="flex min-h-[220px] items-center justify-center px-4 text-center text-sm text-sky-900">
-                {routePreviewStatus === "processing"
-                  ? "Calcul..."
-                  : "Saisis un départ pour voir l’aperçu."}
+          <div className="mt-4 rounded-2xl border border-sky-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.14em] text-sky-500">
+                  Aperçu & tracé
+                </p>
+                <p className="text-sm text-slate-600">
+                  {isQuickMode
+                    ? "L’aperçu se base sur le lieu ou le départ saisi."
+                    : effectiveManualDrawingEnabled
+                      ? "Dessine ou corrige le tracé directement sur la carte."
+                      : "Active le tracé manuel pour confirmer la zone nettoyée."}
+                </p>
               </div>
-            )}
-          </div>
+              {!isQuickMode ? (
+                <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-900">
+                  <input
+                    type="checkbox"
+                    checked={manualDrawingEnabled}
+                    onChange={(event) =>
+                      setManualDrawingEnabled(event.target.checked)
+                    }
+                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  />
+                  Tracé manuel
+                </label>
+              ) : null}
+            </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-            <span className="rounded-full bg-white px-3 py-1 font-semibold text-sky-900">
-              {routePreviewStatus === "processing"
-                ? "calcul..."
-                : routePreviewStatus === "ready"
-                  ? "prêt"
-                  : routePreviewStatus === "error"
-                    ? "partiel"
-                    : "en attente"}
-            </span>
-            {routePreviewMessage ? (
-              <span className="text-sky-800">{routePreviewMessage}</span>
+            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <ActionDrawingMap
+                value={displayDrawing}
+                onChange={setManualDrawing}
+                readOnly={drawingMapReadOnly}
+                wasteKg={toRequiredNumber(form.wasteKg, 0)}
+                butts={Math.max(
+                  0,
+                  Math.trunc(toRequiredNumber(form.cigaretteButts, 0)),
+                )}
+                isCleanPlace={false}
+              />
+            </div>
+
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+              <span className="rounded-full bg-white px-3 py-1 font-semibold text-sky-900">
+                {routePreviewStatus === "processing"
+                  ? "calcul..."
+                  : routePreviewStatus === "ready"
+                    ? "prêt"
+                    : routePreviewStatus === "error"
+                      ? "partiel"
+                      : "en attente"}
+              </span>
+              {routePreviewMessage ? (
+                <span className="text-sky-800">{routePreviewMessage}</span>
+              ) : null}
+            </div>
+
+            {!displayDrawing ? (
+              <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                Saisis un lieu ou un départ pour voir l’aperçu. En mode complet, active le tracé manuel pour dessiner la zone.
+              </div>
             ) : null}
           </div>
 
@@ -802,25 +917,40 @@ export function ActionDeclarationForm({
           </details>
         </section>
 
-        <label className="md:col-span-2 flex flex-col gap-2 text-sm font-bold text-slate-700">
-          Type de lieu <span className="text-emerald-500">*</span>
-          <select
-            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm appearance-none"
-            value={form.placeType}
-            onChange={(event) => updateField("placeType", event.target.value)}
-          >
-            {PLACE_TYPE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-          <p className="text-xs text-slate-500 font-normal mt-1">
-            Sert au classement et aux rapports.
-          </p>
-        </label>
+        <section className="md:col-span-2 rounded-[1.5rem] border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-[0.14em] text-emerald-700">
+                Déchets / impact
+              </p>
+              <h3 className="text-lg font-semibold text-slate-900">
+                Volumes et qualité du ramassage
+              </h3>
+            </div>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900">
+              3. Valider
+            </span>
+          </div>
 
-        <label className="md:col-span-2 flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 text-sm font-bold text-slate-700 shadow-sm">
+          <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
+            Type de lieu <span className="text-emerald-500">*</span>
+            <select
+              className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm appearance-none"
+              value={form.placeType}
+              onChange={(event) => updateField("placeType", event.target.value)}
+            >
+              {PLACE_TYPE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-slate-500 font-normal mt-1">
+              Sert au classement et aux rapports.
+            </p>
+          </label>
+
+          <label className="flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 text-sm font-bold text-slate-700 shadow-sm">
           <span className="flex items-center justify-between gap-3">
             <span>
               Déchets collectés (kg) <span className="text-emerald-500">*</span>
@@ -876,6 +1006,40 @@ export function ActionDeclarationForm({
             }
           />
         </label>
+        </section>
+
+        <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Aide à la relecture
+              </p>
+              <p className="text-sm text-slate-600">
+                Informations facultatives qui aident l&apos;équipe à vérifier la déclaration.
+              </p>
+            </div>
+          </div>
+
+          {dataQuality.warnings.length > 0 ? (
+            <div className="mt-4 text-sm text-slate-700">
+              <p>
+                Cette déclaration est envoyable, mais ces éléments peuvent aider l&apos;administration :
+              </p>
+              <ul className="mt-3 list-disc space-y-2 pl-5">
+                {dataQuality.warnings.map((warning) => (
+                  <li key={warning}>{warning}</li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-slate-500">
+                Envoi possible sans photo ni position précise. Ces informations facilitent la validation.
+              </p>
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-slate-500">
+              Bonne base. L&apos;équipe devrait pouvoir traiter cette déclaration rapidement.
+            </p>
+          )}
+        </section>
 
         <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -891,6 +1055,20 @@ export function ActionDeclarationForm({
               prêt
             </span>
           </div>
+
+          <label className="mt-4 flex flex-col gap-2 text-sm text-slate-700">
+            Détails pour l&apos;équipe (optionnel)
+            <textarea
+              className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
+              value={form.notes}
+              onChange={(event) => updateField("notes", event.target.value)}
+              maxLength={1000}
+              placeholder="Si le parcours est difficile à tracer sur mobile, décris ici les étapes et les points clés."
+            />
+            <span className="text-xs text-slate-500">
+              Ces détails ne sont pas obligatoires, mais ils aident les admins à comprendre le ramassage.
+            </span>
+          </label>
 
           <div className="mt-4 grid gap-3 md:grid-cols-2">
             <div className="rounded-xl border border-white/70 bg-white p-3">

@@ -26,6 +26,7 @@ export type ActionCsvRowWithDrawing = ActionCsvRow & {
   observed_at?: string | null;
   geometry_kind?: "point" | "polyline" | "polygon" | null;
   geometry_geojson?: string | null;
+  geometry_confidence?: number | null;
   manual_drawing_kind?: "polyline" | "polygon" | null;
   manual_drawing_points?: number | null;
   manual_drawing_coordinates_json?: string | null;
@@ -162,6 +163,7 @@ export function buildActionsCsv(rows: ActionCsvRowWithDrawing[]): string {
     "observed_at",
     "geometry_kind",
     "geometry_geojson",
+    "geometry_confidence",
     "manual_drawing_kind",
     "manual_drawing_points",
     "manual_drawing_coordinates_json",
@@ -192,6 +194,7 @@ export function buildActionsCsv(rows: ActionCsvRowWithDrawing[]): string {
         row.observed_at ?? null,
         row.geometry_kind ?? null,
         row.geometry_geojson ?? null,
+        row.geometry_confidence ?? null,
         row.manual_drawing_kind ?? null,
         row.manual_drawing_points ?? null,
         row.manual_drawing_coordinates_json ?? null,

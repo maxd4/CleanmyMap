@@ -1,5 +1,6 @@
 import type {
   ActionDrawing,
+  ActionGeometryKind,
   ActionImpactLevel,
   ActionPhotoAsset,
   ActionListItem,
@@ -14,7 +15,16 @@ import type {
   LegacyActionRecordType,
   ActionWasteBreakdown,
   ActionMegotsCondition,
+  ActionGeometryOrigin,
+  ActionGeometrySource,
 } from "@/lib/actions/types";
+import {
+  buildPersistedGeometryFromStoredFields,
+  isRenderableDrawing,
+  resolveGeometryOriginFromConfidence,
+  toGeoJsonString,
+  type PersistedDerivedGeometry,
+} from "@/lib/actions/derived-geometry";
 
 export const BUTTS_PER_KG_REFERENCE = 2500;
 export const CONDITION_WEIGHT_FACTORS: Record<ActionMegotsCondition, number> = {
@@ -41,9 +51,12 @@ export type ActionDataLocation = {
 };
 
 export type ActionDataGeometry = {
-  kind: "point" | "polyline" | "polygon";
+  kind: ActionGeometryKind;
   coordinates: [number, number][];
   geojson: string | null;
+  confidence: number | null;
+  geometrySource: ActionGeometrySource;
+  origin: ActionGeometryOrigin;
 };
 
 export type ActionDataDates = {
@@ -165,6 +178,10 @@ type BuildActionContractParams = {
   visionEstimate?: ActionVisionEstimate | null;
   manualDrawing?: ActionDrawing | null;
   manualDrawingGeoJson?: string | null;
+  derivedGeometryKind?: ActionGeometryKind | null;
+  derivedGeometryGeoJson?: string | null;
+  geometryConfidence?: number | null;
+  geometrySource?: ActionGeometrySource | null;
 };
 
 type ActionInsightsLike = {
@@ -175,6 +192,148 @@ type ActionInsightsLike = {
   toFixPriority: boolean;
   impactLevel: ActionImpactLevel;
 };
+
+export type GeometryPresentation = {
+  origin: ActionGeometryOrigin;
+  reality: "real" | "estimated" | "fallback";
+  label: string;
+  strokeStyle: "solid" | "dashed" | "point";
+};
+
+function toGeometryPresentationOrigin(
+  item: ActionMapItem,
+): ActionGeometryOrigin {
+  const contractGeometry = item.contract?.geometry;
+  const geometrySource =
+    item.geometry_source ??
+    contractGeometry?.geometrySource ??
+    contractGeometry?.origin ??
+    null;
+  if (geometrySource) {
+    return geometrySource;
+  }
+  return resolveGeometryOriginFromConfidence(
+    contractGeometry?.confidence ?? item.geometry_confidence ?? null,
+  );
+}
+
+export function getGeometryPresentation(
+  item: ActionMapItem,
+): GeometryPresentation {
+  const origin = toGeometryPresentationOrigin(item);
+  switch (origin) {
+    case "manual":
+    case "reference":
+      return {
+        origin,
+        reality: "real",
+        label:
+          origin === "manual" ? "Géométrie réelle · manuelle" : "Géométrie réelle · référence",
+        strokeStyle: "solid",
+      };
+    case "routed":
+      return {
+        origin,
+        reality: "estimated",
+        label: "Géométrie estimée · routée",
+        strokeStyle: "dashed",
+      };
+    case "estimated_area":
+      return {
+        origin,
+        reality: "estimated",
+        label: "Géométrie estimée · zone",
+        strokeStyle: "dashed",
+      };
+    case "fallback_point":
+    default:
+      return {
+        origin: "fallback_point",
+        reality: "fallback",
+        label: "Point discret · fallback",
+        strokeStyle: "point",
+      };
+  }
+}
+
+export function isRealGeometryOrigin(origin: ActionGeometryOrigin): boolean {
+  return origin === "manual" || origin === "reference";
+}
+
+export function isEstimatedGeometryOrigin(origin: ActionGeometryOrigin): boolean {
+  return origin === "routed" || origin === "estimated_area";
+}
+
+export type ActionOperationalContext = {
+  placeType: string | null;
+  routeStyle: "direct" | "souple" | null;
+  routeAdjustmentMessage: string | null;
+  volunteersCount: number;
+  durationMinutes: number;
+  engagementMinutes: number;
+  engagementHours: number;
+  placeTypeLabel: string;
+  routeStyleLabel: string;
+};
+
+export type ActionOperationalContextSource = {
+  metadata?: {
+    placeType?: string | null;
+    routeStyle?: "direct" | "souple" | null;
+    routeAdjustmentMessage?: string | null;
+    volunteersCount?: number | null;
+    durationMinutes?: number | null;
+  } | null;
+} | null | undefined;
+
+function normalizeContextText(value: string | null | undefined): string | null {
+  const text = typeof value === "string" ? value.trim() : "";
+  return text.length > 0 ? text : null;
+}
+
+export function formatRouteStyleLabel(
+  routeStyle: "direct" | "souple" | null | undefined,
+): string {
+  if (routeStyle === "direct") {
+    return "Trajet direct";
+  }
+  if (routeStyle === "souple") {
+    return "Trajet souple";
+  }
+  return "Trajet non précisé";
+}
+
+export function getActionOperationalContext(
+  contract: ActionOperationalContextSource,
+): ActionOperationalContext {
+  const metadata = contract?.metadata ?? null;
+  const placeType = normalizeContextText(metadata?.placeType);
+  const routeStyle = metadata?.routeStyle ?? null;
+  const routeAdjustmentMessage = normalizeContextText(
+    metadata?.routeAdjustmentMessage,
+  );
+  const volunteersCount = Math.max(
+    0,
+    Math.trunc(toFiniteNumber(metadata?.volunteersCount ?? null, 0)),
+  );
+  const durationMinutes = Math.max(
+    0,
+    Math.trunc(toFiniteNumber(metadata?.durationMinutes ?? null, 0)),
+  );
+  const engagementMinutes = volunteersCount * durationMinutes;
+
+  return {
+    placeType,
+    routeStyle,
+    routeAdjustmentMessage,
+    volunteersCount,
+    durationMinutes,
+    engagementMinutes,
+    engagementHours: Number((engagementMinutes / 60).toFixed(1)),
+    placeTypeLabel: placeType ?? "Type de lieu non précisé",
+    routeStyleLabel: formatRouteStyleLabel(routeStyle),
+  };
+}
 
 function toFiniteNumber(
   value: number | null | undefined,
@@ -194,24 +353,33 @@ function normalizeObservedDate(raw: string): string {
   return parsed.toISOString().slice(0, 10);
 }
 
-function toPointCoordinates(
-  latitude: number | null,
-  longitude: number | null,
-): [number, number][] {
-  if (latitude === null || longitude === null) {
-    return [];
-  }
-  return [[latitude, longitude]];
-}
-
 export function buildActionDataContract(
   params: BuildActionContractParams,
 ): ActionDataContract {
   const manualDrawing = params.manualDrawing ?? null;
   const latitude =
-    params.latitude === null ? null : toFiniteNumber(params.latitude, 0);
+    params.latitude === null || params.latitude === undefined
+      ? null
+      : toFiniteNumber(params.latitude, 0);
   const longitude =
-    params.longitude === null ? null : toFiniteNumber(params.longitude, 0);
+    params.longitude === null || params.longitude === undefined
+      ? null
+      : toFiniteNumber(params.longitude, 0);
+  const persistedGeometry: PersistedDerivedGeometry =
+    buildPersistedGeometryFromStoredFields({
+      derivedGeometryKind: params.derivedGeometryKind ?? null,
+      derivedGeometryGeoJson: params.derivedGeometryGeoJson ?? null,
+      geometrySource: params.geometrySource ?? null,
+      geometryConfidence: params.geometryConfidence ?? null,
+      manualDrawing,
+      manualDrawingGeoJson: params.manualDrawingGeoJson ?? null,
+      latitude,
+      longitude,
+      locationLabel: params.locationLabel,
+      departureLocationLabel: params.departureLocationLabel ?? null,
+      arrivalLocationLabel: params.arrivalLocationLabel ?? null,
+      routeStyle: params.routeStyle ?? null,
+    });
   return {
     id: params.id,
     type: params.type,
@@ -223,17 +391,7 @@ export function buildActionDataContract(
       latitude,
       longitude,
     },
-    geometry: manualDrawing
-      ? {
-          kind: manualDrawing.kind,
-          coordinates: manualDrawing.coordinates,
-          geojson: params.manualDrawingGeoJson ?? null,
-        }
-      : {
-          kind: "point",
-          coordinates: toPointCoordinates(latitude, longitude),
-          geojson: null,
-        },
+    geometry: persistedGeometry,
     dates: {
       observedAt: normalizeObservedDate(params.observedAt),
       createdAt: params.createdAt ?? null,
@@ -288,7 +446,11 @@ export function toActionMapItem(
     source: contract.source,
     created_by_clerk_id: contract.createdByClerkId ?? null,
     manual_drawing: contract.metadata.manualDrawing,
-    manual_drawing_geojson: contract.geometry.geojson,
+    manual_drawing_geojson: contract.metadata.manualDrawing
+      ? toGeoJsonString(contract.metadata.manualDrawing)
+      : null,
+    geometry_confidence: contract.geometry.confidence,
+    geometry_source: contract.geometry.geometrySource,
     submission_mode: contract.metadata.submissionMode,
     waste_breakdown: contract.metadata.wasteBreakdown,
     quality_score: insights?.qualityScore,
@@ -330,8 +492,12 @@ export function toActionListItem(
     observed_at: contract.dates.observedAt,
     geometry_kind: contract.geometry.kind,
     geometry_geojson: contract.geometry.geojson,
+    geometry_confidence: contract.geometry.confidence,
+    geometry_source: contract.geometry.geometrySource,
     manual_drawing: contract.metadata.manualDrawing,
-    manual_drawing_geojson: contract.geometry.geojson,
+    manual_drawing_geojson: contract.metadata.manualDrawing
+      ? toGeoJsonString(contract.metadata.manualDrawing)
+      : null,
     submission_mode: contract.metadata.submissionMode,
     waste_breakdown: contract.metadata.wasteBreakdown,
     quality_score: insights?.qualityScore,
@@ -491,4 +657,36 @@ export function mapItemCoordinates(item: ActionMapItem): {
 
 export function mapItemObservedAt(item: ActionMapItem): string {
   return item.contract?.dates.observedAt ?? item.action_date;
+}
+
+export function mapItemDrawing(item: ActionMapItem): ActionDrawing | null {
+  const contractGeometry = item.contract?.geometry;
+  if (
+    contractGeometry &&
+    contractGeometry.kind !== "point" &&
+    isRenderableDrawing({
+      kind: contractGeometry.kind,
+      coordinates: contractGeometry.coordinates,
+    })
+  ) {
+    return {
+      kind: contractGeometry.kind,
+      coordinates: contractGeometry.coordinates,
+    };
+  }
+
+  if (isRenderableDrawing(item.manual_drawing)) {
+    return item.manual_drawing;
+  }
+
+  return null;
+}
+
+export function mapItemShouldRenderPoint(item: ActionMapItem): boolean {
+  const { latitude, longitude } = mapItemCoordinates(item);
+  if (latitude === null || longitude === null) {
+    return false;
+  }
+
+  return mapItemDrawing(item) === null;
 }

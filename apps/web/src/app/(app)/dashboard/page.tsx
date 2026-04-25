@@ -18,6 +18,7 @@ import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-but
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
+import { getActionOperationalContext, type ActionDataContract } from "@/lib/actions/data-contract";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { loadVisionTrainingMetrics } from "@/lib/actions/training";
 import {
@@ -30,6 +31,14 @@ import { getServerLocale, getServerDisplayMode } from "@/lib/server-preferences"
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/lib/i18n/server-translation";
 import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
+import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigation-grid";
+import { 
+  PlusCircle, 
+  AlertTriangle, 
+  Map, 
+  BarChart3, 
+  ShieldCheck 
+} from "lucide-react";
 
 async function loadDashboardOverview() {
   const supabase = getSupabaseServerClient();
@@ -43,6 +52,24 @@ async function loadDashboardOverview() {
 async function loadDashboardVisionMetrics() {
   const supabase = getSupabaseServerClient();
   return loadVisionTrainingMetrics(supabase).catch(() => null);
+}
+
+function toDashboardExportRow(contract: ActionDataContract) {
+  const operational = getActionOperationalContext(contract);
+  return {
+    Date: contract.dates.observedAt,
+    Lieu: contract.location.label,
+    Masse_Kg: contract.metadata.wasteKg || 0,
+    Megots: contract.metadata.cigaretteButts || 0,
+    Bénévoles: operational.volunteersCount,
+    Durée_Min: operational.durationMinutes,
+    Charge_Terrain_Min: operational.engagementMinutes,
+    Type_Lieu: operational.placeTypeLabel,
+    Trajet: operational.routeStyleLabel,
+    Ajustement_Trajet: operational.routeAdjustmentMessage ?? "",
+    Type: contract.type,
+    Source: contract.source,
+  };
 }
 
 export default async function DashboardPage() {
@@ -131,6 +158,81 @@ export default async function DashboardPage() {
     identity?.actorNameOptions && identity.actorNameOptions.length > 0
       ? identity.actorNameOptions
       : [fallbackActorName];
+
+  const dashboardActions: NavigationGridItem[] = [];
+  if (role === 'benevole') {
+    dashboardActions.push(
+      {
+        icon: PlusCircle,
+        title: "Déclarer",
+        desc: "Enregistrer une nouvelle collecte de déchets ou une action de dépollution.",
+        iconBg: "bg-emerald-900/50",
+        iconColor: "text-emerald-300",
+        accent: "from-emerald-900/40 to-emerald-800/10",
+        ring: "ring-emerald-700/40",
+        dot: "bg-emerald-400",
+        href: "/actions/new",
+      },
+      {
+        icon: AlertTriangle,
+        title: "Signaler",
+        desc: "Signaler un point noir ou une décharge sauvage sur la carte.",
+        iconBg: "bg-amber-900/50",
+        iconColor: "text-amber-300",
+        accent: "from-amber-900/40 to-amber-800/10",
+        ring: "ring-amber-700/40",
+        dot: "bg-amber-400",
+        href: "/signalement",
+      },
+      {
+        icon: Map,
+        title: "Carte",
+        desc: "Visualiser les actions de la communauté et les zones à traiter.",
+        iconBg: "bg-sky-900/50",
+        iconColor: "text-sky-300",
+        accent: "from-sky-900/40 to-sky-800/10",
+        ring: "ring-sky-700/40",
+        dot: "bg-sky-400",
+        href: "/actions/map",
+      },
+      {
+        icon: BarChart3,
+        title: "Mon Impact",
+        desc: "Consulter tes statistiques personnelles et ton historique d'actions.",
+        iconBg: "bg-rose-900/50",
+        iconColor: "text-rose-300",
+        accent: "from-rose-900/40 to-rose-800/10",
+        ring: "ring-rose-700/40",
+        dot: "bg-rose-400",
+        href: "/profil/impact",
+      }
+    );
+  } else if (role === 'admin') {
+    dashboardActions.push(
+      {
+        icon: ShieldCheck,
+        title: "Validation",
+        desc: "Vérifier et valider les actions soumises par les bénévoles.",
+        iconBg: "bg-amber-900/50",
+        iconColor: "text-amber-300",
+        accent: "from-amber-900/40 to-amber-800/10",
+        ring: "ring-amber-700/40",
+        dot: "bg-amber-400",
+        href: "/admin/validation",
+      },
+      {
+        icon: BarChart3,
+        title: "Reporting",
+        desc: "Accéder aux rapports d'impact consolidés et aux exports de données.",
+        iconBg: "bg-indigo-900/50",
+        iconColor: "text-indigo-300",
+        accent: "from-indigo-900/40 to-indigo-800/10",
+        ring: "ring-indigo-700/40",
+        dot: "bg-indigo-400",
+        href: "/reports",
+      }
+    );
+  }
 
   const kpis = overview
     ? ([
@@ -262,16 +364,7 @@ export default async function DashboardPage() {
                 <RubriquePdfExportButton rubriqueTitle="Tableau de bord pilotage" />
                 <RubriqueExcelExportButton
                   rubriqueTitle="Tableau de bord pilotage"
-                  data={overview?.contracts.map(c => ({
-                    Date: c.dates.observedAt,
-                    Lieu: c.location.label,
-                    Masse_Kg: c.metadata.wasteKg || 0,
-                    Megots: c.metadata.cigaretteButts || 0,
-                    Bénévoles: c.metadata.volunteersCount,
-                    Durée_Min: c.metadata.durationMinutes,
-                    Type: c.type,
-                    Source: c.source
-                  }))}
+                  data={overview?.contracts.map(toDashboardExportRow)}
                 />
                 <Link
                   href="/reports"
@@ -327,7 +420,7 @@ export default async function DashboardPage() {
 
           {overview ? (
             <KpiMethodBlock
-              methods={overview.methods.slice(0, 3)}
+              methods={overview.methods.slice(0, 5)}
               title={t("section_method")}
             />
           ) : null}
@@ -387,61 +480,22 @@ export default async function DashboardPage() {
           {t("desc_v1")}
         </p>
 
-        {/* BOUTONS DYNAMIQUES GÉANTS VS ROLE */}
+        {/* NAVIGATION GRID MODERNE */}
         <div className="mt-8 relative z-10">
-          {role === 'benevole' ? (
-            <div className="flex flex-wrap gap-4">
-              <Link
-                href="/actions/new"
-                className="inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
-              >
-                <span className="text-2xl">🔥</span> {t("btn_action")}
-              </Link>
-              <Link
-                href="/signalement"
-                className="inline-flex items-center justify-center gap-3 rounded-xl bg-amber-500 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
-              >
-                <span className="text-2xl">⚡</span> {t("btn_signal")}
-              </Link>
-              <Link
-                href="/profil/impact"
-                className="inline-flex items-center justify-center gap-3 rounded-xl bg-white border-2 border-emerald-500 px-8 py-5 text-lg font-black text-emerald-600 shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
-              >
-                <span className="text-2xl">📊</span> {t("btn_impact")}
-              </Link>
-            </div>
-          ) : role === 'admin' ? (
-            <div className="flex flex-wrap gap-4">
-              <Link
-                href="/admin/validation"
-                className="inline-flex items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-8 py-5 text-lg font-black text-white shadow-lg transition hover:scale-[1.02] hover:shadow-xl"
-              >
-                <span className="text-2xl">🔍</span> {t("btn_eval")}
-              </Link>
-            </div>
-          ) : null}
+          <NavigationGrid items={dashboardActions} columns={{ default: 1, sm: 2, lg: 3, xl: 4 }} />
         </div>
 
-        <div className="mt-2 flex gap-2">
+        <div className="mt-6 flex gap-2">
           <RubriquePdfExportButton rubriqueTitle="Cockpit décisionnel" />
           <RubriqueExcelExportButton
             rubriqueTitle="Cockpit décisionnel"
-            data={overview?.contracts.map(c => ({
-              Date: c.dates.observedAt,
-              Lieu: c.location.label,
-              Masse_Kg: c.metadata.wasteKg || 0,
-              Megots: c.metadata.cigaretteButts || 0,
-              Bénévoles: c.metadata.volunteersCount,
-              Durée_Min: c.metadata.durationMinutes,
-              Type: c.type,
-              Source: c.source
-            }))}
+            data={overview?.contracts.map(toDashboardExportRow)}
           />
           <Link
             href="/reports"
             className="inline-flex rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
           >
-            📊 Ouvrir le reporting
+            📊 Reporting complet
           </Link>
         </div>
       </header>
@@ -485,7 +539,7 @@ export default async function DashboardPage() {
 
       {overview ? (
         <KpiMethodBlock
-          methods={overview.methods.slice(0, 3)}
+          methods={overview.methods.slice(0, 5)}
           title={t("section_method")}
         />
       ) : null}

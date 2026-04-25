@@ -58,12 +58,33 @@ export async function GET(request: Request) {
       status: contract.status,
       notes: contract.metadata.notes,
       notes_plain: contract.metadata.notesPlain,
+      geometry_kind: contract.geometry.kind,
+      geometry_geojson: contract.geometry.geojson,
+      geometry_confidence: contract.geometry.confidence,
       contract,
       manual_drawing: contract.metadata.manualDrawing,
       manual_drawing_coordinates_json: contract.metadata.manualDrawing
         ? JSON.stringify(contract.metadata.manualDrawing)
         : null,
-      manual_drawing_geojson: contract.geometry.geojson,
+      manual_drawing_geojson: contract.metadata.manualDrawing
+        ? JSON.stringify(
+            contract.metadata.manualDrawing.kind === "polyline"
+              ? {
+                  type: "LineString",
+                  coordinates: contract.metadata.manualDrawing.coordinates.map(
+                    ([lat, lng]) => [lng, lat],
+                  ),
+                }
+              : {
+                  type: "Polygon",
+                  coordinates: [
+                    contract.metadata.manualDrawing.coordinates.map(
+                      ([lat, lng]) => [lng, lat],
+                    ),
+                  ],
+                },
+          )
+        : null,
     }));
 
     const payload = {

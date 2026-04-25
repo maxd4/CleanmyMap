@@ -1,34 +1,97 @@
 import Link from "next/link";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { ArrowRight, ChevronRight, LayoutGrid, Layers, User } from "lucide-react";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import {
   getNavigationSpacesForProfile,
-  type NavigationSpace,
+  type NavigationItem,
 } from "@/lib/navigation";
-import { toProfile } from "@/lib/profiles";
+import { getProfileLabel, toProfile } from "@/lib/profiles";
 import {
   getServerDisplayModePreference,
   getServerLocale,
 } from "@/lib/server-preferences";
+import { AppNavigationRibbon } from "@/components/navigation/app-navigation-ribbon";
 
-function getSpaceSummary(space: NavigationSpace, locale: "fr" | "en"): string {
-  if (space.items.length === 0) {
-    return locale === "fr"
-      ? "Aucune rubrique disponible pour ce profil."
-      : "No page available for this profile.";
-  }
+const BLOCK_PREVIEW_PRIORITY: Record<
+  "home" | "act" | "visualize" | "impact" | "network" | "learn" | "pilot",
+  Partial<Record<NavigationItem["id"], number>>
+> = {
+  home: {
+    dashboard: 1,
+    profile: 2,
+  },
+  act: {
+    new: 1,
+    route: 2,
+    "trash-spotter": 3,
+  },
+  visualize: {
+    map: 1,
+    sandbox: 2,
+    weather: 3,
+  },
+  impact: {
+    reports: 1,
+    gamification: 2,
+  },
+  network: {
+    network: 1,
+    annuaire: 2,
+    community: 3,
+    messagerie: 4,
+    "open-data": 5,
+    funding: 6,
+    actors: 7,
+  },
+  learn: {
+    hub: 1,
+    guide: 2,
+    climate: 3,
+    recycling: 4,
+  },
+  pilot: {
+    admin: 1,
+    sponsor: 2,
+    elus: 3,
+    godmode: 4,
+  },
+};
 
-  const firstLabel = space.items[0]?.label[locale];
-  const lastLabel = space.items[space.items.length - 1]?.label[locale];
-  return locale === "fr"
-    ? `${space.items.length} rubriques, de ${firstLabel} à ${lastLabel}.`
-    : `${space.items.length} pages, from ${firstLabel} to ${lastLabel}.`;
+function getOrderedPreviewItems(
+  blockId: keyof typeof BLOCK_PREVIEW_PRIORITY,
+  items: NavigationItem[],
+): NavigationItem[] {
+  const blockPriority = BLOCK_PREVIEW_PRIORITY[blockId];
+  return [...items].sort((a, b) => {
+    const pa = blockPriority[a.id] ?? 99;
+    const pb = blockPriority[b.id] ?? 99;
+    if (pa !== pb) {
+      return pa - pb;
+    }
+    return a.label.fr.localeCompare(b.label.fr, "fr");
+  });
+}
+
+function getBlockAccent(blockId: keyof typeof BLOCK_PREVIEW_PRIORITY) {
+  const byBlock = {
+    home: { bar: "bg-slate-400", glow: "shadow-slate-950/10", tint: "from-slate-50 to-white" },
+    act: { bar: "bg-amber-400", glow: "shadow-amber-500/10", tint: "from-amber-50 to-white" },
+    visualize: { bar: "bg-sky-400", glow: "shadow-sky-500/10", tint: "from-sky-50 to-white" },
+    impact: { bar: "bg-emerald-400", glow: "shadow-emerald-500/10", tint: "from-emerald-50 to-white" },
+    network: { bar: "bg-violet-400", glow: "shadow-violet-500/10", tint: "from-violet-50 to-white" },
+    learn: { bar: "bg-rose-400", glow: "shadow-rose-500/10", tint: "from-rose-50 to-white" },
+    pilot: { bar: "bg-indigo-400", glow: "shadow-indigo-500/10", tint: "from-indigo-50 to-white" },
+  } as const;
+  return byBlock[blockId];
 }
 
 export default async function ExplorerPage() {
   const locale = await getServerLocale();
   const displayModePreference = await getServerDisplayModePreference();
   const role = await getCurrentUserRoleLabel();
+  const identity = await getCurrentUserIdentity();
   const currentProfile = toProfile(role);
+  const profileLabel = getProfileLabel(currentProfile, locale);
   const spaces = getNavigationSpacesForProfile(
     currentProfile,
     displayModePreference.displayMode,
@@ -37,105 +100,159 @@ export default async function ExplorerPage() {
   const totalItems = spaces.reduce((sum, space) => sum + space.items.length, 0);
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-8 lg:py-10">
-      <section className="overflow-hidden rounded-[2rem] border border-white/50 bg-white/85 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
-          <div className="space-y-4">
-            <p className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-700">
-              {locale === "fr" ? "Plan du site" : "Site map"}
-            </p>
-            <div className="space-y-3">
-              <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
-                {locale === "fr" ? "Explorer les blocs et rubriques" : "Explore blocks and pages"}
-              </h1>
-              <p className="max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
-                {locale === "fr"
-                  ? "Cette vue montre la hiérarchie utile du site pour naviguer sans garder une arborescence permanente dans le bandeau."
-                  : "This view shows the useful navigation hierarchy without keeping a permanent tree in the header."}
-              </p>
-            </div>
-          </div>
+    <div className="space-y-3 sm:space-y-6">
+      <AppNavigationRibbon
+        currentProfile={currentProfile}
+        profileLabel={profileLabel}
+        identity={identity}
+      />
+      <div className="relative overflow-hidden">
+        {/* Fond : dégradé doux + quadrillage très atténué (utilitaire, pas marketing) */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0b2a52]/6 via-white to-emerald-500/6 dark:from-[#0b2a52]/18 dark:via-slate-950 dark:to-emerald-500/14" />
+          <div className="absolute inset-0 opacity-[0.035] [background-image:linear-gradient(to_right,rgba(15,23,42,0.18)_1px,transparent_1px),linear-gradient(to_bottom,rgba(15,23,42,0.18)_1px,transparent_1px)] [background-size:44px_44px] dark:opacity-[0.04]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_45%_at_50%_0%,rgba(34,211,238,0.10),transparent),radial-gradient(ellipse_40%_40%_at_0%_100%,rgba(16,185,129,0.08),transparent)] dark:bg-[radial-gradient(ellipse_70%_45%_at_50%_0%,rgba(34,211,238,0.08),transparent),radial-gradient(ellipse_40%_40%_at_0%_100%,rgba(16,185,129,0.06),transparent)]" />
+        </div>
 
-          <div className="grid gap-3 sm:grid-cols-3 lg:justify-end">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                {locale === "fr" ? "Blocs visibles" : "Visible blocks"}
+        <div className="relative mx-auto min-h-full w-full max-w-7xl space-y-3 px-3 py-4 sm:space-y-6 sm:px-8 sm:py-8 lg:py-12">
+        <section className="rounded-[1.5rem] border border-slate-200/70 bg-white/80 p-4 shadow-[0_18px_44px_-34px_rgba(15,23,42,0.35)] backdrop-blur-sm sm:rounded-[2rem] sm:p-6 dark:border-slate-800/70 dark:bg-slate-950/55">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">
+              {locale === "fr" ? "Navigation utilitaire" : "Utility navigation"}
+            </p>
+            <h1 className="text-[1.15rem] font-black tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+              {locale === "fr" ? "Plan du site" : "Site map"}
+            </h1>
+            <p className="max-w-2xl text-[11px] leading-[1.5] text-slate-600 sm:text-base sm:leading-relaxed dark:text-slate-300">
+              {locale === "fr"
+                ? "Vue compacte de toutes les rubriques accessibles pour votre profil. Objectif : trouver et ouvrir rapidement la bonne page."
+                : "Compact view of all accessible sections for your profile. Goal: quickly find and open the right page."}
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5 text-center sm:gap-2">
+            <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-2 py-1.5 shadow-sm sm:px-3 sm:py-2 dark:border-slate-800/80 dark:bg-slate-950/40">
+              <div className="text-lg font-black text-slate-900 dark:text-white">{spaces.length}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {locale === "fr" ? "Blocs" : "Blocks"}
               </div>
-              <div className="mt-2 text-3xl font-black text-slate-950">{spaces.length}</div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                {locale === "fr" ? "Rubriques visibles" : "Visible pages"}
+            <div className="rounded-2xl border border-slate-200/80 bg-white/70 px-2 py-1.5 shadow-sm sm:px-3 sm:py-2 dark:border-slate-800/80 dark:bg-slate-950/40">
+              <div className="text-lg font-black text-slate-900 dark:text-white">{totalItems}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {locale === "fr" ? "Rubriques" : "Sections"}
               </div>
-              <div className="mt-2 text-3xl font-black text-slate-950">{totalItems}</div>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                {locale === "fr" ? "Profil courant" : "Current profile"}
+            <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/60 px-2 py-1.5 shadow-sm sm:px-3 sm:py-2 dark:border-emerald-900/50 dark:bg-emerald-950/30">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-800 dark:text-emerald-200">
+                {locale === "fr" ? "Profil actif" : "Active profile"}
               </div>
-              <div className="mt-2 text-sm font-bold text-slate-950">
-                {currentProfile}
+              <div className="text-xs font-black tracking-tight text-emerald-900 dark:text-emerald-100">
+                {profileLabel}
               </div>
             </div>
           </div>
         </div>
-      </section>
+        </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
+        <section className="sticky top-[5.2rem] z-20 rounded-[1.5rem] border border-slate-200/70 bg-white/85 p-2.5 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.35)] backdrop-blur sm:static sm:rounded-2xl sm:bg-white/80 sm:p-4 sm:backdrop-blur-0 dark:border-slate-800/70 dark:bg-slate-950/55">
+        <div className="mb-2 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.22em] text-slate-500 sm:mb-3 sm:text-xs dark:text-slate-400">
+          <LayoutGrid className="h-4 w-4" />
+          {locale === "fr" ? "Accès rapide blocs" : "Quick block access"}
+        </div>
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+          {spaces.map((space) => (
+            (() => {
+              const accent = getBlockAccent(space.id);
+              return (
+            <a
+              key={space.id}
+              href={`#bloc-${space.id}`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white/70 px-2 py-1 text-[10px] font-semibold leading-none text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white hover:text-slate-900 hover:shadow-md sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-emerald-700 dark:hover:bg-slate-900"
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${accent.bar}`} />
+              <span>{space.icon}</span>
+              <span>{space.label[locale]}</span>
+              <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] text-slate-500">
+                {space.items.length}
+              </span>
+            </a>
+              );
+            })()
+          ))}
+        </div>
+        </section>
+
+        <section className="space-y-2.5 sm:space-y-4">
         {spaces.map((space) => {
-          const firstHref = space.items[0]?.href ?? "/dashboard";
+          const orderedItems = getOrderedPreviewItems(space.id, space.items);
+          const firstHref = orderedItems[0]?.href ?? "/dashboard";
+          const accent = getBlockAccent(space.id);
           return (
             <article
               key={space.id}
-              className="rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+              id={`bloc-${space.id}`}
+              className={`scroll-mt-28 overflow-hidden rounded-[1.6rem] border border-slate-200/70 bg-gradient-to-b ${accent.tint} p-2.5 shadow-[0_22px_52px_-42px_rgba(15,23,42,0.42)] transition hover:-translate-y-0.5 hover:shadow-[0_34px_70px_-52px_rgba(15,23,42,0.55)] sm:rounded-[2rem] sm:p-5 dark:border-slate-800/70 dark:bg-slate-950`}
             >
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
-                    <span className="text-xl leading-none">{space.icon}</span>
-                    <span className="uppercase tracking-[0.14em]">
-                      {locale === "fr" ? "Bloc" : "Block"}
+              <div className={`absolute left-0 top-0 h-full w-1 ${accent.bar} opacity-70`} />
+              <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2 sm:mb-4 sm:gap-3 sm:pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/80 text-base shadow-sm ring-1 ring-black/5 sm:h-10 sm:w-10 sm:text-lg dark:bg-slate-900/80 dark:ring-white/10">
+                      {space.icon}
                     </span>
+                    <span className={`absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full ${accent.bar} ring-2 ring-white dark:ring-slate-950`} />
                   </div>
-                  <h2 className="text-2xl font-black tracking-tight text-slate-950">
-                    {space.label[locale]}
-                  </h2>
-                  <p className="max-w-lg text-sm leading-6 text-slate-600">
-                    {getSpaceSummary(space, locale)}
-                  </p>
+                  <div>
+                    <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${space.color}`}>
+                      {locale === "fr" ? "Bloc" : "Block"}
+                    </p>
+                    <h2 className="text-[15px] font-black leading-tight text-slate-900 sm:text-xl dark:text-white">
+                      {space.label[locale]}
+                    </h2>
+                  </div>
                 </div>
-
                 <Link
                   href={firstHref}
-                  className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:border-emerald-300 hover:bg-emerald-100"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/80 bg-white/70 px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white hover:text-slate-900 hover:shadow-md sm:gap-2 sm:px-3 sm:py-1.5 sm:text-xs dark:border-slate-700/80 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:border-emerald-700"
                 >
-                  {locale === "fr" ? "Ouvrir" : "Open"}
+                  <ArrowRight className="h-4 w-4" />
+                  {locale === "fr" ? "Ouvrir le bloc" : "Open block"}
                 </Link>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {space.items.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    title={item.description[locale]}
-                    className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800"
-                  >
-                    {item.label[locale]}
-                  </Link>
-                ))}
-                {space.items.length === 0 ? (
-                  <span className="inline-flex items-center rounded-full border border-dashed border-slate-300 px-3 py-1.5 text-sm text-slate-500">
-                    {locale === "fr"
-                      ? "Aucune rubrique disponible"
-                      : "No page available"}
-                  </span>
-                ) : null}
-              </div>
+              {orderedItems.length > 0 ? (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
+                  {orderedItems.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      title={item.description[locale]}
+                      className="group flex items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-white/70 px-3 py-2.5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-white hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 sm:px-4 sm:py-3 dark:border-slate-800/70 dark:bg-slate-900/55 dark:hover:border-emerald-700"
+                    >
+                      <span className="min-w-0">
+                        <span className="line-clamp-1 block text-[13px] font-semibold leading-tight text-slate-900 sm:text-sm dark:text-white">
+                          {item.label[locale]}
+                        </span>
+                        <span className="line-clamp-1 text-[11px] leading-tight text-slate-600 sm:line-clamp-2 sm:text-xs dark:text-slate-300">
+                          {item.description[locale]}
+                        </span>
+                      </span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-emerald-600 dark:text-slate-400" />
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-slate-200/70 bg-white/60 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800/70 dark:bg-slate-900/40 dark:text-slate-400">
+                  {locale === "fr" ? "Aucune rubrique accessible sur ce bloc" : "No section available in this block"}
+                </div>
+              )}
             </article>
           );
         })}
-      </section>
+        </section>
+      </div>
     </div>
+      </div>
   );
 }

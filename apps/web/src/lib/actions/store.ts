@@ -6,6 +6,11 @@ import type {
 import type { ActionRow } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DRAWING_NOTE_PREFIX } from "@/lib/actions/drawing";
+import {
+  buildPersistedGeometry,
+  GEOMETRY_CONFIDENCE,
+  toGeoJsonString,
+} from "@/lib/actions/derived-geometry";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import {
@@ -55,7 +60,7 @@ export async function fetchActions(
   let query = supabase
     .from("actions")
     .select(
-      "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
+      "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
     )
     .order("action_date", { ascending: false })
     .limit(params.limit);
@@ -90,7 +95,7 @@ export async function fetchRecentActionsByUser(
   const result = await supabase
     .from("actions")
     .select(
-      "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
+      "id, created_at, updated_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, waste_kg, cigarette_butts, volunteers_count, duration_minutes, notes, status",
     )
     .eq("created_by_clerk_id", params.userId)
     .order("action_date", { ascending: false })
@@ -126,6 +131,26 @@ export async function createAction(
         routeStyle: payload.routeStyle,
       })) ?? null;
   }
+  const persistedGeometry = buildPersistedGeometry({
+    drawing: finalDrawing,
+    geojson: finalDrawing ? toGeoJsonString(finalDrawing) : null,
+    confidence: finalDrawing
+      ? payload.manualDrawing
+        ? GEOMETRY_CONFIDENCE.MANUAL_DRAWING
+        : GEOMETRY_CONFIDENCE.AUTO_ROUTE
+      : GEOMETRY_CONFIDENCE.POINT_FALLBACK,
+    geometrySourceHint: finalDrawing
+      ? payload.manualDrawing
+        ? "manual"
+        : "routed"
+      : "fallback_point",
+    latitude: payload.latitude ?? null,
+    longitude: payload.longitude ?? null,
+    locationLabel: payload.locationLabel,
+    departureLocationLabel: payload.departureLocationLabel ?? null,
+    arrivalLocationLabel: payload.arrivalLocationLabel ?? null,
+    routeStyle: payload.routeStyle ?? null,
+  });
 
   const inserted = await supabase
     .from("actions")
@@ -136,6 +161,10 @@ export async function createAction(
       location_label: payload.locationLabel,
       latitude: payload.latitude ?? null,
       longitude: payload.longitude ?? null,
+      derived_geometry_kind: persistedGeometry.kind,
+      derived_geometry_geojson: persistedGeometry.geojson,
+      geometry_confidence: persistedGeometry.confidence,
+      geometry_source: persistedGeometry.geometrySource,
       waste_kg: payload.wasteKg,
       cigarette_butts: payload.cigaretteButts,
       volunteers_count: payload.volunteersCount,

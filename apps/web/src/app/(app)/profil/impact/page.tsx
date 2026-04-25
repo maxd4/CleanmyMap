@@ -69,7 +69,7 @@ export default function ImpactProfilePage() {
               </p>
               <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4">
                 <p className="text-sm text-slate-600">
-                  La carte d'impact montre tes actions validées, ton niveau et
+                  La carte d&apos;impact montre tes actions validées, ton niveau et
                   tes badges après connexion.
                 </p>
               </div>
@@ -99,15 +99,15 @@ export default function ImpactProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-12">
+    <div className="w-full space-y-8 pb-12">
       <header className="flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900 transition">
           <ArrowLeft size={16} /> Retour Dashboard
         </Link>
-        <h1 className="text-xl font-black uppercase tracking-tighter">Ma Carte d'Impact</h1>
+        <h1 className="text-xl font-black uppercase tracking-tighter">Ma Carte d&apos;Impact</h1>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+      <div className="grid grid-cols-1 gap-12 items-center xl:grid-cols-[minmax(340px,420px)_minmax(0,1fr)]">
         {/* Visual Preview */}
         <div className="flex justify-center">
           <ImpactCard 
@@ -144,7 +144,7 @@ export default function ImpactProfilePage() {
           <div className="rounded-2xl bg-slate-100 p-6 space-y-4">
             <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Détail méthodologie</p>
             <p className="text-xs text-slate-500 leading-relaxed">
-              Les données d'impact sont consolidées à partir de vos actions validées. Le volume d'eau préservé est calculé sur la base de 500L/mégot extrait.
+              Les données d&apos;impact sont consolidées à partir de vos actions validées. Le volume d&apos;eau préservé est calculé sur la base de 500L/mégot extrait.
             </p>
             <Link href="/methodologie" className="block text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:underline">
               Consulter le protocole scientifique →

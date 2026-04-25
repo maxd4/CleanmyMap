@@ -35,6 +35,22 @@ export function ActionDeclarationFormHeader({
         </p>
       ) : null}
 
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+        <p className="text-sm font-semibold text-slate-900">
+          Mode actuel : {isQuickMode ? "Rapide" : "Complet"}
+        </p>
+        <p className="mt-2 text-sm text-slate-700">
+          {isQuickMode
+            ? "Le mode rapide limite la saisie aux champs essentiels pour publier vite."
+            : "Le mode complet ouvre le tracé et les preuves photo pour une déclaration plus précise."}
+        </p>
+        <p className="mt-2 text-xs text-slate-500">
+          {isQuickMode
+            ? "Passe en mode complet si tu as des photos ou que tu veux tracer la zone nettoyée."
+            : "Reviens au mode rapide pour une saisie express sans bloquer l'envoi."}
+        </p>
+      </div>
+
       <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
           Parcours simple
@@ -60,6 +76,11 @@ export function ActionDeclarationFormHeader({
         >
           {isQuickMode ? "Activer le tracé détaillé" : "Revenir au mode rapide"}
         </button>
+        {!isQuickMode ? (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Le mode complet recommande une preuve photo ou GPS haute fiabilité pour renforcer la déclaration.
+          </div>
+        ) : null}
         <details className="rounded-xl border border-slate-200 bg-white px-4 py-3">
           <summary className="cursor-pointer list-none text-sm font-semibold text-slate-700">
             Options de mode
@@ -92,8 +113,8 @@ export function ActionDeclarationFormHeader({
       </div>
       <p className="mt-2 text-xs text-slate-500">
         {isQuickMode
-          ? "Mode rapide: champs essentiels."
-          : "Mode détaillé: tracé et infos complémentaires."}
+          ? "Mode rapide: champs essentiels pour une déclaration directe."
+          : "Mode complet: preuves, photo, et tracé pour plus de précision."}
       </p>
     </>
   );

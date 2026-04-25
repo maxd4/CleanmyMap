@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { VibrantBackground } from "@/components/ui/vibrant-background";
 import { Globe, Home, ArrowLeft } from "lucide-react";
@@ -25,7 +27,7 @@ export default function NotFound() {
             Coordonnées Introuvables
           </h2>
           <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-            Même les meilleurs navigateurs s'égarent parfois. Cet emplacement n'est pas répertorié dans notre base de données géographique.
+            Même les meilleurs navigateurs s&apos;égarent parfois. Cet emplacement n&apos;est pas répertorié dans notre base de données géographique.
           </p>
         </div>
 
@@ -36,7 +38,7 @@ export default function NotFound() {
             className="flex items-center gap-2 px-8 py-4 bg-slate-900 dark:bg-white text-white dark:text-slate-950 font-black rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl hover:shadow-emerald-500/20"
           >
             <Home size={18} />
-            RETOUR À L'ACCUEIL
+            RETOUR À L&apos;ACCUEIL
           </Link>
           
           <button 

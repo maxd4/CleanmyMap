@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import { estimateWasteKg } from "./action-declaration-form.estimation";
 import type { ActionVisionEstimate } from "@/lib/actions/types";
 import type { FormState } from "./action-declaration-form.model";
-import { getWasteWeightSuspicion } from "./action-declaration-form.suspicion";
 import {
   resolveWasteSuggestion,
   type WasteSuggestionSource,
@@ -113,15 +112,15 @@ export function ActionDeclarationLocationAssist({
   onAutofillGps: () => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
       <button
         type="button"
-        className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
+        className="rounded-2xl border-2 border-emerald-400 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
         onClick={onAutofillGps}
         disabled={gpsStatus === "locating"}
       >
         {gpsStatus === "locating"
-          ? "Recherche..."
+          ? "Recherche de position..."
           : "Utiliser ma position"}
       </button>
       <span
@@ -131,9 +130,10 @@ export function ActionDeclarationLocationAssist({
             : gpsStatus === "success"
               ? "text-emerald-700"
               : "text-slate-500"
-        }`}
+        }`} 
+        aria-live="polite"
       >
-        {gpsMessage ?? "Aide utile pour pre-remplir le depart."}
+        {gpsMessage ?? "Aide utile pour pré-remplir le GPS et améliorer la précision."}
       </span>
     </div>
   );
@@ -156,10 +156,6 @@ export function ActionDeclarationWasteAssist({
   visionEstimate?: ActionVisionEstimate | null;
   suggestionLabel?: string;
 }) {
-  const suspicion = getWasteWeightSuspicion(
-    currentWasteKg ?? "",
-    visionEstimate ?? null,
-  );
   return (
     <div className="rounded-xl border border-slate-200 bg-slate-100 px-3 py-2 text-xs text-slate-600">
       <div className="flex flex-wrap items-center gap-2">
@@ -171,11 +167,6 @@ export function ActionDeclarationWasteAssist({
             ? "Source vision"
             : "Fallback heuristique"}
         </span>
-        {suspicion.isSuspect ? (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-800">
-            Écart suspect
-          </span>
-        ) : null}
       </div>
       <p className="mt-1">
         {estimatedWasteKg.toFixed(1)} kg
@@ -193,11 +184,6 @@ export function ActionDeclarationWasteAssist({
       <p className="mt-1 text-[10px] text-slate-500">
         La valeur reste a saisir et corriger a la main.
       </p>
-      {suspicion.message ? (
-        <p className="mt-1 text-[10px] font-semibold text-amber-700">
-          {suspicion.message}
-        </p>
-      ) : null}
     </div>
   );
 }

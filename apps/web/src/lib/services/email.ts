@@ -1,4 +1,5 @@
 import { getResendClient } from "./resend";
+import { env } from "@/lib/env";
 
 export type EmailPayload = {
   to: string | string[];
@@ -14,7 +15,11 @@ export type EmailPayload = {
  */
 export async function sendEmail(payload: EmailPayload) {
   const resend = getResendClient();
-  const from = payload.from || "CleanMyMap <notifs@cleanmymap.fr>"; // Example domain
+  const from =
+    payload.from ||
+    env.RESEND_FROM_EMAIL ||
+    "CleanMyMap <contact@mail.cleanmymap.fr>";
+  const replyTo = payload.replyTo || env.RESEND_REPLY_TO || env.RESEND_FROM_EMAIL;
 
   if (!resend) {
     console.warn("[Email Service] No RESEND_API_KEY found. Logging email instead:", {
@@ -30,7 +35,7 @@ export async function sendEmail(payload: EmailPayload) {
       to: payload.to,
       subject: payload.subject,
       html: payload.html,
-      replyTo: payload.replyTo,
+      replyTo,
     });
 
     if (error) {

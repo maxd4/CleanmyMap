@@ -1,4 +1,4 @@
-import type { ActionDrawing } from "@/lib/actions/types";
+import type { ActionDrawing } from "../actions/types.ts";
 
 export type GeoReference = {
   keywords: string[];

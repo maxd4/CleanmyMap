@@ -7,12 +7,12 @@ import useSWR from "swr";
 import { ActionsMapFeed } from "@/components/actions/actions-map-feed";
 import { ActionsMapTable } from "@/components/actions/actions-map-table";
 import { ActionsVisualizationPanel } from "@/components/actions/actions-visualization-panel";
-import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { DecisionPageHeader } from "@/components/ui/decision-page-header";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
-import type { ActionStatus, ActionImpactLevel, ActionMapItem } from "@/lib/actions/types";
+import type { ActionStatus, ActionImpactLevel } from "@/lib/actions/types";
 import { mapItemWasteKg, mapItemCigaretteButts } from "@/lib/actions/data-contract";
+import { BarChart3, MapPinned, Table2 } from "lucide-react";
 
 const INITIAL_DAYS = Math.ceil(
   (new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) /
@@ -44,10 +44,11 @@ export default function ActionsMapPage() {
   
   // Rôle Utilisateur pour CTA dynamique
   const { user } = useUser();
+  const isAuthenticated = Boolean(user?.id);
   const role = user?.publicMetadata?.role || "volunteer";
+  const isPublicVisitor = !isAuthenticated;
   
-  // État local pour le journal (piloté par le chargement de la carte)
-  const [mapItems, setMapItems] = useState<ActionMapItem[]>([]);
+  const [railTab, setRailTab] = useState<"insights" | "journal">("insights");
 
   // --- RÉCUPÉRATION DES DONNÉES POUR LES KPI UNIFIÉS ---
   const mapDataQuery = useSWR(["map-page-kpis-map", days, statusFilter, impactFilter, qualityMin], () =>
@@ -60,8 +61,9 @@ export default function ActionsMapPage() {
     })
   );
 
-  const actionsDataQuery = useSWR(["map-page-kpis-actions", days, statusFilter], () =>
-    fetchActions({ status: statusFilter, days, limit: 100 })
+  const actionsDataQuery = useSWR(
+    isAuthenticated ? ["map-page-kpis-actions", days, statusFilter] : null,
+    () => fetchActions({ status: statusFilter, days, limit: 100 }),
   );
 
   const stats = useMemo(() => {
@@ -73,11 +75,20 @@ export default function ActionsMapPage() {
     
     let volunteers = 0;
     let citizenHours = 0;
-    for (const item of actionItems) {
-      const count = Number(item.volunteers_count || 0);
-      const minutes = Number(item.duration_minutes || 0);
-      volunteers += count;
-      citizenHours += (count * Math.max(0, minutes)) / 60;
+    if (isAuthenticated) {
+      for (const item of actionItems) {
+        const count = Number(item.volunteers_count || 0);
+        const minutes = Number(item.duration_minutes || 0);
+        volunteers += count;
+        citizenHours += (count * Math.max(0, minutes)) / 60;
+      }
+    } else {
+      for (const item of items) {
+        const count = Number(item.contract?.metadata.volunteersCount || 0);
+        const minutes = Number(item.contract?.metadata.durationMinutes || 0);
+        volunteers += count;
+        citizenHours += (count * Math.max(0, minutes)) / 60;
+      }
     }
 
     const geolocated = items.filter(i => i.latitude !== null && i.longitude !== null).length;
@@ -90,7 +101,7 @@ export default function ActionsMapPage() {
       citizenHours,
       geocoverage: items.length > 0 ? Math.round((geolocated / items.length) * 100) : 0,
     };
-  }, [mapDataQuery.data, actionsDataQuery.data]);
+  }, [isAuthenticated, mapDataQuery.data, actionsDataQuery.data]);
 
   const kpiRibbon = (
     <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
@@ -253,38 +264,95 @@ export default function ActionsMapPage() {
         }
       />
 
+      {isPublicVisitor ? (
+        <section className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-950">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              La carte est consultable librement. Connecte-toi uniquement pour
+              déclarer une action, suivre ton historique ou exporter un rapport.
+            </p>
+            <Link
+              href="/sign-in"
+              className="inline-flex shrink-0 items-center justify-center rounded-lg border border-emerald-300 bg-white px-3 py-2 text-sm font-semibold text-emerald-900 transition hover:bg-emerald-100"
+            >
+              Se connecter
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       <div className="space-y-4">
         {/* TOUR DE CONTRÔLE UNIQUE */}
         {controlTower}
-
-        {/* RUBAN KPI UNIFIÉ */}
-        {kpiRibbon}
       </div>
 
-      {/* CŒUR DE PAGE : SPLIT SCREEN */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6 items-start">
-        {/* GAUCHE : LA CARTE */}
-        <div className="min-w-0">
-          <ActionsMapFeed 
-            days={days} 
-            statusFilter={statusFilter} 
-            impactFilter={impactFilter} 
-            qualityMin={qualityMin} 
-            onData={(data) => setMapItems(data.items)}
+      {/* CŒUR DE PAGE : CARTE DOMINANTE + RAIL SECONDIARE */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_22rem]">
+        <section className="min-w-0 xl:sticky xl:top-6 self-start">
+          <ActionsMapFeed
+            presentation="immersive"
+            days={days}
+            statusFilter={statusFilter}
+            impactFilter={impactFilter}
+            qualityMin={qualityMin}
           />
-        </div>
+        </section>
 
-        {/* DROITE : LES ANALYSES */}
-        <div className="min-w-0 space-y-6">
-          <ActionsVisualizationPanel 
-            days={days} 
-            status={statusFilter} 
-          />
-        </div>
+        <aside className="min-w-0 self-start xl:sticky xl:top-6">
+          <div className="rounded-[2rem] border border-slate-200/80 bg-white/90 p-3 shadow-[0_24px_70px_-34px_rgba(15,23,42,0.28)] backdrop-blur-xl">
+            <div className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-slate-100 p-1">
+              <button
+                type="button"
+                onClick={() => setRailTab("insights")}
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                  railTab === "insights"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span>Insights</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRailTab("journal")}
+                className={`inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                  railTab === "journal"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                <Table2 className="h-4 w-4" />
+                <span>Journal</span>
+              </button>
+            </div>
+
+            <div className="mt-4">
+              {railTab === "insights" ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 rounded-2xl border border-emerald-100 bg-emerald-50 px-3 py-3">
+                    <MapPinned className="h-4 w-4 text-emerald-600" />
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                        Lecture active
+                      </p>
+                      <p className="text-sm text-emerald-950/80">
+                        La carte domine, les analyses restent secondaires.
+                      </p>
+                    </div>
+                  </div>
+                  <ActionsVisualizationPanel days={days} status={statusFilter} compact />
+                </div>
+              ) : (
+                <ActionsMapTable items={mapDataQuery.data?.items ?? []} compact />
+              )}
+            </div>
+          </div>
+        </aside>
       </div>
 
-      {/* BAS DE PAGE : LE JOURNAL (Full Width) */}
-      <ActionsMapTable items={mapItems} />
+      {/* RUBAN KPI UNIFIÉ */}
+      {kpiRibbon}
 
       {/* SUPERVISION TECHNIQUE */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -332,14 +400,5 @@ export default function ActionsMapPage() {
     </div>
   );
 
-  return (
-    <ClerkRequiredGate
-      isAuthenticated={Boolean(user?.id)}
-      mode="disabled"
-      title="Carte des actions"
-      description="Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
-    >
-      {page}
-    </ClerkRequiredGate>
-  );
+  return page;
 }

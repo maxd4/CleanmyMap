@@ -18,7 +18,7 @@ export default async function AdminServicesPage() {
           <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
             <h2 className="text-xl font-semibold text-slate-900">Supervision des services</h2>
             <p className="mt-3 text-sm text-slate-600">
-              Connectez-vous avec un compte admin pour afficher l'état des intégrations et des services.
+              Connectez-vous avec un compte admin pour afficher l&apos;état des intégrations et des services.
             </p>
           </section>
         }
@@ -29,7 +29,6 @@ export default async function AdminServicesPage() {
   }
 
   const role = await getCurrentUserRoleLabel();
-  const locale = await getServerLocale();
 
   if (role !== "admin") {
     return (
@@ -59,8 +58,8 @@ export default async function AdminServicesPage() {
               Tableau de bord des services
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-              Visualisez l'état des intégrations critiques, optionnelles et externes de
-              CleanMyMap. Les données sont mises à jour en temps réel via l'API
+              Visualisez l&apos;état des intégrations critiques, optionnelles et externes de
+              CleanMyMap. Les données sont mises à jour en temps réel via l&apos;API
               <code className="rounded bg-slate-100 px-1 py-0.5 text-xs font-medium text-slate-700">
                 /api/services
               </code>.

@@ -1,4 +1,4 @@
-Reusable Codex Prompt Library (Web/App)
+Reusable Agent Prompt Library (Web/App)
 
 ==================================================
 PHASE 0 — FONDATIONS (URGENT)

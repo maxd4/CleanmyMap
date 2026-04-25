@@ -20,6 +20,9 @@ describe("report scope helpers", () => {
       kind: "point",
       coordinates: [[48.85, 2.35] as [number, number]],
       geojson: null,
+      confidence: 0.24,
+      geometrySource: "fallback_point",
+      origin: "fallback_point",
     },
     dates: {
       observedAt: "2026-04-01",

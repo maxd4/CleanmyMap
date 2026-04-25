@@ -5,5 +5,4 @@ export { ClimateSection } from "./climate-section";
 export { WeatherSection } from "./weather-section";
 export { CompareSection } from "./compare-section";
 export { GuideSection } from "./guide-section";
-export { KitSection } from "./kit-section";
 export { SandboxSection } from "./sandbox-section";

@@ -76,4 +76,51 @@ describe("deriveAutoDrawingFromLocation", () => {
       global.fetch = originalFetch;
     }
   });
+
+  it("falls back to a raw or flexible polyline when OSRM fails", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = (async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("nominatim.openstreetmap.org")) {
+        const lat = url.includes("depart") ? "48.85" : "48.86";
+        const lon = url.includes("depart") ? "2.35" : "2.37";
+        return new Response(JSON.stringify([{ lat, lon }]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response("Service unavailable", { status: 503 });
+    }) as typeof fetch;
+
+    try {
+      const directFallback = await deriveAutoDrawingFromLocation({
+        locationLabel: "depart",
+        departureLocationLabel: "depart",
+        arrivalLocationLabel: "arrivee",
+        routeStyle: "direct",
+      });
+
+      expect(directFallback).not.toBeNull();
+      expect(directFallback?.kind).toBe("polyline");
+      expect(directFallback?.coordinates).toEqual([
+        [48.85, 2.35],
+        [48.86, 2.37],
+      ]);
+
+      const soupleFallback = await deriveAutoDrawingFromLocation({
+        locationLabel: "depart",
+        departureLocationLabel: "depart",
+        arrivalLocationLabel: "arrivee",
+        routeStyle: "souple",
+      });
+
+      expect(soupleFallback).not.toBeNull();
+      expect(soupleFallback?.kind).toBe("polyline");
+      expect(soupleFallback?.coordinates.length).toBe(3);
+      expect(soupleFallback?.coordinates[0]).toEqual([48.85, 2.35]);
+      expect(soupleFallback?.coordinates[2]).toEqual([48.86, 2.37]);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });

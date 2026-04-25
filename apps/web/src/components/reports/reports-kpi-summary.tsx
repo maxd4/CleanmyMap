@@ -43,7 +43,7 @@ export function ReportsKpiSummary() {
       (item) => item.latitude !== null && item.longitude !== null,
     ).length;
     const traced = mapItems.filter((item) =>
-      Boolean(item.manual_drawing),
+      (item.contract?.geometry.kind ?? item.geometry_kind ?? "point") !== "point",
     ).length;
     return {
       totalKg,

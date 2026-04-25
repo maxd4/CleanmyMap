@@ -48,7 +48,7 @@ export function RecyclingSection() {
     );
     const avgKg = items.length > 0 ? totalKg / items.length : 0;
     const withTrace = (map.data?.items ?? []).filter((item) =>
-      Boolean(item.manual_drawing),
+      (item.contract?.geometry.kind ?? item.geometry_kind ?? "point") !== "point",
     ).length;
     const mixedIndex =
       totalKg > 0

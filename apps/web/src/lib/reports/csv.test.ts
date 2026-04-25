@@ -68,6 +68,7 @@ describe("report csv helpers", () => {
         observed_at: "2026-04-01",
         geometry_kind: "polygon",
         geometry_geojson: '{"type":"Polygon"}',
+        geometry_confidence: 0.92,
         manual_drawing_kind: "polygon",
         manual_drawing_points: 3,
         manual_drawing_coordinates_json:
@@ -82,6 +83,7 @@ describe("report csv helpers", () => {
     expect(csv).toContain('"Rue, Paris"');
     expect(csv).toContain('"ligne 1\nligne 2"');
     expect(csv).toContain("geometry_kind");
+    expect(csv).toContain("geometry_confidence");
     expect(csv).toContain("manual_drawing_geojson");
     expect(csv).toContain('"{""type"":""Polygon""}"');
   });

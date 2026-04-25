@@ -32,7 +32,7 @@ export default async function SignalementPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="w-full space-y-6">
       <DecisionPageHeader
         context="Terrain"
         title="Signalement Express"

@@ -18,7 +18,6 @@ import {
   ClimateSection,
   CompareSection,
   GuideSection,
-  KitSection,
   RecyclingSection,
   RouteSection,
   SandboxSection,
@@ -362,24 +361,6 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
           ]}
         >
           <GuideSection />
-        </SectionShell>
-      );
-    case "kit":
-      return (
-        <SectionShell
-          title={{ fr: "Kit terrain", en: "Field kit" }}
-          subtitle={{
-            fr: "Préparation matériel et checklist opérationnelle bénévole.",
-            en: "Volunteer equipment and operational checklist.",
-          }}
-          links={[
-            {
-              href: "/sections/guide",
-              label: { fr: "Voir le guide", en: "Open guide" },
-            },
-          ]}
-        >
-          <KitSection />
         </SectionShell>
       );
     case "messagerie":

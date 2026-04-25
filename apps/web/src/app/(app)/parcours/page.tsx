@@ -14,7 +14,7 @@ export default async function ParcoursRootPage() {
         title="Parcours"
         description={
           clerkReachable
-            ? "Le parcours personnalisé s'ouvre après connexion au compte Clerk."
+            ? "Le parcours personnalisé s&apos;ouvre après connexion au compte Clerk."
             : "Connexion Clerk temporairement indisponible. La vue reste lisible."
         }
         lockedPreview={
@@ -41,7 +41,7 @@ export default async function ParcoursRootPage() {
                   Suivre
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  Le suivi d'impact reste attaché au compte Clerk.
+                  Le suivi d&apos;impact reste attaché au compte Clerk.
                 </p>
               </article>
             </div>

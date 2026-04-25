@@ -3,6 +3,14 @@ export const ACTION_STATUSES = ["pending", "approved", "rejected"] as const;
 export type ActionStatus = (typeof ACTION_STATUSES)[number];
 export type ActionRecordType = "action" | "clean_place" | "spot";
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
+export type ActionGeometryKind = "point" | "polyline" | "polygon";
+export type ActionGeometryOrigin =
+  | "manual"
+  | "reference"
+  | "routed"
+  | "estimated_area"
+  | "fallback_point";
+export type ActionGeometrySource = ActionGeometryOrigin;
 export type ActionSubmissionMode = "quick" | "complete";
 export type ActionQualityGrade = "A" | "B" | "C";
 export type ActionImpactLevel = "faible" | "moyen" | "fort" | "critique";
@@ -99,8 +107,10 @@ export type ActionListItem = {
   source?: string;
   notes_plain?: string | null;
   observed_at?: string;
-  geometry_kind?: "point" | "polyline" | "polygon" | null;
+  geometry_kind?: ActionGeometryKind | null;
   geometry_geojson?: string | null;
+  geometry_confidence?: number | null;
+  geometry_source?: ActionGeometrySource | null;
   manual_drawing?: ActionDrawing | null;
   manual_drawing_geojson?: string | null;
   submission_mode?: ActionSubmissionMode | null;
@@ -122,9 +132,12 @@ export type ActionListItem = {
       longitude: number | null;
     };
     geometry: {
-      kind: "point" | "polyline" | "polygon";
+      kind: ActionGeometryKind;
       coordinates: [number, number][];
       geojson: string | null;
+      confidence: number | null;
+      geometrySource: ActionGeometrySource;
+      origin: ActionGeometryOrigin;
     };
     dates: {
       observedAt: string;
@@ -212,6 +225,10 @@ export type ActionMapItem = Pick<
 > & {
   record_type?: ActionRecordType | LegacyActionRecordType;
   source?: string;
+  geometry_kind?: ActionGeometryKind | null;
+  geometry_geojson?: string | null;
+  geometry_confidence?: number | null;
+  geometry_source?: ActionGeometrySource | null;
   manual_drawing?: ActionDrawing | null;
   manual_drawing_geojson?: string | null;
   submission_mode?: ActionSubmissionMode | null;
@@ -233,9 +250,12 @@ export type ActionMapItem = Pick<
       longitude: number | null;
     };
     geometry: {
-      kind: "point" | "polyline" | "polygon";
+      kind: ActionGeometryKind;
       coordinates: [number, number][];
       geojson: string | null;
+      confidence: number | null;
+      geometrySource: ActionGeometrySource;
+      origin: ActionGeometryOrigin;
     };
     dates: {
       observedAt: string;

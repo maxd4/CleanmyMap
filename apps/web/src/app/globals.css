@@ -7,18 +7,164 @@
   --accent-vibrant: #34d399;
   --accent-soft: #ecfdf5;
   --slate-deep: #0f172a;
+
+  /* Tokens sémantiques (canon) */
+  --bg-canvas: var(--background);
+  --bg-elevated: rgba(255, 255, 255, 0.86);
+  --bg-muted: rgba(248, 250, 252, 0.8);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-inverse: #f8fafc;
+  --border-default: rgba(15, 23, 42, 0.12);
+  --border-strong: rgba(15, 23, 42, 0.18);
+  --focus-ring: rgba(16, 185, 129, 0.45);
+
+  --action-primary-bg: rgb(16 185 129);
+  --action-primary-text: #ffffff;
+  --action-primary-hover: rgb(5 150 105);
+  --action-secondary-bg: rgba(255, 255, 255, 0.72);
+  --action-secondary-text: #0f172a;
+  --action-secondary-hover: rgba(16, 185, 129, 0.08);
+
+  /* ============================================================
+     TYPOGRAPHY TOKENS - Échelle cohérente Desktop/Mobile
+     ============================================================ */
+
+  /* 1. Font Families (Paire: Display + Body) - next/font variables */
+  --font-display: var(--font-outfit), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-body: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* 2. Type Scale (Major Third ratio 1.25) - Desktop */
+  --text-xs: 0.75rem;      /* 12px - Captions, meta, badges */
+  --text-sm: 0.875rem;     /* 14px - Labels, aides, boutons */
+  --text-base: 1rem;       /* 16px - Corps de texte */
+  --text-lg: 1.125rem;     /* 18px - Lead text, paragraphes importants */
+  --text-xl: 1.25rem;      /* 20px - H4, sous-titres */
+  --text-2xl: 1.5rem;      /* 24px - H3 */
+  --text-3xl: 1.875rem;    /* 30px - H2 */
+  --text-4xl: 2.25rem;     /* 36px - H1 page */
+  --text-5xl: 3rem;        /* 48px - Hero */
+  --text-6xl: 3.75rem;     /* 60px - Hero large */
+
+  /* 3. Font Weights (Limiter: 400-700, éviter 800+) */
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* 4. Line Heights (lisibilité FR optimisée) */
+  --leading-none: 1;
+  --leading-tight: 1.15;   /* Titres courts */
+  --leading-snug: 1.3;     /* Sous-titres */
+  --leading-normal: 1.5;   /* Corps de texte */
+  --leading-relaxed: 1.625; /* Paragraphes longs */
+
+  /* 5. Semantic Typography (Hiérarchie) */
+  /* Display/Titres */
+  --font-h1: var(--font-display);
+  --font-h2: var(--font-display);
+  --font-h3: var(--font-display);
+  --font-h4: var(--font-display);
+
+  --size-h1: var(--text-4xl);
+  --size-h2: var(--text-3xl);
+  --size-h3: var(--text-2xl);
+  --size-h4: var(--text-xl);
+
+  --weight-h1: var(--weight-bold);
+  --weight-h2: var(--weight-semibold);
+  --weight-h3: var(--weight-semibold);
+  --weight-h4: var(--weight-medium);
+
+  --leading-h1: var(--leading-tight);
+  --leading-h2: var(--leading-snug);
+  --leading-h3: var(--leading-snug);
+  --leading-h4: var(--leading-normal);
+
+  /* Corps */
+  --font-body: var(--font-body);
+  --size-body: var(--text-base);
+  --weight-body: var(--weight-normal);
+  --leading-body: var(--leading-normal);
+
+  /* Petit texte */
+  --font-small: var(--font-body);
+  --size-small: var(--text-sm);
+  --weight-small: var(--weight-normal);
+  --leading-small: var(--leading-normal);
+
+  /* Caption */
+  --font-caption: var(--font-body);
+  --size-caption: var(--text-xs);
+  --weight-caption: var(--weight-normal);
+  --leading-caption: var(--leading-normal);
+
+  /* 6. Semantic Text Colors */
+  /* Hiérarchie de contenu */
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --text-inverse: #f8fafc;
+
+  /* États / Feedback */
+  --text-success: #059669;
+  --text-warning: #b45309;
+  --text-danger: #dc2626;
+  --text-info: #0369a1;
+
+  /* Actions */
+  --text-link: #0369a1;
+  --text-link-hover: #0284c7;
 }
 
 html.dark {
   --background: #020617; /* Very deep slate */
   --foreground: #f8fafc;
   --accent-soft: rgba(16, 185, 129, 0.1);
+
+  /* Tokens sémantiques (canon) */
+  --bg-canvas: var(--background);
+  --bg-elevated: rgba(2, 6, 23, 0.62);
+  --bg-muted: rgba(15, 23, 42, 0.62);
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-inverse: #0b1220;
+  --border-default: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(148, 163, 184, 0.26);
+  --focus-ring: rgba(16, 185, 129, 0.4);
+
+  --action-secondary-bg: rgba(15, 23, 42, 0.72);
+  --action-secondary-text: #f8fafc;
+  --action-secondary-hover: rgba(16, 185, 129, 0.12);
+
+  /* Typography: Dark mode text colors */
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-inverse: #0b1220;
+
+  /* States */
+  --text-success: #34d399;
+  --text-warning: #fbbf24;
+  --text-danger: #f87171;
+  --text-info: #38bdf8;
+
+  /* Actions */
+  --text-link: #38bdf8;
+  --text-link-hover: #7dd3fc;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-primary: var(--accent-primary);
+
+  /* Font families */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-outfit), system-ui, -apple-system, sans-serif;
+
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-bg-dark: rgba(15, 23, 42, 0.6);
   --glass-border: rgba(255, 255, 255, 0.4);
@@ -28,6 +174,10 @@ html.dark {
   /* Premium Soft Shadows */
   --shadow-premium: 0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 4px 6px -2px rgba(0, 0, 0, 0.01);
   --shadow-vibrant: 0 20px 25px -5px rgba(16, 185, 129, 0.1), 0 10px 10px -5px rgba(16, 185, 129, 0.04);
+
+  /* Propreté / cohérence */
+  --shadow-soft: 0 10px 24px -18px rgba(15, 23, 42, 0.28);
+  --shadow-elevated: 0 22px 52px -42px rgba(15, 23, 42, 0.42);
 }
 
 @layer utilities {
@@ -59,6 +209,220 @@ html.dark {
     transform: translateY(-2px);
     box-shadow: var(--shadow-vibrant);
     border-color: rgba(16, 185, 129, 0.3);
+  }
+
+  /* Surfaces & contrôles canoniques (utiliser plutôt que bg-white / shadow arbitraires) */
+  .cmm-surface {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(10px);
+  }
+
+  .cmm-surface-muted {
+    background: var(--bg-muted);
+    border: 1px solid var(--border-default);
+    box-shadow: none;
+  }
+
+  .cmm-panel {
+    border-radius: 1.5rem;
+  }
+
+  .cmm-card {
+    border-radius: 1.25rem;
+  }
+
+  .cmm-focus-ring {
+    outline: none;
+    box-shadow:
+      0 0 0 2px var(--focus-ring),
+      0 0 0 6px rgba(255, 255, 255, 0.65);
+  }
+
+  html.dark .cmm-focus-ring {
+    box-shadow:
+      0 0 0 2px var(--focus-ring),
+      0 0 0 6px rgba(2, 6, 23, 0.55);
+  }
+
+  /* ============================================================
+     TYPOGRAPHY UTILITIES - Classes sémantiques hiérarchiques
+     ============================================================ */
+
+  /* Hiérarchie Display/Titres */
+  .cmm-text-h1 {
+    font: var(--weight-h1) var(--size-h1)/var(--leading-h1) var(--font-h1);
+    letter-spacing: -0.02em;
+  }
+
+  .cmm-text-h2 {
+    font: var(--weight-h2) var(--size-h2)/var(--leading-h2) var(--font-h2);
+    letter-spacing: -0.01em;
+  }
+
+  .cmm-text-h3 {
+    font: var(--weight-h3) var(--size-h3)/var(--leading-h3) var(--font-h3);
+  }
+
+  .cmm-text-h4 {
+    font: var(--weight-h4) var(--size-h4)/var(--leading-h4) var(--font-h4);
+  }
+
+  /* Corps et texte courant */
+  .cmm-text-body {
+    font: var(--weight-body) var(--size-body)/var(--leading-body) var(--font-body);
+  }
+
+  .cmm-text-small {
+    font: var(--weight-small) var(--size-small)/var(--leading-small) var(--font-small);
+  }
+
+  .cmm-text-caption {
+    font: var(--weight-caption) var(--size-caption)/var(--leading-caption) var(--font-caption);
+  }
+
+  /* Couleurs texte sémantiques */
+  .text-primary { color: var(--text-primary); }
+  .text-secondary { color: var(--text-secondary); }
+  .text-muted { color: var(--text-muted); }
+  .text-inverse { color: var(--text-inverse); }
+
+  .text-success { color: var(--text-success); }
+  .text-warning { color: var(--text-warning); }
+  .text-danger { color: var(--text-danger); }
+  .text-info { color: var(--text-info); }
+
+  .text-link {
+    color: var(--text-link);
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  .text-link:hover {
+    color: var(--text-link-hover);
+  }
+
+  /* ============================================================
+     CURSOR SYSTEM - Comportements tactiles cohérents
+     ============================================================ */
+
+  /* Base: Éléments interactifs natifs */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  a[href],
+  label[for],
+  select,
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="file"],
+  input[type="submit"],
+  input[type="button"],
+  input[type="reset"],
+  summary {
+    cursor: pointer;
+  }
+
+  /* Éléments de texte */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  textarea {
+    cursor: text;
+  }
+
+  /* Éléments désactivés */
+  :disabled,
+  [aria-disabled="true"],
+  .disabled {
+    cursor: not-allowed !important;
+  }
+
+  /* Éléments draggables */
+  [draggable="true"],
+  .cursor-grab {
+    cursor: grab;
+  }
+
+  .cursor-grab:active,
+  .cursor-grabbing,
+  [draggable="true"]:active {
+    cursor: grabbing;
+  }
+
+  /* Classes utilitaires cursor explicites */
+  .cursor-pointer { cursor: pointer; }
+  .cursor-text { cursor: text; }
+  .cursor-not-allowed { cursor: not-allowed; }
+  .cursor-default { cursor: default; }
+  .cursor-help { cursor: help; }
+  .cursor-wait { cursor: wait; }
+  .cursor-move { cursor: move; }
+  .cursor-crosshair { cursor: crosshair; }
+  .cursor-zoom-in { cursor: zoom-in; }
+  .cursor-zoom-out { cursor: zoom-out; }
+
+  /* Comportement par défaut pour éléments non-interactifs */
+  .cursor-inherit { cursor: inherit; }
+
+  /* Cards et surfaces cliquables */
+  .cmm-clickable {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+
+  .cmm-clickable:hover {
+    transform: translateY(-1px);
+  }
+
+  .cmm-clickable:active {
+    transform: translateY(0);
+  }
+
+  /* S'assurer que les enfants d'éléments cliquables héritent correctement */
+  .cmm-clickable > * {
+    cursor: inherit;
+  }
+
+  /* Liens et boutons avec indicateur visuel supplémentaire */
+  .cmm-interactive {
+    cursor: pointer;
+    position: relative;
+  }
+
+  .cmm-interactive::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+  }
+
+  .cmm-interactive:hover::after {
+    opacity: 1;
+  }
+
+  /* Éléments de formulaire avec états cohérents */
+  .cmm-input {
+    cursor: text;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .cmm-input:read-only,
+  .cmm-input[readonly] {
+    cursor: default;
+  }
+
+  .cmm-input:disabled,
+  .cmm-input[disabled] {
+    cursor: not-allowed;
   }
 }
 
@@ -95,39 +459,25 @@ a {
   text-decoration: none;
 }
 
-html.dark .bg-white {
-  background-color: #111827 !important;
+/* Note: Les overrides globaux !important ont été supprimés (P0)
+ * Utilisez les classes canoniques suivantes pour garantir la cohérence dark/light:
+ * - Surfaces: .cmm-surface, .cmm-surface-muted, .cmm-panel, .cmm-card
+ * - Texte: --text-primary, --text-secondary, --text-muted (via CSS variables)
+ * - Bordures: --border-default, --border-strong
+ * - Cards premium: .premium-card
+ * */
+
+/* Classes utilitaires legacy pour compatibilité - à migrer vers les tokens sémantiques */
+html.dark .cmm-legacy-surface {
+  background-color: #111827;
 }
 
-html.dark .bg-slate-50 {
-  background-color: #0b1220 !important;
+html.dark .cmm-legacy-muted {
+  background-color: #0b1220;
 }
 
-html.dark .bg-slate-100 {
-  background-color: #1e293b !important;
-}
-
-html.dark .text-slate-900 {
-  color: #f1f5f9 !important;
-}
-
-html.dark .text-slate-800 {
-  color: #e2e8f0 !important;
-}
-
-html.dark .text-slate-700 {
-  color: #cbd5e1 !important;
-}
-
-html.dark .text-slate-600,
-html.dark .text-slate-500 {
-  color: #94a3b8 !important;
-}
-
-html.dark .border-slate-200,
-html.dark .border-slate-300,
-html.dark .border-slate-100 {
-  border-color: #334155 !important;
+html.dark .cmm-legacy-elevated {
+  background-color: #1e293b;
 }
 
 /* Leaflet Custom Styles */
@@ -192,99 +542,153 @@ html.dark .glass-tooltip {
   from { stroke-dashoffset: 20; }
   to { stroke-dashoffset: 0; }
 }
-/* Display Modes Support */
+/* ============================================================
+   DISPLAY MODES - Chartes graphiques distinctes
+   ============================================================ */
+
+/* -----------------------------------------------------------
+   MODE EXHAUSTIF (défaut)
+   Charte premium complète: gradients, glassmorphism, animations
+   ----------------------------------------------------------- */
+/* Aucune règle spécifique - le CSS par défaut s'applique */
+
+/* -----------------------------------------------------------
+   MODE MINIMALISTE
+   Essentiel stylé: fond uni, ombres soft, pas de blur
+   ----------------------------------------------------------- */
+[data-display-mode="minimaliste"] {
+  /* Désactiver le mesh gradient */
+  --vibrant-bg: none;
+  /* Réduire les ombres au niveau soft uniquement */
+  --shadow-elevated: var(--shadow-soft);
+  --shadow-vibrant: var(--shadow-soft);
+  /* Désactiver glassmorphism par défaut */
+  --glass-bg: rgba(255, 255, 255, 0.95);
+  --glass-bg-dark: rgba(15, 23, 42, 0.95);
+  --glass-blur: none;
+}
+
+/* Masquer les éléments décoratifs excessifs */
+[data-display-mode="minimaliste"] .exhaustive-only {
+  display: none;
+}
+
+/* Afficher uniquement en mode minimaliste */
+[data-display-mode="exhaustif"] .minimal-only,
+[data-display-mode="sobre"] .minimal-only {
+  display: none;
+}
+
+/* Afficher uniquement en mode sobre */
+[data-display-mode="exhaustif"] .sober-only,
+[data-display-mode="minimaliste"] .sober-only {
+  display: none;
+}
+
+/* Fond uni sans mesh */
+[data-display-mode="minimaliste"] body {
+  background: var(--background);
+}
+
+/* Cards sans glassmorphism mais avec style propre */
+[data-display-mode="minimaliste"] .cmm-minimal {
+  backdrop-filter: none;
+  background: var(--bg-elevated);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Désactiver animations complexes, garder transitions douces */
+[data-display-mode="minimaliste"] .cmm-minimal-animate {
+  animation: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Typographie sans gradient */
+[data-display-mode="minimaliste"] .cmm-minimal-text {
+  background: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  color: var(--text-primary);
+  -webkit-text-fill-color: initial;
+}
+
+/* Hover simple (pas de transform) */
+[data-display-mode="minimaliste"] .cmm-minimal-hover:hover {
+  transform: none;
+  background-color: var(--bg-muted);
+}
+
+/* -----------------------------------------------------------
+   MODE SOBRE
+   Accessibilité cognitive: aucun effet, statique, contrastes élevés
+   ----------------------------------------------------------- */
+[data-display-mode="sobre"] {
+  /* Supprimer tous les effets visuels */
+  --shadow-soft: none;
+  --shadow-elevated: none;
+  --shadow-vibrant: none;
+  --shadow-premium: none;
+  --glass-blur: none;
+  --glass-bg: var(--background);
+  --glass-bg-dark: var(--background);
+  /* Couleurs unies uniquement */
+  --bg-elevated: var(--background);
+  --bg-muted: var(--background);
+}
+
+/* Masquer éléments décoratifs */
 [data-display-mode="sobre"] .exhaustive-only,
-[data-display-mode="simplifie"] .exhaustive-only {
+[data-display-mode="sobre"] .minimal-only {
   display: none !important;
 }
 
+/* Fond strictement uni */
 [data-display-mode="sobre"] body {
   background: var(--background) !important;
 }
 
-[data-display-mode="sobre"] .rounded-2xl,
-[data-display-mode="sobre"] .rounded-3xl,
-[data-display-mode="sobre"] .rounded-\[2\.5rem\],
-[data-display-mode="sobre"] .rounded-\[3rem\],
-[data-display-mode="sobre"] .rounded-\[4rem\],
-[data-display-mode="sobre"] .rounded-\[6rem\] {
-  border-radius: 0.75rem !important;
-  border-width: 1px !important;
-  background-color: var(--background) !important;
+/* Classes canoniques pour mode sobre */
+[data-display-mode="sobre"] .cmm-sober {
+  border-radius: 0.75rem;
+  border-width: 1px;
   box-shadow: none !important;
-  border-color: #cbd5e1 !important; /* Higher contrast border */
+  backdrop-filter: none !important;
+  background: var(--background);
+  border-color: #cbd5e1;
 }
 
-html.dark[data-display-mode="sobre"] .rounded-2xl,
-html.dark[data-display-mode="sobre"] .rounded-3xl,
-html.dark[data-display-mode="sobre"] .rounded-\[2\.5rem\],
-html.dark[data-display-mode="sobre"] .rounded-\[3rem\] {
-  border-color: #334155 !important;
-  background-color: #0b1220 !important;
+html.dark[data-display-mode="sobre"] .cmm-sober {
+  border-color: #334155;
+  background: #0b1220;
 }
 
-[data-display-mode="sobre"] .punchy-title,
-[data-display-mode="sobre"] .text-transparent,
-[data-display-mode="sobre"] .bg-clip-text {
-  background: none !important;
-  -webkit-background-clip: initial !important;
-  background-clip: initial !important;
-  color: inherit !important;
-  -webkit-text-fill-color: initial !important;
-}
-
-[data-display-mode="sobre"] .animate-pulse,
-[data-display-mode="sobre"] .animate-marquee,
-[data-display-mode="sobre"] .animate-in {
+/* Aucune animation */
+[data-display-mode="sobre"] .cmm-sober-animate {
   animation: none !important;
   transition: opacity 0.1s ease-out !important;
 }
 
-[data-display-mode="sobre"] .blur-3xl,
-[data-display-mode="sobre"] .blur-\[100px\] {
-  display: none !important;
+/* Typographie plate */
+[data-display-mode="sobre"] .cmm-sober-text {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  background-clip: initial !important;
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: initial !important;
 }
 
-[data-display-mode="sobre"] .shadow-2xl,
-[data-display-mode="sobre"] .shadow-xl,
-[data-display-mode="sobre"] .shadow-lg {
-  box-shadow: none !important;
-}
-
-[data-display-mode="sobre"] .group:hover {
+/* Hover uniquement sur bordure */
+[data-display-mode="sobre"] .cmm-sober-hover:hover {
   transform: none !important;
+  box-shadow: none !important;
+  border-color: var(--text-primary) !important;
 }
 
-/* Mode Simplifie : Radical & Accessible */
-[data-display-mode="simplifie"] body {
-  background: white !important;
-  font-size: 110%; /* General boost */
-}
-
-[data-display-mode="simplifie"] .exhaustive-only,
-[data-display-mode="simplifie"] .sober-only,
-[data-display-mode="simplifie"] section:not(.core-feature) {
-  display: none !important;
-}
-
-[data-display-mode="simplifie"] .core-feature {
-  border: 4px solid #0f172a !important; /* Ultra high contrast */
-  border-radius: 0 !important; /* Functional over aesthetic */
-  margin-bottom: 2rem !important;
-  padding: 2.5rem !important;
-}
-
-[data-display-mode="simplifie"] button,
-[data-display-mode="simplifie"] .btn-primary {
-  font-size: 1.5rem !important;
-  padding: 1.5rem 2rem !important;
-  border-radius: 4px !important;
-}
-
-[data-display-mode="simplifie"] h1 {
-  font-size: 3rem !important;
-  font-weight: 900 !important;
-  letter-spacing: -0.05em !important;
+/* Focus visible uniquement */
+[data-display-mode="sobre"] .cmm-sober-focus:focus-visible {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 2px;
 }
 
 /* Profile-Specific Theming */
@@ -308,17 +712,202 @@ html.dark[data-display-mode="sobre"] .rounded-\[3rem\] {
   --profile-primary: 8 145 178; /* Cyan */
 }
 
-/* Global Override of Emerald-500 using the profile theme for brand elements */
-[data-user-profile] .bg-emerald-500 {
-  background-color: rgb(var(--profile-primary)) !important;
+/* Profile-specific accent - classe canonique au lieu d'override global des classes emerald */
+/* Utilisez .cmm-profile-accent pour appliquer la couleur du profil (supprime l'override destructif sur .bg-emerald-500) */
+.cmm-profile-bg {
+  background-color: rgb(var(--profile-primary));
 }
 
-[data-user-profile] .text-emerald-700 {
-  color: rgb(var(--profile-primary)) !important;
+.cmm-profile-text {
+  color: rgb(var(--profile-primary));
 }
 
-[data-user-profile] .border-emerald-500 {
-  border-color: rgb(var(--profile-primary)) !important;
+.cmm-profile-border {
+  border-color: rgb(var(--profile-primary));
+}
+
+/* Transition douce pour les éléments profile */
+.cmm-profile-accent {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* ============================================================
+   P3 POLISH - Accessibilité, densité mobile, typographie
+   ============================================================ */
+
+/* -----------------------------------------------------------
+   Accessibilité focus
+   ----------------------------------------------------------- */
+
+/* Focus visible cohérent pour tous les éléments interactifs */
+*:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Focus dans le mode sobre - plus visible */
+[data-display-mode="sobre"] *:focus-visible {
+  outline: 3px solid var(--text-primary);
+  outline-offset: 3px;
+}
+
+/* Suppression du focus pour les éléments non-interactifs */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Focus spécifique pour les cards cliquables */
+.cmm-clickable:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+  border-radius: inherit;
+}
+
+/* -----------------------------------------------------------
+   Typographie optimale
+   ----------------------------------------------------------- */
+
+/* Équilibrage du texte pour éviter les retours à la ligne inutiles */
+.cmm-text-balance {
+  text-wrap: balance;
+}
+
+/* Largeur de texte optimale (65-75 caractères) */
+.cmm-prose {
+  max-width: 65ch;
+}
+
+.cmm-prose-wide {
+  max-width: 75ch;
+}
+
+.cmm-prose-narrow {
+  max-width: 55ch;
+}
+
+/* Titres avec balance automatique */
+h1, h2, h3, h4 {
+  text-wrap: balance;
+}
+
+/* Empêcher les titres trop longs de créer des orphans */
+.cmm-heading {
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Description avec limite de lignes */
+.cmm-line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cmm-line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Whitespace pour pills et labels courts */
+.cmm-nowrap {
+  white-space: nowrap;
+}
+
+/* -----------------------------------------------------------
+   Densité mobile
+   ----------------------------------------------------------- */
+
+/* Espacement adaptatif selon la densité */
+.cmm-density-comfortable {
+  --space-unit: 1rem;
+}
+
+.cmm-density-compact {
+  --space-unit: 0.75rem;
+}
+
+/* Sur mobile, densité compacte automatique */
+@media (max-width: 640px) {
+  :root {
+    /* Échelle typographique mobile (ratio 1.2) */
+    --text-xs: 0.75rem;      /* 12px - inchangé */
+    --text-sm: 0.8125rem;    /* 13px - légèrement plus grand */
+    --text-base: 0.9375rem;  /* 15px - plus lisible */
+    --text-lg: 1.0625rem;    /* 17px */
+    --text-xl: 1.125rem;     /* 18px */
+    --text-2xl: 1.375rem;    /* 22px */
+    --text-3xl: 1.625rem;    /* 26px */
+    --text-4xl: 1.875rem;    /* 30px */
+    --text-5xl: 2.25rem;     /* 36px */
+    --text-6xl: 2.5rem;      /* 40px - réduit pour mobile */
+  }
+
+  .cmm-responsive-density {
+    --space-unit: 0.75rem;
+  }
+
+  /* Réduction des paddings sur mobile */
+  .cmm-mobile-compact {
+    padding: 0.75rem;
+  }
+
+  /* Typographie ajustée (déprécié: utiliser les tokens ci-dessus) */
+  .cmm-mobile-text {
+    font-size: var(--text-base);
+  }
+
+  /* Largeur de texte adaptée aux petits écrans */
+  .cmm-prose {
+    max-width: 100%;
+  }
+}
+
+/* -----------------------------------------------------------
+   États visuels cohérents
+   ----------------------------------------------------------- */
+
+/* Hover states subtils */
+.cmm-hover-lift {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cmm-hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Active states */
+.cmm-active-press:active {
+  transform: translateY(1px);
+}
+
+/* Disabled cohérent */
+.cmm-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* -----------------------------------------------------------
+   Réduction de mouvement (accessibilité)
+   ----------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .cmm-clickable:hover,
+  .cmm-hover-lift:hover {
+    transform: none !important;
+  }
 }
 
 /* Marker Cluster Basic Styles */

@@ -5,6 +5,8 @@ import {
   classifyPollutionColor,
   deriveMarkerCategories,
   isVisibleWithCategoryFilter,
+  resolveInfrastructureEmoji,
+  resolveInfrastructureNeed,
 } from "./map-marker-categories";
 
 function buildItem(partial: Partial<ActionMapItem>): ActionMapItem {
@@ -29,6 +31,7 @@ describe("map marker categories", () => {
     expect(DEFAULT_VISIBLE_CATEGORIES.blue).toBe(true);
     expect(DEFAULT_VISIBLE_CATEGORIES.ashtray).toBe(true);
     expect(DEFAULT_VISIBLE_CATEGORIES.bin).toBe(true);
+    expect(DEFAULT_VISIBLE_CATEGORIES.combo).toBe(true);
   });
 
   it("classifies pollution color with defined thresholds", () => {
@@ -48,13 +51,25 @@ describe("map marker categories", () => {
     ).toBe("blue");
   });
 
-  it("adds ashtray/bin markers when relevant", () => {
+  it("adds a combo marker when both infrastructure thresholds are exceeded", () => {
     const categories = deriveMarkerCategories(
-      buildItem({ waste_kg: 20, cigarette_butts: 800 }),
+      buildItem({ waste_kg: 18, cigarette_butts: 1800 }),
     );
-    expect(categories).toContain("yellow");
-    expect(categories).toContain("ashtray");
-    expect(categories).toContain("bin");
+    expect(categories).toContain("violet");
+    expect(categories).toContain("combo");
+  });
+
+  it("derives infrastructure needs from normalized component scores", () => {
+    expect(resolveInfrastructureNeed(buildItem({ waste_kg: 16, cigarette_butts: 0 }))).toBe("bin");
+    expect(resolveInfrastructureNeed(buildItem({ waste_kg: 0, cigarette_butts: 1500 }))).toBe("ashtray");
+    expect(resolveInfrastructureNeed(buildItem({ waste_kg: 18, cigarette_butts: 1800 }))).toBe("combo");
+    expect(resolveInfrastructureNeed(buildItem({ waste_kg: 2, cigarette_butts: 100 }))).toBeNull();
+  });
+
+  it("maps infrastructure needs to explicit emojis", () => {
+    expect(resolveInfrastructureEmoji(buildItem({ waste_kg: 16, cigarette_butts: 0 }))).toBe("🗑️");
+    expect(resolveInfrastructureEmoji(buildItem({ waste_kg: 0, cigarette_butts: 1500 }))).toBe("🚬");
+    expect(resolveInfrastructureEmoji(buildItem({ waste_kg: 18, cigarette_butts: 1800 }))).toBe("💰");
   });
 
   it("applies visibility filter from toggles", () => {

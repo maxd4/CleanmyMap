@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { CmmCard, CmmPageShell } from "@/components/ui/cmm-card";
+import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 
 type TemplateAction = {
   href: string;
@@ -21,67 +22,81 @@ type PageReadingTemplateProps = {
   trace: ReactNode;
 };
 
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+      {children}
+    </p>
+  );
+}
+
+function ContextLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 [data-display-mode='simplifie']_&:text-slate-900">
+      {children}
+    </p>
+  );
+}
+
 export function PageReadingTemplate(props: PageReadingTemplateProps) {
   const { locale } = useSitePreferences();
   const isFrench = locale === "fr";
 
   return (
-    <div data-rubrique-report-root className="space-y-4">
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm core-feature">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 [data-display-mode='simplifie']_&:hidden">
-          {isFrench ? "Pourquoi je suis ici" : "Why am I here"}
-        </p>
-        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 [data-display-mode='simplifie']_&:text-slate-900">
-          {props.context}
-        </p>
+    <CmmPageShell data-rubrique-report-root>
+      {/* Header */}
+      <CmmCard tone="slate" variant="elevated" size="lg" className="core-feature">
+        <div className="[data-display-mode='simplifie']_&:hidden">
+          <SectionLabel>{isFrench ? "Pourquoi je suis ici" : "Why am I here"}</SectionLabel>
+        </div>
+        <ContextLabel>{props.context}</ContextLabel>
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">
           {props.title}
         </h1>
         <p className="mt-2 text-sm text-slate-600 font-medium">{props.objective}</p>
-      </section>
+      </CmmCard>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm [data-display-mode='simplifie']_&:hidden">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          {isFrench ? "Résumer" : "Summarize"}
-        </p>
+      {/* Summary */}
+      <CmmCard tone="slate" className="[data-display-mode='simplifie']_&:hidden">
+        <SectionLabel>{isFrench ? "Résumer" : "Summarize"}</SectionLabel>
         <div className="mt-2">{props.summary}</div>
-      </section>
+      </CmmCard>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm core-feature">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 [data-display-mode='simplifie']_&:hidden">
-          {isFrench ? "Agir" : "Act"}
-        </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <Link
+      {/* Actions */}
+      <CmmCard tone="emerald" className="core-feature">
+        <div className="[data-display-mode='simplifie']_&:hidden">
+          <SectionLabel>{isFrench ? "Agir" : "Act"}</SectionLabel>
+        </div>
+        <CmmButtonGroup className="mt-2">
+          <CmmButton
             href={props.primaryAction.href}
-            className="inline-flex rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900 hover:bg-emerald-100"
+            tone="primary"
+            variant={props.primaryAction.tone === "primary" ? "default" : "default"}
           >
             {props.primaryAction.label}
-          </Link>
+          </CmmButton>
           {props.secondaryAction ? (
-            <Link
+            <CmmButton
               href={props.secondaryAction.href}
-              className="inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              tone="secondary"
             >
               {props.secondaryAction.label}
-            </Link>
+            </CmmButton>
           ) : null}
-        </div>
-      </section>
+        </CmmButtonGroup>
+      </CmmCard>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          {isFrench ? "Analyser" : "Analyze"}
-        </p>
+      {/* Analysis */}
+      <CmmCard tone="sky">
+        <SectionLabel>{isFrench ? "Analyser" : "Analyze"}</SectionLabel>
         <div className="mt-2 space-y-4">{props.analysis}</div>
-      </section>
+      </CmmCard>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          {isFrench ? "Tracer" : "Trace"}
-        </p>
+      {/* Trace */}
+      <CmmCard tone="amber">
+        <SectionLabel>{isFrench ? "Tracer" : "Trace"}</SectionLabel>
         <div className="mt-2">{props.trace}</div>
-      </section>
-    </div>
+      </CmmCard>
+    </CmmPageShell>
   );
 }

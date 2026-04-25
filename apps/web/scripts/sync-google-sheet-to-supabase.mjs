@@ -4,6 +4,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 import { createClient } from "@supabase/supabase-js";
+import { computeButtsFromMegotsKg } from "./lib/sheet-ingestion-core.mjs";
+import { resolveBestGeometry } from "../src/lib/actions/geometry-resolution.ts";
 
 const APP_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const ACTIONS_IMPORT_PATH = join(
@@ -27,6 +29,14 @@ const SYSTEM_USER_ID_DEFAULT = "system:google_sheet_sync";
 const ALLOWED_ACTION_STATUSES = new Set(["pending", "approved", "rejected"]);
 const ALLOWED_SPOT_STATUSES = new Set(["new", "validated", "cleaned"]);
 const BATCH_SIZE = 500;
+const GEOMETRY_CONFIDENCE = {
+  MANUAL_DRAWING: 1,
+  IMPORTED_ROUTE: 0.78,
+  SYNTHETIC_ROUTE: 0.58,
+  LABEL_POLYGON: 0.52,
+  COORDINATE_ELLIPSE: 0.44,
+  POINT_FALLBACK: 0.24,
+};
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -238,72 +248,288 @@ function normalizeSpotStatus(value) {
   return "validated";
 }
 
+function serializeDrawingGeoJson(drawing) {
+  if (
+    !drawing ||
+    !Array.isArray(drawing.coordinates) ||
+    (drawing.kind !== "polyline" && drawing.kind !== "polygon")
+  ) {
+    return null;
+  }
+  if (drawing.kind === "polyline") {
+    return JSON.stringify({
+      type: "LineString",
+      coordinates: drawing.coordinates.map(([lat, lng]) => [lng, lat]),
+    });
+  }
+  return JSON.stringify({
+    type: "Polygon",
+    coordinates: [drawing.coordinates.map(([lat, lng]) => [lng, lat])],
+  });
+}
+
+function metersToLatitudeDelta(meters) {
+  return meters / 111_320;
+}
+
+function metersToLongitudeDelta(meters, latitude) {
+  const radius = Math.max(0.1, Math.cos((latitude * Math.PI) / 180));
+  return meters / (111_320 * radius);
+}
+
+function normalizeLabel(value) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function hasPreciseLocationLabel(value) {
+  const label = normalizeLabel(value);
+  if (label.length < 10) {
+    return false;
+  }
+  const lowered = label.toLowerCase();
+  if (/\b\d{5}\b/.test(label) || /\b\d+[a-z]?\b/i.test(label)) {
+    return true;
+  }
+  if (label.includes(",") || label.includes("→")) {
+    return true;
+  }
+  return [
+    "rue",
+    "avenue",
+    "av.",
+    "boulevard",
+    "bd",
+    "place",
+    "pl.",
+    "quai",
+    "impasse",
+    "allée",
+    "allee",
+    "villa",
+    "jardin",
+    "parc",
+    "école",
+    "ecole",
+    "mairie",
+    "porte",
+  ].some((token) => lowered.includes(token));
+}
+
+function buildEllipsePolygon(latitude, longitude, radiusMetersX, radiusMetersY) {
+  const coordinates = [];
+  const steps = 12;
+  for (let index = 0; index < steps; index += 1) {
+    const angle = (Math.PI * 2 * index) / steps;
+    const latOffset = metersToLatitudeDelta(radiusMetersY * Math.sin(angle));
+    const lngOffset = metersToLongitudeDelta(
+      radiusMetersX * Math.cos(angle),
+      latitude,
+    );
+    coordinates.push([
+      Number((latitude + latOffset).toFixed(6)),
+      Number((longitude + lngOffset).toFixed(6)),
+    ]);
+  }
+  return {
+    kind: "polygon",
+    coordinates,
+  };
+}
+
+function buildSyntheticRoute(latitude, longitude, routeStyle) {
+  const reachMeters = routeStyle === "direct" ? 120 : 180;
+  const latDelta = metersToLatitudeDelta(routeStyle === "direct" ? 20 : 55);
+  const lngDelta = metersToLongitudeDelta(reachMeters, latitude);
+  return {
+    kind: "polyline",
+    coordinates: [
+      [
+        Number((latitude - latDelta).toFixed(6)),
+        Number((longitude - lngDelta).toFixed(6)),
+      ],
+      [latitude, longitude],
+      [
+        Number((latitude + latDelta).toFixed(6)),
+        Number((longitude + lngDelta).toFixed(6)),
+      ],
+    ],
+  };
+}
+
+function deriveFallbackDrawing(item) {
+  const latitude = Number(item.latitude);
+  const longitude = Number(item.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+  const departureLocationLabel = normalizeLabel(item.departureLocationLabel);
+  const arrivalLocationLabel = normalizeLabel(item.arrivalLocationLabel);
+  const anchorLabel =
+    normalizeLabel(item.locationLabel) ||
+    departureLocationLabel ||
+    arrivalLocationLabel;
+
+  if (departureLocationLabel && arrivalLocationLabel) {
+    return {
+      drawing: buildSyntheticRoute(latitude, longitude, item.routeStyle),
+      confidence: GEOMETRY_CONFIDENCE.SYNTHETIC_ROUTE,
+    };
+  }
+
+  if (hasPreciseLocationLabel(anchorLabel)) {
+    return {
+      drawing: buildEllipsePolygon(latitude, longitude, 85, 55),
+      confidence: GEOMETRY_CONFIDENCE.LABEL_POLYGON,
+    };
+  }
+
+  return {
+    drawing: buildEllipsePolygon(latitude, longitude, 110, 72),
+    confidence: GEOMETRY_CONFIDENCE.COORDINATE_ELLIPSE,
+  };
+}
+
 function buildActionRows(items, systemUserId) {
-  return items.map((item) => ({
-    created_by_clerk_id: systemUserId,
-    actor_name:
-      typeof item.actorName === "string" && item.actorName.trim().length > 0
-        ? item.actorName.trim().slice(0, 200)
-        : "Google Sheet",
-    action_date: item.actionDate,
-    location_label: String(item.locationLabel ?? "").trim().slice(0, 255),
-    latitude:
-      typeof item.latitude === "number" && Number.isFinite(item.latitude)
-        ? item.latitude
-        : null,
-    longitude:
-      typeof item.longitude === "number" && Number.isFinite(item.longitude)
-        ? item.longitude
-        : null,
-    waste_kg: Number.isFinite(Number(item.wasteKg)) ? Number(item.wasteKg) : 0,
-    cigarette_butts: Math.max(
+  return items.map((item) => {
+    const manualDrawing =
+      item.manualDrawing &&
+      Array.isArray(item.manualDrawing.coordinates) &&
+      ((item.manualDrawing.kind === "polygon" &&
+        item.manualDrawing.coordinates.length >= 3) ||
+        (item.manualDrawing.kind === "polyline" &&
+          item.manualDrawing.coordinates.length >= 2))
+        ? item.manualDrawing
+        : null;
+    const geometry = resolveBestGeometry({
+      drawing: manualDrawing,
+      geojson: manualDrawing ? serializeDrawingGeoJson(manualDrawing) : null,
+      confidence:
+        typeof item.geometryConfidence === "number" &&
+        Number.isFinite(item.geometryConfidence)
+          ? item.geometryConfidence
+          : manualDrawing
+            ? GEOMETRY_CONFIDENCE.MANUAL_DRAWING
+            : GEOMETRY_CONFIDENCE.POINT_FALLBACK,
+      geometrySourceHint:
+        item.geometrySource ??
+        (manualDrawing ? "manual" : null),
+      latitude:
+        typeof item.latitude === "number" && Number.isFinite(item.latitude)
+          ? item.latitude
+          : null,
+      longitude:
+        typeof item.longitude === "number" && Number.isFinite(item.longitude)
+          ? item.longitude
+          : null,
+      locationLabel: typeof item.locationLabel === "string" ? item.locationLabel : null,
+      departureLocationLabel:
+        typeof item.departureLocationLabel === "string"
+          ? item.departureLocationLabel
+          : null,
+      arrivalLocationLabel:
+        typeof item.arrivalLocationLabel === "string"
+          ? item.arrivalLocationLabel
+          : null,
+      routeStyle:
+        item.routeStyle === "direct" || item.routeStyle === "souple"
+          ? item.routeStyle
+          : null,
+    });
+    const explicitButts = Number(item.cigaretteButts);
+    const derivedButts =
+      Number.isFinite(Number(item.megotsKg)) && Number(item.megotsKg) > 0
+        ? computeButtsFromMegotsKg(
+            item.megotsKg,
+            typeof item.megotsQuality === "string" ? item.megotsQuality : "",
+          )
+        : 0;
+    const cigaretteButts = Math.max(
       0,
-      Math.trunc(
-        Number.isFinite(Number(item.cigaretteButts))
-          ? Number(item.cigaretteButts)
-          : 0,
+      Math.trunc(explicitButts > 0 ? explicitButts : derivedButts),
+    );
+    return {
+      created_by_clerk_id: systemUserId,
+      actor_name:
+        typeof item.actorName === "string" && item.actorName.trim().length > 0
+          ? item.actorName.trim().slice(0, 200)
+          : "Google Sheet",
+      action_date: item.actionDate,
+      location_label: String(item.locationLabel ?? "").trim().slice(0, 255),
+      latitude:
+        typeof item.latitude === "number" && Number.isFinite(item.latitude)
+          ? item.latitude
+          : null,
+      longitude:
+        typeof item.longitude === "number" && Number.isFinite(item.longitude)
+          ? item.longitude
+          : null,
+      derived_geometry_kind: geometry.kind,
+      derived_geometry_geojson: geometry.geojson,
+      geometry_confidence: geometry.confidence,
+      geometry_source: geometry.geometrySource,
+      waste_kg: Number.isFinite(Number(item.wasteKg)) ? Number(item.wasteKg) : 0,
+      cigarette_butts: cigaretteButts,
+      volunteers_count: Math.max(
+        1,
+        Math.trunc(
+          Number.isFinite(Number(item.volunteersCount))
+            ? Number(item.volunteersCount)
+            : 1,
+        ),
       ),
-    ),
-    volunteers_count: Math.max(
-      1,
-      Math.trunc(
-        Number.isFinite(Number(item.volunteersCount))
-          ? Number(item.volunteersCount)
-          : 1,
+      duration_minutes: Math.max(
+        1,
+        Math.trunc(
+          Number.isFinite(Number(item.durationMinutes))
+            ? Number(item.durationMinutes)
+            : 60,
+        ),
       ),
-    ),
-    duration_minutes: Math.max(
-      1,
-      Math.trunc(
-        Number.isFinite(Number(item.durationMinutes))
-          ? Number(item.durationMinutes)
-          : 60,
-      ),
-    ),
-    notes: composeActionNotes(item),
-    status: normalizeActionStatus(item.status),
-  }));
+      notes: composeActionNotes(item),
+      status: normalizeActionStatus(item.status),
+    };
+  });
 }
 
 function buildSpotRows(items, systemUserId) {
-  return items.map((item) => ({
-    created_by_clerk_id: systemUserId,
-    label: String(item.label ?? "").trim().slice(0, 255),
-    waste_type:
-      typeof item.type === "string" && item.type.trim() === "spot"
-        ? "spot"
-        : "clean_place",
-    latitude:
-      typeof item.latitude === "number" && Number.isFinite(item.latitude)
-        ? item.latitude
-        : null,
-    longitude:
-      typeof item.longitude === "number" && Number.isFinite(item.longitude)
-        ? item.longitude
-        : null,
-    status: normalizeSpotStatus(item.status),
-    notes: `${typeof item.notes === "string" ? item.notes.trim() : ""}\n${SYNC_MARKER}`.trim(),
-  }));
+  return items.map((item) => {
+    const geometry = resolveBestGeometry({
+      latitude:
+        typeof item.latitude === "number" && Number.isFinite(item.latitude)
+          ? item.latitude
+          : null,
+      longitude:
+        typeof item.longitude === "number" && Number.isFinite(item.longitude)
+          ? item.longitude
+          : null,
+      locationLabel: typeof item.label === "string" ? item.label : null,
+      departureLocationLabel: null,
+      arrivalLocationLabel: null,
+      routeStyle: null,
+    });
+    return {
+      created_by_clerk_id: systemUserId,
+      label: String(item.label ?? "").trim().slice(0, 255),
+      waste_type:
+        typeof item.type === "string" && item.type.trim() === "spot"
+          ? "spot"
+          : "clean_place",
+      latitude:
+        typeof item.latitude === "number" && Number.isFinite(item.latitude)
+          ? item.latitude
+          : null,
+      longitude:
+        typeof item.longitude === "number" && Number.isFinite(item.longitude)
+          ? item.longitude
+          : null,
+      derived_geometry_kind: geometry.kind,
+      derived_geometry_geojson: geometry.geojson,
+      geometry_confidence: geometry.confidence,
+      geometry_source: geometry.geometrySource,
+      status: normalizeSpotStatus(item.status),
+      notes: `${typeof item.notes === "string" ? item.notes.trim() : ""}\n${SYNC_MARKER}`.trim(),
+    };
+  });
 }
 
 async function deletePreviousSyncRows(supabase, systemUserId) {

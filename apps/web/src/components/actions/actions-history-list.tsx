@@ -4,7 +4,11 @@ import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
 import { evaluateActionQuality } from "@/lib/actions/quality";
-import { mapItemWasteKg, mapItemCigaretteButts } from "@/lib/actions/data-contract";
+import {
+  getActionOperationalContext,
+  mapItemWasteKg,
+  mapItemCigaretteButts,
+} from "@/lib/actions/data-contract";
 import type {
   ActionListItem,
   ActionQualityGrade,
@@ -141,6 +145,9 @@ export function ActionsHistoryList() {
   const selectedQuality = selectedItem
     ? (qualityById.get(selectedItem.id) ?? null)
     : null;
+  const selectedOperational = selectedItem?.contract
+    ? getActionOperationalContext(selectedItem.contract)
+    : null;
   const selectedLostPoints = selectedQuality
     ? Math.max(0, 100 - selectedQuality.score)
     : 0;
@@ -276,6 +283,35 @@ export function ActionsHistoryList() {
           <p className="mt-1 text-xs text-slate-600">
             Action corrective recommandee: {correctiveAction}
           </p>
+          {selectedOperational ? (
+            <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Contexte métier
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
+                  {selectedOperational.placeTypeLabel}
+                </span>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
+                  {selectedOperational.routeStyleLabel}
+                </span>
+                <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-semibold text-sky-800">
+                  {selectedOperational.volunteersCount} bénévoles
+                </span>
+                <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-800">
+                  {selectedOperational.durationMinutes} min
+                </span>
+                <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                  {selectedOperational.engagementHours} h-personnes
+                </span>
+              </div>
+              {selectedOperational.routeAdjustmentMessage ? (
+                <p className="mt-2 text-xs text-slate-600">
+                  Ajustement trajet: {selectedOperational.routeAdjustmentMessage}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ) : null}
 

@@ -84,10 +84,10 @@ export function ImpactCard({
       {/* Logo footer */}
       <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center space-y-1">
         <Image
-          src="/brand/nouveau-logo.png"
+          src="/brand/pictogramme-cleanmymap.svg"
           alt="Logo CleanMyMap"
           width={54}
-          height={30}
+          height={54}
           className="h-6 w-auto opacity-55"
           priority
         />

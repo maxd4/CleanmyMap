@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-23T09:52:47.187Z",
+  "updatedAt": "2026-04-24T07:54:03.634Z",
   "records": [
     {
-      "id": "real_action_b456db13e31c8c83",
+      "id": "real_action_01",
       "recordType": "action",
       "status": "validated",
       "source": "google_sheet",
@@ -28,14 +28,46 @@
         "lon": 2.3948421
       },
       "trace": {
-        "externalId": "real_action_b456db13e31c8c83",
+        "externalId": "real_action_01",
         "originTable": "google_sheet",
-        "importedAt": "2026-04-23T09:52:47.187Z",
+        "importedAt": "2026-04-24T07:54:03.634Z",
         "notes": "[cmm-meta]{\"associationName\":\"La Brigade Verte Paris\",\"placeType\":\"Rue/Allée/Villa/Ruelle/Impasse\",\"departureLocationLabel\":\"Mairie du 20ᵉ arrondissement de Paris, 6 Pl. Gambetta, 75020 Paris\",\"arrivalLocationLabel\":\"Pl. Martin Nadaud, 75020 Paris\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}\n[google-sheet-sync]"
       }
     },
     {
-      "id": "real_action_6e5ce31facde8b1b",
+      "id": "real_action_02",
+      "recordType": "action",
+      "status": "validated",
+      "source": "google_sheet",
+      "title": "Studio Ferber, 6 Rue Pierre Mouillard, 75020 Paris → Pl. Saint-Fargeau, 75020 Paris",
+      "description": "[cmm-meta]{\"associationName\":\"La Brigade Verte Paris\",\"placeType\":\"Rue/Allée/Villa/Ruelle/Impasse\",\"departureLocationLabel\":\"Studio Ferber, 6 Rue Pierre Mouillard, 75020 Paris\",\"arrivalLocationLabel\":\"Pl. Saint-Fargeau, 75020 Paris\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}\n[google-sheet-sync]",
+      "location": {
+        "label": "Studio Ferber, 6 Rue Pierre Mouillard, 75020 Paris → Pl. Saint-Fargeau, 75020 Paris",
+        "city": "Paris",
+        "latitude": 48.8723545,
+        "longitude": 2.4043564
+      },
+      "eventDate": "2026-03-06",
+      "metrics": {
+        "wasteKg": 0,
+        "cigaretteButts": 0,
+        "volunteersCount": 10,
+        "durationMinutes": 90
+      },
+      "map": {
+        "displayable": true,
+        "lat": 48.8723545,
+        "lon": 2.4043564
+      },
+      "trace": {
+        "externalId": "real_action_02",
+        "originTable": "google_sheet",
+        "importedAt": "2026-04-24T07:54:03.634Z",
+        "notes": "[cmm-meta]{\"associationName\":\"La Brigade Verte Paris\",\"placeType\":\"Rue/Allée/Villa/Ruelle/Impasse\",\"departureLocationLabel\":\"Studio Ferber, 6 Rue Pierre Mouillard, 75020 Paris\",\"arrivalLocationLabel\":\"Pl. Saint-Fargeau, 75020 Paris\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}\n[google-sheet-sync]"
+      }
+    },
+    {
+      "id": "real_action_03",
       "recordType": "action",
       "status": "validated",
       "source": "google_sheet",
@@ -49,7 +81,7 @@
       },
       "eventDate": "2026-03-21",
       "metrics": {
-        "wasteKg": 0,
+        "wasteKg": 20,
         "cigaretteButts": 0,
         "volunteersCount": 20,
         "durationMinutes": 90
@@ -60,14 +92,14 @@
         "lon": 2.4064184
       },
       "trace": {
-        "externalId": "real_action_6e5ce31facde8b1b",
+        "externalId": "real_action_03",
         "originTable": "google_sheet",
-        "importedAt": "2026-04-23T09:52:47.187Z",
+        "importedAt": "2026-04-24T07:54:03.634Z",
         "notes": "[cmm-meta]{\"associationName\":\"La Brigade Verte Paris\",\"placeType\":\"Rue/Allée/Villa/Ruelle/Impasse\",\"departureLocationLabel\":\"Porte des Lilas, 75020 Paris\",\"arrivalLocationLabel\":\"Jardin Serge Gainsbourg, 9 Av. de la Prte des Lilas, 75019 Paris\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}\n[google-sheet-sync]"
       }
     },
     {
-      "id": "real_action_6199c2cad3482664",
+      "id": "real_action_04",
       "recordType": "action",
       "status": "validated",
       "source": "google_sheet",
@@ -92,14 +124,14 @@
         "lon": 2.4091438
       },
       "trace": {
-        "externalId": "real_action_6199c2cad3482664",
+        "externalId": "real_action_04",
         "originTable": "google_sheet",
-        "importedAt": "2026-04-23T09:52:47.187Z",
+        "importedAt": "2026-04-24T07:54:03.634Z",
         "notes": "[cmm-meta]{\"associationName\":\"La Brigade Verte Paris\",\"placeType\":\"Rue/Allée/Villa/Ruelle/Impasse\",\"departureLocationLabel\":\"Ecole élémentaire Pierre Foncin (Ecole A), 8 Rue Pierre Foncin, 75020 Paris\",\"arrivalLocationLabel\":\"Saveurs en Partage, 38 Bd Mortier, 75020 Paris\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}\n[google-sheet-sync]"
       }
     },
     {
-      "id": "real_action_145db6e6efc81539",
+      "id": "real_action_05",
       "recordType": "action",
       "status": "validated",
       "source": "google_sheet",
@@ -113,7 +145,7 @@
       },
       "eventDate": "2026-04-22",
       "metrics": {
-        "wasteKg": 0,
+        "wasteKg": 20,
         "cigaretteButts": 0,
         "volunteersCount": 10,
         "durationMinutes": 60
@@ -124,9 +156,9 @@
         "lon": 2.375222
       },
       "trace": {
-        "externalId": "real_action_145db6e6efc81539",
+        "externalId": "real_action_05",
         "originTable": "google_sheet",
-        "importedAt": "2026-04-23T09:52:47.187Z",
+        "importedAt": "2026-04-24T07:54:03.634Z",
         "notes": "[cmm-meta]{\"associationName\":\"La Brigade Verte Paris\",\"placeType\":\"Rue/Allée/Villa/Ruelle/Impasse\",\"departureLocationLabel\":\"Rue Jacques Louvel-Tessier, 75010 Paris\",\"arrivalLocationLabel\":\"Rue Marguerite Moret, 75011 Paris\",\"routeStyle\":\"souple\",\"routeAdjustmentMessage\":\"Itinéraire reconstitué depuis les colonnes Départ / Arrivée\"}\n[google-sheet-sync]\n[DRAWING_GEOJSON]{\"kind\":\"polyline\",\"coordinates\":[[48.8715141,2.371046],[48.869332,2.375217],[48.8671692,2.3793982]]}"
       }
     }

@@ -246,7 +246,7 @@ export function PlanetaryBoundariesInteractive() {
       <div className="text-center space-y-4">
         <h2 className="text-3xl font-black text-slate-900">Les 9 Limites Planétaires</h2>
         <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-          Le concept des limites planétaires définit les seuils au-delà desquels l'humanité risque de
+          Le concept des limites planétaires définit les seuils au-delà desquels l&apos;humanité risque de
           compromettre les conditions de vie sur Terre. Développé par le Stockholm Resilience Centre.
         </p>
       </div>

@@ -1,0 +1,124 @@
+- generic [active] [ref=e1]:
+  - main [ref=e7]:
+    - generic [ref=e8]:
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - generic [ref=e18]: Communauté
+          - img "Logo officiel CleanMyMap" [ref=e20]
+          - generic [ref=e22]: Impact local
+        - generic [ref=e23]:
+          - paragraph [ref=e24]: Cleaner Maps, Better Communities
+          - heading "Agir - Cartographier - Préserver" [level=1] [ref=e25]
+          - paragraph [ref=e26]: Reprenez le Contrôle de Votre Territoire.
+          - paragraph [ref=e27]: Navigue librement, découvre les ressources publiques et génère un livrable sans compte. La connexion Clerk n'intervient que pour les fonctionnalités qui utilisent ton profil.
+          - generic [ref=e28]:
+            - generic [ref=e30]:
+              - generic [ref=e31]:
+                - generic:
+                  - img
+                - combobox "Choisir la langue" [ref=e32] [cursor=pointer]:
+                  - option "FR" [selected]
+                  - option "EN"
+              - button "Changer le thème" [ref=e34]:
+                - img [ref=e35]
+              - generic [ref=e42]:
+                - generic:
+                  - img
+                - combobox "Choisir le mode d'affichage" [ref=e43] [cursor=pointer]:
+                  - option "Exhaustif" [selected]
+                  - option "Sobre"
+                  - option "Simplifié"
+            - paragraph [ref=e44]: Préférences d'affichage instantanées
+          - generic [ref=e45]:
+            - link "Se connecter" [ref=e46] [cursor=pointer]:
+              - /url: /sign-in
+              - text: Se connecter
+              - img [ref=e47]
+            - link "Consulter la carte" [ref=e49] [cursor=pointer]:
+              - /url: /actions/map
+              - text: Consulter la carte
+              - img [ref=e50]
+            - link "Déclarer une action" [ref=e52] [cursor=pointer]:
+              - /url: /actions/new
+              - text: Déclarer une action
+              - img [ref=e53]
+            - link "Générer un rapport d'impact" [ref=e55] [cursor=pointer]:
+              - /url: /reports
+              - text: Générer un rapport d'impact
+              - img [ref=e56]
+      - generic [ref=e59]:
+        - generic [ref=e60]:
+          - generic [ref=e61]:
+            - heading "0.0 kg" [level=3] [ref=e62]
+            - paragraph [ref=e63]: Masse de déchets récoltés
+          - generic [ref=e64]:
+            - heading "0 mégots" [level=3] [ref=e65]
+            - paragraph [ref=e66]: Mégots retirés
+          - generic [ref=e67]:
+            - heading "65 bénévoles" [level=3] [ref=e68]
+            - paragraph [ref=e69]: Bénévoles mobilisés
+          - generic [ref=e70]:
+            - heading "0.0 kg CO2" [level=3] [ref=e71]
+            - paragraph [ref=e72]: CO2 évité
+          - generic [ref=e73]:
+            - heading "0 L" [level=3] [ref=e74]
+            - paragraph [ref=e75]: Eau préservée
+          - generic [ref=e76]:
+            - heading "0 €" [level=3] [ref=e77]
+            - paragraph [ref=e78]: Économie de voirie
+        - link "Voir méthodologie" [ref=e79] [cursor=pointer]:
+          - /url: /methodologie
+      - generic [ref=e80]:
+        - generic [ref=e81]:
+          - heading "Comment ça marche ?" [level=2] [ref=e82]
+          - paragraph [ref=e83]: Une mécanique simple pour un impact territorial massif.
+        - generic [ref=e84]:
+          - generic [ref=e85]:
+            - img [ref=e87]
+            - heading "Signaler" [level=3] [ref=e90]
+            - paragraph [ref=e91]: Marquez les hotspots de pollution sur la carte pour déclencher des interventions.
+          - generic [ref=e92]:
+            - img [ref=e94]
+            - heading "Collecter" [level=3] [ref=e97]
+            - paragraph [ref=e98]: Rejoignez ou organisez des événements de ramassage. Identifiez les types de déchets.
+          - generic [ref=e99]:
+            - img [ref=e101]
+            - heading "Valoriser" [level=3] [ref=e104]
+            - paragraph [ref=e105]: Générez des certificats d'impact et participez à l'intelligence environnementale.
+          - generic [ref=e106]:
+            - img [ref=e108]
+            - heading "Carte commune" [level=3] [ref=e112]
+            - paragraph [ref=e113]: Consultez la carte partagée pour visualiser les actions, les zones couvertes et les points utiles.
+          - generic [ref=e114]:
+            - img [ref=e116]
+            - heading "Bloc apprendre" [level=3] [ref=e119]
+            - paragraph [ref=e120]: Retrouvez les contenus d'aide, les repères méthodologiques et les parcours pour monter en compétence.
+          - generic [ref=e121]:
+            - img [ref=e123]
+            - heading "Chemins IA" [level=3] [ref=e125]
+            - paragraph [ref=e126]: Laissez l'IA proposer des trajets, boucles et itinéraires adaptés au terrain et aux contraintes du moment.
+          - generic [ref=e127]:
+            - img [ref=e129]
+            - heading "Partenaires" [level=3] [ref=e134]
+            - paragraph [ref=e135]: Accédez à l'annuaire des partenaires, relais locaux et lieux utiles pour agir à plusieurs.
+          - generic [ref=e136]:
+            - img [ref=e138]
+            - heading "Formulaire" [level=3] [ref=e141]
+            - paragraph [ref=e142]: Déclarez une action, un spot ou un besoin avec les champs métiers déjà structurés dans le site.
+          - generic [ref=e143]:
+            - img [ref=e145]
+            - heading "Espace discussion" [level=3] [ref=e147]
+            - paragraph [ref=e148]: Échangez avec la communauté pour coordonner, relayer les besoins et suivre les retours terrain.
+          - generic [ref=e149]:
+            - img [ref=e151]
+            - heading "Parcours guidés" [level=3] [ref=e155]
+            - paragraph [ref=e156]: Naviguez entre déclaration, carte, apprentissage et rapports sans perdre le fil du parcours.
+      - generic [ref=e157]:
+        - generic [ref=e159]:
+          - generic [ref=e160]: Agir-
+          - generic [ref=e161]: Cartographier-
+          - generic [ref=e162]: Préserver
+        - paragraph [ref=e163]: © 2026 CleanMyMap. Le futur de l'engagement environnemental.
+  - button "Open Next.js Dev Tools" [ref=e169] [cursor=pointer]:
+    - img [ref=e170]
+  - alert [ref=e175]
