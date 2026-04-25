@@ -8,6 +8,27 @@
       "arrivalLocationLabel": "Pl. Martin Nadaud, 75020 Paris",
       "routeStyle": "souple",
       "routeAdjustmentMessage": "Itinéraire reconstitué depuis les colonnes Départ / Arrivée",
+      "manualDrawing": {
+        "kind": "polyline",
+        "coordinates": [
+          [
+            48.864464,
+            2.392384
+          ],
+          [
+            48.8649577,
+            2.3948421
+          ],
+          [
+            48.865452,
+            2.3973
+          ]
+        ]
+      },
+      "derivedGeometryKind": "polyline",
+      "derivedGeometryGeoJson": "{\"type\":\"LineString\",\"coordinates\":[[2.392384,48.864464],[2.3948421,48.8649577],[2.3973,48.865452]]}",
+      "geometryConfidence": 0.58,
+      "geometrySource": "routed",
       "placeType": "Rue/Allée/Villa/Ruelle/Impasse",
       "cleanPlaceFlag": false,
       "megotsKg": null,
@@ -22,17 +43,79 @@
     },
     {
       "associationName": "La Brigade Verte Paris",
+      "actionDate": "2026-03-06",
+      "locationLabel": "Studio Ferber, 6 Rue Pierre Mouillard, 75020 Paris → Pl. Saint-Fargeau, 75020 Paris",
+      "departureLocationLabel": "Studio Ferber, 6 Rue Pierre Mouillard, 75020 Paris",
+      "arrivalLocationLabel": "Pl. Saint-Fargeau, 75020 Paris",
+      "routeStyle": "souple",
+      "routeAdjustmentMessage": "Itinéraire reconstitué depuis les colonnes Départ / Arrivée",
+      "manualDrawing": {
+        "kind": "polyline",
+        "coordinates": [
+          [
+            48.871002,
+            2.401535
+          ],
+          [
+            48.8714957,
+            2.4039938
+          ],
+          [
+            48.87199,
+            2.406452
+          ]
+        ]
+      },
+      "derivedGeometryKind": "polyline",
+      "derivedGeometryGeoJson": "{\"type\":\"LineString\",\"coordinates\":[[2.401535,48.871002],[2.4039938,48.8714957],[2.406452,48.87199]]}",
+      "geometryConfidence": 0.58,
+      "geometrySource": "routed",
+      "placeType": "Rue/Allée/Villa/Ruelle/Impasse",
+      "cleanPlaceFlag": false,
+      "megotsKg": null,
+      "latitude": 48.8714957,
+      "longitude": 2.4039938,
+      "wasteKg": 0,
+      "cigaretteButts": 0,
+      "volunteersCount": 10,
+      "durationMinutes": 90,
+      "notes": "Type de lieu: Rue/Allée/Villa/Ruelle/Impasse | Lieu propre: non",
+      "status": "approved"
+    },
+    {
+      "associationName": "La Brigade Verte Paris",
       "actionDate": "2026-03-21",
       "locationLabel": "Porte des Lilas, 75020 Paris → Jardin Serge Gainsbourg, 9 Av. de la Prte des Lilas, 75019 Paris",
       "departureLocationLabel": "Porte des Lilas, 75020 Paris",
       "arrivalLocationLabel": "Jardin Serge Gainsbourg, 9 Av. de la Prte des Lilas, 75019 Paris",
       "routeStyle": "souple",
       "routeAdjustmentMessage": "Itinéraire reconstitué depuis les colonnes Départ / Arrivée",
+      "manualDrawing": {
+        "kind": "polyline",
+        "coordinates": [
+          [
+            48.875748,
+            2.404071
+          ],
+          [
+            48.8762418,
+            2.4065295
+          ],
+          [
+            48.876736,
+            2.408988
+          ]
+        ]
+      },
+      "derivedGeometryKind": "polyline",
+      "derivedGeometryGeoJson": "{\"type\":\"LineString\",\"coordinates\":[[2.404071,48.875748],[2.4065295,48.8762418],[2.408988,48.876736]]}",
+      "geometryConfidence": 0.58,
+      "geometrySource": "routed",
       "placeType": "Rue/Allée/Villa/Ruelle/Impasse",
       "cleanPlaceFlag": false,
       "megotsKg": null,
-      "latitude": 48.8769658,
-      "longitude": 2.4064184,
+      "latitude": 48.8762418,
+      "longitude": 2.4065295,
       "wasteKg": 0,
       "cigaretteButts": 0,
       "volunteersCount": 20,
@@ -48,6 +131,27 @@
       "arrivalLocationLabel": "Saveurs en Partage, 38 Bd Mortier, 75020 Paris",
       "routeStyle": "souple",
       "routeAdjustmentMessage": "Itinéraire reconstitué depuis les colonnes Départ / Arrivée",
+      "manualDrawing": {
+        "kind": "polyline",
+        "coordinates": [
+          [
+            48.866275,
+            2.406686
+          ],
+          [
+            48.8667692,
+            2.4091438
+          ],
+          [
+            48.867263,
+            2.411602
+          ]
+        ]
+      },
+      "derivedGeometryKind": "polyline",
+      "derivedGeometryGeoJson": "{\"type\":\"LineString\",\"coordinates\":[[2.406686,48.866275],[2.4091438,48.8667692],[2.411602,48.867263]]}",
+      "geometryConfidence": 0.58,
+      "geometrySource": "routed",
       "placeType": "Rue/Allée/Villa/Ruelle/Impasse",
       "cleanPlaceFlag": false,
       "megotsKg": null,
@@ -85,6 +189,10 @@
           ]
         ]
       },
+      "derivedGeometryKind": "polyline",
+      "derivedGeometryGeoJson": "{\"type\":\"LineString\",\"coordinates\":[[2.371046,48.8715141],[2.375217,48.869332],[2.3793982,48.8671692]]}",
+      "geometryConfidence": 0.78,
+      "geometrySource": "routed",
       "placeType": "Rue/Allée/Villa/Ruelle/Impasse",
       "cleanPlaceFlag": false,
       "megotsKg": null,

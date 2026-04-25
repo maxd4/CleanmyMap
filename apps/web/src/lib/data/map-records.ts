@@ -1,4 +1,5 @@
 import type { ActionMapItem, ActionStatus } from "@/lib/actions/types";
+import { parseDrawingFromNotes, toGeoJsonString } from "@/lib/actions/drawing";
 import { readAllLocalStores } from "@/lib/data/local-store";
 import { mapLocalStatusToActionStatus } from "@/lib/data/local-records";
 import { allowLocalActionStoreInCurrentRuntime } from "@/lib/persistence/runtime-store";
@@ -56,6 +57,8 @@ function toLocalContract(
   if (requireCoordinates && (latitude === null || longitude === null)) {
     return null;
   }
+  const persistedNotes = record.description ?? record.trace?.notes ?? null;
+  const parsedNotes = parseDrawingFromNotes(persistedNotes);
 
   return buildActionDataContract({
     id: canonicalId,
@@ -72,7 +75,10 @@ function toLocalContract(
     cigaretteButts: Number(record.metrics?.cigaretteButts ?? 0),
     volunteersCount: Number(record.metrics?.volunteersCount ?? 0),
     durationMinutes: Number(record.metrics?.durationMinutes ?? 0),
-    notes: record.description ?? record.trace?.notes ?? null,
+    notes: parsedNotes.cleanNotes,
+    notesPlain: parsedNotes.cleanNotes,
+    manualDrawing: parsedNotes.manualDrawing,
+    manualDrawingGeoJson: toGeoJsonString(parsedNotes.manualDrawing),
   });
 }
 

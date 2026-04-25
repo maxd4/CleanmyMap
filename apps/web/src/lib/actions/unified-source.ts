@@ -38,6 +38,10 @@ type SpotRow = {
   waste_type: string | null;
   latitude: number | null;
   longitude: number | null;
+  derived_geometry_kind?: "point" | "polyline" | "polygon" | null;
+  derived_geometry_geojson?: string | null;
+  geometry_confidence?: number | null;
+  geometry_source?: "manual" | "reference" | "routed" | "estimated_area" | "fallback_point" | null;
   status: "new" | "validated" | "cleaned";
   notes: string | null;
 };
@@ -53,9 +57,14 @@ function toActionContractFromRow(row: StoredAction): ActionDataContract {
     createdByClerkId: row.created_by_clerk_id,
     observedAt: row.action_date,
     createdAt: row.created_at,
+    importedAt: row.updated_at ?? null,
     locationLabel: row.location_label,
     latitude: row.latitude,
     longitude: row.longitude,
+    derivedGeometryKind: row.derived_geometry_kind ?? null,
+    derivedGeometryGeoJson: row.derived_geometry_geojson ?? null,
+    geometryConfidence: row.geometry_confidence ?? null,
+    geometrySource: row.geometry_source ?? null,
     wasteKg: row.waste_kg,
     cigaretteButts: row.cigarette_butts,
     volunteersCount: row.volunteers_count,
@@ -119,6 +128,10 @@ function toSpotContractFromRow(row: SpotRow): ActionDataContract {
     locationLabel: row.label,
     latitude: row.latitude,
     longitude: row.longitude,
+    derivedGeometryKind: row.derived_geometry_kind ?? null,
+    derivedGeometryGeoJson: row.derived_geometry_geojson ?? null,
+    geometryConfidence: row.geometry_confidence ?? null,
+    geometrySource: row.geometry_source ?? null,
     notes: row.notes,
   });
 }
@@ -217,7 +230,7 @@ export async function fetchUnifiedActionContracts(
         let query = supabase
           .from("spots")
           .select(
-            "id, created_at, label, waste_type, latitude, longitude, status, notes",
+            "id, created_at, created_by_clerk_id, label, waste_type, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, status, notes",
           )
           .order("created_at", { ascending: false })
           .limit(params.limit + 1); // Un de plus ici aussi

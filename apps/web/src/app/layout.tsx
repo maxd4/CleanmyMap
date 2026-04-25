@@ -8,6 +8,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { Inter, Outfit } from "next/font/google";
 import { AccountIdentityChip } from "@/components/account/account-identity-chip";
 import { PostHogProvider } from "@/components/posthog-provider";
 import { ClerkLocalizationProvider } from "@/components/auth/clerk-localization-provider";
@@ -21,6 +22,21 @@ import { metadata as appMetadata } from "@/lib/metadata";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import "./globals.css";
+
+/* Font configuration - Optimized loading via next/font */
+const outfit = Outfit({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-outfit",
+  weight: ["400", "500", "600", "700"],
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-inter",
+  weight: ["400", "500", "600", "700"],
+});
 
 export const metadata: Metadata = appMetadata;
 
@@ -36,9 +52,11 @@ export default async function RootLayout({
   const displayModePreference = await getServerDisplayModePreference();
   const requestHeaders = await headers();
   const isAppShell = requestHeaders.get("x-cleanmymap-app-shell") === "1";
+  const hideGlobalHeader =
+    requestHeaders.get("x-cleanmymap-hide-global-header") === "1";
 
   return (
-    <html className="h-full antialiased" suppressHydrationWarning>
+    <html className={`h-full antialiased ${outfit.variable} ${inter.variable}`} suppressHydrationWarning>
       <body className="min-h-full bg-background text-foreground font-sans">
         <SitePreferencesProvider
           initialDisplayMode={displayModePreference.displayMode}
@@ -57,41 +75,41 @@ export default async function RootLayout({
           >
             <PostHogProvider>
               <VibrantBackground />
-              {!isAppShell ? (
+              {!isAppShell && !hideGlobalHeader ? (
                 <header className="sticky top-0 z-30 border-b border-white/10 bg-white/60 shadow-sm backdrop-blur-xl transition-all duration-300 dark:bg-slate-950/60">
                   <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 overflow-x-auto px-4 py-3 scrollbar-none sm:px-8">
                     <Link href="/" className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-95">
                       <Image
-                        src="/brand/nouveau-logo.png"
+                        src="/brand/logo-cleanmymap-officiel.svg"
                         alt="Logo CleanMyMap"
-                        width={42}
-                        height={24}
+                        width={160}
+                        height={48}
                         className="h-6 w-auto sm:h-7"
                         priority
                       />
-                      <h1 className="whitespace-nowrap text-[11px] font-bold uppercase tracking-[0.18em] text-slate-900 dark:text-white sm:text-sm">
-                        Agir-Cartographier-Préserver
+                      <h1 className="whitespace-nowrap cmm-text-caption font-semibold uppercase tracking-[0.18em] text-primary dark:text-inverse sm:cmm-text-small">
+                        Dépolluer · Cartographier · Impacter
                       </h1>
                     </Link>
                     <div className="flex min-w-max items-center gap-3 sm:gap-4">
                       <Link
                         href="/explorer"
-                        className="hidden rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 sm:inline-flex"
+                        className="hidden rounded-full border border-slate-200 bg-white px-3 py-1.5 cmm-text-small font-semibold text-secondary transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 sm:inline-flex"
                       >
-                        Explorer
+                        Plan du site
                       </Link>
                       <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
                       <Show when="signed-out">
                         <div className="flex items-center gap-2">
                           <Link
                             href="/sign-in"
-                            className="text-xs font-bold text-slate-600 transition-colors hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400"
+                            className="cmm-text-small font-semibold text-secondary transition-colors hover:text-emerald-600 dark:text-muted dark:hover:text-emerald-400"
                           >
                             Sign in
                           </Link>
                           <Link
                             href="/sign-up"
-                            className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-bold text-white shadow-md shadow-emerald-600/10 transition-all hover:bg-emerald-700"
+                            className="rounded-full bg-emerald-600 px-4 py-1.5 cmm-text-small font-semibold text-white shadow-md shadow-emerald-600/10 transition-all hover:bg-emerald-700"
                           >
                             Sign up
                           </Link>

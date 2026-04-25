@@ -4,6 +4,7 @@ import {
   buildEntrepriseAssociationName,
 } from "../../../lib/actions/association-options";
 import { PLACE_TYPE_OPTIONS } from "../../../lib/actions/place-type-options";
+import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import type {
   ActionDrawing,
   ActionPhotoAsset,
@@ -97,7 +98,7 @@ function getDrawingCentroid(drawing: ActionDrawing): {
 }
 
 export function isDrawingValid(
-  drawing: ActionDrawing | null,
+  drawing: ActionDrawing | null | undefined,
 ): drawing is ActionDrawing {
   if (!drawing) {
     return false;
@@ -191,7 +192,7 @@ export function buildCreateActionPayload(params: {
       ? 0
       : Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
     notes: appendEventRefToNotes(
-      quickMode ? undefined : form.notes.trim() || undefined,
+      form.notes.trim() || undefined,
       linkedEventId,
     ),
     manualDrawing:
@@ -213,5 +214,47 @@ export function buildCreateActionPayload(params: {
         },
     photos: params.photos ?? [],
     visionEstimate: params.visionEstimate ?? null,
+  };
+}
+
+export async function prepareCreateActionPayload(params: {
+  form: FormState;
+  declarationMode: DeclarationMode;
+  effectiveManualDrawingEnabled: boolean;
+  drawingIsValid: boolean;
+  manualDrawing: ActionDrawing | null;
+  routePreviewDrawing?: ActionDrawing | null;
+  isEntrepriseMode: boolean;
+  linkedEventId?: string;
+  photos?: ActionPhotoAsset[];
+  visionEstimate?: ActionVisionEstimate | null;
+}): Promise<CreateActionPayload> {
+  const payload = buildCreateActionPayload(params);
+
+  if (payload.manualDrawing) {
+    return payload;
+  }
+
+  if (isDrawingValid(params.routePreviewDrawing)) {
+    return {
+      ...payload,
+      manualDrawing: params.routePreviewDrawing,
+    };
+  }
+
+  const derivedDrawing = await deriveAutoDrawingFromLocation({
+    locationLabel: payload.locationLabel,
+    departureLocationLabel: payload.departureLocationLabel,
+    arrivalLocationLabel: payload.arrivalLocationLabel,
+    routeStyle: payload.routeStyle,
+  });
+
+  if (!derivedDrawing) {
+    return payload;
+  }
+
+  return {
+    ...payload,
+    manualDrawing: derivedDrawing,
   };
 }

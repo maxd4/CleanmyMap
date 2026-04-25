@@ -7,6 +7,7 @@ describe("proxy app shell routes", () => {
       "/actions",
       "/admin",
       "/dashboard",
+      "/explorer",
       "/learn",
       "/methodologie",
       "/observatoire",
@@ -29,7 +30,6 @@ describe("proxy app shell routes", () => {
 
   it("keeps public routes outside the app shell", () => {
     expect(isAppShellRoute("/")).toBe(false);
-    expect(isAppShellRoute("/explorer")).toBe(false);
     expect(isAppShellRoute("/sign-in")).toBe(false);
   });
 });

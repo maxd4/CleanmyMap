@@ -22,6 +22,8 @@ Recommended for production:
 - `CLERK_ADMIN_USER_IDS`
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
+- `RESEND_REPLY_TO` (optional, reply target for outbound emails)
+- `RESEND_TEST_TOKEN` (optional, for `/api/send` test endpoint without admin session)
 - `SENTRY_DSN`
 - `SENTRY_ORG`
 - `SENTRY_PROJECT`
@@ -75,6 +77,24 @@ npm run data:sheet:sync-supabase
   - returns `503` when required backend config or Supabase connectivity is missing
 - `GET /api/services`
   - service-by-service status (`ready`, `missing`, `defer`, `external`)
+
+## Resend quick test (`/api/send`)
+
+- Required:
+  - `RESEND_API_KEY`
+  - `RESEND_FROM_EMAIL` (must be on your verified domain, e.g. `contact@mail.cleanmymap.fr`)
+- Optional:
+  - `RESEND_REPLY_TO` (professional inbox that receives user replies, e.g. `contact@cleanmymap.fr` or Gmail)
+  - `RESEND_TEST_TOKEN` to authorize test calls without admin session.
+
+Example:
+
+```bash
+curl -X POST http://localhost:3000/api/send \
+  -H "content-type: application/json" \
+  -H "x-resend-test-token: $RESEND_TEST_TOKEN" \
+  -d '{"to":"maxence.deroome@gmail.com","subject":"Hello World","html":"<p>Test OK</p>"}'
+```
 
 ## Operational safety
 

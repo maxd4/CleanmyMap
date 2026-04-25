@@ -16,10 +16,20 @@ function safeNumber(value: number | null | undefined): number {
 
 // Calibration metier: contribution normalisee des dechets et megots
 // vers un score de pollution sur 100.
-const WASTE_REFERENCE_KG = 20;
-const BUTTS_REFERENCE_COUNT = 2000;
+export const WASTE_REFERENCE_KG = 20;
+export const BUTTS_REFERENCE_COUNT = 2000;
 const WASTE_WEIGHT = 0.65;
 const BUTTS_WEIGHT = 0.35;
+
+export function computeWasteContributionScore(wasteKg: number | null): number {
+  return clamp((safeNumber(wasteKg) / WASTE_REFERENCE_KG) * 100, 0, 100);
+}
+
+export function computeButtsContributionScore(
+  cigaretteButts: number | null,
+): number {
+  return clamp((safeNumber(cigaretteButts) / BUTTS_REFERENCE_COUNT) * 100, 0, 100);
+}
 
 export function computePollutionScore(inputs: PollutionScoreInputs): number {
   const wasteKg = safeNumber(inputs.wasteKg);
@@ -29,12 +39,8 @@ export function computePollutionScore(inputs: PollutionScoreInputs): number {
     return 0;
   }
 
-  const wasteContribution = clamp((wasteKg / WASTE_REFERENCE_KG) * 100, 0, 100);
-  const buttsContribution = clamp(
-    (cigaretteButts / BUTTS_REFERENCE_COUNT) * 100,
-    0,
-    100,
-  );
+  const wasteContribution = computeWasteContributionScore(wasteKg);
+  const buttsContribution = computeButtsContributionScore(cigaretteButts);
 
   const weightedScore =
     wasteContribution * WASTE_WEIGHT + buttsContribution * BUTTS_WEIGHT;

@@ -201,7 +201,7 @@ export function RubriquePdfExportButton({
   <body>
     <header class="rubrique-print-header">
       <div class="rubrique-print-brand">
-        <img src="/brand/nouveau-logo.png" alt="Logo CleanMyMap" />
+        <img src="/brand/logo-cleanmymap-officiel.svg" alt="Logo CleanMyMap" />
       </div>
       <h1>${safeTitle}</h1>
       <p>Generation: ${escapeHtml(generatedAt)} | Rubrique: ${escapeHtml(rubriqueSlug)} | Fichier suggere: ${escapeHtml(fullFilename)}</p>

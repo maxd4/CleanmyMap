@@ -8,27 +8,11 @@ import type {
 } from "@/lib/actions/types";
 import type { FormState } from "./action-declaration-form.model";
 import { toRequiredNumber } from "./action-declaration-form.model";
-import {
-  getBagCountSuspicion,
-  getDensitySuspicion,
-  getFillLevelSuspicion,
-} from "./action-declaration-form.suspicion";
 
 type UpdateField = <K extends keyof FormState>(
   key: K,
   value: FormState[K],
 ) => void;
-
-function SuspicionBadge({ message }: { message: string | null }) {
-  if (!message) {
-    return null;
-  }
-  return (
-    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800">
-      Écart suspect
-    </span>
-  );
-}
 
 type CompleteModeFieldsProps = {
   isQuickMode: boolean;
@@ -58,7 +42,7 @@ export function ActionDeclarationMegotsSection({
         </span>
       </div>
       <p className="mb-4 text-xs text-slate-500">
-        Champ facultatif. Sert à compléter l&apos;impact.
+        Champ facultatif. Sert à compléter l&apos;impact et valoriser le résultat.
       </p>
       <div className="grid gap-3 md:grid-cols-2">
         <label className="flex flex-col gap-2 text-sm text-slate-700">
@@ -143,18 +127,6 @@ export function ActionDeclarationCompleteModeFields({
 }: CompleteModeFieldsProps) {
   const [showTrainingPrecisionFields, setShowTrainingPrecisionFields] =
     useState(false);
-  const bagCountSuspicion = getBagCountSuspicion(
-    form.visionBagsCount,
-    visionEstimate,
-  );
-  const fillLevelSuspicion = getFillLevelSuspicion(
-    form.visionFillLevel,
-    visionEstimate,
-  );
-  const densitySuspicion = getDensitySuspicion(
-    form.visionDensity,
-    visionEstimate,
-  );
 
   if (isQuickMode) {
     return null;
@@ -293,7 +265,6 @@ export function ActionDeclarationCompleteModeFields({
               <label className="flex flex-col gap-2 text-sm text-slate-700">
                 <span className="flex items-center gap-2">
                   <span>Nombre de sacs</span>
-                  <SuspicionBadge message={bagCountSuspicion.message} />
                 </span>
                 <input
                   type="number"
@@ -315,7 +286,6 @@ export function ActionDeclarationCompleteModeFields({
               <label className="flex flex-col gap-2 text-sm text-slate-700">
                 <span className="flex items-center gap-2">
                   <span>Remplissage</span>
-                  <SuspicionBadge message={fillLevelSuspicion.message} />
                 </span>
                 <select
                   className="rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
@@ -342,7 +312,6 @@ export function ActionDeclarationCompleteModeFields({
               <label className="flex flex-col gap-2 text-sm text-slate-700">
                 <span className="flex items-center gap-2">
                   <span>Densité</span>
-                  <SuspicionBadge message={densitySuspicion.message} />
                 </span>
                 <select
                   className="rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
@@ -410,17 +379,6 @@ export function ActionDeclarationCompleteModeFields({
                 onChange={(event) =>
                   updateField("durationMinutes", event.target.value)
                 }
-              />
-            </label>
-
-            <label className="md:col-span-2 flex flex-col gap-2 text-sm text-slate-700">
-              Commentaire
-              <textarea
-                className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
-                value={form.notes}
-                onChange={(event) => updateField("notes", event.target.value)}
-                maxLength={1000}
-                placeholder="Ex: présence de nombreux mégots près des bouches de métro."
               />
             </label>
 

@@ -107,7 +107,7 @@ export default async function NewActionPage({
       <PageReadingTemplate
         context={`Profil ${getProfileLabel(profile, locale)}`}
         title="Déclarer une action"
-        objective="Saisir une action terrain fiable avec un mode rapide (<60s) ou un mode complet avec preuve, sans bloquer la saisie avant soumission."
+        objective="Saisir une action terrain fiable avec un mode rapide ou un mode complet, en 3 étapes simples : localiser, tracer, valider."
         summary={
           <div className="space-y-3">
             <div className="grid gap-3 md:grid-cols-3">
@@ -239,6 +239,33 @@ export default async function NewActionPage({
         profile={profile}
         title="CTA dynamiques selon votre role"
       />
+
+      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <article className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-500">1. Localiser</p>
+            <p className="mt-2 text-sm text-slate-600">
+              Définis rapidement le lieu et le point de départ.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-500">2. Tracer</p>
+            <p className="mt-2 text-sm text-slate-600">
+              Choisis le tracé ou laisse l’aperçu automatique.
+            </p>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-500">3. Valider</p>
+            <p className="mt-2 text-sm text-slate-600">
+              Finalise ton action avec les détails essentiels.
+            </p>
+          </article>
+        </div>
+        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+          <p className="font-semibold">Mode rapide</p>
+          <p>Idéal pour publier vite. Passe en mode complet si tu veux ajouter des photos ou du tracé précis.</p>
+        </div>
+      </section>
 
       <ActionDeclarationForm
         actorNameOptions={actorNameOptions}

@@ -218,7 +218,7 @@ export function GIECContent() {
           <h2 className="text-3xl font-black text-slate-900">Rapports du GIEC</h2>
         </div>
         <p className="text-lg text-slate-600 max-w-3xl mx-auto">
-          Le Groupe d'experts intergouvernemental sur l'évolution du climat (GIEC) produit des rapports
+          Le Groupe d&apos;experts intergouvernemental sur l&apos;évolution du climat (GIEC) produit des rapports
           scientifiques qui font référence sur le changement climatique. Voici les conclusions clés
           vulgarisées pour une meilleure compréhension.
         </p>
@@ -365,7 +365,7 @@ export function GIECContent() {
 
                 {/* Implications */}
                 <div>
-                  <h4 className="text-xl font-bold text-red-900 mb-4">Implications pour l'humanité</h4>
+                  <h4 className="text-xl font-bold text-red-900 mb-4">Implications pour l&apos;humanité</h4>
                   <div className="grid gap-3">
                     {selectedReport.implications.map((implication, index) => (
                       <div key={index} className="flex items-start gap-3 p-3 bg-red-50 rounded-xl">

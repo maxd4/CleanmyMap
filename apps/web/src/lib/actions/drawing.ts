@@ -1,4 +1,9 @@
 import type { ActionDrawing } from "@/lib/actions/types";
+import {
+  isRenderableDrawing,
+  parseDrawingFromGeoJson,
+  toGeoJsonString,
+} from "@/lib/actions/derived-geometry";
 import { stripEventRefFromNotes } from "./event-link";
 
 export const DRAWING_NOTE_PREFIX = "[DRAWING_GEOJSON]";
@@ -40,14 +45,12 @@ function normalizeDrawing(raw: unknown): ActionDrawing | null {
   if (!coordinates || (kind !== "polyline" && kind !== "polygon")) {
     return null;
   }
-  const minPoints = kind === "polygon" ? 3 : 2;
-  if (coordinates.length < minPoints) {
-    return null;
-  }
-  return {
-    kind,
-    coordinates,
-  };
+  return isRenderableDrawing({ kind, coordinates })
+    ? {
+        kind,
+        coordinates,
+      }
+    : null;
 }
 
 export function parseDrawingFromNotes(
@@ -100,18 +103,4 @@ export function parseDrawingFromNotes(
   }
 }
 
-export function toGeoJsonString(drawing: ActionDrawing | null): string | null {
-  if (!drawing) {
-    return null;
-  }
-  if (drawing.kind === "polyline") {
-    return JSON.stringify({
-      type: "LineString",
-      coordinates: drawing.coordinates.map(([lat, lng]) => [lng, lat]),
-    });
-  }
-  return JSON.stringify({
-    type: "Polygon",
-    coordinates: [drawing.coordinates.map(([lat, lng]) => [lng, lat])],
-  });
-}
+export { parseDrawingFromGeoJson, toGeoJsonString };

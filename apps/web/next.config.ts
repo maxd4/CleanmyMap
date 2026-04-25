@@ -7,8 +7,13 @@ const appRoot = path.resolve(__dirname, "../..");
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: appRoot,
-  turbopack: {
+  /* turbopack: {
     root: appRoot,
+  }, */
+  images: {
+    dangerouslyAllowSVG: true,
+    contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 };
 

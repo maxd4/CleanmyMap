@@ -45,12 +45,14 @@ export async function POST(request: Request) {
   const subject = payload.subject || "[CleanMyMap] Test email";
   const html =
     payload.html || "<p>Test email from CleanMyMap modern stack baseline.</p>";
+  const replyTo = env.RESEND_REPLY_TO || env.RESEND_FROM_EMAIL;
 
   const result = await resend.emails.send({
     from: env.RESEND_FROM_EMAIL,
     to,
     subject,
     html,
+    replyTo,
   });
 
   return NextResponse.json({ status: "queued", id: result.data?.id ?? null });

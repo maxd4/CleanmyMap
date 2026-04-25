@@ -15,7 +15,7 @@ const COPY_FILES = [
   "src/components/sections/rubriques/open-data-section.tsx",
   "src/components/sections/rubriques/funding-section.tsx",
   "src/components/sections/rubriques/guide-section.tsx",
-  "src/components/sections/rubriques/kit-section.tsx",
+  "src/components/sections/rubriques/weather-section.tsx",
   "src/components/sections/rubriques/annuaire-governance-panel.tsx",
   "src/components/sections/rubriques/annuaire-section.tsx",
   "src/components/sections/rubriques/climate-section.tsx",

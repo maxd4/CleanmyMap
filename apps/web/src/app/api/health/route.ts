@@ -52,8 +52,9 @@ export async function GET() {
 
   const ok = missingConfigKeys.length === 0 && supabaseConnectivity;
   const payload = {
+    ok,
     status: ok ? "ok" : "degraded",
-    service: "cleanmymap-web",
+    service: "cleanmymap",
     checks: {
       requiredConfigPresent: missingConfigKeys.length === 0,
       supabaseConnectivity,

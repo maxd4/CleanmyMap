@@ -1,6 +1,6 @@
 # AI Developer Guide - CleanmyMap
 
-Ce projet utilise une architecture très structurée (Next.js 15, React Server Components/Client Components, Supabase, Clerk) et un vocabulaire d'entreprise très strict (Domain Language). Si tu es un agent IA (Claude, Copilot, Cursor), **lis attentivement ce fichier avant de modifier du code.**
+Ce projet utilise une architecture très structurée (Next.js 15, React Server Components/Client Components, Supabase, Clerk) et un vocabulaire d'entreprise très strict (Domain Language). Si tu es un agent de développement (coding assistant, LLM, ou automation tool), **lis attentivement ce fichier avant de modifier du code.**
 
 ## 1. Domain Language (Vocabulaire Critique)
 Toute l'application repose sur `apps/web/src/lib/domain-language.ts` et `apps/web/src/lib/profiles.ts`.

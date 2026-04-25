@@ -44,7 +44,14 @@ describe("buildPilotageOverviewFromContracts", () => {
     expect(overview.comparison.current.impactVolumeKg).toBe(10);
     expect(overview.comparisonsByWindow["30"].current.impactVolumeKg).toBe(10);
     expect(overview.zones.length).toBeGreaterThanOrEqual(1);
-    expect(overview.methods.length).toBeGreaterThanOrEqual(3);
+    expect(overview.methods.length).toBeGreaterThanOrEqual(5);
+    expect(overview.methods.map((method) => method.id)).toEqual(
+      expect.arrayContaining([
+        "field-load",
+        "place-context",
+        "route-profile",
+      ]),
+    );
     expect(overview.priorities).toHaveLength(3);
     expect(overview.summary.kpis[0].previousValue.length).toBeGreaterThan(0);
     expect(overview.summary.recommendedAction.reason.length).toBeGreaterThan(0);

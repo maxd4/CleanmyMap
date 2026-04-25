@@ -3,10 +3,9 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
-import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Globe, ShieldCheck, Zap } from "lucide-react";
+import { Globe, ShieldCheck } from "lucide-react";
 import { getServerDisplayMode } from "@/lib/server-preferences";
 
 export const revalidate = 60; // 1 minute Cache for public observatory
@@ -60,10 +59,10 @@ export default async function ObservatoirePage() {
 
   return (
     <div className={`min-h-screen p-6 sm:p-12 space-y-12 transition-colors duration-500 ${isSober ? 'bg-white text-slate-900' : 'bg-slate-950 text-slate-100'}`}>
-      <header className="max-w-5xl mx-auto space-y-4">
+      <header className="w-full space-y-4">
         <div className={`flex items-center gap-2 font-black uppercase tracking-widest text-xs ${isSober ? 'text-slate-500' : 'text-emerald-400'}`}>
           <Globe size={14} />
-          OBSERVATOIRE PUBLIC D'IMPACT
+          OBSERVATOIRE PUBLIC D&apos;IMPACT
         </div>
         <h1 className={`text-4xl sm:text-6xl font-black tracking-tighter ${isSober ? 'text-slate-900' : 'bg-gradient-to-br from-white to-slate-500 bg-clip-text text-transparent'}`}>
           La Science du Nettoyage. <br />{isSober ? 'Transparence Totale' : 'Transparence Totale.'}
@@ -74,7 +73,7 @@ export default async function ObservatoirePage() {
         </p>
       </header>
 
-      <div className="max-w-5xl mx-auto grid gap-6 md:grid-cols-3">
+      <div className="w-full grid gap-6 md:grid-cols-3 xl:grid-cols-3">
         {kpis.map((kpi, idx) => (
           <div key={idx} className={`p-6 rounded-3xl border transition-all ${isSober ? 'bg-slate-50 border-slate-200' : 'bg-slate-900 border-slate-800 hover:border-emerald-500/50'} space-y-2 group`}>
             <p className={`text-xs font-bold uppercase tracking-widest ${isSober ? 'text-slate-400' : 'text-slate-500'}`}>{kpi.label}</p>
@@ -83,12 +82,12 @@ export default async function ObservatoirePage() {
         ))}
       </div>
 
-      <div className={`max-w-5xl mx-auto rounded-[2.5rem] border p-8 shadow-2xl overflow-hidden relative transition-all ${isSober ? 'bg-white border-slate-200 shadow-none rounded-xl' : 'bg-slate-900 border-slate-800 shadow-emerald-500/5'}`}>
+      <div className={`w-full rounded-[2.5rem] border p-8 shadow-2xl overflow-hidden relative transition-all ${isSober ? 'bg-white border-slate-200 shadow-none rounded-xl' : 'bg-slate-900 border-slate-800 shadow-emerald-500/5'}`}>
         {!isSober && <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none"></div>}
         <AnalyticsCockpit data={monthlyData} />
       </div>
 
-      <footer className={`max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6 pt-12 border-t ${isSober ? 'border-slate-200' : 'border-slate-800'}`}>
+      <footer className={`w-full flex flex-col sm:flex-row items-center justify-between gap-6 pt-12 border-t ${isSober ? 'border-slate-200' : 'border-slate-800'}`}>
         <div className="space-y-1">
           <div className={`flex items-center gap-2 font-bold text-sm ${isSober ? 'text-slate-600' : 'text-slate-400'}`}>
             <ShieldCheck size={16} className="text-emerald-500" />

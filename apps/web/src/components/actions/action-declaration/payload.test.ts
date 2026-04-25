@@ -4,6 +4,7 @@ import {
   createInitialFormState,
   isDrawingValid,
   isLocationLikelyPark,
+  prepareCreateActionPayload,
   toOptionalNumber,
   toRequiredNumber,
 } from "./payload";
@@ -114,7 +115,36 @@ describe("action declaration payload helpers", () => {
     expect(payload.cigaretteButts).toBe(0);
     expect(payload.durationMinutes).toBe(0);
     expect(payload.wasteBreakdown).toBeUndefined();
-    expect(payload.notes).toBe("[EVENT_REF]EVENT-12345");
+    expect(payload.notes).toContain("Collecte de test");
+    expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
+  });
+
+  it("prefers a ready route preview before submission", async () => {
+    const form = buildBaseForm();
+    form.departureLocationLabel = "Place des Vosges";
+    form.arrivalLocationLabel = "Rue de Rivoli";
+
+    const previewDrawing: ActionDrawing = {
+      kind: "polyline",
+      coordinates: [
+        [48.855, 2.36],
+        [48.856, 2.361],
+        [48.857, 2.362],
+      ],
+    };
+
+    const payload = await prepareCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      routePreviewDrawing: previewDrawing,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.manualDrawing).toEqual(previewDrawing);
   });
 
   it("detects park-like labels", () => {

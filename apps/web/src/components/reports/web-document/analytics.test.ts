@@ -32,7 +32,13 @@ function makeListItem(overrides: Partial<ActionListItem> = {}): ActionListItem {
       status: "approved",
       source: "web_form",
       location: { label: "Paris 10e", latitude: 48.87, longitude: 2.36 },
-      geometry: { kind: "point", coordinates: [[48.87, 2.36]], geojson: null },
+      geometry: {
+        kind: "point",
+        coordinates: [[48.87, 2.36]],
+        geojson: null,
+        confidence: 0.24,
+        origin: "fallback_point",
+      },
       dates: {
         observedAt: "2026-03-02",
         createdAt: "2026-03-01T08:00:00.000Z",

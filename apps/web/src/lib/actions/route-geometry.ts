@@ -41,6 +41,27 @@ function buildLinearTrace(center: GeoPoint, radiusMeters: number): ActionDrawing
   };
 }
 
+function buildFallbackRoute(
+  departure: GeoPoint,
+  arrival: GeoPoint,
+  routeStyle: "direct" | "souple",
+): ActionDrawing {
+  if (routeStyle === "souple") {
+    return {
+      kind: "polyline",
+      coordinates: buildFlexibleRoutePoints(departure, arrival),
+    };
+  }
+
+  return {
+    kind: "polyline",
+    coordinates: [
+      [departure.latitude, departure.longitude],
+      [arrival.latitude, arrival.longitude],
+    ],
+  };
+}
+
 function isBoulevardLike(label: string): boolean {
   const lower = label.toLowerCase();
   return [
@@ -172,13 +193,7 @@ export async function deriveAutoDrawingFromLocation(params: {
           coordinates: snapped,
         };
       }
-      return {
-        kind: "polyline",
-        coordinates: [
-          [departure.latitude, departure.longitude],
-          [arrival.latitude, arrival.longitude],
-        ],
-      };
+      return buildFallbackRoute(departure, arrival, routeStyle);
     }
     return buildLinearTrace(departure, 500);
   }

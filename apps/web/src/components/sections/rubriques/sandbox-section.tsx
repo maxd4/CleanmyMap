@@ -19,6 +19,7 @@ export function SandboxSection() {
         throw new Error("health_unavailable");
       }
       return (await response.json()) as {
+        ok?: boolean;
         status?: string;
         service?: string;
         timestamp?: string;
@@ -100,11 +101,11 @@ export function SandboxSection() {
                 ? fr
                   ? "Chargement..."
                   : "Loading..."
-                : error
-                  ? fr
-                    ? "Indisponible"
-                    : "Unavailable"
-                  : (data?.status ?? "n/a")}
+                  : error
+                    ? fr
+                      ? "Indisponible"
+                      : "Unavailable"
+                  : (data?.status ?? (data?.ok ? "ok" : "n/a"))}
             </p>
           </article>
           <article className="rounded-lg border border-slate-200 bg-white p-3">
@@ -112,7 +113,7 @@ export function SandboxSection() {
               {fr ? "Service" : "Service"}
             </p>
             <p className="mt-1 text-sm font-semibold text-slate-900">
-              {data?.service ?? "cleanmymap-web"}
+              {data?.service ?? "cleanmymap"}
             </p>
           </article>
           <article className="rounded-lg border border-slate-200 bg-white p-3">

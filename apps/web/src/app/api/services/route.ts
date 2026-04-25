@@ -32,7 +32,7 @@ function getServiceState(id: string): ServiceHealthState {
         ? "ready"
         : "missing";
     case "cloudflare":
-      return "defer";
+      return isConfigured(env.CLOUDFLARE_API_TOKEN) ? "ready" : "external";
     case "sentry":
       return isConfigured(env.SENTRY_DSN) || isConfigured(env.NEXT_PUBLIC_SENTRY_DSN)
         ? "ready"
@@ -57,7 +57,7 @@ function getServiceState(id: string): ServiceHealthState {
         ? "ready"
         : "defer";
     case "uptimerobot":
-      return "external";
+      return isConfigured(env.UPTIMEROBOT_API_KEY) ? "ready" : "external";
     default:
       return "defer";
   }

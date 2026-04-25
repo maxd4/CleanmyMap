@@ -126,6 +126,7 @@ export type ValidationIssue = {
     | "actionDate"
     | "locationLabel"
     | "wasteKg"
-    | "volunteersCount";
+    | "volunteersCount"
+    | "durationMinutes";
   message: string;
 };

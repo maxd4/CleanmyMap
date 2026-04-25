@@ -6,7 +6,7 @@ import { useSitePreferences } from "./site-preferences-provider";
 export function PunchySlogan() {
   const { displayMode } = useSitePreferences();
   const isSober = displayMode === "sobre";
-  const words = ["Agir", "Cartographier", "Préserver"];
+  const words = ["Dépolluer", "Cartographier", "Impacter"];
 
   if (isSober) {
     return (

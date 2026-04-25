@@ -33,7 +33,7 @@ export default async function ActionsHistoryPage() {
                   Corrections
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  Les lignes à corriger restent cachées tant que tu n'es pas connecté.
+                  Les lignes à corriger restent cachées tant que tu n&apos;es pas connecté.
                 </p>
               </article>
               <article className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -41,7 +41,7 @@ export default async function ActionsHistoryPage() {
                   Traçabilité
                 </p>
                 <p className="mt-2 text-sm text-slate-600">
-                  La méthode complète s'affiche après connexion.
+                  La méthode complète s&apos;affiche après connexion.
                 </p>
               </article>
             </div>

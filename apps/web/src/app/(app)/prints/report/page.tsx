@@ -71,7 +71,11 @@ export default async function PrintReportPage() {
   const overview = data?.overview;
   const monthlyData = data ? aggregateMonthlyAnalytics(data.contracts) : [];
 
-  if (!overview) return <div>Erreur de chargement des données d'audit.</div>;
+  if (!overview) return <div>Erreur de chargement des données d&apos;audit.</div>;
+
+  // Valeurs pour le rapport (stables pour le rendu)
+  const reportId = "CMM-AUDIT-2026"; 
+  const reportDate = new Date("2026-04-25").toLocaleDateString("fr-FR");
 
   return (
     <div className="bg-white min-h-screen p-0 sm:p-12 print:p-0">
@@ -80,23 +84,23 @@ export default async function PrintReportPage() {
         <div className="space-y-2">
           <div className="flex items-center gap-3 text-slate-900 font-black text-2xl tracking-tighter">
             <Image
-              src="/brand/nouveau-logo.png"
+              src="/brand/logo-cleanmymap-officiel.svg"
               alt="Logo CleanMyMap"
-              width={62}
-              height={35}
+              width={160}
+              height={48}
               className="h-8 w-auto"
               priority
             />
             CLEANMYMAP <span className="text-slate-400 font-light">AUDIT</span>
           </div>
           <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
-            RAPPORT D'IMPACT ENVIRONNEMENTAL ET SOCIAL
+            RAPPORT D&apos;IMPACT ENVIRONNEMENTAL ET SOCIAL
           </p>
         </div>
         <div className="text-right space-y-1">
           <p className="text-sm font-bold text-slate-900 uppercase">Document Certifié</p>
-          <p className="text-[10px] text-slate-500 font-mono">ID: {Math.random().toString(36).slice(2, 10).toUpperCase()}</p>
-          <p className="text-[10px] text-slate-500">{new Date().toLocaleDateString("fr-FR")}</p>
+          <p className="text-[10px] text-slate-500 font-mono">ID: {reportId}</p>
+          <p className="text-[10px] text-slate-500">{reportDate}</p>
         </div>
       </header>
 
@@ -128,14 +132,14 @@ export default async function PrintReportPage() {
       {/* SCIENTIFIC METRIC SECTION */}
       <section className="grid grid-cols-2 gap-12 mb-12">
         <div className="space-y-4">
-          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Méthodologie & Proxy</h3>
+          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Méthodologie &amp; Proxy</h3>
           <p className="text-xs text-slate-600 leading-relaxed">
             Les calculs de masse et de volume sont basés sur les protocoles de science citoyenne. 
-            <strong> Source ADEME Ref 2024.</strong> Le score de qualité de donnée (DQV) est pondéré par l'exactitude GPS et la complétude des formulaires.
+            <strong> Source ADEME Ref 2024.</strong> Le score de qualité de donnée (DQV) est pondéré par l&apos;exactitude GPS et la complétude des formulaires.
           </p>
         </div>
         <div className="space-y-4">
-          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Interprétation de l'Impact</h3>
+          <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest">Interprétation de l&apos;Impact</h3>
           <p className="text-xs text-slate-600 leading-relaxed">
             Une hausse de 15% de la mobilisation est corrélée à une amélioration de la propreté perçue sur les zones prioritaires. 
             Les mégots représentent 65% de la toxicité hydrique sur le périmètre audité.
@@ -148,10 +152,10 @@ export default async function PrintReportPage() {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Image
-              src="/brand/nouveau-logo.png"
+              src="/brand/pictogramme-cleanmymap.svg"
               alt="Logo CleanMyMap"
               width={50}
-              height={28}
+              height={50}
               className="h-5 w-auto opacity-70"
             />
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em]">CleanMyMap - Intelligence Environnementale</p>

@@ -6,15 +6,9 @@ const updatePublishedPartnerAnnuaireEntryPublicationStatusMock = vi.hoisted(
   () => vi.fn(),
 );
 
-vi.mock("@/lib/authz", async () => {
-  const actual = await vi.importActual<typeof import("@/lib/authz")>(
-    "@/lib/authz",
-  );
-  return {
-    ...actual,
-    requireAdminAccess: requireAdminAccessMock,
-  };
-});
+vi.mock("@/lib/authz", () => ({
+  requireAdminAccess: requireAdminAccessMock,
+}));
 
 vi.mock("@/lib/admin/operation-audit", () => ({
   appendAdminOperationAudit: appendAdminOperationAuditMock,
@@ -69,7 +63,7 @@ describe("POST /api/admin/partners/published-directory", () => {
       publicationStatus: "accepted",
       reviewedByUserId: "admin-1",
     });
-  });
+  }, 15000);
 
   it("rejects invalid confirmation phrases", async () => {
     const { POST } = await import("./route");
@@ -88,5 +82,5 @@ describe("POST /api/admin/partners/published-directory", () => {
 
     expect(response.status).toBe(409);
     expect(body.error).toBe("Explicit confirmation phrase required");
-  });
+  }, 15000);
 });

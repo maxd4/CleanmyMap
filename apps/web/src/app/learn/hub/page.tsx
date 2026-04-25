@@ -6,14 +6,12 @@ import {
   BookOpen,
   Calendar as CalendarIcon,
   FileText,
-  Info,
   Trash2,
   GraduationCap,
   ArrowRight,
   Globe,
   Target,
   Brain,
-  FileText as FileTextIcon,
   Sparkles
 } from "lucide-react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
@@ -62,7 +60,7 @@ export default function LearnHubPage() {
   const { locale } = useSitePreferences();
 
   return (
-    <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-8">
+    <div className="w-full p-4 md:p-8 space-y-8">
       {/* Enhanced Header */}
       <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 p-8 md:p-12 text-white">
         {/* Background Pattern */}
@@ -105,7 +103,6 @@ export default function LearnHubPage() {
             { id: "quiz", label: "Quiz Interactif", icon: Brain, color: "text-purple-600" },
             { id: "usage", label: "Mode d'Emploi", icon: BookOpen, color: "text-slate-600" },
             { id: "events", label: "Rassemblements", icon: CalendarIcon, color: "text-orange-600" },
-            { id: "kit", label: "Kit Terrain", icon: FileTextIcon, color: "text-indigo-600" },
             { id: "waste", label: "Guide Déchets", icon: Trash2, color: "text-slate-600" },
           ].map((tab) => (
             <Tabs.Trigger
@@ -204,27 +201,6 @@ export default function LearnHubPage() {
                 day: t("events.day")
               }}
             />
-          </Tabs.Content>
-
-          {/* Section: Kit Terrain */}
-          <Tabs.Content value="kit" className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            {[
-              { title: t("kit.doc1_title"), type: "PDF", size: "1.2 MB" },
-              { title: t("kit.doc2_title"), type: "PDF", size: "4.5 MB" },
-              { title: t("kit.doc3_title"), type: "PNG", size: "12 MB" },
-              { title: t("kit.doc4_title"), type: "PDF", size: "0.5 MB" },
-            ].map((doc) => (
-              <div key={doc.title} className="group p-6 rounded-3xl bg-white border border-slate-200 shadow-sm hover:shadow-xl hover:border-emerald-500 transition-all cursor-pointer">
-                <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-600 transition-colors">
-                  <FileText size={24} />
-                </div>
-                <h4 className="mt-4 font-bold text-slate-900">{doc.title}</h4>
-                <div className="flex items-center justify-between mt-4">
-                  <span className="text-[10px] font-black tracking-widest text-slate-400 uppercase">{t("kit.type_size", { type: doc.type, size: doc.size })}</span>
-                  <ArrowRight size={16} className="text-slate-300 group-hover:text-emerald-600 translate-x-0 group-hover:translate-x-1 transition-all" />
-                </div>
-              </div>
-            ))}
           </Tabs.Content>
 
           {/* Section: Déchets */}

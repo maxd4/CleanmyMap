@@ -9,10 +9,18 @@ import { ReportsWebDocument } from "@/components/reports/reports-web-document";
 import { DecisionPageHeader } from "@/components/ui/decision-page-header";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
+import { 
+  BarChart3, 
+  Layers, 
+  Info, 
+  DownloadCloud 
+} from "lucide-react";
+import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigation-grid";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
+import { getActionOperationalContext, type ActionDataContract } from "@/lib/actions/data-contract";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import {
   getProfilePrimaryAction,
@@ -41,6 +49,24 @@ async function loadReportsData() {
   });
 
   return { overview, contracts };
+}
+
+function toReportsExportRow(contract: ActionDataContract) {
+  const operational = getActionOperationalContext(contract);
+  return {
+    Date: contract.dates.observedAt,
+    Lieu: contract.location.label,
+    Masse_Kg: contract.metadata.wasteKg || 0,
+    Megots: contract.metadata.cigaretteButts || 0,
+    Bénévoles: operational.volunteersCount,
+    Durée_Min: operational.durationMinutes,
+    Charge_Terrain_Min: operational.engagementMinutes,
+    Type_Lieu: operational.placeTypeLabel,
+    Trajet: operational.routeStyleLabel,
+    Ajustement_Trajet: operational.routeAdjustmentMessage ?? "",
+    Type: contract.type,
+    Source: contract.source,
+  };
 }
 
 export default async function ReportsPage() {
@@ -134,6 +160,53 @@ export default async function ReportsPage() {
         },
       ] as const);
 
+  const navigationItems: NavigationGridItem[] = [
+    {
+      icon: BarChart3,
+      title: "Comparaisons",
+      desc: "Analyses temporelles 30j / 90j / 12m.",
+      iconBg: "bg-blue-500/20",
+      iconColor: "text-blue-400",
+      accent: "from-blue-600/20 to-blue-900/40",
+      ring: "ring-blue-500/30",
+      dot: "bg-blue-400",
+      href: "#comparisons",
+    },
+    {
+      icon: Info,
+      title: "Méthode KPI",
+      desc: "Comprendre le calcul et les sources des données.",
+      iconBg: "bg-emerald-500/20",
+      iconColor: "text-emerald-400",
+      accent: "from-emerald-600/20 to-emerald-900/40",
+      ring: "ring-emerald-500/30",
+      dot: "bg-emerald-400",
+      href: "#method",
+    },
+    {
+      icon: Layers,
+      title: "Cockpit",
+      desc: "Vues agrégées et analyses mensuelles.",
+      iconBg: "bg-purple-500/20",
+      iconColor: "text-purple-400",
+      accent: "from-purple-600/20 to-purple-900/40",
+      ring: "ring-purple-500/30",
+      dot: "bg-purple-400",
+      href: "#cockpit",
+    },
+    {
+      icon: DownloadCloud,
+      title: "Exports",
+      desc: "Générer PDF, Excel et rapports officiels.",
+      iconBg: "bg-amber-500/20",
+      iconColor: "text-amber-400",
+      accent: "from-amber-600/20 to-amber-900/40",
+      ring: "ring-amber-500/30",
+      dot: "bg-amber-400",
+      href: "#exports",
+    },
+  ];
+
   if (pageTemplateV2Enabled) {
     return (
       <div className="space-y-4">
@@ -144,18 +217,21 @@ export default async function ReportsPage() {
           title="Rapports d'impact multi-horizon et exports"
           objective="Concentrer les comparatifs 30j/90j/12m, la méthode KPI et les livrables exportables, sans recopier le cockpit."
           summary={
-            <ThirtySecondsSummary
-              kpis={summaryKpis}
-              alert={overview ? overview.summary.alert : undefined}
-              recommendedAction={{
-                href:
-                  overview?.summary.recommendedAction.href ?? primaryAction.href,
-                label:
-                  overview?.summary.recommendedAction.label ??
-                  primaryAction.label[locale],
-              }}
-              recommendedReason={overview?.summary.recommendedAction.reason}
-            />
+            <div className="space-y-6">
+              <ThirtySecondsSummary
+                kpis={summaryKpis}
+                alert={overview ? overview.summary.alert : undefined}
+                recommendedAction={{
+                  href:
+                    overview?.summary.recommendedAction.href ?? primaryAction.href,
+                  label:
+                    overview?.summary.recommendedAction.label ??
+                    primaryAction.label[locale],
+                }}
+                recommendedReason={overview?.summary.recommendedAction.reason}
+              />
+              <NavigationGrid items={navigationItems} columns={{ default: 1, sm: 2, md: 4, xl: 4 }} />
+            </div>
           }
           primaryAction={{
             href: primaryAction.href,
@@ -170,20 +246,22 @@ export default async function ReportsPage() {
               : undefined
           }
           analysis={
-            <>
-              {overview ? (
-                <ReportsWindowComparisonsSection
-                  comparisonsByWindow={overview.comparisonsByWindow}
-                />
-              ) : (
-                <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-                  <p className="text-sm text-amber-800">
-                    Données de comparaison temporairement indisponibles.
-                    Vérifier la source pilotage.
-                  </p>
-                </section>
-              )}
-            </>
+            <div className="space-y-8">
+              <div id="comparisons">
+                {overview ? (
+                  <ReportsWindowComparisonsSection
+                    comparisonsByWindow={overview.comparisonsByWindow}
+                  />
+                ) : (
+                  <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+                    <p className="text-sm text-amber-800">
+                      Données de comparaison temporairement indisponibles.
+                      Vérifier la source pilotage.
+                    </p>
+                  </section>
+                )}
+              </div>
+            </div>
           }
           trace={
             <div className="space-y-2 text-xs text-slate-600">
@@ -213,25 +291,16 @@ export default async function ReportsPage() {
                 <RubriquePdfExportButton rubriqueTitle="Reporting et pilotage" />
                 <RubriqueExcelExportButton
                   rubriqueTitle="Reporting et pilotage"
-                  data={contracts.map((c) => ({
-                    Date: c.dates.observedAt,
-                    Lieu: c.location.label,
-                    Masse_Kg: c.metadata.wasteKg || 0,
-                    Megots: c.metadata.cigaretteButts || 0,
-                    Bénévoles: c.metadata.volunteersCount,
-                    Durée_Min: c.metadata.durationMinutes,
-                    Type: c.type,
-                    Source: c.source,
-                  }))}
+                  data={contracts.map(toReportsExportRow)}
                 />
               </div>
             </div>
           }
         />
 
-        <div className="space-y-4">
+        <div className="space-y-8">
           {overview ? (
-            <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
+            <section id="method" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                   Méthode
@@ -248,7 +317,7 @@ export default async function ReportsPage() {
             </section>
           ) : null}
 
-          <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
+          <section id="cockpit" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                 Analyse mensuelle
@@ -264,11 +333,11 @@ export default async function ReportsPage() {
             <AnalyticsCockpit data={monthlyData} />
           </section>
 
-          <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
+          <section id="document" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
             <ReportsWebDocument />
           </section>
 
-          <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
+          <section id="kpi-summary" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
             <ReportsKpiSummary />
           </section>
 
@@ -292,7 +361,7 @@ export default async function ReportsPage() {
             )}
           </section>
 
-          <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
+          <section id="exports" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                 Exports
@@ -309,16 +378,7 @@ export default async function ReportsPage() {
               <RubriquePdfExportButton rubriqueTitle="Reporting et pilotage" />
               <RubriqueExcelExportButton
                 rubriqueTitle="Reporting et pilotage"
-                data={contracts.map((c) => ({
-                  Date: c.dates.observedAt,
-                  Lieu: c.location.label,
-                  Masse_Kg: c.metadata.wasteKg || 0,
-                  Megots: c.metadata.cigaretteButts || 0,
-                  Bénévoles: c.metadata.volunteersCount,
-                  Durée_Min: c.metadata.durationMinutes,
-                  Type: c.type,
-                  Source: c.source,
-                }))}
+                data={contracts.map(toReportsExportRow)}
               />
             </div>
           </section>
@@ -355,19 +415,10 @@ export default async function ReportsPage() {
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
           <RubriquePdfExportButton rubriqueTitle="Reporting et pilotage" />
-          <RubriqueExcelExportButton
-            rubriqueTitle="Reporting et pilotage"
-            data={contracts.map((c) => ({
-              Date: c.dates.observedAt,
-              Lieu: c.location.label,
-              Masse_Kg: c.metadata.wasteKg || 0,
-              Megots: c.metadata.cigaretteButts || 0,
-              Bénévoles: c.metadata.volunteersCount,
-              Durée_Min: c.metadata.durationMinutes,
-              Type: c.type,
-              Source: c.source,
-            }))}
-          />
+            <RubriqueExcelExportButton
+              rubriqueTitle="Reporting et pilotage"
+              data={contracts.map(toReportsExportRow)}
+            />
         </div>
       </section>
 

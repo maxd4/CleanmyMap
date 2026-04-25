@@ -1,6 +1,7 @@
 {
   "name": "web",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,7 +16,8 @@
     "data:test:build": "node scripts/build-test-local-store.mjs",
     "data:real:sync": "node scripts/sync-real-data-from-sheet.mjs --geocode",
     "data:sheet:build-import": "node scripts/build-admin-import-from-sheet.mjs",
-    "data:sheet:sync-supabase": "node scripts/sync-google-sheet-to-supabase.mjs --geocode",
+    "data:sheet:sync-supabase": "node --experimental-strip-types scripts/sync-google-sheet-to-supabase.mjs --geocode",
+    "data:geometry:backfill": "node --experimental-strip-types scripts/backfill-derived-geometry.mjs",
     "data:sheet:push": "node scripts/push-google-sheet-from-form-like.mjs",
     "data:validated:sync": "node scripts/sync-validated-local-store.mjs",
     "backend:doctor": "node scripts/backend-doctor.mjs",
