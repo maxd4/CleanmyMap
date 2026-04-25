@@ -1,7 +1,26 @@
 # GitHub Actions, Dependabot & Security Audit
 
 ## Date: 2026-04-26
-## Statut: ✅ Audit terminé
+## Statut: ✅ Audit terminé - CORRECTIONS APPLIQUÉES
+
+---
+
+## ✅ Changements Appliqués
+
+### 1. GitHub Actions CI (`.github/workflows/ci.yml`)
+- ✅ Ajouté `timeout-minutes: 15` pour éviter les runs bloqués
+
+### 2. Dependabot (`.github/dependabot.yml`)
+- ✅ Ajouté reviewers automatiques (`maxd4`)
+- ✅ Ajouté labels (`dependencies`, `npm`, `github-actions`)
+- ✅ Ajouté `exclude-patterns` pour `next`, `react`, `react-dom` (majeurs critiques)
+
+### 3. CodeQL (`.github/workflows/codeql.yml`)
+- ✅ Activé `queries: security-extended,security-and-quality` (ligne 34)
+
+### 4. Vulnérabilités npm (Corrigées dans commits précédents)
+- ✅ CodeQL: Fix URL substring sanitization dans `route-geometry.test.ts`
+- ✅ Overrides: `uuid: ^11.0.0` et `postcss: ^8.5.0` dans `package.json`
 
 ---
 

@@ -5,22 +5,46 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    reviewers:
+      - "maxd4"
+    labels:
+      - "dependencies"
+      - "npm"
     groups:
       dependencies:
         patterns:
           - "*"
+        exclude-patterns:
+          - "next"
+          - "react"
+          - "react-dom"
 
   - package-ecosystem: "npm"
     directory: "/apps/web" # Dossier spécifique de l'app web
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    reviewers:
+      - "maxd4"
+    labels:
+      - "dependencies"
+      - "npm"
+      - "apps/web"
     groups:
       dependencies:
         patterns:
           - "*"
+        exclude-patterns:
+          - "next"
+          - "react"
+          - "react-dom"
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    reviewers:
+      - "maxd4"
+    labels:
+      - "dependencies"
+      - "github-actions"
