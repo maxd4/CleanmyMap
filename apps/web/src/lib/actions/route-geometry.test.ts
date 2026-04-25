@@ -16,11 +16,13 @@ describe("deriveAutoDrawingFromLocation", () => {
     const originalFetch = global.fetch;
     const fetchCalls: string[] = [];
     global.fetch = (async (input: RequestInfo | URL) => {
-      const url = String(input);
-      fetchCalls.push(url);
-      if (url.includes("nominatim.openstreetmap.org")) {
-        const lat = url.includes("depart") ? "48.85" : "48.86";
-        const lon = url.includes("depart") ? "2.35" : "2.37";
+      const urlString = String(input);
+      fetchCalls.push(urlString);
+      // Safe URL validation: parse and check hostname exactly
+      const url = new URL(urlString);
+      if (url.hostname === "nominatim.openstreetmap.org") {
+        const lat = url.searchParams.get("q")?.includes("depart") ? "48.85" : "48.86";
+        const lon = url.searchParams.get("q")?.includes("depart") ? "2.35" : "2.37";
         return new Response(JSON.stringify([{ lat, lon }]), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -55,9 +57,14 @@ describe("deriveAutoDrawingFromLocation", () => {
         arrivalLocationLabel: "arrivee",
         routeStyle: "direct",
       });
-      const directRouteCall = fetchCalls.find((url) =>
-        url.includes("router.project-osrm.org"),
-      );
+      // Safe URL validation: parse and check hostname exactly
+      const directRouteCall = fetchCalls.find((url) => {
+        try {
+          return new URL(url).hostname === "router.project-osrm.org";
+        } catch {
+          return false;
+        }
+      });
       expect(directRouteCall).toContain("2.350000,48.850000;2.370000,48.860000");
 
       fetchCalls.length = 0;
@@ -67,9 +74,14 @@ describe("deriveAutoDrawingFromLocation", () => {
         arrivalLocationLabel: "arrivee",
         routeStyle: "souple",
       });
-      const soupleRouteCall = fetchCalls.find((url) =>
-        url.includes("router.project-osrm.org"),
-      );
+      // Safe URL validation: parse and check hostname exactly
+      const soupleRouteCall = fetchCalls.find((url) => {
+        try {
+          return new URL(url).hostname === "router.project-osrm.org";
+        } catch {
+          return false;
+        }
+      });
       expect(soupleRouteCall).toContain(";");
       expect(soupleRouteCall?.split(";").length).toBeGreaterThan(2);
     } finally {
@@ -80,10 +92,12 @@ describe("deriveAutoDrawingFromLocation", () => {
   it("falls back to a raw or flexible polyline when OSRM fails", async () => {
     const originalFetch = global.fetch;
     global.fetch = (async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes("nominatim.openstreetmap.org")) {
-        const lat = url.includes("depart") ? "48.85" : "48.86";
-        const lon = url.includes("depart") ? "2.35" : "2.37";
+      const urlString = String(input);
+      // Safe URL validation: parse and check hostname exactly
+      const url = new URL(urlString);
+      if (url.hostname === "nominatim.openstreetmap.org") {
+        const lat = url.searchParams.get("q")?.includes("depart") ? "48.85" : "48.86";
+        const lon = url.searchParams.get("q")?.includes("depart") ? "2.35" : "2.37";
         return new Response(JSON.stringify([{ lat, lon }]), {
           status: 200,
           headers: { "Content-Type": "application/json" },
