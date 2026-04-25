@@ -112,12 +112,12 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "admin",
 ]);
 
-const SIMPLIFIE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
+const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "profile",
   "new",
   "map",
   "history",
-  "guide",
+  "help",
   "dashboard",
   "sandbox",
   "community",
@@ -230,15 +230,15 @@ function isRouteAllowedByDisplayMode(
   if (displayMode === "sobre") {
     return SOBRE_ALLOWED_ROUTE_IDS.has(routeId);
   }
-  return SIMPLIFIE_ALLOWED_ROUTE_IDS.has(routeId);
+  return MINIMALISTE_ALLOWED_ROUTE_IDS.has(routeId);
 }
 
 function getDisplayModeLabel(displayMode: DisplayMode, locale: Locale): string {
   if (displayMode === "sobre") {
     return locale === "fr" ? "mode sobre" : "calm mode";
   }
-  if (displayMode === "simplifie") {
-    return locale === "fr" ? "mode simplifié" : "simplified mode";
+  if (displayMode === "minimaliste") {
+    return locale === "fr" ? "mode minimaliste" : "minimalist mode";
   }
   return locale === "fr" ? "mode exhaustif" : "exhaustive mode";
 }

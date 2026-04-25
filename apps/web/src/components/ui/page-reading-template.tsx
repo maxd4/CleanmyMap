@@ -32,7 +32,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
 
 function ContextLabel({ children }: { children: ReactNode }) {
   return (
-    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 [data-display-mode='simplifie']_&:text-slate-900">
+    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700 [data-display-mode='minimaliste']_&:text-slate-900">
       {children}
     </p>
   );
@@ -46,7 +46,7 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
     <CmmPageShell data-rubrique-report-root>
       {/* Header */}
       <CmmCard tone="slate" variant="elevated" size="lg" className="core-feature">
-        <div className="[data-display-mode='simplifie']_&:hidden">
+        <div className="[data-display-mode='minimaliste']_&:hidden">
           <SectionLabel>{isFrench ? "Pourquoi je suis ici" : "Why am I here"}</SectionLabel>
         </div>
         <ContextLabel>{props.context}</ContextLabel>
@@ -57,14 +57,14 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
       </CmmCard>
 
       {/* Summary */}
-      <CmmCard tone="slate" className="[data-display-mode='simplifie']_&:hidden">
+      <CmmCard tone="slate" className="[data-display-mode='minimaliste']_&:hidden">
         <SectionLabel>{isFrench ? "Résumer" : "Summarize"}</SectionLabel>
         <div className="mt-2">{props.summary}</div>
       </CmmCard>
 
       {/* Actions */}
       <CmmCard tone="emerald" className="core-feature">
-        <div className="[data-display-mode='simplifie']_&:hidden">
+        <div className="[data-display-mode='minimaliste']_&:hidden">
           <SectionLabel>{isFrench ? "Agir" : "Act"}</SectionLabel>
         </div>
         <CmmButtonGroup className="mt-2">
