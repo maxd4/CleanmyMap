@@ -28,7 +28,7 @@ export function IdentityProfileBanner({ profile }: IdentityProfileBannerProps) {
   const { displayMode } = useSitePreferences();
   const Icon = PROFILE_ICONS[profile] || Info;
   
-  if (displayMode === "simplifie") return null;
+  if (displayMode === "minimaliste") return null;
 
   return (
     <div className="flex items-center gap-4 px-6 py-4 bg-slate-900/[0.03] border border-slate-200/60 rounded-2xl mb-8 group transition-all hover:bg-white hover:shadow-md hover:border-slate-300">

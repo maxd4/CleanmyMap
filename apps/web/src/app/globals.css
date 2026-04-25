@@ -613,7 +613,7 @@ html.dark .glass-tooltip {
   -webkit-text-fill-color: initial;
 }
 
-/* Hover simple (pas de transform) */
+/* Hover minimaliste (pas de transform) */
 [data-display-mode="minimaliste"] .cmm-minimal-hover:hover {
   transform: none;
   background-color: var(--bg-muted);

@@ -54,7 +54,7 @@ const BANNED_UNACCENTED_FORMS = [
   /\binterpretation\b/i,
   /\bevenements\b/i,
   /\bbenevoles\b/i,
-  /\bsimplifie\b/i,
+  /\bminimaliste\b/i,
 ] as const;
 
 function collectHumanStrings(raw: string): string[] {

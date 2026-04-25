@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { estimateVisionFromStats } from "./vision";
 
 describe("estimateVisionFromStats", () => {
-  it("returns the simplified training signals and a discrete fill level", () => {
+  it("returns the minimalisted training signals and a discrete fill level", () => {
     const estimate = estimateVisionFromStats(
       [
         {

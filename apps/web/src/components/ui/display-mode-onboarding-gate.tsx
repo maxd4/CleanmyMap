@@ -36,7 +36,7 @@ const MODE_CARDS: ModeCard[] = [
     },
   },
   {
-    id: "simplifie",
+    id: "minimaliste",
     title: { fr: "Simplifié", en: "Simplified" },
     recommendation: {
       fr: "Recommandé pour les nouveaux utilisateurs",
@@ -44,7 +44,7 @@ const MODE_CARDS: ModeCard[] = [
     },
     description: {
       fr: "Parcours guidé, vocabulaire simplifié, accès progressif aux rubriques avancées.",
-      en: "Guided flow, simplified wording, progressive access to advanced sections.",
+      en: "Guided flow, minimalisted wording, progressive access to advanced sections.",
     },
   },
 ];

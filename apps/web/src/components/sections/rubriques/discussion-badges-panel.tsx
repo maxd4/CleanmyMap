@@ -6,7 +6,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 const MODE_BADGES = [
   { id: "mode_exhaustif", label: "Mode exhaustif", icon: "sparkles" },
   { id: "mode_sobre", label: "Mode sobre", icon: "leaf" },
-  { id: "mode_simplifie", label: "Mode simplifié", icon: "sliders-horizontal" },
+  { id: "mode_minimaliste", label: "Mode simplifié", icon: "sliders-horizontal" },
 ] as const;
 
 const ROLE_BADGES = [
