@@ -1,5 +1,5 @@
 export const ASSOCIATION_SELECTION_OPTIONS = [
-  "Action spontanee",
+  "Action spontanée",
   "Entreprise",
   "AEBCPEV",
   "Association Sans Murs Paris 15",

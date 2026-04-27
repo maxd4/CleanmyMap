@@ -10,6 +10,7 @@ import {
 } from "react-leaflet";
 import L from "leaflet";
 import { ExternalLink, Instagram, Globe } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { getEntryTrustState, getPartnerWhyThisStructureMatters } from "./annuaire-helpers";
 
 // Types needed for integration
@@ -47,6 +48,9 @@ export type AnnuaireEntry = {
   };
   verificationStatus: VerificationStatus;
   qualificationStatus: QualificationStatus;
+  isFeatured?: boolean;
+  featuredReason?: string;
+  tags?: string[];
   lastUpdatedAt: string;
   recentActivityAt: string;
   internalAdminContact?: {
@@ -58,156 +62,131 @@ export type AnnuaireEntry = {
 
 const PARIS_CENTER: [number, number] = [48.8566, 2.3522];
 
-// Custom icons based on entity kind
-const createCustomIcon = (
-  kind: EntityKind,
-  trustState: "trusted" | "pending" | "incomplete",
+// Custom icons based on engagement type and style
+const createBubbleIcon = (
+  entry: AnnuaireEntry,
   highlighted = false,
 ) => {
-  let color = "#10b981"; // emerald default (association)
-  if (kind === "commerce" || kind === "entreprise") color = "#f59e0b"; // amber
-  if (kind === "evenement") color = "#3b82f6"; // blue
-  if (kind === "groupe_parole") color = "#8b5cf6"; // violet
-  const outline =
-    trustState === "incomplete"
-      ? "#fb7185"
-      : trustState === "pending"
-        ? "#f59e0b"
-        : highlighted
-          ? "#1d4ed8"
-          : "transparent";
+  const primaryType = entry.types[0];
+  let color = "#8b5cf6"; // violet default
+  if (primaryType === "environnemental") color = "#10b981"; // emerald
+  if (primaryType === "social") color = "#3b82f6"; // blue
+  if (primaryType === "humanitaire") color = "#f43f5e"; // rose
+
+  const initials = entry.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
   return L.divIcon({
-    className: "custom-leaflet-icon",
-    html: `<div style="background-color: ${color}; width: ${highlighted ? "18px" : "14px"}; height: ${highlighted ? "18px" : "14px"}; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.4); outline: ${outline === "transparent" ? "none" : `3px solid ${outline}`}; opacity: ${trustState === "trusted" ? 1 : 0.82};"></div>`,
-    iconSize: [highlighted ? 18 : 14, highlighted ? 18 : 14],
-    iconAnchor: [highlighted ? 9 : 7, highlighted ? 9 : 7],
+    className: "custom-bubble-icon",
+    html: `
+      <div class="group relative flex items-center gap-2 transition-all duration-300 ${highlighted ? 'scale-110 z-[1000]' : 'hover:scale-105'}">
+        <div class="flex items-center justify-center w-10 h-10 rounded-full border-2 border-white shadow-lg shadow-black/10 transition-transform overflow-hidden" 
+             style="background-color: ${color}; color: white; font-weight: bold; font-size: 12px;">
+          ${initials}
+        </div>
+        <div class="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-slate-200 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          <p class="text-[11px] font-bold text-slate-900">${entry.name}</p>
+        </div>
+      </div>
+    `,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20],
   });
 };
 
 export function AnnuaireMapCanvas({
   items,
   highlightedItemId,
+  onItemClick,
+  variant = "standard",
 }: {
   items: AnnuaireEntry[];
   highlightedItemId?: string | null;
+  onItemClick?: (id: string) => void;
+  variant?: "standard" | "exploration";
 }) {
   const center = useMemo<[number, number]>(() => {
+    if (highlightedItemId) {
+      const item = items.find(i => i.id === highlightedItemId);
+      if (item) return [item.lat, item.lng];
+    }
     return PARIS_CENTER;
-  }, []);
+  }, [highlightedItemId, items]);
+
+  const isExploration = variant === "exploration";
 
   return (
-    <div className="h-[500px] w-full overflow-hidden rounded-xl border border-slate-200">
+    <div className={cn(
+      "w-full overflow-hidden border border-slate-200 bg-slate-50 transition-all duration-500",
+      isExploration ? "h-[750px] rounded-[2.5rem] shadow-2xl border-white/50" : "h-[500px] rounded-xl"
+    )}>
       <MapContainer
         center={center}
-        zoom={12}
+        zoom={isExploration ? 13 : 12}
         scrollWheelZoom
         className="h-full w-full bg-slate-50 relative z-0"
       >
         <LayersControl position="topright">
-          <LayersControl.BaseLayer checked name="Mode Clair">
+          <LayersControl.BaseLayer checked name="Mode Épuré">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
               url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
             />
           </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Mode Sombre">
+          <LayersControl.BaseLayer name="Voyager">
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
-              url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
             />
           </LayersControl.BaseLayer>
         </LayersControl>
 
         {items.map((entry) => {
           const trustState = getEntryTrustState(entry);
+          const isHighlighted = highlightedItemId === entry.id;
+          const initials = entry.name.split(" ").map(n => n[0]).join("").slice(0, 2);
+          const color = entry.types.includes("environnemental") ? "emerald" : 
+                        entry.types.includes("social") ? "blue" : 
+                        entry.types.includes("humanitaire") ? "rose" : "violet";
+          
           return (
             <Marker
               key={entry.id}
               position={[entry.lat, entry.lng]}
-              icon={createCustomIcon(
-                entry.kind,
-                trustState,
-                highlightedItemId === entry.id,
-              )}
+              icon={createBubbleIcon(entry, isHighlighted)}
+              eventHandlers={{
+                click: () => onItemClick?.(entry.id),
+              }}
             >
-              <Popup className="rounded-xl">
-                <div className="w-64 space-y-2 p-1">
-                  <h4 className="font-semibold leading-tight text-slate-900">{entry.name}</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {entry.types.map((t) => (
-                      <span
-                        key={t}
-                        className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-slate-600"
-                      >
-                        {t}
-                      </span>
-                    ))}
-                  </div>
-                  <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-slate-600">
-                    {entry.description}
-                  </p>
-                  {trustState !== "trusted" ? (
-                    <p
-                      className={`text-[11px] font-semibold ${
-                        trustState === "incomplete"
-                          ? "text-rose-700"
-                          : "text-amber-700"
-                      }`}
-                    >
-                      {trustState === "incomplete"
-                        ? "Fiche à compléter"
-                        : "Fiche non confirmée"}
+              {!isExploration && (
+                <Popup className="rounded-xl">
+                  <div className="w-64 space-y-2 p-1">
+                    <h4 className="font-semibold leading-tight cmm-text-primary">{entry.name}</h4>
+                    <div className="flex flex-wrap gap-1">
+                      {entry.types.map((t) => (
+                        <span
+                          key={t}
+                          className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase cmm-text-secondary"
+                        >
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="mt-1 line-clamp-3 cmm-text-caption leading-relaxed cmm-text-secondary">
+                      {entry.description}
                     </p>
-                  ) : null}
-                  <p className="text-[11px] text-slate-500">
-                    Zone couverte:{" "}
-                    {entry.coveredArrondissements.length > 0
-                      ? `Paris ${entry.coveredArrondissements.join(", ")}`
-                      : entry.location}
-                  </p>
-                  <p className="text-[11px] text-slate-500">
-                    Statut:{" "}
-                    {entry.verificationStatus === "verifie"
-                      ? "vérifiée"
-                      : entry.verificationStatus === "en_cours"
-                        ? "en cours"
-                        : "à revalider"}{" "}
-                    | MAJ: {entry.lastUpdatedAt}
-                  </p>
-                  {trustState === "trusted" ? (
-                    <p className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] text-emerald-900">
-                      {getPartnerWhyThisStructureMatters(entry)}
-                    </p>
-                  ) : null}
-                  <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-100 pt-2">
-                    {entry.primaryChannel ? (
-                      <a
-                        href={entry.primaryChannel.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-full bg-emerald-600 px-3 py-1.5 text-[10px] font-semibold text-white hover:bg-emerald-700"
-                      >
-                        Contacter <ExternalLink size={10} />
-                      </a>
-                    ) : (
-                      <span className="rounded-full border border-dashed border-slate-300 px-3 py-1.5 text-[10px] font-semibold text-slate-500">
-                        Canal public à confirmer
-                      </span>
-                    )}
-                    {entry.websiteUrl ? (
-                      <a
-                        href={entry.websiteUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1.5 text-[10px] font-semibold text-slate-700 hover:bg-slate-100"
-                      >
-                        Site officiel <Globe size={10} />
-                      </a>
+                    {trustState !== "trusted" ? (
+                      <p className={`cmm-text-caption font-semibold ${trustState === "incomplete" ? "text-rose-700" : "text-amber-700"}`}>
+                        {trustState === "incomplete" ? "Fiche à compléter" : "Fiche non confirmée"}
+                      </p>
                     ) : null}
+                    <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-100 pt-2">
+                      <CmmButton size="sm" tone="violet" onClick={() => onItemClick?.(entry.id)}>
+                        {variant === "standard" ? "Détails" : "Ouvrir la fiche"}
+                      </CmmButton>
+                    </div>
                   </div>
-                </div>
-              </Popup>
+                </Popup>
+              )}
             </Marker>
           );
         })}

@@ -28,49 +28,43 @@
   --action-secondary-hover: rgba(16, 185, 129, 0.08);
 
   /* ============================================================
-     TYPOGRAPHY TOKENS - Échelle cohérente Desktop/Mobile
+     TYPOGRAPHY TOKENS - 1 SEULE FONT FAMILY (Inter)
      ============================================================ */
 
-  /* 1. Font Families (Paire: Display + Body) - next/font variables */
-  --font-display: var(--font-outfit), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-body: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* 1. Font Family Unique */
+  --font-base: var(--font-inter), system-ui, -apple-system, sans-serif;
 
-  /* 2. Type Scale (Major Third ratio 1.25) - Desktop */
-  --text-xs: 0.75rem;      /* 12px - Captions, meta, badges */
-  --text-sm: 0.875rem;     /* 14px - Labels, aides, boutons */
-  --text-base: 1rem;       /* 16px - Corps de texte */
-  --text-lg: 1.125rem;     /* 18px - Lead text, paragraphes importants */
-  --text-xl: 1.25rem;      /* 20px - H4, sous-titres */
-  --text-2xl: 1.5rem;      /* 24px - H3 */
-  --text-3xl: 1.875rem;    /* 30px - H2 */
-  --text-4xl: 2.25rem;     /* 36px - H1 page */
-  --text-5xl: 3rem;        /* 48px - Hero */
-  --text-6xl: 3.75rem;     /* 60px - Hero large */
+  /* 2. Type Scale (Modular Scale - Perfect Fourth 1.333) - Base 16px */
+  --text-caption: 0.75rem;   /* 12px */
+  --text-small: 0.875rem;    /* 14px */
+  --text-body: 1rem;         /* 16px */
+  --text-h4: 1.333rem;       /* ~21px */
+  --text-h3: 1.777rem;       /* ~28px */
+  --text-h2: 2.369rem;       /* ~38px */
+  --text-h1: 3.157rem;       /* ~50px */
+  --text-display: 4.209rem;  /* ~67px */
 
-  /* 3. Font Weights (Limiter: 400-700, éviter 800+) */
+  /* 3. Font Weights */
   --weight-normal: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
   --weight-bold: 700;
 
-  /* 4. Line Heights (lisibilité FR optimisée) */
+  /* 4. Line Heights */
   --leading-none: 1;
-  --leading-tight: 1.15;   /* Titres courts */
-  --leading-snug: 1.3;     /* Sous-titres */
-  --leading-normal: 1.5;   /* Corps de texte */
-  --leading-relaxed: 1.625; /* Paragraphes longs */
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
 
   /* 5. Semantic Typography (Hiérarchie) */
-  /* Display/Titres */
-  --font-h1: var(--font-display);
-  --font-h2: var(--font-display);
-  --font-h3: var(--font-display);
-  --font-h4: var(--font-display);
+  --font-h1: var(--font-base);
+  --font-h2: var(--font-base);
+  --font-h3: var(--font-base);
+  --font-h4: var(--font-base);
 
-  --size-h1: var(--text-4xl);
-  --size-h2: var(--text-3xl);
-  --size-h3: var(--text-2xl);
-  --size-h4: var(--text-xl);
+  --size-h1: var(--text-h1);
+  --size-h2: var(--text-h2);
+  --size-h3: var(--text-h3);
+  --size-h4: var(--text-h4);
 
   --weight-h1: var(--weight-bold);
   --weight-h2: var(--weight-semibold);
@@ -78,35 +72,51 @@
   --weight-h4: var(--weight-medium);
 
   --leading-h1: var(--leading-tight);
-  --leading-h2: var(--leading-snug);
-  --leading-h3: var(--leading-snug);
+  --leading-h2: var(--leading-tight);
+  --leading-h3: var(--leading-tight);
   --leading-h4: var(--leading-normal);
 
   /* Corps */
-  --font-body: var(--font-body);
-  --size-body: var(--text-base);
+  --font-body-text: var(--font-base);
+  --size-body: var(--text-body);
   --weight-body: var(--weight-normal);
   --leading-body: var(--leading-normal);
 
   /* Petit texte */
-  --font-small: var(--font-body);
-  --size-small: var(--text-sm);
+  --font-small: var(--font-base);
+  --size-small: var(--text-small);
   --weight-small: var(--weight-normal);
   --leading-small: var(--leading-normal);
 
   /* Caption */
-  --font-caption: var(--font-body);
-  --size-caption: var(--text-xs);
+  --font-caption: var(--font-base);
+  --size-caption: var(--text-caption);
   --weight-caption: var(--weight-normal);
   --leading-caption: var(--leading-normal);
 
-  /* 6. Semantic Text Colors */
-  /* Hiérarchie de contenu */
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  --text-inverse: #f8fafc;
+  /* ============================================================
+     SPACING TOKENS - Base unit 8px
+     ============================================================ */
+  --space-1: 0.5rem;   /* 8px */
+  --space-2: 1rem;     /* 16px */
+  --space-3: 1.5rem;   /* 24px */
+  --space-4: 2rem;     /* 32px */
+  --space-5: 2.5rem;   /* 40px */
+  --space-6: 3rem;     /* 48px */
+  --space-8: 4rem;     /* 64px */
+  --space-12: 6rem;    /* 96px */
 
+  /* ============================================================
+     RADIUS TOKENS
+     ============================================================ */
+  --radius-sm: 0.5rem;   /* 8px */
+  --radius-md: 1rem;     /* 16px */
+  --radius-lg: 1.5rem;   /* 24px */
+  --radius-full: 9999px;
+
+
+
+  /* 6. Semantic Text Colors */
   /* États / Feedback */
   --text-success: #059669;
   --text-warning: #b45309;
@@ -138,12 +148,6 @@ html.dark {
   --action-secondary-bg: rgba(15, 23, 42, 0.72);
   --action-secondary-text: #f8fafc;
   --action-secondary-hover: rgba(16, 185, 129, 0.12);
-
-  /* Typography: Dark mode text colors */
-  --text-primary: #f8fafc;
-  --text-secondary: #e2e8f0;
-  --text-muted: #94a3b8;
-  --text-inverse: #0b1220;
 
   /* States */
   --text-success: #34d399;
@@ -181,14 +185,16 @@ html.dark {
 }
 
 @layer utilities {
+  /* ============================================================
+     GRADIENTS & EFFECTS
+     ============================================================ */
   .punchy-title {
-    font-family: 'Outfit', sans-serif;
-    letter-spacing: -0.02em;
-    background: linear-gradient(135deg, var(--accent-primary), #3b82f6);
+    /* 135deg gradient, Emerald (#10b981) to Cyan (#06b6d4) -> ~60deg hue shift on color wheel */
+    background: linear-gradient(135deg, #10b981, #06b6d4);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
-    filter: drop-shadow(0 2px 4px rgba(16, 185, 129, 0.1));
+    filter: drop-shadow(0 2px 4px rgba(16, 185, 129, 0.15));
   }
 
   .premium-card {
@@ -227,12 +233,17 @@ html.dark {
   }
 
   .cmm-panel {
-    border-radius: 1.5rem;
+    border-radius: var(--radius-lg); /* 24px — top-level page sections */
   }
 
   .cmm-card {
-    border-radius: 1.25rem;
+    border-radius: var(--radius-md); /* 16px — content cards */
   }
+
+  /* Canonical radius aliases for inline usage */
+  .rounded-card  { border-radius: var(--radius-md); }  /* 16px cards */
+  .rounded-panel { border-radius: var(--radius-lg); }  /* 24px sections */
+  .rounded-chip  { border-radius: var(--radius-sm); }  /* 8px tags/chips */
 
   .cmm-focus-ring {
     outline: none;
@@ -272,35 +283,35 @@ html.dark {
 
   /* Corps et texte courant */
   .cmm-text-body {
-    font: var(--weight-body) var(--size-body)/var(--leading-body) var(--font-body);
+    font: var(--weight-body) var(--size-body)/var(--leading-body) var(--font-body-text);
   }
 
   .cmm-text-small {
-    font: var(--weight-small) var(--size-small)/var(--leading-small) var(--font-small);
+    font: var(--weight-small) var(--size-small)/var(--leading-small) var(--font-body);
   }
 
   .cmm-text-caption {
-    font: var(--weight-caption) var(--size-caption)/var(--leading-caption) var(--font-caption);
+    font: var(--weight-caption) var(--size-caption)/var(--leading-caption) var(--font-body);
   }
 
-  /* Couleurs texte sémantiques */
-  .text-primary { color: var(--text-primary); }
-  .text-secondary { color: var(--text-secondary); }
-  .text-muted { color: var(--text-muted); }
-  .text-inverse { color: var(--text-inverse); }
+  /* Couleurs texte sémantiques (préfixe cmm- pour éviter conflit Tailwind v4) */
+  .cmm-text-primary { color: var(--text-primary); }
+  .cmm-text-secondary { color: var(--text-secondary); }
+  .cmm-text-muted { color: var(--text-muted); }
+  .cmm-text-inverse { color: var(--text-inverse); }
 
-  .text-success { color: var(--text-success); }
-  .text-warning { color: var(--text-warning); }
-  .text-danger { color: var(--text-danger); }
-  .text-info { color: var(--text-info); }
+  .cmm-text-success { color: var(--text-success); }
+  .cmm-text-warning { color: var(--text-warning); }
+  .cmm-text-danger { color: var(--text-danger); }
+  .cmm-text-info { color: var(--text-info); }
 
-  .text-link {
+  .cmm-text-link {
     color: var(--text-link);
     text-decoration: underline;
     text-underline-offset: 0.15em;
   }
 
-  .text-link:hover {
+  .cmm-text-link:hover {
     color: var(--text-link-hover);
   }
 
@@ -370,18 +381,60 @@ html.dark {
   /* Comportement par défaut pour éléments non-interactifs */
   .cursor-inherit { cursor: inherit; }
 
+  /* ============================================================
+     COLOR POP-OUT — 60/30/10 rule
+     60% neutral canvas, 30% secondary (slate/muted), 10% CTA accent
+     ============================================================ */
+
+  /* Primary CTA pop-out: high-chroma emerald with warm contrast */
+  .cmm-cta-pop {
+    background: var(--action-primary-bg);
+    color: var(--action-primary-text);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    transition: background 0.18s ease, box-shadow 0.22s ease, transform 0.15s ease;
+  }
+  .cmm-cta-pop:hover {
+    background: var(--action-primary-hover);
+    box-shadow: 0 4px 14px -4px rgba(16, 185, 129, 0.45);
+    transform: translateY(-1px);
+  }
+  .cmm-cta-pop:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px -2px rgba(16, 185, 129, 0.35);
+  }
+
+  /* Neutral 30%: secondary surfaces – subtle hover tint */
+  .cmm-surface-action {
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .cmm-surface-action:hover {
+    background: var(--action-secondary-hover);
+    border-color: rgba(16, 185, 129, 0.25);
+  }
+
+  /* ============================================================
+     INTERACTION POLISH — Cards, buttons, controls
+     ============================================================ */
+
   /* Cards et surfaces cliquables */
   .cmm-clickable {
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    transition:
+      transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow 0.18s ease,
+      border-color 0.18s ease;
   }
 
   .cmm-clickable:hover {
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-elevated);
+    border-color: rgba(16, 185, 129, 0.3);
   }
 
   .cmm-clickable:active {
-    transform: translateY(0);
+    transform: translateY(0) scale(0.99);
+    box-shadow: var(--shadow-soft);
+    transition-duration: 0.08s;
   }
 
   /* S'assurer que les enfants d'éléments cliquables héritent correctement */
@@ -393,6 +446,11 @@ html.dark {
   .cmm-interactive {
     cursor: pointer;
     position: relative;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      box-shadow 0.18s ease,
+      transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   .cmm-interactive::after {
@@ -403,26 +461,186 @@ html.dark {
     opacity: 0;
     transition: opacity 0.15s ease;
     pointer-events: none;
+    background: radial-gradient(circle at center, rgba(16, 185, 129, 0.06), transparent 70%);
   }
 
   .cmm-interactive:hover::after {
     opacity: 1;
   }
 
-  /* Éléments de formulaire avec états cohérents */
+  .cmm-interactive:active {
+    transform: scale(0.98);
+    transition-duration: 0.08s;
+  }
+
+  /* ============================================================
+     FORM FIELD POLISH — Prompt #17
+     ============================================================ */
+
+  /* Standard form inputs: consistent focus glow */
   .cmm-input {
     cursor: text;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.18s ease,
+      background 0.15s ease;
+  }
+
+  .cmm-input:focus,
+  .cmm-input:focus-visible {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow:
+      0 0 0 3px rgba(16, 185, 129, 0.15),
+      0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  html.dark .cmm-input:focus,
+  html.dark .cmm-input:focus-visible {
+    box-shadow:
+      0 0 0 3px rgba(16, 185, 129, 0.2),
+      0 1px 3px rgba(0, 0, 0, 0.3);
   }
 
   .cmm-input:read-only,
   .cmm-input[readonly] {
     cursor: default;
+    background: var(--bg-muted);
   }
 
   .cmm-input:disabled,
   .cmm-input[disabled] {
     cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  /* Native inputs: apply consistent focus ring via a global rule */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="submit"]):not([type="button"]):not([type="reset"]):focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    box-shadow:
+      0 0 0 2px rgba(16, 185, 129, 0.18),
+      0 1px 3px rgba(0, 0, 0, 0.05);
+    border-color: var(--accent-primary) !important;
+    transition: box-shadow 0.18s ease, border-color 0.15s ease;
+  }
+
+  /* Toggle/checkbox accent */
+  input[type="checkbox"],
+  input[type="radio"] {
+    accent-color: var(--accent-primary);
+    transition: box-shadow 0.15s ease;
+  }
+
+  input[type="checkbox"]:focus,
+  input[type="radio"]:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.22);
+  }
+
+  /* ============================================================
+     MODAL UX — Prompt #18
+     Backdrop, enter/exit, focus hierarchy, scrollbar
+     ============================================================ */
+
+  /* Backdrop separation: deep blur + warm dark overlay */
+  .cmm-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(2, 6, 23, 0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    animation: cmm-backdrop-in 0.22s ease forwards;
+  }
+
+  @keyframes cmm-backdrop-in {
+    from { opacity: 0; backdrop-filter: blur(0px); }
+    to   { opacity: 1; backdrop-filter: blur(6px); }
+  }
+
+  .cmm-backdrop-exit {
+    animation: cmm-backdrop-out 0.18s ease forwards;
+  }
+
+  @keyframes cmm-backdrop-out {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  /* Modal panel: slide-up enter, scale-down exit */
+  .cmm-modal-panel {
+    animation: cmm-modal-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes cmm-modal-enter {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .cmm-modal-panel-exit {
+    animation: cmm-modal-exit 0.18s cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+
+  @keyframes cmm-modal-exit {
+    from {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(12px) scale(0.97);
+    }
+  }
+
+  /* Modal scrollable body: thin scrollbar */
+  .cmm-modal-scroll {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  }
+
+  .cmm-modal-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+
+  .cmm-modal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .cmm-modal-scroll::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.4);
+    border-radius: 99px;
+  }
+
+  html.dark .cmm-modal-scroll::-webkit-scrollbar-thumb {
+    background: rgba(71, 85, 105, 0.5);
+  }
+
+  /* Sticky header/footer inside modal: subtle separator */
+  .cmm-modal-header-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-default);
+  }
+
+  .cmm-modal-footer-sticky {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border-default);
   }
 }
 
@@ -438,9 +656,14 @@ body {
 }
 
 body {
-  background: radial-gradient(circle at top right, #dcfce7 0%, transparent 40%), var(--background);
+  /* 3-point mesh gradient, background matches Emerald/Cyan theme */
+  background: 
+    radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 50% 10%, rgba(16, 185, 129, 0.04) 0%, transparent 50%),
+    var(--background);
   color: var(--foreground);
-  font-family: "Outfit", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: var(--font-base);
 }
 
 @media (min-width: 1024px) {
@@ -450,7 +673,12 @@ body {
 }
 
 html.dark body {
-  background: radial-gradient(circle at top right, #0f172a 0%, transparent 40%), var(--background);
+  /* 3-point mesh gradient for dark mode */
+  background: 
+    radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 50% 10%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+    var(--background);
   color: var(--foreground);
 }
 
@@ -508,6 +736,39 @@ html.dark .glass-tooltip {
   0% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.5); opacity: 0.3; }
   100% { transform: scale(2.2); opacity: 0; }
+}
+
+@keyframes cmm-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.cmm-shimmer::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.4) 20%,
+    rgba(255, 255, 255, 0.7) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translateX(-100%);
+  animation: cmm-shimmer 1.8s infinite linear;
+}
+
+html.dark .cmm-shimmer::after {
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.05) 20%,
+    rgba(255, 255, 255, 0.1) 60%,
+    rgba(255, 255, 255, 0) 100%
+  );
 }
 
 .cmm-glow-container {
@@ -583,6 +844,11 @@ html.dark .glass-tooltip {
 [data-display-mode="exhaustif"] .sober-only,
 [data-display-mode="minimaliste"] .sober-only {
   display: none;
+}
+
+/* Visible en exhaustif et minimaliste, masqué en sobre */
+[data-display-mode="sobre"] .not-sober {
+  display: none !important;
 }
 
 /* Fond uni sans mesh */
@@ -730,6 +996,57 @@ html.dark[data-display-mode="sobre"] .cmm-sober {
 .cmm-profile-accent {
   transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
+
+/* ============================================================
+   BLOCK ACCENTS - Classes utilitaires par bloc
+   ============================================================ */
+
+/* Classes utilitaires pour accents par bloc - usage rapide */
+.cmm-accent-home {
+  @apply bg-slate-50/80 border-slate-200/80 text-slate-700;
+}
+
+.cmm-accent-act {
+  @apply bg-amber-50/80 border-amber-200/80 text-amber-800;
+}
+
+.cmm-accent-visualize {
+  @apply bg-sky-50/80 border-sky-200/80 text-sky-800;
+}
+
+.cmm-accent-impact {
+  @apply bg-emerald-50/80 border-emerald-200/80 text-emerald-800;
+}
+
+.cmm-accent-network {
+  @apply bg-violet-50/80 border-violet-200/80 text-violet-800;
+}
+
+.cmm-accent-learn {
+  @apply bg-rose-50/80 border-rose-200/80 text-rose-800;
+}
+
+.cmm-accent-pilot {
+  @apply bg-indigo-50/80 border-indigo-200/80 text-indigo-800;
+}
+
+/* Classes pour dots d'accent par bloc */
+.cmm-dot-home { @apply bg-slate-400; }
+.cmm-dot-act { @apply bg-amber-400; }
+.cmm-dot-visualize { @apply bg-sky-400; }
+.cmm-dot-impact { @apply bg-emerald-400; }
+.cmm-dot-network { @apply bg-violet-400; }
+.cmm-dot-learn { @apply bg-rose-400; }
+.cmm-dot-pilot { @apply bg-indigo-400; }
+
+/* Classes pour rings d'accent par bloc */
+.cmm-ring-home { @apply ring-slate-200; }
+.cmm-ring-act { @apply ring-amber-200; }
+.cmm-ring-visualize { @apply ring-sky-200; }
+.cmm-ring-impact { @apply ring-emerald-200; }
+.cmm-ring-network { @apply ring-violet-200; }
+.cmm-ring-learn { @apply ring-rose-200; }
+.cmm-ring-pilot { @apply ring-indigo-200; }
 
 /* ============================================================
    P3 POLISH - Accessibilité, densité mobile, typographie

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import Link from "next/link";
 import type {
   PostActionRetentionLoop,
   SubmissionState,
@@ -9,22 +10,21 @@ type ActionDeclarationFormFeedbackProps = {
   submissionState: SubmissionState;
   createdId: string | null;
   errorMessage: string | null;
-  isQuickMode: boolean;
   hasAttemptedSubmit: boolean;
   validationIssues: ValidationIssue[];
-  optimisticLabel: string | null;
   retentionLoop: PostActionRetentionLoop | null;
+  /** Called when user chooses to declare a new action in-place (no navigation). */
+  onReset?: () => void;
 };
 
 export function ActionDeclarationFormFeedback({
   submissionState,
   createdId,
   errorMessage,
-  isQuickMode,
   hasAttemptedSubmit,
   validationIssues,
-  optimisticLabel,
   retentionLoop,
+  onReset,
 }: ActionDeclarationFormFeedbackProps) {
   const shareUrl = useMemo(() => {
     if (!retentionLoop) {
@@ -51,7 +51,7 @@ export function ActionDeclarationFormFeedback({
       }
       await navigator.clipboard.writeText(text);
     } catch {
-      // Best-effort UX: share availability depends on browser permissions.
+      // Best-effort UX
     }
   }
 
@@ -61,105 +61,93 @@ export function ActionDeclarationFormFeedback({
         <button
           type="submit"
           disabled={submissionState === "pending"}
-          aria-live="polite"
-          className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400 sm:w-auto"
+          className="rounded-lg bg-emerald-600 px-6 py-3 cmm-text-small font-semibold text-white hover:bg-emerald-700 disabled:bg-slate-400"
         >
-          {submissionState === "pending"
-            ? "Envoi en cours..."
-            : isQuickMode
-              ? "Envoyer"
-              : "Envoyer l'action"}
+          {submissionState === "pending" ? "Envoi..." : "Envoyer"}
         </button>
 
-        {submissionState === "success" && createdId ? (
-          <p aria-live="polite" className="text-sm font-medium text-emerald-700">
-            Enregistrée · Réf.{" "}
-            <span className="font-mono">{createdId}</span>
+        {submissionState === "success" && createdId && (
+          <p className="cmm-text-small font-medium text-emerald-700">
+            Enregistrée · {createdId}
           </p>
-        ) : null}
+        )}
 
-        {submissionState === "error" && errorMessage ? (
-          <p aria-live="polite" className="text-sm font-medium text-rose-700">
-            {errorMessage}
-          </p>
-        ) : null}
+        {submissionState === "error" && errorMessage && (
+          <p className="cmm-text-small font-medium text-rose-700">{errorMessage}</p>
+        )}
       </div>
 
-      {hasAttemptedSubmit && validationIssues.length > 0 ? (
-        <div
-          aria-live="polite"
-          className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
-        >
-          <p className="font-semibold">Corrige avant envoi:</p>
+      {hasAttemptedSubmit && validationIssues.length > 0 && (
+        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3 cmm-text-small text-rose-700">
+          <p className="font-semibold">Erreurs:</p>
           <ul className="mt-1 list-disc pl-5">
             {validationIssues.map((issue) => (
               <li key={`${issue.field}-${issue.message}`}>{issue.message}</li>
             ))}
           </ul>
         </div>
-      ) : null}
+      )}
 
-      {optimisticLabel ? (
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          En preparation pour{" "}
-          <span className="font-semibold">{optimisticLabel}</span>...
+      {submissionState === "success" && (
+        <div className="md:col-span-2 mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3 cmm-text-small text-sky-900">
+          <p className="font-semibold">Envoyé</p>
+          <p className="mt-1">En attente de validation admin.</p>
         </div>
-      ) : null}
+      )}
 
-      {submissionState === "success" ? (
-        <div
-          aria-live="polite"
-          className="md:col-span-2 mt-4 rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900"
-        >
-          <p className="font-semibold">Envoye</p>
-          <p className="mt-1">
-            En attente de validation admin. Visible en carte apres{" "}
-            <span className="font-semibold">approved</span>.
-          </p>
-        </div>
-      ) : null}
-
-      {submissionState === "success" && retentionLoop ? (
-        <div
-          aria-live="polite"
-          className="md:col-span-2 mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"
-        >
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-            <p className="font-semibold text-lg">Bravo pour ton action ! 🌿</p>
-            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800 uppercase tracking-wide">
+      {submissionState === "success" && retentionLoop && (
+        <div className="md:col-span-2 mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 cmm-text-small text-emerald-900">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <p className="font-semibold text-base">Bravo ! 🌿</p>
+            <span className="rounded-full bg-emerald-100 px-2 py-1 cmm-text-caption font-bold text-emerald-800">
               {retentionLoop.badge}
             </span>
           </div>
-          
-          <p className="mt-1 leading-relaxed">{retentionLoop.summary}</p>
-          
-          <p className="mt-3 text-emerald-800 font-medium">
-            💡 Prochaine étape : {retentionLoop.nextActionSuggestion}
+
+          <p className="mt-1">{retentionLoop.summary}</p>
+
+          <p className="mt-2 text-emerald-800">
+            💡 {retentionLoop.nextActionSuggestion}
           </p>
 
-          <div className="mt-4 flex flex-wrap items-center gap-3">
+          <div className="mt-3 flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => void handleShare()}
-              className="rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100 shadow-sm"
+              className="rounded-lg border border-emerald-300 bg-white px-3 py-2 cmm-text-small font-semibold text-emerald-800 hover:bg-emerald-100 transition"
             >
-              Partager mon impact
+              Partager
             </button>
-            <a
+
+            {/* In-place reset — stays on the form page */}
+            {onReset && (
+              <button
+                type="button"
+                onClick={onReset}
+                className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 cmm-text-small font-semibold text-emerald-900 hover:bg-emerald-100 transition"
+              >
+                ↺ Nouvelle déclaration
+              </button>
+            )}
+
+            {/* Client-side nav — no full page reload */}
+            <Link
               href="/actions/history"
-              className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 shadow-sm"
+              prefetch
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 cmm-text-small font-semibold cmm-text-secondary hover:bg-slate-100 transition"
             >
-              Voir mon historique
-            </a>
-            <a
+              Historique
+            </Link>
+            <Link
               href="/actions/map"
-              className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 shadow-sm"
+              prefetch
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 cmm-text-small font-semibold cmm-text-secondary hover:bg-slate-100 transition"
             >
-              Consulter la carte
-            </a>
+              Carte
+            </Link>
           </div>
         </div>
-      ) : null}
+      )}
     </>
   );
 }

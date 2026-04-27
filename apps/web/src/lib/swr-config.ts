@@ -10,3 +10,9 @@ export const swrRecentViewOptions: SWRConfiguration = {
   dedupingInterval: VIEW_CACHE_TTL_MS,
   keepPreviousData: true,
 };
+
+export const swrLiveFeedOptions: SWRConfiguration = {
+  ...swrRecentViewOptions,
+  revalidateOnFocus: true,
+  refreshInterval: 30_000, // Polling every 30s for live streams (community, chat, etc.)
+};

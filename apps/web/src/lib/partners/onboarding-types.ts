@@ -111,7 +111,7 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 function extractArrondissementsFromText(text: string): number[] {
-  const matches = text.matchAll(/(?:Paris\s*)?(\d{1,2})(?:er|e)?/gi);
+  const matches = text.matchAll(/(?:Paris\s+)?(\d{1,2})(?:er|e)?\b/gi);
   const values: number[] = [];
   for (const match of matches) {
     const parsed = Number.parseInt(match[1] ?? "", 10);
@@ -161,7 +161,7 @@ export function normalizePublicChannelUrl(value: unknown): string | null {
   if (!trimmed) {
     return null;
   }
-  if (/^https?:\/\//i.test(trimmed)) {
+  if (/^https?:\/\//i.test(trimmed) && trimmed.length < 2048) {
     return isPlaceholderUrl(trimmed) ? null : trimmed;
   }
   if (trimmed.startsWith("mailto:") || trimmed.startsWith("tel:")) {

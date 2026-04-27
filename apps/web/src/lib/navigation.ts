@@ -31,6 +31,7 @@ export type NavigationBlockId =
   | "visualize"
   | "impact"
   | "network"
+  | "connect"
   | "learn"
   | "pilot";
 
@@ -55,6 +56,7 @@ const SPACE_DEFINITIONS: Record<NavigationBlockId, NavigationSpaceMeta> = {
   visualize: { id: "visualize", label: { fr: "Visualiser",     en: "Visualize" },     icon: "🗺️", color: "text-sky-600"  },
   impact:    { id: "impact",    label: { fr: "Impact",         en: "Impact" },        icon: "📊", color: "text-emerald-600" },
   network:   { id: "network",   label: { fr: "Réseau",         en: "Network" },       icon: "🤝", color: "text-violet-600" },
+  connect:   { id: "connect",   label: { fr: "Échanges",       en: "Connect" },       icon: "💬", color: "text-pink-600"   },
   learn:     { id: "learn",     label: { fr: "Apprendre",      en: "Learn" },         icon: "📚", color: "text-rose-600"  },
   pilot:     { id: "pilot",     label: { fr: "Piloter",        en: "Govern" },        icon: "🎯", color: "text-indigo-600" },
 };
@@ -64,6 +66,7 @@ const FIXED_SPACE_ORDER: NavigationBlockId[] = [
   "visualize",
   "impact",
   "network",
+  "connect",
   "learn",
   "pilot",
 ];
@@ -132,7 +135,8 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     act: ["new", "route", "trash-spotter"],
     visualize: ["map", "sandbox"],
     impact: ["reports", "gamification"],
-    network: ["network", "community", "messagerie", "annuaire", "open-data", "funding", "actors"],
+    network: ["network", "community", "annuaire", "open-data", "funding", "actors"],
+    connect: ["messagerie", "dm"],
     learn: ["hub", "climate", "guide", "recycling"],
     pilot: [],
   },
@@ -141,7 +145,8 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     act: ["new", "route", "trash-spotter"],
     visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
-    network: ["community", "messagerie", "annuaire", "open-data", "funding", "actors"],
+    network: ["community", "annuaire", "open-data", "funding", "actors"],
+    connect: ["messagerie", "dm"],
     learn: ["hub", "climate", "guide", "recycling"],
     pilot: ["elus"],
   },
@@ -150,7 +155,8 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     act: ["new", "route", "trash-spotter"],
     visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
-    network: ["community", "messagerie", "annuaire", "open-data", "funding", "actors"],
+    network: ["community", "annuaire", "open-data", "funding", "actors"],
+    connect: ["messagerie", "dm"],
     learn: ["hub", "climate", "guide", "recycling"],
     pilot: ["elus"],
   },
@@ -159,7 +165,8 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     act: ["new", "route", "trash-spotter"],
     visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
-    network: ["network", "community", "messagerie", "annuaire", "open-data", "funding", "actors"],
+    network: ["network", "community", "annuaire", "open-data", "funding", "actors"],
+    connect: ["messagerie", "dm"],
     learn: ["hub", "climate", "guide", "recycling"],
     pilot: ["sponsor", "elus"],
   },
@@ -168,7 +175,8 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     act: ["new", "route", "trash-spotter"],
     visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
-    network: ["network", "community", "messagerie", "annuaire", "open-data", "funding", "actors"],
+    network: ["network", "community", "annuaire", "open-data", "funding", "actors"],
+    connect: ["messagerie", "dm"],
     learn: ["hub", "climate", "guide", "recycling"],
     pilot: ["godmode", "admin", "sponsor", "elus"],
   },

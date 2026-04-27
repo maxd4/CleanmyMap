@@ -59,17 +59,36 @@ const BANNED_UNACCENTED_FORMS = [
 
 function collectHumanStrings(raw: string): string[] {
   const strings: string[] = [];
-  const matches = raw.matchAll(/(["'`])((?:\\.|(?!\1)[\s\S])*)\1/g);
-  for (const match of matches) {
-    const value = match[2];
-    // Ignore identifiers/keys and technical literals.
-    if (!/\s|['’]/.test(value)) {
-      continue;
+  // Safer string extraction: iterate character-by-character to avoid ReDoS
+  // from nested quantifiers in regex like /(["'`])((?:\\.|(?!\1)[\s\S])*)\1/g
+  const quotes = new Set(['"', "'", '`']);
+  let i = 0;
+  while (i < raw.length) {
+    const ch = raw[i];
+    if (!quotes.has(ch)) { i++; continue; }
+    const quote = ch;
+    let j = i + 1;
+    let value = '';
+    while (j < raw.length && raw[j] !== quote) {
+      if (raw[j] === '\\' && j + 1 < raw.length) {
+        value += raw[j + 1];
+        j += 2;
+      } else {
+        value += raw[j];
+        j++;
+      }
     }
-    if (/^https?:\/\//i.test(value)) {
-      continue;
+    if (j < raw.length) {
+      // Ignore identifiers/keys and technical literals.
+      if (!/\s|['’]/.test(value)) {
+        // skip
+      } else if (/^https?:\/\//i.test(value)) {
+        // skip
+      } else {
+        strings.push(value);
+      }
     }
-    strings.push(value);
+    i = j + 1;
   }
   return strings;
 }

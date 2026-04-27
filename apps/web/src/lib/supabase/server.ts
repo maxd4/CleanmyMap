@@ -2,11 +2,24 @@ import { createClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 
 /**
+ * Validates URL has https protocol (CodeQL-safe alternative to startsWith checks)
+ */
+function hasHttpsProtocol(url: string | undefined): boolean {
+  if (!url || typeof url !== "string") return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Returns true if the core Supabase environment variables are present and look valid.
  */
 export function isSupabaseConfigured(): boolean {
   return (
-    !!env.NEXT_PUBLIC_SUPABASE_URL?.startsWith("https://") &&
+    hasHttpsProtocol(env.NEXT_PUBLIC_SUPABASE_URL) &&
     !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length > 20
   );
@@ -37,7 +50,7 @@ export function getSupabaseServerClient(useServiceRole = true) {
       },
     });
 
-  if (!url || !url.startsWith("https://")) {
+  if (!hasHttpsProtocol(url)) {
     const errorMsg = "CRITICAL: NEXT_PUBLIC_SUPABASE_URL is missing or invalid.";
     if (isProd) throw new Error(errorMsg);
 
@@ -53,7 +66,8 @@ export function getSupabaseServerClient(useServiceRole = true) {
     return failFastClient(errorMsg);
   }
 
-  return createClient(url, key, {
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  return createClient(url!, key, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,
