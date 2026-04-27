@@ -199,6 +199,7 @@ export type CreateActionPayload = {
   longitude?: number;
   wasteKg: number;
   cigaretteButts: number; // Toujours présent pour la compatibilité, calculé côté client ou API
+  cigaretteButtsCount?: number; // Nouveau champ optionnel pour le nombre de mégots
   volunteersCount: number;
   durationMinutes: number;
   notes?: string;
@@ -209,6 +210,13 @@ export type CreateActionPayload = {
   recordType?: ActionRecordType;
   photos?: ActionPhotoAsset[];
   visionEstimate?: ActionVisionEstimate | null;
+  // Données utilisateur automatiques
+  userMetadata?: {
+    userId: string;
+    username?: string;
+    displayName?: string;
+    email?: string;
+  };
 };
 
 export type ActionMapItem = Pick<

@@ -78,19 +78,7 @@ PHASE 1 — QUALITÉ UI FONCTIONNELLE
 11) Audit UX réel (écran par écran)
 Usage: prioriser les défauts de perception et d'usage.
 
-Objectif : Supprimer la perception d'attente. Remplacer par anticipation, fluidité et feedback immédiat.
-
-Prompt:
-"Fais un audit UX réel du site avec les 10 critères fournis (hiérarchie, densité, micro-interactions, cohérence, navigation, performance perçue, direction artistique, différenciation, contenu, comportement utilisateur).
-Écris le rendu dans le fichier texte documentation/du/UX.txt
-
-Audit + amélioration UX des états de chargement et interactions.
-
-Contraintes :
-- Ne pas dégrader perf réelle
-- Préserver cohérence UI
-- Pas d'animations inutiles
-- UX prioritaire
+Objectif : Améliorer les fichiers de code UX
 
 Actions obligatoires :
 
@@ -128,44 +116,22 @@ Actions obligatoires :
 - Supprimer toute latence perçue
 - Éviter états "figés" ou ambigus
 
-Méthode :
-- Identifier tous les états de chargement
-- Remplacer spinners par skeletons adaptés
-- Implémenter optimistic updates sur actions clés
-- Harmoniser animations et timings
-- Tester perception utilisateur (rapidité ressentie)
 
 Output attendu :
-- Liste des écrans avec mauvais loading UX
+- Améliorer les mauvais loading UX
 - Nouveau système skeleton (règles + exemples)
 - Implémentation optimistic UI
 - Fichiers modifiés
 - Code appliqué
-- Vérification UX finale (fluidité + perception vitesse)
 
-Format strict:
-1) Résumé exécutif
-2) Top problèmes prioritaires
-3) Audit détaillé par critère
-4) Corrections recommandées par priorité
-5) Points nécessitant des données réelles
-6) Quick wins avant prochaine démo.
-
-Contraintes: critique, concret, séparer faits/inférences, pas de blabla." 
+Contraintes: critique, concret, pas de blabla, tirer 100% du potentiel UX pour un site modern, profond, professionnel, agréalbe.
 
 --------------------------------------------------
 
 
-11.5) Audit UI réel (écran par écran)
-Usage: prioriser les défauts de perception et d'usage.
+11.5) de même pour l'UI 
 
-Objectif : 
-Agis comme un expert design system + UI engineer senior. Audite puis refonds mon site web pour corriger toute incohérence visuelle et le faire reposer sur un vrai design system maintenable, cohérent et scalable.
-
-Prompt:
-"Fais un audit UI réel du site et écris le dans un fichier texte à la base du repo avec un plan step by step d'implémentation executable.
-
-Applique strictement ces 5 axes :
+Applique aussi ces 5 axes :
 1. Couleurs sémantiques : remplace les couleurs hardcodées par des tokens fonctionnels (background, surface, text, border, brand, success, warning, error, muted, info) avec une échelle cohérente de nuances.
 2. Typographie : remplace les tailles arbitraires par une hiérarchie structurée (display, h1-h4, body, small, caption, label) avec size, weight et line-height explicites.
 3. Spacing : impose un système d'espacement basé sur une unité constante (ex. 4px) pour tous les margin, padding et gaps.
@@ -192,9 +158,7 @@ Méthode :
 
 
 
-
-Voici la suite de l'audit à réaliser et donc le contenu doit être écrit à la suite du précédent dans son fichier texte associé à la base du repo au meme format step by step.
-
+Voici la suite de l'audit UI à réaliser
 Usage : Construire ou refactorer un design system complet basé sur tokens.
 
 Objectif :
@@ -264,7 +228,7 @@ Méthode :
 - Refactor composants → consommer tokens
 - Supprimer duplication et styles legacy
 
-Output attendu step by step dans le fichier texte :
+Output attendu step by step :
 - Diagnostic incohérences
 - Système de tokens (color, type, spacing, radius)
 - Échelle typographique + spacing
@@ -337,8 +301,8 @@ Output:
 
 --------------------------------------------------
 
-16) Optimisation color system (60-30-10 + perception)
-Usage: clarifier la hiérarchie visuelle.
+16) Optimise global color system (60-30-10 + perception)
+Usage: clarifier la hiérarchie visuelle. 
 
 Prompt:
 "Apply a coherent color system (60/30/10) with simultaneous contrast, pop-out for key actions, warm/cool balance.

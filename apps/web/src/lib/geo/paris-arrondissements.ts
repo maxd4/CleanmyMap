@@ -133,7 +133,7 @@ export function extractArrondissementFromLabel(label: string): number | null {
   const zipMatch = label.match(/750(\d{2})/);
   if (zipMatch) return parseInt(zipMatch[1], 10);
 
-  const ordinalMatch = label.match(/(\d{1,2})(?:er|e|eme)?\b/i);
+  const ordinalMatch = label.match(/(\d{1,2})(?:eme|er|e)?\b/i);
   if (ordinalMatch) {
     const val = parseInt(ordinalMatch[1], 10);
     if (val >= 1 && val <= 20) return val;

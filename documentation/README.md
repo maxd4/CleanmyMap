@@ -31,6 +31,11 @@ flowchart TD
   - [Sécurité & Secrets](./technical/gestion-secrets-et-env.md)
   - [Déploiement (Runbook)](./technical/runbook-deploiement.md)
   - [Data Pipeline](./technical/pipeline-import.md)
+- **[Sécurité](./security/)** :
+  - [Guide Rapide](./security/SECURITY_QUICK_REFERENCE.md) ⭐ **À lire en priorité**
+  - [Checklist Revue de Code](./security/CODE_REVIEW_CHECKLIST.md)
+  - [Validation d'URL](./security/url-validation-security.md)
+  - [Prévention XSS](./security/dom-xss-prevention.md)
 - **[Produit](./product/)** :
   - [Vision & Objectifs](./product/vision-et-objectifs.md)
   - [Roadmap Priorisée](./product/roadmap-priorisee.md)

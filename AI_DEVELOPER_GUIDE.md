@@ -27,10 +27,12 @@ Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionR
 - Ne fais jamais de requêtes SQL brutes. L'application utilise typiquement le client Supabase `createClient()` ou des helpers dans `lib/actions/http.ts`.
 
 ## 4. Règles d'Architecture & Gouvernance
-1. **Gouvernance Globale** : Avant toute modification structurale, consulte la couche de gouvernance dans `documentation/repo-docs/` :
-   - [Design System](./documentation/repo-docs/design-system.md) (Règles visuelles Premium).
-   - [Data Governance](./documentation/repo-docs/data-governance.md) (Contrats et Ingestion).
-   - [API Standard](./documentation/repo-docs/api-standard.md) (Erreurs et Sécurité).
+1. **Gouvernance Globale** : Avant toute modification structurale, consulte la couche de gouvernance dans `documentation/` :
+   - [Design System](./documentation/design/charte-ui-pro-moderne-futuriste.md) (Règles visuelles Premium).
+   - [Display Modes](./documentation/design/display-modes-chartes.md) (Chartes des 3 modes).
+   - [Typography](./documentation/design/TYPOGRAPHY_SYSTEM.md) (Système typographique).
+   - [Data Governance](./documentation/technical/data-governance.md) (Contrats et Ingestion).
+   - [API Standard](./documentation/technical/api-standard.md) (Erreurs et Sécurité).
 3. **Nomenclature Utilisateur** : Utilise toujours les noms engageants pour les rubriques FR (ex: "Signalement Déchets" au lieu de "Trash Spotter", "Mon Profil & Impact" au lieu de "Compte", "Entraide Locale" au lieu de "Discussion").
 4. **Pas de logique lourde en Client Components** : Isole la data-fetching côté serveur.
 5. **Dynamic Imports pour Leaflet** : Obligatoire pour éviter les crashs SSR.

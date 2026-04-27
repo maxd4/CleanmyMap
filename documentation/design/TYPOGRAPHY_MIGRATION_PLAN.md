@@ -147,6 +147,46 @@ Priorité élevée (formulaire principal):
 
 ---
 
+## État actuel de la migration (Audit 2026-04-26)
+
+### Progression globale
+- **Prioritaires**: ✅ 3/3 complétés (CmmCard, CmmButton, layout Header)
+- **Restants**: ~57 fichiers avec `text-[10px]` ou `font-extrabold`
+- **Classes canoniques utilisées**: Faible adoption en dehors des composants prioritaires
+
+### Composants prioritaires restants (P1)
+
+| Composant | Problèmes identifiés | Fichier |
+|-----------|---------------------|---------|
+| app-navigation-ribbon.tsx | 9 occurrences text-[10px] | `components/navigation/app-navigation-ribbon.tsx` |
+| page.tsx (homepage) | 7 occurrences text-[10px] | `app/page.tsx` |
+| explorer/page.tsx | 11 occurrences text-[10px] | `app/explorer/page.tsx` |
+| actions-map-feed.tsx | 32 occurrences | `components/actions/actions-map-feed.tsx` |
+| actions-map-canvas.tsx | 14 occurrences | `components/actions/actions-map-canvas.tsx` |
+| actions-map-table.tsx | 8 occurrences | `components/actions/actions-map-table.tsx` |
+
+### Anti-patterns encore présents
+
+```bash
+# Tailles custom problématiques (241 matches dans 57 fichiers)
+grep -rn "text-\[10px\]\|text-\[11px\]" apps/web/src/ --include="*.tsx"
+
+# Poids excessif
+grep -rn "font-extrabold" apps/web/src/ --include="*.tsx"
+
+# Classes typographiques canoniques (très peu utilisées)
+grep -rn "cmm-text-h1\|cmm-text-h2\|cmm-text-h3" apps/web/src/ --include="*.tsx"  # 0 résultats
+```
+
+### Prochaines étapes recommandées
+
+1. **P1**: Migrer les composants navigation (app-navigation-ribbon.tsx)
+2. **P1**: Migrer la homepage (page.tsx) - référence UI importante
+3. **P2**: Migrer les composants actions (feed, canvas, table)
+4. **P2**: Audit et migration des pages rubriques
+
+---
+
 ## Commandes de vérification
 
 ```bash
@@ -158,6 +198,9 @@ grep -rn "text-slate-900\|text-slate-600\|text-slate-500" apps/web/src/component
 
 # Compter les occurrences par fichier
 grep -rn "text-slate-" apps/web/src/ --include="*.tsx" | cut -d: -f1 | sort | uniq -c | sort -nr
+
+# Vérifier l'adoption des classes canoniques
+grep -rn "cmm-text-caption\|cmm-text-small\|cmm-text-body" apps/web/src/ --include="*.tsx" | wc -l
 ```
 
 ---

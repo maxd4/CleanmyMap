@@ -39,37 +39,37 @@ export default async function NewActionPage({
           <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
             <div className="grid gap-3 md:grid-cols-3">
               <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
+                <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
                   {locale === "fr" ? "1. Localiser" : "1. Locate"}
                 </p>
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="mt-2 cmm-text-small cmm-text-secondary">
                   {locale === "fr"
                     ? "Repérer le lieu et préparer la déclaration."
                     : "Find the place and prepare the submission."}
                 </p>
               </article>
               <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
+                <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
                   {locale === "fr" ? "2. Tracer" : "2. Trace"}
                 </p>
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="mt-2 cmm-text-small cmm-text-secondary">
                   {locale === "fr"
                     ? "Tracer la zone sur la carte avec l'assistance."
                     : "Trace the area on the map with assistance."}
                 </p>
               </article>
               <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
+                <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
                   {locale === "fr" ? "3. Valider" : "3. Validate"}
                 </p>
-                <p className="mt-2 text-sm text-slate-600">
+                <p className="mt-2 cmm-text-small cmm-text-secondary">
                   {locale === "fr"
-                    ? "Finaliser l'envoi avec ton profil connecté."
+                    ? "Finaliser l'envoi avec votre profil connecté."
                     : "Finalize submission with your signed-in profile."}
                 </p>
               </article>
             </div>
-            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 cmm-text-small text-emerald-900">
               {locale === "fr"
                 ? "Se connecter pour ouvrir le formulaire et rattacher la déclaration au compte."
                 : "Sign in to open the form and attach the submission to the account."}
@@ -102,74 +102,34 @@ export default async function NewActionPage({
       ? identity.actorNameOptions
       : [fallbackActorName];
 
+  // Préparer les métadonnées utilisateur automatiques
+  const userMetadata = {
+    userId,
+    username: identity?.username,
+    displayName: identity?.displayName,
+    email: undefined, // Email non exposé pour la sécurité
+  };
+
   if (pageTemplateV2Enabled) {
     return (
       <PageReadingTemplate
         context={`Profil ${getProfileLabel(profile, locale)}`}
         title="Déclarer une action"
-        objective="Saisir une action terrain fiable avec un mode rapide ou un mode complet, en 3 étapes simples : localiser, tracer, valider."
+        objective="Déclarer une action terrain en 3 étapes : localiser, tracer, valider."
         summary={
-          <div className="space-y-3">
-            <div className="grid gap-3 md:grid-cols-3">
-              <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Mode actif
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {initialMode === "complete" ? "Complet" : "Rapide"}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  N-1: {initialMode === "complete" ? "Rapide" : "Complet"}
-                </p>
-                <p className="mt-1 text-xs text-slate-600">
-                  Delta abs: n/a | Delta %: n/a
-                </p>
-              </article>
-              <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Préremplissage structure
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {actorNameOptions[0]}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">
-                  N-1: dernière structure connue
-                </p>
-                <p className="mt-1 text-xs text-slate-600">
-                  Delta abs: n/a | Delta %: n/a
-                </p>
-              </article>
-              <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">
-                  Contexte profil
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-900">
-                  {getProfileLabel(profile, locale)}
-                </p>
-                <p className="mt-1 text-xs text-slate-500">N-1: même profil</p>
-                <p className="mt-1 text-xs text-slate-600">
-                  Delta abs: 0 | Delta %: 0%
-                </p>
-              </article>
-            </div>
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em]">
-                Alerte prioritaire
+          <div className="grid gap-3 md:grid-cols-2">
+            <article className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+              <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">Mode actif</p>
+              <p className="text-lg font-semibold cmm-text-primary">
+                {initialMode === "complete" ? "Complet" : "Rapide"}
               </p>
-              <p className="mt-1">
-                Vérifier la géolocalisation et la preuve si la déclaration est
-                en mode complet.
+            </article>
+            <article className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+              <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">Profil</p>
+              <p className="text-lg font-semibold cmm-text-primary">
+                {getProfileLabel(profile, locale)}
               </p>
-            </div>
-            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-              <p className="text-xs font-semibold uppercase tracking-[0.14em]">
-                Action recommandée
-              </p>
-              <p className="mt-1">
-                Démarrer en mode rapide puis enrichir la preuve si le contexte
-                terrain l’exige.
-              </p>
-            </div>
+            </article>
           </div>
         }
         primaryAction={{
@@ -182,17 +142,22 @@ export default async function NewActionPage({
             : undefined
         }
         analysis={
-          <ActionDeclarationForm
-            actorNameOptions={actorNameOptions}
-            defaultActorName={actorNameOptions[0]}
-            clerkIdentityLabel={identity?.displayName ?? fallbackActorName}
-            clerkUserId={identity?.userId ?? fallbackActorName}
-            linkedEventId={fromEventId ?? undefined}
-            initialMode={initialMode}
-          />
+          <div className="space-y-8">
+            <ActionDeclarationForm
+              actorNameOptions={actorNameOptions}
+              defaultActorName={actorNameOptions[0]}
+              userMetadata={userMetadata}
+              linkedEventId={fromEventId ?? undefined}
+              initialMode={initialMode}
+            />
+            <section className="flex flex-col items-center justify-center border-t border-slate-200 pt-8 pb-4">
+              <RubriquePdfExportButton rubriqueTitle="Déclaration de nettoyage" />
+              <p className="mt-2 cmm-text-caption cmm-text-muted">Générer un justificatif administratif de cette saisie</p>
+            </section>
+          </div>
         }
         trace={
-          <div className="space-y-2 text-xs text-slate-600">
+          <div className="space-y-2 cmm-text-caption cmm-text-secondary">
             <p>
               Horodatage: {new Date().toLocaleString("fr-FR")} | Fiabilité:
               dépend des champs essentiels fournis à la soumission.
@@ -205,9 +170,6 @@ export default async function NewActionPage({
               Méthode: validation progressive en saisie, blocage uniquement sur
               les essentiels au submit. Périmètre: /actions/new.
             </p>
-            <div className="pt-1">
-              <RubriquePdfExportButton rubriqueTitle="Declaration de nettoyage" />
-            </div>
           </div>
         }
       />
@@ -218,63 +180,26 @@ export default async function NewActionPage({
     <div data-rubrique-report-root className="space-y-4">
       <DecisionPageHeader
         context={`Profil ${getProfileLabel(profile, locale)}`}
-        title="Declaration de nettoyage"
-        objective="Saisir rapidement une action fiable (mode rapide) ou complete avec preuve (mode complet)."
+        title="Déclaration d'action"
+        objective="Saisir rapidement une action terrain (3 étapes : localiser, tracer, valider)."
         actions={[
-          { href: "/actions/map", label: "Verifier sur la carte" },
-          { href: "/actions/history", label: "Suivre les corrections" },
+          { href: "/actions/map", label: "Carte" },
+          { href: "/actions/history", label: "Historique" },
         ]}
       />
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          Tracer
-        </p>
-        <div className="mt-2">
-          <RubriquePdfExportButton rubriqueTitle="Declaration de nettoyage" />
-        </div>
-      </section>
-
-      <RolePrimaryActions
-        profile={profile}
-        title="CTA dynamiques selon votre role"
-      />
-
-      <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-        <div className="grid gap-3 sm:grid-cols-3">
-          <article className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">1. Localiser</p>
-            <p className="mt-2 text-sm text-slate-600">
-              Définis rapidement le lieu et le point de départ.
-            </p>
-          </article>
-          <article className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">2. Tracer</p>
-            <p className="mt-2 text-sm text-slate-600">
-              Choisis le tracé ou laisse l’aperçu automatique.
-            </p>
-          </article>
-          <article className="rounded-2xl border border-slate-200 bg-white p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-500">3. Valider</p>
-            <p className="mt-2 text-sm text-slate-600">
-              Finalise ton action avec les détails essentiels.
-            </p>
-          </article>
-        </div>
-        <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-          <p className="font-semibold">Mode rapide</p>
-          <p>Idéal pour publier vite. Passe en mode complet si tu veux ajouter des photos ou du tracé précis.</p>
-        </div>
-      </section>
 
       <ActionDeclarationForm
         actorNameOptions={actorNameOptions}
         defaultActorName={actorNameOptions[0]}
-        clerkIdentityLabel={identity?.displayName ?? fallbackActorName}
-        clerkUserId={identity?.userId ?? fallbackActorName}
+        userMetadata={userMetadata}
         linkedEventId={fromEventId ?? undefined}
         initialMode={initialMode}
       />
+
+      <section className="flex flex-col items-center justify-center border-t border-slate-200 pt-8 pb-4">
+        <RubriquePdfExportButton rubriqueTitle="Déclaration de nettoyage" />
+        <p className="mt-2 cmm-text-caption cmm-text-muted">Générer un justificatif administratif de cette saisie</p>
+      </section>
     </div>
   );
 }

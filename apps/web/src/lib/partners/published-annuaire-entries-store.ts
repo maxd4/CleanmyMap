@@ -176,7 +176,7 @@ function normalizeContactUrl(
   ) {
     return `mailto:${trimmedDetails}`;
   }
-  if (/t[ée]l|phone|mobile/i.test(contactChannel) || /^[+\d][\d\s().-]+$/.test(trimmedDetails)) {
+  if (/t[ée]l|phone|mobile/i.test(contactChannel) || (/^[+\d]/.test(trimmedDetails) && /^[\d\s().+-]+$/.test(trimmedDetails) && trimmedDetails.length <= 30)) {
     const digits = trimmedDetails.replace(/[^\d+]/g, "");
     return `tel:${digits}`;
   }

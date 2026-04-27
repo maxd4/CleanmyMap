@@ -47,3 +47,6 @@ Commandes IA :
 
 ## Contribuer
 Consultez le fichier [CONTRIBUTING.md](./CONTRIBUTING.md) pour lire les guides complets d'installation, de contribution et de tests.
+
+## 🔐 Sécurité
+Consultez [SECURITY_GUIDE.md](./SECURITY_GUIDE.md) pour les bonnes pratiques de sécurité et éviter les erreurs courantes (validation d'URL, injection HTML).

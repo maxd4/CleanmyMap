@@ -50,7 +50,7 @@ const AREA_REFERENCE: Record<string, AreaReference> = {
 
 function extractArrondissement(label: string): string {
   const normalized = label.toLowerCase();
-  const matched = normalized.match(/\b([1-9]|1[0-9]|20)(?:e|eme|er)?\b/);
+  const matched = normalized.match(/\b([1-9]|1[0-9]|20)(?:eme|er|e)?\b/);
   if (!matched) {
     return "Hors arrondissement";
   }

@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import { createAction, fetchActionPrefill } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
-import { PLACE_TYPE_OPTIONS } from "@/lib/actions/place-type-options";
 import type {
   ActionDrawing,
   ActionPhotoAsset,
@@ -21,31 +20,30 @@ import {
   PARK_PLACE_TYPE,
   prepareCreateActionPayload,
 } from "./action-declaration/payload";
+import { ActionStepIdentity } from "./action-declaration/ActionStepIdentity";
+import { ActionStepHarvest } from "./action-declaration/ActionStepHarvest";
+import { ActionStepLocation } from "./action-declaration/ActionStepLocation";
+import { ActionStepReview } from "./action-declaration/ActionStepReview";
 import {
-  ActionDeclarationCompleteModeFields,
-  ActionDeclarationMegotsSection,
-} from "./action-declaration-form.sections";
-import { ActionDeclarationFormHeader } from "./action-declaration-form.header";
+  User,
+  Scale,
+  Route as RouteIcon,
+  ClipboardCheck,
+  CheckCircle2,
+  ChevronRight,
+  Sparkles,
+  ShieldCheck,
+  ChevronLeft
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { ActionDeclarationFormConfirmation } from "./action-declaration-form-confirmation";
 import { ActionDeclarationFormFeedback } from "./action-declaration-form.feedback";
-import { ActionDeclarationIdentityFields } from "./action-declaration-form.identity-fields";
-import {
-  DeclarationMode,
-  FormState,
-  PostActionRetentionLoop,
-  ValidationIssue,
-  SubmissionState,
-  toRequiredNumber,
-} from "./action-declaration-form.model";
-import {
-  ActionDeclarationLocationAssist,
-  ActionDeclarationWasteAssist,
-  useActionDeclarationSmartAssist,
-} from "./action-declaration-form.smart-assist";
 import { computeActionDataQuality } from "./action-declaration-form.quality";
-import { estimateWasteKg } from "./action-declaration-form.estimation";
-import { runActionVisionEstimate } from "./action-declaration-form.vision-engine";
-import { normalizeActionPhotos } from "@/lib/actions/vision";
+import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
+import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
+
 const ActionDrawingMap = dynamic(
   () =>
     import("@/components/actions/action-drawing-map").then(
@@ -57,17 +55,23 @@ const ActionDrawingMap = dynamic(
 type ActionDeclarationFormProps = {
   actorNameOptions: string[];
   defaultActorName: string;
-  clerkIdentityLabel: string;
-  clerkUserId: string;
+  userMetadata: {
+    userId: string;
+    username?: string;
+    displayName?: string;
+    email?: string;
+  };
   linkedEventId?: string;
-  initialMode?: DeclarationMode;
+  initialMode?: "quick" | "complete";
 };
+
+type DeclarationMode = "quick" | "complete";
+type SubmissionState = "idle" | "pending" | "success" | "error";
 
 export function ActionDeclarationForm({
   actorNameOptions,
   defaultActorName,
-  clerkIdentityLabel,
-  clerkUserId,
+  userMetadata,
   linkedEventId,
   initialMode = "quick",
 }: ActionDeclarationFormProps) {
@@ -76,51 +80,57 @@ export function ActionDeclarationForm({
     defaultActorName,
   )
     ? defaultActorName
-    : (resolvedActorOptions[0] ?? clerkUserId);
-  const [form, setForm] = useState<FormState>(() =>
+    : (resolvedActorOptions[0] ?? userMetadata.userId);
+
+  const [form, setForm] = useState(() =>
     createInitialFormState(resolvedDefaultActorName),
   );
   const [manualDrawingEnabled, setManualDrawingEnabled] = useState<boolean>(true);
-  const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(
-    null,
-  );
+  const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(null);
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
-  const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(
-    null,
-  );
-  const [visionStatus, setVisionStatus] =
-    useState<"idle" | "processing" | "ready" | "error">("idle");
-  const [visionMessage, setVisionMessage] = useState<string | null>(null);
+  const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
+  const [visionStatus, setVisionStatus] = useState<"idle" | "processing" | "ready" | "error">("idle");
   const [routePreviewDrawing, setRoutePreviewDrawing] = useState<ActionDrawing | null>(null);
-  const [routePreviewStatus, setRoutePreviewStatus] =
-    useState<"idle" | "processing" | "ready" | "error">("idle");
-  const [routePreviewMessage, setRoutePreviewMessage] = useState<string | null>(null);
-  const [declarationMode, setDeclarationMode] =
-    useState<DeclarationMode>(initialMode);
-  const [submissionState, setSubmissionState] =
-    useState<SubmissionState>("idle");
+  const [declarationMode, setDeclarationMode] = useState<DeclarationMode>(initialMode);
+  const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
-  const [optimisticLabel, setOptimisticLabel] = useState<string | null>(null);
-  const [retentionLoop, setRetentionLoop] =
-    useState<PostActionRetentionLoop | null>(null);
-  const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>(
-    [],
-  );
+  const [retentionLoop, setRetentionLoop] = useState<any>(null);
+  const [validationIssues, setValidationIssues] = useState<any[]>([]);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
-  const [prefillApplied, setPrefillApplied] = useState<boolean>(false);
+  const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const hasTrackedStartRef = useRef<boolean>(false);
 
-  // Persistence locale (Draft)
+  // Steps State
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const totalSteps = 4;
+
+  const nextStep = () => {
+    setHasAttemptedSubmit(true);
+    if (currentStep === 1) {
+      if (!form.actionDate || !form.associationName) return;
+    }
+    if (currentStep === 2) {
+      if (parseFloat(form.wasteKg) <= 0 && declarationMode === "complete") return;
+    }
+    setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+    setHasAttemptedSubmit(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const prevStep = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  // Persistence draft logic
   useEffect(() => {
     const saved = localStorage.getItem("cmm_action_draft");
     if (saved) {
       try {
         const draft = JSON.parse(saved);
-        setForm((prev) => ({ ...prev, ...draft }));
-      } catch {
-        // Ignorer les erreurs de parsing
-      }
+        setForm((prev: any) => ({ ...prev, ...draft }));
+      } catch { }
     }
   }, []);
 
@@ -133,42 +143,23 @@ export function ActionDeclarationForm({
   }, [form, submissionState]);
 
   const drawingIsValid = isDrawingValid(manualDrawing);
-  const isQuickMode = declarationMode === "quick";
-  const effectiveManualDrawingEnabled =
-    declarationMode === "complete" && manualDrawingEnabled;
-  const isEntrepriseMode =
-    form.associationName === ENTREPRISE_ASSOCIATION_OPTION;
+  const isEntrepriseMode = form.associationName === ENTREPRISE_ASSOCIATION_OPTION;
 
-  const displayDrawing = effectiveManualDrawingEnabled
-    ? manualDrawing ?? routePreviewDrawing
-    : routePreviewDrawing;
-  const drawingMapReadOnly = !effectiveManualDrawingEnabled;
-  const hasExplicitDeparture = form.departureLocationLabel.trim().length > 0;
-
-  const payload = useMemo<CreateActionPayload>(
+  const payload = useMemo(
     () =>
       buildCreateActionPayload({
         form,
         declarationMode,
-        effectiveManualDrawingEnabled,
+        effectiveManualDrawingEnabled: declarationMode === "complete" && manualDrawingEnabled,
         drawingIsValid,
         manualDrawing,
         isEntrepriseMode,
         linkedEventId,
         photos: photoAssets,
         visionEstimate,
+        userMetadata,
       }),
-    [
-      declarationMode,
-      drawingIsValid,
-      effectiveManualDrawingEnabled,
-      form,
-      isEntrepriseMode,
-      linkedEventId,
-      manualDrawing,
-      photoAssets,
-      visionEstimate,
-    ],
+    [declarationMode, drawingIsValid, manualDrawingEnabled, form, isEntrepriseMode, linkedEventId, manualDrawing, photoAssets, visionEstimate, userMetadata]
   );
 
   const dataQuality = useMemo(
@@ -176,29 +167,17 @@ export function ActionDeclarationForm({
       computeActionDataQuality({
         form,
         declarationMode,
-        hasLocationProof:
-          form.latitude.trim().length > 0 && form.longitude.trim().length > 0,
+        hasLocationProof: form.latitude.trim().length > 0 && form.longitude.trim().length > 0,
         hasDrawingProof: drawingIsValid || Boolean(routePreviewDrawing),
         photoAssets,
         visionEstimate,
       }),
-    [
-      declarationMode,
-      drawingIsValid,
-      form,
-      photoAssets,
-      routePreviewDrawing,
-      visionEstimate,
-    ],
+    [declarationMode, drawingIsValid, form, photoAssets, routePreviewDrawing, visionEstimate]
   );
 
   const {
     gpsStatus,
     gpsMessage,
-    estimatedWasteKg,
-    estimatedWasteKgInterval,
-    estimatedWasteKgConfidence,
-    wasteSuggestionSource,
     autofillGps,
   } = useActionDeclarationSmartAssist({
     form,
@@ -206,6 +185,7 @@ export function ActionDeclarationForm({
     visionEstimate,
   });
 
+  // Route preview effect
   useEffect(() => {
     let active = true;
     const departure = form.departureLocationLabel.trim() || form.locationLabel.trim();
@@ -213,92 +193,35 @@ export function ActionDeclarationForm({
 
     if (!departure) {
       setRoutePreviewDrawing(null);
-      setRoutePreviewStatus("idle");
-      setRoutePreviewMessage(null);
-      return () => {
-        active = false;
-      };
+      return () => { active = false; };
     }
 
-    const timer = window.setTimeout(() => {
-      setRoutePreviewStatus("processing");
-      setRoutePreviewMessage(
-        arrival
-          ? form.routeStyle === "direct"
-            ? "Aperçu d'un itinéraire direct."
-            : "Aperçu d'un itinéraire souple avec petits détours possibles."
-          : hasExplicitDeparture
-            ? "Aperçu d'une boucle autour du point de départ."
-            : "Aperçu d'une zone autour du lieu indiqué.",
-      );
-
-      void deriveAutoDrawingFromLocation({
+    const timer = setTimeout(() => {
+      deriveAutoDrawingFromLocation({
         locationLabel: form.locationLabel,
         departureLocationLabel: departure,
         arrivalLocationLabel: arrival || undefined,
         routeStyle: form.routeStyle,
-      })
-        .then((drawing) => {
-          if (!active) {
-            return;
-          }
-          setRoutePreviewDrawing(drawing);
-          setRoutePreviewStatus(drawing ? "ready" : "error");
-          setRoutePreviewMessage(
-            drawing
-              ? arrival
-                ? form.routeStyle === "direct"
-                  ? "Trajet direct calculé."
-                  : "Trajet souple calculé."
-                : "Boucle locale calculée."
-              : "Impossible de calculer l'aperçu pour le moment.",
-          );
-        })
-        .catch(() => {
-          if (!active) {
-            return;
-          }
-          setRoutePreviewDrawing(null);
-          setRoutePreviewStatus("error");
-          setRoutePreviewMessage(
-            "Aperçu indisponible temporairement. La géométrie sera recalculée à la soumission.",
-          );
-        });
-    }, 350);
+      }).then(drawing => {
+        if (!active) return;
+        setRoutePreviewDrawing(drawing);
+      }).catch(() => {
+        if (!active) return;
+      });
+    }, 400);
 
-    return () => {
-      active = false;
-      window.clearTimeout(timer);
-    };
-  }, [
-    form.arrivalLocationLabel,
-    form.departureLocationLabel,
-    form.locationLabel,
-    form.routeStyle,
-  ]);
+    return () => { active = false; clearTimeout(timer); };
+  }, [form.arrivalLocationLabel, form.departureLocationLabel, form.locationLabel, form.routeStyle]);
 
   async function handlePhotoUpload(files: FileList | null) {
     const selected = files ? Array.from(files) : [];
-    if (selected.length === 0) {
-      clearPhotos();
-      return;
-    }
-
+    if (selected.length === 0) { clearPhotos(); return; }
     setVisionStatus("processing");
-    setVisionMessage("Préparation des photos...");
     try {
       const assets = await normalizeActionPhotos(selected);
       setPhotoAssets(assets);
-      setVisionMessage(`Photos chargées: ${assets.length}.`);
-    } catch (error) {
-      setPhotoAssets([]);
-      setVisionEstimate(null);
+    } catch {
       setVisionStatus("error");
-      setVisionMessage(
-        error instanceof Error
-          ? error.message
-          : "Impossible de préparer les photos.",
-      );
     }
   }
 
@@ -306,296 +229,44 @@ export function ActionDeclarationForm({
     setPhotoAssets([]);
     setVisionEstimate(null);
     setVisionStatus("idle");
-    setVisionMessage(null);
-    setForm((previous) => ({
-      ...previous,
-      visionBagsCount: "",
-      visionFillLevel: "",
-      visionDensity: "",
-    }));
   }
 
   useEffect(() => {
     let active = true;
-    if (photoAssets.length === 0) {
-      setVisionEstimate(null);
-      setVisionStatus("idle");
-      setVisionMessage(null);
-      return () => {
-        active = false;
-      };
-    }
-
+    if (photoAssets.length === 0) return;
     setVisionStatus("processing");
-    setVisionMessage("Analyse visuelle en cours...");
-
-    void runActionVisionEstimate(photoAssets, {
+    inferActionVisionEstimate(photoAssets, {
       locationLabel: form.locationLabel,
-      departureLocationLabel: form.departureLocationLabel,
-      arrivalLocationLabel: form.arrivalLocationLabel,
       placeType: form.placeType,
-      volunteersCount: Number(form.volunteersCount) || undefined,
-      durationMinutes: Number(form.durationMinutes) || undefined,
-    })
-      .then((result) => {
-        if (!active) {
-          return;
-        }
-        setVisionEstimate(result);
-        setVisionStatus("ready");
-        setVisionMessage(
-          `Estimation vision prête: ${result.wasteKg.value.toFixed(1)} kg, confiance ${(result.wasteKg.confidence * 100).toFixed(0)} %.`,
-        );
-      })
-      .catch(() => {
-        if (!active) {
-          return;
-        }
-        setVisionEstimate(null);
-        setVisionStatus("error");
-        setVisionMessage("Analyse visuelle indisponible, estimation heuristique activée.");
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [
-    form.arrivalLocationLabel,
-    form.departureLocationLabel,
-    form.durationMinutes,
-    form.locationLabel,
-    form.placeType,
-    form.volunteersCount,
-    photoAssets,
-  ]);
-
-  function validateEssentials(): ValidationIssue[] {
-    const issues: ValidationIssue[] = [];
-    if (!form.associationName) {
-      issues.push({
-        field: "associationName",
-        message: "L'association est obligatoire.",
-      });
-    }
-    if (isEntrepriseMode && form.enterpriseName.trim().length < 2) {
-      issues.push({
-        field: "enterpriseName",
-        message:
-          "Le nom de l'entreprise est obligatoire (2 caracteres minimum).",
-      });
-    }
-    if (payload.actionDate.length !== 10) {
-      issues.push({ field: "actionDate", message: "La date est obligatoire." });
-    }
-    if (payload.locationLabel.length < 2) {
-      issues.push({
-        field: "locationLabel",
-        message: "Le lieu est obligatoire (2 caracteres minimum).",
-      });
-    }
-    if (!Number.isFinite(payload.wasteKg) || payload.wasteKg < 0) {
-      issues.push({
-        field: "wasteKg",
-        message: "Le poids doit etre un nombre >= 0.",
-      });
-    }
-    if (payload.wasteKg <= 0) {
-      issues.push({
-        field: "wasteKg",
-        message: "Le poids collecte doit etre superieur a 0 kg.",
-      });
-    }
-    if (
-      !Number.isFinite(payload.volunteersCount) ||
-      payload.volunteersCount < 1
-    ) {
-      issues.push({
-        field: "volunteersCount",
-        message: "Le nombre de benevoles doit etre >= 1.",
-      });
-    }
-    if (
-      !Number.isFinite(payload.durationMinutes) ||
-      payload.durationMinutes < 5
-    ) {
-      issues.push({
-        field: "durationMinutes",
-        message: "La duree doit etre de 5 minutes ou plus.",
-      });
-    }
-
-    if (
-      Number.isFinite(payload.wasteKg) &&
-      payload.wasteKg > 0 &&
-      Number.isFinite(payload.volunteersCount) &&
-      payload.volunteersCount >= 1 &&
-      Number.isFinite(payload.durationMinutes) &&
-      payload.durationMinutes >= 5
-    ) {
-      const estimatedWaste = estimateWasteKg({
-        volunteersCount: String(payload.volunteersCount),
-        durationMinutes: String(payload.durationMinutes),
-        placeType: form.placeType,
-        wasteMegotsKg: form.wasteMegotsKg,
-      });
-      const ratio = payload.wasteKg / Math.max(1, estimatedWaste);
-      if (ratio > 5 || ratio < 0.2) {
-        issues.push({
-          field: "wasteKg",
-          message:
-            "Le poids declare semble tres incoherent par rapport aux benevoles et a la duree.",
-        });
-      }
-    }
-
-    if (effectiveManualDrawingEnabled && !drawingIsValid) {
-      issues.push({
-        field: "locationLabel",
-        message: "Le trace/polygone est incomplet.",
-      });
-    }
-    return issues;
-  }
-
-  useEffect(() => {
-    void trackFunnel("view_new", declarationMode, {
-      linkedEventId: linkedEventId ?? null,
+      volunteersCount: Number(form.volunteersCount),
+      durationMinutes: Number(form.durationMinutes),
+    }).then(result => {
+      if (!active) return;
+      setVisionEstimate(result);
+      setVisionStatus("ready");
+    }).catch(() => {
+      if (!active) return;
+      setVisionStatus("error");
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => { active = false; };
+  }, [photoAssets, form.locationLabel, form.placeType, form.volunteersCount, form.durationMinutes]);
 
-  useEffect(() => {
-    let active = true;
-    if (prefillApplied) {
-      return () => {
-        active = false;
-      };
-    }
-    void fetchActionPrefill()
-      .then((result) => {
-        if (!active) {
-          return;
-        }
-        setForm((prev) => ({
-          ...prev,
-          actionDate: result.prefill.actionDate || prev.actionDate,
-          actorName: result.prefill.actorName || prev.actorName,
-          associationName:
-            result.prefill.associationName || prev.associationName,
-          locationLabel: result.prefill.locationLabel || prev.locationLabel,
-          volunteersCount: String(
-            result.prefill.volunteersCount || Number(prev.volunteersCount),
-          ),
-          durationMinutes: String(
-            result.prefill.durationMinutes || Number(prev.durationMinutes),
-          ),
-        }));
-        setPrefillApplied(true);
-      })
-      .catch(() => {
-        if (active) {
-          setPrefillApplied(true);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [prefillApplied]);
-
-  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
+  function updateField(key: string, value: any) {
     if (!hasTrackedStartRef.current) {
       hasTrackedStartRef.current = true;
-      void trackFunnel("start_form", declarationMode);
+      trackFunnel("start_form", declarationMode);
     }
-
-    const syncRouteLabel = (
-      departureLocationLabel: string,
-      arrivalLocationLabel: string,
-    ) => {
-      const departure = departureLocationLabel.trim();
-      const arrival = arrivalLocationLabel.trim();
-      if (!departure && !arrival) {
-        return "";
-      }
-      if (!departure) {
-        return arrival;
-      }
-      if (!arrival) {
-        return departure;
-      }
-      return `${departure} → ${arrival}`;
-    };
-
-    if (key === "locationLabel" && typeof value === "string") {
-      if (isLocationLikelyPark(value)) {
-        setForm((prev) => ({
-          ...prev,
-          [key]: value,
-          placeType: PARK_PLACE_TYPE,
-        }));
-        return;
-      }
-    }
-
-    if (key === "departureLocationLabel" && typeof value === "string") {
-      setForm((prev) => {
-        const nextDeparture = value;
-        const nextLocationLabel = syncRouteLabel(
-          nextDeparture,
-          prev.arrivalLocationLabel,
-        );
-        return {
-          ...prev,
-          departureLocationLabel: nextDeparture,
-          locationLabel: nextLocationLabel || prev.locationLabel,
-        };
-      });
-      return;
-    }
-
-    if (key === "arrivalLocationLabel" && typeof value === "string") {
-      setForm((prev) => {
-        const nextArrival = value;
-        const nextLocationLabel = syncRouteLabel(
-          prev.departureLocationLabel,
-          nextArrival,
-        );
-        return {
-          ...prev,
-          arrivalLocationLabel: nextArrival,
-          locationLabel: nextLocationLabel || prev.locationLabel,
-        };
-      });
-      return;
-    }
-
-    setForm((prev) => ({ ...prev, [key]: value }));
+    setForm((prev: any) => ({ ...prev, [key]: value }));
   }
 
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (submissionState === "pending") {
-      return;
-    }
-
-    setHasAttemptedSubmit(true);
-    const issues = validateEssentials();
-    setValidationIssues(issues);
-    if (issues.length > 0) {
-      return;
-    }
-
+  async function handleConfirmSubmit() {
+    if (submissionState === "pending") return;
     setSubmissionState("pending");
-    setErrorMessage(null);
-    setCreatedId(null);
-    setOptimisticLabel(payload.locationLabel);
-    setRetentionLoop(null);
-
     try {
       const submissionPayload = await prepareCreateActionPayload({
         form,
         declarationMode,
-        effectiveManualDrawingEnabled,
+        effectiveManualDrawingEnabled: declarationMode === "complete" && manualDrawingEnabled,
         drawingIsValid,
         manualDrawing,
         routePreviewDrawing,
@@ -603,529 +274,173 @@ export function ActionDeclarationForm({
         linkedEventId,
         photos: photoAssets,
         visionEstimate,
+        userMetadata,
       });
       const result = await createAction(submissionPayload);
-      void trackFunnel("submit_success", declarationMode, {
-        hasDrawing: Boolean(submissionPayload.manualDrawing),
-      });
       setCreatedId(result.id);
       setRetentionLoop(result.retentionLoop ?? null);
       setSubmissionState("success");
-      setOptimisticLabel(null);
-      setManualDrawing(null);
-      setPhotoAssets([]);
-      setVisionEstimate(null);
-      setVisionStatus("idle");
-      setVisionMessage(null);
-      setForm((prev) => getFormResetState(prev));
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Une erreur inconnue est survenue.";
+      setShowConfirmation(false);
+      localStorage.removeItem("cmm_action_draft");
+    } catch (error: any) {
       setSubmissionState("error");
-      setErrorMessage(message);
-      setOptimisticLabel(null);
-      setRetentionLoop(null);
+      setErrorMessage(error.message || "Erreur lors de la soumission");
+      setShowConfirmation(false);
     }
   }
 
-  const drawingSummary =
-    drawingIsValid && manualDrawing
-      ? `Dessin enregistre (${manualDrawing.kind === "polygon" ? "polygone" : "trace"}, ${manualDrawing.coordinates.length} points).`
-      : "Aucun dessin valide pour le moment (2 points min pour un trace, 3 pour un polygone).";
-
-  const routeSummary = form.arrivalLocationLabel.trim()
-    ? `${form.departureLocationLabel.trim() || "Départ à renseigner"} → ${form.arrivalLocationLabel.trim()}`
-    : `${form.departureLocationLabel.trim() || "Départ à renseigner"} (boucle locale)`;
-  const advancedPrecisionSummary =
-    form.visionBagsCount || form.visionFillLevel || form.visionDensity
-      ? "Précisions IA renseignées"
-      : "Précisions IA non renseignées";
+  async function onSubmit(e?: FormEvent) {
+    if (e) e.preventDefault();
+    setShowConfirmation(true);
+  }
 
   return (
-    <div className="space-y-4">
-      <section className="rounded-[1.5rem] border border-slate-200/60 bg-white/80 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl md:rounded-[2.5rem] md:p-8">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-          Parcours simple
-        </p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-900">
-            1. Localiser
+    <>
+      {showConfirmation && (
+        <ActionDeclarationFormConfirmation
+          form={form}
+          payload={payload as any}
+          userMetadata={userMetadata}
+          onModify={() => setShowConfirmation(false)}
+          onConfirm={handleConfirmSubmit}
+          isSubmitting={submissionState === "pending"}
+        />
+      )}
+
+      <div className="max-w-5xl mx-auto space-y-6 mt-6 px-4 md:px-0">
+
+        {/* Premium Progress Stepper */}
+        <div className="relative p-4 md:p-6 rounded-[2rem] bg-white/80 border border-slate-200/60 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
+          <div className="absolute top-0 left-0 h-1 bg-slate-100 w-full rounded-t-[2rem] overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 transition-all duration-700 ease-out"
+              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
+            />
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
-            2. Tracer
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">
-            3. Valider
+
+          <div className="relative flex justify-between items-center z-10 pt-2">
+            {[
+              { id: 1, label: "Identité", icon: User },
+              { id: 2, label: "Récolte", icon: Scale },
+              { id: 3, label: "Parcours", icon: RouteIcon },
+              { id: 4, label: "Validation", icon: ClipboardCheck },
+            ].map((step, index) => {
+              const Icon = step.icon;
+              const isPast = currentStep > step.id;
+              const isCurrent = currentStep === step.id;
+
+              return (
+                <div key={step.id} className="flex flex-col items-center gap-2 group relative z-10 w-1/4">
+                  <div className={cn(
+                    "h-10 w-10 md:h-12 md:w-12 rounded-2xl flex items-center justify-center transition-all duration-500 relative z-10",
+                    isPast ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20" :
+                      isCurrent ? "bg-white border-2 border-emerald-500 text-emerald-600 scale-110 shadow-xl shadow-emerald-500/10" :
+                        "bg-slate-50 border border-slate-200 text-slate-400"
+                  )}>
+                    {isPast ? <CheckCircle2 size={18} className="animate-in zoom-in" /> : <Icon size={18} />}
+                  </div>
+                  <p className={cn(
+                    "text-[9px] font-black tracking-widest uppercase hidden md:block transition-colors duration-300",
+                    isCurrent ? "text-emerald-700" : isPast ? "text-slate-600" : "text-slate-400"
+                  )}>
+                    {step.label}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </section>
 
-      <section className="rounded-[1.5rem] border border-slate-200/60 bg-white/80 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl md:rounded-[2.5rem] md:p-8">
-        <ActionDeclarationFormHeader
-          clerkIdentityLabel={clerkIdentityLabel}
-          clerkUserId={clerkUserId}
-          linkedEventId={linkedEventId}
-          isQuickMode={isQuickMode}
-          onModeChange={setDeclarationMode}
-        />
-      </section>
+        {/* Main Form Container */}
+        <section className="relative overflow-hidden rounded-[2.5rem] border border-slate-200/60 bg-white/95 p-6 md:p-10 shadow-2xl shadow-slate-200/50 backdrop-blur-xl min-h-[500px] flex flex-col">
+          {/* Subtle background glow */}
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-emerald-100/40 rounded-full blur-3xl pointer-events-none" />
 
-      <section className="relative overflow-hidden rounded-[1.5rem] border border-slate-200/60 bg-white/80 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.06)] backdrop-blur-xl md:rounded-[2.5rem] md:p-8">
-        {/* Background Decor */}
-        <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 -translate-y-1/2 translate-x-1/2 rounded-full bg-emerald-400 opacity-[0.03] blur-3xl" />
-
-        <form className="relative z-10 mt-2 grid gap-4 md:grid-cols-2 md:gap-6" onSubmit={onSubmit}>
-          <section className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 shadow-sm">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.14em] text-slate-500">
-                  Identité / acteur
-                </p>
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Qui a réalisé l&apos;action ?
-                </h3>
-              </div>
-              <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900">
-                1. Localiser
+          {/* Contextual Step Header */}
+          <div className="mb-8 pb-6 border-b border-slate-100 relative z-10">
+            <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-1 mb-4">
+              <Sparkles size={14} className="text-emerald-500" />
+              <span className="cmm-text-caption font-bold text-emerald-700 uppercase tracking-widest">
+                Étape {currentStep} sur {totalSteps}
               </span>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              <ActionDeclarationIdentityFields
-                resolvedActorOptions={resolvedActorOptions}
-                actorName={form.actorName}
-                associationName={form.associationName}
-                enterpriseName={form.enterpriseName}
-                onActorNameChange={(value) => updateField("actorName", value)}
-                onAssociationNameChange={(value) =>
-                  updateField("associationName", value)
-                }
-                onEnterpriseNameChange={(value) =>
-                  updateField("enterpriseName", value)
-                }
-              />
-
-              <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
-                Date de l&apos;action <span className="text-emerald-500">*</span>
-                <input
-                  type="date"
-                  className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
-                  value={form.actionDate}
-                  onChange={(event) => updateField("actionDate", event.target.value)}
-                />
-              </label>
-            </div>
-          </section>
-
-          <section className="md:col-span-2 rounded-2xl border border-sky-200 bg-sky-50/70 px-4 py-4 shadow-sm">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.14em] text-sky-500">
-                  Localisation
-                </p>
-                <h3 className="text-lg font-semibold text-slate-900">
-                  Indique où la collecte a eu lieu
-                </h3>
-              </div>
-              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-700">
-                2. Tracer
-              </span>
-            </div>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-sm font-bold text-sky-900">
-                Lieu / tracé <span className="text-emerald-500">*</span>
-              </p>
-              <p className="text-xs text-sky-800">
-              Départ obligatoire. Arrivée vide = boucle locale.
+            <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+              {currentStep === 1 && "Qui a mené cette action ?"}
+              {currentStep === 2 && "Bilan de la récolte"}
+              {currentStep === 3 && "Géolocalisation du parcours"}
+              {currentStep === 4 && "Vérification et envoi"}
+            </h2>
+            <p className="mt-2 text-slate-500 font-medium">
+              {currentStep === 1 && "Identifiez la structure ou le bénévole pour valoriser votre engagement local."}
+              {currentStep === 2 && "Indiquez les volumes collectés. Ces données permettent de mesurer l'impact environnemental sur le territoire."}
+              {currentStep === 3 && "Tracez ou localisez votre itinéraire. Cela permet de cartographier précisément les zones traitées."}
+              {currentStep === 4 && "Vérifiez vos informations avant de valider officiellement votre déclaration."}
             </p>
-            </div>
-            <div className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-sky-900">
-              {form.departureLocationLabel.trim() || "Départ à renseigner"}
-              {form.arrivalLocationLabel.trim()
-                ? ` → ${form.arrivalLocationLabel.trim()}`
-                : " (boucle locale)"}
-            </div>
           </div>
 
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <label className="flex flex-col gap-2 text-sm font-semibold text-sky-950">
-              Départ du tracé <span className="text-emerald-500">*</span>
-              <input
-                type="text"
-                className="rounded-xl border border-sky-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400"
-                value={form.departureLocationLabel}
-                onChange={(event) =>
-                  updateField("departureLocationLabel", event.target.value)
-                }
-                placeholder="Ex: Place de la République"
+          <div className="flex-1 relative z-10">
+            {currentStep === 1 && <ActionStepIdentity form={form} updateField={updateField} userMetadata={userMetadata} />}
+            {currentStep === 2 && (
+              <ActionStepHarvest
+                form={form} updateField={updateField} photoAssets={photoAssets}
+                visionEstimate={visionEstimate} visionStatus={visionStatus}
+                onPhotoUpload={handlePhotoUpload} onClearPhotos={clearPhotos}
               />
-            </label>
-
-            <label className="flex flex-col gap-2 text-sm font-semibold text-sky-950">
-              Arrivée du tracé
-              <input
-                type="text"
-                className="rounded-xl border border-sky-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400"
-                value={form.arrivalLocationLabel}
-                onChange={(event) =>
-                  updateField("arrivalLocationLabel", event.target.value)
-                }
-                placeholder="Vide = boucle"
+            )}
+            {currentStep === 3 && (
+              <ActionStepLocation
+                form={form} updateField={updateField} manualDrawing={manualDrawing}
+                setManualDrawing={setManualDrawing} routePreviewDrawing={routePreviewDrawing}
+                gpsStatus={gpsStatus} gpsMessage={gpsMessage} onAutofillGps={autofillGps}
               />
-            </label>
+            )}
+            {currentStep === 4 && (
+              <ActionStepReview
+                form={form} payload={payload as any} dataQuality={dataQuality}
+                isSubmitting={submissionState === "pending"} onSubmit={() => onSubmit()}
+              />
+            )}
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <ActionDeclarationLocationAssist
-              gpsStatus={gpsStatus}
-              gpsMessage={gpsMessage}
-              onAutofillGps={autofillGps}
-            />
-
-            <label className="flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-2 text-xs font-semibold text-sky-900">
-              Style de parcours
-              <select
-                value={form.routeStyle}
-                onChange={(event) =>
-                  updateField(
-                    "routeStyle",
-                    event.target.value as "direct" | "souple",
-                  )
-                }
-                className="bg-transparent outline-none"
+          {currentStep < 4 && (
+            <div className="mt-8 sticky bottom-0 z-20 -mx-6 -mb-6 md:-mx-10 md:-mb-10 p-6 md:p-8 bg-white/80 backdrop-blur-md border-t border-slate-100 flex items-center justify-between">
+              <CmmButton
+                variant="ghost"
+                className={cn("h-12 md:h-14 font-medium text-slate-500 hover:text-slate-800", currentStep === 1 && "invisible")}
+                onClick={prevStep}
               >
-                <option value="souple">Souple</option>
-                <option value="direct">Direct</option>
-              </select>
-            </label>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-sky-200 bg-white p-4 shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.14em] text-sky-500">
-                  Aperçu & tracé
-                </p>
-                <p className="text-sm text-slate-600">
-                  {isQuickMode
-                    ? "L’aperçu se base sur le lieu ou le départ saisi."
-                    : effectiveManualDrawingEnabled
-                      ? "Dessine ou corrige le tracé directement sur la carte."
-                      : "Active le tracé manuel pour confirmer la zone nettoyée."}
-                </p>
-              </div>
-              {!isQuickMode ? (
-                <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-900">
-                  <input
-                    type="checkbox"
-                    checked={manualDrawingEnabled}
-                    onChange={(event) =>
-                      setManualDrawingEnabled(event.target.checked)
-                    }
-                    className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  Tracé manuel
-                </label>
-              ) : null}
+                <ChevronLeft size={18} className="mr-2" /> Retour
+              </CmmButton>
+              <CmmButton
+                tone="emerald"
+                className="h-12 md:h-14 px-8 md:px-10 rounded-2xl font-bold text-sm md:text-base shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5"
+                onClick={nextStep}
+              >
+                {currentStep === 1 && "Continuer vers Récolte"}
+                {currentStep === 2 && "Continuer vers Parcours"}
+                {currentStep === 3 && "Finaliser la saisie"}
+                <ChevronRight size={18} className="ml-2" />
+              </CmmButton>
             </div>
-
-            <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <ActionDrawingMap
-                value={displayDrawing}
-                onChange={setManualDrawing}
-                readOnly={drawingMapReadOnly}
-                wasteKg={toRequiredNumber(form.wasteKg, 0)}
-                butts={Math.max(
-                  0,
-                  Math.trunc(toRequiredNumber(form.cigaretteButts, 0)),
-                )}
-                isCleanPlace={false}
-              />
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-              <span className="rounded-full bg-white px-3 py-1 font-semibold text-sky-900">
-                {routePreviewStatus === "processing"
-                  ? "calcul..."
-                  : routePreviewStatus === "ready"
-                    ? "prêt"
-                    : routePreviewStatus === "error"
-                      ? "partiel"
-                      : "en attente"}
-              </span>
-              {routePreviewMessage ? (
-                <span className="text-sky-800">{routePreviewMessage}</span>
-              ) : null}
-            </div>
-
-            {!displayDrawing ? (
-              <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                Saisis un lieu ou un départ pour voir l’aperçu. En mode complet, active le tracé manuel pour dessiner la zone.
-              </div>
-            ) : null}
-          </div>
-
-          <details className="mt-4 rounded-xl border border-sky-200 bg-white px-4 py-3">
-            <summary className="cursor-pointer list-none text-sm font-semibold text-sky-950">
-              Détails avancés
-            </summary>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <label className="flex flex-col gap-2 text-sm text-slate-700">
-                Latitude
-                <input
-                  type="number"
-                  step="any"
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-sky-400"
-                  value={form.latitude}
-                  onChange={(event) => updateField("latitude", event.target.value)}
-                  placeholder="48.8566"
-                />
-              </label>
-
-              <label className="flex flex-col gap-2 text-sm text-slate-700">
-                Longitude
-                <input
-                  type="number"
-                  step="any"
-                  className="rounded-lg border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-sky-400"
-                  value={form.longitude}
-                  onChange={(event) =>
-                    updateField("longitude", event.target.value)
-                  }
-                  placeholder="2.3522"
-                />
-              </label>
-
-              <label className="md:col-span-2 flex flex-col gap-2 text-sm font-semibold text-sky-950">
-                Message pour ajuster le trajet
-                <textarea
-                  value={form.routeAdjustmentMessage}
-                  onChange={(event) =>
-                    updateField("routeAdjustmentMessage", event.target.value)
-                  }
-                  placeholder="Ex: éviter l'avenue principale, passer par la rue latérale, garder la boucle compacte..."
-                  className="min-h-[96px] rounded-xl border border-sky-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-sky-400"
-                  maxLength={500}
-                />
-                <span className="text-xs font-normal text-sky-800">
-                  Transmis avec l&apos;action si besoin.
-                </span>
-              </label>
-            </div>
-          </details>
-        </section>
-
-        <section className="md:col-span-2 rounded-[1.5rem] border border-emerald-200 bg-emerald-50/70 p-5 shadow-sm">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.14em] text-emerald-700">
-                Déchets / impact
-              </p>
-              <h3 className="text-lg font-semibold text-slate-900">
-                Volumes et qualité du ramassage
-              </h3>
-            </div>
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-900">
-              3. Valider
-            </span>
-          </div>
-
-          <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
-            Type de lieu <span className="text-emerald-500">*</span>
-            <select
-              className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm appearance-none"
-              value={form.placeType}
-              onChange={(event) => updateField("placeType", event.target.value)}
-            >
-              {PLACE_TYPE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-slate-500 font-normal mt-1">
-              Sert au classement et aux rapports.
-            </p>
-          </label>
-
-          <label className="flex flex-col gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4 text-sm font-bold text-slate-700 shadow-sm">
-          <span className="flex items-center justify-between gap-3">
-            <span>
-              Déchets collectés (kg) <span className="text-emerald-500">*</span>
-            </span>
-            <span className="rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-              valeur réelle
-            </span>
-          </span>
-          <input
-            type="number"
-            step="0.1"
-            min="0"
-            className="rounded-xl border-2 border-emerald-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
-            value={form.wasteKg}
-            onChange={(event) => updateField("wasteKg", event.target.value)}
-            placeholder="Ex: 12.5"
-          />
-          <p className="text-xs font-normal text-emerald-900/80">
-            La vision aide, la saisie reste manuelle.
-          </p>
-          <ActionDeclarationWasteAssist
-            estimatedWasteKg={estimatedWasteKg}
-            estimatedWasteKgInterval={estimatedWasteKgInterval}
-            estimatedWasteKgConfidence={estimatedWasteKgConfidence}
-            wasteSuggestionSource={wasteSuggestionSource}
-            currentWasteKg={form.wasteKg}
-            visionEstimate={visionEstimate}
-          />
-        </label>
-
-        <ActionDeclarationCompleteModeFields
-          isQuickMode={isQuickMode}
-          form={form}
-          updateField={updateField}
-          photoAssets={photoAssets}
-          visionEstimate={visionEstimate}
-          visionStatus={visionStatus}
-          visionMessage={visionMessage}
-          onPhotoUpload={handlePhotoUpload}
-          onClearPhotos={clearPhotos}
-        />
-
-        <ActionDeclarationMegotsSection form={form} updateField={updateField} />
-        <label className="flex flex-col gap-2 text-sm font-bold text-slate-700">
-          Nombre de bénévoles <span className="text-emerald-500">*</span>
-          <input
-            type="number"
-            min="1"
-            className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
-            value={form.volunteersCount}
-            onChange={(event) =>
-              updateField("volunteersCount", event.target.value)
-            }
-          />
-        </label>
-        </section>
-
-        <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Aide à la relecture
-              </p>
-              <p className="text-sm text-slate-600">
-                Informations facultatives qui aident l&apos;équipe à vérifier la déclaration.
-              </p>
-            </div>
-          </div>
-
-          {dataQuality.warnings.length > 0 ? (
-            <div className="mt-4 text-sm text-slate-700">
-              <p>
-                Cette déclaration est envoyable, mais ces éléments peuvent aider l&apos;administration :
-              </p>
-              <ul className="mt-3 list-disc space-y-2 pl-5">
-                {dataQuality.warnings.map((warning) => (
-                  <li key={warning}>{warning}</li>
-                ))}
-              </ul>
-              <p className="mt-3 text-xs text-slate-500">
-                Envoi possible sans photo ni position précise. Ces informations facilitent la validation.
-              </p>
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-slate-500">
-              Bonne base. L&apos;équipe devrait pouvoir traiter cette déclaration rapidement.
-            </p>
           )}
-        </section>
-
-        <section className="md:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Valider
-              </p>
-              <p className="text-sm text-slate-600">
-                Relis les informations avant l&apos;envoi.
-              </p>
-            </div>
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-              prêt
-            </span>
-          </div>
-
-          <label className="mt-4 flex flex-col gap-2 text-sm text-slate-700">
-            Détails pour l&apos;équipe (optionnel)
-            <textarea
-              className="min-h-[110px] rounded-xl border border-slate-300 px-3 py-2 text-slate-900 outline-none transition focus:border-emerald-500"
-              value={form.notes}
-              onChange={(event) => updateField("notes", event.target.value)}
-              maxLength={1000}
-              placeholder="Si le parcours est difficile à tracer sur mobile, décris ici les étapes et les points clés."
-            />
-            <span className="text-xs text-slate-500">
-              Ces détails ne sont pas obligatoires, mais ils aident les admins à comprendre le ramassage.
-            </span>
-          </label>
-
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            <div className="rounded-xl border border-white/70 bg-white p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Parcours
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-900">{routeSummary}</p>
-              <p className="mt-1 text-xs text-slate-500">
-                {form.routeStyle === "direct" ? "Direct" : "Souple"}
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/70 bg-white p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Quantité
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-900">
-                {form.wasteKg || "0"} kg collectés
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                Bénévoles: {form.volunteersCount || "1"} · {form.durationMinutes || "0"} min
-              </p>
-            </div>
-            <div className="rounded-xl border border-white/70 bg-white p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Entraînement IA
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-900">
-                {photoAssets.length} photo(s)
-              </p>
-              <p className="mt-1 text-xs text-slate-500">{advancedPrecisionSummary}</p>
-            </div>
-            <div className="rounded-xl border border-white/70 bg-white p-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                Mégots
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-900">
-                {form.wasteMegotsKg || "0"} {Number(form.wasteMegotsKg) > 1 ? "kg" : "kg"}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">
-                {form.wasteMegotsCondition}
-              </p>
-            </div>
-          </div>
         </section>
 
         <ActionDeclarationFormFeedback
           submissionState={submissionState}
           createdId={createdId}
           errorMessage={errorMessage}
-          isQuickMode={isQuickMode}
           hasAttemptedSubmit={hasAttemptedSubmit}
           validationIssues={validationIssues}
-          optimisticLabel={optimisticLabel}
           retentionLoop={retentionLoop}
+          onReset={() => {
+            setSubmissionState("idle");
+            setCreatedId(null);
+            setErrorMessage(null);
+            setCurrentStep(1);
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }}
         />
-      </form>
-      </section>
-    </div>
+      </div>
+    </>
   );
 }

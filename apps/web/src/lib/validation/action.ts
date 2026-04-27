@@ -80,6 +80,13 @@ const associationNameSchema = z
   .max(120)
   .refine((value) => isValidAssociationName(value), "Association invalide.");
 
+const userMetadataSchema = z.object({
+  userId: z.string().min(1).max(120),
+  username: z.string().min(1).max(120).optional(),
+  displayName: z.string().min(1).max(200).optional(),
+  email: z.string().email().max(200).optional(),
+});
+
 const createActionLegacySchema = z.object({
   actorName: z.string().min(1).max(120).optional(),
   associationName: associationNameSchema,
@@ -94,6 +101,7 @@ const createActionLegacySchema = z.object({
   longitude: z.number().min(-180).max(180).optional(),
   wasteKg: z.number().min(0).max(100000),
   cigaretteButts: z.number().int().min(0).max(5000000).default(0),
+  cigaretteButtsCount: z.number().int().min(1).max(10000).optional(),
   volunteersCount: z.number().int().min(1).max(500).default(1),
   durationMinutes: z
     .number()
@@ -107,6 +115,7 @@ const createActionLegacySchema = z.object({
   wasteBreakdown: wasteBreakdownSchema.optional(),
   photos: z.array(photoAssetSchema).max(3).optional(),
   visionEstimate: visionEstimateSchema.nullable().optional(),
+  userMetadata: userMetadataSchema.optional(),
 });
 
 const createActionContractSchema = z.object({

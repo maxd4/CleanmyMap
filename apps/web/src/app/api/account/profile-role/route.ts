@@ -1,16 +1,22 @@
-import { clerkClient } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
-import { z } from "zod";
-import { auth } from "@clerk/nextjs/server";
-import { getCurrentUserRoleLabel, isAdminRole } from "@/lib/authz";
-import { syncClerkUserToSupabase } from "@/lib/auth/sync";
+import { clerkClient } from"@clerk/nextjs/server";
+import { NextResponse } from"next/server";
+import { z } from"zod";
+import { auth } from"@clerk/nextjs/server";
+import { getCurrentUserRoleLabel, isAdminRole } from"@/lib/authz";
+import { syncClerkUserToSupabase } from"@/lib/auth/sync";
 import {
-  getProfileEntryPath,
-  isSelfServiceProfile,
-} from "@/lib/profiles";
+ getProfileEntryPath,
+ isSelfServiceProfile,
+} from"@/lib/profiles";
 
 const requestSchema = z.object({
-  profile: z.enum(["benevole", "coordinateur", "scientifique"]),
+  profile: z.enum([
+    "benevole",
+    "coordinateur",
+    "scientifique",
+    "local_authority",
+    "admin",
+  ]),
 });
 
 export async function POST(request: Request) {
@@ -27,19 +33,30 @@ export async function POST(request: Request) {
     );
   }
 
+  const client = await clerkClient();
+  const currentUser = await client.users.getUser(session.userId);
+  const isCurrentAdmin = isAdminRole({
+    publicMetadata: currentUser.publicMetadata,
+    privateMetadata: currentUser.privateMetadata,
+  });
+
   const currentRole = await getCurrentUserRoleLabel();
-  if (!isSelfServiceProfile(currentRole)) {
+  const targetRole = parsed.data.profile;
+
+  // Seuls les admins ou les profils "self-service" peuvent changer de rôle
+  const canSwitch = isCurrentAdmin || isSelfServiceProfile(currentRole);
+
+  if (!canSwitch) {
     return NextResponse.json(
       {
-        error:
-          "Ce compte ne peut pas modifier son rôle via le badge.",
+        error: "Ce compte ne peut pas modifier son rôle via le badge.",
       },
       { status: 403 },
     );
   }
 
-  const targetRole = parsed.data.profile;
-  if (!isSelfServiceProfile(targetRole)) {
+  // Les non-admins ne peuvent cibler que des profils "self-service"
+  if (!isCurrentAdmin && !isSelfServiceProfile(targetRole)) {
     return NextResponse.json(
       { error: "Rôle cible interdit." },
       { status: 403 },
@@ -51,23 +68,6 @@ export async function POST(request: Request) {
       role: targetRole,
       profilePath: getProfileEntryPath(targetRole),
     });
-  }
-
-  const client = await clerkClient();
-  const currentUser = await client.users.getUser(session.userId);
-  const isCurrentAdmin = isAdminRole({
-    publicMetadata: currentUser.publicMetadata,
-    privateMetadata: currentUser.privateMetadata,
-  });
-
-  if (isCurrentAdmin) {
-    return NextResponse.json(
-      {
-        error:
-          "Les comptes administrateur ne sont pas modifiables depuis cette interface.",
-      },
-      { status: 403 },
-    );
   }
 
   const updatedUser = await client.users.updateUser(session.userId, {

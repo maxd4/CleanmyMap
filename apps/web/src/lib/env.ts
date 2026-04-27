@@ -9,8 +9,12 @@ const emptyToUndefined = (value: unknown) => {
 
 function normalizeUrlCandidate(raw: string): string {
   const value = raw.trim();
-  if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value)) {
-    return value;
+  // Use URL constructor instead of regex to avoid ReDoS (CodeQL: js/regex/dos)
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol) return value;
+  } catch {
+    // Not a valid absolute URL — fall through
   }
   if (value.startsWith("localhost") || value.startsWith("127.0.0.1")) {
     return `http://${value}`;

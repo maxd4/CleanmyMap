@@ -1,10 +1,23 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, type LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  PlusCircle,
+  AlertTriangle,
+  Map,
+  BarChart3,
+  ShieldCheck,
+  Search,
+  UserPlus,
+  LayoutDashboard,
+  Handshake,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 export interface NavigationGridItem {
-  icon: LucideIcon;
+  icon: LucideIcon | string;
   title: string;
   desc: string;
   iconBg: string;
@@ -14,6 +27,16 @@ export interface NavigationGridItem {
   dot: string;
   href: string;
 }
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  ShieldCheck,
+  Search,
+  UserPlus,
+  LayoutDashboard,
+  ArrowRight,
+  Handshake,
+  Users,
+};
 
 interface NavigationGridProps {
   items: NavigationGridItem[];
@@ -73,36 +96,56 @@ export function NavigationGrid({
 
   return (
     <div className={`grid gap-4 ${gridCols}`}>
-      {items.map((item) => (
-        <Link
-          key={item.title}
-          href={item.href}
-          className={`group relative flex flex-col overflow-hidden rounded-2xl bg-gradient-to-br ${item.accent} ring-1 ${item.ring} p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/5 hover:shadow-2xl hover:shadow-black/40 active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900`}
-        >
-          {/* coin accent dot */}
-          <span className={`absolute right-5 top-5 h-2 w-2 rounded-full ${item.dot} opacity-60 group-hover:opacity-100 transition-opacity`} />
+      {items.map((item) => {
+        const IconComponent =
+          typeof item.icon === "string"
+            ? ICON_MAP[item.icon] || PlusCircle
+            : item.icon;
 
-          {/* icône */}
-          <div className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${item.iconBg} ${item.iconColor} transition-transform duration-300 group-hover:scale-110 shadow-lg`}>
-            <item.icon size={24} />
-          </div>
+        return (
+          <Link
+            key={item.title}
+            href={item.href}
+            className={`group relative flex flex-col overflow-hidden rounded-2xl bg-gradient-to-br ${item.accent} ring-1 ${item.ring} p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50 focus-visible:ring-offset-2`}
+          >
+            {/* coin accent dot */}
+            <span
+              className={`absolute right-5 top-5 h-2 w-2 rounded-full ${item.dot} opacity-60 group-hover:opacity-100 transition-opacity`}
+            />
 
-          {/* titre */}
-          <h3 className="mb-2 text-base font-black text-white leading-tight">
-            {item.title}
-          </h3>
+            {/* icône */}
+            <div
+              className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${item.iconBg} ${item.iconColor} transition-transform duration-300 group-hover:scale-110 shadow-lg`}
+            >
+              <IconComponent size={24} />
+            </div>
 
-          {/* description — 2 lignes max */}
-          <p className="flex-1 text-[13px] leading-relaxed text-white/60 group-hover:text-white/80 transition-colors" style={{ textWrap: "pretty" }}>
-            {item.desc}
-          </p>
+            {/* titre */}
+            <h3 className="mb-2 text-base font-bold cmm-text-primary leading-tight">
+              {item.title}
+            </h3>
 
-          {/* lien */}
-          <div className={`mt-5 flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest ${item.iconColor} opacity-60 group-hover:opacity-100 transition-opacity whitespace-nowrap`}>
-            Accéder <ArrowRight size={12} className="transition-transform duration-300 group-hover:translate-x-1" />
-          </div>
-        </Link>
-      ))}
+            {/* description — 2 lignes max */}
+            <p
+              className="flex-1 text-[13px] leading-relaxed cmm-text-secondary group-hover:cmm-text-primary transition-colors"
+              style={{ textWrap: "pretty" }}
+            >
+              {item.desc}
+            </p>
+
+            {/* lien */}
+            <div
+              className={`mt-5 flex items-center gap-2 cmm-text-caption font-bold uppercase tracking-widest ${item.iconColor} opacity-70 group-hover:opacity-100 transition-opacity whitespace-nowrap`}
+            >
+              Accéder{" "}
+              <ArrowRight
+                size={12}
+                className="transition-transform duration-300 group-hover:translate-x-1"
+              />
+            </div>
+          </Link>
+        );
+      })}
     </div>
   );
 }

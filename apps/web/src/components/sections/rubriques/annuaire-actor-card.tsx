@@ -8,133 +8,271 @@ import {
   VERIFICATION_LABELS,
   formatCoverage,
   formatFreshness,
+  hasRecentPartnerUpdate,
 } from "./annuaire-helpers";
+import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmButton } from "@/components/ui/cmm-button";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { Info, MapPin, MessageSquare, ShieldCheck, Clock } from "lucide-react";
 
 type AnnuaireActorCardProps = {
   entry: EnrichedAnnuaireEntry;
   onFocusMap: (entryId: string) => void;
   showInternalContact: boolean;
 };
+
 export function AnnuaireActorCard({
   entry,
   onFocusMap,
   showInternalContact,
 }: AnnuaireActorCardProps) {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   const trustState = getEntryTrustState(entry);
   const isTrusted = trustState === "trusted";
   const isIncomplete = trustState === "incomplete";
-  const isPending = trustState === "pending";
-  const borderTone = isIncomplete
-    ? "border-rose-200 bg-rose-50/90"
-    : isPending
-      ? "border-amber-200 bg-amber-50/90"
-      : "border-slate-200 bg-slate-50";
+
+  const isFeatured = entry.isFeatured;
 
   return (
-    <article
-      className={`rounded-lg border p-3 ${
-        isTrusted ? borderTone : `${borderTone} shadow-[0_0_0_1px_rgba(0,0,0,0.02)]`
-      }`}
+    <CmmCard
+      tone={isFeatured ? "violet" : isTrusted ? "violet" : isIncomplete ? "rose" : "amber"}
+      variant={isFeatured ? "elevated" : "subtle"}
+      className={cn(
+        "group relative flex flex-col transition-all duration-500",
+        isFeatured 
+          ? "ring-2 ring-violet-200 shadow-xl scale-[1.02]" 
+          : "hover:shadow-xl hover:-translate-y-1 hover:border-violet-200"
+      )}
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <h4 className="text-sm font-semibold text-slate-900">{entry.name}</h4>
-        <div className="flex flex-wrap gap-1 text-[11px]">
-          <span className="rounded bg-white px-2 py-0.5 font-medium text-slate-700 border border-slate-200">
-            {ENTITY_LABELS[entry.kind]}
-          </span>
-          <span className="rounded bg-white px-2 py-0.5 font-medium text-indigo-700 border border-indigo-200">
-            {VERIFICATION_LABELS[entry.verificationStatus]}
-          </span>
-          {!isTrusted ? (
-            <span
-              className={`rounded px-2 py-0.5 font-semibold ${
-                isIncomplete
-                  ? "border border-rose-200 bg-rose-100 text-rose-800"
-                  : "border border-amber-200 bg-amber-100 text-amber-800"
-              }`}
-            >
-              {TRUST_LABELS[trustState]}
+      {/* Dynamic Accent Bar */}
+      <div className={cn(
+        "absolute top-0 left-0 right-0 h-1 transition-opacity",
+        isFeatured ? "bg-violet-600 opacity-100" : "bg-violet-400 opacity-0 group-hover:opacity-100"
+      )} />
+
+      {/* Badges Flottants */}
+      <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-10">
+        {isFeatured && (
+          <div className="relative">
+            <div className="absolute inset-0 bg-violet-400 blur-sm opacity-40 rounded-full" />
+            <span className="relative inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-3 py-1 text-[10px] font-black tracking-widest text-white shadow-lg">
+              <Star size={10} className="fill-current" />
+              {fr ? "À LA UNE" : "FEATURED"}
             </span>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-700 sm:grid-cols-2">
-        <p>
-          <span className="font-semibold">Zone:</span>{" "}
-          {formatCoverage(entry.coveredArrondissements, entry.location)}
-        </p>
-        <p>
-          <span className="font-semibold">Disponibilité :</span> {entry.availability}
-        </p>
-        <p className="sm:col-span-2">
-          <span className="font-semibold">Contribution:</span>{" "}
-          {entry.contributionTypes.map((item) => CONTRIBUTION_LABELS[item]).join(", ")}
-        </p>
-        <p className="sm:col-span-2">
-          <span className="font-semibold">Contact:</span>{" "}
-          {entry.primaryChannel ? (
-            <a
-              href={entry.primaryChannel.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-emerald-700 hover:underline"
-            >
-              {entry.primaryChannel.label} ({entry.primaryChannel.platform})
-            </a>
-          ) : (
-            <span className="text-slate-600">Canal public à confirmer</span>
-          )}
-        </p>
-        <p className="sm:col-span-2 text-[11px] text-slate-500">
-          MAJ: {entry.lastUpdatedAt} - {formatFreshness(entry.lastUpdatedAt)}
-        </p>
-        {isTrusted ? (
-          <p className="sm:col-span-2 rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-[11px] text-emerald-900">
-            {getPartnerWhyThisStructureMatters(entry)}
-          </p>
-        ) : null}
-        {!isTrusted ? (
-          <p className="sm:col-span-2 rounded border border-dashed border-amber-300 bg-white/70 px-2 py-1 text-[11px] text-amber-900">
-            {isIncomplete
-              ? "Fiche à compléter avant mise au même niveau que les partenaires confirmés."
-              : "Fiche non confirmée par un humain; lecture possible mais priorité réduite."}
-          </p>
-        ) : null}
-        {showInternalContact && entry.internalAdminContact ? (
-          <div className="sm:col-span-2 rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-900">
-            <p className="font-semibold">Interne admin/elus</p>
-            <p>
-              Referent: {entry.internalAdminContact.referentName} | Email:{" "}
-              {entry.internalAdminContact.email} | Tel:{" "}
-              {entry.internalAdminContact.phone}
-            </p>
           </div>
-        ) : null}
-      </div>
-
-      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <button
-          onClick={() => onFocusMap(entry.id)}
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-        >
-          Voir sur la carte
-        </button>
-        {entry.primaryChannel ? (
-          <a
-            href={entry.primaryChannel.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-emerald-700"
-          >
-            Contacter
-          </a>
-        ) : (
-          <span className="w-full rounded-lg border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-center text-xs font-semibold text-slate-500">
-            Canal public à confirmer
+        )}
+        {!isFeatured && isTrusted && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200 shadow-sm">
+            <ShieldCheck size={12} className="text-emerald-500" />
+            {fr ? "VÉRIFIÉ" : "VERIFIED"}
+          </span>
+        )}
+        {hasRecentPartnerUpdate(entry) && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700 border border-indigo-200 shadow-sm">
+            <div className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+            </div>
+            {fr ? "ACTIF" : "ACTIVE"}
           </span>
         )}
       </div>
-    </article>
+
+      <div className="flex-1 space-y-4">
+        {/* En-tête */}
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-black tracking-widest text-slate-500 uppercase">
+              {ENTITY_LABELS[entry.kind]}
+            </span>
+            {entry.tags?.slice(0, 2).map(tag => (
+              <span key={tag} className="cmm-text-caption font-bold px-2 py-0.5 rounded-md bg-violet-50 text-violet-600 border border-violet-100/50">
+                {tag}
+              </span>
+            ))}
+          </div>
+          <h3 className={cn(
+            "font-bold cmm-text-primary group-hover:text-violet-700 transition-colors leading-tight",
+            isFeatured ? "cmm-text-h4" : "cmm-text-body text-lg"
+          )}>
+            {entry.name}
+          </h3>
+        </div>
+
+        {/* Description courte et scannable */}
+        <p className={cn(
+          "cmm-text-caption cmm-text-secondary leading-relaxed",
+          isFeatured ? "line-clamp-3" : "line-clamp-2"
+        )}>
+          {entry.description}
+        </p>
+
+        {/* Localisation simple */}
+        <div className="flex items-center gap-2 cmm-text-caption cmm-text-muted pt-1">
+          <div className="p-1 rounded-md bg-slate-50 border border-slate-100">
+            <MapPin size={12} className="text-violet-400" />
+          </div>
+          <span className="font-medium">{entry.location}</span>
+          {entry.distanceKm !== null && (
+            <div className="ml-auto flex items-center gap-1 font-black text-violet-600 bg-violet-50 px-2 py-0.5 rounded-lg border border-violet-100/50">
+              {entry.distanceKm.toFixed(1)} km
+            </div>
+          )}
+        </div>
+
+        {/* Grille d'infos compacte */}
+        <div className="grid grid-cols-1 gap-3 pt-4 border-t border-slate-50">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-slate-50 p-1.5 text-slate-400 border border-slate-100 group-hover:bg-violet-50 group-hover:text-violet-500 transition-colors">
+              <MapPin size={14} />
+            </div>
+            <div className="space-y-0.5">
+              <span className="block font-black cmm-text-secondary uppercase tracking-widest text-[9px] opacity-60">
+                {fr ? "Zone de couverture" : "Coverage zone"}
+              </span>
+              <span className="cmm-text-caption font-bold cmm-text-primary leading-tight block">
+                {formatCoverage(entry.coveredArrondissements, entry.location)}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-slate-50 p-1.5 text-slate-400 border border-slate-100 group-hover:bg-violet-50 group-hover:text-violet-500 transition-colors">
+              <Clock size={14} />
+            </div>
+            <div className="space-y-0.5">
+              <span className="block font-black cmm-text-secondary uppercase tracking-widest text-[9px] opacity-60">
+                {fr ? "Disponibilité" : "Availability"}
+              </span>
+              <span className="cmm-text-caption font-bold cmm-text-primary leading-tight block">
+                {entry.availability}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-slate-50 p-1.5 text-slate-400 border border-slate-100 group-hover:bg-violet-50 group-hover:text-violet-500 transition-colors">
+              <Info size={14} />
+            </div>
+            <div className="space-y-0.5">
+              <span className="block font-black cmm-text-secondary uppercase tracking-widest text-[9px] opacity-60">
+                {fr ? "Contribution" : "Contribution"}
+              </span>
+              <span className="cmm-text-caption font-bold cmm-text-primary leading-tight block">
+                {entry.contributionTypes.map((item) => CONTRIBUTION_LABELS[item]).join(", ")}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Trust/Status Section */}
+        <div className="pt-2">
+          {isTrusted ? (
+            <div className="relative overflow-hidden rounded-xl border border-violet-100 bg-gradient-to-br from-violet-50/80 to-white p-3 shadow-sm">
+              <div className="absolute top-0 left-0 w-1 h-full bg-violet-400" />
+              <div className="flex items-start justify-between">
+                <p className="cmm-text-caption text-violet-900 italic leading-relaxed">
+                  <span className="font-black not-italic text-violet-700 mr-1.5 uppercase text-[9px] tracking-wider">
+                    💡 {fr ? "Pourquoi ce partenaire ?" : "Why this partner?"}
+                  </span>
+                  {getPartnerWhyThisStructureMatters(entry)}
+                </p>
+                <div className="group/tooltip relative ml-2">
+                  <Info size={14} className="text-violet-400 cursor-help" />
+                  <div className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-slate-900 p-3 text-xs text-white shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20">
+                    <p className="font-bold mb-1">Score de confiance : {isTrusted ? "Élevé" : "Moyen"}</p>
+                    <p className="opacity-80">Calculé via algorithme de scoring tenant compte de : la fraîcheur des données (dernière MAJ), la complétude du profil, et la disponibilité de contacts directs vérifiés.</p>
+                    <div className="absolute -bottom-1 right-2 w-2 h-2 bg-slate-900 rotate-45" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className={cn(
+              "relative overflow-hidden rounded-xl border border-dashed p-3 shadow-sm",
+              isIncomplete ? "border-rose-200 bg-rose-50/50 text-rose-900" : "border-amber-200 bg-amber-50/50 text-amber-900"
+            )}>
+              <div className="flex items-start justify-between">
+                <p className="cmm-text-caption italic leading-relaxed">
+                  <span className={cn(
+                    "font-black not-italic mr-1.5 uppercase text-[9px] tracking-wider",
+                    isIncomplete ? "text-rose-700" : "text-amber-700"
+                  )}>
+                    ⚠️ {fr ? "Status restreint" : "Restricted status"}
+                  </span>
+                  {isIncomplete
+                    ? (fr ? "Données insuffisantes pour garantir la qualité habituelle." : "Insufficient data to guarantee usual quality.")
+                    : (fr ? "Validation humaine en cours. Prudence recommandée." : "Human validation in progress. Caution recommended.")}
+                </p>
+                <div className="group/tooltip relative ml-2">
+                  <Info size={14} className={cn("cursor-help", isIncomplete ? "text-rose-400" : "text-amber-400")} />
+                  <div className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-slate-900 p-3 text-xs text-white shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20">
+                    <p className="font-bold mb-1">Score de confiance : {isIncomplete ? "Faible" : "Moyen"}</p>
+                    <p className="opacity-80">Calculé via algorithme de scoring tenant compte de : la fraîcheur des données (dernière MAJ), la complétude du profil, et la disponibilité de contacts directs vérifiés.</p>
+                    <div className="absolute -bottom-1 right-2 w-2 h-2 bg-slate-900 rotate-45" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showInternalContact && entry.internalAdminContact && (
+            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 cmm-text-caption text-amber-900 shadow-inner">
+              <p className="font-black uppercase tracking-widest text-[9px] mb-2 text-amber-700 opacity-80">{fr ? "Accès Interne" : "Internal Access"}</p>
+              <div className="grid grid-cols-1 gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-amber-800">{fr ? "Référent :" : "Referent:"}</span> 
+                  <span className="font-medium">{entry.internalAdminContact.referentName}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-amber-800">Email :</span> 
+                  <span className="font-medium underline decoration-amber-300">{entry.internalAdminContact.email}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="mt-6 flex flex-col sm:flex-row gap-3 pt-5 border-t border-slate-50">
+        <CmmButton
+          variant="outline"
+          size="sm"
+          className="flex-1 rounded-xl font-bold border-slate-200 hover:border-violet-300 hover:bg-violet-50 transition-all"
+          onClick={() => onFocusMap(entry.id)}
+        >
+          <MapPin size={14} className="mr-2 text-violet-500" />
+          {fr ? "Voir Carte" : "Map"}
+        </CmmButton>
+        {entry.primaryChannel ? (
+          <CmmButton
+            variant="primary"
+            size="sm"
+            className="flex-1 rounded-xl bg-violet-600 hover:bg-violet-700 text-white border-none shadow-lg shadow-violet-100 hover:shadow-violet-200 transition-all group/btn"
+            asChild
+          >
+            <a href={entry.primaryChannel.url} target="_blank" rel="noopener noreferrer">
+              <MessageSquare size={14} className="mr-2 group-hover/btn:scale-110 transition-transform" />
+              {fr ? "Contacter" : "Contact"}
+            </a>
+          </CmmButton>
+        ) : (
+          <div className="flex-1 flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-3 py-2 cmm-text-caption font-bold text-slate-400">
+            {fr ? "Canal à confirmer" : "Channel to confirm"}
+          </div>
+        )}
+      </div>
+
+      {/* Footer Meta */}
+      <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        <span>MAJ: {entry.lastUpdatedAt}</span>
+        <span className="flex items-center gap-1 italic opacity-70">
+          <Clock size={10} />
+          {formatFreshness(entry.lastUpdatedAt)}
+        </span>
+      </div>
+    </CmmCard>
   );
 }

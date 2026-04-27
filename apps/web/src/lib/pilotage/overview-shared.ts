@@ -26,7 +26,7 @@ export function parseDateMs(raw: string | null | undefined): number | null {
 export function areaFromLabel(label: string): string {
   const matched = label
     .toLowerCase()
-    .match(/\b([1-9]|1[0-9]|20)(?:e|eme|er)?\b/);
+    .match(/\b([1-9]|1[0-9]|20)(?:eme|er|e)?\b/);
   if (!matched) {
     return "Hors arrondissement";
   }

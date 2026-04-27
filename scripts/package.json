@@ -1,0 +1,12 @@
+{
+  "name": "form-migration-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for form simplification migration",
+  "scripts": {
+    "migrate:phase4": "node scripts/migrate-phase-4.js",
+    "rollback:emergency": "node scripts/rollback-emergency.js",
+    "check:metrics": "node scripts/check-metrics.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

@@ -1,416 +1,4 @@
-
-applique les correction proposées dans le plan GitHub Actions, Dependabot & Security.md
-
-ne fais pas de push, travaille seulement en local maintenant
-
-
-
-
-Perform a post-refactor design-system and typography verification audit.
-
-Context:
-Cursor has already done a major UI/UX refactor, centralized the new CleanMyMap graphic charter, removed obsolete design documents, and aligned the project around the homepage as the most advanced UI reference.
-The product has 3 display modes. Do not restart the design-system work from scratch.
-
-Goal:
-Verify that the new design system is now coherent, correctly documented, usable by AI coding agents, and consistently applicable across all pages and the 3 display modes.
-
-Audit only. Do not modify files.
-
-Check:
-- Locate the current canonical design-system/graphic-charter documents.
-- Verify that old obsolete design docs were actually removed or clearly deprecated.
-- Verify that AGENTS.md or equivalent root-level instructions point to the correct canonical design docs.
-- Verify that the homepage is clearly identified as the most advanced UI reference.
-- Verify that the 3 display modes are documented and visually coherent.
-- Inspect global CSS, Tailwind config, theme tokens, shared components, layout wrappers, buttons, cards, navigation, forms, typography and responsive utilities.
-- Compare the new documentation against the actual implementation.
-- Identify remaining inconsistencies, duplicates, obsolete references or conflicting rules.
-- Identify pages/components that still do not follow the new CleanMyMap visual identity.
-- Check whether future agents like Codex, Gemini Code Assist, Claude Code or Cursor can reliably find and apply the design rules.
-- Check whether each block/rubric can keep its own accent/style while still belonging to one coherent product.
-- Check accessibility basics: contrast, focus states, readable typography, responsive behavior.
-
-Important:
-- Do not propose a full redesign.
-- Do not propose moving files unless there is a clear problem.
-- Do not recreate deleted obsolete docs.
-- Do not change routes, logic or data.
-- Treat Cursor’s new design system as the baseline.
-- Focus on validation, gaps and small corrective actions.
-
-Output:
-1. Executive diagnosis.
-2. Current canonical design-system files.
-3. Confirmation of obsolete docs removed/deprecated.
-4. Summary of the current CleanMyMap visual system.
-5. Assessment of the 3 display modes.
-6. Remaining inconsistencies between docs and code.
-7. AI-agent-readiness score /10.
-8. Risks of future visual drift.
-9. Minimal corrective actions only.
-10. Exact files likely requiring small updates.
-11. Proposed AGENTS.md improvements if needed.
-12. Prioritized action plan:
-   - P0: blockers
-   - P1: consistency fixes
-   - P2: polish
-
-
-
-
-
-
-
-
-applique cela a tous le site 
-
-
-
-
-
-
-Prompt 1 — Audit ciblé du formulaire
-Audite uniquement la rubrique / page du formulaire de déclaration d’action.
-
-Objectif :
-Le formulaire est trop long, trop textuel et trop redondant. Un formulaire doit être clair, concis, rapide à remplir et facile à comprendre.
-
-À faire :
-- Identifier tous les fichiers liés à la déclaration d’action.
-- Identifier les champs actuels du formulaire.
-- Identifier les textes inutiles, redondants ou trop explicatifs.
-- Identifier les sections qui peuvent être raccourcies, fusionnées ou supprimées.
-- Identifier les champs obligatoires vs optionnels.
-- Identifier les données déjà connues via l’utilisateur connecté : pseudo, nom de compte, identifiant utilisateur.
-- Identifier la logique actuelle de carte, tracé, polygones, zone de texte et envoi.
-- Identifier les risques fonctionnels avant modification.
-
-Contraintes :
-- Ne modifie aucun fichier.
-- Ne change pas la logique métier.
-- Ne supprime aucun champ sans lister l’impact.
-- Ne fais qu’un audit et un plan.
-
-Livrable attendu :
-1. Fichiers concernés.
-2. Structure actuelle du formulaire.
-3. Champs à garder.
-4. Champs à supprimer ou automatiser.
-5. Textes à réduire.
-6. Problèmes UX prioritaires.
-7. Plan d’implémentation par étapes.
-
-
-
-
-
-
-
-
-
-
-
-
-Prompt 2 — Simplifier fortement le formulaire
-Simplifie fortement le formulaire de déclaration d’action.
-
-Objectif :
-Réduire le texte, l’espace vertical et la complexité. Le formulaire doit être rapide à remplir, avec une case par ligne et une structure claire.
-
-À faire :
-- Réduire tous les textes d’aide au strict nécessaire.
-- Supprimer les paragraphes redondants ou trop explicatifs.
-- Garder une seule zone de saisie libre à la fin du formulaire.
-- Mettre une case/champ par ligne pour éviter la confusion.
-- Réorganiser les champs dans un ordre logique.
-- Clarifier les labels.
-- Réduire les espacements excessifs.
-- Garder uniquement les informations nécessaires à l’envoi.
-- Préserver les validations existantes.
-- Ne pas afficher l’impact estimé dans le formulaire.
-
-Contraintes :
-- Ne pas changer les routes.
-- Ne pas casser l’envoi du formulaire.
-- Ne pas supprimer de donnée métier nécessaire.
-- Ne pas ajouter de dépendance.
-- Ne pas modifier la carte dans cette étape.
-- Responsive propre.
-
-Après modification :
-- Vérifie que le formulaire reste utilisable desktop/mobile.
-- Lance lint/build si disponibles.
-- Résume les champs modifiés, supprimés ou conservés.
-
-
-
-
-
-
-
-
-
-
-
-
-
-Prompt 3 — Automatiser les données utilisateur
-Modifie le formulaire bénévole pour que les données utilisateur soient envoyées automatiquement.
-
-Objectif :
-Les admins doivent pouvoir identifier la personne sans que l’utilisateur remplisse manuellement ces informations.
-
-À faire :
-- Supprimer du formulaire visible les champs demandant :
-  - pseudo ;
-  - nom de compte ;
-  - identifiant utilisateur.
-- Récupérer automatiquement ces données depuis l’auth/session/profil utilisateur existant.
-- Envoyer automatiquement avec la soumission :
-  - userId ;
-  - username/pseudo si disponible ;
-  - nom de compte ou displayName si disponible ;
-  - email si déjà disponible et autorisé dans le projet.
-- Ne jamais demander ces informations manuellement si l’utilisateur est connecté.
-- Si une donnée manque, prévoir une valeur fallback propre sans casser l’envoi.
-- Vérifier que les admins reçoivent ou peuvent consulter ces informations.
-
-Contraintes :
-- Ne pas exposer de donnée sensible inutilement côté UI.
-- Ne pas modifier la logique auth globale.
-- Ne pas créer de nouvelle table sans nécessité.
-- Ne pas casser les utilisateurs existants.
-- Garder une correction minimale et robuste.
-
-Après modification :
-- Vérifie le payload envoyé.
-- Vérifie l’affichage/admin si concerné.
-- Lance lint/build si disponibles.
-- Résume les champs supprimés et les données envoyées automatiquement.
-
-
-
-
-
-
-
-
-
-
-
-
-Prompt 4 — Réorganiser les champs principaux
-Réorganise les champs principaux du formulaire de déclaration d’action.
-
-Objectif :
-Le formulaire doit être plus clair, avec des champs courts, une case par ligne et un ordre logique.
-
-À faire :
-- La première case du formulaire doit être :
-  “Structure / cadre d’engagement”
-- Trier les structures par ordre alphabétique.
-- Ajouter une étoile ou un marqueur visuel à côté des structures les plus populaires.
-- Ne pas mélanger plusieurs champs sur une même ligne.
-- Mettre chaque champ principal sur sa propre ligne.
-- Clarifier la différence entre action organisée, action spontanée, structure, lieu, date, déchets, remarques.
-- Réduire les textes d’aide sous les champs.
-- Garder une seule zone de texte libre à la fin.
-
-Contraintes :
-- Ne pas inventer de nouvelles structures.
-- Ne pas casser les valeurs enregistrées existantes.
-- Ne pas modifier le backend sauf si nécessaire pour conserver les données.
-- Ne pas ajouter de dépendance.
-
-Après modification :
-- Vérifie l’ordre des champs.
-- Vérifie que les valeurs sont correctement envoyées.
-- Lance lint/build si disponibles.
-
-
-
-
-
-
-
-Prompt 5 — Ajouter “nombre de mégots” pour les actions spontanées
-Ajoute un champ “Nombre de mégots” pour les actions spontanées.
-
-Objectif :
-Lorsqu’un utilisateur fait une action seul, il est souvent plus simple de compter les mégots que de les peser.
-
-À faire :
-- Ajouter un champ numérique “Nombre de mégots”.
-- Afficher ce champ principalement pour les actions spontanées.
-- Garder le champ optionnel si le contexte ne permet pas de le rendre obligatoire.
-- Valider que la valeur est un nombre positif.
-- Envoyer cette donnée avec le formulaire.
-- Mettre à jour les types, schémas, validations et payloads concernés.
-- Ne pas afficher d’impact estimé pendant le formulaire.
-- Prévoir que ce champ puisse être utilisé plus tard pour calculer un impact estimé.
-
-Contraintes :
-- Ne pas supprimer les champs de poids existants si encore utilisés.
-- Ne pas casser les anciennes déclarations.
-- Ne pas inventer de formule d’impact si aucune formule officielle n’existe.
-- Ne pas ajouter de dépendance.
-
-Après modification :
-- Vérifie l’affichage conditionnel.
-- Vérifie le payload envoyé.
-- Lance lint/build si disponibles.
-
-
-
-
-
-
-
-
-
-Prompt 6 — Améliorer la carte et le tracé
-Améliore uniquement la partie carte / tracé du formulaire de déclaration d’action.
-
-Objectif :
-La carte actuelle est trop vide et peu utile. L’utilisateur doit pouvoir se repérer avec une vraie carte lisible et tracer correctement son parcours ou sa zone.
-
-À faire :
-- Remplacer ou configurer la carte pour afficher un fond de carte utile avec noms des rues, repères et lieux.
-- Utiliser une carte type Google Maps si le projet l’intègre déjà ou si une intégration existe.
-- Si Google Maps n’est pas déjà disponible, proposer l’alternative la plus cohérente avec l’architecture existante sans ajouter de dépendance inutile.
-- Permettre à l’utilisateur sur ordinateur de tracer son chemin à la main.
-- Vérifier l’expérience mobile : tracé utilisable sans gêner le scroll.
-- Corriger les polygones : ils doivent pouvoir suivre le contour réel du lieu, pas seulement former un gros carré.
-- Améliorer les outils de tracé : chemin, zone, édition, suppression si déjà présents ou facilement possibles.
-- Garder une interface simple, sans trop de texte.
-
-Contraintes :
-- Ne pas ajouter une clé API dans le frontend en dur.
-- Ne pas exposer de secret.
-- Ne pas casser l’envoi du formulaire.
-- Ne pas modifier les champs non liés à la carte.
-- Ne pas ajouter de dépendance lourde sans justification.
-- Préserver la compatibilité desktop/mobile.
-
-Après modification :
-- Vérifie que les coordonnées/tracés sont bien enregistrés.
-- Vérifie le rendu carte desktop/mobile.
-- Lance lint/build si disponibles.
-- Résume la solution retenue pour la carte.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Prompt 7 — Nouvelle mise en page 60/40
-Réorganise la page de déclaration d’action en layout deux colonnes desktop.
-
-Objectif :
-Utiliser toute la largeur disponible et rendre la page plus claire.
-
-Layout attendu :
-- Colonne gauche : formulaire, largeur environ 60%.
-- Colonne droite : carte de tracé + unique zone de texte finale, largeur environ 40%.
-- La page doit utiliser toute la largeur utile disponible.
-- Sur mobile/tablette étroite, repasser proprement en une seule colonne.
-
-À faire :
-- Déplacer la carte dans la colonne droite.
-- Placer la seule zone de texte libre finale dans la colonne droite, sous la carte ou dans une position logique.
-- Garder le formulaire principal à gauche.
-- Réduire le texte et les espaces inutiles.
-- Aligner proprement les blocs.
-- Garder des cartes/surfaces visuellement cohérentes avec CleanMyMap.
-- Éviter les sections trop hautes ou trop vides.
-
-Contraintes :
-- Ne pas changer la logique d’envoi.
-- Ne pas casser le responsive.
-- Ne pas ajouter de dépendance.
-- Ne pas modifier les routes.
-- Ne pas afficher l’impact estimé dans le formulaire.
-
-Après modification :
-- Vérifie desktop/tablette/mobile.
-- Vérifie que le formulaire reste clair et rapide à remplir.
-- Lance lint/build si disponibles.
-
-
-
-
-
-
-
-
-
-
-Prompt 8 — Confirmation avant envoi avec récapitulatif
-Ajoute une étape de confirmation avant l’envoi final du formulaire de déclaration d’action.
-
-Objectif :
-Quand l’utilisateur clique sur envoyer, afficher d’abord un récapitulatif clair avec les données saisies, l’impact estimé, puis un bouton “Confirmer l’envoi”.
-
-Comportement attendu :
-- Pendant le formulaire, ne pas afficher l’impact estimé.
-- Au clic sur le bouton d’envoi initial, ne pas envoyer immédiatement.
-- Afficher un écran/modal/panneau de confirmation.
-- Afficher un récapitulatif clair :
-  - structure / cadre d’engagement ;
-  - type d’action ;
-  - lieu ;
-  - date ;
-  - données déchets ;
-  - nombre de mégots si renseigné ;
-  - tracé ou zone si disponible ;
-  - commentaire final si renseigné ;
-  - données utilisateur automatiques visibles côté admin si pertinent ;
-  - impact estimé.
-- Ajouter deux actions :
-  - “Modifier” pour revenir au formulaire ;
-  - “Confirmer l’envoi” pour envoyer réellement.
-- Après confirmation, envoyer le formulaire avec le payload complet.
-
-Contraintes :
-- Ne pas afficher l’impact estimé avant l’étape de confirmation.
-- Ne pas casser les validations existantes.
-- Ne pas envoyer deux fois le formulaire.
-- Gérer les états loading, succès et erreur.
-- Ne pas ajouter de dépendance.
-- Garder une UI concise et lisible.
-
-Après modification :
-- Tester le parcours complet :
-  1. remplissage ;
-  2. clic envoyer ;
-  3. récapitulatif ;
-  4. modifier ;
-  5. confirmer ;
-  6. succès/erreur.
-- Lance lint/build si disponibles.
-- Résume les fichiers modifiés et la logique ajoutée.
-
-
-
-
-
-
-
-
-
-
-Prompt 9 — Audit final du parcours formulaire
+Audit final du parcours formulaire
 Audite le parcours complet de déclaration d’action après les modifications.
 
 Objectif :
@@ -430,7 +18,7 @@ Vérifier que le formulaire est court, clair, fiable et compréhensible.
 - Il n’y a qu’une seule zone de texte libre à la fin.
 - L’impact estimé apparaît seulement à la confirmation.
 - Le bouton “Confirmer l’envoi” envoie correctement le formulaire.
-- Le layout 60/40 fonctionne sur desktop.
+- Le layout 60/40 (deux colonnes : a gauche le formulaire et a droite la carte de tracé) fonctionne sur desktop.
 - Le responsive mobile est propre.
 - Les admins peuvent identifier correctement l’auteur.
 
@@ -445,6 +33,43 @@ Contraintes :
 
 
 
+Analyse toutes les rubriques et page du site web puis propose une stratégie de construction progressive
+
+Objectif :
+éviter de coder toutes les rubriques de façon incohérentes sans préparer une UX/UI homogène, maintenable et scalable.
+
+Méthode attendue :
+1. Identifier les patterns communs entre rubriques : layout, headers, cards, formulaires, tableaux, filtres, modales, états loading/empty/error/success, permissions, actions principales.
+2. Utiliser la homepage et la rubrique formulaire d'action comme pilote représentative.
+3. Définir ou consolider les composants communs nécessaires.
+4. Coder la base fonctionnelle minimale de chaque rubrique avec les mêmes patterns.
+5. Appliquer la charte UX/UI globalement.
+6. Laisser une marge de liberté sur chaque rubrique pour qu'elles ne soient pas juste "copier coller"
+7. Peaufiner ensuite rubrique par rubrique selon les besoins spécifiques.
+
+Contraintes :
+- Ne pas sur-optimiser une seule rubrique avant d’avoir stabilisé les patterns communs.
+- Éviter la duplication de composants.
+- Préserver la cohérence visuelle et fonctionnelle.
+- Prioriser la maintenabilité.
+- Ne pas faire de refonte massive non contrôlée.
+- Documenter les patterns réutilisables si la documentation du projet l’exige sachant que chaque rubrique à un document texte dédié dans CleanmyMap-main\documentation\product\audit
+
+Livrable attendu :
+- Plan d’exécution par phases.
+- Composants communs à créer ou factoriser.
+- Risques techniques/UX.
+- Ordre de priorité des rubriques par ordre d'importance.
+
+Ne commence pas l’implémentation complète. Commence par produire le fichier du plan d’exécution, les composants communs à créer/factoriser, les risques, et l’ordre de priorité. Attends validation avant de modifier le code.
+
+
+
+
+
+
+
+règles a suivre : audit de la section avec plan, exécuter le plan, modulariser, refactoriser, passe UI/UX, plan "tirer 100% du potentiel" puis passer à la rubrique suivante. 
 
 
 
@@ -469,43 +94,6 @@ Contraintes :
 
 
 
- Prompt de correction technique pour CleanmyMap
-
-  Tu es un expert senior Fullstack (React/Next.js/TypeScript/Python). Ta mission est de corriger les erreurs de test, de type et de maintenance identifiées
-  dans le projet CleanmyMap.
-
-  Contexte du Projet
-   - Frontend : Next.js 16+, TypeScript, Tailwind CSS 4, Framer Motion, Vitest.
-   - Backend Legacy : Python 3.10+, Pytest.
-   - Maintenance : Scripts de vérification personnalisés (PowerShell/Python).
-
-  1. Erreurs de Maintenance (ci_cleanup)
-  Le script legacy/scripts/ci_cleanup.py échoue avec l'erreur docs_wiring.
-   - Problème : L'outil d'audit legacy/src/maintenance/cleanup_audit.py attend des fichiers dans docs/wiki/ (README.md, MAINTENANCE.md, CHANGELOG.md) et des
-     références spécifiques dans le README.md racine.
-   - Action : Aligner la structure documentaire réelle (documentation/technical/) avec les attentes de l'audit ou mettre à jour les règles de l'audit pour
-     pointer vers les bons dossiers. Assure-toi que les références textuelles attendues (ex: scripts/ci_cleanup.py) sont présentes dans les fichiers
-     concernés.
-
-  2. Échecs de Tests Web (Vitest)
-  Exécute npm --prefix apps/web run test pour valider.
-   - payload.test.ts : L'assertion sur payload.notes échoue. Le test attend uniquement le tag [EVENT_REF], mais reçoit les notes du formulaire suivies du
-     tag. Décide s'il faut vider les notes en mode "quick" ou mettre à jour le test pour accepter la concaténation.
-   - Timeouts : Les tests route.submit.test.ts et route.test.ts expirent après 5000ms. Analyse si c'est un problème de performance, d'importation lourde ou
-     s'il faut augmenter le testTimeout de Vitest.
-
-  3. Erreurs de Type TypeScript
-  Exécute npm --prefix apps/web run typecheck pour valider.
-   - OriginCredibility.tsx : Erreurs TS2322 sur les variantes Framer Motion. La propriété ease reçoit une string ("easeOut") alors que le type attend Easing
-     | Easing[]. Utilise les types explicites de Framer Motion ou transtype si nécessaire.
-   - ZoneRepartitionChart.tsx : Erreur TS2322 sur le Formatter de Recharts. Le paramètre value est typé number mais peut être undefined. Ajuste la signature
-     pour accepter ValueType | undefined.
-
-  Instructions de Travail
-   1. Recherche : Valide les erreurs en lançant les commandes de test et de lint locales.
-   2. Stratégie : Applique des corrections chirurgicales respectant les conventions du projet.
-   3. Validation : Relance powershell scripts/run_checks.ps1 et les tests unitaires web pour confirmer la résolution complète.
-   4. Précision : Ne supprime pas de tests, corrige-les. Ne désactive pas les warnings TS avec @ts-ignore, corrige les types.
 
 
 
@@ -519,25 +107,6 @@ Contraintes :
 
 
 
-Audite et finalise tous les ajouts récents probablement bâclés par un modèle moins performant.
-
-Utilise latest-session comme preuve/source des changements récents à vérifier. Commence par regrouper ses éléments par similarité ou zone fonctionnelle, puis réorganise-les par ordre de priorité de vérification et supprime ceux obsolète.
-
-Pour chaque groupe :
-1. Inspecte le code réel, pas seulement latest-session.
-2. Identifie ce qui a été ajouté, partiellement implémenté, dupliqué, incohérent, fragile ou inachevé.
-3. Refactorise ou complète chaque ajout pour obtenir un résultat propre, cohérent, maintenable, optimisé et aligné avec l’architecture et l’UX existantes.
-4. Préserve le comportement prévu sauf si une correction est clairement justifiée.
-5. Supprime progressivement de latest-session chaque élément entièrement traité et vérifié.
-
-Continue jusqu’à ce que latest-session ne contienne plus que de vrais bloqueurs non résolus, s’il y en a.
-
-Sortie attendue :
-- Groupes identifiés et ordre de priorité
-- Éléments terminés
-- Fichiers modifiés
-- Tests/vérifications exécutés
-- Bloqueurs ou risques restants
 
 
 
@@ -546,8 +115,9 @@ Sortie attendue :
 
 
 
+todo
 
-
+risks
 
 
 
@@ -618,10 +188,6 @@ Rapport final attendu :
 
 
 
-
-job GitHub 
-
-alerte securité ghithub
 
 
 
@@ -979,7 +545,7 @@ j'ai créer le bucket chat-attachments sur supabase en public pour la logique de
 
 
 
-
+reprendre prompt-codex a partir de stratégie SEO compris
 
 
 
