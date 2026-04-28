@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+
 import { MapPin, Navigation, Route, Map as MapIcon, Crosshair, HelpCircle } from "lucide-react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
@@ -34,7 +34,7 @@ export function ActionStepLocation({
   gpsMessage,
   onAutofillGps,
 }: ActionStepLocationProps) {
-  const isCompleteMode = true; // For now
+
   
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -75,8 +75,8 @@ export function ActionStepLocation({
 
             <div className="flex items-center gap-4 pt-2">
               <CmmButton 
-                tone={gpsStatus === "success" ? "emerald" : "slate"} 
-                variant="elevated" 
+                tone={gpsStatus === "success" ? "primary" : "secondary"} 
+                variant="default" 
                 size="sm" 
                 className="h-12 rounded-xl flex-1 font-black uppercase tracking-widest text-[10px]"
                 onClick={onAutofillGps}

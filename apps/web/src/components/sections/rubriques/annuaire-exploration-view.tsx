@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Search, Filter, Map as MapIcon, Share2, Info } from "lucide-react";
+import { useState } from "react";
+import { Search, Filter, Map as MapIcon, Share2 } from "lucide-react";
 import { AnnuaireMapCanvas } from "./annuaire-map-canvas";
 import { AnnuaireNetworkGraph } from "./annuaire-network-graph";
 import { AnnuairePartnerDrawer } from "./annuaire-partner-drawer";
@@ -38,35 +38,41 @@ export function AnnuaireExplorationView() {
   };
 
   return (
-    <div id="exploration-canvas-anchor" className="flex flex-col xl:flex-row gap-8">
+    <div id="exploration-canvas-anchor" className="flex flex-col lg:flex-row gap-10 items-start">
       {/* LEFT COLUMN: Search & List (60%) */}
-      <div className="flex-1 xl:w-[60%] flex flex-col gap-8">
+      <div className="flex-1 lg:w-[60%] flex flex-col gap-10 order-2 lg:order-1">
         
         {/* Search & Filter Header */}
-        <div className="bg-slate-900/5 rounded-[2rem] p-6 border border-slate-200/60 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+        <div className="bg-slate-900/80 rounded-[2.5rem] p-8 border border-slate-800/60 shadow-xl backdrop-blur-xl relative overflow-hidden group">
+          {/* Subtle background glow on hover */}
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+          
+          <div className="flex flex-col md:flex-row gap-6 items-start md:items-center relative z-10">
             {/* Search Input */}
             <div className="relative flex-1 group/search w-full">
-              <div className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/search:text-violet-600 transition-colors">
-                <Search size={20} strokeWidth={3} />
+              <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within/search:text-emerald-500 group-focus-within/search:scale-110 transition-all duration-300">
+                <Search size={22} strokeWidth={2.5} />
               </div>
               <input 
                 type="text"
                 placeholder={fr ? "Rechercher une structure, un domaine..." : "Search structures, domains..."}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full h-14 pl-14 pr-6 rounded-2xl bg-white border border-slate-200/60 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:border-violet-500 shadow-sm transition-all font-bold text-base"
+                className="w-full h-16 pl-16 pr-8 rounded-2xl bg-slate-900/60 border border-slate-700/50 text-white placeholder:text-slate-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500/50 focus:bg-slate-900 shadow-inner transition-all font-bold text-lg"
               />
             </div>
             
             {/* Filter Toggle Button */}
             <CmmButton 
-              tone="slate" 
-              variant="outline" 
-              className={cn("h-14 px-6 rounded-2xl font-bold whitespace-nowrap", showFilters && "bg-slate-100 ring-2 ring-slate-200")}
+              tone="secondary" 
+              variant="default" 
+              className={cn(
+                "h-16 px-8 rounded-2xl font-black text-sm tracking-wider uppercase whitespace-nowrap transition-all duration-300",
+                showFilters ? "bg-emerald-600 text-white shadow-xl scale-95 border-emerald-500" : "bg-slate-900/40 border border-slate-800 hover:border-emerald-500/50"
+              )}
               onClick={() => setShowFilters(!showFilters)}
             >
-              <Filter size={18} strokeWidth={2.5} className="mr-2" />
+              <Filter size={18} strokeWidth={3} className={cn("mr-3 transition-transform", showFilters && "rotate-180")} />
               {fr ? "Filtres" : "Filters"}
             </CmmButton>
           </div>
@@ -84,8 +90,8 @@ export function AnnuaireExplorationView() {
                 className={cn(
                   "px-4 py-1.5 rounded-xl text-[10px] font-black tracking-widest border transition-all duration-300 uppercase",
                   searchTerm === theme.id 
-                    ? "bg-violet-600 border-violet-600 text-white shadow-md shadow-violet-600/20" 
-                    : "bg-white border-slate-200 text-slate-500 hover:border-violet-300 hover:text-violet-600"
+                    ? "bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-600/20" 
+                    : "bg-slate-900/60 border-slate-800 text-slate-500 hover:border-emerald-500/50 hover:text-emerald-400"
                 )}
               >
                 {theme.label}
@@ -95,7 +101,7 @@ export function AnnuaireExplorationView() {
 
           {/* Advanced Filters Panel */}
           {showFilters && (
-            <div className="mt-6 pt-6 border-t border-slate-200/60 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="mt-6 pt-6 border-t border-slate-800/60 animate-in fade-in slide-in-from-top-4 duration-500">
               <AnnuaireFiltersCard 
                 fr={fr}
                 searchTerm={searchTerm}
@@ -119,7 +125,7 @@ export function AnnuaireExplorationView() {
           <h3 className="cmm-text-h3 cmm-text-primary">
             {fr ? "Structures partenaires" : "Partner structures"}
           </h3>
-          <div className="bg-violet-100 text-violet-700 px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase">
+          <div className="bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-black tracking-widest uppercase border border-emerald-500/20">
             {sortedAndFilteredEntries.length} {fr ? "résultats" : "results"}
           </div>
         </div>
@@ -138,7 +144,7 @@ export function AnnuaireExplorationView() {
       </div>
 
       {/* RIGHT COLUMN: Sticky Map (40%) */}
-      <aside className="xl:w-[40%] min-w-[320px] h-[500px] xl:h-[calc(100vh-120px)] xl:sticky xl:top-24 rounded-[2.5rem] overflow-hidden border border-slate-200/60 shadow-2xl shadow-slate-200/50 bg-slate-900 group relative">
+      <aside className="lg:w-[40%] w-full min-w-[320px] h-[550px] lg:h-[calc(100vh-140px)] lg:sticky lg:top-24 rounded-[3rem] overflow-hidden border-4 border-slate-800 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] bg-slate-900 group relative order-1 lg:order-2">
         {/* Futuristic Map Overlay */}
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_49%,rgba(255,255,255,0.02)_50%,transparent_51%)] bg-[length:100%_4px] pointer-events-none opacity-20 z-10" />
         
@@ -162,7 +168,7 @@ export function AnnuaireExplorationView() {
             onClick={() => setViewMode("map")}
             className={cn(
               "px-3 py-2 rounded-lg flex items-center justify-center transition-all",
-              viewMode === "map" ? "bg-violet-600 text-white shadow-lg" : "text-white/60 hover:text-white"
+              viewMode === "map" ? "bg-emerald-600 text-white shadow-lg" : "text-white/60 hover:text-white"
             )}
           >
             <MapIcon size={16} strokeWidth={2.5} />
@@ -171,7 +177,7 @@ export function AnnuaireExplorationView() {
             onClick={() => setViewMode("network")}
             className={cn(
               "px-3 py-2 rounded-lg flex items-center justify-center transition-all",
-              viewMode === "network" ? "bg-violet-600 text-white shadow-lg" : "text-white/60 hover:text-white"
+              viewMode === "network" ? "bg-emerald-600 text-white shadow-lg" : "text-white/60 hover:text-white"
             )}
           >
             <Share2 size={16} strokeWidth={2.5} />

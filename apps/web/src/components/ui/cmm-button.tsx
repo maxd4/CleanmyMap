@@ -17,16 +17,17 @@ export interface CmmButtonProps {
  variant?: ButtonVariant;
  className?: string;
  disabled?: boolean;
+ ariaLabel?: string;
  type?:"button" |"submit" |"reset";
 }
 
 const toneClasses: Record<ButtonTone, string> = {
  primary:
-"border-emerald-200/80 bg-emerald-600 text-white hover:bg-emerald-700 hover:border-emerald-300 focus-visible:ring-emerald-500/40",
+ "border-emerald-500/40 bg-emerald-600 text-white hover:bg-emerald-500 hover:border-emerald-400 focus-visible:ring-emerald-500/40",
  secondary:
-"border-slate-200/80 bg-white cmm-text-secondary hover:bg-slate-50/80 hover:border-slate-300 focus-visible:ring-slate-500/30",
+ "border-slate-800 bg-slate-900 cmm-text-primary hover:bg-slate-800 hover:border-slate-700 focus-visible:ring-slate-500/30",
  muted:
-"border-transparent bg-transparent cmm-text-secondary hover:bg-slate-50/60 hover:cmm-text-primary focus-visible:ring-slate-500/20",
+ "border-transparent bg-transparent cmm-text-secondary hover:bg-white/5 hover:cmm-text-primary focus-visible:ring-slate-500/20",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -53,6 +54,7 @@ export function CmmButton({
  variant ="default",
  className,
  disabled,
+ ariaLabel,
  type ="button",
 }: CmmButtonProps) {
  const classes = cn(
@@ -65,7 +67,7 @@ export function CmmButton({
 
  if (href) {
  return (
- <Link href={href} className={classes}>
+ <Link href={href} className={classes} aria-label={ariaLabel}>
  {children}
  </Link>
  );
@@ -77,6 +79,7 @@ export function CmmButton({
  onClick={onClick}
  disabled={disabled}
  className={classes}
+ aria-label={ariaLabel}
  >
  {children}
  </button>

@@ -43,9 +43,9 @@ function CommunityRemindersCard(props: CommunityRemindersCardProps) {
  </p>
  </li>
  ))}
- {reminders.length === 0 ? (
- <li>Aucune relance urgente sur les 14 prochains jours.</li>
- ) : null}
+      {reminders.length === 0 ? (
+        <li className="cmm-text-secondary italic">Aucune relance urgente n'est nécessaire sur les 14 prochains jours.</li>
+      ) : null}
  </ul>
  </div>
  );

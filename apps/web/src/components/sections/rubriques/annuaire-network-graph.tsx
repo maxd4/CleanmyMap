@@ -19,7 +19,7 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
   const nodes = useMemo(() => {
     return entries.slice(0, 40).map((entry, i) => {
       // Use index and name hash for deterministic positions
-      const hash = entry.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const hash = entry.name.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
       return {
         ...entry,
         x: 15 + (hash % 70) + (Math.sin(i) * 5), // 15% to 85% range
@@ -38,7 +38,7 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
         const n2 = nodes[j];
         
         // Share a tag?
-        const sharedTags = n1.tags?.filter(t => n2.tags?.includes(t)) || [];
+        const sharedTags = n1.tags?.filter((t: string) => n2.tags?.includes(t)) || [];
         
         if (sharedTags.length > 0) {
           l.push({
@@ -137,7 +137,7 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
                   cx={node.x}
                   cy={node.y}
                   r="1.8"
-                  className={cn("opacity-0 group-hover:opacity-40 transition-opacity duration-500", getColorClass(node.engagementType))}
+                  className={cn("opacity-0 group-hover:opacity-40 transition-opacity duration-500", getColorClass(node.types[0]))}
                   filter="url(#glow)"
                 />
                 
@@ -146,7 +146,7 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
                   cx={node.x}
                   cy={node.y}
                   r="1.2"
-                  className={cn("transition-all duration-500 stroke-[0.2]", getColorClass(node.engagementType))}
+                  className={cn("transition-all duration-500 stroke-[0.2]", getColorClass(node.types[0]))}
                 />
 
                 {/* Internal Dot */}
@@ -171,9 +171,9 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
                       {node.name}
                     </span>
                     <span className={cn("text-[1.2px] font-bold opacity-0 group-hover:opacity-70 transition-opacity uppercase tracking-tighter", 
-                      node.engagementType === 'environnemental' ? 'text-emerald-400' :
-                      node.engagementType === 'social' ? 'text-sky-400' :
-                      node.engagementType === 'humanitaire' ? 'text-rose-400' : 'text-violet-400'
+                      node.types[0] === 'environnemental' ? 'text-emerald-400' :
+                      node.types[0] === 'social' ? 'text-sky-400' :
+                      node.types[0] === 'humanitaire' ? 'text-rose-400' : 'text-violet-400'
                     )}>
                       {node.location}
                     </span>

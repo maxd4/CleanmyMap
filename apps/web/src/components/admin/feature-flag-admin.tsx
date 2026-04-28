@@ -41,7 +41,7 @@ export function FeatureFlagAdmin() {
  <span className="font-medium">{key}</span>
  <CmmButton
  onClick={() => toggleFlag(key as keyof typeof flags)}
- variant={value ? 'default' : 'outline'}
+ variant={value ? 'default' : 'ghost'}
  className="px-4 py-2"
  >
  {value ? 'Enabled' : 'Disabled'}
@@ -54,7 +54,7 @@ export function FeatureFlagAdmin() {
  <CmmCard className="p-6">
  <div className="flex justify-between items-center mb-4">
  <h2 className="text-xl font-bold">Form Analytics</h2>
- <CmmButton onClick={clearAnalytics} variant="outline">
+ <CmmButton onClick={clearAnalytics} variant="ghost">
  Clear Data
  </CmmButton>
  </div>
@@ -87,7 +87,7 @@ export function FeatureFlagAdmin() {
  </CmmButton>
  <CmmButton 
  onClick={() => window.open('/declaration', '_blank')}
- variant="outline"
+ variant="ghost"
  className="w-full"
  >
  Test Complex Form

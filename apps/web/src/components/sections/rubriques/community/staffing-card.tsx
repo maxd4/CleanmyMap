@@ -71,11 +71,11 @@ function CommunityStaffingCard(props: CommunityStaffingCardProps) {
  <p className="cmm-text-caption cmm-text-muted">{row.reason}</p>
  </li>
  ))}
- {staffingPlan.rows.length === 0 ? (
- <li className="rounded-lg border border-slate-200 bg-slate-50 p-3 cmm-text-secondary">
- Aucun evenement a venir necessitant un dimensionnement staffing.
- </li>
- ) : null}
+      {staffingPlan.rows.length === 0 ? (
+        <li className="rounded-lg border border-slate-200 bg-slate-50 p-3 cmm-text-secondary">
+          Aucun événement à venir ne nécessite de staffing particulier pour le moment.
+        </li>
+      ) : null}
  </ul>
  </div>
  );

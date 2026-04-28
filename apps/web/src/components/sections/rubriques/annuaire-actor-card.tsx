@@ -2,10 +2,8 @@ import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
 import {
   CONTRIBUTION_LABELS,
   ENTITY_LABELS,
-  TRUST_LABELS,
   getEntryTrustState,
   getPartnerWhyThisStructureMatters,
-  VERIFICATION_LABELS,
   formatCoverage,
   formatFreshness,
   hasRecentPartnerUpdate,
@@ -13,7 +11,8 @@ import {
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { Info, MapPin, MessageSquare, ShieldCheck, Clock } from "lucide-react";
+import { Info, MapPin, MessageSquare, ShieldCheck, Clock, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type AnnuaireActorCardProps = {
   entry: EnrichedAnnuaireEntry;
@@ -37,11 +36,11 @@ export function AnnuaireActorCard({
   return (
     <CmmCard
       tone={isFeatured ? "violet" : isTrusted ? "violet" : isIncomplete ? "rose" : "amber"}
-      variant={isFeatured ? "elevated" : "subtle"}
+      variant={isFeatured ? "elevated" : "default"}
       className={cn(
         "group relative flex flex-col transition-all duration-500",
-        isFeatured 
-          ? "ring-2 ring-violet-200 shadow-xl scale-[1.02]" 
+        isFeatured
+          ? "ring-2 ring-violet-200 shadow-xl scale-[1.02]"
           : "hover:shadow-xl hover:-translate-y-1 hover:border-violet-200"
       )}
     >
@@ -63,8 +62,8 @@ export function AnnuaireActorCard({
           </div>
         )}
         {!isFeatured && isTrusted && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200 shadow-sm">
-            <ShieldCheck size={12} className="text-emerald-500" />
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-bold text-violet-700 border border-violet-200 shadow-sm">
+            <ShieldCheck size={12} className="text-violet-500" />
             {fr ? "VÉRIFIÉ" : "VERIFIED"}
           </span>
         )}
@@ -83,11 +82,11 @@ export function AnnuaireActorCard({
         {/* En-tête */}
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-slate-100 text-[10px] font-black tracking-widest text-slate-500 uppercase">
+            <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-black tracking-widest text-slate-400 uppercase border border-slate-700/50">
               {ENTITY_LABELS[entry.kind]}
             </span>
             {entry.tags?.slice(0, 2).map(tag => (
-              <span key={tag} className="cmm-text-caption font-bold px-2 py-0.5 rounded-md bg-violet-50 text-violet-600 border border-violet-100/50">
+              <span key={tag} className="cmm-text-caption font-bold px-2 py-0.5 rounded-md bg-emerald-950/40 text-emerald-400 border border-emerald-500/20">
                 {tag}
               </span>
             ))}
@@ -122,9 +121,9 @@ export function AnnuaireActorCard({
         </div>
 
         {/* Grille d'infos compacte */}
-        <div className="grid grid-cols-1 gap-3 pt-4 border-t border-slate-50">
+        <div className="grid grid-cols-1 gap-3 pt-4 border-t border-slate-800/60">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-lg bg-slate-50 p-1.5 text-slate-400 border border-slate-100 group-hover:bg-violet-50 group-hover:text-violet-500 transition-colors">
+            <div className="mt-0.5 rounded-lg bg-slate-800 p-1.5 text-slate-400 border border-slate-700 group-hover:bg-emerald-900/40 group-hover:text-emerald-400 transition-colors">
               <MapPin size={14} />
             </div>
             <div className="space-y-0.5">
@@ -138,7 +137,7 @@ export function AnnuaireActorCard({
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-lg bg-slate-50 p-1.5 text-slate-400 border border-slate-100 group-hover:bg-violet-50 group-hover:text-violet-500 transition-colors">
+            <div className="mt-0.5 rounded-lg bg-slate-800 p-1.5 text-slate-400 border border-slate-700 group-hover:bg-emerald-900/40 group-hover:text-emerald-400 transition-colors">
               <Clock size={14} />
             </div>
             <div className="space-y-0.5">
@@ -152,7 +151,7 @@ export function AnnuaireActorCard({
           </div>
 
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-lg bg-slate-50 p-1.5 text-slate-400 border border-slate-100 group-hover:bg-violet-50 group-hover:text-violet-500 transition-colors">
+            <div className="mt-0.5 rounded-lg bg-slate-800 p-1.5 text-slate-400 border border-slate-700 group-hover:bg-emerald-900/40 group-hover:text-emerald-400 transition-colors">
               <Info size={14} />
             </div>
             <div className="space-y-0.5">
@@ -180,10 +179,16 @@ export function AnnuaireActorCard({
                 </p>
                 <div className="group/tooltip relative ml-2">
                   <Info size={14} className="text-violet-400 cursor-help" />
-                  <div className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-slate-900 p-3 text-xs text-white shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20">
-                    <p className="font-bold mb-1">Score de confiance : {isTrusted ? "Élevé" : "Moyen"}</p>
-                    <p className="opacity-80">Calculé via algorithme de scoring tenant compte de : la fraîcheur des données (dernière MAJ), la complétude du profil, et la disponibilité de contacts directs vérifiés.</p>
-                    <div className="absolute -bottom-1 right-2 w-2 h-2 bg-slate-900 rotate-45" />
+                  <div className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-slate-900 p-4 text-xs text-white shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 border border-white/10 backdrop-blur-md">
+                    <p className="font-black text-violet-400 mb-2 uppercase tracking-widest text-[9px]">Méthodologie de Confiance</p>
+                    <p className="font-bold mb-2">Score : {isTrusted ? "90-100%" : "60-80%"}</p>
+                    <p className="opacity-90 leading-relaxed">
+                      L'indice de confiance est calculé par pondération :
+                      <br />• 40% Complétude (Photos, Contacts)
+                      <br />• 30% Fraîcheur (MAJ &lt; 3 mois)
+                      <br />• 30% Engagement (Activité réelle terrain)
+                    </p>
+                    <div className="absolute -bottom-1 right-2 w-2 h-2 bg-slate-900 rotate-45 border-r border-b border-white/10" />
                   </div>
                 </div>
               </div>
@@ -222,11 +227,11 @@ export function AnnuaireActorCard({
               <p className="font-black uppercase tracking-widest text-[9px] mb-2 text-amber-700 opacity-80">{fr ? "Accès Interne" : "Internal Access"}</p>
               <div className="grid grid-cols-1 gap-1">
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-amber-800">{fr ? "Référent :" : "Referent:"}</span> 
+                  <span className="font-semibold text-amber-800">{fr ? "Référent :" : "Referent:"}</span>
                   <span className="font-medium">{entry.internalAdminContact.referentName}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-semibold text-amber-800">Email :</span> 
+                  <span className="font-semibold text-amber-800">Email :</span>
                   <span className="font-medium underline decoration-amber-300">{entry.internalAdminContact.email}</span>
                 </div>
               </div>
@@ -236,19 +241,20 @@ export function AnnuaireActorCard({
       </div>
 
       {/* Actions */}
-      <div className="mt-6 flex flex-col sm:flex-row gap-3 pt-5 border-t border-slate-50">
+      <div className="mt-6 flex flex-col sm:flex-row gap-3 pt-5 border-t border-slate-800/60">
         <CmmButton
-          variant="outline"
+          variant="default"
           size="sm"
-          className="flex-1 rounded-xl font-bold border-slate-200 hover:border-violet-300 hover:bg-violet-50 transition-all"
+          className="flex-1 rounded-xl font-bold border-slate-800 bg-slate-900 hover:border-emerald-500/50 hover:bg-slate-800 transition-all"
           onClick={() => onFocusMap(entry.id)}
         >
-          <MapPin size={14} className="mr-2 text-violet-500" />
+          <MapPin size={14} className="mr-2 text-emerald-500" />
           {fr ? "Voir Carte" : "Map"}
         </CmmButton>
         {entry.primaryChannel ? (
           <CmmButton
-            variant="primary"
+            variant="default"
+            tone="primary"
             size="sm"
             className="flex-1 rounded-xl bg-violet-600 hover:bg-violet-700 text-white border-none shadow-lg shadow-violet-100 hover:shadow-violet-200 transition-all group/btn"
             asChild
@@ -259,14 +265,14 @@ export function AnnuaireActorCard({
             </a>
           </CmmButton>
         ) : (
-          <div className="flex-1 flex items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/50 px-3 py-2 cmm-text-caption font-bold text-slate-400">
+          <div className="flex-1 flex items-center justify-center rounded-xl border border-dashed border-slate-800 bg-slate-900/40 px-3 py-2 cmm-text-caption font-bold text-slate-500">
             {fr ? "Canal à confirmer" : "Channel to confirm"}
           </div>
         )}
       </div>
 
       {/* Footer Meta */}
-      <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+      <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
         <span>MAJ: {entry.lastUpdatedAt}</span>
         <span className="flex items-center gap-1 italic opacity-70">
           <Clock size={10} />

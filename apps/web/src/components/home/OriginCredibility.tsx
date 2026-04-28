@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Map, Users, GraduationCap, CheckCircle2, Construction, Calendar, MessageSquare } from 'lucide-react';
+
+import { Map, Users, GraduationCap, CheckCircle2, Construction, Calendar } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import type { Variants } from"framer-motion";
@@ -160,7 +160,7 @@ export function OriginCredibility() {
  <Link href="/actions/map" className="group flex items-center justify-center gap-3 px-8 md:px-10 py-4 md:py-5 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 transition-all rounded-2xl text-base md:text-lg font-bold shadow-xl shadow-emerald-500/20 active:scale-95">
  <Map className="w-5 h-5 md:w-6 md:h-6 transition-transform group-hover:scale-110" /> Voir la carte
  </Link>
- <Link href="/sections/annuaire" className="flex items-center justify-center gap-3 px-8 md:px-10 py-4 md:py-5 bg-white/10 hover:bg-white/15 transition-all rounded-2xl text-base md:text-lg font-bold border border-white/20 backdrop-blur-md text-white active:scale-95">
+ <Link href="/sections/annuaire" className="flex items-center justify-center gap-3 px-8 md:px-10 py-4 md:py-5 bg-slate-900/40 hover:bg-slate-800/60 transition-all rounded-2xl text-base md:text-lg font-bold border border-slate-700/50 backdrop-blur-md text-white active:scale-95">
  Annuaire partenaires
  </Link>
  </motion.div>

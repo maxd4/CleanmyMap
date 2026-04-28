@@ -4,7 +4,6 @@ import useSWR from"swr";
 import {
  serviceLevelLabel,
  summarizeUptime,
- type ServiceStatusInfo,
  type ServicesPayload,
  type UptimePayload,
 } from"@/lib/dashboard/status";

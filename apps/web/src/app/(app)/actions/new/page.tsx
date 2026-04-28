@@ -29,7 +29,7 @@ export default async function NewActionPage({
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
-        title={locale === "fr" ? "Déclarer une action" : "Declare an action"}
+        title={locale === "fr" ? "Déclarer" : "Declare"}
         description={
           locale === "fr"
             ? "Cette fonctionnalité nécessite une connexion Clerk."
@@ -114,7 +114,7 @@ export default async function NewActionPage({
     return (
       <PageReadingTemplate
         context={`Profil ${getProfileLabel(profile, locale)}`}
-        title="Déclarer une action"
+        title="Déclarer"
         objective="Déclarer une action terrain en 3 étapes : localiser, tracer, valider."
         summary={
           <div className="grid gap-3 md:grid-cols-2">
@@ -180,7 +180,7 @@ export default async function NewActionPage({
     <div data-rubrique-report-root className="space-y-4">
       <DecisionPageHeader
         context={`Profil ${getProfileLabel(profile, locale)}`}
-        title="Déclaration d'action"
+        title="Déclarer"
         objective="Saisir rapidement une action terrain (3 étapes : localiser, tracer, valider)."
         actions={[
           { href: "/actions/map", label: "Carte" },

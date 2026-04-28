@@ -12,6 +12,7 @@ import L from "leaflet";
 import { ExternalLink, Instagram, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getEntryTrustState, getPartnerWhyThisStructureMatters } from "./annuaire-helpers";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 // Types needed for integration
 type EngagementType = "environnemental" | "social" | "humanitaire";
@@ -69,9 +70,9 @@ const createBubbleIcon = (
 ) => {
   const primaryType = entry.types[0];
   let color = "#8b5cf6"; // violet default
-  if (primaryType === "environnemental") color = "#10b981"; // emerald
-  if (primaryType === "social") color = "#3b82f6"; // blue
-  if (primaryType === "humanitaire") color = "#f43f5e"; // rose
+  if (primaryType === "environnemental") color = "#6366f1"; // indigo/violet mix
+  if (primaryType === "social") color = "#4f46e5"; // indigo
+  if (primaryType === "humanitaire") color = "#7c3aed"; // violet deeper
 
   const initials = entry.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
 
@@ -93,17 +94,19 @@ const createBubbleIcon = (
   });
 };
 
+export interface AnnuaireMapCanvasProps {
+  items: AnnuaireEntry[];
+  highlightedItemId?: string | null;
+  onItemClick?: (id: string) => void;
+  variant?: "standard" | "exploration";
+}
+
 export function AnnuaireMapCanvas({
   items,
   highlightedItemId,
   onItemClick,
   variant = "standard",
-}: {
-  items: AnnuaireEntry[];
-  highlightedItemId?: string | null;
-  onItemClick?: (id: string) => void;
-  variant?: "standard" | "exploration";
-}) {
+}: AnnuaireMapCanvasProps) {
   const center = useMemo<[number, number]>(() => {
     if (highlightedItemId) {
       const item = items.find(i => i.id === highlightedItemId);
@@ -180,7 +183,7 @@ export function AnnuaireMapCanvas({
                       </p>
                     ) : null}
                     <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-100 pt-2">
-                      <CmmButton size="sm" tone="violet" onClick={() => onItemClick?.(entry.id)}>
+                      <CmmButton size="sm" tone="primary" onClick={() => onItemClick?.(entry.id)}>
                         {variant === "standard" ? "Détails" : "Ouvrir la fiche"}
                       </CmmButton>
                     </div>

@@ -30,7 +30,7 @@ export function ReportExportSmokeCard() {
  );
  } catch (error) {
  setProbeState("error");
- setMessage(error instanceof Error ? error.message :"Erreur inconnue.");
+      setMessage(error instanceof Error ? error.message : "Une erreur inattendue est survenue lors du test de l'export.");
  }
  }
 

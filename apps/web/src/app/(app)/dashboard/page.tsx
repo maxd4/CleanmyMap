@@ -104,7 +104,7 @@ export default async function DashboardPage() {
                 </p>
                 <p className="mt-2 cmm-text-small cmm-text-secondary">
                   {locale === "fr"
-                    ? "Le formulaire bénévole s'ouvre après connexion."
+                    ? "Le formulaire bénévole s&apos;ouvre après connexion."
                     : "The volunteer form opens after sign-in."}
                 </p>
               </article>
@@ -117,14 +117,14 @@ export default async function DashboardPage() {
                 </p>
                 <p className="mt-2 cmm-text-small cmm-text-secondary">
                   {locale === "fr"
-                    ? "Les livrables complets s'ouvrent après connexion."
+                    ? "Les livrables complets s&apos;ouvrent après connexion."
                     : "Full deliverables unlock after sign-in."}
                 </p>
               </article>
             </div>
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 cmm-text-small text-emerald-900">
               {locale === "fr"
-                ? "En visite libre, consulte Apprendre ou Générer un livrable depuis la page d'accueil."
+                ? "En visite libre, consulte Apprendre ou Générer un livrable depuis la page d&apos;accueil."
                 : "In public browsing, use Learn or Generate a deliverable from the home page."}
             </div>
           </div>

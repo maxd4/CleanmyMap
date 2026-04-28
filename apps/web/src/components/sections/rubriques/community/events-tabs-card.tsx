@@ -213,7 +213,7 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  ))}
  {upcomingEvents.length === 0 ? (
  <p className="cmm-text-small cmm-text-secondary">
- Aucun evenement a venir pour le moment.
+ Pas de rendez-vous prévu pour l'instant. Revenez bientôt ou proposez votre propre action !
  </p>
  ) : null}
  </div>
@@ -223,7 +223,7 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  <div className="mt-4 space-y-2">
  {myEvents.length === 0 ? (
  <p className="cmm-text-small cmm-text-secondary">
- Aucune inscription enregistree pour le moment.
+ Vous n'avez pas encore d'inscription. Parcourez l'onglet "À venir" pour rejoindre une action.
  </p>
  ) : (
  myEvents.map((event) => (
@@ -340,12 +340,12 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  </article>
  ))}
  {pastEvents.length === 0 ? (
- <p className="cmm-text-small cmm-text-secondary">Aucun evenement passe.</p>
+ <p className="cmm-text-small cmm-text-secondary">L'historique des événements est vide pour le moment.</p>
  ) : null}
  </div>
  ) : null}
  </div>
  );
-}
+ }
 
-export { CommunityEventsTabsCard };
+ export { CommunityEventsTabsCard };

@@ -58,17 +58,17 @@ export function SimpleActionForm() {
  })
  
  if (!response.ok) {
- throw new Error('Erreur lors de l\'envoi')
+      throw new Error('Une erreur réseau a empêché l\'envoi de votre déclaration. Veuillez réessayer.')
  }
  
- const result = await response.json()
+ await response.json()
  analytics.trackFormComplete()
  metrics.complete()
  setSubmitSuccess(true)
  setForm(initialForm)
  } catch (error) {
  console.error('Submission error:', error)
- setErrors({ title: 'Erreur lors de l\'envoi. Veuillez réessayer.' })
+    setErrors({ title: 'Impossible d\'enregistrer l\'action. Vérifiez votre connexion et les champs obligatoires.' })
  } finally {
  setIsSubmitting(false)
  }
@@ -89,7 +89,7 @@ export function SimpleActionForm() {
  <div className="text-green-600 text-4xl">✓</div>
  <h2 className="text-2xl font-bold text-green-800">Action déclarée avec succès !</h2>
  <p className="cmm-text-secondary">Votre action de dépollution a été enregistrée.</p>
- <CmmButton onClick={() => setSubmitSuccess(false)}>Déclarer une nouvelle action</CmmButton>
+ <CmmButton onClick={() => setSubmitSuccess(false)}>Nouvelle déclaration</CmmButton>
  </div>
  </CmmCard>
  )
@@ -103,10 +103,11 @@ export function SimpleActionForm() {
  
  {/* Title */}
  <div>
- <label className="block cmm-text-small font-medium mb-2">
+ <label htmlFor="action-title" className="block cmm-text-small font-medium mb-2">
  Titre de l'action *
  </label>
  <input
+ id="action-title"
  type="text"
  required
  value={form.title}
@@ -119,10 +120,11 @@ export function SimpleActionForm() {
 
  {/* Description */}
  <div>
- <label className="block cmm-text-small font-medium mb-2">
+ <label htmlFor="action-description" className="block cmm-text-small font-medium mb-2">
  Description
  </label>
  <textarea
+ id="action-description"
  value={form.description}
  onChange={(e) => updateForm('description', e.target.value)}
  className="w-full p-3 border rounded-lg h-24"
@@ -132,10 +134,11 @@ export function SimpleActionForm() {
 
  {/* Location */}
  <div>
- <label className="block cmm-text-small font-medium mb-2">
+ <label htmlFor="action-location" className="block cmm-text-small font-medium mb-2">
  Lieu *
  </label>
  <input
+ id="action-location"
  type="text"
  required
  value={form.location}
@@ -148,10 +151,11 @@ export function SimpleActionForm() {
 
  {/* Date */}
  <div>
- <label className="block cmm-text-small font-medium mb-2">
+ <label htmlFor="action-date" className="block cmm-text-small font-medium mb-2">
  Date *
  </label>
  <input
+ id="action-date"
  type="date"
  required
  value={form.date}
@@ -163,10 +167,11 @@ export function SimpleActionForm() {
 
  {/* Participants */}
  <div>
- <label className="block cmm-text-small font-medium mb-2">
+ <label htmlFor="action-participants" className="block cmm-text-small font-medium mb-2">
  Nombre de participants *
  </label>
  <input
+ id="action-participants"
  type="number"
  required
  min="1"
@@ -179,10 +184,11 @@ export function SimpleActionForm() {
 
  {/* Waste Amount */}
  <div>
- <label className="block cmm-text-small font-medium mb-2">
+ <label htmlFor="action-waste" className="block cmm-text-small font-medium mb-2">
  Quantité de déchets collectés (kg)
  </label>
  <input
+ id="action-waste"
  type="number"
  min="0"
  step="0.1"
@@ -194,10 +200,11 @@ export function SimpleActionForm() {
 
  {/* Photos */}
  <div>
- <label className="block cmm-text-small font-medium mb-2">
+ <label htmlFor="action-photos" className="block cmm-text-small font-medium mb-2">
  Photos
  </label>
  <input
+ id="action-photos"
  type="file"
  multiple
  accept="image/*"
@@ -208,10 +215,11 @@ export function SimpleActionForm() {
 
  {/* Organizer Name */}
  <div>
- <label className="block cmm-text-small font-medium mb-2">
+ <label htmlFor="action-organizer-name" className="block cmm-text-small font-medium mb-2">
  Nom de l'organisateur *
  </label>
  <input
+ id="action-organizer-name"
  type="text"
  required
  value={form.organizerName}
@@ -223,10 +231,11 @@ export function SimpleActionForm() {
 
  {/* Organizer Email */}
  <div>
- <label className="block cmm-text-small font-medium mb-2">
+ <label htmlFor="action-organizer-email" className="block cmm-text-small font-medium mb-2">
  Email de contact *
  </label>
  <input
+ id="action-organizer-email"
  type="email"
  required
  value={form.organizerEmail}
@@ -238,8 +247,9 @@ export function SimpleActionForm() {
 
  {/* Public/Private */}
  <div>
- <label className="flex items-center space-x-2">
+ <label className="flex items-center space-x-2 cursor-pointer">
  <input
+ id="action-is-public"
  type="checkbox"
  checked={form.isPublic}
  onChange={(e) => updateForm('isPublic', e.target.checked)}
@@ -252,7 +262,7 @@ export function SimpleActionForm() {
 
  <div className="flex gap-4">
  <CmmButton type="submit" disabled={isSubmitting} className="flex-1 flex items-center justify-center gap-2">
- {isSubmitting ? <><Loader2 className="animate-spin" size={16} /> Envoi...</> : 'Déclarer l\'action'}
+ {isSubmitting ? <><Loader2 className="animate-spin" size={16} /> Envoi...</> : 'Envoyer'}
  </CmmButton>
  <CmmButton type="button" variant="outline" className="px-8">
  Annuler

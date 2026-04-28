@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+
 import { Map as MapIcon, Trees, Waves, Building2, TrainFront, ShoppingBag, Landmark, Calendar, Users, Star, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CmmCard } from "@/components/ui/cmm-card";
+
 import { PLACE_TYPE_OPTIONS } from "@/lib/actions/place-type-options";
 import { ASSOCIATION_SELECTION_OPTIONS } from "@/lib/actions/association-options";
 import type { FormState } from "../action-declaration-form.model";
+import { VisualOptionCard } from "./ui/VisualOptionCard";
 
 const PLACE_TYPE_ICONS: Record<string, any> = {
   "N° Rue/Allée/Villa/Ruelle/Impasse": MapIcon,
@@ -64,7 +65,7 @@ export function ActionStepIdentity({ form, updateField, userMetadata }: ActionSt
               value={form.associationName}
               onChange={(e) => updateField("associationName", e.target.value)}
             >
-              {ASSOCIATION_SELECTION_OPTIONS.sort().map((opt) => (
+              {[...ASSOCIATION_SELECTION_OPTIONS].sort().map((opt) => (
                 <option key={opt} value={opt}>
                   {POPULAR_ASSOCIATIONS.has(opt) ? `⭐ ${opt}` : opt}
                 </option>
@@ -102,27 +103,15 @@ export function ActionStepIdentity({ form, updateField, userMetadata }: ActionSt
             const isSelected = form.placeType === option;
             
             return (
-              <button
+              <VisualOptionCard
                 key={option}
-                type="button"
+                selected={isSelected}
                 onClick={() => updateField("placeType", option)}
-                className={cn(
-                  "relative flex flex-col items-center justify-center gap-4 p-6 rounded-[2rem] border transition-all duration-500 group",
-                  isSelected 
-                    ? "bg-slate-900 border-slate-900 text-white shadow-2xl scale-105 -translate-y-1" 
-                    : "bg-white border-slate-100 text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/30"
-                )}
-              >
-                <div className={cn(
-                  "p-3 rounded-xl transition-all duration-500",
-                  isSelected ? "bg-white/20 text-white" : "bg-slate-50 text-slate-400 group-hover:scale-110 group-hover:text-emerald-600"
-                )}>
-                  <Icon size={24} />
-                </div>
-                <span className="text-[10px] font-black tracking-widest uppercase text-center leading-tight">
-                  {option.split('/')[0]}
-                </span>
-              </button>
+                icon={Icon}
+                label={option.split('/')[0]}
+                description={option.includes('/') ? option.split('/')[1] : undefined}
+                color="emerald"
+              />
             );
           })}
         </div>

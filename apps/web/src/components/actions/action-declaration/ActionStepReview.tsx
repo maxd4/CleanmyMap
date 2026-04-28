@@ -1,14 +1,13 @@
 "use client";
 
-import React from "react";
-import { CheckCircle2, AlertTriangle, ShieldCheck, ArrowRight, ClipboardCheck, Info } from "lucide-react";
+
+import { AlertTriangle, ShieldCheck, ArrowRight, ClipboardCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CmmButton } from "@/components/ui/cmm-button";
-import type { FormState } from "../action-declaration-form.model";
+
 import type { CreateActionPayload } from "@/lib/actions/types";
 
 interface ActionStepReviewProps {
-  form: FormState;
   payload: CreateActionPayload;
   dataQuality: { score: number; level: string; warnings: string[] };
   isSubmitting: boolean;
@@ -16,7 +15,6 @@ interface ActionStepReviewProps {
 }
 
 export function ActionStepReview({
-  form,
   payload,
   dataQuality,
   isSubmitting,
@@ -139,19 +137,19 @@ export function ActionStepReview({
       {/* 4. Final Action */}
       <div className="pt-6">
         <CmmButton 
-          tone="emerald" 
-          variant="solid" 
+          tone="primary" 
+          variant="default" 
           size="lg" 
           className="w-full h-20 rounded-[1.5rem] shadow-[0_12px_40px_rgba(16,185,129,0.3)] hover:shadow-[0_20px_50px_rgba(16,185,129,0.4)] transition-all font-black text-xl tracking-tight flex items-center justify-center gap-4 group"
           onClick={onSubmit}
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <span className="animate-pulse">Transmission en cours...</span>
+            <span className="animate-pulse">Envoi en cours...</span>
           ) : (
             <>
               <ClipboardCheck size={28} />
-              <span>Transmettre ma déclaration</span>
+              <span>Publier ma déclaration</span>
               <ArrowRight size={24} className="ml-2 group-hover:translate-x-2 transition-transform duration-500" />
             </>
           )}

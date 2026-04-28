@@ -4,14 +4,10 @@ import { useState, useMemo } from"react";
 import dynamic from"next/dynamic";
 import { 
  Navigation, 
- Clock, 
- MapPin, 
- Zap, 
- CheckCircle2,
- ChevronRight
+ Zap
 } from"lucide-react";
 import { computePollutionScore } from"@/lib/actions/pollution-score";
-import { mapItemWasteKg, mapItemCigaretteButts } from"@/lib/actions/data-contract";
+
 
 // dynamic import Leaflet
 const MapWithNoSSR = dynamic(

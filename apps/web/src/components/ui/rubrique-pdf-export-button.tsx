@@ -251,10 +251,11 @@ export function RubriquePdfExportButton({
  </p>
  </div>
  
- <label className="block cmm-text-caption font-bold cmm-text-secondary mb-1">
+ <label htmlFor="pdf-rubrique-name" className="block cmm-text-caption font-bold cmm-text-secondary mb-1">
  Renommer la rubrique (Optionnel)
  </label>
  <input
+ id="pdf-rubrique-name"
  type="text"
  value={customRubrique}
  onChange={(event) => setCustomRubrique(event.target.value)}

@@ -22,7 +22,7 @@ export function ClerkLocalizationProvider({
  children,
  ...props
 }: ClerkLocalizationProviderProps) {
- const { locale, theme } = useSitePreferences();
+ const { locale } = useSitePreferences();
 
  return (
  <ClerkProvider

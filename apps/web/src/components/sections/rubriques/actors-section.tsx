@@ -58,9 +58,9 @@ export function ActorsSection() {
  <span className="cmm-text-small font-bold cmm-text-secondary">{count} {fr ? `signalement${count > 1 ?"s" :""}` : `report${count > 1 ?"s" :""}`}</span>
  </li>
  ))}
- {hotspots.length === 0 ? (
- <li className="cmm-text-small cmm-text-muted italic">{fr ?"Aucune donnée disponible." :"No data available."}</li>
- ) : null}
+  {hotspots.length === 0 ? (
+    <li className="cmm-text-small cmm-text-muted italic">{fr ?"Pas de signalement enregistré sur cette période." :"No report registered for this period."}</li>
+  ) : null}
  </ul>
  </article>
 
@@ -100,11 +100,11 @@ export function ActorsSection() {
  </p>
  </article>
  ))}
- {partnerCards.length === 0 ? (
- <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 cmm-text-small cmm-text-secondary">
- {fr ?"Aucune fiche partenaire disponible." :"No partner profile available."}
- </p>
- ) : null}
+  {partnerCards.length === 0 ? (
+    <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 cmm-text-small cmm-text-secondary italic text-center">
+      {fr ?"Aucun profil partenaire n'est encore rattaché à vos actions récentes." :"No partner profile attached to your recent actions yet."}
+    </p>
+  ) : null}
  </div>
  </div>
  );

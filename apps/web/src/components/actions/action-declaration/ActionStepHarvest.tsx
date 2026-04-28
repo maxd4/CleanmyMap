@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
-import { Scale, Camera, Trash2, Sparkles, AlertCircle, Info, ChevronRight, ShieldCheck } from "lucide-react";
+
+import { Scale, Camera, Trash2, Sparkles, Info, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { CmmButton } from "@/components/ui/cmm-button";
+
 import type { FormState } from "../action-declaration-form.model";
 import type { ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
+import { VolumeSliderWidget } from "./ui/VolumeSliderWidget";
 
 interface ActionStepHarvestProps {
   form: FormState;
@@ -39,23 +40,13 @@ export function ActionStepHarvest({
             <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">Bilan de la récolte</h3>
           </div>
           
-          <div className="relative group">
-            <div className="absolute left-6 top-1/2 -translate-y-1/2 text-emerald-600">
-              <Scale size={24} strokeWidth={2.5} />
-            </div>
-            <input
-              type="number"
-              step="0.1"
-              min="0"
-              placeholder="Ex: 12.5"
-              className="w-full h-24 pl-20 pr-32 rounded-[2rem] bg-white border-2 border-emerald-100 shadow-[0_8px_30px_rgba(16,185,129,0.05)] focus:ring-8 focus:ring-emerald-500/5 focus:border-emerald-500 transition-all font-black text-4xl text-slate-900"
-              value={form.wasteKg}
-              onChange={(e) => updateField("wasteKg", e.target.value)}
-            />
-            <div className="absolute right-8 top-1/2 -translate-y-1/2 text-xl font-black text-emerald-600 tracking-widest">
-              KG
-            </div>
-          </div>
+          <VolumeSliderWidget
+            value={parseFloat(form.wasteKg || "0")}
+            onChange={(val) => updateField("wasteKg", val.toString())}
+            label="Volume récolté"
+            max={100}
+            unit="kg"
+          />
 
           {/* Mégots (Specific for Spontaneous or can be toggled) */}
           {(isActionSpontanee || form.cigaretteButtsCount) && (

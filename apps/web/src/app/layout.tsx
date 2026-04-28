@@ -14,6 +14,7 @@ import { PostHogProvider } from"@/components/posthog-provider";
 import { ClerkLocalizationProvider } from"@/components/auth/clerk-localization-provider";
 import { VibrantBackground } from"@/components/ui/vibrant-background";
 import { SitePreferencesProvider } from"@/components/ui/site-preferences-provider";
+import { PageTransition } from"@/components/ui/page-transition";
 import { NotificationBell } from"@/components/navigation/notification-bell";
 import { getCurrentUserIdentity } from"@/lib/authz";
 import { getClerkRuntimeConfig } from"@/lib/clerk-session-config";
@@ -56,7 +57,7 @@ export default async function RootLayout({
  requestHeaders.get("x-cleanmymap-hide-global-header") ==="1";
 
  return (
- <html className={`h-full antialiased ${outfit.variable} ${inter.variable}`} suppressHydrationWarning>
+ <html className={`h-full dark antialiased ${outfit.variable} ${inter.variable}`} suppressHydrationWarning>
  <body className="min-h-full bg-background text-foreground font-sans">
  <SitePreferencesProvider
  initialDisplayMode={displayModePreference.displayMode}
@@ -76,7 +77,7 @@ export default async function RootLayout({
  <PostHogProvider>
  <VibrantBackground />
  {!isAppShell && !hideGlobalHeader ? (
- <header className="sticky top-0 z-30 border-b border-white/10 bg-white/60 shadow-sm backdrop-blur-xl transition-all duration-300 dark:bg-slate-950/60">
+ <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/60 shadow-sm backdrop-blur-xl transition-all duration-300">
  <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 overflow-x-auto px-4 py-3 scrollbar-none sm:px-8">
  <Link href="/" className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-95">
  <Image
@@ -94,7 +95,7 @@ export default async function RootLayout({
  <div className="flex min-w-max items-center gap-3 sm:gap-4">
  <Link
  href="/explorer"
- className="hidden rounded-full border border-slate-200 bg-white px-3 py-1.5 cmm-text-small cmm-text-secondary font-semibold transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700 sm:inline-flex"
+ className="hidden rounded-full border border-slate-800 bg-slate-900 px-3 py-1.5 cmm-text-small cmm-text-secondary font-semibold transition hover:border-emerald-500/50 hover:bg-slate-800 hover:text-emerald-400 sm:inline-flex"
  >
  Plan du site
  </Link>
@@ -134,8 +135,10 @@ export default async function RootLayout({
  </div>
  </header>
  ) : null}
- <main>
+ <main className="flex flex-col flex-1">
+ <PageTransition>
  {children}
+ </PageTransition>
  </main>
  <Analytics />
  <SpeedInsights />

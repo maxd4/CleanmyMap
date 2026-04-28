@@ -33,7 +33,7 @@ export default async function AppLayout({
 
  return (
  <div
- className="flex min-h-screen w-full flex-col bg-slate-50/30 transition-all duration-300"
+ className="flex min-h-screen w-full flex-col bg-slate-950 transition-all duration-300"
  data-display-mode={displayMode}
  data-user-profile={currentProfile}
  >

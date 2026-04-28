@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { toFrNumber, toFrInt } from '../reports/web-document/analytics';
 import type { NameType, ValueType } from"recharts/types/component/DefaultTooltipContent";
@@ -89,7 +89,7 @@ export function ZoneRepartitionChart({ data, title }: Props) {
  dataKey={metric}
  nameKey="area"
  >
- {chartData.map((entry, index) => (
+ {chartData.map((_, index) => (
  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
  ))}
  </Pie>
@@ -103,7 +103,7 @@ export function ZoneRepartitionChart({ data, title }: Props) {
  </div>
 
  <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-slate-100">
- {chartData.slice(0, 4).map((item, i) => (
+ {chartData.slice(0, 4).map((item) => (
  <div key={item.area}>
  <p className="cmm-text-caption uppercase tracking-wider cmm-text-muted font-bold">{item.area}</p>
  <p className="text-lg font-semibold cmm-text-primary">

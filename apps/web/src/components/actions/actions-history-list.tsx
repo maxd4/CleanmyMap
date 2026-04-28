@@ -324,7 +324,7 @@ export function ActionsHistoryList() {
 
  {error ? (
  <p className="mt-5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 cmm-text-small text-rose-700">
- {error instanceof Error ? error.message :"Erreur inconnue."}
+  {error instanceof Error ? error.message : "Impossible de charger l'historique des actions. Veuillez vérifier votre connexion ou rafraîchir la page."}
  </p>
  ) : null}
 
@@ -423,11 +423,16 @@ export function ActionsHistoryList() {
  </div>
  )}
 
- {filteredItems.length === 0 ? (
- <p className="mt-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 cmm-text-small cmm-text-secondary">
- Aucun resultat pour ce filtre.
- </p>
- ) : null}
+  {filteredItems.length === 0 ? (
+    <div className="mt-8 text-center space-y-3 p-8 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+      <p className="cmm-text-small font-medium cmm-text-secondary">
+        Aucune action ne correspond à vos critères de recherche.
+      </p>
+      <p className="cmm-text-caption cmm-text-muted">
+        Essayez d'élargir vos filtres ou déclarez une nouvelle action pour commencer à enrichir votre historique.
+      </p>
+    </div>
+  ) : null}
  </div>
  ) : null}
  </section>

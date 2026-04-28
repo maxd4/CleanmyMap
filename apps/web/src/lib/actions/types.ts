@@ -1,7 +1,10 @@
 export const ACTION_STATUSES = ["pending", "approved", "rejected"] as const;
 
 export type ActionStatus = (typeof ACTION_STATUSES)[number];
-export type ActionRecordType = "action" | "clean_place" | "spot";
+
+export const ACTION_ENTITY_TYPES = ["action", "clean_place", "spot"] as const;
+
+export type ActionRecordType = (typeof ACTION_ENTITY_TYPES)[number];
 export type LegacyActionRecordType = "action" | "clean_place" | "other";
 export type ActionGeometryKind = "point" | "polyline" | "polygon";
 export type ActionGeometryOrigin =

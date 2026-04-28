@@ -21,7 +21,7 @@ export const STORAGE_KEYS = {
 } as const;
 
 export const DEFAULT_LOCALE: Locale = "fr";
-export const DEFAULT_THEME: ThemeMode = "light";
+export const DEFAULT_THEME: ThemeMode = "dark";
 export const DEFAULT_DISPLAY_MODE: DisplayMode = "exhaustif";
 
 export function parseDisplayMode(raw: string | null | undefined): DisplayMode {

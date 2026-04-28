@@ -24,11 +24,14 @@ const BADGE_CONFIG: Record<string, { tone:"admin" |"role" |"profile" |"mode" |"g
 export function BadgeShowcase({ badges }: { badges: string[] }) {
  return (
  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
- {badges.length === 0 ? (
- <p className="col-span-full py-4 text-center cmm-text-caption italic cmm-text-muted">
- Réalise tes premières actions pour débloquer des badges !
- </p>
- ) : (
+  {badges.length === 0 ? (
+    <div className="col-span-full py-8 text-center flex flex-col items-center gap-2">
+      <p className="cmm-text-caption font-semibold cmm-text-muted uppercase tracking-widest">Vitrine de succès</p>
+      <p className="cmm-text-caption italic cmm-text-secondary max-w-[200px] mx-auto">
+        Votre collection est encore vide. Réalisez vos premières actions pour débloquer des badges exclusifs !
+      </p>
+    </div>
+  ) : (
  badges.map((badge, index) => {
  const config = BADGE_CONFIG[badge] || {
  tone:"neutral" as const,

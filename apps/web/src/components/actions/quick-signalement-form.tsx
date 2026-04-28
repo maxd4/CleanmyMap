@@ -55,7 +55,7 @@ export function QuickSignalementForm() {
  setIsSuccess(true);
  } catch (err) {
  console.error(err);
- alert("Erreur lors du signalement.");
+      alert("Impossible d'envoyer votre signalement. Veuillez vérifier que votre GPS est activé et réessayer.");
  } finally {
  setIsSubmitting(false);
  }

@@ -39,13 +39,13 @@ export default function Error({
  <h1 className="text-4xl font-bold tracking-tight cmm-text-primary dark:text-white leading-tight">
  Oops ! Un imprévu <br />scientifique.
  </h1>
- <p className="cmm-text-muted dark:cmm-text-muted max-w-sm mx-auto leading-relaxed">
- Une erreur inattendue est survenue lors de l&apos;exécution de l&apos;application.
- {""}
- {isSentryConfigured
- ?"Nos équipes ont été alertées via Sentry."
- :"Le monitoring Sentry n&apos;est pas configuré sur cet environnement."}
- </p>
+        <p className="cmm-text-muted dark:cmm-text-muted max-w-sm mx-auto leading-relaxed">
+          Une petite perturbation technique empêche l&apos;affichage de cette page. Pas d&apos;inquiétude, vos données sont en sécurité.
+          {" "}
+          {isSentryConfigured
+            ? "Nos équipes ont été alertées et travaillent sur une résolution."
+            : "N'hésitez pas à rafraîchir la page ou à revenir plus tard."}
+        </p>
  {error.digest && (
  <code className="block mt-4 cmm-text-caption uppercase tracking-widest cmm-text-muted dark:cmm-text-secondary font-mono">
  Digest: {error.digest}

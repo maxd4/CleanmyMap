@@ -1,9 +1,8 @@
-import React from "react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { Star, MapPin, ArrowRight } from "lucide-react";
+import { Star, MapPin, ArrowRight, Quote } from "lucide-react";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
-import { cn } from "@/lib/utils";
+
 
 interface AnnuaireFeaturedSectionProps {
   fr: boolean;
@@ -113,8 +112,8 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
 
             <div className="p-10 pt-0 mt-auto">
               <CmmButton 
-                tone="violet" 
-                className="w-full h-16 rounded-2xl font-black text-base tracking-tight shadow-[0_8px_32px_-6px_rgba(139,92,246,0.3)] hover:shadow-[0_18px_40px_-8px_rgba(139,92,246,0.4)] transition-all duration-500 group/btn"
+                tone="primary" 
+                className="w-full h-16 rounded-2xl font-black text-base tracking-tight bg-violet-600 hover:bg-violet-700 border-none shadow-[0_8px_32px_-6px_rgba(139,92,246,0.3)] hover:shadow-[0_18px_40px_-8px_rgba(139,92,246,0.4)] transition-all duration-500 group/btn"
                 onClick={() => onFocusMap(entry.id)}
               >
                 <span>{fr ? "Voir sur la carte" : "View on map"}</span>

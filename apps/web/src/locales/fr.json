@@ -117,12 +117,12 @@
     "trace_bad": "faible (données absentes)",
     "trace_source": "Sources: actions validées, module pilotage overview, métriques dérivées N/N-1.",
     "trace_method": "Méthode: deltas absolus et relatifs sur fenêtre 30 jours. Périmètre: cockpit transversal.",
-    "btn_reports": "Ouvrir le reporting",
+    "btn_reports": "Reporting",
     "title_v1": "Tableau de bord",
     "desc_v1": "Pilotage décisionnel centré sur l'impact terrain, la mobilisation et la fiabilité des données.",
-    "btn_action": "ALLER RAMASSER MAINTENANT",
-    "btn_signal": "SIGNALER UNE ZONE SALE",
-    "btn_impact": "MON IMPACT",
-    "btn_eval": "3 VALIDATIONS QA EN ATTENTE"
+    "btn_action": "Déclarer",
+    "btn_signal": "Signaler",
+    "btn_impact": "Impact",
+    "btn_eval": "3 VALIDATIONS QA"
   }
 }

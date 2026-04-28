@@ -51,14 +51,14 @@ export type NavigationSpace = {
 };
 
 const SPACE_DEFINITIONS: Record<NavigationBlockId, NavigationSpaceMeta> = {
-  home:      { id: "home",      label: { fr: "Accueil", en: "Home" },                icon: "🏠", color: "text-slate-600" },
-  act:       { id: "act",       label: { fr: "Agir",           en: "Act" },           icon: "⚡", color: "text-amber-600" },
-  visualize: { id: "visualize", label: { fr: "Visualiser",     en: "Visualize" },     icon: "🗺️", color: "text-sky-600"  },
-  impact:    { id: "impact",    label: { fr: "Impact",         en: "Impact" },        icon: "📊", color: "text-emerald-600" },
-  network:   { id: "network",   label: { fr: "Réseau",         en: "Network" },       icon: "🤝", color: "text-violet-600" },
-  connect:   { id: "connect",   label: { fr: "Échanges",       en: "Connect" },       icon: "💬", color: "text-pink-600"   },
-  learn:     { id: "learn",     label: { fr: "Apprendre",      en: "Learn" },         icon: "📚", color: "text-rose-600"  },
-  pilot:     { id: "pilot",     label: { fr: "Piloter",        en: "Govern" },        icon: "🎯", color: "text-indigo-600" },
+  home: { id: "home", label: { fr: "Accueil", en: "Home" }, icon: "🏠", color: "text-slate-600" },
+  act: { id: "act", label: { fr: "Agir", en: "Act" }, icon: "⚡", color: "text-amber-600" },
+  visualize: { id: "visualize", label: { fr: "Visualiser", en: "Visualize" }, icon: "🗺️", color: "text-sky-600" },
+  impact: { id: "impact", label: { fr: "Impact", en: "Impact" }, icon: "📊", color: "text-emerald-600" },
+  network: { id: "network", label: { fr: "Réseau", en: "Network" }, icon: "🤝", color: "text-violet-600" },
+  connect: { id: "connect", label: { fr: "Échanges", en: "Connect" }, icon: "💬", color: "text-pink-600" },
+  learn: { id: "learn", label: { fr: "Apprendre", en: "Learn" }, icon: "📚", color: "text-rose-600" },
+  pilot: { id: "pilot", label: { fr: "Piloter", en: "Govern" }, icon: "🎯", color: "text-indigo-600" },
 };
 const FIXED_SPACE_ORDER: NavigationBlockId[] = [
   "home",
@@ -196,7 +196,7 @@ function toNavItem(rubrique: Rubrique): NavigationItem {
   };
 }
 
-export function getPilotFallbackItems(locale: Locale): NavigationItem[] {
+export function getPilotFallbackItems(_locale?: string): NavigationItem[] {
   const fallbackRouteIds: RouteId[] = ["dashboard", "reports"];
   return fallbackRouteIds
     .map((routeId) => RUBRIQUE_BY_ID.get(routeId))
