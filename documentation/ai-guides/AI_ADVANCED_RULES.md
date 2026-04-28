@@ -1,359 +1,200 @@
 # Règles Avancées pour Agents IA
 
-Règles supplémentaires pour optimiser le développement et la communication.
+Règles supplémentaires pour produire des réponses utiles, cohérentes et vérifiables.
 
 ---
 
-## 🎯 Proposer une Action Pertinente
+## 1. Règle De Fiabilité
 
-À la fin de CHAQUE récapitulatif, tâche ou réponse, TOUJOURS inclure :
+Ne jamais inventer :
 
-```
-## 🎯 Prochaine Action Recommandée
+- un type,
+- un chemin de fichier,
+- une API,
+- un résultat de test,
+- un comportement qui n'a pas été lu dans le dépôt.
 
-[Action concrète et pertinente basée sur le contexte]
-
-Voulez-vous que je procède ?
-```
-
-### Exemples d'Actions Pertinentes
-
-**Après modularisation** :
-```
-🎯 Prochaine Action Recommandée
-
-Option 1 : Améliorer la rubrique modularisée (Kaizen)
-- Audit Fond : Optimiser la logique, gérer les cas limites
-- Audit Forme : Améliorer l'UX selon VISUAL_STORYTELLING.md
-- Proposer des innovations (gamification, visualisations)
-
-Option 2 : Modulariser le fichier suivant
-- apps/web/src/app/(app)/dashboard/page.tsx
-- Priorité : #2 (CRITIQUE)
-- Taille : 22KB
-
-Que préférez-vous ?
-```
-
-**Après création API** :
-```
-🎯 Prochaine Action Recommandée
-
-Créer le frontend qui consomme cette API :
-1. Créer le hook use-gamification-data.ts
-2. Créer les composants React
-3. Intégrer avec l'API
-
-Voulez-vous que je commence par le hook ?
-```
-
-**Après structure de données** :
-```
-🎯 Prochaine Action Recommandée
-
-Implémenter la logique métier :
-1. Créer lib/gamification/progression.ts
-2. Implémenter le calcul des points
-3. Implémenter le système de badges
-
-Voulez-vous que je procède ?
-```
-
-### ❌ Mauvais Exemples (Trop Vagues)
-
-- "Continuer le développement"
-- "Améliorer le code"
-- "Passer à la suite"
-- "Faire les tests"
-
-### ✅ Bons Exemples (Concrets)
-
-- "Modulariser apps/web/src/app/(app)/dashboard/page.tsx (22KB - priorité #2)"
-- "Créer les tests unitaires pour use-gamification-data.ts"
-- "Implémenter l'API POST /api/gamification/progress"
-- "Créer le composant GamificationBadge.tsx selon le design system"
+Si l'information manque, signaler l'hypothèse ou demander une précision.
 
 ---
 
-## 🔄 Amélioration Continue (Kaizen)
+## 2. Gestion Des Prompts Flous
 
-### Mentalité Kaizen - Toujours Active
+Quand une demande est imprécise :
 
-**RÈGLE FONDAMENTALE** : L'IA doit adopter une mentalité Kaizen **en permanence** et proposer des améliorations dès que cela semble pertinent.
+1. Identifier ce qui manque.
+2. Poser une question courte et concrète si la suite dépend de cette information.
+3. Si une hypothèse raisonnable est possible, l'indiquer clairement avant d'agir.
+4. Ne pas partir sur une implémentation large sans objectif vérifié.
 
-**Référence obligatoire** : `documentation/development/AI_MINDSET_KAIZEN.md`
+Exemples de signaux d'alerte :
 
-### Quand Appliquer Kaizen ?
+- "améliore ça"
+- "fais quelque chose de mieux"
+- "optimise le code"
+- fichier ou fonctionnalité non spécifié
 
-✅ **TOUJOURS dans ces situations** :
-- Après modularisation d'un fichier
-- Après création/modification d'une fonctionnalité
-- Après correction d'un bug
-- Quand l'IA détecte une opportunité d'amélioration
-- Quand l'IA lit du code qui pourrait être meilleur
-- Quand l'IA voit du texte qui pourrait être visuel
-- Quand l'IA identifie une dette technique
+---
 
-❌ **Ne PAS appliquer Kaizen** :
-- Si l'utilisateur demande explicitement de ne pas proposer d'améliorations
-- Si l'utilisateur est pressé et demande juste une tâche précise
+## 3. Vérification De Cohérence
 
-### Posture Kaizen
+Si la demande impose un mauvais ordre, le signaler avant d'exécuter :
 
-**"C'est bien, mais comment cela pourrait-il être exceptionnel ?"**
+- UI avant logique métier,
+- frontend avant API,
+- test avant implémentation quand le comportement n'existe pas encore,
+- optimisation avant fonctionnement,
+- refactor large sans comprendre le flux actuel.
 
-L'IA doit :
-- ✅ Être force de proposition
-- ✅ Identifier les opportunités d'amélioration
-- ✅ Proposer des innovations
-- ✅ Signaler la dette technique
-- ✅ Suggérer des simplifications
-- ❌ Ne jamais considérer une fonctionnalité comme "parfaite" ou "finale"
+Ordre conseillé pour une nouvelle fonctionnalité :
 
-### Audit en 2 Axes
+1. Définir les types et la structure.
+2. Implémenter la logique métier.
+3. Créer ou adapter l'API.
+4. Ajouter les tests.
+5. Construire le frontend.
+6. Vérifier lint, types et intégration.
 
-#### 1. Le Fond (Logique & Science)
-```
-□ Les données sont-elles rigoureusement sourcées ?
-□ Les calculs sont-ils optimaux ?
-□ Les cas limites sont-ils gérés ?
-□ La logique peut-elle être simplifiée ?
-□ Y a-t-il du code mort à supprimer ?
-```
+---
 
-#### 2. La Forme (UX & Design Premium)
-```
-□ L'interface respecte-t-elle VISUAL_STORYTELLING.md ?
-□ Peut-on remplacer du texte par du visuel (SVG, graphiques) ?
-□ L'interaction est-elle "Zéro Clavier" ?
-□ Le feedback visuel est-il instantané et élégant ?
-□ Les animations sont-elles sémantiques (Framer Motion) ?
-```
+## 4. Contrat De Réponse
 
-### Déclencheurs Kaizen
+Quand la tâche est terminée, la réponse doit contenir :
 
-**L'IA doit proposer un audit Kaizen quand** :
+1. Ce qui a été fait.
+2. Les fichiers modifiés ou créés.
+3. Les tests ou vérifications effectués.
+4. Les risques résiduels ou hypothèses, s'il y en a.
 
-1. **Après une tâche terminée**
-   - Modularisation ✓
-   - Création de fonctionnalité ✓
-   - Correction de bug ✓
-   - Refactoring ✓
+Quand une suite logique existe, terminer par une action recommandée concrète.
 
-2. **Pendant la lecture de code**
-   - Détection de texte qui pourrait être visuel
-   - Détection de logique qui pourrait être optimisée
-   - Détection de dette technique
-   - Détection de cas limites non gérés
+Quand aucune suite n'est utile, ne pas forcer une question finale.
 
-3. **Pendant l'analyse**
-   - UX qui pourrait être améliorée
-   - Performance qui pourrait être optimisée
-   - Sécurité qui pourrait être renforcée
-   - Accessibilité qui pourrait être améliorée
+---
 
-### Format Court vs Format Complet
+## 5. Kaizen
 
-**Format Court** (quand l'IA détecte une opportunité) :
+Référence obligatoire : [AI_MINDSET_KAIZEN.md](../development/AI_MINDSET_KAIZEN.md)
+
+La mentalité Kaizen doit rester active, mais seulement si elle sert réellement la tâche en cours.
+
+### Déclencheurs utiles
+
+- Cas limite non géré.
+- Code dupliqué.
+- Texte qui devrait devenir un visuel.
+- Opportunité de simplifier la logique.
+- Dette technique visible.
+
+### Quand ne pas l'appliquer
+
+- L'utilisateur demande explicitement une exécution stricte sans suggestion.
+- La demande est purement informative.
+- Une proposition supplémentaire créerait du bruit ou de la confusion.
+
+### Format court attendu
+
 ```markdown
 💡 Opportunité d'amélioration détectée
 
-[Description brève du problème]
+[Description courte du problème ou de l'opportunité]
 
 Proposition :
 - [Solution concrète]
-- Impact : [Bénéfice]
-- Complexité : [Faible/Moyenne/Élevée]
-
-Voulez-vous que j'implémente cette amélioration ?
-```
-
-**Format Complet** (après une tâche terminée) :
-Voir template détaillé dans `AI_MINDSET_KAIZEN.md`
-
-**Exemples concrets** : Voir `AI_KAIZEN_EXAMPLES.md`
-
----
-
-## ⚠️ Validation des Prompts
-
-### Prompts Imprécis - Demander Clarification
-
-Si le prompt contient :
-- **Termes vagues** : "améliore ça", "fais quelque chose", "optimise"
-- **Objectifs flous** : "rends-le mieux", "améliore l'UX"
-- **Informations manquantes** : fichier non spécifié, fonctionnalité non décrite
-
-**Action IA** : Demander des précisions AVANT de procéder.
-
-**Template de réponse** :
-```
-⚠️ Prompt imprécis. J'ai besoin de clarifications :
-
-1. [Question spécifique 1]
-2. [Question spécifique 2]
-3. [Question spécifique 3]
-
-Merci de préciser pour que je puisse vous aider efficacement.
+- Impact : [bénéfice mesurable]
+- Complexité : [Faible / Moyenne / Élevée]
 ```
 
 ---
 
-## 🔄 Vérification de Cohérence
+## 6. Ordre Logique De Développement
 
-### Prompts Incohérents - Signaler et Corriger
+### Nouvelle fonctionnalité
 
-Si le prompt demande :
-- **UI/UX avant structure** : Design avant que la logique existe
-- **Frontend avant API** : Composants avant endpoints
-- **Tests avant code** : Tests avant implémentation
-- **Optimisation avant fonctionnement** : Perf avant que ça marche
+1. Structure.
+2. Logique métier.
+3. API.
+4. Tests backend.
+5. Frontend.
+6. Tests frontend.
+7. UI/UX.
+8. Optimisation.
 
-**Action IA** : Signaler l'incohérence et proposer l'ordre correct.
+### Modification ciblée
 
-**Template de réponse** :
-```
-⚠️ Incohérence détectée dans l'ordre des étapes.
-
-Avant [action demandée], nous devons :
-
-1. ✅ [Étape préalable 1]
-2. ✅ [Étape préalable 2]
-3. ✅ [Étape préalable 3]
-4. ✅ PUIS [action demandée]
-
-Voulez-vous que je commence par l'étape 1 ?
-```
+1. Lire le fichier concerné.
+2. Identifier la cause racine.
+3. Corriger le point minimal.
+4. Tester le comportement modifié.
+5. Vérifier qu'aucune régression n'a été créée.
 
 ---
 
-## 📋 Ordre Logique de Développement
+## 7. Règles Spécifiques UI
 
-### Ordre Standard pour Nouvelle Fonctionnalité
+Avant de modifier l'interface :
 
-```
-1. STRUCTURE
-   ├─ Définir les types TypeScript
-   ├─ Définir le schéma de données
-   └─ Définir les relations
+- Vérifier que la logique métier existe.
+- Vérifier que l'API est prête ou simulée correctement.
+- Consulter le design system.
+- Réutiliser les composants canoniques quand ils existent.
 
-2. LOGIQUE MÉTIER
-   ├─ Implémenter les fonctions de calcul
-   ├─ Implémenter les règles métier
-   └─ Créer les utilitaires
+Checklist rapide :
 
-3. API
-   ├─ Créer les endpoints
-   ├─ Implémenter la validation
-   └─ Gérer les erreurs
-
-4. TESTS BACKEND
-   ├─ Tests unitaires logique
-   ├─ Tests API
-   └─ Tests d'intégration
-
-5. FRONTEND
-   ├─ Créer les hooks
-   ├─ Créer les composants
-   └─ Intégrer avec l'API
-
-6. TESTS FRONTEND
-   ├─ Tests unitaires composants
-   ├─ Tests hooks
-   └─ Tests d'intégration
-
-7. UI/UX
-   ├─ Appliquer le design system
-   ├─ Animations
-   └─ Responsive
-
-8. OPTIMISATION
-   ├─ Performance
-   ├─ Accessibilité
-   └─ SEO
-```
-
-### Vérification Avant de Commencer
-
-Avant de coder, vérifier :
-```
-□ La structure de données est-elle définie ?
-□ La logique métier est-elle claire ?
-□ L'API existe-t-elle (si frontend) ?
-□ Le design system est-il consulté (si UI) ?
-□ Les prérequis sont-ils remplis ?
-```
+- composants canoniques utilisés,
+- classes cohérentes avec le design system,
+- responsive vérifié,
+- texte réduit si un visuel est plus clair,
+- pas de décorations gratuites qui masquent le sens.
 
 ---
 
-## 🎨 Règles Spécifiques UI
+## 8. Règles Spécifiques Sécurité
 
-### Avant de Créer/Modifier de l'UI
+Avant de modifier un code sensible :
 
-**TOUJOURS vérifier** :
-```
-1. ✅ La logique métier est implémentée
-2. ✅ L'API est créée et testée
-3. ✅ Le design system est consulté
-4. ✅ Les composants canoniques sont identifiés
-```
-
-### Checklist UI
-
-```
-□ documentation/design-system/charte-ui-pro-moderne-futuriste.md lu
-□ Composants canoniques utilisés (CmmCard, CmmButton)
-□ Classes cmm-* utilisées (pas text-[Xpx])
-□ Pas de font-extrabold
-□ Display modes respectés
-□ Visuels prioritaires sur texte
-```
+- Valider les entrées utilisateur.
+- Échapper ou sanitiser le HTML.
+- Valider les URLs avec `new URL()` si nécessaire.
+- Vérifier les autorisations.
+- Éviter toute exposition de secret ou de clé.
 
 ---
 
-## 🔐 Règles Spécifiques Sécurité
-
-### Avant de Créer/Modifier du Code Sensible
-
-**TOUJOURS vérifier** :
-```
-1. ✅ Les entrées utilisateur sont-elles validées ?
-2. ✅ Le HTML est-il échappé/sanitized ?
-3. ✅ Les URLs sont-elles validées ?
-4. ✅ Les autorisations sont-elles vérifiées ?
-5. ✅ Pas de secrets exposés ?
-```
-
----
-
-## 📊 Format de Récapitulatif
-
-### Structure Standard
+## 9. Format De Récapitulatif
 
 ```markdown
-## ✅ [Titre de la Tâche] - TERMINÉ
+## ✅ [Titre de la tâche] - TERMINÉ
 
-### 📊 Résultat
-[Résumé en 1-2 phrases]
+### Résultat
+[Résumé en une ou deux phrases]
 
-### 📝 Actions Réalisées
-1. ✅ [Action 1]
-2. ✅ [Action 2]
-3. ✅ [Action 3]
+### Actions réalisées
+1. [Action 1]
+2. [Action 2]
+3. [Action 3]
 
-### 📁 Fichiers Modifiés/Créés
-- `chemin/fichier1.ts` - [Description]
-- `chemin/fichier2.tsx` - [Description]
+### Fichiers modifiés
+- `chemin/fichier1.ts` - [description]
+- `chemin/fichier2.tsx` - [description]
 
-### 🎯 Prochaine Action Recommandée
+### Validation
+- [tests ou vérifications]
 
-[Action concrète et pertinente]
-
-Voulez-vous que je procède ?
+### Suite recommandée
+[Action concrète uniquement si elle est pertinente]
 ```
 
 ---
 
-**Optimisé pour** : Agents IA  
-**Version** : 2.0.0  
-**Dernière mise à jour** : 28/04/2026
+## 10. Règle Finale
+
+Une réponse utile doit être :
+
+- vraie,
+- vérifiable,
+- contextualisée,
+- courte quand le sujet est simple,
+- précise quand le sujet est risqué.
+
+Si un détail manque, mieux vaut le dire explicitement que le combler avec une supposition.

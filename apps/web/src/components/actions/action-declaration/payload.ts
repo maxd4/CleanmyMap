@@ -13,6 +13,7 @@ import type {
 } from"../../../lib/actions/types";
 import { computeButtsCount } from"../../../lib/actions/data-contract";
 import type { DeclarationMode, FormState } from"./types";
+import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
 
 export const PARK_PLACE_TYPE ="Bois/Parc/Jardin/Square/Sentier";
 
@@ -102,11 +103,7 @@ function getDrawingCentroid(drawing: ActionDrawing): {
 export function isDrawingValid(
  drawing: ActionDrawing | null | undefined,
 ): drawing is ActionDrawing {
- if (!drawing) {
- return false;
- }
- const minPoints = drawing.kind ==="polygon" ? 3 : 2;
- return drawing.coordinates.length >= minPoints;
+ return normalizeActionDrawing(drawing) !== null;
 }
 
 export function isLocationLikelyPark(value: string): boolean {
@@ -164,8 +161,10 @@ export function buildCreateActionPayload(params: {
  let latitude = fallbackLatitude;
  let longitude = fallbackLongitude;
 
- if (effectiveManualDrawingEnabled && drawingIsValid && manualDrawing) {
- const centroid = getDrawingCentroid(manualDrawing);
+ const normalizedManualDrawing = normalizeActionDrawing(manualDrawing);
+
+ if (effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing) {
+ const centroid = getDrawingCentroid(normalizedManualDrawing);
  latitude = centroid.latitude;
  longitude = centroid.longitude;
  }
@@ -205,8 +204,8 @@ export function buildCreateActionPayload(params: {
  linkedEventId,
  ),
  manualDrawing:
- effectiveManualDrawingEnabled && drawingIsValid && manualDrawing
- ? manualDrawing
+ effectiveManualDrawingEnabled && drawingIsValid && normalizedManualDrawing
+ ? normalizedManualDrawing
  : undefined,
  placeType: form.placeType,
  submissionMode: declarationMode,
@@ -251,10 +250,11 @@ export async function prepareCreateActionPayload(params: {
  return payload;
  }
 
- if (isDrawingValid(params.routePreviewDrawing)) {
+ const normalizedRoutePreview = normalizeActionDrawing(params.routePreviewDrawing);
+ if (normalizedRoutePreview) {
  return {
  ...payload,
- manualDrawing: params.routePreviewDrawing,
+ manualDrawing: normalizedRoutePreview,
  };
  }
 

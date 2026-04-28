@@ -2,21 +2,6 @@
  * Configuration et helpers pour la page d'accueil
  */
 
-import {
-  BookOpen,
-  BarChart3,
-  FileText,
-  LayoutDashboard,
-  MapPin,
-  Network,
-  Shield,
-  Target,
-  Users,
-  Zap,
-  Map as MapIcon,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-
 export interface HomeMetric {
   key: string;
   label: string;
@@ -25,8 +10,21 @@ export interface HomeMetric {
   accent: 'blue' | 'emerald' | 'amber';
 }
 
+export type HomeIconName =
+  | 'layout-dashboard'
+  | 'zap'
+  | 'map'
+  | 'target'
+  | 'network'
+  | 'book-open'
+  | 'map-pin'
+  | 'bar-chart-3'
+  | 'users'
+  | 'file-text'
+  | 'shield';
+
 export interface HomePillar {
-  icon: LucideIcon;
+  iconName: HomeIconName;
   title: string;
   preview: {
     mobile: string[];
@@ -41,7 +39,7 @@ export interface HomePillar {
 }
 
 export interface HomeBenefit {
-  icon: LucideIcon;
+  iconName: HomeIconName;
   title: string;
   desc: string;
   color: string;
@@ -123,7 +121,7 @@ export function buildHomePillars(
 ): HomePillar[] {
   return [
     {
-      icon: LayoutDashboard,
+      iconName: 'layout-dashboard',
       title: 'Accueil',
       preview: getSpacePreview('home'),
       iconBg: 'bg-slate-700/60',
@@ -134,7 +132,7 @@ export function buildHomePillars(
       href: '/dashboard',
     },
     {
-      icon: Zap,
+      iconName: 'zap',
       title: 'Agir',
       preview: getSpacePreview('act'),
       iconBg: 'bg-amber-900/50',
@@ -145,7 +143,7 @@ export function buildHomePillars(
       href: '/sections/route',
     },
     {
-      icon: MapIcon,
+      iconName: 'map',
       title: 'Visualiser',
       preview: getSpacePreview('visualize'),
       iconBg: 'bg-sky-900/50',
@@ -156,7 +154,7 @@ export function buildHomePillars(
       href: '/actions/map',
     },
     {
-      icon: Target,
+      iconName: 'target',
       title: 'Impact',
       preview: getSpacePreview('impact'),
       iconBg: 'bg-emerald-900/50',
@@ -167,7 +165,7 @@ export function buildHomePillars(
       href: '/reports',
     },
     {
-      icon: Network,
+      iconName: 'network',
       title: 'Réseau',
       preview: getSpacePreview('network'),
       iconBg: 'bg-violet-900/50',
@@ -178,7 +176,7 @@ export function buildHomePillars(
       href: '/partners/network',
     },
     {
-      icon: BookOpen,
+      iconName: 'book-open',
       title: 'Apprendre',
       preview: getSpacePreview('learn'),
       iconBg: 'bg-rose-900/50',
@@ -189,7 +187,7 @@ export function buildHomePillars(
       href: '/learn/hub',
     },
     {
-      icon: Target,
+      iconName: 'target',
       title: 'Piloter',
       preview: getSpacePreview('pilot'),
       iconBg: 'bg-indigo-900/50',
@@ -207,7 +205,7 @@ export function buildHomePillars(
  */
 export const HOME_BENEFITS: HomeBenefit[] = [
   {
-    icon: MapPin,
+    iconName: 'map-pin',
     title: 'Centralisez vos cleanwalks',
     desc: 'Toutes vos actions terrain en un seul endroit : dates, lieux, volumes, participants. Fini les tableurs éparpillés.',
     color: 'text-cyan-400',
@@ -215,7 +213,7 @@ export const HOME_BENEFITS: HomeBenefit[] = [
     border: 'border-cyan-900/40',
   },
   {
-    icon: MapIcon,
+    iconName: 'map',
     title: 'Visualisez sur une carte commune',
     desc: 'Chaque action apparaît sur une carte partagée avec la communauté. Repérez les zones couvertes et les zones prioritaires.',
     color: 'text-sky-400',
@@ -223,7 +221,7 @@ export const HOME_BENEFITS: HomeBenefit[] = [
     border: 'border-sky-900/40',
   },
   {
-    icon: BarChart3,
+    iconName: 'bar-chart-3',
     title: 'Suivez votre impact réel',
     desc: 'Déchets collectés, mégots retirés, bénévoles mobilisés, CO₂ évité : des indicateurs concrets calculés depuis vos données.',
     color: 'text-emerald-400',
@@ -231,7 +229,7 @@ export const HOME_BENEFITS: HomeBenefit[] = [
     border: 'border-emerald-900/40',
   },
   {
-    icon: Users,
+    iconName: 'users',
     title: 'Coordonnez les acteurs locaux',
     desc: 'Mettez en relation associations, bénévoles et partenaires locaux pour organiser des opérations collectives plus efficaces.',
     color: 'text-violet-400',
@@ -239,7 +237,7 @@ export const HOME_BENEFITS: HomeBenefit[] = [
     border: 'border-violet-900/40',
   },
   {
-    icon: FileText,
+    iconName: 'file-text',
     title: 'Produisez des rapports utiles',
     desc: "Générez des rapports d'impact pour votre RSE, vos dossiers de subvention, les collectivités et les élus locaux.",
     color: 'text-indigo-400',
@@ -247,7 +245,7 @@ export const HOME_BENEFITS: HomeBenefit[] = [
     border: 'border-indigo-900/40',
   },
   {
-    icon: Shield,
+    iconName: 'shield',
     title: 'Donnez de la crédibilité à vos actions',
     desc: "Chiffres sourcés, méthodologie transparente et données terrain vérifiables : renforcez la légitimité de votre engagement.",
     color: 'text-rose-400',

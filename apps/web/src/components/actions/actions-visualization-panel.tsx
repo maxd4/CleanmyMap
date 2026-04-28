@@ -2,9 +2,14 @@
 
 import { useMemo } from"react";
 import useSWR from"swr";
-import { fetchActions, fetchMapActions } from"@/lib/actions/http";
+import { fetchMapActions } from"@/lib/actions/http";
 import { extractArrondissement, monthKey } from"@/components/sections/rubriques/helpers";
-import type { ActionStatus } from"@/lib/actions/types";
+import type { ActionImpactLevel, ActionStatus } from"@/lib/actions/types";
+import {
+ DEFAULT_VISIBLE_CATEGORIES,
+ isVisibleWithCategoryFilter,
+ type MarkerCategory,
+} from"@/components/actions/map-marker-categories";
 
 type ZoneStats = {
  zone: string;
@@ -16,30 +21,49 @@ type ZoneStats = {
 type ActionsVisualizationPanelProps = {
  days: number;
  status: ActionStatus |"all";
+ impact?: ActionImpactLevel |"all";
+ qualityMin?: number;
+ visibleCategories?: Record<MarkerCategory, boolean>;
  compact?: boolean;
 };
 
 type ImpactLevel ="faible" |"moyen" |"fort" |"critique";
 const IMPACT_LEVELS: ImpactLevel[] = ["faible","moyen","fort","critique"];
 
-export function ActionsVisualizationPanel({ days, status, compact = false }: ActionsVisualizationPanelProps) {
- const mapQuery = useSWR(["visualization-map", String(days), status], () =>
- fetchMapActions({ status, days, limit: 300, types:"all" }),
- );
- const actionsQuery = useSWR(["visualization-actions", String(days), status], () =>
- fetchActions({ status, days, limit: 200, types:"all" }),
+export function ActionsVisualizationPanel({
+ days,
+ status,
+ impact ="all",
+ qualityMin = 0,
+ visibleCategories = DEFAULT_VISIBLE_CATEGORIES,
+ compact = false,
+}: ActionsVisualizationPanelProps) {
+ const mapQuery = useSWR(
+ ["visualization-map", String(days), status, impact, String(qualityMin)],
+ () =>
+ fetchMapActions({
+ status,
+ days,
+ impact: impact ==="all" ? undefined : impact,
+ qualityMin: qualityMin > 0 ? qualityMin : undefined,
+ limit: 300,
+ types:"all",
+ }),
  );
 
- const loading = mapQuery.isLoading || actionsQuery.isLoading;
- const error = mapQuery.error || actionsQuery.error;
+ const loading = mapQuery.isLoading;
+ const error = mapQuery.error;
 
  const model = useMemo(() => {
- const mapItems = mapQuery.data?.items ?? [];
- const actionsItems = actionsQuery.data?.items ?? [];
+ const mapItems = (mapQuery.data?.items ?? []).filter((item) =>
+ isVisibleWithCategoryFilter(item, visibleCategories),
+ );
 
  let wasteKg = 0;
  let butts = 0;
  let geolocated = 0;
+ let volunteers = 0;
+ let citizenHours = 0;
  const impacts = new Map<ImpactLevel, number>();
  const byZone = new Map<string, ZoneStats>();
  const byMonth = new Map<string, number>();
@@ -51,6 +75,11 @@ export function ActionsVisualizationPanel({ days, status, compact = false }: Act
  for (const item of mapItems) {
  wasteKg += Number(item.waste_kg || 0);
  butts += Number(item.cigarette_butts || 0);
+ const volunteersCount = Number(item.contract?.metadata.volunteersCount || 0);
+ const durationMinutes = Number(item.contract?.metadata.durationMinutes || 0);
+ volunteers += volunteersCount;
+ citizenHours +=
+ (volunteersCount * Math.max(0, durationMinutes)) / 60;
  if (item.latitude !== null && item.longitude !== null) {
  geolocated += 1;
  }
@@ -70,15 +99,6 @@ export function ActionsVisualizationPanel({ days, status, compact = false }: Act
 
  const month = monthKey(item.action_date);
  byMonth.set(month, (byMonth.get(month) ?? 0) + 1);
- }
-
- let volunteers = 0;
- let citizenHours = 0;
- for (const item of actionsItems) {
- const count = Number(item.volunteers_count || 0);
- const minutes = Number(item.duration_minutes || 0);
- volunteers += count;
- citizenHours += (count * Math.max(0, minutes)) / 60;
  }
 
  const zoneRows = [...byZone.values()]
@@ -114,7 +134,7 @@ export function ActionsVisualizationPanel({ days, status, compact = false }: Act
  maxMonth,
  maxImpact,
  };
- }, [actionsQuery.data?.items, mapQuery.data?.items]);
+ }, [mapQuery.data?.items, visibleCategories]);
 
  return (
  <div className={compact ?"space-y-3" :"space-y-4"}>
@@ -188,7 +208,7 @@ export function ActionsVisualizationPanel({ days, status, compact = false }: Act
 
     <article className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ? "p-3" : "p-4"}`}>
       <h3 className={compact ? "cmm-text-caption font-semibold cmm-text-primary" : "cmm-text-small font-semibold cmm-text-primary"}>
-        Profil d'impact terrain
+        Profil d&apos;impact terrain
       </h3>
       <div className="mt-4 flex h-32 items-center justify-center gap-6">
         <div className="relative h-24 w-24 shrink-0">

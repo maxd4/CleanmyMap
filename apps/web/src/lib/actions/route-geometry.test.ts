@@ -57,6 +57,15 @@ describe("deriveAutoDrawingFromLocation", () => {
         arrivalLocationLabel: "arrivee",
         routeStyle: "direct",
       });
+      const nominatimCall = fetchCalls.find((url) => {
+        try {
+          return new URL(url).hostname === "nominatim.openstreetmap.org";
+        } catch {
+          return false;
+        }
+      });
+      expect(nominatimCall).toContain("bounded=1");
+      expect(nominatimCall).toContain("viewbox=2.12%2C48.98%2C2.55%2C48.74");
       // Safe URL validation: parse and check hostname exactly
       const directRouteCall = fetchCalls.find((url) => {
         try {
@@ -84,6 +93,33 @@ describe("deriveAutoDrawingFromLocation", () => {
       });
       expect(soupleRouteCall).toContain(";");
       expect(soupleRouteCall?.split(";").length).toBeGreaterThan(2);
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it("rejects geocoding results outside the greater paris perimeter", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = (async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      if (url.hostname === "nominatim.openstreetmap.org") {
+        return new Response(JSON.stringify([{ lat: "49.5", lon: "2.7" }]), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+      return new Response("Unexpected", { status: 500 });
+    }) as typeof fetch;
+
+    try {
+      await expect(
+        deriveAutoDrawingFromLocation({
+          locationLabel: "lieu hors zone",
+          departureLocationLabel: "lieu hors zone",
+          arrivalLocationLabel: "autre lieu hors zone",
+          routeStyle: "direct",
+        }),
+      ).resolves.toBeNull();
     } finally {
       global.fetch = originalFetch;
     }

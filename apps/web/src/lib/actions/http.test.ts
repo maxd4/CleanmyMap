@@ -64,4 +64,15 @@ describe("buildMapActionsQueryString", () => {
     const params = new URLSearchParams(query);
     expect(params.has("status")).toBe(false);
   });
+
+  it("serializes impact and minimum quality filters", () => {
+    const query = buildMapActionsQueryString({
+      impact: "critique",
+      qualityMin: 73,
+    });
+    const params = new URLSearchParams(query);
+
+    expect(params.get("impact")).toBe("critique");
+    expect(params.get("qualityMin")).toBe("73");
+  });
 });

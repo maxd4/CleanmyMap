@@ -1,7 +1,6 @@
 "use client";
 
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import { createAction } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
@@ -17,6 +16,8 @@ import {
   isDrawingValid,
   prepareCreateActionPayload,
 } from "./action-declaration/payload";
+import { hydrateActionDeclarationDraft } from "./action-declaration/draft-storage";
+import { summarizeActionDrawingValidation } from "./map/actions-map-geometry.utils";
 import { ActionStepIdentity } from "./action-declaration/ActionStepIdentity";
 import { ActionStepHarvest } from "./action-declaration/ActionStepHarvest";
 import { ActionStepLocation } from "./action-declaration/ActionStepLocation";
@@ -39,6 +40,11 @@ import { computeActionDataQuality } from "./action-declaration-form.quality";
 import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart-assist";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
+import type {
+  FormState,
+  PostActionRetentionLoop,
+  ValidationIssue,
+} from "./action-declaration-form.model";
 
 
 
@@ -72,8 +78,10 @@ export function ActionDeclarationForm({
     ? defaultActorName
     : (resolvedActorOptions[0] ?? userMetadata.userId);
 
-  const [form, setForm] = useState(() =>
-    createInitialFormState(resolvedDefaultActorName),
+  const [form, setForm] = useState<FormState>(() =>
+    hydrateActionDeclarationDraft(
+      createInitialFormState(resolvedDefaultActorName),
+    ),
   );
   const [manualDrawingEnabled] = useState<boolean>(true);
   const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(null);
@@ -85,8 +93,8 @@ export function ActionDeclarationForm({
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
-  const [retentionLoop, setRetentionLoop] = useState<any>(null);
-  const [validationIssues] = useState<any[]>([]);
+  const [retentionLoop, setRetentionLoop] = useState<PostActionRetentionLoop | null>(null);
+  const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const hasTrackedStartRef = useRef<boolean>(false);
@@ -113,17 +121,6 @@ export function ActionDeclarationForm({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Persistence draft logic
-  useEffect(() => {
-    const saved = localStorage.getItem("cmm_action_draft");
-    if (saved) {
-      try {
-        const draft = JSON.parse(saved);
-        setForm((prev: any) => ({ ...prev, ...draft }));
-      } catch { }
-    }
-  }, []);
-
   useEffect(() => {
     if (submissionState !== "success") {
       localStorage.setItem("cmm_action_draft", JSON.stringify(form));
@@ -134,8 +131,18 @@ export function ActionDeclarationForm({
 
   const drawingIsValid = isDrawingValid(manualDrawing);
   const isEntrepriseMode = form.associationName === ENTREPRISE_ASSOCIATION_OPTION;
+  const routePreviewInput = form.departureLocationLabel.trim() || form.locationLabel.trim();
+  const manualDrawingValidation = summarizeActionDrawingValidation(manualDrawing);
+  const routePreviewValidation = summarizeActionDrawingValidation(
+    routePreviewInput ? routePreviewDrawing : null,
+  );
+  const effectiveRoutePreviewDrawing = routePreviewInput
+    ? routePreviewValidation.normalized
+    : null;
+  const effectiveDrawing = manualDrawingValidation.normalized ?? effectiveRoutePreviewDrawing;
+  const hasValidDrawing = Boolean(effectiveDrawing);
 
-  const payload = useMemo(
+  const payload = useMemo<CreateActionPayload>(
     () =>
       buildCreateActionPayload({
         form,
@@ -158,11 +165,11 @@ export function ActionDeclarationForm({
         form,
         declarationMode,
         hasLocationProof: form.latitude.trim().length > 0 && form.longitude.trim().length > 0,
-        hasDrawingProof: drawingIsValid || Boolean(routePreviewDrawing),
+        hasDrawingProof: hasValidDrawing,
         photoAssets,
         visionEstimate,
       }),
-    [declarationMode, drawingIsValid, form, photoAssets, routePreviewDrawing, visionEstimate]
+    [declarationMode, hasValidDrawing, form, photoAssets, visionEstimate]
   );
 
   const {
@@ -182,7 +189,6 @@ export function ActionDeclarationForm({
     const arrival = form.arrivalLocationLabel.trim();
 
     if (!departure) {
-      setRoutePreviewDrawing(null);
       return () => { active = false; };
     }
 
@@ -224,7 +230,6 @@ export function ActionDeclarationForm({
   useEffect(() => {
     let active = true;
     if (photoAssets.length === 0) return;
-    setVisionStatus("processing");
     inferActionVisionEstimate(photoAssets, {
       locationLabel: form.locationLabel,
       placeType: form.placeType,
@@ -241,25 +246,44 @@ export function ActionDeclarationForm({
     return () => { active = false; };
   }, [photoAssets, form.locationLabel, form.placeType, form.volunteersCount, form.durationMinutes]);
 
-  function updateField(key: string, value: any) {
+  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     if (!hasTrackedStartRef.current) {
       hasTrackedStartRef.current = true;
       trackFunnel("start_form", declarationMode);
     }
-    setForm((prev: any) => ({ ...prev, [key]: value }));
+    setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   async function handleConfirmSubmit() {
     if (submissionState === "pending") return;
+
+    if (declarationMode === "complete" && !hasValidDrawing) {
+      setValidationIssues([
+        {
+          field: "manualDrawing",
+          message:
+            "Ajoute un tracé manuel valide ou un aperçu géographique avant l'envoi.",
+        },
+      ]);
+      setHasAttemptedSubmit(true);
+      setErrorMessage(
+        "Ajoute un tracé manuel valide ou un aperçu géographique avant l'envoi.",
+      );
+      setSubmissionState("error");
+      setShowConfirmation(false);
+      return;
+    }
+
+    setValidationIssues([]);
     setSubmissionState("pending");
     try {
       const submissionPayload = await prepareCreateActionPayload({
         form,
         declarationMode,
         effectiveManualDrawingEnabled: declarationMode === "complete" && manualDrawingEnabled,
-        drawingIsValid,
+        drawingIsValid: manualDrawingValidation.isValid,
         manualDrawing,
-        routePreviewDrawing,
+        routePreviewDrawing: effectiveRoutePreviewDrawing,
         isEntrepriseMode,
         linkedEventId,
         photos: photoAssets,
@@ -272,9 +296,13 @@ export function ActionDeclarationForm({
       setSubmissionState("success");
       setShowConfirmation(false);
       localStorage.removeItem("cmm_action_draft");
-    } catch (error: any) {
+    } catch (error: unknown) {
       setSubmissionState("error");
-      setErrorMessage(error.message || "Impossible de valider votre déclaration pour le moment. Veuillez vérifier vos informations et réessayer.");
+      setErrorMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "Impossible de valider votre déclaration pour le moment. Veuillez vérifier vos informations et réessayer.",
+      );
       setShowConfirmation(false);
     }
   }
@@ -287,13 +315,13 @@ export function ActionDeclarationForm({
   return (
     <>
       {showConfirmation && (
-        <ActionDeclarationFormConfirmation
-          form={form}
-          payload={payload as any}
-          userMetadata={userMetadata}
-          onModify={() => setShowConfirmation(false)}
-          onConfirm={handleConfirmSubmit}
-          isSubmitting={submissionState === "pending"}
+              <ActionDeclarationFormConfirmation
+                form={form}
+                payload={payload}
+                userMetadata={userMetadata}
+                onModify={() => setShowConfirmation(false)}
+                onConfirm={handleConfirmSubmit}
+                isSubmitting={submissionState === "pending"}
         />
       )}
 
@@ -377,16 +405,17 @@ export function ActionDeclarationForm({
                 onPhotoUpload={handlePhotoUpload} onClearPhotos={clearPhotos}
               />
             )}
-            {currentStep === 3 && (
+      {currentStep === 3 && (
               <ActionStepLocation
                 form={form} updateField={updateField} manualDrawing={manualDrawing}
-                setManualDrawing={setManualDrawing} routePreviewDrawing={routePreviewDrawing}
+                setManualDrawing={setManualDrawing} routePreviewDrawing={effectiveRoutePreviewDrawing}
+                onResetManualDrawing={() => setManualDrawing(null)}
                 gpsStatus={gpsStatus} gpsMessage={gpsMessage} onAutofillGps={autofillGps}
               />
             )}
             {currentStep === 4 && (
               <ActionStepReview
-                form={form} payload={payload as any} dataQuality={dataQuality}
+                form={form} payload={payload} dataQuality={dataQuality}
                 isSubmitting={submissionState === "pending"} onSubmit={() => onSubmit()}
               />
             )}

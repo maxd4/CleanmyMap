@@ -4,6 +4,13 @@ Documentation optimisée pour les agents IA qui développent ce projet.
 
 ---
 
+## 🧭 Ordre De Lecture
+
+1. `AI_ADVANCED_RULES.md` pour gérer les prompts flous, les incohérences et le format de réponse.
+2. `GEMINI_FLASH_QUALITY_GUIDE.md` pour générer ou corriger du code avec un niveau de fiabilité plus élevé.
+3. `GEMINI_FLASH_CHEATSHEET.md` pour la vérification finale avant livraison.
+4. `AI_MODULARIZATION_GUIDE.md` si la tâche concerne un refactor structuré.
+
 ## 📚 Guides Disponibles
 
 ### 🔧 Modularisation
@@ -50,6 +57,18 @@ Documentation optimisée pour les agents IA qui développent ce projet.
    - 6 situations types avec réactions
    - Templates de propositions
 
+### ⚡ Qualité De Code Gemini Flash
+
+8. **[GEMINI_FLASH_QUALITY_GUIDE.md](./GEMINI_FLASH_QUALITY_GUIDE.md)**
+   - Règles anti-erreurs pour la génération de code
+   - Protocole de validation avant livraison
+   - Patterns sûrs pour React, TypeScript et ESLint
+
+9. **[GEMINI_FLASH_CHEATSHEET.md](./GEMINI_FLASH_CHEATSHEET.md)**
+   - Mémo ultra-rapide
+   - Rappels de correction ESLint
+   - Checklist de dernière minute
+
 ### 📝 Historique
 
 Fichiers historiques supprimés pour éviter la redondance.
@@ -66,6 +85,14 @@ Consulter l'historique Git si nécessaire.
 3. Suivre le processus en 5 étapes
 4. Référencer **AI_MODULARIZATION_CHEATSHEET.md** pendant l'exécution
 5. Mettre à jour **AI_MODULARIZATION_PROGRESS.md** après complétion
+
+### Pour Corriger Du Code Ou Des Warnings Lint
+
+1. Lire **AI_ADVANCED_RULES.md** si le besoin est ambigu.
+2. Lire **GEMINI_FLASH_QUALITY_GUIDE.md** pour le protocole complet.
+3. Utiliser **GEMINI_FLASH_CHEATSHEET.md** pour la vérification finale.
+4. Corriger la cause racine plutôt que masquer le warning.
+5. Valider avec `npm run lint`, `npm run test` et, si pertinent, `npm run build`.
 
 ### Commandes
 
@@ -88,6 +115,12 @@ npm run lint && npm run test && npm run build
 - **Réutilisable** : Templates et patterns prêts à l'emploi
 - **Complet** : Tout au même endroit
 - **Actionnable** : Processus étape par étape
+
+### Références Complémentaires
+
+- `AI_ADVANCED_RULES.md` : conduite générale et gestion de l'incertitude
+- `GEMINI_FLASH_QUALITY_GUIDE.md` : règles de qualité de code
+- `GEMINI_FLASH_CHEATSHEET.md` : mémo de validation rapide
 
 ---
 

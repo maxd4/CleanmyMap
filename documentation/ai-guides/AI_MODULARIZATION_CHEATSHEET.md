@@ -11,8 +11,8 @@
 npm run analyze:heavy-files
 
 # 2. Consulter
-# - MODULARIZATION_PLAN.md (stratégie)
-# - MODULARIZATION_PROGRESS.md (état)
+# - AI_MODULARIZATION_PLAN.md (stratégie)
+# - AI_MODULARIZATION_PROGRESS.md (état)
 
 # 3. Modulariser (voir ci-dessous)
 
@@ -162,10 +162,10 @@ Objectif : [X] → [Y] lignes (-Z%)
 ## 📚 Docs Complètes
 
 - `AI_MODULARIZATION_GUIDE.md` - Guide complet IA
-- `MODULARIZATION_PLAN.md` - Stratégie
-- `MODULARIZATION_GUIDE.md` - Méthodologie
-- `MODULARIZATION_QUICK_REF.md` - Référence
-- `MODULARIZATION_PROGRESS.md` - Suivi
+- `AI_MODULARIZATION_PLAN.md` - Stratégie
+- `AI_MODULARIZATION_DIAGRAMS.md` - Schémas visuels
+- `AI_MODULARIZATION_CHEATSHEET.md` - Référence rapide
+- `AI_MODULARIZATION_PROGRESS.md` - Suivi
 
 ---
 

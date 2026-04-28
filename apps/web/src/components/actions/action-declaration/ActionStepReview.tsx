@@ -6,6 +6,10 @@ import { cn } from "@/lib/utils";
 import { CmmButton } from "@/components/ui/cmm-button";
 
 import type { CreateActionPayload } from "@/lib/actions/types";
+import {
+  formatGeometryPointCount,
+  summarizeActionDrawingValidation,
+} from "../map/actions-map-geometry.utils";
 
 interface ActionStepReviewProps {
   payload: CreateActionPayload;
@@ -21,6 +25,7 @@ export function ActionStepReview({
   onSubmit,
 }: ActionStepReviewProps) {
   const hasWarnings = dataQuality.warnings.length > 0;
+  const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -97,6 +102,40 @@ export function ActionStepReview({
         <div className="p-8 rounded-[2rem] bg-white border border-slate-100 shadow-xl space-y-6">
           <div className="flex items-center gap-3">
             <div className="h-1.5 w-6 rounded-full bg-sky-500" />
+            <h4 className="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">Le Tracé</h4>
+          </div>
+
+          {payload.manualDrawing ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-50 pb-4">
+                <span className="text-sm font-bold text-slate-500">Type</span>
+                <span className="text-lg font-black text-slate-900">
+                  {payload.manualDrawing.kind === "polygon" ? "Polygone" : "Tracé"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3 border-b border-slate-50 pb-4">
+                <span className="text-sm font-bold text-slate-500">Points retenus</span>
+                <span className="text-lg font-black text-slate-900">
+                  {formatGeometryPointCount(drawingSummary.pointCount)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-bold text-slate-500">Statut</span>
+                <span className="text-sm font-black text-emerald-700">
+                  {drawingSummary.message}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm font-medium leading-relaxed text-slate-500">
+              Aucun tracé manuel n&apos;est retenu. Le formulaire utilisera le point ou l&apos;aperçu géographique disponible.
+            </p>
+          )}
+        </div>
+
+        <div className="p-8 rounded-[2rem] bg-white border border-slate-100 shadow-xl space-y-6">
+          <div className="flex items-center gap-3">
+            <div className="h-1.5 w-6 rounded-full bg-sky-500" />
             <h4 className="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">Le Contexte</h4>
           </div>
           <div className="space-y-4">
@@ -121,7 +160,7 @@ export function ActionStepReview({
         <div className="p-8 rounded-[2.5rem] bg-amber-50 border border-amber-200 space-y-4">
           <div className="flex items-center gap-3 text-amber-700">
             <AlertTriangle size={20} />
-            <span className="text-sm font-black tracking-widest uppercase">Points d'attention suggérés</span>
+            <span className="text-sm font-black tracking-widest uppercase">Points d&apos;attention suggérés</span>
           </div>
           <ul className="space-y-2">
             {dataQuality.warnings.map((warning, i) => (

@@ -41,6 +41,7 @@ export type ValidationIssue = {
  |"enterpriseName"
  |"actionDate"
  |"locationLabel"
+ |"manualDrawing"
  |"wasteKg"
  |"volunteersCount";
  message: string;

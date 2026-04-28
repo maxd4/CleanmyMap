@@ -1,17 +1,22 @@
 "use client";
 
-import { useState, useMemo, useEffect } from"react";
+import { useState, useMemo } from"react";
 import { useUser } from"@clerk/nextjs";
 import Link from"next/link";
 import useSWR from"swr";
 import { ActionsMapFeed } from"@/components/actions/actions-map-feed";
+import { ActionsMapExportButton } from"@/components/actions/map/actions-map-export-button";
 import { ActionsMapTable } from"@/components/actions/actions-map-table";
 import { ActionsVisualizationPanel } from"@/components/actions/actions-visualization-panel";
+import { ActionsMapFilterControls } from"@/components/actions/map/actions-map-filter-controls";
+import { ActionsMapSelectedCard } from"@/components/actions/map/actions-map-selected-card";
+import { buildActionsMapGeoQuality } from"@/components/actions/map/actions-map-quality";
+import { useActionsMapFilters } from"@/components/actions/map/use-actions-map-filters";
+import { isVisibleWithCategoryFilter } from"@/components/actions/map-marker-categories";
 import { DecisionPageHeader } from"@/components/ui/decision-page-header";
 import { RubriquePdfExportButton } from"@/components/ui/rubrique-pdf-export-button";
-import { fetchActions, fetchMapActions } from"@/lib/actions/http";
-import type { ActionStatus, ActionImpactLevel } from"@/lib/actions/types";
-import { mapItemWasteKg, mapItemCigaretteButts } from"@/lib/actions/data-contract";
+import { fetchMapActions } from"@/lib/actions/http";
+import { mapItemWasteKg, mapItemCigaretteButts, mapItemCoordinates } from"@/lib/actions/data-contract";
 import { BarChart3, MapPinned, Table2 } from"lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,26 +27,17 @@ const INITIAL_DAYS = Math.ceil(
 
 export default function ActionsMapPage() {
  // --- TOUR DE CONTRÔLE (ÉTAT GLOBAL) ---
- const [days, setDays] = useState<number>(() => {
- if (typeof window !=="undefined") {
- const saved = window.localStorage.getItem("cmm_dashboard_days");
- if (saved && !isNaN(Number(saved))) return Number(saved);
- }
- return Math.ceil(
- (new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) /
- (1000 * 60 * 60 * 24),
- );
- });
- 
- useEffect(() => {
- if (typeof window !=="undefined") {
- window.localStorage.setItem("cmm_dashboard_days", String(days));
- }
- }, [days]);
-
- const [statusFilter, setStatusFilter] = useState<ActionStatus |"all">("approved");
- const [impactFilter, setImpactFilter] = useState<ActionImpactLevel |"all">("all");
- const [qualityMin, setQualityMin] = useState<number>(0);
+ const {
+  filters,
+  setDays,
+  setStatusFilter,
+ setImpactFilter,
+ setQualityMin,
+ toggleCategory,
+ resetFilters,
+ } = useActionsMapFilters(INITIAL_DAYS);
+ const { days, statusFilter, impactFilter, qualityMin, visibleCategories } =
+  filters;
  
  // Rôle Utilisateur pour CTA dynamique
  const { user } = useUser();
@@ -50,6 +46,35 @@ export default function ActionsMapPage() {
  const isPublicVisitor = !isAuthenticated;
  
  const [railTab, setRailTab] = useState<"insights" |"journal">("insights");
+ const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
+ const handleSelectAction = (actionId: string) => {
+   setSelectedActionId((current) => (current === actionId ? null : actionId));
+   setRailTab("journal");
+ };
+ const handleDaysChange = (daysValue: number) => {
+   setSelectedActionId(null);
+   setDays(daysValue);
+ };
+ const handleStatusChange = (statusValue: typeof statusFilter) => {
+   setSelectedActionId(null);
+   setStatusFilter(statusValue);
+ };
+ const handleImpactChange = (impactValue: typeof impactFilter) => {
+   setSelectedActionId(null);
+   setImpactFilter(impactValue);
+ };
+ const handleQualityMinChange = (qualityValue: number) => {
+   setSelectedActionId(null);
+   setQualityMin(qualityValue);
+ };
+ const handleCategoryToggle = (category: Parameters<typeof toggleCategory>[0]) => {
+   setSelectedActionId(null);
+   toggleCategory(category);
+ };
+ const handleResetFilters = () => {
+   setSelectedActionId(null);
+   resetFilters();
+ };
 
  // --- RÉCUPÉRATION DES DONNÉES POUR LES KPI UNIFIÉS ---
  const mapDataQuery = useSWR(["map-page-kpis-map", days, statusFilter, impactFilter, qualityMin], () =>
@@ -62,37 +87,45 @@ export default function ActionsMapPage() {
  })
  );
 
- const actionsDataQuery = useSWR(
- isAuthenticated ? ["map-page-kpis-actions", days, statusFilter] : null,
- () => fetchActions({ status: statusFilter, days, limit: 100 }),
+ const mapItems = useMemo(() => mapDataQuery.data?.items ?? [], [mapDataQuery.data?.items]);
+ const filteredMapItems = useMemo(
+   () =>
+     mapItems.filter((item) =>
+       isVisibleWithCategoryFilter(item, visibleCategories),
+     ),
+   [mapItems, visibleCategories],
+ );
+ const selectedAction = useMemo(
+   () => filteredMapItems.find((item) => item.id === selectedActionId) ?? null,
+   [filteredMapItems, selectedActionId],
  );
 
+  const geoQuality = useMemo(
+    () => buildActionsMapGeoQuality(filteredMapItems),
+    [filteredMapItems],
+  );
+  const visibleCount = filteredMapItems.length;
+  const loadedCount = mapItems.length;
+
  const stats = useMemo(() => {
- const items = mapDataQuery.data?.items ?? [];
- const actionItems = actionsDataQuery.data?.items ?? [];
+ const items = filteredMapItems;
 
  const totalKg = items.reduce((acc, item) => acc + (mapItemWasteKg(item) ?? 0), 0);
  const totalButts = items.reduce((acc, item) => acc + (mapItemCigaretteButts(item) ?? 0), 0);
  
  let volunteers = 0;
  let citizenHours = 0;
- if (isAuthenticated) {
- for (const item of actionItems) {
- const count = Number(item.volunteers_count || 0);
- const minutes = Number(item.duration_minutes || 0);
- volunteers += count;
- citizenHours += (count * Math.max(0, minutes)) / 60;
- }
- } else {
  for (const item of items) {
  const count = Number(item.contract?.metadata.volunteersCount || 0);
  const minutes = Number(item.contract?.metadata.durationMinutes || 0);
  volunteers += count;
  citizenHours += (count * Math.max(0, minutes)) / 60;
  }
- }
 
- const geolocated = items.filter(i => i.latitude !== null && i.longitude !== null).length;
+ const geolocated = items.filter((item) => {
+ const coords = mapItemCoordinates(item);
+ return coords.latitude !== null && coords.longitude !== null;
+ }).length;
 
  return {
  actions: items.length,
@@ -102,7 +135,14 @@ export default function ActionsMapPage() {
  citizenHours,
  geocoverage: items.length > 0 ? Math.round((geolocated / items.length) * 100) : 0,
  };
- }, [isAuthenticated, mapDataQuery.data, actionsDataQuery.data]);
+ }, [filteredMapItems]);
+
+ const failedSources = mapDataQuery.data?.sourceHealth?.failedSources ?? [];
+ const partialSourcesLabel =
+ failedSources.length > 0 ? failedSources.join(", ") :"inconnues";
+ const hasMapError = Boolean(mapDataQuery.error);
+ const hasEmptyFilteredMap =
+ !mapDataQuery.isLoading && !hasMapError && filteredMapItems.length === 0;
 
   const kpiRibbon = (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
@@ -203,19 +243,28 @@ export default function ActionsMapPage() {
           <p className="text-xs font-bold text-slate-500">PARAMÉTRAGE DES DONNÉES</p>
         </div>
       </div>
-      <div className="w-full md:w-auto min-w-[250px]">
-        <label className="sr-only">Fenêtre temporelle</label>
-        <select
-          value={String(days)}
-          onChange={(event) => setDays(Number(event.target.value))}
-          className="w-full h-12 rounded-xl border border-slate-200 bg-white/50 px-4 text-sm font-bold text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 cursor-pointer appearance-none"
-        >
-          <option value="90">90 derniers jours</option>
-          <option value={String(INITIAL_DAYS)}>
-            Année en cours (YTD)
-          </option>
-          <option value="3650">Historique complet</option>
-        </select>
+      <ActionsMapFilterControls
+        filters={filters}
+        initialDays={INITIAL_DAYS}
+        onDaysChange={handleDaysChange}
+        onStatusChange={handleStatusChange}
+        onImpactChange={handleImpactChange}
+        onQualityMinChange={handleQualityMinChange}
+        onCategoryToggle={handleCategoryToggle}
+        onReset={handleResetFilters}
+      />
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200/80 bg-slate-50/80 px-4 py-3 text-xs font-semibold text-slate-600 shadow-sm">
+        <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-white px-2 font-black text-slate-900 shadow-sm">
+          {visibleCount}
+        </span>
+        <span>actions visibles</span>
+        <span className="text-slate-300">/</span>
+        <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-white px-2 font-black text-slate-900 shadow-sm">
+          {loadedCount}
+        </span>
+        <span>chargées</span>
+        <div className="flex-1" />
+        <ActionsMapExportButton items={filteredMapItems} />
       </div>
     </section>
   );
@@ -256,9 +305,52 @@ export default function ActionsMapPage() {
         </section>
       ) : null}
 
+      {mapDataQuery.data?.partialSource ? (
+        <section className="rounded-3xl border border-amber-300/50 bg-amber-50/80 p-5 text-sm font-semibold text-amber-950 shadow-lg shadow-amber-500/5">
+          Sources partielles sur la carte: {partialSourcesLabel}. Les KPI et
+          le journal restent synchronisés avec les données disponibles.
+        </section>
+      ) : null}
+
+      {hasMapError ? (
+        <section className="rounded-3xl border border-rose-300/60 bg-rose-50/80 p-5 text-sm font-semibold text-rose-900 shadow-lg shadow-rose-500/5">
+          Impossible de charger les données cartographiques pour les KPI et le
+          journal. La carte signale séparément son propre état de chargement.
+        </section>
+      ) : null}
+
+      {hasEmptyFilteredMap ? (
+        <section className="rounded-3xl border border-slate-200 bg-white/80 p-5 text-sm font-semibold text-slate-600 shadow-lg shadow-slate-200/50">
+          Aucun point ne correspond aux filtres actifs. Ajuste la période, le
+          niveau d&apos;impact, la qualité ou les catégories visibles.
+        </section>
+      ) : null}
+
       <div className="space-y-4">
         {/* TOUR DE CONTRÔLE UNIQUE */}
         {controlTower}
+        <section className="grid gap-3 rounded-[2rem] border border-slate-200/60 bg-white/80 p-4 shadow-xl shadow-slate-200/50 backdrop-blur-xl sm:grid-cols-2 lg:grid-cols-5">
+          <div>
+            <p className="text-[10px] font-black uppercase text-slate-400">Géo qualité</p>
+            <p className="mt-1 text-2xl font-black text-slate-900">{geoQuality.total}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase text-slate-400">Sans coord.</p>
+            <p className="mt-1 text-2xl font-black text-rose-600">{geoQuality.missingCoordinates}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase text-slate-400">Réels</p>
+            <p className="mt-1 text-2xl font-black text-emerald-700">{geoQuality.realGeometry}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase text-slate-400">Estimés</p>
+            <p className="mt-1 text-2xl font-black text-amber-700">{geoQuality.estimatedGeometry}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-black uppercase text-slate-400">Fallback</p>
+            <p className="mt-1 text-2xl font-black text-slate-600">{geoQuality.fallbackPoint}</p>
+          </div>
+        </section>
       </div>
 
       {/* CŒUR DE PAGE : CARTE DOMINANTE (70%) + RAIL SECONDAIRE (30%) */}
@@ -270,12 +362,22 @@ export default function ActionsMapPage() {
             statusFilter={statusFilter}
             impactFilter={impactFilter}
             qualityMin={qualityMin}
+            visibleCategories={visibleCategories}
+            selectedActionId={selectedActionId}
           />
         </section>
 
         <aside className="min-w-0 self-start xl:sticky xl:top-6">
           <div className="rounded-[2.5rem] border border-slate-200/60 bg-white/80 p-5 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
-            
+            {selectedAction ? (
+              <div className="mb-5">
+                <ActionsMapSelectedCard
+                  item={selectedAction}
+                  onClear={() => setSelectedActionId(null)}
+                />
+              </div>
+            ) : null}
+
             {/* Premium Tabs */}
             <div className="relative flex w-full rounded-2xl bg-slate-100/80 p-1 backdrop-blur-md shadow-inner mb-6">
               <button
@@ -326,14 +428,26 @@ export default function ActionsMapPage() {
                       </p>
                     </div>
                   </div>
-                  <ActionsVisualizationPanel days={days} status={statusFilter} compact />
+                  <ActionsVisualizationPanel
+                    days={days}
+                    status={statusFilter}
+                    impact={impactFilter}
+                    qualityMin={qualityMin}
+                    visibleCategories={visibleCategories}
+                    compact
+                  />
                 </div>
  ) : (
- <ActionsMapTable items={mapDataQuery.data?.items ?? []} compact />
- )}
- </div>
- </div>
- </aside>
+<ActionsMapTable
+   items={filteredMapItems}
+   compact
+   selectedActionId={selectedActionId}
+   onSelectAction={handleSelectAction}
+ />
+)}
+</div>
+</div>
+</aside>
  </div>
 
  {/* RUBAN KPI UNIFIÉ */}

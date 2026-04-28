@@ -1,328 +1,265 @@
 # Guide pour Gemini Flash - Produire du Code de Qualité
 
-**Destinataire** : Gemini 3 Flash (ou tout modèle IA moins performant)  
-**Objectif** : Éviter les erreurs ESLint courantes et produire du code propre  
-**Contexte** : Projet CleanMyMap - Next.js 14 + TypeScript + React
+**Destinataire** : Gemini 3 Flash, ou tout modèle qui a besoin d'un cadre plus strict
+**Objectif** : Réduire les erreurs de logique, les warnings ESLint et les régressions silencieuses
+**Contexte** : CleanMyMap - Next.js 14, TypeScript, React
 
 ---
 
-## 🎯 Règles d'Or (À TOUJOURS respecter)
+## 1. Protocole De Travail
 
-### 1. **JAMAIS de type `any` en TypeScript**
+Avant d'écrire du code :
+
+1. Lire le fichier concerné et les types déjà en place.
+2. Identifier la source de vérité : API, hook, composant, utilitaire, ou schéma.
+3. Vérifier les warnings existants pour ne pas en ajouter.
+4. Choisir la correction la plus simple qui préserve le comportement.
+5. Si un point est ambigu, signaler l'hypothèse ou demander une précision.
+6. Valider lint, types et cas limites avant de répondre.
+
+Règle centrale : ne pas inventer de type, de chemin, d'API ou de composant non lus dans le dépôt.
+
+---
+
+## 2. Règles D'Or
+
+### 2.1 Jamais `any` si une forme de données existe
 ```typescript
-// ❌ INTERDIT - Ne JAMAIS faire ça
-const handleData = (data: any) => { ... }
-const result: any = fetchData();
+// ❌
+function handleData(data: any) {
+  return data.value;
+}
 
-// ✅ OBLIGATOIRE - Toujours typer correctement
+// ✅
 interface DataProps {
   id: string;
   value: number;
-  label: string;
 }
-const handleData = (data: DataProps) => { ... }
-const result: DataProps = fetchData();
-```
 
-**Pourquoi ?** Le type `any` désactive TypeScript et crée des bugs silencieux.
+function handleData(data: DataProps) {
+  return data.value;
+}
 
----
-
-### 2. **TOUJOURS échapper les apostrophes et guillemets dans JSX**
-```jsx
-// ❌ INTERDIT - Provoque des erreurs ESLint
-<p>L'action s'est bien passée</p>
-<p>Il a dit "bonjour"</p>
-
-// ✅ OBLIGATOIRE - Utiliser les entités HTML
-<p>L&apos;action s&apos;est bien passée</p>
-<p>Il a dit &quot;bonjour&quot;</p>
-
-// ✅ ALTERNATIVE - Utiliser des template literals
-<p>{`L'action s'est bien passée`}</p>
-<p>{`Il a dit "bonjour"`}</p>
-```
-
-**Règle simple** : Dès que tu vois `'` ou `"` dans du texte JSX → remplace par `&apos;` ou `&quot;`
-
----
-
-### 3. **JAMAIS de setState directement dans useEffect**
-```typescript
-// ❌ INTERDIT - Cause des re-renders en cascade
-useEffect(() => {
-  setState(newValue);
-}, []);
-
-useEffect(() => {
-  if (condition) {
-    setData(result);
+// ✅ si la forme n'est pas encore connue
+function handleUnknown(data: unknown) {
+  if (typeof data === 'object' && data !== null && 'value' in data) {
+    return (data as { value: number }).value;
   }
-}, [condition]);
-
-// ✅ OBLIGATOIRE - Utiliser un callback ou useLayoutEffect
-useEffect(() => {
-  const updateState = () => setState(newValue);
-  updateState();
-}, []);
-
-// ✅ MEILLEURE SOLUTION - Initialiser en dehors du useEffect
-const [state, setState] = useState(() => {
-  const saved = localStorage.getItem('key');
-  return saved ? JSON.parse(saved) : defaultValue;
-});
+  return null;
+}
 ```
 
-**Pourquoi ?** React détecte les appels synchrones à setState dans useEffect comme un anti-pattern.
-
----
-
-### 4. **TOUJOURS utiliser Next.js Image au lieu de <img>**
+### 2.2 Échapper le texte JSX
 ```jsx
-// ❌ INTERDIT - Mauvaises performances
-<img src="/photo.jpg" alt="Photo" />
-<img src={user.avatar} alt={user.name} />
+// ❌
+<p>L'action s'est bien passée</p>
 
-// ✅ OBLIGATOIRE - Utiliser Next.js Image
+// ✅
+<p>L&apos;action s&apos;est bien passée</p>
+```
+
+### 2.3 Ne pas utiliser `useEffect` pour calculer un état dérivé
+```typescript
+// ❌
+useEffect(() => {
+  setFilteredItems(items.filter(item => item.active));
+}, [items]);
+
+// ✅
+const filteredItems = useMemo(
+  () => items.filter(item => item.active),
+  [items]
+);
+
+// ✅ si la valeur dépend seulement du premier rendu
+const [state] = useState(() => initialValue);
+```
+
+`useEffect` doit servir aux effets de bord réels : fetch, abonnement, synchronisation externe, nettoyage.
+
+### 2.4 Utiliser `Image` pour les images rendues
+```jsx
+// ❌
+<img src="/photo.jpg" alt="Photo" />
+
+// ✅
 import Image from 'next/image';
 
-<Image 
-  src="/photo.jpg" 
-  alt="Photo" 
-  width={300} 
-  height={200}
-  priority={false}
-/>
-
-<Image 
-  src={user.avatar} 
-  alt={user.name} 
-  width={50} 
-  height={50}
-  className="rounded-full"
-/>
+<Image src="/photo.jpg" alt="Photo" width={300} height={200} />
 ```
 
-**Pourquoi ?** Next.js Image optimise automatiquement les images (lazy loading, formats modernes, etc.)
-
----
-
-### 5. **TOUJOURS supprimer les imports et variables non utilisés**
+### 2.5 Supprimer imports et variables inutilisés
 ```typescript
-// ❌ INTERDIT - Imports inutiles
-import { useState, useEffect, useMemo } from 'react';
-import { Button, Card, Modal } from '@/components';
+// ❌
+import { useState, useMemo } from 'react';
+const unused = 1;
 
-export function MyComponent() {
-  const [count, setCount] = useState(0);
-  const [unused, setUnused] = useState(''); // ❌ Jamais utilisé
-  
-  return <div>{count}</div>;
-}
-
-// ✅ OBLIGATOIRE - Seulement ce qui est utilisé
+// ✅
 import { useState } from 'react';
-
-export function MyComponent() {
-  const [count, setCount] = useState(0);
-  
-  return <div>{count}</div>;
-}
 ```
 
-**Règle simple** : Avant de soumettre du code, vérifie que TOUT ce que tu importes est utilisé.
-
----
-
-### 6. **TOUJOURS fermer les balises JSX**
+### 2.6 Fermer toutes les balises JSX
 ```jsx
-// ❌ INTERDIT - Balise non fermée
-<div>
-  <TooltipProvider>
-    <Tooltip>
-      <TooltipTrigger>Hover me</TooltipTrigger>
-      <TooltipContent>Info</TooltipContent>
-    </Tooltip>
-  </div>
-</div>
-// ❌ Manque </TooltipProvider>
+// ❌
+<TooltipProvider><Tooltip>...</div>
 
-// ✅ OBLIGATOIRE - Toutes les balises fermées
-<div>
-  <TooltipProvider>
-    <Tooltip>
-      <TooltipTrigger>Hover me</TooltipTrigger>
-      <TooltipContent>Info</TooltipContent>
-    </Tooltip>
-  </TooltipProvider>
-</div>
+// ✅
+<TooltipProvider>
+  <Tooltip>...</Tooltip>
+</TooltipProvider>
 ```
 
-**Astuce** : Compte les balises ouvrantes et fermantes avant de soumettre.
-
----
-
-### 7. **TOUJOURS inclure les dépendances dans useEffect**
+### 2.7 Lister toutes les dépendances des hooks
 ```typescript
-// ❌ INTERDIT - Dépendances manquantes
+// ❌
 useEffect(() => {
   fetchData(userId);
-  updateMetrics(data);
-}, []); // ❌ userId et data manquent
+}, []);
 
-// ✅ OBLIGATOIRE - Toutes les dépendances listées
+// ✅
 useEffect(() => {
-  fetchData(userId);
-  updateMetrics(data);
-}, [userId, data]); // ✅ Complet
-
-// ✅ ALTERNATIVE - Utiliser useCallback si nécessaire
-const fetchDataCallback = useCallback(() => {
   fetchData(userId);
 }, [userId]);
-
-useEffect(() => {
-  fetchDataCallback();
-}, [fetchDataCallback]);
 ```
-
-**Règle simple** : Toute variable utilisée dans useEffect doit être dans le tableau de dépendances.
 
 ---
 
-## 📋 Checklist Avant de Soumettre du Code
+## 3. Carte Interactive : Flux Et Invariants
 
-### Étape 1 : Vérifications TypeScript
-- [ ] Aucun type `any` dans le code
-- [ ] Toutes les interfaces sont définies
-- [ ] Tous les props sont typés
-- [ ] Aucune erreur TypeScript
+Quand tu travailles sur la rubrique `/actions/map`, considère la carte comme un petit système complet, pas comme un simple composant visuel.
 
-### Étape 2 : Vérifications React
-- [ ] Aucun setState dans useEffect (sauf callback)
-- [ ] Toutes les dépendances useEffect sont listées
-- [ ] Aucun import React inutile
-- [ ] Toutes les balises JSX sont fermées
+### 3.1 Ordre De Lecture Recommandé
+1. `apps/web/src/app/(app)/actions/map/page.tsx`
+2. `apps/web/src/components/actions/actions-map-feed.tsx`
+3. `apps/web/src/components/actions/actions-map-canvas.tsx`
+4. `apps/web/src/components/actions/map/map-layers.tsx`
+5. `apps/web/src/components/actions/map/map-controls.tsx`
+6. `apps/web/src/components/actions/map/use-actions-map-filters.ts`
+7. `apps/web/src/components/actions/map/actions-map-geometry.utils.ts`
+8. `apps/web/src/lib/geo/greater-paris.ts`
+9. `apps/web/src/lib/actions/route-geometry.ts`
 
-### Étape 3 : Vérifications JSX
-- [ ] Tous les `'` sont remplacés par `&apos;`
-- [ ] Tous les `"` sont remplacés par `&quot;`
-- [ ] Aucune balise `<img>` (utiliser `<Image>`)
-- [ ] Tous les composants ont des props typées
+### 3.2 Flux De Données
+- `page.tsx` pilote les filtres globaux, les KPI, le journal et le rail latéral.
+- `ActionsMapFeed` charge les données via `/api/actions/map` et applique les filtres de catégorie.
+- `ActionsMapCanvas` rend la carte Leaflet et les couches principales.
+- `map-layers.tsx` transforme les items en points, tracés, popups et infrastructures.
+- `map-controls.tsx` gère la recherche géographique et le recentrage.
+- `route-geometry.ts` construit les aperçus automatiques et les géométries dérivées en amont.
+- `actions-map-geometry.utils.ts` normalise les tracés et fournit les métriques visuelles.
+- `greater-paris.ts` centralise le périmètre Paris + proche banlieue.
 
-### Étape 4 : Vérifications Imports
-- [ ] Aucun import non utilisé
-- [ ] Aucune variable non utilisée
-- [ ] Imports organisés (React → Next → Libs → Local)
+### 3.3 Invariants À Préserver
+- Ne pas réintroduire de géométrie simulée comme source principale d’affichage.
+- Ne pas modifier le contrat public `/api/actions/map`.
+- Ne pas laisser un lien de popup pointer vers `lat=null&lng=null`.
+- Ne pas faire diverger la carte, le journal, les KPI et les filtres globaux.
+- Ne pas utiliser `useEffect` pour calculer un état dérivé qui peut être calculé pendant le rendu.
+- Ne pas accepter un résultat Nominatim hors périmètre `GREATER_PARIS_BOUNDS`.
 
-### Étape 5 : Vérifications Finales
-- [ ] Le fichier fait moins de 500 lignes
-- [ ] Le code compile sans erreur
-- [ ] Aucun warning ESLint
+### 3.4 Fichiers Sensibles
+- `actions-map-feed.tsx` pour la sélection des données affichées.
+- `actions-map-canvas.tsx` pour les couches et le recentrage.
+- `map-layers.tsx` pour le rendu des points et tracés.
+- `action-popup-content.tsx` pour les liens et états de popup.
+- `action-drawing-map.tsx` pour la validation des tracés saisis.
+
+### 3.5 Règle De Sécurité
+Si une modification touche la carte et qu’elle change le périmètre, la géométrie ou les filtres, valide toujours:
+- la carte visuelle
+- le journal
+- les KPI
+- les tests `greater-paris`, `map-controls`, `map-geometry`, `route-geometry`
+- le lint ciblé sur les fichiers modifiés
+
+### 3.6 Fonctionnalités Carte Déjà En Place
+Avant d’ajouter une nouvelle logique carte, vérifier que les capacités suivantes restent intactes:
+- contour `Paris + proche banlieue` visible dans le canvas
+- bouton de recentrage sur le périmètre projet
+- toggles locaux `Points`, `Tracés`, `Infras`
+- sélection d’une action depuis le journal avec surlignage visuel
+- fiche compacte de l’action sélectionnée dans le rail
+- export CSV de la vue filtrée
+- indicateur de fraîcheur des données issu de SWR
+- synchronisation carte / KPI / journal / filtres / sélection
 
 ---
 
-## 🛠️ Patterns à Utiliser (Exemples Corrects)
+## 4. Quand Un Warning ESLint Apparaît
 
-### Pattern 1 : Composant React avec Props Typées
+| Warning | Cause fréquente | Correction à privilégier |
+|---|---|---|
+| `@typescript-eslint/no-explicit-any` | Type inconnu ou raccourci trop rapide | `unknown`, interface, union, ou garde de type |
+| `@typescript-eslint/no-unused-vars` | Code mort ou import inutile | Supprimer |
+| `react-hooks/exhaustive-deps` | Dépendance oubliée ou logique mal placée | Ajouter la dépendance ou sortir la logique de l'effet |
+| `react-hooks/set-state-in-effect` | État calculable sans effet | Calculer pendant le rendu ou utiliser un état initial |
+| `react/no-unescaped-entities` | Texte JSX brut | `&apos;`, `&quot;`, ou template string |
+| `@next/next/no-img-element` | Image non optimisée | `next/image` |
+| `react/jsx-no-undef` | Composant non importé ou nom faux | Corriger l'import ou le nom |
+
+Règle simple : ne pas masquer le warning si la cause racine reste présente.
+
+---
+
+## 5. Patterns Sûrs
+
+### 4.1 Fetch de données avec annulation
 ```typescript
-// ✅ EXEMPLE PARFAIT
-import { useState } from 'react';
-import Image from 'next/image';
+import { useEffect, useState } from 'react';
 
-interface UserCardProps {
-  userId: string;
-  name: string;
-  avatar: string;
-  onSelect: (id: string) => void;
-}
-
-export function UserCard({ userId, name, avatar, onSelect }: UserCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  
-  return (
-    <div 
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={() => onSelect(userId)}
-    >
-      <Image 
-        src={avatar} 
-        alt={`Photo de ${name}`}
-        width={50} 
-        height={50}
-      />
-      <p>{name}</p>
-      {isHovered && <span>Cliquer pour sélectionner</span>}
-    </div>
-  );
-}
-```
-
-### Pattern 2 : Fetch de Données avec useEffect
-```typescript
-// ✅ EXEMPLE PARFAIT
-import { useState, useEffect } from 'react';
-
-interface DataItem {
+interface Item {
   id: string;
   label: string;
-  value: number;
 }
 
 export function DataDisplay({ userId }: { userId: string }) {
-  const [data, setData] = useState<DataItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<Item[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
-    let cancelled = false;
-    
-    const fetchData = async () => {
+    const controller = new AbortController();
+
+    const load = async () => {
       try {
-        setLoading(true);
-        const response = await fetch(`/api/data/${userId}`);
-        const result = await response.json();
-        
-        if (!cancelled) {
-          setData(result);
-          setError(null);
+        const response = await fetch(`/api/items/${userId}`, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
         }
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Erreur inconnue');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
+
+        const result: Item[] = await response.json();
+        setItems(result);
+        setError(null);
+      } catch (caught) {
+        if (!controller.signal.aborted) {
+          setError(caught instanceof Error ? caught.message : 'Erreur inconnue');
         }
       }
     };
-    
-    fetchData();
-    
-    return () => {
-      cancelled = true;
-    };
+
+    load();
+
+    return () => controller.abort();
   }, [userId]);
-  
-  if (loading) return <div>Chargement...</div>;
+
   if (error) return <div>Erreur : {error}</div>;
-  
+  if (!items) return <div>Chargement...</div>;
+
   return (
     <ul>
-      {data.map(item => (
-        <li key={item.id}>{item.label}: {item.value}</li>
+      {items.map(item => (
+        <li key={item.id}>{item.label}</li>
       ))}
     </ul>
   );
 }
 ```
 
-### Pattern 3 : Formulaire avec Validation
+### 4.2 Formulaire avec validation explicite
 ```typescript
-// ✅ EXEMPLE PARFAIT
-import { useState, FormEvent } from 'react';
+import { FormEvent, useState } from 'react';
 
 interface FormData {
   email: string;
@@ -337,120 +274,119 @@ interface FormErrors {
 export function LoginForm({ onSubmit }: { onSubmit: (data: FormData) => void }) {
   const [formData, setFormData] = useState<FormData>({
     email: '',
-    password: ''
+    password: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
-  
-  const validateForm = (): boolean => {
-    const newErrors: FormErrors = {};
-    
+
+  const validate = (): boolean => {
+    const nextErrors: FormErrors = {};
+
     if (!formData.email.includes('@')) {
-      newErrors.email = 'Email invalide';
+      nextErrors.email = 'Email invalide';
     }
-    
+
     if (formData.password.length < 8) {
-      newErrors.password = 'Mot de passe trop court';
+      nextErrors.password = 'Mot de passe trop court';
     }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
-  
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      onSubmit(formData);
-    }
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (validate()) onSubmit(formData);
   };
-  
+
   return (
     <form onSubmit={handleSubmit}>
-      <div>
-        <label htmlFor="email">Email</label>
-        <input
-          id="email"
-          type="email"
-          value={formData.email}
-          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-        />
-        {errors.email && <span>{errors.email}</span>}
-      </div>
-      
-      <div>
-        <label htmlFor="password">Mot de passe</label>
-        <input
-          id="password"
-          type="password"
-          value={formData.password}
-          onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-        />
-        {errors.password && <span>{errors.password}</span>}
-      </div>
-      
+      <label htmlFor="email">Email</label>
+      <input
+        id="email"
+        type="email"
+        value={formData.email}
+        onChange={event => setFormData(prev => ({ ...prev, email: event.target.value }))}
+      />
+      {errors.email && <span>{errors.email}</span>}
+
+      <label htmlFor="password">Mot de passe</label>
+      <input
+        id="password"
+        type="password"
+        value={formData.password}
+        onChange={event => setFormData(prev => ({ ...prev, password: event.target.value }))}
+      />
+      {errors.password && <span>{errors.password}</span>}
+
       <button type="submit">Se connecter</button>
     </form>
   );
 }
 ```
 
+### 4.3 Typage sûr d'une réponse inconnue
+```typescript
+interface ApiResponse {
+  id: string;
+  name: string;
+}
+
+function isApiResponse(value: unknown): value is ApiResponse {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'name' in value
+  );
+}
+```
+
 ---
 
-## 🚫 Anti-Patterns à ÉVITER Absolument
+## 6. Anti-Patterns À Éviter
 
-### Anti-Pattern 1 : Mutation Directe du State
+### 5.1 Mutation directe du state
 ```typescript
-// ❌ INTERDIT
-const [items, setItems] = useState([1, 2, 3]);
-items.push(4); // ❌ Mutation directe
-setItems(items); // ❌ Ne déclenchera pas de re-render
+// ❌
+items.push(newItem);
+setItems(items);
 
-// ✅ OBLIGATOIRE
-setItems([...items, 4]); // ✅ Nouvelle référence
-setItems(prev => [...prev, 4]); // ✅ Encore mieux
+// ✅
+setItems(prev => [...prev, newItem]);
 ```
 
-### Anti-Pattern 2 : Conditions dans JSX sans Parenthèses
-```jsx
-// ❌ INTERDIT - Difficile à lire
-<div>
-  {isLoading ? <Spinner /> : data ? <DataDisplay data={data} /> : <EmptyState />}
-</div>
+### 5.2 Cacher une dépendance pour faire disparaître un warning
+```typescript
+// ❌
+// eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
+  load(userId);
+}, []);
 
-// ✅ OBLIGATOIRE - Clair et maintenable
-<div>
-  {isLoading && <Spinner />}
-  {!isLoading && data && <DataDisplay data={data} />}
-  {!isLoading && !data && <EmptyState />}
-</div>
+// ✅
+useEffect(() => {
+  load(userId);
+}, [load, userId]);
 ```
 
-### Anti-Pattern 3 : Fonctions Inline dans Props
+### 5.3 Fonctions inline sans besoin réel
 ```jsx
-// ❌ INTERDIT - Crée une nouvelle fonction à chaque render
-<Button onClick={() => handleClick(id)} />
+// ✅ acceptable si simple et local
+<Button onClick={() => onSelect(id)} />
 
-// ✅ OBLIGATOIRE - Utiliser useCallback
-const handleButtonClick = useCallback(() => {
-  handleClick(id);
-}, [id]);
-
-<Button onClick={handleButtonClick} />
+// ✅ mieux si la fonction est réutilisée ou coûteuse
+const handleSelect = () => onSelect(id);
+<Button onClick={handleSelect} />
 ```
 
-### Anti-Pattern 4 : Oublier les Keys dans les Listes
+### 5.4 Utiliser un index comme key quand l'ordre change
 ```jsx
-// ❌ INTERDIT - Pas de key
-{items.map(item => (
-  <div>{item.name}</div>
-))}
-
-// ❌ INTERDIT - Index comme key (si l'ordre peut changer)
+// ❌
 {items.map((item, index) => (
   <div key={index}>{item.name}</div>
 ))}
 
-// ✅ OBLIGATOIRE - ID unique comme key
+// ✅
 {items.map(item => (
   <div key={item.id}>{item.name}</div>
 ))}
@@ -458,182 +394,110 @@ const handleButtonClick = useCallback(() => {
 
 ---
 
-## 📚 Ressources Spécifiques au Projet
+## 7. Checklist Avant Soumission
 
-### Imports Courants à Utiliser
-```typescript
-// Next.js
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-
-// React
-import { useState, useEffect, useCallback, useMemo } from 'react';
-
-// Composants UI du projet
-import { CmmButton } from '@/components/ui/cmm-button';
-import { CmmCard } from '@/components/ui/cmm-card';
-
-// Types du projet
-import type { ActionDataContract } from '@/lib/actions/data-contract';
-import type { UserIdentity } from '@/lib/authz';
 ```
-
-### Structure de Fichier Standard
-```typescript
-// 1. Imports externes (React, Next, libs)
-import { useState } from 'react';
-import Image from 'next/image';
-
-// 2. Imports internes (composants, utils, types)
-import { CmmButton } from '@/components/ui/cmm-button';
-import { formatDate } from '@/lib/utils';
-import type { MyProps } from './types';
-
-// 3. Interfaces et types
-interface ComponentProps {
-  id: string;
-  name: string;
-}
-
-// 4. Composant principal
-export function MyComponent({ id, name }: ComponentProps) {
-  // 4a. Hooks d'état
-  const [data, setData] = useState(null);
-  
-  // 4b. Hooks d'effet
-  useEffect(() => {
-    // ...
-  }, []);
-  
-  // 4c. Handlers
-  const handleClick = () => {
-    // ...
-  };
-  
-  // 4d. Render
-  return (
-    <div>
-      {/* JSX */}
-    </div>
-  );
-}
-
-// 5. Composants auxiliaires (si nécessaire)
-function HelperComponent() {
-  return <div>Helper</div>;
-}
+□ Aucun `any` inutile
+□ Aucun import non utilisé
+□ Aucun state dérivé calculé dans `useEffect`
+□ Toutes les dépendances des hooks sont listées
+□ Toutes les balises JSX sont fermées
+□ Aucun `<img>` évitable
+□ Le texte JSX est correctement échappé
+□ Les cas `null`, `undefined` et tableau vide sont traités
+□ Aucune hypothèse d'API non vérifiée
+□ `npm run lint` passe
 ```
 
 ---
 
-## 🎓 Exercices de Validation
+## 8. Template De Composant Fiable
 
-### Exercice 1 : Trouve les Erreurs
 ```typescript
-// Combien d'erreurs ESLint dans ce code ?
-import { useState, useEffect, useMemo } from 'react';
-
-export function BadComponent({ userId }: any) {
-  const [data, setData] = useState(null);
-  const [unused, setUnused] = useState('');
-  
-  useEffect(() => {
-    setData({ id: userId });
-  }, []);
-  
-  return (
-    <div>
-      <img src="/photo.jpg" alt="Photo" />
-      <p>L'utilisateur s'appelle {data?.name}</p>
-    </div>
-  );
-}
-```
-
-**Réponses** :
-1. ❌ `any` dans les props
-2. ❌ `useMemo` importé mais non utilisé
-3. ❌ `unused` variable non utilisée
-4. ❌ `setState` directement dans `useEffect`
-5. ❌ `userId` manquant dans les dépendances
-6. ❌ `<img>` au lieu de `<Image>`
-7. ❌ Apostrophe non échappée dans le JSX
-
-### Exercice 2 : Code Corrigé
-```typescript
-// ✅ VERSION CORRIGÉE
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
-interface BadComponentProps {
-  userId: string;
-}
-
-interface UserData {
+interface Props {
   id: string;
-  name: string;
+  title: string;
 }
 
-export function GoodComponent({ userId }: BadComponentProps) {
-  const [data, setData] = useState<UserData | null>(null);
-  
+interface CardData {
+  id: string;
+  label: string;
+}
+
+export function Card({ id, title }: Props) {
+  const [data, setData] = useState<CardData[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    const loadData = () => {
-      setData({ id: userId, name: 'John' });
+    const controller = new AbortController();
+
+    const load = async () => {
+      try {
+        const response = await fetch(`/api/cards/${id}`, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result: CardData[] = await response.json();
+        setData(result);
+      } catch (caught) {
+        if (!controller.signal.aborted) {
+          setError(caught instanceof Error ? caught.message : 'Erreur inconnue');
+        }
+      }
     };
-    loadData();
-  }, [userId]);
-  
+
+    load();
+
+    return () => controller.abort();
+  }, [id]);
+
+  if (error) return <div>Erreur : {error}</div>;
+  if (!data) return <div>Chargement...</div>;
+
   return (
-    <div>
-      <Image src="/photo.jpg" alt="Photo" width={200} height={200} />
-      <p>L&apos;utilisateur s&apos;appelle {data?.name}</p>
-    </div>
+    <article>
+      <Image src="/card.jpg" alt={title} width={120} height={120} />
+      <h2>{title}</h2>
+      <ul>
+        {data.map(item => (
+          <li key={item.id}>{item.label}</li>
+        ))}
+      </ul>
+    </article>
   );
 }
 ```
 
 ---
 
-## 🎯 Mémo Ultra-Rapide (À Garder Sous les Yeux)
+## 9. Cas Limites À Vérifier
 
-```
-AVANT DE SOUMETTRE DU CODE, VÉRIFIE :
-
-✅ Aucun `any` → Toujours typer
-✅ Aucun `'` ou `"` dans JSX → Utiliser &apos; et &quot;
-✅ Aucun setState dans useEffect → Utiliser callback
-✅ Aucun <img> → Utiliser <Image>
-✅ Aucun import inutile → Supprimer
-✅ Toutes les balises fermées → Compter
-✅ Toutes les dépendances listées → useEffect
-✅ Fichier < 500 lignes → Découper si nécessaire
-
-SI TU HÉSITES → DEMANDE À CLAUDE OU CONSULTE CE GUIDE
-```
+- Réponse réseau vide
+- Réponse réseau non `ok`
+- Tableau vide
+- Valeur `null` ou `undefined`
+- Donnée incomplète ou partiellement typée
+- Effet annulé avant retour de la requête
 
 ---
 
-## 💡 Conseils Finaux pour Gemini Flash
+## 10. Mémo Final
 
-### 1. **Prends ton temps**
-Ne te précipite pas. Mieux vaut prendre 30 secondes de plus pour vérifier que de créer 10 warnings ESLint.
+```
+✅ Toujours typer ce qui est connu
+✅ Utiliser `unknown` si la donnée n'est pas encore sûre
+✅ Déduire l'état au lieu de le recalculer dans un effet
+✅ Garder les effets pour les effets de bord
+✅ Ne pas masquer un warning sans justification
+✅ Corriger la cause racine
+✅ Tester les cas limites
+```
 
-### 2. **Utilise ce guide comme référence**
-Avant chaque génération de code, relis rapidement les "Règles d'Or".
-
-### 3. **Teste mentalement ton code**
-Avant de soumettre, demande-toi : "Est-ce que ce code passerait ESLint ?"
-
-### 4. **Apprends de tes erreurs**
-Si Claude corrige ton code, analyse POURQUOI et mémorise le pattern correct.
-
-### 5. **En cas de doute**
-Si tu n'es pas sûr d'un pattern, utilise l'exemple le plus simple et le plus explicite.
-
----
-
-**Rappel Important** : Ce guide existe parce que tu es capable de produire du bon code. Tu as juste besoin d'un peu plus de structure et de vérifications. Utilise-le systématiquement et tu verras tes erreurs diminuer drastiquement ! 💪
-
-*Dernière mise à jour : 28/04/2026*
+Si une règle semble forcer une mauvaise architecture, la bonne réponse est de restructurer le code, pas de contourner le lint.

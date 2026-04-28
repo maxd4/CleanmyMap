@@ -23,13 +23,20 @@ function formatDate(value: string): string {
 }
 
 type ActionsMapTableProps = {
- items: ActionMapItem[];
- compact?: boolean;
+  items: ActionMapItem[];
+  compact?: boolean;
+  selectedActionId?: string | null;
+  onSelectAction?: (actionId: string) => void;
 };
 
 const ACTIONS_BATCH_SIZE = 4;
 
-export function ActionsMapTable({ items, compact = false }: ActionsMapTableProps) {
+export function ActionsMapTable({
+  items,
+  compact = false,
+  selectedActionId = null,
+  onSelectAction,
+}: ActionsMapTableProps) {
  const [isVisible, setIsVisible] = useState(false);
  const [visibleCount, setVisibleCount] = useState(ACTIONS_BATCH_SIZE);
 
@@ -105,12 +112,32 @@ export function ActionsMapTable({ items, compact = false }: ActionsMapTableProps
  const drawing = mapItemDrawing(item);
  const geometry = getGeometryPresentation(item);
  return (
- <tr key={item.id} className="cmm-text-secondary hover:bg-slate-50 transition-colors">
- <td className="px-2 py-2 whitespace-nowrap">
- {formatDate(mapItemObservedAt(item))}
- </td>
- <td className="px-2 py-2 font-medium">
- {mapItemLocationLabel(item)}
+          <tr
+            key={item.id}
+            className={[
+              "cmm-text-secondary transition-colors",
+              selectedActionId === item.id ? "bg-emerald-50/80 ring-1 ring-inset ring-emerald-200" : "hover:bg-slate-50",
+              onSelectAction ? "cursor-pointer" : "",
+            ].join(" ")}
+            onClick={() => onSelectAction?.(item.id)}
+            onKeyDown={(event) => {
+              if (!onSelectAction) {
+                return;
+              }
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelectAction(item.id);
+              }
+            }}
+            tabIndex={onSelectAction ? 0 : undefined}
+            role={onSelectAction ? "button" : undefined}
+            aria-pressed={selectedActionId === item.id}
+          >
+            <td className="px-2 py-2 whitespace-nowrap">
+              {formatDate(mapItemObservedAt(item))}
+            </td>
+            <td className="px-2 py-2 font-medium">
+              {mapItemLocationLabel(item)}
  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
  {(item as any).campaign_name && (
  <div className="mt-1">

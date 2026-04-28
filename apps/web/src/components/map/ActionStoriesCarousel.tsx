@@ -2,21 +2,47 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
 import { ActionMapItem } from "@/lib/actions/types";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { MapPin, Calendar, Trash2, ArrowRight } from "lucide-react";
+import {
+  mapItemCigaretteButts,
+  mapItemLocationLabel,
+  mapItemObservedAt,
+  mapItemType,
+  mapItemWasteKg,
+} from "@/lib/actions/data-contract";
 
 interface ActionStoriesCarouselProps {
   items: ActionMapItem[];
+}
+
+function formatStoryDate(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+  }).format(parsed);
+}
+
+function formatStoryTitle(item: ActionMapItem): string {
+  const type = mapItemType(item);
+  if (type === "clean_place") {
+    return "Zone propre vérifiée";
+  }
+  if (type === "spot") {
+    return "Signalement terrain";
+  }
+  return "Intervention terrain";
 }
 
 export function ActionStoriesCarousel({ items }: ActionStoriesCarouselProps) {
   const [index, setIndex] = useState(0);
 
   if (!items.length) return null;
-
-  const current = items[index % items.length];
 
   return (
     <div className="relative w-full py-8">
@@ -43,7 +69,10 @@ export function ActionStoriesCarousel({ items }: ActionStoriesCarouselProps) {
 
       <div className="relative h-[400px] w-full perspective-1000">
         <AnimatePresence mode="popLayout">
-          {items.slice(index % items.length, (index % items.length) + 3).map((item, i) => (
+          {items.slice(index % items.length, (index % items.length) + 3).map((item, i) => {
+            const wasteKg = mapItemWasteKg(item) ?? 0;
+            const butts = mapItemCigaretteButts(item) ?? 0;
+            return (
             <motion.div
               key={item.id}
               initial={{ x: 300, opacity: 0, scale: 0.8 }}
@@ -74,27 +103,34 @@ export function ActionStoriesCarousel({ items }: ActionStoriesCarouselProps) {
                   </div>
                   
                   <h4 className="text-xl font-bold text-white mb-2 line-clamp-2">
-                    {item.metadata?.title || "Dépôt sauvage identifié"}
+                    {formatStoryTitle(item)}
                   </h4>
                   
                   <div className="flex flex-col gap-2 mb-6">
                     <div className="flex items-center gap-2 text-slate-300">
                       <MapPin size={14} className="text-emerald-400" />
-                      <span className="text-xs font-medium">Secteur {item.id.slice(0, 4)}</span>
+                      <span className="text-xs font-medium line-clamp-1">{mapItemLocationLabel(item)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-300">
+                      <Calendar size={14} className="text-sky-400" />
+                      <span className="text-xs font-medium">{formatStoryDate(mapItemObservedAt(item))}</span>
                     </div>
                     <div className="flex items-center gap-2 text-slate-300">
                       <Trash2 size={14} className="text-rose-400" />
-                      <span className="text-xs font-medium">{item.impact?.score || 0}kg de déchets</span>
+                      <span className="text-xs font-medium">
+                        {wasteKg.toFixed(1)}kg · {Math.round(butts)} mégots
+                      </span>
                     </div>
                   </div>
 
-                  <button className="w-full py-3 rounded-2xl bg-white text-slate-950 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-emerald-400 hover:text-white transition-all">
-                    Détails de l'intervention <ArrowRight size={14} />
+                  <button type="button" className="w-full py-3 rounded-2xl bg-white text-slate-950 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-emerald-400 hover:text-white transition-all">
+                    Détails de l&apos;intervention <ArrowRight size={14} />
                   </button>
                 </div>
               </CmmCard>
             </motion.div>
-          ))}
+          );
+          })}
         </AnimatePresence>
       </div>
     </div>

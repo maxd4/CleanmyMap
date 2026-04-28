@@ -1,135 +1,113 @@
-# Checklist de Correction ESLint
+# Checklist De Correction ESLint
 
-**Rubrique** : _[Nom de la rubrique en cours de développement]_  
-**Date** : _[Date de début des corrections]_  
-**Développeur** : _[Nom du développeur]_
+Guide de travail pour corriger des warnings ESLint sans introduire de régression.
 
 ---
 
-## 📋 Avant de commencer
+## 1. Avant De Commencer
 
-- [ ] Consulter l'audit ESLint : `npm run lint:audit`
-- [ ] Identifier les warnings de la rubrique concernée
-- [ ] Estimer le temps nécessaire pour les corrections
-- [ ] Créer une branche dédiée : `git checkout -b fix/lint-[rubrique]`
-
----
-
-## 🔍 Analyse des warnings
-
-### Warnings critiques (🔴 - À corriger immédiatement)
-- [ ] `react-hooks/set-state-in-effect` : _____ occurrences
-- [ ] `react/jsx-no-undef` : _____ occurrences
-- [ ] Autres critiques : _____
-
-### Warnings haute priorité (🟠 - À corriger avec le développement)
-- [ ] `@typescript-eslint/no-explicit-any` : _____ occurrences
-- [ ] `@typescript-eslint/no-unused-vars` : _____ occurrences
-- [ ] `react-hooks/exhaustive-deps` : _____ occurrences
-
-### Warnings moyenne priorité (🟡 - Corrections rapides)
-- [ ] `react/no-unescaped-entities` : _____ occurrences
-- [ ] `@next/next/no-img-element` : _____ occurrences
-
-### Warnings faible priorité (🟢 - Optionnel)
-- [ ] `max-lines` : _____ occurrences
-- [ ] Directives ESLint inutiles : _____ occurrences
+- Lire l'audit ESLint ou le rapport de la rubrique concernée.
+- Identifier si le warning est critique, structurel ou purement cosmétique.
+- Corriger la cause racine, pas seulement le symptôme.
+- Travailler sur une branche dédiée si la session touche plusieurs fichiers.
+- Éviter d'empiler des `eslint-disable` sans justification écrite.
 
 ---
 
-## 🛠️ Plan de correction
+## 2. Triage Des Warnings
 
-### Étape 1 : Corrections critiques
-**Fichiers concernés** :
-- [ ] `_____` - Description du problème
-- [ ] `_____` - Description du problème
-- [ ] `_____` - Description du problème
-
-**Actions** :
-- [ ] Déplacer les `setState` hors des `useEffect`
-- [ ] Corriger les imports manquants
-- [ ] Tester que les fonctionnalités marchent toujours
-
-### Étape 2 : Corrections haute priorité
-**Fichiers concernés** :
-- [ ] `_____` - Types `any` à remplacer
-- [ ] `_____` - Variables non utilisées à supprimer
-- [ ] `_____` - Dépendances useEffect à ajouter
-
-**Actions** :
-- [ ] Créer les interfaces TypeScript appropriées
-- [ ] Nettoyer les imports et variables inutiles
-- [ ] Vérifier les dépendances des hooks
-
-### Étape 3 : Corrections rapides
-**Fichiers concernés** :
-- [ ] `_____` - Apostrophes à échapper
-- [ ] `_____` - Images à optimiser
-
-**Actions** :
-- [ ] Remplacer `'` par `&apos;` dans JSX
-- [ ] Remplacer `<img>` par `<Image>` de Next.js
-- [ ] Ajouter les props width/height nécessaires
+| Règle ESLint | Cause fréquente | Correction à privilégier | Piège à éviter |
+|---|---|---|---|
+| `react-hooks/set-state-in-effect` | État calculable sans effet | Calculer pendant le rendu ou initialiser l'état | Déplacer un calcul pur dans `useEffect` |
+| `react-hooks/exhaustive-deps` | Dépendance oubliée | Ajouter la dépendance ou restructurer la logique | Retirer la dépendance pour faire taire le warning |
+| `@typescript-eslint/no-explicit-any` | Type inconnu ou contournement rapide | `unknown`, interface, union, garde de type | Convertir le `any` en cast aveugle |
+| `@typescript-eslint/no-unused-vars` | Code mort | Supprimer l'import ou la variable | Laisser le code commenté |
+| `react/no-unescaped-entities` | Texte JSX brut | `&apos;`, `&quot;` ou template string | Ignorer l'erreur |
+| `@next/next/no-img-element` | Image non optimisée | `next/image` | Garder `<img>` sans justification |
+| `react/jsx-no-undef` | Import manquant ou nom faux | Corriger l'import ou le nom du composant | Laisser un composant non résolu |
 
 ---
 
-## ✅ Validation
+## 3. Plan De Correction
 
-### Tests automatiques
-- [ ] `npm run lint` passe sans erreur
-- [ ] `npm run typecheck` passe sans erreur
-- [ ] `npm run test` passe (si tests existants)
+### Phase A - Stabiliser
 
-### Tests manuels
-- [ ] La rubrique fonctionne correctement
-- [ ] Aucune régression visuelle
-- [ ] Performance maintenue (pas de ralentissement)
+- Corriger les warnings qui bloquent la lecture du fichier.
+- Retirer les imports inutiles.
+- Corriger les composants non résolus.
 
-### Métriques
-**Avant corrections** :
-- Erreurs : _____
-- Warnings : _____
+### Phase B - Corriger La Logique
 
-**Après corrections** :
-- Erreurs : _____
-- Warnings : _____
+- Remplacer les `any` par des types précis.
+- Remonter les calculs purs hors des effets.
+- Ajouter les dépendances manquantes ou extraire la logique vers un utilitaire.
 
-**Amélioration** : _____ warnings corrigés
+### Phase C - Sécuriser L'UI
+
+- Échapper le texte JSX.
+- Remplacer les balises `<img>` par `Image` quand c'est possible.
+- Vérifier que les états d'erreur et de chargement existent.
 
 ---
 
-## 📝 Documentation des corrections
+## 4. Règles De Réécriture
 
-### Corrections appliquées
+### 4.1 État dérivé
 
-#### `react-hooks/set-state-in-effect`
 ```typescript
 // Avant
 useEffect(() => {
-  setState(value);
-}, []);
-
-// Après  
-useEffect(() => {
-  const updateState = () => setState(value);
-  updateState();
-}, []);
-```
-
-#### `@typescript-eslint/no-explicit-any`
-```typescript
-// Avant
-const handleData = (data: any) => { ... }
+  setFilteredItems(items.filter(item => item.active));
+}, [items]);
 
 // Après
-interface DataProps {
-  id: string;
-  value: number;
-}
-const handleData = (data: DataProps) => { ... }
+const filteredItems = useMemo(
+  () => items.filter(item => item.active),
+  [items]
+);
 ```
 
-#### `react/no-unescaped-entities`
+### 4.2 Donnée inconnue
+
+```typescript
+// Avant
+function handleData(data: any) {
+  return data.value;
+}
+
+// Après
+interface DataItem {
+  value: number;
+}
+
+function handleData(data: unknown) {
+  if (typeof data === 'object' && data !== null && 'value' in data) {
+    return (data as DataItem).value;
+  }
+  return null;
+}
+```
+
+### 4.3 `useEffect` avec fetch
+
+```typescript
+useEffect(() => {
+  const controller = new AbortController();
+
+  const load = async () => {
+    const response = await fetch(url, { signal: controller.signal });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    setData(await response.json());
+  };
+
+  load();
+
+  return () => controller.abort();
+}, [url]);
+```
+
+### 4.4 Texte JSX
+
 ```jsx
 // Avant
 <p>L'action s'est bien passée</p>
@@ -138,59 +116,69 @@ const handleData = (data: DataProps) => { ... }
 <p>L&apos;action s&apos;est bien passée</p>
 ```
 
-#### `@next/next/no-img-element`
+### 4.5 Image
+
 ```jsx
 // Avant
 <img src="/photo.jpg" alt="Photo" />
 
 // Après
 import Image from 'next/image';
+
 <Image src="/photo.jpg" alt="Photo" width={300} height={200} />
 ```
 
-### Difficultés rencontrées
-- [ ] Aucune difficulté particulière
-- [ ] Problème de types complexes : _____
-- [ ] Régression fonctionnelle : _____
-- [ ] Performance impactée : _____
+---
 
-### Solutions trouvées
-_[Décrire les solutions non-standard ou créatives utilisées]_
+## 5. Validation
+
+### Automatique
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test` si le projet contient des tests utiles pour la zone touchée
+
+### Fonctionnelle
+
+- Vérifier le comportement nominal.
+- Vérifier les cas limites.
+- Vérifier les erreurs réseau ou de données.
+- Vérifier qu'aucune régression visuelle n'a été introduite.
+
+### Critères de sortie
+
+- Aucun warning critique introduit.
+- Aucun `eslint-disable` inutile.
+- Le code reste lisible et maintenable.
+- La logique métier reste correcte.
 
 ---
 
-## 🚀 Finalisation
+## 6. Journal De Session
 
-### Commit et merge
-- [ ] Commit avec message descriptif : `fix(lint): correct [rubrique] warnings`
-- [ ] Push de la branche
-- [ ] Création de la PR avec description des corrections
-- [ ] Review et merge
+À la fin de la session, consigner :
 
-### Mise à jour de la documentation
-- [ ] Mettre à jour `LINT_AUDIT.md` si nécessaire
-- [ ] Documenter les patterns de correction pour l'équipe
-- [ ] Partager les bonnes pratiques découvertes
+- la rubrique corrigée,
+- les fichiers modifiés,
+- les règles ESLint traitées,
+- les cas limites vérifiés,
+- les risques restants ou les dettes repérées.
 
-### Suivi
-- [ ] Vérifier que les métriques sont mises à jour
-- [ ] Planifier les prochaines corrections si nécessaire
-- [ ] Célébrer l'amélioration de la qualité du code ! 🎉
+Ce journal doit servir à éviter de corriger deux fois le même problème.
 
 ---
 
-## 📊 Métriques finales
+## 7. Exemple De Session Réussie
 
-| Métrique | Avant | Après | Amélioration |
-|----------|-------|-------|--------------|
-| Erreurs totales | _____ | _____ | _____ |
-| Warnings totaux | _____ | _____ | _____ |
-| Warnings critiques | _____ | _____ | _____ |
-| Fichiers concernés | _____ | _____ | _____ |
-
-**Temps passé** : _____ heures  
-**Efficacité** : _____ warnings/heure
+1. L'audit montre 8 warnings dans une rubrique.
+2. Les imports inutiles sont retirés en premier.
+3. Les types `any` sont remplacés par des interfaces ou `unknown`.
+4. Les effets sont restructurés pour ne garder que les vrais effets de bord.
+5. Les tests de la zone touchée passent.
+6. Le nombre de warnings baisse sans régression fonctionnelle.
 
 ---
 
-*Cette checklist doit être remplie à chaque session de correction de warnings ESLint pour maintenir la traçabilité et l'amélioration continue.*
+## 8. Rappel Final
+
+Un warning ESLint n'est pas un objectif en soi. L'objectif est un code correct, lisible et stable. Si le warning disparaît mais que la logique est affaiblie, la correction est mauvaise.

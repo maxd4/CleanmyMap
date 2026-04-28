@@ -1,10 +1,24 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { LucideIcon } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  FileText,
+  LayoutDashboard,
+  MapPin,
+  Map as MapIcon,
+  Network,
+  Shield,
+  Target,
+  Users,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
+import type { HomeIconName } from "@/lib/home/config";
 
 interface Benefit {
-  icon: LucideIcon;
+  iconName: HomeIconName;
   title: string;
   desc: string;
   color: string;
@@ -15,6 +29,20 @@ interface Benefit {
 interface HomeBenefitsProps {
   benefits: Benefit[];
 }
+
+const ICONS: Record<HomeIconName, LucideIcon> = {
+  "layout-dashboard": LayoutDashboard,
+  zap: Zap,
+  map: MapIcon,
+  target: Target,
+  network: Network,
+  "book-open": BookOpen,
+  "map-pin": MapPin,
+  "bar-chart-3": BarChart3,
+  users: Users,
+  "file-text": FileText,
+  shield: Shield,
+};
 
 const container = {
   hidden: { opacity: 0 },
@@ -79,7 +107,10 @@ export function HomeBenefits({ benefits }: HomeBenefitsProps) {
               <div
                 className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-white dark:bg-slate-800 shadow-lg ring-1 ring-black/5 dark:ring-white/5 ${benefit.color}`}
               >
-                <benefit.icon size={28} />
+                {(() => {
+                  const Icon = ICONS[benefit.iconName];
+                  return <Icon size={28} />;
+                })()}
               </div>
               <h3 className="mb-3 text-lg font-bold cmm-text-primary dark:text-white">
                 {benefit.title}

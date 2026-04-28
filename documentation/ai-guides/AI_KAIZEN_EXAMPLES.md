@@ -2,7 +2,7 @@
 
 Guide pratique avec exemples concrets pour détecter et proposer des améliorations.
 
-**Référence** : `documentation/development/AI_MINDSET_KAIZEN.md`
+**Référence** : [AI_MINDSET_KAIZEN.md](../development/AI_MINDSET_KAIZEN.md)
 
 ---
 
@@ -136,7 +136,7 @@ Voulez-vous que j'implémente ce système de gamification ?
 ⚠️ Données non sourcées détectées
 
 Le calcul de CO2 utilise un facteur de 0.5 kg/km sans référence.
-Selon AI_MINDSET_KAIZEN.md, toutes les données doivent être rigoureusement sourcées.
+Selon [AI_MINDSET_KAIZEN.md](../development/AI_MINDSET_KAIZEN.md), toutes les données doivent être rigoureusement sourcées.
 
 Proposition :
 - Ajouter la référence ADEME dans le code
@@ -177,3 +177,57 @@ Voulez-vous que j'implémente cette amélioration ?
 - ⚠️ Risque de sécurité détecté
 - ⚠️ Problème de performance détecté
 - ⚠️ Problème d'accessibilité détecté
+- ⚠️ Warning lint détecté
+
+---
+
+## 💡 Exemple 7 : Détection d'un Warning Lint
+
+**Situation** : L'IA ajoute un `useEffect` qui calcule un état dérivé, ce qui déclenche `react-hooks/set-state-in-effect`.
+
+**Réaction Kaizen** :
+```markdown
+⚠️ Warning lint détecté
+
+Le composant calcule un état dérivé dans `useEffect`.
+Cela peut masquer une logique pure qui devrait vivre dans le rendu ou dans `useMemo`.
+
+Proposition :
+- Déplacer le calcul pur hors de `useEffect`
+- Garder l'effet uniquement pour un vrai effet de bord
+- Impact : Moins de warnings, logique plus lisible, moins de risques de divergence
+- Complexité : Faible (5-10 min)
+
+Voulez-vous que je corrige ce warning à la source ?
+```
+
+---
+
+## 💡 Exemple 8 : Carte Interactive Et Invariants
+
+**Situation** : L'IA modifie `/actions/map` et touche à la fois les filtres, la carte et la recherche.
+
+**Réaction Kaizen** :
+```markdown
+💡 Opportunité d'amélioration détectée
+
+J'ai remarqué que la rubrique carte combine des filtres globaux, une carte Leaflet, une recherche géographique et un journal.
+Pour éviter les régressions, il faut traiter ces flux comme un système unique.
+
+Proposition :
+- Vérifier que `page.tsx`, `ActionsMapFeed`, `ActionsMapCanvas` et `map-layers` restent synchronisés
+- Garder le périmètre `Paris + proche banlieue` cohérent entre recherche, formulaire et carte
+- Préserver les invariants: pas de géométrie simulée principale, pas de `lat=null&lng=null`, pas de divergence KPI/journal/carte
+- Conserver les fonctions déjà en place: contour du périmètre, recentrage, toggles locaux, sélection du journal, fiche latérale, export CSV, fraîcheur SWR
+- Impact : Moins de bugs de cohérence, modèle plus fiable pour les phases suivantes
+- Complexité : Faible (lecture + check ciblé)
+
+Voulez-vous que j'applique ce cadrage avant la prochaine modification carte ?
+```
+
+**Checklist pratique**
+- Lire d'abord `page.tsx`, puis `ActionsMapFeed`, puis `ActionsMapCanvas`
+- Ne pas toucher au contrat `/api/actions/map`
+- Ne pas réintroduire de carte simulée ou de heatmap fictive
+- Désélectionner l’action active si le filtre la fait sortir de la vue
+- Relancer le lint et les tests ciblés de la carte avant de conclure

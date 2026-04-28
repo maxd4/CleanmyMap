@@ -60,11 +60,11 @@ describe("action declaration payload helpers", () => {
  ).toBe(true);
  });
 
- it("builds complete mode payload with drawing centroid and breakdown", () => {
- const form = buildBaseForm();
- const drawing: ActionDrawing = {
- kind:"polygon",
- coordinates: [
+  it("builds complete mode payload with drawing centroid and breakdown", () => {
+    const form = buildBaseForm();
+    const drawing: ActionDrawing = {
+      kind:"polygon",
+      coordinates: [
  [48.85, 2.35],
  [48.86, 2.36],
  [48.87, 2.37],
@@ -87,9 +87,41 @@ describe("action declaration payload helpers", () => {
  expect(payload.wasteBreakdown).toBeDefined();
  expect(payload.routeStyle).toBe("souple");
  expect(payload.routeAdjustmentMessage).toBe("Éviter l'avenue principale");
- expect(payload.notes).toContain("Collecte de test");
- expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
- });
+    expect(payload.notes).toContain("Collecte de test");
+    expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
+  });
+
+  it("normalizes duplicate drawing points before building the payload", () => {
+    const form = buildBaseForm();
+    const drawing: ActionDrawing = {
+      kind: "polyline",
+      coordinates: [
+        [48.85, 2.35],
+        [48.85, 2.35],
+        [48.86, 2.36],
+      ],
+    };
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: true,
+      drawingIsValid: true,
+      manualDrawing: drawing,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.manualDrawing).toEqual({
+      kind: "polyline",
+      coordinates: [
+        [48.85, 2.35],
+        [48.86, 2.36],
+      ],
+    });
+    expect(payload.latitude).toBeCloseTo(48.855, 6);
+    expect(payload.longitude).toBeCloseTo(2.355, 6);
+  });
 
  it("builds quick mode payload without geo/breakdown and with butts reset", () => {
  const form = buildBaseForm();
@@ -119,10 +151,10 @@ describe("action declaration payload helpers", () => {
  expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
  });
 
- it("prefers a ready route preview before submission", async () => {
- const form = buildBaseForm();
- form.departureLocationLabel ="Place des Vosges";
- form.arrivalLocationLabel ="Rue de Rivoli";
+  it("prefers a ready route preview before submission", async () => {
+    const form = buildBaseForm();
+    form.departureLocationLabel ="Place des Vosges";
+    form.arrivalLocationLabel ="Rue de Rivoli";
 
  const previewDrawing: ActionDrawing = {
  kind:"polyline",
@@ -142,10 +174,10 @@ describe("action declaration payload helpers", () => {
  routePreviewDrawing: previewDrawing,
  isEntrepriseMode: false,
  linkedEventId: undefined,
- });
+    });
 
- expect(payload.manualDrawing).toEqual(previewDrawing);
- });
+    expect(payload.manualDrawing).toEqual(previewDrawing);
+  });
 
  it("detects park-like labels", () => {
  expect(isLocationLikelyPark("Parc des Buttes-Chaumont")).toBe(true);
