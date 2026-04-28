@@ -205,233 +205,238 @@ export function GamificationSection() {
  const individualRows = rows as IndividualItem[];
  const collectiveRows = rows as CollectiveItem[];
 
- return (
- <div className="space-y-4">
- <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 cmm-text-small text-emerald-900">
- Progression durable: l&apos;impact vérifié, la qualité des données et la
- contribution collective sont privilégiés sur le simple volume.
- </div>
+    return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-emerald-900/30 bg-emerald-950/20 p-4 cmm-text-small text-emerald-400 backdrop-blur-sm">
+        <span className="font-bold">Progression durable :</span> l&apos;impact vérifié, la qualité des données et la
+        contribution collective sont privilégiés sur le simple volume.
+      </div>
 
- <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
- {/* GAUCHE : Progression personnelle */}
- <div className="space-y-4">
- <div className="rounded-xl border border-slate-200 bg-white p-4">
- <h3 className="cmm-text-small font-semibold cmm-text-primary">
- {locale ==="fr" ?"Ta progression" :"Your progression"}
- </h3>
- {meLoading ? (
- <p className="mt-2 cmm-text-small cmm-text-muted">Chargement progression...</p>
- ) : null}
- {meError ? (
- <p className="mt-2 cmm-text-small text-rose-700">
- Progression indisponible pour le moment.
- </p>
- ) : null}
- {progression ? (
- <div className="mt-3 space-y-4">
- <div className="grid gap-3 grid-cols-2">
- <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">Niveau actuel</p>
- <p className="mt-1 text-2xl font-semibold cmm-text-primary">
- {progression.currentLevel}
- </p>
- {progression.potentialLevel > progression.currentLevel ? (
- <p className="cmm-text-caption text-amber-700 mt-1">Potentiel: {progression.potentialLevel}</p>
- ) : null}
- </article>
- <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">Ranking</p>
- <p className="mt-1 text-2xl font-semibold cmm-text-primary">
- {progression.dynamicRanking.rank ? `#${progression.dynamicRanking.rank}` :"n/a"}
- </p>
- <p className="cmm-text-caption cmm-text-muted mt-1">
- {progression.dynamicRanking.percentile
- ? `Top ${progression.dynamicRanking.percentile}%`
- :"En cours"}
- </p>
- </article>
- </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
+        {/* GAUCHE : Progression personnelle */}
+        <div className="space-y-4">
+          <div className="rounded-xl border border-slate-800/40 bg-slate-900/40 backdrop-blur-md p-4">
+            <h3 className="cmm-text-small font-bold cmm-text-primary uppercase tracking-widest">
+              {locale === "fr" ? "Ta progression" : "Your progression"}
+            </h3>
+            {meLoading ? (
+              <p className="mt-2 cmm-text-small cmm-text-muted italic">Chargement progression...</p>
+            ) : null}
+            {meError ? (
+              <p className="mt-2 cmm-text-small text-rose-400">
+                Progression indisponible pour le moment.
+              </p>
+            ) : null}
+            {progression ? (
+              <div className="mt-5 space-y-4">
+                <div className="grid gap-3 grid-cols-2">
+                  <article className="rounded-xl border border-slate-800/60 bg-slate-950/40 p-3">
+                    <p className="cmm-text-caption uppercase tracking-wider cmm-text-muted font-bold">Niveau actuel</p>
+                    <p className="mt-1 text-3xl font-black cmm-text-primary tracking-tight">
+                      {progression.currentLevel}
+                    </p>
+                    {progression.potentialLevel > progression.currentLevel ? (
+                      <p className="cmm-text-caption text-amber-400/80 mt-1 font-medium">Potentiel : {progression.potentialLevel}</p>
+                    ) : null}
+                  </article>
+                  <article className="rounded-xl border border-slate-800/60 bg-slate-950/40 p-3">
+                    <p className="cmm-text-caption uppercase tracking-wider cmm-text-muted font-bold">Ranking</p>
+                    <p className="mt-1 text-3xl font-black cmm-text-primary tracking-tight">
+                      {progression.dynamicRanking.rank ? `#${progression.dynamicRanking.rank}` : "n/a"}
+                    </p>
+                    <p className="cmm-text-caption cmm-text-muted mt-1 font-medium">
+                      {progression.dynamicRanking.percentile
+                        ? `Top ${progression.dynamicRanking.percentile}%`
+                        : "En cours"}
+                    </p>
+                  </article>
+                </div>
 
- <div className="grid gap-3 grid-cols-2">
- <article className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 shadow-sm">
- <p className="cmm-text-caption uppercase tracking-wide text-emerald-700">XP validée</p>
- <p className="mt-1 text-xl font-bold text-emerald-900">
- {progression.xpValidated}
- </p>
- </article>
- <article className="rounded-lg border border-amber-100 bg-amber-50 p-3 shadow-sm">
- <p className="cmm-text-caption uppercase tracking-wide text-amber-700">XP en attente</p>
- <p className="mt-1 text-xl font-bold text-amber-900">
- {progression.xpPending}
- </p>
- </article>
- </div>
+                <div className="grid gap-3 grid-cols-2">
+                  <article className="rounded-xl border border-emerald-900/40 bg-emerald-950/20 p-3 shadow-inner">
+                    <p className="cmm-text-caption uppercase tracking-wider text-emerald-500/80 font-bold">XP validée</p>
+                    <p className="mt-1 text-2xl font-black text-emerald-400">
+                      {progression.xpValidated}
+                    </p>
+                  </article>
+                  <article className="rounded-xl border border-amber-900/40 bg-amber-950/20 p-3 shadow-inner">
+                    <p className="cmm-text-caption uppercase tracking-wider text-amber-500/80 font-bold">XP en attente</p>
+                    <p className="mt-1 text-2xl font-black text-amber-400">
+                      {progression.xpPending}
+                    </p>
+                  </article>
+                </div>
 
- <details className="rounded-lg border border-slate-200 bg-slate-50 p-3">
- <summary className="cursor-pointer cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
- Méthodologie d&apos;impact
- </summary>
- <div className="mt-3">
- <GamificationImpactMethodologyCard
- methodology={progression.impactMethodology}
- />
- </div>
- </details>
+                <details className="group rounded-xl border border-slate-800/60 bg-slate-950/40 p-3 transition-all">
+                  <summary className="cursor-pointer cmm-text-caption font-bold uppercase tracking-widest cmm-text-muted list-none flex items-center justify-between">
+                    Méthodologie d&apos;impact
+                    <span className="text-xs transition-transform group-open:rotate-180">↓</span>
+                  </summary>
+                  <div className="mt-3">
+                    <GamificationImpactMethodologyCard
+                      methodology={progression.impactMethodology}
+                    />
+                  </div>
+                </details>
 
- <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
- <p className="cmm-text-caption font-semibold cmm-text-secondary">Objectif niveau {progression.nextLevel.level}</p>
- <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200">
- <div
- className="h-full rounded-full bg-emerald-600 transition-all"
- style={{ width: `${progressToNext}%` }}
- />
- </div>
- <p className="mt-2 cmm-text-caption cmm-text-secondary">
- Reste {progression.nextLevel.xpRemaining} XP.
- </p>
- 
- {progression.nextLevel.frozen ? (
- <p className="mt-2 cmm-text-caption font-semibold text-amber-700">
- Niveau gelé : des prérequis bloquent le passage.
- </p>
- ) : null}
+                <div className="rounded-xl border border-slate-800/60 bg-slate-950/40 p-3">
+                  <p className="cmm-text-caption font-bold cmm-text-secondary uppercase tracking-wider">Objectif niveau {progression.nextLevel.level}</p>
+                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-900">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-cyan-500 transition-all shadow-[0_0_8px_rgba(16,185,129,0.4)]"
+                      style={{ width: `${progressToNext}%` }}
+                    />
+                  </div>
+                  <p className="mt-2 cmm-text-caption cmm-text-secondary font-medium">
+                    Reste {progression.nextLevel.xpRemaining} XP.
+                  </p>
+                  
+                  {progression.nextLevel.frozen ? (
+                    <p className="mt-2 cmm-text-caption font-bold text-amber-500">
+                      Niveau gelé : des prérequis bloquent le passage.
+                    </p>
+                  ) : null}
 
- {progression.nextLevel.requirements.missing.length > 0 ? (
- <ul className="mt-2 list-disc pl-4 cmm-text-caption text-amber-800">
- {progression.nextLevel.requirements.missing.map((missing) => (
- <li key={missing}>{missing}</li>
- ))}
- </ul>
- ) : null}
- </div>
+                  {progression.nextLevel.requirements.missing.length > 0 ? (
+                    <ul className="mt-2 list-disc pl-4 cmm-text-caption text-amber-400/80 font-medium">
+                      {progression.nextLevel.requirements.missing.map((missing) => (
+                        <li key={missing}>{missing}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
 
- <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted mb-2">Badges et récompenses</p>
- <BadgeShowcase badges={progression.badges} />
- </div>
- </div>
- ) : null}
- </div>
- </div>
+                <div className="rounded-xl border border-slate-800/60 bg-slate-950/40 p-3">
+                  <p className="cmm-text-caption uppercase tracking-widest cmm-text-muted font-bold mb-3">Badges et récompenses</p>
+                  <BadgeShowcase badges={progression.badges} />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
 
- {/* DROITE : Classements et Cartographie */}
- <div className="space-y-6">
- <div className="rounded-xl border border-slate-200 bg-white p-4">
- <div className="flex flex-wrap items-center gap-2 mb-4">
- <button
- className={`rounded-lg px-4 py-2 cmm-text-small font-semibold transition ${
- scope ==="individual"
- ?"bg-emerald-600 text-white shadow-md"
- :"bg-slate-100 cmm-text-secondary hover:bg-slate-200"
- }`}
- onClick={() => setScope("individual")}
- >
- Classement contributeurs
- </button>
- <button
- className={`rounded-lg px-4 py-2 cmm-text-small font-semibold transition ${
- scope ==="collective"
- ?"bg-emerald-600 text-white shadow-md"
- :"bg-slate-100 cmm-text-secondary hover:bg-slate-200"
- }`}
- onClick={() => setScope("collective")}
- >
- Classement collectifs
- </button>
- </div>
+        {/* DROITE : Classements et Cartographie */}
+        <div className="space-y-6">
+          <div className="rounded-xl border border-slate-800/40 bg-slate-900/40 backdrop-blur-md p-4">
+            <div className="flex flex-wrap items-center gap-2 mb-6">
+              <button
+                className={`rounded-full px-5 py-2 cmm-text-small font-bold tracking-tight transition-all ${
+                  scope === "individual"
+                    ? "bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                    : "bg-slate-950/60 cmm-text-secondary hover:bg-slate-900 border border-slate-800/40"
+                }`}
+                onClick={() => setScope("individual")}
+              >
+                Contributeurs
+              </button>
+              <button
+                className={`rounded-full px-5 py-2 cmm-text-small font-bold tracking-tight transition-all ${
+                  scope === "collective"
+                    ? "bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+                    : "bg-slate-950/60 cmm-text-secondary hover:bg-slate-900 border border-slate-800/40"
+                }`}
+                onClick={() => setScope("collective")}
+              >
+                Collectifs
+              </button>
+            </div>
 
- {leaderboardLoading ? (
- <p className="cmm-text-small cmm-text-muted">Synchronisation du classement global...</p>
- ) : null}
- {leaderboardError ? (
- <p className="cmm-text-small text-rose-700">
- Moteur de classement indisponible.
- </p>
- ) : null}
+            {leaderboardLoading ? (
+              <p className="cmm-text-small cmm-text-muted italic">Synchronisation du classement global...</p>
+            ) : null}
+            {leaderboardError ? (
+              <p className="cmm-text-small text-rose-400 font-medium">
+                Moteur de classement indisponible.
+              </p>
+            ) : null}
 
- {!leaderboardLoading && !leaderboardError ? (
- <div className="overflow-x-auto rounded-lg border border-slate-200">
- <table className="min-w-full text-left cmm-text-small">
- <thead className="bg-slate-50 cmm-text-secondary">
- {scope ==="individual" ? (
- <tr>
- <th className="px-3 py-2 w-10 text-center">#</th>
- <th className="px-3 py-2">Identité</th>
- <th className="px-3 py-2 text-center">Niv.</th>
- <th className="px-3 py-2 text-right">XP</th>
- <th className="px-3 py-2 text-right">Qualité</th>
- <th className="px-3 py-2 text-right">Durable</th>
- </tr>
- ) : (
- <tr>
- <th className="px-3 py-2 w-10 text-center">#</th>
- <th className="px-3 py-2">Collectif</th>
- <th className="px-3 py-2 text-center">Membres</th>
- <th className="px-3 py-2 text-center">Actions</th>
- <th className="px-3 py-2 text-right">Qualité</th>
- <th className="px-3 py-2 text-right">Durable</th>
- </tr>
- )}
- </thead>
- <tbody className="divide-y divide-slate-100">
- {scope ==="individual"
- ? individualRows.map((row) => (
- <tr
- key={`${row.userId}-${row.rank}`}
- className="bg-white hover:bg-slate-50 transition-colors"
- >
- <td className="px-3 py-2 font-bold cmm-text-muted text-center">{row.rank}</td>
- <td className="px-3 py-2 font-semibold cmm-text-primary">
- {row.actorName}
- {row.associationName ? <span className="block font-normal cmm-text-caption cmm-text-muted">{row.associationName}</span> : null}
- </td>
- <td className="px-3 py-2 text-center font-medium">
- {row.currentLevel}
- </td>
- <td className="px-3 py-2 text-right text-emerald-700 font-medium">{row.xpValidated}</td>
- <td className="px-3 py-2 text-right cmm-text-caption">A {row.qualityAverage}/100</td>
- <td className="px-3 py-2 text-right font-bold cmm-text-primary">{row.score.toFixed(0)}</td>
- </tr>
- ))
- : collectiveRows.map((row) => (
- <tr
- key={`${row.associationName}-${row.rank}`}
- className="bg-white hover:bg-slate-50 transition-colors"
- >
- <td className="px-3 py-2 font-bold cmm-text-muted text-center">{row.rank}</td>
- <td className="px-3 py-2 font-semibold cmm-text-primary">{row.associationName}</td>
- <td className="px-3 py-2 text-center">{row.members}</td>
- <td className="px-3 py-2 text-center">{row.validatedActions}</td>
- <td className="px-3 py-2 text-right cmm-text-caption">A {row.qualityAverage}/100</td>
- <td className="px-3 py-2 text-right font-bold cmm-text-primary">{row.score.toFixed(0)}</td>
- </tr>
- ))}
- {rows.length === 0 ? (
- <tr>
- <td
- className="px-3 py-8 text-center cmm-text-muted italic"
- colSpan={6}
- >
- Aucune donnée qualifiée pour cette catégorie.
- </td>
- </tr>
- ) : null}
- </tbody>
- </table>
- </div>
- ) : null}
- </div>
+            {!leaderboardLoading && !leaderboardError ? (
+              <div className="overflow-x-auto rounded-xl border border-slate-800/60 bg-slate-950/20">
+                <table className="min-w-full text-left cmm-text-small">
+                  <thead className="bg-slate-900/60 cmm-text-secondary">
+                    {scope === "individual" ? (
+                      <tr>
+                        <th className="px-4 py-3 w-10 text-center font-bold uppercase tracking-widest text-[10px]">#</th>
+                        <th className="px-4 py-3 font-bold uppercase tracking-widest text-[10px]">Identité</th>
+                        <th className="px-4 py-3 text-center font-bold uppercase tracking-widest text-[10px]">Niv.</th>
+                        <th className="px-4 py-3 text-right font-bold uppercase tracking-widest text-[10px]">XP</th>
+                        <th className="px-4 py-3 text-right font-bold uppercase tracking-widest text-[10px]">Qualité</th>
+                        <th className="px-4 py-3 text-right font-bold uppercase tracking-widest text-[10px]">Score</th>
+                      </tr>
+                    ) : (
+                      <tr>
+                        <th className="px-4 py-3 w-10 text-center font-bold uppercase tracking-widest text-[10px]">#</th>
+                        <th className="px-4 py-3 font-bold uppercase tracking-widest text-[10px]">Collectif</th>
+                        <th className="px-4 py-3 text-center font-bold uppercase tracking-widest text-[10px]">Membres</th>
+                        <th className="px-4 py-3 text-center font-bold uppercase tracking-widest text-[10px]">Actions</th>
+                        <th className="px-4 py-3 text-right font-bold uppercase tracking-widest text-[10px]">Qualité</th>
+                        <th className="px-4 py-3 text-right font-bold uppercase tracking-widest text-[10px]">Score</th>
+                      </tr>
+                    )}
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/40">
+                    {scope === "individual"
+                      ? individualRows.map((row) => (
+                          <tr
+                            key={`${row.userId}-${row.rank}`}
+                            className="hover:bg-slate-900/40 transition-colors group"
+                          >
+                            <td className="px-4 py-3 font-black cmm-text-muted text-center opacity-60 group-hover:opacity-100">{row.rank}</td>
+                            <td className="px-4 py-3 font-bold cmm-text-primary">
+                              {row.actorName}
+                              {row.associationName ? <span className="block font-medium cmm-text-caption cmm-text-muted mt-0.5">{row.associationName}</span> : null}
+                            </td>
+                            <td className="px-4 py-3 text-center font-black cmm-text-primary">
+                              {row.currentLevel}
+                            </td>
+                            <td className="px-4 py-3 text-right text-emerald-400 font-bold">{row.xpValidated}</td>
+                            <td className="px-4 py-3 text-right cmm-text-caption font-medium">A {row.qualityAverage}/100</td>
+                            <td className="px-4 py-3 text-right font-black cmm-text-primary">{row.score.toFixed(0)}</td>
+                          </tr>
+                        )
+                      )
+                      : collectiveRows.map((row) => (
+                          <tr
+                            key={`${row.associationName}-${row.rank}`}
+                            className="hover:bg-slate-900/40 transition-colors group"
+                          >
+                            <td className="px-4 py-3 font-black cmm-text-muted text-center opacity-60 group-hover:opacity-100">{row.rank}</td>
+                            <td className="px-4 py-3 font-bold cmm-text-primary">{row.associationName}</td>
+                            <td className="px-4 py-3 text-center font-medium">{row.members}</td>
+                            <td className="px-4 py-3 text-center font-medium">{row.validatedActions}</td>
+                            <td className="px-4 py-3 text-right cmm-text-caption font-medium">A {row.qualityAverage}/100</td>
+                            <td className="px-4 py-3 text-right font-black cmm-text-primary">{row.score.toFixed(0)}</td>
+                          </tr>
+                        )
+                      )}
+                    {rows.length === 0 ? (
+                      <tr>
+                        <td
+                          className="px-4 py-10 text-center cmm-text-muted italic font-medium"
+                          colSpan={6}
+                        >
+                          Aucune donnée qualifiée pour cette catégorie.
+                        </td>
+                      </tr>
+                    ) : null}
+                  </tbody>
+                </table>
+              </div>
+            ) : null}
+          </div>
 
- {progression && personalMapItems.length > 0 ? (
- <div className="rounded-xl border border-slate-200 bg-white p-4">
- <h3 className="cmm-text-small font-semibold cmm-text-primary mb-3">Carte personnelle</h3>
- <div className="overflow-hidden rounded-lg border border-slate-200 h-[300px]">
- <ActionsMapCanvas items={personalMapItems.slice(0, 50)} />
- </div>
- </div>
- ) : null}
- </div>
- </div>
- </div>
+          {progression && personalMapItems.length > 0 ? (
+            <div className="rounded-xl border border-slate-800/40 bg-slate-900/40 backdrop-blur-md p-4">
+              <h3 className="cmm-text-small font-bold cmm-text-primary mb-4 uppercase tracking-widest">Carte personnelle</h3>
+              <div className="overflow-hidden rounded-xl border border-slate-800/60 h-[300px] shadow-inner relative group">
+                <div className="absolute inset-0 bg-emerald-500/5 pointer-events-none group-hover:bg-emerald-500/0 transition-all" />
+                <ActionsMapCanvas items={personalMapItems.slice(0, 50)} />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+
  );
 }

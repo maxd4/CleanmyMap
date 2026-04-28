@@ -100,7 +100,7 @@ export function RubriqueExcelExportButton({
  URL.revokeObjectURL(url);
  } catch (error) {
  console.error("Erreur export CSV:", error);
- alert("Erreur lors de l'export CSV. Vérifiez les données.");
+      alert("Impossible de générer l'export CSV. Vérifiez que la page contient des données et réessayez.");
  } finally {
  setIsExporting(false);
  }
@@ -111,8 +111,9 @@ export function RubriqueExcelExportButton({
  onClick={handleExport}
  disabled={isExporting}
  className="inline-flex items-center gap-2 rounded-lg border border-emerald-600 bg-emerald-50 px-4 py-2 cmm-text-small font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50"
+ aria-label={`Exporter les données de ${rubriqueTitle} au format CSV`}
  >
- <FileSpreadsheet size={16} />
+ <FileSpreadsheet size={16} aria-hidden="true" />
  {isExporting ?"Export en cours..." :"Exporter CSV (Excel)"}
  </button>
  );

@@ -23,10 +23,11 @@ npm run dev
 - `npm run test` : Tests vitest
 - `npm run test:regression-gates` : Tests de non-régression critiques
 - `npm run checks` : Script global de validation du projet
+- `npm run analyze:heavy-files` : Analyser les fichiers volumineux (modularisation)
 
 ## Structure du projet
 - `apps/web/` : Application Next.js (frontend + routes API)
-- `documentation/` : Architecture, produit, historique des sessions IA ([voir le README documentaire](./documentation/README.md))
+- `documentation/` : Architecture, design system, règles de développement, opérations et sécurité
 - `scripts/` : Scripts de maintenance à la racine
 - `legacy/` : Historique du code Python archivé
 
@@ -38,7 +39,7 @@ Pour l'initialisation du backend, la synchronisation des variables d'environneme
 - Règles globales persistantes : `AGENTS.md`
 - Contexte du projet : `project_context.md`
 - Mémoire de session en cours : `documentation/sessions/history/latest-session.md`
-- Gouvernance mémoire IA : `documentation/technical/agent-memory-governance.md`
+- Gouvernance mémoire IA : `documentation/operations/agent-memory-governance.md`
 
 Commandes IA :
 - `npm run session:bootstrap`
@@ -46,7 +47,23 @@ Commandes IA :
 - `npm run session:budget`
 
 ## Contribuer
-Consultez le fichier [CONTRIBUTING.md](./CONTRIBUTING.md) pour lire les guides complets d'installation, de contribution et de tests.
+Consultez le fichier [CONTRIBUTING.md](./documentation/development/CONTRIBUTING.md) pour lire les guides complets d'installation, de contribution et de tests.
+
+## 🔧 Modularisation
+Le projet suit un plan de modularisation pour améliorer la maintenabilité.
+
+**📊 Progression : 6.7% (1/15 fichiers)**
+
+**Documentation pour Agents IA** :
+- 🤖 [Guide Complet IA](./documentation/ai-guides/AI_MODULARIZATION_GUIDE.md) - Instructions complètes et réutilisables
+- 📝 [Aide-Mémoire IA](./documentation/ai-guides/AI_MODULARIZATION_CHEATSHEET.md) - Référence ultra-rapide
+- 📈 [Suivi Progression](./documentation/ai-guides/MODULARIZATION_PROGRESS.md) - Tableau de bord
+
+**Commandes** :
+```bash
+npm run analyze:heavy-files    # Analyser les fichiers volumineux
+npm run modularize:report <f>  # Générer un rapport
+```
 
 ## 🔐 Sécurité
-Consultez [SECURITY_GUIDE.md](./SECURITY_GUIDE.md) pour les bonnes pratiques de sécurité et éviter les erreurs courantes (validation d'URL, injection HTML).
+Consultez [SECURITY_GUIDE.md](./documentation/security/SECURITY_GUIDE.md) pour les bonnes pratiques de sécurité et éviter les erreurs courantes (validation d'URL, injection HTML).

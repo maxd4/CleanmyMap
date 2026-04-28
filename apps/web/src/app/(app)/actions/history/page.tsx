@@ -125,7 +125,7 @@ export default async function ActionsHistoryPage() {
  </div>
  </div>
  }
- primaryAction={{ href:"/actions/new", label:"Déclarer une action" }}
+ primaryAction={{ href:"/actions/new", label:"Déclarer" }}
  secondaryAction={{ href:"/reports", label:"Ouvrir reporting" }}
  analysis={<ActionsHistoryList />}
  trace={

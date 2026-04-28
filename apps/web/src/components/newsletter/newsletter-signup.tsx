@@ -31,7 +31,7 @@ export function NewsletterSignup() {
  }
  } catch (err) {
  setStatus("error");
- setMessage("Une erreur est survenue.");
+      setMessage("Impossible de vous inscrire pour le moment. Veuillez vérifier votre adresse email ou réessayer plus tard.");
  }
  };
 
@@ -72,25 +72,29 @@ export function NewsletterSignup() {
  <form onSubmit={handleSubmit} className="space-y-4">
  <div className="relative">
  <input
+ id="newsletter-email"
  type="email"
  required
  value={email}
  onChange={(e) => setEmail(e.target.value)}
  placeholder="Votre adresse email..."
+ aria-label="Votre adresse email pour la newsletter"
  className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-950 border rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:outline-none dark:text-white transition-all"
  />
  <button
  type="submit"
  disabled={status ==="loading" || !consent}
+ aria-label="S'inscrire à la newsletter"
  className="absolute right-2 top-2 h-12 w-12 flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 disabled:bg-slate-400 text-white rounded-xl transition-all shadow-lg active:scale-95"
  >
- {status === "loading" ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+ {status === "loading" ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} aria-hidden="true" />}
  </button>
  </div>
  
- <label className="flex items-start gap-3 cursor-pointer group/consent">
+ <label htmlFor="newsletter-consent" className="flex items-start gap-3 cursor-pointer group/consent">
  <div className="relative mt-1">
  <input
+ id="newsletter-consent"
  type="checkbox"
  required
  checked={consent}

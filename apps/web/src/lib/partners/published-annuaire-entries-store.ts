@@ -157,7 +157,6 @@ function averageParisCoordinates(arrondissements: number[]): {
 function normalizeContactUrl(
   contactChannel: string,
   contactDetails: string,
-  organizationName: string,
 ): string | null {
   const trimmedDetails = contactDetails.trim();
   if (/^https?:\/\//i.test(trimmedDetails)) {
@@ -221,7 +220,6 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
   const contactUrl = normalizeContactUrl(
     params.request.contactChannel,
     params.request.contactDetails,
-    params.request.organizationName,
   );
   const publicChannelUrl = contactUrl ? normalizePublicChannelUrl(contactUrl) : null;
   const websiteUrl = normalizePublicChannelUrl(params.request.contactDetails.trim());

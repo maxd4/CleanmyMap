@@ -67,24 +67,17 @@ export function SitePreferencesProvider({
  children,
  initialDisplayMode,
  initialDisplayModeExplicit = false,
-}: SitePreferencesProviderProps) {
+ }: SitePreferencesProviderProps) {
  const [locale, setLocaleState] = useState<Locale>(() => {
  if (typeof window ==="undefined") {
  return DEFAULT_LOCALE;
  }
  return parseLocale(window.localStorage.getItem(STORAGE_KEYS.locale));
  });
- const [theme, setThemeState] = useState<ThemeMode>(() => {
- if (typeof window ==="undefined") {
- return DEFAULT_THEME;
- }
- const storedThemeRaw = window.localStorage.getItem(STORAGE_KEYS.theme);
- const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)")
- .matches
- ?"dark"
- :"light";
- return parseTheme(storedThemeRaw ?? preferredTheme);
- });
+ 
+ // Verrouillage sur le mode sombre (Unique Theme Dark Premium)
+ const [theme, setThemeState] = useState<ThemeMode>("dark");
+
  const [displayMode, setDisplayModeState] = useState<DisplayMode>(() => {
  if (typeof window ==="undefined") {
  return initialDisplayMode ?? DEFAULT_DISPLAY_MODE;
@@ -120,10 +113,11 @@ export function SitePreferencesProvider({
  if (typeof window ==="undefined") {
  return;
  }
- window.localStorage.setItem(STORAGE_KEYS.theme, theme);
- document.documentElement.classList.toggle("dark", theme ==="dark");
- document.documentElement.setAttribute("data-theme", theme);
- }, [theme]);
+ // On s'assure que le thème reste dark dans le localStorage et sur le DOM
+ window.localStorage.setItem(STORAGE_KEYS.theme, "dark");
+ document.documentElement.classList.add("dark");
+ document.documentElement.setAttribute("data-theme", "dark");
+ }, []);
 
  useEffect(() => {
  if (typeof window ==="undefined") {
@@ -148,7 +142,7 @@ export function SitePreferencesProvider({
  const response = await fetch("/api/account/display-mode", {
  method:"POST",
  headers: {
-"Content-Type":"application/json",
+ "Content-Type":"application/json",
  },
  body: JSON.stringify({ displayMode: value }),
  });
@@ -163,14 +157,19 @@ export function SitePreferencesProvider({
  }, []);
 
  const setLocale = useCallback((value: Locale) => setLocaleState(value), []);
- const setTheme = useCallback((value: ThemeMode) => setThemeState(value), []);
+ const setTheme = useCallback((_value: ThemeMode) => {
+   // Ignoré pendant la phase de stabilisation visuelle unique
+ }, []);
+ 
  const setDisplayMode = useCallback((value: DisplayMode) => {
  setDisplayModeState(value);
  setIsDisplayModeExplicitlySet(true);
  void persistDisplayMode(value);
  }, [persistDisplayMode]);
+
  const toggleTheme = useCallback(() => {
- setThemeState((previous) => (previous ==="dark" ?"light" :"dark"));
+   // Désactivé pour stabiliser le thème unique sombre doux
+   console.log("Theme toggle disabled during Dark Premium stabilization.");
  }, []);
 
  useEffect(() => {
@@ -241,7 +240,7 @@ export function useSitePreferences(): SitePreferencesContextValue {
  const context = useContext(SitePreferencesContext);
  if (!context) {
  throw new Error(
-"useSitePreferences must be used inside SitePreferencesProvider",
+ "useSitePreferences must be used inside SitePreferencesProvider",
  );
  }
  return context;

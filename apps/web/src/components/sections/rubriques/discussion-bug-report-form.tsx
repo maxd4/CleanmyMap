@@ -58,9 +58,9 @@ export function DiscussionBugReportForm() {
  setDescription("");
  } catch (error) {
  setSubmitState("error");
- setErrorMessage(
- error instanceof Error ? error.message :"Erreur inattendue.",
- );
+      setErrorMessage(
+        error instanceof Error ? error.message : (fr ? "Une erreur inattendue est survenue. Veuillez vérifier votre saisie." : "An unexpected error occurred. Please check your input."),
+      );
  }
  }
 

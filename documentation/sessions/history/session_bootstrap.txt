@@ -1,3 +1,0 @@
-Lis AGENTS.md + project_context.md + documentation/du/session/latest-session.md.
-Confirme contraintes et risques en 8 puces max.
-Propose un plan en 5 blocs max puis execute.

@@ -11,6 +11,8 @@ import {
 } from"@/lib/partners/onboarding-types";
 import type { AnnuaireEntry } from"./annuaire-map-canvas";
 
+export type { AnnuaireEntry };
+
 export type EnrichedAnnuaireEntry = AnnuaireEntry & { distanceKm: number | null };
 
 export const ENTITY_LABELS: Record<AnnuaireEntry["kind"], string> = {

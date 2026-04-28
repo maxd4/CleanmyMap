@@ -83,21 +83,21 @@ export function FeatureFlagAdmin() {
  <div className="grid grid-cols-4 gap-2">
  <CmmButton 
  onClick={() => updateTrafficSplit(10)}
- variant="outline"
+ variant="ghost"
  className="cmm-text-caption"
  >
  Week 1: 10%
  </CmmButton>
  <CmmButton 
  onClick={() => updateTrafficSplit(25)}
- variant="outline"
+ variant="ghost"
  className="cmm-text-caption"
  >
  Week 2: 25%
  </CmmButton>
  <CmmButton 
  onClick={() => updateTrafficSplit(75)}
- variant="outline"
+ variant="ghost"
  className="cmm-text-caption"
  >
  Week 3: 75%
@@ -120,7 +120,7 @@ export function FeatureFlagAdmin() {
  <span className="font-medium">{key}</span>
  <CmmButton
  onClick={() => toggleFlag(key as keyof typeof flags)}
- variant={value ? 'default' : 'outline'}
+ variant={value ? 'default' : 'ghost'}
  className="px-4 py-2"
  >
  {value ? 'Enabled' : 'Disabled'}
@@ -133,7 +133,7 @@ export function FeatureFlagAdmin() {
  <CmmCard className="p-6">
  <div className="flex justify-between items-center mb-4">
  <h2 className="text-xl font-bold">Form Analytics</h2>
- <CmmButton onClick={clearAnalytics} variant="outline">
+ <CmmButton onClick={clearAnalytics} variant="ghost">
  Clear Data
  </CmmButton>
  </div>
@@ -166,7 +166,7 @@ export function FeatureFlagAdmin() {
  </CmmButton>
  <CmmButton 
  onClick={() => window.open('/form-comparison', '_blank')}
- variant="outline"
+ variant="ghost"
  className="w-full"
  >
  View Comparison

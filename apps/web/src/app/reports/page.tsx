@@ -9,6 +9,9 @@ import { ReportsWebDocument } from"@/components/reports/reports-web-document";
 import { DecisionPageHeader } from"@/components/ui/decision-page-header";
 import { PageReadingTemplate } from"@/components/ui/page-reading-template";
 import { RubriquePdfExportButton } from"@/components/ui/rubrique-pdf-export-button";
+import { AnimatedImpactMetrics } from "@/components/reports/AnimatedImpactMetrics";
+import { RadialProgressGauge } from "@/components/reports/RadialProgressGauge";
+import { EcologicalTimeline } from "@/components/reports/EcologicalTimeline";
 import { 
  BarChart3, 
  Layers, 
@@ -98,7 +101,7 @@ export default async function ReportsPage() {
  ) : null;
  const headerActions = userId
  ? [
- { href:"/profil", label:"Retour cockpit" },
+ { href:"/profil", label:"Cockpit" },
  { href:"/learn/hub", label:"Apprendre" },
  ]
  : [
@@ -217,19 +220,36 @@ export default async function ReportsPage() {
  title="Rapports d'impact multi-horizon et exports"
  objective="Concentrer les comparatifs 30j/90j/12m, la méthode KPI et les livrables exportables, sans recopier le cockpit."
  summary={
- <div className="space-y-6">
- <ThirtySecondsSummary
- kpis={summaryKpis}
- alert={overview ? overview.summary.alert : undefined}
- recommendedAction={{
- href:
- overview?.summary.recommendedAction.href ?? primaryAction.href,
- label:
- overview?.summary.recommendedAction.label ??
- primaryAction.label[locale],
- }}
- recommendedReason={overview?.summary.recommendedAction.reason}
- />
+ <div className="space-y-10">
+ <AnimatedImpactMetrics kpis={summaryKpis} />
+
+ <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+   <RadialProgressGauge 
+     value={78} 
+     label="Réduction Déchets" 
+     subLabel="Objectif Q2 2026"
+     color="emerald"
+   />
+   <RadialProgressGauge 
+     value={45} 
+     label="Mobilisation" 
+     subLabel="Nouveaux bénévoles"
+     color="blue"
+   />
+   <RadialProgressGauge 
+     value={92} 
+     label="Qualité Data" 
+     subLabel="Précision GPS"
+     color="violet"
+   />
+   <RadialProgressGauge 
+     value={65} 
+     label="Impact CO2" 
+     subLabel="Émissions évitées"
+     color="amber"
+   />
+ </div>
+
  <NavigationGrid items={navigationItems} columns={{ default: 1, sm: 2, md: 4, xl: 4 }} />
  </div>
  }
@@ -246,7 +266,7 @@ export default async function ReportsPage() {
  : undefined
  }
  analysis={
- <div className="space-y-8">
+ <div className="space-y-16">
  <div id="comparisons">
  {overview ? (
  <ReportsWindowComparisonsSection
@@ -260,6 +280,23 @@ export default async function ReportsPage() {
  </p>
  </section>
  )}
+ </div>
+
+ <div className="space-y-10">
+   <div className="text-center">
+     <h3 className="text-3xl font-black cmm-text-primary mb-2">Historique d&apos;Impact</h3>
+     <p className="cmm-text-secondary font-medium italic">Les dernières actions marquantes sur le terrain</p>
+   </div>
+   <EcologicalTimeline 
+     actions={contracts.map(c => ({
+       id: c.id,
+       date: c.dates.observedAt,
+       label: c.location.label,
+       wasteKg: c.metadata.wasteKg || 0,
+       volunteers: getActionOperationalContext(c).volunteersCount,
+       type: c.type
+     }))} 
+   />
  </div>
  </div>
  }

@@ -92,8 +92,10 @@ export function NotificationBell() {
  <button
  onClick={() => setIsOpen(!isOpen)}
  className="relative p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors group"
+ aria-label={`Notifications (${unreadCount} non lues)`}
+ aria-expanded={isOpen}
  >
- <Bell className={`w-5 h-5 ${unreadCount > 0 ? 'text-emerald-500 animate-swing' : 'cmm-text-muted dark:cmm-text-muted'}`} />
+ <Bell className={`w-5 h-5 ${unreadCount > 0 ? 'text-emerald-500 animate-swing' : 'cmm-text-muted dark:cmm-text-muted'}`} aria-hidden="true" />
  {unreadCount > 0 && (
  <span className="absolute top-1.5 right-1.5 flex h-4 w-4">
  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -115,12 +117,13 @@ export function NotificationBell() {
 
  <div className="overflow-y-auto max-h-96 custom-scrollbar">
  {notifications.length === 0 ? (
- <div className="p-12 text-center space-y-2">
- <div className="inline-flex items-center justify-center w-12 h-12 cmm-surface-muted rounded-full text-slate-300">
- <Check size={24} />
- </div>
- <p className="cmm-text-caption font-bold cmm-text-muted uppercase tracking-tighter">Tout est à jour !</p>
- </div>
+  <div className="p-12 text-center space-y-2">
+  <div className="inline-flex items-center justify-center w-12 h-12 cmm-surface-muted rounded-full text-slate-300">
+  <Check size={24} />
+  </div>
+  <p className="cmm-text-caption font-bold cmm-text-muted uppercase tracking-tighter">Tout est à jour !</p>
+  <p className="cmm-text-caption cmm-text-muted">Vous n'avez pas de nouvelles notifications pour le moment.</p>
+  </div>
  ) : (
  notifications.map((n) => (
  <div

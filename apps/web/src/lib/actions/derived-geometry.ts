@@ -24,12 +24,7 @@ export type PersistedDerivedGeometry = {
 
 export const GEOMETRY_CONFIDENCE = RESOLUTION_GEOMETRY_CONFIDENCE;
 
-function clampConfidence(value: number | null | undefined): number | null {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return null;
-  }
-  return Math.max(0, Math.min(1, Number(value.toFixed(3))));
-}
+
 
 export function resolveGeometryOriginFromConfidence(
   confidence: number | null | undefined,
@@ -128,7 +123,7 @@ function buildSyntheticRoute(
 }
 
 function normalizeLabel(value: string | null | undefined): string {
-  return typeof value === "string" ? value.trim() : "";
+  return typeof value === "string" ? value.trim().replace(/[^\w\sàâäéèêëîïôöùûüç\-]/gi, "") : "";
 }
 
 function hasPreciseLocationLabel(value: string | null | undefined): boolean {
@@ -165,63 +160,7 @@ function hasPreciseLocationLabel(value: string | null | undefined): boolean {
   ].some((token) => lowered.includes(token));
 }
 
-function buildFallbackGeometry(params: {
-  latitude?: number | null;
-  longitude?: number | null;
-  locationLabel?: string | null;
-  departureLocationLabel?: string | null;
-  arrivalLocationLabel?: string | null;
-  routeStyle?: "direct" | "souple" | null;
-}): { drawing: ActionDrawing | null; confidence: number; origin: ActionGeometryOrigin } {
-  const locationLabel = normalizeLabel(params.locationLabel);
-  const departureLocationLabel = normalizeLabel(params.departureLocationLabel);
-  const arrivalLocationLabel = normalizeLabel(params.arrivalLocationLabel);
-  const anchorLabel =
-    locationLabel || departureLocationLabel || arrivalLocationLabel;
 
-  if (anchorLabel) {
-    const referenceDrawing = findMatchingGeometry(anchorLabel);
-    if (referenceDrawing && isRenderableDrawing(referenceDrawing)) {
-      return {
-        drawing: referenceDrawing,
-        confidence: GEOMETRY_CONFIDENCE.REFERENCE_GEOMETRY,
-        origin: "reference",
-      };
-    }
-  }
-
-  if (hasCoordinates(params.latitude ?? null, params.longitude ?? null)) {
-    const center = {
-      latitude: Number(params.latitude),
-      longitude: Number(params.longitude),
-    };
-    if (departureLocationLabel && arrivalLocationLabel) {
-      return {
-        drawing: buildSyntheticRoute(center, params.routeStyle),
-        confidence: GEOMETRY_CONFIDENCE.SYNTHETIC_ROUTE,
-        origin: "routed",
-      };
-    }
-    if (hasPreciseLocationLabel(anchorLabel)) {
-      return {
-        drawing: buildEllipsePolygon(center, 85, 55),
-        confidence: GEOMETRY_CONFIDENCE.LABEL_POLYGON,
-        origin: "estimated_area",
-      };
-    }
-    return {
-      drawing: buildEllipsePolygon(center, 110, 72),
-      confidence: GEOMETRY_CONFIDENCE.COORDINATE_ELLIPSE,
-      origin: "estimated_area",
-    };
-  }
-
-  return {
-    drawing: null,
-    confidence: GEOMETRY_CONFIDENCE.POINT_FALLBACK,
-    origin: "fallback_point",
-  };
-}
 
 export function toGeoJsonString(drawing: ActionDrawing | null): string | null {
   if (!drawing) {
@@ -250,9 +189,9 @@ export function parseDrawingFromGeoJson(
   try {
     const parsed = JSON.parse(geojson) as
       | {
-          type?: string;
-          coordinates?: unknown;
-        }
+        type?: string;
+        coordinates?: unknown;
+      }
       | null;
 
     if (!parsed || typeof parsed !== "object") {
@@ -301,8 +240,8 @@ export function parseDrawingFromGeoJson(
 
       const normalizedCoordinates =
         coordinates.length >= 2 &&
-        coordinates[0][0] === coordinates[coordinates.length - 1][0] &&
-        coordinates[0][1] === coordinates[coordinates.length - 1][1]
+          coordinates[0][0] === coordinates[coordinates.length - 1][0] &&
+          coordinates[0][1] === coordinates[coordinates.length - 1][1]
           ? coordinates.slice(0, -1)
           : coordinates;
 
@@ -383,8 +322,8 @@ export function buildPersistedGeometryFromStoredFields(params: {
     geojson:
       storedDrawing
         ? params.derivedGeometryGeoJson ??
-          params.manualDrawingGeoJson ??
-          toGeoJsonString(storedDrawing)
+        params.manualDrawingGeoJson ??
+        toGeoJsonString(storedDrawing)
         : null,
     confidence: params.geometryConfidence ?? null,
     geometrySourceHint: params.geometrySource ?? null,

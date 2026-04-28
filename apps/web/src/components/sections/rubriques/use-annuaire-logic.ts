@@ -3,8 +3,7 @@ import useSWR from "swr";
 import { useUser } from "@clerk/nextjs";
 import { extractUserLocationPreferenceFromMetadata } from "@/lib/user-location-preference";
 import { 
-  distanceToParisArrondissementKm, 
-  type ParisArrondissement 
+  distanceToParisArrondissementKm
 } from "@/lib/geo/paris-arrondissements";
 import { INITIAL_ANNUAIRE_ENTRIES } from "./annuaire-directory-seed";
 import { 
@@ -70,7 +69,7 @@ export function useAnnuaireLogic() {
     allEntries.filter(e => e.isFeatured).map(e => ({
       ...e,
       distanceKm: targetArrondissement 
-        ? distanceToParisArrondissementKm(e.arrondissement, targetArrondissement)
+        ? distanceToParisArrondissementKm(e.lat, e.lng, targetArrondissement)
         : null
     }))
   , [allEntries, targetArrondissement]);
@@ -78,7 +77,7 @@ export function useAnnuaireLogic() {
   const sortedAndFilteredEntries = useMemo(() => {
     let result = allEntries.map((entry): EnrichedAnnuaireEntry => {
       const distance = targetArrondissement 
-        ? distanceToParisArrondissementKm(entry.arrondissement, targetArrondissement)
+        ? distanceToParisArrondissementKm(entry.lat, entry.lng, targetArrondissement)
         : null;
       return { ...entry, distanceKm: distance };
     });
@@ -104,7 +103,7 @@ export function useAnnuaireLogic() {
     if (zoneFilter === "nearby") {
       result = result.filter(e => isNearbyEntry(e, targetArrondissement, e.distanceKm));
     } else if (typeof zoneFilter === "number") {
-      result = result.filter(e => e.arrondissement === zoneFilter);
+      result = result.filter(e => e.coveredArrondissements.includes(zoneFilter));
     }
 
     return result.sort((a, b) => {
@@ -145,9 +144,10 @@ export function useAnnuaireLogic() {
     allEntries,
     featuredEntries,
     sortedAndFilteredEntries,
-    paginatedActorCards,
-    actorCardsTotalPages,
+    paginatedEntries: paginatedActorCards,
+    totalPages: actorCardsTotalPages,
     safeActorCardsPage,
+    locale: "fr",
     isLoading: publishedEntriesQuery.isLoading
   };
 }

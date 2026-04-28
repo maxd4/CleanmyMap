@@ -91,7 +91,7 @@ export function AnnuaireThematicExploration({
             >
               <CmmCard 
                 tone={tone} 
-                variant={isActive ? "elevated" : "subtle"}
+                variant={isActive ? "elevated" : "muted"}
                 className={cn(
                   "p-8 h-full rounded-[2rem] transition-all duration-500 border-none",
                   isActive 

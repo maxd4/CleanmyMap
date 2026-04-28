@@ -51,53 +51,54 @@ export default async function SectionPage({ params }: SectionPageProps) {
  ?"This feature requires Clerk sign-in."
  :"Clerk sign-in is temporarily unavailable. This view stays readable."
  }
- lockedPreview={
- <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
- <div className="rounded-2xl border border-slate-200 bg-white p-4">
- <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
- {locale ==="fr" ?"Pourquoi je suis ici" :"Why am I here"}
- </p>
- <h1 className="mt-2 text-2xl font-semibold cmm-text-primary">
- {locale ==="fr" ? section.label.fr : section.label.en}
- </h1>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
- {locale ==="fr" ? section.description.fr : section.description.en}
- </p>
- </div>
- <div className="grid gap-3 md:grid-cols-3">
- <div className="rounded-2xl border border-slate-200 bg-white p-4">
- <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
- {locale ==="fr" ?"Résumer" :"Summarize"}
- </p>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
- {locale ==="fr"
- ?"Aperçu public conservé pour la découverte."
- :"Public preview kept for discovery."}
- </p>
- </div>
- <div className="rounded-2xl border border-slate-200 bg-white p-4">
- <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
- {locale ==="fr" ?"Agir" :"Act"}
- </p>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
- {locale ==="fr"
- ?"Les fonctions interactives se déverrouillent après connexion."
- :"Interactive features unlock after sign-in."}
- </p>
- </div>
- <div className="rounded-2xl border border-slate-200 bg-white p-4">
- <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
- {locale ==="fr" ?"Analyser" :"Analyze"}
- </p>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
- {locale ==="fr"
- ?"Le contenu complet se déverrouille après connexion."
- :"Full content unlocks after sign-in."}
- </p>
- </div>
- </div>
- </section>
- }
+        lockedPreview={
+          <section className="space-y-4 rounded-3xl border border-slate-800/40 bg-slate-950/20 p-4 backdrop-blur-md">
+            <div className="rounded-2xl border border-slate-800/40 bg-slate-900/40 p-4">
+              <p className="cmm-text-caption font-bold uppercase tracking-[0.14em] cmm-text-muted">
+                {locale === "fr" ? "Pourquoi je suis ici" : "Why am I here"}
+              </p>
+              <h1 className="mt-2 text-2xl font-black cmm-text-primary tracking-tight">
+                {locale === "fr" ? section.label.fr : section.label.en}
+              </h1>
+              <p className="mt-2 cmm-text-small cmm-text-secondary font-medium">
+                {locale === "fr" ? section.description.fr : section.description.en}
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              <div className="rounded-2xl border border-slate-800/40 bg-slate-900/40 p-4">
+                <p className="cmm-text-caption font-bold uppercase tracking-[0.14em] cmm-text-muted">
+                  {locale === "fr" ? "Résumer" : "Summarize"}
+                </p>
+                <p className="mt-2 cmm-text-small cmm-text-secondary font-medium">
+                  {locale === "fr"
+                    ? "Aperçu public conservé pour la découverte."
+                    : "Public preview kept for discovery."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-800/40 bg-slate-900/40 p-4">
+                <p className="cmm-text-caption font-bold uppercase tracking-[0.14em] cmm-text-muted">
+                  {locale === "fr" ? "Agir" : "Act"}
+                </p>
+                <p className="mt-2 cmm-text-small cmm-text-secondary font-medium">
+                  {locale === "fr"
+                    ? "Les fonctions interactives se déverrouillent après connexion."
+                    : "Interactive features unlock after sign-in."}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-800/40 bg-slate-900/40 p-4">
+                <p className="cmm-text-caption font-bold uppercase tracking-[0.14em] cmm-text-muted">
+                  {locale === "fr" ? "Analyser" : "Analyze"}
+                </p>
+                <p className="mt-2 cmm-text-small cmm-text-secondary font-medium">
+                  {locale === "fr"
+                    ? "Le contenu complet se déverrouille après connexion."
+                    : "Full content unlocks after sign-in."}
+                </p>
+              </div>
+            </div>
+          </section>
+        }
+
  >
  <SectionRenderer sectionId={sectionIdTyped} />
  </ClerkRequiredGate>

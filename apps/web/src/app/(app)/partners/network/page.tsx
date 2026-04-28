@@ -1,4 +1,4 @@
-import { ArrowRight, Handshake, ShieldCheck, Users, Search, UserPlus, LayoutDashboard } from"lucide-react";
+import { Handshake, Users } from"lucide-react";
 import Link from"next/link";
 import { NavigationGrid, type NavigationGridItem } from"@/components/ui/navigation-grid";
 

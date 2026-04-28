@@ -120,7 +120,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
   benevole: {
     primaryCTA: {
       href: "/actions/new",
-      label: { fr: "Déclarer une action", en: "Declare action" },
+      label: { fr: "Déclarer", en: "Declare" },
       description: {
         fr: "Saisie terrain rapide en moins d'une minute",
         en: "Fast field capture in under one minute",
@@ -128,7 +128,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     secondaryCTA: {
       href: "/actions/map",
-      label: { fr: "Vérifier la carte", en: "Check map" },
+      label: { fr: "Voir la carte", en: "View map" },
       description: {
         fr: "Confirmer la priorité terrain autour de vous",
         en: "Confirm nearby field priorities",
@@ -157,8 +157,8 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     primaryCTA: {
       href: "/sections/community",
       label: {
-        fr: "Lancer / mettre à jour une opération communautaire",
-        en: "Launch or update a community operation",
+        fr: "Gérer l'opération",
+        en: "Manage operation",
       },
       description: {
         fr: "Piloter agenda, RSVPs et conversion en actions",
@@ -167,7 +167,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     secondaryCTA: {
       href: "/dashboard",
-      label: { fr: "Suivre le cockpit", en: "Open cockpit" },
+      label: { fr: "Cockpit", en: "Cockpit" },
       description: {
         fr: "Voir les alertes et priorités du jour",
         en: "See daily alerts and priorities",
@@ -176,7 +176,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     additionalActions: [
       {
         href: "/reports",
-        label: { fr: "Consulter les rapports", en: "Open reports" },
+        label: { fr: "Rapports", en: "Reports" },
         description: {
           fr: "Synthèse exportable multi-horizon",
           en: "Exportable multi-horizon synthesis",
@@ -187,7 +187,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
   scientifique: {
     primaryCTA: {
       href: "/reports",
-      label: { fr: "Analyser les indicateurs", en: "Analyze indicators" },
+      label: { fr: "Analyser", en: "Analyze" },
       description: {
         fr: "Consolider les tendances et KPI utiles à la décision",
         en: "Consolidate trends and decision-grade KPIs",
@@ -195,7 +195,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     secondaryCTA: {
       href: "/sections/climate",
-      label: { fr: "Lire le contexte durable", en: "Open sustainability context" },
+      label: { fr: "Contexte", en: "Context" },
       description: {
         fr: "Croiser impact local, ODD et limites planétaires",
         en: "Cross local impact with SDGs and boundaries",
@@ -219,8 +219,8 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     primaryCTA: {
       href: "/sponsor-portal",
       label: {
-        fr: "Portail Décideur & ROI",
-        en: "Decision Maker & ROI Portal",
+        fr: "Portail",
+        en: "Portal",
       },
       description: {
         fr: "Pilotage budgétaire et impact territorial",
@@ -230,8 +230,8 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     secondaryCTA: {
       href: "/reports",
       label: {
-        fr: "Consulter les rapports",
-        en: "Open reports",
+        fr: "Rapports",
+        en: "Reports",
       },
       description: {
         fr: "Lecture synthétique des indicateurs",
@@ -261,8 +261,8 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     primaryCTA: {
       href: "/admin",
       label: {
-        fr: "Traiter le backlog critique",
-        en: "Process critical backlog",
+        fr: "Backlog",
+        en: "Backlog",
       },
       description: {
         fr: "Prioriser modération/imports sensibles",
@@ -271,7 +271,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     secondaryCTA: {
       href: "/reports",
-      label: { fr: "Exporter les données", en: "Export data" },
+      label: { fr: "Exporter", en: "Export" },
       description: {
         fr: "CSV/JSON et suivi des opérations",
         en: "CSV/JSON and operations tracking",

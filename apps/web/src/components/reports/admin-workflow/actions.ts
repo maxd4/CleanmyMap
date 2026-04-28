@@ -63,7 +63,7 @@ function toErrorMessage(error: unknown): string {
  if (error instanceof Error) {
  return error.message;
  }
- return"Erreur inconnue.";
+  return "Une erreur inattendue est survenue lors de l'opération d'administration.";
 }
 
 function buildModerationPayload(
@@ -93,7 +93,7 @@ export function parseModerationErrorMessage(error: unknown): string {
  return `Acces admin requis (${error.message}).`;
  }
  if (error.code ==="network_error") {
- return"Erreur reseau pendant la moderation. Reessaie dans quelques secondes.";
+      return "Erreur réseau lors de la modération. Veuillez patienter quelques instants avant de réessayer.";
  }
  return error.message;
  }
@@ -209,12 +209,12 @@ export function createAdminWorkflowActions(
  const trimmedId = state.moderationId.trim();
  if (!trimmedId) {
  state.setModerationState("error");
- state.setErrorMessage("Renseigne un identifiant d'entite (UUID/ID).");
+      state.setErrorMessage("Veuillez renseigner un identifiant d'entité (UUID ou ID) pour continuer.");
  return;
  }
  if (!state.moderationConfirmed) {
  state.setModerationState("error");
- state.setErrorMessage("Confirme explicitement la moderation avant execution.");
+      state.setErrorMessage("Veuillez confirmer explicitement la modération avant de lancer l'opération.");
  return;
  }
  if (
@@ -222,7 +222,7 @@ export function createAdminWorkflowActions(
 "CONFIRMER MODERATION"
  ) {
  state.setModerationState("error");
- state.setErrorMessage("Saisis la phrase CONFIRMER MODERATION avant execution.");
+      state.setErrorMessage("Veuillez saisir exactement la phrase de confirmation pour valider l'action.");
  return;
  }
 

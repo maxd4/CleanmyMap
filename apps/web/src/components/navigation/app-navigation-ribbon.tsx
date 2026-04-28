@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from"react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
- BarChart3,
- BookOpen,
- Compass,
- House,
- MapPinned,
- MessageSquare,
- Route,
- Settings2,
- Target,
- Users,
-} from"lucide-react";
+  BarChart3,
+  BookOpen,
+  Compass,
+  House,
+  MapPinned,
+  MessageSquare,
+  Route,
+  Settings2,
+  Target,
+  Users,
+} from "lucide-react";
 import { Show, SignInButton, SignUpButton, UserButton } from"@clerk/nextjs";
 import Link from"next/link";
 import { usePathname } from"next/navigation";
@@ -29,6 +30,7 @@ import { useSitePreferences } from"@/components/ui/site-preferences-provider";
 import type { AppProfile } from"@/lib/profiles";
 import { AccountIdentityChip } from"@/components/account/account-identity-chip";
 import { getRibbonNavigationGroups } from"./app-navigation-ribbon.utils";
+import { cn } from"@/lib/utils";
 
 const SPACE_ICON_MAP = {
  home: House,
@@ -62,7 +64,7 @@ function getItemTooltip(
  item: { label: Record<string, string>; description: Record<string, string> },
  locale: string,
 ) {
- return `${item.label[locale]} — utilité & impact : ${item.description[locale]}`;
+ return `${item.label[locale]} — utilité & impact : ${item.description[locale]}`;
 }
 
 function getSpaceTooltip(
@@ -84,55 +86,48 @@ function getSpaceIcon(spaceId: keyof typeof SPACE_ICON_MAP) {
 function getSpaceToneClasses(spaceId: keyof typeof SPACE_ICON_MAP): {
  active: string;
  inactive: string;
+ glow: string;
 } {
  const toneBySpace = {
  home: {
- active:
-"border-slate-300 bg-white cmm-text-primary shadow-[0_8px_20px_-12px_rgba(15,23,42,0.45)] dark:border-slate-600 dark:bg-slate-900",
- inactive:
-"border-slate-200/80 bg-slate-50 cmm-text-secondary hover:border-slate-300 hover:bg-white hover:cmm-text-primary dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-slate-500 dark:hover:bg-slate-900 dark:hover:text-slate-50",
+ active: "border-slate-400/30 bg-slate-900/60 text-slate-50 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.8)]",
+ inactive: "border-slate-800/40 bg-slate-900/20 text-slate-500 hover:border-slate-600/50 hover:bg-slate-900/40 hover:text-slate-200",
+ glow: "bg-slate-500/20",
  },
  act: {
- active:
-"border-amber-300 bg-amber-50 text-amber-900 shadow-[0_8px_20px_-12px_rgba(245,158,11,0.55)] dark:border-amber-700 dark:bg-amber-950/55 dark:text-amber-100",
- inactive:
-"border-amber-200/70 bg-amber-50/70 text-amber-800 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-900 dark:border-amber-800 dark:bg-amber-950/35 dark:text-amber-200 dark:hover:border-amber-700 dark:hover:bg-amber-950/55 dark:hover:text-amber-100",
+ active: "border-amber-500/30 bg-amber-950/40 text-amber-50 shadow-[0_10px_30px_-10px_rgba(245,158,11,0.3)]",
+ inactive: "border-amber-900/30 bg-amber-950/10 text-amber-500/50 hover:border-amber-700/50 hover:bg-amber-950/30 hover:text-amber-200",
+ glow: "bg-amber-500/30",
  },
  visualize: {
- active:
-"border-sky-300 bg-sky-50 text-sky-900 shadow-[0_8px_20px_-12px_rgba(14,165,233,0.55)] dark:border-sky-700 dark:bg-sky-950/55 dark:text-sky-100",
- inactive:
-"border-sky-200/70 bg-sky-50/70 text-sky-800 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900 dark:border-sky-800 dark:bg-sky-950/35 dark:text-sky-200 dark:hover:border-sky-700 dark:hover:bg-sky-950/55 dark:hover:text-sky-100",
+ active: "border-sky-500/30 bg-sky-950/40 text-sky-50 shadow-[0_10px_30px_-10px_rgba(14,165,233,0.3)]",
+ inactive: "border-sky-900/30 bg-sky-950/10 text-sky-500/50 hover:border-sky-700/50 hover:bg-sky-950/30 hover:text-sky-200",
+ glow: "bg-sky-500/30",
  },
  impact: {
- active:
-"border-emerald-300 bg-emerald-50 text-emerald-900 shadow-[0_8px_20px_-12px_rgba(16,185,129,0.55)] dark:border-emerald-700 dark:bg-emerald-950/55 dark:text-emerald-100",
- inactive:
-"border-emerald-200/70 bg-emerald-50/70 text-emerald-800 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/35 dark:text-emerald-200 dark:hover:border-emerald-700 dark:hover:bg-emerald-950/55 dark:hover:text-emerald-100",
+ active: "border-emerald-500/30 bg-emerald-950/40 text-emerald-50 shadow-[0_10px_30px_-10px_rgba(16,185,129,0.3)]",
+ inactive: "border-emerald-900/30 bg-emerald-950/10 text-emerald-500/50 hover:border-emerald-700/50 hover:bg-emerald-950/30 hover:text-emerald-200",
+ glow: "bg-emerald-500/30",
  },
  network: {
- active:
-"border-violet-300 bg-violet-50 text-violet-900 shadow-[0_8px_20px_-12px_rgba(139,92,246,0.55)] dark:border-violet-700 dark:bg-violet-950/55 dark:text-violet-100",
- inactive:
-"border-violet-200/70 bg-violet-50/70 text-violet-800 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-900 dark:border-violet-800 dark:bg-violet-950/35 dark:text-violet-200 dark:hover:border-violet-700 dark:hover:bg-violet-950/55 dark:hover:text-violet-100",
+ active: "border-cyan-500/30 bg-cyan-950/40 text-cyan-50 shadow-[0_10px_30px_-10px_rgba(6,182,212,0.3)]",
+ inactive: "border-cyan-900/30 bg-cyan-950/10 text-cyan-500/50 hover:border-cyan-700/50 hover:bg-cyan-950/30 hover:text-cyan-200",
+ glow: "bg-cyan-500/30",
  },
  connect: {
- active:
- "border-pink-300 bg-pink-50 text-pink-900 shadow-[0_8px_20px_-12px_rgba(236,72,153,0.55)] dark:border-pink-700 dark:bg-pink-950/55 dark:text-pink-100",
- inactive:
- "border-pink-200/70 bg-pink-50/70 text-pink-800 hover:border-pink-300 hover:bg-pink-50 hover:text-pink-900 dark:border-pink-800 dark:bg-pink-950/35 dark:text-pink-200 dark:hover:border-pink-700 dark:hover:bg-pink-950/55 dark:hover:text-pink-100",
+ active: "border-pink-500/30 bg-pink-950/40 text-pink-50 shadow-[0_10px_30px_-10px_rgba(236,72,153,0.3)]",
+ inactive: "border-pink-900/30 bg-pink-950/10 text-pink-500/50 hover:border-pink-700/50 hover:bg-pink-950/30 hover:text-pink-200",
+ glow: "bg-pink-500/30",
  },
  learn: {
- active:
-"border-rose-300 bg-rose-50 text-rose-900 shadow-[0_8px_20px_-12px_rgba(244,63,94,0.55)] dark:border-rose-700 dark:bg-rose-950/55 dark:text-rose-100",
- inactive:
-"border-rose-200/70 bg-rose-50/70 text-rose-800 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-900 dark:border-rose-800 dark:bg-rose-950/35 dark:text-rose-200 dark:hover:border-rose-700 dark:hover:bg-rose-950/55 dark:hover:text-rose-100",
+ active: "border-rose-500/30 bg-rose-950/40 text-rose-50 shadow-[0_10px_30px_-10px_rgba(244,63,94,0.3)]",
+ inactive: "border-rose-900/30 bg-rose-950/10 text-rose-500/50 hover:border-rose-700/50 hover:bg-rose-950/30 hover:text-rose-200",
+ glow: "bg-rose-500/30",
  },
  pilot: {
- active:
-"border-indigo-300 bg-indigo-50 text-indigo-900 shadow-[0_8px_20px_-12px_rgba(99,102,241,0.55)] dark:border-indigo-700 dark:bg-indigo-950/55 dark:text-indigo-100",
- inactive:
-"border-indigo-200/70 bg-indigo-50/70 text-indigo-800 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-900 dark:border-indigo-800 dark:bg-indigo-950/35 dark:text-indigo-200 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/55 dark:hover:text-indigo-100",
+ active: "border-indigo-500/30 bg-indigo-950/40 text-indigo-50 shadow-[0_10px_30px_-10px_rgba(99,102,241,0.3)]",
+ inactive: "border-indigo-900/30 bg-indigo-950/10 text-indigo-500/50 hover:border-indigo-700/50 hover:bg-indigo-950/30 hover:text-indigo-200",
+ glow: "bg-indigo-500/30",
  },
  } as const;
  return toneBySpace[spaceId];
@@ -149,7 +144,6 @@ export function AppNavigationRibbon({
  const [isScrolled, setIsScrolled] = useState(false);
  const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
 
- // Synchronize menu state with pathname changes during render to avoid cascading renders
  const [lastPathname, setLastPathname] = useState(pathname);
  if (pathname !== lastPathname) {
  setLastPathname(pathname);
@@ -234,181 +228,203 @@ export function AppNavigationRibbon({
  }, []);
 
  return (
- <div aria-label="Navigation principale" className="relative z-30 w-full">
- <nav
- aria-label="Navigation principale"
- className={[
-"border-b border-slate-200/80 bg-gradient-to-r from-white via-slate-50 to-white transition-shadow duration-300 dark:border-slate-800/80 dark:bg-gradient-to-r dark:from-slate-950 dark:via-slate-900 dark:to-slate-950",
- isScrolled
- ?"shadow-[0_26px_60px_-38px_rgba(15,23,42,0.42)]"
- :"shadow-[0_14px_34px_-30px_rgba(15,23,42,0.32)]",
- ].join("")}
- >
- <div className="mx-auto w-full px-4 sm:px-6 xl:px-10">
- <div className="flex flex-col gap-3 py-2.5 sm:py-3">
- <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
- <div className="hidden min-w-[11rem] items-center gap-2 xl:flex">
- <Link
- href="/"
- className="inline-flex items-center rounded-full border border-slate-200/90 bg-white px-3.5 py-2 cmm-text-caption font-bold uppercase tracking-[0.18em] cmm-text-secondary shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50/70 hover:text-emerald-800 hover:shadow-md dark:border-slate-800 dark:bg-slate-900/90 dark:hover:border-emerald-700 dark:hover:bg-slate-800 dark:hover:text-emerald-200"
- onClick={() => onTrackNavigation("/","CleanMyMap", null)}
- >
- CleanMyMap
- </Link>
- </div>
+    <div className="relative z-30 w-full px-4 pt-4 sm:px-6 xl:px-10">
+      <nav
+        aria-label={locale === "fr" ? "Barre de navigation principale" : "Main navigation bar"}
+        className={cn(
+          "overflow-hidden rounded-[2.5rem] border border-slate-800/40 bg-slate-950/60 backdrop-blur-xl transition-all duration-500",
+          isScrolled
+            ? "shadow-[0_48px_96px_-24px_rgba(0,0,0,0.9)]"
+            : "shadow-[0_20px_40px_-20px_rgba(0,0,0,0.6)]"
+        )}
+      >
+        <div className="mx-auto w-full px-4 py-2 sm:px-6">
+          <div className="flex flex-col gap-4">
+            {/* RANGÉE SUPÉRIEURE : LOGO + ESPACES + ACTIONS */}
+            <div className="flex items-center justify-between gap-4">
+              {/* LOGO (Glace) */}
+              <div className="flex shrink-0 items-center">
+                <Link
+                  href="/"
+                  className="group relative flex items-center justify-center rounded-full border border-slate-700/30 bg-slate-900/40 px-5 py-2.5 cmm-text-caption font-black uppercase tracking-[0.25em] text-slate-100 transition-all hover:border-emerald-500/50 hover:bg-slate-800/60 active:scale-95 shadow-lg"
+                  onClick={() => onTrackNavigation("/", "CleanMyMap", null)}
+                >
+                  <span className="relative z-10">CleanMyMap</span>
+                  <div className="absolute inset-0 -z-0 rounded-full bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 opacity-0 transition-opacity group-hover:opacity-100" />
+                </Link>
+              </div>
 
- <div className="min-w-0 flex-1">
- <div className="flex items-center gap-1 overflow-x-auto rounded-[1.1rem] border border-slate-200/90 bg-slate-50 p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] scrollbar-none dark:border-slate-800/80 dark:bg-slate-900/80">
- {spaces.map((space) => {
- const firstHref = space.items[0]?.href ??"/dashboard";
- const isSpaceActive = space.id === activeSpaceId;
- const SpaceIcon = getSpaceIcon(space.id);
- const tone = getSpaceToneClasses(space.id);
- return (
- <Link
- key={space.id}
- href={firstHref}
- title={getSpaceTooltip(space, locale)}
- aria-label={getSpaceTooltip(space, locale)}
- aria-current={isSpaceActive ?"page" : undefined}
- onClick={() =>
- onTrackNavigation(firstHref, space.label[locale], space.id)
- }
- className={[
-"inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-3.5 py-2 cmm-text-caption font-semibold transition sm:cmm-text-small",
- isSpaceActive ? tone.active : tone.inactive,
- ].join("")}
- >
- <SpaceIcon className="h-4 w-4 shrink-0" />
- <span>{space.label[locale]}</span>
- {isSpaceActive ? (
- <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
- ) : null}
- </Link>
- );
- })}
- </div>
- </div>
+              {/* SÉLECTEUR D'ESPACES (DASHBOARD PILLS) */}
+              <div className="hidden flex-1 items-center justify-center lg:flex">
+                <div className="relative flex items-center gap-1.5 rounded-full border border-slate-800/60 bg-slate-900/60 p-1.5 shadow-inner">
+                  {spaces.map((space) => {
+                    const firstHref = space.items[0]?.href ?? "/dashboard";
+                    const isSpaceActive = space.id === activeSpaceId;
+                    const SpaceIcon = getSpaceIcon(space.id);
+                    const tone = getSpaceToneClasses(space.id);
 
- <div className="flex flex-wrap items-center justify-end gap-2 lg:flex-nowrap">
- <Link
- href="/explorer"
- className="inline-flex shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:hover:border-emerald-700 dark:hover:bg-slate-800 dark:hover:text-slate-100 sm:cmm-text-small"
- >
- <Compass className="h-4 w-4" />
- <span className="hidden sm:inline">
- {locale ==="fr" ?"Plan du site" :"Site map"}
- </span>
- </Link>
+                    return (
+                      <Link
+                        key={space.id}
+                        href={firstHref}
+                        title={getSpaceTooltip(space, locale)}
+                        aria-label={getSpaceTooltip(space, locale)}
+                        aria-current={isSpaceActive ? "page" : undefined}
+                        onClick={() => onTrackNavigation(firstHref, space.label[locale], space.id)}
+                        className={cn(
+                          "relative flex min-h-10 items-center gap-2 rounded-full px-4 py-2 cmm-text-caption font-bold transition-all duration-300 active:scale-95",
+                          isSpaceActive ? "text-slate-50" : "text-slate-500 hover:text-slate-200"
+                        )}
+                      >
+                        {isSpaceActive && (
+                          <motion.div
+                            layoutId="active-space"
+                            className={cn("absolute inset-0 rounded-full border", tone.active)}
+                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                          />
+                        )}
+                        <SpaceIcon className={cn("relative z-10 h-4 w-4 shrink-0 transition-transform group-hover:scale-110", isSpaceActive ? "opacity-100" : "opacity-60")} />
+                        <span className="relative z-10">{space.label[locale]}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
 
- <details
- ref={preferencesMenuRef}
- open={isPreferencesOpen}
- onToggle={(event) => {
- const isOpen = event.currentTarget.open;
- setIsPreferencesOpen(isOpen);
- }}
- className="relative shrink-0"
- >
- <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-800 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:hover:border-emerald-700 dark:hover:bg-slate-800 dark:hover:text-slate-100 sm:px-3.5 sm:cmm-text-small [&::-webkit-details-marker]:hidden">
- <Settings2 className="h-4 w-4" />
- <span className="hidden sm:inline">
- {locale ==="fr" ?"Réglages" :"Settings"}
- </span>
- </summary>
+              {/* ACTIONS DROITE (Settings, Explorer, User) */}
+              <div className="flex items-center gap-2.5">
+                <Link
+                  href="/explorer"
+                  aria-label={locale === "fr" ? "Explorer toutes les rubriques" : "Explore all sections"}
+                  className="group flex h-11 w-11 items-center justify-center rounded-full border border-slate-800/40 bg-slate-900/40 text-slate-400 transition-all hover:border-emerald-500/50 hover:bg-slate-800/60 hover:text-emerald-200 active:scale-90 shadow-md sm:h-auto sm:w-auto sm:px-4"
+                >
+                  <Compass className="h-4.5 w-4.5 transition-transform group-hover:rotate-12" aria-hidden="true" />
+                  <span className="ml-2 hidden sm:inline cmm-text-caption font-bold uppercase tracking-widest">
+                    {locale === "fr" ? "Explorer" : "Explorer"}
+                  </span>
+                </Link>
 
- {isPreferencesOpen ? (
- <div className="absolute right-0 top-full z-40 mt-2 w-80 rounded-3xl border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-3 shadow-2xl shadow-slate-950/15 dark:border-slate-800 dark:from-slate-950 dark:to-slate-900">
- <SitePreferencesControls />
- </div>
- ) : null}
- </details>
+                <details
+                  ref={preferencesMenuRef}
+                  open={isPreferencesOpen}
+                  onToggle={(event) => setIsPreferencesOpen(event.currentTarget.open)}
+                  className="relative"
+                >
+                  <summary 
+                    aria-label={locale === "fr" ? "Menu des préférences d'affichage et langue" : "Display and language preferences menu"}
+                    className="flex h-11 w-11 list-none cursor-pointer items-center justify-center rounded-full border border-slate-800/40 bg-slate-900/40 text-slate-400 transition-all hover:border-emerald-500/50 hover:bg-slate-800/60 hover:text-emerald-200 active:scale-90 shadow-md sm:h-auto sm:w-auto sm:px-4 [&::-webkit-details-marker]:hidden"
+                  >
+                    <Settings2 className="h-4.5 w-4.5" aria-hidden="true" />
+                    <span className="ml-2 hidden sm:inline cmm-text-caption font-bold uppercase tracking-widest">
+                      {locale === "fr" ? "Réglages" : "Settings"}
+                    </span>
+                  </summary>
 
- <Show when="signed-out">
- <div className="flex items-center gap-2">
- <SignInButton mode="modal">
- <button className="rounded-full border border-slate-200 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary transition hover:border-emerald-200 hover:text-emerald-800 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-emerald-700 dark:hover:text-emerald-200 sm:cmm-text-small">
- {locale ==="fr" ?"Connexion" :"Sign in"}
- </button>
- </SignInButton>
- <SignUpButton mode="modal">
- <button className="rounded-full bg-emerald-600 px-4 py-2 cmm-text-caption font-semibold text-white shadow-sm shadow-emerald-600/15 transition hover:bg-emerald-700 sm:cmm-text-small">
- {locale ==="fr" ?"Créer un compte" :"Sign up"}
- </button>
- </SignUpButton>
- </div>
- </Show>
+                  {isPreferencesOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      className="absolute right-0 top-full z-50 mt-4 w-80 rounded-[2rem] border border-slate-800 bg-slate-950/90 p-4 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.7)] backdrop-blur-2xl"
+                    >
+                      <SitePreferencesControls />
+                    </motion.div>
+                  )}
+                </details>
 
- <Show when="signed-in">
- <div className="flex items-center gap-3">
- <div className="hidden sm:block">
- {identity ? <AccountIdentityChip identity={identity} /> : null}
- </div>
- <NotificationBell />
- <UserButton
- appearance={{
- elements: {
- userButtonAvatarBox:"h-8 w-8 ring-2 ring-emerald-500/20",
- },
- }}
- />
- </div>
- </Show>
- </div>
- </div>
+                <div className="h-8 w-[1px] bg-slate-800/60 mx-1 hidden sm:block" />
 
- <div className="flex flex-col gap-2 rounded-[1.15rem] border border-slate-200/80 bg-white px-3 py-2.5 shadow-[0_14px_34px_-26px_rgba(15,23,42,0.35)] dark:border-slate-800/70 dark:bg-slate-950 md:flex-row md:items-center md:gap-3">
- <p className="min-w-0 cmm-text-caption font-medium cmm-text-muted">
- {contextText}
- </p>
+                <Show when="signed-out">
+                  <div className="flex items-center gap-2">
+                    <SignInButton mode="modal">
+                      <button className="rounded-full px-4 py-2 cmm-text-caption font-bold text-slate-400 transition hover:text-white">
+                        {locale === "fr" ? "Connexion" : "Sign in"}
+                      </button>
+                    </SignInButton>
+                    <SignUpButton mode="modal">
+                      <button className="rounded-full bg-emerald-600 px-5 py-2 cmm-text-caption font-bold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-500 active:scale-95">
+                        {locale === "fr" ? "S'inscrire" : "Sign up"}
+                      </button>
+                    </SignUpButton>
+                  </div>
+                </Show>
 
- <div className="min-w-0 flex-1">
- <div className="flex min-w-0 items-center gap-2 overflow-x-auto scrollbar-none">
- {activeSpaceItems.map((item) => {
- const isItemActive = isActivePath(pathname, item.href);
- return (
- <Link
- key={item.id}
- href={item.href}
- onClick={() =>
- onTrackNavigation(
- item.href,
- item.label[locale],
- activeSpace?.id ?? null,
- )
- }
- title={getItemTooltip(item, locale)}
- aria-label={getItemTooltip(item, locale)}
- className={[
- "inline-flex min-h-[2.5rem] shrink-0 items-center justify-center rounded-full border px-4 py-1.5 cmm-text-caption font-bold tracking-wide transition-all duration-300 sm:cmm-text-small",
- isItemActive
- ? "border-violet-500/20 bg-violet-500/10 text-violet-700 shadow-[0_4px_12px_-4px_rgba(139,92,246,0.3)] dark:border-violet-500/40 dark:bg-violet-500/20 dark:text-violet-300"
- : "border-slate-200/60 bg-white/50 cmm-text-secondary hover:border-violet-300/50 hover:bg-white hover:cmm-text-primary hover:shadow-md dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-violet-600 dark:hover:bg-slate-900 dark:hover:text-slate-100",
- ].join(" ")}
- >
- {item.label[locale]}
- {isItemActive && (
- <span className="relative ml-2 flex h-2 w-2">
- <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-fuchsia-400 opacity-75"></span>
- <span className="relative inline-flex h-2 w-2 rounded-full bg-fuchsia-500"></span>
- </span>
- )}
- </Link>
- );
- })}
- {activeSpaceItems.length === 0 ? (
- <span className="inline-flex min-h-9 shrink-0 items-center rounded-full border border-dashed border-slate-300 px-3 py-1.5 cmm-text-caption cmm-text-muted dark:border-slate-700 dark:cmm-text-muted">
- {locale ==="fr"
- ?"Aucune rubrique dans ce bloc"
- :"No page in this block"}
- </span>
- ) : null}
- </div>
- </div>
- </div>
- </div>
- </div>
- </nav>
- </div>
+                <Show when="signed-in">
+                  <div className="flex items-center gap-4">
+                    <div className="hidden xl:block">
+                      {identity && <AccountIdentityChip identity={identity} />}
+                    </div>
+                    <NotificationBell />
+                    <UserButton
+                      appearance={{
+                        elements: {
+                          userButtonAvatarBox: "h-9 w-9 ring-2 ring-emerald-500/20 shadow-lg",
+                        },
+                      }}
+                    />
+                  </div>
+                </Show>
+              </div>
+            </div>
+
+            {/* RANGÉE INFÉRIEURE (SHELF) : CONTEXTE + SOUS-RUBRIQUES */}
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeSpaceId}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.3, ease: "easeOut" }}
+                className="flex flex-col gap-3 border-t border-slate-800/40 pb-1.5 pt-3 md:flex-row md:items-center"
+              >
+                {/* CONTEXTE (Fil d'Ariane dynamique) */}
+                <div className="flex shrink-0 items-center gap-2">
+                  <div className={cn("h-1.5 w-1.5 rounded-full", activeSpace ? getSpaceToneClasses(activeSpace.id).glow : "bg-slate-700")} />
+                  <p className="cmm-text-caption font-bold uppercase tracking-widest cmm-text-muted opacity-80">
+                    {activeSpace ? activeSpace.label[locale] : "CleanMyMap"}
+                  </p>
+                  <span className="cmm-text-caption text-slate-800">/</span>
+                </div>
+
+                {/* LISTE DES SOUS-RUBRIQUES */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+                    {activeSpaceItems.map((item) => {
+                      const isItemActive = isActivePath(pathname, item.href);
+                      return (
+                        <Link
+                          key={item.id}
+                          href={item.href}
+                          onClick={() => onTrackNavigation(item.href, item.label[locale], activeSpace?.id ?? null)}
+                          title={getItemTooltip(item, locale)}
+                          aria-label={getItemTooltip(item, locale)}
+                          className={cn(
+                            "group relative flex min-h-[2.5rem] shrink-0 items-center justify-center rounded-full px-5 py-1.5 cmm-text-caption font-bold tracking-wide transition-all duration-300",
+                            isItemActive
+                              ? "text-emerald-400"
+                              : "text-slate-400 hover:text-slate-100"
+                          )}
+                        >
+                          {isItemActive && (
+                            <motion.div
+                              layoutId="active-item"
+                              className="absolute inset-0 rounded-full border border-emerald-500/20 bg-emerald-500/10 shadow-[0_4px_15px_-5px_rgba(16,185,129,0.4)]"
+                              transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
+                            />
+                          )}
+                          {!isItemActive && (
+                            <div className="absolute inset-0 rounded-full border border-transparent transition-colors group-hover:border-slate-800 group-hover:bg-slate-900/40" />
+                          )}
+                          <span className="relative z-10">{item.label[locale]}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </nav>
+    </div>
  );
 }

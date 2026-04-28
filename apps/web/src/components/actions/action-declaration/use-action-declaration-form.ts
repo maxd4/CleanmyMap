@@ -51,18 +51,18 @@ export function useActionDeclarationForm({
   const [form, setForm] = useState(() =>
     createInitialFormState(resolvedDefaultActorName),
   );
-  const [manualDrawingEnabled, setManualDrawingEnabled] = useState<boolean>(true);
+  const [manualDrawingEnabled] = useState<boolean>(true);
   const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(null);
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
   const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
   const [visionStatus, setVisionStatus] = useState<"idle" | "processing" | "ready" | "error">("idle");
   const [routePreviewDrawing, setRoutePreviewDrawing] = useState<ActionDrawing | null>(null);
-  const [declarationMode, setDeclarationMode] = useState<DeclarationMode>(initialMode);
+  const [declarationMode] = useState<DeclarationMode>(initialMode);
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [retentionLoop, setRetentionLoop] = useState<any>(null);
-  const [validationIssues, setValidationIssues] = useState<any[]>([]);
+  const [validationIssues] = useState<any[]>([]);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const hasTrackedStartRef = useRef<boolean>(false);
@@ -250,7 +250,7 @@ export function useActionDeclarationForm({
       localStorage.removeItem("cmm_action_draft");
     } catch (error: any) {
       setSubmissionState("error");
-      setErrorMessage(error.message || "Erreur lors de la soumission");
+      setErrorMessage(error.message || "Impossible de valider votre déclaration pour le moment. Veuillez vérifier vos informations et réessayer.");
       setShowConfirmation(false);
     }
   }

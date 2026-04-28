@@ -90,6 +90,7 @@ export function WeatherWarningBar() {
  <button
  onClick={() => setIsVisible(false)}
  className="rounded p-1 transition hover:bg-white/20"
+ aria-label="Fermer l'alerte opérationnelle"
  >
  <X size={16} />
  </button>

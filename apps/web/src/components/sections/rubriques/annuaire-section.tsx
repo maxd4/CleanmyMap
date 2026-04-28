@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+
 import { MapPin, ArrowRight } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { getParisArrondissementLabel } from "@/lib/geo/paris-arrondissements";
+
 
 import { AnnuaireFeaturedSection } from "./annuaire-featured-section";
 import { AnnuaireThematicExploration } from "./annuaire-thematic-exploration";
@@ -22,16 +22,11 @@ export function AnnuaireSection() {
     featuredEntries,
   } = useAnnuaireLogic();
 
-  const handleFocusMap = (entryId: string) => {
+  const handleFocusMap = () => {
     // In exploration mode, we can just highlight the item in the canvas
     // Or scroll to the canvas
     const canvasAnchor = document.getElementById("exploration-canvas-anchor");
     canvasAnchor?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const handleSelectTheme = (themeId: string) => {
-    setActorCardsPage(1);
-    setSearchTerm(themeId);
   };
 
   return (
@@ -95,7 +90,7 @@ export function AnnuaireSection() {
                   : "Join our network and gain visibility with engaged citizens and companies."}
               </p>
             </div>
-            <CmmButton tone="violet" variant="solid" className="h-16 px-10 rounded-2xl text-lg font-bold shadow-xl shadow-violet-500/20 group">
+            <CmmButton tone="primary" variant="default" className="h-16 px-10 rounded-2xl text-lg font-bold shadow-xl shadow-violet-500/20 group">
               <span>{fr ? "Rejoindre le réseau" : "Join the Network"}</span>
               <ArrowRight size={20} className="ml-3 group-hover:translate-x-1.5 transition-transform" />
             </CmmButton>

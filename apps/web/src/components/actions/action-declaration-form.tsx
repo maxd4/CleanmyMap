@@ -2,7 +2,7 @@
 
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { createAction, fetchActionPrefill } from "@/lib/actions/http";
+import { createAction } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
 import type {
@@ -14,10 +14,7 @@ import type {
 import {
   buildCreateActionPayload,
   createInitialFormState,
-  getFormResetState,
   isDrawingValid,
-  isLocationLikelyPark,
-  PARK_PLACE_TYPE,
   prepareCreateActionPayload,
 } from "./action-declaration/payload";
 import { ActionStepIdentity } from "./action-declaration/ActionStepIdentity";
@@ -32,7 +29,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Sparkles,
-  ShieldCheck,
   ChevronLeft
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,13 +40,7 @@ import { useActionDeclarationSmartAssist } from "./action-declaration-form.smart
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
 
-const ActionDrawingMap = dynamic(
-  () =>
-    import("@/components/actions/action-drawing-map").then(
-      (mod) => mod.ActionDrawingMap,
-    ),
-  { ssr: false },
-);
+
 
 type ActionDeclarationFormProps = {
   actorNameOptions: string[];
@@ -85,18 +75,18 @@ export function ActionDeclarationForm({
   const [form, setForm] = useState(() =>
     createInitialFormState(resolvedDefaultActorName),
   );
-  const [manualDrawingEnabled, setManualDrawingEnabled] = useState<boolean>(true);
+  const [manualDrawingEnabled] = useState<boolean>(true);
   const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(null);
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
   const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
   const [visionStatus, setVisionStatus] = useState<"idle" | "processing" | "ready" | "error">("idle");
   const [routePreviewDrawing, setRoutePreviewDrawing] = useState<ActionDrawing | null>(null);
-  const [declarationMode, setDeclarationMode] = useState<DeclarationMode>(initialMode);
+  const [declarationMode] = useState<DeclarationMode>(initialMode);
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [retentionLoop, setRetentionLoop] = useState<any>(null);
-  const [validationIssues, setValidationIssues] = useState<any[]>([]);
+  const [validationIssues] = useState<any[]>([]);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const hasTrackedStartRef = useRef<boolean>(false);
@@ -284,7 +274,7 @@ export function ActionDeclarationForm({
       localStorage.removeItem("cmm_action_draft");
     } catch (error: any) {
       setSubmissionState("error");
-      setErrorMessage(error.message || "Erreur lors de la soumission");
+      setErrorMessage(error.message || "Impossible de valider votre déclaration pour le moment. Veuillez vérifier vos informations et réessayer.");
       setShowConfirmation(false);
     }
   }
@@ -324,7 +314,7 @@ export function ActionDeclarationForm({
               { id: 2, label: "Récolte", icon: Scale },
               { id: 3, label: "Parcours", icon: RouteIcon },
               { id: 4, label: "Validation", icon: ClipboardCheck },
-            ].map((step, index) => {
+            ].map((step) => {
               const Icon = step.icon;
               const isPast = currentStep > step.id;
               const isCurrent = currentStep === step.id;
@@ -412,13 +402,13 @@ export function ActionDeclarationForm({
                 <ChevronLeft size={18} className="mr-2" /> Retour
               </CmmButton>
               <CmmButton
-                tone="emerald"
+                tone="primary"
                 className="h-12 md:h-14 px-8 md:px-10 rounded-2xl font-bold text-sm md:text-base shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5"
                 onClick={nextStep}
               >
-                {currentStep === 1 && "Continuer vers Récolte"}
-                {currentStep === 2 && "Continuer vers Parcours"}
-                {currentStep === 3 && "Finaliser la saisie"}
+                {currentStep === 1 && "Continuer"}
+                {currentStep === 2 && "Continuer"}
+                {currentStep === 3 && "Vérifier"}
                 <ChevronRight size={18} className="ml-2" />
               </CmmButton>
             </div>

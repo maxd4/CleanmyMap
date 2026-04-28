@@ -90,7 +90,7 @@ export function BusinessAlertsPanel() {
 
  {!isLoading && !hasError && alerts.length === 0 ? (
  <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 cmm-text-small text-emerald-700">
- Aucune alerte prioritaire detectee sur la fenetre courante.
+ Tout est sous contrôle. Aucune alerte prioritaire n'est détectée sur cette période.
  </p>
  ) : null}
 
@@ -151,8 +151,7 @@ export function BusinessAlertsPanel() {
  ))}
  {campaignGoals.length === 0 ? (
  <li className="rounded-lg border border-slate-200 bg-white px-3 py-2 cmm-text-secondary">
- Donnees insuffisantes pour fixer des objectifs de campagne par
- zone.
+ Données insuffisantes pour projeter des objectifs. Continuez à déclarer vos actions pour affiner les prévisions.
  </li>
  ) : null}
  </ul>
@@ -195,7 +194,7 @@ export function BusinessAlertsPanel() {
  ))}
  {neighborhoodPlan.length === 0 ? (
  <li className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 cmm-text-secondary">
- Donnees insuffisantes pour generer un plan de campagne quartier.
+ Pas assez de données historiques pour bâtir un plan de quartier. Les objectifs s'affineront avec vos prochaines sorties.
  </li>
  ) : null}
  </ul>

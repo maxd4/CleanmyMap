@@ -1,7 +1,6 @@
 "use client";
 
 import { 
- BarChart, 
  Bar, 
  XAxis, 
  YAxis, 
@@ -9,7 +8,6 @@ import {
  Tooltip, 
  Legend, 
  ResponsiveContainer, 
- LineChart, 
  Line,
  ComposedChart
 } from"recharts";
@@ -24,11 +22,11 @@ export function AnalyticsCockpit({ data }: AnalyticsCockpitProps) {
  const { displayMode } = useSitePreferences();
  const isSober = displayMode ==="sobre";
  if (!data || data.length === 0) {
- return (
- <div className="flex h-64 items-center justify-center rounded-xl bg-slate-50 border border-dashed border-slate-200 cmm-text-muted">
- <p className="cmm-text-small font-medium">Données analytiques insuffisantes pour générer les graphiques.</p>
- </div>
- );
+    return (
+      <div className="flex h-64 items-center justify-center rounded-xl bg-slate-50 border border-dashed border-slate-200 cmm-text-muted text-center p-6">
+        <p className="cmm-text-small font-medium">Pas encore assez de données pour générer les graphiques. Vos prochaines actions permettront d'afficher les tendances.</p>
+      </div>
+    );
  }
 
  return (

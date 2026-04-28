@@ -60,7 +60,7 @@ export function SitePreferencesControls({
  <button
  type="button"
  onClick={toggleTheme}
- className="flex items-center gap-2 rounded-xl px-2 py-1.5 cmm-text-caption font-bold cmm-text-secondary transition-colors hover:bg-white dark:hover:bg-slate-700/80"
+ className="hidden items-center gap-2 rounded-xl px-2 py-1.5 cmm-text-caption font-bold cmm-text-secondary transition-colors hover:bg-white dark:hover:bg-slate-700/80"
  aria-label={locale ==="fr" ?"Changer le thème" :"Toggle theme"}
  >
  {theme ==="dark" ? (
@@ -75,7 +75,7 @@ export function SitePreferencesControls({
  </span>
  </button>
 
- <div className="h-4 w-px bg-slate-300/30 dark:bg-slate-600/30" />
+ <div className="hidden h-4 w-px bg-slate-300/30 dark:bg-slate-600/30" />
 
  {/* Display Mode Selector */}
  <div className="relative group">

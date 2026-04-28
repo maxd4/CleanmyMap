@@ -1,4 +1,4 @@
-import React from "react";
+import { motion } from "framer-motion";
 import { AnnuaireActorCard } from "./annuaire-actor-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
@@ -22,26 +22,47 @@ export function AnnuairePartnerList({
 }: AnnuairePartnerListProps) {
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1">
+      <motion.div 
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1"
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: { opacity: 0 },
+          visible: {
+            opacity: 1,
+            transition: {
+              staggerChildren: 0.1
+            }
+          }
+        }}
+      >
         {entries.map((actor) => (
-          <div 
+          <motion.div 
             key={actor.id} 
-            className="animate-in fade-in slide-in-from-bottom-2 duration-300"
+            variants={{
+              hidden: { opacity: 0, x: -20, filter: "blur(5px)" },
+              visible: { 
+                opacity: 1, 
+                x: 0, 
+                filter: "blur(0px)",
+                transition: { duration: 0.5, ease: "easeOut" }
+              }
+            }}
           >
             <AnnuaireActorCard
               entry={actor}
               onFocusMap={() => onFocusMap(actor.id)}
               showInternalContact={false}
             />
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {totalPages > 1 ? (
-        <div className="mt-8 flex items-center justify-center gap-2 pt-4 border-t border-slate-100">
+        <div className="mt-8 flex items-center justify-center gap-2 pt-4 border-t border-slate-800/60">
           <CmmButton
             variant="ghost"
-            tone="slate"
+            tone="secondary"
             size="sm"
             disabled={currentPage === 1}
             onClick={() => onPageChange(currentPage - 1)}
@@ -55,8 +76,8 @@ export function AnnuairePartnerList({
                 onClick={() => onPageChange(p)}
                 className={`w-8 h-8 rounded-lg cmm-text-caption font-bold transition-all ${
                   currentPage === p
-                    ? "bg-violet-600 text-white shadow-md shadow-violet-200"
-                    : "bg-white border border-slate-200 cmm-text-secondary hover:bg-slate-50"
+                    ? "bg-emerald-600 text-white shadow-md shadow-emerald-900/40"
+                    : "bg-slate-900/60 border border-slate-800 cmm-text-secondary hover:bg-slate-800 hover:cmm-text-primary"
                 }`}
               >
                 {p}
@@ -65,7 +86,7 @@ export function AnnuairePartnerList({
           </div>
           <CmmButton
             variant="ghost"
-            tone="slate"
+            tone="secondary"
             size="sm"
             disabled={currentPage === totalPages}
             onClick={() => onPageChange(currentPage + 1)}

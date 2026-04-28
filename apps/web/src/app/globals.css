@@ -1,31 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fdfdfd;
-  --foreground: #0f172a;
+  --background: #020617; /* Deep Premium Dark */
+  --foreground: #f8fafc;
   --accent-primary: #10b981; /* Emerald */
   --accent-vibrant: #34d399;
-  --accent-soft: #ecfdf5;
-  --slate-deep: #0f172a;
+  --accent-soft: rgba(16, 185, 129, 0.1);
+  --slate-deep: #020617;
 
-  /* Tokens sémantiques (canon) */
+  /* Tokens sémantiques (Stabilisés sur Dark Premium) */
   --bg-canvas: var(--background);
-  --bg-elevated: rgba(255, 255, 255, 0.86);
-  --bg-muted: rgba(248, 250, 252, 0.8);
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  --text-inverse: #f8fafc;
-  --border-default: rgba(15, 23, 42, 0.12);
-  --border-strong: rgba(15, 23, 42, 0.18);
+  --bg-elevated: rgba(2, 6, 23, 0.62);
+  --bg-muted: rgba(15, 23, 42, 0.62);
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-inverse: #0b1220;
+  --border-default: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(148, 163, 184, 0.26);
   --focus-ring: rgba(16, 185, 129, 0.45);
 
   --action-primary-bg: rgb(16 185 129);
   --action-primary-text: #ffffff;
   --action-primary-hover: rgb(5 150 105);
-  --action-secondary-bg: rgba(255, 255, 255, 0.72);
-  --action-secondary-text: #0f172a;
-  --action-secondary-hover: rgba(16, 185, 129, 0.08);
+  --action-secondary-bg: rgba(15, 23, 42, 0.72);
+  --action-secondary-text: #f8fafc;
+  --action-secondary-hover: rgba(16, 185, 129, 0.12);
 
   /* ============================================================
      TYPOGRAPHY TOKENS - 1 SEULE FONT FAMILY (Inter)

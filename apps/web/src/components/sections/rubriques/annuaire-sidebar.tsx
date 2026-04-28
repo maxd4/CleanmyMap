@@ -31,10 +31,9 @@ export function AnnuaireSidebar({
     <div className="sticky top-24 space-y-4">
       {/* Carte */}
       <CmmCard 
-        id="annuaire-map-anchor"
         tone="violet" 
         variant="elevated" 
-        className="overflow-hidden p-0 h-[500px] group border-2 border-violet-100 shadow-xl"
+        className="overflow-hidden p-0 h-[500px] group relative border-2 border-violet-100 shadow-xl"
       >
         <AnnuaireMapCanvas
           items={entries}
@@ -55,7 +54,7 @@ export function AnnuaireSidebar({
       </div>
 
       {/* Méthodologie Card */}
-      <CmmCard tone="slate" variant="subtle" className="p-4 space-y-3">
+      <CmmCard tone="slate" variant="muted" className="p-4 space-y-3">
         <h4 className="cmm-text-caption font-bold uppercase tracking-wider cmm-text-primary flex items-center gap-2">
           <ShieldCheck size={14} className="text-violet-600" />
           {fr ? "Méthodologie & Transparence" : "Methodology & Transparency"}

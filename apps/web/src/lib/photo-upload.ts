@@ -35,7 +35,7 @@ export class PhotoUploadService {
 
       if (error) {
         console.error('Upload error:', error)
-        return { url: '', path: '', error: 'Erreur lors de l\'upload' }
+        return { url: '', path: '', error: 'Impossible d\'envoyer la photo. Veuillez vérifier votre connexion et réessayer.' }
       }
 
       // Get public URL
@@ -50,7 +50,7 @@ export class PhotoUploadService {
 
     } catch (error) {
       console.error('Photo upload service error:', error)
-      return { url: '', path: '', error: 'Erreur technique' }
+      return { url: '', path: '', error: 'Une erreur technique est survenue lors de l\'upload. Si le problème persiste, contactez le support.' }
     }
   }
 
