@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from"react";
-import L, { type LeafletEvent } from"leaflet";
+import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
+import L, { type LeafletEvent } from "leaflet";
 import"leaflet-draw";
 import { MapContainer, TileLayer, useMap } from"react-leaflet";
 import type { ActionDrawing } from"@/lib/actions/types";
@@ -11,18 +11,49 @@ import {
 } from"./map-marker-categories";
 import { snapPolylineToStreetNetwork } from"@/lib/geo/osrm-routing";
 import { computePollutionScore } from"@/lib/actions/pollution-score";
+import {
+  normalizeActionDrawing,
+} from"./map/actions-map-geometry.utils";
+import { GREATER_PARIS_BOUNDS } from "@/lib/geo/greater-paris";
 
 const PARIS_CENTER: [number, number] = [48.8566, 2.3522];
-const PARIS_BOUNDS = L.latLngBounds([48.78, 2.2], [48.92, 2.48]);
+const GREATER_PARIS_LAT_LNG_BOUNDS = L.latLngBounds(
+ [GREATER_PARIS_BOUNDS.south, GREATER_PARIS_BOUNDS.west],
+ [GREATER_PARIS_BOUNDS.north, GREATER_PARIS_BOUNDS.east],
+);
+const MOBILE_MEDIA_QUERY = "(max-width: 768px)";
 
 type DrawingLayer = L.Polyline | L.Polygon;
 
 const COLOR_BLUE ="#0284c7"; // Lieu Propre
 
-// Détection du type d'appareil
-function isMobileDevice(): boolean {
- if (typeof window ==="undefined") return false;
- return window.innerWidth <= 768 || /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+function subscribeToMediaQuery(
+ query: string,
+ onStoreChange: () => void,
+): () => void {
+ if (typeof window ==="undefined") {
+ return () => undefined;
+ }
+
+ const mediaQuery = window.matchMedia(query);
+ mediaQuery.addEventListener("change", onStoreChange);
+
+ return () => {
+ mediaQuery.removeEventListener("change", onStoreChange);
+ };
+}
+
+function useMediaQuery(query: string): boolean {
+ return useSyncExternalStore(
+  (onStoreChange) => subscribeToMediaQuery(query, onStoreChange),
+  () => {
+   if (typeof window ==="undefined") {
+    return false;
+   }
+   return window.matchMedia(query).matches;
+  },
+  () => false,
+ );
 }
 
 function asCoordinates(latLngs: L.LatLng[]): [number, number][] {
@@ -32,10 +63,13 @@ function asCoordinates(latLngs: L.LatLng[]): [number, number][] {
  ]);
 }
 
-function extractDrawing(layer: DrawingLayer): ActionDrawing {
+ function extractDrawing(layer: DrawingLayer): ActionDrawing {
  if (layer instanceof L.Polygon) {
  const rings = layer.getLatLngs() as L.LatLng[][];
- return { kind:"polygon", coordinates: asCoordinates(rings[0] ?? []) };
+ return {
+ kind:"polygon",
+ coordinates: asCoordinates(rings[0] ?? []),
+ };
  }
  const latLngs = layer.getLatLngs() as L.LatLng[];
  return { kind:"polyline", coordinates: asCoordinates(latLngs) };
@@ -54,11 +88,7 @@ function DrawingController({
 }) {
  const map = useMap();
  const layerGroupRef = useRef<L.FeatureGroup | null>(null);
- const [isMobile, setIsMobile] = useState(false);
-
- useEffect(() => {
- setIsMobile(isMobileDevice());
- }, []);
+ const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
 
  useEffect(() => {
  const layerGroup = new L.FeatureGroup();
@@ -104,10 +134,7 @@ function DrawingController({
  featureGroup: layerGroup,
  remove: true,
  edit: {
- selectedPathOptions: {
- maintainColor: true,
- opacity: 0.6
- }
+ selectedPathOptions: { opacity: 0.6 }
  }
  },
  });
@@ -145,31 +172,43 @@ function DrawingController({
  }
 
  async function normalizeAndEmit(layer: DrawingLayer) {
- if (layer instanceof L.Polygon) {
+ const rawDrawing = extractDrawing(layer);
+ const normalizedDrawing = normalizeActionDrawing(rawDrawing);
+
+ if (!normalizedDrawing) {
+ onChange(null);
+ return;
+ }
+
+ if (normalizedDrawing.kind ==="polygon") {
  // Les polygones représentent une zone, pas de snap automatique
- onChange(extractDrawing(layer));
+ onChange(normalizedDrawing);
  return;
  }
  
  // Auto-Snap pour les polylines avec OSRM
  document.body.style.cursor ="wait";
  try {
- const rawCoords = asCoordinates(layer.getLatLngs() as L.LatLng[]);
- const snappedCoords = await snapPolylineToStreetNetwork(rawCoords);
+ const snappedCoords = await snapPolylineToStreetNetwork(
+ normalizedDrawing.coordinates,
+ );
  
  if (snappedCoords && snappedCoords.length > 0) {
- // Créer une nouvelle polyline avec les coordonnées snappées
- const newLayer = L.polyline(snappedCoords.map(c => L.latLng(c[0], c[1])));
- onChange(extractDrawing(newLayer));
+  // Créer une nouvelle polyline avec les coordonnées snappées
+  const snappedDrawing = normalizeActionDrawing({
+  kind: "polyline",
+  coordinates: snappedCoords,
+  });
+  onChange(snappedDrawing ?? normalizedDrawing);
  } else {
- // Fallback vers les coordonnées brutes si le snap échoue
- onChange(extractDrawing(layer));
+  // Fallback vers les coordonnées brutes si le snap échoue
+ onChange(normalizedDrawing);
  }
- } catch (error) {
- // En cas d'erreur, utiliser les coordonnées brutes
- onChange(extractDrawing(layer));
+ } catch {
+  // En cas d'erreur, utiliser les coordonnées brutes
+ onChange(normalizedDrawing);
  } finally {
- document.body.style.cursor ="";
+  document.body.style.cursor ="";
  }
  }
 
@@ -218,13 +257,14 @@ function DrawingController({
  return;
  }
  layerGroup.clearLayers();
- if (!value || value.coordinates.length === 0) {
+ const normalizedValue = normalizeActionDrawing(value);
+ if (!normalizedValue) {
  return;
  }
 
- const latLngs = value.coordinates.map(([lat, lng]) => L.latLng(lat, lng));
+ const latLngs = normalizedValue.coordinates.map(([lat, lng]) => L.latLng(lat, lng));
  const layer =
- value.kind ==="polygon"
+ normalizedValue.kind ==="polygon"
  ? L.polygon(latLngs, { 
  color: drawColor, 
  weight: 3, 
@@ -241,27 +281,31 @@ function DrawingController({
  return null;
 }
 
-export function ActionDrawingMap({
- value,
- onChange,
- wasteKg = 0,
- butts = 0,
- isCleanPlace = false,
- readOnly = false,
-}: {
- value: ActionDrawing | null;
- onChange: (drawing: ActionDrawing | null) => void;
+type ActionDrawingMapProps = {
+ value?: ActionDrawing | null;
+ onChange?: (drawing: ActionDrawing | null) => void;
+ drawing?: ActionDrawing | null;
+ onDrawingChange?: (drawing: ActionDrawing | null) => void;
  wasteKg?: number;
  butts?: number;
  isCleanPlace?: boolean;
  readOnly?: boolean;
-}) {
- const mapStyle = useMemo(() => ({ height:"400px", width:"100%" }), []);
- const [isMobile, setIsMobile] = useState(false);
+};
 
- useEffect(() => {
- setIsMobile(isMobileDevice());
- }, []);
+export function ActionDrawingMap({
+ value,
+ onChange,
+ drawing,
+ onDrawingChange,
+ wasteKg = 0,
+ butts = 0,
+ isCleanPlace = false,
+ readOnly = false,
+}: ActionDrawingMapProps) {
+ const mapStyle = useMemo(() => ({ height:"400px", width:"100%" }), []);
+ const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+ const currentValue = normalizeActionDrawing(value ?? drawing ?? null);
+ const handleChange = onChange ?? onDrawingChange ?? (() => undefined);
 
  const drawColor = useMemo(() => {
  if (isCleanPlace) {
@@ -290,7 +334,7 @@ export function ActionDrawingMap({
  zoom={13}
  minZoom={10}
  maxZoom={18}
- maxBounds={PARIS_BOUNDS}
+ maxBounds={GREATER_PARIS_LAT_LNG_BOUNDS}
  maxBoundsViscosity={0.9}
  scrollWheelZoom
  className="bg-white"
@@ -303,8 +347,8 @@ export function ActionDrawingMap({
  maxZoom={18}
  />
  <DrawingController
- value={value}
- onChange={onChange}
+ value={currentValue}
+ onChange={handleChange}
  drawColor={drawColor}
  readOnly={effectiveReadOnly}
  />

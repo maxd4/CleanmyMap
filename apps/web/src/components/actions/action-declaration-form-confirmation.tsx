@@ -1,5 +1,9 @@
 import type { FormState } from "./action-declaration-form.model";
 import type { CreateActionPayload } from "@/lib/actions/types";
+import {
+  formatGeometryPointCount,
+  summarizeActionDrawingValidation,
+} from "./map/actions-map-geometry.utils";
 
 type ActionDeclarationFormConfirmationProps = {
   form: FormState;
@@ -25,6 +29,7 @@ export function ActionDeclarationFormConfirmation({
 }: ActionDeclarationFormConfirmationProps) {
   const impactCO2 = (payload.wasteKg * 0.5).toFixed(1);
   const impactPlastic = (payload.wasteKg * 0.3).toFixed(1);
+  const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
 
   return (
     <div className="cmm-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -110,6 +115,27 @@ export function ActionDeclarationFormConfirmation({
               <p className="text-sm text-sky-700 mt-2">
                 Départ : {form.departureLocationLabel}
                 {form.arrivalLocationLabel && ` → Arrivée : ${form.arrivalLocationLabel}`}
+              </p>
+            )}
+          </div>
+
+          {/* Tracé retenu */}
+          <div className="rounded-[1.5rem] border border-slate-200/60 bg-white p-5 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.14em] text-slate-500 font-bold mb-2">
+              Tracé retenu
+            </p>
+            {payload.manualDrawing ? (
+              <div className="space-y-2">
+                <p className="text-base font-bold text-slate-900">
+                  {payload.manualDrawing.kind === "polygon" ? "Polygone" : "Tracé"}
+                </p>
+                <p className="text-sm text-slate-600">
+                  {formatGeometryPointCount(drawingSummary.pointCount)} · {drawingSummary.message}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-600">
+                Aucun tracé manuel validé. La carte utilisera le point disponible ou l&apos;aperçu géographique.
               </p>
             )}
           </div>

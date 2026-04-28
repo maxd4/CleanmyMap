@@ -111,7 +111,7 @@ Tableau de bord de l'avancement de la modularisation du projet CleanMyMap.
 ## 🟢 Priorité Basse (11-15)
 
 ### 11-15. Fichiers < 16KB
-- Voir [MODULARIZATION_PLAN.md](./MODULARIZATION_PLAN.md) pour détails
+- Voir [AI_MODULARIZATION_PLAN.md](./AI_MODULARIZATION_PLAN.md) pour détails
 
 ---
 
@@ -184,9 +184,9 @@ Tableau de bord de l'avancement de la modularisation du projet CleanMyMap.
 
 ## 📚 Ressources
 
-- [MODULARIZATION_PLAN.md](./MODULARIZATION_PLAN.md) - Plan détaillé
-- [MODULARIZATION_GUIDE.md](./MODULARIZATION_GUIDE.md) - Guide pratique
-- [MODULARIZATION_QUICK_REF.md](./MODULARIZATION_QUICK_REF.md) - Référence rapide
+- [AI_MODULARIZATION_PLAN.md](./AI_MODULARIZATION_PLAN.md) - Plan détaillé
+- [AI_MODULARIZATION_GUIDE.md](./AI_MODULARIZATION_GUIDE.md) - Guide pratique
+- [AI_MODULARIZATION_CHEATSHEET.md](./AI_MODULARIZATION_CHEATSHEET.md) - Référence rapide
 - [MODULARIZATION_TEMPLATE.md](./MODULARIZATION_TEMPLATE.md) - Template
 - [MODULARIZATION_SESSION_REPORT.md](./MODULARIZATION_SESSION_REPORT.md) - Rapport
 

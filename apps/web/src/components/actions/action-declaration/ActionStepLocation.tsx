@@ -7,6 +7,11 @@ import { cn } from "@/lib/utils";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { FormState } from "../action-declaration-form.model";
 import type { ActionDrawing } from "@/lib/actions/types";
+import type { UpdateFormField } from "./types";
+import {
+  formatGeometryPointCount,
+  summarizeActionDrawingValidation,
+} from "../map/actions-map-geometry.utils";
 
 const ActionDrawingMap = dynamic(
   () => import("@/components/actions/action-drawing-map").then((mod) => mod.ActionDrawingMap),
@@ -15,10 +20,11 @@ const ActionDrawingMap = dynamic(
 
 interface ActionStepLocationProps {
   form: FormState;
-  updateField: (key: keyof FormState, value: any) => void;
+  updateField: UpdateFormField;
   manualDrawing: ActionDrawing | null;
   setManualDrawing: (drawing: ActionDrawing | null) => void;
   routePreviewDrawing: ActionDrawing | null;
+  onResetManualDrawing?: () => void;
   gpsStatus: "idle" | "locating" | "success" | "error";
   gpsMessage: string | null;
   onAutofillGps: () => void;
@@ -30,10 +36,48 @@ export function ActionStepLocation({
   manualDrawing,
   setManualDrawing,
   routePreviewDrawing,
+  onResetManualDrawing,
   gpsStatus,
   gpsMessage,
   onAutofillGps,
 }: ActionStepLocationProps) {
+  const manualDrawingSummary = summarizeActionDrawingValidation(manualDrawing);
+  const routePreviewSummary = summarizeActionDrawingValidation(routePreviewDrawing);
+  const displayedDrawing =
+    manualDrawingSummary.normalized ?? routePreviewSummary.normalized;
+  const displayedDrawingSummary = manualDrawingSummary.normalized
+    ? manualDrawingSummary
+    : routePreviewSummary;
+  const isUsingManualDrawing = Boolean(manualDrawingSummary.normalized);
+  const statusStyles = {
+    success:
+      "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100",
+    warning:
+      "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100",
+    error:
+      "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-100",
+    neutral:
+      "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200",
+  } as const;
+
+  const statusLabel = isUsingManualDrawing
+    ? "Tracé manuel validé"
+    : displayedDrawing
+      ? "Aperçu automatique"
+      : "Aucun tracé";
+  const statusMessage = isUsingManualDrawing
+    ? manualDrawingSummary.message
+    : displayedDrawing
+      ? `${routePreviewSummary.message} Dessine un tracé manuel pour verrouiller la zone.`
+      : "Ajoute un départ ou un tracé pour obtenir un aperçu plus précis.";
+  const statusTone = isUsingManualDrawing
+    ? manualDrawingSummary.tone
+    : displayedDrawing
+      ? routePreviewSummary.tone
+      : "neutral";
+  const pointCountLabel = displayedDrawing
+    ? formatGeometryPointCount(displayedDrawingSummary.pointCount)
+    : "Aucun point";
 
   
   return (
@@ -90,7 +134,9 @@ export function ActionStepLocation({
                 <select 
                   className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest text-slate-700"
                   value={form.routeStyle}
-                  onChange={(e) => updateField("routeStyle", e.target.value)}
+                  onChange={(e) =>
+                    updateField("routeStyle", e.target.value as FormState["routeStyle"])
+                  }
                 >
                   <option value="direct">Direct</option>
                   <option value="flexible">Souple</option>
@@ -115,13 +161,13 @@ export function ActionStepLocation({
             </div>
             <div className="flex items-center gap-1 text-[10px] font-black text-slate-400 tracking-widest uppercase">
               <HelpCircle size={12} />
-              Dessinez votre parcours sur la carte
+              Dessinez votre parcours sur la carte Paris + proche banlieue
             </div>
           </div>
 
           <div className="relative h-[340px] rounded-[2.5rem] bg-slate-100 border border-slate-200 overflow-hidden shadow-inner group">
             <ActionDrawingMap
-              drawing={manualDrawing ?? routePreviewDrawing}
+              drawing={displayedDrawing}
               onDrawingChange={setManualDrawing}
               readOnly={false}
             />
@@ -132,6 +178,37 @@ export function ActionStepLocation({
                 <MapIcon size={20} />
               </button>
             </div>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]",
+                    statusStyles[statusTone],
+                  )}
+                >
+                  {statusLabel}
+                </span>
+                <span className="text-[11px] font-semibold text-slate-500">
+                  {pointCountLabel}
+                </span>
+              </div>
+              <p className="text-[11px] leading-snug text-slate-500">
+                {statusMessage}
+              </p>
+            </div>
+
+            {manualDrawingSummary.normalized && onResetManualDrawing ? (
+              <button
+                type="button"
+                onClick={onResetManualDrawing}
+                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
+              >
+                Réinitialiser le tracé
+              </button>
+            ) : null}
           </div>
         </div>
       </div>

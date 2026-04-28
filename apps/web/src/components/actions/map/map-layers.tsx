@@ -9,17 +9,14 @@ import {
   Tooltip,
 } from "react-leaflet";
 import MarkerClusterGroup from "react-leaflet-cluster";
-import { divIcon, LatLngExpression, LatLngTuple } from "leaflet";
+import { divIcon } from "leaflet";
 import { Info } from "lucide-react";
-import { CmmButton } from "@/components/ui/cmm-button";
-import { ActionMapItem, ActionDrawing } from "@/lib/actions/types";
+import { ActionMapItem } from "@/lib/actions/types";
 import {
   mapItemCoordinates,
   mapItemShouldRenderPoint,
   mapItemWasteKg,
   mapItemCigaretteButts,
-  getGeometryPresentation,
-  mapItemDrawing,
 } from "@/lib/actions/data-contract";
 import { computePollutionScore } from "@/lib/actions/pollution-score";
 import {
@@ -27,6 +24,14 @@ import {
   resolveDynamicColor,
 } from "@/components/actions/map-marker-categories";
 import { ActionPopupContent } from "./action-popup-content";
+import {
+  formatGeometryConfidenceLabel,
+  formatGeometryModeLabel,
+  formatGeometryPointCount,
+  resolveActionMapGeometryViewModel,
+  resolveInfrastructureAnchor,
+  resolveGeometryRenderStyle,
+} from "./actions-map-geometry.utils";
 
 function getPollutionScore(item: ActionMapItem): number {
   return computePollutionScore({
@@ -46,41 +51,66 @@ function resolvePointColor(item: ActionMapItem): string {
   return resolveDynamicColor(score);
 }
 
-function drawingCoordinates(
-  drawing: ActionDrawing | null | undefined,
-): LatLngExpression[] {
-  if (!drawing) {
-    return [];
-  }
-  return drawing.coordinates.map(
-    (point) => [point[0], point[1]] as LatLngExpression,
+function GeometryTooltipContent({
+  title,
+  geometryModeLabel,
+  geometryPointsLabel,
+  geometryMetricLabel,
+  geometryConfidenceLabel,
+  color,
+}: {
+  title: string;
+  geometryModeLabel: string;
+  geometryPointsLabel: string;
+  geometryMetricLabel: string | null;
+  geometryConfidenceLabel: string | null;
+  color: string;
+}) {
+  return (
+    <div className="min-w-[150px] rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.5)] backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-950/95">
+      <div className="flex items-center justify-between gap-2">
+        <span className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+          {geometryModeLabel}
+        </span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+          {geometryPointsLabel}
+        </span>
+      </div>
+
+      <p className="mt-1 text-[11px] font-bold leading-tight text-slate-900 dark:text-slate-50">
+        {title}
+      </p>
+
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {geometryMetricLabel && (
+          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            {geometryMetricLabel}
+          </span>
+        )}
+        {geometryConfidenceLabel && (
+          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            {geometryConfidenceLabel}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
-function resolveInfrastructureAnchor(
-  item: ActionMapItem,
-  drawing: ActionDrawing | null,
-): LatLngTuple | null {
-  if (drawing && drawing.coordinates.length > 0) {
-    const [latitudeSum, longitudeSum] = drawing.coordinates.reduce(
-      (acc, point) => [acc[0] + point[0], acc[1] + point[1]],
-      [0, 0],
-    );
-    return [
-      latitudeSum / drawing.coordinates.length,
-      longitudeSum / drawing.coordinates.length,
-    ];
-  }
-
-  const coords = mapItemCoordinates(item);
-  if (coords.latitude === null || coords.longitude === null) {
+export function SignalementMarkers({
+  items,
+  visible = true,
+  selectedActionId = null,
+}: {
+  items: ActionMapItem[];
+  visible?: boolean;
+  selectedActionId?: string | null;
+}) {
+  if (!visible) {
     return null;
   }
 
-  return [coords.latitude, coords.longitude];
-}
-
-export function SignalementMarkers({ items }: { items: ActionMapItem[] }) {
   return (
     <MarkerClusterGroup
       chunkedLoading
@@ -99,20 +129,25 @@ export function SignalementMarkers({ items }: { items: ActionMapItem[] }) {
 
         const score = getPollutionScore(item);
         const color = resolvePointColor(item);
-        const geometry = getGeometryPresentation(item);
-        const isFallbackPoint = geometry.strokeStyle === "point";
+        const geometry = resolveActionMapGeometryViewModel(item);
+        const renderStyle = resolveGeometryRenderStyle(geometry);
+        const isFallbackPoint = geometry.presentation.strokeStyle === "point";
+        const isSelected = selectedActionId === item.id;
 
         return (
           <CircleMarker
             key={`point-${item.id}`}
-            center={[coords.latitude, coords.longitude]}
-            radius={isFallbackPoint ? 4.5 : 6}
+            center={geometry.anchor ?? [coords.latitude, coords.longitude]}
+            radius={renderStyle.pointRadius ?? (isFallbackPoint ? 4.5 : 6) + (isSelected ? 2 : 0)}
             pathOptions={{
               color: color,
               fillColor: color,
-              fillOpacity: isFallbackPoint ? 0.52 : 0.85,
-              weight: isFallbackPoint ? 1.5 : 2,
-              opacity: isFallbackPoint ? 0.7 : 0.95,
+              fillOpacity:
+                renderStyle.pointFillOpacity ?? (isFallbackPoint ? 0.52 : 0.85),
+              weight: (renderStyle.pointWeight ?? (isFallbackPoint ? 1.5 : 2)) + (isSelected ? 1 : 0),
+              opacity: isSelected
+                ? 1
+                : renderStyle.pointOpacity ?? (isFallbackPoint ? 0.7 : 0.95),
             }}
           >
             <Popup className="glass-popup custom-popup">
@@ -130,39 +165,61 @@ export function SignalementMarkers({ items }: { items: ActionMapItem[] }) {
   );
 }
 
-export function ShapeLayers({ items }: { items: ActionMapItem[] }) {
+export function ShapeLayers({
+  items,
+  visible = true,
+  selectedActionId = null,
+}: {
+  items: ActionMapItem[];
+  visible?: boolean;
+  selectedActionId?: string | null;
+}) {
+  if (!visible) {
+    return null;
+  }
+
   return (
     <>
       {items.map((item) => {
-        const drawing = mapItemDrawing(item);
-        const coordinates = drawingCoordinates(drawing);
-        if (!drawing || coordinates.length === 0) return null;
+        const geometry = resolveActionMapGeometryViewModel(item);
+        if (geometry.renderMode !== "drawing" || geometry.positions.length === 0) {
+          return null;
+        }
 
         const color = resolvePointColor(item);
         const score = getPollutionScore(item);
         const coords = mapItemCoordinates(item);
-        const geometry = getGeometryPresentation(item);
-        const isEstimated = geometry.strokeStyle === "dashed";
+        const renderStyle = resolveGeometryRenderStyle(geometry);
+        const geometryModeLabel = formatGeometryModeLabel(geometry.presentation);
+        const geometryPointsLabel = formatGeometryPointCount(geometry.pointCount);
+        const geometryConfidenceLabel = formatGeometryConfidenceLabel(
+          geometry.confidence,
+        );
+        const geometryMetricLabel = geometry.metrics.label;
+        const isSelected = selectedActionId === item.id;
 
-        if (drawing.kind === "polygon") {
+        if (geometry.kind === "polygon") {
           return (
             <Polygon
               key={`shape-${item.id}`}
-              positions={coordinates}
+              positions={geometry.positions}
               pathOptions={{
                 color: color,
-                weight: 2,
-                opacity: isEstimated ? 0.8 : 0.95,
-                fillOpacity: isEstimated ? 0.14 : 0.24,
-                dashArray: isEstimated ? "8 8" : undefined,
+                weight: (renderStyle.strokeWeight ?? 2) + (isSelected ? 2 : 0),
+                opacity: isSelected ? 1 : renderStyle.strokeOpacity ?? 0.95,
+                fillOpacity: (renderStyle.fillOpacity ?? 0.24) + (isSelected ? 0.08 : 0),
+                dashArray: renderStyle.dashArray,
               }}
             >
               <Tooltip className="glass-tooltip" direction="center" sticky>
-                <div className="text-center">
-                  <p className="text-[9px] uppercase font-bold tracking-wider">
-                    Zone {Math.round(score)}%
-                  </p>
-                </div>
+                <GeometryTooltipContent
+                  title={`Zone ${Math.round(score)}%`}
+                  geometryModeLabel={geometryModeLabel}
+                  geometryPointsLabel={geometryPointsLabel}
+                  geometryMetricLabel={geometryMetricLabel}
+                  geometryConfidenceLabel={geometryConfidenceLabel}
+                  color={color}
+                />
               </Tooltip>
               <Popup className="glass-popup custom-popup">
                 <ActionPopupContent
@@ -179,20 +236,23 @@ export function ShapeLayers({ items }: { items: ActionMapItem[] }) {
         return (
           <Polyline
             key={`shape-${item.id}`}
-            positions={coordinates}
+            positions={geometry.positions}
             pathOptions={{
               color: color,
-              weight: 4,
-              opacity: isEstimated ? 0.75 : 0.92,
-              dashArray: isEstimated ? "8 8" : undefined,
+              weight: (renderStyle.strokeWeight ?? 4) + (isSelected ? 2 : 0),
+              opacity: isSelected ? 1 : renderStyle.strokeOpacity ?? 0.92,
+              dashArray: renderStyle.dashArray,
             }}
           >
             <Tooltip className="glass-tooltip" direction="top" sticky>
-              <div className="text-center">
-                <p className="text-[9px] uppercase font-bold tracking-wider">
-                  Trace {Math.round(score)}%
-                </p>
-              </div>
+              <GeometryTooltipContent
+                title={`Trace ${Math.round(score)}%`}
+                geometryModeLabel={geometryModeLabel}
+                geometryPointsLabel={geometryPointsLabel}
+                geometryMetricLabel={geometryMetricLabel}
+                geometryConfidenceLabel={geometryConfidenceLabel}
+                color={color}
+              />
             </Tooltip>
             <Popup className="glass-popup custom-popup">
               <ActionPopupContent
@@ -209,7 +269,19 @@ export function ShapeLayers({ items }: { items: ActionMapItem[] }) {
   );
 }
 
-export function InfrastructureMarkers({ items }: { items: ActionMapItem[] }) {
+export function InfrastructureMarkers({
+  items,
+  visible = true,
+  selectedActionId = null,
+}: {
+  items: ActionMapItem[];
+  visible?: boolean;
+  selectedActionId?: string | null;
+}) {
+  if (!visible) {
+    return null;
+  }
+
   return (
     <>
       {items.map((item) => {
@@ -218,11 +290,11 @@ export function InfrastructureMarkers({ items }: { items: ActionMapItem[] }) {
           return null;
         }
 
-        const drawing = mapItemDrawing(item);
-        const anchor = resolveInfrastructureAnchor(item, drawing);
+        const anchor = resolveInfrastructureAnchor(item);
         if (!anchor) {
           return null;
         }
+        const isSelected = selectedActionId === item.id;
 
         return (
           <Marker
@@ -234,7 +306,7 @@ export function InfrastructureMarkers({ items }: { items: ActionMapItem[] }) {
               html: `
                 <div class="cmm-infrastructure-marker__outer group">
                   <div class="cmm-infrastructure-marker__glow"></div>
-                  <div class="cmm-infrastructure-marker__inner">
+                  <div class="cmm-infrastructure-marker__inner${isSelected ? " cmm-infrastructure-marker__inner--selected" : ""}">
                     <span class="cmm-infrastructure-marker__emoji">${emoji}</span>
                   </div>
                 </div>
@@ -246,7 +318,7 @@ export function InfrastructureMarkers({ items }: { items: ActionMapItem[] }) {
             <Popup className="glass-popup custom-popup">
               <div className="p-5 space-y-4 min-w-[280px]">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/50 flex items-center justify-center text-2xl shadow-inner border border-violet-200/50">
+                  <div className={`w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/50 flex items-center justify-center text-2xl shadow-inner border border-violet-200/50 ${isSelected ? "ring-4 ring-violet-400/40" : ""}`}>
                     {emoji}
                   </div>
                   <div>

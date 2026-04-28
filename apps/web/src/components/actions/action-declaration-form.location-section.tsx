@@ -59,27 +59,27 @@ export function ActionDeclarationLocationSection({
  return (
  <section className="md:col-span-2 rounded-2xl border border-sky-200 bg-sky-50/70 px-4 py-4 shadow-sm">
  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
- <div>
- <p className="cmm-text-caption uppercase tracking-[0.14em] text-sky-500">
- Localisation
- </p>
- <h3 className="text-lg font-semibold cmm-text-primary">
+<div>
+<p className="cmm-text-caption uppercase tracking-[0.14em] text-sky-500">
+Localisation
+</p>
+<h3 className="text-lg font-semibold cmm-text-primary">
  Indique où la collecte a eu lieu
- </h3>
- </div>
+</h3>
+</div>
  <span className="rounded-full bg-white px-3 py-1 cmm-text-caption font-semibold cmm-text-secondary">
  2. Tracer
  </span>
  </div>
  <div className="flex flex-wrap items-start justify-between gap-3">
- <div className="space-y-1">
- <p className="cmm-text-small font-bold text-sky-900">
+<div className="space-y-1">
+<p className="cmm-text-small font-bold text-sky-900">
  Lieu / tracé <span className="text-emerald-500">*</span>
- </p>
- <p className="cmm-text-caption text-sky-800">
- Départ obligatoire. Arrivée vide = boucle locale.
- </p>
- </div>
+</p>
+<p className="cmm-text-caption text-sky-800">
+ Départ obligatoire. Arrivée vide = boucle locale dans Paris + proche banlieue.
+</p>
+</div>
  <div className="rounded-full bg-white px-3 py-1 cmm-text-caption font-semibold text-sky-900">
  {form.departureLocationLabel.trim() ||"Départ à renseigner"}
  {form.arrivalLocationLabel.trim()
@@ -193,10 +193,10 @@ export function ActionDeclarationLocationSection({
  </div>
 
  {!displayDrawing ? (
- <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 cmm-text-small cmm-text-muted">
- Saisis un lieu ou un départ pour voir l'aperçu. En mode complet, active le tracé manuel pour dessiner la zone.
- </div>
- ) : null}
+<div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 cmm-text-small cmm-text-muted">
+ Saisis un lieu ou un départ pour voir l&apos;aperçu dans le périmètre Paris + proche banlieue. En mode complet, active le tracé manuel pour dessiner la zone.
+</div>
+) : null}
  </div>
 
  <details className="mt-4 rounded-xl border border-sky-200 bg-white px-4 py-3">

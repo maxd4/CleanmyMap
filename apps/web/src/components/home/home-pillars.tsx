@@ -1,11 +1,26 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, LucideIcon } from "lucide-react";
+import {
+  ArrowRight,
+  BarChart3,
+  BookOpen,
+  FileText,
+  LayoutDashboard,
+  Map as MapIcon,
+  MapPin,
+  Network,
+  Shield,
+  Target,
+  Users,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
+import type { HomeIconName } from "@/lib/home/config";
 
 interface Pillar {
-  icon: LucideIcon;
+  iconName: HomeIconName;
   title: string;
   preview: {
     mobile: string[];
@@ -22,6 +37,20 @@ interface Pillar {
 interface HomePillarsProps {
   pillars: Pillar[];
 }
+
+const ICONS: Record<HomeIconName, LucideIcon> = {
+  "layout-dashboard": LayoutDashboard,
+  zap: Zap,
+  map: MapIcon,
+  target: Target,
+  network: Network,
+  "book-open": BookOpen,
+  "map-pin": MapPin,
+  "bar-chart-3": BarChart3,
+  users: Users,
+  "file-text": FileText,
+  shield: Shield,
+};
 
 const container = {
   hidden: { opacity: 0 },
@@ -100,7 +129,10 @@ export function HomePillars({ pillars }: HomePillarsProps) {
                 <div
                   className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${bloc.iconBg} ${bloc.iconColor} transition-transform duration-300 group-hover:scale-110 shadow-lg`}
                 >
-                  <bloc.icon size={24} />
+                  {(() => {
+                    const Icon = ICONS[bloc.iconName];
+                    return <Icon size={24} />;
+                  })()}
                 </div>
 
                 {/* titre */}

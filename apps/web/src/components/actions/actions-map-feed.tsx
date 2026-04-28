@@ -22,20 +22,23 @@ import {
  mapItemWasteKg,
 } from"../../lib/actions/data-contract";
 import { COLOR_TOKENS } from"./map-marker-categories";
-import { ImpactHeatmap } from "@/components/map/ImpactHeatmap";
 import { ActionStoriesCarousel } from "@/components/map/ActionStoriesCarousel";
+import { formatMapFreshnessLabel } from "./actions-map-freshness.utils";
 
 type ActionsMapCanvasComponent = ComponentType<{
- items: ActionMapItem[];
+  items: ActionMapItem[];
+  selectedActionId?: string | null;
 }>;
 
 type ActionsMapFeedProps = {
- types?: ActionRecordType[] |"all";
- days: number;
- statusFilter: ActionStatus |"all";
- impactFilter: ActionImpactLevel |"all";
- qualityMin: number;
- presentation?:"default" |"immersive";
+  types?: ActionRecordType[] |"all";
+  days: number;
+  statusFilter: ActionStatus |"all";
+  impactFilter: ActionImpactLevel |"all";
+  qualityMin: number;
+  presentation?:"default" |"immersive";
+  visibleCategories?: Record<MarkerCategory, boolean>;
+  selectedActionId?: string | null;
 };
 
 export function ActionsMapFeed({
@@ -43,11 +46,11 @@ export function ActionsMapFeed({
  days,
  statusFilter,
  impactFilter,
- qualityMin,
- presentation ="default",
+  qualityMin,
+  presentation ="default",
+  visibleCategories = DEFAULT_VISIBLE_CATEGORIES,
+  selectedActionId = null,
 }: ActionsMapFeedProps) {
- const visibleCategories: Record<MarkerCategory, boolean> =
- DEFAULT_VISIBLE_CATEGORIES;
  const serializedTypes = useMemo(
  () => (types ==="all" ?"all" : [...new Set(types)].sort().join(",")),
  [types],
@@ -69,6 +72,7 @@ export function ActionsMapFeed({
  error,
  isLoading,
  isValidating,
+ dataUpdatedAt,
  mutate: reload,
  } = useSWR(
  swrKey,
@@ -104,6 +108,10 @@ export function ActionsMapFeed({
  const partialSourcesLabel =
  failedSources.length > 0 ? failedSources.join(",") :"inconnues";
  const isImmersive = presentation ==="immersive";
+ const freshnessLabel = useMemo(
+   () => formatMapFreshnessLabel(dataUpdatedAt),
+   [dataUpdatedAt],
+ );
  const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
  const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);
 
@@ -161,6 +169,12 @@ export function ActionsMapFeed({
             <p className="mt-2 max-w-3xl text-sm font-medium leading-relaxed text-slate-300">
               Visualisation en temps réel des flux de pollution et des interventions citoyennes.
             </p>
+            {freshnessLabel ? (
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-100">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_0_4px_rgba(16,185,129,0.15)]" />
+                {freshnessLabel}
+              </div>
+            ) : null}
           </div>
           <button
             onClick={() => void reload()}
@@ -171,10 +185,10 @@ export function ActionsMapFeed({
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
-          {/* Main Visual: Heatmap */}
+          {/* Main Visual: Interactive map */}
           <div className="relative min-h-[600px] overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/60 shadow-2xl">
             {MapCanvas ? (
-              <ImpactHeatmap items={items} height="h-full" />
+              <MapCanvas items={items} selectedActionId={selectedActionId} />
             ) : mapCanvasError ? (
               <div className="flex h-full items-center justify-center bg-slate-950 px-6 text-center text-white">
                 <div className="max-w-md space-y-3 rounded-[2rem] border border-rose-400/20 bg-rose-500/10 px-8 py-10">
@@ -258,6 +272,12 @@ export function ActionsMapFeed({
  les interventions terrain. Par défaut, seules les données validées
  admin sont affichées.
  </p>
+ {freshnessLabel ? (
+ <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-700">
+ <span className="h-2 w-2 rounded-full bg-emerald-500" />
+ {freshnessLabel}
+ </div>
+ ) : null}
  </div>
  <button
  onClick={() => void reload()}
@@ -273,8 +293,8 @@ export function ActionsMapFeed({
  <>
  <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-950 shadow-inner">
  {MapCanvas ? (
- <MapCanvas items={items} />
- ) : mapCanvasError ? (
+ <MapCanvas items={items} selectedActionId={selectedActionId} />
+) : mapCanvasError ? (
  <div className="flex h-[28rem] items-center justify-center rounded-[1.75rem] border border-rose-200 bg-rose-50 px-6 text-center text-rose-900">
  <div className="max-w-sm space-y-2 rounded-[1.5rem] border border-rose-200 bg-white px-5 py-6 shadow-sm">
  <p className="cmm-text-small font-semibold uppercase tracking-[0.16em] text-rose-700">
@@ -311,7 +331,7 @@ export function ActionsMapFeed({
               <div className="absolute -right-16 -top-16 w-32 h-32 bg-emerald-400/10 rounded-full blur-3xl group-hover:bg-emerald-400/20 transition-colors" />
               <div className="relative z-10">
                 <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6">
-                  Légende d'Impact
+                  Légende d&apos;Impact
                 </p>
                 
                 <div className="space-y-6">
@@ -354,7 +374,7 @@ export function ActionsMapFeed({
                       </div>
                       <div className="ml-2">
                         <p className="text-xs font-bold text-slate-700 uppercase tracking-wide">Opacité Dynamique</p>
-                        <p className="text-[10px] font-semibold text-slate-400">Varie selon le score d'urgence</p>
+                        <p className="text-[10px] font-semibold text-slate-400">Varie selon le score d&apos;urgence</p>
                       </div>
                     </div>
                   </div>
@@ -413,7 +433,7 @@ export function ActionsMapFeed({
                       Infrastructures Suggérées
                     </p>
                     <p className="text-[10px] font-semibold text-emerald-800/70 mb-4">
-                      Apparaissent au-delà de {INFRASTRUCTURE_ALERT_THRESHOLD}% d'urgence normalisée.
+                      Apparaissent au-delà de {INFRASTRUCTURE_ALERT_THRESHOLD}% d&apos;urgence normalisée.
                     </p>
                     <div className="flex flex-wrap gap-2">
                       <div className="flex items-center gap-2 bg-white/80 px-2.5 py-1.5 rounded-xl shadow-sm border border-emerald-100">

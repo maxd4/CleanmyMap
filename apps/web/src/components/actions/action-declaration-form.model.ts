@@ -3,6 +3,7 @@ import {
  ASSOCIATION_SELECTION_OPTIONS,
 } from"@/lib/actions/association-options";
 import { PLACE_TYPE_OPTIONS } from"@/lib/actions/place-type-options";
+import { normalizeActionDrawing } from"./map/actions-map-geometry.utils";
 
 export type FormState = {
  actorName: string;
@@ -116,11 +117,7 @@ export function getDrawingCentroid(drawing: ActionDrawing): {
 export function isDrawingValid(
  drawing: ActionDrawing | null,
 ): drawing is ActionDrawing {
- if (!drawing) {
- return false;
- }
- const minPoints = drawing.kind ==="polygon" ? 3 : 2;
- return drawing.coordinates.length >= minPoints;
+ return normalizeActionDrawing(drawing) !== null;
 }
 
 export type ValidationIssue = {
@@ -129,6 +126,7 @@ export type ValidationIssue = {
  |"enterpriseName"
  |"actionDate"
  |"locationLabel"
+ |"manualDrawing"
  |"wasteKg"
  |"volunteersCount"
  |"durationMinutes";

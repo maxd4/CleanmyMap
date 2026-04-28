@@ -89,4 +89,25 @@ describe("map marker categories", () => {
  false,
  );
  });
+
+ it("lets each infrastructure category be hidden independently", () => {
+ const ashtrayItem = buildItem({ waste_kg: 0, cigarette_butts: 1500 });
+ const binItem = buildItem({ waste_kg: 16, cigarette_butts: 0 });
+ const comboItem = buildItem({ waste_kg: 18, cigarette_butts: 1800 });
+ const hideItemCategories = (item: ActionMapItem) =>
+ deriveMarkerCategories(item).reduce(
+ (acc, category) => ({ ...acc, [category]: false }),
+ DEFAULT_VISIBLE_CATEGORIES,
+ );
+
+ expect(
+ isVisibleWithCategoryFilter(ashtrayItem, hideItemCategories(ashtrayItem)),
+ ).toBe(false);
+ expect(
+ isVisibleWithCategoryFilter(binItem, hideItemCategories(binItem)),
+ ).toBe(false);
+ expect(
+ isVisibleWithCategoryFilter(comboItem, hideItemCategories(comboItem)),
+ ).toBe(false);
+ });
 });

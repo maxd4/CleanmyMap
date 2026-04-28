@@ -17,6 +17,7 @@ import {
 } from "./payload";
 import { computeActionDataQuality } from "../action-declaration-form.quality";
 import { useActionDeclarationSmartAssist } from "../action-declaration-form.smart-assist";
+import { hydrateActionDeclarationDraft } from "./draft-storage";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
 
@@ -49,7 +50,9 @@ export function useActionDeclarationForm({
     : (resolvedActorOptions[0] ?? userMetadata.userId);
 
   const [form, setForm] = useState(() =>
-    createInitialFormState(resolvedDefaultActorName),
+    hydrateActionDeclarationDraft(
+      createInitialFormState(resolvedDefaultActorName),
+    ),
   );
   const [manualDrawingEnabled] = useState<boolean>(true);
   const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(null);
@@ -89,17 +92,6 @@ export function useActionDeclarationForm({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Persistence draft logic
-  useEffect(() => {
-    const saved = localStorage.getItem("cmm_action_draft");
-    if (saved) {
-      try {
-        const draft = JSON.parse(saved);
-        setForm((prev: any) => ({ ...prev, ...draft }));
-      } catch {}
-    }
-  }, []);
-
   useEffect(() => {
     if (submissionState !== "success") {
       localStorage.setItem("cmm_action_draft", JSON.stringify(form));
@@ -110,6 +102,8 @@ export function useActionDeclarationForm({
 
   const drawingIsValid = isDrawingValid(manualDrawing);
   const isEntrepriseMode = form.associationName === ENTREPRISE_ASSOCIATION_OPTION;
+  const routePreviewInput = form.departureLocationLabel.trim() || form.locationLabel.trim();
+  const effectiveRoutePreviewDrawing = routePreviewInput ? routePreviewDrawing : null;
 
   const payload = useMemo(
     () =>
@@ -134,11 +128,11 @@ export function useActionDeclarationForm({
         form,
         declarationMode,
         hasLocationProof: form.latitude.trim().length > 0 && form.longitude.trim().length > 0,
-        hasDrawingProof: drawingIsValid || Boolean(routePreviewDrawing),
+        hasDrawingProof: drawingIsValid || Boolean(effectiveRoutePreviewDrawing),
         photoAssets,
         visionEstimate,
       }),
-    [declarationMode, drawingIsValid, form, photoAssets, routePreviewDrawing, visionEstimate]
+    [declarationMode, drawingIsValid, effectiveRoutePreviewDrawing, form, photoAssets, visionEstimate]
   );
 
   const {
@@ -158,7 +152,6 @@ export function useActionDeclarationForm({
     const arrival = form.arrivalLocationLabel.trim();
 
     if (!departure) {
-      setRoutePreviewDrawing(null);
       return () => { active = false; };
     }
 
@@ -200,7 +193,6 @@ export function useActionDeclarationForm({
   useEffect(() => {
     let active = true;
     if (photoAssets.length === 0) return;
-    setVisionStatus("processing");
     inferActionVisionEstimate(photoAssets, {
       locationLabel: form.locationLabel,
       placeType: form.placeType,

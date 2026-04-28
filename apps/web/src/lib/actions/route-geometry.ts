@@ -1,5 +1,10 @@
 import type { ActionDrawing } from "@/lib/actions/types";
 import { findMatchingGeometry } from "../geo/geometry-reference";
+import {
+  buildGreaterParisNominatimSearchUrl,
+  isWithinGreaterParisBounds,
+  parseNominatimCoordinates,
+} from "../geo/greater-paris";
 
 type GeoPoint = {
   latitude: number;
@@ -88,19 +93,16 @@ function isSmallStreetLike(label: string): boolean {
 }
 
 async function geocodeLabel(label: string): Promise<GeoPoint | null> {
-  const query = encodeURIComponent(label.trim());
-  if (!query) {
+  const url = buildGreaterParisNominatimSearchUrl(label);
+  if (!url) {
     return null;
   }
   try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${query}&limit=1`,
-      {
-        headers: {
-          Accept: "application/json",
-        },
+    const response = await fetch(url, {
+      headers: {
+        Accept: "application/json",
       },
-    );
+    });
     if (!response.ok) {
       return null;
     }
@@ -108,16 +110,19 @@ async function geocodeLabel(label: string): Promise<GeoPoint | null> {
       lat?: string;
       lon?: string;
     }>;
-    const first = data[0];
-    if (!first?.lat || !first?.lon) {
+    const coordinates = parseNominatimCoordinates(data[0]);
+    if (!coordinates) {
       return null;
     }
-    const latitude = Number(first.lat);
-    const longitude = Number(first.lon);
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    if (
+      !isWithinGreaterParisBounds(
+        coordinates.latitude,
+        coordinates.longitude,
+      )
+    ) {
       return null;
     }
-    return { latitude, longitude };
+    return coordinates;
   } catch {
     return null;
   }
