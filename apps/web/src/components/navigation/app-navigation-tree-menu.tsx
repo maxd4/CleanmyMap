@@ -1,0 +1,374 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown, ChevronRight, Menu, PanelLeft } from "lucide-react";
+import Link from "next/link";
+import type { NavigationSpace, NavigationItem } from "@/lib/navigation";
+import type { Locale } from "@/lib/ui/preferences";
+import { cn } from "@/lib/utils";
+import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
+import type { RibbonChrome } from "./app-navigation-ribbon-theme";
+
+type AppNavigationTreeMenuProps = {
+  activeSpaceId: NavigationSpace["id"] | null;
+  idBase: string;
+  locale: Locale;
+  onTrackNavigation: (href: string, label: string, spaceId: string | null) => void;
+  pathname: string;
+  ribbonChrome: RibbonChrome;
+  spaces: NavigationSpace[];
+};
+
+function isActivePath(pathname: string, href: string): boolean {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+export function AppNavigationTreeMenu({
+  activeSpaceId,
+  idBase,
+  locale,
+  onTrackNavigation,
+  pathname,
+  ribbonChrome,
+  spaces,
+}: AppNavigationTreeMenuProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [desktopActiveSpaceId, setDesktopActiveSpaceId] = useState<NavigationSpace["id"] | null>(null);
+  const [mobileOpenSpaceId, setMobileOpenSpaceId] = useState<NavigationSpace["id"] | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+
+  const placement = useDropdownPlacement({
+    isOpen,
+    triggerRef,
+    minPanelWidth: 520,
+  });
+
+  const panelStyle = useMemo(
+    () => ({
+      backgroundImage: ribbonChrome.backgroundImage,
+      borderColor: ribbonChrome.borderColor,
+    }),
+    [ribbonChrome.backgroundImage, ribbonChrome.borderColor],
+  );
+
+  const desktopVisibleSpaceId =
+    desktopActiveSpaceId ?? (isOpen ? activeSpaceId ?? spaces[0]?.id ?? null : null);
+  const activeDesktopSpace = desktopVisibleSpaceId
+    ? spaces.find((space) => space.id === desktopVisibleSpaceId) ?? null
+    : null;
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    panelRef.current?.focus();
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    };
+
+    const closeOnPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (
+        target &&
+        !triggerRef.current?.contains(target) &&
+        !panelRef.current?.contains(target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOnPointerDown);
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOnPointerDown);
+    };
+  }, [isOpen]);
+
+  const toggleMenu = () => {
+    setIsOpen((current) => {
+      const next = !current;
+      if (next) {
+        setDesktopActiveSpaceId(activeSpaceId ?? spaces[0]?.id ?? null);
+        setMobileOpenSpaceId(null);
+      }
+      return next;
+    });
+  };
+
+  return (
+    <div
+      className="relative shrink-0"
+      onMouseEnter={() => {
+        setIsOpen(true);
+        setDesktopActiveSpaceId(activeSpaceId ?? spaces[0]?.id ?? null);
+      }}
+      onMouseLeave={() => {
+        setIsOpen(false);
+      }}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-expanded={isOpen}
+        aria-controls={`${idBase}-panel`}
+        aria-haspopup="dialog"
+        onClick={toggleMenu}
+        className={cn(
+          "inline-flex min-h-11 min-w-[8.5rem] items-center justify-center gap-2 rounded-full border border-white/14 bg-white/10 px-4 text-white transition-colors hover:border-cyan-300/40 hover:bg-white/16 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+          isOpen && "border-cyan-300/45 bg-white/16",
+        )}
+      >
+        <PanelLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <span className="cmm-text-caption font-bold uppercase tracking-[0.16em]">
+          {locale === "fr" ? "Naviguer" : "Navigate"}
+        </span>
+        <ChevronDown
+          className={cn("h-4 w-4 shrink-0 transition-transform", isOpen && "rotate-180")}
+          aria-hidden="true"
+        />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {isOpen ? (
+          <>
+            <motion.div
+              key="app-navigation-tree-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-40 bg-slate-950/42"
+            />
+            <motion.div
+              key="app-navigation-tree-panel"
+              ref={panelRef}
+              id={`${idBase}-panel`}
+              role="dialog"
+              aria-modal="false"
+              aria-label={
+                locale === "fr"
+                  ? "Navigation par sections et rubriques"
+                  : "Navigation by sections and pages"
+              }
+              tabIndex={-1}
+              initial={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98 }}
+              transition={{ duration: 0.16, ease: "easeOut" }}
+              className={cn(
+                "fixed inset-x-4 z-50 max-h-[calc(100vh-7rem)] overflow-hidden rounded-[1.75rem] border shadow-[0_28px_70px_-30px_rgba(2,6,23,0.75)] lg:absolute lg:inset-x-auto lg:max-h-[min(72vh,40rem)] lg:w-[min(60rem,calc(100vw-5rem))]",
+                "top-[calc(var(--app-ribbon-top-offset,0.5rem)+4.75rem)] lg:top-full",
+                placement.openUp ? "lg:bottom-full lg:top-auto lg:mb-3" : "lg:mt-3",
+                placement.alignRight ? "lg:right-0" : "lg:left-0",
+              )}
+              style={panelStyle}
+            >
+              <div className="flex items-center justify-end border-b border-white/10 px-3 py-2.5 sm:px-4">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/10 text-white/74 transition hover:border-white/22 hover:bg-white/16 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+                  aria-label={locale === "fr" ? "Fermer le menu de navigation" : "Close navigation menu"}
+                >
+                  <Menu className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="max-h-[calc(100vh-11rem)] overflow-y-auto px-3 py-3 lg:max-h-[min(72vh,35rem)] sm:px-4">
+                <div className="hidden gap-3 lg:grid lg:grid-cols-[12.5rem_minmax(0,1fr)]">
+                  <div className="space-y-1.5">
+                    {spaces.map((space) => {
+                      const isCurrentSpace = space.id === activeSpaceId;
+                      const isOpenSpace = desktopActiveSpaceId === space.id;
+
+                      return (
+                        <button
+                          key={space.id}
+                          type="button"
+                          aria-expanded={isOpenSpace}
+                          aria-controls={`${idBase}-desktop-panel`}
+                          onMouseEnter={() => setDesktopActiveSpaceId(space.id)}
+                          onFocus={() => setDesktopActiveSpaceId(space.id)}
+                          onClick={() => setDesktopActiveSpaceId(space.id)}
+                          className={cn(
+                            "flex min-h-12 w-full items-center justify-between gap-2 rounded-[1.05rem] border px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
+                            isOpenSpace
+                              ? "border-cyan-300/35 bg-white/14 text-white"
+                              : isCurrentSpace
+                                ? "border-emerald-300/30 bg-emerald-400/10 text-white"
+                                : "border-white/12 bg-white/8 text-white/86 hover:border-white/18 hover:bg-white/12 hover:text-white",
+                          )}
+                        >
+                          <span className="flex min-w-0 items-center gap-2.5">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-lg">
+                              {space.icon}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate cmm-text-small font-bold uppercase tracking-[0.12em]">
+                                {space.label[locale]}
+                              </span>
+                            </span>
+                          </span>
+                          <ChevronRight
+                            className={cn(
+                              "h-4 w-4 shrink-0 transition-transform duration-150",
+                              isOpenSpace && "rotate-90",
+                            )}
+                            aria-hidden="true"
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div
+                    id={`${idBase}-desktop-panel`}
+                    className="min-w-0 rounded-[1.25rem] border border-white/12 bg-white/8 p-3 shadow-[0_18px_44px_-34px_rgba(2,6,23,0.85)]"
+                  >
+                    {activeDesktopSpace ? (
+                      <div className="flex h-full min-h-[22rem] flex-col">
+                        <ul className="space-y-1">
+                          {activeDesktopSpace.items.map((item: NavigationItem) => {
+                            const isActiveItem = isActivePath(pathname, item.href);
+                            return (
+                              <li key={item.id}>
+                                <Link
+                                  href={item.href}
+                                  aria-current={isActiveItem ? "page" : undefined}
+                                  onClick={() => {
+                                    onTrackNavigation(item.href, item.label[locale], activeDesktopSpace.id);
+                                    setIsOpen(false);
+                                  }}
+                                  className={cn(
+                                    "flex min-h-10 items-center justify-between gap-2 rounded-xl border px-3 py-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
+                                    isActiveItem
+                                      ? "border-emerald-300/35 bg-emerald-400/12 text-white"
+                                      : "border-transparent bg-transparent text-white/80 hover:border-white/12 hover:bg-white/10 hover:text-white",
+                                  )}
+                                >
+                                  <span className="min-w-0">
+                                    <span className="block truncate cmm-text-small font-semibold">
+                                      {item.label[locale]}
+                                    </span>
+                                  </span>
+                                  <ChevronRight className="h-4 w-4 shrink-0 opacity-72" aria-hidden="true" />
+                                </Link>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+
+                <div className="space-y-2 lg:hidden">
+                  {spaces.map((space) => {
+                    const isCurrentSpace = space.id === activeSpaceId;
+                    const isOpenSpace = mobileOpenSpaceId === space.id;
+                    const panelId = `${idBase}-${space.id}-mobile-panel`;
+                    const buttonId = `${idBase}-${space.id}-mobile-trigger`;
+
+                    return (
+                      <section
+                        key={space.id}
+                        className={cn(
+                          "rounded-[1.2rem] border border-white/12 bg-white/8 p-1.5",
+                          isOpenSpace
+                            ? "border-cyan-300/30 bg-white/12"
+                            : isCurrentSpace
+                              ? "border-emerald-300/24 bg-emerald-400/8"
+                              : "",
+                        )}
+                      >
+                        <button
+                          id={buttonId}
+                          type="button"
+                          aria-expanded={isOpenSpace}
+                          aria-controls={panelId}
+                          onClick={() =>
+                            setMobileOpenSpaceId((current) => (current === space.id ? null : space.id))
+                          }
+                          className="cmm-dropdown-trigger flex min-h-11 w-full items-center justify-between gap-2 rounded-[0.95rem] px-3 text-left text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 [&::-webkit-details-marker]:hidden"
+                        >
+                          <span className="flex min-w-0 items-center gap-2.5">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-lg">
+                              {space.icon}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate cmm-text-small font-bold uppercase tracking-[0.12em]">
+                                {space.label[locale]}
+                              </span>
+                            </span>
+                          </span>
+                          <ChevronDown
+                            className={cn(
+                              "h-4 w-4 shrink-0 text-white/70 transition-transform duration-150",
+                              isOpenSpace && "rotate-180",
+                            )}
+                            aria-hidden="true"
+                          />
+                        </button>
+
+                        <AnimatePresence initial={false}>
+                          {isOpenSpace ? (
+                            <motion.div
+                              key={panelId}
+                              id={panelId}
+                              role="region"
+                              aria-labelledby={buttonId}
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ duration: 0.16, ease: "easeOut" }}
+                              className="overflow-hidden"
+                            >
+                              <ul className="mt-1.5 space-y-1 px-1 pb-1">
+                                {space.items.map((item: NavigationItem) => {
+                                  const isActiveItem = isActivePath(pathname, item.href);
+                                  return (
+                                    <li key={item.id}>
+                                      <Link
+                                        href={item.href}
+                                        aria-current={isActiveItem ? "page" : undefined}
+                                        onClick={() => {
+                                          onTrackNavigation(item.href, item.label[locale], space.id);
+                                          setIsOpen(false);
+                                        }}
+                                        className={cn(
+                                          "block rounded-xl border px-3 py-2.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
+                                          isActiveItem
+                                            ? "border-emerald-300/35 bg-emerald-400/12 text-white"
+                                            : "border-transparent bg-transparent text-white/82 hover:border-white/12 hover:bg-white/10 hover:text-white",
+                                        )}
+                                      >
+                                        <span className="block cmm-text-small font-semibold">
+                                          {item.label[locale]}
+                                        </span>
+                                      </Link>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </motion.div>
+                          ) : null}
+                        </AnimatePresence>
+                      </section>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  );
+}

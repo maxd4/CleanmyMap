@@ -75,8 +75,12 @@ export function SitePreferencesProvider({
  return parseLocale(window.localStorage.getItem(STORAGE_KEYS.locale));
  });
  
- // Verrouillage sur le mode sombre (Unique Theme Dark Premium)
- const [theme, setThemeState] = useState<ThemeMode>("dark");
+ const [theme, setThemeState] = useState<ThemeMode>(() => {
+ if (typeof window ==="undefined") {
+ return DEFAULT_THEME;
+ }
+ return parseTheme(window.localStorage.getItem(STORAGE_KEYS.theme));
+ });
 
  const [displayMode, setDisplayModeState] = useState<DisplayMode>(() => {
  if (typeof window ==="undefined") {
@@ -113,11 +117,9 @@ export function SitePreferencesProvider({
  if (typeof window ==="undefined") {
  return;
  }
- // On s'assure que le thème reste dark dans le localStorage et sur le DOM
- window.localStorage.setItem(STORAGE_KEYS.theme, "dark");
- document.documentElement.classList.add("dark");
- document.documentElement.setAttribute("data-theme", "dark");
- }, []);
+ window.localStorage.setItem(STORAGE_KEYS.theme, theme);
+ document.documentElement.setAttribute("data-theme", theme);
+ }, [theme]);
 
  useEffect(() => {
  if (typeof window ==="undefined") {
@@ -157,8 +159,8 @@ export function SitePreferencesProvider({
  }, []);
 
  const setLocale = useCallback((value: Locale) => setLocaleState(value), []);
- const setTheme = useCallback((_value: ThemeMode) => {
-   // Ignoré pendant la phase de stabilisation visuelle unique
+ const setTheme = useCallback((value: ThemeMode) => {
+ setThemeState(value);
  }, []);
  
  const setDisplayMode = useCallback((value: DisplayMode) => {
@@ -168,8 +170,7 @@ export function SitePreferencesProvider({
  }, [persistDisplayMode]);
 
  const toggleTheme = useCallback(() => {
-   // Désactivé pour stabiliser le thème unique sombre doux
-   console.log("Theme toggle disabled during Dark Premium stabilization.");
+ setThemeState((current) => (current ==="dark" ?"mixed" :"dark"));
  }, []);
 
  useEffect(() => {

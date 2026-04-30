@@ -10,16 +10,21 @@ import type { Metadata } from"next";
 import { headers } from"next/headers";
 import { Inter, Outfit } from"next/font/google";
 import { AccountIdentityChip } from"@/components/account/account-identity-chip";
+import { AppNavigationRibbon } from"@/components/navigation/app-navigation-ribbon";
 import { PostHogProvider } from"@/components/posthog-provider";
 import { ClerkLocalizationProvider } from"@/components/auth/clerk-localization-provider";
 import { VibrantBackground } from"@/components/ui/vibrant-background";
 import { SitePreferencesProvider } from"@/components/ui/site-preferences-provider";
+import { SiteTooltips } from"@/components/ui/site-tooltips";
 import { PageTransition } from"@/components/ui/page-transition";
 import { NotificationBell } from"@/components/navigation/notification-bell";
-import { getCurrentUserIdentity } from"@/lib/authz";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from"@/lib/authz";
+import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { getClerkRuntimeConfig } from"@/lib/clerk-session-config";
-import { getServerDisplayModePreference } from"@/lib/server-preferences";
+import { getProfileLabel, toProfile } from"@/lib/profiles";
+import { getServerDisplayModePreference, getServerLocale } from"@/lib/server-preferences";
 import { metadata as appMetadata } from"@/lib/metadata";
+import type { CSSProperties } from "react";
 import"leaflet/dist/leaflet.css";
 import"leaflet-draw/dist/leaflet.draw.css";
 import"./globals.css";
@@ -50,15 +55,36 @@ export default async function RootLayout({
 }>) {
  const identity = await getCurrentUserIdentity();
  const clerkRuntime = getClerkRuntimeConfig();
- const displayModePreference = await getServerDisplayModePreference();
- const requestHeaders = await headers();
- const isAppShell = requestHeaders.get("x-cleanmymap-app-shell") ==="1";
- const hideGlobalHeader =
- requestHeaders.get("x-cleanmymap-hide-global-header") ==="1";
+  const { userId, clerkReachable } = await getSafeAuthSession();
+  const displayModePreference = await getServerDisplayModePreference();
+  const locale = await getServerLocale();
+  const role = clerkReachable
+  ? await getCurrentUserRoleLabel().catch(() =>"anonymous" as const)
+  : ("anonymous" as const);
+  const currentProfile = toProfile(role);
+  const profileLabel = userId
+  ? getProfileLabel(currentProfile, locale)
+  : locale ==="fr"
+  ?"Visiteur"
+  :"Visitor";
+  const requestHeaders = await headers();
+  const isAppShell = requestHeaders.get("x-cleanmymap-app-shell") ==="1";
+  const hideGlobalHeader =
+  requestHeaders.get("x-cleanmymap-hide-global-header") ==="1";
+  const appRibbonTopOffset = "0rem";
+  const appHeaderTopOffset = hideGlobalHeader ? "0rem" : "4.75rem";
 
  return (
- <html className={`h-full dark antialiased ${outfit.variable} ${inter.variable}`} suppressHydrationWarning>
- <body className="min-h-full bg-background text-foreground font-sans">
+        <html className={`h-full antialiased ${outfit.variable} ${inter.variable}`} suppressHydrationWarning data-theme="mixed">
+ <body
+   className="min-h-full bg-background text-foreground font-sans"
+   style={
+     {
+      "--app-ribbon-top-offset": appRibbonTopOffset,
+      "--app-header-top-offset": appHeaderTopOffset,
+     } as CSSProperties
+   }
+  >
  <SitePreferencesProvider
  initialDisplayMode={displayModePreference.displayMode}
  initialDisplayModeExplicit={displayModePreference.isExplicit}
@@ -75,11 +101,16 @@ export default async function RootLayout({
  allowedRedirectOrigins={clerkRuntime.allowedRedirectOrigins}
  >
  <PostHogProvider>
- <VibrantBackground />
- {!isAppShell && !hideGlobalHeader ? (
- <header className="sticky top-0 z-30 border-b border-white/10 bg-slate-950/60 shadow-sm backdrop-blur-xl transition-all duration-300">
- <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 overflow-x-auto px-4 py-3 scrollbar-none sm:px-8">
- <Link href="/" className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-95">
+  <VibrantBackground />
+  <SiteTooltips />
+  <AppNavigationRibbon
+  currentProfile={currentProfile}
+  profileLabel={profileLabel}
+  identity={identity}
+  />
+  {!isAppShell && !hideGlobalHeader ? (
+  <header className="sticky top-[var(--app-header-top-offset,0rem)] z-30 border-b border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] shadow-sm backdrop-blur-xl transition-all duration-300">
+   <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4 overflow-x-auto px-4 py-3 scrollbar-none sm:px-8"> <Link href="/" className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-95">
  <Image
  src="/brand/logo-cleanmymap-officiel.svg"
  alt="Logo CleanMyMap"
@@ -88,23 +119,23 @@ export default async function RootLayout({
  className="h-6 w-auto sm:h-7"
  priority
  />
- <h1 className="whitespace-nowrap cmm-text-caption cmm-text-primary dark:cmm-text-inverse font-semibold uppercase tracking-[0.18em] sm:cmm-text-small">
+ <h1 className="whitespace-nowrap cmm-text-caption cmm-text-secondary font-semibold uppercase tracking-[0.18em] sm:cmm-text-small">
  Dépolluer · Cartographier · Impacter
  </h1>
  </Link>
  <div className="flex min-w-max items-center gap-3 sm:gap-4">
  <Link
  href="/explorer"
- className="hidden rounded-full border border-slate-800 bg-slate-900 px-3 py-1.5 cmm-text-small cmm-text-secondary font-semibold transition hover:border-emerald-500/50 hover:bg-slate-800 hover:text-emerald-400 sm:inline-flex"
+ className="hidden rounded-full border border-[color:var(--border-default)] bg-[color:var(--bg-muted)] px-3 py-1.5 cmm-text-small cmm-text-secondary font-semibold transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 sm:inline-flex"
  >
  Plan du site
  </Link>
- <div className="h-4 w-px bg-slate-200 dark:bg-slate-800" />
+ <div className="h-4 w-px bg-[color:var(--border-default)]" />
  <Show when="signed-out">
  <div className="flex items-center gap-2">
  <Link
  href="/sign-in"
- className="cmm-text-small cmm-text-secondary font-semibold transition-colors hover:text-emerald-600 dark:cmm-text-muted dark:hover:text-emerald-400"
+ className="cmm-text-small cmm-text-secondary font-semibold transition-colors hover:text-cyan-200"
  >
   Se connecter
  </Link>

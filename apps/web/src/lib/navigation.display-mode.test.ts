@@ -8,7 +8,7 @@ import {
 } from "./navigation";
 
 function collectRouteIds(
-  profile: "benevole" | "coordinateur" | "scientifique" | "elu" | "admin",
+  profile: "benevole" | "coordinateur" | "scientifique" | "elu" | "admin" | "max",
   mode: "exhaustif" | "sobre" | "minimaliste",
 ) {
   return getNavigationSpacesForProfile(profile, mode).flatMap((space) =>
@@ -58,10 +58,10 @@ describe("navigation display modes", () => {
       isAdmin: false,
       displayMode: "minimaliste",
     });
-    expect(labels.summary).toContain("mode simplifié");
+    expect(labels.summary).toContain("mode essentiel");
   });
 
-  it("keeps the 7-block product order", () => {
+  it("keeps the product order", () => {
     const scientifiqueSpaceIds = getNavigationSpacesForProfile(
       "scientifique",
       "exhaustif",
@@ -77,6 +77,7 @@ describe("navigation display modes", () => {
       "visualize",
       "impact",
       "network",
+      "connect",
       "learn",
       "pilot",
     ]);
@@ -86,9 +87,28 @@ describe("navigation display modes", () => {
       "visualize",
       "impact",
       "network",
+      "connect",
       "learn",
       "pilot",
     ]);
+  });
+
+  it("hides the empty pilot space for benevole", () => {
+    const benevoleSpaceIds = getNavigationSpacesForProfile(
+      "benevole",
+      "exhaustif",
+    ).map((space) => space.id);
+
+    expect(benevoleSpaceIds).toEqual([
+      "home",
+      "act",
+      "visualize",
+      "impact",
+      "network",
+      "connect",
+      "learn",
+    ]);
+    expect(benevoleSpaceIds).not.toContain("pilot");
   });
 
   it("provides fallback pilot items for empty pilot blocks", () => {
@@ -111,10 +131,15 @@ describe("navigation display modes", () => {
       currentProfile: "coordinateur",
       isAdmin: true,
     });
+    const maxEntries = getProfileNavigationEntries({
+      currentProfile: "max",
+      isAdmin: true,
+    });
 
     expect(nonAdminEntries).toHaveLength(1);
     expect(nonAdminEntries[0]?.id).toBe("coordinateur");
     expect(adminEntries.length).toBeGreaterThan(nonAdminEntries.length);
     expect(adminEntries.some((entry) => entry.id === "admin")).toBe(true);
+    expect(maxEntries.some((entry) => entry.id === "max")).toBe(true);
   });
 });

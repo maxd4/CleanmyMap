@@ -1,8 +1,9 @@
 // Test script pour vérifier le payload avec les données utilisateur automatiques
-import { buildCreateActionPayload } from "../components/actions/action-declaration/payload";
+import type { FormState } from "./components/actions/action-declaration-form.model";
+import { buildCreateActionPayload } from "./components/actions/action-declaration/payload";
 
 // Données de test
-const mockForm = {
+const mockForm: FormState = {
   actorName: "Test User",
   associationName: "Test Association",
   actionDate: "2024-01-15",
@@ -13,6 +14,8 @@ const mockForm = {
   routeAdjustmentMessage: "",
   latitude: "",
   longitude: "",
+  cigaretteButtsCount: "",
+  cigaretteButtsCondition: "propre" as const,
   wasteKg: "5.5",
   cigaretteButts: "0",
   volunteersCount: "2",

@@ -26,13 +26,14 @@ export function ActionDeclarationPhotoSection({
  Aide à estimer le poids collecté.
  </p>
  </div>
- {photoAssets.length > 0 ? (
- <button
- type="button"
- onClick={onClearPhotos}
- className="rounded-full bg-red-50 px-3 py-1 cmm-text-caption font-semibold text-red-700 transition hover:bg-red-100"
- >
- Supprimer
+      {photoAssets.length > 0 ? (
+        <button
+          type="button"
+          onClick={onClearPhotos}
+          aria-label="Supprimer les photos jointes"
+          className="rounded-full bg-red-50 px-3 py-1 cmm-text-caption font-semibold text-red-700 transition hover:bg-red-100"
+        >
+          Supprimer
  </button>
  ) : null}
  </div>
@@ -57,9 +58,9 @@ export function ActionDeclarationPhotoSection({
  >
  <img
  src={asset.dataUrl}
- alt={`Photo ${index + 1}`}
+ alt={`Aperçu de la photo ${index + 1}`}
  className="h-full w-full object-cover"
- />
+/>
  </div>
  ))}
  </div>
@@ -77,7 +78,7 @@ export function ActionDeclarationPhotoSection({
  </span>
  {visionEstimate ? (
  <span className="text-emerald-800">
- Estimation : {visionEstimate.estimatedWasteKg.toFixed(1)} kg
+ Estimation : {visionEstimate.wasteKg.value.toFixed(1)} kg
  </span>
  ) : null}
  </div>

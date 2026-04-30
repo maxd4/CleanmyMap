@@ -372,7 +372,7 @@ async function assertDerivedGeometryColumnsExist(supabase, table) {
   if (result.error) {
     if (result.error.message.includes("does not exist")) {
       throw new Error(
-        `Missing derived geometry columns on ${table}. Apply migration 20260424_000017_persist_derived_geometry.sql and 20260424_000018_persist_geometry_source.sql first.`,
+        `Missing derived geometry columns on ${table}. Apply migration 20260424000017_persist_derived_geometry.sql and 20260424000018_persist_geometry_source.sql first.`,
       );
     }
     throw new Error(`${table} schema check failed: ${result.error.message}`);

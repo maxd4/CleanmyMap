@@ -40,12 +40,12 @@ Corriger les warnings **uniquement** lors du développement actif d'une rubrique
 ## 📋 Audit par rubrique
 
 ### 🏠 **Page d'accueil** (Priorité 1 - En cours de modularisation)
-**Fichiers** : `src/app/page.tsx`, `src/components/home/*`
+**Fichiers** : `src/app/page.tsx`, `src/components/accueil/*`
 
 | Fichier | Warnings | Types | Priorité |
 |---------|----------|-------|----------|
-| `home-community-activity.tsx` | 3 | Apostrophes, `<img>` | 🟡 Moyenne |
-| `home-hero.tsx` | 1 | Apostrophes | 🟡 Moyenne |
+| `accueil-community-activity.tsx` | 3 | Apostrophes, `<img>` | 🟡 Moyenne |
+| `accueil-hero.tsx` | 1 | Apostrophes | 🟡 Moyenne |
 | `ZoneRepartitionChart.tsx` | 2 | Types `any` | 🟠 Élevée |
 
 **Actions recommandées** :
@@ -282,12 +282,12 @@ import { used } from './module';
 
 ### Linter par fichier spécifique
 ```bash
-npx eslint src/components/home/home-hero.tsx
+npx eslint src/components/accueil/accueil-hero.tsx
 ```
 
 ### Correction automatique
 ```bash
-npx eslint src/components/home/ --fix
+npx eslint src/components/accueil/ --fix
 ```
 
 ### Analyse par type de warning
@@ -315,3 +315,4 @@ const data: any = response;
 ---
 
 *Cet audit sera mis à jour à chaque correction significative pour maintenir la visibilité sur la dette technique.*
+

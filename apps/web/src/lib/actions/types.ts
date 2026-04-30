@@ -66,30 +66,6 @@ export type ActionQualityBreakdown = {
   freshness: number;
 };
 
-export type ActionContractCreatePayload = {
-  type: ActionRecordType;
-  source: string;
-  actor_name: string | null;
-  association_name?: string | null;
-  action_date: string;
-  location_label: string;
-  latitude: number | null;
-  longitude: number | null;
-  departure_location_label?: string | null;
-  arrival_location_label?: string | null;
-  route_style?: "direct" | "souple" | null;
-  route_adjustment_message?: string | null;
-  waste_kg: number | null;
-  cigarette_butts: number | null;
-  volunteers_count: number;
-  duration_minutes: number;
-  notes: string | null;
-  manual_drawing?: ActionDrawing | null;
-  waste_breakdown?: ActionWasteBreakdown | null;
-  photos?: ActionPhotoAsset[] | null;
-  vision_estimate?: ActionVisionEstimate | null;
-};
-
 export type ActionListItem = {
   id: string;
   created_at: string;

@@ -1,21 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import type { UserIdentity } from "@/lib/authz";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { IdentityBadge } from "@/components/ui/identity-badge";
 import { BadgePictogram, getAccountBadgeIconName } from "@/components/gamification/badge-icon";
 import { BadgeSurface } from "@/components/gamification/badge-surface";
 import { useRouter } from "next/navigation";
+import { ChevronDown } from "lucide-react";
+import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import {
   getProfileEntryPath,
   getProfileLabel,
   getProfileSubtitle,
-  isSelfServiceProfile,
-  PROFILE_ORDER,
-  SELF_SERVICE_PROFILE_ORDER,
+  getSwitchableProfiles,
   type AppProfile,
 } from "@/lib/profiles";
+import { cn } from "@/lib/utils";
 
 type AccountIdentityChipProps = {
   identity: UserIdentity;
@@ -30,6 +31,7 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
   const [isUpdatingRole, setIsUpdatingRole] = useState(false);
   const [roleError, setRoleError] = useState<string | null>(null);
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
+  const [isBadgeMenuOpen, setIsBadgeMenuOpen] = useState(false);
   const gamificationBadges = identity.badges.filter(
     (badge) =>
       badge.id !== "admin" &&
@@ -38,16 +40,20 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
   );
 
   const roleOptions = useMemo(() => {
-    // Les administrateurs peuvent basculer vers n'importe quel rôle pour tester
-    if (identity.role === "admin") {
-      return [...PROFILE_ORDER];
-    }
-    // Les autres profils "self-service" peuvent basculer entre eux
-    if (isSelfServiceProfile(identity.role)) {
-      return [...SELF_SERVICE_PROFILE_ORDER];
-    }
-    return [] as AppProfile[];
+    return getSwitchableProfiles(identity.role);
   }, [identity.role]);
+  const roleMenuRef = useRef<HTMLDetailsElement | null>(null);
+  const roleMenuPlacement = useDropdownPlacement({
+    isOpen: isRoleMenuOpen,
+    triggerRef: roleMenuRef,
+    minPanelWidth: 288,
+  });
+  const badgeMenuRef = useRef<HTMLDetailsElement | null>(null);
+  const badgeMenuPlacement = useDropdownPlacement({
+    isOpen: isBadgeMenuOpen,
+    triggerRef: badgeMenuRef,
+    minPanelWidth: 272,
+  });
 
   const handleRoleMutation = async (targetProfile: AppProfile | null) => {
     if (!targetProfile || isUpdatingRole) {
@@ -75,7 +81,6 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
 
       const profilePath =
         payload?.profilePath ?? getProfileEntryPath(targetProfile);
-      setIsRoleMenuOpen(false);
       router.push(profilePath);
       router.refresh();
     } catch (error) {
@@ -101,93 +106,94 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
       {roleBadge ? (
         roleOptions.length > 0 ? (
           <details
-            className="relative"
+            ref={roleMenuRef}
             open={isRoleMenuOpen}
             onToggle={(event) => setIsRoleMenuOpen(event.currentTarget.open)}
+            className="relative"
           >
-            <summary className="list-none rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 transition-transform active:scale-95 [&::-webkit-details-marker]:hidden">
-              <div className="group relative flex items-center gap-1">
-                <IdentityBadge
-                  icon={roleBadge.icon}
-                  label={roleBadge.label}
-                  tone="role"
-                  className={`${isUpdatingRole ? "opacity-60" : ""}`}
-                />
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-400 shadow-sm transition group-hover:bg-emerald-100 group-hover:text-emerald-600">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className={`transition-transform duration-200 ${isRoleMenuOpen ? "rotate-180" : ""}`}
-                  >
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
-                </div>
-              </div>
+            <summary
+              aria-haspopup="menu"
+              aria-expanded={isRoleMenuOpen}
+              aria-controls="account-role-menu-panel"
+            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full px-3 cmm-text-caption font-bold cmm-text-secondary transition active:scale-95 [&::-webkit-details-marker]:hidden"
+          >
+            <IdentityBadge
+              icon={roleBadge.icon}
+              label={roleBadge.label}
+              tone="role"
+              className={`${isUpdatingRole ? "opacity-60" : ""}`}
+            />
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 transition-transform duration-150",
+                  isRoleMenuOpen && "rotate-180",
+                )}
+                aria-hidden="true"
+              />
             </summary>
-            <div className="absolute right-0 top-11 z-50 w-64 overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-1.5 shadow-2xl shadow-slate-950/20 backdrop-blur-xl dark:border-slate-700 dark:bg-slate-900/95">
-              <div className="px-3 py-2 border-b border-slate-100 mb-1.5">
-                <p className="cmm-text-caption font-bold uppercase tracking-[0.14em] cmm-text-muted">
-                  {locale === "fr" ? "Changer de rôle" : "Switch role"}
-                </p>
-              </div>
-              <div className="space-y-1">
+            <div
+              id="account-role-menu-panel"
+              className={cn(
+                "cmm-dropdown-panel cmm-surface-elevated absolute z-40 w-72 rounded-[1.25rem] p-3 shadow-xl",
+                roleMenuPlacement.openUp ? "bottom-full mb-3" : "top-full mt-3",
+                roleMenuPlacement.alignRight ? "right-0" : "left-0",
+              )}
+            >
+              <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
+                {locale === "fr" ? "Changer de rôle" : "Switch role"}
+              </p>
+              <ul className="mt-2 space-y-1">
                 {roleOptions.map((profile) => {
                   const isActive = profile === identity.role;
                   return (
-                    <button
-                      key={profile}
-                      type="button"
-                      disabled={isUpdatingRole}
-                      onClick={() => {
-                        if (isActive) {
-                          setIsRoleMenuOpen(false);
-                          return;
-                        }
-                        void handleRoleMutation(profile);
-                      }}
-                      className={[
-                        "flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-all",
-                        isActive
-                          ? "bg-emerald-50 text-emerald-900 shadow-sm ring-1 ring-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:ring-emerald-800"
-                          : "hover:bg-slate-50 cmm-text-secondary hover:text-emerald-800 disabled:opacity-40 dark:hover:bg-slate-800/50",
-                      ].join(" ")}
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate cmm-text-small font-bold">
-                          {getProfileLabel(profile, locale)}
+                    <li key={profile}>
+                      <button
+                        type="button"
+                        disabled={isUpdatingRole}
+                        onClick={() => {
+                          if (isActive) {
+                            setIsRoleMenuOpen(false);
+                            return;
+                          }
+                          void handleRoleMutation(profile);
+                        }}
+                        className={cn(
+                          "flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-all",
+                          isActive
+                            ? "bg-emerald-50 text-emerald-900 shadow-sm ring-1 ring-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:ring-emerald-800"
+                            : "hover:bg-slate-50 cmm-text-secondary hover:text-emerald-800 disabled:opacity-40 dark:hover:bg-slate-800/50",
+                        )}
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate cmm-text-small font-bold">
+                            {getProfileLabel(profile, locale)}
+                          </span>
+                          <span className="mt-0.5 block line-clamp-1 text-[10px] uppercase tracking-wide opacity-60">
+                            {getProfileSubtitle(profile, locale)}
+                          </span>
                         </span>
-                        <span className="mt-0.5 block line-clamp-1 text-[10px] uppercase tracking-wide opacity-60">
-                          {getProfileSubtitle(profile, locale)}
-                        </span>
-                      </span>
-                      {isActive ? (
-                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="10"
-                            height="10"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M20 6 9 17l-5-5" />
-                          </svg>
-                        </div>
-                      ) : null}
-                    </button>
+                        {isActive ? (
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="10"
+                              height="10"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M20 6 9 17l-5-5" />
+                            </svg>
+                          </div>
+                        ) : null}
+                      </button>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             </div>
           </details>
         ) : (
@@ -200,11 +206,37 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
       ) : null}
 
       {gamificationBadges.length > 0 ? (
-        <details className="group relative">
-          <summary className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-slate-300 bg-white cmm-text-caption font-bold cmm-text-secondary transition hover:bg-slate-100">
+        <details
+          ref={badgeMenuRef}
+          open={isBadgeMenuOpen}
+          onToggle={(event) => setIsBadgeMenuOpen(event.currentTarget.open)}
+          className="group relative"
+        >
+          <summary
+            aria-expanded={isBadgeMenuOpen}
+            aria-controls="account-badges-menu-panel"
+            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full px-3 cmm-text-caption font-bold cmm-text-secondary transition active:scale-95 [&::-webkit-details-marker]:hidden"
+          >
             <BadgePictogram name="award" size={14} className="cmm-text-secondary" />
+            <span className="hidden sm:inline">
+              {locale === "fr" ? "Badges" : "Badges"}
+            </span>
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 transition-transform duration-150",
+                isBadgeMenuOpen && "rotate-180",
+              )}
+              aria-hidden="true"
+            />
           </summary>
-          <div className="absolute right-0 top-9 z-40 w-64 rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
+          <div
+            id="account-badges-menu-panel"
+            className={cn(
+              "cmm-dropdown-panel cmm-surface-elevated absolute z-40 w-64 rounded-[1.25rem] p-3 shadow-xl",
+              badgeMenuPlacement.openUp ? "bottom-full mb-3" : "top-full mt-3",
+              badgeMenuPlacement.alignRight ? "right-0" : "left-0",
+            )}
+          >
             <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
               Badges d&apos;engagement
             </p>

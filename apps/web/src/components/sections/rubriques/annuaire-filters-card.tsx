@@ -173,18 +173,20 @@ export function AnnuaireFiltersCard({
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
             <p className="cmm-text-body font-bold text-amber-500">
-              {fr ? "Aucun résultat trouvé" : "No results found"}
+              {fr ? "Aucune structure ne correspond à ces filtres" : "No structure matches these filters"}
             </p>
           </div>
           <p className="cmm-text-caption text-amber-200/50 mb-5 leading-relaxed">
-            {fr ? "Il n'y a pas encore de structure correspondant à ces critères exacts. Vous pouvez élargir votre recherche ou nous aider à enrichir l'annuaire." : "No structure matches these exact criteria yet. You can expand your search or help us grow the directory."}
+            {fr
+              ? "Essayez d'élargir le périmètre, de retirer un filtre ou de changer de mot-clé. Si la structure manque, vous pouvez aussi la proposer."
+              : "Try widening the area, removing one filter or changing the keyword. If the structure is missing, you can also propose it."}
           </p>
           <div className="flex flex-wrap gap-3">
             <Link
               href="/partners/onboarding"
               className="rounded-xl bg-amber-500 px-5 py-2.5 cmm-text-small font-black text-white transition-all hover:bg-amber-600 hover:shadow-lg shadow-md uppercase tracking-wider"
             >
-              {fr ? "Ajouter une structure" : "Add a structure"}
+              {fr ? "Proposer une structure" : "Propose a structure"}
             </Link>
             <button
               onClick={() => {
@@ -195,7 +197,7 @@ export function AnnuaireFiltersCard({
               }}
               className="rounded-xl border border-slate-800 bg-slate-900 px-5 py-2.5 cmm-text-small font-bold text-slate-300 transition-all hover:bg-slate-800 shadow-sm"
             >
-              {fr ? "Tout effacer" : "Clear all"}
+              {fr ? "Réinitialiser les filtres" : "Reset filters"}
             </button>
           </div>
         </div>

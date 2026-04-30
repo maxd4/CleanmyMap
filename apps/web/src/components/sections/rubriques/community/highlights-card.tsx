@@ -33,7 +33,7 @@ function CommunityHighlightsCard(props: CommunityHighlightsCardProps) {
  </li>
  ))}
  {highlights.length === 0 ? (
- <li>Aucune action validee sur la periode.</li>
+ <li>Aucune action validée sur cette période. Les mobilisations récentes apparaîtront ici dès qu&apos;elles seront clôturées.</li>
  ) : null}
  </ul>
  ) : null}

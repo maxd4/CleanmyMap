@@ -21,7 +21,7 @@ import {
  type EventStaffingRow,
 } from"@/lib/community/engagement";
 import { standardPostMortemTemplate } from"@/lib/community/event-ops";
-import { swrRecentViewOptions, swrLiveFeedOptions } from "@/lib/swr-config";
+import { swrLiveFeedOptions } from "@/lib/swr-config";
 import {
  parseOptionalInt,
  toRsvpLabel,

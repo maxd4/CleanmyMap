@@ -55,11 +55,12 @@ export function AppSidebar({ currentProfile }: AppSidebarProps) {
  }`}
  >
  {/* Collapse toggle */}
- <button
+<button
  onClick={() => setCollapsed((c) => !c)}
+ aria-label={collapsed ? (locale ==="fr" ?"Déplier la barre latérale" :"Expand sidebar") : (locale ==="fr" ?"Replier la barre latérale" :"Collapse sidebar")}
  title={collapsed ? (locale ==="fr" ?"Déplier" :"Expand") : (locale ==="fr" ?"Replier" :"Collapse")}
  className="mb-2 self-end rounded-lg border border-white/40 bg-white/60 backdrop-blur-md p-1.5 cmm-text-muted hover:text-emerald-700 transition"
- >
+>
  {collapsed ?"→" :"←"}
  </button>
 
@@ -70,7 +71,7 @@ export function AppSidebar({ currentProfile }: AppSidebarProps) {
 
  return (
  <div key={space.id}>
- {/* Bloc header */}
+ {/* Section header */}
  <button
  onClick={() => toggleBlock(space.id)}
  className={`w-full flex items-center gap-2 rounded-xl px-2 py-2 text-left transition ${
@@ -118,11 +119,11 @@ export function AppSidebar({ currentProfile }: AppSidebarProps) {
  </li>
  );
  })}
- {space.items.length === 0 && space.id !=="pilot" && (
+{space.items.length === 0 && space.id !=="pilot" && (
  <li className="cmm-text-caption italic cmm-text-muted px-2 py-1">
- {locale ==="fr" ?"Aucune page" :"No pages"}
+ {locale ==="fr" ?"Aucune page disponible pour cette section" :"No pages available for this section"}
  </li>
- )}
+)}
  </ul>
  )}
  </div>

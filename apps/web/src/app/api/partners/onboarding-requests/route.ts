@@ -1,8 +1,8 @@
 import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { z } from"zod";
-import { requireAdminAccess } from"@/lib/authz";
-import { unauthorizedJsonResponse, adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
+import { requireCreatorAccess } from"@/lib/authz";
+import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import {
  CONTRIBUTION_TYPES,
  formatAvailabilitySummary,
@@ -15,6 +15,8 @@ import {
  countPartnerOnboardingRequests,
  listPartnerOnboardingRequests,
 } from"@/lib/partners/onboarding-requests-store";
+import { getCurrentUserIdentity } from"@/lib/authz";
+import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { getResendClient } from"@/lib/services/resend";
 import { env } from"@/lib/env";
 
@@ -89,9 +91,9 @@ async function tryNotifyAdmins(payload: z.infer<typeof onboardingSchema>) {
 }
 
 export async function GET(request: Request) {
- const access = await requireAdminAccess();
+ const access = await requireCreatorAccess();
  if (!access.ok) {
- return adminAccessErrorJsonResponse(access);
+ return NextResponse.json({ error: "Forbidden" }, { status: access.status });
  }
 
  const url = new URL(request.url);
@@ -112,6 +114,7 @@ export async function POST(request: Request) {
  if (!userId) {
  return unauthorizedJsonResponse();
  }
+ const identity = await getCurrentUserIdentity();
 
  let payload: unknown;
  try {
@@ -132,14 +135,34 @@ export async function POST(request: Request) {
  }
 
  const created = await appendPartnerOnboardingRequest({
- submittedByUserId: userId,
- input: parsed.data,
+  submittedByUserId: userId,
+  submittedByEmail: identity?.email ?? null,
+  input: parsed.data,
  });
 
  try {
- await tryNotifyAdmins(parsed.data);
+  await tryNotifyAdmins(parsed.data);
+  await sendCreatorInboxEmail({
+   subject: `[CleanMyMap] Nouvelle demande partenaire - ${parsed.data.organizationName}`,
+   title: "Nouvelle demande partenaire",
+   intro: "Une demande d'onboarding partenaire vient d'arriver dans la file créateur.",
+   lines: [
+    { label: "Organisation", value: parsed.data.organizationName },
+    { label: "Type", value: parsed.data.organizationType },
+    { label: "Identité", value: parsed.data.legalIdentity },
+    { label: "Source", value: "Formulaire partenaires" },
+    { label: "Zone", value: formatCoverageSummary(parsed.data.coverage) },
+    { label: "Contributions", value: parsed.data.contributionTypes.join(", ") },
+    { label: "Disponibilité", value: formatAvailabilitySummary(parsed.data.availability) },
+    { label: "Contact", value: `${parsed.data.contactName} - ${parsed.data.contactChannel} (${parsed.data.contactDetails})` },
+    { label: "Motivation", value: parsed.data.motivation },
+    { label: "Statut", value: created.status },
+   ],
+   footer: "La demande est synchronisée avec la revue annuaire partenaire.",
+   extraRecipients: ["partenaires@cleanmymap.fr"],
+  });
  } catch (error) {
- console.warn("Partner onboarding admin notification failed", error);
+  console.warn("Partner onboarding admin notification failed", error);
  }
 
  return NextResponse.json(

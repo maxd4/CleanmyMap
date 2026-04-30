@@ -11,8 +11,8 @@ Plan détaillé des fichiers à modulariser avec objectifs et structure cible.
 **Réduction** : 54%
 
 **Fichiers créés** :
-- `components/home/index.ts` - Exports centralisés
-- `lib/home/config.ts` - Configuration et builders
+- `components/accueil/index.ts` - Exports centralisés
+- `lib/accueil/config.ts` - Configuration et builders
 
 **Date** : 28/04/2026
 
@@ -330,3 +330,4 @@ hooks/
 
 **Dernière mise à jour** : 28/04/2026  
 **Progression** : 1/15 fichiers (6.7%)
+

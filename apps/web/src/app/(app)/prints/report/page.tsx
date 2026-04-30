@@ -31,7 +31,7 @@ export default async function PrintReportPage() {
  <ClerkRequiredGate
  isAuthenticated={false}
  mode="blur"
- title="Rapport imprimable"
+ title="Rapport d'impact imprimable"
  description={
  clerkReachable
  ?"Cette fonctionnalité nécessite une connexion Clerk."
@@ -56,7 +56,7 @@ export default async function PrintReportPage() {
  ))}
  </div>
  <div className="rounded-2xl border border-slate-200 bg-white p-4 cmm-text-small cmm-text-secondary">
- Le rapport complet, les exportations et la méthodologie détaillée
+ Le rapport complet, les exports et la méthodologie détaillée
  se déverrouillent après connexion.
  </div>
  </section>
@@ -122,7 +122,7 @@ export default async function PrintReportPage() {
  {/* ANALYTICS BLOCK */}
  <section className="space-y-6 mb-12">
  <h2 className="text-xl font-bold cmm-text-primary uppercase tracking-tight border-l-4 border-emerald-500 pl-4">
- Analyse de la Performance Mensuelle
+ Analyse mensuelle
  </h2>
  <div className="border border-slate-100 p-6 rounded-2xl bg-slate-50/50">
  <AnalyticsCockpit data={monthlyData} />
@@ -132,14 +132,14 @@ export default async function PrintReportPage() {
  {/* SCIENTIFIC METRIC SECTION */}
  <section className="grid grid-cols-2 gap-12 mb-12">
  <div className="space-y-4">
- <h3 className="cmm-text-small font-bold cmm-text-primary uppercase tracking-widest">Méthodologie &amp; Proxy</h3>
+ <h3 className="cmm-text-small font-bold cmm-text-primary uppercase tracking-widest">Méthode et proxy</h3>
  <p className="cmm-text-caption cmm-text-secondary leading-relaxed">
  Les calculs de masse et de volume sont basés sur les protocoles de science citoyenne. 
  <strong> Source ADEME Ref 2024.</strong> Le score de qualité de donnée (DQV) est pondéré par l&apos;exactitude GPS et la complétude des formulaires.
  </p>
  </div>
  <div className="space-y-4">
- <h3 className="cmm-text-small font-bold cmm-text-primary uppercase tracking-widest">Interprétation de l&apos;Impact</h3>
+ <h3 className="cmm-text-small font-bold cmm-text-primary uppercase tracking-widest">Lecture de l&apos;impact</h3>
  <p className="cmm-text-caption cmm-text-secondary leading-relaxed">
  Une hausse de 15% de la mobilisation est corrélée à une amélioration de la propreté perçue sur les zones prioritaires. 
  Les mégots représentent 65% de la toxicité hydrique sur le périmètre audité.
@@ -167,7 +167,7 @@ export default async function PrintReportPage() {
  </div>
  </div>
  <div className="w-24 h-24 bg-slate-100 rounded-xl flex items-center justify-center text-slate-300">
- <span className="cmm-text-caption font-bold text-center">QR CODE <br/> PLACEHOLDER</span>
+ <span className="cmm-text-caption font-bold text-center">QR code <br/> à générer</span>
  </div>
  </footer>
 

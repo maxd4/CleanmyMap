@@ -5,9 +5,11 @@ const RIBBON_PRIMARY_SPACE_ORDER: NavigationSpace["id"][] = [
 "act",
 "visualize",
 "impact",
+"network",
+"connect",
 ];
 
-const MAX_VISIBLE_SPACE_COUNT = 5;
+const MAX_VISIBLE_SPACE_COUNT = 6;
 
 type RibbonNavigationGroups = {
  primarySpaces: NavigationSpace[];

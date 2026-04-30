@@ -33,6 +33,7 @@ export const PROFILE_ORDER: AppProfile[] = [
   "scientifique",
   "elu",
   "admin",
+  "max",
 ];
 
 export const SELF_SERVICE_PROFILE_ORDER = [
@@ -89,11 +90,24 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
     },
     spacePriority: { supervise: 1, execute: 2, decide: 3, prepare: 4 },
   },
+  max: {
+    id: "max",
+    label: { fr: "IMU", en: "IMU" },
+    subtitle: {
+      fr: "Supervision propriétaire et arbitrage final",
+      en: "Owner supervision and final arbitration",
+    },
+    spacePriority: { supervise: 1, execute: 2, decide: 3, prepare: 4 },
+  },
 };
 
 const ROLE_ALIASES: Record<string, Role> = {
   admin: "admin",
   administrator: "admin",
+  max: "max",
+  imu: "max",
+  owner: "max",
+  superadmin: "max",
   benevole: "benevole",
   volunteer: "benevole",
   user: "benevole",
@@ -120,7 +134,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
   benevole: {
     primaryCTA: {
       href: "/actions/new",
-      label: { fr: "Déclarer", en: "Declare" },
+      label: { fr: "Déclarer une action", en: "Declare an action" },
       description: {
         fr: "Saisie terrain rapide en moins d'une minute",
         en: "Fast field capture in under one minute",
@@ -128,7 +142,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     secondaryCTA: {
       href: "/actions/map",
-      label: { fr: "Voir la carte", en: "View map" },
+      label: { fr: "Consulter la carte", en: "Consult the map" },
       description: {
         fr: "Confirmer la priorité terrain autour de vous",
         en: "Confirm nearby field priorities",
@@ -137,7 +151,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     additionalActions: [
       {
         href: "/actions/history",
-        label: { fr: "Historique", en: "History" },
+        label: { fr: "Voir l'historique", en: "View history" },
         description: {
           fr: "Suivre les actions validées",
           en: "Track validated actions",
@@ -157,8 +171,8 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     primaryCTA: {
       href: "/sections/community",
       label: {
-        fr: "Gérer l'opération",
-        en: "Manage operation",
+        fr: "Gérer les opérations",
+        en: "Manage operations",
       },
       description: {
         fr: "Piloter agenda, RSVPs et conversion en actions",
@@ -167,7 +181,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     secondaryCTA: {
       href: "/dashboard",
-      label: { fr: "Cockpit", en: "Cockpit" },
+      label: { fr: "Tableau de bord", en: "Dashboard" },
       description: {
         fr: "Voir les alertes et priorités du jour",
         en: "See daily alerts and priorities",
@@ -176,7 +190,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     additionalActions: [
       {
         href: "/reports",
-        label: { fr: "Rapports", en: "Reports" },
+        label: { fr: "Consulter l'impact", en: "Consult impact" },
         description: {
           fr: "Synthèse exportable multi-horizon",
           en: "Exportable multi-horizon synthesis",
@@ -187,7 +201,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
   scientifique: {
     primaryCTA: {
       href: "/reports",
-      label: { fr: "Analyser", en: "Analyze" },
+      label: { fr: "Analyser l'impact", en: "Analyze impact" },
       description: {
         fr: "Consolider les tendances et KPI utiles à la décision",
         en: "Consolidate trends and decision-grade KPIs",
@@ -195,7 +209,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     secondaryCTA: {
       href: "/sections/climate",
-      label: { fr: "Contexte", en: "Context" },
+      label: { fr: "Contexte climat", en: "Climate context" },
       description: {
         fr: "Croiser impact local, ODD et limites planétaires",
         en: "Cross local impact with SDGs and boundaries",
@@ -205,8 +219,8 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       {
         href: "/sections/climate",
         label: {
-          fr: "Croiser avec le contexte climat",
-          en: "Cross-check climate context",
+          fr: "Analyser les signaux",
+          en: "Analyze signals",
         },
         description: {
           fr: "Ajouter les signaux météo-climat à l'analyse",
@@ -219,8 +233,8 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     primaryCTA: {
       href: "/sponsor-portal",
       label: {
-        fr: "Portail",
-        en: "Portal",
+        fr: "Accéder au portail",
+        en: "Access portal",
       },
       description: {
         fr: "Pilotage budgétaire et impact territorial",
@@ -230,8 +244,8 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     secondaryCTA: {
       href: "/reports",
       label: {
-        fr: "Rapports",
-        en: "Reports",
+        fr: "Consulter l'impact",
+        en: "Consult impact",
       },
       description: {
         fr: "Lecture synthétique des indicateurs",
@@ -261,8 +275,8 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     primaryCTA: {
       href: "/admin",
       label: {
-        fr: "Backlog",
-        en: "Backlog",
+        fr: "Gérer le backlog",
+        en: "Manage backlog",
       },
       description: {
         fr: "Prioriser modération/imports sensibles",
@@ -271,7 +285,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     secondaryCTA: {
       href: "/reports",
-      label: { fr: "Exporter", en: "Export" },
+      label: { fr: "Exporter les données", en: "Export data" },
       description: {
         fr: "CSV/JSON et suivi des opérations",
         en: "CSV/JSON and operations tracking",
@@ -280,7 +294,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     additionalActions: [
       {
         href: "/admin/godmode",
-        label: { fr: "God Mode", en: "God Mode" },
+        label: { fr: "Mode Administrateur", en: "Admin Mode" },
         description: {
           fr: "Accès root et sandbox admin",
           en: "Root access and admin sandbox",
@@ -292,6 +306,45 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         description: {
           fr: "Intégrations et uptime",
           en: "Integrations and uptime",
+        },
+      },
+    ],
+  },
+  max: {
+    primaryCTA: {
+      href: "/admin/godmode",
+      label: {
+        fr: "Piloter en mode IMU",
+        en: "Run IMU mode",
+      },
+      description: {
+        fr: "Accès propriétaire aux arbitrages sensibles",
+        en: "Owner access for sensitive arbitration",
+      },
+    },
+    secondaryCTA: {
+      href: "/dashboard",
+      label: { fr: "Vue d'ensemble", en: "Overview" },
+      description: {
+        fr: "Contrôler les indicateurs et la santé du site",
+        en: "Check indicators and site health",
+      },
+    },
+    additionalActions: [
+      {
+        href: "/reports",
+        label: { fr: "Consulter l'impact", en: "Consult impact" },
+        description: {
+          fr: "Lire la synthèse et les exports",
+          en: "Read synthesis and exports",
+        },
+      },
+      {
+        href: "/admin",
+        label: { fr: "Administration", en: "Administration" },
+        description: {
+          fr: "Accès complet aux outils d'administration",
+          en: "Full access to administration tools",
         },
       },
     ],
@@ -310,8 +363,12 @@ export function normalizeProfileRole(
 
 export function resolveProfile(params: {
   metadataRole: string | null | undefined;
+  isMax: boolean;
   isAdmin: boolean;
 }): Role {
+  if (params.isMax) {
+    return "max";
+  }
   if (params.isAdmin) {
     return "admin";
   }
@@ -323,6 +380,25 @@ export function toProfile(role: AppRoleLabel): AppProfile {
     return "benevole";
   }
   return role;
+}
+
+export function isAdminLikeProfile(profile: AppProfile): boolean {
+  return profile === "admin" || profile === "max";
+}
+
+export function getSwitchableProfiles(
+  profile: AppProfile,
+): AppProfile[] {
+  if (profile === "max") {
+    return [...PROFILE_ORDER];
+  }
+  if (profile === "admin") {
+    return PROFILE_ORDER.filter((item) => item !== "max");
+  }
+  if (isSelfServiceProfile(profile)) {
+    return [...SELF_SERVICE_PROFILE_ORDER];
+  }
+  return [profile];
 }
 
 export function getProfileEntryPath(profile: AppProfile): string {

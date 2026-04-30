@@ -49,11 +49,11 @@ function CommunityPostEventLoopCard(props: CommunityPostEventLoopCardProps) {
  </p>
  </li>
  ))}
- {postEventLoop.missing.length === 0 ? (
+{postEventLoop.missing.length === 0 ? (
  <li className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-emerald-800">
- Toutes les boucles post-evenement sont completes.
+ Toutes les boucles post-événement sont complètes pour le moment. La présence, le post-mortem et l'action liée sont déjà renseignés.
  </li>
- ) : null}
+) : null}
  </ul>
  </div>
  );

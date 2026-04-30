@@ -49,7 +49,7 @@
   - `apps/web/src/lib/admin/operation-audit.ts`
 - Messaging & Security Hardening:
   - Rate Limiting: `apps/web/src/lib/community/discussion-rate-limit.ts`
-  - Message Pruning: `apps/web/supabase/migrations/20260420_000015_advanced_chat_core.sql`
+  - Message Pruning: `apps/web/supabase/migrations/20260420000015_advanced_chat_core.sql`
   - Authorized Access: `apps/web/src/lib/authz.ts`
 
 ## Repo conventions

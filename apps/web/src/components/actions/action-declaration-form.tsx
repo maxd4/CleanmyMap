@@ -415,7 +415,7 @@ export function ActionDeclarationForm({
             )}
             {currentStep === 4 && (
               <ActionStepReview
-                form={form} payload={payload} dataQuality={dataQuality}
+                payload={payload} dataQuality={dataQuality}
                 isSubmitting={submissionState === "pending"} onSubmit={() => onSubmit()}
               />
             )}

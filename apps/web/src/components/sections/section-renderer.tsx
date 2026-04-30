@@ -6,6 +6,7 @@ import {
  type SectionId,
 } from"@/lib/sections-registry";
 import { CommunitySection } from"@/components/sections/rubriques/community-section";
+import { FeedbackSection } from"@/components/sections/rubriques/feedback-section";
 import {
  ActorsSection,
  GamificationSection,
@@ -24,7 +25,6 @@ import {
  TrashSpotterSection,
  WeatherSection,
 } from"@/components/sections/rubriques/terrain-sections";
-import { ChatShell } from"@/components/chat/chat-shell";
 import { ConnectSection } from"@/components/sections/rubriques/connect-section";
 import {
  NotFoundSection,
@@ -70,23 +70,25 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  <SectionShell
  title={{ fr:"Opérations collectives", en:"Collective operations" }}
  subtitle={{
- fr:"Ressources terrain, coordination d'événements collectifs et suivi historique des actions au même endroit.",
- en:"Field resources, collective event coordination and action history in one place.",
+ fr:"Actions collectives, coordination des événements et historique au même endroit.",
+ en:"Collective actions, event coordination and history in one place.",
  }}
  links={[
  {
  href:"/actions/new",
- label: { fr:"Nouvelle action", en:"New action" },
+ label: { fr:"Déclarer une action", en:"Declare an action" },
  },
  {
  href:"/actions/history",
- label: { fr:"Trace historique complète", en:"Full history trace" },
+ label: { fr:"Voir l'historique", en:"View history" },
  },
  ]}
  >
  <CommunitySection />
  </SectionShell>
  );
+ case"feedback":
+ return <FeedbackSection />;
  case"gamification":
  return (
  <SectionShell
@@ -98,7 +100,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  links={[
  {
  href:"/actions/history",
- label: { fr:"Voir historique", en:"Open history" },
+ label: { fr:"Consulter l'historique", en:"Consult history" },
  },
  ]}
  >
@@ -116,7 +118,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  links={[
  {
  href:"/sections/elus",
- label: { fr:"Vue collectivités", en:"Authorities view" },
+ label: { fr:"Accéder à la vue élus", en:"Access authorities view" },
  },
  ]}
  >
@@ -128,17 +130,17 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  <SectionShell
  title={{ fr:"Découvrir le réseau", en:"Discover the network" }}
  subtitle={{
- fr:"Carte, fiches et repères pour lire le réseau local sans mélange avec le pilotage.",
- en:"Map, cards and reference points to read the local network without mixing in governance.",
+ fr:"Carte, fiches et repères pour lire le réseau local.",
+ en:"Map, cards and reference points for reading the local network.",
  }}
  links={[
  {
  href:"/partners/network",
- label: { fr:"Ouvrir la vue réseau", en:"Open network view" },
+ label: { fr:"Explorer le réseau", en:"Explore network" },
  },
  {
  href:"/partners/onboarding",
- label: { fr:"Rejoindre le réseau", en:"Join the network" },
+ label: { fr:"S'inscrire au réseau", en:"Join the network" },
  },
  ]}
  >
@@ -150,17 +152,17 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  <SectionShell
  title={{ fr:"Données ouvertes", en:"Open data" }}
  subtitle={{
- fr:"Open data, API, export JSON et cadre d'interopérabilité pour chercheurs et collectivités.",
- en:"Open data, API, JSON export and interoperability for researchers and cities.",
+ fr:"Open data, API et exports pour chercheurs et collectivités.",
+ en:"Open data, API and exports for researchers and cities.",
  }}
  links={[
  {
  href:"/reports",
- label: { fr:"Exporter les rapports", en:"Export reports" },
+ label: { fr:"Exporter l'impact", en:"Export impact" },
  },
  {
  href:"/sections/elus",
- label: { fr:"Vue institutionnelle", en:"Institutional view" },
+ label: { fr:"Accéder à la vue élus", en:"Access authorities view" },
  },
  ]}
  >
@@ -185,17 +187,17 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  <SectionShell
  title={{ fr:"Financement / sponsoring", en:"Funding / sponsoring" }}
  subtitle={{
- fr:"Sponsoring de zones, mécénat écologique et appel au don pour consolider le modèle économique.",
- en:"Zone sponsorship, ecological patronage and donations for a sustainable model.",
+ fr:"Sponsoring de zones, mécénat écologique et dons.",
+ en:"Zone sponsorship, ecological patronage and donations.",
  }}
  links={[
  {
  href:"/sections/actors",
- label: { fr:"Partenaires engagés", en:"Engaged partners" },
+ label: { fr:"Voir les partenaires", en:"View partners" },
  },
  {
  href:"/reports",
- label: { fr:"Suivi d'impact", en:"Impact tracking" },
+ label: { fr:"Consulter l'impact", en:"Consult impact" },
  },
  ]}
  >
@@ -226,11 +228,11 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  links={[
  {
  href:"/actions/new",
- label: { fr:"Déclarer une action", en:"Declare action" },
+ label: { fr:"Saisir une action", en:"Capture an action" },
  },
  {
  href:"/actions/map",
- label: { fr:"Carte complète", en:"Full map" },
+ label: { fr:"Consulter la carte", en:"Consult the map" },
  },
  ]}
  >
@@ -242,7 +244,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  <SectionShell
  title={{ fr:"Itinéraire IA", en:"AI routing" }}
  subtitle={{
- fr:"Préparation d'un plan de passage priorisé par impact.",
+ fr:"Préparer un itinéraire priorisé par l'impact.",
  en:"Prepare an impact-prioritized route.",
  }}
  links={[
@@ -278,8 +280,8 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  <SectionShell
  title={{ fr:"Développement durable", en:"Sustainability" }}
  subtitle={{
- fr:"Vulgarisation des rapports récents, ODD et limites planétaires, avec lien direct entre impact local et enjeux climatiques, incluant la comparaison territoriale.",
- en:"Scientific briefs, SDGs and planetary boundaries linked to local action impact.",
+ fr:"Lectures scientifiques et lien direct avec l'impact local.",
+ en:"Scientific briefs linked to local action impact.",
  }}
  links={[
  {
@@ -328,8 +330,8 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  <SectionShell
  title={{ fr:"Visualiser la carte", en:"Map sandbox" }}
  subtitle={{
- fr:"Tester la carte, les filtres et la santé technique avant de commencer une action.",
- en:"Test the map, filters and technical health before starting an action.",
+ fr:"Tester la carte et les filtres avant de commencer.",
+ en:"Test the map and filters before starting.",
  }}
  links={[
  {
@@ -350,7 +352,7 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  <SectionShell
  title={{ fr:"Guide pratique", en:"Practical guide" }}
  subtitle={{
- fr:"Workflow web conseillé pour une collecte fiable.",
+ fr:"Workflow conseillé pour une collecte fiable.",
  en:"Recommended workflow for reliable data collection.",
  }}
  links={[
@@ -373,8 +375,8 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  <SectionShell
  title={{ fr:"Autorités locales & coordination", en:"Local authorities & coordination" }}
  subtitle={{
- fr:"Vision lisible et exploitable des besoins et résultats pour faciliter l'arbitrage public et la coordination locale.",
- en:"Readable, actionable needs/results view for public arbitration and local coordination.",
+ fr:"Vision claire des besoins et résultats pour faciliter la coordination.",
+ en:"Clear needs/results view to support coordination.",
  }}
  links={[
  {

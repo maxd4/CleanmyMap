@@ -26,7 +26,7 @@ export default function Error({
  <div className="relative min-h-screen flex flex-col items-center justify-center p-6 text-center overflow-hidden font-outfit">
  <VibrantBackground />
  
- <div className="relative z-10 space-y-8 max-w-2xl px-4 py-12 premium-card bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-rose-500/20 shadow-2xl rounded-[3rem]">
+ <div className="relative z-10 space-y-8 w-full max-w-[42rem] px-5 py-14 sm:px-8 premium-card bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-rose-500/20 shadow-2xl rounded-[3rem]">
  {/* Error Icon */}
  <div className="flex justify-center">
  <div className="p-4 bg-rose-50 dark:bg-rose-950/30 rounded-full border border-rose-200 dark:border-rose-800">
@@ -65,7 +65,7 @@ export default function Error({
  
  <Link 
  href="/"
- className="flex items-center gap-2 px-10 py-5 bg-white dark:bg-slate-800 cmm-text-primary dark:text-white border font-bold rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-lg"
+ className="flex min-w-[11.5rem] items-center justify-center gap-2 px-10 py-5 bg-emerald-500 text-white font-bold rounded-2xl hover:bg-emerald-400 active:scale-95 transition-all shadow-xl shadow-emerald-500/25 border border-emerald-300/30"
  >
  <Home size={18} />
  ACCUEIL
@@ -73,9 +73,6 @@ export default function Error({
  </div>
  </div>
 
- <p className="mt-8 cmm-text-caption cmm-text-muted/50 uppercase tracking-[0.3em]">
- CleanMyMap Resilience Protocol
- </p>
  </div>
  );
 }

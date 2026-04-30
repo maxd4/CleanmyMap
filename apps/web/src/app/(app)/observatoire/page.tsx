@@ -16,10 +16,10 @@ const AnalyticsCockpit = dynamic(
 );
 
 export const metadata: Metadata = {
- title:"Observatoire Public - CleanMyMap",
- description:"Accédez en temps réel aux données de dépollution nationale. Un effort collectif mesuré par des protocoles scientifiques rigoureux.",
+ title:"Observatoire public d'impact | CleanMyMap",
+ description:"Données publiques de dépollution, mises à jour en continu et lues avec une méthode documentée.",
  openGraph: {
- title:"Observatoire Public d'Impact | CleanMyMap",
+ title:"Observatoire public d'impact | CleanMyMap",
  description:"Indicateurs de masse totale, mobilisation et actions validées en temps réel.",
  type:"website",
  },
@@ -62,14 +62,13 @@ export default async function ObservatoirePage() {
  <header className="w-full space-y-4">
  <div className={`flex items-center gap-2 font-bold uppercase tracking-widest cmm-text-caption ${isSober ? 'cmm-text-muted' : 'text-emerald-400'}`}>
  <Globe size={14} />
- OBSERVATOIRE PUBLIC D&apos;IMPACT
+ Observatoire public d&apos;impact
  </div>
  <h1 className={`text-4xl sm:text-6xl font-bold tracking-tighter ${isSober ? 'cmm-text-primary' : 'bg-gradient-to-br from-white to-slate-500 bg-clip-text text-transparent'}`}>
- La Science du Nettoyage. <br />{isSober ? 'Transparence Totale' : 'Transparence Totale.'}
+ Impact public en temps réel
  </h1>
  <p className={`max-w-2xl text-lg ${isSober ? 'cmm-text-secondary font-medium' : 'cmm-text-muted'}`}>
- Accédez en temps réel aux données de dépollution nationale. 
- Un effort collectif mesuré par des protocoles scientifiques rigoureux.
+ Suivez les données de dépollution en direct avec une lecture simple et transparente.
  </p>
  </header>
 
@@ -91,9 +90,9 @@ export default async function ObservatoirePage() {
  <div className="space-y-1">
  <div className={`flex items-center gap-2 font-bold cmm-text-small ${isSober ? 'cmm-text-secondary' : 'cmm-text-muted'}`}>
  <ShieldCheck size={16} className="text-emerald-500" />
- Source de Donnée Certifiée CleanMyMap
+ Source de données certifiée CleanMyMap
  </div>
- <p className="cmm-text-caption cmm-text-muted">Mise à jour en temps réel via Supabase & Protocoles ADEME.</p>
+ <p className="cmm-text-caption cmm-text-muted">Mise à jour en temps réel via Supabase et les protocoles ADEME.</p>
  </div>
  <Link 
  href="/sign-in"

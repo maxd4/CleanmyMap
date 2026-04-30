@@ -3,6 +3,30 @@ import { SimpleActionFormData } from '@/components/actions/simple-form-validatio
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { photoUploadService } from '@/lib/photo-upload'
 
+type SimpleActionInsertRow = {
+ action_date: string
+ location_label: string
+ waste_kg: number
+ volunteers_count: number
+ actor_name: string
+ notes: string
+ created_by_clerk_id: string
+ status: string
+}
+
+type ActionsTableClient = {
+ from(table: 'actions'): {
+ insert(values: SimpleActionInsertRow[]): {
+ select(): {
+ single(): Promise<{ data: { id: string } | null; error: unknown }>
+ }
+ }
+ update(values: { notes: string }): {
+ eq(column: 'id', value: string): Promise<{ error: unknown }>
+ }
+ }
+}
+
 export async function POST(request: NextRequest) {
  try {
  const formData: SimpleActionFormData = await request.json()
@@ -15,7 +39,7 @@ export async function POST(request: NextRequest) {
  )
  }
 
- const supabase = getSupabaseBrowserClient()
+ const supabase = getSupabaseBrowserClient() as unknown as ActionsTableClient
  
  // Map simplified form to database schema
  const actionData = {
@@ -43,6 +67,13 @@ export async function POST(request: NextRequest) {
  )
  }
 
+ if (!data) {
+ return NextResponse.json(
+ { error: 'Impossible de créer l\'action' },
+ { status: 500 }
+ )
+ }
+
  // Handle photo uploads if any
  let photoUrls: string[] = []
  if (formData.photos && formData.photos.length > 0) {
@@ -61,7 +92,7 @@ export async function POST(request: NextRequest) {
  await supabase
  .from('actions')
  .update({ 
- notes: `${actionData.notes}\n\nPhotos: ${photoUrls.join(', ')}` 
+  notes: `${actionData.notes}\n\nPhotos: ${photoUrls.join(', ')}` 
  })
  .eq('id', data.id)
  }

@@ -34,9 +34,9 @@ export function SimpleActionForm() {
  
  const metrics = useMetricsTracking('simple')
 
- useEffect(() => {
+useEffect(() => {
  analytics.trackFormStart()
- }, [])
+ }, [analytics])
 
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault()
@@ -58,7 +58,7 @@ export function SimpleActionForm() {
  })
  
  if (!response.ok) {
-      throw new Error('Une erreur réseau a empêché l\'envoi de votre déclaration. Veuillez réessayer.')
+      throw new Error('Une erreur réseau a empêché l&apos;envoi de votre déclaration. Veuillez réessayer.')
  }
  
  await response.json()
@@ -68,13 +68,13 @@ export function SimpleActionForm() {
  setForm(initialForm)
  } catch (error) {
  console.error('Submission error:', error)
-    setErrors({ title: 'Impossible d\'enregistrer l\'action. Vérifiez votre connexion et les champs obligatoires.' })
+    setErrors({ title: 'Impossible d&apos;enregistrer l&apos;action. Vérifiez votre connexion et les champs obligatoires.' })
  } finally {
  setIsSubmitting(false)
  }
  }
 
- const updateForm = (field: keyof SimpleActionFormData, value: any) => {
+ const updateForm = <K extends keyof SimpleActionFormData>(field: K, value: SimpleActionFormData[K]) => {
  setForm(prev => ({ ...prev, [field]: value }))
  // Clear error when user starts typing
  if (errors[field as keyof FormErrors]) {
@@ -104,7 +104,7 @@ export function SimpleActionForm() {
  {/* Title */}
  <div>
  <label htmlFor="action-title" className="block cmm-text-small font-medium mb-2">
- Titre de l'action *
+ Titre de l&apos;action *
  </label>
  <input
  id="action-title"
@@ -216,7 +216,7 @@ export function SimpleActionForm() {
  {/* Organizer Name */}
  <div>
  <label htmlFor="action-organizer-name" className="block cmm-text-small font-medium mb-2">
- Nom de l'organisateur *
+ Nom de l&apos;organisateur *
  </label>
  <input
  id="action-organizer-name"
@@ -264,7 +264,7 @@ export function SimpleActionForm() {
  <CmmButton type="submit" disabled={isSubmitting} className="flex-1 flex items-center justify-center gap-2">
  {isSubmitting ? <><Loader2 className="animate-spin" size={16} /> Envoi...</> : 'Envoyer'}
  </CmmButton>
- <CmmButton type="button" variant="outline" className="px-8">
+ <CmmButton type="button" variant="ghost" className="px-8">
  Annuler
  </CmmButton>
  </div>

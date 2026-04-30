@@ -38,7 +38,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
  title="Lecture décideur"
  lines={[
 "KPI consolidés, qualité des données, tendances et priorisation territoriale.",
-"Bloc gouvernance + annexes pour arbitrage budgétaire et diffusion institutionnelle.",
+"Section gouvernance + annexes pour arbitrage budgétaire et diffusion institutionnelle.",
  ]}
  />
  </div>
@@ -357,7 +357,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
  <ReportPage {...CHAPTERS[9]}>
  <div className="grid gap-3 md:grid-cols-2">
  <ReportTable
- headers={["Bloc","Donnée clé","Usage"]}
+ headers={["Section","Donnée clé","Usage"]}
  rows={[
  [
 "Pilotage",

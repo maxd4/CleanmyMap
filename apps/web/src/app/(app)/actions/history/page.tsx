@@ -15,7 +15,7 @@ export default async function ActionsHistoryPage() {
  <ClerkRequiredGate
  isAuthenticated={false}
  mode="blur"
- title="Historique des actions"
+ title="Historique des actions validées"
  description="Cette fonctionnalité nécessite une connexion Clerk."
  lockedPreview={
  <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
@@ -57,8 +57,8 @@ export default async function ActionsHistoryPage() {
  return (
  <PageReadingTemplate
  context="Profil supervision"
- title="Historique des actions"
- objective="Prioriser les fiches à corriger, expliciter les pertes de qualité et fiabiliser les données historisées."
+ title="Historique des actions validées"
+ objective="Prioriser les fiches à corriger et fiabiliser l'historique."
  summary={
  <div className="space-y-3">
  <div className="grid gap-3 md:grid-cols-3">
@@ -143,7 +143,7 @@ export default async function ActionsHistoryPage() {
  fraîcheur). Périmètre: /actions/history.
  </p>
  <div className="pt-1">
- <RubriquePdfExportButton rubriqueTitle="Historique bénévole" />
+ <RubriquePdfExportButton rubriqueTitle="Historique terrain" />
  </div>
  </div>
  }
@@ -155,8 +155,8 @@ export default async function ActionsHistoryPage() {
  <div data-rubrique-report-root className="space-y-4">
  <DecisionPageHeader
  context="Profil supervision"
- title="Historique bénévole"
- objective="Identifier les fiches à corriger en priorité et fiabiliser les données historisées."
+ title="Historique terrain"
+ objective="Identifier les fiches à corriger et fiabiliser l'historique."
  actions={[
  {
  href:"/actions/new",
@@ -172,7 +172,7 @@ export default async function ActionsHistoryPage() {
  Tracer
  </p>
  <div className="mt-2">
- <RubriquePdfExportButton rubriqueTitle="Historique bénévole" />
+ <RubriquePdfExportButton rubriqueTitle="Historique terrain" />
  </div>
  </section>
 

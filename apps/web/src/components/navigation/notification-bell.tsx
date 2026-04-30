@@ -121,8 +121,8 @@ export function NotificationBell() {
   <div className="inline-flex items-center justify-center w-12 h-12 cmm-surface-muted rounded-full text-slate-300">
   <Check size={24} />
   </div>
-  <p className="cmm-text-caption font-bold cmm-text-muted uppercase tracking-tighter">Tout est à jour !</p>
-  <p className="cmm-text-caption cmm-text-muted">Vous n'avez pas de nouvelles notifications pour le moment.</p>
+  <p className="cmm-text-caption font-bold cmm-text-muted uppercase tracking-tighter">Aucune notification active</p>
+  <p className="cmm-text-caption cmm-text-muted">Vous n'avez rien de nouveau à traiter pour le moment.</p>
   </div>
  ) : (
  notifications.map((n) => (

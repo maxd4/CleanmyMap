@@ -55,7 +55,9 @@ export function ActionsMapTable({
  if (items.length === 0) {
  return (
  <section className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ?"p-4" :"p-6"}`}>
- <p className={compact ?"cmm-text-caption cmm-text-secondary" :"cmm-text-small cmm-text-secondary"}>Aucun point géolocalisé pour cette période.</p>
+ <p className={compact ?"cmm-text-caption cmm-text-secondary" :"cmm-text-small cmm-text-secondary"}>
+ Aucun point géolocalisé n&apos;a été enregistré sur cette période.
+ </p>
  </section>
  );
  }

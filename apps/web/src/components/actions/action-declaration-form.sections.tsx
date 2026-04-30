@@ -4,7 +4,6 @@ import type {
   ActionVisionEstimate,
 } from "@/lib/actions/types";
 import type { FormState } from "./action-declaration-form.model";
-import { toRequiredNumber } from "./action-declaration-form.model";
 import { ActionDeclarationPhotoSection } from "./action-declaration-form.photo-section";
 import { ActionDeclarationVisionFields } from "./action-declaration-form.vision-fields";
 
@@ -94,8 +93,12 @@ export function ActionDeclarationCompleteModeFields({
       <ActionDeclarationVisionFields
         form={form}
         onVisionBagsCountChange={(value) => updateField("visionBagsCount", value)}
-        onVisionFillLevelChange={(value) => updateField("visionFillLevel", value)}
-        onVisionDensityChange={(value) => updateField("visionDensity", value)}
+        onVisionFillLevelChange={(value) =>
+          updateField("visionFillLevel", value as FormState["visionFillLevel"])
+        }
+        onVisionDensityChange={(value) =>
+          updateField("visionDensity", value as FormState["visionDensity"])
+        }
       />
 
       <label className="mt-4 flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">

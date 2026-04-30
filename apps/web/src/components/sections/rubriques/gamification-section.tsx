@@ -409,13 +409,13 @@ export function GamificationSection() {
                           </tr>
                         )
                       )}
-                    {rows.length === 0 ? (
+                      {rows.length === 0 ? (
                       <tr>
                         <td
                           className="px-4 py-10 text-center cmm-text-muted italic font-medium"
                           colSpan={6}
                         >
-                          Aucune donnée qualifiée pour cette catégorie.
+                          Aucune donnée qualifiée n&apos;est disponible pour cette catégorie. Elle s&apos;affichera dès qu&apos;une activité correspondante sera validée.
                         </td>
                       </tr>
                     ) : null}

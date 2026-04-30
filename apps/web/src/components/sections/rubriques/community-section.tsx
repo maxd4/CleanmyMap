@@ -31,8 +31,8 @@ function CommunitySection() {
  <section className="grid grid-cols-1 gap-6 lg:grid-cols-[1.45fr_0.95fr] items-start">
  <div className="space-y-6">
  <section id="messagerie" className="rounded-3xl border border-slate-200 bg-white p-4 shadow-md">
- <ChatShell initialArrondissement={11} />
- </section>
+ <ChatShell initialChannelType="community" initialArrondissement={11} />
+</section>
 
  <CommunityCreateEventCard
  createForm={model.createForm}

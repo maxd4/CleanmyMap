@@ -11,11 +11,11 @@ export function StepJournal({ workflow }: StepJournalProps) {
  Etape 4 - Journaliser
  </p>
  <div className="mt-3 rounded-lg border border-slate-300 bg-white p-3">
- {workflow.moderationJournal.length === 0 ? (
+{workflow.moderationJournal.length === 0 ? (
  <p className="cmm-text-caption cmm-text-muted">
- Aucune action de moderation sur cette session.
+ Aucune action de modération n'a encore été enregistrée sur cette session.
  </p>
- ) : (
+) : (
  <ul className="space-y-2">
  {workflow.moderationJournal.map((entry, index) => (
  <li
@@ -73,11 +73,11 @@ export function StepJournal({ workflow }: StepJournalProps) {
  <div className="cmm-text-muted">Op: {entry.operationId}</div>
  </li>
  ))}
- {workflow.auditItems.length === 0 ? (
+{workflow.auditItems.length === 0 ? (
  <li className="cmm-text-caption cmm-text-muted">
- Aucune operation enregistree.
+ Aucune opération d'audit n'est disponible pour le moment.
  </li>
- ) : null}
+) : null}
  </ul>
  ) : null}
  </div>

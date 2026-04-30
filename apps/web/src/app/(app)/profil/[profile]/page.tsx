@@ -1,15 +1,16 @@
 import { auth } from"@clerk/nextjs/server";
 import Link from"next/link";
 import { notFound, redirect } from"next/navigation";
-import { FirstMissionOnboarding } from"@/components/navigation/first-mission-onboarding";
 import { RolePrimaryActions } from"@/components/navigation/role-primary-actions";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
+import { PromotionRequestForm } from"@/components/sections/rubriques/promotion-request-form";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
 import {
- PROFILE_ORDER,
  getProfileEntryPath,
  getProfileLabel,
  getProfileSubtitle,
+ getSwitchableProfiles,
+ isAdminLikeProfile,
  isAppProfile,
  toProfile,
 } from"@/lib/profiles";
@@ -32,8 +33,8 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
  <ClerkRequiredGate
  isAuthenticated={false}
  mode="blur"
- title="Profil"
- description="Cette fonctionnalité nécessite une connexion Clerk."
+ title="Parcours personnalisé"
+ description="Connectez-vous pour accéder au parcours lié à votre profil."
  lockedPreview={
  <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
  <div className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -55,7 +56,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
 
  const activeRole = await getCurrentUserRoleLabel();
  const activeProfile = toProfile(activeRole);
- const isAdmin = activeRole ==="admin";
+ const isAdmin = isAdminLikeProfile(activeProfile);
 
  // Guard Strict: un utilisateur ne peut voir que son propre parcours (ou l'admin tout voir).
  if (!isAdmin && normalized !== activeProfile) {
@@ -65,7 +66,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
  const profileLabel = getProfileLabel(normalized,"fr");
  const profileSubtitle = getProfileSubtitle(normalized,"fr");
 
- const switchableProfiles = isAdmin ? PROFILE_ORDER : [activeProfile];
+ const switchableProfiles = isAdmin ? getSwitchableProfiles(activeProfile) : [activeProfile];
 
  return (
  <div className="space-y-4">
@@ -85,12 +86,12 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
  </p>
  </section>
 
- <FirstMissionOnboarding key={normalized} profile={normalized} />
-
  <RolePrimaryActions
  profile={normalized}
- title="Actions recommandées pour ce profil"
+ title="Actions recommandées"
  />
+
+ <PromotionRequestForm currentRole={activeProfile} />
 
  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
  <h2 className="text-base font-semibold cmm-text-primary">

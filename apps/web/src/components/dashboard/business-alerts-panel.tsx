@@ -88,9 +88,9 @@ export function BusinessAlertsPanel() {
  </p>
  ) : null}
 
- {!isLoading && !hasError && alerts.length === 0 ? (
+{!isLoading && !hasError && alerts.length === 0 ? (
  <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 cmm-text-small text-emerald-700">
- Tout est sous contrôle. Aucune alerte prioritaire n'est détectée sur cette période.
+ Tout est sous contrôle. Aucune alerte prioritaire ne ressort sur cette période.
  </p>
  ) : null}
 
@@ -149,9 +149,9 @@ export function BusinessAlertsPanel() {
  </p>
  </li>
  ))}
- {campaignGoals.length === 0 ? (
+{campaignGoals.length === 0 ? (
  <li className="rounded-lg border border-slate-200 bg-white px-3 py-2 cmm-text-secondary">
- Données insuffisantes pour projeter des objectifs. Continuez à déclarer vos actions pour affiner les prévisions.
+ Données insuffisantes pour projeter des objectifs sur cette fenêtre. Continuez à déclarer vos actions pour affiner les prévisions.
  </li>
  ) : null}
  </ul>
@@ -192,9 +192,9 @@ export function BusinessAlertsPanel() {
  </p>
  </li>
  ))}
- {neighborhoodPlan.length === 0 ? (
+{neighborhoodPlan.length === 0 ? (
  <li className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 cmm-text-secondary">
- Pas assez de données historiques pour bâtir un plan de quartier. Les objectifs s'affineront avec vos prochaines sorties.
+ Pas assez de données historiques pour bâtir un plan de quartier. Les prochains objectifs s'affineront avec vos sorties à venir.
  </li>
  ) : null}
  </ul>

@@ -1,5 +1,5 @@
 // Test script pour vérifier l'ordre des champs et les valeurs envoyées
-import { ASSOCIATION_SELECTION_OPTIONS } from "../lib/actions/association-options";
+import { ASSOCIATION_SELECTION_OPTIONS } from "./lib/actions/association-options";
 
 console.log("=== VÉRIFICATION DE LA RÉORGANISATION DES CHAMPS ===\n");
 

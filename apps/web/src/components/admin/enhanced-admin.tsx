@@ -1,33 +1,40 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { CmmCard } from '@/components/ui/cmm-card'
 import { CmmButton } from '@/components/ui/cmm-button'
 import { featureFlags } from '@/lib/feature-flags'
 import { abTestingService } from '@/lib/ab-testing'
 
-export function FeatureFlagAdmin() {
- const [flags, setFlags] = useState(featureFlags.getAllFlags())
- const [analytics, setAnalytics] = useState<any[]>([])
- const [trafficSplit, setTrafficSplit] = useState(10)
+type FormAnalyticsEvent = {
+ event: string
+ version?: string
+ fieldName?: string
+ timeSpent?: number
+}
 
- useEffect(() => {
- // Load analytics data from localStorage for demo
+function readStoredAnalytics(): FormAnalyticsEvent[] {
+ if (typeof window === 'undefined') {
+ return []
+ }
+
  const stored = localStorage.getItem('formAnalytics')
- if (stored) {
+ if (!stored) {
+ return []
+ }
+
  try {
- setAnalytics(JSON.parse(stored))
- } catch (e) {
- console.warn('Failed to parse analytics data')
+ const parsed: unknown = JSON.parse(stored)
+ return Array.isArray(parsed) ? parsed as FormAnalyticsEvent[] : []
+ } catch {
+ return []
  }
- }
- 
- // Load current traffic split
- const formTest = abTestingService.getTestConfig('form-simplification')
- if (formTest) {
- setTrafficSplit(formTest.trafficSplit)
- }
- }, [])
+}
+
+export function EnhancedAdmin() {
+ const [flags, setFlags] = useState(featureFlags.getAllFlags())
+ const [analytics, setAnalytics] = useState<FormAnalyticsEvent[]>(readStoredAnalytics)
+ const [trafficSplit, setTrafficSplit] = useState(() => abTestingService.getTestConfig('form-simplification')?.trafficSplit ?? 10)
 
  const toggleFlag = (flag: keyof typeof flags) => {
  featureFlags.toggle(flag)

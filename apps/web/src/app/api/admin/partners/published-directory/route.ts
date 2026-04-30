@@ -1,15 +1,19 @@
 import { z } from"zod";
 import { requireAdminAccess } from"@/lib/authz";
+import { appendAdminOperationAudit } from"@/lib/admin/operation-audit";
 import {
  adminErrorResponse,
  adminSuccessResponse,
  newOperationId,
 } from"@/lib/admin/response";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
-import { appendAdminOperationAudit } from"@/lib/admin/operation-audit";
 import {
- updatePublishedPartnerAnnuaireEntryPublicationStatus,
+updatePublishedPartnerAnnuaireEntryPublicationStatus,
 } from"@/lib/partners/published-annuaire-entries-store";
+import {
+ updatePartnerOnboardingRequestStatus,
+} from"@/lib/partners/onboarding-requests-store";
+import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 
 export const runtime ="nodejs";
 
@@ -98,9 +102,9 @@ export async function POST(request: Request) {
 
  try {
  const updated = await updatePublishedPartnerAnnuaireEntryPublicationStatus({
- entryId: parsed.data.id,
- publicationStatus: parsed.data.publicationStatus,
- reviewedByUserId: access.userId,
+   entryId: parsed.data.id,
+   publicationStatus: parsed.data.publicationStatus,
+   reviewedByUserId: access.userId,
  });
 
  if (!updated) {
@@ -117,14 +121,53 @@ export async function POST(request: Request) {
  },
  });
 
- return adminErrorResponse({
- status: 404,
- code:"not_found",
- message:"Partner publication not found",
- hint:"Verifier l'identifiant avant de relancer la revue.",
- operationId,
- });
- }
+   return adminErrorResponse({
+     status: 404,
+     code:"not_found",
+     message:"Partner publication not found",
+     hint:"Verifier l'identifiant avant de relancer la revue.",
+     operationId,
+   });
+  }
+
+ if (updated.sourceRequestId) {
+    await updatePartnerOnboardingRequestStatus({
+      requestId: updated.sourceRequestId,
+      status: parsed.data.publicationStatus === "accepted" ? "accepted" : "rejected",
+    }).catch((error) => {
+      console.warn("Partner onboarding request status sync failed", error);
+    });
+  }
+
+  await appendAdminOperationAudit({
+    operationId,
+    at: new Date().toISOString(),
+    actorUserId: access.userId,
+    operationType:"moderation",
+    outcome:"success",
+    targetId: parsed.data.id,
+    details: {
+      entityType:"partner_publication",
+      targetStatus: parsed.data.publicationStatus,
+    },
+  }).catch(() => undefined);
+
+  await sendCreatorInboxEmail({
+    subject: `[CleanMyMap] Revue partenaire - ${updated.name}`,
+    title: "Statut partenaire mis à jour",
+    intro: "La revue partenaire a été traitée depuis le back-office.",
+    lines: [
+      { label: "Fiche", value: updated.name },
+      { label: "Identité", value: updated.legalIdentity },
+      { label: "Statut", value: updated.publicationStatus },
+      { label: "Source request", value: updated.sourceRequestId },
+      { label: "Contact interne", value: updated.internalAdminContact?.email ?? "non communiqué" },
+      { label: "Updated at", value: updated.reviewedAt ?? "non communiqué" },
+    ],
+    footer: "La demande source a été synchronisée avec ce statut.",
+  }).catch((error) => {
+    console.warn("Partner publication creator notification failed", error);
+  });
 
  await appendAdminOperationAudit({
  operationId,

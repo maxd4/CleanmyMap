@@ -1,7 +1,6 @@
 "use client";
 
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
-import { CmmCard } from"@/components/ui/cmm-card";
 import { CmmButton, CmmButtonGroup } from"@/components/ui/cmm-button";
 import { CmmPill, CmmPillGroup } from"@/components/ui/cmm-pill";
 
@@ -28,7 +27,7 @@ export function DecisionPageHeader({
  const isFrench = locale ==="fr";
 
  return (
- <CmmCard tone="slate" variant="elevated" size="lg">
+ <header className="space-y-4 border-b border-[color:var(--border-default)] pb-6">
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
  {isFrench ?"Pourquoi" :"Why"}
  </p>
@@ -63,6 +62,6 @@ export function DecisionPageHeader({
  ))}
  </CmmButtonGroup>
  ) : null}
- </CmmCard>
+ </header>
  );
 }

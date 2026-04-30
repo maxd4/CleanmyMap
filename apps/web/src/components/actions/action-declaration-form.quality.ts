@@ -1,4 +1,4 @@
-import type { ActionPhotoAsset, ActionVisionEstimate } from"@/lib/actions/types";
+import type { ActionPhotoAsset, ActionQualityGrade, ActionVisionEstimate } from"@/lib/actions/types";
 import type { FormState } from"./action-declaration-form.model";
 import { estimateWasteKg } from"./action-declaration-form.estimation";
 
@@ -12,6 +12,7 @@ function uniqueMessages(messages: string[]): string[] {
 
 export type ActionDataQualityResult = {
  score: number;
+ level: ActionQualityGrade;
  warnings: string[];
 };
 
@@ -110,8 +111,11 @@ export function computeActionDataQuality({
  }
  }
 
+ const normalizedScore = clamp(score, 0, 100);
+
  return {
- score: clamp(score, 0, 100),
+ score: normalizedScore,
+ level: normalizedScore >= 80 ? "A" : normalizedScore >= 55 ? "B" : "C",
  warnings: uniqueMessages(warnings),
  };
 }

@@ -72,7 +72,6 @@ export function ActionsMapFeed({
  error,
  isLoading,
  isValidating,
- dataUpdatedAt,
  mutate: reload,
  } = useSWR(
  swrKey,
@@ -108,9 +107,15 @@ export function ActionsMapFeed({
  const partialSourcesLabel =
  failedSources.length > 0 ? failedSources.join(",") :"inconnues";
  const isImmersive = presentation ==="immersive";
+ const [lastRefreshedAt, setLastRefreshedAt] = useState<number | null>(null);
+ useEffect(() => {
+   if (data) {
+     setLastRefreshedAt(Date.now());
+   }
+ }, [data]);
  const freshnessLabel = useMemo(
-   () => formatMapFreshnessLabel(dataUpdatedAt),
-   [dataUpdatedAt],
+   () => formatMapFreshnessLabel(lastRefreshedAt),
+   [lastRefreshedAt],
  );
  const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
  const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);

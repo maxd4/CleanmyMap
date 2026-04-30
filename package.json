@@ -11,6 +11,7 @@
     "build": "npm run build -w apps/web",
     "lint": "npm run lint -w apps/web",
     "lint:audit": "node scripts/lint-audit-direct.js",
+    "security:secrets": "node scripts/secret-audit.mjs",
     "typecheck": "npm run typecheck -w apps/web",
     "check:doc-visuals": "node scripts/check-doc-visuals.mjs",
     "check:utf8-fr": "node scripts/check-utf8-fr-files.mjs",
@@ -20,11 +21,13 @@
     "modularize:report": "node scripts/generate-modularization-report.mjs",
     "test": "npm run test -w apps/web",
     "test:regression-gates": "npm run test:regression-gates -w apps/web",
+    "prepush:guard": "powershell -ExecutionPolicy Bypass -File scripts/pre_push_guard.ps1",
     "checks": "powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1",
     "maintenance:check": "node -e \"console.log('Legacy Python maintenance is archived. Use: npm run checks')\"",
     "session:bootstrap": "node scripts/session_bootstrap.mjs",
     "session:close": "node scripts/update_session_memory.mjs",
-    "session:budget": "node scripts/context-budget-check.mjs"
+    "session:budget": "node scripts/context-budget-check.mjs",
+    "screenshots": "node documentation/liberte-UX-UI/capture-pages.mjs"
   },
   "repository": {
     "type": "git",
@@ -42,7 +45,9 @@
   },
   "homepage": "https://github.com/maxd4/CleanMyMap#readme",
   "devDependencies": {
-    "@playwright/test": "^1.58.2"
+    "@playwright/test": "^1.59.1",
+    "playwright": "^1.59.1",
+    "sharp": "^0.33.0"
   },
   "overrides": {
     "dompurify": "3.4.0",

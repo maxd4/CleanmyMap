@@ -1,258 +1,233 @@
-import Link from"next/link";
-import { ArrowRight, ChevronRight, LayoutGrid, Layers, User } from"lucide-react";
-import { getCurrentUserIdentity, getCurrentUserRoleLabel } from"@/lib/authz";
+import Link from "next/link";
+import { ArrowRight, ChevronRight } from "lucide-react";
+import { getCurrentUserRoleLabel } from "@/lib/authz";
 import {
- getNavigationSpacesForProfile,
- type NavigationItem,
-} from"@/lib/navigation";
-import { getProfileLabel, toProfile } from"@/lib/profiles";
+  getNavigationSpacesForProfile,
+  type NavigationItem,
+  type NavigationBlockId,
+} from "@/lib/navigation";
+import { getProfileLabel, toProfile } from "@/lib/profiles";
 import {
- getServerDisplayModePreference,
- getServerLocale,
-} from"@/lib/server-preferences";
-import { AppNavigationRibbon } from"@/components/navigation/app-navigation-ribbon";
+  getServerDisplayModePreference,
+  getServerLocale,
+} from "@/lib/server-preferences";
 
 const BLOCK_PREVIEW_PRIORITY: Record<
-"home" |"act" |"visualize" |"impact" |"network" |"learn" |"pilot",
- Partial<Record<NavigationItem["id"], number>>
+  NavigationBlockId,
+  Partial<Record<NavigationItem["id"], number>>
 > = {
- home: {
- dashboard: 1,
- profile: 2,
- },
- act: {
- new: 1,
- route: 2,
-"trash-spotter": 3,
- },
- visualize: {
- map: 1,
- sandbox: 2,
- weather: 3,
- },
- impact: {
- reports: 1,
- gamification: 2,
- },
- network: {
- network: 1,
- annuaire: 2,
- community: 3,
- messagerie: 4,
-"open-data": 5,
- funding: 6,
- actors: 7,
- },
- learn: {
- hub: 1,
- guide: 2,
- climate: 3,
- recycling: 4,
- },
- pilot: {
- admin: 1,
- sponsor: 2,
- elus: 3,
- godmode: 4,
- },
+  home: {
+    dashboard: 1,
+    explorer: 2,
+    profile: 3,
+  },
+  act: {
+    new: 1,
+    route: 2,
+    "trash-spotter": 3,
+  },
+  visualize: {
+    map: 1,
+    sandbox: 2,
+    weather: 3,
+  },
+  impact: {
+    reports: 1,
+    gamification: 2,
+  },
+  network: {
+    network: 1,
+    annuaire: 2,
+    community: 3,
+    "open-data": 5,
+  },
+  connect: {
+    messagerie: 1,
+    dm: 2,
+  },
+  learn: {
+    hub: 1,
+    guide: 2,
+    climate: 3,
+    recycling: 4,
+  },
+  pilot: {
+    admin: 1,
+    sponsor: 2,
+    elus: 3,
+    godmode: 4,
+  },
 };
 
 function getOrderedPreviewItems(
- blockId: keyof typeof BLOCK_PREVIEW_PRIORITY,
- items: NavigationItem[],
+  blockId: NavigationBlockId,
+  items: NavigationItem[],
 ): NavigationItem[] {
- const blockPriority = BLOCK_PREVIEW_PRIORITY[blockId];
- return [...items].sort((a, b) => {
- const pa = blockPriority[a.id] ?? 99;
- const pb = blockPriority[b.id] ?? 99;
- if (pa !== pb) {
- return pa - pb;
- }
- return a.label.fr.localeCompare(b.label.fr,"fr");
- });
+  const blockPriority = BLOCK_PREVIEW_PRIORITY[blockId];
+  return [...items].sort((a, b) => {
+    const pa = blockPriority[a.id] ?? 99;
+    const pb = blockPriority[b.id] ?? 99;
+    if (pa !== pb) {
+      return pa - pb;
+    }
+    return a.label.fr.localeCompare(b.label.fr, "fr");
+  });
 }
 
-function getBlockAccent(blockId: keyof typeof BLOCK_PREVIEW_PRIORITY) {
+function getBlockAccent(blockId: NavigationBlockId) {
   const byBlock = {
-  home: { bar:"bg-slate-400", glow:"shadow-slate-950/20", tint:"from-slate-900/80 to-slate-950" },
-  act: { bar:"bg-amber-400", glow:"shadow-amber-500/20", tint:"from-amber-950/60 to-slate-950" },
-  visualize: { bar:"bg-sky-400", glow:"shadow-sky-500/20", tint:"from-sky-950/60 to-slate-950" },
-  impact: { bar:"bg-emerald-400", glow:"shadow-emerald-500/20", tint:"from-emerald-950/60 to-slate-950" },
-  network: { bar:"bg-violet-400", glow:"shadow-violet-500/20", tint:"from-violet-950/60 to-slate-950" },
-  learn: { bar:"bg-rose-400", glow:"shadow-rose-500/20", tint:"from-rose-950/60 to-slate-950" },
-  pilot: { bar:"bg-indigo-400", glow:"shadow-indigo-500/20", tint:"from-indigo-950/60 to-slate-950" },
+    home: { bar: "bg-[#27C3D9]", glow: "shadow-[#27C3D9]/20", tint: "from-[#2C5F77]/78 via-[#356B73]/64 to-[#417C84]/72", hover: "hover:border-[#27C3D9]/40", ring: "focus-visible:ring-[#27C3D9]/50", text: "text-white", badge: "bg-white/12 text-white border-white/16" },
+    act: { bar: "bg-[#2F80C3]", glow: "shadow-[#2F80C3]/20", tint: "from-[#2C5F77]/78 via-[#356B73]/64 to-[#417C84]/72", hover: "hover:border-[#2F80C3]/40", ring: "focus-visible:ring-[#2F80C3]/50", text: "text-white", badge: "bg-white/12 text-white border-white/16" },
+    visualize: { bar: "bg-[#27C3D9]", glow: "shadow-[#27C3D9]/20", tint: "from-[#2C5F77]/78 via-[#356B73]/64 to-[#417C84]/72", hover: "hover:border-[#27C3D9]/40", ring: "focus-visible:ring-[#27C3D9]/50", text: "text-white", badge: "bg-white/12 text-white border-white/16" },
+    impact: { bar: "bg-[#18B68F]", glow: "shadow-[#18B68F]/20", tint: "from-[#2C5F77]/78 via-[#356B73]/64 to-[#417C84]/72", hover: "hover:border-[#18B68F]/40", ring: "focus-visible:ring-[#18B68F]/50", text: "text-white", badge: "bg-white/12 text-white border-white/16" },
+    network: { bar: "bg-[#5B5FCF]", glow: "shadow-[#5B5FCF]/20", tint: "from-[#2C5F77]/78 via-[#356B73]/64 to-[#417C84]/72", hover: "hover:border-[#5B5FCF]/40", ring: "focus-visible:ring-[#5B5FCF]/50", text: "text-white", badge: "bg-white/12 text-white border-white/16" },
+    connect: { bar: "bg-[#27C3D9]", glow: "shadow-[#27C3D9]/20", tint: "from-[#2C5F77]/78 via-[#356B73]/64 to-[#417C84]/72", hover: "hover:border-[#27C3D9]/40", ring: "focus-visible:ring-[#27C3D9]/50", text: "text-white", badge: "bg-white/12 text-white border-white/16" },
+    learn: { bar: "bg-[#4E9A51]", glow: "shadow-[#4E9A51]/20", tint: "from-[#2C5F77]/78 via-[#356B73]/64 to-[#417C84]/72", hover: "hover:border-[#4E9A51]/40", ring: "focus-visible:ring-[#4E9A51]/50", text: "text-white", badge: "bg-white/12 text-white border-white/16" },
+    pilot: { bar: "bg-[#5B5FCF]", glow: "shadow-[#5B5FCF]/20", tint: "from-[#2C5F77]/78 via-[#356B73]/64 to-[#417C84]/72", hover: "hover:border-[#5B5FCF]/40", ring: "focus-visible:ring-[#5B5FCF]/50", text: "text-white", badge: "bg-white/12 text-white border-white/16" },
   } as const;
- return byBlock[blockId];
+  return byBlock[blockId];
 }
 
 export default async function ExplorerPage() {
- const locale = await getServerLocale();
- const displayModePreference = await getServerDisplayModePreference();
- const role = await getCurrentUserRoleLabel();
- const identity = await getCurrentUserIdentity();
- const currentProfile = toProfile(role);
- const profileLabel = getProfileLabel(currentProfile, locale);
- const spaces = getNavigationSpacesForProfile(
- currentProfile,
- displayModePreference.displayMode,
- locale,
- );
- const totalItems = spaces.reduce((sum, space) => sum + space.items.length, 0);
+  const locale = await getServerLocale();
+  const displayModePreference = await getServerDisplayModePreference();
+  const role = await getCurrentUserRoleLabel();
+  const currentProfile = toProfile(role);
+  const profileLabel = getProfileLabel(currentProfile, locale);
+  const spaces = getNavigationSpacesForProfile(
+    currentProfile,
+    displayModePreference.displayMode,
+    locale,
+  );
+  const visibleSpaces = spaces.map((space) => ({
+    ...space,
+    items: space.items.filter((item) => item.routeId !== "explorer"),
+  }));
+  const totalItems = visibleSpaces.reduce((sum, space) => sum + space.items.length, 0);
 
- return (
- <div className="space-y-3 sm:space-y-6">
- <AppNavigationRibbon
- currentProfile={currentProfile}
- profileLabel={profileLabel}
- identity={identity}
- />
- <div className="relative overflow-hidden">
- {/* Fond : dégradé doux + quadrillage très atténué (utilitaire, pas marketing) */}
- <div className="pointer-events-none absolute inset-0">
- <div className="absolute inset-0 bg-gradient-to-br from-[#0b2a52]/20 via-slate-950 to-emerald-500/10" />
- <div className="absolute inset-0 opacity-[0.04] [background-image:linear-gradient(to_right,rgba(148,163,184,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(148,163,184,0.1)_1px,transparent_1px)] [background-size:44px_44px]" />
- <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_45%_at_50%_0%,rgba(34,211,238,0.10),transparent),radial-gradient(ellipse_40%_40%_at_0%_100%,rgba(16,185,129,0.08),transparent)] dark:bg-[radial-gradient(ellipse_70%_45%_at_50%_0%,rgba(34,211,238,0.08),transparent),radial-gradient(ellipse_40%_40%_at_0%_100%,rgba(16,185,129,0.06),transparent)]" />
- </div>
+  return (
+    <div className="space-y-3 sm:space-y-5">
+      <div className="relative mx-auto min-h-full w-full max-w-[1600px] space-y-3 px-3 py-4 sm:space-y-5 sm:px-8 sm:py-8 lg:py-12">
+          <section className="relative overflow-hidden rounded-[1.8rem] border border-white/14 bg-[linear-gradient(135deg,rgba(65,124,132,0.72),rgba(44,95,119,0.78),rgba(91,95,207,0.42))] p-4 shadow-[0_28px_70px_-38px_rgba(19,52,63,0.34)] backdrop-blur-xl sm:rounded-[2.2rem] sm:p-6 lg:p-7">
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/25 to-transparent" />
+              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-cyan-400/12 blur-3xl" />
+              <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-emerald-400/12 blur-3xl" />
+            </div>
+            <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)] lg:items-end">
+              <div className="space-y-2.5 sm:space-y-4">
+                <p className="inline-flex rounded-full border border-white/14 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-white sm:text-[12px]">
+                  {locale === "fr" ? "Navigation utilitaire" : "Utility navigation"}
+                </p>
+                <h1 className="max-w-3xl text-[clamp(2rem,7vw,3.6rem)] font-black tracking-tight leading-[0.94] text-white sm:text-[clamp(2.25rem,4vw,3.6rem)]">
+                  {locale === "fr" ? "Plan du site" : "Site map"}
+                </h1>
+                <p className="max-w-2xl text-sm leading-[1.65] text-white/82 sm:text-base">
+                  {locale === "fr"
+                    ? "Vue compacte des rubriques accessibles pour votre profil, avec un accès direct à la bonne page."
+                    : "Compact view of the sections available for your profile, with direct access to the right page."}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+                <div className="rounded-2xl border border-white/14 bg-white/10 px-3 py-3 shadow-[0_12px_28px_-24px_rgba(19,52,63,0.34)] backdrop-blur-sm sm:px-4 sm:py-4">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/78 sm:text-[11px] sm:tracking-[0.18em]">
+                    {locale === "fr" ? "Sections" : "Sections"}
+                  </div>
+                  <div className="mt-1 text-xl font-black tracking-tight text-white sm:text-2xl">
+                    {spaces.length}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/14 bg-white/10 px-3 py-3 shadow-[0_12px_28px_-24px_rgba(19,52,63,0.34)] backdrop-blur-sm sm:px-4 sm:py-4">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/78 sm:text-[11px] sm:tracking-[0.18em]">
+                    {locale === "fr" ? "Rubriques" : "Sections"}
+                  </div>
+                  <div className="mt-1 text-xl font-black tracking-tight text-white sm:text-2xl">
+                    {totalItems}
+                  </div>
+                </div>
+                <div className="col-span-2 rounded-2xl border border-white/14 bg-[rgba(24,182,143,0.18)] px-3 py-3 shadow-[0_12px_28px_-24px_rgba(19,52,63,0.34)] backdrop-blur-sm sm:col-span-1 sm:px-4 sm:py-4">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/82 sm:text-[11px] sm:tracking-[0.18em]">
+                    {locale === "fr" ? "Profil actif" : "Active profile"}
+                  </div>
+                  <div className="mt-1 text-sm font-semibold tracking-tight text-white sm:text-base">
+                    {profileLabel}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
 
- <div className="relative mx-auto min-h-full w-full max-w-7xl space-y-3 px-3 py-4 sm:space-y-6 sm:px-8 sm:py-8 lg:py-12">
- <section className="rounded-[1.5rem] border border-slate-800/60 bg-slate-900/60 p-4 shadow-2xl backdrop-blur-xl sm:rounded-[2rem] sm:p-6">
- <div className="flex flex-wrap items-start justify-between gap-4">
- <div className="space-y-2">
- <p className="cmm-text-caption font-bold uppercase tracking-[0.22em] cmm-text-muted">
- {locale ==="fr" ?"Navigation utilitaire" :"Utility navigation"}
- </p>
- <h1 className="text-[1.15rem] font-bold tracking-tight cmm-text-primary sm:text-3xl">
- {locale ==="fr" ?"Plan du site" :"Site map"}
- </h1>
- <p className="max-w-2xl cmm-text-caption leading-[1.5] cmm-text-secondary sm:text-base sm:leading-relaxed">
- {locale ==="fr"
- ?"Vue compacte de toutes les rubriques accessibles pour votre profil. Objectif : trouver et ouvrir rapidement la bonne page."
- :"Compact view of all accessible sections for your profile. Goal: quickly find and open the right page."}
- </p>
- </div>
- <div className="grid grid-cols-3 gap-1.5 text-center sm:gap-2">
- <div className="rounded-2xl border border-slate-800/80 bg-slate-950/40 px-2 py-1.5 shadow-sm sm:px-3 sm:py-2">
- <div className="text-lg font-bold cmm-text-primary">{spaces.length}</div>
- <div className="cmm-text-caption font-bold uppercase tracking-wider cmm-text-muted">
- {locale ==="fr" ?"Blocs" :"Blocks"}
- </div>
- </div>
- <div className="rounded-2xl border border-slate-800/80 bg-slate-950/40 px-2 py-1.5 shadow-sm sm:px-3 sm:py-2">
- <div className="text-lg font-bold cmm-text-primary">{totalItems}</div>
- <div className="cmm-text-caption font-bold uppercase tracking-wider cmm-text-muted">
- {locale ==="fr" ?"Rubriques" :"Sections"}
- </div>
- </div>
- <div className="rounded-2xl border border-emerald-900/50 bg-emerald-950/30 px-2 py-1.5 shadow-sm sm:px-3 sm:py-2">
- <div className="cmm-text-caption font-bold uppercase tracking-[0.18em] text-emerald-800 dark:text-emerald-200">
- {locale ==="fr" ?"Profil actif" :"Active profile"}
- </div>
- <div className="cmm-text-caption font-bold tracking-tight text-emerald-900 dark:text-emerald-100">
- {profileLabel}
- </div>
- </div>
- </div>
- </div>
- </section>
+          <section className="space-y-6 sm:space-y-10">
+            {visibleSpaces.map((space) => {
+              const orderedItems = getOrderedPreviewItems(space.id, space.items);
+              const firstHref = orderedItems[0]?.href ?? "/dashboard";
+              const accent = getBlockAccent(space.id);
+              return (
+                <article
+                  key={space.id}
+                  id={`bloc-${space.id}`}
+                  className={`scroll-mt-28 overflow-hidden rounded-[2rem] border border-white/14 bg-gradient-to-br ${accent.tint} p-4 shadow-2xl ${accent.glow} transition-all duration-500 hover:border-white/22 hover:shadow-black/20 sm:rounded-[2.5rem] sm:p-7 lg:p-8`}
+                >
+                  <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-white/14 pb-5 sm:mb-8 sm:pb-6">
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                      <div className="relative">
+                        <div className={`absolute -inset-2 rounded-2xl ${accent.bar} opacity-12 blur-xl transition-opacity group-hover:opacity-24`} />
+                        <span className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white/12 text-xl shadow-2xl ring-1 ring-white/14 sm:h-14 sm:w-14 sm:text-2xl">
+                          {space.icon}
+                        </span>
+                        <span className={`absolute -bottom-1.5 -right-1.5 h-3.5 w-3.5 rounded-full ${accent.bar} border-2 border-[#2C5F77] shadow-sm`} />
+                      </div>
+                      <Link
+                        href={firstHref}
+                        className={`group inline-flex min-h-11 items-center justify-center gap-2.5 rounded-2xl border border-white/14 bg-white/12 px-5 py-2.5 text-sm font-bold text-white transition-all duration-300 hover:border-white/22 hover:bg-white/16 active:scale-95 shadow-lg sm:min-h-14 sm:px-6 sm:py-3 sm:text-base`}
+                      >
+                        <span className="relative flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/10 transition-colors group-hover:bg-white/20 sm:h-6 sm:w-6">
+                          <ArrowRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                        {locale === "fr"
+                          ? `Visiter la section ${space.label[locale]}`
+                          : `Visit the ${space.label[locale]} section`}
+                      </Link>
+                    </div>
+                  </div>
 
- <section className="sticky top-[5.2rem] z-20 rounded-[1.5rem] border border-slate-800/60 bg-slate-900/80 p-2.5 shadow-2xl backdrop-blur-xl sm:static sm:rounded-2xl sm:bg-slate-900/60 sm:p-4 sm:backdrop-blur-0">
- <div className="mb-2 flex items-center gap-2 cmm-text-caption font-bold uppercase tracking-[0.22em] cmm-text-muted sm:mb-3 sm:cmm-text-caption">
- <LayoutGrid className="h-4 w-4" />
- {locale ==="fr" ?"Accès rapide blocs" :"Quick block access"}
- </div>
- <div className="flex flex-wrap gap-1.5 sm:gap-2">
- {spaces.map((space) => (
- (() => {
- const accent = getBlockAccent(space.id);
- return (
- <a
- key={space.id}
- href={`#bloc-${space.id}`}
- className="inline-flex items-center gap-1.5 rounded-full border border-slate-800/60 bg-slate-900/40 px-2 py-1 cmm-text-caption font-semibold leading-none cmm-text-secondary shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-500/50 hover:bg-slate-800 hover:cmm-text-primary hover:shadow-md sm:gap-2 sm:px-3 sm:py-1.5 sm:cmm-text-caption"
- >
- <span className={`h-1.5 w-1.5 rounded-full ${accent.bar}`} />
- <span>{space.icon}</span>
- <span>{space.label[locale]}</span>
- <span className="rounded-full bg-slate-950 px-1.5 py-0.5 cmm-text-caption cmm-text-muted">
- {space.items.length}
- </span>
- </a>
- );
- })()
- ))}
- </div>
- </section>
-
- <section className="space-y-2.5 sm:space-y-4">
- {spaces.map((space) => {
- const orderedItems = getOrderedPreviewItems(space.id, space.items);
- const firstHref = orderedItems[0]?.href ??"/dashboard";
- const accent = getBlockAccent(space.id);
- return (
- <article
- key={space.id}
- id={`bloc-${space.id}`}
- className={`scroll-mt-28 overflow-hidden rounded-[1.6rem] border border-slate-800/60 bg-gradient-to-b ${accent.tint} p-2.5 shadow-2xl transition hover:-translate-y-0.5 hover:shadow-black/40 sm:rounded-[2rem] sm:p-5`}
- >
- <div className={`absolute left-0 top-0 h-full w-1 ${accent.bar} opacity-70`} />
- <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/40 pb-2 sm:mb-4 sm:gap-3 sm:pb-3">
- <div className="flex items-center gap-3">
- <div className="relative">
- <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900/80 text-base shadow-sm ring-1 ring-white/10 sm:h-10 sm:w-10 sm:text-lg">
- {space.icon}
- </span>
- <span className={`absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full ${accent.bar} ring-2 ring-white dark:ring-slate-950`} />
- </div>
- <div>
- <p className={`cmm-text-caption font-bold uppercase tracking-[0.18em] ${space.color}`}>
- {locale ==="fr" ?"Bloc" :"Block"}
- </p>
- <h2 className="text-[15px] font-bold leading-tight cmm-text-primary sm:text-xl dark:text-white">
- {space.label[locale]}
- </h2>
- </div>
- </div>
- <Link
- href={firstHref}
- className="inline-flex items-center gap-1.5 rounded-xl border border-slate-800/60 bg-slate-900/60 px-2.5 py-1 cmm-text-caption font-bold uppercase tracking-wider cmm-text-secondary shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-500/50 hover:bg-slate-800 hover:cmm-text-primary hover:shadow-md sm:gap-2 sm:px-3 sm:py-1.5 sm:cmm-text-caption"
- >
- <ArrowRight className="h-4 w-4" />
- {locale ==="fr" ?"Ouvrir le bloc" :"Open block"}
- </Link>
- </div>
-
- {orderedItems.length > 0 ? (
- <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
- {orderedItems.map((item) => (
- <Link
- key={item.id}
- href={item.href}
- title={item.description[locale]}
- className="group flex items-center justify-between gap-3 rounded-2xl border border-slate-800/60 bg-slate-900/40 px-3 py-2.5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-500/50 hover:bg-slate-800 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/50 sm:px-4 sm:py-3"
- >
- <span className="min-w-0">
- <span className="line-clamp-1 block text-[13px] font-semibold leading-tight cmm-text-primary sm:cmm-text-small dark:text-white">
- {item.label[locale]}
- </span>
- <span className="line-clamp-1 cmm-text-caption leading-tight cmm-text-secondary sm:line-clamp-2 sm:cmm-text-caption">
- {item.description[locale]}
- </span>
- </span>
- <ChevronRight className="h-4 w-4 shrink-0 cmm-text-muted transition group-hover:translate-x-0.5 group-hover:text-emerald-500" />
- </Link>
- ))}
- </div>
- ) : (
- <div className="rounded-2xl border border-dashed border-slate-800/60 bg-slate-950/40 px-4 py-3 cmm-text-caption font-semibold uppercase tracking-wider cmm-text-muted">
- {locale ==="fr" ?"Aucune rubrique accessible sur ce bloc" :"No section available in this block"}
- </div>
- )}
- </article>
- );
- })}
- </section>
- </div>
- </div>
- </div>
- );
+                  {orderedItems.length > 0 ? (
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
+                      {orderedItems.map((item) => (
+                        <Link
+                          key={item.id}
+                          href={item.href}
+                          title={item.description[locale]}
+                          className={`group flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-white/14 bg-white/10 p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-white/22 hover:bg-white/16 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 ${accent.ring} sm:p-4`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <h3 className="block text-[15px] font-bold leading-tight text-white transition-colors group-hover:text-white sm:text-base">
+                                {item.label[locale]}
+                              </h3>
+                              <p className="line-clamp-1 text-[12px] leading-snug text-white/86 transition-colors group-hover:text-white sm:text-[13px]">
+                                {item.description[locale]}
+                              </p>
+                            </div>
+                          </div>
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/14 bg-white/12 text-white/70 shadow-inner transition-all duration-300 group-hover:scale-110 ${accent.hover} group-hover:text-white`}>
+                            <ChevronRight size={18} className="transition-transform group-hover:translate-x-0.5" />
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-white/14 bg-white/10 px-4 py-3 cmm-text-caption font-semibold uppercase tracking-wider text-white/82">
+                      {locale === "fr"
+                        ? "Cette section ne contient pas encore de rubrique accessible pour votre profil"
+                        : "This section does not yet contain a page available for your profile"}
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </section>
+        </div>
+    </div>
+  );
 }

@@ -131,53 +131,63 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
 // Source de vérité navigation: profil -> espaces -> pages.
 const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   benevole: {
-    home: ["dashboard", "profile"],
+    home: ["dashboard", "explorer", "profile"],
     act: ["new", "route", "trash-spotter"],
     visualize: ["map", "sandbox"],
     impact: ["reports", "gamification"],
-    network: ["network", "community", "annuaire", "open-data", "funding", "actors"],
+    network: ["network", "community", "open-data"],
     connect: ["messagerie", "dm"],
-    learn: ["hub", "climate", "guide", "recycling"],
+    learn: ["hub", "guide"],
     pilot: [],
   },
   coordinateur: {
-    home: ["dashboard", "profile"],
+    home: ["dashboard", "explorer", "profile"],
     act: ["new", "route", "trash-spotter"],
     visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
-    network: ["community", "annuaire", "open-data", "funding", "actors"],
+    network: ["network", "community", "open-data"],
     connect: ["messagerie", "dm"],
-    learn: ["hub", "climate", "guide", "recycling"],
+    learn: ["hub", "guide"],
     pilot: ["elus"],
   },
   scientifique: {
-    home: ["dashboard", "profile"],
+    home: ["dashboard", "explorer", "profile"],
     act: ["new", "route", "trash-spotter"],
     visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
-    network: ["community", "annuaire", "open-data", "funding", "actors"],
+    network: ["network", "community", "open-data"],
     connect: ["messagerie", "dm"],
-    learn: ["hub", "climate", "guide", "recycling"],
+    learn: ["hub", "guide"],
     pilot: ["elus"],
   },
   elu: {
-    home: ["dashboard", "profile"],
+    home: ["dashboard", "explorer", "profile"],
     act: ["new", "route", "trash-spotter"],
     visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
-    network: ["network", "community", "annuaire", "open-data", "funding", "actors"],
+    network: ["network", "community", "open-data"],
     connect: ["messagerie", "dm"],
-    learn: ["hub", "climate", "guide", "recycling"],
+    learn: ["hub", "guide"],
     pilot: ["sponsor", "elus"],
   },
   admin: {
-    home: ["dashboard", "profile"],
+    home: ["dashboard", "explorer", "profile"],
     act: ["new", "route", "trash-spotter"],
     visualize: ["map", "sandbox", "weather"],
     impact: ["reports", "gamification"],
-    network: ["network", "community", "annuaire", "open-data", "funding", "actors"],
+    network: ["network", "community", "open-data"],
     connect: ["messagerie", "dm"],
-    learn: ["hub", "climate", "guide", "recycling"],
+    learn: ["hub", "guide"],
+    pilot: [],
+  },
+  max: {
+    home: ["dashboard", "explorer", "profile"],
+    act: ["new", "route", "trash-spotter"],
+    visualize: ["map", "sandbox", "weather"],
+    impact: ["reports", "gamification"],
+    network: ["network", "community", "open-data"],
+    connect: ["messagerie", "dm"],
+    learn: ["hub", "guide"],
     pilot: ["godmode", "admin", "sponsor", "elus"],
   },
 };
@@ -196,8 +206,9 @@ function toNavItem(rubrique: Rubrique): NavigationItem {
   };
 }
 
-export function getPilotFallbackItems(_locale?: string): NavigationItem[] {
+export function getPilotFallbackItems(locale: string = "fr"): NavigationItem[] {
   const fallbackRouteIds: RouteId[] = ["dashboard", "reports"];
+  const isFrench = locale === "fr";
   return fallbackRouteIds
     .map((routeId) => RUBRIQUE_BY_ID.get(routeId))
     .filter((rubrique): rubrique is Rubrique => Boolean(rubrique))
@@ -205,24 +216,24 @@ export function getPilotFallbackItems(_locale?: string): NavigationItem[] {
     .map((item) => ({
       ...item,
       description: {
-        fr:
-          item.routeId === "dashboard"
-            ? "Vue synthèse du pilotage"
-            : "Synthèse d'impact, exports et contrôle",
-        en:
-          item.routeId === "dashboard"
-            ? "Operational overview"
-            : "Impact synthesis, exports and control",
+        fr: item.routeId === "dashboard"
+          ? "Vue synthèse du pilotage"
+          : "Synthèse d'impact, exports et contrôle",
+        en: item.routeId === "dashboard"
+          ? "Operational overview"
+          : "Impact synthesis, exports and control",
       },
       label: {
-        fr:
-          item.routeId === "dashboard"
+        fr: isFrench
+          ? item.routeId === "dashboard"
             ? "Tableau de bord"
-            : "Rapports d'impact",
-        en:
-          item.routeId === "dashboard"
+            : "Rapports d'impact"
+          : item.routeId === "dashboard"
             ? "Dashboard"
             : "Impact reports",
+        en: item.routeId === "dashboard"
+          ? "Dashboard"
+          : "Impact reports",
       },
     }));
 }
@@ -245,7 +256,7 @@ function getDisplayModeLabel(displayMode: DisplayMode, locale: Locale): string {
     return locale === "fr" ? "mode sobre" : "calm mode";
   }
   if (displayMode === "minimaliste") {
-    return locale === "fr" ? "mode minimaliste" : "minimalist mode";
+    return locale === "fr" ? "mode essentiel" : "minimalist mode";
   }
   return locale === "fr" ? "mode exhaustif" : "exhaustive mode";
 }
@@ -311,9 +322,6 @@ export function getNavigationSpacesForProfile(
     return { id: spaceId, label: def.label, icon: def.icon, color: def.color, items };
   });
 
-  if (displayMode === "exhaustif") {
-    return spaces;
-  }
   return spaces.filter((space) => space.items.length > 0);
 }
 
@@ -339,7 +347,7 @@ export function getProfileNavigationEntries(params: {
   currentProfile: AppProfile;
   isAdmin: boolean;
 }): ProfileNavigationEntry[] {
-  if (!params.isAdmin) {
+  if (!params.isAdmin && params.currentProfile !== "max") {
     const profile = params.currentProfile;
     return [
       {
@@ -357,9 +365,17 @@ export function getProfileNavigationEntries(params: {
     ];
   }
 
-  return PROFILE_ORDER.filter(
-    (profile) => params.isAdmin || profile !== "admin",
-  ).map((profile) => ({
+  const visibleProfiles =
+    params.currentProfile === "max"
+      ? PROFILE_ORDER
+      : PROFILE_ORDER.filter((profile) => profile !== "max");
+
+  return visibleProfiles
+    .filter(
+      (profile) =>
+        params.isAdmin || params.currentProfile === "max" || profile !== "admin",
+    )
+    .map((profile) => ({
     id: profile,
     href: getProfileEntryPath(profile),
     label: {
@@ -389,11 +405,11 @@ export function getNavigationLabels(
   const displayModeLabel = getDisplayModeLabel(displayMode, locale);
   return {
     navTitle:
-      locale === "fr" ? "Navigation en 7 blocs" : "7-block navigation",
+      locale === "fr" ? "Navigation en 7 sections" : "7-section navigation",
     summary:
       locale === "fr"
-        ? `${rubriqueCount} pages opérationnelles pour ${profileLabel} (${spaceCount} blocs, ${displayModeLabel})`
-        : `${rubriqueCount} operational pages for ${profileLabel} (${spaceCount} blocks, ${displayModeLabel})`,
+        ? `${rubriqueCount} pages opérationnelles pour ${profileLabel} (${spaceCount} sections, ${displayModeLabel})`
+        : `${rubriqueCount} operational pages for ${profileLabel} (${spaceCount} sections, ${displayModeLabel})`,
   };
 }
 

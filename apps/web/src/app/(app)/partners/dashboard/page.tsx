@@ -56,11 +56,11 @@ export default async function PartnersDashboardPage() {
  <div className="space-y-4">
  <header className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
- Décision / supervision
+   Pilotage réseau
  </p>
- <h1 className="mt-1 text-lg font-semibold cmm-text-primary">Tableau de bord partenaires</h1>
+  <h1 className="mt-1 text-lg font-semibold cmm-text-primary">Tableau de bord du réseau</h1>
  <p className="mt-1 cmm-text-small cmm-text-secondary">
- Vue de pilotage: arbitrer, valider et suivre les demandes.
+   Suivi des demandes, des fiches publiées et des zones couvertes.
  </p>
  </header>
 
@@ -119,8 +119,8 @@ export default async function PartnersDashboardPage() {
  <ClerkRequiredGate
  isAuthenticated={Boolean(userId)}
  mode="disabled"
- title="Tableau de bord du réseau"
- description="Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
+   title="Pilotage réseau"
+   description="Cette vue reste lisible, mais les actions demandent une connexion."
  >
  {page}
  </ClerkRequiredGate>

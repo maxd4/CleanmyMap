@@ -172,9 +172,9 @@ function profileBonus(entry: EnrichedAnnuaireEntry, profile: string): number {
  ? 16
  : 0;
  }
- if (profile ==="elu" || profile ==="admin") {
+ if (profile ==="elu" || profile ==="admin" || profile ==="max") {
  return entry.kind ==="commerce" || entry.kind ==="entreprise" ? 14 : 8;
- }
+}
  if (profile ==="scientifique") {
  return entry.contributionTypes.includes("materiel") ? 12 : 6;
  }

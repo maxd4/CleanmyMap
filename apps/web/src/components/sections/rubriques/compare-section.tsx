@@ -113,7 +113,7 @@ export function CompareSection() {
  d&apos;activité pour rendre la lecture territoriale plus stable.
  </p>
  <p>
- Le bloc « Effort » signale le levier attendu, tandis que les zones
+ La section « Effort » signale le levier attendu, tandis que les zones
  prioritaires synthétisent l&apos;écart le plus utile à traiter.
  </p>
  </div>
@@ -155,7 +155,7 @@ export function CompareSection() {
  );
  })}
       {topRows.length === 0 ? (
-        <tr><td className="px-3 py-4 cmm-text-small cmm-text-muted italic text-center" colSpan={6}>Pas assez de données pour établir une comparaison détaillée entre les zones.</td></tr>
+        <tr><td className="px-3 py-4 cmm-text-small cmm-text-muted italic text-center" colSpan={6}>Pas encore assez de données comparables pour détailler les zones sur cette période.</td></tr>
       ) : null}
  </tbody>
  </table>
@@ -173,7 +173,7 @@ export function CompareSection() {
  {area}
  </li>
  ))}
-              {comparison.rawRanking.length === 0 ? <li className="cmm-text-small cmm-text-muted italic">Aucune zone enregistrée.</li> : null}
+              {comparison.rawRanking.length === 0 ? <li className="cmm-text-small cmm-text-muted italic">Aucune zone n&apos;est encore classée sur cette période.</li> : null}
  </ol>
  </CmmCard>
  <CmmCard tone="slate" size="md">
@@ -185,7 +185,7 @@ export function CompareSection() {
  {area}
  </li>
  ))}
-              {comparison.normalizedRanking.length === 0 ? <li className="cmm-text-small cmm-text-muted italic">Aucune zone enregistrée.</li> : null}
+              {comparison.normalizedRanking.length === 0 ? <li className="cmm-text-small cmm-text-muted italic">Aucune zone n&apos;est encore classée sur cette période.</li> : null}
  </ol>
  </CmmCard>
  </div>
@@ -200,7 +200,7 @@ export function CompareSection() {
  <span className="cmm-text-caption font-bold uppercase tracking-wide text-amber-700">Effort : {zone.effort}</span>
  </li>
  ))}
-              {comparison.priorityZones.length === 0 ? <li className="cmm-text-small cmm-text-muted italic">Tout est stable. Aucune priorité d'action immédiate n'est identifiée.</li> : null}
+              {comparison.priorityZones.length === 0 ? <li className="cmm-text-small cmm-text-muted italic">Aucune zone prioritaire ne se détache sur cette fenêtre. La situation paraît stable.</li> : null}
  </ul>
  </CmmCard>
 
@@ -211,7 +211,7 @@ export function CompareSection() {
  {comparison.improvingZones.slice(0, 5).map((area) => (
  <li key={`up-${area}`} className="cmm-text-small text-emerald-800 font-medium">{area}</li>
  ))}
-              {comparison.improvingZones.length === 0 ? <li className="cmm-text-small cmm-text-muted italic">Pas de tendance positive identifiée.</li> : null}
+              {comparison.improvingZones.length === 0 ? <li className="cmm-text-small cmm-text-muted italic">Aucune zone n&apos;est en amélioration sur la période observée.</li> : null}
  </ul>
  </CmmCard>
  <CmmCard tone="rose" size="md">
@@ -220,7 +220,7 @@ export function CompareSection() {
  {comparison.degradingZones.slice(0, 5).map((area) => (
  <li key={`down-${area}`} className="cmm-text-small text-rose-800 font-medium">{area}</li>
  ))}
-              {comparison.degradingZones.length === 0 ? <li className="cmm-text-small cmm-text-muted italic">Tout est stable. Aucune dégradation identifiée.</li> : null}
+              {comparison.degradingZones.length === 0 ? <li className="cmm-text-small cmm-text-muted italic">Aucune dégradation nette n&apos;est détectée sur cette fenêtre.</li> : null}
  </ul>
  </CmmCard>
  </div>

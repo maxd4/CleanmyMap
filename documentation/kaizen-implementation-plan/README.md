@@ -28,7 +28,7 @@ Chaque audit est une **suite de prompts à exécuter par ordre de priorité**.
 
 ### ✅ Complétés
 
-1. **[01-homepage-audit.md](./01-homepage-audit.md)** - Page d'Accueil
+1. **[01-accueil-audit.md](./01-accueil-audit.md)** - Page d'Accueil
    - 3 améliorations Fond (rigueur scientifique)
    - 3 améliorations Forme (UX premium)
    - 3 innovations (engagement)

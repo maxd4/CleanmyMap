@@ -1,0 +1,313 @@
+- generic [active] [ref=e1]:
+  - navigation "Barre de navigation principale" [ref=e5]:
+    - generic [ref=e6]:
+      - paragraph [ref=e7]: "Profil actif: Visiteur"
+      - link "CleanMyMap" [ref=e8] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e9]: CMM
+      - button "Naviguer" [ref=e12] [cursor=pointer]:
+        - img [ref=e13]
+        - generic [ref=e15]: Naviguer
+        - img [ref=e16]
+      - generic [ref=e18]:
+        - button "Chercher K" [ref=e19] [cursor=pointer]:
+          - img [ref=e20]
+          - generic [ref=e23]: Chercher
+          - generic [ref=e24]:
+            - img [ref=e25]
+            - text: K
+        - link "Déclarer une action" [ref=e27] [cursor=pointer]:
+          - /url: /actions/new
+          - generic [ref=e28]: Déclarer une action
+        - group [ref=e29]:
+          - generic "Menu des préférences d'affichage et langue" [ref=e30] [cursor=pointer]:
+            - img [ref=e31]
+            - generic [ref=e34]: Réglages
+            - img [ref=e35]
+        - group [ref=e37]:
+          - generic "Menu Feedback" [ref=e38] [cursor=pointer]:
+            - img [ref=e39]
+            - generic [ref=e41]: Feedback
+            - img [ref=e42]
+  - main [ref=e44]:
+    - generic [ref=e46]:
+      - generic [ref=e49]:
+        - generic [ref=e51]:
+          - button "Passer en anglais" [ref=e53] [cursor=pointer]:
+            - img [ref=e54]
+            - generic [ref=e58]: FR
+          - generic [ref=e59]:
+            - heading "Clean My Map" [level=1] [ref=e60]
+            - paragraph [ref=e63]:
+              - generic [ref=e64]: Dépolluer
+              - generic [ref=e65]: ·
+              - generic [ref=e66]: Cartographier
+              - generic [ref=e67]: ·
+              - generic [ref=e68]: Impacter
+          - paragraph [ref=e69]: Mutualisez vos cleanwalks, visualisez les zones prioritaires sur une carte commune et générez des rapports d'impact automatisés pour votre RSE, les collectivités et les élus. Cultivons l'entraide.
+          - generic [ref=e70]:
+            - link "Se connecter" [ref=e71] [cursor=pointer]:
+              - /url: /sign-in
+              - text: Se connecter
+              - img [ref=e72]
+            - link "Tableau de bord" [ref=e74] [cursor=pointer]:
+              - /url: /dashboard
+              - text: Tableau de bord
+              - img [ref=e75]
+            - link "Voir la carte" [ref=e77] [cursor=pointer]:
+              - /url: /actions/map
+              - text: Voir la carte
+              - img [ref=e78]
+            - link "Déclarer une action" [ref=e80] [cursor=pointer]:
+              - /url: /actions/new
+              - text: Déclarer une action
+              - img [ref=e81]
+            - link "Rapport d'impact" [ref=e83] [cursor=pointer]:
+              - /url: /reports
+              - text: Rapport d'impact
+              - img [ref=e84]
+        - generic [ref=e87]:
+          - generic [ref=e88]:
+            - generic [ref=e89]:
+              - paragraph [ref=e90]: Impact terrain 2026
+              - paragraph [ref=e92]: Données terrain certifiées. Formules exposées en méthodologie.
+            - link "Méthodologie" [ref=e93] [cursor=pointer]:
+              - /url: /methodology
+              - img [ref=e94]
+              - text: Méthodologie
+          - generic [ref=e96]:
+            - generic [ref=e97]:
+              - paragraph [ref=e99]: Déchets récoltés
+              - generic [ref=e100]: 0.0 kg
+            - generic [ref=e101]:
+              - paragraph [ref=e103]: Mégots retirés
+              - generic [ref=e104]: "0"
+            - generic [ref=e105]:
+              - paragraph [ref=e107]: Bénévoles mobilisés
+              - generic [ref=e108]: "65"
+            - generic [ref=e109]:
+              - paragraph [ref=e111]: CO₂e évité
+              - generic [ref=e112]: 0.0 kg
+            - generic [ref=e113]:
+              - paragraph [ref=e115]: Eau préservée
+              - generic [ref=e116]: 0 L
+            - generic [ref=e117]:
+              - paragraph [ref=e119]: Économie de voirie
+              - generic [ref=e120]: 0 €
+      - generic [ref=e125]:
+        - generic [ref=e126]:
+          - heading "Les sept piliers de CleanMyMap" [level=2] [ref=e127]
+          - paragraph [ref=e128]: Agir, visualiser, apprendre et piloter vos initiatives environnementales.
+        - generic [ref=e129]:
+          - link "Accueil Tableau de bord, Explorer, Profil & impact Accéder" [ref=e130] [cursor=pointer]:
+            - /url: /dashboard
+            - generic [ref=e131]:
+              - img [ref=e134]
+              - heading "Accueil" [level=3] [ref=e139]
+              - paragraph [ref=e140]: Tableau de bord, Explorer, Profil & impact
+              - generic [ref=e141]:
+                - text: Accéder
+                - img [ref=e142]
+          - link "Agir Déclarer une action, Itinéraire IA, Signalement Déchets Accéder" [ref=e144] [cursor=pointer]:
+            - /url: /sections/route
+            - generic [ref=e145]:
+              - img [ref=e148]
+              - heading "Agir" [level=3] [ref=e150]
+              - paragraph [ref=e151]: Déclarer une action, Itinéraire IA, Signalement Déchets
+              - generic [ref=e152]:
+                - text: Accéder
+                - img [ref=e153]
+          - link "Visualiser Carte des actions, Visualiser la carte Accéder" [ref=e155] [cursor=pointer]:
+            - /url: /actions/map
+            - generic [ref=e156]:
+              - img [ref=e159]
+              - heading "Visualiser" [level=3] [ref=e161]
+              - paragraph [ref=e162]: Carte des actions, Visualiser la carte
+              - generic [ref=e163]:
+                - text: Accéder
+                - img [ref=e164]
+          - link "Apprendre Hub Éducatif, Mode d'emploi Accéder" [ref=e166] [cursor=pointer]:
+            - /url: /learn/hub
+            - generic [ref=e167]:
+              - img [ref=e170]
+              - heading "Apprendre" [level=3] [ref=e172]
+              - paragraph [ref=e173]: Hub Éducatif, Mode d'emploi
+              - generic [ref=e174]:
+                - text: Accéder
+                - img [ref=e175]
+          - link "Impacter Rapports d'impact, Progression & Badges Accéder" [ref=e177] [cursor=pointer]:
+            - /url: /reports
+            - generic [ref=e178]:
+              - img [ref=e181]
+              - heading "Impacter" [level=3] [ref=e185]
+              - paragraph [ref=e186]: Rapports d'impact, Progression & Badges
+              - generic [ref=e187]:
+                - text: Accéder
+                - img [ref=e188]
+          - link "Discuter Découvrir le réseau, Opérations collectives, Observatoire Public Accéder" [ref=e190] [cursor=pointer]:
+            - /url: /partners/network
+            - generic [ref=e191]:
+              - img [ref=e194]
+              - heading "Discuter" [level=3] [ref=e199]
+              - paragraph [ref=e200]: Découvrir le réseau, Opérations collectives, Observatoire Public
+              - generic [ref=e201]:
+                - text: Accéder
+                - img [ref=e202]
+          - link "Piloter Rubriques en cours de configuration. Accéder" [ref=e204] [cursor=pointer]:
+            - /url: /pilotage
+            - generic [ref=e205]:
+              - img [ref=e208]
+              - heading "Piloter" [level=3] [ref=e213]
+              - paragraph [ref=e214]: Rubriques en cours de configuration.
+              - generic [ref=e215]:
+                - text: Accéder
+                - img [ref=e216]
+      - generic [ref=e219]:
+        - generic [ref=e220]:
+          - paragraph [ref=e221]: Bénéfices
+          - heading "Pourquoi utiliser CleanMyMap ?" [level=2] [ref=e222]
+          - paragraph [ref=e223]: Un seul outil pour structurer, mesurer et valoriser vos actions terrain.
+        - generic [ref=e224]:
+          - article [ref=e225]:
+            - img [ref=e227]
+            - heading "Centralisez vos cleanwalks" [level=3] [ref=e230]
+            - paragraph [ref=e231]: "Toutes vos actions terrain en un seul endroit : dates, lieux, volumes, participants. Fini les tableurs éparpillés."
+          - article [ref=e232]:
+            - img [ref=e234]
+            - heading "Visualisez sur une carte commune" [level=3] [ref=e236]
+            - paragraph [ref=e237]: Chaque action apparaît sur une carte partagée avec la communauté. Repérez les zones couvertes et les zones prioritaires.
+          - article [ref=e238]:
+            - img [ref=e240]
+            - heading "Suivez votre impact réel" [level=3] [ref=e242]
+            - paragraph [ref=e243]: "Déchets collectés, mégots retirés, bénévoles mobilisés, CO₂ évité : des indicateurs concrets calculés depuis vos données."
+          - article [ref=e244]:
+            - img [ref=e246]
+            - heading "Coordonnez les acteurs locaux" [level=3] [ref=e251]
+            - paragraph [ref=e252]: Mettez en relation associations, bénévoles et partenaires locaux pour organiser des opérations collectives plus efficaces.
+          - article [ref=e253]:
+            - img [ref=e255]
+            - heading "Produisez des rapports utiles" [level=3] [ref=e258]
+            - paragraph [ref=e259]: Générez des rapports d'impact pour votre RSE, vos dossiers de subvention, les collectivités et les élus locaux.
+          - article [ref=e260]:
+            - img [ref=e262]
+            - heading "Donnez de la crédibilité à vos actions" [level=3] [ref=e264]
+            - paragraph [ref=e265]: "Chiffres sourcés, méthodologie transparente et données terrain vérifiables : renforcez la légitimité de votre engagement."
+      - generic [ref=e267]:
+        - generic [ref=e268]:
+          - generic [ref=e269]:
+            - img [ref=e270]
+            - generic [ref=e272]: Le pouls du réseau
+          - heading "Une communauté vivante et engagée" [level=2] [ref=e273]:
+            - text: Une communauté
+            - text: vivante et engagée
+          - paragraph [ref=e274]: Les dernières actions remontent ici depuis les données du terrain. Rien d'inventé, seulement des actions vérifiées et récentes.
+          - generic [ref=e275]:
+            - generic [ref=e276]:
+              - img [ref=e278]
+              - generic [ref=e283]:
+                - paragraph [ref=e284]: "5"
+                - paragraph [ref=e285]: Actions visibles
+            - generic [ref=e286]:
+              - img [ref=e288]
+              - generic [ref=e290]:
+                - paragraph [ref=e291]: "5"
+                - paragraph [ref=e292]: Lieux distincts
+        - generic [ref=e296]:
+          - generic [ref=e297]:
+            - generic [ref=e298]:
+              - generic [ref=e299]: GS
+              - img [ref=e301]
+            - generic [ref=e306]:
+              - generic [ref=e307]:
+                - paragraph [ref=e308]: Google Sheet
+                - paragraph [ref=e309]: Il y a 7 j
+              - paragraph [ref=e310]:
+                - text: a mobilisé 10 bénévoles
+                - generic [ref=e311]: "@Rue Jacques Louvel-Tessier, 75010 Paris → Rue Marguerite Moret, 75011 Paris"
+          - generic [ref=e312]:
+            - generic [ref=e313]:
+              - generic [ref=e314]: GS
+              - img [ref=e316]
+            - generic [ref=e321]:
+              - generic [ref=e322]:
+                - paragraph [ref=e323]: Google Sheet
+                - paragraph [ref=e324]: Il y a 18 j
+              - paragraph [ref=e325]:
+                - text: a mobilisé 10 bénévoles
+                - generic [ref=e326]: "@Ecole élémentaire Pierre Foncin (Ecole A), 8 Rue Pierre Foncin, 75020 Paris → Saveurs en Partage, 38 Bd Mortier, 75020 Paris"
+          - generic [ref=e327]:
+            - generic [ref=e328]:
+              - generic [ref=e329]: GS
+              - img [ref=e331]
+            - generic [ref=e336]:
+              - generic [ref=e337]:
+                - paragraph [ref=e338]: Google Sheet
+                - paragraph [ref=e339]: Il y a 39 j
+              - paragraph [ref=e340]:
+                - text: a mobilisé 20 bénévoles
+                - generic [ref=e341]: "@Porte des Lilas, 75020 Paris → Jardin Serge Gainsbourg, 9 Av. de la Prte des Lilas, 75019 Paris"
+          - generic [ref=e342]:
+            - img [ref=e344]
+            - generic [ref=e350]:
+              - paragraph [ref=e351]: 5 actions visibles
+              - paragraph [ref=e352]: Données terrain
+      - generic [ref=e354]:
+        - generic [ref=e355]:
+          - heading "Origine, terrain et crédibilité" [level=2] [ref=e356]
+          - paragraph [ref=e357]: CleanMyMap est un projet étudiant construit autour d'actions terrain réelles, porté par une ambition partenariale progressive et une rigueur universitaire.
+        - generic [ref=e358]:
+          - article [ref=e359]:
+            - generic [ref=e360]:
+              - img [ref=e362]
+              - generic [ref=e365]:
+                - paragraph [ref=e366]: L'histoire du projet
+                - heading "Une logique d'engagement concrète" [level=3] [ref=e367]
+            - generic [ref=e368]:
+              - paragraph [ref=e369]: Né au sein du DU Engagement de Sorbonne Université, ce projet transforme l'engagement citoyen en un outil de pilotage concret pour le territoire.
+              - paragraph [ref=e370]: Notre objectif est de structurer, cartographier et valoriser les actions de dépollution pour offrir une visibilité inédite sur l'impact environnemental local.
+              - generic [ref=e372]:
+                - img [ref=e373]
+                - generic [ref=e375]: Création du projet, premières actions terrain, puis développement des outils de cartographie, de rapports et d'IA dans une plateforme en amélioration continue.
+          - generic [ref=e376]:
+            - generic [ref=e377]:
+              - generic [ref=e378]:
+                - img [ref=e380]
+                - generic [ref=e383]: Actions terrain documentées
+              - paragraph [ref=e384]: Chaque point sur notre carte représente une action réelle, vérifiée et géolocalisée.
+            - generic [ref=e385]:
+              - generic [ref=e386]:
+                - img [ref=e388]
+                - generic [ref=e391]: Cadre Sorbonne Université
+              - paragraph [ref=e392]: Un projet académique sérieux garantissant une approche méthodologique rigoureuse.
+            - generic [ref=e393]:
+              - generic [ref=e394]:
+                - img [ref=e396]
+                - generic [ref=e401]: Écosystème en construction
+              - paragraph [ref=e402]: Partenariats progressifs avec les associations locales et les acteurs publics franciliens.
+            - generic [ref=e404]:
+              - link "Voir la carte" [ref=e405] [cursor=pointer]:
+                - /url: /actions/map
+                - text: Voir la carte
+                - img [ref=e406]
+              - link "Annuaire partenaires" [ref=e408] [cursor=pointer]:
+                - /url: /partners/network
+                - text: Annuaire partenaires
+                - img [ref=e409]
+      - generic [ref=e414]:
+        - generic [ref=e415]:
+          - paragraph [ref=e418]: Contact
+          - paragraph [ref=e419]: Une question ou un partenariat ? Échangeons.
+        - generic [ref=e420]:
+          - link "maxence.drm@gmail.com" [ref=e421] [cursor=pointer]:
+            - /url: mailto:maxence.drm@gmail.com
+            - img [ref=e423]
+            - generic [ref=e426]: maxence.drm@gmail.com
+          - link "@max_drm4" [ref=e427] [cursor=pointer]:
+            - /url: https://instagram.com/max_drm4
+            - img [ref=e429]
+            - generic [ref=e432]: "@max_drm4"
+        - generic [ref=e434]:
+          - paragraph [ref=e435]: Dépolluer · Cartographier · Impacter
+          - generic [ref=e437]:
+            - paragraph [ref=e438]: Cultivons l'entraide
+            - paragraph [ref=e440]: © 2026 CleanMyMap

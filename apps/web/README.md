@@ -23,6 +23,7 @@ Recommended for production:
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
 - `RESEND_REPLY_TO` (optional, reply target for outbound emails)
+- `CREATOR_INBOX_EMAIL` (optional, creator inbox target for operational notifications)
 - `RESEND_TEST_TOKEN` (optional, for `/api/send` test endpoint without admin session)
 - `SENTRY_DSN`
 - `SENTRY_ORG`
@@ -85,6 +86,7 @@ npm run data:sheet:sync-supabase
   - `RESEND_FROM_EMAIL` (must be on your verified domain, e.g. `contact@mail.cleanmymap.fr`)
 - Optional:
   - `RESEND_REPLY_TO` (professional inbox that receives user replies, e.g. `contact@cleanmymap.fr` or Gmail)
+  - `CREATOR_INBOX_EMAIL` (creator inbox for operational requests; falls back to `RESEND_REPLY_TO`)
   - `RESEND_TEST_TOKEN` to authorize test calls without admin session.
 
 Example:

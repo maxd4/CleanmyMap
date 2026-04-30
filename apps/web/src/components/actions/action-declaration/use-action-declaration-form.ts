@@ -20,6 +20,7 @@ import { useActionDeclarationSmartAssist } from "../action-declaration-form.smar
 import { hydrateActionDeclarationDraft } from "./draft-storage";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
+import type { FormState, ValidationIssue, PostActionRetentionLoop } from "../action-declaration-form.model";
 
 type DeclarationMode = "quick" | "complete";
 type SubmissionState = "idle" | "pending" | "success" | "error";
@@ -49,7 +50,7 @@ export function useActionDeclarationForm({
     ? defaultActorName
     : (resolvedActorOptions[0] ?? userMetadata.userId);
 
-  const [form, setForm] = useState(() =>
+  const [form, setForm] = useState<FormState>(() =>
     hydrateActionDeclarationDraft(
       createInitialFormState(resolvedDefaultActorName),
     ),
@@ -64,8 +65,8 @@ export function useActionDeclarationForm({
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
-  const [retentionLoop, setRetentionLoop] = useState<any>(null);
-  const [validationIssues] = useState<any[]>([]);
+  const [retentionLoop, setRetentionLoop] = useState<PostActionRetentionLoop | null>(null);
+  const [validationIssues] = useState<ValidationIssue[]>([]);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const hasTrackedStartRef = useRef<boolean>(false);
@@ -209,12 +210,12 @@ export function useActionDeclarationForm({
     return () => { active = false; };
   }, [photoAssets, form.locationLabel, form.placeType, form.volunteersCount, form.durationMinutes]);
 
-  function updateField(key: string, value: any) {
+  function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     if (!hasTrackedStartRef.current) {
       hasTrackedStartRef.current = true;
       trackFunnel("start_form", declarationMode);
     }
-    setForm((prev: any) => ({ ...prev, [key]: value }));
+    setForm((prev) => ({ ...prev, [key]: value }));
   }
 
   async function handleConfirmSubmit() {
@@ -240,9 +241,13 @@ export function useActionDeclarationForm({
       setSubmissionState("success");
       setShowConfirmation(false);
       localStorage.removeItem("cmm_action_draft");
-    } catch (error: any) {
+    } catch (error: unknown) {
       setSubmissionState("error");
-      setErrorMessage(error.message || "Impossible de valider votre déclaration pour le moment. Veuillez vérifier vos informations et réessayer.");
+      setErrorMessage(
+        error instanceof Error && error.message
+          ? error.message
+          : "Impossible de valider votre déclaration pour le moment. Veuillez vérifier vos informations et réessayer.",
+      );
       setShowConfirmation(false);
     }
   }

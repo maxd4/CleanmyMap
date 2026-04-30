@@ -9,40 +9,20 @@
 
 export function VibrantBackground() {
  return (
- <div className="fixed inset-0 -z-10 overflow-hidden bg-background">
- {/* Mesh Gradient Blooms - Mode exhaustif uniquement */}
- <div className="exhaustive-only">
- {/* Mesh Gradient Bloom 1 - Emerald/Green */}
- <div
- className="absolute -top-[20%] -left-[10%] h-[80%] w-[80%] rounded-full bg-emerald-400/20 blur-[140px] mix-blend-multiply dark:mix-blend-soft-light animate-pulse"
- style={{ animationDuration: '12s' }}
- />
- {/* Mesh Gradient Bloom 2 - Cyan/Blue */}
- <div
- className="absolute top-[10%] -right-[15%] h-[70%] w-[70%] rounded-full bg-cyan-500/20 blur-[130px] mix-blend-multiply dark:mix-blend-soft-light animate-pulse"
- style={{ animationDuration: '18s', animationDelay: '3s' }}
- />
- {/* Mesh Gradient Bloom 3 - Teal/Emerald */}
- <div
- className="absolute -bottom-[20%] left-[10%] h-[60%] w-[60%] rounded-full bg-emerald-400/10 blur-[120px] mix-blend-multiply dark:mix-blend-soft-light animate-pulse"
- style={{ animationDuration: '15s', animationDelay: '1s' }}
- />
- </div>
+ <div className="fixed inset-0 -z-10 overflow-hidden bg-[linear-gradient(135deg,#2C5F77_0%,#356B73_24%,#417C84_48%,#2F80C3_76%,#5B5FCF_100%)]">
+ <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_16%,rgba(39,195,217,0.20)_0%,transparent_28%),radial-gradient(circle_at_82%_12%,rgba(24,182,143,0.16)_0%,transparent_24%),radial-gradient(circle_at_52%_90%,rgba(91,95,207,0.16)_0%,transparent_34%)]" />
 
- {/* Subtle Grain Overlay - Mode exhaustif/minimaliste (masqué en sobre) */}
+ {/* Texture très légère pour éviter le plat sans créer de bandes */}
  <div
- className="pointer-events-none absolute inset-0 opacity-[0.05] not-sober"
+ className="pointer-events-none absolute inset-0 opacity-[0.035] not-sober"
  style={{
  backgroundImage:
 "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E\")",
  }}
  />
 
- {/* Grid Pattern - Tous modes */}
- <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]" />
-
- {/* Cinematic Vignette */}
- <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
+ {/* Vignette douce */}
+ <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_0%,rgba(44,95,119,0.18)_100%)]" />
  </div>
  );
 }

@@ -149,4 +149,66 @@ describe("syncClerkUserToSupabase", () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
+
+  it("promotes profile metadata admin into the Supabase role label", async () => {
+    const { supabase, upsert } = createSupabaseMock({
+      existingProfile: null,
+    });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await syncClerkUserToSupabase({
+      id: "user_admin",
+      username: "admin",
+      emailAddresses: [],
+      imageUrl: "https://example.com/avatar.png",
+      publicMetadata: { profile: "admin" },
+      privateMetadata: {},
+      firstName: "Ada",
+      lastName: "Admin",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role_label: "admin",
+        display_name: "Ada Admin",
+      }),
+      { onConflict: "id" },
+    );
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
+  it("stores IMU as the Supabase role label for the owner", async () => {
+    const { supabase, upsert } = createSupabaseMock({
+      existingProfile: null,
+    });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await syncClerkUserToSupabase({
+      id: "user_max",
+      username: "max",
+      emailAddresses: [],
+      imageUrl: "https://example.com/avatar.png",
+      publicMetadata: { role: "max" },
+      privateMetadata: {},
+      firstName: "Max",
+      lastName: "Owner",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        role_label: "imu",
+        display_name: "Max Owner",
+      }),
+      { onConflict: "id" },
+    );
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
 });

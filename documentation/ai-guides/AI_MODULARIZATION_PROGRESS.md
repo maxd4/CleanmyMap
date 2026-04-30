@@ -22,8 +22,8 @@ Tableau de bord de l'avancement de la modularisation du projet CleanMyMap.
 - **Date** : 2025-01-XX
 - **Réduction** : 54%
 - **Fichiers créés** : 
-  - `components/home/index.ts`
-  - `lib/home/config.ts`
+  - `components/accueil/index.ts`
+  - `lib/accueil/config.ts`
 - **Notes** : Configuration extraite, exports centralisés
 
 ---
@@ -195,3 +195,4 @@ Tableau de bord de l'avancement de la modularisation du projet CleanMyMap.
 **Dernière mise à jour** : 28/04/2026  
 **Progression globale** : 6.7% (1/15)  
 **Prochaine cible** : Dashboard Page (#2)
+

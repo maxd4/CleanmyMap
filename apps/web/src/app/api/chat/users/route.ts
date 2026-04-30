@@ -1,8 +1,8 @@
-import { auth } from"@clerk/nextjs/server";
-import { NextResponse } from"next/server";
-import { getSupabaseServerClient } from"@/lib/supabase/server";
-import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
-import { handleApiError } from"@/lib/http/api-errors";
+import { auth } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
+import { handleApiError } from "@/lib/http/api-errors";
+import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 
 export async function GET(request: Request) {
  const { userId } = await auth();
@@ -11,14 +11,25 @@ export async function GET(request: Request) {
  const { searchParams } = new URL(request.url);
  const query = searchParams.get("q") ||"";
 
- const supabase = getSupabaseServerClient();
+ const supabase = await getSupabaseClerkRlsClient();
+ if (!supabase) {
+  return NextResponse.json(
+   {
+    error: "Connexion sécurisée indisponible",
+    hint: "Configurez un template JWT Clerk Supabase (ou CLERK_SUPABASE_JWT_TEMPLATE) pour lire les profils sous RLS.",
+   },
+   { status: 503 },
+  );
+ }
 
  // Fetch handles for autocomplete, restricted to active/valid profiles
  let dbQuery = supabase
  .from("profiles")
- .select("handle, display_name, avatar_url")
- .order("display_name")
- .limit(10);
+ .select("id, handle, display_name, avatar_url")
+  .order("display_name")
+  .limit(10);
+
+ dbQuery = dbQuery.neq("id", userId);
 
  if (query) {
  dbQuery = dbQuery.or(`handle.ilike.%${query}%,display_name.ilike.%${query}%`);

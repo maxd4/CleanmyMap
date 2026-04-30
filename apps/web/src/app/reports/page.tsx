@@ -29,10 +29,12 @@ import {
  getProfilePrimaryAction,
  getProfileSecondaryAction,
  getProfileLabel,
+ isAdminLikeProfile,
  toProfile,
 } from"@/lib/profiles";
 import { getServerLocale } from"@/lib/server-preferences";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
+import { CognitiveCueStrip } from"@/components/learn/cognitive-cue-strip";
 
 async function loadReportsData() {
  const supabase = getSupabaseServerClient();
@@ -88,15 +90,28 @@ export default async function ReportsPage() {
  const data = await loadReportsData().catch(() => null);
  const overview = data?.overview ?? null;
  const contracts = data?.contracts ?? [];
+ const reportsCue =
+  locale === "fr"
+   ? {
+       question: "Quel indicateur mérite une relecture avant l’export ?",
+       clue:
+         "Le rapport sert à réactiver la preuve utile et à garder visible la prochaine révision.",
+       actionLabel: "Lire la méthode",
+     }
+   : {
+       question: "Which indicator deserves a review before exporting?",
+       clue:
+         "The report is here to reactivate the useful proof and keep the next review visible.",
+       actionLabel: "Read the method",
+     };
 
  const { aggregateMonthlyAnalytics } = await import("@/lib/pilotage/analytics-data-utils");
  const { AnalyticsCockpit } = await import("@/components/reports/analytics-cockpit");
  const monthlyData = aggregateMonthlyAnalytics(contracts);
  const publicAccessBanner = !userId ? (
  <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 cmm-text-small text-emerald-900 shadow-sm">
- Lecture publique: tu peux parcourir les rapports et générer un livrable
- sans compte. La connexion n&apos;est utile que pour les vues
- personnalisées et la modération.
+ Lecture publique: parcourez les rapports et exportez un livrable sans
+ compte. La connexion sert aux vues personnalisées et à la modération.
  </section>
  ) : null;
  const headerActions = userId
@@ -165,9 +180,9 @@ export default async function ReportsPage() {
 
  const navigationItems: NavigationGridItem[] = [
  {
- icon: BarChart3,
- title:"Comparaisons",
- desc:"Analyses temporelles 30j / 90j / 12m.",
+  icon: BarChart3,
+  title:"Comparaisons",
+  desc:"Comparer 30j / 90j / 12m.",
  iconBg:"bg-blue-500/20",
  iconColor:"text-blue-400",
  accent:"from-blue-600/20 to-blue-900/40",
@@ -176,9 +191,9 @@ export default async function ReportsPage() {
  href:"#comparisons",
  },
  {
- icon: Info,
- title:"Méthode KPI",
- desc:"Comprendre le calcul et les sources des données.",
+  icon: Info,
+  title:"Méthode KPI",
+  desc:"Lire la méthode et les sources.",
  iconBg:"bg-emerald-500/20",
  iconColor:"text-emerald-400",
  accent:"from-emerald-600/20 to-emerald-900/40",
@@ -187,9 +202,9 @@ export default async function ReportsPage() {
  href:"#method",
  },
  {
- icon: Layers,
- title:"Cockpit",
- desc:"Vues agrégées et analyses mensuelles.",
+  icon: Layers,
+  title:"Vue mensuelle",
+  desc:"Consulter les agrégats et les tendances.",
  iconBg:"bg-purple-500/20",
  iconColor:"text-purple-400",
  accent:"from-purple-600/20 to-purple-900/40",
@@ -198,9 +213,9 @@ export default async function ReportsPage() {
  href:"#cockpit",
  },
  {
- icon: DownloadCloud,
- title:"Exports",
- desc:"Générer PDF, Excel et rapports officiels.",
+  icon: DownloadCloud,
+  title:"Exports",
+  desc:"Exporter PDF, Excel et synthèse.",
  iconBg:"bg-amber-500/20",
  iconColor:"text-amber-400",
  accent:"from-amber-600/20 to-amber-900/40",
@@ -217,10 +232,24 @@ export default async function ReportsPage() {
 
  <PageReadingTemplate
  context={`Profil ${roleLabel}`}
- title="Rapports d'impact multi-horizon et exports"
- objective="Concentrer les comparatifs 30j/90j/12m, la méthode KPI et les livrables exportables, sans recopier le cockpit."
+ title="Rapports d'impact"
+ objective="Comparer les fenêtres utiles, lire la méthode KPI et exporter les livrables."
  summary={
  <div className="space-y-10">
+ <CognitiveCueStrip
+  locale={locale}
+  rubricId="reports"
+  question={reportsCue.question}
+  clue={reportsCue.clue}
+  chips={[
+   locale === "fr" ? "À revoir" : "To review",
+   locale === "fr" ? "Prochaine révision" : "Next review",
+   locale === "fr" ? "Maîtrisées" : "Mastered",
+   locale === "fr" ? "Reprendre demain" : "Resume tomorrow",
+  ]}
+  action={{ href: "/methodologie", label: reportsCue.actionLabel }}
+ />
+
  <AnimatedImpactMetrics kpis={summaryKpis} />
 
  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -284,8 +313,8 @@ export default async function ReportsPage() {
 
  <div className="space-y-10">
    <div className="text-center">
-     <h3 className="text-3xl font-black cmm-text-primary mb-2">Historique d&apos;Impact</h3>
-     <p className="cmm-text-secondary font-medium italic">Les dernières actions marquantes sur le terrain</p>
+     <h3 className="text-3xl font-black cmm-text-primary mb-2">Historique d&apos;impact</h3>
+     <p className="cmm-text-secondary font-medium italic">Les actions les plus significatives sur le terrain</p>
    </div>
    <EcologicalTimeline 
      actions={contracts.map(c => ({
@@ -340,14 +369,13 @@ export default async function ReportsPage() {
  <section id="method" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
  <div>
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
- Méthode
+ Méthode KPI
  </p>
  <h2 className="mt-1 text-xl font-semibold cmm-text-primary">
- Lecture des KPI
+ Lire la méthode KPI
  </h2>
  <p className="mt-1 cmm-text-small cmm-text-secondary">
- L&apos;explication détaillée est conservée hors de l&apos;écran
- d&apos;ouverture.
+ L&apos;explication détaillée reste disponible plus bas.
  </p>
  </div>
  <KpiMethodBlock methods={overview.methods} title="Méthode" />
@@ -360,11 +388,10 @@ export default async function ReportsPage() {
  Analyse mensuelle
  </p>
  <h2 className="mt-1 text-xl font-semibold cmm-text-primary">
- Cockpit intermédiaire
+ Vue mensuelle
  </h2>
  <p className="mt-1 cmm-text-small cmm-text-secondary">
- Les vues comparatives, les agrégations et les exports détaillés
- restent accessibles plus bas.
+ Les comparatifs, les agrégats et les exports restent plus bas.
  </p>
  </div>
  <AnalyticsCockpit data={monthlyData} />
@@ -379,7 +406,7 @@ export default async function ReportsPage() {
  </section>
 
  <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
- {role ==="admin" ? (
+ {isAdminLikeProfile(profile) ? (
  <ActionsReportPanel />
  ) : (
  <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
@@ -392,7 +419,7 @@ export default async function ReportsPage() {
  <p className="mt-2 cmm-text-small text-amber-800">
  Tu vois la synthèse KPI, mais les exports CSV/JSON et la
  modération restent limités au rôle{""}
- <span className="font-semibold">admin</span>.
+ <span className="font-semibold">admin</span> ou <span className="font-semibold">max</span>.
  </p>
  </section>
  )}
@@ -404,11 +431,10 @@ export default async function ReportsPage() {
  Exports
  </p>
  <h2 className="mt-1 text-xl font-semibold cmm-text-primary">
- Livraison des livrables
+ Livrables
  </h2>
  <p className="mt-1 cmm-text-small cmm-text-secondary">
- Les exports sont déplacés sous le fold pour ne pas encombrer
- l&apos;ouverture.
+ Les exports sont regroupés plus bas pour alléger l&apos;ouverture.
  </p>
  </div>
  <div className="flex flex-wrap gap-2">
@@ -425,8 +451,22 @@ export default async function ReportsPage() {
  }
 
  return (
- <div data-rubrique-report-root className="space-y-4">
+<div data-rubrique-report-root className="space-y-4">
  {publicAccessBanner}
+
+ <CognitiveCueStrip
+  locale={locale}
+  rubricId="reports"
+  question={reportsCue.question}
+  clue={reportsCue.clue}
+  chips={[
+   locale === "fr" ? "À revoir" : "To review",
+   locale === "fr" ? "Prochaine révision" : "Next review",
+   locale === "fr" ? "Maîtrisées" : "Mastered",
+   locale === "fr" ? "Reprendre demain" : "Resume tomorrow",
+  ]}
+  action={{ href: "/methodologie", label: reportsCue.actionLabel }}
+ />
 
  <ThirtySecondsSummary
  kpis={summaryKpis}
@@ -441,7 +481,7 @@ export default async function ReportsPage() {
 
  <DecisionPageHeader
  context={`Profil ${roleLabel}`}
- title="Rapports d'impact, méthode KPI et priorités opérationnelles"
+ title="Rapports d'impact"
  objective="Arbitrer sur 30j/90j/12m avec comparatifs N vs N-1 et priorités auto justifiées."
  actions={headerActions}
  />
@@ -471,7 +511,7 @@ export default async function ReportsPage() {
 
  <ReportsKpiSummary />
 
- {role ==="admin" ? (
+ {isAdminLikeProfile(profile) ? (
  <ActionsReportPanel />
  ) : (
  <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
@@ -483,7 +523,7 @@ export default async function ReportsPage() {
  </h2>
  <p className="mt-2 cmm-text-small text-amber-800">
  Tu vois la synthèse KPI, mais les exports CSV/JSON et la modération
- restent limités au rôle <span className="font-semibold">admin</span>.
+ restent limités au rôle <span className="font-semibold">admin</span> ou <span className="font-semibold">max</span>.
  </p>
  </section>
  )}

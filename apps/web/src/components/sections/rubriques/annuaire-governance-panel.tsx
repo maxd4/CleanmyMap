@@ -96,11 +96,11 @@ export function AnnuaireGovernancePanel({
  </p>
  </li>
  ))}
- {pendingEntries.length === 0 ? (
+{pendingEntries.length === 0 ? (
  <li className="rounded bg-white/70 p-2">
- {fr ?"Aucun contact à qualifier." :"No contacts to qualify."}
+ {fr ?"Aucun contact n'est en attente de qualification." :"No contacts are waiting to be qualified."}
  </li>
- ) : null}
+) : null}
  </ul>
  </section>
  </>

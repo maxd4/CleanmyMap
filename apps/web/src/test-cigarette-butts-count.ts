@@ -1,10 +1,11 @@
 // Test script pour vérifier le champ "Nombre de mégots"
-import { buildCreateActionPayload } from "../components/actions/action-declaration/payload";
+import type { FormState } from "./components/actions/action-declaration-form.model";
+import { buildCreateActionPayload } from "./components/actions/action-declaration/payload";
 
 console.log("=== TEST DU CHAMP NOMBRE DE MÉGOTS ===\n");
 
 // Test 1: Action spontanée avec nombre de mégots
-const mockFormActionSpontanee = {
+const mockFormActionSpontanee: FormState = {
   actorName: "Test User",
   associationName: "Action spontanee", // Action spontanée
   enterpriseName: "",
@@ -16,6 +17,7 @@ const mockFormActionSpontanee = {
   routeAdjustmentMessage: "",
   latitude: "",
   longitude: "",
+  cigaretteButtsCondition: "propre" as const,
   wasteKg: "2.5",
   cigaretteButts: "0",
   cigaretteButtsCount: "150", // Nouveau champ
@@ -36,10 +38,11 @@ const mockFormActionSpontanee = {
 };
 
 // Test 2: Action organisée sans nombre de mégots
-const mockFormActionOrganisee = {
+const mockFormActionOrganisee: FormState = {
   ...mockFormActionSpontanee,
   associationName: "Paris Clean Walk", // Action organisée
   cigaretteButtsCount: "", // Vide pour action organisée
+  cigaretteButtsCondition: "propre" as const,
   volunteersCount: "5",
   notes: "Test sans mégots",
 };

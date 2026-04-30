@@ -36,8 +36,8 @@
 - `@typescript-eslint/no-explicit-any` : 1 occurrence 🟠
 
 **Fichiers à traiter** :
-- `home-community-activity.tsx` : 0 erreurs, 3 warnings
-- `home-hero.tsx` : 0 erreurs, 1 warning
+- `accueil-community-activity.tsx` : 0 erreurs, 3 warnings
+- `accueil-hero.tsx` : 0 erreurs, 1 warning
 - `ZoneRepartitionChart.tsx` : 0 erreurs, 2 warnings
 
 **Actions recommandées** :

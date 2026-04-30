@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { MessageSquare, Tag, Zap, Image as ImageIcon, MapPin, Sparkles } from "lucide-react";
+import { MessageSquare, Zap, Image as ImageIcon, MapPin } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -35,7 +35,7 @@ export function RichMessageCard({ message, isMe }: RichMessageCardProps) {
         <img 
           src={message.sender.avatar_url || `https://ui-avatars.com/api/?name=${message.sender.display_name}`} 
           className="w-10 h-10 rounded-2xl relative z-10 border-2 border-white dark:border-slate-800 shadow-xl"
-          alt="" 
+          alt={`Avatar de ${message.sender.display_name}`} 
         />
         <div className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white dark:border-slate-800 flex items-center justify-center z-20 ${isMe ? 'bg-violet-500' : 'bg-emerald-500'}`}>
           <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
@@ -105,7 +105,7 @@ export function RichMessageCard({ message, isMe }: RichMessageCardProps) {
               </div>
               <img 
                 src={message.attachment_url} 
-                alt="Attachment" 
+                alt={`Pièce jointe de ${message.sender.display_name}`} 
                 className="w-full object-cover max-h-60"
               />
             </motion.div>

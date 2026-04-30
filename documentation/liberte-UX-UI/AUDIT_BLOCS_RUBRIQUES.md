@@ -2,14 +2,16 @@
 
 ## Ce que produit ce système
 
-Pour chaque bloc, on produit deux fichiers de prompts à envoyer à un agent IA dans cet ordre :
+Pour chaque bloc, on produit trois fichiers de travail à utiliser dans cet ordre :
 
 1. **`AUDIT-[BLOC].md`** — 5 prompts de cadrage. L'agent les reçoit en premier. Ils posent la logique UX/UI choisie pour le bloc, la direction artistique, les contraintes globales et l'ordre d'exécution.
 2. **`RUBRIQUE-[NOM].md`** — prompts d'implémentation détaillés, un fichier par rubrique. L'agent les reçoit après le cadrage, rubrique par rubrique.
+3. **`KAIZEN-[NOM].md`** — second fichier d'audit obligatoire pour la même rubrique, construit avec la méthodologie Kaizen. Il sert à identifier les améliorations de fond, de forme et les innovations à planifier après l'audit UX/UI principal.
 
 **Séquence d'utilisation :**
 → Envoyer les 5 prompts de `AUDIT-[BLOC].md`
 → Puis envoyer les prompts de `RUBRIQUE-[NOM].md` dans l'ordre de priorité indiqué
+→ Générer ensuite `KAIZEN-[NOM].md` pour chaque rubrique traitée en suivant la méthodologie Kaizen
 
 ---
 
@@ -23,7 +25,6 @@ Pour chaque bloc, on produit deux fichiers de prompts à envoyer à un agent IA 
 - ❌ Texte brut : "Afficher '+5% ce mois'"
 - ✅ Mesurable : "LCP < 2.5s sur Lighthouse mobile, contraste WCAG AA (4.5:1) sur WebAIM"
 - ❌ Subjectif : "Améliorer la lisibilité"
-
 ---
 
 ## Direction artistique globale (à intégrer dans chaque AUDIT-[BLOC].md)
@@ -51,7 +52,35 @@ Accents par bloc (identité visuelle) :
 - Réseau : `violet`
 - Apprendre : `rose`
 - Piloter : `indigo`
-- Homepage : `emerald-500` + `cyan-400` (double accent, vitrine)
+- Accueil : `emerald-500` + `cyan-400` (double accent, vitrine)
+
+---
+
+## Audit Kaizen complémentaire obligatoire
+
+Pour chaque fichier `RUBRIQUE-[NOM].md`, produire aussi un second audit nommé `KAIZEN-[NOM].md`.
+
+Ce fichier Kaizen n'est pas un duplicat du fichier rubrique :
+- il complète l'audit UX/UI avec une logique d'amélioration continue
+- il couvre obligatoirement `Fond`, `Forme` et `Innovations proposées`
+- il doit être rédigé à partir de la méthodologie existante, pas improvisé
+
+Sources obligatoires pour produire `KAIZEN-[NOM].md` :
+- `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md`
+- `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md`
+- `documentation/development/AI_MINDSET_KAIZEN.md`
+
+Règles de nommage :
+- audit UX/UI principal : `RUBRIQUE-[NOM].md`
+- audit Kaizen associé : `KAIZEN-[NOM].md`
+
+Contenu minimum attendu dans chaque `KAIZEN-[NOM].md` :
+- identification du fichier rubrique et du composant réel concerné
+- état actuel et points forts
+- audit fond avec priorités et prompts d'exécution
+- audit forme avec priorités et prompts d'exécution
+- innovations proposées
+- temps estimé et impact attendu
 
 ---
 
@@ -200,6 +229,12 @@ Produire autant de prompts que nécessaire, classés par priorité décroissante
 **Bloc parent** : [Nom du bloc]
 **Fichier** : `apps/web/src/components/[bloc]/[fichier].tsx`
 **Route** : `/route`
+**Audit Kaizen associé à produire** : `KAIZEN-[NOM].md`
+
+**Méthodologie obligatoire pour le fichier Kaizen associé** :
+- `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md`
+- `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md`
+- `documentation/development/AI_MINDSET_KAIZEN.md`
 
 ---
 
@@ -275,11 +310,51 @@ valeurs numériques, structure JSX si nécessaire.]
 
 ---
 
+## Template — KAIZEN-[NOM].md
+
+Produire un fichier Kaizen complémentaire pour chaque rubrique à partir du template officiel Kaizen, sans réinventer sa structure.
+
+```markdown
+# Audit Kaizen - [Nom de la rubrique] ([chemin du composant])
+
+Utiliser comme base :
+- `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md`
+- `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md`
+- `documentation/development/AI_MINDSET_KAIZEN.md`
+
+Règles de production :
+- nom du fichier : `KAIZEN-[NOM].md`
+- périmètre : le composant réel de la rubrique et ses fichiers directement liés
+- ne pas recopier le fichier `RUBRIQUE-[NOM].md`
+- identifier des opportunités complémentaires, priorisées et actionnables
+
+Contenu obligatoire :
+1. État actuel
+2. Audit Fond
+3. Audit Forme
+4. Innovations proposées
+5. Temps estimé
+6. Impact attendu
+
+Chaque opportunité doit inclure :
+- un problème concret
+- une solution explicite
+- un prompt à exécuter
+- un temps estimé
+- un impact attendu
+```
+
+---
+
 ## Ressources
 
 - `documentation/design-system/charte-ui-pro-moderne-futuriste.md`
 - `documentation/design-system/VISUAL_STORYTELLING.md`
 - `documentation/design-system/TYPOGRAPHY_SYSTEM.md`
 - `documentation/design-system/display-modes-chartes.md`
+- `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md`
+- `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md`
+- `documentation/development/AI_MINDSET_KAIZEN.md`
 - `apps/web/src/components/ui/` — composants canoniques
 - `apps/web/tailwind.config.ts` — palette
+

@@ -15,11 +15,11 @@ export interface CmmPillProps {
 }
 
 const toneClasses: Record<PillTone, string> = {
- slate:"border-slate-200/80 bg-slate-50/80 cmm-text-secondary",
- emerald:"border-emerald-200/80 bg-emerald-50/80 text-emerald-800",
- sky:"border-sky-200/80 bg-sky-50/80 text-sky-800",
- amber:"border-amber-200/80 bg-amber-50/80 text-amber-800",
- violet:"border-violet-200/80 bg-violet-50/80 text-violet-800",
+ slate:"border-[color:var(--border-default)] bg-[color:var(--bg-muted)] cmm-text-secondary",
+ emerald:"border-emerald-300/70 bg-emerald-500/10 text-emerald-800",
+ sky:"border-cyan-300/70 bg-cyan-500/10 text-cyan-800",
+ amber:"border-amber-300/70 bg-amber-500/10 text-amber-800",
+ violet:"border-violet-300/70 bg-violet-500/10 text-violet-800",
  muted:"border-transparent bg-transparent cmm-text-muted",
 };
 
@@ -29,7 +29,7 @@ const sizeClasses: Record<PillSize, string> = {
 };
 
 const baseClasses =
-"inline-flex items-center rounded-full border font-semibold tracking-wide whitespace-nowrap";
+"inline-flex items-center rounded-xl border font-semibold tracking-wide whitespace-nowrap";
 
 export function CmmPill({
  children,

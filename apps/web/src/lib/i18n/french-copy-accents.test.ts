@@ -7,7 +7,6 @@ const COPY_FILES = [
   "src/lib/profiles.ts",
   "src/lib/navigation.ts",
   "src/components/sections/section-renderer.tsx",
-  "src/components/navigation/first-mission-onboarding.tsx",
   "src/components/ui/display-mode-onboarding-gate.tsx",
   "src/app/(app)/admin/page.tsx",
   "src/app/(app)/dashboard/page.tsx",

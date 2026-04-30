@@ -1,13 +1,15 @@
 import { Handshake, Users } from"lucide-react";
-import Link from"next/link";
 import { NavigationGrid, type NavigationGridItem } from"@/components/ui/navigation-grid";
+import { getServerLocale } from"@/lib/server-preferences";
+import { CognitiveCueStrip } from"@/components/learn/cognitive-cue-strip";
 
-export default function PartnersNetworkPage() {
+export default async function PartnersNetworkPage() {
+  const locale = await getServerLocale();
   const networkActions: NavigationGridItem[] = [
     {
       icon: "Search",
-      title: "Explorer le réseau",
-      desc: "Ouvrir l'annuaire et la carte des structures locales pour découvrir les acteurs du territoire.",
+      title: "Consulter le réseau",
+      desc: "Ouvrir l'annuaire et la carte des structures locales.",
       iconBg: "bg-violet-50",
       iconColor: "text-violet-600",
       accent: "from-violet-50 to-white",
@@ -18,7 +20,7 @@ export default function PartnersNetworkPage() {
     {
       icon: "UserPlus",
       title: "Rejoindre le réseau",
-      desc: "Inscrire votre structure (association, commerce, collectif) pour devenir visible sur la carte.",
+      desc: "Inscrire votre structure pour devenir visible sur la carte.",
       iconBg: "bg-rose-50",
       iconColor: "text-rose-600",
       accent: "from-rose-50 to-white",
@@ -28,8 +30,8 @@ export default function PartnersNetworkPage() {
     },
     {
       icon: "LayoutDashboard",
-      title: "Espace Gouvernance",
-      desc: "Accéder au tableau de bord de pilotage, valider les fiches et gérer les demandes du réseau.",
+      title: "Pilotage réseau",
+      desc: "Accéder au tableau de bord, valider les fiches et suivre les demandes.",
       iconBg: "bg-fuchsia-50",
       iconColor: "text-fuchsia-600",
       accent: "from-fuchsia-50 to-white",
@@ -38,6 +40,20 @@ export default function PartnersNetworkPage() {
       href: "/partners/dashboard",
     }
   ];
+  const networkCue =
+    locale === "fr"
+      ? {
+          question: "Quel lien entre acteurs ouvre une nouvelle piste utile ?",
+          clue:
+            "Le réseau devient plus lisible quand on mélange proximité thématique, territoire et format de collaboration.",
+          actionLabel: "Consulter l'annuaire",
+        }
+      : {
+          question: "Which link between actors opens a useful new path?",
+          clue:
+            "The network becomes clearer when you mix thematic proximity, territory, and collaboration format.",
+          actionLabel: "Open the directory",
+        };
 
   return (
     <div className="w-full space-y-8 p-4 md:p-8">
@@ -51,7 +67,7 @@ export default function PartnersNetworkPage() {
         {/* texture grain */}
         <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage:"url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E\")"}} />
 
-        <div className="relative z-10 mx-auto max-w-5xl space-y-10 text-center">
+        <div className="relative z-10 mx-auto w-full space-y-10 text-center">
           {/* carte glassmorphism interne pour le titre */}
           <div className="mx-auto inline-block rounded-3xl border border-white/10 bg-white/[0.05] p-2 backdrop-blur-md">
             <div className="inline-flex items-center gap-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 px-5 py-2 text-violet-400 cmm-text-caption font-bold tracking-[0.25em] uppercase">
@@ -61,22 +77,35 @@ export default function PartnersNetworkPage() {
 
           <div className="space-y-6">
             <h1 className="text-5xl font-bold leading-[0.95] tracking-tighter sm:text-6xl md:text-8xl">
-              Collaborer et <br /> s&apos;engager localement.
+              Réseau local <br /> et action concrète.
             </h1>
-            <p className="mx-auto max-w-2xl text-lg font-light leading-relaxed text-white/80 sm:text-xl">
-              Découvrez les structures, consultez les fiches et rejoignez la dynamique de territoire pour un impact durable.
+            <p className="mx-auto max-w-3xl text-lg font-light leading-relaxed text-white/80 sm:text-xl">
+              Consultez les structures, lisez les fiches et rejoignez la dynamique de territoire.
             </p>
           </div>
         </div>
       </header>
 
-      <div className="relative z-20 mx-auto max-w-7xl px-4 -mt-10 sm:-mt-14">
+      <div className="relative z-20 mx-auto w-full px-4 -mt-10 sm:-mt-14">
         <div className="rounded-[2.5rem] border border-white/10 bg-white/95 p-6 backdrop-blur-xl shadow-2xl shadow-violet-950/10 dark:border-slate-800 dark:bg-slate-900/95 sm:p-10">
           <NavigationGrid items={networkActions} columns={{ default: 1, md: 3 }} />
         </div>
       </div>
 
-      <section className="mx-auto max-w-7xl overflow-hidden rounded-[3rem] border border-slate-200/60 bg-white/70 p-8 shadow-xl backdrop-blur-xl transition-all duration-500 hover:shadow-2xl md:p-16 lg:p-20">
+      <CognitiveCueStrip
+        locale={locale}
+        rubricId="network"
+        question={networkCue.question}
+        clue={networkCue.clue}
+        chips={[
+          locale === "fr" ? "Curiosité" : "Curiosity",
+          locale === "fr" ? "Questions mélangées" : "Mixed questions",
+          locale === "fr" ? "Mini-défi" : "Mini challenge",
+        ]}
+        action={{ href: "/sections/annuaire", label: networkCue.actionLabel }}
+      />
+
+      <section className="mx-auto w-full overflow-hidden rounded-[3rem] border border-slate-200/60 bg-white/70 p-8 shadow-xl backdrop-blur-xl transition-all duration-500 hover:shadow-2xl md:p-16 lg:p-20">
         <div className="grid gap-12 items-center md:grid-cols-2 lg:gap-20">
           <div className="space-y-8">
             <div className="flex h-20 w-20 items-center justify-center rounded-[2.5rem] bg-violet-50 text-violet-600 shadow-inner">
@@ -85,14 +114,13 @@ export default function PartnersNetworkPage() {
             
             <div className="space-y-4">
               <h2 className="text-4xl font-bold leading-tight tracking-tight cmm-text-primary lg:text-6xl">
-                Transparence <br />
+                Découverte <br />
                 <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-600 via-fuchsia-500 to-rose-500">
                   et coordination.
                 </span>
               </h2>
               <p className="text-lg leading-relaxed cmm-text-secondary md:text-xl font-light">
-                Ici, on privilégie la découverte et la visibilité. Les cartes et les fiches restent
-                accessibles à tous, favorisant la mise en relation directe et la compréhension du maillage local.
+                Les cartes et les fiches restent accessibles à tous pour comprendre le maillage local.
               </p>
             </div>
           </div>

@@ -1,16 +1,18 @@
 "use client";
 
 
-import { Scale, Camera, Trash2, Sparkles, Info, ShieldCheck } from "lucide-react";
+import Image from "next/image";
+import { Camera, Trash2, Sparkles, Info, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 import type { FormState } from "../action-declaration-form.model";
-import type { ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
+import type { ActionMegotsCondition, ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
 import { VolumeSliderWidget } from "./ui/VolumeSliderWidget";
+import type { UpdateFormField } from "./types";
 
 interface ActionStepHarvestProps {
   form: FormState;
-  updateField: (key: keyof FormState, value: any) => void;
+  updateField: UpdateFormField;
   photoAssets: ActionPhotoAsset[];
   visionEstimate: ActionVisionEstimate | null;
   visionStatus: "idle" | "processing" | "ready" | "error";
@@ -81,7 +83,7 @@ export function ActionStepHarvest({
                   <select
                     className="w-full h-14 px-6 rounded-xl bg-white border border-amber-200 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500 transition-all font-bold text-slate-900 appearance-none"
                     value={form.cigaretteButtsCondition}
-                    onChange={(e) => updateField("cigaretteButtsCondition", e.target.value)}
+                  onChange={(e) => updateField("cigaretteButtsCondition", e.target.value as ActionMegotsCondition)}
                   >
                     <option value="propre">Sec / Propre</option>
                     <option value="humide">Humide</option>
@@ -110,7 +112,7 @@ export function ActionStepHarvest({
                   <Camera size={32} />
                 </div>
                 <p className="text-sm font-black text-slate-900 uppercase tracking-widest">Ajouter des photos</p>
-                <p className="text-[10px] text-slate-400 font-bold mt-2">JPG, PNG JUSQU'À 10 MO</p>
+                <p className="text-[10px] text-slate-400 font-bold mt-2">JPG, PNG JUSQU&apos;À 10 MO</p>
                 <input type="file" className="hidden" accept="image/*" multiple onChange={(e) => onPhotoUpload(e.target.files)} />
               </label>
             ) : (
@@ -119,13 +121,21 @@ export function ActionStepHarvest({
                   <span className="px-4 py-2 rounded-full bg-white shadow-sm border border-violet-100 text-[10px] font-black text-violet-600 tracking-widest uppercase">
                     {photoAssets.length} PHOTO(S) ANALYSÉE(S)
                   </span>
-                  <button onClick={onClearPhotos} className="p-2 rounded-xl bg-white text-rose-500 shadow-sm border border-rose-100 hover:bg-rose-50 transition-colors">
+                  <button onClick={onClearPhotos} aria-label="Supprimer les photos jointes" className="p-2 rounded-xl bg-white text-rose-500 shadow-sm border border-rose-100 hover:bg-rose-50 transition-colors">
                     <Trash2 size={16} />
                   </button>
                 </div>
                 <div className="flex-1 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                   {photoAssets.map((asset, i) => (
-                    <img key={i} src={asset.previewUrl} alt="Preview" className="h-full aspect-square object-cover rounded-2xl ring-2 ring-white shadow-lg" />
+                    <Image
+                      key={i}
+                      src={asset.dataUrl}
+                      alt={`Aperçu de la photo ${i + 1}`}
+                      width={320}
+                      height={320}
+                      unoptimized
+                      className="h-full aspect-square object-cover rounded-2xl ring-2 ring-white shadow-lg"
+                    />
                   ))}
                 </div>
               </div>
@@ -156,15 +166,15 @@ export function ActionStepHarvest({
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Sacs</p>
-                  <p className="text-xl font-black text-slate-900">{visionEstimate.bagsCount}</p>
+                  <p className="text-xl font-black text-slate-900">{visionEstimate.bagsCount.value}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">Volume</p>
-                  <p className="text-xl font-black text-slate-900">{visionEstimate.totalVolumeL}L</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Poids</p>
+                  <p className="text-xl font-black text-slate-900">{visionEstimate.wasteKg.value}kg</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold text-slate-400 uppercase">Confiance</p>
-                  <p className="text-xl font-black text-emerald-600">{Math.round(visionEstimate.confidenceScore * 100)}%</p>
+                  <p className="text-xl font-black text-emerald-600">{Math.round(visionEstimate.wasteKg.confidence * 100)}%</p>
                 </div>
               </div>
             </div>
@@ -181,7 +191,7 @@ export function ActionStepHarvest({
           <div className="space-y-1">
             <p className="text-sm font-black tracking-tight leading-tight">Pourquoi mesurer votre impact ?</p>
             <p className="text-xs font-medium text-slate-400 leading-relaxed">
-              Vos données permettent d'évaluer l'impact réel de la propreté à Paris et d'aider les services de voirie à optimiser leurs tournées.
+              Vos données permettent d&apos;évaluer l&apos;impact réel de la propreté à Paris et d&apos;aider les services de voirie à optimiser leurs tournées.
             </p>
           </div>
         </div>
@@ -197,13 +207,13 @@ export function ActionStepHarvest({
               <p className="font-black text-emerald-900 uppercase tracking-wider">Calcul de conversion</p>
               <p>
                 Le poids automatique est calculé sur une base de <span className="font-bold text-emerald-700">0.2g (0.0002kg) par mégot</span>. 
-                Ce facteur est pondéré par l'état des filtres : <span className="font-bold">x1.2</span> pour humide et <span className="font-bold">x1.5</span> pour mouillé.
+                Ce facteur est pondéré par l&apos;état des filtres : <span className="font-bold">x1.2</span> pour humide et <span className="font-bold">x1.5</span> pour mouillé.
               </p>
             </div>
             <div className="space-y-2">
               <p className="font-black text-emerald-900 uppercase tracking-wider">Estimation Vision IA</p>
               <p>
-                L'IA analyse le nombre de sacs, leur niveau de remplissage et la densité visuelle des déchets. 
+                L&apos;IA analyse le nombre de sacs, leur niveau de remplissage et la densité visuelle des déchets. 
                 Une densité moyenne de <span className="font-bold text-emerald-700">150kg/m³</span> est appliquée pour le tout-venant urbain.
               </p>
             </div>

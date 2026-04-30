@@ -1,21 +1,24 @@
 import { getNavigationSpacesForProfile } from '@/lib/navigation';
 import {
   HomeHero,
-  HomeImpactSummary,
   HomePillars,
   HomeBenefits,
   HomeCommunityActivity,
   HomeFooter,
   OriginCredibility,
-} from '@/components/home';
-import { loadLandingOverview, computeLandingCounters } from '@/lib/home/data';
-import { sortItemsForPreview, BLOCK_PREVIEW_PRIORITY } from '@/lib/home/navigation';
+} from '@/components/accueil';
+import {
+  buildHomeCommunityActivity,
+  computeLandingCounters,
+  loadLandingOverview,
+} from '@/lib/accueil/data';
+import { sortItemsForPreview, BLOCK_PREVIEW_PRIORITY } from '@/lib/accueil/navigation';
 import {
   buildHomeMetrics,
   buildHomePillars,
   HOME_BENEFITS,
   type HomeCounters,
-} from '@/lib/home/config';
+} from '@/lib/accueil/config';
 
 export default async function HomePage() {
   const overview = await loadLandingOverview().catch(() => null);
@@ -36,14 +39,18 @@ export default async function HomePage() {
 
   const hasOverviewData = Boolean(overview);
   const metrics = buildHomeMetrics(counters, hasOverviewData);
+  const communityActivity = buildHomeCommunityActivity(
+    overview?.contracts ?? [],
+    floorDate,
+  );
 
-  const homepageSpaces = getNavigationSpacesForProfile('benevole', 'exhaustif', 'fr');
-  const homepageSpaceMap = new Map(homepageSpaces.map((space) => [space.id, space]));
+  const accueilSpaces = getNavigationSpacesForProfile('benevole', 'exhaustif', 'fr');
+  const accueilSpaceMap = new Map(accueilSpaces.map((space) => [space.id, space]));
   
   const getSpacePreview = (spaceId: keyof typeof BLOCK_PREVIEW_PRIORITY) => {
     const ordered = sortItemsForPreview(
       spaceId,
-      homepageSpaceMap.get(spaceId)?.items ?? [],
+      accueilSpaceMap.get(spaceId)?.items ?? [],
     );
     return {
       mobile: ordered.slice(0, 2).map((item) => item.label.fr),
@@ -54,12 +61,11 @@ export default async function HomePage() {
   const pillars = buildHomePillars(getSpacePreview);
 
   return (
-    <div className="min-h-screen overflow-hidden bg-slate-950 font-sans">
-      <HomeHero />
-      <HomeImpactSummary metrics={metrics} />
+    <div className="min-h-screen overflow-hidden bg-[#061223] font-sans">
+      <HomeHero metrics={metrics} />
       <HomePillars pillars={pillars} />
       <HomeBenefits benefits={HOME_BENEFITS} />
-      <HomeCommunityActivity />
+      <HomeCommunityActivity activity={communityActivity} />
       <OriginCredibility />
       <HomeFooter />
     </div>

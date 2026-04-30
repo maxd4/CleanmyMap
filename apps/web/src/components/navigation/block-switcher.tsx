@@ -77,7 +77,7 @@ export function BlockSwitcher({ currentProfile }: BlockSwitcherProps) {
  <div className="border-t border-slate-200/80 px-3 py-2">
  <div className="flex items-center justify-between gap-2">
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.16em] cmm-text-muted">
- {locale ==="fr" ?"Rubriques du bloc actif" :"Active block pages"}
+ {locale ==="fr" ?"Rubriques de la section active" :"Active section pages"}
  </p>
  {activeSpace ? (
  <p className="truncate cmm-text-caption font-medium cmm-text-secondary">
@@ -110,12 +110,12 @@ export function BlockSwitcher({ currentProfile }: BlockSwitcherProps) {
  </Link>
  );
  })}
- {activeSpaceItems.length === 0 ? (
- <span className="inline-flex shrink-0 items-center rounded-full border border-dashed border-slate-300 px-3 py-2 cmm-text-small cmm-text-muted">
- {locale ==="fr"
- ?"Aucune rubrique dans ce bloc"
- :"No page in this block"}
- </span>
+{activeSpaceItems.length === 0 ? (
+  <span className="inline-flex shrink-0 items-center rounded-full border border-dashed border-slate-300 px-3 py-2 cmm-text-small cmm-text-muted">
+    {locale ==="fr"
+    ?"Cette section ne contient pas encore de rubrique accessible"
+    :"This section does not yet contain an available page"}
+  </span>
  ) : null}
  </div>
  </div>

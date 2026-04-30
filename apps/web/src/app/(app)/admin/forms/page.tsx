@@ -11,7 +11,7 @@ export default function AdminFormPage() {
  </p>
  </div>
  
- <EnhancedAdmin />
+      <EnhancedAdmin />
  </div>
  </div>
  )
