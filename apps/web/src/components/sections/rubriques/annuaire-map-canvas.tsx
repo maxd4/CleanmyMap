@@ -9,9 +9,8 @@ import {
   LayersControl,
 } from "react-leaflet";
 import L from "leaflet";
-import { ExternalLink, Instagram, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getEntryTrustState, getPartnerWhyThisStructureMatters } from "./annuaire-helpers";
+import { getEntryTrustState } from "./annuaire-helpers";
 import { CmmButton } from "@/components/ui/cmm-button";
 
 // Types needed for integration

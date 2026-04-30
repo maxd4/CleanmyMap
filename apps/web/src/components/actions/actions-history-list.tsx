@@ -426,10 +426,10 @@ export function ActionsHistoryList() {
   {filteredItems.length === 0 ? (
     <div className="mt-8 text-center space-y-3 p-8 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
       <p className="cmm-text-small font-medium cmm-text-secondary">
-        Aucune action ne correspond à vos critères de recherche.
+        Aucune action ne correspond à la recherche ou aux filtres actifs.
       </p>
       <p className="cmm-text-caption cmm-text-muted">
-        Essayez d'élargir vos filtres ou déclarez une nouvelle action pour commencer à enrichir votre historique.
+        Essayez d'élargir la période, de changer de lieu ou de repartir d'une recherche plus large.
       </p>
     </div>
   ) : null}

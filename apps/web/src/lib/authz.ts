@@ -1,13 +1,20 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { auth, clerkClient, type User } from "@clerk/nextjs/server";
 import { env } from "./env";
 import { resolveProfile, type AppProfile, type AppRoleLabel } from "./profiles";
-import { getEffectiveAccessForSessionRole, type EffectiveAccess } from "./domain-language";
+import {
+  getEffectiveAccessForSessionRole,
+  type EffectiveAccess,
+} from "./domain-language";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 
 type ClerkMetadata = Record<string, unknown> | null | undefined;
 
 export type AdminAccessResult =
+  | { ok: true; userId: string }
+  | { ok: false; status: 401 | 403; error: string };
+
+export type CreatorAccessResult =
   | { ok: true; userId: string }
   | { ok: false; status: 401 | 403; error: string };
 
@@ -26,6 +33,7 @@ export type UserIdentity = {
   displayName: string;
   firstName: string | null;
   username: string;
+  email: string | null;
   currentLevel: number;
   actorNameOptions: string[];
   role: AppProfile;
@@ -47,6 +55,7 @@ const BADGE_CATALOG: Record<string, AccountBadge> = {
     icon: "sparkles",
   },
   role_elu: { id: "role_elu", label: "Autorité locale", icon: "badge-check" },
+  role_max: { id: "role_max", label: "IMU", icon: "shield-check" },
   profile_admin: {
     id: "profile_admin",
     label: "Profil administration",
@@ -68,6 +77,11 @@ const BADGE_CATALOG: Record<string, AccountBadge> = {
     icon: "sparkles",
   },
   profile_elu: { id: "profile_elu", label: "Profil autorité locale", icon: "badge-check" },
+  profile_max: {
+    id: "profile_max",
+    label: "Profil IMU",
+    icon: "shield-check",
+  },
   pioneer: { id: "pioneer", label: "Pionnier", icon: "zap" },
   mentor: { id: "mentor", label: "Mentor", icon: "award" },
   cleanwalk_10: { id: "cleanwalk_10", label: "10 cleanwalks", icon: "medal" },
@@ -76,6 +90,21 @@ const BADGE_CATALOG: Record<string, AccountBadge> = {
 };
 
 function parseAdminUserIds(raw: string | undefined): Set<string> {
+  return parseUserIds(raw);
+}
+
+function parseMaxUserIds(
+  raw: string | undefined,
+  fallbackRaw?: string | undefined,
+): Set<string> {
+  const parsed = parseUserIds(raw);
+  if (parsed.size > 0) {
+    return parsed;
+  }
+  return parseUserIds(fallbackRaw);
+}
+
+function parseUserIds(raw: string | undefined): Set<string> {
   if (!raw) {
     return new Set<string>();
   }
@@ -90,8 +119,8 @@ function extractRole(metadata: ClerkMetadata): string | null {
   if (!metadata) {
     return null;
   }
-  const role = metadata["role"];
-  return typeof role === "string" ? role.trim().toLowerCase() : null;
+  const roleValue = metadata["role"] ?? metadata["profile"];
+  return typeof roleValue === "string" ? roleValue.trim().toLowerCase() : null;
 }
 
 function extractBadgeIds(metadata: ClerkMetadata): string[] {
@@ -204,16 +233,59 @@ function describeBackgroundSyncError(error: unknown): string {
   }
 }
 
+async function normalizeLegacyOwnerMetadata(
+  client: Awaited<ReturnType<typeof clerkClient>>,
+  user: User,
+): Promise<User> {
+  const publicRole = extractRole(user.publicMetadata);
+  const privateRole = extractRole(user.privateMetadata);
+  if (publicRole !== "max" && privateRole !== "max") {
+    return user;
+  }
+
+  try {
+    return await client.users.updateUser(user.id, {
+      publicMetadata: {
+        ...(user.publicMetadata as Record<string, unknown>),
+        role: "imu",
+        profile: "imu",
+      },
+      privateMetadata: {
+        ...(user.privateMetadata as Record<string, unknown>),
+        role: "imu",
+        profile: "imu",
+      },
+    });
+  } catch (error) {
+    console.warn(
+      `[Authz] Legacy IMU metadata normalization skipped for ${user.id}: ${describeBackgroundSyncError(error)}`,
+    );
+    return user;
+  }
+}
+
 export function isAdminRole(metadata: {
   publicMetadata?: ClerkMetadata;
   privateMetadata?: ClerkMetadata;
 }): boolean {
   const publicRole = extractRole(metadata.publicMetadata);
-  if (publicRole === "admin") {
+  if (publicRole === "admin" || publicRole === "max") {
     return true;
   }
   const privateRole = extractRole(metadata.privateMetadata);
-  return privateRole === "admin";
+  return privateRole === "admin" || privateRole === "max";
+}
+
+export function isMaxRole(metadata: {
+  publicMetadata?: ClerkMetadata;
+  privateMetadata?: ClerkMetadata;
+}): boolean {
+  const publicRole = extractRole(metadata.publicMetadata);
+  if (publicRole === "max") {
+    return true;
+  }
+  const privateRole = extractRole(metadata.privateMetadata);
+  return privateRole === "max";
 }
 
 export async function requireAdminAccess(): Promise<AdminAccessResult> {
@@ -223,7 +295,11 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
   }
 
   const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
-  if (adminUserIds.has(userId)) {
+  const maxUserIds = parseMaxUserIds(
+    env.CLERK_MAX_USER_IDS,
+    env.CLERK_ADMIN_USER_IDS,
+  );
+  if (adminUserIds.has(userId) || maxUserIds.has(userId)) {
     return { ok: true, userId };
   }
 
@@ -245,6 +321,20 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
   return { ok: false, status: 403, error: "Forbidden" };
 }
 
+export async function requireCreatorAccess(): Promise<CreatorAccessResult> {
+  const { userId } = await auth();
+  if (!userId) {
+    return { ok: false, status: 401, error: "Unauthorized" };
+  }
+
+  const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
+  if (role === "max") {
+    return { ok: true, userId };
+  }
+
+  return { ok: false, status: 403, error: "Forbidden" };
+}
+
 export async function requireAuthenticatedAccess(): Promise<AuthenticatedAccessResult> {
   const { userId } = await auth();
   if (!userId) {
@@ -254,13 +344,6 @@ export async function requireAuthenticatedAccess(): Promise<AuthenticatedAccessR
 }
 
 export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
-  const access = await requireAdminAccess();
-  if (access.ok) {
-    return "admin" as const;
-  }
-  if (access.status === 401) {
-    return "anonymous" as const;
-  }
   const { userId } = await auth();
   if (!userId) {
     return "anonymous" as const;
@@ -268,10 +351,38 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
 
   try {
     const client = await clerkClient();
-    const user = await client.users.getUser(userId);
+    const user = await normalizeLegacyOwnerMetadata(
+      client,
+      await client.users.getUser(userId),
+    );
+    const maxUserIds = parseMaxUserIds(
+      env.CLERK_MAX_USER_IDS,
+      env.CLERK_ADMIN_USER_IDS,
+    );
+    if (
+      maxUserIds.has(userId) ||
+      isMaxRole({
+        publicMetadata: user.publicMetadata,
+        privateMetadata: user.privateMetadata,
+      })
+    ) {
+      return "max" as const;
+    }
+
+    const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
+    if (
+      adminUserIds.has(userId) ||
+      isAdminRole({
+        publicMetadata: user.publicMetadata,
+        privateMetadata: user.privateMetadata,
+      })
+    ) {
+      return "admin" as const;
+    }
+
     const metadataRole =
       extractRole(user.publicMetadata) ?? extractRole(user.privateMetadata);
-    return resolveProfile({ metadataRole, isAdmin: false });
+    return resolveProfile({ metadataRole, isAdmin: false, isMax: false });
   } catch (error) {
     console.error("Current user role resolution failed", error);
     return "benevole";
@@ -290,13 +401,18 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
   }
 
   const adminUserIds = parseAdminUserIds(env.CLERK_ADMIN_USER_IDS);
+  const maxUserIds = parseMaxUserIds(
+    env.CLERK_MAX_USER_IDS,
+    env.CLERK_ADMIN_USER_IDS,
+  );
 
   try {
     const client = await clerkClient();
-    const [user, currentLevel] = await Promise.all([
+    const [fetchedUser, currentLevel] = await Promise.all([
       client.users.getUser(userId),
       loadUserCurrentLevel(userId),
     ]);
+    const user = await normalizeLegacyOwnerMetadata(client, fetchedUser);
 
     // Passive sync: avoid blocking UI but ensure data consistency
     syncClerkUserToSupabase(user).catch((err) => {
@@ -311,11 +427,17 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
         publicMetadata: user.publicMetadata,
         privateMetadata: user.privateMetadata,
       });
+    const isMax =
+      maxUserIds.has(userId) ||
+      isMaxRole({
+        publicMetadata: user.publicMetadata,
+        privateMetadata: user.privateMetadata,
+      });
 
     const badgeIds = [
       ...extractBadgeIds(user.publicMetadata),
       ...extractBadgeIds(user.privateMetadata),
-      ...(isAdmin ? ["admin"] : []),
+      ...(isMax ? ["max"] : isAdmin ? ["admin"] : []),
     ];
 
     const firstName = user.firstName?.trim() || "";
@@ -326,6 +448,7 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
       user.primaryEmailAddress?.emailAddress?.trim() ||
       user.primaryPhoneNumber?.phoneNumber?.trim() ||
       userId;
+    const email = user.primaryEmailAddress?.emailAddress?.trim() || null;
 
     const actorNameOptions = buildActorNameOptions(
       firstName || null,
@@ -336,13 +459,14 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
     const metadataRole =
       extractRole(user.publicMetadata) ?? extractRole(user.privateMetadata);
 
-    const resolvedRole = resolveProfile({ metadataRole, isAdmin });
+    const resolvedRole = resolveProfile({ metadataRole, isAdmin, isMax });
 
     return {
       userId,
       displayName: fullName || username,
       firstName: firstName || null,
       username,
+      email,
       currentLevel,
       actorNameOptions,
       role: resolvedRole,
@@ -357,17 +481,19 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
     const resolvedRole = resolveProfile({
       metadataRole: null,
       isAdmin: adminUserIds.has(userId),
+      isMax: maxUserIds.has(userId),
     });
     return {
       userId,
       displayName: userId,
       firstName: null,
       username: userId,
+      email: null,
       currentLevel: 1,
       actorNameOptions: [userId],
       role: resolvedRole,
       badges: mapBadgeIdsToBadges([
-        ...(adminUserIds.has(userId) ? ["admin"] : []),
+        ...(maxUserIds.has(userId) ? ["max"] : adminUserIds.has(userId) ? ["admin"] : []),
         getRoleBadgeId(resolvedRole),
         getProfileBadgeId(resolvedRole),
       ]),

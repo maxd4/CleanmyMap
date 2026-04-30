@@ -177,20 +177,15 @@ export function AnnuaireActorCard({
                   </span>
                   {getPartnerWhyThisStructureMatters(entry)}
                 </p>
-                <div className="group/tooltip relative ml-2">
-                  <Info size={14} className="text-violet-400 cursor-help" />
-                  <div className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-slate-900 p-4 text-xs text-white shadow-2xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20 border border-white/10 backdrop-blur-md">
-                    <p className="font-black text-violet-400 mb-2 uppercase tracking-widest text-[9px]">Méthodologie de Confiance</p>
-                    <p className="font-bold mb-2">Score : {isTrusted ? "90-100%" : "60-80%"}</p>
-                    <p className="opacity-90 leading-relaxed">
-                      L'indice de confiance est calculé par pondération :
-                      <br />• 40% Complétude (Photos, Contacts)
-                      <br />• 30% Fraîcheur (MAJ &lt; 3 mois)
-                      <br />• 30% Engagement (Activité réelle terrain)
-                    </p>
-                    <div className="absolute -bottom-1 right-2 w-2 h-2 bg-slate-900 rotate-45 border-r border-b border-white/10" />
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  aria-label={fr ? "Méthode de confiance" : "Trust methodology"}
+                  data-tooltip-content={fr ? "Méthode basée sur la complétude, la fraîcheur et l'activité terrain." : "Based on completeness, freshness and field activity."}
+                  data-tooltip-placement="top"
+                  className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full text-violet-400 cursor-help"
+                >
+                  <Info size={14} />
+                </button>
               </div>
             </div>
           ) : (
@@ -210,14 +205,15 @@ export function AnnuaireActorCard({
                     ? (fr ? "Données insuffisantes pour garantir la qualité habituelle." : "Insufficient data to guarantee usual quality.")
                     : (fr ? "Validation humaine en cours. Prudence recommandée." : "Human validation in progress. Caution recommended.")}
                 </p>
-                <div className="group/tooltip relative ml-2">
-                  <Info size={14} className={cn("cursor-help", isIncomplete ? "text-rose-400" : "text-amber-400")} />
-                  <div className="absolute bottom-full right-0 mb-2 w-64 rounded-xl bg-slate-900 p-3 text-xs text-white shadow-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all z-20">
-                    <p className="font-bold mb-1">Score de confiance : {isIncomplete ? "Faible" : "Moyen"}</p>
-                    <p className="opacity-80">Calculé via algorithme de scoring tenant compte de : la fraîcheur des données (dernière MAJ), la complétude du profil, et la disponibilité de contacts directs vérifiés.</p>
-                    <div className="absolute -bottom-1 right-2 w-2 h-2 bg-slate-900 rotate-45" />
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  aria-label={fr ? "Méthode de score" : "Score method"}
+                  data-tooltip-content={fr ? "Score calculé selon la fraîcheur, la complétude et les contacts vérifiés." : "Score based on freshness, completeness and verified contacts."}
+                  data-tooltip-placement="top"
+                  className={cn("ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full cursor-help", isIncomplete ? "text-rose-400" : "text-amber-400")}
+                >
+                  <Info size={14} />
+                </button>
               </div>
             </div>
           )}

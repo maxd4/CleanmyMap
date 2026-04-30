@@ -2,25 +2,24 @@
 
 import { useState, useMemo } from "react";
 import {
- MessageSquare,
- Mail,
- Users,
- Hash,
- Sparkles,
- ArrowRight,
- Shield,
- Lock,
+  MessageSquare,
+  Mail,
+  Users,
+  Hash,
+  Shield,
+  MapPin,
 } from "lucide-react";
-import Link from "next/link";
 import { ChatShell } from "@/components/chat/chat-shell";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type ConnectTab = "discussions" | "dm";
 
 const CHANNEL_STATS = [
- { label: { fr: "Voisinage", en: "Neighborhood" }, icon: Users, count: "24/7", color: "text-pink-600" },
- { label: { fr: "Gouvernance", en: "Governance" }, icon: Shield, count: "Staff", color: "text-violet-600" },
- { label: { fr: "Admin", en: "Admin" }, icon: Lock, count: "Privé", color: "text-fuchsia-600" },
+ { label: { fr: "Communauté", en: "Community" }, icon: Users, count: "Global", color: "text-emerald-600" },
+ { label: { fr: "Privé", en: "Private" }, icon: Mail, count: "DM", color: "text-sky-600" },
+ { label: { fr: "Admin & élus", en: "Admin & elected" }, icon: Shield, count: "Réservé", color: "text-violet-600" },
+ { label: { fr: "Territoire", en: "Territory" }, icon: MapPin, count: "Arrond.", color: "text-amber-600" },
+ { label: { fr: "Feedback", en: "Feedback" }, icon: MessageSquare, count: "Direct", color: "text-rose-600" },
 ];
 
 export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: ConnectTab }) {
@@ -28,24 +27,24 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
  const { locale } = useSitePreferences();
 
  const tabs = useMemo(() => [
-   {
-     id: "discussions" as const,
-     label: { fr: "Discussions", en: "Channels" },
-     icon: Hash,
-     desc: {
-       fr: "Canaux collectifs par thématique et territoire",
-       en: "Collective channels by theme and territory",
+     {
+       id: "discussions" as const,
+     label: { fr: "Canaux", en: "Channels" },
+       icon: Hash,
+       desc: {
+       fr: "Communauté, privé, élus, territoire et feedback",
+       en: "Community, private, elected, territory and feedback",
+       },
      },
-   },
-   {
-     id: "dm" as const,
-     label: { fr: "Messages privés", en: "Private Messages" },
-     icon: Mail,
-     desc: {
-       fr: "Échanges directs et confidentiels",
-       en: "Direct and confidential messages",
+     {
+       id: "dm" as const,
+       label: { fr: "Messages privés", en: "Private Messages" },
+       icon: Mail,
+       desc: {
+       fr: "Conversation directe et confidentielle",
+       en: "Direct and confidential conversation",
+       },
      },
-   },
  ], []);
 
  return (
@@ -93,16 +92,16 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
 
          {/* quick stats */}
          <div className="flex flex-wrap items-center justify-center gap-3">
-           {CHANNEL_STATS.map((stat) => (
+       {CHANNEL_STATS.map((stat) => (
              <div
                key={stat.label.fr}
                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 backdrop-blur-sm"
              >
-               <stat.icon size={14} className="text-pink-300" />
+               <stat.icon size={14} className={stat.color} />
                <span className="cmm-text-caption font-semibold text-white/80">
                  {locale === "fr" ? stat.label.fr : stat.label.en}
                </span>
-               <span className="cmm-text-caption font-bold text-pink-400">
+               <span className={`cmm-text-caption font-bold ${stat.color}`}>
                  {stat.count}
                </span>
              </div>
@@ -157,99 +156,16 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
      <div className="mx-auto max-w-5xl">
        {activeTab === "discussions" && (
          <div className="space-y-5 animate-in fade-in duration-300">
-           <ChatShell initialArrondissement={11} />
+           <ChatShell initialChannelType="community" initialArrondissement={11} />
          </div>
        )}
 
        {activeTab === "dm" && (
          <div className="animate-in fade-in duration-300">
-           <DmPlaceholder locale={locale} />
+           <ChatShell initialChannelType="dm" initialArrondissement={11} />
          </div>
        )}
      </div>
    </section>
- );
-}
-
-/* ── DM Placeholder — premium empty state ── */
-function DmPlaceholder({ locale }: { locale: "fr" | "en" }) {
- return (
-   <div className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-b from-white to-slate-50 p-8 shadow-lg dark:border-slate-800 dark:from-slate-900 dark:to-slate-950 md:p-12">
-     {/* decorative glow */}
-     <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-pink-200/30 blur-3xl dark:bg-pink-900/20" />
-     <div className="absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-violet-200/30 blur-3xl dark:bg-violet-900/20" />
-
-     <div className="relative z-10 mx-auto max-w-md text-center space-y-6">
-       {/* icon */}
-       <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-100 to-pink-100 shadow-lg shadow-violet-200/40 dark:from-violet-900/50 dark:to-pink-900/50 dark:shadow-violet-800/20">
-         <Mail size={32} className="text-violet-600 dark:text-violet-400" />
-       </div>
-
-       {/* badge */}
-       <div className="inline-flex items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-1.5 dark:border-violet-800 dark:bg-violet-950">
-         <Sparkles size={12} className="text-violet-500" />
-         <span className="cmm-text-caption font-bold text-violet-700 uppercase tracking-wider dark:text-violet-300">
-           {locale === "fr" ? "Bientôt disponible" : "Coming soon"}
-         </span>
-       </div>
-
-       {/* text */}
-       <div className="space-y-3">
-         <h2 className="text-xl font-bold cmm-text-primary sm:text-2xl">
-           {locale === "fr"
-             ? "Messagerie directe privée"
-             : "Private direct messaging"}
-         </h2>
-         <p className="cmm-text-small cmm-text-secondary leading-relaxed">
-           {locale === "fr"
-             ? "Échangez directement avec les membres du réseau. Messages chiffrés, notifications instantanées et partage de fichiers."
-             : "Chat directly with network members. Encrypted messages, instant notifications and file sharing."}
-         </p>
-       </div>
-
-       {/* feature preview cards */}
-       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-         {[
-           {
-             icon: Shield,
-             label: { fr: "Chiffré", en: "Encrypted" },
-             desc: { fr: "E2E sécurisé", en: "E2E secure" },
-           },
-           {
-             icon: Sparkles,
-             label: { fr: "Instantané", en: "Instant" },
-             desc: { fr: "Temps réel", en: "Real-time" },
-           },
-           {
-             icon: Users,
-             label: { fr: "Groupes", en: "Groups" },
-             desc: { fr: "Multi-membres", en: "Multi-member" },
-           },
-         ].map((feature) => (
-           <div
-             key={feature.label.fr}
-             className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 dark:border-slate-700 dark:bg-slate-800/50"
-           >
-             <feature.icon size={18} className="mx-auto mb-2 text-pink-500" />
-             <p className="cmm-text-caption font-bold cmm-text-primary">
-               {locale === "fr" ? feature.label.fr : feature.label.en}
-             </p>
-             <p className="cmm-text-caption cmm-text-muted">
-               {locale === "fr" ? feature.desc.fr : feature.desc.en}
-             </p>
-           </div>
-         ))}
-       </div>
-
-       {/* CTA */}
-       <Link
-         href="/sections/messagerie"
-         className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-pink-600 px-6 py-3 cmm-text-small font-bold text-white shadow-lg shadow-violet-500/20 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-violet-500/30"
-       >
-         {locale === "fr" ? "Rejoindre les discussions en attendant" : "Join channels in the meantime"}
-         <ArrowRight size={16} />
-       </Link>
-     </div>
-   </div>
  );
 }

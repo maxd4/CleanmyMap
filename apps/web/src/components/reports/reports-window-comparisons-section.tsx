@@ -1,7 +1,7 @@
 import { KpiComparisonCard } from "@/components/pilotage/kpi-comparison-card";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
-import { motion } from "framer-motion";
-import { CalendarDays, AlertCircle, CheckCircle2 } from "lucide-react";
+import { motion, type Variants } from "framer-motion";
+import { CalendarDays, AlertCircle, CheckCircle2, type LucideIcon } from "lucide-react";
 
 type ReportsWindowComparisonsSectionProps = {
   comparisonsByWindow: PilotageOverview["comparisonsByWindow"];
@@ -11,7 +11,7 @@ function signed(value: number, suffix = ""): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}${suffix}`;
 }
 
-function reliabilityTone(level: "elevee" | "moyenne" | "faible"): { bg: string; text: string; icon: any } {
+function reliabilityTone(level: "elevee" | "moyenne" | "faible"): { bg: string; text: string; icon: LucideIcon } {
   if (level === "elevee") return { bg: "bg-emerald-500/10 border-emerald-500/20", text: "text-emerald-600", icon: CheckCircle2 };
   if (level === "moyenne") return { bg: "bg-amber-500/10 border-amber-500/20", text: "text-amber-600", icon: AlertCircle };
   return { bg: "bg-rose-500/10 border-rose-500/20", text: "text-rose-600", icon: AlertCircle };
@@ -23,12 +23,12 @@ const containerVariants = {
     opacity: 1,
     transition: { staggerChildren: 0.1 }
   }
-};
+} as const satisfies Variants;
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
-};
+} as const satisfies Variants;
 
 export function ReportsWindowComparisonsSection({
   comparisonsByWindow,
@@ -44,7 +44,7 @@ export function ReportsWindowComparisonsSection({
             Analyse Temporelle
           </h2>
           <p className="text-sm font-semibold text-slate-500">
-            Comparatifs d'impact sur 3 horizons (N vs N-1)
+            Comparatifs d&apos;impact sur 3 horizons (N vs N-1)
           </p>
         </div>
       </div>

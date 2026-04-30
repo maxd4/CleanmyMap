@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 interface RadialProgressGaugeProps {
   value: number; // 0 to 100

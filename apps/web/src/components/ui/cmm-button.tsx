@@ -1,7 +1,8 @@
 "use client";
 
 import Link from"next/link";
-import type { ReactNode } from"react";
+import type { ReactElement, ReactNode } from"react";
+import { isValidElement, cloneElement } from"react";
 import { cn } from"@/lib/utils";
 
 export type ButtonTone ="primary" |"secondary" |"muted";
@@ -19,15 +20,16 @@ export interface CmmButtonProps {
  disabled?: boolean;
  ariaLabel?: string;
  type?:"button" |"submit" |"reset";
+ asChild?: boolean;
 }
 
 const toneClasses: Record<ButtonTone, string> = {
- primary:
- "border-emerald-500/40 bg-emerald-600 text-white hover:bg-emerald-500 hover:border-emerald-400 focus-visible:ring-emerald-500/40",
- secondary:
- "border-slate-800 bg-slate-900 cmm-text-primary hover:bg-slate-800 hover:border-slate-700 focus-visible:ring-slate-500/30",
- muted:
- "border-transparent bg-transparent cmm-text-secondary hover:bg-white/5 hover:cmm-text-primary focus-visible:ring-slate-500/20",
+  primary:
+ "border-emerald-300/45 bg-[color:var(--action-primary-bg)] text-[color:var(--action-primary-text)] hover:bg-[color:var(--action-primary-hover)] hover:border-cyan-300/60 focus-visible:ring-cyan-300/40",
+  secondary:
+ "border-[color:var(--border-default)] bg-[color:var(--action-secondary-bg)] cmm-text-primary hover:bg-[color:var(--action-secondary-hover)] hover:border-[color:var(--border-strong)] focus-visible:ring-cyan-300/30",
+  muted:
+ "border-transparent bg-transparent cmm-text-secondary hover:bg-cyan-300/12 hover:cmm-text-primary focus-visible:ring-cyan-300/22",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -37,13 +39,13 @@ const sizeClasses: Record<ButtonSize, string> = {
 };
 
 const variantClasses: Record<ButtonVariant, string> = {
- default:"rounded-lg",
- pill:"rounded-full",
- ghost:"rounded-lg shadow-none border-transparent",
+ default:"rounded-xl",
+ pill:"rounded-2xl",
+ ghost:"rounded-xl shadow-none border-transparent",
 };
 
 const baseClasses =
-"cmm-interactive inline-flex items-center justify-center gap-1.5 border font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-white/80 dark:focus-visible:ring-offset-slate-900/80 disabled:opacity-50 disabled:cursor-not-allowed";
+"cmm-interactive inline-flex min-h-11 items-center justify-center gap-1.5 border font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-[color:var(--bg-canvas)] disabled:opacity-50 disabled:cursor-not-allowed";
 
 export function CmmButton({
  children,
@@ -56,6 +58,7 @@ export function CmmButton({
  disabled,
  ariaLabel,
  type ="button",
+ asChild = false,
 }: CmmButtonProps) {
  const classes = cn(
  baseClasses,
@@ -71,6 +74,14 @@ export function CmmButton({
  {children}
  </Link>
  );
+ }
+
+ if (asChild && isValidElement(children)) {
+   const child = children as ReactElement<{ className?: string; onClick?: () => void }>;
+   return cloneElement(child, {
+     className: cn(classes, child.props.className),
+     onClick,
+   });
  }
 
  return (

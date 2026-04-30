@@ -59,7 +59,7 @@ export function ActorsSection() {
  </li>
  ))}
   {hotspots.length === 0 ? (
-    <li className="cmm-text-small cmm-text-muted italic">{fr ?"Pas de signalement enregistré sur cette période." :"No report registered for this period."}</li>
+    <li className="cmm-text-small cmm-text-muted italic">{fr ?"Aucun signalement n'a été enregistré sur cette période." :"No reports were recorded for this period."}</li>
   ) : null}
  </ul>
  </article>
@@ -102,7 +102,7 @@ export function ActorsSection() {
  ))}
   {partnerCards.length === 0 ? (
     <p className="rounded-xl border border-slate-200 bg-slate-50 p-4 cmm-text-small cmm-text-secondary italic text-center">
-      {fr ?"Aucun profil partenaire n'est encore rattaché à vos actions récentes." :"No partner profile attached to your recent actions yet."}
+      {fr ?"Aucun profil partenaire n'est encore relié à vos actions récentes." :"No partner profile is linked to your recent actions yet."}
     </p>
   ) : null}
  </div>

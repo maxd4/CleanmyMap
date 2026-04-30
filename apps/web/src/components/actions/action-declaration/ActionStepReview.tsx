@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { CmmButton } from "@/components/ui/cmm-button";
 
 import type { CreateActionPayload } from "@/lib/actions/types";
+import type { ActionDataQualityResult } from "../action-declaration-form.quality";
 import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
@@ -13,7 +14,7 @@ import {
 
 interface ActionStepReviewProps {
   payload: CreateActionPayload;
-  dataQuality: { score: number; level: string; warnings: string[] };
+  dataQuality: ActionDataQualityResult;
   isSubmitting: boolean;
   onSubmit: () => void;
 }
@@ -55,7 +56,9 @@ export function ActionStepReview({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-3xl font-black">{dataQuality.score}</span>
-              <span className="text-[8px] font-black tracking-widest text-white/40 uppercase">INDICE</span>
+              <span className="text-[8px] font-black tracking-widest text-white/40 uppercase">
+                Niveau {dataQuality.level}
+              </span>
             </div>
           </div>
 

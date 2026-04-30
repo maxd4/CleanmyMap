@@ -3,6 +3,41 @@ import { createInitialSRSState, SRSStats } from "@/lib/gamification/quiz-srs";
 
 const LOCAL_STORAGE_KEY = "cleanmymap_quiz_srs";
 
+type QuizSrsRow = {
+  question_id: string;
+  last_seen_at: string | undefined;
+  next_review_at: string;
+  success_count: number;
+  failure_count: number;
+  streak: number;
+  ease_factor: number;
+  mastery_level: number;
+};
+
+type QuizSrsTableClient = {
+  from(table: "quiz_srs"): {
+    select(columns: string): {
+      eq(column: "user_id", value: string): {
+        in(column: "question_id", values: string[]): Promise<{ data: QuizSrsRow[] | null; error: unknown }>;
+      };
+    };
+    upsert(
+      value: {
+        user_id: string;
+        question_id: string;
+        last_seen_at: string | undefined;
+        next_review_at: string;
+        success_count: number;
+        failure_count: number;
+        streak: number;
+        ease_factor: number;
+        mastery_level: number;
+      },
+      options: { onConflict: string },
+    ): Promise<{ error: unknown }>;
+  };
+};
+
 /**
  * Charge les données SRS pour une liste de questions
  */
@@ -10,7 +45,7 @@ export async function loadQuizSRSData(userId: string | null, questionIds: string
   const data: Record<string, SRSStats> = {};
 
   if (userId) {
-    const supabase = getSupabaseBrowserClient();
+    const supabase = getSupabaseBrowserClient() as unknown as QuizSrsTableClient;
     const { data: dbData, error } = await supabase
       .from("quiz_srs")
       .select("*")
@@ -18,7 +53,7 @@ export async function loadQuizSRSData(userId: string | null, questionIds: string
       .in("question_id", questionIds);
 
     if (!error && dbData) {
-      dbData.forEach((row: any) => {
+      dbData.forEach((row) => {
         data[row.question_id] = {
           question_id: row.question_id,
           last_seen_at: row.last_seen_at,
@@ -57,7 +92,7 @@ export async function loadQuizSRSData(userId: string | null, questionIds: string
  */
 export async function saveQuizSRSState(userId: string | null, stats: SRSStats): Promise<void> {
   if (userId) {
-    const supabase = getSupabaseBrowserClient();
+    const supabase = getSupabaseBrowserClient() as unknown as QuizSrsTableClient;
     const { error } = await supabase
       .from("quiz_srs")
       .upsert({

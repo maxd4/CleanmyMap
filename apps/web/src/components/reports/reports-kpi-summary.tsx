@@ -5,7 +5,7 @@ import useSWR from "swr";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 
-import { motion } from "framer-motion";
+import { motion, type Variants } from "framer-motion";
 import { 
   CheckCircle2, 
   Trash2, 
@@ -23,12 +23,12 @@ const containerVariant = {
       staggerChildren: 0.1
     }
   }
-};
+} as const satisfies Variants;
 
 const itemVariant = {
   hidden: { opacity: 0, y: 20 },
   show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
-};
+} as const satisfies Variants;
 
 export function ReportsKpiSummary() {
   const actions = useSWR(
@@ -90,7 +90,7 @@ export function ReportsKpiSummary() {
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
           <h2 className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-            Synthèse d'Impact Scientifique
+            Synthèse d&apos;Impact Scientifique
           </h2>
           <p className="mt-2 text-sm font-semibold text-slate-500">
             Indicateurs consolidés en temps réel.{" "}
@@ -109,7 +109,7 @@ export function ReportsKpiSummary() {
       
       {error ? (
         <div className="rounded-xl bg-rose-50 border border-rose-100 p-4 text-sm text-rose-600 font-semibold">
-          Impossible de charger les données d'impact.
+          Impossible de charger les données d&apos;impact.
         </div>
       ) : null}
 

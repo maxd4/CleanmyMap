@@ -125,7 +125,7 @@ export default async function DashboardPage() {
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 cmm-text-small text-emerald-900">
               {locale === "fr"
                 ? "En visite libre, consulte Apprendre ou Générer un livrable depuis la page d&apos;accueil."
-                : "In public browsing, use Learn or Generate a deliverable from the home page."}
+                : "In public browsing, use Learn or generate a deliverable from the page d'accueil."}
             </div>
           </div>
         }
@@ -200,7 +200,7 @@ export default async function DashboardPage() {
         href: "/profil/impact",
       },
     );
-  } else if (role === "admin") {
+  } else if (role === "admin" || role === "max") {
     dashboardActions.push(
       {
         icon: "ShieldCheck",
@@ -291,7 +291,7 @@ export default async function DashboardPage() {
 
   if (pageTemplateV2Enabled) {
     return (
-      <div className="flex flex-col gap-6" data-display-mode={displayMode}>
+      <div className="flex flex-col gap-6 pt-4 md:pt-6" data-display-mode={displayMode}>
         <PunchySlogan />
         <IdentityProfileBanner profile={profile} />
         <PageReadingTemplate

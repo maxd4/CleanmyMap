@@ -15,7 +15,6 @@ import { extractArrondissement, formatDateTimeShort } from"@/components/sections
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
 import { CloudSun, ClipboardCheck } from"lucide-react";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
-import { CmmCard } from "@/components/ui/cmm-card";
 
 interface OpenMeteoResponse {
  current?: {

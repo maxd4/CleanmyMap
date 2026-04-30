@@ -30,7 +30,7 @@ export function DashboardComparisonGrid({
  if (!method) {
  return undefined;
  }
- return `Formule: ${method.formula}\nSource: ${method.source}\nFrequence: ${method.recalc}\nHypotheses/Limites: ${method.limits}`;
+ return "Méthode de calcul de cet indicateur.";
  }
 
  function labelWithTooltip(label: string) {
@@ -41,13 +41,15 @@ export function DashboardComparisonGrid({
  return (
  <span className="inline-flex items-center gap-1">
  <span>{label}</span>
- <span
+ <button
+ type="button"
  aria-label={`Formule de calcul pour ${label}`}
- title={tooltip}
- className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 bg-slate-100 cmm-text-caption font-bold cmm-text-secondary"
+ data-tooltip-content={tooltip}
+ data-tooltip-placement="top"
+ className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-300 bg-slate-100 cmm-text-caption font-bold cmm-text-secondary cursor-help"
  >
  i
- </span>
+ </button>
  </span>
  );
  }

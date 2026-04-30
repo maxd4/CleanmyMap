@@ -2,6 +2,7 @@
 
 import Link from"next/link";
 import { usePathname } from"next/navigation";
+import { ChevronDown } from"lucide-react";
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
 import {
  trackNavigationClick,
@@ -105,7 +106,7 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
  </span>
  </p>
  <p>
- Bloc actif:{""}
+ Section active:{""}
  <span className="font-semibold">
  {activeSpace
  ? (renderedSpaces.find((space) => space.id === activeSpace)
@@ -229,27 +230,28 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
  </li>
  );
  })}
- {space.items.length === 0 && space.id !=="pilot" ? (
+{space.items.length === 0 && space.id !=="pilot" ? (
  <li className="rounded-lg border border-dashed border-slate-300 px-3 py-2 cmm-text-caption cmm-text-muted">
  {locale ==="fr"
- ?"Aucune page rattachee a ce bloc."
- :"No page assigned to this block."}
+ ?"Aucune page n'est encore rattachée à cette section."
+ :"No page is assigned to this section yet."}
  </li>
- ) : null}
+) : null}
  </ul>
  </section>
  ))}
  </div>
 
- <div className="space-y-2 lg:hidden">
- {renderedSpaces.map((space) => (
- <details
- key={space.id}
- className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
- >
- <summary className="cursor-pointer cmm-text-small font-semibold cmm-text-primary">
- {space.label[locale]}
- </summary>
+<div className="space-y-2 lg:hidden">
+{renderedSpaces.map((space) => (
+<details
+key={space.id}
+className="group rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
+>
+<summary className="cmm-dropdown-trigger flex min-h-11 list-none items-center justify-between gap-2 rounded-lg px-3 cmm-text-small font-semibold cmm-text-primary [&::-webkit-details-marker]:hidden">
+{space.label[locale]}
+<ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-150 group-open:rotate-180" aria-hidden="true" />
+</summary>
  <ul className="mt-2 space-y-2">
  {getRenderedSpaceItems(space).map((item) => {
  const active = isActive(pathname, item.href);
@@ -282,13 +284,13 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
  </li>
  );
  })}
- {space.items.length === 0 && space.id !=="pilot" ? (
+{space.items.length === 0 && space.id !=="pilot" ? (
  <li className="rounded-lg border border-dashed border-slate-300 px-3 py-2 cmm-text-caption cmm-text-muted">
  {locale ==="fr"
- ?"Aucune page rattachee a ce bloc."
- :"No page assigned to this block."}
+ ?"Aucune page n'est encore rattachée à cette section."
+ :"No page is assigned to this section yet."}
  </li>
- ) : null}
+) : null}
  </ul>
  </details>
  ))}

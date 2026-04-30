@@ -1,0 +1,270 @@
+- generic [active] [ref=e1]:
+  - main [ref=e7]:
+    - generic [ref=e9]:
+      - navigation "Barre de navigation principale" [ref=e11]:
+        - generic [ref=e13]:
+          - generic [ref=e14]:
+            - link "CleanMyMap" [ref=e16] [cursor=pointer]:
+              - /url: /
+              - generic [ref=e17]: CleanMyMap
+            - generic [ref=e20]:
+              - link "Accueil — 2 rubriques dans ce bloc." [ref=e21] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=e22]
+                - generic [ref=e25]: Accueil
+              - link "Agir — 3 rubriques dans ce bloc." [ref=e26] [cursor=pointer]:
+                - /url: /actions/new
+                - img [ref=e27]
+                - generic [ref=e31]: Agir
+              - link "Visualiser — 2 rubriques dans ce bloc." [ref=e32] [cursor=pointer]:
+                - /url: /actions/map
+                - img [ref=e33]
+                - generic [ref=e37]: Visualiser
+              - link "Impact — 2 rubriques dans ce bloc." [ref=e38] [cursor=pointer]:
+                - /url: /reports
+                - img [ref=e39]
+                - generic [ref=e41]: Impact
+              - link "Réseau — 3 rubriques dans ce bloc." [ref=e42] [cursor=pointer]:
+                - /url: /partners/network
+                - img [ref=e43]
+                - generic [ref=e48]: Réseau
+              - link "Échanges — 2 rubriques dans ce bloc." [ref=e49] [cursor=pointer]:
+                - /url: /sections/messagerie
+                - img [ref=e50]
+                - generic [ref=e52]: Échanges
+              - link "Apprendre — 2 rubriques dans ce bloc." [ref=e53] [cursor=pointer]:
+                - /url: /learn/hub
+                - img [ref=e54]
+                - generic [ref=e56]: Apprendre
+              - link "Piloter — 0 rubrique dans ce bloc." [ref=e57] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=e58]
+                - generic [ref=e62]: Piloter
+            - generic [ref=e63]:
+              - button "Chercher K" [ref=e64] [cursor=pointer]:
+                - img [ref=e65]
+                - generic [ref=e68]: Chercher
+                - generic [ref=e69]:
+                  - img [ref=e70]
+                  - text: K
+              - link "Explorer toutes les rubriques" [ref=e72] [cursor=pointer]:
+                - /url: /explorer
+                - img [ref=e73]
+                - generic [ref=e76]: Explorer
+              - group [ref=e77]:
+                - generic "Menu des préférences d'affichage et langue" [ref=e78] [cursor=pointer]:
+                  - img [ref=e79]
+                  - generic [ref=e82]: Réglages
+          - generic [ref=e85]:
+            - paragraph [ref=e87]: CleanMyMap
+            - generic [ref=e88]: /
+      - generic [ref=e92]:
+        - generic [ref=e94]:
+          - generic [ref=e95]:
+            - paragraph [ref=e96]: Navigation utilitaire
+            - heading "Plan du site" [level=1] [ref=e97]
+            - paragraph [ref=e98]: Vue compacte des rubriques accessibles pour votre profil, avec un accès direct à la bonne page.
+          - generic [ref=e99]:
+            - generic [ref=e100]:
+              - generic [ref=e101]: Blocs
+              - generic [ref=e102]: "8"
+            - generic [ref=e103]:
+              - generic [ref=e104]: Rubriques
+              - generic [ref=e105]: "16"
+            - generic [ref=e106]:
+              - generic [ref=e107]: Profil actif
+              - generic [ref=e108]: Bénévole
+        - generic [ref=e109]:
+          - article [ref=e110]:
+            - generic [ref=e111]:
+              - generic [ref=e112]:
+                - generic [ref=e114]: 🏠
+                - generic [ref=e116]:
+                  - paragraph [ref=e117]: Bloc
+                  - heading "Accueil" [level=2] [ref=e118]
+              - link "Lancer le bloc" [ref=e119] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=e120]
+                - text: Lancer le bloc
+            - generic [ref=e122]:
+              - link "Tableau de bord Vue synthèse" [ref=e123] [cursor=pointer]:
+                - /url: /dashboard
+                - generic [ref=e124]:
+                  - generic [ref=e125]: Tableau de bord
+                  - generic [ref=e126]: Vue synthèse
+                - img [ref=e128]
+              - link "Profil & impact Paramètres du compte et impact" [ref=e130] [cursor=pointer]:
+                - /url: /profil
+                - generic [ref=e131]:
+                  - generic [ref=e132]: Profil & impact
+                  - generic [ref=e133]: Paramètres du compte et impact
+                - img [ref=e135]
+          - article [ref=e137]:
+            - generic [ref=e138]:
+              - generic [ref=e139]:
+                - generic [ref=e141]: ⚡
+                - generic [ref=e143]:
+                  - paragraph [ref=e144]: Bloc
+                  - heading "Agir" [level=2] [ref=e145]
+              - link "Lancer le bloc" [ref=e146] [cursor=pointer]:
+                - /url: /actions/new
+                - img [ref=e147]
+                - text: Lancer le bloc
+            - generic [ref=e149]:
+              - link "Déclarer une action Rendre une action terrain visible" [ref=e150] [cursor=pointer]:
+                - /url: /actions/new
+                - generic [ref=e151]:
+                  - generic [ref=e152]: Déclarer une action
+                  - generic [ref=e153]: Rendre une action terrain visible
+                - img [ref=e155]
+              - link "Itinéraire IA Où agir en priorité aujourd'hui ?" [ref=e157] [cursor=pointer]:
+                - /url: /sections/route
+                - generic [ref=e158]:
+                  - generic [ref=e159]: Itinéraire IA
+                  - generic [ref=e160]: Où agir en priorité aujourd'hui ?
+                - img [ref=e162]
+              - link "Signalement Déchets Signaler un hotspot de pollution" [ref=e164] [cursor=pointer]:
+                - /url: /sections/trash-spotter
+                - generic [ref=e165]:
+                  - generic [ref=e166]: Signalement Déchets
+                  - generic [ref=e167]: Signaler un hotspot de pollution
+                - img [ref=e169]
+          - article [ref=e171]:
+            - generic [ref=e172]:
+              - generic [ref=e173]:
+                - generic [ref=e175]: 🗺️
+                - generic [ref=e177]:
+                  - paragraph [ref=e178]: Bloc
+                  - heading "Visualiser" [level=2] [ref=e179]
+              - link "Lancer le bloc" [ref=e180] [cursor=pointer]:
+                - /url: /actions/map
+                - img [ref=e181]
+                - text: Lancer le bloc
+            - generic [ref=e183]:
+              - link "Carte des actions Vue géolocalisée de l'engagement" [ref=e184] [cursor=pointer]:
+                - /url: /actions/map
+                - generic [ref=e185]:
+                  - generic [ref=e186]: Carte des actions
+                  - generic [ref=e187]: Vue géolocalisée de l'engagement
+                - img [ref=e189]
+              - link "Visualiser la carte Tester la carte, les filtres et l'état technique avant de démarrer." [ref=e191] [cursor=pointer]:
+                - /url: /sections/sandbox
+                - generic [ref=e192]:
+                  - generic [ref=e193]: Visualiser la carte
+                  - generic [ref=e194]: Tester la carte, les filtres et l'état technique avant de démarrer.
+                - img [ref=e196]
+          - article [ref=e198]:
+            - generic [ref=e199]:
+              - generic [ref=e200]:
+                - generic [ref=e202]: 📊
+                - generic [ref=e204]:
+                  - paragraph [ref=e205]: Bloc
+                  - heading "Impact" [level=2] [ref=e206]
+              - link "Lancer le bloc" [ref=e207] [cursor=pointer]:
+                - /url: /reports
+                - img [ref=e208]
+                - text: Lancer le bloc
+            - generic [ref=e210]:
+              - link "Rapports d'impact Synthèse d'impact, exports et contrôle" [ref=e211] [cursor=pointer]:
+                - /url: /reports
+                - generic [ref=e212]:
+                  - generic [ref=e213]: Rapports d'impact
+                  - generic [ref=e214]: Synthèse d'impact, exports et contrôle
+                - img [ref=e216]
+              - link "Progression & Badges Mon impact et mes niveaux de réussite" [ref=e218] [cursor=pointer]:
+                - /url: /sections/gamification
+                - generic [ref=e219]:
+                  - generic [ref=e220]: Progression & Badges
+                  - generic [ref=e221]: Mon impact et mes niveaux de réussite
+                - img [ref=e223]
+          - article [ref=e225]:
+            - generic [ref=e226]:
+              - generic [ref=e227]:
+                - generic [ref=e229]: 🤝
+                - generic [ref=e231]:
+                  - paragraph [ref=e232]: Bloc
+                  - heading "Réseau" [level=2] [ref=e233]
+              - link "Lancer le bloc" [ref=e234] [cursor=pointer]:
+                - /url: /partners/network
+                - img [ref=e235]
+                - text: Lancer le bloc
+            - generic [ref=e237]:
+              - link "Découvrir le réseau Carte et fiches des partenaires engagés" [ref=e238] [cursor=pointer]:
+                - /url: /partners/network
+                - generic [ref=e239]:
+                  - generic [ref=e240]: Découvrir le réseau
+                  - generic [ref=e241]: Carte et fiches des partenaires engagés
+                - img [ref=e243]
+              - link "Opérations collectives Ressources et rassemblements communautaires" [ref=e245] [cursor=pointer]:
+                - /url: /sections/community
+                - generic [ref=e246]:
+                  - generic [ref=e247]: Opérations collectives
+                  - generic [ref=e248]: Ressources et rassemblements communautaires
+                - img [ref=e250]
+              - link "Observatoire Public Données ouvertes et exports pour la recherche" [ref=e252] [cursor=pointer]:
+                - /url: /sections/open-data
+                - generic [ref=e253]:
+                  - generic [ref=e254]: Observatoire Public
+                  - generic [ref=e255]: Données ouvertes et exports pour la recherche
+                - img [ref=e257]
+          - article [ref=e259]:
+            - generic [ref=e260]:
+              - generic [ref=e261]:
+                - generic [ref=e263]: 💬
+                - generic [ref=e265]:
+                  - paragraph [ref=e266]: Bloc
+                  - heading "Échanges" [level=2] [ref=e267]
+              - link "Lancer le bloc" [ref=e268] [cursor=pointer]:
+                - /url: /sections/messagerie
+                - img [ref=e269]
+                - text: Lancer le bloc
+            - generic [ref=e271]:
+              - link "Discussions Canaux de discussion collectifs par thématique et territoire" [ref=e272] [cursor=pointer]:
+                - /url: /sections/messagerie
+                - generic [ref=e273]:
+                  - generic [ref=e274]: Discussions
+                  - generic [ref=e275]: Canaux de discussion collectifs par thématique et territoire
+                - img [ref=e277]
+              - link "Messages privés Échanges directs et confidentiels avec les membres du réseau" [ref=e279] [cursor=pointer]:
+                - /url: /sections/dm
+                - generic [ref=e280]:
+                  - generic [ref=e281]: Messages privés
+                  - generic [ref=e282]: Échanges directs et confidentiels avec les membres du réseau
+                - img [ref=e284]
+          - article [ref=e286]:
+            - generic [ref=e287]:
+              - generic [ref=e288]:
+                - generic [ref=e290]: 📚
+                - generic [ref=e292]:
+                  - paragraph [ref=e293]: Bloc
+                  - heading "Apprendre" [level=2] [ref=e294]
+              - link "Lancer le bloc" [ref=e295] [cursor=pointer]:
+                - /url: /learn/hub
+                - img [ref=e296]
+                - text: Lancer le bloc
+            - generic [ref=e298]:
+              - 'link "Hub Éducatif L''Université CleanMyMap : Apprendre et Agir" [ref=e299] [cursor=pointer]':
+                - /url: /learn/hub
+                - generic [ref=e300]:
+                  - generic [ref=e301]: Hub Éducatif
+                  - generic [ref=e302]: "L'Université CleanMyMap : Apprendre et Agir"
+                - img [ref=e304]
+              - link "Mode d'emploi Comment agir efficacement sur le terrain" [ref=e306] [cursor=pointer]:
+                - /url: /sections/guide
+                - generic [ref=e307]:
+                  - generic [ref=e308]: Mode d'emploi
+                  - generic [ref=e309]: Comment agir efficacement sur le terrain
+                - img [ref=e311]
+          - article [ref=e313]:
+            - generic [ref=e314]:
+              - generic [ref=e315]:
+                - generic [ref=e317]: 🎯
+                - generic [ref=e319]:
+                  - paragraph [ref=e320]: Bloc
+                  - heading "Piloter" [level=2] [ref=e321]
+              - link "Lancer le bloc" [ref=e322] [cursor=pointer]:
+                - /url: /dashboard
+                - img [ref=e323]
+                - text: Lancer le bloc
+            - generic [ref=e325]: Ce bloc ne contient pas encore de rubrique accessible pour votre profil
+  - alert [ref=e326]

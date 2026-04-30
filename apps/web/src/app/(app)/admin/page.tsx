@@ -1,4 +1,3 @@
-import Link from"next/link";
 import { auth } from"@clerk/nextjs/server";
 import { 
  ShieldCheck, 
@@ -7,6 +6,8 @@ import {
  AlertTriangle,
 } from"lucide-react";
 import { BusinessAlertsPanel } from"@/components/dashboard/business-alerts-panel";
+import { CreatorInboxPanel } from"@/components/admin/creator-inbox-panel";
+import { RoleManagementPanel } from"@/components/admin/role-management-panel";
 import { RolePrimaryActions } from"@/components/navigation/role-primary-actions";
 
 import { ThirtySecondsSummary } from"@/components/pilotage/thirty-seconds-summary";
@@ -14,10 +15,12 @@ import { ActionsReportPanel } from"@/components/reports/actions-report-panel";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
 import { RubriquePdfExportButton } from"@/components/ui/rubrique-pdf-export-button";
 import { listAdminOperationAudit } from"@/lib/admin/operation-audit";
+import { listManagedRoleAccounts } from"@/lib/admin/role-management";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
+import { loadCreatorInboxItems } from"@/lib/community/creator-inbox-loader";
 import { loadPilotageOverview } from"@/lib/pilotage/overview";
-import { listPartnerOnboardingRequests } from"@/lib/partners/onboarding-requests-store";
 import { listPublishedPartnerAnnuaireEntries } from"@/lib/partners/published-annuaire-entries-store";
+import { isAdminLikeProfile } from"@/lib/profiles";
 import { getProfilePrimaryAction, toProfile } from"@/lib/profiles";
 import { getServerLocale } from"@/lib/server-preferences";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
@@ -36,11 +39,11 @@ export default async function AdminPage() {
  const { userId } = await auth();
  if (!userId) {
  return (
- <ClerkRequiredGate
- isAuthenticated={false}
- mode="blur"
- title="Administration"
- description="Cette fonctionnalité nécessite une connexion Clerk."
+  <ClerkRequiredGate
+   isAuthenticated={false}
+   mode="blur"
+   title="Pilotage administratif"
+   description="Accès réservé aux comptes Clerk autorisés."
  lockedPreview={
  <section className="grid gap-3 md:grid-cols-3 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
  <article className="rounded-2xl border border-slate-200 bg-white p-4">
@@ -80,33 +83,44 @@ export default async function AdminPage() {
  const locale = await getServerLocale();
  const primaryAction = getProfilePrimaryAction(profile);
 
- if (role !=="admin") {
+  if (!isAdminLikeProfile(profile)) {
  return (
  <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-amber-700">
  Admin requis
  </p>
  <h1 className="mt-2 text-2xl font-semibold text-amber-900">
- Administration réservée aux admins
+ Accès administrateur requis
  </h1>
  <p className="mt-2 cmm-text-small text-amber-800">
- Demande l&apos;attribution du rôle{""}
- <span className="font-semibold">admin</span> dans Clerk.
+ Demandez l&apos;attribution du rôle <span className="font-semibold">admin</span> dans Clerk.
  </p>
  </section>
  );
  }
 
  const overview = await loadAdminOverview().catch(() => null);
- const onboardingRequests = await listPartnerOnboardingRequests(500).catch(() => []);
+ const creatorInboxItems =
+ profile ==="max"
+ ? await loadCreatorInboxItems().catch(() => [])
+ : [];
+ const roleAccounts =
+ profile ==="max"
+ ? await listManagedRoleAccounts().catch(() => [])
+ : [];
  const publishedEntries = await listPublishedPartnerAnnuaireEntries().catch(() => []);
  const adminAudit = await listAdminOperationAudit(25).catch(() => []);
 
  const onboardingStatus = {
- pending: onboardingRequests.filter((item) => item.status ==="pending_admin_review")
- .length,
- accepted: onboardingRequests.filter((item) => item.status ==="accepted").length,
- rejected: onboardingRequests.filter((item) => item.status ==="rejected").length,
+ pending: creatorInboxItems.filter(
+ (item) => item.source ==="partner" && item.sourceStatus ==="pending_admin_review",
+ ).length,
+ accepted: creatorInboxItems.filter(
+ (item) => item.source ==="partner" && item.sourceStatus ==="accepted",
+ ).length,
+ rejected: creatorInboxItems.filter(
+ (item) => item.source ==="partner" && item.sourceStatus ==="rejected",
+ ).length,
  };
 
  const publicationStatus = {
@@ -126,9 +140,9 @@ export default async function AdminPage() {
 
  const navigationItems: NavigationGridItem[] = [
  {
- icon: ShieldCheck,
- title:"Gouvernance",
- desc:"Suivi des statuts métier et décisions stratégiques.",
+  icon: ShieldCheck,
+  title:"Gouvernance",
+  desc:"Décisions et statuts clés.",
  iconBg:"bg-blue-500/20",
  iconColor:"text-blue-400",
  accent:"from-blue-600/20 to-blue-900/40",
@@ -137,9 +151,9 @@ export default async function AdminPage() {
  href:"#governance",
  },
  {
- icon: AlertTriangle,
- title:"Alertes",
- desc:"Points d'attention et écarts critiques à traiter.",
+  icon: AlertTriangle,
+  title:"Alertes",
+  desc:"Écarts à traiter rapidement.",
  iconBg:"bg-amber-500/20",
  iconColor:"text-amber-400",
  accent:"from-amber-600/20 to-amber-900/40",
@@ -148,9 +162,9 @@ export default async function AdminPage() {
  href:"#alerts",
  },
  {
- icon: FileSearch,
- title:"Modération",
- desc:"Validation des actions et gestion des preuves.",
+  icon: FileSearch,
+  title:"Modération",
+  desc:"Validation des actions et preuves.",
  iconBg:"bg-emerald-500/20",
  iconColor:"text-emerald-400",
  accent:"from-emerald-600/20 to-emerald-900/40",
@@ -159,9 +173,9 @@ export default async function AdminPage() {
  href:"#moderation",
  },
  {
- icon: Settings,
- title:"Services",
- desc:"État de santé des API et infrastructures.",
+  icon: Settings,
+  title:"Services",
+  desc:"État des API et de l'infrastructure.",
  iconBg:"bg-slate-500/20",
  iconColor:"cmm-text-muted",
  accent:"from-slate-600/20 to-slate-900/40",
@@ -240,16 +254,15 @@ export default async function AdminPage() {
 
  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
- Workflow admin guide
+ Guide admin
  </p>
  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
  <div>
  <h1 className="mt-2 text-2xl font-semibold cmm-text-primary">
- Administration
+ Pilotage administratif
  </h1>
  <p className="mt-2 cmm-text-small cmm-text-secondary">
- Modération, import/export et supervision des opérations critiques avec
- garde-fous explicites.
+ Superviser la modération, les exports et les opérations critiques.
  </p>
  </div>
  <div className="flex flex-wrap gap-3">
@@ -261,18 +274,39 @@ export default async function AdminPage() {
  </div>
  </section>
 
+ {profile ==="max" ? (
+ <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+ <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
+ Inbox créateur
+ </p>
+ <h2 className="mt-2 text-xl font-semibold cmm-text-primary">
+ Demandes reçues et à traiter
+ </h2>
+ <p className="mt-2 cmm-text-small cmm-text-secondary">
+ Les demandes de feedback, de promotion, de partenariat et d'événement arrivent ici avec le contact, le contexte et le statut.
+ </p>
+ <div className="mt-6">
+ <CreatorInboxPanel initialItems={creatorInboxItems} />
+ </div>
+ </section>
+ ) : null}
+
+ {profile ==="max" ? (
+ <div className="mt-6">
+ <RoleManagementPanel initialAccounts={roleAccounts} currentUserId={userId} />
+ </div>
+ ) : null}
+
  <div id="governance">
  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
- Vues gouvernance
+ Pilotage
  </p>
  <h2 className="mt-2 text-xl font-semibold cmm-text-primary">
- Etats metier relies au pilotage
+ États métier liés au pilotage
  </h2>
  <p className="mt-2 cmm-text-small cmm-text-secondary">
- Les compteurs ci-dessous reprennent les cycles de decision actifs:
- onboarding partenaire, revue de publication et execution des operations
- admin.
+ Les compteurs suivent l&apos;onboarding partenaire, la publication annuaire et les opérations admin.
  </p>
 
  <div className="mt-4 grid gap-4 md:grid-cols-3">

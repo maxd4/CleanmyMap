@@ -20,7 +20,9 @@ export type PartnerOnboardingRequestRecord = PartnerOnboardingRequestInput & {
   id: string;
   createdAt: string;
   submittedByUserId: string;
+  submittedByEmail: string | null;
   status: "pending_admin_review" | "accepted" | "rejected";
+  creatorState: "new" | "pending" | "responded" | "treated" | "archived" | "accepted" | "rejected";
 };
 
 type StorePayload = {
@@ -42,10 +44,27 @@ export function normalizeStoredPartnerOnboardingRequest(
   const createdAt = typeof record.createdAt === "string" ? record.createdAt : "";
   const submittedByUserId =
     typeof record.submittedByUserId === "string" ? record.submittedByUserId : "";
+  const submittedByEmail =
+    typeof record.submittedByEmail === "string" && record.submittedByEmail.trim().length > 0
+      ? record.submittedByEmail
+      : null;
   const status =
     record.status === "accepted" || record.status === "rejected"
       ? record.status
       : "pending_admin_review";
+  const creatorState =
+    record.creatorState === "pending" ||
+    record.creatorState === "responded" ||
+    record.creatorState === "treated" ||
+    record.creatorState === "archived" ||
+    record.creatorState === "accepted" ||
+    record.creatorState === "rejected"
+      ? record.creatorState
+      : status === "accepted"
+        ? "accepted"
+        : status === "rejected"
+          ? "rejected"
+          : "new";
 
   const organizationName =
     typeof record.organizationName === "string" ? record.organizationName : "";
@@ -85,6 +104,7 @@ export function normalizeStoredPartnerOnboardingRequest(
     id,
     createdAt,
     submittedByUserId,
+    submittedByEmail,
     status,
     organizationName,
     organizationType,
@@ -96,6 +116,7 @@ export function normalizeStoredPartnerOnboardingRequest(
     contactChannel: typeof record.contactChannel === "string" ? record.contactChannel : "",
     contactDetails: typeof record.contactDetails === "string" ? record.contactDetails : "",
     motivation: typeof record.motivation === "string" ? record.motivation : "",
+    creatorState,
   };
 }
 
@@ -139,6 +160,7 @@ async function writeStore(store: StorePayload): Promise<void> {
 
 export async function appendPartnerOnboardingRequest(params: {
   submittedByUserId: string;
+  submittedByEmail?: string | null;
   input: PartnerOnboardingRequestInput;
 }): Promise<PartnerOnboardingRequestRecord> {
   assertPersistenceAvailable("partner_onboarding_requests");
@@ -147,7 +169,9 @@ export async function appendPartnerOnboardingRequest(params: {
     id: randomUUID(),
     createdAt: new Date().toISOString(),
     submittedByUserId: params.submittedByUserId,
+    submittedByEmail: params.submittedByEmail ?? null,
     status: "pending_admin_review",
+    creatorState: "pending",
     ...params.input,
   };
 
@@ -181,4 +205,67 @@ export async function countPartnerOnboardingRequests(): Promise<number> {
   assertPersistenceAvailable("partner_onboarding_requests");
   const store = await readStore();
   return store.records.length;
+}
+
+export async function updatePartnerOnboardingRequestStatus(params: {
+  requestId: string;
+  status: "pending_admin_review" | "accepted" | "rejected";
+}): Promise<PartnerOnboardingRequestRecord | null> {
+  assertPersistenceAvailable("partner_onboarding_requests");
+  const store = await readStore();
+  const index = store.records.findIndex((record) => record.id === params.requestId);
+  if (index < 0) {
+    return null;
+  }
+
+  const updated: PartnerOnboardingRequestRecord = {
+    ...store.records[index],
+    status: params.status,
+    creatorState:
+      params.status === "accepted"
+        ? "accepted"
+        : params.status === "rejected"
+          ? "rejected"
+          : "pending",
+  };
+
+  const records = [...store.records];
+  records[index] = updated;
+  await writeStore({ updatedAt: new Date().toISOString(), records });
+  return updated;
+}
+
+export async function updatePartnerOnboardingRequestCreatorState(params: {
+  requestId: string;
+  creatorState: "new" | "pending" | "responded" | "treated" | "archived" | "accepted" | "rejected";
+}): Promise<PartnerOnboardingRequestRecord | null> {
+  assertPersistenceAvailable("partner_onboarding_requests");
+  const store = await readStore();
+  const index = store.records.findIndex((record) => record.id === params.requestId);
+  if (index < 0) {
+    return null;
+  }
+
+  const updated: PartnerOnboardingRequestRecord = {
+    ...store.records[index],
+    creatorState: params.creatorState,
+  };
+
+  const records = [...store.records];
+  records[index] = updated;
+  await writeStore({ updatedAt: new Date().toISOString(), records });
+  return updated;
+}
+
+export async function deletePartnerOnboardingRequest(
+  requestId: string,
+): Promise<boolean> {
+  assertPersistenceAvailable("partner_onboarding_requests");
+  const store = await readStore();
+  const records = store.records.filter((record) => record.id !== requestId);
+  if (records.length === store.records.length) {
+    return false;
+  }
+  await writeStore({ updatedAt: new Date().toISOString(), records });
+  return true;
 }

@@ -8,7 +8,6 @@ import { ThirtySecondsSummary } from"@/components/pilotage/thirty-seconds-summar
 import { PRIORITIZATION_RULESET } from"@/lib/pilotage/constants";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
-import { CmmCard } from "@/components/ui/cmm-card";
 
 type PilotageOverviewResponse = {
  status:"ok";
@@ -287,13 +286,13 @@ function ElusSection() {
  </p>
  </li>
  ))}
- {!isLoading && !error && (data?.zones ?? []).length === 0 ? (
+{!isLoading && !error && (data?.zones ?? []).length === 0 ? (
  <li className="rounded-lg border border-slate-200/80 bg-slate-50/80 dark:bg-slate-800/50 dark:border-slate-700/80 p-3 cmm-text-secondary">
  {fr
- ?"Aucune zone prioritaire exploitable sur cette fenêtre."
- :"No priority zone can be used on this window."}
+ ?"Aucune zone prioritaire exploitable ne ressort sur cette fenêtre."
+ :"No usable priority zone emerges on this window."}
  </li>
- ) : null}
+) : null}
  </ul>
  </div>
 
@@ -354,13 +353,13 @@ function ElusSection() {
  <td className="px-3 py-2 font-medium">{zone.normalizedScore.toFixed(1)}</td>
  </tr>
  ))}
- {!isLoading && !error && (data?.zones ?? []).length === 0 ? (
+{!isLoading && !error && (data?.zones ?? []).length === 0 ? (
  <tr className="cmm-text-secondary">
  <td className="px-3 py-3 text-center" colSpan={7}>
- {fr ?"Aucune zone détectée." :"No zone detected."}
+ {fr ?"Aucune zone n'est détectée sur cette fenêtre." :"No zone is detected on this window."}
  </td>
  </tr>
- ) : null}
+) : null}
  </tbody>
  </table>
  </div>

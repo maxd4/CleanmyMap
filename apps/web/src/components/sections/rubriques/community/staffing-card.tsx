@@ -73,7 +73,7 @@ function CommunityStaffingCard(props: CommunityStaffingCardProps) {
  ))}
       {staffingPlan.rows.length === 0 ? (
         <li className="rounded-lg border border-slate-200 bg-slate-50 p-3 cmm-text-secondary">
-          Aucun événement à venir ne nécessite de staffing particulier pour le moment.
+          Aucun événement à venir ne nécessite de renfort particulier pour le moment.
         </li>
       ) : null}
  </ul>

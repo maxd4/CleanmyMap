@@ -60,6 +60,8 @@ const envSchema = z.object({
 
   CLERK_SECRET_KEY: z.string().optional(),
   CLERK_ADMIN_USER_IDS: z.string().optional(),
+  CLERK_MAX_USER_IDS: z.string().optional(),
+  CLERK_SUPABASE_JWT_TEMPLATE: z.string().optional(),
   CLERK_ALLOWED_PARTIES: z.string().optional(),
   CLERK_DOMAIN: z.string().optional(),
   CLERK_IS_SATELLITE: optionalBoolean,
@@ -71,6 +73,7 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
   RESEND_REPLY_TO: z.string().optional(),
+  CREATOR_INBOX_EMAIL: z.string().optional(),
   RESEND_TEST_TOKEN: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
@@ -89,7 +92,18 @@ const envSchema = z.object({
   IMPACT_PROXY_SURFACE_M2_PER_VOLUNTEER_MINUTE: z.string().optional(),
 });
 
-const parsed = envSchema.safeParse(process.env);
+const parsed = envSchema.safeParse({
+  ...process.env,
+  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mgvmuambbxmmkrjjlryo.supabase.co",
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_2ZvYS31hhXeWkIGVaaPyMA_qzdutOI4",
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_cHJvcGVyLWNvd2JpcmQtNTQuY2xlcmsuYWNjb3VudHMuZGV2JA",
+  NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
+  NEXT_PUBLIC_POSTHOG_TOKEN: process.env.NEXT_PUBLIC_POSTHOG_TOKEN,
+  NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+  NEXT_PUBLIC_POSTHOG_REGION: process.env.NEXT_PUBLIC_POSTHOG_REGION,
+  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+});
 if (!parsed.success) {
   // Fail fast in server contexts while keeping local DX understandable.
   console.error(

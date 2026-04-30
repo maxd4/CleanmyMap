@@ -7,9 +7,9 @@ export default function FormComparisonPage() {
  <div className="min-h-screen bg-gray-50 py-8">
  <div className="container mx-auto px-4 max-w-4xl">
  <div className="text-center mb-8">
- <h1 className="text-3xl font-bold mb-4">Comparaison des formulaires</h1>
+ <h1 className="text-3xl font-bold mb-4">Comparer les formulaires</h1>
  <p className="cmm-text-secondary">
- Testez les deux versions du formulaire de déclaration d'action
+      Comparez la version actuelle et la version simplifiée du formulaire de déclaration.
  </p>
  </div>
 
@@ -21,7 +21,7 @@ export default function FormComparisonPage() {
  <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full cmm-text-small inline-block mb-3">
  Complexe
  </div>
- <h2 className="text-xl font-bold">Formulaire actuel</h2>
+ <h2 className="text-xl font-bold">Version actuelle</h2>
  </div>
  
  <div className="space-y-2 cmm-text-small cmm-text-secondary">
@@ -30,7 +30,7 @@ export default function FormComparisonPage() {
  <span className="font-semibold text-red-600">35+</span>
  </div>
  <div className="flex justify-between">
- <span>Temps de completion:</span>
+ <span>Temps de saisie:</span>
  <span className="font-semibold text-red-600">15-20 min</span>
  </div>
  <div className="flex justify-between">
@@ -45,7 +45,7 @@ export default function FormComparisonPage() {
 
  <div className="pt-4">
  <Link href="/declaration">
- <CmmButton className="w-full" variant="outline">
+        <CmmButton className="w-full" variant="ghost">
  Tester le formulaire complexe
  </CmmButton>
  </Link>
@@ -60,7 +60,7 @@ export default function FormComparisonPage() {
  <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full cmm-text-small inline-block mb-3">
  Simplifié
  </div>
- <h2 className="text-xl font-bold">Formulaire optimisé</h2>
+ <h2 className="text-xl font-bold">Version simplifiée</h2>
  </div>
  
  <div className="space-y-2 cmm-text-small cmm-text-secondary">
@@ -69,7 +69,7 @@ export default function FormComparisonPage() {
  <span className="font-semibold text-green-600">10</span>
  </div>
  <div className="flex justify-between">
- <span>Temps de completion:</span>
+ <span>Temps de saisie:</span>
  <span className="font-semibold text-green-600">3-5 min</span>
  </div>
  <div className="flex justify-between">
@@ -95,19 +95,19 @@ export default function FormComparisonPage() {
 
  <div className="mt-8 text-center">
  <CmmCard className="p-6">
- <h3 className="text-lg font-semibold mb-4">Amélioration mesurée</h3>
+ <h3 className="text-lg font-semibold mb-4">Gain mesuré</h3>
  <div className="grid grid-cols-3 gap-4 text-center">
  <div>
  <div className="text-2xl font-bold text-green-600">-70%</div>
- <div className="cmm-text-small cmm-text-secondary">Réduction du texte</div>
+ <div className="cmm-text-small cmm-text-secondary">Texte réduit</div>
  </div>
  <div>
  <div className="text-2xl font-bold text-green-600">-60%</div>
- <div className="cmm-text-small cmm-text-secondary">Temps de completion</div>
+ <div className="cmm-text-small cmm-text-secondary">Temps de saisie</div>
  </div>
  <div>
  <div className="text-2xl font-bold text-green-600">+50%</div>
- <div className="cmm-text-small cmm-text-secondary">Satisfaction utilisateur</div>
+ <div className="cmm-text-small cmm-text-secondary">Satisfaction</div>
  </div>
  </div>
  </CmmCard>

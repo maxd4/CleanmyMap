@@ -14,7 +14,7 @@ import {
 
 export default async function GodModeAdminPage() {
  const user = await currentUser();
- const role = user?.publicMetadata?.role;
+ const role = user?.publicMetadata?.role || user?.publicMetadata?.profile;
  const displayName =
  user?.fullName?.trim() ||
  [user?.firstName, user?.lastName].filter(Boolean).join("") ||

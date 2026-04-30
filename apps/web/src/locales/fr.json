@@ -1,37 +1,37 @@
 {
   "methodologie": {
-    "header_suptitle": "TRANSFERENCE & CRÉDIBILITÉ SCIENTIFIQUE",
-    "header_title": "Méthodologie de Calcul d'Impact.",
-    "header_desc": "Toutes nos métriques sont fondées sur des rapports officiels et des protocoles de calcul documentés.",
+    "header_suptitle": "Méthode et données",
+    "header_title": "Calcul de l'impact",
+    "header_desc": "Des métriques courtes, lisibles et fondées sur des sources documentées.",
     "cards": {
       "water": {
-        "title": "Eau préservée de la pollution",
+        "title": "Eau préservée",
         "formula": "Impact = [Mégots collectés] × {val} L",
-        "desc": "Un seul mégot peut polluer jusqu'à 500 à 1000 litres d'eau en libérant des métaux lourds et des microplastiques (Source: WHO/Tobacco and its environmental impact, 2017). Nous utilisons la borne basse ({val}L) pour garantir une estimation prudente.",
+        "desc": "Un mégot peut contaminer 500 à 1000 litres d'eau. Nous retenons la borne basse pour rester prudents.",
         "source": "SOURCE: {src}"
       },
       "co2": {
-        "title": "Émissions CO2 évitées",
+        "title": "Émissions évitées",
         "formula": "Impact = [Masse déchets (kg)] × {val} kg CO2eq",
-        "desc": "Ce facteur correspond à la moyenne d'émissions évitées par la collecte et le traitement contrôlé par rapport à l'abandon en nature (fermentation, microplastiques). Ce chiffre est dérivé de la base de données Empreinte de l'ADEME pour le mix de déchets urbains standards.",
+        "desc": "Le calcul s'appuie sur le facteur ADEME pour estimer les émissions évitées par la collecte et le traitement contrôlé.",
         "source": "SOURCE: {src}"
       },
       "surface": {
-        "title": "Surface d'impact opérationnelle",
+        "title": "Surface d'action",
         "formula": "Surface (m²) = [Masse(kg)] × {valkg} + [Minutes] × {valmin}",
-        "desc": "Contrairement aux métriques physiques directes, notre calcul de surface est un index de \"pénétration terrain\". Il combine la densité de nettoyage (poids récolté) et l'effort de prospection (temps passé) pour simuler la zone d'influence d'une action.",
+        "desc": "Cet indice combine la quantité collectée et le temps passé pour lire l'intensité d'une action.",
         "source": "SOURCE: {src}"
       },
       "map": {
-        "title": "L'Indice de Pollution Terrain (Carte)",
+        "title": "Indice pollution carte",
         "formula": "Score % = ([Poids/20kg] × 65) + ([Mégots/2000] × 35)",
-        "desc": "Utilisé pour colorer la carte interactive, ce score normalise la pollution observée sur une échelle de 0 à 100%. Un score de 100% (Violet) représente une zone nécessitant une intervention d'envergure (ex: 20kg de déchets ou 2000 mégots concentrés). L'interpolation des couleurs (Vert → Jaune → Rouge → Violet) suit une logique de criticité opérationnelle.",
+        "desc": "Ce score normalise la pollution observée sur 100 et alimente la couleur des zones sur la carte.",
         "source": "SOURCE: Algorithme de calibration terrain CleanMyMap v1."
       },
       "roi": {
-        "title": "Économies de voirie pour la ville (ROI)",
+        "title": "Économies de voirie",
         "formula": "Économies (€) = [Poids collecté (kg)] × 1.5€",
-        "desc": "Ce proxy économique estime le coût évité pour les services de voirie municipaux. Sur la base des rapports de coûts de propreté urbaine, la collecte citoyenne permet d'économiser environ 1,50€ par kilogramme retiré (incluant logistique, main d'œuvre urbaine et frais de traitement).",
+        "desc": "Ce proxy estime le coût évité pour les services municipaux à partir du poids collecté.",
         "source": "SOURCE: Estimation basée sur les coûts de propreté urbaine moyens (Moyenne observée : 1500€ / tonne)."
       }
     },
@@ -42,34 +42,34 @@
     }
   },
   "learnHub": {
-    "header_suptitle": "UNIVERSITÉ CLEANMYMAP",
-    "header_title": "Le Hub Éducatif.",
-    "header_desc": "Apprenez, organisez et agissez. Tout ce qu'il faut savoir pour devenir un ambassadeur du changement.",
+    "header_suptitle": "Guide pratique",
+    "header_title": "Apprendre et agir",
+    "header_desc": "Comprendre les enjeux, préparer une action et avancer étape par étape.",
     "tabs": {
       "enjeux": "Enjeux",
-      "usage": "Mode d'Emploi",
-      "events": "Rassemblements",
-      "kit": "Kit Terrain",
-      "waste": "Guide Déchets"
+      "usage": "Mode d'emploi",
+      "events": "Événements",
+      "kit": "Kit terrain",
+      "waste": "Tri et déchets"
     },
     "enjeux": {
-      "title": "Le 7ème Continent.",
-      "desc": "Chaque minute, l'équivalent d'un camion poubelle plastique est jeté dans l'océan. Sur CleanMyMap, nous cartographions cette pollution invisible pour forcer l'action publique.",
+      "title": "Pourquoi agir maintenant",
+      "desc": "Chaque minute, une nouvelle charge de plastique rejoint les milieux naturels. Nous rendons cette pollution visible pour déclencher l'action.",
       "stat1_val": "8M",
       "stat1_label": "Tonnes de plastique / an",
       "stat2_val": "450",
       "stat2_label": "Années de décomposition",
-      "quote": "\"On ne peut protéger que ce que l'on comprend.\""
+      "quote": "\"On protège mieux ce qu'on mesure.\""
     },
     "usage": {
-      "step1_title": "Observez",
-      "step1_desc": "En marchant, signalez un hotspot de pollution via le bouton 'Signalement Express'.",
-      "step2_title": "Agissez",
-      "step2_desc": "Collectez les déchets, seul ou en groupe, et photographiez le résultat.",
-      "step3_title": "Tracez",
-      "step3_desc": "Déclarer votre action pour transformer vos kilos en points d'impact réels.",
-      "step4_title": "Analysez",
-      "step4_desc": "Consultez vos statistiques et téléchargez votre certificat d'impact."
+      "step1_title": "Repérer",
+      "step1_desc": "Signaler un point de pollution depuis le terrain.",
+      "step2_title": "Agir",
+      "step2_desc": "Collecter les déchets et documenter le résultat.",
+      "step3_title": "Déclarer",
+      "step3_desc": "Saisir l'action pour transformer l'effort en impact mesuré.",
+      "step4_title": "Suivre",
+      "step4_desc": "Consulter vos statistiques et votre certificat d'impact."
     },
     "events": {
       "next": "Suivant",
@@ -87,7 +87,7 @@
       "type_size": "{type} • {size}"
     },
     "waste": {
-      "title": "L'Encyclopédie du Tri.",
+      "title": "Repères de tri",
       "cat1_name": "Verre",
       "cat1_info": "Infini recyclable. Toujours sans bouchon.",
       "cat2_name": "Plastique PET",
@@ -99,27 +99,27 @@
     }
   },
   "dashboard": {
-    "title_v2": "Cockpit transversal",
-    "objective_v2": "Orienter la priorisation opérationnelle avec un résumé décisionnel court, puis des analyses ciblées sans doublonner Compare, Climate et Reports.",
-    "section1_sup": "Pilotage metier",
-    "section1_title": "Synthèse comparative N vs N-1",
-    "section1_desc": "Lecture actionnable court terme: impact, qualité, couverture, mobilisation, délai de modération.",
+    "title_v2": "Cockpit de pilotage",
+    "objective_v2": "Résumer l'essentiel, puis détailler les analyses utiles sans répéter les autres pages.",
+    "section1_sup": "Pilotage métier",
+    "section1_title": "Synthèse N vs N-1",
+    "section1_desc": "Impact, qualité, couverture, mobilisation et délai de modération en lecture courte.",
     "section2_sup": "Supervision technique",
-    "section2_title": "Santé plateforme et exports critiques",
+    "section2_title": "Santé des services",
     "section2_desc": "État des services et vérification des exécutions sensibles.",
-    "section_method": "Méthode (KPI clés)",
-    "section3_sup": "Exécution terrain",
+    "section_method": "Méthode KPI",
+    "section3_sup": "Terrain",
     "section3_title": "Formulaire bénévole",
-    "section3_desc": "Déclaration rapide d'action directement depuis la page d'accueil.",
+    "section3_desc": "Déclarer une action directement depuis le point d'entrée principal.",
     "trace_time": "Horodatage:",
     "trace_reliability": "Fiabilité:",
     "trace_good": "moyenne à élevée selon les métriques disponibles",
-    "trace_bad": "faible (données absentes)",
-    "trace_source": "Sources: actions validées, module pilotage overview, métriques dérivées N/N-1.",
-    "trace_method": "Méthode: deltas absolus et relatifs sur fenêtre 30 jours. Périmètre: cockpit transversal.",
-    "btn_reports": "Reporting",
+    "trace_bad": "faible si les données manquent",
+    "trace_source": "Sources: actions validées, overview de pilotage, métriques dérivées.",
+    "trace_method": "Méthode: deltas absolus et relatifs sur 30 jours.",
+    "btn_reports": "Rapports",
     "title_v1": "Tableau de bord",
-    "desc_v1": "Pilotage décisionnel centré sur l'impact terrain, la mobilisation et la fiabilité des données.",
+    "desc_v1": "Suivre l'impact terrain, la mobilisation et la fiabilité des données.",
     "btn_action": "Déclarer",
     "btn_signal": "Signaler",
     "btn_impact": "Impact",

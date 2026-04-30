@@ -7,7 +7,7 @@
 
 ### 1. Transformation Visuelle "Film" & Thème Sombre Douce
 - **Stabilisation Thème Unique** : Abandon du mode clair au profit d'une esthétique "Sombre Douce" (Slate-950, Emerald, Cyan).
-- **Nettoyage Global** : Suppression des résidus `bg-white` et teintes claires sur la Homepage et la page Explorer.
+- **Nettoyage Global** : Suppression des résidus `bg-white` et teintes claires sur la Accueil et la page Explorer.
 - **Documentation** : Création de `documentation/design-system/THEME_SOMBRE_DOUCE.md` comme source de vérité. Mise à jour de `AGENTS.md` et de la charte UI.
 - **Transitions** : Intégration de Framer Motion pour des transitions fluides type "Film".
 
@@ -29,3 +29,4 @@
 - **Dette Lint** : Non-conformité lint globale encore présente.
 - **Complexité Framer Motion** : Veiller à ce que les animations `layoutId` ne créent pas de conflits de rendu sur mobile.
 - **Chemins Documentation** : Risque de liens brisés dans d'autres docs suite à la migration racine (audit des liens à prévoir).
+

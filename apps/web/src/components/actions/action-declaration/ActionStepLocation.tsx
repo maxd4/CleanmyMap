@@ -124,6 +124,7 @@ export function ActionStepLocation({
                 size="sm" 
                 className="h-12 rounded-xl flex-1 font-black uppercase tracking-widest text-[10px]"
                 onClick={onAutofillGps}
+                ariaLabel={gpsStatus === "locating" ? "Localisation en cours" : "Utiliser ma géolocalisation"}
               >
                 <Crosshair size={14} className={cn("mr-2", gpsStatus === "locating" && "animate-spin")} />
                 {gpsStatus === "locating" ? "Localisation..." : "Utiliser ma géolocalisation"}
@@ -139,7 +140,7 @@ export function ActionStepLocation({
                   }
                 >
                   <option value="direct">Direct</option>
-                  <option value="flexible">Souple</option>
+                  <option value="souple">Souple</option>
                 </select>
               </div>
             </div>
@@ -174,7 +175,7 @@ export function ActionStepLocation({
             
             {/* Map Controls Glass Overlay */}
             <div className="absolute bottom-6 right-6 flex flex-col gap-2">
-              <button className="h-12 w-12 rounded-2xl bg-white/90 backdrop-blur-xl shadow-xl border border-white/50 flex items-center justify-center text-slate-600 hover:text-sky-600 transition-colors">
+              <button className="h-12 w-12 rounded-2xl bg-white/90 backdrop-blur-xl shadow-xl border border-white/50 flex items-center justify-center text-slate-600 hover:text-sky-600 transition-colors" aria-label="Ouvrir l'aperçu de la carte">
                 <MapIcon size={20} />
               </button>
             </div>

@@ -2,7 +2,6 @@ import { auth } from"@clerk/nextjs/server";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
 import { SystemStatusPanel } from"@/components/dashboard/system-status-panel";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
-import { getServerLocale } from"@/lib/server-preferences";
 
 export default async function AdminServicesPage() {
  const { userId } = await auth();
@@ -10,15 +9,15 @@ export default async function AdminServicesPage() {
  if (!userId) {
  return (
  <ClerkRequiredGate
- isAuthenticated={false}
- mode="blur"
- title="Supervision des services"
- description="Accès réservé aux administrateurs connectés."
+  isAuthenticated={false}
+  mode="blur"
+  title="Services techniques"
+  description="Accès réservé aux administrateurs connectés."
  lockedPreview={
  <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
- <h2 className="text-xl font-semibold cmm-text-primary">Supervision des services</h2>
+ <h2 className="text-xl font-semibold cmm-text-primary">Services techniques</h2>
  <p className="mt-3 cmm-text-small cmm-text-secondary">
- Connectez-vous avec un compte admin pour afficher l&apos;état des intégrations et des services.
+ Connectez-vous avec un compte admin pour afficher l&apos;état des intégrations et services.
  </p>
  </section>
  }
@@ -37,7 +36,7 @@ export default async function AdminServicesPage() {
  Accès admin requis
  </p>
  <h1 className="mt-2 text-2xl font-semibold text-amber-900">
- Supervision des services réservée aux admins
+ Supervision technique réservée aux admins
  </h1>
  <p className="mt-2 cmm-text-small text-amber-800">
  Vous devez disposer du rôle <span className="font-semibold">admin</span> pour voir cette page.
@@ -55,13 +54,13 @@ export default async function AdminServicesPage() {
  Supervision des intégrations
  </p>
  <h1 className="mt-2 text-3xl font-bold cmm-text-primary">
- Tableau de bord des services
+ Santé des services
  </h1>
  <p className="mt-3 max-w-2xl cmm-text-small leading-6 cmm-text-secondary">
  Visualisez l&apos;état des intégrations critiques, optionnelles et externes de
  CleanMyMap. Les données sont mises à jour en temps réel via l&apos;API
  <code className="rounded bg-slate-100 px-1 py-0.5 cmm-text-caption font-medium cmm-text-secondary">
- /api/services
+  /api/services
  </code>.
  </p>
  </div>

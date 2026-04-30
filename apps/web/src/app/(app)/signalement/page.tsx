@@ -11,7 +11,7 @@ export default async function SignalementPage() {
  <ClerkRequiredGate
  isAuthenticated={false}
  mode="blur"
- title="Signalement express"
+        title="Signalement de terrain"
  description="Cette fonctionnalité nécessite une connexion Clerk."
  lockedPreview={
  <div className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
@@ -35,8 +35,8 @@ export default async function SignalementPage() {
  <div className="w-full space-y-6">
  <DecisionPageHeader
  context="Terrain"
- title="Signalement Express"
- objective="Signaler une zone polluée en 10 secondes. GPS et Photo recommandés."
+        title="Signalement de terrain"
+        objective="Signaler une zone polluée en quelques secondes, avec GPS et photo si possible."
  />
  
  <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden p-6 sm:p-8">

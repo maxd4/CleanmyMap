@@ -10,11 +10,12 @@ import { getSupabaseServerClient } from"@/lib/supabase/server";
 import type { CommunityEventRow, EventRsvpRow } from"@/types/database";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
-import { getRoleBadge, getProfileBadge } from"@/lib/authz";
+import { getCurrentUserIdentity, getRoleBadge, getProfileBadge } from"@/lib/authz";
 import {
  reserveDiscussionMessageSlot,
  toDiscussionRateLimitErrorPayload,
 } from"@/lib/community/discussion-rate-limit";
+import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { getClerkService, type ClerkUserIdentity as OrganizerIdentity } from"@/lib/services/clerk";
 import { 
  extractArrondissementFromLabel, 
@@ -183,6 +184,7 @@ export async function POST(request: Request) {
  if (!userId) {
  return unauthorizedJsonResponse();
  }
+ const identity = await getCurrentUserIdentity();
 
  let payload: unknown;
  try {
@@ -238,6 +240,27 @@ export async function POST(request: Request) {
  { error:"Event creation failed - no data returned" },
  { status: 500 },
  );
+ }
+
+ try {
+ await sendCreatorInboxEmail({
+ subject: `[CleanMyMap] Nouvel événement - ${parsed.data.title}`,
+ title: "Nouvel événement communautaire",
+ intro: "Un événement vient d'être créé dans la file créateur.",
+ lines: [
+ { label:"Organisateur", value: identity?.displayName ?? userId },
+ { label:"Email", value: identity?.email ?? "non communiqué" },
+ { label:"Source", value: "Création d'événement communautaire" },
+ { label:"Titre", value: parsed.data.title },
+ { label:"Date", value: parsed.data.eventDate },
+ { label:"Lieu", value: parsed.data.locationLabel },
+ { label:"Description", value: parsed.data.description ?? "non communiquée" },
+ { label:"Capacité cible", value: String(parsed.data.capacityTarget ?? "non communiquée") },
+ ],
+ footer:"L'événement est également visible dans le flux communautaire.",
+ });
+ } catch (notifError) {
+ console.warn("[Event Notif] Creator inbox failure:", notifError);
  }
 
  // --- Start: In-App Notifications for Local Community ---

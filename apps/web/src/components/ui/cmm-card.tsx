@@ -9,7 +9,7 @@ export type CardTone ="slate" |"emerald" |"sky" |"amber" |"violet" |"rose" |"ind
 export interface CmmCardProps {
  children: ReactNode;
  tone?: CardTone;
- variant?:"default" |"elevated" |"muted" |"outlined";
+ variant?:"default" |"elevated" |"muted" |"outlined" |"glass";
  size?:"sm" |"md" |"lg";
  className?: string;
  header?: ReactNode;
@@ -31,36 +31,37 @@ export interface CmmCardProps {
 }
 
 const toneClasses: Record<CardTone, string> = {
- slate: "border-slate-800/60 bg-slate-900/80 dark:bg-slate-900/90 dark:border-slate-800/80 shadow-slate-950/30",
- emerald: "border-emerald-800/60 bg-emerald-950/40 dark:bg-emerald-950/60 dark:border-emerald-800/80 shadow-emerald-950/40",
- sky: "border-sky-800/60 bg-sky-950/40 dark:bg-sky-950/60 dark:border-sky-800/80 shadow-sky-950/40",
- amber: "border-amber-800/60 bg-amber-950/40 dark:bg-amber-950/60 dark:border-amber-800/80 shadow-amber-950/40",
- violet: "border-violet-800/60 bg-violet-950/40 dark:bg-violet-950/60 dark:border-violet-800/80 shadow-violet-950/40",
- rose: "border-rose-800/60 bg-rose-950/40 dark:bg-rose-950/60 dark:border-rose-800/80 shadow-rose-950/40",
- indigo: "border-indigo-800/60 bg-indigo-950/40 dark:bg-indigo-950/60 dark:border-indigo-800/80 shadow-indigo-950/40",
+ slate: "border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] shadow-[0_14px_32px_-24px_rgba(47,128,195,0.24)]",
+ emerald: "border-emerald-300/35 bg-emerald-500/10 shadow-[0_14px_32px_-24px_rgba(24,182,143,0.22)]",
+ sky: "border-cyan-300/35 bg-cyan-500/10 shadow-[0_14px_32px_-24px_rgba(39,195,217,0.22)]",
+ amber: "border-amber-300/35 bg-amber-500/10 shadow-[0_14px_32px_-24px_rgba(39,195,217,0.18)]",
+ violet: "border-violet-300/35 bg-violet-500/10 shadow-[0_14px_32px_-24px_rgba(91,95,207,0.22)]",
+ rose: "border-rose-300/35 bg-rose-500/10 shadow-[0_14px_32px_-24px_rgba(91,95,207,0.18)]",
+ indigo: "border-indigo-300/35 bg-indigo-500/10 shadow-[0_14px_32px_-24px_rgba(47,128,195,0.20)]",
 };
 
 const toneHeaderClasses: Record<CardTone, string> = {
- slate: "border-white/5 bg-slate-800/40 dark:bg-slate-800/60 dark:border-slate-700/50",
- emerald: "border-emerald-800/30 bg-emerald-900/20 dark:bg-emerald-900/40 dark:border-emerald-700/50",
- sky: "border-sky-800/30 bg-sky-900/20 dark:bg-sky-900/40 dark:border-sky-700/50",
- amber: "border-amber-800/30 bg-amber-900/20 dark:bg-amber-900/40 dark:border-amber-700/50",
- violet: "border-violet-800/30 bg-violet-900/20 dark:bg-violet-900/40 dark:border-violet-700/50",
- rose: "border-rose-800/30 bg-rose-900/20 dark:bg-rose-900/40 dark:border-rose-700/50",
- indigo: "border-indigo-800/30 bg-indigo-900/20 dark:bg-indigo-900/40 dark:border-indigo-700/50",
+ slate: "border-[color:var(--border-default)] bg-[color:var(--bg-muted)]",
+ emerald: "border-emerald-300/22 bg-emerald-500/8",
+ sky: "border-cyan-300/22 bg-cyan-500/8",
+ amber: "border-amber-300/22 bg-amber-500/8",
+ violet: "border-violet-300/22 bg-violet-500/8",
+ rose: "border-rose-300/22 bg-rose-500/8",
+ indigo: "border-indigo-300/22 bg-indigo-500/8",
 };
 
 const variantClasses = {
- default:"shadow-sm",
- elevated:"shadow-md",
- muted:"shadow-none bg-opacity-60",
+ default:"shadow-none",
+ elevated:"shadow-[0_18px_44px_-30px_rgba(47,128,195,0.28),0_10px_24px_-20px_rgba(24,182,143,0.16)]",
+ muted:"shadow-none bg-opacity-70",
  outlined:"shadow-none bg-transparent",
+ glass:"shadow-[0_18px_44px_-30px_rgba(39,195,217,0.22),0_8px_18px_-16px_rgba(91,95,207,0.14)] bg-[color:var(--bg-elevated)]/92 backdrop-blur-sm border-[color:var(--border-strong)]",
 };
 
 const sizeClasses = {
- sm:"rounded-2xl p-4",
- md:"rounded-2xl p-5",
- lg:"rounded-2xl p-6",
+ sm:"rounded-xl p-4",
+ md:"rounded-xl p-5",
+ lg:"rounded-xl p-6",
 };
 
 export function CmmCard({
@@ -118,7 +119,7 @@ export function CmmCard({
   initial={animateEntrance ? { opacity: 0, y: 10 } : false}
   animate={animateEntrance ? { opacity: 1, y: 0 } : false}
   className={cn(
-"overflow-hidden border ring-1 ring-black/5 backdrop-blur-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500",
+"overflow-hidden border ring-1 ring-cyan-500/8 backdrop-blur-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/50",
  toneClasses[tone],
  variantClasses[variant],
  sizeClasses[size],

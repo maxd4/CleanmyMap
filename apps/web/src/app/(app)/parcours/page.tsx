@@ -11,10 +11,10 @@ export default async function ParcoursRootPage() {
  <ClerkRequiredGate
  isAuthenticated={false}
  mode="blur"
- title="Parcours"
+ title="Parcours personnalisé"
  description={
  clerkReachable
- ?"Le parcours personnalisé s&apos;ouvre après connexion au compte Clerk."
+ ?"Connectez-vous pour accéder au parcours associé à votre profil."
  :"Connexion Clerk temporairement indisponible. La vue reste lisible."
  }
  lockedPreview={

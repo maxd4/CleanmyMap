@@ -12,7 +12,8 @@ export type Role =
   | "coordinateur"
   | "scientifique"
   | "elu"
-  | "admin";
+  | "admin"
+  | "max";
 
 // Role de session (inclut l'etat non connecte).
 export type SessionRole = Role | "anonymous";
@@ -54,7 +55,7 @@ export const DOMAIN_GLOSSARY: Record<
   | "effective_access",
   string
 > = {
-  role: "Attribution metier d'un utilisateur (benevole, coordinateur, scientifique, elu, admin).",
+  role: "Attribution metier d'un utilisateur (benevole, coordinateur, scientifique, elu, admin, max / IMU).",
   parcours:
     "Projection UX du role dans la navigation, sans dupliquer les pages.",
   espace:
@@ -75,7 +76,7 @@ export function getEffectiveAccessForSessionRole(
   role: SessionRole,
 ): EffectiveAccess {
   const isAuthenticated = role !== "anonymous";
-  const isAdmin = role === "admin";
+  const isAdmin = role === "admin" || role === "max";
 
   return {
     canAccessProtectedApp: isAuthenticated,
@@ -89,4 +90,8 @@ export function getEffectiveAccessForSessionRole(
     // /api/sandbox/runbook-checks est reserve aux admins.
     canRunSandboxChecksWithoutAuth: false,
   };
+}
+
+export function isAdminLikeRole(role: SessionRole): boolean {
+  return role === "admin" || role === "max";
 }

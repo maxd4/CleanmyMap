@@ -159,7 +159,7 @@ export function ActionsMapCanvas({
             justify-content: center;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
           }
-          html.dark .cmm-infrastructure-marker__inner {
+          html[data-theme="dark"] .cmm-infrastructure-marker__inner {
             background: rgba(15, 23, 42, 0.8);
             border-color: rgba(255, 255, 255, 0.1);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);

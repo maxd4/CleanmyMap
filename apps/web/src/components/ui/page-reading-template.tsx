@@ -2,7 +2,7 @@
 
 import type { ReactNode } from"react";
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
-import { CmmCard, CmmPageShell } from"@/components/ui/cmm-card";
+import { CmmPageShell } from"@/components/ui/cmm-card";
 import { CmmButton, CmmButtonGroup } from"@/components/ui/cmm-button";
 
 type TemplateAction = {
@@ -43,31 +43,31 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
  const isFrench = locale ==="fr";
 
  return (
- <CmmPageShell data-rubrique-report-root>
+ <CmmPageShell className="space-y-8" data-rubrique-report-root>
  {/* Header */}
- <CmmCard tone="slate" variant="elevated" size="lg" className="core-feature">
+ <header className="core-feature border-b border-[color:var(--border-default)] pb-6">
  <div className="[data-display-mode='minimaliste']_&:hidden">
  <SectionLabel>{isFrench ?"Pourquoi je suis ici" :"Why am I here"}</SectionLabel>
  </div>
  <ContextLabel>{props.context}</ContextLabel>
- <h1 className="mt-2 text-2xl font-semibold cmm-text-primary">
+ <h1 className="mt-3 text-3xl font-semibold cmm-text-primary">
  {props.title}
  </h1>
  <p className="mt-2 cmm-text-small cmm-text-secondary font-medium">{props.objective}</p>
- </CmmCard>
+ </header>
 
  {/* Summary */}
- <CmmCard tone="slate" className="[data-display-mode='minimaliste']_&:hidden">
+ <section className="space-y-3 [data-display-mode='minimaliste']_&:hidden">
  <SectionLabel>{isFrench ?"Résumer" :"Summarize"}</SectionLabel>
- <div className="mt-2">{props.summary}</div>
- </CmmCard>
+ <div>{props.summary}</div>
+ </section>
 
  {/* Actions */}
- <CmmCard tone="emerald" className="core-feature">
+ <section className="core-feature border-b border-[color:var(--border-default)] pb-6">
  <div className="[data-display-mode='minimaliste']_&:hidden">
  <SectionLabel>{isFrench ?"Agir" :"Act"}</SectionLabel>
  </div>
- <CmmButtonGroup className="mt-2">
+ <CmmButtonGroup className="mt-3">
  <CmmButton
  href={props.primaryAction.href}
  tone="primary"
@@ -84,19 +84,19 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
  </CmmButton>
  ) : null}
  </CmmButtonGroup>
- </CmmCard>
+ </section>
 
  {/* Analysis */}
- <CmmCard tone="sky">
+ <section className="space-y-3">
  <SectionLabel>{isFrench ?"Analyser" :"Analyze"}</SectionLabel>
- <div className="mt-2 space-y-4">{props.analysis}</div>
- </CmmCard>
+ <div className="space-y-4">{props.analysis}</div>
+ </section>
 
  {/* Trace */}
- <CmmCard tone="amber">
+ <section className="space-y-3">
  <SectionLabel>{isFrench ?"Tracer" :"Trace"}</SectionLabel>
- <div className="mt-2">{props.trace}</div>
- </CmmCard>
+ <div>{props.trace}</div>
+ </section>
  </CmmPageShell>
  );
 }

@@ -24,6 +24,7 @@ npm run dev
 - `npm run test:regression-gates` : Tests de non-régression critiques
 - `npm run checks` : Script global de validation du projet
 - `npm run analyze:heavy-files` : Analyser les fichiers volumineux (modularisation)
+- `npm run screenshots` : Captures d'écran full-page avec Playwright
 
 ## Structure du projet
 - `apps/web/` : Application Next.js (frontend + routes API)
@@ -67,3 +68,33 @@ npm run modularize:report <f>  # Générer un rapport
 
 ## 🔐 Sécurité
 Consultez [SECURITY_GUIDE.md](./documentation/security/SECURITY_GUIDE.md) pour les bonnes pratiques de sécurité et éviter les erreurs courantes (validation d'URL, injection HTML).
+
+## 📸 Captures d'écran
+Génération automatique de captures full-page avec Playwright, organisées par section :
+
+```bash
+# Terminal 1 : Démarrer le serveur local
+npm run dev
+
+# Terminal 2 : Lancer les captures
+npm run screenshots
+```
+
+**Avec URL déployée :**
+```bash
+# Linux/macOS
+BASE_URL=https://mon-site.vercel.app npm run screenshots
+
+# Windows PowerShell
+$env:BASE_URL="https://mon-site.vercel.app"; npm run screenshots
+```
+
+**Organisation des captures :**
+- Pages complètes : `documentation/liberte-UX-UI/10-PAGES-STANDALONE/`
+- Blocs homepage : `documentation/liberte-UX-UI/02-BLOC-HOME/[section]/`
+- Sections spécialisées : `documentation/liberte-UX-UI/[0X-BLOC-NAME]/`
+- **Versions contexte** : `screenshots/` (compatibles VS Code/Codex, ≤ 3000px)
+
+**Formats générés :** 
+- Originaux : desktop + mobile (.desktop.png, .mobile.png)
+- Contexte : versions compressées (.webp, optimisées pour VS Code)

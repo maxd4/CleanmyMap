@@ -1,15 +1,14 @@
 "use client";
 
 
-import { Map as MapIcon, Trees, Waves, Building2, TrainFront, ShoppingBag, Landmark, Calendar, Users, Star, User } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Map as MapIcon, Trees, Waves, Building2, TrainFront, ShoppingBag, Landmark, Calendar, Users, Star, User, type LucideIcon } from "lucide-react";
 
 import { PLACE_TYPE_OPTIONS } from "@/lib/actions/place-type-options";
 import { ASSOCIATION_SELECTION_OPTIONS } from "@/lib/actions/association-options";
 import type { FormState } from "../action-declaration-form.model";
 import { VisualOptionCard } from "./ui/VisualOptionCard";
 
-const PLACE_TYPE_ICONS: Record<string, any> = {
+const PLACE_TYPE_ICONS: Record<string, LucideIcon> = {
   "N° Rue/Allée/Villa/Ruelle/Impasse": MapIcon,
   "Bois/Parc/Jardin/Square/Sentier": Trees,
   "Quai/Pont/Port": Waves,
@@ -29,7 +28,7 @@ const POPULAR_ASSOCIATIONS = new Set([
 
 interface ActionStepIdentityProps {
   form: FormState;
-  updateField: (key: keyof FormState, value: any) => void;
+  updateField: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
   userMetadata: { displayName?: string; username?: string };
 }
 
@@ -56,7 +55,7 @@ export function ActionStepIdentity({ form, updateField, userMetadata }: ActionSt
       <div className="space-y-4">
         <div className="flex items-center gap-3">
           <div className="h-1.5 w-8 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.5)]" />
-          <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">Cadre d'engagement et calendrier</h3>
+          <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">Cadre d&apos;engagement et calendrier</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="relative group">

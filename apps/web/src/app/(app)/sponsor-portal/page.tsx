@@ -50,10 +50,10 @@ export default async function SponsorPortalPage() {
  Gouvernance / sponsors
  </div>
  <h1 className="text-4xl font-bold tracking-tight cmm-text-primary">
- Impact Territorial & ROI.
+ Impact territorial et ROI
  </h1>
  <p className="cmm-text-muted max-w-xl">
- Visualisez la valeur générée par la mobilisation citoyenne pour votre ville et votre stratégie ESG.
+ Suivez la valeur générée par la mobilisation citoyenne pour votre ville et votre stratégie ESG.
  </p>
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
  Fenêtre d&apos;observation: {observationWindowLabel} ({SPONSOR_WINDOW_DAYS} jours glissants)
@@ -61,14 +61,14 @@ export default async function SponsorPortalPage() {
  </div>
  <div className="flex gap-3">
  <button className="flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 cmm-text-small font-bold text-white transition hover:bg-slate-800">
- <Download size={18} /> Export Bilan Annuel
+ <Download size={18} /> Exporter le bilan annuel
  </button>
  </div>
  </header>
 
  <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 cmm-text-small text-amber-900">
- Les KPI ci-dessous agrègent une fenêtre longue pour la lecture stratégique.
- Pour comparer avec des vues 30/90 jours, utilisez le même périmètre temporel.
+ Les KPI ci-dessous couvrent une fenêtre longue pour la lecture stratégique.
+ Pour comparer avec les vues 30/90 jours, gardez le même périmètre temporel.
  </section>
 
  {/* ROI CARDS */}
@@ -110,12 +110,11 @@ export default async function SponsorPortalPage() {
  <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4">
  <div className="flex items-center gap-2 cmm-text-primary font-bold uppercase tracking-widest cmm-text-caption">
  <Info size={16} className="text-amber-500" />
- Réseau observé
+ Réseau suivi
  </div>
  <p className="cmm-text-small cmm-text-secondary leading-relaxed">
- Le portail affiche maintenant un périmètre plus large pour éviter une lecture trop
- promotionnelle du réseau. La fenêtre d&apos;observation couvre deux ans, avec les
- zones les plus actives mises en avant ci-dessous.
+ Le portail affiche un périmètre plus large pour garder une lecture utile du réseau.
+ La fenêtre d&apos;observation couvre deux ans.
  </p>
  <div className="grid sm:grid-cols-3 gap-3 cmm-text-small">
  <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
@@ -135,7 +134,7 @@ export default async function SponsorPortalPage() {
 
  <div className="bg-slate-900 rounded-3xl p-8 text-white space-y-4 relative overflow-hidden">
  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl" />
- <h3 className="text-xl font-bold relative z-10">Zones à suivre</h3>
+ <h3 className="text-xl font-bold relative z-10">Zones prioritaires</h3>
  <ul className="space-y-3 relative z-10">
  {observedZones.length > 0 ? (
  observedZones.map((zone) => (
@@ -163,10 +162,10 @@ export default async function SponsorPortalPage() {
  <div className="bg-white p-8 rounded-3xl border border-slate-200 space-y-6">
  <h3 className="text-xl font-bold flex items-center gap-2">
  <Info className="text-amber-500" size={20} />
- Comment calculons-nous le ROI ?
+ Méthode ROI
  </h3>
  <p className="cmm-text-secondary cmm-text-small leading-relaxed">
- L&apos;économie de voirie est calculée sur la base d&apos;un coût moyen de <strong>1,50€ par kilogramme</strong> de déchet collecté de manière diffuse. Ce montant inclut l&apos;amortissement du matériel, le temps de trajet des équipes municipales et les coûts de traitement optimisés grâce au tri citoyen.
+ L&apos;économie de voirie repose sur un coût moyen de <strong>1,50€ par kilogramme</strong> de déchet collecté. Le calcul intègre le matériel, les trajets et le traitement.
  </p>
  <div className="pt-4 border-t border-slate-100 italic cmm-text-caption cmm-text-muted">
  Note: Ce calcul est un proxy validé par le conseil scientifique CleanMyMap v1.
@@ -183,13 +182,13 @@ export default async function SponsorPortalPage() {
  {/* Call to Active */}
  <div className="bg-slate-900 rounded-3xl p-8 text-white space-y-6 relative overflow-hidden">
  <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl" />
- <h3 className="text-xl font-bold relative z-10">Optimisez l&apos;Engagement.</h3>
+ <h3 className="text-xl font-bold relative z-10">Renforcer l&apos;engagement</h3>
  <p className="cmm-text-muted cmm-text-small leading-relaxed relative z-10">
- Plus la qualité des actions est élevée, plus le ROI pour la collectivité est précis. 
- Encouragez vos citoyens à utiliser le mode"Expert" pour leurs déclarations.
+ Plus la qualité des actions est élevée, plus le ROI est précis.
+ Encouragez l&apos;usage du mode "Expert" pour les déclarations.
  </p>
  <button className="w-full py-4 bg-emerald-600 rounded-2xl font-bold cmm-text-small hover:bg-emerald-700 transition relative z-10">
- Lancer un Challenge de Ville
+ Lancer un challenge local
  </button>
  </div>
  </div>
@@ -203,7 +202,7 @@ export default async function SponsorPortalPage() {
  title="Portail décideur"
  description={
  clerkReachable
- ?"Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
+ ?"La vue reste lisible, mais les actions sont réservées aux comptes connectés."
  :"Connexion Clerk temporairement indisponible. La vue reste lisible, les actions restent désactivées."
  }
  >

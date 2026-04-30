@@ -60,7 +60,7 @@ Voulez-vous que j'implémente ces améliorations ?
 💡 Dette technique détectée
 
 J'ai remarqué que la logique de calcul d'impact est dupliquée dans 3 composants :
-- components/home/home-impact-summary.tsx
+- components/accueil/accueil-impact-summary.tsx
 - components/dashboard/impact-card.tsx
 - components/profil/impact-display.tsx
 
@@ -231,3 +231,5 @@ Voulez-vous que j'applique ce cadrage avant la prochaine modification carte ?
 - Ne pas réintroduire de carte simulée ou de heatmap fictive
 - Désélectionner l’action active si le filtre la fait sortir de la vue
 - Relancer le lint et les tests ciblés de la carte avant de conclure
+
+

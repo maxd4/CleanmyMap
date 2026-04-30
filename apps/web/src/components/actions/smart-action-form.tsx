@@ -34,11 +34,18 @@ const ComplexActionForm = dynamic(() =>
 export function SmartActionForm() {
  const useSimpleForm = useFeatureFlag('useSimpleForm')
  const abTestVariant = useABTest('form-simplification')
+ const fallbackProps = {
+ actorNameOptions: [],
+ defaultActorName: '',
+ userMetadata: {
+ userId: 'anonymous',
+ },
+ }
  
  // Feature flag overrides A/B test
  const shouldUseSimpleForm = useSimpleForm || abTestVariant === 'treatment'
  
- return shouldUseSimpleForm ? <SimpleActionForm /> : <ComplexActionForm />
+ return shouldUseSimpleForm ? <SimpleActionForm /> : <ComplexActionForm {...fallbackProps} />
 }
 
 export default SmartActionForm

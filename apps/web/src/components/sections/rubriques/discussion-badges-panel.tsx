@@ -15,6 +15,7 @@ const ROLE_BADGES = [
  { id:"role_scientifique", label:"Scientifique", icon:"sparkles" },
  { id:"role_elu", label:"Autorité locale", icon:"badge-check" },
  { id:"role_admin", label:"Administration", icon:"shield" },
+ { id:"role_max", label:"IMU", icon:"shield-check" },
 ] as const;
 
 const PROFILE_BADGES = [
@@ -23,6 +24,7 @@ const PROFILE_BADGES = [
  { id:"profile_scientifique", label:"Profil scientifique", icon:"sparkles" },
  { id:"profile_elu", label:"Profil autorité locale", icon:"badge-check" },
  { id:"profile_admin", label:"Profil administration", icon:"shield" },
+ { id:"profile_max", label:"Profil IMU", icon:"shield-check" },
 ] as const;
 
 export function DiscussionBadgesPanel() {

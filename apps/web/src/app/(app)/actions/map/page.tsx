@@ -42,7 +42,7 @@ export default function ActionsMapPage() {
  // Rôle Utilisateur pour CTA dynamique
  const { user } = useUser();
  const isAuthenticated = Boolean(user?.id);
- const role = user?.publicMetadata?.role ||"volunteer";
+ const role = user?.publicMetadata?.role || user?.publicMetadata?.profile || "volunteer";
  const isPublicVisitor = !isAuthenticated;
  
  const [railTab, setRailTab] = useState<"insights" |"journal">("insights");
@@ -239,8 +239,8 @@ export default function ActionsMapPage() {
           <MapPinned size={24} />
         </div>
         <div>
-          <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Cockpit Terrain</h2>
-          <p className="text-xs font-bold text-slate-500">PARAMÉTRAGE DES DONNÉES</p>
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-900">Carte terrain</h2>
+          <p className="text-xs font-bold text-slate-500">Paramètres de lecture</p>
         </div>
       </div>
       <ActionsMapFilterControls
@@ -273,10 +273,10 @@ export default function ActionsMapPage() {
     <div data-rubrique-report-root className="space-y-6">
       <DecisionPageHeader
         context="Profil terrain"
-        title="Cockpit de Pilotage Cartographique"
-        objective="Superviser l'impact terrain, la mobilisation citoyenne et la fiabilité des données en temps réel."
+        title="Carte terrain"
+        objective="Suivre l'impact terrain, la mobilisation et la fiabilité des données en temps réel."
         actions={
-          role === "politician" || role === "admin"
+          role === "politician" || role === "admin" || role === "max"
             ? [
                 { href: "/reports", label: "Générer Rapport", tone: "primary" },
                 { href: "/actions/history", label: "Auditer Qualité" },
@@ -321,8 +321,9 @@ export default function ActionsMapPage() {
 
       {hasEmptyFilteredMap ? (
         <section className="rounded-3xl border border-slate-200 bg-white/80 p-5 text-sm font-semibold text-slate-600 shadow-lg shadow-slate-200/50">
-          Aucun point ne correspond aux filtres actifs. Ajuste la période, le
-          niveau d&apos;impact, la qualité ou les catégories visibles.
+          Aucun point ne correspond à la sélection actuelle. Élargis la
+          période ou assouplis les filtres d&apos;impact, de qualité ou de
+          catégorie pour revoir des points.
         </section>
       ) : null}
 
@@ -466,8 +467,8 @@ export default function ActionsMapPage() {
  </div>
  <div className="rounded-2xl border border-sky-500/20 bg-sky-50/50 dark:bg-sky-950/20 p-5">
  <p className="cmm-text-small text-sky-900 dark:text-sky-100">
- La sandbox complète est maintenant disponible dans la rubrique dédiée du
- bloc Visualiser.
+ La sandbox complète est maintenant disponible dans la rubrique dédiée de la
+ section Visualiser.
  </p>
  <div className="mt-3 flex flex-wrap gap-2">
  <Link

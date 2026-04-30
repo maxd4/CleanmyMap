@@ -3,7 +3,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Globe, Target, Quote, Heart, Zap, ArrowRight } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { cn } from "@/lib/utils";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
 import { ENTITY_LABELS, CONTRIBUTION_LABELS } from "./annuaire-helpers";
 

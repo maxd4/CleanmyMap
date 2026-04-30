@@ -211,9 +211,11 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  })()}
  </article>
  ))}
- {upcomingEvents.length === 0 ? (
+{upcomingEvents.length === 0 ? (
  <p className="cmm-text-small cmm-text-secondary">
- Pas de rendez-vous prévu pour l'instant. Revenez bientôt ou proposez votre propre action !
+ {activeTab ==="upcoming"
+ ? "Aucun événement à venir sur cette vue. Revenez plus tard ou ouvrez l'onglet Passé pour relier une action à un événement clôturé."
+ : "Aucun événement à venir ne correspond à cette vue."}
  </p>
  ) : null}
  </div>
@@ -221,9 +223,9 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
 
  {!eventsLoading && !eventsLoadError && activeTab ==="mine" ? (
  <div className="mt-4 space-y-2">
- {myEvents.length === 0 ? (
+{myEvents.length === 0 ? (
  <p className="cmm-text-small cmm-text-secondary">
- Vous n'avez pas encore d'inscription. Parcourez l'onglet "À venir" pour rejoindre une action.
+ Vous n'avez pas encore d'inscription sur cette période. Ouvrez l'onglet "À venir" pour rejoindre une action disponible.
  </p>
  ) : (
  myEvents.map((event) => (
@@ -339,8 +341,8 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  })()}
  </article>
  ))}
- {pastEvents.length === 0 ? (
- <p className="cmm-text-small cmm-text-secondary">L'historique des événements est vide pour le moment.</p>
+{pastEvents.length === 0 ? (
+ <p className="cmm-text-small cmm-text-secondary">Aucun événement passé n'est encore disponible sur cette période. Les suivis apparaîtront ici une fois les événements clôturés.</p>
  ) : null}
  </div>
  ) : null}

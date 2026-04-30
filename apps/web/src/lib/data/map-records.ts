@@ -1,5 +1,6 @@
 import type { ActionMapItem, ActionStatus } from "@/lib/actions/types";
 import { parseDrawingFromNotes, toGeoJsonString } from "@/lib/actions/drawing";
+import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 import { readAllLocalStores } from "@/lib/data/local-store";
 import { mapLocalStatusToActionStatus } from "@/lib/data/local-records";
 import { allowLocalActionStoreInCurrentRuntime } from "@/lib/persistence/runtime-store";
@@ -58,6 +59,7 @@ function toLocalContract(
     return null;
   }
   const persistedNotes = record.description ?? record.trace?.notes ?? null;
+  const parsedMetadata = extractActionMetadataFromNotes(persistedNotes);
   const parsedNotes = parseDrawingFromNotes(persistedNotes);
 
   return buildActionDataContract({
@@ -75,6 +77,12 @@ function toLocalContract(
     cigaretteButts: Number(record.metrics?.cigaretteButts ?? 0),
     volunteersCount: Number(record.metrics?.volunteersCount ?? 0),
     durationMinutes: Number(record.metrics?.durationMinutes ?? 0),
+    associationName: parsedMetadata.associationName,
+    placeType: parsedMetadata.placeType,
+    departureLocationLabel: parsedMetadata.departureLocationLabel,
+    arrivalLocationLabel: parsedMetadata.arrivalLocationLabel,
+    routeStyle: parsedMetadata.routeStyle,
+    routeAdjustmentMessage: parsedMetadata.routeAdjustmentMessage,
     notes: parsedNotes.cleanNotes,
     notesPlain: parsedNotes.cleanNotes,
     manualDrawing: parsedNotes.manualDrawing,

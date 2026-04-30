@@ -1,7 +1,7 @@
 "use client";
 
 import { useSitePreferences } from"./site-preferences-provider";
-import type { AppProfile } from"@/lib/profiles";
+import { getProfileLabel, type AppProfile } from"@/lib/profiles";
 import { Info, Microscope, Landmark, ShieldAlert, Users, Layers } from"lucide-react";
 
 const PROFILE_CONTEXT_MESSAGES: Record<AppProfile, string> = {
@@ -10,6 +10,7 @@ const PROFILE_CONTEXT_MESSAGES: Record<AppProfile, string> = {
  scientifique:"Console d'analyse avancée axée sur l'intégrité des données et les statistiques.",
  elu:"Portail de gouvernance avec indicateurs de ROI et impact territorial global.",
  admin:"Espace de supervision système et modération critique.",
+ max:"Espace IMU avec arbitrage final et traitement des demandes sensibles.",
 };
 
 const PROFILE_ICONS: Record<AppProfile, any> = {
@@ -18,6 +19,7 @@ const PROFILE_ICONS: Record<AppProfile, any> = {
  scientifique: Microscope,
  elu: Landmark,
  admin: ShieldAlert,
+ max: ShieldAlert,
 };
 
 type IdentityProfileBannerProps = {
@@ -25,7 +27,7 @@ type IdentityProfileBannerProps = {
 };
 
 export function IdentityProfileBanner({ profile }: IdentityProfileBannerProps) {
- const { displayMode } = useSitePreferences();
+ const { displayMode, locale } = useSitePreferences();
  const Icon = PROFILE_ICONS[profile] || Info;
  
  if (displayMode ==="minimaliste") return null;
@@ -44,7 +46,7 @@ export function IdentityProfileBanner({ profile }: IdentityProfileBannerProps) {
  <div className="hidden sm:block text-right">
  <p className="cmm-text-caption font-bold cmm-text-muted uppercase tracking-widest">Type de vue</p>
  <p className="cmm-text-caption font-bold cmm-text-secondary uppercase mt-0.5" style={{ color: 'rgb(var(--profile-primary))' }}>
- {profile} (Optimisé)
+ {getProfileLabel(profile, locale)} (Optimisé)
  </p>
  </div>
  </div>

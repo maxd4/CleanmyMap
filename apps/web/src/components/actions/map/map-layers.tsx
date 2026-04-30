@@ -211,7 +211,7 @@ export function ShapeLayers({
                 dashArray: renderStyle.dashArray,
               }}
             >
-              <Tooltip className="glass-tooltip" direction="center" sticky>
+            <Tooltip className="glass-tooltip" direction="auto" sticky>
                 <GeometryTooltipContent
                   title={`Zone ${Math.round(score)}%`}
                   geometryModeLabel={geometryModeLabel}
@@ -244,7 +244,7 @@ export function ShapeLayers({
               dashArray: renderStyle.dashArray,
             }}
           >
-            <Tooltip className="glass-tooltip" direction="top" sticky>
+            <Tooltip className="glass-tooltip" direction="auto" sticky>
               <GeometryTooltipContent
                 title={`Trace ${Math.round(score)}%`}
                 geometryModeLabel={geometryModeLabel}

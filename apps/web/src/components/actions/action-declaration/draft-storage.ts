@@ -54,7 +54,7 @@ export function hydrateActionDeclarationDraft(fallback: FormState): FormState {
       return fallback;
     }
 
-    const next = { ...fallback };
+    const next = { ...fallback } as Record<keyof FormState, string>;
 
     for (const key of FORM_STATE_KEYS) {
       const value = parsed[key];
@@ -63,7 +63,7 @@ export function hydrateActionDeclarationDraft(fallback: FormState): FormState {
       }
     }
 
-    return next;
+    return next as FormState;
   } catch {
     return fallback;
   }

@@ -23,6 +23,7 @@ import { useSitePreferences } from"@/components/ui/site-preferences-provider";
 import { PlanetaryBoundariesInteractive } from"@/components/learn/planetary-boundaries";
 import { SustainableGoalsInteractive } from"@/components/learn/sustainable-goals";
 import { EnvironmentalQuiz } from"@/components/learn/environmental-quiz";
+import { CognitivePrimer } from"@/components/learn/cognitive-primer";
 import { GIECContent } from"@/components/learn/giac-content";
 
 const locales = {
@@ -54,15 +55,81 @@ const MOCK_EVENTS = [
  }
 ];
 
+const CURIOUSITY_PROMPTS = {
+ "fr": {
+  enjeux: {
+   question: "Quel signal du GIEC montre le plus vite la pression exercée sur le système climatique ?",
+   clue: "Un chiffre court, une preuve claire, puis une action utile à retenir.",
+  },
+  limites: {
+   question: "Quelle limite planétaire bascule en premier dans votre lecture du territoire ?",
+   clue: "Comparer les signaux permet de ne pas rester sur une seule courbe.",
+  },
+  odd: {
+   question: "Quel ODD peut être relié le plus directement à une action du quotidien ?",
+   clue: "Le bon réflexe est souvent celui qui revient le plus facilement demain.",
+  },
+  quiz: {
+   question: "Quelle question mérite d’être revue plutôt que simplement relue ?",
+   clue: "Le mélange des thèmes aide à récupérer la bonne réponse au bon moment.",
+  },
+  usage: {
+   question: "Quelle entrée peut être reprise en moins d’une minute ?",
+   clue: "Une micro-révision suffit pour consolider la suite.",
+  },
+  events: {
+   question: "Quel événement donne le plus vite envie de passer à l’action ?",
+   clue: "La curiosité sociale fonctionne mieux quand la prochaine étape est simple.",
+  },
+  waste: {
+   question: "Quel flux de déchets revient le plus souvent et mérite d’être retenu ?",
+   clue: "Un exemple concret facilite le rappel à la prochaine visite.",
+  },
+ },
+ "en": {
+  enjeux: {
+   question: "Which IPCC signal reveals climate pressure the fastest?",
+   clue: "A short number, a clear proof, then one useful action to remember.",
+  },
+  limites: {
+   question: "Which planetary boundary becomes visible first in your territory reading?",
+   clue: "Comparing signals keeps the picture from collapsing into one chart.",
+  },
+  odd: {
+   question: "Which SDG can be linked most directly to a daily action?",
+   clue: "The best cue is often the one that returns most easily tomorrow.",
+  },
+  quiz: {
+   question: "Which question should be reviewed instead of simply reread?",
+   clue: "Mixing themes helps the right answer come back at the right time.",
+  },
+  usage: {
+   question: "Which entry can be revisited in under a minute?",
+   clue: "A short recap is enough to consolidate the next step.",
+  },
+  events: {
+   question: "Which event makes the next action feel immediate?",
+   clue: "Social curiosity works best when the next step is simple.",
+  },
+  waste: {
+   question: "Which waste stream appears most often and deserves to stick?",
+   clue: "A concrete example makes the next recall easier.",
+  },
+ },
+} as const;
+
 export default function LearnHubPage() {
  const [activeTab, setActiveTab] = useState("enjeux");
  const { t } = useTranslation("learnHub");
  const { locale } = useSitePreferences();
+ const curiosityPrompt =
+  CURIOUSITY_PROMPTS[locale][activeTab as keyof (typeof CURIOUSITY_PROMPTS)[typeof locale]] ??
+  CURIOUSITY_PROMPTS[locale].enjeux;
 
  return (
  <div className="w-full p-4 md:p-8 space-y-8">
  {/* Enhanced Header */}
- <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 p-8 md:p-12 text-white">
+<header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 p-8 md:p-12 text-white">
  {/* Background Pattern */}
  <div className="absolute inset-0 opacity-10">
  <div className="absolute top-4 right-4">
@@ -92,15 +159,43 @@ export default function LearnHubPage() {
  {t("header_desc")}
  </p>
  </div>
- </header>
+</header>
 
- <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-8">
+<CognitivePrimer
+ locale={locale}
+ highlightRubricId={activeTab === "quiz" ? "quiz" : "learn"}
+ className="border-slate-200 bg-white/70"
+/>
+
+<section className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">
+ <div className="flex flex-wrap items-center gap-2">
+  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] cmm-text-secondary">
+   Curiosité
+  </span>
+  <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] cmm-text-secondary">
+   Reprendre demain
+  </span>
+  {activeTab === "quiz" ? (
+   <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] cmm-text-secondary">
+    Questions mélangées
+   </span>
+  ) : null}
+ </div>
+ <h3 className="mt-4 text-xl font-black cmm-text-primary tracking-tight md:text-2xl">
+  {curiosityPrompt.question}
+ </h3>
+ <p className="mt-2 max-w-3xl cmm-text-small cmm-text-secondary">
+  {curiosityPrompt.clue}
+ </p>
+</section>
+
+<Tabs.Root value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-8">
  <Tabs.List className="flex flex-wrap gap-3 border-b border-slate-200 pb-4">
  {[
  { id:"enjeux", label:"Rapports GIEC", icon: FileText, color:"text-blue-600" },
  { id:"limites", label:"Limites Planétaires", icon: Globe, color:"text-red-600" },
  { id:"odd", label:"Objectifs Mondiaux", icon: Target, color:"text-emerald-600" },
- { id:"quiz", label:"Quiz Interactif", icon: Brain, color:"text-purple-600" },
+ { id:"quiz", label:"Quiz", icon: Brain, color:"text-purple-600" },
  { id:"usage", label:"Mode d'Emploi", icon: BookOpen, color:"cmm-text-secondary" },
  { id:"events", label:"Rassemblements", icon: CalendarIcon, color:"text-orange-600" },
  { id:"waste", label:"Guide Déchets", icon: Trash2, color:"cmm-text-secondary" },

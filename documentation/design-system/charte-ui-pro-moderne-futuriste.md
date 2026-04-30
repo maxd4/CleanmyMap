@@ -116,7 +116,7 @@ Rôle : **outil de pilotage** (pas marketing).
 
 ## Pages : patterns recommandés
 
-### Pattern A — “Vitrine premium” (Homepage)
+### Pattern A — “Vitrine premium” (Accueil)
 
 - Background multi-couches (gradient directionnel + glow radial + grain léger).
 - Card glassmorphism contenant titre + slogan en pastille + 2 CTA primaires + 2 secondaires max.
@@ -146,3 +146,4 @@ Rôle : **outil de pilotage** (pas marketing).
 - Stack : Next.js + Tailwind.
 - Ne pas ajouter de dépendance pour suivre cette charte.
 - Préférer des classes Tailwind explicites plutôt que des abstractions prématurées.
+

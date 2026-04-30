@@ -1,6 +1,7 @@
 import type { User } from "@clerk/nextjs/server";
+import { env } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
-import { isAdminRole } from "@/lib/authz";
+import { isAdminRole, isMaxRole } from "@/lib/authz";
 import { resolveProfile } from "@/lib/profiles";
 
 const MAX_HANDLE_LENGTH = 30;
@@ -9,6 +10,18 @@ type ProfileRow = {
   id: string;
   handle: string | null;
 };
+
+function parseUserIds(raw: string | undefined): Set<string> {
+  if (!raw) {
+    return new Set<string>();
+  }
+  return new Set(
+    raw
+      .split(",")
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0),
+  );
+}
 
 function normalizeHandleSegment(value: string): string {
   const normalized = value
@@ -110,15 +123,29 @@ export async function syncClerkUserToSupabase(user: User | null) {
   if (!user) return null;
 
   const supabase = getSupabaseAdminClient();
+  const adminUserIds = parseUserIds(env.CLERK_ADMIN_USER_IDS);
+  const maxUserIds = parseUserIds(env.CLERK_MAX_USER_IDS);
 
   const isAdmin = isAdminRole({
     publicMetadata: user.publicMetadata,
     privateMetadata: user.privateMetadata,
   });
+  const isMax =
+    isMaxRole({
+      publicMetadata: user.publicMetadata,
+      privateMetadata: user.privateMetadata,
+    }) ||
+    (maxUserIds.size > 0
+      ? maxUserIds.has(user.id)
+      : adminUserIds.has(user.id));
 
   const metadataRole =
-    (user.publicMetadata as any)?.role || (user.privateMetadata as any)?.role;
-  const profile = resolveProfile({ metadataRole, isAdmin });
+    (user.publicMetadata as any)?.role ||
+    (user.publicMetadata as any)?.profile ||
+    (user.privateMetadata as any)?.role ||
+    (user.privateMetadata as any)?.profile;
+  const profile = resolveProfile({ metadataRole, isAdmin, isMax });
+  const persistedProfile = profile === "max" ? "imu" : profile;
 
   const firstName = user.firstName?.trim() ?? "";
   const lastName = user.lastName?.trim() ?? "";
@@ -157,7 +184,7 @@ export async function syncClerkUserToSupabase(user: User | null) {
       id: user.id,
       display_name: displayName,
       handle,
-      role_label: profile,
+      role_label: persistedProfile,
       avatar_url: user.imageUrl,
       paris_arrondissement:
         parsedArrondissement &&

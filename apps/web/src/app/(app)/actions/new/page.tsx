@@ -1,6 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
 import { ActionDeclarationForm } from "@/components/actions/action-declaration-form";
-import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { DecisionPageHeader } from "@/components/ui/decision-page-header";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
@@ -14,6 +13,7 @@ import {
   toProfile,
 } from "@/lib/profiles";
 import { getServerLocale } from "@/lib/server-preferences";
+import { CognitiveCueStrip } from "@/components/learn/cognitive-cue-strip";
 
 type NewActionPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -24,12 +24,26 @@ export default async function NewActionPage({
 }: NewActionPageProps) {
   const { userId } = await auth();
   const locale = await getServerLocale();
+  const actionCue =
+    locale === "fr"
+      ? {
+          question: "Quel rappel doit revenir juste avant le formulaire ?",
+          clue:
+            "Un rappel bref suffit pour activer le bon geste avant de déclarer l’action.",
+          actionLabel: "Voir l'historique",
+        }
+      : {
+          question: "Which reminder should return just before the form?",
+          clue:
+            "A short cue is enough to activate the right gesture before submitting the action.",
+          actionLabel: "View history",
+        };
   if (!userId) {
     return (
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
-        title={locale === "fr" ? "Déclarer" : "Declare"}
+        title={locale === "fr" ? "Déclarer une action" : "Declare an action"}
         description={
           locale === "fr"
             ? "Cette fonctionnalité nécessite une connexion Clerk."
@@ -37,6 +51,18 @@ export default async function NewActionPage({
         }
         lockedPreview={
           <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+            <CognitiveCueStrip
+              locale={locale}
+              rubricId="actions"
+              question={actionCue.question}
+              clue={actionCue.clue}
+              chips={[
+                locale === "fr" ? "Feedback immédiat" : "Immediate feedback",
+                locale === "fr" ? "Rappel à revoir" : "Review reminder",
+                locale === "fr" ? "Mini-défi" : "Mini challenge",
+              ]}
+              action={{ href: "/actions/history", label: actionCue.actionLabel }}
+            />
             <div className="grid gap-3 md:grid-cols-3">
               <article className="rounded-2xl border border-slate-200 bg-white p-4">
                 <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
@@ -114,8 +140,8 @@ export default async function NewActionPage({
     return (
       <PageReadingTemplate
         context={`Profil ${getProfileLabel(profile, locale)}`}
-        title="Déclarer"
-        objective="Déclarer une action terrain en 3 étapes : localiser, tracer, valider."
+        title="Déclarer une action"
+        objective="Déclarer une action terrain en trois étapes."
         summary={
           <div className="grid gap-3 md:grid-cols-2">
             <article className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
@@ -143,6 +169,18 @@ export default async function NewActionPage({
         }
         analysis={
           <div className="space-y-8">
+            <CognitiveCueStrip
+              locale={locale}
+              rubricId="actions"
+              question={actionCue.question}
+              clue={actionCue.clue}
+              chips={[
+                locale === "fr" ? "Feedback immédiat" : "Immediate feedback",
+                locale === "fr" ? "Rappel à revoir" : "Review reminder",
+                locale === "fr" ? "Mini-défi" : "Mini challenge",
+              ]}
+              action={{ href: "/actions/history", label: actionCue.actionLabel }}
+            />
             <ActionDeclarationForm
               actorNameOptions={actorNameOptions}
               defaultActorName={actorNameOptions[0]}
@@ -180,12 +218,25 @@ export default async function NewActionPage({
     <div data-rubrique-report-root className="space-y-4">
       <DecisionPageHeader
         context={`Profil ${getProfileLabel(profile, locale)}`}
-        title="Déclarer"
-        objective="Saisir rapidement une action terrain (3 étapes : localiser, tracer, valider)."
+        title="Déclarer une action"
+        objective="Saisir rapidement une action terrain en trois étapes."
         actions={[
           { href: "/actions/map", label: "Carte" },
           { href: "/actions/history", label: "Historique" },
         ]}
+      />
+
+      <CognitiveCueStrip
+        locale={locale}
+        rubricId="actions"
+        question={actionCue.question}
+        clue={actionCue.clue}
+        chips={[
+          locale === "fr" ? "Feedback immédiat" : "Immediate feedback",
+          locale === "fr" ? "Rappel à revoir" : "Review reminder",
+          locale === "fr" ? "Mini-défi" : "Mini challenge",
+        ]}
+        action={{ href: "/actions/history", label: actionCue.actionLabel }}
       />
 
       <ActionDeclarationForm

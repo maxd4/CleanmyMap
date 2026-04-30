@@ -14,7 +14,7 @@ export type AccentElement ="dot" |"bar" |"ring" |"gradient";
 export interface CmmBlockAccentProps {
  /** Accent à utiliser (direct) */
  accent?: BlockAccent;
- /** Bloc pour dériver l'accent (alternative) */
+ /** Section pour dériver l'accent (alternative) */
  blockId?: BlockId;
  /** Type d'élément d'accent */
  element?: AccentElement;
@@ -125,24 +125,24 @@ export function CmmBlockAccent({
  }
 
  // Gradient - gradient subtil (5-10% max)
- if (element ==="gradient") {
- return (
- <span
- className={cn(
-"absolute inset-0 opacity-[0.05]",
-"bg-gradient-to-br",
- accentKey ==="slate" &&"from-slate-400 to-transparent",
- accentKey ==="amber" &&"from-amber-400 to-transparent",
- accentKey ==="sky" &&"from-sky-400 to-transparent",
- accentKey ==="emerald" &&"from-emerald-400 to-transparent",
- accentKey ==="violet" &&"from-violet-400 to-transparent",
- accentKey ==="rose" &&"from-rose-400 to-transparent",
- accentKey ==="indigo" &&"from-indigo-400 to-transparent",
- hoverOnly &&"opacity-0",
- hoverOnly &&"group-hover:opacity-[0.05]",
-"transition-opacity",
- className
- )}
+  if (element ==="gradient") {
+    return (
+      <span
+        className={cn(
+          "absolute inset-0 opacity-[0.05]",
+          "bg-gradient-to-br",
+          accentKey ==="slate" &&"from-[#2F80C3] to-transparent",
+          accentKey ==="amber" &&"from-[#18B68F] to-transparent",
+          accentKey ==="sky" &&"from-[#27C3D9] to-transparent",
+          accentKey ==="emerald" &&"from-[#18B68F] to-transparent",
+          accentKey ==="violet" &&"from-[#5B5FCF] to-transparent",
+          accentKey ==="rose" &&"from-[#4E9A51] to-transparent",
+          accentKey ==="indigo" &&"from-[#5B5FCF] to-transparent",
+          hoverOnly &&"opacity-0",
+          hoverOnly &&"group-hover:opacity-[0.05]",
+          "transition-opacity",
+          className
+        )}
  />
  );
  }

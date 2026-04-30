@@ -19,14 +19,14 @@ export const CHAPTERS: ChapterDef[] = [
  {
  id:"pilotage",
  kicker:"Partie 2",
- title:"Bloc Pilotage",
+ title:"Section Pilotage",
  subtitle:"KPI cœur, qualité de données, modération et priorisation élus.",
  audience:"strategie",
  },
  {
  id:"terrain",
  kicker:"Partie 3",
- title:"Bloc Terrain",
+ title:"Section Terrain",
  subtitle:
 "Traçabilité opérationnelle, itinéraire, tri et couverture cartographique.",
  audience:"terrain",
@@ -34,21 +34,21 @@ export const CHAPTERS: ChapterDef[] = [
  {
  id:"contexte",
  kicker:"Partie 4",
- title:"Bloc Analyse contexte",
+ title:"Section Analyse contexte",
  subtitle:"Climat, météo opérationnelle et benchmark inter-zones.",
  audience:"mixte",
  },
  {
  id:"communaute",
  kicker:"Partie 5",
- title:"Bloc Communauté",
+ title:"Section Communauté",
  subtitle:"Événements, gamification et acteurs engagés.",
  audience:"mixte",
  },
  {
  id:"gouvernance",
  kicker:"Partie 6",
- title:"Bloc Gouvernance",
+ title:"Section Gouvernance",
  subtitle:"Méthodologie, journal de version et cadre d'interprétation.",
  audience:"strategie",
  },

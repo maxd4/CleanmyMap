@@ -1,37 +1,37 @@
 {
   "methodologie": {
-    "header_suptitle": "TRANSFERENCE & SCIENTIFIC CREDIBILITY",
-    "header_title": "Impact Calculation Methodology.",
-    "header_desc": "All our metrics are based on official reports and documented calculation protocols.",
+    "header_suptitle": "Method and data",
+    "header_title": "Impact calculation",
+    "header_desc": "Short, readable metrics based on documented sources.",
     "cards": {
       "water": {
-        "title": "Water preserved from pollution",
+        "title": "Water preserved",
         "formula": "Impact = [Cigarette butts collected] × {val} L",
-        "desc": "A single cigarette butt can pollute up to 500 to 1000 liters of water by releasing heavy metals and microplastics (Source: WHO/Tobacco and its environmental impact, 2017). We use the lower bound ({val}L) to ensure a conservative estimate.",
+        "desc": "A cigarette butt can contaminate 500 to 1000 liters of water. We keep the lower bound to stay conservative.",
         "source": "SOURCE: {src}"
       },
       "co2": {
-        "title": "CO2 Emissions avoided",
+        "title": "Emissions avoided",
         "formula": "Impact = [Waste mass (kg)] × {val} kg CO2eq",
-        "desc": "This factor corresponds to the average emissions avoided by collection and controlled treatment compared to leaving it in nature (fermentation, microplastics). This figure is derived from the ADEME Empreinte database for the standard urban waste mix.",
+        "desc": "The calculation uses the ADEME factor to estimate emissions avoided through collection and controlled treatment.",
         "source": "SOURCE: {src}"
       },
       "surface": {
-        "title": "Operational impact area",
+        "title": "Action area",
         "formula": "Area (m²) = [Mass(kg)] × {valkg} + [Minutes] × {valmin}",
-        "desc": "Unlike direct physical metrics, our area calculation is a \"field penetration\" index. It combines cleaning density (collected weight) and prospecting effort (time spent) to simulate the influence zone of an action.",
+        "desc": "This index combines collected weight and time spent to read how intense an action is.",
         "source": "SOURCE: {src}"
       },
       "map": {
-        "title": "Field Pollution Index (Map)",
+        "title": "Map pollution index",
         "formula": "Score % = ([Weight/20kg] × 65) + ([Butts/2000] × 35)",
-        "desc": "Used to color the interactive map, this score normalizes the observed pollution on a scale of 0 to 100%. A score of 100% (Purple) represents an area requiring a major intervention (e.g., 20kg of waste or 2000 concentrated butts). The color interpolation (Green → Yellow → Red → Purple) follows a logic of operational criticality.",
+        "desc": "This score normalizes observed pollution on a 0 to 100 scale and drives map coloring.",
         "source": "SOURCE: CleanMyMap v1 field calibration algorithm."
       },
       "roi": {
-        "title": "Street-cleaning savings for the city (ROI)",
+        "title": "Street-cleaning savings",
         "formula": "Savings (€) = [Collected weight (kg)] × 1.5€",
-        "desc": "This economic proxy estimates the cost avoided for municipal street-cleaning services. Based on urban cleanliness cost reports, citizen collection saves about €1.50 per kilogram removed (including logistics, urban labor, and treatment costs).",
+        "desc": "This proxy estimates the cost avoided for municipal services from the weight collected.",
         "source": "SOURCE: Estimate based on average urban cleanliness costs (Observed average: €1500 / ton)."
       }
     },
@@ -42,34 +42,34 @@
     }
   },
   "learnHub": {
-    "header_suptitle": "CLEANMYMAP UNIVERSITY",
-    "header_title": "The Educational Hub.",
-    "header_desc": "Learn, organize, and act. Everything you need to know to become an ambassador of change.",
+    "header_suptitle": "Practical guide",
+    "header_title": "Learn and act",
+    "header_desc": "Understand the issues, prepare an action, and move step by step.",
     "tabs": {
-      "enjeux": "Challenges",
-      "usage": "User Guide",
-      "events": "Gatherings",
-      "kit": "Field Kit",
-      "waste": "Waste Guide"
+      "enjeux": "Issues",
+      "usage": "How to",
+      "events": "Events",
+      "kit": "Field kit",
+      "waste": "Sorting"
     },
     "enjeux": {
-      "title": "The 7th Continent.",
-      "desc": "Every minute, the equivalent of a plastic garbage truck is dumped into the ocean. On CleanMyMap, we map this invisible pollution to force public action.",
+      "title": "Why act now",
+      "desc": "Every minute, a new load of plastic reaches natural environments. We make this pollution visible to trigger action.",
       "stat1_val": "8M",
       "stat1_label": "Tons of plastic / year",
       "stat2_val": "450",
       "stat2_label": "Years to decompose",
-      "quote": "\"We can only protect what we understand.\""
+      "quote": "\"We protect better what we measure.\""
     },
     "usage": {
-      "step1_title": "Observe",
-      "step1_desc": "While walking, report a pollution hotspot using the 'Express Report' button.",
+      "step1_title": "Spot",
+      "step1_desc": "Report a pollution point from the field.",
       "step2_title": "Act",
-      "step2_desc": "Collect waste, alone or in a group, and photograph the result.",
-      "step3_title": "Track",
-      "step3_desc": "Declare your action to turn your kilos into real impact points.",
-      "step4_title": "Analyze",
-      "step4_desc": "Check your statistics and download your impact certificate."
+      "step2_desc": "Collect waste and document the result.",
+      "step3_title": "Declare",
+      "step3_desc": "Submit the action to turn effort into measured impact.",
+      "step4_title": "Follow up",
+      "step4_desc": "Review your statistics and impact certificate."
     },
     "events": {
       "next": "Next",
@@ -87,7 +87,7 @@
       "type_size": "{type} • {size}"
     },
     "waste": {
-      "title": "The Recycling Encyclopedia.",
+      "title": "Sorting guide",
       "cat1_name": "Glass",
       "cat1_info": "Infinitely recyclable. Always without caps.",
       "cat2_name": "PET Plastic",
@@ -110,7 +110,7 @@
     "section_method": "Method (Key KPIs)",
     "section3_sup": "Field Execution",
     "section3_title": "Volunteer Form",
-    "section3_desc": "Quick action declaration directly from the home page.",
+    "section3_desc": "Quick action declaration directly from the landing page.",
     "trace_time": "Timestamp:",
     "trace_reliability": "Reliability:",
     "trace_good": "medium to high depending on available metrics",

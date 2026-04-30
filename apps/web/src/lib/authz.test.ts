@@ -14,6 +14,8 @@ describe("authz helpers", () => {
 
   it("extracts normalized role from metadata", () => {
     expect(__authz_testables.extractRole({ role: " Admin " })).toBe("admin");
+    expect(__authz_testables.extractRole({ profile: " Admin " })).toBe("admin");
+    expect(__authz_testables.extractRole({ role: " Max " })).toBe("max");
     expect(__authz_testables.extractRole({ role: 123 })).toBeNull();
     expect(__authz_testables.extractRole(undefined)).toBeNull();
   });
@@ -27,6 +29,24 @@ describe("authz helpers", () => {
   it("accepts admin role from private metadata", () => {
     expect(
       isAdminRole({ publicMetadata: {}, privateMetadata: { role: "admin" } }),
+    ).toBe(true);
+  });
+
+  it("accepts admin role from profile metadata fallback", () => {
+    expect(
+      isAdminRole({
+        publicMetadata: { profile: "admin" },
+        privateMetadata: {},
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts max role as admin-like", () => {
+    expect(
+      isAdminRole({
+        publicMetadata: { role: "max" },
+        privateMetadata: {},
+      }),
     ).toBe(true);
   });
 

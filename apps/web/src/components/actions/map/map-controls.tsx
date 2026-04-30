@@ -81,6 +81,7 @@ export function MapControls({
         <input
           type="text"
           placeholder="Rechercher à Paris et proche banlieue..."
+          aria-label="Rechercher une adresse ou un lieu à Paris et proche banlieue"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-48 px-4 py-2 cmm-text-small outline-none bg-transparent cmm-text-primary placeholder:text-slate-400"
@@ -88,6 +89,7 @@ export function MapControls({
         <button
           type="submit"
           disabled={isSearching}
+          aria-label={isSearching ? "Recherche en cours" : "Lancer la recherche"}
           className="bg-emerald-500 px-4 py-2 cmm-text-small font-bold text-white transition hover:bg-emerald-600 disabled:opacity-50"
         >
           {isSearching ? "..." : "🔍"}
@@ -102,6 +104,7 @@ export function MapControls({
       <button
         type="button"
         onClick={() => map.fitBounds(greaterParisBounds, { padding: [32, 32] })}
+        aria-label="Recentrer sur le périmètre Paris et proche banlieue"
         className="flex w-fit items-center gap-2 rounded-2xl border border-teal-500/20 bg-teal-50/80 px-4 py-2 cmm-text-small font-bold text-teal-700 shadow-xl shadow-teal-950/10 backdrop-blur-xl transition hover:bg-teal-100/90 dark:border-teal-400/20 dark:bg-teal-950/40 dark:text-teal-300 dark:hover:bg-teal-900/60"
       >
         <span>🗺️</span> Périmètre
@@ -110,6 +113,7 @@ export function MapControls({
       <button
         type="button"
         onClick={() => map.flyTo(center, 12)}
+        aria-label="Recentrer la carte"
         className="flex w-fit items-center gap-2 rounded-2xl border cmm-border-color bg-white/80 px-4 py-2 cmm-text-small font-bold cmm-text-secondary shadow-xl shadow-slate-950/10 backdrop-blur-xl transition hover:bg-white/95 hover:cmm-text-primary dark:bg-slate-900/80 dark:hover:bg-slate-900/95"
       >
         <span>📍</span> Reset Vue
@@ -117,6 +121,7 @@ export function MapControls({
 
       <a
         href="/methodologie"
+        aria-label="Ouvrir la méthodologie"
         className="flex w-fit items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-50/80 dark:bg-emerald-950/40 px-4 py-2 cmm-text-small font-bold text-emerald-700 dark:text-emerald-400 shadow-xl shadow-emerald-950/10 backdrop-blur-xl transition hover:bg-emerald-100/90 dark:hover:bg-emerald-900/60"
       >
         <span>🔬</span> Méthodologie

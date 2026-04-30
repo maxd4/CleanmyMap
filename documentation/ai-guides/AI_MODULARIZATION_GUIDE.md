@@ -99,9 +99,9 @@ feature/
 **Output attendu** :
 ```
 Structure cible:
-lib/home/
+lib/accueil/
 ├── config.ts (types + builders + constantes)
-components/home/
+components/accueil/
 ├── index.ts (exports)
 app/
 └── page.tsx (orchestrateur simplifié)
@@ -721,3 +721,4 @@ SI npm run build échoue ALORS
 **Version** : 3.0.0  
 **Dernière mise à jour** : 28/04/2026  
 **Statut** : ✅ Guide modulaire optimisé pour agents IA
+

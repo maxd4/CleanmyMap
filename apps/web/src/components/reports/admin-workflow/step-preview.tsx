@@ -71,13 +71,13 @@ export function StepPreview({ workflow }: StepPreviewProps) {
  </td>
  </tr>
  ))}
- {workflow.previewRows.length === 0 ? (
+{workflow.previewRows.length === 0 ? (
  <tr className="border-t border-slate-100">
  <td className="px-2 py-3 cmm-text-muted" colSpan={6}>
- Aucun element correspondant au filtre.
+ Aucun élément ne correspond au filtre de modération.
  </td>
  </tr>
- ) : null}
+) : null}
  </tbody>
  </table>
  </div>
