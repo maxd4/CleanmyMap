@@ -21,14 +21,19 @@ function main() {
     existsSync(resolve(ROOT, path)),
   );
   const rootLockfile = "package-lock.json";
-  const trackedLockfiles = tracked.filter((path) => path.endsWith("/package-lock.json") || path === rootLockfile);
+  const allowedNestedLockfiles = new Set(["companion-app/package-lock.json"]);
+  const trackedLockfiles = tracked.filter(
+    (path) => path.endsWith("/package-lock.json") || path === rootLockfile,
+  );
 
   if (!tracked.includes(rootLockfile)) {
     console.error("[lockfile-policy] missing root package-lock.json");
     process.exit(1);
   }
 
-  const invalidLockfiles = trackedLockfiles.filter((path) => path !== rootLockfile);
+  const invalidLockfiles = trackedLockfiles.filter(
+    (path) => path !== rootLockfile && !allowedNestedLockfiles.has(path),
+  );
   if (invalidLockfiles.length > 0) {
     console.error("[lockfile-policy] unexpected nested lockfile(s):");
     for (const path of invalidLockfiles) {

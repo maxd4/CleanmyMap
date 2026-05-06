@@ -7,6 +7,16 @@
     "apps/web/src/components/partners/partner-onboarding-form.tsx",
     "apps/web/src/components/learn/sustainable-goals.tsx",
     "apps/web/src/app/(app)/dashboard/page.tsx",
-    "apps/web/src/app/api/reports/elus-dossier/route.ts"
+    "apps/web/src/app/api/reports/elus-dossier/route.ts",
+    "apps/web/src/components/sections/rubriques/recycling-question-assistant.tsx",
+    "apps/web/src/components/chat/chat-shell.tsx",
+    "apps/web/src/components/admin/creator-inbox-panel.tsx",
+    "apps/web/src/components/sections/rubriques/annuaire-directory-seed.ts",
+    "apps/web/src/components/seo/structured-data.tsx",
+    "apps/web/src/lib/sections-registry.ts",
+    "apps/web/src/components/sections/rubriques/feedback-section.tsx",
+    "apps/web/src/app/reports/page.tsx",
+    "apps/web/src/lib/authz.ts",
+    "apps/web/src/app/(app)/actions/map/page.tsx"
   ]
 }
