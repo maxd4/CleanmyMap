@@ -1,7 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { Instagram, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+
+function InstagramMark({
+  className,
+  size = 18,
+}: {
+  className?: string;
+  size?: number;
+}) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
 
 export function HomeFooter() {
   return (
@@ -48,7 +75,7 @@ export function HomeFooter() {
               className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] px-6 py-3.5 transition-all hover:border-pink-500/40 hover:bg-white/10 hover:shadow-lg hover:shadow-pink-500/5"
             >
               <div className="p-2 bg-pink-500/20 rounded-lg group-hover:bg-pink-500/30 transition-colors">
-                <Instagram size={18} className="text-pink-400" />
+                <InstagramMark size={18} className="text-pink-400" />
               </div>
               <span className="cmm-text-small font-bold text-slate-200 group-hover:text-white transition-colors">
                 @cleanmymap.fr
