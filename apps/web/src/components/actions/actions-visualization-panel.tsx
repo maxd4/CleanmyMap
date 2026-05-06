@@ -296,8 +296,11 @@ export function ActionsVisualizationPanel({
             );
           })
         ) : (
-          <div className="py-8 text-center cmm-text-caption cmm-text-muted italic">
-            Aucune donnée de zone
+          <div className="py-8 text-center cmm-text-caption cmm-text-muted">
+            <p className="flex items-center justify-center gap-2">
+              <span>🗺️</span>
+              Aucune donnée de zone
+            </p>
           </div>
         )}
       </div>

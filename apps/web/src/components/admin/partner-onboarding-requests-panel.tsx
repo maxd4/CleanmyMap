@@ -11,7 +11,7 @@ type PartnerOnboardingRequestsPanelProps = {
 };
 
 const STATUS_LABELS: Record<PartnerOnboardingRequestRecord["status"], { fr: string; en: string }> = {
-  pending_admin_review: { fr: "En attente", en: "Pending" },
+  pending_admin_review: { fr: "En attente de validation", en: "Awaiting validation" },
   accepted: { fr: "Acceptée", en: "Accepted" },
   rejected: { fr: "Refusée", en: "Rejected" },
 };

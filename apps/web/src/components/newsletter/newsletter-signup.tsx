@@ -2,18 +2,23 @@
 
 import { useState } from"react";
 import { Send, CheckCircle2, Leaf, Loader2 } from "lucide-react";
+import { ErrorMessage } from"@/components/ui/error-message";
+import { defaultMessageForKind, isAppError, toAppError, type AppError } from"@/lib/errors/app-errors";
+import { notifyNetworkToast } from"@/lib/errors/network-toast";
 
 export function NewsletterSignup() {
  const [email, setEmail] = useState("");
  const [consent, setConsent] = useState(false);
  const [status, setStatus] = useState<"idle" |"loading" |"success" |"error">("idle");
  const [message, setMessage] = useState("");
+ const [error, setError] = useState<AppError | null>(null);
 
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault();
  if (!consent) return;
 
  setStatus("loading");
+ setError(null);
  try {
  const res = await fetch("/api/newsletter/subscribe", {
  method:"POST",
@@ -26,12 +31,36 @@ export function NewsletterSignup() {
  setStatus("success");
  setMessage(data.message);
  } else {
+ const appError = toAppError(
+ new Error(typeof data.error ==="string" ? data.error : "Impossible de vous inscrire pour le moment."),
+ {
+ kind: res.status === 401 || res.status === 403 ? "permission" : res.status >= 500 ? "server" : "validation",
+ message: typeof data.error ==="string" ? data.error : "Impossible de vous inscrire pour le moment.",
+ },
+ );
  setStatus("error");
- setMessage(typeof data.error ==="object" ?"Données invalides" : data.error);
+ setError(appError);
+ setMessage(appError.message);
  }
  } catch (err) {
+ const appError = isAppError(err)
+ ? err
+ : toAppError(err, {
+ kind:"network",
+ message:"Connexion perdue. Nouvelle tentative dans 5 secondes.",
+ });
+ if (appError.kind ==="network") {
+ notifyNetworkToast({
+ message: appError.message || defaultMessageForKind("network"),
+ onRetry: () => window.location.reload(),
+ onRefresh: () => window.location.reload(),
+ });
+ setStatus("idle");
+ return;
+ }
  setStatus("error");
-      setMessage("Impossible de vous inscrire pour le moment. Veuillez vérifier votre adresse email ou réessayer plus tard.");
+ setError(appError);
+ setMessage(appError.message);
  }
  };
 
@@ -109,9 +138,14 @@ export function NewsletterSignup() {
  </span>
  </label>
 
- {status ==="error" && (
- <p className="cmm-text-caption font-bold text-rose-500 animate-in fade-in slide-in-from-top-2">{message}</p>
- )}
+ {status ==="error" && error ? (
+ <ErrorMessage
+ kind={error.kind}
+ title="L'inscription n'a pas pu être finalisée"
+ message={message}
+ actions={<button type="button" onClick={() => window.location.reload()} className="rounded-full bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-700">Réessayer</button>}
+ />
+ ) : null}
  </form>
  </div>
  </div>

@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from"react";
 import * as Tabs from"@radix-ui/react-tabs";
 import {
@@ -39,7 +38,6 @@ const localizer = dateFnsLocalizer({
  locales,
 });
 
-// Mock events for the calendar
 const MOCK_EVENTS = [
  {
  title:"Grande Collecte de Printemps - Paris 14",
@@ -70,19 +68,19 @@ const CURIOUSITY_PROMPTS = {
    clue: "Le bon réflexe est souvent celui qui revient le plus facilement demain.",
   },
   quiz: {
-   question: "Quelle question mérite d’être revue plutôt que simplement relue ?",
+   question: "Quelle question mérite d'être revue plutôt que simplement relue ?",
    clue: "Le mélange des thèmes aide à récupérer la bonne réponse au bon moment.",
   },
   usage: {
-   question: "Quelle entrée peut être reprise en moins d’une minute ?",
+   question: "Quelle entrée peut être reprise en moins d'une minute ?",
    clue: "Une micro-révision suffit pour consolider la suite.",
   },
   events: {
-   question: "Quel événement donne le plus vite envie de passer à l’action ?",
+   question: "Quel événement donne le plus vite envie de passer à l'action ?",
    clue: "La curiosité sociale fonctionne mieux quand la prochaine étape est simple.",
   },
   waste: {
-   question: "Quel flux de déchets revient le plus souvent et mérite d’être retenu ?",
+   question: "Quel flux de déchets revient le plus souvent et mérite d'être retenu ?",
    clue: "Un exemple concret facilite le rappel à la prochaine visite.",
   },
  },
@@ -116,7 +114,7 @@ const CURIOUSITY_PROMPTS = {
    clue: "A concrete example makes the next recall easier.",
   },
  },
-} as const;
+ } as const;
 
 export default function LearnHubPage() {
  const [activeTab, setActiveTab] = useState("enjeux");
@@ -128,9 +126,7 @@ export default function LearnHubPage() {
 
  return (
  <div className="w-full p-4 md:p-8 space-y-8">
- {/* Enhanced Header */}
-<header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 p-8 md:p-12 text-white">
- {/* Background Pattern */}
+ <header className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 via-blue-500 to-purple-600 p-8 md:p-12 text-white">
  <div className="absolute inset-0 opacity-10">
  <div className="absolute top-4 right-4">
  <Sparkles size={120} />
@@ -159,15 +155,15 @@ export default function LearnHubPage() {
  {t("header_desc")}
  </p>
  </div>
-</header>
+ </header>
 
-<CognitivePrimer
- locale={locale}
- highlightRubricId={activeTab === "quiz" ? "quiz" : "learn"}
- className="border-slate-200 bg-white/70"
-/>
+ <CognitivePrimer
+  locale={locale}
+  highlightRubricId={activeTab === "quiz" ? "quiz" : "learn"}
+  className="border-slate-200 bg-white/70"
+ />
 
-<section className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">
+ <section className="rounded-3xl border border-slate-200 bg-white/80 p-5 shadow-sm">
  <div className="flex flex-wrap items-center gap-2">
   <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] cmm-text-secondary">
    Curiosité
@@ -187,9 +183,9 @@ export default function LearnHubPage() {
  <p className="mt-2 max-w-3xl cmm-text-small cmm-text-secondary">
   {curiosityPrompt.clue}
  </p>
-</section>
+ </section>
 
-<Tabs.Root value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-8">
+ <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="flex flex-col gap-8">
  <Tabs.List className="flex flex-wrap gap-3 border-b border-slate-200 pb-4">
  {[
  { id:"enjeux", label:"Rapports GIEC", icon: FileText, color:"text-blue-600" },
@@ -238,27 +234,22 @@ export default function LearnHubPage() {
  </section>
 
  <div className="min-h-[600px]">
- {/* Section: Rapports GIEC */}
  <Tabs.Content value="enjeux" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
  <GIECContent />
  </Tabs.Content>
 
- {/* Section: Limites Planétaires */}
  <Tabs.Content value="limites" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
  <PlanetaryBoundariesInteractive />
  </Tabs.Content>
 
- {/* Section: Objectifs de Développement Durable */}
  <Tabs.Content value="odd" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
  <SustainableGoalsInteractive />
  </Tabs.Content>
 
- {/* Section: Quiz Interactif */}
  <Tabs.Content value="quiz" className="animate-in fade-in slide-in-from-bottom-2 duration-500">
  <EnvironmentalQuiz />
  </Tabs.Content>
 
- {/* Section: Mode d'emploi (Original) */}
  <Tabs.Content value="usage" className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
  <div className="grid gap-4">
  {[
@@ -278,16 +269,15 @@ export default function LearnHubPage() {
  </div>
  </Tabs.Content>
 
- {/* Section: Rassemblements */}
  <Tabs.Content value="events" className="h-[600px] bg-white rounded-3xl p-6 border border-slate-200 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
  <Calendar
- localizer={localizer}
- events={MOCK_EVENTS}
- startAccessor="start"
- endAccessor="end"
- style={{ height:"100%" }}
- culture={locale}
- messages={{
+  localizer={localizer}
+  events={MOCK_EVENTS}
+  startAccessor="start"
+  endAccessor="end"
+  style={{ height:"100%" }}
+  culture={locale}
+  messages={{
  next: t("events.next"),
  previous: t("events.previous"),
  today: t("events.today"),
@@ -298,7 +288,6 @@ export default function LearnHubPage() {
  />
  </Tabs.Content>
 
- {/* Section: Déchets */}
  <Tabs.Content value="waste" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
  <div className="rounded-3xl bg-slate-900 border border-slate-800 p-8 text-white overflow-hidden relative">
  <div className="absolute top-0 right-0 p-8 opacity-10">

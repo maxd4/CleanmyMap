@@ -8,6 +8,10 @@ import {
   type PartnerOnboardingRequestInput,
 } from "./onboarding-types";
 import { appendPublishedPartnerAnnuaireEntry } from "./published-annuaire-entries-store";
+import {
+  deleteSupabaseMirror,
+  upsertSupabaseMirror,
+} from "@/lib/supabase/mirror";
 
 const STORE_FILE = join(
   process.cwd(),
@@ -40,26 +44,26 @@ function emptyStore(): StorePayload {
 export function normalizeStoredPartnerOnboardingRequest(
   record: Record<string, unknown>,
 ): PartnerOnboardingRequestRecord | null {
-  const id = typeof record.id === "string" ? record.id : "";
-  const createdAt = typeof record.createdAt === "string" ? record.createdAt : "";
+  const id = typeof record["id"] === "string" ? record["id"] : "";
+  const createdAt = typeof record["createdAt"] === "string" ? record["createdAt"] : "";
   const submittedByUserId =
-    typeof record.submittedByUserId === "string" ? record.submittedByUserId : "";
+    typeof record["submittedByUserId"] === "string" ? record["submittedByUserId"] : "";
   const submittedByEmail =
-    typeof record.submittedByEmail === "string" && record.submittedByEmail.trim().length > 0
-      ? record.submittedByEmail
+    typeof record["submittedByEmail"] === "string" && record["submittedByEmail"].trim().length > 0
+      ? record["submittedByEmail"]
       : null;
   const status =
-    record.status === "accepted" || record.status === "rejected"
-      ? record.status
+    record["status"] === "accepted" || record["status"] === "rejected"
+      ? record["status"]
       : "pending_admin_review";
   const creatorState =
-    record.creatorState === "pending" ||
-    record.creatorState === "responded" ||
-    record.creatorState === "treated" ||
-    record.creatorState === "archived" ||
-    record.creatorState === "accepted" ||
-    record.creatorState === "rejected"
-      ? record.creatorState
+    record["creatorState"] === "pending" ||
+    record["creatorState"] === "responded" ||
+    record["creatorState"] === "treated" ||
+    record["creatorState"] === "archived" ||
+    record["creatorState"] === "accepted" ||
+    record["creatorState"] === "rejected"
+      ? record["creatorState"]
       : status === "accepted"
         ? "accepted"
         : status === "rejected"
@@ -67,12 +71,13 @@ export function normalizeStoredPartnerOnboardingRequest(
           : "new";
 
   const organizationName =
-    typeof record.organizationName === "string" ? record.organizationName : "";
-  const organizationType = record.organizationType;
+    typeof record["organizationName"] === "string" ? record["organizationName"] : "";
+  const organizationType = record["organizationType"];
   const legalIdentity =
-    typeof record.legalIdentity === "string" ? record.legalIdentity : "";
-  const contributionTypes = Array.isArray(record.contributionTypes)
-    ? record.contributionTypes.filter(
+    typeof record["legalIdentity"] === "string" ? record["legalIdentity"] : "";
+  const rawContributionTypes = record["contributionTypes"];
+  const contributionTypes = Array.isArray(rawContributionTypes)
+    ? rawContributionTypes.filter(
         (item): item is PartnerOnboardingRequestInput["contributionTypes"][number] =>
           item === "materiel" ||
           item === "logistique" ||
@@ -97,8 +102,8 @@ export function normalizeStoredPartnerOnboardingRequest(
     return null;
   }
 
-  const coverage = normalizePartnerCoverage(record.coverage);
-  const availability = normalizePartnerAvailability(record.availability);
+  const coverage = normalizePartnerCoverage(record["coverage"]);
+  const availability = normalizePartnerAvailability(record["availability"]);
 
   return {
     id,
@@ -112,10 +117,10 @@ export function normalizeStoredPartnerOnboardingRequest(
     coverage,
     contributionTypes,
     availability,
-    contactName: typeof record.contactName === "string" ? record.contactName : "",
-    contactChannel: typeof record.contactChannel === "string" ? record.contactChannel : "",
-    contactDetails: typeof record.contactDetails === "string" ? record.contactDetails : "",
-    motivation: typeof record.motivation === "string" ? record.motivation : "",
+    contactName: typeof record["contactName"] === "string" ? record["contactName"] : "",
+    contactChannel: typeof record["contactChannel"] === "string" ? record["contactChannel"] : "",
+    contactDetails: typeof record["contactDetails"] === "string" ? record["contactDetails"] : "",
+    motivation: typeof record["motivation"] === "string" ? record["motivation"] : "",
     creatorState,
   };
 }
@@ -158,6 +163,27 @@ async function writeStore(store: StorePayload): Promise<void> {
   );
 }
 
+function toSupabaseRow(record: PartnerOnboardingRequestRecord): Record<string, unknown> {
+  return {
+    id: record.id,
+    created_at: record.createdAt,
+    submitted_by_user_id: record.submittedByUserId,
+    submitted_by_email: record.submittedByEmail,
+    organization_name: record.organizationName,
+    organization_type: record.organizationType,
+    legal_identity: record.legalIdentity,
+    coverage: record.coverage,
+    contribution_types: record.contributionTypes,
+    availability: record.availability,
+    contact_name: record.contactName,
+    contact_channel: record.contactChannel,
+    contact_details: record.contactDetails,
+    motivation: record.motivation,
+    status: record.status,
+    creator_state: record.creatorState,
+  };
+}
+
 export async function appendPartnerOnboardingRequest(params: {
   submittedByUserId: string;
   submittedByEmail?: string | null;
@@ -178,6 +204,12 @@ export async function appendPartnerOnboardingRequest(params: {
   const store = await readStore();
   const records = [record, ...store.records].slice(0, 2000);
   await writeStore({ updatedAt: new Date().toISOString(), records });
+  await upsertSupabaseMirror(
+    "partner_onboarding_requests",
+    toSupabaseRow(record),
+  ).catch((error) => {
+    console.warn("Partner onboarding Supabase sync failed", error);
+  });
 
   try {
     await appendPublishedPartnerAnnuaireEntry({
@@ -232,6 +264,12 @@ export async function updatePartnerOnboardingRequestStatus(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
+  await upsertSupabaseMirror(
+    "partner_onboarding_requests",
+    toSupabaseRow(updated),
+  ).catch((error) => {
+    console.warn("Partner onboarding Supabase sync failed", error);
+  });
   return updated;
 }
 
@@ -254,6 +292,12 @@ export async function updatePartnerOnboardingRequestCreatorState(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
+  await upsertSupabaseMirror(
+    "partner_onboarding_requests",
+    toSupabaseRow(updated),
+  ).catch((error) => {
+    console.warn("Partner onboarding Supabase sync failed", error);
+  });
   return updated;
 }
 
@@ -267,5 +311,10 @@ export async function deletePartnerOnboardingRequest(
     return false;
   }
   await writeStore({ updatedAt: new Date().toISOString(), records });
+  await deleteSupabaseMirror("partner_onboarding_requests", requestId).catch(
+    (error) => {
+      console.warn("Partner onboarding Supabase delete sync failed", error);
+    },
+  );
   return true;
 }

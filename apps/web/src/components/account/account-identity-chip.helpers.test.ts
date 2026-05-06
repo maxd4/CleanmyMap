@@ -10,7 +10,7 @@ describe("cycleRoleForSelfService", () => {
 });
 
 describe("cycleDisplayMode", () => {
- it("keeps display modes cycling", () => {
- expect(cycleDisplayMode("exhaustif")).toBe("sobre");
- });
+  it("keeps display modes cycling", () => {
+    expect(cycleDisplayMode("exhaustif")).toBe("minimaliste");
+  });
 });

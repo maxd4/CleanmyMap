@@ -26,7 +26,7 @@ const visionEstimate: ActionVisionEstimate = {
 };
 
 describe("buildTrainingExampleInsert", () => {
-  it("serializes the photo-based learning example", () => {
+  it("skips persistence while vision training is paused", () => {
     const insert = buildTrainingExampleInsert({
       actionId: "action-1",
       photos: [photo],
@@ -37,20 +37,7 @@ describe("buildTrainingExampleInsert", () => {
       },
     });
 
-    expect(insert).toEqual(
-      expect.objectContaining({
-        action_id: "action-1",
-        poids_reel: 4.6,
-        poids_estime: 4.2,
-        confiance: 0.84,
-        model_version: "vision-hybrid-v1",
-        status: "labelled",
-      }),
-    );
-    expect(insert?.metadata).toMatchObject({
-      photoCount: 1,
-      placeType: "N° Boulevard/Avenue/Place",
-    });
+    expect(insert).toBeNull();
   });
 
   it("skips examples when no photo is available", () => {

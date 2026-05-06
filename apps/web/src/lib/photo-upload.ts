@@ -1,4 +1,5 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { compressImageFile } from '@/lib/media/image-compression'
 
 export interface PhotoUploadResult {
   url: string
@@ -12,23 +13,26 @@ export class PhotoUploadService {
 
   async uploadPhoto(file: File, actionId: string): Promise<PhotoUploadResult> {
     try {
-      // Validate file
       if (!this.isValidImageFile(file)) {
         return { url: '', path: '', error: 'Format de fichier non supporté' }
       }
 
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      const preparedFile = await compressImageFile(file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.82,
+      })
+
+      if (preparedFile.size > 5 * 1024 * 1024) {
         return { url: '', path: '', error: 'Fichier trop volumineux (max 5MB)' }
       }
 
-      // Generate unique filename
-      const fileExt = file.name.split('.').pop()
+      const fileExt = preparedFile.name.split('.').pop() || 'jpg'
       const fileName = `${actionId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
 
-      // Upload to Supabase Storage
       const { data, error } = await this.supabase.storage
         .from(this.bucket)
-        .upload(fileName, file, {
+        .upload(fileName, preparedFile, {
           cacheControl: '3600',
           upsert: false
         })
@@ -38,7 +42,6 @@ export class PhotoUploadService {
         return { url: '', path: '', error: 'Impossible d\'envoyer la photo. Veuillez vérifier votre connexion et réessayer.' }
       }
 
-      // Get public URL
       const { data: { publicUrl } } = this.supabase.storage
         .from(this.bucket)
         .getPublicUrl(data.path)

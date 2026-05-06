@@ -223,7 +223,8 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-800/50 text-slate-500 mb-4">
                       <Search size={24} />
                     </div>
-                    <p className="cmm-text-caption font-bold uppercase tracking-widest text-slate-500">
+<p className="cmm-text-caption font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2">
+                      <span>🔍</span>
                       {locale === "fr" ? "Aucun résultat pour cette recherche" : "No results for this search"}
                     </p>
                     <p className="mt-1 text-xs text-slate-600">

@@ -1,4 +1,57 @@
 {
+  "nationalStats": {
+    "header_suptitle": "Contexte national",
+    "header_title": "La problématique des déchets abandonnés en France",
+    "header_desc": "Des données clés pour comprendre l'ampleur du problème et l'importance de l'action collective.",
+    "annualToll": {
+      "title": "Tonnage annuel",
+      "value": "1M",
+      "unit": "tonnes",
+      "desc": "de déchets abandonnés chaque année en France métropolitaine",
+      "equivalent": "Soit l'équivalent de 100 Tours Eiffel"
+    },
+    "cost": {
+      "title": "Coût annuel",
+      "value": "1.2Mds",
+      "unit": "€",
+      "desc": "dépensés par les collectivités pour le nettoyage des déchets sauvages"
+    },
+    "perCapita": {
+      "title": "Par habitant",
+      "value": "32",
+      "unit": "kg",
+      "desc": "de déchets abandonnés annuellement par habitant"
+    },
+    "decomposition": {
+      "title": "Temps de décomposition",
+      "value": "450",
+      "unit": "ans",
+      "desc": "pour un plastique classique dans la nature",
+      "note": "Le temps qu'une canette met à disparaître"
+    },
+    "waterImpact": {
+      "title": "Pollution aquatique",
+      "value": "80%",
+      "unit": "",
+      "desc": "des déchets abandonnés finissent dans les cours d'eau et les océans"
+    },
+    "sources": {
+      "label": "Sources",
+      "items": [
+        "ADEME - Rapport Déchets abandonnés 2023",
+        "Ministère de la Transition écologique",
+        "L'Observatoire national des déchets"
+      ]
+    },
+    "cta": {
+      "label": "Voir l'impact de vos actions",
+      "link": "/methodologie"
+    },
+    "quote": {
+      "text": "\"La propreté est l'affaire de tous. Chaque geste compte.\"",
+      "author": "Ministère de la Transition écologique"
+    }
+  },
   "methodologie": {
     "header_suptitle": "Méthode et données",
     "header_title": "Calcul de l'impact",
@@ -42,15 +95,14 @@
     }
   },
   "learnHub": {
-    "header_suptitle": "Guide pratique",
-    "header_title": "Apprendre et agir",
-    "header_desc": "Comprendre les enjeux, préparer une action et avancer étape par étape.",
+    "header_suptitle": "Parcours pédagogique",
+    "header_title": "Comprendre pour agir",
+    "header_desc": "Le hub ouvre quatre pages dédiées pour comprendre le contexte, lire des ordres de grandeur, s'entraîner, adopter de bonnes pratiques et retrouver les ressources utiles. La méthodologie reste séparée.",
     "tabs": {
-      "enjeux": "Enjeux",
-      "usage": "Mode d'emploi",
-      "events": "Événements",
-      "kit": "Kit terrain",
-      "waste": "Tri et déchets"
+      "comprendre": "Comprendre",
+      "sentrainer": "S'entraîner",
+      "bonnesPratiques": "Bonnes pratiques",
+      "ressources": "Ressources"
     },
     "enjeux": {
       "title": "Pourquoi agir maintenant",
@@ -96,6 +148,37 @@
       "cat3_info": "Déchets toxiques. Filière de recyclage spécifique.",
       "cat4_name": "Aluminium",
       "cat4_info": "Canettes. 95% d'énergie économisée au recyclage."
+    },
+    "magnitude": {
+      "eyebrow": "Ordres de grandeur",
+      "title": "Des calculs courts pour comprendre vite",
+      "desc": "Quelques proxies visibles pour estimer l'impact en une minute, puis un lien direct vers la page méthodologie pour la preuve complète.",
+      "cta": "Ouvrir la méthodologie",
+      "note": "Ces repères sont des proxies de décision. La page méthodologie garde la preuve complète.",
+      "water": {
+        "title": "Mégots et eau",
+        "subtitle": "Lire un petit geste en grand",
+        "inputLabel": "Nombre de mégots",
+        "resultLabel": "Eau impactée",
+        "helper": "{count} mégots × {factor} L = {value} L"
+      },
+      "waste": {
+        "title": "Déchets et CO2",
+        "subtitle": "Voir l'impact d'un volume collecté",
+        "inputLabel": "Kg de déchets",
+        "resultLabel": "CO2 évité",
+        "surfaceLabel": "Surface nettoyée",
+        "savingsLabel": "Économie estimée",
+        "formulaLabel": "Repère",
+        "formula": "{waste} kg × {factor} = CO2"
+      },
+      "time": {
+        "title": "Temps bénévole",
+        "subtitle": "Convertir du temps en surface utile",
+        "inputLabel": "Minutes",
+        "resultLabel": "Surface nettoyée",
+        "helper": "{minutes} min × {factor} m² = {value} m²"
+      }
     }
   },
   "dashboard": {
@@ -117,12 +200,12 @@
     "trace_bad": "faible si les données manquent",
     "trace_source": "Sources: actions validées, overview de pilotage, métriques dérivées.",
     "trace_method": "Méthode: deltas absolus et relatifs sur 30 jours.",
-    "btn_reports": "Rapports",
+    "btn_reports": "Voir les rapports",
     "title_v1": "Tableau de bord",
     "desc_v1": "Suivre l'impact terrain, la mobilisation et la fiabilité des données.",
-    "btn_action": "Déclarer",
-    "btn_signal": "Signaler",
-    "btn_impact": "Impact",
-    "btn_eval": "3 VALIDATIONS QA"
+    "btn_action": "Nettoyer maintenant",
+    "btn_signal": "Signaler un lieu sale",
+    "btn_impact": "Mon impact",
+    "btn_eval": "3 validations en attente"
   }
 }

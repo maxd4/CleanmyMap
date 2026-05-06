@@ -1,4 +1,25 @@
+import type { Metadata } from "next";
 import { auth } from "@clerk/nextjs/server";
+
+export const metadata: Metadata = {
+  title: "Déclarer une action - CleanMyMap",
+  description:
+    "Déclarez votre action de nettoyage urbain et累计 votre impact environnemental. Signalez les déchets collectés, calcul automatique CO2 et eau préservée.",
+  keywords: [
+    "déclarer action",
+    "déclaration nettoyage",
+    "signalement déchets",
+    "impact environnemental",
+    "bénévolat propreté",
+    "action citoyenne",
+    "collecte déchets Paris",
+    "écologie",
+    "développement durable",
+  ],
+  alternates: {
+    canonical: "/actions/new",
+  },
+};
 import { ActionDeclarationForm } from "@/components/actions/action-declaration-form";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { DecisionPageHeader } from "@/components/ui/decision-page-header";
@@ -108,25 +129,35 @@ export default async function NewActionPage({
     );
   }
 
-  const identity = await getCurrentUserIdentity();
-  const role = await getCurrentUserRoleLabel();
+  const [identity, role] = await Promise.all([
+    getCurrentUserIdentity(),
+    getCurrentUserRoleLabel(),
+  ]);
   const profile = toProfile(role);
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const params = searchParams ? await searchParams : undefined;
-  const fromEventIdRaw = params?.fromEventId;
+  const fromEventIdRaw = params?.["fromEventId"];
   const fromEventId = Array.isArray(fromEventIdRaw)
     ? fromEventIdRaw[0]
     : fromEventIdRaw;
-  const modeRaw = params?.mode;
+  const modeRaw = params?.["mode"];
   const mode = Array.isArray(modeRaw) ? modeRaw[0] : modeRaw;
   const initialMode = mode === "complete" ? "complete" : "quick";
+  const initialRecordType = mode === "propre" ? "clean_place" : "action";
   const fallbackActorName = userId ?? "unknown-user";
   const actorNameOptions =
     identity?.actorNameOptions && identity.actorNameOptions.length > 0
       ? identity.actorNameOptions
       : [fallbackActorName];
+  const defaultActorName = actorNameOptions[0] ?? fallbackActorName;
+  const primaryActionLink = primaryAction
+    ? { href: primaryAction.href, label: primaryAction.label[locale] }
+    : {
+        href: "/actions/history",
+        label: locale === "fr" ? "Voir l'historique" : "View history",
+      };
 
   // Préparer les métadonnées utilisateur automatiques
   const userMetadata = {
@@ -140,8 +171,12 @@ export default async function NewActionPage({
     return (
       <PageReadingTemplate
         context={`Profil ${getProfileLabel(profile, locale)}`}
-        title="Déclarer une action"
-        objective="Déclarer une action terrain en trois étapes."
+        title={initialRecordType === "clean_place" ? "Déclarer un lieu propre" : "Déclarer une action"}
+        objective={
+          initialRecordType === "clean_place"
+            ? "Déclarer un lieu propre ou une action terrain en trois étapes."
+            : "Déclarer une action terrain en trois étapes."
+        }
         summary={
           <div className="grid gap-3 md:grid-cols-2">
             <article className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
@@ -158,10 +193,7 @@ export default async function NewActionPage({
             </article>
           </div>
         }
-        primaryAction={{
-          href: primaryAction.href,
-          label: primaryAction.label[locale],
-        }}
+        primaryAction={primaryActionLink}
         secondaryAction={
           secondaryAction
             ? { href: secondaryAction.href, label: secondaryAction.label[locale] }
@@ -183,10 +215,11 @@ export default async function NewActionPage({
             />
             <ActionDeclarationForm
               actorNameOptions={actorNameOptions}
-              defaultActorName={actorNameOptions[0]}
+              defaultActorName={defaultActorName}
               userMetadata={userMetadata}
               linkedEventId={fromEventId ?? undefined}
               initialMode={initialMode}
+              initialRecordType={initialRecordType}
             />
             <section className="flex flex-col items-center justify-center border-t border-slate-200 pt-8 pb-4">
               <RubriquePdfExportButton rubriqueTitle="Déclaration de nettoyage" />
@@ -218,8 +251,12 @@ export default async function NewActionPage({
     <div data-rubrique-report-root className="space-y-4">
       <DecisionPageHeader
         context={`Profil ${getProfileLabel(profile, locale)}`}
-        title="Déclarer une action"
-        objective="Saisir rapidement une action terrain en trois étapes."
+        title={initialRecordType === "clean_place" ? "Déclarer un lieu propre" : "Déclarer une action"}
+        objective={
+          initialRecordType === "clean_place"
+            ? "Saisir rapidement un lieu propre ou une action terrain en trois étapes."
+            : "Saisir rapidement une action terrain en trois étapes."
+        }
         actions={[
           { href: "/actions/map", label: "Carte" },
           { href: "/actions/history", label: "Historique" },
@@ -241,10 +278,11 @@ export default async function NewActionPage({
 
       <ActionDeclarationForm
         actorNameOptions={actorNameOptions}
-        defaultActorName={actorNameOptions[0]}
+        defaultActorName={defaultActorName}
         userMetadata={userMetadata}
         linkedEventId={fromEventId ?? undefined}
         initialMode={initialMode}
+        initialRecordType={initialRecordType}
       />
 
       <section className="flex flex-col items-center justify-center border-t border-slate-200 pt-8 pb-4">

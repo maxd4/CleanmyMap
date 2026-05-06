@@ -21,6 +21,7 @@ const ActionDrawingMap = dynamic(
 interface ActionStepLocationProps {
   form: FormState;
   updateField: UpdateFormField;
+  recordType: FormState["recordType"];
   manualDrawing: ActionDrawing | null;
   setManualDrawing: (drawing: ActionDrawing | null) => void;
   routePreviewDrawing: ActionDrawing | null;
@@ -33,6 +34,7 @@ interface ActionStepLocationProps {
 export function ActionStepLocation({
   form,
   updateField,
+  recordType,
   manualDrawing,
   setManualDrawing,
   routePreviewDrawing,
@@ -41,6 +43,7 @@ export function ActionStepLocation({
   gpsMessage,
   onAutofillGps,
 }: ActionStepLocationProps) {
+  const isCleanPlaceMode = recordType === "clean_place";
   const manualDrawingSummary = summarizeActionDrawingValidation(manualDrawing);
   const routePreviewSummary = summarizeActionDrawingValidation(routePreviewDrawing);
   const displayedDrawing =
@@ -87,7 +90,9 @@ export function ActionStepLocation({
         <div className="space-y-6">
           <div className="flex items-center gap-3">
             <div className="h-1.5 w-8 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(14,165,233,0.5)]" />
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">Itinéraire de collecte</h3>
+            <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
+              {isCleanPlaceMode ? "Géolocalisation du lieu propre" : "Itinéraire de collecte"}
+            </h3>
           </div>
 
           <div className="space-y-4">
@@ -97,7 +102,7 @@ export function ActionStepLocation({
               </div>
               <input
                 type="text"
-                placeholder="Départ (ex: Rue de Rivoli)"
+                placeholder={isCleanPlaceMode ? "Lieu propre (ex: Square du quartier)" : "Départ (ex: Rue de Rivoli)"}
                 className="w-full h-16 pl-14 pr-6 rounded-2xl bg-white border border-slate-200 shadow-sm focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-bold text-slate-900"
                 value={form.departureLocationLabel}
                 onChange={(e) => updateField("departureLocationLabel", e.target.value)}
@@ -110,7 +115,7 @@ export function ActionStepLocation({
               </div>
               <input
                 type="text"
-                placeholder="Arrivée (laissez vide si identique au départ)"
+                placeholder={isCleanPlaceMode ? "Complément du lieu (optionnel)" : "Arrivée (laissez vide si identique au départ)"}
                 className="w-full h-16 pl-14 pr-6 rounded-2xl bg-white border border-slate-200 shadow-sm focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-bold text-slate-900"
                 value={form.arrivalLocationLabel}
                 onChange={(e) => updateField("arrivalLocationLabel", e.target.value)}
@@ -118,10 +123,10 @@ export function ActionStepLocation({
             </div>
 
             <div className="flex items-center gap-4 pt-2">
-              <CmmButton 
-                tone={gpsStatus === "success" ? "primary" : "secondary"} 
-                variant="default" 
-                size="sm" 
+              <CmmButton
+                tone={gpsStatus === "success" ? "primary" : "secondary"}
+                variant="default"
+                size="sm"
                 className="h-12 rounded-xl flex-1 font-black uppercase tracking-widest text-[10px]"
                 onClick={onAutofillGps}
                 ariaLabel={gpsStatus === "locating" ? "Localisation en cours" : "Utiliser ma géolocalisation"}
@@ -129,20 +134,22 @@ export function ActionStepLocation({
                 <Crosshair size={14} className={cn("mr-2", gpsStatus === "locating" && "animate-spin")} />
                 {gpsStatus === "locating" ? "Localisation..." : "Utiliser ma géolocalisation"}
               </CmmButton>
-              
-              <div className="flex items-center gap-2 px-4 h-12 rounded-xl bg-slate-100 border border-slate-200">
-                <Route size={14} className="text-slate-400" />
-                <select 
-                  className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest text-slate-700"
-                  value={form.routeStyle}
-                  onChange={(e) =>
-                    updateField("routeStyle", e.target.value as FormState["routeStyle"])
-                  }
-                >
-                  <option value="direct">Direct</option>
-                  <option value="souple">Souple</option>
-                </select>
-              </div>
+
+              {!isCleanPlaceMode ? (
+                <div className="flex items-center gap-2 px-4 h-12 rounded-xl bg-slate-100 border border-slate-200">
+                  <Route size={14} className="text-slate-400" />
+                  <select
+                    className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest text-slate-700"
+                    value={form.routeStyle}
+                    onChange={(e) =>
+                      updateField("routeStyle", e.target.value as FormState["routeStyle"])
+                    }
+                  >
+                    <option value="direct">Direct</option>
+                    <option value="souple">Souple</option>
+                  </select>
+                </div>
+              ) : null}
             </div>
             
             {gpsMessage && (
@@ -158,11 +165,15 @@ export function ActionStepLocation({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="h-1.5 w-8 rounded-full bg-slate-900 shadow-[0_0_12px_rgba(15,23,42,0.3)]" />
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">Tracé Géographique</h3>
+              <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
+                {isCleanPlaceMode ? "Point géographique" : "Tracé Géographique"}
+              </h3>
             </div>
             <div className="flex items-center gap-1 text-[10px] font-black text-slate-400 tracking-widest uppercase">
               <HelpCircle size={12} />
-              Dessinez votre parcours sur la carte Paris + proche banlieue
+              {isCleanPlaceMode
+                ? "Situez le lieu propre sur la carte Paris + proche banlieue"
+                : "Dessinez votre parcours sur la carte Paris + proche banlieue"}
             </div>
           </div>
 
@@ -171,6 +182,7 @@ export function ActionStepLocation({
               drawing={displayedDrawing}
               onDrawingChange={setManualDrawing}
               readOnly={false}
+              isCleanPlace={isCleanPlaceMode}
             />
             
             {/* Map Controls Glass Overlay */}

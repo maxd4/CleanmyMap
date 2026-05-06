@@ -1,53 +1,81 @@
-# Direction UX - Bloc Pages Standalone
+# Direction UX — Pages Standalone
 
 ## Mission
 
-Le bloc Pages Standalone regroupe les pages transverses qui ne doivent pas etre absorbees par une logique de bloc produit. Leur role est d'offrir des points d'entree, de reglage ou de consultation autonomes, avec une UX immediate et auto-suffisante.
+Regrouper les pages transverses qui ne s'inscrivent pas dans un bloc produit. Point d'entrée, réglage ou consultation autonomes — UX immédiate et auto-suffisante.
 
-## Pages existantes
+---
 
-- `Explorer`-> `/explorer`
-- `Accueil` -> `/accueil`
-- `Reglages` -> `/reglages`
+## Routes et fichiers réels
 
-## Theme couleur recommande
+| Page | Route | Fichier | Accès |
+|---|---|---|---|
+| Page publique (vitrine) | `/` | `apps/web/src/app/page.tsx` | Public |
+| Accueil personnel | `/accueil` | `apps/web/src/app/accueil/page.tsx` | Connecté |
+| Explorer | `/explorer` | `apps/web/src/app/explorer/page.tsx` | Public/Semi |
+| Onboarding | `/onboarding` | `apps/web/src/app/onboarding/page.tsx` | Connecté |
+| Mentions légales | `/mentions-legales` | `apps/web/src/app/mentions-legales/` | Public |
+| CGU | `/conditions-generales-utilisation` | `apps/web/src/app/conditions-generales-utilisation/` | Public |
+| Politique cookies | `/politique-cookies` | `apps/web/src/app/politique-cookies/` | Public |
+| Politique confidentialité | `/politique-confidentialite` | `apps/web/src/app/politique-confidentialite/` | Public |
+| Sign-in | `/sign-in` | `apps/web/src/app/sign-in/` | Public |
+| Sign-up | `/sign-up` | `apps/web/src/app/sign-up/` | Public |
 
-- Axe chromatique : bleu-vert institutionnel, cyan doux, teal structurel
-- Role : neutralite premium, lisibilite transverse, point d'entree stable
-- Fond de bloc : `bg-[linear-gradient(180deg,rgba(28,74,95,0.95),rgba(39,85,102,0.98))]`
-- Overlay / glow : `from-cyan-400/12 via-emerald-400/08 to-transparent`
-- Bordure : `border-cyan-200/18`
-- Hover border : `hover:border-cyan-300/34`
-- Surface secondaire : `bg-[rgba(53,107,115,0.84)]`
-- Ombre : `shadow-[0_24px_56px_-32px_rgba(39,195,217,0.20)]`
-- Texte secondaire : `text-white/80`
-- Chips / badges : `bg-cyan-400/12 text-cyan-100 border-cyan-200/16`
-- Regle stricte : aucun blanc ni noir sur les surfaces, bordures, overlays ou ombres. Reserve au texte uniquement.
+> **Note :** L'ancien doc listait `/accueil` et `/reglages`. `/reglages` **n'a pas été trouvée** dans la structure actuelle.
+> La page vitrine `/` est traitée en détail dans `01-ACCUEIL`.
+> `/accueil` est traitée en détail dans `02-BLOC-ACCUEIL`.
 
-## Direction UX
+---
 
-- Chaque page doit pouvoir etre comprise sans contexte fort de bloc.
-- L'accueil porte l'image produit et l'orientation initiale.
-- Les reglages doivent privilegier la clarte fonctionnelle et la reduction de friction.
-- Les pages standalone doivent rester sobres, nettes et tres lisibles.
+## Composants clés identifiés
 
-## Regles d'interface
+- Page vitrine → `apps/web/src/components/accueil/` (HomeHero, HomePillars, etc.)
+- Onboarding → `apps/web/src/app/onboarding/`
+- Sign-in/Sign-up → Clerk (composants external)
 
-- Prioriser une hierarchie simple : intention, action, repere, confirmation.
-- Eviter les compositions trop dependantes d'un contexte de navigation interne.
-- Les actions principales doivent etre visibles rapidement sur desktop comme mobile.
-- Les pages de preference doivent minimiser la charge cognitive et les allers-retours.
+---
 
-## Signaux de reussite
+## Identité visuelle
 
-- L'utilisateur comprend immediatement l'objet de la page.
-- La page peut vivre seule sans perdre en clarte.
-- Les actions principales sont visibles sans exploration excessive.
-- L'identite visuelle reste coherente avec le reste du produit sans se confondre avec un bloc metier.
+Ces pages utilisent des palettes **propres à leur rôle** :
 
-## A eviter
+- `/` (vitrine) : bleu-vert `from-[#1e4a5f] via-[#275566] to-[#376b74]` — voir `01-ACCUEIL`
+- `/accueil` (personnel) : orange/ambre — voir `02-BLOC-ACCUEIL`
+- `/explorer` : à vérifier — plein écran carte
+- Pages légales : fond clair probable (`bg-white` ou `bg-slate-50`) — **exception admise** pour ces pages utilitaires
 
-- recycler mecanquement les codes d'un bloc produit quand la page a un role transversal
-- interfaces trop denses pour des pages d'entree ou de reglage
-- effets decoratifs qui concurrencent la comprehension immediate
-- dependance a un contexte precedent pour comprendre la page
+---
+
+## Rubriques à auditer
+
+| Priorité | Page | Route | Note |
+|---|---|---|---|
+| [CRITIQUE] | Explorer | `/explorer` | Carte plein écran, entrée publique majeure |
+| [HAUTE] | Onboarding | `/onboarding` | Première expérience utilisateur connecté |
+| [HAUTE] | Sign-in / Sign-up | `/sign-in`, `/sign-up` | Friction d'entrée — Clerk, personnalisation limitée |
+| [MOYENNE] | Pages légales | `/mentions-legales`, `/cgu`, etc. | Lisibilité, accessibilité |
+| [BASSE] | Réglages | `/reglages` | **Route non trouvée** — à créer ou confirmer suppression |
+
+---
+
+## Points de dette
+
+- `/reglages` mentionné dans l'ancien doc : **non trouvé** — feature planifiée ou supprimée ?
+- `/explorer` hors layout `(app)/` — authz à vérifier
+- Pages légales : vérifier accessibilité WCAG (contraste, heading hierarchy)
+- Onboarding : vérifier si flux complet ou squelette
+
+---
+
+## Règles d'interface
+
+- Chaque page doit pouvoir être comprise sans contexte fort de bloc
+- Hiérarchie simple : intention → action → repère → confirmation
+- Actions principales visibles rapidement sur desktop comme mobile
+- Pages de préférence : minimiser charge cognitive et allers-retours
+
+## À éviter
+
+- Recycler mécaniquement les codes d'un bloc produit pour une page transversale
+- Interfaces trop denses pour des pages d'entrée ou de réglage
+- Effets décoratifs qui concurrencent la compréhension immédiate

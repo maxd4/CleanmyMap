@@ -1,9 +1,14 @@
 import * as Sentry from "@sentry/nextjs";
+import { isSentryEnabled } from "@/lib/observability/sentry";
 
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  tracesSampleRate: 0.1,
-  enabled: Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN),
-});
+if (isSentryEnabled()) {
+  Sentry.init({
+    dsn: process.env["NEXT_PUBLIC_SENTRY_DSN"],
+    tracesSampleRate: 0.1,
+    enabled: Boolean(process.env["NEXT_PUBLIC_SENTRY_DSN"]),
+  });
+}
 
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+export const onRouterTransitionStart = isSentryEnabled()
+  ? Sentry.captureRouterTransitionStart
+  : () => {};

@@ -3,6 +3,12 @@
 import Link from "next/link";
 import { useMemo, useState, type FormEvent } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { InlineFieldError } from "@/components/ui/inline-field-error";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { PermissionErrorState } from "@/components/ui/permission-error-state";
+import { toAppError, isAppError, defaultMessageForKind } from "@/lib/errors/app-errors";
+import { notifyNetworkToast } from "@/lib/errors/network-toast";
+import type { AppError } from "@/lib/errors/app-errors";
 import type { AppProfile } from "@/lib/profiles";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
@@ -41,21 +47,25 @@ export function PromotionRequestForm({ currentRole }: PromotionRequestFormProps)
   );
   const [motivation, setMotivation] = useState("");
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [error, setError] = useState<AppError | null>(null);
+  const [motivationTouched, setMotivationTouched] = useState(false);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
+  const motivationError =
+    (motivationTouched || submitAttempted) && motivation.trim().length < 10
+      ? (fr
+          ? "La motivation doit contenir au moins 10 caractères."
+          : "The motivation must contain at least 10 characters.")
+      : null;
   const canSubmit = useMemo(
-    () => options.length > 0 && motivation.trim().length >= 10 && submitState !== "submitting",
-    [motivation, options.length, submitState],
+    () => options.length > 0 && !motivationError && submitState !== "submitting",
+    [motivationError, options.length, submitState],
   );
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!canSubmit) {
-      return;
-    }
+  async function submitRequest() {
 
     setSubmitState("submitting");
-    setErrorMessage(null);
+    setError(null);
 
     try {
       const response = await fetch("/api/community/promotion-requests", {
@@ -69,23 +79,57 @@ export function PromotionRequestForm({ currentRole }: PromotionRequestFormProps)
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as
-          | { error?: string }
+          | { error?: string; kind?: string }
           | null;
-        throw new Error(body?.error ?? "Impossible d'envoyer la demande.");
+        throw toAppError(
+          new Error(body?.error ?? "Impossible d'envoyer la demande."),
+          {
+            kind:
+              body?.kind === "validation"
+                ? "validation"
+                : body?.kind === "permission"
+                  ? "permission"
+                  : "server",
+            message: body?.error ?? "Impossible d'envoyer la demande.",
+          },
+        );
       }
 
       setSubmitState("success");
       setMotivation("");
+      setMotivationTouched(false);
+      setSubmitAttempted(false);
+      setError(null);
     } catch (error) {
+      const appError = isAppError(error)
+        ? error
+        : toAppError(error, {
+            kind: "server",
+            message: fr
+              ? "Une erreur inattendue est survenue. Réessayez."
+              : "An unexpected error occurred. Please try again.",
+          });
+      if (appError.kind === "network") {
+        notifyNetworkToast({
+          message: appError.message || defaultMessageForKind("network"),
+          onRetry: () => void submitRequest(),
+          onRefresh: () => window.location.reload(),
+        });
+        setSubmitState("idle");
+        return;
+      }
       setSubmitState("error");
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : fr
-            ? "Une erreur inattendue est survenue."
-            : "An unexpected error occurred.",
-      );
+      setError(appError);
     }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitAttempted(true);
+    if (!canSubmit) {
+      return;
+    }
+    await submitRequest();
   }
 
   if (options.length === 0) {
@@ -148,7 +192,13 @@ export function PromotionRequestForm({ currentRole }: PromotionRequestFormProps)
           </span>
           <textarea
             value={motivation}
-            onChange={(event) => setMotivation(event.target.value)}
+            onChange={(event) => {
+              setMotivationTouched(true);
+              setMotivation(event.target.value);
+              if (error) {
+                setError(null);
+              }
+            }}
             placeholder={
               fr
                 ? "Explique brièvement pourquoi ce niveau est justifié."
@@ -157,6 +207,7 @@ export function PromotionRequestForm({ currentRole }: PromotionRequestFormProps)
             className="min-h-[120px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
             maxLength={1200}
           />
+          {motivationError ? <InlineFieldError message={motivationError} /> : null}
         </label>
 
         <div className="flex items-center justify-between gap-3">
@@ -195,10 +246,30 @@ export function PromotionRequestForm({ currentRole }: PromotionRequestFormProps)
               : "Thanks, the request has been sent to IMU."}
           </p>
         ) : null}
-        {submitState === "error" ? (
-          <p className="cmm-text-caption font-medium text-rose-700">
-            {errorMessage ?? (fr ? "Impossible d'envoyer la demande." : "Unable to send the request.")}
-          </p>
+        {error ? (
+          error.kind === "permission" ? (
+            <PermissionErrorState
+              className="mt-2"
+              title={fr ? "Connexion requise" : "Sign-in required"}
+              message={error.message}
+            />
+          ) : (
+            <ErrorMessage
+              className="mt-2"
+              kind={error.kind}
+              title={fr ? "La demande n'a pas pu partir" : "The request could not be sent"}
+              message={error.message}
+              actions={
+                <button
+                  type="button"
+                  onClick={() => void submitRequest()}
+                  className="rounded-full bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-700"
+                >
+                  {fr ? "Réessayer" : "Retry"}
+                </button>
+              }
+            />
+          )
         ) : null}
       </form>
     </section>

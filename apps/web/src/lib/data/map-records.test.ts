@@ -71,17 +71,22 @@ describe("local action contracts", () => {
     });
 
     expect(contracts).toHaveLength(1);
-    expect(contracts[0].source).toBe("google_sheet");
-    expect(contracts[0].metadata.associationName).toBe("La Brigade Verte Paris");
-    expect(contracts[0].metadata.placeType).toBe(
+    const first = contracts[0];
+    expect(first).toBeDefined();
+    if (!first) {
+      return;
+    }
+    expect(first.source).toBe("google_sheet");
+    expect(first.metadata.associationName).toBe("La Brigade Verte Paris");
+    expect(first.metadata.placeType).toBe(
       "Rue/Allée/Villa/Ruelle/Impasse",
     );
-    expect(contracts[0].metadata.departureLocationLabel).toBe(
+    expect(first.metadata.departureLocationLabel).toBe(
       "Rue Jacques Louvel-Tessier, 75010 Paris",
     );
-    expect(contracts[0].metadata.arrivalLocationLabel).toBe(
+    expect(first.metadata.arrivalLocationLabel).toBe(
       "Rue Marguerite Moret, 75011 Paris",
     );
-    expect(contracts[0].metadata.routeStyle).toBe("souple");
+    expect(first.metadata.routeStyle).toBe("souple");
   });
 });

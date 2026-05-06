@@ -81,7 +81,8 @@ export function useActionDeclarationForm({
       if (!form.actionDate || !form.associationName) return;
     }
     if (currentStep === 2) {
-      if (parseFloat(form.wasteKg) <= 0 && declarationMode === "complete") return;
+      const hasWaste = parseFloat(form.wasteKg) > 0 || parseFloat(form.wasteMegotsKg) > 0;
+      if (!hasWaste && declarationMode === "complete") return;
     }
     setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
     setHasAttemptedSubmit(false);
@@ -128,6 +129,7 @@ export function useActionDeclarationForm({
       computeActionDataQuality({
         form,
         declarationMode,
+        recordType: form.recordType,
         hasLocationProof: form.latitude.trim().length > 0 && form.longitude.trim().length > 0,
         hasDrawingProof: drawingIsValid || Boolean(effectiveRoutePreviewDrawing),
         photoAssets,

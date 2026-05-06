@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { ActionPhotoAsset, ActionVisionEstimate } from"@/lib/actions/types";
 
 type ActionDeclarationPhotoSectionProps = {
@@ -56,10 +57,12 @@ export function ActionDeclarationPhotoSection({
  key={index}
  className="h-20 w-20 overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
  >
- <img
- src={asset.dataUrl}
- alt={`Aperçu de la photo ${index + 1}`}
- className="h-full w-full object-cover"
+<Image
+  src={asset.dataUrl}
+  alt={`Aperçu de la photo ${index + 1}`}
+  width={80}
+  height={80}
+  className="h-full w-full object-cover"
 />
  </div>
  ))}

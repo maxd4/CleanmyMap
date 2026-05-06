@@ -1,8 +1,27 @@
+import type { Metadata } from "next";
 import { auth } from"@clerk/nextjs/server";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
 import { redirect } from"next/navigation";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
 import { getProfileEntryPath, toProfile } from"@/lib/profiles";
+
+export const metadata: Metadata = {
+  title: "Mon Profil - CleanMyMap",
+  description:
+    "Accédez à votre profil CleanMyMap, consultez votre impact environnemental, vos statistiques de bénévolat et votre progression dans la communauté écologie.",
+  keywords: [
+    "profil",
+    "mon compte",
+    "impact environnemental",
+    "statistiques bénévolat",
+    "progression",
+    "communauté CleanMyMap",
+    "écologie",
+  ],
+  alternates: {
+    canonical: "/profil",
+  },
+};
 
 export default async function ProfilRootPage() {
  const { userId } = await auth();
@@ -29,7 +48,7 @@ export default async function ProfilRootPage() {
  Impact
  </p>
  <p className="mt-2 cmm-text-small cmm-text-secondary">
- Carte d'impact et progression personnelle après connexion.
+ Carte d&apos;impact et progression personnelle après connexion.
  </p>
  </article>
  <article className="rounded-2xl border border-slate-200 bg-white p-4">

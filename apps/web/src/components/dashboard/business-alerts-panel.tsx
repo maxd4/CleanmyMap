@@ -194,7 +194,7 @@ export function BusinessAlertsPanel() {
  ))}
 {neighborhoodPlan.length === 0 ? (
  <li className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 cmm-text-secondary">
- Pas assez de données historiques pour bâtir un plan de quartier. Les prochains objectifs s'affineront avec vos sorties à venir.
+ Pas assez de données historiques pour bâtir un plan de quartier. Les prochains objectifs s&apos;affineront avec vos sorties à venir.
  </li>
  ) : null}
  </ul>

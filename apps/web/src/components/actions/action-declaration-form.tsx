@@ -59,6 +59,7 @@ type ActionDeclarationFormProps = {
   };
   linkedEventId?: string;
   initialMode?: "quick" | "complete";
+  initialRecordType?: "action" | "clean_place";
 };
 
 type DeclarationMode = "quick" | "complete";
@@ -70,6 +71,7 @@ export function ActionDeclarationForm({
   userMetadata,
   linkedEventId,
   initialMode = "quick",
+  initialRecordType = "action",
 }: ActionDeclarationFormProps) {
   const resolvedActorOptions = actorNameOptions;
   const resolvedDefaultActorName = resolvedActorOptions.includes(
@@ -79,9 +81,14 @@ export function ActionDeclarationForm({
     : (resolvedActorOptions[0] ?? userMetadata.userId);
 
   const [form, setForm] = useState<FormState>(() =>
-    hydrateActionDeclarationDraft(
-      createInitialFormState(resolvedDefaultActorName),
-    ),
+    (() => {
+      const draft = hydrateActionDeclarationDraft(
+        createInitialFormState(resolvedDefaultActorName, initialRecordType),
+      );
+      return initialRecordType === "clean_place"
+        ? { ...draft, recordType: "clean_place" }
+        : draft;
+    })(),
   );
   const [manualDrawingEnabled] = useState<boolean>(true);
   const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(null);
@@ -100,8 +107,9 @@ export function ActionDeclarationForm({
   const hasTrackedStartRef = useRef<boolean>(false);
 
   // Steps State
+  const isCleanPlaceMode = form.recordType === "clean_place";
+  const totalSteps = isCleanPlaceMode ? 2 : 4;
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const totalSteps = 4;
 
   const nextStep = () => {
     setHasAttemptedSubmit(true);
@@ -109,7 +117,8 @@ export function ActionDeclarationForm({
       if (!form.actionDate || !form.associationName) return;
     }
     if (currentStep === 2) {
-      if (parseFloat(form.wasteKg) <= 0 && declarationMode === "complete") return;
+      const hasWaste = parseFloat(form.wasteKg) > 0 || parseFloat(form.wasteMegotsKg) > 0;
+      if (!hasWaste && declarationMode === "complete" && !isCleanPlaceMode) return;
     }
     setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
     setHasAttemptedSubmit(false);
@@ -120,6 +129,11 @@ export function ActionDeclarationForm({
     setCurrentStep((prev) => Math.max(prev - 1, 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  useEffect(() => {
+    setCurrentStep((prev) => Math.min(prev, totalSteps));
+    setHasAttemptedSubmit(false);
+  }, [totalSteps]);
 
   useEffect(() => {
     if (submissionState !== "success") {
@@ -164,6 +178,7 @@ export function ActionDeclarationForm({
       computeActionDataQuality({
         form,
         declarationMode,
+        recordType: form.recordType,
         hasLocationProof: form.latitude.trim().length > 0 && form.longitude.trim().length > 0,
         hasDrawingProof: hasValidDrawing,
         photoAssets,
@@ -175,6 +190,11 @@ export function ActionDeclarationForm({
   const {
     gpsStatus,
     gpsMessage,
+    heuristicEstimatedWasteKg,
+    estimatedWasteKg,
+    estimatedWasteKgInterval,
+    estimatedWasteKgConfidence,
+    wasteSuggestionSource,
     autofillGps,
   } = useActionDeclarationSmartAssist({
     form,
@@ -257,7 +277,7 @@ export function ActionDeclarationForm({
   async function handleConfirmSubmit() {
     if (submissionState === "pending") return;
 
-    if (declarationMode === "complete" && !hasValidDrawing) {
+    if (declarationMode === "complete" && !hasValidDrawing && !isCleanPlaceMode) {
       setValidationIssues([
         {
           field: "manualDrawing",
@@ -337,18 +357,31 @@ export function ActionDeclarationForm({
           </div>
 
           <div className="relative flex justify-between items-center z-10 pt-2">
-            {[
-              { id: 1, label: "Identité", icon: User },
-              { id: 2, label: "Récolte", icon: Scale },
-              { id: 3, label: "Parcours", icon: RouteIcon },
-              { id: 4, label: "Validation", icon: ClipboardCheck },
-            ].map((step) => {
+            {(
+              isCleanPlaceMode
+                ? [
+                    { id: 1, label: "Identité", icon: User },
+                    { id: 2, label: "Lieu propre", icon: ClipboardCheck },
+                  ]
+                : [
+                    { id: 1, label: "Identité", icon: User },
+                    { id: 2, label: "Récolte", icon: Scale },
+                    { id: 3, label: "Parcours", icon: RouteIcon },
+                    { id: 4, label: "Validation", icon: ClipboardCheck },
+                  ]
+            ).map((step) => {
               const Icon = step.icon;
               const isPast = currentStep > step.id;
               const isCurrent = currentStep === step.id;
 
               return (
-                <div key={step.id} className="flex flex-col items-center gap-2 group relative z-10 w-1/4">
+                <div
+                  key={step.id}
+                  className={cn(
+                    "flex flex-col items-center gap-2 group relative z-10",
+                    isCleanPlaceMode ? "w-1/2" : "w-1/4",
+                  )}
+                >
                   <div className={cn(
                     "h-10 w-10 md:h-12 md:w-12 rounded-2xl flex items-center justify-center transition-all duration-500 relative z-10",
                     isPast ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20" :
@@ -383,37 +416,69 @@ export function ActionDeclarationForm({
               </span>
             </div>
             <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
-              {currentStep === 1 && "Qui a mené cette action ?"}
-              {currentStep === 2 && "Bilan de la récolte"}
-              {currentStep === 3 && "Géolocalisation du parcours"}
-              {currentStep === 4 && "Vérification et envoi"}
+              {currentStep === 1 && (isCleanPlaceMode ? "Qui a déclaré ce lieu propre ?" : "Qui a mené cette action ?")}
+              {currentStep === 2 && (isCleanPlaceMode ? "Lieu propre et localisation" : "Déchets et mégots")}
+              {!isCleanPlaceMode && currentStep === 3 && "Géolocalisation du parcours"}
+              {!isCleanPlaceMode && currentStep === 4 && "Vérification et envoi"}
             </h2>
             <p className="mt-2 text-slate-500 font-medium">
-              {currentStep === 1 && "Identifiez la structure ou le bénévole pour valoriser votre engagement local."}
-              {currentStep === 2 && "Indiquez les volumes collectés. Ces données permettent de mesurer l'impact environnemental sur le territoire."}
-              {currentStep === 3 && "Tracez ou localisez votre itinéraire. Cela permet de cartographier précisément les zones traitées."}
-              {currentStep === 4 && "Vérifiez vos informations avant de valider officiellement votre déclaration."}
+              {currentStep === 1 && (isCleanPlaceMode ? "Choisissez le mode de déclaration pour un lieu propre ou une action terrain." : "Identifiez la structure ou le bénévole pour valoriser votre engagement local." )}
+              {currentStep === 2 && (isCleanPlaceMode ? "Ajoute le lieu, une photo et un court contexte. La validation finale arrive juste après." : "Remplissez d'abord les déchets collectés puis la déclaration des mégots. Les comparaisons par bénévole sont intégrées directement dans chaque carte.")}
+              {!isCleanPlaceMode && currentStep === 3 && "Tracez ou localisez votre itinéraire. Cela permet de cartographier précisément les zones traitées."}
+              {!isCleanPlaceMode && currentStep === 4 && "Vérifiez vos informations avant de valider officiellement votre déclaration."}
             </p>
           </div>
 
           <div className="flex-1 relative z-10">
-            {currentStep === 1 && <ActionStepIdentity form={form} updateField={updateField} userMetadata={userMetadata} />}
-            {currentStep === 2 && (
-              <ActionStepHarvest
-                form={form} updateField={updateField} photoAssets={photoAssets}
-                visionEstimate={visionEstimate} visionStatus={visionStatus}
-                onPhotoUpload={handlePhotoUpload} onClearPhotos={clearPhotos}
+            {currentStep === 1 && (
+              <ActionStepIdentity
+                form={form}
+                updateField={updateField}
+                userMetadata={userMetadata}
+                recordType={form.recordType}
               />
             )}
-      {currentStep === 3 && (
+            {currentStep === 2 && (
+              <div className="space-y-6">
+                <ActionStepHarvest
+                  form={form}
+                  updateField={updateField}
+                  recordType={form.recordType}
+                  photoAssets={photoAssets}
+                  visionEstimate={visionEstimate}
+                  visionStatus={visionStatus}
+                  heuristicEstimatedWasteKg={heuristicEstimatedWasteKg}
+                  estimatedWasteKg={estimatedWasteKg}
+                  estimatedWasteKgInterval={estimatedWasteKgInterval}
+                  estimatedWasteKgConfidence={estimatedWasteKgConfidence}
+                  wasteSuggestionSource={wasteSuggestionSource}
+                  onPhotoUpload={handlePhotoUpload}
+                  onClearPhotos={clearPhotos}
+                />
+                <ActionStepLocation
+                  form={form}
+                  updateField={updateField}
+                  manualDrawing={manualDrawing}
+                  setManualDrawing={setManualDrawing}
+                  routePreviewDrawing={effectiveRoutePreviewDrawing}
+                  onResetManualDrawing={() => setManualDrawing(null)}
+                  gpsStatus={gpsStatus}
+                  gpsMessage={gpsMessage}
+                  onAutofillGps={autofillGps}
+                  recordType={form.recordType}
+                />
+              </div>
+            )}
+            {!isCleanPlaceMode && currentStep === 3 && (
               <ActionStepLocation
                 form={form} updateField={updateField} manualDrawing={manualDrawing}
                 setManualDrawing={setManualDrawing} routePreviewDrawing={effectiveRoutePreviewDrawing}
                 onResetManualDrawing={() => setManualDrawing(null)}
                 gpsStatus={gpsStatus} gpsMessage={gpsMessage} onAutofillGps={autofillGps}
+                recordType={form.recordType}
               />
             )}
-            {currentStep === 4 && (
+            {!isCleanPlaceMode && currentStep === 4 && (
               <ActionStepReview
                 payload={payload} dataQuality={dataQuality}
                 isSubmitting={submissionState === "pending"} onSubmit={() => onSubmit()}
@@ -421,7 +486,7 @@ export function ActionDeclarationForm({
             )}
           </div>
 
-          {currentStep < 4 && (
+          {(currentStep < totalSteps || (isCleanPlaceMode && currentStep === totalSteps)) && (
             <div className="mt-8 sticky bottom-0 z-20 -mx-6 -mb-6 md:-mx-10 md:-mb-10 p-6 md:p-8 bg-white/80 backdrop-blur-md border-t border-slate-100 flex items-center justify-between">
               <CmmButton
                 variant="ghost"
@@ -433,11 +498,11 @@ export function ActionDeclarationForm({
               <CmmButton
                 tone="primary"
                 className="h-12 md:h-14 px-8 md:px-10 rounded-2xl font-bold text-sm md:text-base shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5"
-                onClick={nextStep}
+                onClick={isCleanPlaceMode && currentStep === totalSteps ? () => onSubmit() : nextStep}
               >
                 {currentStep === 1 && "Continuer"}
-                {currentStep === 2 && "Continuer"}
-                {currentStep === 3 && "Vérifier"}
+                {currentStep === 2 && (isCleanPlaceMode ? "Vérifier" : "Continuer")}
+                {!isCleanPlaceMode && currentStep === 3 && "Vérifier"}
                 <ChevronRight size={18} className="ml-2" />
               </CmmButton>
             </div>

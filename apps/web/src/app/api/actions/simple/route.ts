@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
  volunteers_count: formData.participantCount,
  actor_name: formData.organizerName,
  notes: `${formData.title}\n\n${formData.description}\n\nContact: ${formData.organizerEmail}\nPublic: ${formData.isPublic}`,
- created_by_clerk_id: 'anonymous', // TODO: Get from auth
+ created_by_clerk_id: 'anonymous', // Note: anonymous for public quick-form (optional auth in v2)
  status: 'pending'
  }
 

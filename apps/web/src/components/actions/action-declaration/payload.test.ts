@@ -86,9 +86,26 @@ describe("action declaration payload helpers", () => {
  expect(payload.manualDrawing).toEqual(drawing);
  expect(payload.wasteBreakdown).toBeDefined();
  expect(payload.routeStyle).toBe("souple");
- expect(payload.routeAdjustmentMessage).toBe("Éviter l'avenue principale");
+    expect(payload.routeAdjustmentMessage).toBe("Éviter l'avenue principale");
     expect(payload.notes).toContain("Collecte de test");
     expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
+  });
+
+  it("preserves the declaration mode in the payload", () => {
+    const form = buildBaseForm();
+    form.recordType = "clean_place";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "quick",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.recordType).toBe("clean_place");
   });
 
   it("normalizes duplicate drawing points before building the payload", () => {
@@ -123,7 +140,7 @@ describe("action declaration payload helpers", () => {
     expect(payload.longitude).toBeCloseTo(2.355, 6);
   });
 
- it("builds quick mode payload without geo/breakdown and with butts reset", () => {
+  it("builds quick mode payload without geo and keeps megots data available", () => {
  const form = buildBaseForm();
  form.departureLocationLabel ="Place des Vosges";
  form.arrivalLocationLabel ="";
@@ -146,7 +163,9 @@ describe("action declaration payload helpers", () => {
  expect(payload.arrivalLocationLabel).toBeUndefined();
  expect(payload.cigaretteButts).toBe(0);
  expect(payload.durationMinutes).toBe(0);
- expect(payload.wasteBreakdown).toBeUndefined();
+ expect(payload.wasteBreakdown).toBeDefined();
+ expect(payload.wasteBreakdown?.megotsKg).toBe(1.5);
+ expect(payload.wasteBreakdown?.megotsCondition).toBe("propre");
  expect(payload.notes).toContain("Collecte de test");
  expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
  });

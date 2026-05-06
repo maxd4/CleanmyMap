@@ -34,8 +34,8 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
     const l: { id: string; x1: number; y1: number; x2: number; y2: number }[] = [];
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
-        const n1 = nodes[i];
-        const n2 = nodes[j];
+        const n1 = nodes[i]!;
+        const n2 = nodes[j]!;
         
         // Share a tag?
         const sharedTags = n1.tags?.filter((t: string) => n2.tags?.includes(t)) || [];
@@ -121,66 +121,70 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
         {/* Nodes */}
         <g className="nodes">
           <AnimatePresence>
-            {nodes.map((node) => (
-              <motion.g
-                key={node.id}
-                layout
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 100, damping: 15 }}
-                className="cursor-pointer group"
-                onClick={() => onSelectPartner(node)}
-              >
-                {/* Outer Glow Halo */}
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r="1.8"
-                  className={cn("opacity-0 group-hover:opacity-40 transition-opacity duration-500", getColorClass(node.types[0]))}
-                  filter="url(#glow)"
-                />
-                
-                {/* Main Node Circle */}
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r="1.2"
-                  className={cn("transition-all duration-500 stroke-[0.2]", getColorClass(node.types[0]))}
-                />
+            {nodes.map((node) => {
+              const primaryType = node.types?.[0] ?? "autre";
 
-                {/* Internal Dot */}
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r="0.4"
-                  fill="white"
-                  className="opacity-50 group-hover:opacity-100 transition-opacity"
-                />
-
-                {/* Label */}
-                <foreignObject
-                  x={node.x + 1.8}
-                  y={node.y - 1.5}
-                  width="20"
-                  height="10"
-                  className="pointer-events-none overflow-visible"
+              return (
+                <motion.g
+                  key={node.id}
+                  layout
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  transition={{ type: "spring", stiffness: 100, damping: 15 }}
+                  className="cursor-pointer group"
+                  onClick={() => onSelectPartner(node)}
                 >
-                  <div className="flex flex-col">
-                    <span className="text-[1.8px] font-black tracking-widest text-white/90 uppercase whitespace-nowrap drop-shadow-md">
-                      {node.name}
-                    </span>
-                    <span className={cn("text-[1.2px] font-bold opacity-0 group-hover:opacity-70 transition-opacity uppercase tracking-tighter", 
-                      node.types[0] === 'environnemental' ? 'text-emerald-400' :
-                      node.types[0] === 'social' ? 'text-sky-400' :
-                      node.types[0] === 'humanitaire' ? 'text-rose-400' : 'text-violet-400'
-                    )}>
-                      {node.location}
-                    </span>
-                  </div>
-                </foreignObject>
-              </motion.g>
-            ))}
+                  {/* Outer Glow Halo */}
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r="1.8"
+                    className={cn("opacity-0 group-hover:opacity-40 transition-opacity duration-500", getColorClass(primaryType))}
+                    filter="url(#glow)"
+                  />
+                  
+                  {/* Main Node Circle */}
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r="1.2"
+                    className={cn("transition-all duration-500 stroke-[0.2]", getColorClass(primaryType))}
+                  />
+
+                  {/* Internal Dot */}
+                  <circle
+                    cx={node.x}
+                    cy={node.y}
+                    r="0.4"
+                    fill="white"
+                    className="opacity-50 group-hover:opacity-100 transition-opacity"
+                  />
+
+                  {/* Label */}
+                  <foreignObject
+                    x={node.x + 1.8}
+                    y={node.y - 1.5}
+                    width="20"
+                    height="10"
+                    className="pointer-events-none overflow-visible"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-[1.8px] font-black tracking-widest text-white/90 uppercase whitespace-nowrap drop-shadow-md">
+                        {node.name}
+                      </span>
+                      <span className={cn("text-[1.2px] font-bold opacity-0 group-hover:opacity-70 transition-opacity uppercase tracking-tighter", 
+                        primaryType === "environnemental" ? "text-emerald-400" :
+                        primaryType === "social" ? "text-sky-400" :
+                        primaryType === "humanitaire" ? "text-rose-400" : "text-violet-400"
+                      )}>
+                        {node.location}
+                      </span>
+                    </div>
+                  </foreignObject>
+                </motion.g>
+              );
+            })}
           </AnimatePresence>
         </g>
       </svg>

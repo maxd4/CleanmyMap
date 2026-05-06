@@ -4,6 +4,7 @@ import { useMemo } from"react";
 import useSWR from"swr";
 import { fetchActions, fetchMapActions } from"@/lib/actions/http";
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
+import { RecyclingQuestionAssistant } from "./recycling-question-assistant";
 
 
 export function RecyclingSection() {
@@ -72,6 +73,7 @@ export function RecyclingSection() {
 
  return (
  <div className="space-y-4">
+ <RecyclingQuestionAssistant />
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
  {/* GAUCHE : KPIs et Workflow */}
  <div className="space-y-4">

@@ -26,22 +26,24 @@ export const metadata: Metadata = {
 };
 
 async function loadPublicStats() {
- const supabase = getSupabaseServerClient();
- const overview = await loadPilotageOverview({
- supabase,
- periodDays: 365, // Vue annuelle pour l'observatoire
- limit: 2000,
- });
- 
- const { items: contracts } = await fetchUnifiedActionContracts(supabase, {
- limit: 1000,
- status:"approved",
- floorDate: null,
- requireCoordinates: false,
- types: null,
- });
+  const supabase = getSupabaseServerClient();
+  
+  const [overview, contractsResult] = await Promise.all([
+    loadPilotageOverview({
+      supabase,
+      periodDays: 365, // Vue annuelle pour l'observatoire
+      limit: 2000,
+    }),
+    fetchUnifiedActionContracts(supabase, {
+      limit: 1000,
+      status:"approved",
+      floorDate: null,
+      requireCoordinates: false,
+      types: null,
+    }),
+  ]);
 
- return { overview, contracts };
+  return { overview, contracts: contractsResult.items };
 }
 
 export default async function ObservatoirePage() {

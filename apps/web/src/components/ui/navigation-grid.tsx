@@ -4,9 +4,6 @@ import Link from "next/link";
 import {
   ArrowRight,
   PlusCircle,
-  AlertTriangle,
-  Map,
-  BarChart3,
   ShieldCheck,
   Search,
   UserPlus,

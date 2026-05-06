@@ -19,9 +19,14 @@ function median(values: number[], fallback: number): number {
  const sorted = [...values].sort((a, b) => a - b);
  const mid = Math.floor(sorted.length / 2);
  if (sorted.length % 2 === 0) {
- return Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+ const left = sorted[mid - 1];
+ const right = sorted[mid];
+ return left !== undefined && right !== undefined
+ ? Math.round((left + right) / 2)
+ : fallback;
  }
- return Math.round(sorted[mid]);
+ const value = sorted[mid];
+ return value !== undefined ? Math.round(value) : fallback;
 }
 
 export async function GET() {
@@ -60,10 +65,11 @@ export async function GET() {
  (associationCounts.get(normalizedAssociation) ?? 0) + 1,
  );
  }
- if (Number.isFinite(item.volunteers_count) && item.volunteers_count > 0) {
+ if (typeof item.volunteers_count === "number" && Number.isFinite(item.volunteers_count) && item.volunteers_count > 0) {
  volunteersSamples.push(item.volunteers_count);
  }
  if (
+ typeof item.duration_minutes === "number" &&
  Number.isFinite(item.duration_minutes) &&
  item.duration_minutes >= 0
  ) {
@@ -76,12 +82,13 @@ export async function GET() {
  const preferredAssociation =
  [...associationCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
  ASSOCIATION_SELECTION_OPTIONS[0];
+ const firstAction = recent[0];
 
  return NextResponse.json({
  status:"ok",
  prefill: {
  actionDate: new Date().toISOString().slice(0, 10),
- actorName: identity?.displayName ?? recent[0]?.actor_name ?? userId,
+ actorName: identity?.displayName ?? firstAction?.actor_name ?? userId,
  associationName: preferredAssociation,
  locationLabel: preferredLocation,
  volunteersCount: median(volunteersSamples, 1),

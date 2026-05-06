@@ -13,6 +13,7 @@ import {
 } from "@/lib/actions/derived-geometry";
 import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
+import { computeButtsCount } from "@/lib/actions/impact-calculators";
 import {
   buildTrainingExampleInsert,
   recordTrainingExample,
@@ -46,6 +47,23 @@ function buildPersistedNotes(payload: CreateActionPayload): string | null {
   return base
     ? `${base}\n${DRAWING_NOTE_PREFIX}${drawingJson}`
     : `${DRAWING_NOTE_PREFIX}${drawingJson}`;
+}
+
+export function resolvePersistedCigaretteButts(
+  payload: CreateActionPayload,
+): number {
+  const megotsKg = payload.wasteBreakdown?.megotsKg ?? null;
+  const megotsCondition = payload.wasteBreakdown?.megotsCondition ?? "propre";
+
+  if (typeof megotsKg === "number" && Number.isFinite(megotsKg) && megotsKg > 0) {
+    return computeButtsCount(megotsKg, megotsCondition);
+  }
+
+  if (typeof payload.cigaretteButtsCount === "number" && Number.isFinite(payload.cigaretteButtsCount)) {
+    return Math.max(0, Math.trunc(payload.cigaretteButtsCount));
+  }
+
+  return Math.max(0, Math.trunc(payload.cigaretteButts));
 }
 
 export async function fetchActions(
@@ -166,7 +184,7 @@ export async function createAction(
       geometry_confidence: persistedGeometry.confidence,
       geometry_source: persistedGeometry.geometrySource,
       waste_kg: payload.wasteKg,
-      cigarette_butts: payload.cigaretteButts,
+      cigarette_butts: resolvePersistedCigaretteButts(payload),
       volunteers_count: payload.volunteersCount,
       duration_minutes: payload.durationMinutes,
       notes: buildPersistedNotes({
@@ -182,19 +200,28 @@ export async function createAction(
     throw inserted.error;
   }
 
-  const trainingExample = buildTrainingExampleInsert({
-    actionId: String(inserted.data.id),
-    photos: payload.photos ?? null,
-    realWeightKg: payload.wasteKg ?? null,
-    visionEstimate: payload.visionEstimate ?? null,
-    metadata: {
-      departureLocationLabel: payload.departureLocationLabel ?? null,
-      arrivalLocationLabel: payload.arrivalLocationLabel ?? null,
-      placeType: payload.placeType ?? null,
-      submissionMode: payload.submissionMode ?? null,
-    },
-  });
-  await recordTrainingExample(supabase, trainingExample);
+  const actionId = inserted.data.id;
 
-  return { id: String(inserted.data.id) };
+  try {
+    const trainingExample = buildTrainingExampleInsert({
+      actionId: String(actionId),
+      photos: payload.photos ?? null,
+      realWeightKg: payload.wasteKg ?? null,
+      visionEstimate: payload.visionEstimate ?? null,
+      metadata: {
+        departureLocationLabel: payload.departureLocationLabel ?? null,
+        arrivalLocationLabel: payload.arrivalLocationLabel ?? null,
+        placeType: payload.placeType ?? null,
+        submissionMode: payload.submissionMode ?? null,
+      },
+    });
+    await recordTrainingExample(supabase, trainingExample);
+  } catch (trainingError) {
+    console.error("[Action Create] Training example creation failed, action created:", {
+      actionId,
+      error: trainingError instanceof Error ? trainingError.message : String(trainingError),
+    });
+  }
+
+  return { id: String(actionId) };
 }

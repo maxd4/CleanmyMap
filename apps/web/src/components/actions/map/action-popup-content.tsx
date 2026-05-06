@@ -66,7 +66,7 @@ function formatStatusLabel(status: string | undefined): string {
     case "approved":
       return "Validée";
     case "pending":
-      return "En attente";
+      return "En attente de validation";
     case "rejected":
       return "Rejetée";
     case "cleaned":

@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
 import { SignIn } from"@clerk/nextjs";
+
+export const metadata: Metadata = {
+  title: "Connexion - CleanMyMap",
+  description: "Connectez-vous à CleanMyMap pour déclarer vos actions de nettoyage, signaler les pollutions et rejoindre la communauté de bénévoles écologistes.",
+  keywords: ["connexion", "login", "sign in", "bénévolat", "écologie", "CleanMyMap"],
+  alternates: {
+    canonical: "/sign-in",
+  },
+};
 
 export default function SignInPage() {
  return (

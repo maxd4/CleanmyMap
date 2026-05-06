@@ -1,3 +1,11 @@
+import {
+  findDistrictByName,
+  getNeighbors,
+  getSuburbsForDistrict,
+  isGreaterParisZone,
+} from "@/lib/geo/paris-neighborhood";
+import { getAffectedArrondissements } from "@/lib/geo/paris-arrondissements";
+
 export type ChatChannelType =
   | "community"
   | "dm"
@@ -5,16 +13,23 @@ export type ChatChannelType =
   | "territory"
   | "bug_report";
 
+export type ZoneContext = {
+  zoneName: string | null;
+  arrondissementId: number | null;
+};
+
 export type ChatChannelAccessContext = {
   roleLabel: string | null | undefined;
   hasArrondissement: boolean;
+  hasGreaterParisZone: boolean;
+  zoneContext: ZoneContext | null;
 };
 
 export type ChatChannelDefinition = {
   type: ChatChannelType;
   label: string;
   description: string;
-  requiresArrondissement?: boolean;
+  requiresZone?: boolean;
 };
 
 const CHAT_CHANNEL_DEFINITIONS: Record<ChatChannelType, ChatChannelDefinition> = {
@@ -35,9 +50,9 @@ const CHAT_CHANNEL_DEFINITIONS: Record<ChatChannelType, ChatChannelDefinition> =
   },
   territory: {
     type: "territory",
-    label: "Arrondissements & limitrophes",
-    description: "Échanges liés à votre arrondissement et à ses voisins.",
-    requiresArrondissement: true,
+    label: "Territoire & limitrophes",
+    description: "Échanges liés à votre zone (arrondissement ou commune) et ses voisines.",
+    requiresZone: true,
   },
   bug_report: {
     type: "bug_report",
@@ -77,7 +92,7 @@ export function canAccessChatChannel(
     case "admin_elu":
       return roleLabel === "admin" || roleLabel === "max" || roleLabel === "elu";
     case "territory":
-      return context.hasArrondissement;
+      return context.hasGreaterParisZone || context.hasArrondissement;
     default:
       return false;
   }
@@ -104,4 +119,90 @@ export function getDefaultChatChannelType(
     getVisibleChatChannelTypes(context)[0] ??
     "community"
   );
+}
+
+export function getTerritoryFilter(
+  zoneContext: ZoneContext | null,
+): { arrondissementIds: number[] | null; zoneNames: string[] | null } {
+  if (!zoneContext) {
+    return { arrondissementIds: null, zoneNames: null };
+  }
+
+  if (zoneContext.zoneName) {
+    const district = findDistrictByName(zoneContext.zoneName);
+    if (district) {
+      return {
+        arrondissementIds: getAffectedArrondissements(district.number),
+        zoneNames: getSuburbsForDistrict(district.number),
+      };
+    }
+  }
+
+  if (zoneContext.zoneName && isGreaterParisZone(zoneContext.zoneName)) {
+    const neighbors = getNeighbors(zoneContext.zoneName);
+    return {
+      arrondissementIds: null,
+      zoneNames: [zoneContext.zoneName, ...neighbors],
+    };
+  }
+
+  if (zoneContext.arrondissementId && zoneContext.arrondissementId >= 1 && zoneContext.arrondissementId <= 20) {
+    const neighboringSuburbs = getSuburbsForDistrict(zoneContext.arrondissementId);
+    return {
+      arrondissementIds: getAffectedArrondissements(zoneContext.arrondissementId),
+      zoneNames: neighboringSuburbs.length > 0 ? neighboringSuburbs : null,
+    };
+  }
+
+  return { arrondissementIds: null, zoneNames: null };
+}
+
+export function buildChannelAccessHint(channelType: ChatChannelType): string {
+  switch (channelType) {
+    case "community":
+      return "Canal communautaire indisponible pour le moment.";
+    case "dm":
+      return "Sélectionnez un destinataire pour ouvrir les messages privés.";
+    case "admin_elu":
+      return "Canal réservé aux élus et à l'administration.";
+    case "territory":
+      return "Votre profil doit avoir une zone (arrondissement ou commune) pour ouvrir ce canal.";
+    case "bug_report":
+      return "Le canal de feedback est indisponible tant qu'aucun compte administrateur n'est configuré.";
+    default:
+      return "Canal indisponible.";
+  }
+}
+
+export function getZoneLabel(zoneContext: ZoneContext | null): string {
+  if (!zoneContext) {
+    return "Aucune zone définie";
+  }
+  if (zoneContext.zoneName) {
+    return zoneContext.zoneName;
+  }
+  if (zoneContext.arrondissementId) {
+    return `${zoneContext.arrondissementId}e arrondissement`;
+  }
+  return "Aucune zone définie";
+}
+
+export function extractZoneContextFromMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+): ZoneContext {
+  const zoneNameRaw = metadata?.["zoneName"];
+  const zoneName = typeof zoneNameRaw === "string" && zoneNameRaw.length > 0 ? zoneNameRaw : null;
+
+  const arrondissementRaw = metadata?.["parisArrondissement"];
+  let arrondissementId: number | null = null;
+  if (typeof arrondissementRaw === "number" && arrondissementRaw >= 1 && arrondissementRaw <= 20) {
+    arrondissementId = arrondissementRaw;
+  } else if (typeof arrondissementRaw === "string") {
+    const parsed = parseInt(arrondissementRaw, 10);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 20) {
+      arrondissementId = parsed;
+    }
+  }
+
+  return { zoneName, arrondissementId };
 }

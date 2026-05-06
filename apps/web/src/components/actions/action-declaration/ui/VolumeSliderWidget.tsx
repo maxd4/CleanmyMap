@@ -10,6 +10,7 @@ interface VolumeSliderWidgetProps {
   max?: number;
   label: string;
   unit?: string;
+  inputId: string;
 }
 
 export function VolumeSliderWidget({
@@ -17,9 +18,10 @@ export function VolumeSliderWidget({
   onChange,
   max = 100,
   label,
-  unit = "kg"
+  unit = "kg",
+  inputId,
 }: VolumeSliderWidgetProps) {
-  const percentage = (value / max) * 100;
+  const labelId = `${inputId}-label`;
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none">
@@ -29,7 +31,9 @@ export function VolumeSliderWidget({
             <Scale size={24} />
           </div>
           <div>
-            <h4 className="text-lg font-black cmm-text-primary tracking-tight">{label}</h4>
+            <h4 id={labelId} className="text-lg font-black cmm-text-primary tracking-tight">
+              {label}
+            </h4>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Estimation visuelle</p>
           </div>
         </div>
@@ -69,12 +73,14 @@ export function VolumeSliderWidget({
 
       <div className="relative pt-4">
         <input
+          id={inputId}
           type="range"
           min="0"
           max={max}
           step="0.5"
           value={value}
           onChange={(e) => onChange(parseFloat(e.target.value))}
+          aria-labelledby={labelId}
           className="w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full appearance-none cursor-pointer accent-emerald-500"
         />
         <div className="flex justify-between mt-4 text-[10px] font-black text-slate-300 uppercase tracking-widest">

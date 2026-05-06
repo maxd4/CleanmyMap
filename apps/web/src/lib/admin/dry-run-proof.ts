@@ -34,8 +34,8 @@ function stableNormalize(value: unknown): unknown {
 }
 
 function encodingSecret(): string {
-  if (isConfigured(process.env.IMPORT_DRY_RUN_SECRET)) {
-    return String(process.env.IMPORT_DRY_RUN_SECRET);
+  if (isConfigured(process.env["IMPORT_DRY_RUN_SECRET"])) {
+    return String(process.env["IMPORT_DRY_RUN_SECRET"]);
   }
   if (isConfigured(env.CLERK_SECRET_KEY)) {
     return String(env.CLERK_SECRET_KEY);

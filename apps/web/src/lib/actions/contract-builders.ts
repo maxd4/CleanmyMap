@@ -106,6 +106,7 @@ export function normalizeCreatePayload(
     actorName: payload.metadata.actorName,
     associationName: payload.metadata.associationName,
     actionDate: payload.dates.observedAt,
+    recordType: payload.type,
     locationLabel: payload.location.label,
     departureLocationLabel:
       payload.departureLocationLabel ??
@@ -133,7 +134,7 @@ export function normalizeCreatePayload(
       ? {
           kind: payload.geometry.kind,
           coordinates: payload.geometry.coordinates,
-        }
+      }
       : undefined,
     placeType: payload.metadata.placeType ?? undefined,
   };

@@ -20,6 +20,7 @@
 - Run targeted validations for modified logic.
 - Preserve existing behavior unless change is required by the task.
 - **Règle Scientifique** : Toujours sourcer et faire apparaître toutes les données, hypothèses et formules de calcul sur le site web à l'endroit dédié (page Méthodologie ou Tooltips).
+- **Qualité & i18n** : Lire `documentation/development/QUALITY_GUIDE.md` avant de modifier des chaînes utilisateur, messages, formulaires ou interfaces. Ce guide couvre les conventions d'internationalisation, orthographe, accessibilité et empty states.
 
 ## Design System & UI
 
@@ -51,3 +52,4 @@ Access via `useSitePreferences()` hook:
 - Short, structured, and action-oriented.
 - File references for changed areas.
 - Clear next step when relevant.
+- Do not list sections titled `Fichiers créés/modifiés` or `Tests`; summarize the outcome directly instead.

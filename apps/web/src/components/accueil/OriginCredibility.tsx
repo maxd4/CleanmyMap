@@ -5,7 +5,6 @@ import {
   ArrowRight,
   CheckCircle2,
   GraduationCap,
-  Map,
   Sparkles,
   Users,
 } from "lucide-react";

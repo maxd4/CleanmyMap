@@ -90,6 +90,7 @@ const userMetadataSchema = z.object({
 const createActionLegacySchema = z.object({
   actorName: z.string().min(1).max(120).optional(),
   associationName: associationNameSchema,
+  recordType: z.enum(["action", "clean_place", "spot"]).optional(),
   placeType: z.string().max(80).optional(),
   actionDate: z.string().date(),
   locationLabel: z.string().min(2).max(200),
@@ -119,7 +120,7 @@ const createActionLegacySchema = z.object({
 });
 
 const createActionContractSchema = z.object({
-  type: z.literal("action"),
+  type: z.enum(["action", "clean_place", "spot"]),
   source: z.string().min(1).max(80),
   location: z.object({
     label: z.string().min(2).max(200),

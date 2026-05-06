@@ -18,6 +18,7 @@ import { OpenDataSection } from"@/components/sections/rubriques/open-data-sectio
 import {
  ClimateSection,
  CompareSection,
+ CompostSection,
  GuideSection,
  RecyclingSection,
  RouteSection,
@@ -262,8 +263,8 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  <SectionShell
  title={{ fr:"Seconde vie", en:"Recycling" }}
  subtitle={{
- fr:"Consignes de tri et valorisation terrain.",
- en:"Field sorting and reuse guidance.",
+ fr:"Consignes de tri, réponses rapides et valorisation terrain.",
+ en:"Field sorting guidance, quick answers and reuse.",
  }}
  links={[
  {
@@ -275,6 +276,8 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  <RecyclingSection />
  </SectionShell>
  );
+ case"compost":
+ return <CompostSection />;
  case"climate":
  return (
  <SectionShell
@@ -310,15 +313,19 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  case"weather":
  return (
  <SectionShell
- title={{ fr:"Météo", en:"Weather" }}
+ title={{ fr:"Météo opérationnelle", en:"Operational weather" }}
  subtitle={{
- fr:"Conditions courantes pour sécuriser les opérations.",
- en:"Current conditions to secure field operations.",
+ fr:"Lire les conditions pour caler le terrain et choisir le bon créneau d'action.",
+ en:"Read conditions to plan the field and pick the right action window.",
  }}
  links={[
  {
- href:"/actions/new",
- label: { fr:"Planifier une action", en:"Plan action" },
+  href:"/actions/new",
+  label: { fr:"Planifier une action", en:"Plan action" },
+ },
+ {
+  href:"/actions/map",
+  label: { fr:"Vérifier la zone", en:"Check the area" },
  },
  ]}
  >
@@ -328,10 +335,10 @@ export function SectionRenderer({ sectionId }: SectionRendererProps) {
  case"sandbox":
  return (
  <SectionShell
- title={{ fr:"Visualiser la carte", en:"Map sandbox" }}
+ title={{ fr:"Carte d'entrainement", en:"Sandmap" }}
  subtitle={{
- fr:"Tester la carte et les filtres avant de commencer.",
- en:"Test the map and filters before starting.",
+ fr:"Espace d'entrainement pour tester la carte et les filtres avant de commencer.",
+ en:"Training space to test the map and filters before starting.",
  }}
  links={[
  {

@@ -1,3 +1,5 @@
+import { env } from "@/lib/env";
+
 const POSTHOG_EU_HOST = "https://eu.i.posthog.com";
 const POSTHOG_US_HOST = "https://us.i.posthog.com";
 
@@ -10,7 +12,7 @@ function normalizeHost(value: string): string {
 }
 
 export function getPostHogKey(): string | null {
-  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY ?? process.env.NEXT_PUBLIC_POSTHOG_TOKEN;
+  const key = env.NEXT_PUBLIC_POSTHOG_KEY ?? env.NEXT_PUBLIC_POSTHOG_TOKEN;
   if (!isConfigured(key)) {
     return null;
   }
@@ -18,11 +20,11 @@ export function getPostHogKey(): string | null {
 }
 
 export function getPostHogHost(): string {
-  const host = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+  const host = env.NEXT_PUBLIC_POSTHOG_HOST;
   if (isConfigured(host)) {
     return normalizeHost(host!);
   }
-  return process.env.NEXT_PUBLIC_POSTHOG_REGION === "us" ? POSTHOG_US_HOST : POSTHOG_EU_HOST;
+  return env.NEXT_PUBLIC_POSTHOG_REGION === "us" ? POSTHOG_US_HOST : POSTHOG_EU_HOST;
 }
 
 export function isPostHogConfigured(): boolean {
@@ -32,8 +34,8 @@ export function isPostHogConfigured(): boolean {
 export function getPostHogDeprecatedEnvWarnings(): string[] {
   const warnings: string[] = [];
   if (
-    !isConfigured(process.env.NEXT_PUBLIC_POSTHOG_KEY) &&
-    isConfigured(process.env.NEXT_PUBLIC_POSTHOG_TOKEN)
+    !isConfigured(env.NEXT_PUBLIC_POSTHOG_KEY) &&
+    isConfigured(env.NEXT_PUBLIC_POSTHOG_TOKEN)
   ) {
     warnings.push(
       "NEXT_PUBLIC_POSTHOG_TOKEN est dépréciée. Utiliser NEXT_PUBLIC_POSTHOG_KEY à la place.",

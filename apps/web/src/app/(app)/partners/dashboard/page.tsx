@@ -77,12 +77,13 @@ export default async function PartnersDashboardPage() {
  <p className="cmm-text-caption cmm-text-muted">Zones couvertes</p>
  <p className="text-xl font-semibold cmm-text-primary">{coveredZones.size}</p>
  </article>
- <article className="rounded-lg border border-slate-200 bg-white p-3">
- <p className="cmm-text-caption cmm-text-muted">Demandes en attente</p>
- <p className="text-xl font-semibold cmm-text-primary">
- {onboardingRequestCount ??"n/a"}
- </p>
- </article>
+<article className="rounded-lg border border-slate-200 bg-white p-3">
+  <p className="cmm-text-caption cmm-text-muted">Demandes en attente de validation</p>
+  <p className="text-xl font-semibold cmm-text-primary">
+  {onboardingRequestCount ??"n/a"}
+  </p>
+  <p className="cmm-text-caption text-amber-600">En attente de votre décision</p>
+  </article>
  <article className="rounded-lg border border-slate-200 bg-white p-3">
  <p className="cmm-text-caption cmm-text-muted">Fiches à revoir</p>
  <p className="text-xl font-semibold cmm-text-primary">{reviewPublishedEntries.length}</p>
@@ -102,8 +103,8 @@ export default async function PartnersDashboardPage() {
  <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
  <h2 className="cmm-text-small font-semibold cmm-text-primary">Prochaines décisions</h2>
  <ol className="mt-3 list-decimal space-y-2 pl-5 cmm-text-small cmm-text-secondary">
- <li>Traiter les demandes de partenariat en attente sous 72h ouvrées.</li>
- <li>Revoir les fiches publiées en attente d&apos;acceptation ou de rejet.</li>
+<li>Traiter les demandes de partenariat en attente de validation sous 72h ouvrées</li>
+  <li>Revoir les fiches publiées en attente de validation ou de refus</li>
  <li>Renforcer les contributions en zones sous-couvertes.</li>
  <li>Publier les mises à jour de fiches partenaires cette semaine.</li>
  </ol>

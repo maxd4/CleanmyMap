@@ -15,10 +15,14 @@ import { filterActionContractsByScope, type ReportScope } from"@/lib/reports/sco
 import {
  buildPostActionRetentionLoop as buildActionRetentionLoop,
  trackActionCreated,
+ trackSpotCreated,
 } from"@/lib/gamification/progression";
+import { trackServerEvent } from"@/lib/analytics.server";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
 import { resolveReportQuery } from"@/lib/reports/csv";
+import { emitActionCreated, emitSpotCreated } from"@/lib/events/emit";
+import { verifyRateLimit, createServerRateLimitResponse } from"@/lib/rate-limit";
 
 export const runtime ="nodejs";
 const QUALITY_GRADES = ["A","B","C"] as const;
@@ -166,12 +170,23 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
- const { userId } = await auth();
- if (!userId) {
- return unauthorizedJsonResponse();
- }
+  const { userId } = await auth();
+  if (!userId) {
+    return unauthorizedJsonResponse();
+  }
 
- let payload: unknown;
+  const rateLimit = await verifyRateLimit({ 
+    limit: 10, 
+    window: 60,
+    key: userId,
+  });
+  
+  const rateLimitResponse = createServerRateLimitResponse(rateLimit.allowed, rateLimit.retryAfter);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
+  let payload: unknown;
  try {
  payload = await request.json();
  } catch {
@@ -191,26 +206,71 @@ export async function POST(request: Request) {
  const identity = await getCurrentUserIdentity();
  const actorName = pickTraceableActorName(identity, parsed.data.actorName);
  const normalizedPayload = {
- ...parsed.data,
- actorName,
+  ...parsed.data,
+  actorName,
  };
- const created = await createAction(supabase, {
- userId,
- payload: normalizedPayload,
- });
- try {
- await trackActionCreated(supabase, { userId, actionId: created.id });
- } catch (progressionError) {
- console.error("Progression tracking failed for action creation", {
- userId,
- actionId: created.id,
- message:
- progressionError instanceof Error
- ? progressionError.message
- : String(progressionError),
+
+ if (normalizedPayload.recordType === "clean_place" || normalizedPayload.recordType === "spot") {
+ const label = normalizedPayload.locationLabel.trim();
+ if (label.length < 2) {
+ return validationErrorResponse({
+ locationLabel: ["Le lieu propre doit être renseigné."],
  });
  }
- const retentionLoop = await buildActionRetentionLoop(supabase, {
+
+ const composedNotes = normalizedPayload.notes?.trim()
+ ? `[spot-by:${actorName}] ${normalizedPayload.notes.trim()}`
+ : `[spot-by:${actorName}]`;
+
+ const inserted = await supabase
+ .from("spots")
+ .insert({
+ created_by_clerk_id: userId,
+ label,
+ waste_type: normalizedPayload.recordType,
+ latitude: normalizedPayload.latitude ?? null,
+ longitude: normalizedPayload.longitude ?? null,
+ status:"new",
+ notes: composedNotes,
+ })
+ .select("id, created_at, label, waste_type, latitude, longitude, status, notes")
+ .single();
+
+ if (inserted.error) {
+ return handleApiError(inserted.error,"POST /api/actions (spot insert)");
+ }
+
+emitSpotCreated({
+    spotId: String(inserted.data.id),
+    userId,
+    label: inserted.data.label,
+    wasteType: inserted.data.waste_type,
+  });
+
+  await trackServerEvent(userId,"spot_created", {
+ waste_type: inserted.data.waste_type,
+ location: inserted.data.label,
+ });
+
+ return NextResponse.json(
+ { status:"created", id: inserted.data.id, source:"spots", retentionLoop: null },
+ { status: 201 },
+ );
+ }
+
+const created = await createAction(supabase, {
+    userId,
+    payload: normalizedPayload,
+  });
+
+  emitActionCreated({
+    actionId: created.id,
+    userId,
+    locationLabel: normalizedPayload.locationLabel,
+    wasteKg: Number(normalizedPayload.wasteKg) || 0,
+  });
+
+  const retentionLoop = await buildActionRetentionLoop(supabase, {
  userId,
  actionId: created.id,
  }).catch(() => null);

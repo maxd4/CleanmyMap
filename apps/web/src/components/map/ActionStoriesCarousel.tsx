@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { ActionMapItem } from "@/lib/actions/types";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { MapPin, Calendar, Trash2, ArrowRight } from "lucide-react";
 import {
   mapItemCigaretteButts,
@@ -123,9 +124,9 @@ export function ActionStoriesCarousel({ items }: ActionStoriesCarouselProps) {
                     </div>
                   </div>
 
-                  <button type="button" className="w-full py-3 rounded-2xl bg-white text-slate-950 text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-emerald-400 hover:text-white transition-all">
+                  <CmmButton variant="default" tone="secondary" className="w-full py-3">
                     Détails de l&apos;intervention <ArrowRight size={14} />
-                  </button>
+                  </CmmButton>
                 </div>
               </CmmCard>
             </motion.div>

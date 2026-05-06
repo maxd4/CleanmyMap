@@ -27,6 +27,8 @@ export function ActionDeclarationFormConfirmation({
   onConfirm,
   isSubmitting,
 }: ActionDeclarationFormConfirmationProps) {
+  const isCleanPlaceMode =
+    payload.recordType === "clean_place" || payload.recordType === "spot";
   const impactCO2 = (payload.wasteKg * 0.5).toFixed(1);
   const impactPlastic = (payload.wasteKg * 0.3).toFixed(1);
   const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
@@ -39,11 +41,13 @@ export function ActionDeclarationFormConfirmation({
           <div className="flex items-center gap-3 mb-2">
             <span className="inline-block h-3 w-3 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 shadow-sm" />
             <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-              Confirmation de votre action
+              {isCleanPlaceMode ? "Confirmation de votre lieu propre" : "Confirmation de votre action"}
             </h2>
           </div>
           <p className="text-sm text-slate-600 pl-6">
-            Vérifiez les informations avant l&apos;envoi
+            {isCleanPlaceMode
+              ? "Vérifiez les informations avant l'envoi du signalement."
+              : "Vérifiez les informations avant l'envoi"}
           </p>
         </div>
 
@@ -143,15 +147,22 @@ export function ActionDeclarationFormConfirmation({
           {/* Déchets collectés */}
           <div className="rounded-[1.5rem] border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-emerald-50/40 p-6 shadow-sm">
             <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold mb-3">
-              Déchets collectés
+              {isCleanPlaceMode ? "Lieu propre" : "Déchets collectés"}
             </p>
             <p className="text-4xl font-bold text-emerald-900 tracking-tight">
-              {payload.wasteKg} kg
+              {isCleanPlaceMode ? "Signalé" : `${payload.wasteKg} kg`}
             </p>
-            {payload.cigaretteButtsCount && payload.cigaretteButtsCount > 0 && (
+            {isCleanPlaceMode ? (
               <p className="text-sm text-emerald-800 mt-2 font-semibold">
-                dont {payload.cigaretteButtsCount} mégots
+                {payload.locationLabel}
               </p>
+            ) : (
+              payload.cigaretteButtsCount &&
+              payload.cigaretteButtsCount > 0 && (
+                <p className="text-sm text-emerald-800 mt-2 font-semibold">
+                  dont {payload.cigaretteButtsCount} mégots
+                </p>
+              )
             )}
           </div>
 
@@ -188,40 +199,43 @@ export function ActionDeclarationFormConfirmation({
             </div>
           )}
 
-          {/* Impact estimé */}
-          <div className="rounded-[1.5rem] border border-purple-200/60 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 p-6 shadow-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="inline-block h-2 w-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
-              <p className="text-xs uppercase tracking-[0.14em] text-purple-700 font-bold">
-                Impact estimé
-              </p>
+          {!isCleanPlaceMode && (
+            <div className="rounded-[1.5rem] border border-purple-200/60 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="inline-block h-2 w-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
+                <p className="text-xs uppercase tracking-[0.14em] text-purple-700 font-bold">
+                  Impact estimé
+                </p>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div>
+                  <p className="text-xs text-purple-600 font-semibold mb-1">Déchets évités</p>
+                  <p className="text-xl font-bold text-purple-900 tracking-tight">
+                    {payload.wasteKg} kg
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-purple-600 font-semibold mb-1">CO₂ évité</p>
+                  <p className="text-xl font-bold text-purple-900 tracking-tight">
+                    ~{impactCO2} kg
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-purple-600 font-semibold mb-1">Plastique</p>
+                  <p className="text-xl font-bold text-purple-900 tracking-tight">
+                    ~{impactPlastic} kg
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div>
-                <p className="text-xs text-purple-600 font-semibold mb-1">Déchets évités</p>
-                <p className="text-xl font-bold text-purple-900 tracking-tight">
-                  {payload.wasteKg} kg
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-purple-600 font-semibold mb-1">CO₂ évité</p>
-                <p className="text-xl font-bold text-purple-900 tracking-tight">
-                  ~{impactCO2} kg
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-purple-600 font-semibold mb-1">Plastique</p>
-                <p className="text-xl font-bold text-purple-900 tracking-tight">
-                  ~{impactPlastic} kg
-                </p>
-              </div>
-            </div>
-          </div>
+          )}
 
           {/* Message de validation */}
           <div className="rounded-[1.5rem] border border-blue-200/60 bg-gradient-to-br from-blue-50/80 to-blue-50/40 p-5 shadow-sm">
             <p className="text-sm text-blue-900 leading-relaxed">
-              Votre action sera visible sur la carte une fois le formulaire validé et complété par les administrateurs. Merci pour votre contribution !
+              {isCleanPlaceMode
+                ? "Votre lieu propre sera visible sur la carte une fois le formulaire validé par les administrateurs. Merci pour votre signalement."
+                : "Votre action sera visible sur la carte une fois le formulaire validé et complété par les administrateurs. Merci pour votre contribution !"}
             </p>
           </div>
         </div>

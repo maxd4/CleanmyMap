@@ -89,7 +89,20 @@ describe("navigation display modes", () => {
       "network",
       "connect",
       "learn",
-      "pilot",
+    ]);
+  });
+
+  it("exposes the dedicated learn pages in the learn space", () => {
+    const learnSpace = getNavigationSpacesForProfile("benevole", "exhaustif").find(
+      (space) => space.id === "learn",
+    );
+
+    expect(learnSpace?.items.map((item) => item.routeId)).toEqual([
+      "hub",
+      "learn-comprendre",
+      "learn-sentrainer",
+      "learn-bonnes-pratiques",
+      "learn-ressources",
     ]);
   });
 

@@ -1,5 +1,11 @@
 import { RolePrimaryActions } from"@/components/navigation/role-primary-actions";
 import { KpiMethodBlock } from"@/components/pilotage/kpi-method-block";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: 'Rapports d\'impact - CleanMyMap',
+  description: 'Analysez les données de nettoyage participatif, téléchargez des rapports détaillés et visualisez l\'évolution de l\'impact environnemental.',
+};
 
 import { ThirtySecondsSummary } from"@/components/pilotage/thirty-seconds-summary";
 import { ActionsReportPanel } from"@/components/reports/actions-report-panel";
@@ -75,39 +81,45 @@ function toReportsExportRow(contract: ActionDataContract) {
 }
 
 export default async function ReportsPage() {
- const { userId, clerkReachable } = await getSafeAuthSession();
- const role =
- userId && clerkReachable
- ? await getCurrentUserRoleLabel().catch(() =>"anonymous" as const)
- : ("anonymous" as const);
- const profile = toProfile(role);
- const locale = await getServerLocale();
- const primaryAction = getProfilePrimaryAction(profile);
- const secondaryAction = getProfileSecondaryAction(profile);
- const roleLabel =
- userId ? getProfileLabel(profile, locale) : locale ==="fr" ?"Visiteur" :"Visitor";
- const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
- const data = await loadReportsData().catch(() => null);
- const overview = data?.overview ?? null;
- const contracts = data?.contracts ?? [];
- const reportsCue =
-  locale === "fr"
-   ? {
-       question: "Quel indicateur mérite une relecture avant l’export ?",
-       clue:
-         "Le rapport sert à réactiver la preuve utile et à garder visible la prochaine révision.",
-       actionLabel: "Lire la méthode",
-     }
-   : {
-       question: "Which indicator deserves a review before exporting?",
-       clue:
-         "The report is here to reactivate the useful proof and keep the next review visible.",
-       actionLabel: "Read the method",
-     };
-
- const { aggregateMonthlyAnalytics } = await import("@/lib/pilotage/analytics-data-utils");
- const { AnalyticsCockpit } = await import("@/components/reports/analytics-cockpit");
- const monthlyData = aggregateMonthlyAnalytics(contracts);
+  const [{ userId, clerkReachable }, locale] = await Promise.all([
+    getSafeAuthSession(),
+    getServerLocale(),
+  ]);
+  const role =
+  userId && clerkReachable
+  ? await getCurrentUserRoleLabel().catch(() =>"anonymous" as const)
+  : ("anonymous" as const);
+  const profile = toProfile(role);
+  const primaryAction = getProfilePrimaryAction(profile);
+  const secondaryAction = getProfileSecondaryAction(profile);
+  const roleLabel =
+  userId ? getProfileLabel(profile, locale) : locale ==="fr" ?"Visiteur" :"Visitor";
+  const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
+  
+  const [data, utils, cockpitModule] = await Promise.all([
+    loadReportsData().catch(() => null),
+    import("@/lib/pilotage/analytics-data-utils"),
+    import("@/components/reports/analytics-cockpit"),
+  ]);
+  const { aggregateMonthlyAnalytics } = utils;
+  const { AnalyticsCockpit } = cockpitModule;
+  const overview = data?.overview ?? null;
+  const contracts = data?.contracts ?? [];
+  const monthlyData = aggregateMonthlyAnalytics(contracts);
+  const reportsCue =
+   locale === "fr"
+    ? {
+        question: "Quel indicateur mérite une relecture avant l'export ?",
+        clue:
+          "Le rapport sert à réactiver la preuve utile et à garder visible la prochaine révision.",
+        actionLabel: "Lire la méthode",
+      }
+    : {
+        question: "Which indicator deserves a review before exporting?",
+        clue:
+          "The report is here to reactivate the useful proof and keep the next review visible.",
+        actionLabel: "Read the method",
+      };
  const publicAccessBanner = !userId ? (
  <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 cmm-text-small text-emerald-900 shadow-sm">
  Lecture publique: parcourez les rapports et exportez un livrable sans

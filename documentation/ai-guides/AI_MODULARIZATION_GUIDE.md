@@ -1,724 +1,312 @@
-# Guide de Modularisation pour Agents IA
+# Guide de Modularisation — Agents IA
 
-Instructions complètes et réutilisables pour modulariser efficacement les fichiers du projet CleanMyMap.
-
----
-
-## 📋 Table des Matières
-
-1. [Instructions](#instructions)
-2. [Processus en 5 Étapes](#processus)
-3. [Règles Strictes](#règles)
-4. [Patterns Réutilisables](#patterns)
-5. [Templates de Code](#templates)
-6. [Ressources](#ressources)
+> **Version :** 4.0.0 | **Mis à jour :** 2026-05-06  
+> **Référence plan :** `documentation/architecture/monolith-split-plan.md`
 
 ---
 
-## 🤖 Instructions pour l'Agent IA {#instructions}
+## 1. Quand modulariser ?
 
-### Quand Modulariser ?
+| Signal | Action |
+|--------|--------|
+| Fichier > 300 lignes **OU** > 10 KB | Modulariser |
+| Plusieurs responsabilités distinctes dans un même fichier | Modulariser |
+| Code difficile à tester unitairement | Extraire dans un hook/helper |
+| Copié-collé entre 2 composants | Extraire en composant réutilisable |
+| `page.tsx` fait du fetch ET du rendu complexe | Séparer Server Component / Client Component |
 
-Modulariser un fichier quand :
-- L'utilisateur demande explicitement de modulariser
-- Un fichier dépasse 300 lignes
-- Un fichier a plusieurs responsabilités distinctes
-- Le code est difficile à maintenir
+**Tailles cibles strictes :**
 
-### Workflow Automatique
-
-```
-1. ANALYSER → 2. PLANIFIER → 3. EXTRAIRE → 4. INTÉGRER → 5. VALIDER
-```
-
-### Checklist Systématique
-
-Avant de commencer, **TOUJOURS** :
-
-```bash
-# 1. Analyser les fichiers volumineux
-npm run analyze:heavy-files
-
-# 2. Consulter le plan
-# Voir: AI_MODULARIZATION_PLAN.md
-
-# 3. Consulter les diagrammes si besoin
-# Voir: AI_MODULARIZATION_DIAGRAMS.md
-```
+| Type | Lignes max | Taille max |
+|------|-----------|------------|
+| `page.tsx` (Server Component) | 80 | 3 KB |
+| Composant orchestrateur | 150 | 5 KB |
+| Composant complexe | 300 | 10 KB |
+| Composant simple / UI | 150 | 5 KB |
+| Hook | 200 | 7 KB |
+| Config / données statiques | 100 / fichier | 8 KB |
+| Utils / helpers | 150 | 5 KB |
 
 ---
 
-## 🎯 Processus Étape par Étape {#processus}
+## 2. Processus en 5 étapes
 
-### ÉTAPE 1 : ANALYSER (5 min)
-
-**Actions** :
-1. Lire le fichier cible en entier
-2. Identifier les blocs de code distincts
-3. Repérer les responsabilités multiples
-4. Noter les dépendances
-
-**Questions à se poser** :
-- Quelles sont les responsabilités distinctes ?
-- Quel code est réutilisable ailleurs ?
-- Quelle logique peut être extraite dans un hook ?
-- Quelle configuration peut être externalisée ?
-
-**Output attendu** :
 ```
-Fichier: apps/web/src/app/page.tsx
-Responsabilités identifiées:
-1. Configuration des métriques (100 lignes)
-2. Configuration des piliers (150 lignes)
-3. Configuration des bénéfices (120 lignes)
-4. Orchestration du rendu (50 lignes)
+ANALYSER → PLANIFIER → EXTRAIRE → INTÉGRER → VALIDER
 ```
 
----
+### ÉTAPE 1 — ANALYSER (5 min)
 
-### ÉTAPE 2 : PLANIFIER (5 min)
+Lire le fichier en entier, identifier :
 
-**Actions** :
-1. Définir la structure de dossiers cible
-2. Nommer les nouveaux fichiers
-3. Définir les interfaces/types
-4. Estimer la taille finale
+- Les responsabilités distinctes (UI, logique, config, types, fetching).
+- Les blocs de > 50 lignes pouvant vivre dans leur propre fichier.
+- Les dépendances (imports extérieurs, hooks, props).
 
-**Template de structure** :
+**Output attendu :**
+```
+Fichier : apps/web/src/components/chat/chat-shell.tsx
+Taille  : 41 801 o (~650 lignes) — CRITIQUE
+Responsabilités identifiées :
+  1. Gestion connexion WebSocket (logique)
+  2. Fetch + pagination des messages (logique)
+  3. Rendu liste de messages (UI)
+  4. Zone de saisie + send (UI)
+  5. Gestion pièces jointes (UI + logique)
+  6. En-tête du chat (UI)
+```
+
+### ÉTAPE 2 — PLANIFIER (5 min)
+
+Définir la structure cible **avant** d'écrire une ligne de code.
+
+**Template de structure :**
 ```
 feature/
-├── index.ts              # Exports centralisés
-├── feature-main.tsx      # Composant principal
-├── feature-section-1.tsx # Sous-composant 1
-├── feature-section-2.tsx # Sous-composant 2
-├── use-feature-data.ts   # Hook de logique
-├── config.ts             # Configuration
-└── types.ts              # Types TypeScript
+├── index.ts                 ← re-exports centralisés (obligatoire)
+├── feature-main.tsx         ← orchestrateur (< 150 lignes)
+├── feature-section-a.tsx    ← sous-composant A
+├── feature-section-b.tsx    ← sous-composant B
+├── use-feature-logic.ts     ← logique / état
+├── feature.config.ts        ← données statiques / constantes
+└── feature.types.ts         ← interfaces TypeScript
 ```
 
-**Output attendu** :
-```
-Structure cible:
-lib/accueil/
-├── config.ts (types + builders + constantes)
-components/accueil/
-├── index.ts (exports)
-app/
-└── page.tsx (orchestrateur simplifié)
-```
+### ÉTAPE 3 — EXTRAIRE (20–40 min)
 
----
+Ordre d'extraction recommandé :
 
-### ÉTAPE 3 : EXTRAIRE (20-40 min)
+1. **Types** (`types.ts`) — interfaces, enums, DTOs.
+2. **Config / données** (`config.ts`) — constantes, tableaux statiques.
+3. **Helpers purs** (`helpers.ts`) — fonctions sans effet de bord.
+4. **Hooks** (`use-*.ts`) — `useState`, `useEffect`, appels API.
+5. **Sous-composants** (`*.tsx`) — sections visuelles distinctes.
+6. **Index** (`index.ts`) — re-exports propres.
 
-**Actions par type d'extraction** :
+**Patterns par type d'extraction :**
 
-#### A. Extraire Configuration
+#### A. Extraire des types
 
 ```typescript
-// CRÉER: lib/feature/config.ts
-
-// 1. Définir les types
-export interface FeatureConfig {
-  key: string;
-  value: string;
-}
-
-// 2. Exporter les constantes
-export const FEATURE_CONFIG: FeatureConfig[] = [
-  { key: 'a', value: 'A' },
-  // ...
-];
-
-// 3. Exporter les builders
-export function buildFeatureData(input: Input): Output {
-  // logique de transformation
-  return output;
-}
-```
-
-#### B. Extraire Hook de Logique
-
-```typescript
-// CRÉER: hooks/use-feature-data.ts
-
-import { useState, useEffect, useMemo } from 'react';
-
-export function useFeatureData() {
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    // logique de chargement
-  }, []);
-  
-  const processed = useMemo(() => {
-    // logique de transformation
-  }, [data]);
-  
-  return { data: processed, loading };
-}
-```
-
-#### C. Extraire Composant
-
-```typescript
-// CRÉER: components/feature/feature-section.tsx
-
-interface FeatureSectionProps {
-  title: string;
-  items: Item[];
-}
-
-export function FeatureSection({ title, items }: FeatureSectionProps) {
-  return (
-    <section>
-      <h2>{title}</h2>
-      {items.map(item => (
-        <div key={item.id}>{item.name}</div>
-      ))}
-    </section>
-  );
-}
-```
-
-#### D. Créer Fichier d'Exports
-
-```typescript
-// CRÉER: components/feature/index.ts
-
-export { FeatureMain } from './feature-main';
-export { FeatureSection } from './feature-section';
-export { FeatureHeader } from './feature-header';
-export type { FeatureProps, FeatureSectionProps } from './types';
-```
-
----
-
-### ÉTAPE 4 : INTÉGRER (10 min)
-
-**Actions** :
-1. Mettre à jour les imports du fichier original
-2. Remplacer le code inline par les nouveaux composants
-3. Passer les props nécessaires
-4. Supprimer le code dupliqué
-
-**Template de refactorisation** :
-
-```typescript
-// AVANT
-import { Icon1, Icon2, Icon3 } from 'lucide-react';
-
-function Component() {
-  const config = [/* 100 lignes */];
-  const data = [/* 150 lignes */];
-  
-  return (
-    <div>
-      {/* 400 lignes de JSX */}
-    </div>
-  );
-}
-
-// APRÈS
-import { Section1, Section2, Section3 } from '@/components/feature';
-import { useFeatureData } from '@/hooks/use-feature-data';
-import { FEATURE_CONFIG } from '@/lib/feature/config';
-
-function Component() {
-  const { data, loading } = useFeatureData();
-  
-  return (
-    <div>
-      <Section1 config={FEATURE_CONFIG} />
-      <Section2 data={data} loading={loading} />
-      <Section3 />
-    </div>
-  );
-}
-```
-
----
-
-### ÉTAPE 5 : VALIDER (5 min)
-
-**Actions obligatoires** :
-
-```bash
-# 1. Vérifier la syntaxe
-npm run lint
-
-# 2. Lancer les tests
-npm run test
-
-# 3. Vérifier le build
-npm run build
-
-# 4. Vérifier les types
-npm run typecheck
-```
-
-**Si erreurs** :
-- Corriger les imports manquants
-- Ajuster les types TypeScript
-- Vérifier les props passées
-- Résoudre les dépendances circulaires
-
----
-
-## 🎯 Règles Strictes pour l'IA {#règles}
-
-### ✅ TOUJOURS FAIRE
-
-1. **Lire le plan** avant de commencer
-   ```
-   Fichier: AI_MODULARIZATION_PLAN.md
-   Section: Chercher le fichier cible
-   ```
-
-2. **Créer les types TypeScript** en premier
-   ```typescript
-   // Toujours définir les interfaces
-   export interface ComponentProps {
-     title: string;
-     items: Item[];
-   }
-   ```
-
-3. **Créer index.ts** pour les exports
-   ```typescript
-   // Centraliser tous les exports
-   export { Component1 } from './component-1';
-   export { Component2 } from './component-2';
-   ```
-
-4. **Extraire la configuration** avant les composants
-   ```typescript
-   // Séparer données et logique
-   export const CONFIG = [...];
-   ```
-
-5. **Valider après chaque extraction**
-   ```bash
-   npm run lint && npm run test
-   ```
-
-6. **Documenter les changements**
-   ```bash
-   npm run modularize:report <fichier>
-   ```
-
-7. **Mettre à jour la progression**
-   ```
-   Fichier: AI_MODULARIZATION_PROGRESS.md
-   Marquer: ✅ Complété
-   ```
-
-### ❌ NE JAMAIS FAIRE
-
-1. **Ne pas sur-modulariser**
-   ```
-   ❌ Un fichier par ligne de code
-   ✅ Regroupement logique par responsabilité
-   ```
-
-2. **Ne pas créer de dépendances circulaires**
-   ```
-   ❌ A importe B, B importe A
-   ✅ Architecture unidirectionnelle
-   ```
-
-3. **Ne pas utiliser de noms génériques**
-   ```
-   ❌ Card, Item, Component
-   ✅ UserProfileCard, ActionItem, DashboardHeader
-   ```
-
-4. **Ne pas dupliquer le code**
-   ```
-   ❌ Copier-coller sans factoriser
-   ✅ Extraire dans un composant réutilisable
-   ```
-
-5. **Ne pas oublier les tests**
-   ```
-   ❌ Modulariser sans tester
-   ✅ Valider avec npm run test
-   ```
-
-6. **Ne pas modifier sans backup**
-   ```
-   ❌ Supprimer l'ancien code immédiatement
-   ✅ Commenter l'ancien code jusqu'à validation
-   ```
-
----
-
-## 📊 Objectifs de Taille (Strictement Respecter)
-
-| Type de Fichier | Taille Max | Lignes Max |
-|-----------------|-----------|-----------|
-| Page (app/) | 5 KB | 200 lignes |
-| Composant Complexe | 10 KB | 300 lignes |
-| Composant Simple | 5 KB | 150 lignes |
-| Hook | 5 KB | 200 lignes |
-| Config/Utils | 3 KB | 100 lignes |
-
-**Si dépassement** : Continuer à modulariser !
-
----
-
-## 🔄 Patterns Réutilisables {#patterns}
-
-### Pattern 1 : Page Monolithique → Modulaire
-
-```typescript
-// IDENTIFIER dans le fichier original:
-// - Configuration (const DATA = [...])
-// - Logique (useEffect, useState)
-// - Rendu (JSX)
-
-// CRÉER:
-// 1. lib/feature/config.ts → Configuration
-// 2. hooks/use-feature.ts → Logique
-// 3. components/feature/*.tsx → Composants
-// 4. components/feature/index.ts → Exports
-
-// REFACTORISER le fichier original:
-// - Importer depuis les nouveaux fichiers
-// - Remplacer le code inline
-// - Réduire à < 200 lignes
-```
-
-### Pattern 2 : Composant Complexe → Sous-Composants
-
-```typescript
-// IDENTIFIER les sections distinctes:
-// - Header (titre, actions)
-// - Content (contenu principal)
-// - Footer (actions secondaires)
-
-// CRÉER:
-// 1. feature-header.tsx
-// 2. feature-content.tsx
-// 3. feature-footer.tsx
-// 4. index.ts
-
-// REFACTORISER:
-function Feature() {
-  return (
-    <>
-      <FeatureHeader />
-      <FeatureContent />
-      <FeatureFooter />
-    </>
-  );
-}
-```
-
-### Pattern 3 : Logique Métier → Hook
-
-```typescript
-// IDENTIFIER la logique:
-// - useState, useEffect
-// - Calculs, transformations
-// - Appels API
-
-// CRÉER: hooks/use-feature-logic.ts
-export function useFeatureLogic() {
-  // Toute la logique ici
-  return { data, loading, error, actions };
-}
-
-// UTILISER:
-function Feature() {
-  const { data, loading } = useFeatureLogic();
-  return <div>{/* rendu */}</div>;
-}
-```
-
----
-
-## 📝 Templates de Code {#templates}
-
-### Template : Configuration
-
-```typescript
-// lib/feature/config.ts
-
-// Types
+// feature/feature.types.ts
 export interface FeatureItem {
   id: string;
   name: string;
   value: number;
 }
 
-// Constantes
+export type FeatureStatus = 'idle' | 'loading' | 'error' | 'success';
+```
+
+#### B. Extraire la configuration
+
+```typescript
+// feature/feature.config.ts
+import type { FeatureItem } from './feature.types';
+
 export const FEATURE_ITEMS: FeatureItem[] = [
-  { id: '1', name: 'Item 1', value: 100 },
-  { id: '2', name: 'Item 2', value: 200 },
+  { id: '1', name: 'Item A', value: 100 },
 ];
 
-// Builders
-export function buildFeatureData(raw: RawData): FeatureItem[] {
-  return raw.map(item => ({
-    id: item.id,
-    name: item.name,
-    value: item.value * 2,
-  }));
+export function buildFeatureData(raw: unknown[]): FeatureItem[] {
+  // transformation pure — aucun effet de bord
+  return raw.map(/* ... */);
 }
 ```
 
-### Template : Hook
+#### C. Extraire un hook
 
 ```typescript
-// hooks/use-feature-data.ts
-
+// feature/use-feature-data.ts
 import { useState, useEffect } from 'react';
+import type { FeatureItem, FeatureStatus } from './feature.types';
 
 export function useFeatureData() {
-  const [data, setData] = useState<FeatureItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [items, setItems] = useState<FeatureItem[]>([]);
+  const [status, setStatus] = useState<FeatureStatus>('idle');
 
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await fetch('/api/feature');
-        const json = await response.json();
-        setData(json);
-      } catch (err) {
-        setError(err as Error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
+    setStatus('loading');
+    fetch('/api/feature')
+      .then(r => r.json())
+      .then(data => { setItems(data); setStatus('success'); })
+      .catch(() => setStatus('error'));
   }, []);
 
-  return { data, loading, error };
+  return { items, status };
 }
 ```
 
-### Template : Composant
+#### D. Extraire un sous-composant
 
 ```typescript
-// components/feature/feature-card.tsx
+// feature/feature-card.tsx
+import type { FeatureItem } from './feature.types';
 
 interface FeatureCardProps {
-  title: string;
-  description: string;
-  onClick?: () => void;
+  item: FeatureItem;
+  onClick?: (id: string) => void;
 }
 
-export function FeatureCard({ title, description, onClick }: FeatureCardProps) {
+export function FeatureCard({ item, onClick }: FeatureCardProps) {
   return (
-    <div className="cmm-card" onClick={onClick}>
-      <h3 className="cmm-text-h3">{title}</h3>
-      <p className="cmm-text-body">{description}</p>
+    <div className="cmm-card" onClick={() => onClick?.(item.id)}>
+      <h3 className="cmm-text-h3">{item.name}</h3>
     </div>
   );
 }
 ```
 
-### Template : Index
+#### E. Créer l'index
 
 ```typescript
-// components/feature/index.ts
-
+// feature/index.ts
 export { FeatureMain } from './feature-main';
 export { FeatureCard } from './feature-card';
-export { FeatureHeader } from './feature-header';
-export { FeatureFooter } from './feature-footer';
-
-export type { FeatureMainProps } from './feature-main';
-export type { FeatureCardProps } from './feature-card';
+export { useFeatureData } from './use-feature-data';
+export type { FeatureItem, FeatureStatus } from './feature.types';
 ```
 
----
+### ÉTAPE 4 — INTÉGRER (10 min)
 
-## 📝 Checklist de Validation Finale
+Mettre à jour le fichier original pour qu'il devienne un orchestrateur léger :
 
-Avant de considérer la modularisation terminée :
+```typescript
+// AVANT — 650 lignes, tout en un
+import { Icon1, Icon2 } from 'lucide-react';
+function ChatShell() {
+  const [messages, setMessages] = useState([]);
+  // 600 lignes de logique + JSX mélangés
+}
 
-```
-□ Fichier original < objectif de taille
-□ Tous les nouveaux fichiers créés
-□ Fichier index.ts avec exports
-□ Types TypeScript définis
-□ Imports mis à jour
-□ Aucune duplication de code
-□ npm run lint → ✓
-□ npm run test → ✓
-□ npm run build → ✓
-□ npm run typecheck → ✓
-□ Rapport généré (npm run modularize:report)
-□ AI_MODULARIZATION_PROGRESS.md mis à jour
-□ Documentation complétée
-```
+// APRÈS — < 150 lignes, rôle d'assemblage
+import { ChatHeader, ChatMessageList, ChatInputBar } from './index';
+import { useChatMessages } from './use-chat-messages';
+import { useChatConnection } from './use-chat-connection';
 
----
+export function ChatShell({ sessionId }: ChatShellProps) {
+  const { messages, sendMessage } = useChatMessages(sessionId);
+  const { status } = useChatConnection(sessionId);
 
-## 🤖 Prompt Template pour l'IA
-
-Quand l'utilisateur demande de modulariser, utiliser ce template :
-
-```
-Je vais modulariser le fichier [FICHIER] en suivant le processus standard :
-
-1. ANALYSE
-   - Taille actuelle : [X] lignes / [Y] KB
-   - Responsabilités identifiées : [liste]
-   - Fichiers à créer : [liste]
-
-2. PLAN
-   [Structure de dossiers]
-
-3. EXTRACTION
-   - Création de [fichier1]
-   - Création de [fichier2]
-   - ...
-
-4. INTÉGRATION
-   - Mise à jour des imports
-   - Refactorisation du fichier original
-
-5. VALIDATION
-   - npm run lint ✓
-   - npm run test ✓
-   - npm run build ✓
-
-Résultat attendu : [X] → [Y] lignes (-Z%)
+  return (
+    <div className="flex flex-col h-full">
+      <ChatHeader status={status} />
+      <ChatMessageList messages={messages} />
+      <ChatInputBar onSend={sendMessage} />
+    </div>
+  );
+}
 ```
 
----
-
-## 📚 Ressources {#ressources}
-
-### Documents à Consulter
-
-1. **Avant de commencer** :
-   - `AI_MODULARIZATION_PLAN.md` → Plan des 15 fichiers
-   - `AI_MODULARIZATION_PROGRESS.md` → État actuel
-
-2. **Pendant la modularisation** :
-   - `AI_MODULARIZATION_GUIDE.md` → Ce guide
-   - `AI_MODULARIZATION_CHEATSHEET.md` → Référence rapide
-   - `AI_MODULARIZATION_DIAGRAMS.md` → Diagrammes visuels
-
-### Commandes Essentielles
+### ÉTAPE 5 — VALIDER (5 min)
 
 ```bash
-# Analyse
-npm run analyze:heavy-files
-
-# Validation
-npm run lint
-npm run test
-npm run build
-npm run typecheck
-
-# Documentation
-npm run modularize:report <fichier>
+npm -C apps/web run lint        # 0 erreur, 0 warning
+npm -C apps/web run test        # tests existants + nouveaux hooks
+npm run typecheck               # 0 erreur TypeScript
+npm run quality:top-heavy       # fichier retiré du top 20
 ```
 
 ---
 
-## 🚀 Démarrage Rapide
+## 3. Règles strictes
 
-### Scénario : L'utilisateur dit "Modularise le dashboard"
+### ✅ Toujours faire
 
-**Réponse de l'IA** :
+1. **Définir les types en premier** — interfaces avant le code.
+2. **Créer `index.ts`** pour chaque nouveau dossier de feature.
+3. **Extraire la configuration avant les composants** — données séparées du rendu.
+4. **Ne pas modifier la signature publique** — props, hook returns, exports nommés inchangés.
+5. **Tester les fonctions pures** — helpers et hooks avant de supprimer l'original.
+6. **Valider après chaque extraction** — `lint` + `test` à chaque étape, pas seulement à la fin.
+
+### ❌ Ne jamais faire
+
+1. **Sur-modulariser** — un fichier par ligne est contre-productif. Regrouper par responsabilité logique.
+2. **Créer des dépendances circulaires** — architecture unidirectionnelle obligatoire.
+3. **Utiliser des noms génériques** — `Card`, `Item`, `Component` sont interdits. Préférer `ActionMapPopup`, `HarvestPhotoCard`.
+4. **Copier-coller** sans extraire dans un composant partagé.
+5. **Supprimer le code legacy** avant que les tests soient verts.
+
+---
+
+## 4. Patterns communs dans CleanMyMap
+
+### Pattern A — Page Next.js monolithique → Server + Client
 
 ```
-Je vais modulariser le dashboard en suivant le plan établi.
+app/(app)/feature/
+├── page.tsx           ← Server Component : fetch data, passe props, < 80 lignes
+└── feature-client.tsx ← Client Component : interactivité, < 200 lignes
 
-1. ANALYSE
-   Fichier: apps/web/src/app/(app)/dashboard/page.tsx
-   Taille: 22545 octets (priorité #2 - CRITIQUE)
-   
-2. CONSULTATION DU PLAN
-   [Lire AI_MODULARIZATION_PLAN.md section #2]
-   
-3. STRUCTURE CIBLE
-   components/dashboard/
-   ├── index.ts
-   ├── dashboard-layout.tsx
-   ├── dashboard-header.tsx
-   └── [panels existants]
-   
-   hooks/
-   └── use-dashboard-data.ts
+components/feature/    ← sous-composants partagés
+```
 
-4. EXTRACTION
-   [Créer les fichiers un par un]
+### Pattern B — Section rubrique (pattern dominant dans ce projet)
 
-5. VALIDATION
-   [Lancer les tests]
+```
+components/sections/rubriques/[nom]/
+├── index.ts
+├── [nom]-section.tsx           ← conteneur léger (< 150 lignes)
+├── [nom]-header.tsx
+├── [nom]-content.tsx
+├── [nom]-empty-state.tsx
+├── use-[nom]-data.ts           ← SWR / fetch + normalisation
+└── use-[nom]-kpis.ts           ← calculs, tris, filtres
+```
 
-Objectif: 22545 → <5000 octets
+### Pattern C — Hook monolithique → hooks spécialisés
+
+```
+hooks/feature/
+├── use-feature.ts              ← orchestrateur, réexporte tout
+├── use-feature-state.ts        ← useState + fonctions reset
+├── use-feature-actions.ts      ← handlers (onClick, onSubmit...)
+└── use-feature-data.ts         ← fetch + cache
+```
+
+### Pattern D — Données statiques volumineuses
+
+```
+data/[domaine]/
+├── [catégorie-a].ts
+├── [catégorie-b].ts
+└── index.ts                    ← combinaison + re-export
 ```
 
 ---
 
-## 💡 Conseils Spécifiques pour l'IA
-
-### Gestion de la Complexité
-
-1. **Fichiers > 20KB** : Modulariser en 2 sessions
-   - Session 1 : Extraire configuration + hooks
-   - Session 2 : Extraire composants
-
-2. **Fichiers 10-20KB** : Modulariser en 1 session
-   - Tout extraire d'un coup
-
-3. **Fichiers < 10KB** : Évaluer si nécessaire
-   - Peut-être juste extraire la config
-
-### Priorisation Automatique
+## 5. Prompt template pour une IA
 
 ```
-SI taille > 20KB ALORS priorité = CRITIQUE
-SI taille > 15KB ALORS priorité = HAUTE
-SI taille > 10KB ALORS priorité = MOYENNE
-SINON priorité = BASSE
-```
+Je vais modulariser le fichier [CHEMIN] suivant le guide AI_MODULARIZATION_GUIDE.md.
 
-### Gestion des Erreurs
+ÉTAPE 1 — ANALYSE
+- Taille : [X] o / [Y] lignes
+- Responsabilités identifiées : [liste numérotée]
+- Dépendances : [imports principaux]
 
-```
-SI npm run lint échoue ALORS
-  - Vérifier les imports
-  - Vérifier les exports
-  - Vérifier les types
+ÉTAPE 2 — STRUCTURE CIBLE
+[arborescence des nouveaux fichiers]
 
-SI npm run test échoue ALORS
-  - Vérifier les mocks
-  - Vérifier les props
-  - Vérifier la logique
+ÉTAPE 3-4 — EXÉCUTION
+Je vais créer les fichiers dans l'ordre : types → config → hooks → sous-composants → index → refactoring de l'original.
 
-SI npm run build échoue ALORS
-  - Vérifier les dépendances circulaires
-  - Vérifier les chemins d'import
-  - Vérifier les types TypeScript
+ÉTAPE 5 — VALIDATION
+npm -C apps/web run lint && npm run typecheck && npm run quality:top-heavy
+
+Résultat attendu : [AVANT X] o → [APRÈS Y] o (objectif -60%)
 ```
 
 ---
 
-## 🎯 Objectif Final
+## 6. Ressources
 
-**Pour l'IA** : Être capable de modulariser n'importe quel fichier du projet de manière autonome, reproductible et conforme aux standards établis.
-
-**Critères de succès** :
-- ✅ Réduction de taille > 50%
-- ✅ Tous les tests passent
-- ✅ Build réussit
-- ✅ Documentation complète
-- ✅ Progression mise à jour
-
----
-
-**Version** : 3.0.0  
-**Dernière mise à jour** : 28/04/2026  
-**Statut** : ✅ Guide modulaire optimisé pour agents IA
-
+| Fichier | Rôle | Lire avant... |
+|---------|------|---------------|
+| `documentation/architecture/monolith-split-plan.md` | Liste des fichiers prioritaires | Toute modularisation |
+| `documentation/design-system/TYPOGRAPHY_SYSTEM.md` | Classes `cmm-text-*` | Tout composant textuel |
+| `documentation/design-system/display-modes-chartes.md` | Mode sobre, fallbacks | Tout composant animé |
+| `apps/web/src/components/ui/cmm-button.tsx` | Props CmmButton | Tout prompt avec boutons |
+| `apps/web/src/components/ui/cmm-card.tsx` | Props CmmCard | Tout prompt avec cards |
+| `apps/web/tailwind.config.ts` | Palette, tokens, breakpoints | Tout doute sur une couleur |

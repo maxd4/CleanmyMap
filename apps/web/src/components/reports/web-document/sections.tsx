@@ -22,10 +22,25 @@ type ReportsWebSectionsProps = {
 
 export function ReportsWebSections(props: ReportsWebSectionsProps) {
  const { report, weather, weatherAdvice, isLoading, hasError } = props;
+ const [chapter0, chapter1, chapter2, chapter3, chapter4, chapter5, chapter6, chapter7, chapter8, chapter9] = CHAPTERS;
+ if (
+  !chapter0 ||
+  !chapter1 ||
+  !chapter2 ||
+  !chapter3 ||
+  !chapter4 ||
+  !chapter5 ||
+  !chapter6 ||
+  !chapter7 ||
+  !chapter8 ||
+  !chapter9
+ ) {
+  return null;
+ }
 
  return (
  <div className="space-y-8">
- <ReportPage {...CHAPTERS[0]}>
+ <ReportPage {...chapter0}>
  <div className="grid gap-3 md:grid-cols-2">
  <InsightBox
  title="Lecture terrain"
@@ -56,7 +71,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
  />
  </ReportPage>
 
- <ReportPage {...CHAPTERS[1]}>
+ <ReportPage {...chapter1}>
  <div className="grid gap-3 md:grid-cols-3">
  <MetricCard
  label="Actions validées"
@@ -77,7 +92,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
  <MonthlyBars rows={report.monthRows6} />
  </ReportPage>
 
- <ReportPage {...CHAPTERS[2]}>
+ <ReportPage {...chapter2}>
  <div className="grid gap-3 md:grid-cols-4">
  <MetricCard label="Pending" value={toFrInt(report.moderation.pending)} />
  <MetricCard label="Approved" value={toFrInt(report.moderation.approved)} />
@@ -119,7 +134,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
  />
  </ReportPage>
 
- <ReportPage {...CHAPTERS[3]}>
+ <ReportPage {...chapter3}>
  <div className="grid gap-3 md:grid-cols-4">
  <MetricCard label="Actions terrain" value={toFrInt(report.terrain.actionCount)} />
  <MetricCard label="Spots signalés" value={toFrInt(report.terrain.spotCount)} />
@@ -154,7 +169,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
  />
  </ReportPage>
 
- <ReportPage {...CHAPTERS[4]}>
+ <ReportPage {...chapter4}>
  <div className="grid gap-3 md:grid-cols-4">
  <MetricCard label="6 mois - actions" value={toFrInt(report.climate.six.actions)} />
  <MetricCard label="6 mois - kg" value={`${toFrNumber(report.climate.six.kg)} kg`} />
@@ -187,7 +202,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
  />
  </ReportPage>
 
- <ReportPage {...CHAPTERS[5]}>
+ <ReportPage {...chapter5}>
  <div className="grid gap-3 md:grid-cols-4">
  <MetricCard label="Événements créés" value={toFrInt(report.community.totalEvents)} />
  <MetricCard label="À venir" value={toFrInt(report.community.upcomingEvents)} />
@@ -245,7 +260,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
  />
  </ReportPage>
 
- <ReportPage {...CHAPTERS[6]}>
+ <ReportPage {...chapter6}>
  <div className="grid gap-3 md:grid-cols-2">
  <InsightBox
  title="Encadré méthodologie"
@@ -324,7 +339,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
  />
  </ReportPage>
 
- <ReportPage {...CHAPTERS[7]}>
+ <ReportPage {...chapter7}>
  <ReportTable
  headers={["Sprint","Période","Objectif principal","Responsables"]}
  rows={report.calendar}
@@ -347,14 +362,14 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
  </div>
  </ReportPage>
 
- <ReportPage {...CHAPTERS[8]}>
+ <ReportPage {...chapter8}>
  <ReportTable
  headers={["Terme","Définition claire"]}
  rows={GLOSSARY_ROWS.map((row) => [...row])}
  />
  </ReportPage>
 
- <ReportPage {...CHAPTERS[9]}>
+ <ReportPage {...chapter9}>
  <div className="grid gap-3 md:grid-cols-2">
  <ReportTable
  headers={["Section","Donnée clé","Usage"]}

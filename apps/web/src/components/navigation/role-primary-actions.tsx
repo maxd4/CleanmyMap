@@ -15,11 +15,12 @@ export function RolePrimaryActions({
  profile,
  title ="Actions principales",
 }: RolePrimaryActionsProps) {
- const { locale, displayMode } = useSitePreferences();
- const allActions = getProfileActions(profile);
+const { locale, displayMode } = useSitePreferences();
+const allActions = getProfileActions(profile);
+const primaryAction = allActions[0];
  
- // En mode simplifié, on ne garde que l'action prioritaire absolue
- const actions = displayMode ==="minimaliste" ? [allActions[0]] : allActions;
+// En mode simplifié, on ne garde que l'action prioritaire absolue
+const actions = displayMode ==="minimaliste" ? (primaryAction ? [primaryAction] : []) : allActions;
 
  function resolveCtaSlot(index: number): CtaSlot {
  if (index === 0) return"primary";

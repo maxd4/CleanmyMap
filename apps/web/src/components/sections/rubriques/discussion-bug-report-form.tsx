@@ -2,6 +2,12 @@
 
 import { useMemo, useState, type FormEvent } from"react";
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
+import { InlineFieldError } from"@/components/ui/inline-field-error";
+import { ErrorMessage } from"@/components/ui/error-message";
+import { PermissionErrorState } from"@/components/ui/permission-error-state";
+import { toAppError, isAppError, defaultMessageForKind } from"@/lib/errors/app-errors";
+import { notifyNetworkToast } from"@/lib/errors/network-toast";
+import type { AppError } from"@/lib/errors/app-errors";
 
 type SubmitState ="idle" |"submitting" |"success" |"error";
 
@@ -12,7 +18,10 @@ export function DiscussionBugReportForm() {
  const [title, setTitle] = useState("");
  const [description, setDescription] = useState("");
  const [submitState, setSubmitState] = useState<SubmitState>("idle");
- const [errorMessage, setErrorMessage] = useState<string | null>(null);
+ const [error, setError] = useState<AppError | null>(null);
+ const [titleTouched, setTitleTouched] = useState(false);
+ const [descriptionTouched, setDescriptionTouched] = useState(false);
+ const [submitAttempted, setSubmitAttempted] = useState(false);
 
  const pagePath = useMemo(() => {
  if (typeof window ==="undefined") {
@@ -21,19 +30,20 @@ export function DiscussionBugReportForm() {
  return window.location.pathname;
  }, []);
 
- const canSubmit =
- title.trim().length >= 4 &&
- description.trim().length >= 10 &&
- submitState !=="submitting";
+ const titleError =
+ (titleTouched || submitAttempted) && title.trim().length < 4
+ ? (fr ? "Le sujet doit contenir au moins 4 caractères." : "The subject must contain at least 4 characters.")
+ : null;
+ const descriptionError =
+ (descriptionTouched || submitAttempted) && description.trim().length < 10
+ ? (fr ? "Ajoute au moins 10 caractères pour décrire le problème." : "Add at least 10 characters to describe the issue.")
+ : null;
+ const canSubmit = !titleError && !descriptionError && submitState !=="submitting";
 
- async function handleSubmit(event: FormEvent<HTMLFormElement>) {
- event.preventDefault();
- if (!canSubmit) {
- return;
- }
+ async function submitReport() {
 
  setSubmitState("submitting");
- setErrorMessage(null);
+ setError(null);
  try {
  const response = await fetch("/api/community/bug-reports", {
  method:"POST",
@@ -48,20 +58,53 @@ export function DiscussionBugReportForm() {
 
  if (!response.ok) {
  const body = (await response.json().catch(() => null)) as
- | { error?: string }
+ | { error?: string; kind?: string }
  | null;
- throw new Error(body?.error ??"Impossible d'envoyer la demande.");
+ throw toAppError(
+ new Error(body?.error ??"Impossible d'envoyer la demande."),
+ {
+ kind:
+ body?.kind ==="validation" ? "validation" : body?.kind ==="permission" ? "permission" : "server",
+ message: body?.error ??"Impossible d'envoyer la demande.",
+ },
+ );
  }
 
  setSubmitState("success");
  setTitle("");
  setDescription("");
+ setTitleTouched(false);
+ setDescriptionTouched(false);
+ setSubmitAttempted(false);
+ setError(null);
  } catch (error) {
- setSubmitState("error");
-      setErrorMessage(
-        error instanceof Error ? error.message : (fr ? "Une erreur inattendue est survenue. Veuillez vérifier votre saisie." : "An unexpected error occurred. Please check your input."),
-      );
+ const appError = isAppError(error)
+ ? error
+ : toAppError(error, {
+ kind:"server",
+ message: fr ? "Une erreur inattendue est survenue. Réessayez." : "An unexpected error occurred. Please try again.",
+ });
+ if (appError.kind ==="network") {
+ notifyNetworkToast({
+ message: appError.message || defaultMessageForKind("network"),
+ onRetry: () => void submitReport(),
+ onRefresh: () => window.location.reload(),
+ });
+ setSubmitState("idle");
+ return;
  }
+ setSubmitState("error");
+ setError(appError);
+ }
+ }
+
+ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+ event.preventDefault();
+ setSubmitAttempted(true);
+ if (!canSubmit) {
+ return;
+ }
+ await submitReport();
  }
 
  return (
@@ -95,22 +138,36 @@ export function DiscussionBugReportForm() {
  <span className="cmm-text-caption font-semibold cmm-text-secondary">{fr ?"Sujet" :"Subject"}</span>
  <input
  value={title}
- onChange={(event) => setTitle(event.target.value)}
+ onChange={(event) => {
+ setTitleTouched(true);
+ setTitle(event.target.value);
+ if (error) {
+ setError(null);
+ }
+ }}
  placeholder={fr ?"Ex: Carte qui ne charge pas sur mobile" :"E.g. Map does not load on mobile"}
  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-amber-500 focus:outline-none"
  maxLength={160}
  />
+ {titleError ? <InlineFieldError message={titleError} /> : null}
  </label>
 
  <label className="block space-y-1">
  <span className="cmm-text-caption font-semibold cmm-text-secondary">{fr ?"Description" :"Description"}</span>
  <textarea
  value={description}
- onChange={(event) => setDescription(event.target.value)}
+ onChange={(event) => {
+ setDescriptionTouched(true);
+ setDescription(event.target.value);
+ if (error) {
+ setError(null);
+ }
+ }}
  placeholder={fr ?"Contexte, étapes, résultat observé, résultat attendu." :"Context, steps, observed result, expected result."}
  className="min-h-[120px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-amber-500 focus:outline-none"
  maxLength={3000}
  />
+ {descriptionError ? <InlineFieldError message={descriptionError} /> : null}
  </label>
 
  <div className="flex items-center justify-between gap-2">
@@ -131,10 +188,22 @@ export function DiscussionBugReportForm() {
  {fr ?"Merci, ta remontée a bien été envoyée." :"Thanks, your report has been sent."}
  </p>
  ) : null}
- {submitState ==="error" ? (
- <p className="cmm-text-caption font-medium text-rose-700">
- {errorMessage ?? (fr ?"Impossible d'envoyer la demande." :"Unable to send the request.")}
- </p>
+ {error ? (
+ error.kind ==="permission" ? (
+ <PermissionErrorState
+ className="mt-2"
+ title={fr ?"Connexion requise" :"Sign-in required"}
+ message={error.message}
+ />
+ ) : (
+ <ErrorMessage
+ className="mt-2"
+ kind={error.kind}
+ title={fr ?"Une erreur a bloqué l'envoi" :"A problem blocked the submission"}
+ message={error.message}
+ actions={<button type="button" onClick={() => void submitReport()} className="rounded-full bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-700">{fr ?"Réessayer" :"Retry"}</button>}
+ />
+ )
  ) : null}
  </form>
  </section>

@@ -1,3 +1,5 @@
+import { AppError, type AppErrorKind, defaultMessageForKind } from "@/lib/errors/app-errors";
+
 export type CommunityRsvpStatus = "yes" | "maybe" | "no";
 
 export type CommunityEventItem = {
@@ -55,19 +57,35 @@ export type CommunityClientErrorCode =
   | "network_error"
   | "server_error";
 
-export class CommunityClientError extends Error {
-  readonly code: CommunityClientErrorCode;
-  readonly status?: number;
+function mapClientErrorCodeToKind(code: CommunityClientErrorCode): AppErrorKind {
+  switch (code) {
+    case "invalid_payload":
+      return "validation";
+    case "permission_denied":
+      return "permission";
+    case "network_error":
+      return "network";
+    case "not_found":
+    case "server_error":
+    default:
+      return "server";
+  }
+}
 
+export class CommunityClientError extends AppError {
   constructor(
     code: CommunityClientErrorCode,
     message: string,
     status?: number,
   ) {
-    super(message);
+    super({
+      kind: mapClientErrorCodeToKind(code),
+      message,
+      status,
+      code,
+      retryable: code === "network_error" || code === "server_error",
+    });
     this.name = "CommunityClientError";
-    this.code = code;
-    this.status = status;
   }
 }
 
@@ -128,7 +146,7 @@ function parseCommunityEventsPayload(
   if (!payload || typeof payload !== "object") {
     throw new CommunityClientError(
       "server_error",
-      "Reponse community invalide.",
+      defaultMessageForKind("server"),
     );
   }
   const body = payload as {
@@ -143,7 +161,7 @@ function parseCommunityEventsPayload(
   ) {
     throw new CommunityClientError(
       "server_error",
-      "Reponse community incomplete.",
+      defaultMessageForKind("server"),
     );
   }
   return {
@@ -174,7 +192,7 @@ export async function fetchCommunityEvents(
   } catch {
     throw new CommunityClientError(
       "network_error",
-      "Reseau indisponible: impossible de charger les evenements.",
+      defaultMessageForKind("network"),
     );
   }
 
@@ -202,7 +220,7 @@ export async function createCommunityEvent(
   } catch {
     throw new CommunityClientError(
       "network_error",
-      "Reseau indisponible: creation d'evenement impossible.",
+      defaultMessageForKind("network"),
     );
   }
 
@@ -251,7 +269,7 @@ export async function updateCommunityEventOps(payload: {
   } catch {
     throw new CommunityClientError(
       "network_error",
-      "Reseau indisponible: mise a jour evenement impossible.",
+      defaultMessageForKind("network"),
     );
   }
 
@@ -303,7 +321,7 @@ export async function upsertCommunityRsvp(payload: {
   } catch {
     throw new CommunityClientError(
       "network_error",
-      "Reseau indisponible: RSVP impossible.",
+      defaultMessageForKind("network"),
     );
   }
 
@@ -320,12 +338,12 @@ export async function upsertCommunityRsvp(payload: {
     typeof body !== "object" ||
     (body as { status?: unknown }).status !== "ok"
   ) {
-    throw new CommunityClientError("server_error", "Reponse RSVP invalide.");
+    throw new CommunityClientError("server_error", defaultMessageForKind("server"));
   }
 
   const item = (body as { item?: unknown }).item;
   if (!item || typeof item !== "object") {
-    throw new CommunityClientError("server_error", "Reponse RSVP incomplete.");
+    throw new CommunityClientError("server_error", defaultMessageForKind("server"));
   }
   const normalized = item as {
     eventId?: unknown;
@@ -341,7 +359,7 @@ export async function upsertCommunityRsvp(payload: {
       normalized.rsvpStatus !== "no") ||
     typeof normalized.updatedAt !== "string"
   ) {
-    throw new CommunityClientError("server_error", "Reponse RSVP incomplete.");
+    throw new CommunityClientError("server_error", defaultMessageForKind("server"));
   }
 
   return {

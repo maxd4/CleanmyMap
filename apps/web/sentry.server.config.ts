@@ -1,8 +1,11 @@
 import * as Sentry from "@sentry/nextjs";
+import { isSentryEnabled } from "./src/lib/observability/sentry";
 
-Sentry.init({
-  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN,
-  tracesSampleRate: 1.0,
-  debug: false,
-  enabled: Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN),
-});
+if (isSentryEnabled()) {
+  Sentry.init({
+    dsn: process.env["NEXT_PUBLIC_SENTRY_DSN"] || process.env["SENTRY_DSN"],
+    tracesSampleRate: 1.0,
+    debug: false,
+    enabled: Boolean(process.env["NEXT_PUBLIC_SENTRY_DSN"] || process.env["SENTRY_DSN"]),
+  });
+}

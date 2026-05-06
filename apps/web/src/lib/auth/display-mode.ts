@@ -13,7 +13,7 @@ function extractDisplayModePreferenceFromMetadata(
     return null;
   }
 
-  const rawDisplayMode = metadata.displayMode;
+  const rawDisplayMode = metadata["displayMode"];
   if (typeof rawDisplayMode !== "string") {
     return null;
   }
@@ -42,4 +42,3 @@ export async function getCurrentUserDisplayModePreference(): Promise<DisplayMode
     return null;
   }
 }
-

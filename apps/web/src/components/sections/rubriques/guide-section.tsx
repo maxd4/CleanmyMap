@@ -3,6 +3,7 @@
 import Link from"next/link";
 import { useEffect, useMemo, useState } from"react";
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
+import { guideChecklistStorage } from "@/lib/storage/ui-state-storage";
 
 
 export function GuideSection() {
@@ -22,28 +23,12 @@ export function GuideSection() {
  if (typeof window ==="undefined") {
  return defaults;
  }
- try {
- const raw = window.localStorage.getItem("cleanmymap.guide.checklist");
- if (!raw) {
- return defaults;
- }
- const parsed = JSON.parse(raw) as Record<string, boolean>;
- return { ...defaults, ...parsed };
- } catch {
- return defaults;
- }
+ return { ...defaults, ...(guideChecklistStorage.read() ?? {}) };
  });
  const [serverReady, setServerReady] = useState<boolean>(false);
 
  useEffect(() => {
- try {
- window.localStorage.setItem(
-"cleanmymap.guide.checklist",
- JSON.stringify(checks),
- );
- } catch {
- // Ignore storage write errors.
- }
+ guideChecklistStorage.write(checks);
  }, [checks]);
 
  useEffect(() => {
@@ -205,7 +190,7 @@ export function GuideSection() {
  :"Validate quality score and export partner/local-authority report.",
  },
  ];
- }, [resourceVariant]);
+ }, [fr, resourceVariant]);
 
  return (
  <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-6 items-start">
@@ -286,7 +271,7 @@ export function GuideSection() {
  <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
  <input
  type="checkbox"
- checked={checks.briefing}
+ checked={checks["briefing"]}
  onChange={() => toggleCheck("briefing")}
  className="mt-1 flex-shrink-0"
  />
@@ -299,7 +284,7 @@ export function GuideSection() {
  <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
  <input
  type="checkbox"
- checked={checks.declaration}
+ checked={checks["declaration"]}
  onChange={() => toggleCheck("declaration")}
  className="mt-1 flex-shrink-0"
  />
@@ -312,7 +297,7 @@ export function GuideSection() {
  <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
  <input
  type="checkbox"
- checked={checks.tracing}
+ checked={checks["tracing"]}
  onChange={() => toggleCheck("tracing")}
  className="mt-1 flex-shrink-0"
  />
@@ -325,7 +310,7 @@ export function GuideSection() {
  <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
  <input
  type="checkbox"
- checked={checks.moderation}
+ checked={checks["moderation"]}
  onChange={() => toggleCheck("moderation")}
  className="mt-1 flex-shrink-0"
  />
@@ -338,7 +323,7 @@ export function GuideSection() {
  <li className="flex items-start gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
  <input
  type="checkbox"
- checked={checks.export}
+ checked={checks["export"]}
  onChange={() => toggleCheck("export")}
  className="mt-1 flex-shrink-0"
  />

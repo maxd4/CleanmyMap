@@ -429,7 +429,7 @@ export function ActionsHistoryList() {
         Aucune action ne correspond à la recherche ou aux filtres actifs.
       </p>
       <p className="cmm-text-caption cmm-text-muted">
-        Essayez d'élargir la période, de changer de lieu ou de repartir d'une recherche plus large.
+        Essayez d&apos;élargir la période, de changer de lieu ou de repartir d&apos;une recherche plus large.
       </p>
     </div>
   ) : null}

@@ -1,0 +1,554 @@
+instrumentation-client.ts(6,22): error TS4111: Property 'NEXT_PUBLIC_SENTRY_DSN' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_SENTRY_DSN'].
+instrumentation-client.ts(8,34): error TS4111: Property 'NEXT_PUBLIC_SENTRY_DSN' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_SENTRY_DSN'].
+next.config.ts(56,35): error TS4111: Property 'NEXT_PUBLIC_SENTRY_ENABLED' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_SENTRY_ENABLED'].
+next.config.ts(57,46): error TS4111: Property 'SENTRY_BUILD_PLUGIN' comes from an index signature, so it must be accessed with ['SENTRY_BUILD_PLUGIN'].
+next.config.ts(61,24): error TS4111: Property 'SENTRY_ORG' comes from an index signature, so it must be accessed with ['SENTRY_ORG'].
+next.config.ts(62,28): error TS4111: Property 'SENTRY_PROJECT' comes from an index signature, so it must be accessed with ['SENTRY_PROJECT'].
+next.config.ts(63,28): error TS4111: Property 'CI' comes from an index signature, so it must be accessed with ['CI'].
+sentry.edge.config.ts(6,22): error TS4111: Property 'SENTRY_DSN' comes from an index signature, so it must be accessed with ['SENTRY_DSN'].
+sentry.edge.config.ts(8,34): error TS4111: Property 'SENTRY_DSN' comes from an index signature, so it must be accessed with ['SENTRY_DSN'].
+sentry.server.config.ts(6,22): error TS4111: Property 'NEXT_PUBLIC_SENTRY_DSN' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_SENTRY_DSN'].
+sentry.server.config.ts(6,60): error TS4111: Property 'SENTRY_DSN' comes from an index signature, so it must be accessed with ['SENTRY_DSN'].
+sentry.server.config.ts(9,34): error TS4111: Property 'NEXT_PUBLIC_SENTRY_DSN' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_SENTRY_DSN'].
+sentry.server.config.ts(9,72): error TS4111: Property 'SENTRY_DSN' comes from an index signature, so it must be accessed with ['SENTRY_DSN'].
+src/app/(app)/actions/map/page.tsx(45,37): error TS4111: Property 'role' comes from an index signature, so it must be accessed with ['role'].
+src/app/(app)/actions/map/page.tsx(45,67): error TS4111: Property 'profile' comes from an index signature, so it must be accessed with ['profile'].
+src/app/(app)/actions/new/page.tsx(141,34): error TS4111: Property 'fromEventId' comes from an index signature, so it must be accessed with ['fromEventId'].
+src/app/(app)/actions/new/page.tsx(145,27): error TS4111: Property 'mode' comes from an index signature, so it must be accessed with ['mode'].
+src/app/(app)/actions/new/page.tsx(214,15): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/(app)/actions/new/page.tsx(277,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/(app)/admin/godmode/page.tsx(17,37): error TS4111: Property 'role' comes from an index signature, so it must be accessed with ['role'].
+src/app/(app)/admin/godmode/page.tsx(17,67): error TS4111: Property 'profile' comes from an index signature, so it must be accessed with ['profile'].
+src/app/(app)/dashboard/page.tsx(183,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/api/actions/prefill/route.ts(22,21): error TS2532: Object is possibly 'undefined'.
+src/app/api/actions/prefill/route.ts(22,39): error TS2532: Object is possibly 'undefined'.
+src/app/api/actions/prefill/route.ts(24,20): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/app/api/admin/role-accounts/route.test.ts(136,26): error TS4111: Property 'roleLabel' comes from an index signature, so it must be accessed with ['roleLabel'].
+src/app/api/reports/elus-dossier/route.ts(259,2): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/app/api/reports/elus-dossier/route.ts(266,24): error TS18048: 'pageLines' is possibly 'undefined'.
+src/app/api/reports/elus-dossier/route.ts(274,2): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/app/api/route/recommend/route.ts(160,34): error TS2322: Type 'StopCandidate | undefined' is not assignable to type 'StopCandidate'.
+  Type 'undefined' is not assignable to type 'StopCandidate'.
+src/app/api/route/recommend/route.ts(169,26): error TS2345: Argument of type 'StopCandidate | undefined' is not assignable to parameter of type '{ latitude: number; longitude: number; }'.
+  Type 'undefined' is not assignable to type '{ latitude: number; longitude: number; }'.
+src/app/api/route/recommend/route.ts(171,2): error TS18048: 'candidate' is possibly 'undefined'.
+src/app/api/route/recommend/route.ts(177,13): error TS2345: Argument of type 'StopCandidate | undefined' is not assignable to parameter of type 'StopCandidate'.
+  Type 'undefined' is not assignable to type 'StopCandidate'.
+src/app/api/services/route.test.ts(71,9): error TS18048: 'body.services.cloudflare' is possibly 'undefined'.
+src/app/api/services/route.test.ts(71,23): error TS4111: Property 'cloudflare' comes from an index signature, so it must be accessed with ['cloudflare'].
+src/app/api/services/route.test.ts(72,9): error TS18048: 'body.services.uptimerobot' is possibly 'undefined'.
+src/app/api/services/route.test.ts(72,23): error TS4111: Property 'uptimerobot' comes from an index signature, so it must be accessed with ['uptimerobot'].
+src/app/api/services/route.test.ts(83,9): error TS18048: 'body.services.cloudflare' is possibly 'undefined'.
+src/app/api/services/route.test.ts(83,23): error TS4111: Property 'cloudflare' comes from an index signature, so it must be accessed with ['cloudflare'].
+src/app/api/services/route.test.ts(84,9): error TS18048: 'body.services.uptimerobot' is possibly 'undefined'.
+src/app/api/services/route.test.ts(84,23): error TS4111: Property 'uptimerobot' comes from an index signature, so it must be accessed with ['uptimerobot'].
+src/app/api/services/route.ts(26,34): error TS4111: Property 'VERCEL' comes from an index signature, so it must be accessed with ['VERCEL'].
+src/app/api/services/route.ts(26,70): error TS4111: Property 'VERCEL_ENV' comes from an index signature, so it must be accessed with ['VERCEL_ENV'].
+src/app/robots.ts(47,29): error TS4111: Property 'NEXT_PUBLIC_APP_URL' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_APP_URL'].
+src/app/sitemap.ts(4,28): error TS4111: Property 'NEXT_PUBLIC_APP_URL' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_APP_URL'].
+src/components/account/account-setup-form.tsx(153,20): error TS4111: Property 'parisArrondissement' comes from an index signature, so it must be accessed with ['parisArrondissement'].
+src/components/account/account-setup-form.tsx(154,20): error TS4111: Property 'parisLocationType' comes from an index signature, so it must be accessed with ['parisLocationType'].
+src/components/account/account-setup-form.tsx(159,20): error TS4111: Property 'parisArrondissement' comes from an index signature, so it must be accessed with ['parisArrondissement'].
+src/components/account/account-setup-form.tsx(160,20): error TS4111: Property 'parisLocationType' comes from an index signature, so it must be accessed with ['parisLocationType'].
+src/components/account/user-location-onboarding-form.tsx(80,16): error TS4111: Property 'parisArrondissement' comes from an index signature, so it must be accessed with ['parisArrondissement'].
+src/components/account/user-location-onboarding-form.tsx(81,16): error TS4111: Property 'parisLocationType' comes from an index signature, so it must be accessed with ['parisLocationType'].
+src/components/account/user-location-onboarding-form.tsx(86,16): error TS4111: Property 'parisArrondissement' comes from an index signature, so it must be accessed with ['parisArrondissement'].
+src/components/account/user-location-onboarding-form.tsx(87,16): error TS4111: Property 'parisLocationType' comes from an index signature, so it must be accessed with ['parisLocationType'].
+src/components/account/user-location-onboarding-form.tsx(201,36): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/actions/action-declaration/ActionStepIdentity.tsx(166,21): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/actions/map/actions-map-geometry.utils.ts(95,11): error TS2488: Type '[number, number] | undefined' must have a '[Symbol.iterator]()' method that returns an iterator.
+src/components/actions/map/actions-map-geometry.utils.ts(132,11): error TS2488: Type 'number[] | undefined' must have a '[Symbol.iterator]()' method that returns an iterator.
+src/components/actions/quick-signalement-form.tsx(43,2): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/chat/chat-shell.tsx(152,75): error TS4111: Property 'parisArrondissement' comes from an index signature, so it must be accessed with ['parisArrondissement'].
+src/components/chat/chat-shell.tsx(369,23): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'SetStateAction<string>'.
+  Type 'undefined' is not assignable to type 'SetStateAction<string>'.
+src/components/learn/environmental-quiz.tsx(223,55): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/learn/environmental-quiz.tsx(230,43): error TS2345: Argument of type 'SRSStats | undefined' is not assignable to parameter of type 'SRSStats'.
+  Type 'undefined' is not assignable to type 'SRSStats'.
+src/components/learn/planetary-boundaries.tsx(155,63): error TS2532: Object is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(210,20): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(219,18): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(228,62): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(231,22): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(234,95): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(238,25): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(239,25): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(240,25): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(242,26): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(243,26): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(244,26): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(251,20): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(257,76): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(261,98): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(272,24): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/learn/planetary-boundaries.tsx(287,24): error TS18048: 'selectedBoundary' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(93,9): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(95,21): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(95,21): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(95,30): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(95,30): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(96,21): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(96,21): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(96,30): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(96,30): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(97,21): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(97,21): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(97,30): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(97,30): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(101,9): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(103,21): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(103,21): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(103,30): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(103,30): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(104,21): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(104,21): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(104,30): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(104,30): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(105,21): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(105,21): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(105,30): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(105,30): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(106,21): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(106,21): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(106,30): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(106,30): error TS2532: Object is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(109,9): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(109,29): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(111,21): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(112,21): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(113,21): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(114,12): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/app-navigation-ribbon-theme.ts(114,40): error TS18048: 'raw' is possibly 'undefined'.
+src/components/navigation/role-primary-actions.tsx(38,10): error TS18048: 'action' is possibly 'undefined'.
+src/components/navigation/role-primary-actions.tsx(39,8): error TS18048: 'action' is possibly 'undefined'.
+src/components/navigation/role-primary-actions.tsx(44,8): error TS18048: 'action' is possibly 'undefined'.
+src/components/navigation/role-primary-actions.tsx(45,9): error TS18048: 'action' is possibly 'undefined'.
+src/components/navigation/role-primary-actions.tsx(55,3): error TS18048: 'action' is possibly 'undefined'.
+src/components/navigation/role-primary-actions.tsx(58,3): error TS18048: 'action' is possibly 'undefined'.
+src/components/reports/admin-workflow/use-admin-workflow.ts(107,22): error TS2532: Object is possibly 'undefined'.
+src/components/reports/AnimatedImpactMetrics.tsx(27,40): error TS2532: Object is possibly 'undefined'.
+src/components/reports/AnimatedImpactMetrics.tsx(29,20): error TS2532: Object is possibly 'undefined'.
+src/components/reports/AnimatedImpactMetrics.tsx(29,48): error TS2532: Object is possibly 'undefined'.
+src/components/reports/web-document/analytics.ts(40,40): error TS2532: Object is possibly 'undefined'.
+src/components/reports/web-document/analytics.ts(40,62): error TS2532: Object is possibly 'undefined'.
+src/components/reports/web-document/analytics.ts(41,2): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/components/reports/web-document/sections.tsx(28,3): error TS2322: Type '{ children: Element[]; id?: string | undefined; kicker?: string | undefined; title?: string | undefined; subtitle?: string | undefined; audience?: ChapterAudience | undefined; }' is not assignable to type '{ id: string; kicker: string; title: string; subtitle: string; audience: ChapterAudience; children: ReactNode; }'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/reports/web-document/sections.tsx(59,3): error TS2322: Type '{ children: Element[]; id?: string | undefined; kicker?: string | undefined; title?: string | undefined; subtitle?: string | undefined; audience?: ChapterAudience | undefined; }' is not assignable to type '{ id: string; kicker: string; title: string; subtitle: string; audience: ChapterAudience; children: ReactNode; }'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/reports/web-document/sections.tsx(80,3): error TS2322: Type '{ children: Element[]; id?: string | undefined; kicker?: string | undefined; title?: string | undefined; subtitle?: string | undefined; audience?: ChapterAudience | undefined; }' is not assignable to type '{ id: string; kicker: string; title: string; subtitle: string; audience: ChapterAudience; children: ReactNode; }'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/reports/web-document/sections.tsx(122,3): error TS2322: Type '{ children: Element[]; id?: string | undefined; kicker?: string | undefined; title?: string | undefined; subtitle?: string | undefined; audience?: ChapterAudience | undefined; }' is not assignable to type '{ id: string; kicker: string; title: string; subtitle: string; audience: ChapterAudience; children: ReactNode; }'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/reports/web-document/sections.tsx(157,3): error TS2322: Type '{ children: Element[]; id?: string | undefined; kicker?: string | undefined; title?: string | undefined; subtitle?: string | undefined; audience?: ChapterAudience | undefined; }' is not assignable to type '{ id: string; kicker: string; title: string; subtitle: string; audience: ChapterAudience; children: ReactNode; }'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/reports/web-document/sections.tsx(190,3): error TS2322: Type '{ children: Element[]; id?: string | undefined; kicker?: string | undefined; title?: string | undefined; subtitle?: string | undefined; audience?: ChapterAudience | undefined; }' is not assignable to type '{ id: string; kicker: string; title: string; subtitle: string; audience: ChapterAudience; children: ReactNode; }'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/reports/web-document/sections.tsx(248,3): error TS2322: Type '{ children: Element[]; id?: string | undefined; kicker?: string | undefined; title?: string | undefined; subtitle?: string | undefined; audience?: ChapterAudience | undefined; }' is not assignable to type '{ id: string; kicker: string; title: string; subtitle: string; audience: ChapterAudience; children: ReactNode; }'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/reports/web-document/sections.tsx(327,3): error TS2322: Type '{ children: Element[]; id?: string | undefined; kicker?: string | undefined; title?: string | undefined; subtitle?: string | undefined; audience?: ChapterAudience | undefined; }' is not assignable to type '{ id: string; kicker: string; title: string; subtitle: string; audience: ChapterAudience; children: ReactNode; }'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/reports/web-document/sections.tsx(350,3): error TS2322: Type '{ children: Element; id?: string | undefined; kicker?: string | undefined; title?: string | undefined; subtitle?: string | undefined; audience?: ChapterAudience | undefined; }' is not assignable to type '{ id: string; kicker: string; title: string; subtitle: string; audience: ChapterAudience; children: ReactNode; }'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/reports/web-document/sections.tsx(357,3): error TS2322: Type '{ children: Element; id?: string | undefined; kicker?: string | undefined; title?: string | undefined; subtitle?: string | undefined; audience?: ChapterAudience | undefined; }' is not assignable to type '{ id: string; kicker: string; title: string; subtitle: string; audience: ChapterAudience; children: ReactNode; }'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/reports/web-document/use-reports-web-document-model.ts(120,16): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/annuaire-network-graph.tsx(41,28): error TS18048: 'n1' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire-network-graph.tsx(41,59): error TS18048: 'n2' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire-network-graph.tsx(45,20): error TS18048: 'n1' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire-network-graph.tsx(45,29): error TS18048: 'n2' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire-network-graph.tsx(46,17): error TS18048: 'n1' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire-network-graph.tsx(47,17): error TS18048: 'n1' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire-network-graph.tsx(48,17): error TS18048: 'n2' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire-network-graph.tsx(49,17): error TS18048: 'n2' is possibly 'undefined'.
+src/components/sections/rubriques/annuaire-network-graph.tsx(140,115): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/sections/rubriques/annuaire-network-graph.tsx(149,91): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/components/sections/rubriques/climate-section.tsx(141,35): error TS18048: 'priorityIndicator' is possibly 'undefined'.
+src/components/sections/rubriques/community/campaigns-section.tsx(129,12): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/community/campaigns-section.tsx(130,30): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/community/campaigns-section.tsx(152,14): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/community/ics.ts(26,18): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/components/sections/rubriques/community/ics.ts(26,24): error TS18048: 'month' is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(110,9): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(111,9): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(112,17): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(113,17): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(114,16): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(115,18): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(118,9): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(119,9): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(120,17): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(121,17): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(122,16): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(123,18): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(126,9): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(127,9): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(128,17): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(129,17): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(130,16): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/elus-section.tsx(131,18): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/feedback-section.tsx(217,21): error TS2532: Object is possibly 'undefined'.
+src/components/sections/rubriques/feedback-section.tsx(270,25): error TS4111: Property 'subject' comes from an index signature, so it must be accessed with ['subject'].
+src/components/sections/rubriques/guide-section.tsx(274,18): error TS4111: Property 'briefing' comes from an index signature, so it must be accessed with ['briefing'].
+src/components/sections/rubriques/guide-section.tsx(287,18): error TS4111: Property 'declaration' comes from an index signature, so it must be accessed with ['declaration'].
+src/components/sections/rubriques/guide-section.tsx(300,18): error TS4111: Property 'tracing' comes from an index signature, so it must be accessed with ['tracing'].
+src/components/sections/rubriques/guide-section.tsx(313,18): error TS4111: Property 'moderation' comes from an index signature, so it must be accessed with ['moderation'].
+src/components/sections/rubriques/guide-section.tsx(326,18): error TS4111: Property 'export' comes from an index signature, so it must be accessed with ['export'].
+src/components/sections/rubriques/national-stats-section.tsx(226,100): error TS18048: 'data' is possibly 'undefined'.
+src/components/sections/rubriques/national-stats-section.tsx(227,22): error TS18048: 'data' is possibly 'undefined'.
+src/components/sections/rubriques/national-stats-section.tsx(227,87): error TS18048: 'data' is possibly 'undefined'.
+src/components/sections/rubriques/national-stats-section.tsx(229,95): error TS18048: 'data' is possibly 'undefined'.
+src/components/sections/rubriques/national-stats-section.tsx(231,88): error TS18048: 'data' is possibly 'undefined'.
+src/components/sections/rubriques/national-stats-section.tsx(232,18): error TS18048: 'data' is possibly 'undefined'.
+src/components/sections/rubriques/national-stats-section.tsx(233,133): error TS18048: 'data' is possibly 'undefined'.
+src/components/sections/rubriques/weather-section.tsx(76,27): error TS18048: 'selectedZone' is possibly 'undefined'.
+src/components/sections/rubriques/weather-section.tsx(79,19): error TS18048: 'selectedZone' is possibly 'undefined'.
+src/components/sections/rubriques/weather-section.tsx(80,20): error TS18048: 'selectedZone' is possibly 'undefined'.
+src/components/sections/rubriques/weather-section.tsx(236,9): error TS18048: 'selectedZone' is possibly 'undefined'.
+src/lib/accueil/data.ts(115,12): error TS2532: Object is possibly 'undefined'.
+src/lib/accueil/data.ts(118,13): error TS2532: Object is possibly 'undefined'.
+src/lib/accueil/data.ts(118,27): error TS2532: Object is possibly 'undefined'.
+src/lib/accueil/data.ts(212,5): error TS2322: Type '{ id: string; actor: string; initials: string; action: string; location: string; timeLabel: string; tone: "emerald" | "blue" | "amber" | "cyan" | undefined; }[]' is not assignable to type 'HomeCommunityActivityItem[]'.
+  Type '{ id: string; actor: string; initials: string; action: string; location: string; timeLabel: string; tone: "emerald" | "blue" | "amber" | "cyan" | undefined; }' is not assignable to type 'HomeCommunityActivityItem'.
+    Types of property 'tone' are incompatible.
+      Type '"emerald" | "blue" | "amber" | "cyan" | undefined' is not assignable to type '"emerald" | "blue" | "amber" | "cyan"'.
+        Type 'undefined' is not assignable to type '"emerald" | "blue" | "amber" | "cyan"'.
+src/lib/actions/derived-geometry.ts(243,11): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/derived-geometry.ts(243,33): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/derived-geometry.ts(244,11): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/derived-geometry.ts(244,33): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/drawing.ts(67,5): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/event-link.ts(29,5): error TS2322: Type 'string | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+src/lib/actions/http.ts(111,24): error TS4111: Property 'code' comes from an index signature, so it must be accessed with ['code'].
+src/lib/actions/http.ts(111,49): error TS4111: Property 'code' comes from an index signature, so it must be accessed with ['code'].
+src/lib/actions/http.ts(113,20): error TS4111: Property 'referenceCode' comes from an index signature, so it must be accessed with ['referenceCode'].
+src/lib/actions/http.ts(113,54): error TS4111: Property 'referenceCode' comes from an index signature, so it must be accessed with ['referenceCode'].
+src/lib/actions/http.ts(116,13): error TS4111: Property 'details' comes from an index signature, so it must be accessed with ['details'].
+src/lib/actions/http.ts(116,36): error TS4111: Property 'details' comes from an index signature, so it must be accessed with ['details'].
+src/lib/actions/http.ts(117,17): error TS4111: Property 'details' comes from an index signature, so it must be accessed with ['details'].
+src/lib/actions/route-geometry.ts(157,12): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/vision.ts(268,15): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/vision.ts(269,15): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/vision.ts(270,15): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/vision.ts(282,20): error TS2532: Object is possibly 'undefined'.
+src/lib/actions/vision.ts(286,19): error TS2532: Object is possibly 'undefined'.
+src/lib/admin/dry-run-proof.ts(37,32): error TS4111: Property 'IMPORT_DRY_RUN_SECRET' comes from an index signature, so it must be accessed with ['IMPORT_DRY_RUN_SECRET'].
+src/lib/admin/dry-run-proof.ts(38,31): error TS4111: Property 'IMPORT_DRY_RUN_SECRET' comes from an index signature, so it must be accessed with ['IMPORT_DRY_RUN_SECRET'].
+src/lib/admin/moderation-client.ts(166,16): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
+src/lib/admin/moderation-client.ts(167,23): error TS4111: Property 'entityType' comes from an index signature, so it must be accessed with ['entityType'].
+src/lib/admin/moderation-client.ts(168,23): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/lib/admin/moderation-client.ts(178,28): error TS4111: Property 'entityType' comes from an index signature, so it must be accessed with ['entityType'].
+src/lib/admin/moderation-client.ts(179,20): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/lib/admin/moderation-client.ts(181,25): error TS4111: Property 'sourceTable' comes from an index signature, so it must be accessed with ['sourceTable'].
+src/lib/admin/moderation-client.ts(182,22): error TS4111: Property 'sourceTable' comes from an index signature, so it must be accessed with ['sourceTable'].
+src/lib/admin/moderation-client.ts(185,25): error TS4111: Property 'copiedToLocalValidatedStore' comes from an index signature, so it must be accessed with ['copiedToLocalValidatedStore'].
+src/lib/admin/moderation-client.ts(186,22): error TS4111: Property 'copiedToLocalValidatedStore' comes from an index signature, so it must be accessed with ['copiedToLocalValidatedStore'].
+src/lib/admin/moderation-client.ts(189,25): error TS4111: Property 'operationId' comes from an index signature, so it must be accessed with ['operationId'].
+src/lib/admin/moderation-client.ts(190,22): error TS4111: Property 'operationId' comes from an index signature, so it must be accessed with ['operationId'].
+src/lib/admin/promotion-requests-store.ts(57,28): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/lib/admin/promotion-requests-store.ts(57,53): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/lib/admin/promotion-requests-store.ts(58,35): error TS4111: Property 'createdAt' comes from an index signature, so it must be accessed with ['createdAt'].
+src/lib/admin/promotion-requests-store.ts(58,67): error TS4111: Property 'createdAt' comes from an index signature, so it must be accessed with ['createdAt'].
+src/lib/admin/promotion-requests-store.ts(60,19): error TS4111: Property 'submittedByUserId' comes from an index signature, so it must be accessed with ['submittedByUserId'].
+src/lib/admin/promotion-requests-store.ts(60,59): error TS4111: Property 'submittedByUserId' comes from an index signature, so it must be accessed with ['submittedByUserId'].
+src/lib/admin/promotion-requests-store.ts(62,19): error TS4111: Property 'submittedByDisplayName' comes from an index signature, so it must be accessed with ['submittedByDisplayName'].
+src/lib/admin/promotion-requests-store.ts(63,16): error TS4111: Property 'submittedByDisplayName' comes from an index signature, so it must be accessed with ['submittedByDisplayName'].
+src/lib/admin/promotion-requests-store.ts(66,19): error TS4111: Property 'submittedByEmail' comes from an index signature, so it must be accessed with ['submittedByEmail'].
+src/lib/admin/promotion-requests-store.ts(66,59): error TS4111: Property 'submittedByEmail' comes from an index signature, so it must be accessed with ['submittedByEmail'].
+src/lib/admin/promotion-requests-store.ts(67,16): error TS4111: Property 'submittedByEmail' comes from an index signature, so it must be accessed with ['submittedByEmail'].
+src/lib/admin/promotion-requests-store.ts(70,19): error TS4111: Property 'submittedByRole' comes from an index signature, so it must be accessed with ['submittedByRole'].
+src/lib/admin/promotion-requests-store.ts(70,57): error TS4111: Property 'submittedByRole' comes from an index signature, so it must be accessed with ['submittedByRole'].
+src/lib/admin/promotion-requests-store.ts(71,32): error TS4111: Property 'requestedRole' comes from an index signature, so it must be accessed with ['requestedRole'].
+src/lib/admin/promotion-requests-store.ts(72,36): error TS4111: Property 'motivation' comes from an index signature, so it must be accessed with ['motivation'].
+src/lib/admin/promotion-requests-store.ts(72,69): error TS4111: Property 'motivation' comes from an index signature, so it must be accessed with ['motivation'].
+src/lib/admin/promotion-requests-store.ts(74,12): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
+src/lib/admin/promotion-requests-store.ts(74,44): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
+src/lib/admin/promotion-requests-store.ts(75,16): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
+src/lib/admin/promotion-requests-store.ts(78,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/admin/promotion-requests-store.ts(79,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/admin/promotion-requests-store.ts(80,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/admin/promotion-requests-store.ts(81,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/admin/promotion-requests-store.ts(82,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/admin/promotion-requests-store.ts(83,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/admin/promotion-requests-store.ts(84,16): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/admin/promotion-requests-store.ts(91,19): error TS4111: Property 'reviewedAt' comes from an index signature, so it must be accessed with ['reviewedAt'].
+src/lib/admin/promotion-requests-store.ts(91,52): error TS4111: Property 'reviewedAt' comes from an index signature, so it must be accessed with ['reviewedAt'].
+src/lib/admin/promotion-requests-store.ts(93,19): error TS4111: Property 'reviewedByUserId' comes from an index signature, so it must be accessed with ['reviewedByUserId'].
+src/lib/admin/promotion-requests-store.ts(93,58): error TS4111: Property 'reviewedByUserId' comes from an index signature, so it must be accessed with ['reviewedByUserId'].
+src/lib/admin/promotion-requests-store.ts(95,19): error TS4111: Property 'reviewedByRole' comes from an index signature, so it must be accessed with ['reviewedByRole'].
+src/lib/admin/promotion-requests-store.ts(95,56): error TS4111: Property 'reviewedByRole' comes from an index signature, so it must be accessed with ['reviewedByRole'].
+src/lib/admin/promotion-requests-store.ts(253,9): error TS2322: Type '{ status: "rejected" | "accepted"; reviewedAt: string; reviewedByUserId: string; reviewedByRole: Role; creatorState: "rejected" | "accepted"; id?: string | undefined; createdAt?: string | undefined; ... 5 more ...; motivation?: string | undefined; }' is not assignable to type 'PromotionRequestRecord'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/admin/promotion-requests-store.ts(284,9): error TS2322: Type '{ creatorState: "pending" | "rejected" | "new" | "accepted" | "responded" | "treated" | "archived"; id?: string | undefined; createdAt?: string | undefined; submittedByUserId?: string | undefined; ... 8 more ...; reviewedByRole?: Role | ... 1 more ... | undefined; }' is not assignable to type 'PromotionRequestRecord'.
+  Types of property 'id' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/lib/admin/response.test.ts(16,17): error TS4111: Property 'code' comes from an index signature, so it must be accessed with ['code'].
+src/lib/admin/response.test.ts(17,17): error TS4111: Property 'message' comes from an index signature, so it must be accessed with ['message'].
+src/lib/admin/response.test.ts(18,17): error TS4111: Property 'hint' comes from an index signature, so it must be accessed with ['hint'].
+src/lib/admin/response.test.ts(19,17): error TS4111: Property 'operationId' comes from an index signature, so it must be accessed with ['operationId'].
+src/lib/analytics/compare-zones.ts(95,13): error TS2532: Object is possibly 'undefined'.
+src/lib/analytics/compare-zones.ts(95,34): error TS2532: Object is possibly 'undefined'.
+src/lib/analytics/compare-zones.ts(97,3): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/analytics/funnel-metrics.ts(55,20): error TS2532: Object is possibly 'undefined'.
+src/lib/analytics/funnel-metrics.ts(55,41): error TS2532: Object is possibly 'undefined'.
+src/lib/analytics/funnel-metrics.ts(57,17): error TS2345: Argument of type 'number | undefined' is not assignable to parameter of type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/analytics/period-comparison.ts(56,13): error TS2532: Object is possibly 'undefined'.
+src/lib/analytics/period-comparison.ts(56,34): error TS2532: Object is possibly 'undefined'.
+src/lib/analytics/period-comparison.ts(58,3): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/auth/account-setup.ts(12,19): error TS4111: Property 'profileSetupCompleted' comes from an index signature, so it must be accessed with ['profileSetupCompleted'].
+src/lib/auth/display-mode.ts(16,35): error TS4111: Property 'displayMode' comes from an index signature, so it must be accessed with ['displayMode'].
+src/lib/authz.ts(180,3): error TS2322: Type 'AccountBadge | undefined' is not assignable to type 'AccountBadge'.
+  Type 'undefined' is not assignable to type 'AccountBadge'.
+src/lib/authz.ts(184,3): error TS2322: Type 'AccountBadge | undefined' is not assignable to type 'AccountBadge'.
+  Type 'undefined' is not assignable to type 'AccountBadge'.
+src/lib/authz.ts(217,3): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/backpressure/index.ts(52,3): error TS2322: Type 'BackpressureConfig | undefined' is not assignable to type 'BackpressureConfig'.
+  Type 'undefined' is not assignable to type 'BackpressureConfig'.
+src/lib/backpressure/index.ts(52,44): error TS4111: Property 'default' comes from an index signature, so it must be accessed with ['default'].
+src/lib/chat/channels.ts(193,33): error TS4111: Property 'zoneName' comes from an index signature, so it must be accessed with ['zoneName'].
+src/lib/chat/channels.ts(196,39): error TS4111: Property 'parisArrondissement' comes from an index signature, so it must be accessed with ['parisArrondissement'].
+src/lib/community/bug-reports-store.ts(62,28): error TS4111: Property 'reportType' comes from an index signature, so it must be accessed with ['reportType'].
+src/lib/community/bug-reports-store.ts(66,28): error TS4111: Property 'title' comes from an index signature, so it must be accessed with ['title'].
+src/lib/community/bug-reports-store.ts(66,53): error TS4111: Property 'title' comes from an index signature, so it must be accessed with ['title'].
+src/lib/community/bug-reports-store.ts(67,34): error TS4111: Property 'description' comes from an index signature, so it must be accessed with ['description'].
+src/lib/community/bug-reports-store.ts(67,65): error TS4111: Property 'description' comes from an index signature, so it must be accessed with ['description'].
+src/lib/community/bug-reports-store.ts(68,31): error TS4111: Property 'pagePath' comes from an index signature, so it must be accessed with ['pagePath'].
+src/lib/community/bug-reports-store.ts(68,59): error TS4111: Property 'pagePath' comes from an index signature, so it must be accessed with ['pagePath'].
+src/lib/community/bug-reports-store.ts(70,16): error TS4111: Property 'submittedByUserId' comes from an index signature, so it must be accessed with ['submittedByUserId'].
+src/lib/community/bug-reports-store.ts(70,53): error TS4111: Property 'submittedByUserId' comes from an index signature, so it must be accessed with ['submittedByUserId'].
+src/lib/community/bug-reports-store.ts(72,16): error TS4111: Property 'submittedByDisplayName' comes from an index signature, so it must be accessed with ['submittedByDisplayName'].
+src/lib/community/bug-reports-store.ts(72,59): error TS4111: Property 'submittedByDisplayName' comes from an index signature, so it must be accessed with ['submittedByDisplayName'].
+src/lib/community/bug-reports-store.ts(73,13): error TS4111: Property 'submittedByDisplayName' comes from an index signature, so it must be accessed with ['submittedByDisplayName'].
+src/lib/community/bug-reports-store.ts(76,16): error TS4111: Property 'submittedByEmail' comes from an index signature, so it must be accessed with ['submittedByEmail'].
+src/lib/community/bug-reports-store.ts(76,53): error TS4111: Property 'submittedByEmail' comes from an index signature, so it must be accessed with ['submittedByEmail'].
+src/lib/community/bug-reports-store.ts(77,13): error TS4111: Property 'submittedByEmail' comes from an index signature, so it must be accessed with ['submittedByEmail'].
+src/lib/community/bug-reports-store.ts(80,16): error TS4111: Property 'submittedByRole' comes from an index signature, so it must be accessed with ['submittedByRole'].
+src/lib/community/bug-reports-store.ts(80,52): error TS4111: Property 'submittedByRole' comes from an index signature, so it must be accessed with ['submittedByRole'].
+src/lib/community/bug-reports-store.ts(81,13): error TS4111: Property 'submittedByRole' comes from an index signature, so it must be accessed with ['submittedByRole'].
+src/lib/community/bug-reports-store.ts(83,25): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/lib/community/bug-reports-store.ts(83,47): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/lib/community/bug-reports-store.ts(84,32): error TS4111: Property 'createdAt' comes from an index signature, so it must be accessed with ['createdAt'].
+src/lib/community/bug-reports-store.ts(84,61): error TS4111: Property 'createdAt' comes from an index signature, so it must be accessed with ['createdAt'].
+src/lib/community/bug-reports-store.ts(86,9): error TS4111: Property 'source' comes from an index signature, so it must be accessed with ['source'].
+src/lib/community/bug-reports-store.ts(86,46): error TS4111: Property 'source' comes from an index signature, so it must be accessed with ['source'].
+src/lib/community/bug-reports-store.ts(87,13): error TS4111: Property 'source' comes from an index signature, so it must be accessed with ['source'].
+src/lib/community/bug-reports-store.ts(90,9): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
+src/lib/community/bug-reports-store.ts(90,37): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
+src/lib/community/bug-reports-store.ts(90,65): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
+src/lib/community/bug-reports-store.ts(92,9): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/community/bug-reports-store.ts(93,9): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/community/bug-reports-store.ts(94,9): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/community/bug-reports-store.ts(95,9): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/community/bug-reports-store.ts(96,13): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/community/bug-reports-store.ts(113,21): error TS4111: Property 'reportType' comes from an index signature, so it must be accessed with ['reportType'].
+src/lib/community/bug-reports-store.ts(239,9): error TS2322: Type '{ status: "treated" | "archived" | "open"; creatorState: "new" | "treated" | "archived"; reportType?: "bug" | "idea" | "improvement" | "collaboration" | undefined; title?: string | undefined; ... 8 more ...; submittedByUserId?: string | undefined; }' is not assignable to type 'BugReportRecord'.
+  Type '{ status: "treated" | "archived" | "open"; creatorState: "new" | "treated" | "archived"; reportType?: "bug" | "idea" | "improvement" | "collaboration" | undefined; title?: string | undefined; ... 8 more ...; submittedByUserId?: string | undefined; }' is not assignable to type 'BugReportInput'.
+    Types of property 'reportType' are incompatible.
+      Type '"bug" | "idea" | "improvement" | "collaboration" | undefined' is not assignable to type '"bug" | "idea" | "improvement" | "collaboration"'.
+        Type 'undefined' is not assignable to type '"bug" | "idea" | "improvement" | "collaboration"'.
+src/lib/community/bug-reports-store.ts(288,9): error TS2322: Type '{ creatorState: "pending" | "new" | "responded" | "treated" | "archived"; reportType?: "bug" | "idea" | "improvement" | "collaboration" | undefined; title?: string | undefined; ... 9 more ...; status?: "treated" | ... 2 more ... | undefined; }' is not assignable to type 'BugReportRecord'.
+  Type '{ creatorState: "pending" | "new" | "responded" | "treated" | "archived"; reportType?: "bug" | "idea" | "improvement" | "collaboration" | undefined; title?: string | undefined; ... 9 more ...; status?: "treated" | ... 2 more ... | undefined; }' is not assignable to type 'BugReportInput'.
+    Types of property 'reportType' are incompatible.
+      Type '"bug" | "idea" | "improvement" | "collaboration" | undefined' is not assignable to type '"bug" | "idea" | "improvement" | "collaboration"'.
+        Type 'undefined' is not assignable to type '"bug" | "idea" | "improvement" | "collaboration"'.
+src/lib/community/event-notification-targets.ts(74,38): error TS4111: Property 'zoneName' comes from an index signature, so it must be accessed with ['zoneName'].
+src/lib/dashboard/today.ts(145,3): error TS2322: Type 'ActionDataContract | undefined' is not assignable to type 'ActionDataContract | null'.
+  Type 'undefined' is not assignable to type 'ActionDataContract | null'.
+src/lib/data/local-store.ts(96,25): error TS2345: Argument of type 'LocalDataRecord | undefined' is not assignable to parameter of type 'LocalDataRecord'.
+  Type 'undefined' is not assignable to type 'LocalDataRecord'.
+src/lib/data/map-records.test.ts(74,12): error TS2532: Object is possibly 'undefined'.
+src/lib/data/map-records.test.ts(75,12): error TS2532: Object is possibly 'undefined'.
+src/lib/data/map-records.test.ts(76,12): error TS2532: Object is possibly 'undefined'.
+src/lib/data/map-records.test.ts(79,12): error TS2532: Object is possibly 'undefined'.
+src/lib/data/map-records.test.ts(82,12): error TS2532: Object is possibly 'undefined'.
+src/lib/data/map-records.test.ts(85,12): error TS2532: Object is possibly 'undefined'.
+src/lib/env.ts(98,36): error TS4111: Property 'NEXT_PUBLIC_APP_URL' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_APP_URL'].
+src/lib/env.ts(99,41): error TS4111: Property 'NEXT_PUBLIC_SUPABASE_URL' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_SUPABASE_URL'].
+src/lib/env.ts(100,46): error TS4111: Property 'NEXT_PUBLIC_SUPABASE_ANON_KEY' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_SUPABASE_ANON_KEY'].
+src/lib/env.ts(101,50): error TS4111: Property 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY'].
+src/lib/env.ts(102,40): error TS4111: Property 'NEXT_PUBLIC_POSTHOG_KEY' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_POSTHOG_KEY'].
+src/lib/env.ts(103,42): error TS4111: Property 'NEXT_PUBLIC_POSTHOG_TOKEN' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_POSTHOG_TOKEN'].
+src/lib/env.ts(104,41): error TS4111: Property 'NEXT_PUBLIC_POSTHOG_HOST' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_POSTHOG_HOST'].
+src/lib/env.ts(105,43): error TS4111: Property 'NEXT_PUBLIC_POSTHOG_REGION' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_POSTHOG_REGION'].
+src/lib/env.ts(106,39): error TS4111: Property 'NEXT_PUBLIC_SENTRY_DSN' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_SENTRY_DSN'].
+src/lib/errors/app-errors.ts(240,29): error TS4111: Property 'error' comes from an index signature, so it must be accessed with ['error'].
+src/lib/errors/app-errors.ts(240,46): error TS4111: Property 'message' comes from an index signature, so it must be accessed with ['message'].
+src/lib/errors/app-errors.ts(240,65): error TS4111: Property 'hint' comes from an index signature, so it must be accessed with ['hint'].
+src/lib/errors/app-errors.ts(251,28): error TS4111: Property 'kind' comes from an index signature, so it must be accessed with ['kind'].
+src/lib/errors/app-errors.ts(297,23): error TS4111: Property 'code' comes from an index signature, so it must be accessed with ['code'].
+src/lib/errors/app-errors.ts(297,52): error TS4111: Property 'code' comes from an index signature, so it must be accessed with ['code'].
+src/lib/errors/app-errors.ts(298,19): error TS4111: Property 'code' comes from an index signature, so it must be accessed with ['code'].
+src/lib/errors/app-errors.ts(301,23): error TS4111: Property 'referenceCode' comes from an index signature, so it must be accessed with ['referenceCode'].
+src/lib/errors/app-errors.ts(302,15): error TS4111: Property 'referenceCode' comes from an index signature, so it must be accessed with ['referenceCode'].
+src/lib/errors/app-errors.ts(303,19): error TS4111: Property 'referenceCode' comes from an index signature, so it must be accessed with ['referenceCode'].
+src/lib/errors/app-errors.ts(307,16): error TS4111: Property 'details' comes from an index signature, so it must be accessed with ['details'].
+src/lib/errors/app-errors.ts(307,42): error TS4111: Property 'details' comes from an index signature, so it must be accessed with ['details'].
+src/lib/errors/app-errors.ts(308,20): error TS4111: Property 'details' comes from an index signature, so it must be accessed with ['details'].
+src/lib/errors/app-errors.ts(310,21): error TS4111: Property 'cause' comes from an index signature, so it must be accessed with ['cause'].
+src/lib/gamification/quiz-srs.ts(41,7): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/gamification/quiz-srs.ts(43,7): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/geo/greater-paris-filter.tsx(62,7): error TS2532: Object is possibly 'undefined'.
+src/lib/geo/greater-paris.test.ts(104,12): error TS2532: Object is possibly 'undefined'.
+src/lib/geo/paris-arrondissements.ts(134,33): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/geo/paris-arrondissements.ts(138,26): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/geo/paris-neighborhood.test.ts(27,12): error TS2532: Object is possibly 'undefined'.
+src/lib/geo/paris-neighborhood.test.ts(28,12): error TS2532: Object is possibly 'undefined'.
+src/lib/geo/paris-neighborhood.test.ts(63,31): error TS2532: Object is possibly 'undefined'.
+src/lib/i18n/french-copy-accents.test.ts(67,21): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/lib/i18n/server-translation.ts(10,53): error TS4111: Property 'fr' comes from an index signature, so it must be accessed with ['fr'].
+src/lib/i18n/use-translation.ts(12,53): error TS4111: Property 'fr' comes from an index signature, so it must be accessed with ['fr'].
+src/lib/learning/cognitive-principles.ts(144,5): error TS2322: Type 'CognitiveRubricSpec | undefined' is not assignable to type 'CognitiveRubricSpec'.
+  Type 'undefined' is not assignable to type 'CognitiveRubricSpec'.
+src/lib/learning/learn-progress.ts(37,25): error TS4111: Property 'lastPage' comes from an index signature, so it must be accessed with ['lastPage'].
+src/lib/learning/learn-progress.ts(38,25): error TS4111: Property 'visitedPages' comes from an index signature, so it must be accessed with ['visitedPages'].
+src/lib/learning/learn-progress.ts(39,11): error TS4111: Property 'visitedPages' comes from an index signature, so it must be accessed with ['visitedPages'].
+src/lib/learning/learn-progress.ts(40,18): error TS4111: Property 'lastUpdatedAt' comes from an index signature, so it must be accessed with ['lastUpdatedAt'].
+src/lib/metadata.ts(3,28): error TS4111: Property 'NEXT_PUBLIC_APP_URL' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_APP_URL'].
+src/lib/observability/sentry.ts(11,35): error TS4111: Property 'NEXT_PUBLIC_SENTRY_ENABLED' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_SENTRY_ENABLED'].
+src/lib/partners/onboarding-requests-store.ts(47,28): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/lib/partners/onboarding-requests-store.ts(47,53): error TS4111: Property 'id' comes from an index signature, so it must be accessed with ['id'].
+src/lib/partners/onboarding-requests-store.ts(48,35): error TS4111: Property 'createdAt' comes from an index signature, so it must be accessed with ['createdAt'].
+src/lib/partners/onboarding-requests-store.ts(48,67): error TS4111: Property 'createdAt' comes from an index signature, so it must be accessed with ['createdAt'].
+src/lib/partners/onboarding-requests-store.ts(50,19): error TS4111: Property 'submittedByUserId' comes from an index signature, so it must be accessed with ['submittedByUserId'].
+src/lib/partners/onboarding-requests-store.ts(50,59): error TS4111: Property 'submittedByUserId' comes from an index signature, so it must be accessed with ['submittedByUserId'].
+src/lib/partners/onboarding-requests-store.ts(52,19): error TS4111: Property 'submittedByEmail' comes from an index signature, so it must be accessed with ['submittedByEmail'].
+src/lib/partners/onboarding-requests-store.ts(52,59): error TS4111: Property 'submittedByEmail' comes from an index signature, so it must be accessed with ['submittedByEmail'].
+src/lib/partners/onboarding-requests-store.ts(53,16): error TS4111: Property 'submittedByEmail' comes from an index signature, so it must be accessed with ['submittedByEmail'].
+src/lib/partners/onboarding-requests-store.ts(56,12): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
+src/lib/partners/onboarding-requests-store.ts(56,44): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
+src/lib/partners/onboarding-requests-store.ts(57,16): error TS4111: Property 'status' comes from an index signature, so it must be accessed with ['status'].
+src/lib/partners/onboarding-requests-store.ts(60,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/partners/onboarding-requests-store.ts(61,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/partners/onboarding-requests-store.ts(62,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/partners/onboarding-requests-store.ts(63,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/partners/onboarding-requests-store.ts(64,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/partners/onboarding-requests-store.ts(65,12): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/partners/onboarding-requests-store.ts(66,16): error TS4111: Property 'creatorState' comes from an index signature, so it must be accessed with ['creatorState'].
+src/lib/partners/onboarding-requests-store.ts(74,19): error TS4111: Property 'organizationName' comes from an index signature, so it must be accessed with ['organizationName'].
+src/lib/partners/onboarding-requests-store.ts(74,58): error TS4111: Property 'organizationName' comes from an index signature, so it must be accessed with ['organizationName'].
+src/lib/partners/onboarding-requests-store.ts(75,35): error TS4111: Property 'organizationType' comes from an index signature, so it must be accessed with ['organizationType'].
+src/lib/partners/onboarding-requests-store.ts(77,19): error TS4111: Property 'legalIdentity' comes from an index signature, so it must be accessed with ['legalIdentity'].
+src/lib/partners/onboarding-requests-store.ts(77,55): error TS4111: Property 'legalIdentity' comes from an index signature, so it must be accessed with ['legalIdentity'].
+src/lib/partners/onboarding-requests-store.ts(78,50): error TS4111: Property 'contributionTypes' comes from an index signature, so it must be accessed with ['contributionTypes'].
+src/lib/partners/onboarding-requests-store.ts(79,14): error TS4111: Property 'contributionTypes' comes from an index signature, so it must be accessed with ['contributionTypes'].
+src/lib/partners/onboarding-requests-store.ts(104,52): error TS4111: Property 'coverage' comes from an index signature, so it must be accessed with ['coverage'].
+src/lib/partners/onboarding-requests-store.ts(105,60): error TS4111: Property 'availability' comes from an index signature, so it must be accessed with ['availability'].
+src/lib/partners/onboarding-requests-store.ts(119,32): error TS4111: Property 'contactName' comes from an index signature, so it must be accessed with ['contactName'].
+src/lib/partners/onboarding-requests-store.ts(119,66): error TS4111: Property 'contactName' comes from an index signature, so it must be accessed with ['contactName'].
+src/lib/partners/onboarding-requests-store.ts(120,35): error TS4111: Property 'contactChannel' comes from an index signature, so it must be accessed with ['contactChannel'].
+src/lib/partners/onboarding-requests-store.ts(120,72): error TS4111: Property 'contactChannel' comes from an index signature, so it must be accessed with ['contactChannel'].
+src/lib/partners/onboarding-requests-store.ts(121,35): error TS4111: Property 'contactDetails' comes from an index signature, so it must be accessed with ['contactDetails'].
+src/lib/partners/onboarding-requests-store.ts(121,72): error TS4111: Property 'contactDetails' comes from an index signature, so it must be accessed with ['contactDetails'].
+src/lib/partners/onboarding-requests-store.ts(122,31): error TS4111: Property 'motivation' comes from an index signature, so it must be accessed with ['motivation'].
+src/lib/partners/onboarding-requests-store.ts(122,64): error TS4111: Property 'motivation' comes from an index signature, so it must be accessed with ['motivation'].
+src/lib/partners/onboarding-requests-store.ts(252,9): error TS2322: Type '{ status: "rejected" | "accepted" | "pending_admin_review"; creatorState: "pending" | "rejected" | "accepted"; organizationName?: string | undefined; organizationType?: "association" | "collectif" | "commerce" | "entreprise" | undefined; ... 11 more ...; submittedByEmail?: string | ... 1 more ... | undefined; }' is not assignable to type 'PartnerOnboardingRequestRecord'.
+  Type '{ status: "rejected" | "accepted" | "pending_admin_review"; creatorState: "pending" | "rejected" | "accepted"; organizationName?: string | undefined; organizationType?: "association" | "collectif" | "commerce" | "entreprise" | undefined; ... 11 more ...; submittedByEmail?: string | ... 1 more ... | undefined; }' is not assignable to type 'PartnerOnboardingRequestInput'.
+    Types of property 'organizationName' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/lib/partners/onboarding-requests-store.ts(286,9): error TS2322: Type '{ creatorState: "pending" | "rejected" | "new" | "accepted" | "responded" | "treated" | "archived"; organizationName?: string | undefined; organizationType?: "association" | "collectif" | "commerce" | "entreprise" | undefined; ... 12 more ...; status?: "rejected" | ... 2 more ... | undefined; }' is not assignable to type 'PartnerOnboardingRequestRecord'.
+  Type '{ creatorState: "pending" | "rejected" | "new" | "accepted" | "responded" | "treated" | "archived"; organizationName?: string | undefined; organizationType?: "association" | "collectif" | "commerce" | "entreprise" | undefined; ... 12 more ...; status?: "rejected" | ... 2 more ... | undefined; }' is not assignable to type 'PartnerOnboardingRequestInput'.
+    Types of property 'organizationName' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/lib/pilotage/metrics.ts(73,13): error TS2532: Object is possibly 'undefined'.
+src/lib/pilotage/metrics.ts(73,34): error TS2532: Object is possibly 'undefined'.
+src/lib/pilotage/metrics.ts(75,3): error TS2322: Type 'number | undefined' is not assignable to type 'number'.
+  Type 'undefined' is not assignable to type 'number'.
+src/lib/pilotage/prioritization.test.ts(137,12): error TS2532: Object is possibly 'undefined'.
+src/lib/pilotage/prioritization.test.ts(137,52): error TS2532: Object is possibly 'undefined'.
+src/lib/pilotage/prioritization.test.ts(138,12): error TS2532: Object is possibly 'undefined'.
+src/lib/pilotage/prioritization.test.ts(138,52): error TS2532: Object is possibly 'undefined'.
+src/lib/pilotage/prioritization.test.ts(139,12): error TS2532: Object is possibly 'undefined'.
+src/lib/pilotage/prioritization.test.ts(140,12): error TS2532: Object is possibly 'undefined'.
+src/lib/pilotage/prioritization.test.ts(141,12): error TS2532: Object is possibly 'undefined'.
+src/lib/posthog/config.ts(13,27): error TS4111: Property 'NEXT_PUBLIC_POSTHOG_KEY' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_POSTHOG_KEY'].
+src/lib/posthog/config.ts(13,66): error TS4111: Property 'NEXT_PUBLIC_POSTHOG_TOKEN' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_POSTHOG_TOKEN'].
+src/lib/posthog/config.ts(21,28): error TS4111: Property 'NEXT_PUBLIC_POSTHOG_HOST' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_POSTHOG_HOST'].
+src/lib/posthog/config.ts(25,22): error TS4111: Property 'NEXT_PUBLIC_POSTHOG_REGION' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_POSTHOG_REGION'].
+src/lib/posthog/config.ts(35,31): error TS4111: Property 'NEXT_PUBLIC_POSTHOG_KEY' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_POSTHOG_KEY'].
+src/lib/posthog/config.ts(36,30): error TS4111: Property 'NEXT_PUBLIC_POSTHOG_TOKEN' comes from an index signature, so it must be accessed with ['NEXT_PUBLIC_POSTHOG_TOKEN'].
+src/lib/rate-limit/server.ts(18,19): error TS18048: 'DEFAULT_RATE_LIMITS.write' is possibly 'undefined'.
+src/lib/rate-limit/server.ts(18,39): error TS4111: Property 'write' comes from an index signature, so it must be accessed with ['write'].
+src/lib/rate-limit/server.ts(18,61): error TS18048: 'DEFAULT_RATE_LIMITS.write' is possibly 'undefined'.
+src/lib/rate-limit/server.ts(18,81): error TS4111: Property 'write' comes from an index signature, so it must be accessed with ['write'].
+src/lib/rate-limit/utils.ts(11,14): error TS2532: Object is possibly 'undefined'.
+src/lib/rate-limit/utils.ts(31,5): error TS2322: Type 'RateLimitConfig | undefined' is not assignable to type 'RateLimitConfig'.
+  Type 'undefined' is not assignable to type 'RateLimitConfig'.
+src/lib/rate-limit/utils.ts(31,32): error TS4111: Property 'auth' comes from an index signature, so it must be accessed with ['auth'].
+src/lib/rate-limit/utils.ts(35,5): error TS2322: Type 'RateLimitConfig | undefined' is not assignable to type 'RateLimitConfig'.
+  Type 'undefined' is not assignable to type 'RateLimitConfig'.
+src/lib/rate-limit/utils.ts(35,32): error TS4111: Property 'ai' comes from an index signature, so it must be accessed with ['ai'].
+src/lib/rate-limit/utils.ts(39,5): error TS2322: Type 'RateLimitConfig | undefined' is not assignable to type 'RateLimitConfig'.
+  Type 'undefined' is not assignable to type 'RateLimitConfig'.
+src/lib/rate-limit/utils.ts(39,32): error TS4111: Property 'write' comes from an index signature, so it must be accessed with ['write'].
+src/lib/rate-limit/utils.ts(43,5): error TS2322: Type 'RateLimitConfig | undefined' is not assignable to type 'RateLimitConfig'.
+  Type 'undefined' is not assignable to type 'RateLimitConfig'.
+src/lib/rate-limit/utils.ts(43,32): error TS4111: Property 'api' comes from an index signature, so it must be accessed with ['api'].
+src/lib/rate-limit/utils.ts(46,3): error TS2322: Type 'RateLimitConfig | undefined' is not assignable to type 'RateLimitConfig'.
+  Type 'undefined' is not assignable to type 'RateLimitConfig'.
+src/lib/rate-limit/utils.ts(46,30): error TS4111: Property 'default' comes from an index signature, so it must be accessed with ['default'].
+src/lib/user-location-preference.ts(39,60): error TS4111: Property 'parisArrondissement' comes from an index signature, so it must be accessed with ['parisArrondissement'].
+src/lib/user-location-preference.ts(40,51): error TS4111: Property 'parisLocationType' comes from an index signature, so it must be accessed with ['parisLocationType'].
+src/lib/user-location-preference.ts(53,36): error TS4111: Property 'zoneName' comes from an index signature, so it must be accessed with ['zoneName'].
+src/lib/user-location-preference.ts(53,69): error TS4111: Property 'zoneName' comes from an index signature, so it must be accessed with ['zoneName'].
+src/lib/user-location-preference.ts(54,38): error TS4111: Property 'zoneDepartment' comes from an index signature, so it must be accessed with ['zoneDepartment'].
+src/lib/user-location-preference.ts(54,77): error TS4111: Property 'zoneDepartment' comes from an index signature, so it must be accessed with ['zoneDepartment'].
+src/lib/user-location-preference.ts(55,39): error TS4111: Property 'zoneAreaType' comes from an index signature, so it must be accessed with ['zoneAreaType'].
+src/lib/user-location-preference.ts(55,76): error TS4111: Property 'zoneAreaType' comes from an index signature, so it must be accessed with ['zoneAreaType'].
+src/lib/user-location-preference.ts(56,51): error TS4111: Property 'zoneLocationType' comes from an index signature, so it must be accessed with ['zoneLocationType'].
+src/lib/weather/ops-weather.ts(176,20): error TS18048: 'start' is possibly 'undefined'.
+src/lib/weather/ops-weather.ts(177,13): error TS18048: 'start' is possibly 'undefined'.
+src/lib/weather/ops-weather.ts(178,13): error TS18048: 'start' is possibly 'undefined'.
+src/lib/weather/ops-weather.ts(181,20): error TS18048: 'end' is possibly 'undefined'.
+src/lib/weather/ops-weather.ts(182,13): error TS18048: 'end' is possibly 'undefined'.
+src/lib/weather/ops-weather.ts(183,13): error TS18048: 'end' is possibly 'undefined'.
+src/lib/weather/ops-weather.ts(188,13): error TS18048: 'start' is possibly 'undefined'.
+src/lib/weather/ops-weather.ts(189,11): error TS18048: 'end' is possibly 'undefined'.

@@ -64,23 +64,23 @@ describe("GET /api/services", () => {
  const { GET } = await import("./route");
  const response = await GET();
  const body = (await response.json()) as {
- services: Record<string, { state: string }>;
+  services: Record<string, { state: string }>;
  };
 
  expect(response.status).toBe(200);
- expect(body.services.cloudflare.state).toBe("ready");
- expect(body.services.uptimerobot.state).toBe("ready");
+ expect(body.services["cloudflare"]?.state).toBe("ready");
+ expect(body.services["uptimerobot"]?.state).toBe("ready");
  });
 
  it("returns cloudflare and uptimerobot as external when keys are missing", async () => {
  const { GET } = await import("./route");
  const response = await GET();
  const body = (await response.json()) as {
- services: Record<string, { state: string }>;
+  services: Record<string, { state: string }>;
  };
 
  expect(response.status).toBe(200);
- expect(body.services.cloudflare.state).toBe("external");
- expect(body.services.uptimerobot.state).toBe("external");
+ expect(body.services["cloudflare"]?.state).toBe("external");
+ expect(body.services["uptimerobot"]?.state).toBe("external");
  });
 });

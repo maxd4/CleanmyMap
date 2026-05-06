@@ -8,7 +8,6 @@ import {
   LOCALES,
   parseDisplayMode,
 } from "./ui/preferences";
-import { getCurrentUserDisplayModePreference } from "./auth/display-mode";
 
 export type ServerDisplayModePreference = {
   displayMode: DisplayMode;
@@ -30,14 +29,10 @@ export async function getServerLocale(): Promise<Locale> {
 }
 
 /**
- * Recupere le mode d'affichage de l'utilisateur cote serveur via Clerk puis les cookies.
+ * Recupere le mode d'affichage de l'utilisateur cote serveur via les cookies.
+ * La preference reste aussi synchronisee en localStorage cote client.
  */
 export async function getServerDisplayModePreference(): Promise<ServerDisplayModePreference> {
-  const clerkDisplayMode = await getCurrentUserDisplayModePreference();
-  if (clerkDisplayMode) {
-    return { displayMode: clerkDisplayMode, isExplicit: true };
-  }
-
   const cookieStore = await cookies();
   const modeCookie = cookieStore.get(STORAGE_KEYS.displayMode)?.value;
 

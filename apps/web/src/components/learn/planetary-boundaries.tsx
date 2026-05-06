@@ -152,9 +152,15 @@ const getStatusRadius = (status: PlanetaryBoundary['status']) => {
 };
 
 export function PlanetaryBoundariesInteractive() {
-  const [selectedId, setSelectedId] = useState<string | null>(PLANETARY_BOUNDARIES[0].id);
+  const [selectedId, setSelectedId] = useState<string | null>(PLANETARY_BOUNDARIES[0]?.id ?? null);
+  if (!selectedId) {
+    return null;
+  }
 
-  const selectedBoundary = PLANETARY_BOUNDARIES.find(b => b.id === selectedId) || PLANETARY_BOUNDARIES[0];
+  const selectedBoundary = PLANETARY_BOUNDARIES.find((b) => b.id === selectedId);
+  if (!selectedBoundary) {
+    return null;
+  }
 
   const radarBoundaries = PLANETARY_BOUNDARIES.map(b => ({
     id: b.id,
@@ -174,7 +180,7 @@ export function PlanetaryBoundariesInteractive() {
         </div>
         <h2 className="text-4xl md:text-5xl font-black cmm-text-primary tracking-tight">Les 9 Limites Planétaires</h2>
         <p className="text-lg cmm-text-secondary max-w-3xl mx-auto font-medium">
-          Découvrez l'état de santé de notre planète à travers ce radar interactif. Le dépassement de ces limites menace la résilience de la Terre.
+          Découvrez l&apos;état de santé de notre planète à travers ce radar interactif. Le dépassement de ces limites menace la résilience de la Terre.
         </p>
       </div>
 
@@ -281,7 +287,7 @@ export function PlanetaryBoundariesInteractive() {
                   <div>
                     <h4 className="flex items-center gap-2 text-xs font-black cmm-text-primary uppercase tracking-[0.2em] mb-4">
                       <Info size={16} className="text-emerald-500" />
-                      Leviers d'Action
+                      Leviers d&apos;Action
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {selectedBoundary.solutions.map((solution, idx) => (

@@ -1,4 +1,4 @@
-import type { ActionMegotsCondition } from"@/lib/actions/types";
+import type { ActionMegotsCondition, ActionRecordType } from"@/lib/actions/types";
 
 export type FormState = {
  actorName: string;
@@ -10,6 +10,7 @@ export type FormState = {
  arrivalLocationLabel: string;
  routeStyle:"direct" |"souple";
  routeAdjustmentMessage: string;
+ recordType: ActionRecordType;
  latitude: string;
  longitude: string;
  wasteKg: string;

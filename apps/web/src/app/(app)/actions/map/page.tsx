@@ -40,9 +40,10 @@ export default function ActionsMapPage() {
   filters;
  
  // Rôle Utilisateur pour CTA dynamique
- const { user } = useUser();
- const isAuthenticated = Boolean(user?.id);
- const role = user?.publicMetadata?.role || user?.publicMetadata?.profile || "volunteer";
+const { user } = useUser();
+const isAuthenticated = Boolean(user?.id);
+const publicMetadata = (user?.publicMetadata ?? {}) as Record<string, string | undefined>;
+const role = publicMetadata["role"] || publicMetadata["profile"] || "volunteer";
  const isPublicVisitor = !isAuthenticated;
  
  const [railTab, setRailTab] = useState<"insights" |"journal">("insights");
@@ -458,24 +459,24 @@ export default function ActionsMapPage() {
  <section className="cmm-card p-6 md:p-8">
  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
  <div>
- <h2 className="text-xl font-semibold cmm-text-primary">Visualiser la carte</h2>
+ <h2 className="text-xl font-semibold cmm-text-primary">Carte d&apos;entrainement</h2>
  <p className="cmm-text-small cmm-text-secondary">
- Espace dédié pour tester la carte et retrouver la sandbox de découverte.
+ Espace dédié pour tester la carte et retrouver la carte d&apos;entrainement.
  </p>
  </div>
  <RubriquePdfExportButton rubriqueTitle="Cockpit terrain complet" />
  </div>
  <div className="rounded-2xl border border-sky-500/20 bg-sky-50/50 dark:bg-sky-950/20 p-5">
  <p className="cmm-text-small text-sky-900 dark:text-sky-100">
- La sandbox complète est maintenant disponible dans la rubrique dédiée de la
- section Visualiser.
+ La carte d&apos;entraînement complète est maintenant disponible dans la rubrique
+ dédiée.
  </p>
  <div className="mt-3 flex flex-wrap gap-2">
  <Link
  href="/sections/sandbox"
  className="rounded-xl bg-sky-600 px-5 py-2.5 cmm-text-small font-bold text-white transition hover:bg-sky-700 shadow-sm"
  >
- Ouvrir la sandbox
+ Ouvrir la carte d&apos;entrainement
  </Link>
  <Link
  href="/actions/new"

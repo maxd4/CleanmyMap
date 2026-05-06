@@ -57,6 +57,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_POSTHOG_HOST: optionalUrl,
   NEXT_PUBLIC_POSTHOG_REGION: z.enum(["eu", "us"]).optional(),
   NEXT_PUBLIC_SENTRY_DSN: optionalUrl,
+  NEXT_PUBLIC_SENTRY_ENABLED: optionalBoolean,
 
   CLERK_SECRET_KEY: z.string().optional(),
   CLERK_ADMIN_USER_IDS: z.string().optional(),
@@ -74,6 +75,7 @@ const envSchema = z.object({
   RESEND_FROM_EMAIL: z.string().optional(),
   RESEND_REPLY_TO: z.string().optional(),
   CREATOR_INBOX_EMAIL: z.string().optional(),
+  VISION_TRAINING_ENABLED: optionalBoolean,
   RESEND_TEST_TOKEN: z.string().optional(),
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
@@ -94,15 +96,16 @@ const envSchema = z.object({
 
 const parsed = envSchema.safeParse({
   ...process.env,
-  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "https://mgvmuambbxmmkrjjlryo.supabase.co",
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_2ZvYS31hhXeWkIGVaaPyMA_qzdutOI4",
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "pk_test_cHJvcGVyLWNvd2JpcmQtNTQuY2xlcmsuYWNjb3VudHMuZGV2JA",
-  NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
-  NEXT_PUBLIC_POSTHOG_TOKEN: process.env.NEXT_PUBLIC_POSTHOG_TOKEN,
-  NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-  NEXT_PUBLIC_POSTHOG_REGION: process.env.NEXT_PUBLIC_POSTHOG_REGION,
-  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  NEXT_PUBLIC_APP_URL: process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3000",
+  NEXT_PUBLIC_SUPABASE_URL: process.env["NEXT_PUBLIC_SUPABASE_URL"] || "https://mgvmuambbxmmkrjjlryo.supabase.co",
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"] || "sb_publishable_2ZvYS31hhXeWkIGVaaPyMA_qzdutOI4",
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"] || "pk_test_cHJvcGVyLWNvd2JpcmQtNTQuY2xlcmsuYWNjb3VudHMuZGV2JA",
+  NEXT_PUBLIC_POSTHOG_KEY: process.env["NEXT_PUBLIC_POSTHOG_KEY"],
+  NEXT_PUBLIC_POSTHOG_TOKEN: process.env["NEXT_PUBLIC_POSTHOG_TOKEN"],
+  NEXT_PUBLIC_POSTHOG_HOST: process.env["NEXT_PUBLIC_POSTHOG_HOST"],
+  NEXT_PUBLIC_POSTHOG_REGION: process.env["NEXT_PUBLIC_POSTHOG_REGION"],
+  NEXT_PUBLIC_SENTRY_DSN: process.env["NEXT_PUBLIC_SENTRY_DSN"],
+  NEXT_PUBLIC_SENTRY_ENABLED: process.env["NEXT_PUBLIC_SENTRY_ENABLED"],
 });
 if (!parsed.success) {
   // Fail fast in server contexts while keeping local DX understandable.

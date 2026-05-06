@@ -92,6 +92,7 @@ export function useActionDeclarationSmartAssist({
  return {
  gpsStatus,
  gpsMessage,
+ heuristicEstimatedWasteKg: fallbackEstimatedWasteKg,
  estimatedWasteKg,
  estimatedWasteKgInterval,
  estimatedWasteKgConfidence,

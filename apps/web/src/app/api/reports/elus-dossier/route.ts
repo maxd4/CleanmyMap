@@ -253,14 +253,14 @@ function buildSimplePdf(lines: string[]): Uint8Array {
  );
 
  for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
- const pageObjectId = pageObjectIds[pageIndex];
- const contentObjectId = contentObjectIds[pageIndex];
+ const pageObjectId = pageObjectIds[pageIndex]!;
+ const contentObjectId = contentObjectIds[pageIndex]!;
  objectById.set(
  pageObjectId,
  `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontObjectId} 0 R >> >> /Contents ${contentObjectId} 0 R >>`,
  );
 
- const pageLines = pages[pageIndex];
+ const pageLines = pages[pageIndex] ?? [];
  let y = pageHeight - marginTop;
  const textOps: string[] = ["BT","/F1 11 Tf"];
  for (const rawLine of pageLines) {

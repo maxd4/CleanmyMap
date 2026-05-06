@@ -19,3 +19,19 @@ export function computeButtsCount(
     weightKg * BUTTS_PER_KG_REFERENCE * CONDITION_WEIGHT_FACTORS[condition],
   );
 }
+
+/**
+ * Estime le poids en kg correspondant à un nombre de mégots.
+ * Sert à garder le slider de quantité et le poids saisis cohérents dans l'UI.
+ */
+export function estimateButtsWeightKg(
+  count: number,
+  condition: ActionMegotsCondition,
+): number {
+  const factor = CONDITION_WEIGHT_FACTORS[condition];
+  if (!Number.isFinite(count) || count <= 0 || factor <= 0) {
+    return 0;
+  }
+
+  return count / (BUTTS_PER_KG_REFERENCE * factor);
+}
