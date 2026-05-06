@@ -47,7 +47,7 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "playwright": "^1.59.1",
-    "sharp": "^0.33.0"
+    "sharp": "^0.34.5"
   },
   "overrides": {
     "dompurify": "3.4.0",
@@ -57,7 +57,7 @@
     "postcss": "^8.5.0"
   },
   "dependencies": {
-    "posthog-js": "^1.371.2",
-    "posthog-node": "^5.29.7"
+    "posthog-js": "^1.372.9",
+    "posthog-node": "^5.33.3"
   }
 }
