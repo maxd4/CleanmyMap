@@ -5,8 +5,8 @@ import { createInitialFormState } from"@/components/actions/action-declaration/p
 const authMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
 const pickTraceableActorNameMock = vi.hoisted(() => vi.fn());
-const trackActionCreatedMock = vi.hoisted(() => vi.fn());
-const trackSpotCreatedMock = vi.hoisted(() => vi.fn());
+const emitActionCreatedMock = vi.hoisted(() => vi.fn());
+const emitSpotCreatedMock = vi.hoisted(() => vi.fn());
 const buildPostActionRetentionLoopMock = vi.hoisted(() => vi.fn());
 const trackServerEventMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -22,9 +22,12 @@ vi.mock("@/lib/authz", () => ({
 }));
 
 vi.mock("@/lib/gamification/progression", () => ({
- trackActionCreated: trackActionCreatedMock,
- trackSpotCreated: trackSpotCreatedMock,
  buildPostActionRetentionLoop: buildPostActionRetentionLoopMock,
+}));
+
+vi.mock("@/lib/events/emit", () => ({
+ emitActionCreated: emitActionCreatedMock,
+ emitSpotCreated: emitSpotCreatedMock,
 }));
 
 vi.mock("@/lib/analytics.server", () => ({
@@ -57,8 +60,8 @@ describe("POST /api/actions", () => {
  badges: [],
  });
  pickTraceableActorNameMock.mockReturnValue("Test User");
- trackActionCreatedMock.mockResolvedValue(undefined);
- trackSpotCreatedMock.mockResolvedValue(undefined);
+ emitActionCreatedMock.mockResolvedValue(undefined);
+ emitSpotCreatedMock.mockResolvedValue(undefined);
  trackServerEventMock.mockResolvedValue(undefined);
  buildPostActionRetentionLoopMock.mockResolvedValue(null);
  });
@@ -99,10 +102,13 @@ describe("POST /api/actions", () => {
  expect(response.status).toBe(201);
  expect(body.id).toBe("action-test-1");
  expect(createActionMock).toHaveBeenCalledTimes(1);
-  expect(trackActionCreatedMock).toHaveBeenCalledWith({}, {
-    userId:"user-test-1",
+  expect(emitActionCreatedMock).toHaveBeenCalledWith({
     actionId:"action-test-1",
+    userId:"user-test-1",
+    locationLabel:"Test lieu action",
+    wasteKg: 2.5,
   });
+  expect(trackServerEventMock).not.toHaveBeenCalled();
  }, 15000);
 
  it("creates a spot when the payload declares a clean place", async () => {
@@ -164,9 +170,11 @@ describe("POST /api/actions", () => {
  expect(body.id).toBe("spot-test-1");
  expect(body.source).toBe("spots");
  expect(createActionMock).not.toHaveBeenCalled();
- expect(trackSpotCreatedMock).toHaveBeenCalledWith(supabaseMock, {
- userId:"user-test-1",
- spotId:"spot-test-1",
+ expect(emitSpotCreatedMock).toHaveBeenCalledWith({
+  spotId:"spot-test-1",
+  userId:"user-test-1",
+  label:"Lieu propre test",
+  wasteType:"clean_place",
  });
  expect(trackServerEventMock).toHaveBeenCalledWith("user-test-1", "spot_created", {
  waste_type:"clean_place",
