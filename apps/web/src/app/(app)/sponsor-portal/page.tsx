@@ -185,7 +185,7 @@ export default async function SponsorPortalPage() {
  <h3 className="text-xl font-bold relative z-10">Renforcer l&apos;engagement</h3>
  <p className="cmm-text-muted cmm-text-small leading-relaxed relative z-10">
  Plus la qualité des actions est élevée, plus le ROI est précis.
- Encouragez l&apos;usage du mode "Expert" pour les déclarations.
+ Encouragez l&apos;usage du mode &quot;Expert&quot; pour les déclarations.
  </p>
  <button className="w-full py-4 bg-emerald-600 rounded-2xl font-bold cmm-text-small hover:bg-emerald-700 transition relative z-10">
  Lancer un challenge local

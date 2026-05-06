@@ -77,6 +77,27 @@ export function HomeFooter() {
             </div>
           </div>
         </div>
+
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-4 border-t border-white/10 pt-6 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+          <Link href="/mentions-legales" className="transition hover:text-white">
+            Mentions légales
+          </Link>
+          <Link
+            href="/conditions-generales-utilisation"
+            className="transition hover:text-white"
+          >
+            CGU
+          </Link>
+          <Link
+            href="/politique-confidentialite"
+            className="transition hover:text-white"
+          >
+            Confidentialité
+          </Link>
+          <Link href="/politique-cookies" className="transition hover:text-white">
+            Cookies
+          </Link>
+        </div>
       </div>
     </footer>
   );

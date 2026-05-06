@@ -1,7 +1,9 @@
 import { auth } from"@clerk/nextjs/server";
 import { redirect } from"next/navigation";
-import { UserLocationOnboardingForm } from"@/components/account/user-location-onboarding-form";
+import { AccountSetupForm } from"@/components/account/account-setup-form";
 import { getCurrentUserLocationPreference } from"@/lib/auth/user-location";
+import { getCurrentUserRoleLabel } from"@/lib/authz";
+import { toProfile } from"@/lib/profiles";
 
 type LocalisationOnboardingPageProps = {
  searchParams: Promise<{ next?: string }>;
@@ -25,20 +27,25 @@ export default async function LocalisationOnboardingPage({
 }: LocalisationOnboardingPageProps) {
  const { userId } = await auth();
  if (!userId) {
- redirect("/sign-in");
+  redirect("/sign-in");
  }
 
- const existingPreference = await getCurrentUserLocationPreference();
+const [existingPreference, role] = await Promise.all([
+    getCurrentUserLocationPreference(),
+    getCurrentUserRoleLabel(),
+  ]);
+  const profile = toProfile(role);
  const resolvedSearchParams = await searchParams;
  const nextPath = sanitizeNextPath(resolvedSearchParams.next);
 
- if (existingPreference) {
- redirect(nextPath);
- }
-
  return (
- <main className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-2xl items-center px-4 py-8">
- <UserLocationOnboardingForm nextPath={nextPath} />
+ <main className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-4xl items-center px-4 py-8">
+ <AccountSetupForm
+  nextPath={nextPath}
+  initialProfile={profile}
+  initialArrondissement={existingPreference?.arrondissement ?? null}
+  initialLocationType={existingPreference?.locationType ?? null}
+ />
  </main>
  );
 }

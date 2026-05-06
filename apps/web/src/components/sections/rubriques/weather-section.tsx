@@ -16,6 +16,14 @@ import { useSitePreferences } from"@/components/ui/site-preferences-provider";
 import { CloudSun, ClipboardCheck } from"lucide-react";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 
+const FALLBACK_ZONE: import("@/lib/weather/ops-weather").OperationalZone = {
+ id:"centre",
+ label:"Paris centre",
+ latitude:48.8593,
+ longitude:2.347,
+ coveredAreas:[],
+};
+
 interface OpenMeteoResponse {
  current?: {
  temperature_2m?: number;
@@ -68,7 +76,7 @@ export function WeatherSection() {
  const selectedZoneId = zoneMode ==="auto" ? inferredZoneId : manualZoneId;
 
  const selectedZone = useMemo(
- () => OPERATIONAL_ZONES.find((zone) => zone.id === selectedZoneId) ?? OPERATIONAL_ZONES[0],
+ () => OPERATIONAL_ZONES.find((zone) => zone.id === selectedZoneId) ?? OPERATIONAL_ZONES[0] ?? FALLBACK_ZONE,
  [selectedZoneId],
  );
 
@@ -214,7 +222,7 @@ export function WeatherSection() {
  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl cmm-text-small font-bold transition ${activeTab ==="weather" ?"bg-white text-emerald-700 shadow-sm" :"cmm-text-muted hover:cmm-text-primary"}`}
  >
  <CloudSun size={18} />
- {fr ?"Météo & Risques" :"Weather & Risks"}
+ {fr ?"Météo d'action" :"Action weather"}
  </button>
  <button
  onClick={() => setActiveTab("kit")}
@@ -257,7 +265,7 @@ export function WeatherSection() {
 
  {!isLoading && !error ? (
  <article className={`rounded-xl border shadow-sm p-4 ${riskTone}`}>
- <h3 className="cmm-text-small font-semibold uppercase tracking-wide">{fr ?"Lecture décisionnelle" :"Decision reading"}</h3>
+ <h3 className="cmm-text-small font-semibold uppercase tracking-wide">{fr ?"Lecture opérationnelle" :"Operational reading"}</h3>
  <div className="mt-4 flex flex-col gap-4">
  <div className="flex items-center justify-between border-b pb-3 border-emerald-900/10">
  <span className="cmm-text-caption font-semibold opacity-70 uppercase">{fr ?"Niveau de risque" :"Risk level"}</span>
@@ -337,7 +345,7 @@ export function WeatherSection() {
  
  <div className="grid gap-4 md:grid-cols-2 pt-2 border-t border-slate-100">
  <article className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm cmm-text-small">
- <h3 className="font-semibold cmm-text-primary mb-2">{fr ?"Fenêtres d'intervention" :"Recommended windows"}</h3>
+ <h3 className="font-semibold cmm-text-primary mb-2">{fr ?"Fenêtres d'action" :"Action windows"}</h3>
  <ul className="space-y-1.5">
  {windows.recommended.slice(0, 3).map((w) => (
  <li key={w.from} className="cmm-text-caption font-medium text-emerald-800">• {formatDateTimeShort(w.from)} : {w.reason}</li>

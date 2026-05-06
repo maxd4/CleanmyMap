@@ -15,12 +15,12 @@ import {
  reserveDiscussionMessageSlot,
  toDiscussionRateLimitErrorPayload,
 } from"@/lib/community/discussion-rate-limit";
+import {
+ getCommunityEventNotificationTargets,
+ isProfileEligibleForCommunityEvent,
+} from"@/lib/community/event-notification-targets";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { getClerkService, type ClerkUserIdentity as OrganizerIdentity } from"@/lib/services/clerk";
-import { 
- extractArrondissementFromLabel, 
- getAffectedArrondissements 
-} from"@/lib/geo/paris-arrondissements";
 
 function parsePositiveInteger(
  raw: string | null,
@@ -265,19 +265,19 @@ export async function POST(request: Request) {
 
  // --- Start: In-App Notifications for Local Community ---
  try {
- const eventArrondissement = extractArrondissementFromLabel(parsed.data.locationLabel);
- if (eventArrondissement) {
- const affectedArrondissements = getAffectedArrondissements(eventArrondissement);
- 
- // Find users in these arrondissements (excluding the organizer)
+ const notificationTargets = getCommunityEventNotificationTargets(parsed.data.locationLabel);
+ if (notificationTargets) {
  const { data: nearbyProfiles } = await supabase
  .from("profiles")
- .select("id")
- .in("paris_arrondissement", affectedArrondissements)
+ .select("id, paris_arrondissement, metadata")
  .not("id","eq", userId);
 
- if (nearbyProfiles && nearbyProfiles.length > 0) {
- const notifications = nearbyProfiles.map((profile) => ({
+ const targetProfiles = (nearbyProfiles ?? []).filter((profile) =>
+ isProfileEligibleForCommunityEvent(profile, notificationTargets),
+ );
+
+ if (targetProfiles.length > 0) {
+ const notifications = targetProfiles.map((profile) => ({
  user_id: profile.id,
  type:"community",
  title:"Appel au collectif ! 📣",

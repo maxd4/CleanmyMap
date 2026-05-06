@@ -10,7 +10,11 @@ import {
 let initialized = false;
 let envWarningLogged = false;
 
-export function initPostHogClient() {
+export function isPostHogInitialized(): boolean {
+  return initialized;
+}
+
+export function initPostHogClient(enableAnalytics = true) {
   if (initialized) return posthog;
 
   const key = getPostHogKey();
@@ -33,6 +37,8 @@ export function initPostHogClient() {
     loaded: () => {
       initialized = true;
     },
+    disable_persistence: !enableAnalytics,
+    respect_dnt: true,
   });
 
   initialized = true;

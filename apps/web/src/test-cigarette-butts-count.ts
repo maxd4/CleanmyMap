@@ -15,6 +15,7 @@ const mockFormActionSpontanee: FormState = {
   arrivalLocationLabel: "",
   routeStyle: "souple" as const,
   routeAdjustmentMessage: "",
+  recordType: "action" as const,
   latitude: "",
   longitude: "",
   cigaretteButtsCondition: "propre" as const,

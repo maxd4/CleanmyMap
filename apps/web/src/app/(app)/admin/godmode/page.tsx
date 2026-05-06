@@ -13,8 +13,9 @@ import {
 } from"lucide-react";
 
 export default async function GodModeAdminPage() {
- const user = await currentUser();
- const role = user?.publicMetadata?.role || user?.publicMetadata?.profile;
+const user = await currentUser();
+ const publicMetadata = (user?.publicMetadata ?? {}) as Record<string, string | undefined>;
+ const role = publicMetadata["role"] || publicMetadata["profile"];
  const displayName =
  user?.fullName?.trim() ||
  [user?.firstName, user?.lastName].filter(Boolean).join("") ||

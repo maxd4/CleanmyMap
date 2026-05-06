@@ -1,10 +1,11 @@
 import { auth } from"@clerk/nextjs/server";
 import { 
- ShieldCheck, 
- FileSearch, 
- Settings,
- AlertTriangle,
+  ShieldCheck, 
+  FileSearch, 
+  Settings,
+  AlertTriangle,
 } from"lucide-react";
+import type { Metadata } from "next";
 import { BusinessAlertsPanel } from"@/components/dashboard/business-alerts-panel";
 import { CreatorInboxPanel } from"@/components/admin/creator-inbox-panel";
 import { RoleManagementPanel } from"@/components/admin/role-management-panel";
@@ -25,6 +26,11 @@ import { getProfilePrimaryAction, toProfile } from"@/lib/profiles";
 import { getServerLocale } from"@/lib/server-preferences";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { NavigationGrid, type NavigationGridItem } from"@/components/ui/navigation-grid";
+
+export const metadata: Metadata = {
+  title: 'Administration - CleanMyMap',
+  description: 'Panel d\'administration pour gérer les utilisateurs, la modération et les demandes.',
+};
 
 async function loadAdminOverview() {
  const supabase = getSupabaseServerClient();
@@ -99,17 +105,14 @@ export default async function AdminPage() {
  );
  }
 
- const overview = await loadAdminOverview().catch(() => null);
- const creatorInboxItems =
- profile ==="max"
- ? await loadCreatorInboxItems().catch(() => [])
- : [];
- const roleAccounts =
- profile ==="max"
- ? await listManagedRoleAccounts().catch(() => [])
- : [];
- const publishedEntries = await listPublishedPartnerAnnuaireEntries().catch(() => []);
- const adminAudit = await listAdminOperationAudit(25).catch(() => []);
+const [overview, creatorInboxItems, roleAccounts, publishedEntries, adminAudit] = 
+  await Promise.all([
+    loadAdminOverview().catch(() => null),
+    profile ==="max" ? loadCreatorInboxItems().catch(() => []) : Promise.resolve([]),
+    profile ==="max" ? listManagedRoleAccounts().catch(() => []) : Promise.resolve([]),
+    listPublishedPartnerAnnuaireEntries().catch(() => []),
+    listAdminOperationAudit(25).catch(() => []),
+  ]);
 
  const onboardingStatus = {
  pending: creatorInboxItems.filter(
@@ -283,7 +286,7 @@ export default async function AdminPage() {
  Demandes reçues et à traiter
  </h2>
  <p className="mt-2 cmm-text-small cmm-text-secondary">
- Les demandes de feedback, de promotion, de partenariat et d'événement arrivent ici avec le contact, le contexte et le statut.
+ Les demandes de feedback, de promotion, de partenariat et d&apos;événement arrivent ici avec le contact, le contexte et le statut.
  </p>
  <div className="mt-6">
  <CreatorInboxPanel initialItems={creatorInboxItems} />

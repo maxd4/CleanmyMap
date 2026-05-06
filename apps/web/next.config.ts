@@ -7,23 +7,60 @@ const appRoot = path.resolve(__dirname, "../..");
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: appRoot,
-  /* turbopack: {
-    root: appRoot,
-  }, */
+  compress: true,
+  generateEtags: true,
+  poweredByHeader: false,
   images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 60 * 60 * 24 * 30,
+  },
+  experimental: {
+    optimizePackageImports: [
+      'lucide-react',
+      '@clerk/nextjs',
+      'date-fns',
+      'zod',
+      '@supabase/supabase-js',
+    ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+      {
+        source: "/:path*.svg",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400" },
+        ],
+      },
+    ];
   },
 };
 
-const sentryBuildPluginEnabled = process.env.SENTRY_BUILD_PLUGIN === "1";
+const sentryEnabled = process.env["NEXT_PUBLIC_SENTRY_ENABLED"] === "1";
+const sentryBuildPluginEnabled = process.env["SENTRY_BUILD_PLUGIN"] === "1" && sentryEnabled;
 
 export default sentryBuildPluginEnabled
   ? withSentryConfig(nextConfig, {
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
-      silent: !process.env.CI,
+      org: process.env["SENTRY_ORG"],
+      project: process.env["SENTRY_PROJECT"],
+      silent: !process.env["CI"],
       telemetry: false,
     })
   : nextConfig;

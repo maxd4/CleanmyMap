@@ -12,12 +12,13 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
   act: {
     new: 1,
     route: 2,
-    "trash-spotter": 3,
+    weather: 3,
+    guide: 4,
+    "trash-spotter": 5,
   },
   visualize: {
     map: 1,
     sandbox: 2,
-    weather: 3,
   },
   impact: {
     reports: 1,
@@ -34,9 +35,8 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
   },
   learn: {
     hub: 1,
-    guide: 2,
-    climate: 3,
-    recycling: 4,
+    climate: 2,
+    recycling: 3,
   },
   pilot: {
     admin: 1,

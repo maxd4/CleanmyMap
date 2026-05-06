@@ -47,6 +47,7 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
               <div className="absolute top-0 right-0 p-10">
                 <button
                   onClick={onClose}
+                  aria-label={fr ? "Fermer le panneau" : "Close panel"}
                   className="p-4 rounded-full bg-slate-950/40 backdrop-blur-md text-white/60 hover:text-white hover:bg-emerald-500/20 border border-white/10 shadow-2xl transition-all active:scale-95"
                 >
                   <X size={24} strokeWidth={3} />

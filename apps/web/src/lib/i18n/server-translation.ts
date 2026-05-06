@@ -7,7 +7,7 @@ const dictionaries: Record<string, any> = {
 };
 
 export function getTranslation(namespace: string, locale: string) {
-  const dict = dictionaries[locale] || dictionaries.fr;
+  const dict = dictionaries[locale] || dictionaries["fr"];
 
   const t = (key: string, values?: Record<string, string | number>) => {
     const keys = key.split(".");

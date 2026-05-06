@@ -1,50 +1,53 @@
 import type {
- ModerationActionStatus,
- ModerationCleanPlaceStatus,
- ModerationEntityType,
+  ModerationActionStatus,
+  ModerationCleanPlaceStatus,
+  ModerationEntityType,
 } from"@/lib/admin/moderation-client";
 import type { AdminWorkflowController } from"./types";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type StepConfirmProps = {
- workflow: AdminWorkflowController;
+  workflow: AdminWorkflowController;
 };
 
 export function StepConfirm({ workflow }: StepConfirmProps) {
- return (
- <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
- <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
- Etape 3 - Confirmer
- </p>
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
 
- <div className="mt-3 flex flex-wrap items-center gap-3">
- <button
- onClick={() => void workflow.onDownloadCsv()}
- disabled={workflow.csvState ==="pending"}
- className="rounded-lg bg-emerald-600 px-4 py-2 cmm-text-small font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
- >
- {workflow.csvState ==="pending"
- ?"Preparation CSV..."
- :"Confirmer export CSV"}
- </button>
- <button
- onClick={() => void workflow.onDownloadJson()}
- disabled={workflow.jsonState ==="pending"}
- className="rounded-lg border border-slate-300 bg-white px-4 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:cmm-text-muted"
- >
- {workflow.jsonState ==="pending"
- ?"Preparation JSON..."
- :"Confirmer export JSON"}
- </button>
- </div>
+  return (
+    <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+    <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
+    {fr ? "Étape 3 - Confirmer" : "Step 3 - Confirm"}
+    </p>
 
- <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
- <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
- Import: dry-run obligatoire
- </p>
- <p className="mt-1 cmm-text-small cmm-text-secondary">
- 1) Previsualiser (dry-run) 2) Verifier le resume 3) Confirmer
- l&apos;import.
- </p>
+    <div className="mt-3 flex flex-wrap items-center gap-3">
+    <button
+      onClick={() => void workflow.onDownloadCsv()}
+      disabled={workflow.csvState ==="pending"}
+      className="rounded-lg bg-emerald-600 px-4 py-2 cmm-text-small font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+    >
+    {workflow.csvState ==="pending"
+    ? (fr ? "Préparation CSV..." : "Preparing CSV...")
+    : (fr ? "Confirmer export CSV" : "Confirm CSV export")}
+    </button>
+    <button
+      onClick={() => void workflow.onDownloadJson()}
+      disabled={workflow.jsonState ==="pending"}
+      className="rounded-lg border border-slate-300 bg-white px-4 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:cmm-text-muted"
+    >
+    {workflow.jsonState ==="pending"
+    ? (fr ? "Préparation JSON..." : "Preparing JSON...")
+    : (fr ? "Confirmer export JSON" : "Confirm JSON export")}
+    </button>
+    </div>
+
+    <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
+    <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
+    {fr ? "Import : dry-run obligatoire" : "Import: dry-run required"}
+    </p>
+    <p className="mt-1 cmm-text-small cmm-text-secondary">
+    {fr ? "1) Prévisualiser (dry-run) 2) Vérifier le résumé 3) Confirmer l'import." : "1) Preview (dry-run) 2) Verify summary 3) Confirm import."}
+    </p>
  <textarea
  value={workflow.importPayload}
  onChange={(event) => workflow.setImportPayload(event.target.value)}

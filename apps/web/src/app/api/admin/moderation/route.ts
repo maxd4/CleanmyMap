@@ -7,9 +7,10 @@ import {
 } from"@/lib/data/local-sync";
 import { appendAdminOperationAudit } from"@/lib/admin/operation-audit";
 import {
- trackActionValidationBonus,
- trackSpotValidationBonus,
+  trackActionValidationBonus,
+  trackSpotValidationBonus,
 } from"@/lib/gamification/progression";
+import { emitActionValidated, emitActionRejected, emitSpotValidated } from"@/lib/events/emit";
 import {
  adminErrorResponse,
  adminSuccessResponse,
@@ -198,45 +199,27 @@ export async function POST(request: Request) {
  });
  }
 
- let copied = false;
- if (parsed.data.status ==="approved") {
- const syncResult = await copyValidatedActionToLocalStore(
- supabase,
- parsed.data.id,
- access.userId,
- );
- copied = syncResult.copied;
- try {
- await trackActionValidationBonus(supabase, {
- actionId: parsed.data.id,
- });
+let copied = false;
+  if (parsed.data.status ==="approved") {
+    const syncResult = await copyValidatedActionToLocalStore(
+      supabase,
+      parsed.data.id,
+      access.userId,
+    );
+    copied = syncResult.copied;
 
- // In-App Notification
- const actionDetails = await supabase
- .from("actions")
- .select("created_by_clerk_id, location_label")
- .eq("id", parsed.data.id)
- .single();
+    const { data: actionDetails } = await supabase
+      .from("actions")
+      .select("created_by_clerk_id")
+      .eq("id", parsed.data.id)
+      .single();
 
- if (actionDetails.data) {
- await supabase.from("app_notifications").insert({
- user_id: actionDetails.data.created_by_clerk_id,
- type:"validation",
- title:"Action Validée ! ✅",
- content: `Votre action à ${actionDetails.data.location_label} a été approuvée par la modération. Merci pour votre impact !`,
- payload: { entityType:"action", id: parsed.data.id },
- });
- }
- } catch (progressionError) {
- console.error("Progression tracking failed for action moderation", {
- actionId: parsed.data.id,
- message:
- progressionError instanceof Error
- ? progressionError.message
- : String(progressionError),
- });
- }
- }
+    emitActionValidated({
+      actionId: parsed.data.id,
+      userId: actionDetails?.created_by_clerk_id || "",
+      moderatorId: access.userId,
+    });
+  }
 
  await appendAdminOperationAudit({
  operationId,
@@ -290,50 +273,31 @@ export async function POST(request: Request) {
  });
  }
 
- let copied = false;
- if (
- parsed.data.status ==="validated" ||
- parsed.data.status ==="cleaned"
- ) {
- copied = await copyValidatedSpotToLocalStore(
- supabase,
- parsed.data.id,
- access.userId,
- );
- try {
- await trackSpotValidationBonus(supabase, {
- spotId: parsed.data.id,
- });
+let copied = false;
+  if (
+  parsed.data.status ==="validated" ||
+  parsed.data.status ==="cleaned"
+  ) {
+    copied = await copyValidatedSpotToLocalStore(
+      supabase,
+      parsed.data.id,
+      access.userId,
+    );
 
- // In-App Notification
- const spotDetails = await supabase
- .from("spots")
- .select("created_by_clerk_id, label")
- .eq("id", parsed.data.id)
- .single();
+    const { data: spotDetails } = await supabase
+      .from("spots")
+      .select("created_by_clerk_id")
+      .eq("id", parsed.data.id)
+      .single();
 
- if (spotDetails.data) {
- const statusText = parsed.data.status ==="validated" ?"validé" :"nettoyé";
- await supabase.from("app_notifications").insert({
- user_id: spotDetails.data.created_by_clerk_id,
- type:"validation",
- title: `Signalement ${statusText.charAt(0).toUpperCase() + statusText.slice(1)} ! 📍`,
- content: `Votre signalement"${spotDetails.data.label}" a été ${statusText}. Merci de participer à la propreté locale !`,
- payload: { entityType:"clean_place", id: parsed.data.id },
- });
- }
- } catch (progressionError) {
- console.error("Progression tracking failed for spot moderation", {
- spotId: parsed.data.id,
- message:
- progressionError instanceof Error
- ? progressionError.message
- : String(progressionError),
- });
- }
- }
+    emitSpotValidated({
+      spotId: parsed.data.id,
+      userId: spotDetails?.created_by_clerk_id || "",
+      moderatorId: access.userId,
+});
+  }
 
- await appendAdminOperationAudit({
+  await appendAdminOperationAudit({
  operationId,
  at: new Date().toISOString(),
  actorUserId: access.userId,

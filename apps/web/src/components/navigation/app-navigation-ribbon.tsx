@@ -283,6 +283,15 @@ export function AppNavigationRibbon({
                     }}
                   >
                     <SitePreferencesControls />
+                    <div className="mt-3 border-t border-white/10 pt-3">
+                      <Link
+                        href="/onboarding/localisation?next=/profil"
+                        onClick={() => onTrackNavigation("/onboarding/localisation?next=/profil", locale === "fr" ? "Préférences de compte" : "Account preferences", null)}
+                        className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-white/8 px-4 py-3 cmm-text-small font-semibold text-white/90 transition hover:border-cyan-300/40 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+                      >
+                        {locale === "fr" ? "Préférences de compte" : "Account preferences"}
+                      </Link>
+                    </div>
                   </motion.div>
                 ) : null}
               </AnimatePresence>

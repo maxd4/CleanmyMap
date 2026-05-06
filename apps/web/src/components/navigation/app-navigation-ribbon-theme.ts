@@ -89,21 +89,24 @@ export function parseCssColor(input: string | null | undefined): RgbaColor | nul
 
   const hex = value.match(/^#([0-9a-f]{3,8})$/i);
   if (hex) {
-    const raw = hex[1];
+    const raw = hex[1] ?? "";
+    if (!raw) {
+      return null;
+    }
     if (raw.length === 3) {
       return {
-        r: parseInt(raw[0] + raw[0], 16),
-        g: parseInt(raw[1] + raw[1], 16),
-        b: parseInt(raw[2] + raw[2], 16),
+        r: parseInt(raw.charAt(0) + raw.charAt(0), 16),
+        g: parseInt(raw.charAt(1) + raw.charAt(1), 16),
+        b: parseInt(raw.charAt(2) + raw.charAt(2), 16),
         a: 1,
       };
     }
     if (raw.length === 4) {
       return {
-        r: parseInt(raw[0] + raw[0], 16),
-        g: parseInt(raw[1] + raw[1], 16),
-        b: parseInt(raw[2] + raw[2], 16),
-        a: parseInt(raw[3] + raw[3], 16) / 255,
+        r: parseInt(raw.charAt(0) + raw.charAt(0), 16),
+        g: parseInt(raw.charAt(1) + raw.charAt(1), 16),
+        b: parseInt(raw.charAt(2) + raw.charAt(2), 16),
+        a: parseInt(raw.charAt(3) + raw.charAt(3), 16) / 255,
       };
     }
     if (raw.length === 6 || raw.length === 8) {

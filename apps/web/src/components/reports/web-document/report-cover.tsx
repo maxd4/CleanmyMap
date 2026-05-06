@@ -25,7 +25,7 @@ export function ReportCover({
  <div className="bg-gradient-to-br from-[#0f4c5c] via-[#1f5d7f] to-[#23426c] p-[1.15cm] text-white">
  <div className="flex flex-wrap items-center gap-2 cmm-text-caption font-semibold uppercase tracking-[0.2em] text-white/70">
  <ShieldCheck size={14} />
- Rapport d'impact institutionnel
+ Rapport d&apos;impact institutionnel
  </div>
  <h1 className="mt-3 text-3xl font-semibold leading-tight lg:text-4xl">
  Une lecture budgétaire, territoriale et méthodologique prête à présenter.

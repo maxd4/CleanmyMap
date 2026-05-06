@@ -133,7 +133,7 @@ describe("GET/POST /api/admin/role-accounts", () => {
 
     expect(response.status).toBe(200);
     expect(body.status).toBe("ok");
-    expect(body.account?.roleLabel).toBe("admin");
+    expect(body.account?.["roleLabel"]).toBe("admin");
     expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
     expect(getManagedRoleAccountByIdMock).toHaveBeenCalledWith("user-2");
   });

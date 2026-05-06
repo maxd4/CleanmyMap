@@ -157,15 +157,28 @@ export async function POST(request: Request) {
 
  const impactWeight = constraints.impactVsDistance / 100;
  const distanceWeight = 1 - impactWeight;
- const route: StopCandidate[] = [selected[0]];
+ const routeStart = selected[0];
+ if (!routeStart) {
+ return NextResponse.json({
+ status:"ok",
+ stops: [],
+ scoreBreakdown: { impact: 0, distance: 0, constraints: 0, global: 0 },
+ constraintsApplied: constraints,
+ tradeoffs: ["Aucun point exploitable n'a pu être retenu."],
+ proactiveAssistant: {
+ ...defaultRouteAssistantPayload(),
+ },
+ });
+ }
+ const route: StopCandidate[] = [routeStart];
  const unvisited = selected.slice(1);
 
  while (route.length < constraints.maxStops && unvisited.length > 0) {
- const current = route[route.length - 1];
+ const current = route[route.length - 1]!;
  let bestIndex = 0;
  let bestValue = Number.NEGATIVE_INFINITY;
  for (let i = 0; i < unvisited.length; i += 1) {
- const candidate = unvisited[i];
+ const candidate = unvisited[i]!;
  const dist = distanceKm(current, candidate);
  const composite =
  candidate.score * impactWeight - dist * 8 * distanceWeight;
@@ -174,7 +187,7 @@ export async function POST(request: Request) {
  bestIndex = i;
  }
  }
- route.push(unvisited.splice(bestIndex, 1)[0]);
+ route.push(unvisited.splice(bestIndex, 1)[0]!);
  }
 
  const stops = route.map((item, index) => {

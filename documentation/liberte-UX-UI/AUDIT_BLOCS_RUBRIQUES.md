@@ -1,17 +1,40 @@
 # Audit des Blocs et Rubriques — Guide de Production
 
+---
+
+## Statut de production (mis à jour manuellement)
+
+| # | Bloc | Dossier | AUDIT produit | Rubriques produites | KAIZEN produit |
+|---|------|---------|:---:|:---:|:---:|
+| 01 | Accueil (page vitrine) | `01-ACCUEIL` | ✅ `AUDIT-ACCUEIL.md` | ✅ `RUBRIQUE-ACCUEIL.md` | ❌ |
+| 02 | Bloc Accueil | `02-BLOC-ACCUEIL` | ❌ | — | — |
+| 03 | Bloc Agir | `03-BLOC-AGIR` | ❌ | 6 rubriques `.md` (pas de RUBRIQUE-*) | — |
+| 04 | Bloc Visualiser | `04-BLOC-VISUALISER` | ❌ | 4 rubriques `.md` | — |
+| 05 | Bloc Impact | `05-BLOC-IMPACT` | ❌ | 3 rubriques `.md` | — |
+| 06 | Bloc Réseau | `06-BLOC-RESEAU` | ❌ | 4 rubriques `.md` | — |
+| 07 | Bloc Échanges | `07-BLOC-ECHANGES` | ❌ | 1 rubrique `.md` | — |
+| 08 | Bloc Apprendre | `08-BLOC-APPRENDRE` | ❌ | 2 rubriques `.md` | — |
+| 09 | Bloc Piloter | `09-BLOC-PILOTER` | ❌ | 1 rubrique `.md` | — |
+| 10 | Pages Standalone | `10-PAGES-STANDALONE` | ❌ | 3+ rubriques `.md` | — |
+
+> **Note :** Les fichiers `.md` dans les sous-dossiers sans préfixe `RUBRIQUE-` sont des specs de rubriques informelles (pré-audit). Ils ne remplacent pas les `RUBRIQUE-[NOM].md` normés.
+
+**Prochain à traiter :** `03-BLOC-AGIR` (6 rubriques déjà spécifiées, priorité haute — bloc d'action principal).
+
+---
+
 ## Ce que produit ce système
 
 Pour chaque bloc, on produit trois fichiers de travail à utiliser dans cet ordre :
 
 1. **`AUDIT-[BLOC].md`** — 5 prompts de cadrage. L'agent les reçoit en premier. Ils posent la logique UX/UI choisie pour le bloc, la direction artistique, les contraintes globales et l'ordre d'exécution.
 2. **`RUBRIQUE-[NOM].md`** — prompts d'implémentation détaillés, un fichier par rubrique. L'agent les reçoit après le cadrage, rubrique par rubrique.
-3. **`KAIZEN-[NOM].md`** — second fichier d'audit obligatoire pour la même rubrique, construit avec la méthodologie Kaizen. Il sert à identifier les améliorations de fond, de forme et les innovations à planifier après l'audit UX/UI principal.
+3. **`KAIZEN-[NOM].md`** — audit d'amélioration continue associé à chaque rubrique. Produit après `RUBRIQUE-[NOM].md`, à partir du template Kaizen officiel. Couvre fond, forme et innovations.
 
 **Séquence d'utilisation :**
 → Envoyer les 5 prompts de `AUDIT-[BLOC].md`
 → Puis envoyer les prompts de `RUBRIQUE-[NOM].md` dans l'ordre de priorité indiqué
-→ Générer ensuite `KAIZEN-[NOM].md` pour chaque rubrique traitée en suivant la méthodologie Kaizen
+→ Générer ensuite `KAIZEN-[NOM].md` pour chaque rubrique traitée
 
 ---
 
@@ -25,15 +48,10 @@ Pour chaque bloc, on produit trois fichiers de travail à utiliser dans cet ordr
 - ❌ Texte brut : "Afficher '+5% ce mois'"
 - ✅ Mesurable : "LCP < 2.5s sur Lighthouse mobile, contraste WCAG AA (4.5:1) sur WebAIM"
 - ❌ Subjectif : "Améliorer la lisibilité"
+
 ---
 
 ## Direction artistique globale (à intégrer dans chaque AUDIT-[BLOC].md)
-
-Lire avant tout audit :
-- `documentation/design-system/charte-ui-pro-moderne-futuriste.md`
-- `documentation/design-system/VISUAL_STORYTELLING.md`
-- `documentation/design-system/TYPOGRAPHY_SYSTEM.md`
-- `documentation/design-system/display-modes-chartes.md`
 
 Règles non négociables à reprendre dans le PROMPT 2 de chaque audit :
 - Fond `slate-950` exclusivement. Aucun fond blanc sur les surfaces.
@@ -46,41 +64,26 @@ Règles non négociables à reprendre dans le PROMPT 2 de chaque audit :
 - Toute donnée chiffrable → SVG animé, D3, jauge ou sparkline. Jamais de chiffre brut seul.
 
 Accents par bloc (identité visuelle) :
-- Agir : `amber`
+- Agir : `emerald`
 - Visualiser : `sky`
-- Impact : `emerald`
+- Impact : `red`
 - Réseau : `violet`
-- Apprendre : `rose`
-- Piloter : `indigo`
+- Apprendre : `yellow`
+- Piloter : `brun`
 - Accueil : `emerald-500` + `cyan-400` (double accent, vitrine)
 
 ---
 
-## Audit Kaizen complémentaire obligatoire
+## Critères de niveau de priorité (PROMPT 5)
 
-Pour chaque fichier `RUBRIQUE-[NOM].md`, produire aussi un second audit nommé `KAIZEN-[NOM].md`.
+Utiliser les niveaux suivants pour classer les rubriques dans le PROMPT 5 :
 
-Ce fichier Kaizen n'est pas un duplicat du fichier rubrique :
-- il complète l'audit UX/UI avec une logique d'amélioration continue
-- il couvre obligatoirement `Fond`, `Forme` et `Innovations proposées`
-- il doit être rédigé à partir de la méthodologie existante, pas improvisé
-
-Sources obligatoires pour produire `KAIZEN-[NOM].md` :
-- `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md`
-- `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md`
-- `documentation/development/AI_MINDSET_KAIZEN.md`
-
-Règles de nommage :
-- audit UX/UI principal : `RUBRIQUE-[NOM].md`
-- audit Kaizen associé : `KAIZEN-[NOM].md`
-
-Contenu minimum attendu dans chaque `KAIZEN-[NOM].md` :
-- identification du fichier rubrique et du composant réel concerné
-- état actuel et points forts
-- audit fond avec priorités et prompts d'exécution
-- audit forme avec priorités et prompts d'exécution
-- innovations proposées
-- temps estimé et impact attendu
+| Niveau | Critère |
+|--------|---------|
+| **[CRITIQUE]** | Visible above the fold, CTA principal, première impression utilisateur |
+| **[HAUTE]** | Conversion directe, parcours principal, données temps réel |
+| **[MOYENNE]** | Enrichissement UX, micro-interactions, états secondaires |
+| **[BASSE]** | Edge cases, états vides, accessibilité non bloquante, animations décoratives |
 
 ---
 
@@ -203,6 +206,7 @@ Ces contraintes s'appliquent à toutes les sections du bloc [Nom] sans exception
 ### PROMPT 5 : Ordre d'exécution des rubriques
 \`\`\`
 Traiter les rubriques dans cet ordre de priorité. Chaque rubrique a son propre fichier de prompts détaillés.
+Critères : [CRITIQUE] = above the fold / CTA principal | [HAUTE] = conversion directe | [MOYENNE] = enrichissement UX | [BASSE] = edge cases / décoratif
 
 1. [CRITIQUE] [Nom rubrique] → prompts dans RUBRIQUE-[NOM].md
 2. [HAUTE]    [Nom rubrique] → prompts dans RUBRIQUE-[NOM].md
@@ -230,11 +234,6 @@ Produire autant de prompts que nécessaire, classés par priorité décroissante
 **Fichier** : `apps/web/src/components/[bloc]/[fichier].tsx`
 **Route** : `/route`
 **Audit Kaizen associé à produire** : `KAIZEN-[NOM].md`
-
-**Méthodologie obligatoire pour le fichier Kaizen associé** :
-- `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md`
-- `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md`
-- `documentation/development/AI_MINDSET_KAIZEN.md`
 
 ---
 
@@ -312,49 +311,47 @@ valeurs numériques, structure JSX si nécessaire.]
 
 ## Template — KAIZEN-[NOM].md
 
-Produire un fichier Kaizen complémentaire pour chaque rubrique à partir du template officiel Kaizen, sans réinventer sa structure.
+Produit après `RUBRIQUE-[NOM].md`. Ne pas réinventer la structure — utiliser le template officiel.
 
 ```markdown
 # Audit Kaizen - [Nom de la rubrique] ([chemin du composant])
 
-Utiliser comme base :
-- `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md`
-- `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md`
-- `documentation/development/AI_MINDSET_KAIZEN.md`
+Sources obligatoires (lire avant de produire ce fichier) :
+- `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md` → structure exacte à suivre
+- `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md` → comment remplir chaque section
+- `documentation/development/AI_MINDSET_KAIZEN.md` → posture d'amélioration continue attendue
 
-Règles de production :
-- nom du fichier : `KAIZEN-[NOM].md`
-- périmètre : le composant réel de la rubrique et ses fichiers directement liés
-- ne pas recopier le fichier `RUBRIQUE-[NOM].md`
-- identifier des opportunités complémentaires, priorisées et actionnables
+Règles :
+- Nom : `KAIZEN-[NOM].md` (même NOM que le fichier RUBRIQUE associé)
+- Périmètre : le composant réel + ses fichiers directement liés uniquement
+- Ne pas recopier le fichier RUBRIQUE-[NOM].md — identifier des opportunités complémentaires
 
-Contenu obligatoire :
-1. État actuel
-2. Audit Fond
-3. Audit Forme
-4. Innovations proposées
-5. Temps estimé
-6. Impact attendu
+Contenu obligatoire (6 sections) :
+1. État actuel — points forts et dettes identifiées
+2. Audit Fond — logique, données, architecture, performance
+3. Audit Forme — visuel, UX, accessibilité, animations
+4. Innovations proposées — idées actionnables avec effort/impact estimés
+5. Temps estimé — par opportunité
+6. Impact attendu — par opportunité
 
-Chaque opportunité doit inclure :
-- un problème concret
-- une solution explicite
-- un prompt à exécuter
-- un temps estimé
-- un impact attendu
+Chaque opportunité = problème concret + solution explicite + prompt à exécuter + temps + impact.
 ```
 
 ---
 
-## Ressources
+## Ressources — Ce qu'il faut retenir de chaque fichier
 
-- `documentation/design-system/charte-ui-pro-moderne-futuriste.md`
-- `documentation/design-system/VISUAL_STORYTELLING.md`
-- `documentation/design-system/TYPOGRAPHY_SYSTEM.md`
-- `documentation/design-system/display-modes-chartes.md`
-- `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md`
-- `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md`
-- `documentation/development/AI_MINDSET_KAIZEN.md`
-- `apps/web/src/components/ui/` — composants canoniques
-- `apps/web/tailwind.config.ts` — palette
+| Fichier | Ce qu'il apporte | Quand le lire |
+|---------|-----------------|---------------|
+| `documentation/design-system/charte-ui-pro-moderne-futuriste.md` | Patterns A/B/C, règles de surface, glassmorphism, accents par bloc | Avant tout PROMPT 2 |
+| `documentation/design-system/VISUAL_STORYTELLING.md` | Types de visualisation (sparkline, jauge, D3, SVG), règle "jamais de chiffre brut" | Avant tout PROMPT d'implémentation avec données chiffrées |
+| `documentation/design-system/TYPOGRAPHY_SYSTEM.md` | Liste exacte des classes `cmm-text-*`, poids autorisés, cas d'usage par niveau | Avant tout composant textuel |
+| `documentation/design-system/display-modes-chartes.md` | Comportement mode sobre (`useSitePreferences()`), fallbacks statiques | Avant tout composant animé |
+| `documentation/kaizen-implementation-plan/TEMPLATE-AUDIT.md` | Structure officielle des 6 sections Kaizen | Avant de produire tout `KAIZEN-*.md` |
+| `documentation/kaizen-implementation-plan/GUIDE-UTILISATION-TEMPLATE.md` | Comment remplir chaque section du template Kaizen | Avant de produire tout `KAIZEN-*.md` |
+| `documentation/development/AI_MINDSET_KAIZEN.md` | Posture d'amélioration continue, critères de priorisation, ton attendu | Avant de produire tout `KAIZEN-*.md` |
+| `apps/web/src/components/ui/cmm-button.tsx` | Props, variantes, classes générées par CmmButton | Avant tout prompt touchant aux boutons |
+| `apps/web/src/components/ui/cmm-card.tsx` | Props, variantes, classes générées par CmmCard | Avant tout prompt touchant aux cards |
+| `apps/web/tailwind.config.ts` | Palette complète, tokens custom, breakpoints | En cas de doute sur une couleur ou classe |
+
 

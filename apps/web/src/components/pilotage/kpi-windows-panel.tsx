@@ -30,9 +30,9 @@ function reliabilityTone(level:"elevee" |"moyenne" |"faible"): string {
 }
 
 export function KpiWindowsPanel({
- comparisonsByWindow,
- title ="Comparatifs N vs N-1 par fenetre",
- unavailableMessage ="Donnees de comparaison temporairement indisponibles. Verifier la source pilotage.",
+  comparisonsByWindow,
+  title = "Comparatifs N vs N-1 par fenêtre",
+  unavailableMessage = "Données de comparaison temporairement indisponibles. Vérifiez la source pilotage.",
 }: KpiWindowsPanelProps) {
  if (!comparisonsByWindow) {
  return (

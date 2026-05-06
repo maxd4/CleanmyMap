@@ -2,22 +2,25 @@ import {
  Show,
  UserButton,
 } from"@clerk/nextjs";
-import { Analytics } from"@vercel/analytics/next";
-import { SpeedInsights } from"@vercel/speed-insights/next";
+import { ConditionalAnalytics } from"@/components/ui/conditional-analytics";
 import Image from"next/image";
 import Link from"next/link";
+import { LogIn, UserPlus, Map as MapIcon } from "lucide-react";
 import type { Metadata } from"next";
 import { headers } from"next/headers";
 import { Inter, Outfit } from"next/font/google";
 import { AccountIdentityChip } from"@/components/account/account-identity-chip";
 import { AppNavigationRibbon } from"@/components/navigation/app-navigation-ribbon";
 import { PostHogProvider } from"@/components/posthog-provider";
+import { CookieConsentBanner } from"@/components/ui/cookie-consent-banner";
 import { ClerkLocalizationProvider } from"@/components/auth/clerk-localization-provider";
 import { VibrantBackground } from"@/components/ui/vibrant-background";
 import { SitePreferencesProvider } from"@/components/ui/site-preferences-provider";
 import { SiteTooltips } from"@/components/ui/site-tooltips";
 import { PageTransition } from"@/components/ui/page-transition";
+import { NetworkToastHost } from"@/components/ui/network-toast";
 import { NotificationBell } from"@/components/navigation/notification-bell";
+import { OrganizationJsonLd, WebSiteJsonLd, FAQJsonLd } from"@/components/seo/structured-data";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { getClerkRuntimeConfig } from"@/lib/clerk-session-config";
@@ -74,10 +77,15 @@ export default async function RootLayout({
   const appRibbonTopOffset = "0rem";
   const appHeaderTopOffset = hideGlobalHeader ? "0rem" : "4.75rem";
 
- return (
+return (
         <html className={`h-full antialiased ${outfit.variable} ${inter.variable}`} suppressHydrationWarning data-theme="mixed">
- <body
-   className="min-h-full bg-background text-foreground font-sans"
+  <head>
+    <OrganizationJsonLd />
+    <WebSiteJsonLd />
+    <FAQJsonLd />
+  </head>
+  <body
+    className="min-h-full bg-background text-foreground font-sans"
    style={
      {
       "--app-ribbon-top-offset": appRibbonTopOffset,
@@ -85,10 +93,10 @@ export default async function RootLayout({
      } as CSSProperties
    }
   >
- <SitePreferencesProvider
- initialDisplayMode={displayModePreference.displayMode}
- initialDisplayModeExplicit={displayModePreference.isExplicit}
- >
+<SitePreferencesProvider
+initialDisplayMode={displayModePreference.displayMode}
+initialDisplayModeExplicit={displayModePreference.isExplicit}
+>
  <ClerkLocalizationProvider
  signInUrl="/sign-in"
  signUpUrl="/sign-up"
@@ -100,7 +108,8 @@ export default async function RootLayout({
  satelliteAutoSync={clerkRuntime.satelliteAutoSync}
  allowedRedirectOrigins={clerkRuntime.allowedRedirectOrigins}
  >
- <PostHogProvider>
+<PostHogProvider>
+  <NetworkToastHost />
   <VibrantBackground />
   <SiteTooltips />
   <AppNavigationRibbon
@@ -119,33 +128,33 @@ export default async function RootLayout({
  className="h-6 w-auto sm:h-7"
  priority
  />
- <h1 className="whitespace-nowrap cmm-text-caption cmm-text-secondary font-semibold uppercase tracking-[0.18em] sm:cmm-text-small">
- Dépolluer · Cartographier · Impacter
- </h1>
  </Link>
  <div className="flex min-w-max items-center gap-3 sm:gap-4">
- <Link
- href="/explorer"
- className="hidden rounded-full border border-[color:var(--border-default)] bg-[color:var(--bg-muted)] px-3 py-1.5 cmm-text-small cmm-text-secondary font-semibold transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 sm:inline-flex"
- >
- Plan du site
- </Link>
+  <Link
+  href="/explorer"
+  className="hidden items-center gap-2 rounded-full border border-[color:var(--border-default)] bg-[color:var(--bg-muted)] px-3 py-1.5 cmm-text-small cmm-text-secondary font-semibold transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 sm:inline-flex"
+  >
+  <MapIcon size={14} />
+  Explorer
+  </Link>
  <div className="h-4 w-px bg-[color:var(--border-default)]" />
  <Show when="signed-out">
- <div className="flex items-center gap-2">
- <Link
- href="/sign-in"
- className="cmm-text-small cmm-text-secondary font-semibold transition-colors hover:text-cyan-200"
- >
-  Se connecter
- </Link>
- <Link
- href="/sign-up"
- className="rounded-full bg-emerald-600 px-4 py-1.5 cmm-text-small font-semibold text-white shadow-md shadow-emerald-600/10 transition-all hover:bg-emerald-700"
- >
-  S'inscrire
- </Link>
- </div>
+  <div className="flex items-center gap-2">
+  <Link
+  href="/sign-in"
+  className="flex items-center gap-2 cmm-text-small cmm-text-secondary font-semibold transition-colors hover:text-cyan-200"
+  >
+   <LogIn size={16} />
+   Connexion
+  </Link>
+  <Link
+  href="/sign-up"
+  className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-1.5 cmm-text-small font-semibold text-white shadow-md shadow-emerald-600/10 transition-all hover:bg-emerald-700"
+  >
+   <UserPlus size={16} />
+   Rejoindre
+  </Link>
+  </div>
  </Show>
  <Show when="signed-in">
  <div className="flex items-center gap-3">
@@ -171,9 +180,9 @@ export default async function RootLayout({
  {children}
  </PageTransition>
  </main>
- <Analytics />
- <SpeedInsights />
- </PostHogProvider>
+<ConditionalAnalytics />
+  <CookieConsentBanner />
+  </PostHogProvider>
  </ClerkLocalizationProvider>
  </SitePreferencesProvider>
  </body>

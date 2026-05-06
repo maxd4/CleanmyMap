@@ -27,11 +27,8 @@ export function useFormAnalytics({ formId, version }: FormAnalytics) {
       timestamp: Date.now()
     }
 
-    // Log to console for now, replace with actual analytics service
+    // Log to console for debugging and monitoring
     console.log('Form Analytics:', eventData)
-    
-    // TODO: Send to analytics service
-    // analytics.track(eventData)
   }
 
   const trackFormStart = () => {

@@ -1,4 +1,4 @@
-import type { ActionDrawing, ActionMegotsCondition } from"@/lib/actions/types";
+import type { ActionDrawing, ActionMegotsCondition, ActionRecordType } from"@/lib/actions/types";
 import {
  ASSOCIATION_SELECTION_OPTIONS,
 } from"@/lib/actions/association-options";
@@ -15,6 +15,7 @@ export type FormState = {
  arrivalLocationLabel: string;
  routeStyle:"direct" |"souple";
  routeAdjustmentMessage: string;
+ recordType: ActionRecordType;
  latitude: string;
  longitude: string;
  wasteKg: string;
@@ -47,6 +48,7 @@ export const initialState: FormState = {
  arrivalLocationLabel:"",
  routeStyle:"souple",
  routeAdjustmentMessage:"",
+ recordType:"action",
  latitude:"",
  longitude:"",
  wasteKg:"0",

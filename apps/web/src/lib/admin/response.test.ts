@@ -13,9 +13,9 @@ describe("admin response helpers", () => {
     const body = (await response.json()) as Record<string, unknown>;
 
     expect(response.status).toBe(409);
-    expect(body.code).toBe("confirmation_required");
-    expect(body.message).toBe("Explicit confirmation phrase required");
-    expect(body.hint).toBe("Type the expected confirmation phrase.");
-    expect(body.operationId).toBe("op-123");
+    expect(body["code"]).toBe("confirmation_required");
+    expect(body["message"]).toBe("Explicit confirmation phrase required");
+    expect(body["hint"]).toBe("Type the expected confirmation phrase.");
+    expect(body["operationId"]).toBe("op-123");
   });
 });

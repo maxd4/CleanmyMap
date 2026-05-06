@@ -16,6 +16,7 @@ import {
  newOperationId,
 } from"@/lib/admin/response";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
+import { acquireBackpressure, releaseBackpressure } from"@/lib/backpressure";
 
 export const runtime ="nodejs";
 const IMPORT_CONFIRM_PHRASE ="CONFIRMER IMPORT";
@@ -68,14 +69,31 @@ function isValidImportConfirmationPhrase(value: string | null): boolean {
 }
 
 export async function POST(request: Request) {
- const operationId = newOperationId();
- const access = await requireAdminAccess();
- if (!access.ok) {
- return adminAccessErrorJsonResponse(access, operationId);
- }
+  const operationId = newOperationId();
+  
+  const bp = acquireBackpressure("import", operationId);
+  if (!bp.allowed) {
+    return adminErrorResponse({
+      status: 429,
+      code: "backpressure",
+      message: bp.reason || "System busy",
+      hint: bp.retryAfter ? `Retry after ${bp.retryAfter} seconds` : "Try again later",
+      operationId,
+      details: {
+        position: bp.position,
+        retryAfter: bp.retryAfter,
+      },
+    });
+  }
 
- const url = new URL(request.url);
- const dryRun = url.searchParams.get("dryRun") ==="1";
+  const access = await requireAdminAccess();
+  if (!access.ok) {
+    releaseBackpressure("import");
+    return adminAccessErrorJsonResponse(access, operationId);
+  }
+
+  const url = new URL(request.url);
+  const dryRun = url.searchParams.get("dryRun") ==="1";
 
  let payload: unknown;
  try {
@@ -327,8 +345,10 @@ export async function POST(request: Request) {
  status: 500,
  code:"server_error",
  message,
- hint:"Verifier la connexion Supabase et relancer l'import.",
- operationId,
- });
- }
+hint:"Verifier la connexion Supabase et relancer l'import.",
+  operationId,
+  });
+  } finally {
+    releaseBackpressure("import");
+  }
 }

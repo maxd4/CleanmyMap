@@ -25,6 +25,8 @@ export function ActionStepReview({
   isSubmitting,
   onSubmit,
 }: ActionStepReviewProps) {
+  const isCleanPlaceMode =
+    payload.recordType === "clean_place" || payload.recordType === "spot";
   const hasWarnings = dataQuality.warnings.length > 0;
   const drawingSummary = summarizeActionDrawingValidation(payload.manualDrawing ?? null);
 
@@ -64,13 +66,19 @@ export function ActionStepReview({
 
           <div className="space-y-4 text-center md:text-left">
             <div className="flex items-center justify-center md:justify-start gap-2">
-              <ShieldCheck size={20} className="text-emerald-400" />
-              <span className="text-[10px] font-black tracking-[0.3em] text-white/50 uppercase">Analyse de Fiabilité</span>
-            </div>
-            <h3 className="text-3xl font-black tracking-tighter">Votre déclaration est prête à être transmise</h3>
+            <ShieldCheck size={20} className="text-emerald-400" />
+            <span className="text-[10px] font-black tracking-[0.3em] text-white/50 uppercase">Analyse de Fiabilité</span>
+          </div>
+            <h3 className="text-3xl font-black tracking-tighter">
+              {isCleanPlaceMode
+                ? "Votre lieu propre est prêt à être transmis"
+                : "Votre déclaration est prête à être transmise"}
+            </h3>
             <p className="text-sm text-slate-400 font-medium leading-relaxed max-w-md">
               {hasWarnings 
                 ? "Nous avons détecté quelques points d'attention qui pourraient impacter la précision de votre impact."
+                : isCleanPlaceMode
+                ? "Le lieu propre est cohérent et prêt à être transmis."
                 : "Toutes les données semblent cohérentes. Merci pour cette contribution de qualité au réseau."}
             </p>
           </div>
@@ -85,20 +93,39 @@ export function ActionStepReview({
             <h4 className="text-[10px] font-black tracking-[0.2em] text-slate-400 uppercase">La Récolte</h4>
           </div>
           <div className="space-y-4">
-            <div className="flex justify-between items-end border-b border-slate-50 pb-4">
-              <span className="text-sm font-bold text-slate-500">Masse totale</span>
-              <span className="text-2xl font-black text-slate-900">{payload.wasteKg} KG</span>
-            </div>
-            {payload.cigaretteButtsCount && (
-              <div className="flex justify-between items-end border-b border-slate-50 pb-4">
-                <span className="text-sm font-bold text-slate-500">Mégots identifiés</span>
-                <span className="text-xl font-black text-amber-600">{payload.cigaretteButtsCount} U</span>
-              </div>
+            {isCleanPlaceMode ? (
+              <>
+                <div className="flex justify-between items-end border-b border-slate-50 pb-4">
+                  <span className="text-sm font-bold text-slate-500">Type</span>
+                  <span className="text-2xl font-black text-slate-900">Lieu propre</span>
+                </div>
+                <div className="flex justify-between items-end border-b border-slate-50 pb-4">
+                  <span className="text-sm font-bold text-slate-500">Lieu</span>
+                  <span className="text-xl font-black text-slate-900 truncate max-w-[200px]">{payload.locationLabel}</span>
+                </div>
+                <div className="flex justify-between items-end">
+                  <span className="text-sm font-bold text-slate-500">Photos</span>
+                  <span className="text-xl font-black text-slate-900">{payload.photos?.length ?? 0}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between items-end border-b border-slate-50 pb-4">
+                  <span className="text-sm font-bold text-slate-500">Masse totale</span>
+                  <span className="text-2xl font-black text-slate-900">{payload.wasteKg} KG</span>
+                </div>
+                {payload.cigaretteButtsCount && (
+                  <div className="flex justify-between items-end border-b border-slate-50 pb-4">
+                    <span className="text-sm font-bold text-slate-500">Mégots identifiés</span>
+                    <span className="text-xl font-black text-amber-600">{payload.cigaretteButtsCount} U</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-end">
+                  <span className="text-sm font-bold text-slate-500">Participants</span>
+                  <span className="text-xl font-black text-slate-900">{payload.volunteersCount} PERS.</span>
+                </div>
+              </>
             )}
-            <div className="flex justify-between items-end">
-              <span className="text-sm font-bold text-slate-500">Participants</span>
-              <span className="text-xl font-black text-slate-900">{payload.volunteersCount} PERS.</span>
-            </div>
           </div>
         </div>
 
@@ -191,7 +218,7 @@ export function ActionStepReview({
           ) : (
             <>
               <ClipboardCheck size={28} />
-              <span>Publier ma déclaration</span>
+              <span>{isCleanPlaceMode ? "Publier mon lieu propre" : "Publier ma déclaration"}</span>
               <ArrowRight size={24} className="ml-2 group-hover:translate-x-2 transition-transform duration-500" />
             </>
           )}

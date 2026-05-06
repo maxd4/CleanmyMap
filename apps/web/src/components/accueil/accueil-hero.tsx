@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Info } from "lucide-react";
+import { ArrowRight, Info, MapPin, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
 import type { HomeMetric } from "@/lib/accueil/config";
@@ -75,48 +75,25 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                 </div>
               </div>
 
-              <p className="max-w-2xl text-[1rem] leading-[1.7] text-white/88 sm:text-[1.08rem]">
-                Mutualisez vos cleanwalks, visualisez les zones prioritaires sur
-                une carte commune et générez des rapports d&apos;impact
-                automatisés pour votre RSE, les collectivités et les élus.
-                <span className="italic text-white/90"> Cultivons l&apos;entraide.</span>
+              <p className="max-w-2xl text-[1.1rem] font-medium leading-[1.6] text-white/90">
+                L'outil citoyen pour structurer, mesurer et valoriser vos actions terrain en Île-de-France. 
+                <span className="block mt-2 text-[#26C8D8] font-semibold">📍 Carte interactive • 📱 Compagnon GPS • 📊 Hub Opérationnel</span>
               </p>
 
-              <div className="grid max-w-[430px] grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="flex flex-wrap gap-4 mt-8">
                 <Link
-                  href="/sign-in"
-                  className="inline-flex h-[52px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#20C6D5] to-[#17C486] px-5 text-[14px] font-bold text-white shadow-[0_18px_30px_-18px_rgba(23,196,134,0.58)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50"
+                  href="/actions/map"
+                  className="inline-flex h-[56px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#20C6D5] to-[#17C486] px-8 text-[15px] font-bold text-white shadow-[0_18px_30px_-18px_rgba(23,196,134,0.58)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50"
                 >
-                  Se connecter
-                  <ArrowRight size={18} />
+                  <MapPin size={20} />
+                  Ouvrir la Carte
                 </Link>
                 <Link
                   href="/dashboard"
-                  className="inline-flex h-[52px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#20C6D5] to-[#17C486] px-5 text-[14px] font-bold text-white shadow-[0_18px_30px_-18px_rgba(39,195,217,0.45)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50"
+                  className="inline-flex h-[56px] items-center justify-center gap-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 px-8 text-[15px] font-bold text-white transition-all hover:bg-white/20 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                 >
-                  Tableau de bord
-                  <ArrowRight size={18} />
-                </Link>
-                <Link
-                  href="/actions/map"
-                  className="inline-flex h-[52px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#625CF3] to-[#A64DF0] px-5 text-[14px] font-bold text-white shadow-[0_18px_32px_-18px_rgba(166,77,240,0.58)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/50"
-                >
-                  Voir la carte
-                  <ArrowRight size={18} />
-                </Link>
-                <Link
-                  href="/actions/new"
-                  className="inline-flex h-[52px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#705CF3] to-[#B04DF0] px-5 text-[14px] font-bold text-white shadow-[0_18px_32px_-18px_rgba(176,77,240,0.58)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/50"
-                >
-                  Déclarer une action
-                  <ArrowRight size={18} />
-                </Link>
-                <Link
-                  href="/reports"
-                  className="inline-flex h-[52px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#705CF3] to-[#B04DF0] px-5 text-[14px] font-bold text-white shadow-[0_18px_32px_-18px_rgba(176,77,240,0.58)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/50"
-                >
-                  Rapport d&apos;impact
-                  <ArrowRight size={18} />
+                  <LayoutDashboard size={20} />
+                  Accéder au Hub
                 </Link>
               </div>
             </div>

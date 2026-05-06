@@ -26,7 +26,7 @@ const SOURCE_FILTERS: Array<{ value: "all" | CreatorInboxSource; label: string }
 const STATUS_FILTERS: Array<{ value: "all" | CreatorInboxStatus; label: string }> = [
   { value: "all", label: "Tous" },
   { value: "new", label: "Nouveau" },
-  { value: "pending", label: "En attente" },
+  { value: "pending", label: "En attente de traitement" },
   { value: "accepted", label: "Accepté" },
   { value: "rejected", label: "Refusé" },
   { value: "responded", label: "Répondu" },

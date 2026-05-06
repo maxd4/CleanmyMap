@@ -7,7 +7,7 @@ import type { ActionsMapFilters } from "./actions-map-filters.utils";
 
 const STATUS_OPTIONS: Array<{ value: ActionStatus | "all"; label: string }> = [
   { value: "approved", label: "Validées" },
-  { value: "pending", label: "En attente" },
+  { value: "pending", label: "En attente de validation" },
   { value: "rejected", label: "Rejetées" },
   { value: "all", label: "Tous statuts" },
 ];

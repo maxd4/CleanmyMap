@@ -48,7 +48,7 @@ export function ClosedLoopPanel(props: ClosedLoopPanelProps) {
  }
  setState("success");
  setFeedback("");
- setMessage("Merci, ton feedback a ete enregistre.");
+ setMessage("Merci, ton feedback a été enregistré.");
  } catch {
  setState("error");
  setMessage("Impossible d'envoyer le feedback pour le moment.");

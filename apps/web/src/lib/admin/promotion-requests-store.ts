@@ -3,6 +3,10 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { assertPersistenceAvailable } from "@/lib/persistence/runtime-store";
 import type { AppProfile } from "@/lib/profiles";
+import {
+  deleteSupabaseMirror,
+  upsertSupabaseMirror,
+} from "@/lib/supabase/mirror";
 
 export type PromotionRequestTargetRole = "elu" | "admin";
 
@@ -50,45 +54,45 @@ function emptyStore(): StorePayload {
 }
 
 function normalizeRecord(record: Record<string, unknown>): PromotionRequestRecord | null {
-  const id = typeof record.id === "string" ? record.id : "";
-  const createdAt = typeof record.createdAt === "string" ? record.createdAt : "";
+  const id = typeof record["id"] === "string" ? record["id"] : "";
+  const createdAt = typeof record["createdAt"] === "string" ? record["createdAt"] : "";
   const submittedByUserId =
-    typeof record.submittedByUserId === "string" ? record.submittedByUserId : "";
+    typeof record["submittedByUserId"] === "string" ? record["submittedByUserId"] : "";
   const submittedByDisplayName =
-    typeof record.submittedByDisplayName === "string"
-      ? record.submittedByDisplayName
+    typeof record["submittedByDisplayName"] === "string"
+      ? record["submittedByDisplayName"]
       : "";
   const submittedByEmail =
-    typeof record.submittedByEmail === "string" && record.submittedByEmail.trim().length > 0
-      ? record.submittedByEmail
+    typeof record["submittedByEmail"] === "string" && record["submittedByEmail"].trim().length > 0
+      ? record["submittedByEmail"]
       : null;
   const submittedByRole =
-    typeof record.submittedByRole === "string" ? record.submittedByRole : "";
-  const requestedRole = record.requestedRole;
-  const motivation = typeof record.motivation === "string" ? record.motivation : "";
+    typeof record["submittedByRole"] === "string" ? record["submittedByRole"] : "";
+  const requestedRole = record["requestedRole"];
+  const motivation = typeof record["motivation"] === "string" ? record["motivation"] : "";
   const status =
-    record.status === "accepted" || record.status === "rejected"
-      ? record.status
+    record["status"] === "accepted" || record["status"] === "rejected"
+      ? record["status"]
       : "pending_owner_review";
   const creatorState =
-    record.creatorState === "pending" ||
-    record.creatorState === "responded" ||
-    record.creatorState === "treated" ||
-    record.creatorState === "archived" ||
-    record.creatorState === "accepted" ||
-    record.creatorState === "rejected"
-      ? record.creatorState
+    record["creatorState"] === "pending" ||
+    record["creatorState"] === "responded" ||
+    record["creatorState"] === "treated" ||
+    record["creatorState"] === "archived" ||
+    record["creatorState"] === "accepted" ||
+    record["creatorState"] === "rejected"
+      ? record["creatorState"]
       : status === "accepted"
         ? "accepted"
         : status === "rejected"
           ? "rejected"
           : "new";
   const reviewedAt =
-    typeof record.reviewedAt === "string" ? record.reviewedAt : null;
+    typeof record["reviewedAt"] === "string" ? record["reviewedAt"] : null;
   const reviewedByUserId =
-    typeof record.reviewedByUserId === "string" ? record.reviewedByUserId : null;
+    typeof record["reviewedByUserId"] === "string" ? record["reviewedByUserId"] : null;
   const reviewedByRole =
-    typeof record.reviewedByRole === "string" ? record.reviewedByRole : null;
+    typeof record["reviewedByRole"] === "string" ? record["reviewedByRole"] : null;
 
   if (
     !id ||
@@ -173,6 +177,24 @@ async function writeStore(store: StorePayload): Promise<void> {
   );
 }
 
+function toSupabaseRow(record: PromotionRequestRecord): Record<string, unknown> {
+  return {
+    id: record.id,
+    created_at: record.createdAt,
+    submitted_by_user_id: record.submittedByUserId,
+    submitted_by_display_name: record.submittedByDisplayName,
+    submitted_by_email: record.submittedByEmail,
+    submitted_by_role: record.submittedByRole,
+    requested_role: record.requestedRole,
+    motivation: record.motivation,
+    status: record.status,
+    reviewed_at: record.reviewedAt,
+    reviewed_by_user_id: record.reviewedByUserId,
+    reviewed_by_role: record.reviewedByRole,
+    creator_state: record.creatorState,
+  };
+}
+
 export async function appendPromotionRequest(params: {
   submittedByUserId: string;
   input: PromotionRequestInput;
@@ -198,6 +220,11 @@ export async function appendPromotionRequest(params: {
   const store = await readStore();
   const records = [record, ...store.records].slice(0, 2000);
   await writeStore({ updatedAt: new Date().toISOString(), records });
+  await upsertSupabaseMirror("promotion_requests", toSupabaseRow(record)).catch(
+    (error) => {
+      console.warn("Promotion request Supabase sync failed", error);
+    },
+  );
   return record;
 }
 
@@ -235,6 +262,11 @@ export async function updatePromotionRequestStatus(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
+  await upsertSupabaseMirror("promotion_requests", toSupabaseRow(updated)).catch(
+    (error) => {
+      console.warn("Promotion request Supabase sync failed", error);
+    },
+  );
   return updated;
 }
 
@@ -257,6 +289,11 @@ export async function updatePromotionRequestCreatorState(params: {
   const records = [...store.records];
   records[index] = updated;
   await writeStore({ updatedAt: new Date().toISOString(), records });
+  await upsertSupabaseMirror("promotion_requests", toSupabaseRow(updated)).catch(
+    (error) => {
+      console.warn("Promotion request Supabase sync failed", error);
+    },
+  );
   return updated;
 }
 
@@ -278,5 +315,8 @@ export async function deletePromotionRequest(
     return false;
   }
   await writeStore({ updatedAt: new Date().toISOString(), records });
+  await deleteSupabaseMirror("promotion_requests", requestId).catch((error) => {
+    console.warn("Promotion request Supabase delete sync failed", error);
+  });
   return true;
 }

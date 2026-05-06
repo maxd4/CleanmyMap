@@ -91,7 +91,7 @@ export function ActionDeclarationFormFeedback({
       {submissionState === "success" && (
         <div className="md:col-span-2 mt-3 rounded-lg border border-sky-200 bg-sky-50 p-3 cmm-text-small text-sky-900">
           <p className="font-semibold">Envoyé</p>
-          <p className="mt-1">En attente de validation admin.</p>
+          <p className="mt-1">Votre contribution est en attente de validation par un administrateur. Vous recevrez une notification une fois examinée.</p>
         </div>
       )}
 

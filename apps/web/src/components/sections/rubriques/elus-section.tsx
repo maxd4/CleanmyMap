@@ -104,31 +104,32 @@ function ElusSection() {
 
  const summaryKpis = useMemo(() => {
  const kpis = data?.summary.kpis ?? [];
- if (kpis.length >= 3) {
+ const [kpi0, kpi1, kpi2] = kpis;
+ if (kpi0 && kpi1 && kpi2) {
  return [
  {
- label: kpis[0].label,
- value: kpis[0].value,
- previousValue: kpis[0].previousValue,
- deltaAbsolute: kpis[0].deltaAbsolute,
- deltaPercent: kpis[0].deltaPercent,
- interpretation: kpis[0].interpretation,
+ label: kpi0.label,
+ value: kpi0.value,
+ previousValue: kpi0.previousValue,
+ deltaAbsolute: kpi0.deltaAbsolute,
+ deltaPercent: kpi0.deltaPercent,
+ interpretation: kpi0.interpretation,
  },
  {
- label: kpis[1].label,
- value: kpis[1].value,
- previousValue: kpis[1].previousValue,
- deltaAbsolute: kpis[1].deltaAbsolute,
- deltaPercent: kpis[1].deltaPercent,
- interpretation: kpis[1].interpretation,
+ label: kpi1.label,
+ value: kpi1.value,
+ previousValue: kpi1.previousValue,
+ deltaAbsolute: kpi1.deltaAbsolute,
+ deltaPercent: kpi1.deltaPercent,
+ interpretation: kpi1.interpretation,
  },
  {
- label: kpis[2].label,
- value: kpis[2].value,
- previousValue: kpis[2].previousValue,
- deltaAbsolute: kpis[2].deltaAbsolute,
- deltaPercent: kpis[2].deltaPercent,
- interpretation: kpis[2].interpretation,
+ label: kpi2.label,
+ value: kpi2.value,
+ previousValue: kpi2.previousValue,
+ deltaAbsolute: kpi2.deltaAbsolute,
+ deltaPercent: kpi2.deltaPercent,
+ interpretation: kpi2.interpretation,
  },
  ] as const;
  }

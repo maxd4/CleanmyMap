@@ -11,7 +11,7 @@ import type {
  ActionVisionEstimate,
  CreateActionPayload,
 } from"../../../lib/actions/types";
-import { computeButtsCount } from"../../../lib/actions/data-contract";
+import { computeButtsCount } from"../../../lib/actions/impact-calculators";
 import type { DeclarationMode, FormState } from"./types";
 import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
 
@@ -33,6 +33,7 @@ const BASE_FORM_STATE: FormState = {
  arrivalLocationLabel:"",
  routeStyle:"souple",
  routeAdjustmentMessage:"",
+ recordType:"action",
  latitude:"",
  longitude:"",
  wasteKg:"0",
@@ -55,8 +56,11 @@ const BASE_FORM_STATE: FormState = {
  visionDensity:"",
 };
 
-export function createInitialFormState(actorName: string): FormState {
- return { ...BASE_FORM_STATE, actorName };
+export function createInitialFormState(
+ actorName: string,
+ recordType: FormState["recordType"] = "action",
+): FormState {
+ return { ...BASE_FORM_STATE, actorName, recordType };
 }
 
 export function getFormResetState(previous: FormState): FormState {
@@ -65,6 +69,7 @@ export function getFormResetState(previous: FormState): FormState {
  actorName: previous.actorName,
  associationName: previous.associationName,
  actionDate: previous.actionDate,
+ recordType: previous.recordType,
  };
 }
 
@@ -172,6 +177,14 @@ export function buildCreateActionPayload(params: {
  const associationName = isEntrepriseMode
  ? buildEntrepriseAssociationName(form.enterpriseName)
  : form.associationName;
+ const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount);
+ const estimatedButtsFromWeight =
+ toOptionalNumber(form.wasteMegotsKg) && toRequiredNumber(form.wasteMegotsKg, 0) > 0
+ ? computeButtsCount(
+ toRequiredNumber(form.wasteMegotsKg, 0),
+ form.wasteMegotsCondition,
+ )
+ : undefined;
 
  return {
  actorName: form.actorName.trim() || undefined,
@@ -182,18 +195,14 @@ export function buildCreateActionPayload(params: {
  arrivalLocationLabel: arrivalLocationLabel || undefined,
  routeStyle: form.routeStyle,
  routeAdjustmentMessage: form.routeAdjustmentMessage.trim() || undefined,
+ recordType: form.recordType,
  latitude: quickMode ? undefined : latitude,
  longitude: quickMode ? undefined : longitude,
  wasteKg: toRequiredNumber(form.wasteKg, 0),
- cigaretteButts: quickMode
- ? 0
- : computeButtsCount(
- toRequiredNumber(form.wasteMegotsKg, 0),
- form.wasteMegotsCondition,
- ),
- cigaretteButtsCount: toOptionalNumber(form.cigaretteButtsCount),
+ cigaretteButts: quickMode ? 0 : enteredButtsCount ?? estimatedButtsFromWeight ?? 0,
+ cigaretteButtsCount: enteredButtsCount ?? estimatedButtsFromWeight,
  volunteersCount: Math.max(
- 1,
+1,
  Math.trunc(toRequiredNumber(form.volunteersCount, 1)),
  ),
  durationMinutes: quickMode
@@ -209,9 +218,7 @@ export function buildCreateActionPayload(params: {
  : undefined,
  placeType: form.placeType,
  submissionMode: declarationMode,
- wasteBreakdown: quickMode
- ? undefined
- : {
+ wasteBreakdown: {
  megotsKg: toOptionalNumber(form.wasteMegotsKg),
  megotsCondition: form.wasteMegotsCondition,
  plastiqueKg: toOptionalNumber(form.wastePlastiqueKg),

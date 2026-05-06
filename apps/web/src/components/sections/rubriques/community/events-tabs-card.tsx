@@ -1,6 +1,7 @@
 "use client";
 
 import Link from"next/link";
+import type { AppError } from "@/lib/errors/app-errors";
 import type {
  EventConversionRow,
  EventReminder,
@@ -14,13 +15,20 @@ import { formatFrDate, toRsvpLabel } from"@/components/sections/rubriques/commun
 import { buildIcsHref } from"@/components/sections/rubriques/community/ics";
 import { formatPct } from"@/components/sections/rubriques/community/kpis";
 import type { CommunityTab, OpsDraft } from"@/components/sections/rubriques/community/types";
+import { ErrorMessage } from"@/components/ui/error-message";
+import { PermissionErrorState } from"@/components/ui/permission-error-state";
+import { ServerErrorCard } from"@/components/ui/server-error-card";
 import { IdentityBadge } from"@/components/ui/identity-badge";
+import { QRCodeDialog } from "@/components/ui/qrcode-dialog";
+import { useState } from "react";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type CommunityEventsTabsCardProps = {
  activeTab: CommunityTab;
  setActiveTab: (tab: CommunityTab) => void;
  eventsLoading: boolean;
- eventsLoadError: string | null;
+ eventsLoadError: AppError | null;
+ onRetry?: () => Promise<unknown> | void;
  upcomingEvents: CommunityEventItem[];
  myEvents: CommunityEventItem[];
  pastEvents: CommunityEventItem[];
@@ -43,11 +51,15 @@ function tabTone(activeTab: CommunityTab, tab: CommunityTab): string {
 }
 
 function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
+ const [shareEvent, setShareEvent] = useState<CommunityEventItem | null>(null);
+ const { locale } = useSitePreferences();
+
  const {
  activeTab,
  setActiveTab,
  eventsLoading,
  eventsLoadError,
+ onRetry,
  upcomingEvents,
  myEvents,
  pastEvents,
@@ -74,27 +86,29 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  }
 
  return (
- <div className="rounded-xl border border-slate-200 bg-white p-4">
- <div className="flex flex-wrap gap-2">
- <button
- onClick={() => setActiveTab("upcoming")}
- className={`rounded-lg border px-3 py-2 cmm-text-small font-semibold transition ${tabTone(activeTab,"upcoming")}`}
- >
- À venir
- </button>
- <button
- onClick={() => setActiveTab("mine")}
- className={`rounded-lg border px-3 py-2 cmm-text-small font-semibold transition ${tabTone(activeTab,"mine")}`}
- >
- Mes inscriptions
- </button>
- <button
- onClick={() => setActiveTab("past")}
- className={`rounded-lg border px-3 py-2 cmm-text-small font-semibold transition ${tabTone(activeTab,"past")}`}
- >
- Passé
- </button>
- </div>
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap gap-2 rounded-2xl border border-slate-200 bg-white/50 p-1.5 shadow-sm backdrop-blur-sm">
+          <button
+            onClick={() => setActiveTab("upcoming")}
+            className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-300 ${activeTab === "upcoming" ? "bg-emerald-600 text-white shadow-lg shadow-emerald-200" : "text-slate-500 hover:bg-slate-100"}`}
+          >
+            {locale === "fr" ? "À venir" : "Upcoming"}
+          </button>
+          <button
+            onClick={() => setActiveTab("mine")}
+            className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-300 ${activeTab === "mine" ? "bg-blue-600 text-white shadow-lg shadow-blue-200" : "text-slate-500 hover:bg-slate-100"}`}
+          >
+            {locale === "fr" ? "Mes inscriptions" : "My events"}
+          </button>
+          <button
+            onClick={() => setActiveTab("past")}
+            className={`rounded-xl px-4 py-2 text-xs font-bold uppercase tracking-wider transition-all duration-300 ${activeTab === "past" ? "bg-slate-600 text-white shadow-lg shadow-slate-200" : "text-slate-500 hover:bg-slate-100"}`}
+          >
+            {locale === "fr" ? "Passé" : "Past"}
+          </button>
+        </div>
+      </div>
 
  {eventsLoading ? (
  <p className="mt-3 cmm-text-small cmm-text-muted">
@@ -102,130 +116,150 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  </p>
  ) : null}
  {eventsLoadError ? (
- <p className="mt-3 cmm-text-small text-rose-700">{eventsLoadError}</p>
- ) : null}
-
- {!eventsLoading && !eventsLoadError && activeTab ==="upcoming" ? (
- <div className="mt-4 space-y-3">
- {upcomingEvents.map((event) => (
- <article
- key={event.id}
- className="rounded-xl border border-slate-200 bg-slate-50 p-4"
- >
- {(() => {
- const organizer = organizerView(event);
- return (
- <>
- <h3 className="cmm-text-small font-semibold cmm-text-primary">
- {event.title}
- </h3>
- <p className="mt-1 cmm-text-caption cmm-text-secondary">
- {formatFrDate(event.eventDate)}
- </p>
- <p className="cmm-text-caption cmm-text-secondary">{event.locationLabel}</p>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
- {event.description ||"Sans description."}
- </p>
- <div className="mt-2 flex flex-wrap items-center gap-2 cmm-text-caption">
- <span className="font-semibold cmm-text-secondary">
- Organisateur: {organizer.displayName}
- </span>
- <IdentityBadge
- icon={organizer.roleBadge.icon}
- label={organizer.roleBadge.label}
- tone="role"
+ eventsLoadError.kind ==="permission" ? (
+ <PermissionErrorState
+ className="mt-3"
+ title="Vous n'avez pas accès à l'agenda communautaire."
+ message="Connectez-vous avec un compte autorisé pour consulter ou modifier les événements."
  />
- <IdentityBadge
- icon={organizer.profileBadge.icon}
- label={organizer.profileBadge.label}
- tone="profile"
+ ) : eventsLoadError.kind ==="server" ? (
+ <ServerErrorCard
+ className="mt-3"
+ title="Impossible de charger l'agenda communautaire."
+ message={eventsLoadError.message}
+ onRetry={onRetry ? () => void onRetry() : undefined}
  />
- </div>
- <p className="mt-1 cmm-text-caption cmm-text-muted">
- RSVP: oui {event.rsvpCounts.yes} | peut-etre{""}
- {event.rsvpCounts.maybe} | non {event.rsvpCounts.no}
- </p>
- <p className="mt-1 cmm-text-caption cmm-text-muted">
- Capacite: {event.capacityTarget ??"n/a"} | remplissage{""}
- {formatPct(conversionByEventId.get(event.id)?.fillRate ?? null)}
- </p>
- {staffingByEventId.get(event.id) ? (
- <p className="mt-1 cmm-text-caption cmm-text-muted">
- Staffing: {staffingByEventId.get(event.id)?.confirmedStaff}/
- {staffingByEventId.get(event.id)?.recommendedStaff}{""}
- referent(s)
- {staffingByEventId.get(event.id)?.staffingGap
- ? ` | gap ${staffingByEventId.get(event.id)?.staffingGap}`
- :""}
- </p>
- ) : null}
- {remindersByEventId.get(event.id) ? (
- <p className="mt-1 rounded border border-amber-200 bg-amber-50 px-2 py-1 cmm-text-caption text-amber-800">
- Relance {remindersByEventId.get(event.id)?.priority.toUpperCase()}
- : {remindersByEventId.get(event.id)?.reason}
- </p>
- ) : null}
-
- <div className="mt-3 flex flex-wrap gap-2">
- <button
- onClick={() => void onRsvp(event.id,"yes")}
- disabled={rsvpLoadingEventId === event.id}
- className="rounded-lg bg-emerald-600 px-3 py-2 cmm-text-caption font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-400"
- >
- Je participe
- </button>
- <button
- onClick={() => void onRsvp(event.id,"maybe")}
- disabled={rsvpLoadingEventId === event.id}
- className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:cmm-text-muted"
- >
- Peut-être
- </button>
- <button
- onClick={() => void onRsvp(event.id,"no")}
- disabled={rsvpLoadingEventId === event.id}
- className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 cmm-text-caption font-semibold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:text-rose-300"
- >
- Je ne participe pas
- </button>
- <a
- href={buildIcsHref(event)}
- download={`${event.id}.ics`}
- className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-secondary transition hover:bg-slate-100"
- >
- Ajouter a mon agenda
- </a>
- </div>
-
- {event.myRsvpStatus ? (
- <p className="mt-2 cmm-text-caption font-semibold text-emerald-700">
- Mon statut: {toRsvpLabel(event.myRsvpStatus)}
- </p>
  ) : (
- <p className="mt-2 cmm-text-caption cmm-text-muted">
- Aucun RSVP enregistre pour mon compte.
- </p>
- )}
- </>
- );
- })()}
- </article>
- ))}
-{upcomingEvents.length === 0 ? (
+ <ErrorMessage
+ className="mt-3"
+ kind={eventsLoadError.kind}
+ title="Connexion perdue"
+ message={eventsLoadError.message}
+ actions={onRetry ? <button type="button" onClick={() => void onRetry()} className="rounded-full bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-700">Réessayer</button> : null}
+ />
+ )
+ ) : null}
+
+  {!eventsLoading && !eventsLoadError && activeTab === "upcoming" ? (
+    <div className="grid gap-4 sm:grid-cols-1">
+      {upcomingEvents.map((event) => {
+        const organizer = organizerView(event);
+        const staffing = staffingByEventId.get(event.id);
+        const reminder = remindersByEventId.get(event.id);
+        
+        return (
+          <article
+            key={event.id}
+            className="group relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-5 shadow-sm transition-all duration-300 hover:border-emerald-200 hover:shadow-xl sm:p-6"
+          >
+            <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-700 ring-1 ring-emerald-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    {locale === "fr" ? "Mission active" : "Active mission"}
+                  </span>
+                  {reminder && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 ring-1 ring-amber-200">
+                      {reminder.reason}
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
+                    {event.title}
+                  </h3>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium text-slate-500">
+                    <span className="flex items-center gap-1.5 text-slate-900">
+                      📅 {formatFrDate(event.eventDate)}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      📍 {event.locationLabel}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="max-w-2xl text-sm leading-relaxed text-slate-600">
+                  {event.description || (locale === "fr" ? "Pas de description détaillée." : "No detailed description.")}
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex -space-x-2">
+                    {[...Array(Math.min(3, event.rsvpCounts.yes))].map((_, i) => (
+                      <div key={i} className="h-7 w-7 rounded-full border-2 border-white bg-slate-200" />
+                    ))}
+                    {event.rsvpCounts.yes > 3 && (
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-slate-100 text-[10px] font-bold text-slate-500">
+                        +{event.rsvpCounts.yes - 3}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-xs font-bold text-slate-400">
+                    {event.rsvpCounts.yes} {locale === "fr" ? "participants confirmés" : "confirmed participants"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 sm:w-48">
+                <button
+                  onClick={() => void onRsvp(event.id, "yes")}
+                  disabled={rsvpLoadingEventId === event.id}
+                  className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
+                >
+                  {event.myRsvpStatus === "yes" ? "✓ Inscrit" : "Je participe"}
+                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => void onRsvp(event.id, "maybe")}
+                    disabled={rsvpLoadingEventId === event.id}
+                    className="rounded-xl border border-slate-200 bg-white py-2 text-[11px] font-bold text-slate-600 transition-all hover:bg-slate-50"
+                  >
+                    Peut-être
+                  </button>
+                  <button
+                    onClick={() => void onRsvp(event.id, "no")}
+                    disabled={rsvpLoadingEventId === event.id}
+                    className="rounded-xl border border-slate-200 bg-white py-2 text-[11px] font-bold text-slate-400 transition-all hover:bg-slate-50"
+                  >
+                    Décliner
+                  </button>
+                </div>
+                <button 
+                  onClick={() => setShareEvent(event)}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-100 bg-slate-50/50 py-2 text-[11px] font-bold text-slate-500 transition-all hover:bg-slate-100"
+                >
+                  🔗 Partager / QR Code
+                </button>
+              </div>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  ) : null}
+
+  <QRCodeDialog
+    isOpen={!!shareEvent}
+    onClose={() => setShareEvent(null)}
+    value={shareEvent ? `${window.location.origin}/missions/${shareEvent.id}` : ""}
+    title={shareEvent?.title || ""}
+    description={locale === "fr" ? "Scannez pour rejoindre cette mission" : "Scan to join this mission"}
+  />
+
+
+ {!eventsLoading && !eventsLoadError && activeTab ==="upcoming" && upcomingEvents.length === 0 ? (
  <p className="cmm-text-small cmm-text-secondary">
  {activeTab ==="upcoming"
  ? "Aucun événement à venir sur cette vue. Revenez plus tard ou ouvrez l'onglet Passé pour relier une action à un événement clôturé."
  : "Aucun événement à venir ne correspond à cette vue."}
  </p>
  ) : null}
- </div>
- ) : null}
-
- {!eventsLoading && !eventsLoadError && activeTab ==="mine" ? (
- <div className="mt-4 space-y-2">
+  {!eventsLoading && !eventsLoadError && activeTab ==="mine" ? (
+  <div className="mt-4 space-y-2">
 {myEvents.length === 0 ? (
  <p className="cmm-text-small cmm-text-secondary">
- Vous n'avez pas encore d'inscription sur cette période. Ouvrez l'onglet "À venir" pour rejoindre une action disponible.
+ Vous n&apos;avez pas encore d&apos;inscription sur cette période. Ouvrez l&apos;onglet &quot;À venir&quot; pour rejoindre une action disponible.
  </p>
  ) : (
  myEvents.map((event) => (
@@ -342,7 +376,7 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  </article>
  ))}
 {pastEvents.length === 0 ? (
- <p className="cmm-text-small cmm-text-secondary">Aucun événement passé n'est encore disponible sur cette période. Les suivis apparaîtront ici une fois les événements clôturés.</p>
+ <p className="cmm-text-small cmm-text-secondary">Aucun événement passé n&apos;est encore disponible sur cette période. Les suivis apparaîtront ici une fois les événements clôturés.</p>
  ) : null}
  </div>
  ) : null}

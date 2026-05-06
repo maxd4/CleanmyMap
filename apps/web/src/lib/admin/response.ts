@@ -11,7 +11,8 @@ export type AdminErrorCode =
   | "dry_run_required"
   | "dry_run_expired"
   | "dry_run_mismatch"
-  | "server_error";
+  | "server_error"
+  | "backpressure";
 
 export function newOperationId(): string {
   return randomUUID();

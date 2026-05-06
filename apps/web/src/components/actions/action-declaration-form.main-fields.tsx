@@ -60,7 +60,7 @@ export function ActionDeclarationMainFields({
       {/* 1. Structure / cadre d'engagement */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-          Structure / cadre d'engagement <span className="text-emerald-500">*</span>
+          Structure / cadre d&apos;engagement <span className="text-emerald-500">*</span>
           <select
             required
             className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
@@ -83,7 +83,7 @@ export function ActionDeclarationMainFields({
       {isEntrepriseMode && (
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-            Nom de l'entreprise <span className="text-emerald-500">*</span>
+            Nom de l&apos;entreprise <span className="text-emerald-500">*</span>
             <input
               required
               type="text"
@@ -101,7 +101,7 @@ export function ActionDeclarationMainFields({
       {/* 3. Date de l'action */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
-          Date de l'action <span className="text-emerald-500">*</span>
+          Date de l&apos;action <span className="text-emerald-500">*</span>
           <input
             required
             type="date"

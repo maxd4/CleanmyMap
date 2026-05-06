@@ -4,7 +4,6 @@ import { useMemo, useState } from"react";
 import useSWR from"swr";
 import { fetchActions } from"@/lib/actions/http";
 import {
- CommunityClientError,
  createCommunityEvent,
  fetchCommunityEvents,
  updateCommunityEventOps,
@@ -12,6 +11,8 @@ import {
  type CommunityEventItem,
  type CommunityRsvpStatus,
 } from"@/lib/community/http";
+import { AppError, defaultMessageForKind, isAppError, toAppError } from"@/lib/errors/app-errors";
+import { notifyNetworkToast } from"@/lib/errors/network-toast";
 import {
  computeEventConversions,
  computeEventRelances,
@@ -49,13 +50,14 @@ type UseCommunitySectionModel = {
  isUpdatingEventOpsId: string | null;
  rsvpLoadingEventId: string | null;
  communitySuccessMessage: string | null;
- communityErrorMessage: string | null;
+ communityError: AppError | null;
  eventsLoading: boolean;
  eventsValidating: boolean;
- eventsLoadError: string | null;
- highlightsLoadError: string | null;
+ eventsLoadError: AppError | null;
+ highlightsLoadError: AppError | null;
  actionsLoading: boolean;
  reloadEvents: () => Promise<unknown>;
+ reloadHighlights: () => Promise<unknown>;
  highlights: CommunityHighlightItem[];
  upcomingEvents: CommunityEventItem[];
  pastEvents: CommunityEventItem[];
@@ -100,9 +102,7 @@ export function useCommunitySection(): UseCommunitySectionModel {
  const [communitySuccessMessage, setCommunitySuccessMessage] = useState<
  string | null
  >(null);
- const [communityErrorMessage, setCommunityErrorMessage] = useState<
- string | null
- >(null);
+ const [communityError, setCommunityError] = useState<AppError | null>(null);
  const [opsDraftByEventId, setOpsDraftByEventId] = useState<OpsDraftByEventId>(
  {},
  );
@@ -123,6 +123,7 @@ export function useCommunitySection(): UseCommunitySectionModel {
  data: actionsData,
  isLoading: actionsLoading,
  error: actionsError,
+ mutate: reloadHighlights,
  } = useSWR(
  ["section-community-feed"],
  () =>
@@ -273,7 +274,7 @@ export function useCommunitySection(): UseCommunitySectionModel {
  }
 
  async function onCreateEvent(): Promise<void> {
- setCommunityErrorMessage(null);
+ setCommunityError(null);
  setCommunitySuccessMessage(null);
 
  if (
@@ -281,8 +282,11 @@ export function useCommunitySection(): UseCommunitySectionModel {
  !createForm.eventDate.trim() ||
  !createForm.locationLabel.trim()
  ) {
- setCommunityErrorMessage(
-"Renseigne le titre, la date et le lieu de l'evenement.",
+ setCommunityError(
+ toAppError("Renseigne le titre, la date et le lieu de l'evenement.", {
+ kind:"validation",
+ message:"Renseigne le titre, la date et le lieu de l'evenement.",
+ }),
  );
  return;
  }
@@ -291,8 +295,11 @@ export function useCommunitySection(): UseCommunitySectionModel {
  createForm.capacityTarget.trim().length > 0 &&
  (parsedCapacity === null || parsedCapacity < 1)
  ) {
- setCommunityErrorMessage(
-"La capacite cible doit etre un entier strictement positif.",
+ setCommunityError(
+ toAppError("La capacite cible doit etre un entier strictement positif.", {
+ kind:"validation",
+ message:"La capacite cible doit etre un entier strictement positif.",
+ }),
  );
  return;
  }
@@ -316,18 +323,20 @@ export function useCommunitySection(): UseCommunitySectionModel {
  setCommunitySuccessMessage("Evenement cree et partage avec la communaute.");
  await reloadEvents();
  } catch (error) {
- if (
- error instanceof CommunityClientError &&
- error.code ==="permission_denied"
- ) {
- setCommunityErrorMessage("Connexion requise pour creer un evenement.");
- } else {
- setCommunityErrorMessage(
- error instanceof Error
- ? error.message
- :"Creation evenement impossible.",
- );
+ const appError = isAppError(error)
+ ? error
+ : toAppError(error, {
+ kind:"server",
+ message:"Creation evenement impossible.",
+ });
+ if (appError.kind ==="network") {
+ notifyNetworkToast({
+ message: appError.message || defaultMessageForKind("network"),
+ onRetry: () => void onCreateEvent(),
+ onRefresh: () => window.location.reload(),
+ });
  }
+ setCommunityError(appError);
  } finally {
  setIsCreatingEvent(false);
  }
@@ -337,7 +346,7 @@ export function useCommunitySection(): UseCommunitySectionModel {
  eventId: string,
  status: CommunityRsvpStatus,
  ): Promise<void> {
- setCommunityErrorMessage(null);
+ setCommunityError(null);
  setCommunitySuccessMessage(null);
  setRsvpLoadingEventId(eventId);
  try {
@@ -345,23 +354,27 @@ export function useCommunitySection(): UseCommunitySectionModel {
  setCommunitySuccessMessage(`RSVP enregistre: ${toRsvpLabel(status)}.`);
  await reloadEvents();
  } catch (error) {
- if (
- error instanceof CommunityClientError &&
- error.code ==="permission_denied"
- ) {
- setCommunityErrorMessage("Connexion requise pour enregistrer un RSVP.");
- } else {
- setCommunityErrorMessage(
- error instanceof Error ? error.message :"RSVP impossible.",
- );
+ const appError = isAppError(error)
+ ? error
+ : toAppError(error, {
+ kind:"server",
+ message:"RSVP impossible.",
+ });
+ if (appError.kind ==="network") {
+ notifyNetworkToast({
+ message: appError.message || defaultMessageForKind("network"),
+ onRetry: () => void onRsvp(eventId, status),
+ onRefresh: () => window.location.reload(),
+ });
  }
+ setCommunityError(appError);
  } finally {
  setRsvpLoadingEventId(null);
  }
  }
 
  async function onSaveEventOps(event: CommunityEventItem): Promise<void> {
- setCommunityErrorMessage(null);
+ setCommunityError(null);
  setCommunitySuccessMessage(null);
  const draft = getOpsDraft(event);
  setIsUpdatingEventOpsId(event.id);
@@ -373,45 +386,60 @@ export function useCommunitySection(): UseCommunitySectionModel {
  });
  setCommunitySuccessMessage(
 "Suivi evenement mis a jour (presence + post-mortem).",
- );
+);
  await reloadEvents();
  } catch (error) {
- if (
- error instanceof CommunityClientError &&
- error.code ==="permission_denied"
- ) {
- setCommunityErrorMessage(
-"Acces refuse: droits organisateur/admin requis pour le suivi evenement.",
- );
- } else {
- setCommunityErrorMessage(
- error instanceof Error
- ? error.message
- :"Mise a jour evenement impossible.",
- );
+ const appError = isAppError(error)
+ ? error
+ : toAppError(error, {
+ kind:"server",
+ message:"Mise a jour evenement impossible.",
+ });
+ if (appError.kind ==="network") {
+ notifyNetworkToast({
+ message: appError.message || defaultMessageForKind("network"),
+ onRetry: () => void onSaveEventOps(event),
+ onRefresh: () => window.location.reload(),
+ });
  }
+ setCommunityError(appError);
  } finally {
  setIsUpdatingEventOpsId(null);
  }
  }
 
  async function copyReminderMessage(message: string): Promise<void> {
- try {
- await navigator.clipboard.writeText(message);
- setCommunitySuccessMessage(
+  try {
+  await navigator.clipboard.writeText(message);
+  setCommunitySuccessMessage(
 "Message de relance copie dans le presse-papiers.",
+);
+  } catch {
+ setCommunityError(
+ toAppError("Copie impossible: autoriser l'acces au presse-papiers.", {
+ kind:"permission",
+ message:"Copie impossible: autoriser l'acces au presse-papiers.",
+ }),
  );
- } catch {
- setCommunityErrorMessage(
-"Copie impossible: autoriser l'acces au presse-papiers.",
- );
- }
+  }
  }
 
- const eventsLoadError =
- eventsError instanceof Error ? eventsError.message : null;
- const highlightsLoadError =
- actionsError instanceof Error ? actionsError.message : null;
+ const eventsLoadError = isAppError(eventsError)
+ ? eventsError
+ : eventsError instanceof Error
+ ? toAppError(eventsError, {
+ kind:"server",
+ message:"Chargement agenda communautaire impossible.",
+ })
+ : null;
+ const highlightsLoadError = isAppError(actionsError)
+ ? actionsError
+ : actionsError instanceof Error
+ ? toAppError(actionsError, {
+ kind:"server",
+ message:"Chargement des points communautaires impossible.",
+ })
+ : null;
 
  return {
  activeTab,
@@ -423,13 +451,14 @@ export function useCommunitySection(): UseCommunitySectionModel {
  isUpdatingEventOpsId,
  rsvpLoadingEventId,
  communitySuccessMessage,
- communityErrorMessage,
+ communityError,
  eventsLoading,
  eventsValidating,
  eventsLoadError,
  highlightsLoadError,
  actionsLoading,
  reloadEvents,
+ reloadHighlights,
  highlights,
  upcomingEvents,
  pastEvents,

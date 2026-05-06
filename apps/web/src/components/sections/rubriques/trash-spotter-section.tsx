@@ -195,9 +195,9 @@ export function TrashSpotterSection() {
             </p>
             <p className="mt-1 text-2xl font-black cmm-text-primary tracking-tight">{quality.total}</p>
           </CmmCard>
-          <CmmCard tone="amber" size="sm" className="bg-amber-950/20 border-amber-900/40 backdrop-blur-md">
-            <p className="cmm-text-caption font-bold uppercase tracking-widest text-amber-500/80">
-              {fr ? "En attente" : "Pending"}
+<CmmCard tone="amber" size="sm" className="bg-amber-950/20 border-amber-900/40 backdrop-blur-md">
+            <p className="cmm-text-caption font-bold uppercase tracking-wider text-amber-500/80">
+              {fr ? "En attente de modération" : "Awaiting moderation"}
             </p>
             <p className="mt-1 text-2xl font-black text-amber-400 tracking-tight">{quality.pending}</p>
           </CmmCard>

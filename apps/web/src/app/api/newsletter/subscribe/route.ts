@@ -1,6 +1,7 @@
 import { NextResponse } from"next/server";
 import { z } from"zod";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
+import { verifyRateLimit, createServerRateLimitResponse } from"@/lib/rate-limit/server";
 
 const subscribeSchema = z.object({
  email: z.string().email("Format d'email invalide"),
@@ -9,9 +10,19 @@ const subscribeSchema = z.object({
 });
 
 export async function POST(request: Request) {
- try {
- const rawData = await request.json();
- const validated = subscribeSchema.safeParse(rawData);
+  const rateLimit = await verifyRateLimit({ 
+    limit: 5, 
+    window: 60,
+  });
+  
+  const rateLimitResponse = createServerRateLimitResponse(rateLimit.allowed, rateLimit.retryAfter);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
+  try {
+    const rawData = await request.json();
+    const validated = subscribeSchema.safeParse(rawData);
 
  if (!validated.success) {
  return NextResponse.json(

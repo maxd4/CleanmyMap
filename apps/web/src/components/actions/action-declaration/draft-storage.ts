@@ -12,6 +12,7 @@ const FORM_STATE_KEYS = [
   "arrivalLocationLabel",
   "routeStyle",
   "routeAdjustmentMessage",
+  "recordType",
   "latitude",
   "longitude",
   "wasteKg",

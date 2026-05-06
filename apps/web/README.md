@@ -24,6 +24,7 @@ Recommended for production:
 - `RESEND_FROM_EMAIL`
 - `RESEND_REPLY_TO` (optional, reply target for outbound emails)
 - `CREATOR_INBOX_EMAIL` (optional, creator inbox target for operational notifications)
+- `VISION_TRAINING_ENABLED` (`1` to reactivate vision training persistence, disabled by default)
 - `RESEND_TEST_TOKEN` (optional, for `/api/send` test endpoint without admin session)
 - `SENTRY_DSN`
 - `SENTRY_ORG`
@@ -32,6 +33,7 @@ Recommended for production:
 - `NEXT_PUBLIC_POSTHOG_HOST`
 - `NEXT_PUBLIC_POSTHOG_REGION` (`eu` by default, `us` if your PostHog project is in US)
 - `NEXT_PUBLIC_SENTRY_DSN`
+- `NEXT_PUBLIC_SENTRY_ENABLED` (`1` to reactivate Sentry, disabled by default in this repo)
 
 ## One-command backend bootstrap
 
@@ -54,6 +56,7 @@ Notes:
 - Default automation syncs `development` and `production`.  
   For branch-scoped preview envs, run:
   `node scripts/vercel-sync-env.mjs --file=.env.local --environments=preview --preview-branch=<branch-name>`
+- Sentry stays paused unless `NEXT_PUBLIC_SENTRY_ENABLED=1` is set.
 
 ## Manual commands
 
@@ -69,6 +72,14 @@ npm run backend:doctor
 
 # Google Sheet -> Supabase sync (actions + clean places for map)
 npm run data:sheet:sync-supabase
+
+# Export Supabase archive to local backups
+npm run data:archive:supabase
+# Includes table snapshots plus `action-photos` and `chat-attachments`.
+
+# Cleanup old Supabase + local mirror records older than 4 months
+npm run data:cleanup:supabase
+# Deletes expired rows from Supabase, archives them locally, and prunes the local mirror files.
 ```
 
 ## Runtime diagnostics

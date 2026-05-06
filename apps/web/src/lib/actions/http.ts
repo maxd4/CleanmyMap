@@ -9,6 +9,7 @@ import type {
 } from "@/lib/actions/types";
 import { toContractCreatePayload } from "./data-contract";
 import type { ReportScopeKind } from "@/lib/reports/scope";
+import { AppError, type AppErrorKind, defaultMessageForKind } from "@/lib/errors/app-errors";
 
 type ActionTypeFilter = ActionRecordType | "all" | ActionRecordType[];
 
@@ -81,6 +82,43 @@ function parseErrorMessage(payload: unknown, fallback: string): string {
     }
   }
   return fallback;
+}
+
+function kindFromStatus(status: number): AppErrorKind {
+  if (status === 400 || status === 422) {
+    return "validation";
+  }
+  if (status === 401 || status === 403) {
+    return "permission";
+  }
+  if (status === 429) {
+    return "network";
+  }
+  return "server";
+}
+
+function createActionError(
+  response: Response,
+  payload: unknown,
+  fallback: string,
+): AppError {
+  const kind = kindFromStatus(response.status);
+  const body = payload && typeof payload === "object" ? (payload as Record<string, unknown>) : null;
+  return new AppError({
+    kind,
+    message: parseErrorMessage(body, fallback || defaultMessageForKind(kind)),
+    status: response.status,
+    code: typeof body?.["code"] === "string" ? String(body["code"]) : undefined,
+    referenceCode:
+      typeof body?.["referenceCode"] === "string"
+        ? String(body["referenceCode"])
+        : undefined,
+    retryable: kind === "network" || kind === "server",
+    details:
+      body?.["details"] && typeof body["details"] === "object"
+        ? (body["details"] as Record<string, unknown>)
+        : undefined,
+  });
 }
 
 function serializeTypes(
@@ -202,7 +240,10 @@ export async function createAction(
           typeof legacyBody !== "object" ||
           typeof (legacyBody as { id?: unknown }).id !== "string"
         ) {
-          throw new Error("Réponse API invalide après création.");
+          throw new AppError({
+            kind: "server",
+            message: "La réponse du service est incomplète après la création.",
+          });
         }
 
         const parsedBody = legacyBody as {
@@ -221,20 +262,26 @@ export async function createAction(
         };
       }
 
-      throw new Error(
-        parseErrorMessage(
-          legacyResult.body,
-          contractError || "Impossible de créer l'action.",
-        ),
+      throw createActionError(
+        legacyResult.response,
+        legacyResult.body,
+        contractError || "Impossible de créer l'action.",
       );
     }
 
-    throw new Error(contractError);
+    throw createActionError(
+      contractResult.response,
+      contractResult.body,
+      contractError,
+    );
   }
 
   const body = contractResult.body;
   if (!body || typeof body !== "object" || typeof (body as { id?: unknown }).id !== "string") {
-    throw new Error("Réponse API invalide après création.");
+    throw new AppError({
+      kind: "server",
+      message: "La réponse du service est incomplète après la création.",
+    });
   }
 
   const parsedBody = body as {
@@ -261,7 +308,9 @@ export async function fetchActions(
   const body = await parseJsonSafely(response);
 
   if (!response.ok) {
-    throw new Error(
+    throw createActionError(
+      response,
+      body,
       parseErrorMessage(body, "Impossible de charger l'historique."),
     );
   }
@@ -271,7 +320,10 @@ export async function fetchActions(
     typeof body !== "object" ||
     !Array.isArray((body as { items?: unknown }).items)
   ) {
-    throw new Error("Réponse API invalide pour l'historique.");
+    throw new AppError({
+      kind: "server",
+      message: "La réponse du service est incomplète pour l'historique.",
+    });
   }
 
   return body as ActionListResponse;
@@ -288,7 +340,9 @@ export async function fetchMapActions(
   const body = await parseJsonSafely(response);
 
   if (!response.ok) {
-    throw new Error(
+    throw createActionError(
+      response,
+      body,
       parseErrorMessage(
         body,
         "Impossible de charger les points cartographiques.",
@@ -301,7 +355,10 @@ export async function fetchMapActions(
     typeof body !== "object" ||
     !Array.isArray((body as { items?: unknown }).items)
   ) {
-    throw new Error("Réponse API invalide pour la carte.");
+    throw new AppError({
+      kind: "server",
+      message: "La réponse du service est incomplète pour la carte.",
+    });
   }
 
   return body as ActionMapResponse;
@@ -329,12 +386,17 @@ export async function fetchActionPrefill(): Promise<ActionPrefillResponse> {
   });
   const body = await parseJsonSafely(response);
   if (!response.ok) {
-    throw new Error(
+    throw createActionError(
+      response,
+      body,
       parseErrorMessage(body, "Impossible de charger le pre-remplissage."),
     );
   }
   if (!body || typeof body !== "object") {
-    throw new Error("Reponse API invalide pour le pre-remplissage.");
+    throw new AppError({
+      kind: "server",
+      message: "La réponse du service est incomplète pour le pre-remplissage.",
+    });
   }
   return body as ActionPrefillResponse;
 }

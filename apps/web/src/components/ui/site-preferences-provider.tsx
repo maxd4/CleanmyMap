@@ -1,248 +1,209 @@
 "use client";
 
 import {
- createContext,
- type ReactNode,
- useCallback,
- useContext,
- useEffect,
- useMemo,
- useState,
-} from"react";
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
- DEFAULT_DISPLAY_MODE,
- DEFAULT_LOCALE,
- DEFAULT_THEME,
- DISPLAY_MODES,
- LOCALES,
- STORAGE_KEYS,
- THEMES,
- type DisplayMode,
- type Locale,
- type ThemeMode,
-} from"@/lib/ui/preferences";
+  DEFAULT_DISPLAY_MODE,
+  STORAGE_KEYS,
+  type DisplayMode,
+  type Locale,
+  type ThemeMode,
+} from "@/lib/ui/preferences";
+import {
+  removeLocalStorageEntry,
+} from "@/lib/storage/local-storage";
+import {
+  DEFAULT_SITE_PREFERENCES as STORAGE_DEFAULTS,
+  siteDisplayModeStorage,
+  siteLocaleStorage,
+  siteThemeStorage,
+} from "@/lib/storage/ui-state-storage";
 
 type SitePreferencesContextValue = {
- locale: Locale;
- setLocale: (value: Locale) => void;
- theme: ThemeMode;
- setTheme: (value: ThemeMode) => void;
- toggleTheme: () => void;
- displayMode: DisplayMode;
- setDisplayMode: (value: DisplayMode) => void;
- isDisplayModeExplicitlySet: boolean;
+  locale: Locale;
+  setLocale: (value: Locale) => void;
+  theme: ThemeMode;
+  setTheme: (value: ThemeMode) => void;
+  toggleTheme: () => void;
+  displayMode: DisplayMode;
+  setDisplayMode: (value: DisplayMode) => void;
+  isDisplayModeExplicitlySet: boolean;
 };
 
 type SitePreferencesProviderProps = {
- children: ReactNode;
- initialDisplayMode?: DisplayMode;
- initialDisplayModeExplicit?: boolean;
+  children: ReactNode;
+  initialDisplayMode?: DisplayMode;
+  initialDisplayModeExplicit?: boolean;
 };
 
-const SitePreferencesContext =
- createContext<SitePreferencesContextValue | null>(null);
+const SitePreferencesContext = createContext<SitePreferencesContextValue | null>(null);
 
-function parseLocale(raw: string | null): Locale {
- return LOCALES.includes(raw as Locale) ? (raw as Locale) : DEFAULT_LOCALE;
+function setCookie(name: string, value: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  document.cookie = `${name}=${value}; Max-Age=31536000; Path=/; SameSite=Lax`;
 }
 
-function parseTheme(raw: string | null): ThemeMode {
- return THEMES.includes(raw as ThemeMode) ? (raw as ThemeMode) : DEFAULT_THEME;
+function clearCookie(name: string): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  document.cookie = `${name}=; Max-Age=0; Path=/; SameSite=Lax`;
 }
 
-function parseDisplayMode(raw: string | null): DisplayMode {
- return DISPLAY_MODES.includes(raw as DisplayMode)
- ? (raw as DisplayMode)
- : DEFAULT_DISPLAY_MODE;
-}
+function applyDisplayModeAttribute(displayMode: DisplayMode): void {
+  if (typeof window === "undefined") {
+    return;
+  }
 
-function parseOptionalDisplayMode(raw: string | null): DisplayMode | null {
- if (!raw) {
- return null;
- }
- return DISPLAY_MODES.includes(raw as DisplayMode) ? (raw as DisplayMode) : null;
+  document.documentElement.setAttribute("data-display-mode", displayMode);
 }
 
 export function SitePreferencesProvider({
- children,
- initialDisplayMode,
- initialDisplayModeExplicit = false,
- }: SitePreferencesProviderProps) {
- const [locale, setLocaleState] = useState<Locale>(() => {
- if (typeof window ==="undefined") {
- return DEFAULT_LOCALE;
- }
- return parseLocale(window.localStorage.getItem(STORAGE_KEYS.locale));
- });
- 
- const [theme, setThemeState] = useState<ThemeMode>(() => {
- if (typeof window ==="undefined") {
- return DEFAULT_THEME;
- }
- return parseTheme(window.localStorage.getItem(STORAGE_KEYS.theme));
- });
+  children,
+  initialDisplayMode,
+  initialDisplayModeExplicit = false,
+}: SitePreferencesProviderProps) {
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    if (typeof window === "undefined") {
+      return STORAGE_DEFAULTS.locale;
+    }
+    return siteLocaleStorage.read() ?? STORAGE_DEFAULTS.locale;
+  });
 
- const [displayMode, setDisplayModeState] = useState<DisplayMode>(() => {
- if (typeof window ==="undefined") {
- return initialDisplayMode ?? DEFAULT_DISPLAY_MODE;
- }
- if (initialDisplayModeExplicit) {
- return initialDisplayMode ?? DEFAULT_DISPLAY_MODE;
- }
- return parseDisplayMode(
- window.localStorage.getItem(STORAGE_KEYS.displayMode),
- );
- });
- const [isDisplayModeExplicitlySet, setIsDisplayModeExplicitlySet] =
- useState<boolean>(() => {
- if (typeof window ==="undefined") {
- return initialDisplayModeExplicit ?? false;
- }
- if (initialDisplayModeExplicit) {
- return true;
- }
- return Boolean(window.localStorage.getItem(STORAGE_KEYS.displayMode));
- });
+  const [theme, setThemeState] = useState<ThemeMode>(() => {
+    if (typeof window === "undefined") {
+      return STORAGE_DEFAULTS.theme;
+    }
+    return siteThemeStorage.read() ?? STORAGE_DEFAULTS.theme;
+  });
 
- useEffect(() => {
- if (typeof window ==="undefined") {
- return;
- }
- window.localStorage.setItem(STORAGE_KEYS.locale, locale);
- document.cookie = `${STORAGE_KEYS.locale}=${locale}; Max-Age=31536000; Path=/; SameSite=Lax`;
- document.documentElement.lang = locale;
- }, [locale]);
+  const [displayMode, setDisplayModeState] = useState<DisplayMode>(() => {
+    if (typeof window === "undefined") {
+      return initialDisplayMode ?? DEFAULT_DISPLAY_MODE;
+    }
+    if (initialDisplayModeExplicit) {
+      return initialDisplayMode ?? DEFAULT_DISPLAY_MODE;
+    }
+    return siteDisplayModeStorage.read() ?? DEFAULT_DISPLAY_MODE;
+  });
 
- useEffect(() => {
- if (typeof window ==="undefined") {
- return;
- }
- window.localStorage.setItem(STORAGE_KEYS.theme, theme);
- document.documentElement.setAttribute("data-theme", theme);
- }, [theme]);
+  const [isDisplayModeExplicitlySet, setIsDisplayModeExplicitlySet] =
+    useState<boolean>(() => {
+      if (typeof window === "undefined") {
+        return initialDisplayModeExplicit ?? false;
+      }
+      if (initialDisplayModeExplicit) {
+        return true;
+      }
+      return siteDisplayModeStorage.read() !== null;
+    });
 
- useEffect(() => {
- if (typeof window ==="undefined") {
- return;
- }
- if (isDisplayModeExplicitlySet) {
- window.localStorage.setItem(STORAGE_KEYS.displayMode, displayMode);
- document.cookie = `${STORAGE_KEYS.displayMode}=${displayMode}; Max-Age=31536000; Path=/; SameSite=Lax`;
- document.documentElement.setAttribute("data-display-mode", displayMode);
- return;
- }
- window.localStorage.removeItem(STORAGE_KEYS.displayMode);
- document.cookie = `${STORAGE_KEYS.displayMode}=; Max-Age=0; Path=/; SameSite=Lax`;
- document.documentElement.removeAttribute("data-display-mode");
- }, [displayMode, isDisplayModeExplicitlySet]);
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
 
- const persistDisplayMode = useCallback(async (value: DisplayMode) => {
- if (typeof window ==="undefined") {
- return;
- }
- try {
- const response = await fetch("/api/account/display-mode", {
- method:"POST",
- headers: {
- "Content-Type":"application/json",
- },
- body: JSON.stringify({ displayMode: value }),
- });
- if (!response.ok) {
- throw new Error(`display_mode_sync_failed_${response.status}`);
- }
- window.localStorage.removeItem(STORAGE_KEYS.displayModePendingSync);
- } catch (error: unknown) {
- window.localStorage.setItem(STORAGE_KEYS.displayModePendingSync, value);
- console.error("Failed to persist display mode preference", error);
- }
- }, []);
+    siteLocaleStorage.write(locale);
+    setCookie(STORAGE_KEYS.locale, locale);
+    document.documentElement.lang = locale;
+  }, [locale]);
 
- const setLocale = useCallback((value: Locale) => setLocaleState(value), []);
- const setTheme = useCallback((value: ThemeMode) => {
- setThemeState(value);
- }, []);
- 
- const setDisplayMode = useCallback((value: DisplayMode) => {
- setDisplayModeState(value);
- setIsDisplayModeExplicitlySet(true);
- void persistDisplayMode(value);
- }, [persistDisplayMode]);
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
 
- const toggleTheme = useCallback(() => {
- setThemeState((current) => (current ==="dark" ?"mixed" :"dark"));
- }, []);
+    siteThemeStorage.write(theme);
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
- useEffect(() => {
- if (typeof window ==="undefined") {
- return;
- }
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
 
- const replayPendingSync = () => {
- const pendingRaw = window.localStorage.getItem(
- STORAGE_KEYS.displayModePendingSync,
- );
- const pendingMode = parseOptionalDisplayMode(pendingRaw);
- if (!pendingMode) {
- if (pendingRaw) {
- window.localStorage.removeItem(STORAGE_KEYS.displayModePendingSync);
- }
- return;
- }
- void persistDisplayMode(pendingMode);
- };
+    applyDisplayModeAttribute(displayMode);
 
- const onVisibilityChange = () => {
- if (document.visibilityState ==="visible") {
- replayPendingSync();
- }
- };
+    if (isDisplayModeExplicitlySet) {
+      siteDisplayModeStorage.write(displayMode);
+      setCookie(STORAGE_KEYS.displayMode, displayMode);
+      return;
+    }
 
- replayPendingSync();
- window.addEventListener("online", replayPendingSync);
- document.addEventListener("visibilitychange", onVisibilityChange);
- return () => {
- window.removeEventListener("online", replayPendingSync);
- document.removeEventListener("visibilitychange", onVisibilityChange);
- };
- }, [persistDisplayMode]);
+    siteDisplayModeStorage.remove();
+    clearCookie(STORAGE_KEYS.displayMode);
+  }, [displayMode, isDisplayModeExplicitlySet]);
 
- const value = useMemo<SitePreferencesContextValue>(
- () => ({
- locale,
- setLocale,
- theme,
- setTheme,
- toggleTheme,
- displayMode,
- setDisplayMode,
- isDisplayModeExplicitlySet,
- }),
- [
- displayMode,
- isDisplayModeExplicitlySet,
- locale,
- setDisplayMode,
- setLocale,
- setTheme,
- theme,
- toggleTheme,
- ],
- );
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
 
- return (
- <SitePreferencesContext.Provider value={value}>
- {children}
- </SitePreferencesContext.Provider>
- );
+    removeLocalStorageEntry(STORAGE_KEYS.displayModePendingSync);
+  }, []);
+
+  const setLocale = useCallback((value: Locale) => {
+    setLocaleState(value);
+  }, []);
+
+  const setTheme = useCallback((value: ThemeMode) => {
+    setThemeState(value);
+  }, []);
+
+  const setDisplayMode = useCallback((value: DisplayMode) => {
+    setDisplayModeState(value);
+    setIsDisplayModeExplicitlySet(true);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setThemeState((current) => (current === "dark" ? "mixed" : "dark"));
+  }, []);
+
+  const value = useMemo<SitePreferencesContextValue>(
+    () => ({
+      locale,
+      setLocale,
+      theme,
+      setTheme,
+      toggleTheme,
+      displayMode,
+      setDisplayMode,
+      isDisplayModeExplicitlySet,
+    }),
+    [
+      displayMode,
+      isDisplayModeExplicitlySet,
+      locale,
+      setDisplayMode,
+      setLocale,
+      setTheme,
+      theme,
+      toggleTheme,
+    ],
+  );
+
+  return (
+    <SitePreferencesContext.Provider value={value}>
+      {children}
+    </SitePreferencesContext.Provider>
+  );
 }
 
 export function useSitePreferences(): SitePreferencesContextValue {
- const context = useContext(SitePreferencesContext);
- if (!context) {
- throw new Error(
- "useSitePreferences must be used inside SitePreferencesProvider",
- );
- }
- return context;
+  const context = useContext(SitePreferencesContext);
+  if (!context) {
+    throw new Error("useSitePreferences must be used inside SitePreferencesProvider");
+  }
+  return context;
 }

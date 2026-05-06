@@ -58,8 +58,9 @@ function parseApiErrorMessage(value: unknown, fallback: string): string {
   if (!value || typeof value !== "object") {
     return fallback;
   }
-  const error = (value as { error?: unknown }).error;
-  const message = (value as { message?: unknown }).message;
+  const record = value as Record<string, unknown>;
+  const error = record["error"];
+  const message = record["message"];
   if (typeof error === "string" && error.trim().length > 0) {
     return error;
   }
@@ -81,7 +82,7 @@ function parseApiHint(value: unknown): string | undefined {
   if (!value || typeof value !== "object") {
     return undefined;
   }
-  const hint = (value as { hint?: unknown }).hint;
+  const hint = (value as Record<string, unknown>)["hint"];
   return typeof hint === "string" && hint.trim().length > 0 ? hint : undefined;
 }
 
@@ -89,7 +90,7 @@ function parseOperationId(value: unknown): string | undefined {
   if (!value || typeof value !== "object") {
     return undefined;
   }
-  const operationId = (value as { operationId?: unknown }).operationId;
+  const operationId = (value as Record<string, unknown>)["operationId"];
   return typeof operationId === "string" && operationId.trim().length > 0
     ? operationId
     : undefined;
@@ -163,9 +164,9 @@ export async function postAdminModeration(
 
   const normalized = body as Record<string, unknown>;
   if (
-    normalized.status !== "ok" ||
-    typeof normalized.entityType !== "string" ||
-    typeof normalized.id !== "string"
+    normalized["status"] !== "ok" ||
+    typeof normalized["entityType"] !== "string" ||
+    typeof normalized["id"] !== "string"
   ) {
     throw new ModerationClientError({
       code: "server_error",
@@ -175,19 +176,19 @@ export async function postAdminModeration(
 
   return {
     status: "ok",
-    entityType: normalized.entityType as ModerationEntityType,
-    id: normalized.id,
+    entityType: normalized["entityType"] as ModerationEntityType,
+    id: normalized["id"],
     sourceTable:
-      typeof normalized.sourceTable === "string"
-        ? normalized.sourceTable
+      typeof normalized["sourceTable"] === "string"
+        ? normalized["sourceTable"]
         : undefined,
     copiedToLocalValidatedStore:
-      typeof normalized.copiedToLocalValidatedStore === "boolean"
-        ? normalized.copiedToLocalValidatedStore
+      typeof normalized["copiedToLocalValidatedStore"] === "boolean"
+        ? normalized["copiedToLocalValidatedStore"]
         : undefined,
     operationId:
-      typeof normalized.operationId === "string"
-        ? normalized.operationId
+      typeof normalized["operationId"] === "string"
+        ? normalized["operationId"]
         : undefined,
   };
 }

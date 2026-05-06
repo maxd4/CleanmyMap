@@ -23,7 +23,7 @@ function getServiceState(id: string): ServiceHealthState {
  ?"ready"
  :"missing";
  case"vercel":
- return isConfigured(process.env.VERCEL) || isConfigured(process.env.VERCEL_ENV)
+ return isConfigured(process.env["VERCEL"]) || isConfigured(process.env["VERCEL_ENV"])
  ?"ready"
  :"external";
  case"clerk":

@@ -7,24 +7,17 @@ import { computeZoneCompare } from"@/lib/analytics/compare-zones";
 import { formatSigned } from "@/components/sections/rubriques/helpers";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { dashboardPeriodStorage } from "@/lib/storage/ui-state-storage";
 
 
 
 export function CompareSection() {
  const [periodDays, setPeriodDays] = useState<30 | 90 | 365>(() => {
- if (typeof window !=="undefined") {
- const saved = window.localStorage.getItem("cmm_dashboard_days");
- if (saved ==="30" || saved ==="90" || saved ==="365") {
- return Number(saved) as 30 | 90 | 365;
- }
- }
- return 90;
+ return dashboardPeriodStorage.read() ?? 90;
  });
 
  useEffect(() => {
- if (typeof window !=="undefined") {
- window.localStorage.setItem("cmm_dashboard_days", String(periodDays));
- }
+ dashboardPeriodStorage.write(periodDays);
  }, [periodDays]);
  const { data, isLoading, error } = useSWR(["section-compare-v2"], () =>
  fetchActions({ status:"approved", limit: 700 }),

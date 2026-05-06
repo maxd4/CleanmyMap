@@ -8,20 +8,24 @@ import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 
 async function loadFullAuditData() {
- const supabase = getSupabaseServerClient();
- const overview = await loadPilotageOverview({
- supabase,
- periodDays: 90,
- limit: 1500,
- });
- const { items: contracts } = await fetchUnifiedActionContracts(supabase, {
- limit: 500,
- status:"approved",
- floorDate: null,
- requireCoordinates: false,
- types: null,
- });
- return { overview, contracts };
+  const supabase = getSupabaseServerClient();
+  
+  const [overview, contractsResult] = await Promise.all([
+    loadPilotageOverview({
+      supabase,
+      periodDays: 90,
+      limit: 1500,
+    }),
+    fetchUnifiedActionContracts(supabase, {
+      limit: 500,
+      status:"approved",
+      floorDate: null,
+      requireCoordinates: false,
+      types: null,
+    }),
+  ]);
+  
+  return { overview, contracts: contractsResult.items };
 }
 
 export default async function PrintReportPage() {

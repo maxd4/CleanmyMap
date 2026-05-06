@@ -70,9 +70,10 @@ const item = {
 export function HomePillars({ pillars }: HomePillarsProps) {
   return (
     <section className="relative w-full overflow-hidden px-3 py-16 sm:px-5 sm:py-20 lg:px-8 lg:py-24">
-      {/* fond travaillé cohérent avec le site */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-[#0b2040] to-[#082a1e] dark:from-slate-950 dark:via-[#060f20] dark:to-[#041710]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_80%_20%,rgba(34,211,238,0.07),transparent),radial-gradient(ellipse_50%_60%_at_10%_80%,rgba(16,185,129,0.07),transparent)]" />
+      {/* fond travaillé cohérent avec le site - Design Mixte */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-sky-50/30 to-emerald-50/20" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_80%_20%,rgba(34,211,238,0.1),transparent),radial-gradient(ellipse_50%_60%_at_10%_80%,rgba(16,185,129,0.1),transparent)]" />
+
       <div
         className="absolute inset-0 opacity-[0.025]"
         style={{
@@ -88,7 +89,7 @@ export function HomePillars({ pillars }: HomePillarsProps) {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-[clamp(2.5rem,5vw,4rem)] font-black leading-[1.02] tracking-[-0.03em] text-white"
+             className="text-[clamp(2.5rem,5vw,4rem)] font-black leading-[1.02] tracking-[-0.03em] text-slate-900"
             style={{ textWrap: "pretty" }}
           >
             Les sept piliers de CleanMyMap
@@ -98,7 +99,7 @@ export function HomePillars({ pillars }: HomePillarsProps) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="mx-auto max-w-2xl text-[15px] font-light leading-relaxed text-white/62 sm:text-base"
+             className="mx-auto max-w-2xl text-[15px] font-medium leading-relaxed text-slate-600 sm:text-base"
           >
             Agir, visualiser, apprendre et piloter vos initiatives
             environnementales.
@@ -136,13 +137,13 @@ export function HomePillars({ pillars }: HomePillarsProps) {
                 </div>
 
                 {/* titre */}
-                <h3 className="mb-3 text-[17px] font-black leading-tight text-white">
+                <h3 className="mb-3 text-[17px] font-black leading-tight text-slate-900">
                   {bloc.title}
                 </h3>
 
                 {/* description — 2 lignes max */}
                 <p
-                  className="line-clamp-2 flex-1 text-[13px] leading-[1.65] text-white/64 transition-colors group-hover:text-white/80"
+                  className="line-clamp-2 flex-1 text-[13px] leading-[1.65] text-slate-600 transition-colors group-hover:text-slate-800"
                   style={{ textWrap: "pretty" }}
                 >
                   {bloc.preview.desktop.length === 0 ? (
@@ -161,7 +162,7 @@ export function HomePillars({ pillars }: HomePillarsProps) {
 
                 {/* lien */}
                 <div
-                  className={`mt-7 flex items-center gap-2 whitespace-nowrap text-[11px] font-black uppercase tracking-[0.14em] ${bloc.iconColor} opacity-70 transition-opacity group-hover:opacity-100`}
+                  className={`mt-7 flex items-center gap-2 whitespace-nowrap text-[11px] font-black uppercase tracking-[0.14em] ${bloc.iconColor} opacity-80 transition-opacity group-hover:opacity-100`}
                 >
                   Accéder{" "}
                   <ArrowRight

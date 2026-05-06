@@ -260,10 +260,11 @@ export function GamificationSection() {
                     </p>
                   </article>
                   <article className="rounded-xl border border-amber-900/40 bg-amber-950/20 p-3 shadow-inner">
-                    <p className="cmm-text-caption uppercase tracking-wider text-amber-500/80 font-bold">XP en attente</p>
+                    <p className="cmm-text-caption uppercase tracking-wider text-amber-500/80 font-bold">XP en attente de validation</p>
                     <p className="mt-1 text-2xl font-black text-amber-400">
                       {progression.xpPending}
                     </p>
+                    <p className="mt-1 text-[10px] text-amber-500/60">Ces points seront crédités après validation de vos actions</p>
                   </article>
                 </div>
 
@@ -412,10 +413,13 @@ export function GamificationSection() {
                       {rows.length === 0 ? (
                       <tr>
                         <td
-                          className="px-4 py-10 text-center cmm-text-muted italic font-medium"
+                          className="px-4 py-10 text-center cmm-text-muted font-medium"
                           colSpan={6}
                         >
-                          Aucune donnée qualifiée n&apos;est disponible pour cette catégorie. Elle s&apos;affichera dès qu&apos;une activité correspondante sera validée.
+                          <span className="flex items-center justify-center gap-2">
+                            <span>🎯</span>
+                            Aucune donnée qualifiée n&apos;est disponible pour cette catégorie. Elle s&apos;affichera dès qu&apos;une activité correspondante sera validée.
+                          </span>
                         </td>
                       </tr>
                     ) : null}

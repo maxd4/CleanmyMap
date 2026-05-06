@@ -1,0 +1,382 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import type { DisplayMode, Locale } from "@/lib/ui/preferences";
+import { DISPLAY_MODES } from "@/lib/ui/preferences";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { parseParisArrondissement } from "@/lib/geo/paris-arrondissements";
+import { GreaterParisSelect } from "@/lib/geo/greater-paris-select";
+import {
+  createGreaterParisMetadata,
+  extractGreaterParisLocationPreferenceFromMetadata,
+} from "@/lib/user-location-preference";
+import { getProfileLabel, getSwitchableProfiles, type AppProfile } from "@/lib/profiles";
+import { InlineFieldError } from "@/components/ui/inline-field-error";
+import { ErrorMessage } from "@/components/ui/error-message";
+import { PermissionErrorState } from "@/components/ui/permission-error-state";
+import { notifyNetworkToast } from "@/lib/errors/network-toast";
+import { defaultMessageForKind, isAppError, toAppError, type AppError } from "@/lib/errors/app-errors";
+
+type AccountSetupFormProps = {
+  nextPath: string;
+  initialProfile: AppProfile;
+  initialArrondissement?: number | null;
+  initialLocationType?: "residence" | "work" | null;
+};
+
+async function updateProfileRole(profile: AppProfile) {
+  const response = await fetch("/api/account/profile-role", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ profile }),
+  });
+
+  const payload = (await response.json().catch(() => null)) as
+    | { error?: string }
+    | null;
+
+  if (!response.ok) {
+    throw new Error(payload?.error ?? "Mutation de rôle refusée.");
+  }
+}
+
+export function AccountSetupForm({
+  nextPath,
+  initialProfile,
+  initialArrondissement = null,
+  initialLocationType = null,
+}: AccountSetupFormProps) {
+  const router = useRouter();
+  const { user, isLoaded } = useUser();
+  const { locale, setLocale, displayMode, setDisplayMode } = useSitePreferences();
+
+  const profileOptions = useMemo(
+    () => getSwitchableProfiles(initialProfile),
+    [initialProfile],
+  );
+
+  const [selectedProfile, setSelectedProfile] = useState<AppProfile>(initialProfile);
+  const [locationType, setLocationType] = useState<"residence" | "work">(
+    initialLocationType ?? "residence",
+  );
+  const [arrondissement, setArrondissement] = useState<number>(
+    initialArrondissement ?? 0,
+  );
+  const [selectedZone, setSelectedZone] = useState<string>(
+    initialArrondissement
+      ? `${initialArrondissement}e arrondissement`
+      : "",
+  );
+  const [selectedLocale, setSelectedLocale] = useState<Locale>(locale);
+  const [selectedDisplayMode, setSelectedDisplayMode] =
+    useState<DisplayMode>(displayMode);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<AppError | null>(null);
+
+  const isProfileValid =
+    profileOptions.includes(selectedProfile) || selectedProfile === initialProfile;
+  const zoneIsValid = Boolean(
+    selectedZone || parseParisArrondissement(arrondissement),
+  );
+  const profileError = !isProfileValid
+    ? "Sélectionnez un rôle valide."
+    : null;
+  const zoneError = !zoneIsValid
+    ? "Sélectionnez une zone (arrondissement ou commune)."
+    : null;
+  const canSubmit = !profileError && !zoneError && !isSaving;
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError(null);
+
+    if (!user) {
+      setError(
+        toAppError("Compte introuvable, reconnectez-vous.", {
+          kind: "permission",
+          message: "Compte introuvable, reconnectez-vous.",
+        }),
+      );
+      return;
+    }
+    if (!isProfileValid) {
+      setError(
+        toAppError("Sélectionnez un rôle valide.", {
+          kind: "validation",
+          message: "Sélectionnez un rôle valide.",
+        }),
+      );
+      return;
+    }
+    if (!zoneIsValid) {
+      setError(
+        toAppError("Sélectionnez une zone (arrondissement ou commune).", {
+          kind: "validation",
+          message: "Sélectionnez une zone (arrondissement ou commune).",
+        }),
+      );
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      if (selectedProfile !== initialProfile) {
+        await updateProfileRole(selectedProfile);
+      }
+
+      setLocale(selectedLocale);
+      setDisplayMode(selectedDisplayMode);
+
+      const existingPref = extractGreaterParisLocationPreferenceFromMetadata(
+        user.unsafeMetadata as Record<string, unknown> | undefined,
+      );
+
+      const metadata: Record<string, unknown> = {
+        ...(user.unsafeMetadata ?? {}),
+        profileSetupCompleted: true,
+      };
+
+      if (selectedZone && existingPref) {
+        const zonePrefs = createGreaterParisMetadata(
+          selectedZone,
+          existingPref.department,
+          existingPref.areaType,
+          locationType,
+        );
+        Object.assign(metadata, zonePrefs);
+      } else if (selectedZone) {
+        const parsedArr = parseParisArrondissement(arrondissement);
+        if (parsedArr) {
+          metadata["parisArrondissement"] = parsedArr;
+          metadata["parisLocationType"] = locationType;
+        }
+      } else {
+        const parsedArr = parseParisArrondissement(arrondissement);
+        if (parsedArr) {
+          metadata["parisArrondissement"] = parsedArr;
+          metadata["parisLocationType"] = locationType;
+        } else {
+          setError(
+            toAppError("Sélectionnez une zone (arrondissement ou commune).", {
+              kind: "validation",
+              message: "Sélectionnez une zone (arrondissement ou commune).",
+            }),
+          );
+          return;
+        }
+      }
+
+      await user.update({ unsafeMetadata: metadata });
+
+      router.replace(nextPath);
+      router.refresh();
+    } catch (error) {
+      console.error("Account setup update failed", error);
+      const appError = isAppError(error)
+        ? error
+        : toAppError(error, {
+            kind: "server",
+            message: "Impossible d'enregistrer les préférences. Réessayez.",
+          });
+      if (appError.kind === "network") {
+        notifyNetworkToast({
+          message: appError.message || defaultMessageForKind("network"),
+          onRetry: () => window.location.reload(),
+          onRefresh: () => window.location.reload(),
+        });
+      }
+      setError(appError);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="cmm-text-small cmm-text-secondary">Chargement du compte...</p>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <PermissionErrorState
+        title="Connexion requise"
+        message="Reconnectez-vous pour finaliser votre compte."
+      />
+    );
+  }
+
+  return (
+    <form
+      onSubmit={(event) => void handleSubmit(event)}
+      className="space-y-5 rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm"
+    >
+      <div className="space-y-2">
+        <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-emerald-700">
+          Configuration initiale
+        </p>
+        <h1 className="text-2xl font-semibold cmm-text-primary">
+          Finalisez votre compte
+        </h1>
+        <p className="cmm-text-small cmm-text-secondary">
+          Choisissez votre rôle, votre lieu principal, votre langue et votre mode
+          d&apos;affichage. Ces réglages restent modifiables plus tard dans
+          &quot;Réglages&quot; du ruban.
+        </p>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <label className="block space-y-2">
+          <span className="cmm-text-small font-medium cmm-text-primary">Rôle</span>
+          <select
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+            value={selectedProfile}
+            onChange={(event) =>
+              setSelectedProfile(event.target.value as AppProfile)
+            }
+          >
+            {profileOptions.map((profile) => (
+              <option key={profile} value={profile}>
+                {getProfileLabel(profile, selectedLocale)}
+              </option>
+            ))}
+          </select>
+          {profileError ? <InlineFieldError message={profileError} /> : null}
+        </label>
+
+        <label className="block space-y-2">
+          <span className="cmm-text-small font-medium cmm-text-primary">
+            Langue
+          </span>
+          <select
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+            value={selectedLocale}
+            onChange={(event) =>
+              setSelectedLocale(event.target.value === "en" ? "en" : "fr")
+            }
+          >
+            <option value="fr">Français</option>
+            <option value="en">English</option>
+          </select>
+        </label>
+
+        <label className="block space-y-2">
+          <span className="cmm-text-small font-medium cmm-text-primary">
+            Mode d&apos;affichage
+          </span>
+          <select
+            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+            value={selectedDisplayMode}
+            onChange={(event) =>
+              setSelectedDisplayMode(event.target.value as DisplayMode)
+            }
+          >
+            {DISPLAY_MODES.map((mode) => (
+              <option key={mode} value={mode}>
+                {mode === "exhaustif"
+                  ? selectedLocale === "fr"
+                    ? "Exhaustif"
+                    : "Exhaustive"
+                  : mode === "minimaliste"
+                    ? selectedLocale === "fr"
+                      ? "Minimaliste"
+                      : "Minimalist"
+                    : selectedLocale === "fr"
+                      ? "Sobre"
+                      : "Calm"}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <fieldset className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <legend className="cmm-text-small font-medium cmm-text-primary">
+            Lieu principal
+          </legend>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex items-center gap-2 cmm-text-small cmm-text-secondary">
+              <input
+                type="radio"
+                name="locationType"
+                value="residence"
+                checked={locationType === "residence"}
+                onChange={() => setLocationType("residence")}
+              />
+              Résidence
+            </label>
+            <label className="flex items-center gap-2 cmm-text-small cmm-text-secondary">
+              <input
+                type="radio"
+                name="locationType"
+                value="work"
+                checked={locationType === "work"}
+                onChange={() => setLocationType("work")}
+              />
+              Travail
+            </label>
+          </div>
+
+          <label className="block space-y-2">
+            <span className="cmm-text-small font-medium cmm-text-primary">
+              Zone (arrondissement ou commune)
+            </span>
+          <GreaterParisSelect
+            value={selectedZone || (arrondissement ? `${arrondissement}e arrondissement` : "")}
+            onChange={(value) => {
+              setSelectedZone(value);
+              const arrNum = parseInt(value.replace(/er|e|ème|eme/g, "").replace("arrondissement", "").trim(), 10);
+              if (!isNaN(arrNum) && arrNum >= 1 && arrNum <= 20) {
+                setArrondissement(arrNum);
+              }
+            }}
+            placeholder="Sélectionnez une zone..."
+          />
+          {zoneError ? <InlineFieldError message={zoneError} /> : null}
+        </label>
+      </fieldset>
+    </div>
+
+      {error ? (
+        error.kind === "permission" ? (
+          <PermissionErrorState
+            title="Connexion requise"
+            message={error.message}
+          />
+        ) : (
+          <ErrorMessage
+            kind={error.kind}
+            title="Les réglages n'ont pas pu être enregistrés"
+            message={error.message}
+            actions={
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="rounded-full bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-700"
+              >
+                Réessayer
+              </button>
+            }
+          />
+        )
+      ) : null}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={!canSubmit}
+          className="inline-flex items-center rounded-xl bg-emerald-600 px-5 py-3 cmm-text-small font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+        >
+          {isSaving ? "Enregistrement..." : "Valider et continuer"}
+        </button>
+        <p className="cmm-text-caption cmm-text-muted">
+          Les modifications restent accessibles plus tard dans le ruban.
+        </p>
+      </div>
+    </form>
+  );
+}

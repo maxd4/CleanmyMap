@@ -1,10 +1,12 @@
 import { DisplayModeOnboardingGate } from"@/components/ui/display-mode-onboarding-gate";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
+import { getCurrentUserAccountSetupRequirement } from"@/lib/auth/account-setup";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { toProfile } from"@/lib/profiles";
 import {
  getServerDisplayModePreference,
 } from"@/lib/server-preferences";
+import { redirect } from"next/navigation";
 
 import { WeatherWarningBar } from"@/components/ui/weather-warning-bar";
 
@@ -14,6 +16,13 @@ export default async function AppLayout({
  children: React.ReactNode;
 }>) {
  const { userId, clerkReachable } = await getSafeAuthSession();
+  const accountSetup = userId
+    ? await getCurrentUserAccountSetupRequirement()
+    : { requiresSetup: false };
+
+  if (accountSetup.requiresSetup) {
+    redirect("/onboarding/localisation?next=/profil");
+  }
 
   const { displayMode } = await getServerDisplayModePreference();
 

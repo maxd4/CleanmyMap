@@ -3,6 +3,7 @@ import type {
   ActionPhotoAsset,
   ActionVisionEstimate,
 } from "@/lib/actions/types";
+import { env } from "@/lib/env";
 
 export type TrainingExampleStatus =
   | "pending_label"
@@ -29,8 +30,13 @@ export type VisionTrainingMetrics = {
   rmse: number | null;
   latestModelVersion: string | null;
   lowDataWarning: boolean;
+  paused: boolean;
   statusCounts: Record<TrainingExampleStatus, number>;
 };
+
+export function isVisionTrainingEnabled(): boolean {
+  return env.VISION_TRAINING_ENABLED === true;
+}
 
 export function buildTrainingExampleInsert(params: {
   actionId: string;
@@ -39,6 +45,10 @@ export function buildTrainingExampleInsert(params: {
   visionEstimate?: ActionVisionEstimate | null;
   metadata?: Record<string, unknown>;
 }): TrainingExampleInsert | null {
+  if (!isVisionTrainingEnabled()) {
+    return null;
+  }
+
   const photos = params.photos ?? null;
   const visionEstimate = params.visionEstimate ?? null;
   if (!photos || photos.length === 0) {
@@ -83,6 +93,9 @@ export async function recordTrainingExample(
   supabase: SupabaseClient,
   insert: TrainingExampleInsert | null,
 ): Promise<void> {
+  if (!isVisionTrainingEnabled()) {
+    return;
+  }
   if (!insert) {
     return;
   }
@@ -112,6 +125,7 @@ export async function loadVisionTrainingMetrics(
     rmse: null,
     latestModelVersion: null,
     lowDataWarning: true,
+    paused: !isVisionTrainingEnabled(),
     statusCounts: {
       pending_label: 0,
       labelled: 0,
@@ -119,6 +133,10 @@ export async function loadVisionTrainingMetrics(
       no_photo: 0,
     },
   };
+
+  if (!isVisionTrainingEnabled()) {
+    return fallback;
+  }
 
   const result = await supabase
     .from("training_examples")
@@ -178,6 +196,7 @@ export async function loadVisionTrainingMetrics(
         : null,
     latestModelVersion,
     lowDataWarning: result.data.length < 20,
+    paused: result.data.length === 0,
     statusCounts,
   };
 }

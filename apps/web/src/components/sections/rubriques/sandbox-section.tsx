@@ -75,12 +75,12 @@ export function SandboxSection() {
  <div className="flex flex-wrap items-center justify-between gap-3">
  <div>
  <h2 className="cmm-text-small font-semibold cmm-text-primary">
- {fr ?"Sandbox de visualisation" :"Preview sandbox"}
+ {fr ?"Carte d'entrainement" :"Sandmap"}
  </h2>
  <p className="mt-1 cmm-text-small cmm-text-secondary">
  {fr
- ?"Espace de test pour découvrir la carte, vérifier les filtres et contrôler l&apos;état technique avant de lancer une action."
- :"Test space to explore the map, verify filters and check technical health before taking action."}
+ ?"Espace d&apos;entrainement pour tester la carte, vérifier les filtres et contrôler l&apos;état technique avant de lancer une action."
+ :"Training space to test the map, verify filters and check technical health before taking action."}
  </p>
  </div>
  <button

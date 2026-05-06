@@ -77,7 +77,7 @@ export function ImpactCard({
  />
  </div>
  ))}
- {topBadges.length === 0 && <p className="cmm-text-caption italic opacity-40">En cours d'obtention...</p>}
+ {topBadges.length === 0 && <p className="cmm-text-caption italic opacity-40">En cours d&apos;obtention...</p>}
  </div>
  </footer>
 

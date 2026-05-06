@@ -19,6 +19,44 @@ import {
   HOME_BENEFITS,
   type HomeCounters,
 } from '@/lib/accueil/config';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'CleanMyMap - Carte Dépollution Paris & Actions Citoyennes Écologie',
+  description: 'CMM Paris : la carte citoyenne de propreté et depollution. Signalez les pollutions, organisez des cleanwalks, declarez vos actions de nettoyage. Developpement durable, benevolat, impact terrain, valorisation des dechets.',
+  keywords: [
+    'cleanmymap', 'cmm', 'depollution', 'proprete', 'paris', 'cleanwalk', 'carte',
+    'signalement', 'dechets', 'benevole', 'nettoyage', 'environnement',
+    'ecologie', 'developpement durable', 'action citoyenne', 'impact terrain',
+    'coordination', 'mutualisation', 'partenariat', 'entraide', 'solidarite',
+    'valorisation dechets', 'recyclage', 'economie circulaire', 'zero dechet',
+    'collecte populaire', 'opERATION propretE', 'engagement citoyen'
+  ],
+  openGraph: {
+    title: 'CleanMyMap - Carte Dépollution Paris & Actions Citoyennes Écologie',
+    description: 'La carte citoyenne de propreté Paris. Signalez, nettoyez, agissez pour l\'environnement. Benevolat, ecologie, impact terrain.',
+    url: 'https://cleanmymap.fr',
+    siteName: 'CleanMyMap',
+    locale: 'fr_FR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'CleanMyMap - Écologie Action Paris',
+    description: 'La carte citoyenne de depollution - Benevolat, ecologie, impact terrain',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+};
 
 export default async function HomePage() {
   const overview = await loadLandingOverview().catch(() => null);

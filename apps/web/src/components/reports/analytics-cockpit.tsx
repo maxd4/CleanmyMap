@@ -24,7 +24,10 @@ export function AnalyticsCockpit({ data }: AnalyticsCockpitProps) {
  if (!data || data.length === 0) {
     return (
       <div className="flex h-64 items-center justify-center rounded-xl bg-slate-50 border border-dashed border-slate-200 cmm-text-muted text-center p-6">
-        <p className="cmm-text-small font-medium">Pas encore assez de données pour générer les graphiques. Vos prochaines actions permettront d'afficher les tendances.</p>
+        <p className="cmm-text-small font-medium flex items-center gap-2">
+          <span>📊</span>
+          Pas encore assez de données pour générer les graphiques. Vos prochaines actions permettront d&apos;afficher les tendances.
+        </p>
       </div>
     );
  }

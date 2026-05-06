@@ -19,6 +19,7 @@ export type ActionDataQualityResult = {
 type ComputeActionDataQualityParams = {
  form: FormState;
  declarationMode:"quick" |"complete";
+ recordType?: "action" |"clean_place" |"spot";
  hasLocationProof: boolean;
  hasDrawingProof: boolean;
  photoAssets: ActionPhotoAsset[];
@@ -28,6 +29,7 @@ type ComputeActionDataQualityParams = {
 export function computeActionDataQuality({
  declarationMode,
  form,
+ recordType,
  hasLocationProof,
  hasDrawingProof,
  photoAssets,
@@ -35,6 +37,7 @@ export function computeActionDataQuality({
 }: ComputeActionDataQualityParams): ActionDataQualityResult {
  const warnings: string[] = [];
  let score = 30;
+ const isCleanPlaceMode = recordType === "clean_place" || recordType === "spot";
 
  if (visionEstimate) {
  score += 5;
@@ -53,7 +56,7 @@ export function computeActionDataQuality({
  }
 
  if (hasDrawingProof) {
- score += 20;
+ score += isCleanPlaceMode ? 10 : 20;
  } else if (declarationMode ==="complete") {
  warnings.push(
 "Un dessin ou un itinéraire visible aide à vérifier le lieu exact.",
@@ -64,7 +67,9 @@ export function computeActionDataQuality({
  score += 15;
  } else if (declarationMode ==="complete") {
  warnings.push(
-"Ajouter des photos ne bloque pas l'envoi et renforce la confiance dans le volume.",
+ isCleanPlaceMode
+ ? "Ajouter au moins une photo renforce la preuve du lieu propre."
+ : "Ajouter des photos ne bloque pas l'envoi et renforce la confiance dans le volume.",
  );
  }
 
@@ -76,19 +81,21 @@ export function computeActionDataQuality({
  form.wasteMixteKg.trim().length > 0;
 
  if (hasExplicitDetails) {
- score += 5;
+ score += isCleanPlaceMode ? 3 : 5;
  } else if (declarationMode ==="complete") {
  warnings.push(
-"Plus de détails de tri ou un commentaire enrichissent la déclaration.",
+ isCleanPlaceMode
+ ? "Une note courte aide à contextualiser le lieu propre."
+ : "Plus de détails de tri ou un commentaire enrichissent la déclaration.",
  );
  }
 
- if (form.visionBagsCount.trim().length > 0 || form.visionFillLevel || form.visionDensity) {
+ if (!isCleanPlaceMode && (form.visionBagsCount.trim().length > 0 || form.visionFillLevel || form.visionDensity)) {
  score += 5;
  }
 
  const actualWasteKg = Number(form.wasteKg);
- if (Number.isFinite(actualWasteKg) && actualWasteKg > 0) {
+ if (!isCleanPlaceMode && Number.isFinite(actualWasteKg) && actualWasteKg > 0) {
  const estimatedWasteKg = estimateWasteKg({
  volunteersCount: form.volunteersCount,
  durationMinutes: form.durationMinutes,

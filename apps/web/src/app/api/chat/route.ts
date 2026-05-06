@@ -2,13 +2,17 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUserIdentity } from "@/lib/authz";
-import { getAffectedArrondissements } from "@/lib/geo/paris-arrondissements";
+import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import {
   canAccessChatChannel,
   isChatChannelType,
   type ChatChannelType,
+  getTerritoryFilter,
+  buildChannelAccessHint,
+  extractZoneContextFromMetadata,
+  type ZoneContext,
 } from "@/lib/chat/channels";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
@@ -30,6 +34,7 @@ const sendMessageSchema = z.object({
   content: z.string().min(1).max(2000),
   recipientId: z.string().optional(),
   arrondissementId: z.number().int().min(1).max(20).optional(),
+  zoneName: z.string().optional(),
   attachmentUrl: z.string().url().optional(),
   attachmentType: z.string().optional(),
 });
@@ -38,6 +43,7 @@ type CurrentProfileRow = {
   id: string;
   paris_arrondissement: number | null;
   role_label: string | null;
+  metadata: Record<string, unknown> | null;
 };
 
 const messageSelect =
@@ -56,30 +62,13 @@ function parseArrondissement(raw: string | null): number | null {
   return parsed;
 }
 
-function buildChannelAccessHint(channelType: ChatChannelType): string {
-  switch (channelType) {
-    case "community":
-      return "Canal communautaire indisponible pour le moment.";
-    case "dm":
-      return "Sélectionnez un destinataire pour ouvrir les messages privés.";
-    case "admin_elu":
-      return "Canal réservé aux élus et à l'administration.";
-    case "territory":
-      return "Votre profil doit avoir un arrondissement pour ouvrir ce canal.";
-    case "bug_report":
-      return "Le canal de feedback est indisponible tant qu'aucun compte administrateur n'est configuré.";
-    default:
-      return "Canal indisponible.";
-  }
-}
-
 async function loadCurrentProfile(
   adminSupabase: ReturnType<typeof getSupabaseAdminClient>,
   userId: string,
 ): Promise<CurrentProfileRow | null> {
   const { data, error } = await adminSupabase
     .from("profiles")
-    .select("id, paris_arrondissement, role_label")
+    .select("id, paris_arrondissement, role_label, metadata")
     .eq("id", userId)
     .maybeSingle();
 
@@ -138,6 +127,20 @@ function toVisibilityFilter(userId: string, recipientId: string) {
   return `and(sender_id.eq.${userId},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${userId})`;
 }
 
+function buildZoneContext(
+  zoneName: string | null,
+  arrondissementId: number | null,
+): ZoneContext {
+  return {
+    zoneName: zoneName && findZoneWithNeighbors(zoneName) ? zoneName : null,
+    arrondissementId,
+  };
+}
+
+function quotePostgrestValue(value: string): string {
+  return `"${value.replace(/"/g, '\\"')}"`;
+}
+
 export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) return unauthorizedJsonResponse();
@@ -176,15 +179,30 @@ export async function POST(request: Request) {
       return NextResponse.json(toDiscussionRateLimitErrorPayload(quota), { status: 429 });
     }
 
-    const profile = await loadCurrentProfile(supabase, userId);
-    const profileArrondissement =
-      parseArrondissement(parsed.data.arrondissementId?.toString() ?? null) ??
-      profile?.paris_arrondissement;
+    const profile = await loadCurrentProfile(adminSupabase, userId);
+    const metadataZone = extractZoneContextFromMetadata(profile?.metadata ?? null);
+
+    const parsedArr = parseArrondissement(parsed.data.arrondissementId?.toString() ?? null);
+    const profileArrondissement = profile?.paris_arrondissement ?? parsedArr;
+
+    const zoneName = parsed.data.zoneName?.trim() || metadataZone.zoneName;
+    const arrondissementId = parsed.data.arrondissementId ?? profileArrondissement;
+    const zoneContext = buildZoneContext(zoneName, arrondissementId);
+    const arrondissementLabel =
+      !zoneName && arrondissementId && arrondissementId >= 1 && arrondissementId <= 20
+        ? `${arrondissementId}e arrondissement`
+        : null;
+
+    const hasGreaterParisZone =
+      (zoneName && findZoneWithNeighbors(zoneName)) !== null || arrondissementLabel !== null;
+    const hasArrondissement = arrondissementId !== null && arrondissementId >= 1 && arrondissementId <= 20;
 
     if (
       !canAccessChatChannel(parsed.data.channelType, {
         roleLabel: identity.role,
-        hasArrondissement: profileArrondissement !== null,
+        hasArrondissement,
+        hasGreaterParisZone,
+        zoneContext,
       })
     ) {
       return NextResponse.json(
@@ -197,7 +215,8 @@ export async function POST(request: Request) {
     }
 
     let recipientId: string | null = null;
-    let arrondissementId: number | null = null;
+    let targetArrondissementId: number | null = null;
+    let targetZoneName: string | null = null;
 
     switch (parsed.data.channelType) {
       case "dm": {
@@ -214,13 +233,17 @@ export async function POST(request: Request) {
         break;
       }
       case "territory": {
-        arrondissementId =
-          parsed.data.arrondissementId ?? profileArrondissement ?? null;
-        if (!arrondissementId) {
+        if (zoneName && findZoneWithNeighbors(zoneName)) {
+          targetZoneName = zoneName;
+          targetArrondissementId = null;
+        } else if (arrondissementId && arrondissementId >= 1 && arrondissementId <= 20) {
+          targetArrondissementId = arrondissementId;
+          targetZoneName = arrondissementLabel;
+        } else {
           return NextResponse.json(
             {
-              error: "Arrondissement requis",
-              hint: "Renseignez un arrondissement dans votre profil ou dans le message.",
+              error: "Zone requise",
+              hint: "Renseignez une zone (arrondissement ou commune) dans votre profil ou dans le message.",
             },
             { status: 400 },
           );
@@ -249,10 +272,6 @@ export async function POST(request: Request) {
         break;
       default:
         break;
-    }
-
-    if (parsed.data.channelType !== "territory") {
-      arrondissementId = null;
     }
 
     const mentions = parsed.data.content.match(/@([a-z0-9_]+)/g);
@@ -286,26 +305,19 @@ export async function POST(request: Request) {
         sender_id: userId,
         recipient_id: recipientId,
         channel_type: parsed.data.channelType,
-        arrondissement_id: arrondissementId,
+        arrondissement_id: targetArrondissementId,
+        zone_name: targetZoneName,
         content: parsed.data.content,
         attachment_url: parsed.data.attachmentUrl,
         attachment_type: parsed.data.attachmentType,
         attachment_expires_at: parsed.data.attachmentUrl
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+          ? new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString()
           : null,
       })
       .select(messageSelect)
       .single();
 
     if (error) return handleApiError(error, "POST /api/chat (insert)");
-
-    if (Math.random() < 0.1) {
-      try {
-        await adminSupabase.rpc("prune_old_messages");
-      } catch (pruneErr) {
-        console.error("[Pruning] Failed:", pruneErr);
-      }
-    }
 
     return NextResponse.json({ status: "sent", message }, { status: 201 });
   } catch (error) {
@@ -325,6 +337,7 @@ export async function GET(request: Request) {
   const channelType = isChatChannelType(channelTypeRaw) ? channelTypeRaw : null;
   const recipientId = searchParams.get("recipientId");
   const requestedArrondissement = parseArrondissement(searchParams.get("arrondissementId"));
+  const requestedZoneName = searchParams.get("zoneName");
 
   if (!channelType) {
     return NextResponse.json(
@@ -346,13 +359,24 @@ export async function GET(request: Request) {
       { status: 503 },
     );
   }
+
   const profile = await loadCurrentProfile(supabase, userId);
+  const profileMetadataZone = extractZoneContextFromMetadata(profile?.metadata ?? null);
   const profileArrondissement = profile?.paris_arrondissement ?? null;
+
+  const zoneName = requestedZoneName || profileMetadataZone.zoneName;
+  const arrondissementId = requestedArrondissement ?? profileArrondissement;
+  const zoneContext = buildZoneContext(zoneName, arrondissementId);
+
+  const hasGreaterParisZone = (zoneName && findZoneWithNeighbors(zoneName)) !== null;
+  const hasArrondissement = arrondissementId !== null && arrondissementId >= 1 && arrondissementId <= 20;
 
   if (
     !canAccessChatChannel(channelType, {
       roleLabel: identity.role,
-      hasArrondissement: (profileArrondissement ?? requestedArrondissement) !== null,
+      hasArrondissement,
+      hasGreaterParisZone,
+      zoneContext,
     })
   ) {
     return NextResponse.json(
@@ -389,20 +413,44 @@ export async function GET(request: Request) {
   } else if (channelType === "admin_elu") {
     query = query.eq("channel_type", "admin_elu");
   } else if (channelType === "territory") {
-    const territoryFocus = requestedArrondissement ?? profileArrondissement;
-    if (!territoryFocus) {
+    if (!zoneName && !arrondissementId) {
       return NextResponse.json(
         {
-          error: "Arrondissement manquant",
-          hint: "Ajoutez un arrondissement à votre profil pour ouvrir ce canal.",
+          error: "Zone manquante",
+          hint: "Ajoutez une zone (arrondissement ou commune) à votre profil pour ouvrir ce canal.",
         },
         { status: 400 },
       );
     }
 
-    query = query
-      .eq("channel_type", "territory")
-      .in("arrondissement_id", getAffectedArrondissements(territoryFocus));
+    const territory = getTerritoryFilter(zoneContext);
+
+    const territoryFilters: string[] = [];
+    if (zoneName) {
+      territoryFilters.push(`zone_name.eq.${quotePostgrestValue(zoneName)}`);
+    }
+    if (territory.zoneNames && territory.zoneNames.length > 0) {
+      territoryFilters.push(
+        `zone_name.in.(${territory.zoneNames.map((n) => quotePostgrestValue(n)).join(",")})`,
+      );
+    }
+    if (territory.arrondissementIds && territory.arrondissementIds.length > 0) {
+      territoryFilters.push(`arrondissement_id.in.(${territory.arrondissementIds.join(",")})`);
+    }
+
+    if (territoryFilters.length > 0) {
+      query = query
+        .eq("channel_type", "territory")
+        .or(territoryFilters.join(","));
+    } else {
+      return NextResponse.json(
+        {
+          error: "Zone invalide",
+          hint: "Votre zone n'est pas reconnue. Veuillez choisir un arrondissement parisien ou une commune de la région.",
+        },
+        { status: 400 },
+      );
+    }
   } else if (channelType === "bug_report") {
     query = query
       .eq("channel_type", "bug_report")
@@ -419,8 +467,8 @@ export async function GET(request: Request) {
         code: error.code,
         details: error.details,
         hint:
-          channelType === "territory" && !profileArrondissement
-            ? "Votre profil n'a pas encore d'arrondissement exploitable."
+          channelType === "territory" && !zoneName && !profileArrondissement
+            ? "Votre profil n'a pas encore de zone exploitable."
             : "Vérifiez que la table 'app_messages' existe et que les profils sont synchronisés.",
       },
       { status: 500 },

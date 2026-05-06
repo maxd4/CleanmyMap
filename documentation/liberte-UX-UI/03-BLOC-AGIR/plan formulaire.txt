@@ -1,0 +1,567 @@
+en bas de la page de la rubrique du fomulaire il y a écris "Tracer 
+Horodatage: 30/04/2026 15:52:23 | Fiabilité: dépend des champs essentiels fournis à la soumission.
+Sources: profil utilisateur, endpoint de préfill, formulaire de déclaration.
+Méthode: validation progressive en saisie, blocage uniquement sur les essentiels au submit. Périmètre: /actions/new." 
+déplace cela a un autre endroit ou supprime le si ce n'est pas important"
+
+
+
+
+propose un plan pour améliorer le haut de la rubrique car là elle prend beaucoup de place. Tu peux supprimer les choses pas intéressante. 
+
+
+Migre ce haut de page sous le formulaire pour que le formulaire soit en haut de page. 
+
+Elargi la bulle du formulaire pour qu'elle prenne dynamiquement toute les place disponible sur la fenêtre.
+
+sur l'étape 4 du formulaire il faut aussi un bouton principal "retour", un bouton secondaire "partager".
+
+Ajoute un deuxième bouton secondaire "exporter" permettant de générer un document PDF du formulaire afin de permettre au bénévole d'exporter son formulaire en fichier PDF. Ce bouton doit remplacer la bulle "generer un livrable PDF" en bas de page qui n'a rien a faire là.
+
+il faut pouvoir retourner à une étape en cliquant sur l'icone de l'étape 
+
+la bulle d'étape et la bulle de formulaire doivent fusionnée 
+
+
+
+PAGE 1
+Audite et améliore la page 1 du formulaire de création d’action.
+
+Contexte :
+Cette page correspond à l’étape 1 sur 4 du formulaire. Elle sert à identifier l’auteur de la déclaration, définir le cadre de l’action, choisir l’environnement de collecte, puis renseigner le bilan des effectifs engagés.
+
+Objectif :
+Rendre cette première page plus claire, plus professionnelle, plus lisible et plus intuitive, sans modifier la logique métier existante.
+
+À améliorer en priorité :
+
+1. Hiérarchie visuelle
+- Renforcer la lisibilité du titre “Qui a mené cette action ?”.
+- Rendre le sous-texte plus lisible et plus utile.
+- Mieux séparer visuellement les blocs : auteur, cadre/calendrier, environnement, effectifs.
+- Réduire l’impression de formulaire dense et flou.
+
+2. Barre d’étapes
+- Améliorer la barre de progression en haut.
+- Rendre l’étape active plus évidente.
+- Améliorer les icônes et labels des étapes : Identité, Collecte, Parcours, Validation.
+- Vérifier l’alignement, les espacements et la cohérence mobile/desktop.
+- Éviter l’effet “grosse capsule grise flottante” si cela nuit à la clarté.
+
+3. - supprimer la bulle "auteur de la déclaration" de l'affichage utilisateur. Les données sont quand même récupérées mais en backend.
+- Ajouter au menu déroulant "Autre bénévole" avec une seconde case pour mettre le nom ou pseudo du bénévole. Le but est qu'un bénévole remplisse l'action d'un autre si besoin.
+- Si on choisis "Entreprise" alors il faut une case pour mettre le nom de l'entreprise. Chaque entreprise doit avoir sa base de donnée et une base de donnée commune aux entreprise pour générer les rapports d'impact d'une entreprise et de toutes les entreprises.
+
+4. Cadre d’engagement et calendrier
+- Rendre le champ “Action spontanée” plus explicite.
+- Améliorer le champ date : alignement, icône calendrier, format lisible.
+
+5. Environnement de collecte
+- Améliorer les cartes de sélection : Voirie, Espace vert, espace couvert (gare, galerie), Pont & Quai, Monument.
+- Rendre l’état sélectionné plus net, sans surcharger.
+- Harmoniser les icônes : taille, graisse, couleur, fond.
+- Améliorer les labels : corriger les abréviations ou noms peu naturels.
+- Vérifier que chaque option est immédiatement compréhensible.
+- Ajouter éventuellement un court sous-label utile ou une bulle de texte au passage souris, mais éviter le bruit visuel.
+- Améliorer l’équilibre de la grille et les espacements entre cartes et centrer les cartes
+
+6. Effectifs engagés
+- Le bloc “Bilan des effectifs engagés” est coupé en bas par un bendeau blanc qui ne devrait pas exister
+- Rendre le champ participants plus visible et le mettre avant le choix d'envrionnement de collecte.
+- Vérifier que le bouton “Continuer” ne masque aucun contenu.
+- Ajouter un meilleur padding bottom pour éviter que le contenu soit caché par le footer/bouton fixe.
+
+7. Bouton de navigation
+- Améliorer le bouton “Continuer” : taille, position, contraste, état hover/press/loading/disabled.
+- Vérifier qu’il est accessible au pouce sur mobile.
+- Ne pas le rendre trop petit ni trop collé au bord.
+- Prévoir un état désactivé si les champs obligatoires ne sont pas remplis.
+- Supprimer le bouton "envoyer" visible en dessous de la page qui ne doit apparaitre que sur la dernière étape du formulaire
+
+8. UI globale
+- Corriger les problèmes de contraste.
+- Corriger les espacements trop faibles ou irréguliers.
+- Améliorer les alignements optiques.
+- Harmoniser les rayons de bordure, ombres, icônes et couleurs avec le design system existant.
+- Vérifier le rendu mobile, tablette et desktop.
+- Préserver le style CleanMyMap : propre, moderne, écologique, sérieux.
+
+9. UX
+- L’utilisateur doit comprendre en moins de 5 secondes :
+  - où il en est dans le formulaire ;
+  - qui est identifié comme déclarant ;
+  - quel type d’action est choisi ;
+  - quelle date est renseignée ;
+  - quel environnement est sélectionné ;
+  - quoi faire ensuite.
+- Ajouter des micro-textes d’aide seulement s’ils clarifient réellement l’action.
+- Ne pas ajouter de complexité inutile.
+
+À vérifier techniquement :
+- Ne pas casser la navigation entre les 4 étapes.
+- Ne pas modifier les données envoyées au backend sauf nécessité claire.
+- Conserver la validation existante.
+- Vérifier les états : chargement, erreur, champ vide, sélection active, bouton disabled.
+- Vérifier l’accessibilité : labels, focus visible, navigation clavier, aria si nécessaire.
+- Vérifier que la page ne déborde pas et que le contenu n’est jamais masqué par le bouton fixe.
+
+Livrable attendu :
+1. Audit rapide des problèmes actuels de la page.
+2. Liste des améliorations UX/UI proposées.
+3. Liste précise des fichiers modifiés.
+4. Implémentation des corrections prioritaires.
+5. Vérification responsive mobile/desktop.
+6. Vérification que le formulaire fonctionne toujours jusqu’à l’étape suivante.
+
+Contraintes :
+- Ne pas refaire tout le formulaire.
+- Ne pas changer la logique métier sans raison.
+- Ne pas créer de nouvelle librairie.
+- Respecter les composants, tokens CSS et patterns existants du projet.
+- Priorité à la clarté, lisibilité, fluidité et qualité perçue.
+
+
+
+
+
+
+PAGE 2
+Audite et améliore la page 2 du formulaire d’action.
+
+Contexte :
+Cette page correspond à l’étape 2 sur 4 du formulaire. Elle sert à renseigner les déchets et mégots collectés, afficher les équivalences / indicateurs, permettre l’ajout d’une photo de preuve, puis expliquer la méthode de calcul.
+
+Objectif :
+Rendre cette page plus claire, plus crédible, plus lisible et plus simple à remplir, sans modifier la logique métier existante.
+
+À améliorer en priorité :
+
+1. Hiérarchie visuelle
+- Renforcer la lisibilité du titre “Déchets et mégots”.
+- Rendre le texte d’introduction plus lisible et mieux structuré.
+- Clarifier les lignes : saisie des données & visualisation puis photo de preuve & explications/méthodologie.
+- Réduire l’impression de densité et de surcharge visuelle.
+
+2. Barre d’étapes
+- Améliorer la barre de progression en haut.
+- Rendre l’étape active plus évidente.
+- Vérifier l’alignement, les espacements et la cohérence des icônes/labels.
+- S’assurer que la progression est immédiatement compréhensible sur mobile et desktop.
+
+3. Bloc principal de saisie
+- Clarifier les champs liés aux déchets collectés.
+- Rendre plus explicites les labels, unités et aides contextuelles.
+- Vérifier que l’utilisateur comprend immédiatement ce qu’il doit renseigner et dans quelle unité.
+- Harmoniser les champs, badges, puces, bordures, espacements et états actifs.
+- Vérifier la lisibilité des valeurs calculées et des mini-résumés affichés.
+
+4. Carte de visualisation / statistiques
+- Harmoniser la couleur de la carte “Déchets collectés” avec le reste clair. 
+- Vérifier la lisibilité du contraste, des chiffres, des unités, des barres et de l’échelle.
+- Rendre les graphiques/indicateurs plus compréhensibles au premier coup d’œil.
+- Clarifier la relation entre les données saisies et les résultats affichés.
+- Éviter les éléments décoratifs qui nuisent à la compréhension.
+- Garder les jauges
+- Si nécessaire, simplifier la visualisation pour la rendre plus pédagogique
+
+5. Équivalences et indicateurs dérivés
+- Rendre les cartes d’équivalence plus compréhensibles et plus crédibles.
+- Vérifier que chaque métrique est utile, clairement nommée et bien hiérarchisée.
+- Clarifier les valeurs, unités et formulations.
+- Harmoniser les cartes entre elles.
+- Vérifier que l’utilisateur comprend ce qui est saisi manuellement vs ce qui est calculé automatiquement.
+
+6. Bloc photo de preuve
+- Améliorer le bloc d’upload photo.
+- Le rendre plus clair, plus rassurant et plus attractif.
+- Vérifier que la zone d’upload indique clairement : action attendue, formats acceptés, état vide, aperçu après ajout, suppression/remplacement.
+- Ajouter si nécessaire un micro-texte utile, sans alourdir l’interface.
+- Vérifier les états : drag/drop, upload en cours, succès, erreur.
+- Ajouter un bouton "prendre la photo" sur mobile pour prendre la photo en live.
+
+7. Bloc d’explication / aide
+- Améliorer le bloc “Pourquoi devez-vous…” ou équivalent.
+- Vérifier que le message apporte une vraie valeur et ne ressemble pas à un encart décoratif.
+- Rendre le ton plus clair, plus direct et plus utile.
+- Vérifier la hiérarchie entre l’aide, la méthodologie et l’action principale.
+
+8. Bloc “Méthode de calcul scientifique”
+- Clarifier la présentation des cartes explicatives.
+- Rendre les textes plus lisibles, mieux espacés et mieux hiérarchisés.
+- Vérifier que le contenu est utile et compréhensible pour un utilisateur non expert.
+- Réduire l’effet de “mur de texte”.
+- Mieux distinguer les concepts / blocs d’information.
+
+9. Boutons de navigation
+- Améliorer les boutons “Retour” et “Continuer”.
+- Vérifier leur taille, contraste, position, alignement et accessibilité mobile.
+- S’assurer qu’ils ne masquent pas du contenu.
+- Ajouter/contrôler les états hover, press, disabled, loading.
+- Prévoir un état désactivé cohérent si des champs obligatoires manquent.
+
+10. UI globale
+- Corriger les contrastes insuffisants.
+- Corriger les espacements irréguliers.
+- Harmoniser rayons, bordures, ombres, icônes et badges.
+- Réduire les effets visuels qui diminuent la lisibilité.
+- Améliorer l’équilibre global entre cartes, champs et explications.
+- Préserver le style du projet : propre, moderne, écologique, sérieux, crédible.
+
+11. UX
+- L’utilisateur doit comprendre en moins de 5 secondes :
+  - quelle donnée il doit saisir ;
+  - quelles données sont calculées automatiquement ;
+  - où ajouter une photo ;
+  - à quoi servent les indicateurs ;
+  - comment passer à l’étape suivante.
+- Ajouter des micro-textes seulement s’ils clarifient vraiment l’action.
+- Ne pas ajouter de complexité inutile.
+- Réduire la charge cognitive.
+- Vérifier que la page reste fluide même avec beaucoup d’informations.
+
+À vérifier techniquement :
+- Ne pas casser la navigation entre les 4 étapes.
+- Ne pas modifier les données envoyées au backend sauf nécessité claire.
+- Conserver la validation existante.
+- Vérifier tous les états : vide, erreur, chargement, succès, champ invalide, upload, bouton disabled.
+- Vérifier l’accessibilité : labels, focus visible, navigation clavier, aria si nécessaire.
+- Vérifier le responsive mobile/tablette/desktop.
+- Vérifier que le contenu ne déborde pas et que rien n’est masqué par le footer ou les boutons.
+
+Livrable attendu :
+1. Audit rapide des problèmes actuels de la page 2.
+2. Liste des améliorations UX/UI proposées.
+3. Liste précise des fichiers modifiés.
+4. Implémentation des corrections prioritaires.
+5. Vérification responsive mobile/desktop.
+6. Vérification que la page fonctionne toujours jusqu’à l’étape suivante.
+
+Contraintes :
+- Ne pas refaire tout le formulaire.
+- Ne pas changer la logique métier sans raison.
+- Ne pas créer de nouvelle librairie.
+- Respecter les composants, tokens CSS et patterns existants du projet.
+- Priorité à la clarté, lisibilité, crédibilité, fluidité et qualité perçue.
+
+
+
+
+
+
+
+
+
+
+
+
+Page 3
+Contexte :
+Cette page correspond à l’étape 3 sur 4 du formulaire. Elle sert à décrire et géolocaliser le parcours de l’action de collecte afin de cartographier précisément les zones traitées.
+
+Objectif :
+Rendre cette étape plus claire, plus rassurante, plus fiable et plus simple à utiliser, surtout pour un utilisateur non technique.
+
+À améliorer en priorité :
+
+1. Hiérarchie visuelle
+- Renforcer la lisibilité du titre “Géolocalisation du parcours”.
+- Rendre le sous-texte plus direct et plus utile.
+- Modifier les deux zones principales pour les afficher sur deux lignes, pas deux colonnes:
+  - cases de saisie du départ, de l’arrivée et options sur la même ligne ;
+  - carte et tracé géographique en dessous, le plus grand possible
+- Bien équilibrer la page en desktop et mobile.
+
+2. Barre d’étapes
+- Améliorer la barre de progression en haut.
+- Rendre l’étape active “Parcours” plus évidente.
+- Vérifier que les étapes déjà complétées sont clairement distinguées de l’étape en cours.
+- Harmoniser les icônes, labels, espacements et états visuels.
+- Corriger l’effet de grande capsule grise si elle prend trop de place ou affaiblit la lisibilité.
+
+3. Bloc “Itinéraire de collecte”
+- Clarifier le titre du bloc.
+- Ajouter un court texte d’aide expliquant que l’utilisateur peut soit saisir une adresse, soit utiliser sa position, soit dessiner sur la carte.
+- Améliorer les champs “Départ” et “Arrivée” :
+  - labels visibles ;
+  - placeholders plus naturels ;
+  - icônes cohérentes ;
+  - état focus clair ;
+  - état erreur si adresse invalide contour rouge glow et emoji croix avec tremblement de la case;
+  - état succès si adresse reconnue contour vert glow et emoji validé .
+- Rendre plus explicite que le champ arrivée peut rester vide si le parcours revient au point de départ ou si c'est une zone globale (polygones)
+- Prévoir une aide pour les adresses imprécises ou non trouvées, cela sera très rare car en reprenant les données google maps tout est bien cartographié et identifié.
+
+4. Bouton “Utiliser ma géolocalisation”
+- Rendre le bouton plus visible et plus compréhensible.
+- Ajouter des états : autorisation demandée, localisation en cours, succès, refus, erreur.
+- Afficher un message clair si l’utilisateur refuse la géolocalisation.
+- Éviter que le bouton ressemble à une action secondaire désactivée.
+- Vérifier contraste, taille, icône et alignement.
+
+5. Sélecteur de type de parcours
+- Clarifier le bouton “Souple”.
+- Renommer ou ajouter une explication si le terme n’est pas immédiatement compréhensible.
+- Expliquer les modes disponibles : parcours libre, trajet optimisé, boucle, manuel, selon ce qui existe réellement dans le code.
+- Vérifier que le menu déroulant est lisible, accessible et cohérent avec le design system.
+- Ne pas ajouter de modes fictifs si la logique n’existe pas.
+
+6. Carte et tracé géographique
+- Clarifier le titre “Tracé géographique”.
+- Ajouter un texte d’aide court : “Dessinez votre parcours ou renseignez une adresse pour générer un tracé.”
+- Améliorer la carte :
+  - taille ;
+  - bordures ;
+  - lisibilité ;
+  - contraste avec le reste de la page ;
+  - intégration visuelle dans une carte UI.
+- Vérifier que les contrôles de carte sont utilisables sur mobile et desktop.
+- Harmoniser les boutons de dessin, édition, suppression, retour arrière, zoom.
+- Ajouter des tooltips ou labels accessibles aux boutons de carte.
+- Éviter que les contrôles paraissent flottants ou désordonnés.
+
+7. État “Aucun tracé”
+- Rendre l’état actuel plus utile et plus visible.
+- Afficher clairement quoi faire ensuite :
+  - saisir un départ ;
+  - utiliser la géolocalisation ;
+  - dessiner directement sur la carte.
+- Ajouter un état avec résumé lorsque le tracé existe : distance estimée, nombre de points, départ, arrivée.
+- Prévoir un bouton “Effacer le tracé” uniquement si un tracé existe.
+
+8. Bouton “Vérifier”
+- Clarifier l’action du bouton : est-ce que l’utilisateur vérifie le tracé ou passe à l’étape suivante ?
+- Si le bouton mène à l’étape 4, préférer un libellé plus clair comme “Vérifier le parcours” ou “Continuer vers validation”.
+- Ajouter des états : disabled si aucun parcours exploitable, loading pendant vérification, erreur si parcours invalide.
+- Vérifier que le bouton ne masque pas le contenu.
+- Harmoniser avec le bouton “Retour”.
+
+9. Ajouter un champs de saisie pour que l'utilisateur puisse écrire ou dicter afin de donner plus de précision sur son parcours. Les admins sur deskop ou tablette pourront retracer proprement le parcours détaillé non accessible sur mobile 
+
+10. UX globale
+- L’utilisateur doit comprendre en moins de 5 secondes :
+  - qu’il doit indiquer le parcours de l’action ;
+  - qu’il peut saisir des adresses ou dessiner sur la carte ;
+  - que l’arrivée est optionnelle si identique au départ ;
+  - comment utiliser la géolocalisation ;
+  - quoi faire pour passer à l’étape suivante.
+- Réduire la charge cognitive.
+- Éviter les termes trop techniques sans explication.
+- Ajouter des micro-textes seulement s’ils aident réellement.
+
+11. Responsive mobile/tablette/desktop
+- Pas de carte de tracer sur mobile, seulement la zone de texte pour écrire les points d'étape du parcours ou des commentaires sur l'action en elle-même
+- Vérifier que les contrôles de carte ne se chevauchent pas.
+- Vérifier que le footer/boutons fixes ne masquent jamais la carte ou les messages.
+- Ajouter un padding bottom suffisant.
+
+12. Accessibilité
+- Ajouter ou vérifier les labels des champs.
+- Focus visible sur champs, boutons et contrôles.
+- Messages d’erreur compréhensibles.
+- Navigation clavier possible.
+- Attributs aria sur les boutons icônes de la carte si nécessaire.
+- Contrastes suffisants.
+
+À vérifier techniquement :
+- Ne pas casser la navigation entre les 4 étapes.
+- Ne pas modifier le format des données envoyées au backend sauf nécessité claire.
+- Préserver la logique de géolocalisation existante.
+- Préserver la logique de tracé/dessin existante.
+- Vérifier les états : aucun tracé, tracé valide, tracé invalide, géolocalisation refusée, adresse introuvable, chargement.
+- Vérifier que les erreurs de carte ou d’API sont gérées proprement.
+- Vérifier que les coordonnées, adresses et distances sont cohérentes.
+- Vérifier que la page fonctionne même si la géolocalisation navigateur est indisponible.
+
+Livrable attendu :
+1. Audit rapide des problèmes actuels de la page 3.
+2. Liste des améliorations UX/UI proposées.
+3. Liste précise des fichiers modifiés.
+4. Implémentation des corrections prioritaires.
+5. Vérification responsive mobile/tablette/desktop.
+6. Vérification que le parcours est bien conservé jusqu’à l’étape 4.
+7. Vérification que la navigation retour/continuer fonctionne toujours.
+
+Contraintes :
+- Ne pas refaire tout le formulaire.
+- Ne pas changer la logique métier sans raison.
+- Ne pas créer de nouvelle librairie.
+- Ne pas ajouter de modes de parcours fictifs.
+- Respecter les composants, tokens CSS et patterns existants du projet.
+- Priorité à la clarté, à la fiabilité, à l’utilisabilité de la carte et à la qualité perçue.
+
+
+
+
+
+
+
+
+
+
+
+
+
+PAGE 4 
+Contexte :
+Cette page correspond à l’étape 4 sur 4 du formulaire. Elle sert à vérifier les informations avant l’envoi officiel de la déclaration : fiabilité, résumé de la collecte, tracé, contexte, points d’attention, puis publication.
+
+Objectif :
+Rendre cette page finale plus claire, plus rassurante, plus professionnelle et plus utile avant validation, sans modifier la logique métier existante.
+
+À améliorer en priorité :
+
+1. Hiérarchie visuelle
+- Renforcer la lisibilité du titre “Vérification et envoi”.
+- Rendre le sous-texte plus direct : l’utilisateur doit comprendre qu’il vérifie avant publication officielle.
+- Clarifier la structure globale :
+  - score de fiabilité ;
+  - résumé des données ;
+  - points d’attention ;
+  - action finale.
+- Mieux hiérarchiser les informations importantes avant le bouton de publication.
+
+2. Carte “Analyse de fiabilité”
+- Clarifier le score affiché : actuellement “30 niveau” n’est pas assez explicite.
+- Remplacer ou compléter par un libellé clair : “Score de fiabilité : 30/100” ou équivalent selon la logique existante.
+- Expliquer brièvement pourquoi le score est faible/moyen/élevé.
+- Ajouter une lecture qualitative : faible, moyen, bon, excellent, si cela existe ou peut être déduit proprement.
+- Vérifier que le texte “Votre déclaration est prête à être transmise” n’est pas contradictoire avec les points d’attention.
+- Si des informations manquent, préférer un message du type : “Déclaration transmissible, mais certains éléments peuvent être améliorés.”
+- Améliorer le contraste, l’espacement, les alignements et la lisibilité de la carte sombre.
+
+3. Cartes de résumé
+- Harmoniser les cartes “La récolte”, “Le tracé”, “Le contexte”.
+- Améliorer les titres, icônes, séparateurs, espacements et valeurs.
+- Rendre les unités plus cohérentes : kg, unités, personne(s).
+- Corriger les incohérences de casse : “25.5 KG” devrait être plus lisible comme “25,5 kg” si le projet utilise le format français.
+- Corriger les libellés : “1 PERS.” peut devenir “1 personne”.
+- Vérifier que les valeurs importantes ressortent sans surcharger.
+- Ajouter un état vide clair pour les informations absentes.
+
+4. Carte “Le tracé”
+- Le message actuel indique qu’aucun tracé manuel n’est retenu et qu’un point GPS approximatif sera utilisé.
+- Rendre ce message plus visible et plus compréhensible.
+- Distinguer clairement :
+  - tracé manuel fourni ;
+  - géolocalisation approximative ;
+  - aucun tracé disponible.
+- Ajouter si possible un résumé : départ, arrivée, distance estimée, mode de tracé, précision.
+- Si aucun tracé précis n’est fourni, proposer une action visible : “Retourner compléter le parcours”.
+- Ne pas bloquer l’envoi si la logique actuelle autorise l’envoi sans tracé, mais avertir clairement.
+
+5. Carte “Le contexte”
+- Rendre les informations plus lisibles : date, structure, lieu.
+- Corriger les valeurs incomplètes ou ambiguës, par exemple “Entreprise -” si cela vient d’une donnée manquante.
+- Ajouter des placeholders propres : “Non renseigné” plutôt qu’un tiret ambigu.
+- Vérifier que les données de l’étape 1 remontent correctement.
+- Ajouter éventuellement un lien/bouton discret pour revenir modifier cette section.
+
+6. Points d’attention
+- Améliorer fortement le bloc “Points d’attention suggérés”.
+- Rendre chaque point d’attention actionnable :
+  - expliquer le problème ;
+  - dire pourquoi c’est important ;
+  - proposer une correction ou un retour vers l’étape concernée.
+- Exemple : si le poids déclaré paraît incohérent avec le nombre de bénévoles et la durée, afficher un message plus précis et un bouton “Modifier les effectifs” ou “Modifier la collecte”.
+- Hiérarchiser les alertes par gravité : critique, attention, conseil.
+- Ne pas afficher un bloc d’alerte trop vague ou anxiogène.
+- Vérifier contraste, couleur, icône, padding et lisibilité.
+
+7. Bouton final “Publier ma déclaration”
+- Clarifier que c’est l’action finale et engageante.
+- Ajouter un état loading pendant l’envoi.
+- Ajouter un état disabled si les conditions minimales ne sont pas remplies.
+- Ajouter une confirmation de succès après publication.
+- Ajouter une gestion d’erreur claire si l’envoi échoue.
+- Vérifier que le bouton est suffisamment visible, mais pas ambigu.
+- Sur mobile, s’assurer qu’il ne masque pas le contenu.
+
+8. Navigation et correction avant envoi
+- Ajouter ou vérifier la possibilité de revenir facilement aux étapes précédentes.
+- Ajouter des actions “Modifier” sur les cartes importantes si cela respecte les patterns existants.
+- L’utilisateur doit pouvoir corriger la récolte, le tracé ou le contexte sans perdre ses données.
+- Vérifier que le retour conserve les informations déjà saisies.
+
+9. UX globale
+- L’utilisateur doit comprendre en moins de 5 secondes :
+  - que sa déclaration est presque prête ;
+  - quelles informations vont être envoyées ;
+  - ce qui manque ou semble fragile ;
+  - s’il peut quand même publier ;
+  - comment corriger avant publication.
+- Réduire les messages trop techniques.
+- Éviter les formulations vagues.
+- Rendre la page rassurante, sérieuse et orientée décision.
+
+10. UI globale
+- Corriger les contrastes insuffisants.
+- Harmoniser les rayons de bordure, ombres, badges, séparateurs et icônes.
+- Améliorer l’équilibre entre la carte sombre, les cartes blanches et l’alerte jaune.
+- Réduire les grands espaces vides si nécessaire.
+- Vérifier les alignements optiques.
+- Préserver le style CleanMyMap : moderne, écologique, sérieux, fiable.
+
+11. Accessibilité
+- Labels et titres sémantiques corrects.
+- Contrastes suffisants.
+- Focus visible sur boutons et liens.
+- Messages d’erreur et d’alerte compréhensibles.
+- Bouton final utilisable au clavier.
+- Ne pas transmettre l’information uniquement par la couleur.
+
+À vérifier techniquement :
+- Ne pas casser la navigation entre les 4 étapes.
+- Ne pas modifier le format des données envoyées au backend sauf nécessité claire.
+- Vérifier que toutes les données des étapes 1, 2 et 3 remontent correctement.
+- Vérifier que les données absentes ont des fallbacks propres.
+- Vérifier les états : prêt à envoyer, avertissement, erreur, loading, succès.
+- Vérifier que l’envoi déclenche bien la création/publication de la déclaration.
+- Vérifier que la notification créateur/admin est bien envoyée si elle existe dans le workflow.
+- Vérifier que les erreurs backend ou réseau sont affichées proprement.
+- Vérifier responsive mobile/tablette/desktop.
+
+Livrable attendu :
+1. Audit rapide des problèmes actuels de la page 4.
+2. Liste des améliorations UX/UI proposées.
+3. Liste des incohérences ou données manquantes détectées.
+4. Liste précise des fichiers modifiés.
+5. Implémentation des corrections prioritaires.
+6. Vérification que les données des étapes précédentes sont bien affichées.
+7. Vérification que la publication fonctionne toujours.
+8. Vérification de la notification créateur/admin si applicable.
+
+Contraintes :
+- Ne pas refaire tout le formulaire.
+- Ne pas changer la logique métier sans raison.
+- Ne pas créer de nouvelle librairie.
+- Ne pas bloquer l’envoi si le comportement actuel autorise l’envoi avec points d’attention.
+- Respecter les composants, tokens CSS et patterns existants du projet.
+- Priorité à la clarté, la confiance, la correction avant envoi et la qualité perçue.
+
+
+
+
+
+
+
+
+
+
+
+
+as tu des idées de choses à ajouter au formulaire bénévole ?
+
+
+
+vérifie que le formulaire est bien envoyé aux admin qui peuvent modifier toutes les cases du formulaire
+
+sur la carte des action il faut deux filtre : action en cours de validation et actions validées.
+
+les chiffres utilisés sur le site doivent uniquement provenir des actions validées pour éviter tout abus.
+
+
+our vérification et stocké dans la base de donnée
+
+
+
+ 

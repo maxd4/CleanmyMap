@@ -4,6 +4,7 @@ import { notFound, redirect } from"next/navigation";
 import { RolePrimaryActions } from"@/components/navigation/role-primary-actions";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
 import { PromotionRequestForm } from"@/components/sections/rubriques/promotion-request-form";
+import { AccountSettingsSection } from"@/components/account/account-settings-section";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
 import {
  getProfileEntryPath,
@@ -107,8 +108,10 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
  {getProfileLabel(candidateProfile,"fr")}
  </Link>
  ))}
- </div>
- </section>
- </div>
- );
+</div>
+  </section>
+
+  <AccountSettingsSection />
+  </div>
+  );
 }

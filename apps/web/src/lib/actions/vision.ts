@@ -4,6 +4,11 @@ import type {
   ActionVisionEstimate,
   ActionVisionSource,
 } from "@/lib/actions/types";
+import {
+  compressImageFile,
+  readBlobAsDataUrl,
+  readImageDimensions,
+} from "@/lib/media/image-compression";
 
 export type ActionVisionContext = {
   locationLabel: string;
@@ -299,16 +304,21 @@ export async function normalizeActionPhotos(files: File[]): Promise<ActionPhotoA
   const selected = files.slice(0, 3);
   const assets = await Promise.all(
     selected.map(async (file) => {
-      const dataUrl = await readPhotoAsDataUrl(file);
-      const dimensions = await readPhotoDimensions(dataUrl).catch(() => ({
+      const preparedFile = await compressImageFile(file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.82,
+      });
+      const dataUrl = await readBlobAsDataUrl(preparedFile);
+      const dimensions = await readImageDimensions(preparedFile).catch(() => ({
         width: null,
         height: null,
       }));
       return {
         id: globalThis.crypto?.randomUUID?.() ?? `photo-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        name: file.name,
-        mimeType: file.type || "image/*",
-        size: file.size,
+        name: preparedFile.name,
+        mimeType: preparedFile.type || file.type || "image/*",
+        size: preparedFile.size,
         width: dimensions.width,
         height: dimensions.height,
         dataUrl,
@@ -316,33 +326,6 @@ export async function normalizeActionPhotos(files: File[]): Promise<ActionPhotoA
     }),
   );
   return assets;
-}
-
-async function readPhotoAsDataUrl(file: File): Promise<string> {
-  return await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error("Impossible de lire la photo."));
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        resolve(reader.result);
-      } else {
-        reject(new Error("Photo invalide."));
-      }
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-async function readPhotoDimensions(dataUrl: string): Promise<{ width: number; height: number }> {
-  const image = new Image();
-  image.decoding = "async";
-  const loaded = new Promise<void>((resolve, reject) => {
-    image.onload = () => resolve();
-    image.onerror = () => reject(new Error("Impossible de lire la photo."));
-  });
-  image.src = dataUrl;
-  await loaded;
-  return { width: image.naturalWidth, height: image.naturalHeight };
 }
 
 export async function inferActionVisionEstimate(

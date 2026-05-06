@@ -1,7 +1,29 @@
+import type { Metadata } from "next";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
-import { Info, BookOpen, Scaling, Beaker, Sparkles, Zap, Brain, ShieldCheck } from "lucide-react";
+import { Info, BookOpen, Scaling, Beaker, Sparkles, Zap, Brain, ShieldCheck, MapPin } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { motion } from "framer-motion";
+import { NationalStatsSection } from "@/components/sections/rubriques/national-stats-section";
+
+export const metadata: Metadata = {
+  title: "Méthodologie - Comment nous calculons l'impact | CleanMyMap",
+  description:
+    "Méthodologie de calcul d'impact environnemental de CleanMyMap. Coefficients CO2, eau, valorisation des déchets. Transparence complète sur les métriques d'action citoyenne.",
+  keywords: [
+    "méthodologie",
+    "calcul impact",
+    "CO2 avoided",
+    "empreinte carbone",
+    "valorisation déchets",
+    "impact environnemental",
+    "transparence",
+    "écologie",
+    "développement durable",
+  ],
+  alternates: {
+    canonical: "/methodologie",
+  },
+};
 
 export default function MethodologiePage() {
   const { factors, sources, version } = IMPACT_PROXY_CONFIG;
@@ -15,7 +37,7 @@ export default function MethodologiePage() {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-6 text-center"
       >
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-100 dark:border-emerald-900/50 shadow-sm mb-4">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-100 shadow-sm mb-4">
           <Beaker size={14} className="animate-pulse" />
           <span className="text-[10px] font-black uppercase tracking-[0.2em]">{t("header_suptitle")}</span>
         </div>
@@ -27,40 +49,59 @@ export default function MethodologiePage() {
         </p>
       </motion.header>
 
-      {/* Logic & Transparency Banner */}
-      <div className="bg-slate-900 rounded-[2.5rem] p-8 md:p-12 text-white relative overflow-hidden shadow-2xl">
+      <NationalStatsSection />
+
+      {/* Logic & Transparency Banner - Design Mixte */}
+      <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-[2.5rem] p-8 md:p-12 text-slate-900 relative overflow-hidden shadow-xl border border-emerald-100">
         <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-          <ShieldCheck size={300} />
+          <ShieldCheck size={300} className="text-emerald-500" />
         </div>
         <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <h2 className="text-3xl font-black tracking-tight flex items-center gap-3">
-              <Brain className="text-emerald-400" />
+            <h2 className="text-3xl font-black tracking-tight flex items-center gap-3 text-slate-900">
+              <Brain className="text-emerald-500" />
               Transparence Algorithmique
             </h2>
-            <p className="text-slate-400 text-lg leading-relaxed">
-              Chez CleanMyMap, chaque gramme de déchet ramassé est converti en impact réel via des coefficients basés sur des publications scientifiques (ADEME, GIEC). Nous ne "devinons" pas votre impact, nous le calculons.
+            <p className="cmm-text-secondary text-lg leading-relaxed font-medium">
+              Chaque donnée terrain est convertie via des coefficients scientifiques (ADEME, GIEC). Un calcul certifié, sans estimation arbitraire.
             </p>
             <div className="flex gap-4">
-              <div className="px-4 py-2 bg-white/10 rounded-xl border border-white/10 text-[10px] font-black uppercase tracking-widest">Version {version}</div>
-              <div className="px-4 py-2 bg-emerald-500 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20">Audit Scientifique OK</div>
+              <div className="px-4 py-2 bg-white/50 backdrop-blur-sm rounded-xl border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-700">Version {version}</div>
+              <div className="px-4 py-2 bg-emerald-500 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/20">Audit Scientifique OK</div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[
               { label: 'Données Sources', val: 'ADEME / GIEC', icon: <BookOpen size={16} /> },
-              { label: 'Intervalle Audit', val: 'Semestriel', icon: <Zap size={16} /> },
+              { label: 'Audit', val: 'Semestriel', icon: <Zap size={16} /> },
               { label: 'Marge Erreur', val: '< 2%', icon: <Scaling size={16} /> },
               { label: 'Algorithme', val: 'Linéaire Proxy', icon: <Sparkles size={16} /> },
             ].map((item, i) => (
-              <div key={i} className="bg-white/5 p-4 rounded-2xl border border-white/5 flex flex-col gap-2">
-                <div className="text-emerald-400">{item.icon}</div>
-                <div className="text-[10px] font-black uppercase text-slate-500">{item.label}</div>
-                <div className="text-sm font-bold">{item.val}</div>
+              <div key={i} className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-white flex flex-col gap-2 shadow-sm">
+                <div className="text-emerald-600">{item.icon}</div>
+                <div className="text-[10px] font-black uppercase text-slate-400">{item.label}</div>
+                <div className="text-sm font-bold text-slate-800">{item.val}</div>
               </div>
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Visual Process Flow */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-8 px-4">
+        {[
+          { icon: <MapPin className="text-sky-500" />, title: "Collecte Terrain", desc: "Données GPS et volumes saisis via l'App" },
+          { icon: <Zap className="text-amber-500" />, title: "Calcul Instantané", desc: "Application des coefficients scientifiques" },
+          { icon: <ShieldCheck className="text-emerald-500" />, title: "Impact Certifié", desc: "Visualisation immédiate de l'impact réel" },
+        ].map((step, i) => (
+          <div key={i} className="flex flex-col items-center text-center space-y-4 p-6 rounded-3xl bg-slate-50/50 border border-slate-100">
+            <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center">
+              {step.icon}
+            </div>
+            <h3 className="font-black text-slate-900 uppercase tracking-widest text-xs">{step.title}</h3>
+            <p className="text-sm cmm-text-secondary font-medium">{step.desc}</p>
+          </div>
+        ))}
       </div>
 
       <section className="grid gap-8 xl:grid-cols-2">
@@ -105,14 +146,14 @@ export default function MethodologiePage() {
         />
       </section>
 
-      <footer className="pt-16 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-8 cmm-text-muted">
+      <footer className="pt-16 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-8 cmm-text-muted">
         <div className="cmm-text-caption space-y-2 text-center sm:text-left">
-          <p className="font-black uppercase tracking-widest text-slate-900 dark:text-white">CleanMyMap Engine v{version}</p>
+          <p className="font-black uppercase tracking-widest text-slate-900">CleanMyMap Engine v{version}</p>
           <p className="font-medium">Tous les calculs sont open-source et vérifiables par les autorités locales.</p>
         </div>
         <div className="flex gap-4">
           <div 
-            className="px-6 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center" 
+            className="px-6 py-3 bg-slate-50/80 backdrop-blur-sm border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center shadow-sm" 
             dangerouslySetInnerHTML={{ __html: t("footer.partner") }}
           />
         </div>
@@ -132,7 +173,7 @@ function MethodologyCard({ title, formula, description, source, color, icon }: a
   return (
     <motion.div 
       whileHover={{ y: -5 }}
-      className="rounded-[2.5rem] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 p-8 md:p-10 space-y-6 shadow-xl shadow-slate-200/50 dark:shadow-none hover:border-slate-200 dark:hover:border-slate-700 transition-all"
+      className="rounded-[2.5rem] border border-slate-100 bg-white/50 backdrop-blur-sm p-8 md:p-10 space-y-6 shadow-xl shadow-slate-200/50 hover:border-slate-200 transition-all"
     >
       <div className={cn("flex items-center gap-4", colorClasses[color].split(' ')[0])}>
         <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner", colorClasses[color].split(' ')[2])}>
@@ -141,12 +182,12 @@ function MethodologyCard({ title, formula, description, source, color, icon }: a
         <h2 className="text-2xl font-black tracking-tight">{title}</h2>
       </div>
 
-      <div className={cn("p-6 rounded-2xl font-mono text-sm border-l-8 shadow-inner overflow-x-auto", colorClasses[color].split(' ')[1], "bg-slate-50 dark:bg-slate-950")}>
+      <div className={cn("p-6 rounded-2xl font-mono text-sm border-l-8 shadow-inner overflow-x-auto", colorClasses[color].split(' ')[1], "bg-slate-50/50")}>
         <div className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Équation Scientifique</div>
         {formula}
       </div>
 
-      <p className="cmm-text-secondary dark:cmm-text-muted font-medium leading-relaxed">
+      <p className="cmm-text-secondary font-medium leading-relaxed">
         {description}
       </p>
 

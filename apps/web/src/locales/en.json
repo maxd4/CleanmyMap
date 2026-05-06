@@ -38,19 +38,18 @@
     "footer": {
       "version": "Protocol Version: {version}",
       "copyright": "© 2026 CleanMyMap Scientific Committee.",
-      "partner": "PARTENAIRE ADEME <br/> SOON"
+      "partner": "ADEME PARTNER <br/> COMING SOON"
     }
   },
   "learnHub": {
-    "header_suptitle": "Practical guide",
-    "header_title": "Learn and act",
-    "header_desc": "Understand the issues, prepare an action, and move step by step.",
+    "header_suptitle": "Learning path",
+    "header_title": "Understand to act",
+    "header_desc": "The hub opens four dedicated pages to read the context, understand orders of magnitude, practice, adopt best practices, and find useful resources. Methodology stays separate.",
     "tabs": {
-      "enjeux": "Issues",
-      "usage": "How to",
-      "events": "Events",
-      "kit": "Field kit",
-      "waste": "Sorting"
+      "comprendre": "Understand",
+      "sentrainer": "Practice",
+      "bonnesPratiques": "Best practices",
+      "ressources": "Resources"
     },
     "enjeux": {
       "title": "Why act now",
@@ -96,6 +95,37 @@
       "cat3_info": "Toxic waste. Specific recycling channel.",
       "cat4_name": "Aluminum",
       "cat4_info": "Cans. 95% energy saved during recycling."
+    },
+    "magnitude": {
+      "eyebrow": "Orders of magnitude",
+      "title": "Short calculations to understand fast",
+      "desc": "A few visible proxies to estimate impact in one minute, then a direct link to the methodology page for the full proof.",
+      "cta": "Open methodology",
+      "note": "These references are decision proxies. The methodology page keeps the full proof.",
+      "water": {
+        "title": "Butts and water",
+        "subtitle": "Read a small gesture at scale",
+        "inputLabel": "Cigarette butts",
+        "resultLabel": "Water impacted",
+        "helper": "{count} butts × {factor} L = {value} L"
+      },
+      "waste": {
+        "title": "Waste and CO2",
+        "subtitle": "See the impact of a collected volume",
+        "inputLabel": "Kg of waste",
+        "resultLabel": "CO2 avoided",
+        "surfaceLabel": "Surface cleaned",
+        "savingsLabel": "Estimated savings",
+        "formulaLabel": "Reference",
+        "formula": "{waste} kg × {factor} = CO2"
+      },
+      "time": {
+        "title": "Volunteer time",
+        "subtitle": "Convert time into useful surface",
+        "inputLabel": "Minutes",
+        "resultLabel": "Surface cleaned",
+        "helper": "{minutes} min × {factor} m² = {value} m²"
+      }
     }
   },
   "dashboard": {
@@ -117,12 +147,12 @@
     "trace_bad": "low (missing data)",
     "trace_source": "Sources: validated actions, pilotage overview module, N/N-1 derived metrics.",
     "trace_method": "Method: absolute and relative deltas over a 30-day window. Scope: overview cockpit.",
-    "btn_reports": "Open reporting",
+    "btn_reports": "View reports",
     "title_v1": "Dashboard",
     "desc_v1": "Decision management focused on field impact, tracking, and data reliability.",
-    "btn_action": "GO CLEAN UP NOW",
-    "btn_signal": "REPORT A DIRTY ZONE",
-    "btn_impact": "MY IMPACT",
-    "btn_eval": "3 QA VALIDATIONS PENDING"
+    "btn_action": "Clean now",
+    "btn_signal": "Report dirty zone",
+    "btn_impact": "My impact",
+    "btn_eval": "3 validations pending"
   }
 }

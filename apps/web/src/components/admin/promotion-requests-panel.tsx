@@ -14,7 +14,7 @@ type ActionState = {
 } | null;
 
 const STATUS_LABELS: Record<PromotionRequestRecord["status"], { fr: string; en: string }> = {
-  pending_owner_review: { fr: "En attente", en: "Pending" },
+  pending_owner_review: { fr: "En attente de révision", en: "Awaiting review" },
   accepted: { fr: "Acceptée", en: "Accepted" },
   rejected: { fr: "Refusée", en: "Rejected" },
 };
