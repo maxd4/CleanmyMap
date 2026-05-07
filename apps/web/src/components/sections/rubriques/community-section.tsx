@@ -15,6 +15,7 @@ import { WeatherSection } from"@/components/sections/rubriques/weather-section";
 import { NewsletterSignup } from"@/components/newsletter/newsletter-signup";
 import { ExternalHubSection } from "@/components/sections/rubriques/community/external-hub-section";
 import { CleanupGuideCard } from "@/components/sections/rubriques/community/cleanup-guide-card";
+import { OrganizerKitCard } from "@/components/sections/rubriques/community/organizer-kit-card";
 import { CampaignsSection } from "@/components/sections/rubriques/community/campaigns-section";
 import { MissionZeroSection } from "@/components/sections/rubriques/mission-zero-section";
 import { FAQSection } from "@/components/sections/rubriques/faq-section";
@@ -133,6 +134,7 @@ function CommunitySection() {
       {hubCategory === "agir" && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <ExternalHubSection />
+          <OrganizerKitCard />
           <CleanupGuideCard />
           <div className="grid gap-6 md:grid-cols-2">
             <MissionZeroSection />

@@ -2,7 +2,15 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { MessageSquare, Zap, Image as ImageIcon, MapPin } from "lucide-react";
+import {
+  Download,
+  FileText,
+  Image as ImageIcon,
+  MapPin,
+  MessageSquare,
+  Paperclip,
+  Zap,
+} from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -13,18 +21,47 @@ type ChatMessageItemProps = {
   userId?: string;
 };
 
+const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "avif", "svg"]);
+
+function isVisualAttachment(message: ChatMessage): boolean {
+  if (message.attachment_type?.startsWith("image/")) {
+    return true;
+  }
+
+  if (!message.attachment_url) {
+    return false;
+  }
+
+  try {
+    const pathname = new URL(message.attachment_url).pathname;
+    const extension = pathname.split(".").pop()?.toLowerCase() ?? "";
+    return IMAGE_EXTENSIONS.has(extension);
+  } catch {
+    return false;
+  }
+}
+
 export function ChatMessageItem({ message, userId }: ChatMessageItemProps) {
   const isMe = message.sender_id === userId;
   const isActionRelated = /collecte|nettoyage|ramassage|déchets|pollution|bravo/i.test(message.content);
   const isQuestionRelated = /\?|comment|pourquoi|où/i.test(message.content);
+  const hasAttachment = Boolean(message.attachment_url);
+  const hasVisualAttachment = hasAttachment && isVisualAttachment(message);
+  const attachmentLabel = message.attachment_type
+    ? message.attachment_type
+        .split("/")
+        .pop()
+        ?.replace(/\+xml$/i, "")
+        .toUpperCase() ?? "FICHIER"
+    : "FICHIER";
 
   return (
     <motion.div
       initial={{ opacity: 0, x: isMe ? 20 : -20 }}
       animate={{ opacity: 1, x: 0 }}
-      className={`flex items-start gap-3 mb-6 ${isMe ? "flex-row-reverse" : "flex-row"}`}
+      className="relative mb-6 w-full"
     >
-      <div className="relative shrink-0">
+      <div className={`pointer-events-none absolute top-0 h-10 w-10 ${isMe ? "right-0" : "left-0"}`}>
         <div
           className={`absolute -inset-1 rounded-2xl blur-sm opacity-20 ${
             isMe ? "bg-violet-500" : "bg-emerald-500"
@@ -46,8 +83,8 @@ export function ChatMessageItem({ message, userId }: ChatMessageItemProps) {
         </div>
       </div>
 
-      <div className={`flex max-w-[85%] flex-col sm:max-w-[70%] ${isMe ? "items-end" : "items-start"}`}>
-        <div className={`mb-1 flex items-center gap-2 px-1 ${isMe ? "flex-row-reverse" : "flex-row"}`}>
+      <div className={`flex min-w-0 w-full flex-1 flex-col ${isMe ? "items-end" : "items-start"}`}>
+        <div className={`mb-1 flex items-center gap-2 px-1 ${isMe ? "flex-row-reverse justify-end" : "flex-row"}`}>
           <span className="text-[11px] font-black uppercase tracking-tight cmm-text-primary">
             {message.sender.display_name}
           </span>
@@ -60,7 +97,7 @@ export function ChatMessageItem({ message, userId }: ChatMessageItemProps) {
         </div>
 
         <div
-          className={`group relative rounded-[2rem] p-4 shadow-lg transition-all duration-300 ${
+          className={`group relative w-full rounded-[2rem] p-4 shadow-lg transition-all duration-300 ${
             isMe
               ? "rounded-tr-none bg-violet-600 text-white"
               : "rounded-tl-none border border-slate-100 bg-white cmm-text-secondary dark:border-slate-800 dark:bg-slate-900"
@@ -97,33 +134,68 @@ export function ChatMessageItem({ message, userId }: ChatMessageItemProps) {
                     : "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
                 }`}
               >
-                <ImageIcon size={10} /> Preuve Visuelle
+                {hasVisualAttachment ? <ImageIcon size={10} /> : <Paperclip size={10} />}
+                {hasVisualAttachment ? "Preuve Visuelle" : attachmentLabel}
               </div>
             ) : null}
           </div>
 
-          <div className={`cmm-text-small font-medium leading-relaxed ${isMe ? "text-white" : "cmm-text-secondary"}`}>
+          <div
+            className={`cmm-text-small font-medium leading-relaxed break-words whitespace-pre-wrap ${
+              isMe ? "text-white" : "cmm-text-secondary"
+            }`}
+          >
             {message.content}
           </div>
 
           {message.attachment_url ? (
-            <motion.div
-              whileHover={{ scale: 1.02 }}
-              className="group/img relative mt-3 overflow-hidden rounded-2xl shadow-2xl"
-            >
-              <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 transition-opacity group-hover/img:opacity-100">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase text-white">
-                  <MapPin size={12} /> Voir sur la carte
+            hasVisualAttachment ? (
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                className="group/img relative mt-3 overflow-hidden rounded-2xl shadow-2xl"
+              >
+                <div className="absolute inset-0 flex items-end bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 transition-opacity group-hover/img:opacity-100">
+                  <div className="flex items-center gap-2 text-[10px] font-black uppercase text-white">
+                    <MapPin size={12} /> Voir sur la carte
+                  </div>
                 </div>
-              </div>
-              <Image
-                src={message.attachment_url}
-                alt={`Pièce jointe de ${message.sender.display_name}`}
-                width={400}
-                height={240}
-                className="max-h-60 w-full object-cover"
-              />
-            </motion.div>
+                <Image
+                  src={message.attachment_url}
+                  alt={`Pièce jointe de ${message.sender.display_name}`}
+                  width={400}
+                  height={240}
+                  className="max-h-60 w-full object-cover"
+                />
+              </motion.div>
+            ) : (
+              <a
+                href={message.attachment_url}
+                target="_blank"
+                rel="noreferrer"
+                className={`mt-3 flex items-center gap-3 rounded-2xl border px-4 py-3 transition hover:-translate-y-0.5 ${
+                  isMe
+                    ? "border-white/20 bg-white/10 text-white"
+                    : "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-950/80 dark:text-slate-200"
+                }`}
+              >
+                <div
+                  className={`flex h-11 w-11 items-center justify-center rounded-2xl ${
+                    isMe ? "bg-white/15 text-white" : "bg-violet-100 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300"
+                  }`}
+                >
+                  <FileText size={18} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-black">
+                    Pièce jointe {attachmentLabel}
+                  </p>
+                  <p className={`truncate text-xs ${isMe ? "text-white/75" : "text-slate-500 dark:text-slate-400"}`}>
+                    Ouvrir le fichier dans un nouvel onglet
+                  </p>
+                </div>
+                <Download size={16} className={isMe ? "text-white/80" : "text-violet-500"} />
+              </a>
+            )
           ) : null}
         </div>
 

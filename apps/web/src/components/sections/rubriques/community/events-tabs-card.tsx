@@ -7,12 +7,15 @@ import type {
  EventReminder,
  EventStaffingRow,
 } from"@/lib/community/engagement";
+import {
+ formatCleanupSupportLabel,
+ formatCleanupWasteTypesLabel,
+ } from"@/lib/community/event-ops";
 import type {
  CommunityEventItem,
  CommunityRsvpStatus,
 } from"@/lib/community/http";
 import { formatFrDate, toRsvpLabel } from"@/components/sections/rubriques/community/helpers";
-import { buildIcsHref } from"@/components/sections/rubriques/community/ics";
 import { formatPct } from"@/components/sections/rubriques/community/kpis";
 import type { CommunityTab, OpsDraft } from"@/components/sections/rubriques/community/types";
 import { ErrorMessage } from"@/components/ui/error-message";
@@ -43,13 +46,6 @@ type CommunityEventsTabsCardProps = {
  isUpdatingEventOpsId: string | null;
 };
 
-function tabTone(activeTab: CommunityTab, tab: CommunityTab): string {
- if (activeTab === tab) {
- return"border-emerald-300 bg-emerald-50 text-emerald-900";
- }
- return"border-slate-300 bg-white cmm-text-secondary hover:bg-slate-100";
-}
-
 function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  const [shareEvent, setShareEvent] = useState<CommunityEventItem | null>(null);
  const { locale } = useSitePreferences();
@@ -65,7 +61,6 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  pastEvents,
  conversionByEventId,
  remindersByEventId,
- staffingByEventId,
  rsvpLoadingEventId,
  onRsvp,
  getOpsDraft,
@@ -74,7 +69,7 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  isUpdatingEventOpsId,
  } = props;
 
- function organizerView(event: CommunityEventItem) {
+  function organizerView(event: CommunityEventItem) {
  return (
  event.organizer ?? {
  userId: event.organizerClerkId ?? null,
@@ -83,7 +78,14 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  profileBadge: { id:"profile_benevole", label:"Profil bénévole", icon:"PBV" },
  }
  );
- }
+  }
+
+  function cleanupNeedLabel(event: CommunityEventItem): string | null {
+    if (!event.cleanupSupportLevel) {
+      return null;
+    }
+    return `Besoin de bénévoles · ${formatCleanupSupportLabel(event.cleanupSupportLevel)}`;
+  }
 
  return (
     <div className="space-y-4">
@@ -143,8 +145,6 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
   {!eventsLoading && !eventsLoadError && activeTab === "upcoming" ? (
     <div className="grid gap-4 sm:grid-cols-1">
       {upcomingEvents.map((event) => {
-        const organizer = organizerView(event);
-        const staffing = staffingByEventId.get(event.id);
         const reminder = remindersByEventId.get(event.id);
         
         return (
@@ -184,6 +184,34 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
                   {event.description || (locale === "fr" ? "Pas de description détaillée." : "No detailed description.")}
                 </p>
 
+                <div className="flex flex-wrap gap-2">
+                  {event.cleanupObjective ? (
+                    <span className="rounded-full bg-sky-50 px-3 py-1 text-[11px] font-semibold text-sky-700 ring-1 ring-sky-200">
+                      Objectif: {event.cleanupObjective}
+                    </span>
+                  ) : null}
+                  {event.cleanupZone ? (
+                    <span className="rounded-full bg-violet-50 px-3 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-200">
+                      Zone: {event.cleanupZone}
+                    </span>
+                  ) : null}
+                  {cleanupNeedLabel(event) ? (
+                    <span className="rounded-full bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-200">
+                      {cleanupNeedLabel(event)}
+                    </span>
+                  ) : null}
+                  {event.cleanupLogisticsNeeds ? (
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                      Logistique: {event.cleanupLogisticsNeeds}
+                    </span>
+                  ) : null}
+                  {event.cleanupWasteTypesExpected.length > 0 ? (
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200">
+                      Déchets: {formatCleanupWasteTypesLabel(event.cleanupWasteTypesExpected)}
+                    </span>
+                  ) : null}
+                </div>
+
                 <div className="flex flex-wrap items-center gap-3">
                   <div className="flex -space-x-2">
                     {[...Array(Math.min(3, event.rsvpCounts.yes))].map((_, i) => (
@@ -207,7 +235,7 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
                   disabled={rsvpLoadingEventId === event.id}
                   className="w-full rounded-2xl bg-emerald-600 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-200 transition-all hover:bg-emerald-700 active:scale-95 disabled:opacity-50"
                 >
-                  {event.myRsvpStatus === "yes" ? "✓ Inscrit" : "Je participe"}
+                  {event.myRsvpStatus === "yes" ? "✓ Je viens" : "Je viens"}
                 </button>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -215,16 +243,28 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
                     disabled={rsvpLoadingEventId === event.id}
                     className="rounded-xl border border-slate-200 bg-white py-2 text-[11px] font-bold text-slate-600 transition-all hover:bg-slate-50"
                   >
-                    Peut-être
+                    Je peux aider
                   </button>
                   <button
                     onClick={() => void onRsvp(event.id, "no")}
                     disabled={rsvpLoadingEventId === event.id}
                     className="rounded-xl border border-slate-200 bg-white py-2 text-[11px] font-bold text-slate-400 transition-all hover:bg-slate-50"
                   >
-                    Décliner
+                    Je ne peux pas
                   </button>
                 </div>
+                <Link
+                  href="#messagerie"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/70 py-2 text-[11px] font-bold text-emerald-700 transition-all hover:bg-emerald-100"
+                >
+                  📣 Je relaie
+                </Link>
+                <Link
+                  href={`/actions/new?mode=complete&fromEventId=${event.id}`}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-sky-100 bg-sky-50/80 py-2 text-[11px] font-bold text-sky-700 transition-all hover:bg-sky-100"
+                >
+                  🧾 Clôturer + caractériser
+                </Link>
                 <button 
                   onClick={() => setShareEvent(event)}
                   className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-100 bg-slate-50/50 py-2 text-[11px] font-bold text-slate-500 transition-all hover:bg-slate-100"
@@ -325,12 +365,12 @@ function CommunityEventsTabsCard(props: CommunityEventsTabsCardProps) {
  null,
  )}
  </p>
- <Link
- href={`/actions/new?fromEventId=${event.id}`}
- className="mt-2 inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 cmm-text-caption font-semibold cmm-text-secondary transition hover:bg-slate-100"
- >
+<Link
+ href={`/actions/new?mode=complete&fromEventId=${event.id}`}
+className="mt-2 inline-flex rounded-lg border border-slate-300 bg-white px-3 py-1.5 cmm-text-caption font-semibold cmm-text-secondary transition hover:bg-slate-100"
+>
  Déclarer une action post-événement
- </Link>
+</Link>
 
  <div className="mt-3 grid gap-2 md:grid-cols-2">
  <label className="flex flex-col gap-1 cmm-text-caption font-semibold uppercase tracking-wide cmm-text-secondary">

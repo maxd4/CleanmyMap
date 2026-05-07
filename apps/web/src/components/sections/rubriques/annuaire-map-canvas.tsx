@@ -30,6 +30,7 @@ export type AnnuaireEntry = {
   name: string;
   legalIdentity: string;
   kind: EntityKind;
+  scope?: "local" | "national" | "france";
   types: EngagementType[];
   description: string;
   location: string;
@@ -83,8 +84,8 @@ const createBubbleIcon = (
              style="background-color: ${color}; color: white; font-weight: bold; font-size: 12px;">
           ${initials}
         </div>
-        <div class="bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-xl border border-slate-200 shadow-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-          <p class="text-[11px] font-bold text-slate-900">${entry.name}</p>
+        <div class="pointer-events-none opacity-0 transition-opacity group-hover:opacity-100 whitespace-nowrap rounded-xl border border-violet-300/16 bg-[rgba(24,17,54,0.98)] px-3 py-1.5 shadow-xl backdrop-blur-sm">
+          <p class="text-[11px] font-bold text-white">${entry.name}</p>
         </div>
       </div>
     `,
@@ -118,14 +119,14 @@ export function AnnuaireMapCanvas({
 
   return (
     <div className={cn(
-      "w-full overflow-hidden border border-slate-200 bg-slate-50 transition-all duration-500",
-      isExploration ? "h-[750px] rounded-[2.5rem] shadow-2xl border-white/50" : "h-[500px] rounded-xl"
+      "w-full overflow-hidden border border-violet-300/14 bg-[rgba(20,14,48,0.96)] transition-all duration-500",
+      isExploration ? "h-[750px] rounded-[2.5rem] shadow-2xl" : "h-[500px] rounded-xl"
     )}>
       <MapContainer
         center={center}
         zoom={isExploration ? 13 : 12}
         scrollWheelZoom
-        className="h-full w-full bg-slate-50 relative z-0"
+        className="relative z-0 h-full w-full bg-[rgba(20,14,48,0.96)]"
       >
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Mode Épuré">
@@ -145,10 +146,6 @@ export function AnnuaireMapCanvas({
         {items.map((entry) => {
           const trustState = getEntryTrustState(entry);
           const isHighlighted = highlightedItemId === entry.id;
-          const initials = entry.name.split(" ").map(n => n[0]).join("").slice(0, 2);
-          const color = entry.types.includes("environnemental") ? "emerald" : 
-                        entry.types.includes("social") ? "blue" : 
-                        entry.types.includes("humanitaire") ? "rose" : "violet";
           
           return (
             <Marker
@@ -160,28 +157,28 @@ export function AnnuaireMapCanvas({
               }}
             >
               {!isExploration && (
-                <Popup className="rounded-xl">
-                  <div className="w-64 space-y-2 p-1">
-                    <h4 className="font-semibold leading-tight cmm-text-primary">{entry.name}</h4>
+                <Popup className="rounded-2xl">
+                  <div className="w-64 space-y-2 rounded-2xl border border-violet-300/16 bg-[rgba(24,17,54,0.98)] p-3 text-white shadow-2xl">
+                    <h4 className="font-semibold leading-tight text-white">{entry.name}</h4>
                     <div className="flex flex-wrap gap-1">
                       {entry.types.map((t) => (
                         <span
                           key={t}
-                          className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase cmm-text-secondary"
+                          className="rounded bg-violet-400/12 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-violet-100/72"
                         >
                           {t}
                         </span>
                       ))}
                     </div>
-                    <p className="mt-1 line-clamp-3 cmm-text-caption leading-relaxed cmm-text-secondary">
+                    <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-violet-100/66">
                       {entry.description}
                     </p>
                     {trustState !== "trusted" ? (
-                      <p className={`cmm-text-caption font-semibold ${trustState === "incomplete" ? "text-rose-700" : "text-amber-700"}`}>
+                      <p className={`text-xs font-semibold ${trustState === "incomplete" ? "text-rose-300" : "text-amber-300"}`}>
                         {trustState === "incomplete" ? "Fiche à compléter" : "Fiche non confirmée"}
                       </p>
                     ) : null}
-                    <div className="mt-2 flex flex-wrap gap-2 border-t border-slate-100 pt-2">
+                    <div className="mt-2 flex flex-wrap gap-2 border-t border-violet-300/12 pt-2">
                       <CmmButton size="sm" tone="primary" onClick={() => onItemClick?.(entry.id)}>
                         {variant === "standard" ? "Détails" : "Ouvrir la fiche"}
                       </CmmButton>
