@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, type FormEvent } from "react";
+import { useEffect, useMemo, type FormEvent } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { enUS, fr } from "date-fns/locale";
 import {
   Bug,
   Mail,
@@ -11,19 +13,25 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-import { useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { compressImageFile } from "@/lib/media/image-compression";
 import { isAppError, toAppError } from "@/lib/errors/app-errors";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { FeedbackSection } from "@/components/sections/rubriques/feedback-section";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import {
+  inferChatAttachmentExtension,
+  inferChatAttachmentType,
+} from "@/lib/chat/chat-attachments";
 import { TopicNetworkGraph } from "./topic-network-graph";
 import { ChatComposer } from "./chat-composer";
 import { ChatHeader } from "./chat-header";
 import { ChatSidebar } from "./chat-sidebar";
 import { useChatData } from "./hooks/use-chat-data";
 import { useChatState } from "./hooks/use-chat-state";
+import { getDiscussionGuidance } from "./discussion-guidance";
 import type { ChatMessage, ChatUser } from "./chat-types";
 import {
   canAccessChatChannel,
@@ -38,6 +46,9 @@ import { ChatMessageItem } from "./ui/chat-message-item";
 type ChatShellProps = {
   initialChannelType?: ChatChannelType;
   initialArrondissement?: number;
+  initialZoneName?: string | null;
+  initialRecipient?: ChatUser | null;
+  initialMessage?: string;
 };
 
 type ChannelVisual = {
@@ -72,6 +83,11 @@ const CHANNEL_VISUALS: Record<ChatChannelType, ChannelVisual> = {
     accentClass: "text-rose-500",
     chipClass: "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300",
   },
+};
+
+type ChatMetaItem = {
+  label: string;
+  value: string;
 };
 
 function readMetadataString(
@@ -118,7 +134,7 @@ function getClerkArrondissement(user: ReturnType<typeof useUser>["user"]): numbe
 function getChannelPlaceholder(channelType: ChatChannelType): string {
   switch (channelType) {
     case "community":
-      return "Partagez une actualité, une coordination ou un point d'avancement.";
+      return "Partagez une actualité, un besoin de relais associatif, un besoin de bénévoles ou un point d'avancement.";
     case "dm":
       return "Choisissez un destinataire puis rédigez votre message privé.";
     case "admin_elu":
@@ -132,91 +148,77 @@ function getChannelPlaceholder(channelType: ChatChannelType): string {
   }
 }
 
+type ChatEmptyStateCopy = {
+  title: string;
+  description: string;
+  starterTitle: string;
+  starterPrompts: string[];
+  purposeTags: string[];
+  messagePattern: string;
+  composerHint: string;
+  visibilityLabel: string;
+  audienceLabel: string;
+  channelGoal: string;
+};
+
 function getEmptyStateCopy(
   channelType: ChatChannelType,
+  locale: "fr" | "en",
   recipientLabel?: string | null,
-  territoryFocus?: number | null,
-  territoryZone?: string | null,
-): { title: string; description: string } {
-  switch (channelType) {
-    case "community":
-      return {
-        title: "Aucun message communautaire pour le moment",
-        description: "Ouvrez l'échange avec un premier message visible par tous les membres connectés.",
-      };
-    case "dm":
-      return recipientLabel
-        ? {
-            title: `Aucun message privé avec ${recipientLabel}`,
-            description: "Votre conversation démarre ici. Envoyez un premier message pour lancer l'échange.",
-          }
-        : {
-            title: "Choisissez un destinataire",
-            description: "Sélectionnez d'abord un membre pour ouvrir la conversation privée.",
-          };
-    case "admin_elu":
-      return {
-        title: "Aucun message dans l'espace admin & élus",
-        description: "Cet espace sert aux arbitrages, aux priorités et aux échanges de pilotage.",
-      };
-    case "territory":
-      const zoneLabel = territoryZone || (territoryFocus ? `${territoryFocus}e arrondissement` : null);
-      return {
-        title: zoneLabel
-          ? `Aucun message pour le territoire ${zoneLabel}`
-          : "Aucun territoire sélectionné",
-        description: zoneLabel
-          ? "Partagez ici les sujets liés à votre zone et aux zones limitrophes."
-          : "Sélectionnez une zone (arrondissement ou commune) pour accéder au canal territoire.",
-      };
-    case "dm":
-      return recipientLabel
-        ? {
-            title: `Aucun message privé avec ${recipientLabel}`,
-            description: "Votre conversation démarre ici. Envoyez un premier message pour lancer l'échange.",
-          }
-        : {
-            title: "Choisissez un destinataire",
-            description: "Sélectionnez d'abord un membre pour ouvrir la conversation privée.",
-          };
-    case "admin_elu":
-      return {
-        title: "Aucun message dans l'espace admin & élus",
-        description: "Cet espace sert aux arbitrages, aux priorités et aux échanges de pilotage.",
-      };
-    case "territory":
-      return {
-        title: territoryFocus
-          ? `Aucun message pour le territoire ${territoryFocus}`
-          : "Aucun message de territoire",
-        description: "Partagez ici les sujets liés à l'arrondissement et aux zones limitrophes.",
-      };
-    case "bug_report":
-      return {
-        title: "Aucun retour feedback enregistré",
-        description: "Utilisez le panneau feedback pour envoyer un bug, une amélioration ou une collaboration.",
-      };
-    default:
-      return {
-        title: "Aucun message",
-        description: "Commencez la discussion avec un premier message.",
-      };
-  }
+  territoryLabel?: string | null,
+): ChatEmptyStateCopy {
+  const guidance = getDiscussionGuidance(channelType, {
+    locale,
+    recipientLabel,
+    territoryLabel,
+  });
+
+  return {
+    title: guidance.emptyTitle,
+    description: guidance.emptyDescription,
+    starterTitle: guidance.starterTitle,
+    starterPrompts: guidance.starterPrompts,
+    purposeTags: guidance.purposeTags,
+    messagePattern: guidance.messagePattern,
+    composerHint: guidance.composerHint,
+    visibilityLabel: guidance.visibilityLabel,
+    audienceLabel: guidance.audienceLabel,
+    channelGoal: guidance.channelGoal,
+  };
 }
 
 function getChannelTitle(channelType: ChatChannelType): string {
   return getChatChannelDefinition(channelType).label;
 }
 
+function formatRecentActivityLabel(
+  locale: "fr" | "en",
+  lastMessageAt: string | null,
+): string {
+  if (!lastMessageAt) {
+    return locale === "fr" ? "Aucun message pour l'instant" : "No message yet";
+  }
+
+  const distance = formatDistanceToNow(new Date(lastMessageAt), {
+    addSuffix: true,
+    locale: locale === "fr" ? fr : enUS,
+  });
+  return locale === "fr" ? `Dernier message ${distance}` : `Last message ${distance}`;
+}
+
 export function ChatShell({
   initialChannelType = "community",
   initialArrondissement,
+  initialZoneName,
+  initialRecipient,
+  initialMessage,
 }: ChatShellProps) {
+  const { getToken } = useAuth();
   const { user } = useUser();
+  const { locale } = useSitePreferences();
   const pathname = usePathname();
   const userId = user?.id;
-  const supabase = getSupabaseBrowserClient();
-  const chatState = useChatState({ initialChannelType, initialArrondissement });
+  const supabase = useMemo(() => getSupabaseBrowserClient(() => getToken()), [getToken]);
   const {
     activeChannelType,
     setActiveChannelType,
@@ -252,7 +254,13 @@ export function ChatShell({
     submitLockRef,
     handleTextChange,
     insertMention,
-  } = chatState;
+  } = useChatState({
+    initialChannelType,
+    initialArrondissement,
+    initialZoneName,
+    initialRecipient,
+    initialMessage,
+  });
 
   const currentRoleLabel = getClerkRoleLabel(user);
   const clerkArrondissement = getClerkArrondissement(user);
@@ -279,6 +287,36 @@ export function ChatShell({
     recipientQuery,
     currentUserId: userId,
   });
+
+  const territoryLabel =
+    effectiveZone || (territoryFocus ? `${territoryFocus}e arrondissement` : null);
+  const recipientLabel = selectedRecipient?.display_name ?? selectedRecipient?.handle ?? null;
+  const discussionGuidance = getEmptyStateCopy(
+    activeChannelType,
+    locale,
+    recipientLabel,
+    territoryLabel,
+  );
+
+  const lastMessageAt = messages[messages.length - 1]?.created_at ?? null;
+  const metaItems: ChatMetaItem[] = [
+    {
+      label: locale === "fr" ? "Canal" : "Channel",
+      value: getChannelTitle(activeChannelType),
+    },
+    {
+      label: locale === "fr" ? "Audience" : "Audience",
+      value: discussionGuidance.audienceLabel,
+    },
+    {
+      label: locale === "fr" ? "Visibilité" : "Visibility",
+      value: discussionGuidance.visibilityLabel,
+    },
+    {
+      label: locale === "fr" ? "Activité" : "Activity",
+      value: formatRecentActivityLabel(locale, lastMessageAt),
+    },
+  ];
 
   useEffect(() => {
     if (scrollRef.current && viewMode === "messages") {
@@ -333,7 +371,7 @@ export function ChatShell({
                 quality: 0.8,
               })
             : file;
-          const fileExt = preparedFile.name.split(".").pop() || "jpg";
+          const fileExt = inferChatAttachmentExtension(preparedFile) ?? "bin";
           const fileName = `${userId}-${Math.random().toString(36).slice(2)}.${fileExt}`;
           const filePath = `${activeChannelType}/${fileName}`;
 
@@ -350,7 +388,8 @@ export function ChatShell({
           } = supabase.storage.from("chat-attachments").getPublicUrl(filePath);
 
           attachmentUrl = publicUrl;
-          attachmentType = preparedFile.type || file.type;
+          const inferredAttachmentType = inferChatAttachmentType(preparedFile);
+          attachmentType = inferredAttachmentType ?? (preparedFile.type || file.type || undefined);
         } catch (uploadError) {
           const appError = isAppError(uploadError)
             ? uploadError
@@ -483,12 +522,7 @@ export function ChatShell({
       !(activeChannelType === "territory" && !effectiveZone && territoryFocus === null),
   );
   const bugReportPagePath = pathname;
-  const emptyState = getEmptyStateCopy(
-    activeChannelType,
-    selectedRecipient?.display_name ?? selectedRecipient?.handle ?? null,
-    territoryFocus,
-    effectiveZone || null,
-  );
+  const emptyState = discussionGuidance;
   const sidebarChannels = CHAT_CHANNEL_ORDER.map((channelType) => {
     const definition = getChatChannelDefinition(channelType);
     const visual = CHANNEL_VISUALS[channelType];
@@ -556,21 +590,31 @@ export function ChatShell({
     setIsRecipientPickerOpen(true);
   };
 
+  const handleStarterPrompt = (prompt: string) => {
+    setMessage(prompt);
+    setShowMentions(false);
+    setSendError(null);
+    if (activeChannelType === "dm" && !selectedRecipient) {
+      setIsRecipientPickerOpen(true);
+    }
+  };
+
   return (
-    <div className="flex flex-col h-[700px] cmm-surface rounded-[2.5rem] border overflow-hidden shadow-2xl relative">
+    <div className="flex flex-col h-[700px] rounded-[2.5rem] border border-pink-200/20 overflow-hidden shadow-2xl relative bg-[linear-gradient(180deg,rgba(73,27,56,0.98),rgba(39,16,31,0.98))]">
       <div className="flex flex-1 overflow-hidden">
         <ChatSidebar
           channels={sidebarChannels}
           currentChannelType={activeChannelType}
           onSelectChannel={handleSelectChannel}
         />
-        <div className="flex-1 flex flex-col relative bg-white dark:bg-slate-950">
+        <div className="flex-1 flex flex-col relative bg-[rgba(255,248,251,0.96)] dark:bg-slate-950">
           <ChatHeader
             activeChannelType={activeChannelType}
             activeChannelLabel={activeChannelLabel}
             activeChannelDescription={activeChannelDescription}
             activeChannelIcon={ActiveChannelIcon}
             activeChannelAccentClass={activeChannelVisual.accentClass}
+            metaItems={metaItems}
             viewMode={viewMode}
             isBugReportChannel={isBugReportChannel}
             selectedRecipient={selectedRecipient}
@@ -603,10 +647,10 @@ export function ChatShell({
                   <div className="space-y-8 p-4">
                     {[...Array(3)].map((_, i) => (
                       <div key={i} className="flex items-start gap-4 animate-pulse">
-                        <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800" />
+                        <div className="w-10 h-10 rounded-2xl bg-pink-100 dark:bg-slate-800" />
                         <div className="flex-1 space-y-3">
-                          <div className="h-3 w-32 bg-slate-100 dark:bg-slate-800 rounded-full" />
-                          <div className="h-12 w-full bg-slate-50 dark:bg-slate-900 rounded-[1.5rem]" />
+                          <div className="h-3 w-32 bg-pink-100 dark:bg-slate-800 rounded-full" />
+                          <div className="h-12 w-full bg-pink-50 dark:bg-slate-900 rounded-[1.5rem]" />
                         </div>
                       </div>
                     ))}
@@ -633,10 +677,10 @@ export function ChatShell({
 
                 {feedState === "empty" && (
                   <div className="h-full flex items-center justify-center p-8">
-                    <div className="w-full max-w-md rounded-[2rem] border border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/60 p-6 text-center">
+                    <div className="w-full max-w-lg rounded-[2rem] border border-pink-100/40 bg-pink-50/80 dark:border-slate-800 dark:bg-slate-900/60 p-6 text-center">
                       <MessageSquare
                         size={48}
-                        className="mx-auto text-slate-400 dark:text-slate-500"
+                        className="mx-auto text-pink-400 dark:text-slate-500"
                       />
                       <h4 className="mt-4 text-lg font-black cmm-text-primary">
                         {emptyState.title}
@@ -644,15 +688,64 @@ export function ChatShell({
                       <p className="mt-2 text-sm cmm-text-secondary">
                         {emptyState.description}
                       </p>
-                      {activeChannelType === "dm" && !selectedRecipient ? (
-                        <button
-                          type="button"
-                          onClick={() => setIsRecipientPickerOpen(true)}
-                          className="mt-4 inline-flex items-center gap-2 rounded-full bg-violet-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-violet-500/20"
-                        >
-                          Choisir un membre
-                        </button>
-                      ) : null}
+                      <div className="mt-4 rounded-2xl border border-pink-100/40 bg-[rgba(255,248,251,0.96)] p-4 text-left shadow-sm dark:border-slate-800 dark:bg-slate-950/80">
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-pink-600">
+                          {emptyState.starterTitle}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {emptyState.starterPrompts.map((prompt) => (
+                            <button
+                              key={prompt}
+                              type="button"
+                              onClick={() => handleStarterPrompt(prompt)}
+                              className="rounded-full border border-pink-200/30 bg-pink-50 px-3 py-1.5 text-xs font-semibold text-pink-700 transition hover:border-pink-300 hover:bg-pink-100 hover:text-pink-800 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-pink-900/60 dark:hover:bg-pink-950/30 dark:hover:text-pink-300"
+                            >
+                              {prompt}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-4 rounded-2xl border border-pink-100/40 bg-pink-50/80 p-4 text-left dark:border-slate-800 dark:bg-slate-950/70">
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-pink-600">
+                            {locale === "fr" ? "Format recommandé" : "Recommended format"}
+                          </p>
+                          <p className="mt-2 text-sm font-semibold cmm-text-primary">
+                            {emptyState.messagePattern}
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-1.5">
+                            {emptyState.purposeTags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="inline-flex rounded-full border border-pink-200/30 bg-pink-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-pink-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="mt-3 text-xs cmm-text-secondary">
+                          {emptyState.composerHint}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <span className="rounded-full bg-pink-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-pink-700 dark:bg-slate-900 dark:text-slate-300">
+                            {emptyState.audienceLabel}
+                          </span>
+                          <span className="rounded-full bg-pink-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-pink-700 dark:bg-slate-900 dark:text-slate-300">
+                            {emptyState.visibilityLabel}
+                          </span>
+                          <span className="rounded-full bg-pink-100 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-pink-700 dark:bg-slate-900 dark:text-slate-300">
+                            {emptyState.channelGoal}
+                          </span>
+                        </div>
+                        {activeChannelType === "dm" && !selectedRecipient ? (
+                          <button
+                            type="button"
+                            onClick={() => setIsRecipientPickerOpen(true)}
+                            className="mt-4 inline-flex items-center gap-2 rounded-full bg-pink-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-pink-500/20"
+                          >
+                            Choisir un membre
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -665,6 +758,19 @@ export function ChatShell({
                   />
                 ))}
               </div>
+
+              {feedState !== "degraded" && feedState !== "empty" ? (
+                <div className="px-6 pb-4">
+                  <div className="flex items-center gap-3 rounded-[1.5rem] border border-pink-100/40 bg-[rgba(255,248,251,0.92)] px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
+                    <span className="rounded-full bg-pink-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-pink-700 dark:bg-slate-900 dark:text-slate-300">
+                      {discussionGuidance.channelGoal}
+                    </span>
+                    <p className="min-w-0 text-xs cmm-text-secondary">
+                      {discussionGuidance.composerHint}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
 
               <ChatComposer
                 activeChannelType={activeChannelType}
@@ -686,12 +792,12 @@ export function ChatShell({
                 dmSuggestions={dmSuggestions}
                 showMentions={showMentions}
                 mentionSuggestions={mentionSuggestions}
-              onInsertMention={insertMention}
-              onSubmit={handleSend}
-              onSelectRecipient={handleSelectRecipient}
-              onClearRecipient={handleClearRecipient}
-              canSubmit={canSubmitMessage}
-            />
+                onInsertMention={insertMention}
+                onSubmit={handleSend}
+                onSelectRecipient={handleSelectRecipient}
+                onClearRecipient={handleClearRecipient}
+                canSubmit={canSubmitMessage}
+              />
             </>
           )}
         </div>

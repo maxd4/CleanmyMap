@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { SignInButton, useUser } from "@clerk/nextjs";
 import { ArrowRight, Bug, Handshake, Lightbulb, ShieldAlert } from "lucide-react";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
@@ -235,8 +235,14 @@ function QuestionnaireCard({
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(questionnaire.fields.map((field) => [field.key, ""])),
   );
+  const [honeypot, setHoneypot] = useState("");
+  const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
   const [submitState, setSubmitState] = useState<SubmitState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setFormStartedAt(Date.now());
+  }, []);
 
   const canSubmit = questionnaire.fields.every((field) => {
     const value = values[field.key]?.trim() ?? "";
@@ -276,14 +282,20 @@ function QuestionnaireCard({
           ),
           pagePath: questionnairePagePath,
           source,
+          honeypot,
+          submittedAt: formStartedAt ?? Date.now(),
         }),
       });
 
       if (!response.ok) {
         const body = (await response.json().catch(() => null)) as
-          | { error?: string }
+          | { error?: string; message?: string }
           | null;
-        throw new Error(body?.error ?? (locale === "fr" ? "Impossible d'envoyer le questionnaire." : "Unable to send the questionnaire."));
+        throw new Error(
+          body?.message ??
+            body?.error ??
+            (locale === "fr" ? "Impossible d'envoyer le questionnaire." : "Unable to send the questionnaire."),
+        );
       }
 
       setSubmitState("success");
@@ -358,6 +370,17 @@ function QuestionnaireCard({
         </div>
       }
     >
+      <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden opacity-0" aria-hidden="true">
+        <label htmlFor={`feedback-website-${questionnaire.id}`}>Website</label>
+        <input
+          id={`feedback-website-${questionnaire.id}`}
+          name="website"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypot}
+          onChange={(event) => setHoneypot(event.target.value)}
+        />
+      </div>
       {isLoaded && !isSignedIn ? (
         <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
           <p className="text-sm font-medium text-slate-100">

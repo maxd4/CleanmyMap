@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from"react";
+import { useEffect, useState, type FormEvent } from"react";
+import { usePathname } from"next/navigation";
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
 import { InlineFieldError } from"@/components/ui/inline-field-error";
 import { ErrorMessage } from"@/components/ui/error-message";
@@ -17,18 +18,20 @@ export function DiscussionBugReportForm() {
  const [reportType, setReportType] = useState<"bug" |"idea">("bug");
  const [title, setTitle] = useState("");
  const [description, setDescription] = useState("");
+ const [honeypot, setHoneypot] = useState("");
+ const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
  const [submitState, setSubmitState] = useState<SubmitState>("idle");
  const [error, setError] = useState<AppError | null>(null);
  const [titleTouched, setTitleTouched] = useState(false);
  const [descriptionTouched, setDescriptionTouched] = useState(false);
  const [submitAttempted, setSubmitAttempted] = useState(false);
+ const pathname = usePathname();
 
- const pagePath = useMemo(() => {
- if (typeof window ==="undefined") {
- return"/sections/annuaire";
- }
- return window.location.pathname;
+ useEffect(() => {
+ setFormStartedAt(Date.now());
  }, []);
+
+ const pagePath = pathname ?? "/sections/annuaire";
 
  const titleError =
  (titleTouched || submitAttempted) && title.trim().length < 4
@@ -53,22 +56,30 @@ export function DiscussionBugReportForm() {
  title: title.trim(),
  description: description.trim(),
  pagePath,
+ honeypot,
+ submittedAt: formStartedAt ?? Date.now(),
  }),
  });
 
- if (!response.ok) {
- const body = (await response.json().catch(() => null)) as
- | { error?: string; kind?: string }
- | null;
- throw toAppError(
- new Error(body?.error ??"Impossible d'envoyer la demande."),
- {
- kind:
- body?.kind ==="validation" ? "validation" : body?.kind ==="permission" ? "permission" : "server",
- message: body?.error ??"Impossible d'envoyer la demande.",
- },
- );
- }
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as
+          | { error?: string; message?: string; kind?: string }
+          | null;
+        throw toAppError(
+        new Error(body?.message ?? body?.error ??"Impossible d'envoyer la demande."),
+        {
+        kind:
+            response.status === 429
+            ? "validation"
+            : body?.kind ==="validation"
+            ? "validation"
+            : body?.kind ==="permission"
+            ? "permission"
+            : "server",
+        message: body?.message ?? body?.error ??"Impossible d'envoyer la demande.",
+        },
+        );
+      }
 
  setSubmitState("success");
  setTitle("");
@@ -109,9 +120,20 @@ export function DiscussionBugReportForm() {
 
  return (
  <section
- id="discussion-bug-report-form"
- className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm"
+  id="discussion-bug-report-form"
+  className="rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm"
  >
+ <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden opacity-0" aria-hidden="true">
+ <label htmlFor="bug-report-website">Website</label>
+ <input
+ id="bug-report-website"
+ name="website"
+ tabIndex={-1}
+ autoComplete="off"
+ value={honeypot}
+ onChange={(event) => setHoneypot(event.target.value)}
+ />
+ </div>
  <h3 className="cmm-text-small font-semibold text-amber-900">
  {fr ?"Remonter un bug ou une idée produit" :"Report a bug or product idea"}
  </h3>
