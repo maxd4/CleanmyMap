@@ -424,13 +424,27 @@ export function ActionsHistoryList() {
  )}
 
   {filteredItems.length === 0 ? (
-    <div className="mt-8 text-center space-y-3 p-8 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
-      <p className="cmm-text-small font-medium cmm-text-secondary">
-        Aucune action ne correspond à la recherche ou aux filtres actifs.
-      </p>
-      <p className="cmm-text-caption cmm-text-muted">
-        Essayez d&apos;élargir la période, de changer de lieu ou de repartir d&apos;une recherche plus large.
-      </p>
+    <div className="mt-8 flex flex-col items-center justify-center space-y-4 p-12 border-2 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50/50 text-center">
+      <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100">
+        <svg className="w-8 h-8 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      </div>
+      <div className="max-w-xs space-y-2">
+        <p className="cmm-text-small font-bold cmm-text-primary">
+          Aucun enregistrement trouvé
+        </p>
+        <p className="cmm-text-caption cmm-text-secondary leading-relaxed">
+          Il semble que vous n&apos;ayez pas encore d&apos;actions correspondant à ces filtres. Commencez par déclarer votre première action terrain !
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={() => window.location.href = "/actions/new"}
+        className="mt-2 inline-flex items-center gap-2 rounded-full bg-emerald-600 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5 hover:bg-emerald-500 active:translate-y-0"
+      >
+        Déclarer une action
+      </button>
     </div>
   ) : null}
  </div>

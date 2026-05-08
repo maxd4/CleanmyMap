@@ -1,0 +1,514 @@
+import { ArrowRight, LockKeyhole, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { PAGE_COPY, buildAccessLinks } from "../access-screen-constants";
+import type { PilotageLocale } from "../access-screen-constants";
+import { formatDateTime, severityTone, reliabilityTone, decisionTone, renderMetricTone } from "../access-screen-utils";
+import type { AppProfile } from "@/lib/profiles";
+import { getProfileLabel, getProfileSubtitle, isAdminLikeProfile } from "@/lib/profiles";
+import type { PilotageOverview } from "@/lib/pilotage/overview";
+import { NavigationGrid } from "@/components/ui/navigation-grid";
+
+export function PilotageOverviewPage({
+  locale,
+  profile,
+  overview,
+}: {
+  locale: PilotageLocale;
+  profile: AppProfile;
+  overview: PilotageOverview | null;
+}) {
+  const copy = PAGE_COPY[locale];
+  const overviewLinks = buildAccessLinks(profile, locale);
+  const lastUpdatedAt = overview ? formatDateTime(overview.generatedAt, locale) : null;
+  const topZones = overview?.zones.slice(0, 3) ?? [];
+  const topPriorities = overview?.priorities ?? [];
+  const kpis = overview?.summary.kpis ?? [];
+  const accessAllowed = isAdminLikeProfile(profile) || profile === "coordinateur" || profile === "max";
+
+  return (
+    <section className="w-full space-y-6 p-4 md:p-8">
+      <div className="relative overflow-hidden rounded-[2.25rem] border border-stone-400/18 bg-[linear-gradient(180deg,rgba(44,28,15,0.96),rgba(52,34,18,0.99))] p-6 text-white shadow-[0_24px_56px_-32px_rgba(69,45,28,0.18)] md:p-8">
+        <div className="absolute inset-0 opacity-70">
+          <div className="absolute -right-12 top-0 h-48 w-48 rounded-full bg-orange-900/10 blur-3xl" />
+          <div className="absolute left-0 top-10 h-56 w-56 rounded-full bg-stone-800/8 blur-3xl" />
+        </div>
+
+        <div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-orange-100">
+                <Sparkles size={14} aria-hidden="true" />
+                {locale === "fr" ? "Bloc Piloter" : "Pilot block"}
+              </span>
+              <span className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
+                {getProfileLabel(profile, locale)}
+              </span>
+              <span className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
+                {getProfileSubtitle(profile, locale)}
+              </span>
+            </div>
+
+            <div className="max-w-3xl space-y-4">
+              <h1 className="text-4xl font-black tracking-tight text-white md:text-6xl">
+                {copy.title}
+              </h1>
+              <p className="max-w-2xl text-base leading-relaxed text-white/78 md:text-lg">
+                {copy.description}
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {kpis.slice(0, 3).map((kpi) => (
+                <article
+                  key={kpi.id}
+                  className="rounded-2xl border border-white/12 bg-white/8 p-4 backdrop-blur-sm"
+                >
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-100/70">
+                    {kpi.label}
+                  </p>
+                  <p className="mt-2 text-2xl font-black tracking-tight text-white">
+                    {kpi.value}
+                  </p>
+                  <p className="mt-1 text-sm text-white/72">
+                    {locale === "fr" ? "N-1" : "Previous"}: {kpi.previousValue}
+                  </p>
+                  <div
+                    className={`mt-3 inline-flex rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] ${decisionTone(kpi.interpretation)}`}
+                  >
+                    {kpi.deltaAbsolute} / {kpi.deltaPercent}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <aside className="rounded-[1.75rem] border border-white/12 bg-[rgba(69,45,28,0.84)] p-5 shadow-[0_18px_40px_-28px_rgba(69,45,28,0.26)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-orange-100/70">
+                  {copy.summaryEyebrow}
+                </p>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-white">
+                  {overview?.summary.alert.title ?? (locale === "fr" ? "Synthèse indisponible" : "Summary unavailable")}
+                </h2>
+              </div>
+              {overview ? (
+                <span
+                  className={`rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] ${severityTone(overview.summary.alert.severity)}`}
+                >
+                  {overview.summary.alert.severity}
+                </span>
+              ) : (
+                <LockKeyhole className="h-8 w-8 text-orange-100" aria-hidden="true" />
+              )}
+            </div>
+
+            <p className="mt-4 text-sm leading-relaxed text-white/82">
+              {overview?.summary.alert.detail ??
+                (locale === "fr"
+                  ? "Les indicateurs complets seront visibles dès qu'une source pilotage est disponible."
+                  : "Full indicators will be visible once a pilotage source is available.")}
+            </p>
+
+            {overview ? (
+              <div className="mt-5 rounded-2xl border border-white/12 bg-black/10 p-4">
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-100/70">
+                  {locale === "fr" ? "Action recommandée" : "Recommended action"}
+                </p>
+                <h3 className="mt-2 text-lg font-bold text-white">
+                  {overview.summary.recommendedAction.label}
+                </h3>
+                <p className="mt-1 text-sm leading-relaxed text-white/72">
+                  {overview.summary.recommendedAction.reason}
+                </p>
+                <Link
+                  href={overview.summary.recommendedAction.href}
+                  className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-black text-slate-900 transition hover:-translate-y-[1px] hover:bg-orange-50"
+                >
+                  {locale === "fr" ? "Ouvrir" : "Open"}
+                  <ArrowRight size={16} aria-hidden="true" />
+                </Link>
+              </div>
+            ) : null}
+
+            <div className="mt-4 rounded-2xl border border-white/12 bg-black/10 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-100/70">
+                {locale === "fr" ? "Dernière mise à jour" : "Last update"}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-white/90">
+                {lastUpdatedAt ?? (locale === "fr" ? "Indisponible" : "Unavailable")}
+              </p>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      {overview ? (
+        <>
+          <section className="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm md:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+                  {copy.summaryEyebrow}
+                </p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight cmm-text-primary md:text-3xl">
+                  {locale === "fr" ? "Lecture 30 jours, sans bruit" : "30-day reading, without noise"}
+                </h2>
+              </div>
+              <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-stone-700">
+                {locale === "fr"
+                  ? `Généré le ${formatDateTime(overview.generatedAt, locale)}`
+                  : `Generated ${formatDateTime(overview.generatedAt, locale)}`}
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {overview.summary.kpis.map((kpi) => (
+                <article
+                  key={kpi.id}
+                  className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-5"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+                      {kpi.label}
+                    </p>
+                    <span
+                      className={`rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] ${renderMetricTone(kpi.interpretation)}`}
+                    >
+                      {kpi.interpretation}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-3xl font-black tracking-tight cmm-text-primary">
+                    {kpi.value}
+                  </p>
+                  <p className="mt-1 text-sm cmm-text-secondary">
+                    {locale === "fr" ? "N-1" : "Previous"} {kpi.previousValue}
+                  </p>
+                  <div className="mt-4 grid gap-2 text-[11px] font-black uppercase tracking-[0.16em]">
+                    <div className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-stone-700">
+                      {locale === "fr" ? "Delta absolu" : "Absolute delta"}:{" "}
+                      <span className="text-stone-900">{kpi.deltaAbsolute}</span>
+                    </div>
+                    <div className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-stone-700">
+                      {locale === "fr" ? "Delta relatif" : "Relative delta"}:{" "}
+                      <span className="text-stone-900">{kpi.deltaPercent}</span>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+            <article className="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm md:p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+                    {copy.windowsEyebrow}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight cmm-text-primary">
+                    {locale === "fr" ? "Fiabilité et fenêtres comparées" : "Reliability and compared windows"}
+                  </h2>
+                </div>
+                <p className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-stone-700">
+                  {locale === "fr" ? `${overview.periodDays} jours` : `${overview.periodDays} days`}
+                </p>
+              </div>
+
+              <div className="mt-5 grid gap-4 xl:grid-cols-3">
+                {(["30", "90", "365"] as const).map((windowKey) => {
+                  const windowResult = overview.comparisonsByWindow[windowKey];
+                  return (
+                    <article
+                      key={windowKey}
+                      className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-stone-500">
+                          {windowKey === "365" ? "12 mois" : `${windowKey} jours`}
+                        </p>
+                        <span
+                          className={`rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] ${reliabilityTone(windowResult.current.reliability.level)}`}
+                        >
+                          {windowResult.current.reliability.level}
+                        </span>
+                      </div>
+                      <p className="mt-3 text-sm leading-relaxed cmm-text-secondary">
+                        {windowResult.current.reliability.reason}
+                      </p>
+                      <div className="mt-4 grid gap-2 text-[11px] font-black uppercase tracking-[0.16em]">
+                        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-stone-700">
+                          {locale === "fr" ? "Complétude" : "Completeness"}:{" "}
+                          <span className="text-stone-900">
+                            {windowResult.current.reliability.completeness.toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-stone-700">
+                          {locale === "fr" ? "Géoloc" : "Geoloc"}:{" "}
+                          <span className="text-stone-900">
+                            {windowResult.current.reliability.geoloc.toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-stone-700">
+                          {locale === "fr" ? "Fraîcheur" : "Freshness"}:{" "}
+                          <span className="text-stone-900">
+                            {windowResult.current.reliability.freshness.toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </article>
+
+            <article className="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm md:p-6">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+                {copy.methodsEyebrow}
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight cmm-text-primary">
+                {locale === "fr" ? "Métriques et limites visibles" : "Visible metrics and limits"}
+              </h2>
+              <div className="mt-5 space-y-3">
+                {overview.methods.map((method) => (
+                  <article key={method.id} className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+                          {method.kpi}
+                        </p>
+                        <p className="mt-2 text-sm cmm-text-secondary">
+                          <span className="font-bold cmm-text-primary">Formule:</span> {method.formula}
+                        </p>
+                        <p className="mt-1 text-sm cmm-text-secondary">
+                          <span className="font-bold cmm-text-primary">Source:</span> {method.source}
+                        </p>
+                        <p className="mt-1 text-sm cmm-text-secondary">
+                          <span className="font-bold cmm-text-primary">Fréquence:</span> {method.recalc}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs uppercase tracking-[0.16em] text-stone-500">
+                      {locale === "fr" ? "Limites" : "Limits"}: {method.limits}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </article>
+          </section>
+
+          <section className="grid gap-4 lg:grid-cols-[1.02fr_0.98fr]">
+            <article className="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm md:p-6">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+                {copy.prioritiesEyebrow}
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight cmm-text-primary">
+                {locale === "fr" ? "Ce qu'il faut traiter maintenant" : "What should be handled now"}
+              </h2>
+              <div className="mt-5 grid gap-4">
+                {topPriorities.length > 0 ? (
+                  topPriorities.map((priority) => (
+                    <article
+                      key={priority.id}
+                      className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span
+                              className={`rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] ${severityTone(priority.severity)}`}
+                            >
+                              {priority.severity}
+                            </span>
+                            <span className="rounded-full border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-stone-700">
+                              score {priority.score.toFixed(1)}
+                            </span>
+                          </div>
+                          <h3 className="text-lg font-black tracking-tight cmm-text-primary">
+                            {priority.title}
+                          </h3>
+                          <p className="text-sm leading-relaxed cmm-text-secondary">
+                            {priority.reason}
+                          </p>
+                        </div>
+                        <Link
+                          href={priority.recommendedAction.href}
+                          className="inline-flex min-h-10 items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-slate-800"
+                        >
+                          {priority.recommendedAction.label}
+                          <ArrowRight size={15} aria-hidden="true" />
+                        </Link>
+                      </div>
+                      <div className="mt-4 grid gap-2 text-sm">
+                        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2">
+                          <span className="font-bold text-stone-900">
+                            {locale === "fr" ? "Impact estimé" : "Estimated impact"}:
+                          </span>{" "}
+                          <span className="text-stone-700">{priority.impactEstimate}</span>
+                        </div>
+                        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2">
+                          <span className="font-bold text-stone-900">
+                            {locale === "fr" ? "Responsable suggéré" : "Suggested owner"}:
+                          </span>{" "}
+                          <span className="text-stone-700">{priority.suggestedOwner}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {priority.evidence.map((item) => (
+                            <span
+                              key={item}
+                              className="inline-flex rounded-full border border-stone-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-stone-600"
+                            >
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <p className="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-sm cmm-text-secondary">
+                    {locale === "fr"
+                      ? "Aucune priorité majeure sur la fenêtre courante."
+                      : "No major priority detected on the current window."}
+                  </p>
+                )}
+              </div>
+            </article>
+
+            <article className="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm md:p-6">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+                {copy.prioritiesEyebrow}
+              </p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight cmm-text-primary">
+                {locale === "fr" ? "Zones sous pression" : "Areas under pressure"}
+              </h2>
+              <div className="mt-5 space-y-3">
+                {topZones.length > 0 ? (
+                  topZones.map((zone) => (
+                    <article
+                      key={zone.area}
+                      className="rounded-[1.5rem] border border-stone-200 bg-stone-50 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-lg font-black tracking-tight cmm-text-primary">
+                            {zone.area}
+                          </p>
+                          <p className="mt-1 text-sm leading-relaxed cmm-text-secondary">
+                            {zone.justification}
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded-full border px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] ${decisionTone(zone.urgency === "critique" ? "negative" : zone.urgency === "elevee" ? "neutral" : "positive")}`}
+                        >
+                          {zone.urgency}
+                        </span>
+                      </div>
+                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm">
+                          <span className="font-bold text-stone-900">Score</span>{" "}
+                          <span className="text-stone-700">{zone.normalizedScore.toFixed(1)}</span>
+                        </div>
+                        <div className="rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm">
+                          <span className="font-bold text-stone-900">
+                            {locale === "fr" ? "Action" : "Action"}
+                          </span>{" "}
+                          <span className="text-stone-700">{zone.recommendedAction}</span>
+                        </div>
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <p className="rounded-2xl border border-stone-200 bg-stone-50 p-4 text-sm cmm-text-secondary">
+                    {locale === "fr"
+                      ? "Aucune zone prioritaire détectée sur la fenêtre courante."
+                      : "No priority area detected on the current window."}
+                  </p>
+                )}
+              </div>
+            </article>
+          </section>
+
+          <section className="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm md:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+                  {copy.accessEyebrow}
+                </p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight cmm-text-primary">
+                  {locale === "fr" ? "Accès directs aux vues utiles" : "Direct access to useful views"}
+                </h2>
+              </div>
+              <div className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-stone-700">
+                {overview.contracts.length} {locale === "fr" ? "contrats" : "contracts"}
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <NavigationGrid
+                columns={{ default: 1, sm: 2, md: 3, xl: accessAllowed ? 5 : 4 }}
+                items={overviewLinks}
+              />
+            </div>
+          </section>
+
+          <section className="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm md:p-6">
+            <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
+              {locale === "fr" ? "Rappel méthodologique" : "Method reminder"}
+            </p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight cmm-text-primary">
+              {locale === "fr"
+                ? "Le contrôle reste lisible, la preuve reste séparée"
+                : "Control stays readable, proof stays separate"}
+            </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-relaxed cmm-text-secondary">
+              {locale === "fr"
+                ? "Le bloc Piloter sert à la supervision transverse. Les preuves détaillées, les rapports longs et les exports institutionnels restent dans leurs rubriques dédiées pour éviter de mélanger décision, observation et exécution."
+                : "The Pilot block is for transverse supervision. Detailed evidence, long reports and institutional exports stay in their dedicated sections so that decision, observation and execution remain separate."}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Link
+                href="/reports"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-slate-800"
+              >
+                {locale === "fr" ? "Ouvrir les rapports" : "Open reports"}
+                <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+              <Link
+                href="/admin"
+                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-sm font-black cmm-text-primary transition hover:-translate-y-[1px] hover:border-amber-300"
+              >
+                {locale === "fr" ? "Aller à l'administration" : "Go to administration"}
+                <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            </div>
+          </section>
+        </>
+      ) : (
+        <section className="rounded-[1.75rem] border border-stone-200 bg-white p-5 shadow-sm md:p-6">
+          <p className="text-sm cmm-text-secondary">
+            {locale === "fr"
+              ? "La source de pilotage n'a pas pu être chargée. La structure du cockpit reste disponible, mais les chiffres détaillés sont temporairement indisponibles."
+              : "The pilotage source could not be loaded. The cockpit structure remains available, but detailed figures are temporarily unavailable."}
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              href="/dashboard"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-slate-800"
+            >
+              {locale === "fr" ? "Tableau de bord" : "Dashboard"}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+            <Link
+              href="/reports"
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-sm font-black cmm-text-primary transition hover:-translate-y-[1px] hover:border-amber-300"
+            >
+              {locale === "fr" ? "Rapports" : "Reports"}
+              <ArrowRight size={16} aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+      )}
+    </section>
+  );
+}

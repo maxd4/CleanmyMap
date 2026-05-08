@@ -1,3 +1,8 @@
+import type {
+  CleanupSupportLevel,
+  CleanupWasteType,
+} from "./event-ops";
+
 export type EventConversionRow = {
   eventId: string;
   title: string;
@@ -8,6 +13,11 @@ export type EventConversionRow = {
   rsvpMaybe: number;
   rsvpNo: number;
   attendanceCount: number | null;
+  cleanupObjective: string | null;
+  cleanupZone: string | null;
+  cleanupLogisticsNeeds: string | null;
+  cleanupSupportLevel: CleanupSupportLevel | null;
+  cleanupWasteTypesExpected: CleanupWasteType[];
   linkedActions: number;
   fillRate: number | null;
   rsvpToAttendanceRate: number | null;

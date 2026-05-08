@@ -3,17 +3,16 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
-  --background: #f7fbfc; /* Mixed canvas: light base with cool gradients */
+  --background: #fafaf9;
   --foreground: #0f172a;
-  --accent-primary: #10b981; /* Emerald */
+  --accent-primary: #10b981;
   --accent-vibrant: #38bdf8;
   --accent-soft: rgba(16, 185, 129, 0.08);
   --slate-deep: #0f172a;
 
-  /* Tokens sémantiques (Stabilisés sur thème mixte) */
   --bg-canvas: var(--background);
-  --bg-elevated: rgba(255, 255, 255, 0.8);
-  --bg-muted: rgba(240, 249, 255, 0.9);
+  --bg-elevated: #ffffff;
+  --bg-muted: #f5f5f4;
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
@@ -25,9 +24,9 @@
   --action-primary-bg: rgb(16 185 129);
   --action-primary-text: #ffffff;
   --action-primary-hover: rgb(5 150 105);
-  --action-secondary-bg: rgba(255, 255, 255, 0.9);
+  --action-secondary-bg: #ffffff;
   --action-secondary-text: #0f172a;
-  --action-secondary-hover: rgba(14, 165, 233, 0.08);
+  --action-secondary-hover: rgba(15, 23, 42, 0.04);
 
   /* ============================================================
      TYPOGRAPHY TOKENS - 1 SEULE FONT FAMILY (Inter)
@@ -702,12 +701,7 @@ body {
 }
 
 body {
-  /* 3-point mesh gradient, background matches Emerald/Cyan theme */
-  background: 
-    radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 50% 10%, rgba(16, 185, 129, 0.04) 0%, transparent 50%),
-    var(--background);
+  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-base);
 }
@@ -719,22 +713,12 @@ body {
 }
 
 body {
-  background:
-    radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.14) 0%, transparent 34%),
-    radial-gradient(circle at 82% 18%, rgba(56, 189, 248, 0.16) 0%, transparent 32%),
-    radial-gradient(circle at 50% 95%, rgba(34, 197, 94, 0.08) 0%, transparent 38%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 252, 255, 0.98) 100%),
-    var(--background);
+  background: var(--background);
   color: var(--foreground);
 }
 
 html[data-theme="dark"] body {
-  /* 3-point mesh gradient for dark mode */
-  background:
-    radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 80% 80%, rgba(6, 182, 212, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 50% 10%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
-    var(--background);
+  background: var(--background);
   color: var(--foreground);
 }
 
@@ -1057,52 +1041,59 @@ html[data-theme="dark"][data-display-mode="sobre"] .cmm-sober {
    BLOCK ACCENTS - Classes utilitaires par bloc
    ============================================================ */
 
-/* Classes utilitaires pour accents par bloc - usage rapide */
+/* Classes utilitaires pour accents par bloc - source: BLOCK_ACCENT_MAP */
 .cmm-accent-home {
-  @apply bg-slate-50/80 border-slate-200/80 text-slate-700;
+  @apply bg-amber-50/80 border-amber-300/80 text-amber-900;
 }
 
 .cmm-accent-act {
-  @apply bg-amber-50/80 border-amber-200/80 text-amber-800;
+  @apply bg-emerald-50/80 border-emerald-300/80 text-emerald-900;
 }
 
 .cmm-accent-visualize {
-  @apply bg-sky-50/80 border-sky-200/80 text-sky-800;
+  @apply bg-sky-50/80 border-sky-300/80 text-sky-900;
 }
 
 .cmm-accent-impact {
-  @apply bg-emerald-50/80 border-emerald-200/80 text-emerald-800;
+  @apply bg-red-50/80 border-red-300/80 text-red-900;
 }
 
 .cmm-accent-network {
-  @apply bg-violet-50/80 border-violet-200/80 text-violet-800;
+  @apply bg-indigo-50/80 border-indigo-300/80 text-indigo-900;
+}
+
+.cmm-accent-connect {
+  @apply bg-pink-50/80 border-pink-300/80 text-pink-900;
 }
 
 .cmm-accent-learn {
-  @apply bg-rose-50/80 border-rose-200/80 text-rose-800;
+  @apply bg-yellow-50/80 border-yellow-300/80 text-yellow-900;
 }
 
 .cmm-accent-pilot {
-  @apply bg-indigo-50/80 border-indigo-200/80 text-indigo-800;
+  @apply bg-amber-100/80 border-amber-400/80 text-amber-950;
 }
 
 /* Classes pour dots d'accent par bloc */
-.cmm-dot-home { @apply bg-slate-400; }
-.cmm-dot-act { @apply bg-amber-400; }
-.cmm-dot-visualize { @apply bg-sky-400; }
-.cmm-dot-impact { @apply bg-emerald-400; }
-.cmm-dot-network { @apply bg-violet-400; }
-.cmm-dot-learn { @apply bg-rose-400; }
-.cmm-dot-pilot { @apply bg-indigo-400; }
+.cmm-dot-home { @apply bg-amber-500; }
+.cmm-dot-act { @apply bg-emerald-500; }
+.cmm-dot-visualize { @apply bg-sky-500; }
+.cmm-dot-impact { @apply bg-red-500; }
+.cmm-dot-network { @apply bg-indigo-500; }
+.cmm-dot-connect { @apply bg-pink-500; }
+.cmm-dot-learn { @apply bg-yellow-500; }
+.cmm-dot-pilot { @apply bg-amber-700; }
 
 /* Classes pour rings d'accent par bloc */
-.cmm-ring-home { @apply ring-slate-200; }
-.cmm-ring-act { @apply ring-amber-200; }
-.cmm-ring-visualize { @apply ring-sky-200; }
-.cmm-ring-impact { @apply ring-emerald-200; }
-.cmm-ring-network { @apply ring-violet-200; }
-.cmm-ring-learn { @apply ring-rose-200; }
-.cmm-ring-pilot { @apply ring-indigo-200; }
+.cmm-ring-home { @apply ring-amber-300; }
+.cmm-ring-act { @apply ring-emerald-300; }
+.cmm-ring-visualize { @apply ring-sky-300; }
+.cmm-ring-impact { @apply ring-red-300; }
+.cmm-ring-network { @apply ring-indigo-300; }
+.cmm-ring-connect { @apply ring-pink-300; }
+.cmm-ring-learn { @apply ring-yellow-300; }
+.cmm-ring-pilot { @apply ring-amber-400; }
+
 
 /* ============================================================
    P3 POLISH - Accessibilité, densité mobile, typographie

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Zap } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
+import { useAuth, useUser } from "@clerk/nextjs";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { computeNextSRSState, type SRSQuality, type SRSStats } from "@/lib/gamification/quiz-srs";
 import { loadQuizSRSData, saveQuizSRSState } from "@/lib/services/quiz-srs-service";
@@ -240,6 +240,7 @@ function getNextDifficulty(
 }
 
 export function EnvironmentalQuiz() {
+  const { getToken } = useAuth();
   const { user } = useUser();
   const { locale } = useSitePreferences();
   const [srsData, setSrsData] = useState<Record<string, SRSStats>>({});
@@ -255,13 +256,13 @@ export function EnvironmentalQuiz() {
   useEffect(() => {
     async function init() {
       const questionIds = QUIZ_QUESTIONS.map((q) => q.id);
-      const data = await loadQuizSRSData(user?.id || null, questionIds);
+      const data = await loadQuizSRSData(user?.id || null, questionIds, getToken);
       setSrsData(data);
       setLoading(false);
     }
 
     init();
-  }, [user?.id]);
+  }, [getToken, user?.id]);
 
   const filteredQuestions = useMemo(() => {
     if (!selectedDifficulty) return [];
@@ -300,7 +301,7 @@ export function EnvironmentalQuiz() {
     const nextStats = computeNextSRSState(currentStats, quality);
 
     setSrsData((prev) => ({ ...prev, [question.id]: nextStats }));
-    await saveQuizSRSState(user?.id || null, nextStats);
+    await saveQuizSRSState(user?.id || null, nextStats, getToken);
   };
 
   const checkAnswer = () => {

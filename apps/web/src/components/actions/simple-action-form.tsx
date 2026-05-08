@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react'
 import { SimpleActionFormData, FormErrors, validateSimpleForm, hasErrors } from './simple-form-validation'
 import { useFormAnalytics } from '@/hooks/use-form-analytics'
 import { useMetricsTracking } from '@/lib/metrics'
+import { useSubmissionLock } from '@/hooks/use-submission-lock'
 
 const initialForm: SimpleActionFormData = {
  title: '',
@@ -26,6 +27,9 @@ export function SimpleActionForm() {
  const [errors, setErrors] = useState<FormErrors>({})
  const [isSubmitting, setIsSubmitting] = useState(false)
  const [submitSuccess, setSubmitSuccess] = useState(false)
+ const [honeypot, setHoneypot] = useState("")
+ const [formStartedAt, setFormStartedAt] = useState<number | null>(null)
+ const { acquire, release } = useSubmissionLock()
  
  const analytics = useFormAnalytics({ 
  formId: 'action-declaration', 
@@ -38,27 +42,56 @@ useEffect(() => {
  analytics.trackFormStart()
  }, [analytics])
 
+ useEffect(() => {
+ setFormStartedAt(Date.now())
+ }, [])
+
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault()
+
+ if (!acquire()) {
+   setErrors((prev) => ({
+     ...prev,
+     form: "Un envoi est déjà en cours. Réessayez dans un instant.",
+   }))
+   return
+ }
  
  const formErrors = validateSimpleForm(form)
  setErrors(formErrors)
  
  if (hasErrors(formErrors)) {
- return
+   release()
+  return
  }
  
  setIsSubmitting(true)
  
  try {
+ const body = new FormData()
+ body.append("title", form.title)
+ body.append("description", form.description)
+ body.append("location", form.location)
+ body.append("date", form.date)
+ body.append("participantCount", String(form.participantCount))
+ body.append("wasteAmount", String(form.wasteAmount))
+ body.append("organizerName", form.organizerName)
+ body.append("organizerEmail", form.organizerEmail)
+ body.append("isPublic", String(form.isPublic))
+ body.append("honeypot", honeypot)
+ body.append("submittedAt", String(formStartedAt ?? Date.now()))
+ for (const photo of form.photos.slice(0, 10)) {
+   body.append("photos", photo)
+ }
+
  const response = await fetch('/api/actions/simple', {
  method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify(form)
+ body,
  })
  
  if (!response.ok) {
-      throw new Error('Une erreur réseau a empêché l&apos;envoi de votre déclaration. Veuillez réessayer.')
+      const payload = (await response.json().catch(() => null)) as { error?: string; message?: string } | null
+      throw new Error(payload?.message || payload?.error || "Une erreur réseau a empêché l'envoi de votre déclaration. Veuillez réessayer.")
  }
  
  await response.json()
@@ -66,20 +99,32 @@ useEffect(() => {
  metrics.complete()
  setSubmitSuccess(true)
  setForm(initialForm)
+ setErrors({})
  } catch (error) {
  console.error('Submission error:', error)
-    setErrors({ title: 'Impossible d&apos;enregistrer l&apos;action. Vérifiez votre connexion et les champs obligatoires.' })
+    setErrors({
+      form: error instanceof Error
+        ? error.message
+        : "Impossible d'enregistrer l'action. Vérifiez votre connexion et les champs obligatoires."
+    })
  } finally {
  setIsSubmitting(false)
+ release()
  }
  }
 
  const updateForm = <K extends keyof SimpleActionFormData>(field: K, value: SimpleActionFormData[K]) => {
  setForm(prev => ({ ...prev, [field]: value }))
  // Clear error when user starts typing
- if (errors[field as keyof FormErrors]) {
- setErrors(prev => ({ ...prev, [field]: undefined }))
+ if (errors.form || errors[field as keyof FormErrors]) {
+ setErrors(prev => ({ ...prev, form: undefined, [field]: undefined }))
  }
+ }
+
+ const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+   const nextFiles = Array.from(event.target.files || []).slice(0, 10)
+   setForm((current) => ({ ...current, photos: nextFiles }))
+   setErrors((prev) => ({ ...prev, photos: undefined, form: undefined }))
  }
 
  if (submitSuccess) {
@@ -98,6 +143,18 @@ useEffect(() => {
  return (
  <CmmCard className="max-w-2xl mx-auto">
  <form onSubmit={handleSubmit} className="space-y-6">
+ {errors.form ? <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 cmm-text-small text-amber-900">{errors.form}</p> : null}
+ <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden opacity-0" aria-hidden="true">
+ <label htmlFor="simple-action-website">Website</label>
+ <input
+ id="simple-action-website"
+ name="website"
+ tabIndex={-1}
+ autoComplete="off"
+ value={honeypot}
+ onChange={(e) => setHoneypot(e.target.value)}
+ />
+ </div>
  <div className="space-y-4">
  <h2 className="text-2xl font-bold">Déclarer une action de dépollution</h2>
  
@@ -207,10 +264,11 @@ useEffect(() => {
  id="action-photos"
  type="file"
  multiple
- accept="image/*"
- onChange={(e) => updateForm('photos', Array.from(e.target.files || []))}
+ accept="image/jpeg,image/png,image/webp"
+ onChange={handlePhotoChange}
  className="w-full p-3 border rounded-lg"
  />
+ {errors.photos && <p className="text-red-500 cmm-text-small mt-1">{errors.photos}</p>}
  </div>
 
  {/* Organizer Name */}

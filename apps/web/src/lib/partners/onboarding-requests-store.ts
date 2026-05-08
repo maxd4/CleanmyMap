@@ -73,6 +73,11 @@ export function normalizeStoredPartnerOnboardingRequest(
   const organizationName =
     typeof record["organizationName"] === "string" ? record["organizationName"] : "";
   const organizationType = record["organizationType"];
+  const partnerScope =
+    record["partnerScope"] === "national" ||
+    record["partnerScope"] === "france"
+      ? record["partnerScope"]
+      : "local";
   const legalIdentity =
     typeof record["legalIdentity"] === "string" ? record["legalIdentity"] : "";
   const rawContributionTypes = record["contributionTypes"];
@@ -113,9 +118,12 @@ export function normalizeStoredPartnerOnboardingRequest(
     status,
     organizationName,
     organizationType,
+    partnerScope,
     legalIdentity,
     coverage,
     contributionTypes,
+    relayActions:
+      typeof record["relayActions"] === "string" ? record["relayActions"] : "",
     availability,
     contactName: typeof record["contactName"] === "string" ? record["contactName"] : "",
     contactChannel: typeof record["contactChannel"] === "string" ? record["contactChannel"] : "",
@@ -171,9 +179,11 @@ function toSupabaseRow(record: PartnerOnboardingRequestRecord): Record<string, u
     submitted_by_email: record.submittedByEmail,
     organization_name: record.organizationName,
     organization_type: record.organizationType,
+    partner_scope: record.partnerScope,
     legal_identity: record.legalIdentity,
     coverage: record.coverage,
     contribution_types: record.contributionTypes,
+    relay_actions: record.relayActions,
     availability: record.availability,
     contact_name: record.contactName,
     contact_channel: record.contactChannel,

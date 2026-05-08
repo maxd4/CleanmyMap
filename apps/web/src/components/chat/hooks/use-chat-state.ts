@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useRef,
   useState,
   type ChangeEvent,
@@ -15,6 +16,9 @@ import type { ChatUser } from "../chat-types";
 type UseChatStateParams = {
   initialChannelType: ChatChannelType;
   initialArrondissement?: number;
+  initialZoneName?: string | null;
+  initialRecipient?: ChatUser | null;
+  initialMessage?: string;
 };
 
 export type UseChatStateModel = {
@@ -58,11 +62,14 @@ export type UseChatStateModel = {
 export function useChatState({
   initialChannelType,
   initialArrondissement,
+  initialZoneName,
+  initialRecipient,
+  initialMessage,
 }: UseChatStateParams): UseChatStateModel {
   const [activeChannelType, setActiveChannelTypeState] =
     useState<ChatChannelType>(initialChannelType);
   const [viewMode, setViewMode] = useState<"messages" | "graph">("messages");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialMessage ?? "");
   const [isSending, setIsSending] = useState(false);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionQuery, setMentionQuery] = useState("");
@@ -73,7 +80,7 @@ export function useChatState({
   const [newHandle, setNewHandle] = useState("");
   const [recipientQuery, setRecipientQuery] = useState("");
   const [selectedRecipient, setSelectedRecipient] = useState<ChatUser | null>(
-    null,
+    initialRecipient ?? null,
   );
   const [isRecipientPickerOpen, setIsRecipientPickerOpen] = useState(
     initialChannelType === "dm",
@@ -83,56 +90,64 @@ export function useChatState({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const submitLockRef = useRef(false);
 
-  const selectedZone = initialArrondissement
-    ? `${initialArrondissement}e arrondissement`
-    : "";
+  const selectedZone =
+    initialZoneName?.trim().length
+      ? initialZoneName.trim()
+      : initialArrondissement
+        ? `${initialArrondissement}e arrondissement`
+        : "";
   const isBugReportChannel = activeChannelType === "bug_report";
 
-  const setActiveChannelType: Dispatch<SetStateAction<ChatChannelType>> = (
-    nextValue,
-  ) => {
-    setActiveChannelTypeState((currentValue) => {
-      const resolvedValue =
-        typeof nextValue === "function"
-          ? nextValue(currentValue)
-          : nextValue;
-      setIsRecipientPickerOpen(resolvedValue === "dm");
-      setSendError(null);
-      return resolvedValue;
-    });
-  };
+  const setActiveChannelType: Dispatch<SetStateAction<ChatChannelType>> = useCallback(
+    (nextValue) => {
+      setActiveChannelTypeState((currentValue) => {
+        const resolvedValue =
+          typeof nextValue === "function" ? nextValue(currentValue) : nextValue;
+        setIsRecipientPickerOpen(resolvedValue === "dm");
+        setSendError(null);
+        return resolvedValue;
+      });
+    },
+    [],
+  );
 
-  const handleTextChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    setMessage(value);
+  const handleTextChange = useCallback(
+    (e: ChangeEvent<HTMLTextAreaElement>) => {
+      const value = e.target.value;
+      setMessage(value);
 
-    const cursor = e.target.selectionStart;
-    const textBefore = value.slice(0, cursor);
-    const match = textBefore.match(/@([a-z0-9_]*)$/i);
+      const cursor = e.target.selectionStart;
+      const textBefore = value.slice(0, cursor);
+      const match = textBefore.match(/@([a-z0-9_]*)$/i);
 
-    if (match) {
-      setShowMentions(true);
-      setMentionQuery(match[1] ?? "");
-    } else {
+      if (match) {
+        setShowMentions(true);
+        setMentionQuery(match[1] ?? "");
+      } else {
+        setShowMentions(false);
+        setMentionQuery("");
+      }
+    },
+    [],
+  );
+
+  const insertMention = useCallback(
+    (handle: string) => {
+      const lastAt = message.lastIndexOf("@");
+      if (lastAt < 0) {
+        return;
+      }
+
+      const newText =
+        message.slice(0, lastAt) +
+        `@${handle} ` +
+        message.slice(lastAt + mentionQuery.length + 1);
+      setMessage(newText);
       setShowMentions(false);
       setMentionQuery("");
-    }
-  };
-
-  const insertMention = (handle: string) => {
-    const lastAt = message.lastIndexOf("@");
-    if (lastAt < 0) {
-      return;
-    }
-
-    const newText =
-      message.slice(0, lastAt) +
-      `@${handle} ` +
-      message.slice(lastAt + mentionQuery.length + 1);
-    setMessage(newText);
-    setShowMentions(false);
-    setMentionQuery("");
-  };
+    },
+    [message, mentionQuery.length],
+  );
 
   return {
     activeChannelType,

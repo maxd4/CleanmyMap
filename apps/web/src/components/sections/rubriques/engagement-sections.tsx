@@ -1,2 +1,2 @@
-export { GamificationSection } from"./gamification-section";
+export { GamificationSection } from "./gamification";
 export { ActorsSection } from"./actors-section";

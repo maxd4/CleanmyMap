@@ -52,31 +52,31 @@ export function ActionsMapTable({
  const visibleItems = orderedItems.slice(0, visibleCount);
  const hasMore = visibleCount < orderedItems.length;
 
- if (items.length === 0) {
+if (items.length === 0) {
  return (
- <section className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ?"p-4" :"p-6"}`}>
- <p className={compact ?"cmm-text-caption cmm-text-secondary" :"cmm-text-small cmm-text-secondary"}>
+ <section className={`rounded-2xl border border-sky-200/12 bg-[rgba(10,31,50,0.9)] shadow-[0_18px_44px_-30px_rgba(56,189,248,0.24)] ${compact ?"p-4" :"p-6"}`}>
+ <p className={compact ?"cmm-text-caption text-sky-100/68" :"cmm-text-small text-sky-100/68"}>
  Aucun point géolocalisé n&apos;a été enregistré sur cette période.
  </p>
  </section>
  );
- }
+}
 
  return (
- <section className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${compact ?"p-4" :"p-6"}`}>
+ <section className={`rounded-2xl border border-sky-200/12 bg-[rgba(10,31,50,0.9)] shadow-[0_18px_44px_-30px_rgba(56,189,248,0.24)] ${compact ?"p-4" :"p-6"}`}>
  <div className={`flex items-center justify-between ${compact ?"mb-3" :"mb-4"}`}>
- <h2 className={compact ?"text-lg font-semibold cmm-text-primary" :"text-xl font-semibold cmm-text-primary"}>Journal des actions (YTD)</h2>
- <span className="rounded-full bg-slate-100 px-2.5 py-1 cmm-text-caption font-medium cmm-text-muted">
+ <h2 className={compact ?"text-lg font-semibold text-white" :"text-xl font-semibold text-white"}>Journal des actions (YTD)</h2>
+ <span className="rounded-full border border-sky-200/12 bg-[rgba(16,40,64,0.76)] px-2.5 py-1 cmm-text-caption font-medium text-sky-100/68">
  {items.length} points affichés
  </span>
  </div>
 
  {!isVisible ? (
- <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-6">
+ <div className="rounded-2xl border border-dashed border-sky-200/18 bg-[rgba(16,40,64,0.62)] px-5 py-6">
  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
  <div>
- <p className="cmm-text-small font-semibold cmm-text-primary">Journal masqué par défaut</p>
- <p className="mt-1 cmm-text-small cmm-text-secondary">
+ <p className="cmm-text-small font-semibold text-white">Journal masqué par défaut</p>
+ <p className="mt-1 cmm-text-small text-sky-100/70">
  Affiche les 4 actions les plus récentes uniquement à la demande.
  </p>
  </div>
@@ -86,7 +86,7 @@ export function ActionsMapTable({
  setIsVisible(true);
  setVisibleCount(ACTIONS_BATCH_SIZE);
  }}
- className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100"
+ className="inline-flex items-center justify-center gap-2 rounded-2xl border border-sky-200/14 bg-[rgba(16,40,64,0.88)] px-4 py-2.5 cmm-text-small font-semibold text-sky-100/82 transition hover:border-sky-200/26 hover:bg-[rgba(18,47,74,0.96)]"
  >
  <span aria-hidden="true">🗂️</span>
  Afficher des actions
@@ -95,11 +95,11 @@ export function ActionsMapTable({
  </div>
  ) : null}
 
- {isVisible ? (
- <div className={compact ?"max-h-[30rem] overflow-auto rounded-xl border border-slate-200" :"overflow-x-auto"}>
+{isVisible ? (
+ <div className={compact ?"max-h-[30rem] overflow-auto rounded-xl border border-sky-200/12" :"overflow-x-auto"}>
  <table className="min-w-full text-left cmm-text-small">
  <thead>
- <tr className="border-b border-slate-200 cmm-text-muted">
+ <tr className="border-b border-sky-200/10 text-sky-100/60">
  <th className="px-2 py-2 font-medium">Date</th>
  <th className="px-2 py-2 font-medium">Lieu</th>
  <th className="px-2 py-2 font-medium">Type</th>
@@ -109,7 +109,7 @@ export function ActionsMapTable({
  <th className="px-2 py-2 font-medium text-right">Impact / Qualité</th>
  </tr>
  </thead>
- <tbody className="divide-y divide-slate-100">
+ <tbody className="divide-y divide-sky-200/8">
  {visibleItems.map((item: ActionMapItem) => {
  const drawing = mapItemDrawing(item);
  const geometry = getGeometryPresentation(item);
@@ -118,7 +118,7 @@ export function ActionsMapTable({
             key={item.id}
             className={[
               "cmm-text-secondary transition-colors",
-              selectedActionId === item.id ? "bg-emerald-50/80 ring-1 ring-inset ring-emerald-200" : "hover:bg-slate-50",
+              selectedActionId === item.id ? "bg-sky-400/10 ring-1 ring-inset ring-sky-300/22" : "hover:bg-[rgba(16,40,64,0.58)]",
               onSelectAction ? "cursor-pointer" : "",
             ].join(" ")}
             onClick={() => onSelectAction?.(item.id)}
@@ -207,8 +207,8 @@ export function ActionsMapTable({
  ) : null}
 
  {isVisible ? (
- <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
- <p className="cmm-text-caption cmm-text-muted">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+ <p className="cmm-text-caption text-sky-100/60">
  {visibleItems.length} action{visibleItems.length > 1 ?"s" :""} affichée
  {visibleItems.length > 1 ?"s" :""} sur {orderedItems.length}
  </p>
@@ -221,7 +221,7 @@ export function ActionsMapTable({
  Math.min(current + ACTIONS_BATCH_SIZE, orderedItems.length),
  )
  }
- className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 cmm-text-small font-semibold text-emerald-800 transition hover:bg-emerald-100"
+ className="rounded-2xl border border-sky-200/14 bg-sky-400/14 px-4 py-2 cmm-text-small font-semibold text-sky-50 transition hover:border-sky-200/26 hover:bg-sky-400/20"
  >
  Afficher plus
  </button>
@@ -232,7 +232,7 @@ export function ActionsMapTable({
  setIsVisible(false);
  setVisibleCount(ACTIONS_BATCH_SIZE);
  }}
- className="rounded-xl border border-slate-300 bg-white px-4 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100"
+ className="rounded-2xl border border-sky-200/14 bg-[rgba(16,40,64,0.88)] px-4 py-2 cmm-text-small font-semibold text-sky-100/82 transition hover:border-sky-200/26 hover:bg-[rgba(18,47,74,0.96)]"
  >
  Masquer le journal
  </button>

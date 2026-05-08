@@ -4,7 +4,6 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { 
   ExternalLink, 
   MapPin, 
-  Calendar, 
   Building2, 
   Share2,
   ArrowRight,
@@ -16,6 +15,7 @@ import {
   Smartphone
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface ResourceLink {
   label: string;
@@ -32,46 +32,79 @@ interface ExternalHubCardProps {
 }
 
 function ExternalHubCard({ title, icon, links, color }: ExternalHubCardProps) {
-  const colorMap = {
-    emerald: "bg-emerald-50 text-emerald-600 border-emerald-100",
-    blue: "bg-blue-50 text-blue-600 border-blue-100",
-    rose: "bg-rose-50 text-rose-600 border-rose-100",
-    violet: "bg-violet-50 text-violet-600 border-violet-100",
+  const colorGlowMap = {
+    emerald: "group-hover:shadow-emerald-500/10",
+    blue: "group-hover:shadow-blue-500/10",
+    rose: "group-hover:shadow-rose-500/10",
+    violet: "group-hover:shadow-violet-500/10",
+  };
+
+  const colorIconMap = {
+    emerald: "text-emerald-400 bg-emerald-400/10",
+    blue: "text-blue-400 bg-blue-400/10",
+    rose: "text-rose-400 bg-rose-400/10",
+    violet: "text-violet-400 bg-violet-400/10",
   };
 
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="group relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-slate-200/50"
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className={cn(
+        "group relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 backdrop-blur-3xl transition-all hover:border-white/20",
+        colorGlowMap[color]
+      )}
     >
-      <div className="flex items-center gap-4 mb-6">
-        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${colorMap[color]} shadow-sm`}>
+      <div className="flex items-center gap-4 mb-8">
+        <div className={cn(
+          "flex h-12 w-12 items-center justify-center rounded-2xl shadow-inner transition-transform group-hover:scale-110",
+          colorIconMap[color]
+        )}>
           {icon}
         </div>
-        <h3 className="text-lg font-black tracking-tight text-slate-900">{title}</h3>
+        <div>
+          <h3 className="text-lg font-black tracking-[0.1em] text-white uppercase">{title}</h3>
+          <div className="h-0.5 w-8 bg-white/10 mt-1 rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ x: "-100%" }}
+              whileInView={{ x: "0%" }}
+              transition={{ delay: 0.5, duration: 1 }}
+              className={cn("h-full w-full", {
+                "bg-emerald-500": color === "emerald",
+                "bg-blue-500": color === "blue",
+                "bg-rose-500": color === "rose",
+                "bg-violet-500": color === "violet",
+              })}
+            />
+          </div>
+        </div>
       </div>
       
-      <div className="grid gap-2">
+      <div className="grid gap-3">
         {links.map((link, index) => (
           <a
             key={index}
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group/link flex items-center justify-between rounded-2xl border border-slate-50 bg-slate-50/50 px-4 py-3 transition-all hover:border-slate-200 hover:bg-white hover:shadow-md"
+            className="group/link flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.03] px-5 py-4 transition-all hover:border-white/10 hover:bg-white/[0.08]"
           >
             <div className="flex items-center gap-3">
-              {link.icon || <ExternalLink size={14} className="text-slate-400" />}
-              <span className="text-sm font-bold text-slate-700">{link.label}</span>
+              <div className="text-white/40 group-hover/link:text-white transition-colors">
+                {link.icon || <ExternalLink size={16} />}
+              </div>
+              <span className="text-sm font-bold text-white/70 group-hover/link:text-white transition-colors">
+                {link.label}
+              </span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {link.badge && (
-                <span className="rounded-full bg-slate-200/50 px-2 py-0.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                <span className="rounded-lg bg-white/5 px-2.5 py-1 text-[10px] font-black text-white/40 uppercase tracking-widest border border-white/5">
                   {link.badge}
                 </span>
               )}
-              <ArrowRight size={14} className="translate-x-0 text-slate-300 transition-transform group-hover/link:translate-x-1 group-hover/link:text-slate-600" />
+              <ArrowRight size={16} className="translate-x-0 text-white/20 transition-all group-hover/link:translate-x-1 group-hover/link:text-white" />
             </div>
           </a>
         ))}
@@ -90,7 +123,7 @@ export function ExternalHubSection() {
       color: "emerald" as const,
       icon: <Users size={24} />,
       links: [
-        { label: "Annuaire CleanMyMap", url: "/partners/network", badge: "Live", icon: <MapPin size={14} /> },
+        { label: "Annuaire CleanMyMap", url: "/partners/network", badge: "Live", icon: <MapPin size={16} /> },
         { label: "J'agis pour la nature", url: "https://jagispourlanature.fr" },
         { label: "Zero Waste Paris", url: "https://www.zerowasteparis.fr" },
         { label: "Surfrider Foundation", url: "https://surfrider.eu" },
@@ -114,7 +147,7 @@ export function ExternalHubSection() {
       links: [
         { label: "Mairie de Paris", url: "https://www.paris.fr", badge: "75" },
         { label: "Nettoyages Participatifs", url: "https://www.paris.fr/Nettoyages-participatifs" },
-        { label: "Demander du matériel", url: "#material", icon: <Smartphone size={14} /> },
+        { label: "Demander du matériel", url: "#material", icon: <Smartphone size={16} /> },
         { label: "Annuaire des Mairies", url: "https://www.paris.fr/mairies" },
       ]
     },
@@ -126,62 +159,87 @@ export function ExternalHubSection() {
         { label: "Générer PDF Mission", url: "#export-pdf", badge: "PDF" },
         { label: "Export HelloAsso", url: "#export-helloasso", badge: "CSV" },
         { label: "Sync Calendrier", url: "#export-ics", badge: "ICS" },
-        { label: "Kit Communication", url: "#kit", icon: <PlusCircle size={14} /> },
+        { label: "Kit Communication", url: "#kit", icon: <PlusCircle size={16} /> },
       ]
     }
   ];
 
   return (
-    <section className="space-y-8 py-4">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+    <section className="space-y-12 py-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
         <div>
-          <h2 className="text-3xl font-black tracking-tighter text-slate-900 flex items-center gap-3">
-            <Handshake size={32} className="text-emerald-600" />
-            {fr ? "Ressources & Partenaires" : "Resources & Partners"}
-          </h2>
-          <p className="mt-2 text-slate-500 font-medium max-w-xl">
+          <motion.h2 
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            className="text-4xl font-black tracking-tighter text-white flex items-center gap-4"
+          >
+            <div className="flex h-14 w-14 items-center justify-center rounded-[1.25rem] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.1)]">
+              <Handshake size={32} />
+            </div>
+            <span>{fr ? "Ressources & Partenaires" : "Resources & Partners"}</span>
+          </motion.h2>
+          <motion.p 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="mt-4 text-white/40 font-medium max-w-xl text-lg leading-relaxed"
+          >
             {fr 
               ? "Accédez aux outils et réseaux officiels pour amplifier vos actions de terrain."
               : "Access official tools and networks to amplify your field actions."
             }
-          </p>
+          </motion.p>
         </div>
         
-        <div className="relative group">
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          className="relative group"
+        >
           <input 
             type="text" 
             placeholder={fr ? "Rechercher une ressource..." : "Search resources..."}
-            className="w-full md:w-64 rounded-2xl border border-slate-200 bg-white px-4 py-2.5 pl-10 text-sm font-medium shadow-sm transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 outline-none"
+            className="w-full md:w-80 rounded-2xl border border-white/10 bg-slate-900/40 px-6 py-4 pl-12 text-sm font-bold text-white shadow-2xl backdrop-blur-xl transition-all focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 outline-none placeholder:text-white/20"
           />
-          <Search size={16} className="absolute left-3.5 top-3 text-slate-400 transition-colors group-focus-within:text-emerald-600" />
-        </div>
+          <Search size={20} className="absolute left-4 top-4 text-white/20 transition-colors group-focus-within:text-emerald-400" />
+        </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
         {sections.map((section, idx) => (
           <ExternalHubCard key={idx} {...section} />
         ))}
       </div>
       
-      <div className="rounded-[2.5rem] bg-slate-900 p-8 text-white shadow-2xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/20 blur-[100px] -translate-y-1/2 translate-x-1/2" />
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
-          <div>
-            <h3 className="text-2xl font-black tracking-tight mb-2">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        className="rounded-[3rem] bg-slate-900/60 border border-white/10 p-10 backdrop-blur-3xl shadow-2xl relative overflow-hidden group"
+      >
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-500/10 blur-[120px] -translate-y-1/2 translate-x-1/2 transition-opacity group-hover:opacity-100 opacity-50" />
+        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/5 blur-[100px] translate-y-1/2 -translate-x-1/2" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10 text-center md:text-left">
+          <div className="flex-1">
+            <div className="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-6">
+              Institutional Network
+            </div>
+            <h3 className="text-3xl font-black tracking-tight text-white mb-4">
               {fr ? "Vous êtes une association ?" : "Are you an association?"}
             </h3>
-            <p className="text-slate-400 font-medium max-w-md">
+            <p className="text-white/40 font-medium max-w-lg text-lg">
               {fr 
-                ? "Rejoignez le réseau CleanMyMap pour bénéficier d'une visibilité accrue et d'outils dédiés."
-                : "Join the CleanMyMap network to benefit from increased visibility and dedicated tools."
+                ? "Rejoignez le réseau CleanMyMap pour bénéficier d'une visibilité accrue et d'outils dédiés à l'impact environnemental."
+                : "Join the CleanMyMap network to benefit from increased visibility and tools dedicated to environmental impact."
               }
             </p>
           </div>
-          <button className="px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-black rounded-2xl transition-all shadow-lg shadow-emerald-500/25 active:scale-95">
-            {fr ? "Devenir Partenaire" : "Become Partner"}
+          <button className="whitespace-nowrap px-10 py-5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black rounded-2xl transition-all shadow-2xl shadow-emerald-500/40 active:scale-95 group/btn flex items-center gap-3">
+            <span>{fr ? "Devenir Partenaire" : "Become Partner"}</span>
+            <ArrowRight size={20} className="transition-transform group-hover/btn:translate-x-1" />
           </button>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }

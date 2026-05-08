@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback } from "react";
 import useSWR from "swr";
 
 import { getChatFeedState, type ChatFeedState } from "../chat-feed-state";
@@ -147,54 +148,56 @@ export function useChatData({
     (candidate) => candidate.id !== currentUserId,
   );
 
-  const sendChatMessage = async ({
-    optimisticMessage,
-    body,
-  }: SendChatMessageParams) => {
-    if (!messagesKey) {
-      throw toAppError("Le canal actif n'est pas prêt pour l'envoi.", {
-        kind: "validation",
-        message: "Le canal actif n'est pas prêt pour l'envoi.",
-      });
-    }
-
-    await mutateMessages(
-      async (currentData) => {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
+  const sendChatMessage = useCallback(
+    async ({ optimisticMessage, body }: SendChatMessageParams) => {
+      if (!messagesKey) {
+        throw toAppError("Le canal actif n'est pas prêt pour l'envoi.", {
+          kind: "validation",
+          message: "Le canal actif n'est pas prêt pour l'envoi.",
         });
+      }
 
-        if (!response.ok) {
-          throw await readAppErrorResponse(
-            response,
-            "Envoi impossible pour le moment. Veuillez réessayer.",
-          );
-        }
+      await mutateMessages(
+        async (currentData) => {
+          const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
 
-        const payload = (await response.json().catch(() => null)) as
-          | { message?: ChatMessage }
-          | null;
-        const serverMessage = payload?.message ?? optimisticMessage;
-        const baseMessages = currentData?.messages ?? [];
+          if (!response.ok) {
+            throw await readAppErrorResponse(
+              response,
+              "Envoi impossible pour le moment. Veuillez réessayer.",
+            );
+          }
 
-        return {
-          messages: [
-            ...baseMessages.filter((message) => message.id !== optimisticMessage.id),
-            serverMessage,
-          ],
-        };
-      },
-      {
-        optimisticData: (currentData) => ({
-          messages: [...(currentData?.messages ?? []), optimisticMessage],
-        }),
-        rollbackOnError: true,
-        revalidate: false,
-      },
-    );
-  };
+          const payload = (await response.json().catch(() => null)) as
+            | { message?: ChatMessage }
+            | null;
+          const serverMessage = payload?.message ?? optimisticMessage;
+          const baseMessages = currentData?.messages ?? [];
+
+          return {
+            messages: [
+              ...baseMessages.filter(
+                (message) => message.id !== optimisticMessage.id,
+              ),
+              serverMessage,
+            ],
+          };
+        },
+        {
+          optimisticData: (currentData) => ({
+            messages: [...(currentData?.messages ?? []), optimisticMessage],
+          }),
+          rollbackOnError: true,
+          revalidate: false,
+        },
+      );
+    },
+    [messagesKey, mutateMessages],
+  );
 
   return {
     messages,

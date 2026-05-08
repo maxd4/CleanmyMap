@@ -1,1 +1,53 @@
-# 🔐 Guide Sécurité - Erreurs Courantes\n\n**Fichier:** `SECURITY_GUIDE.md` (à la racine du projet)\n\nCe fichier vous aide à éviter les erreurs courantes de sécurité.\n\n---\n\n## ⚡ Démarrage rapide (2 min)\n\n### Erreur 1: Validation d'URL\n\n```typescript\n// ❌ DANGEREUX\nif (url.startsWith(\"https://\")) { }\n\n// ✅ CORRECT\nfunction hasHttpsProtocol(url: string | undefined): boolean {\n  if (!url || typeof url !== \"string\") return false;\n  try {\n    const parsed = new URL(url);\n    return parsed.protocol === \"https:\";\n  } catch {\n    return false;\n  }\n}\n```\n\n### Erreur 2: Injection HTML\n\n```typescript\n// ❌ DANGEREUX\nelement.innerHTML = userInput;\n\n// ✅ CORRECT\nelement.textContent = userInput;\n```\n\n---\n\n## 📚 Documentation complète\n\n→ **[documentation/security/SECURITY_QUICK_REFERENCE.md](./documentation/security/SECURITY_QUICK_REFERENCE.md)**\n\nContient:\n- Erreurs courantes avec exemples\n- Solutions correctes\n- Checklist pour les revues\n- Commandes de vérification\n\n---\n\n## 🗺️ Navigation\n\n→ **[documentation/security/INDEX.md](./documentation/security/INDEX.md)**\n\nTrouvez rapidement:\n- Par objectif (\"Je veux...\")\n- Par type de document\n- Par problème\n- Par rôle\n\n---\n\n## 🚀 Workflow complet\n\n→ **[documentation/security/DEVELOPER_WORKFLOW.md](./documentation/security/DEVELOPER_WORKFLOW.md)**\n\nAvant de coder, pendant, avant de committer.\n\n---\n\n## 📋 Checklist revue de code\n\n→ **[documentation/security/CODE_REVIEW_CHECKLIST.md](./documentation/security/CODE_REVIEW_CHECKLIST.md)**\n\nUtilisez cette checklist lors de vos revues.\n\n---\n\n## 🔍 Commandes de vérification\n\n```bash\n# Chercher les startsWith(\"http\")\ngrep -r \"startsWith.*http\" apps/web/src --include=\"*.ts\" --include=\"*.tsx\"\n\n# Chercher les innerHTML\ngrep -r \"\\.innerHTML\" apps/web/src --include=\"*.ts\" --include=\"*.tsx\"\n\n# Chercher les dangerouslySetInnerHTML\ngrep -r \"dangerouslySetInnerHTML\" apps/web/src --include=\"*.ts\" --include=\"*.tsx\"\n```\n\n---\n\n## 📞 Besoin d'aide ?\n\n1. Lire [documentation/security/SECURITY_QUICK_REFERENCE.md](./documentation/security/SECURITY_QUICK_REFERENCE.md)\n2. Consulter [documentation/security/INDEX.md](./documentation/security/INDEX.md)\n3. Ouvrir une issue\n\n
+# Guide Sécurité
+
+Ce document donne le contexte de référence pour les zones sensibles de CleanMyMap.
+
+## Ce qu'il faut protéger
+
+- Routes publiques vs privées
+- Indexation (`robots`, `sitemap`, `noindex`)
+- Validation d'URL
+- Regex à risque et ReDoS
+- Rate limiting et anti-spam
+- Secrets, variables d'environnement et permissions CI
+
+## Règles de base
+
+- Valider les entrées avant toute logique métier.
+- Utiliser des helpers partagés plutôt que des validations locales dupliquées.
+- Préférer le parsing explicite aux regex quand le format est structuré.
+- Garder les réponses d'erreur homogènes sur les mêmes surfaces.
+- Bloquer au plus tôt les surfaces privées ou sensibles.
+
+## Helpers de référence
+
+- `src/lib/security/validation.ts`
+- `src/lib/seo/indexability.ts`
+- `src/lib/auth/protected-routes.ts`
+- `src/lib/community/discussion-rate-limit.ts`
+- `src/lib/http/api-errors.ts`
+
+## Checklists à appliquer
+
+- Voir [README](./README.md)
+- Voir [Contrôles avant merge](./PRE_MERGE_CHECKLIST.md)
+- Voir [Référence rapide](./SECURITY_QUICK_REFERENCE.md)
+
+## Si une modification touche une surface sensible
+
+1. Vérifier si la route doit être publique ou privée.
+2. Vérifier l'impact sur le sitemap et les robots.
+3. Vérifier la validation d'entrée.
+4. Vérifier les protections anti-spam et rate limits.
+5. Lancer les tests de sécurité ciblés.
+6. Vérifier qu'aucun secret n'a été introduit.
+
+## Signal d'alerte
+
+Bloquer immédiatement si:
+
+- une URL est validée par substring
+- une regex critique n'est pas bornée
+- une page privée devient indexable
+- un 429 public change de forme sans raison
+- une permission GitHub Actions devient trop large

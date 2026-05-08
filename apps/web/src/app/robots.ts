@@ -1,5 +1,15 @@
 import type { MetadataRoute } from "next";
 import { env } from "@/lib/env";
+import {
+  getPrivateSectionRoutes,
+  PRIVATE_APP_ROUTE_PREFIXES,
+} from "@/lib/seo/indexability";
+
+const PRIVATE_ROBOTS_PATHS = [
+  ...PRIVATE_APP_ROUTE_PREFIXES,
+  ...getPrivateSectionRoutes(),
+  "/api/",
+];
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -7,6 +17,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
+        disallow: PRIVATE_ROBOTS_PATHS,
       },
       {
         userAgent: "GPTBot",
@@ -17,10 +28,7 @@ export default function robots(): MetadataRoute.Robots {
           "/learn",
         ],
         disallow: [
-          "/dashboard",
-          "/profil",
-          "/admin",
-          "/api/",
+          ...PRIVATE_ROBOTS_PATHS,
         ],
       },
       {
@@ -31,18 +39,18 @@ export default function robots(): MetadataRoute.Robots {
           "/methodologie",
         ],
         disallow: [
-          "/dashboard",
-          "/profil",
-          "/admin",
+          ...PRIVATE_ROBOTS_PATHS,
         ],
       },
       {
         userAgent: "Google-Extended",
         allow: "/",
+        disallow: PRIVATE_ROBOTS_PATHS,
       },
       {
         userAgent: "BingBot",
         allow: "/",
+        disallow: PRIVATE_ROBOTS_PATHS,
       },
     ],
     sitemap: `${env.NEXT_PUBLIC_APP_URL || "https://cleanmymap.fr"}/sitemap.xml`,

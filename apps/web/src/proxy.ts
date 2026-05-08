@@ -3,13 +3,56 @@ import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
 import { PROTECTED_ROUTE_PATTERNS } from "@/lib/auth/protected-routes";
+import {
+  getPrivateSectionRoutes,
+  isPrivateAppPath,
+  ROBOTS_NOINDEX_VALUE,
+} from "@/lib/seo/indexability";
+import { createPublicRateLimitResponse } from "@/lib/security/validation";
 
 const isProtectedRoute = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS]);
 const PUBLIC_ROUTE_EXCEPTIONS = ["/actions/map", "/api/actions/map"] as const;
+const PRIVATE_SECTION_ROUTES = getPrivateSectionRoutes();
+
+type PostRateLimitRule = {
+  prefix: string;
+  limit: number;
+  window: number;
+  label: string;
+};
+
+const POST_RATE_LIMIT_RULES: PostRateLimitRule[] = [
+  { prefix: "/api/newsletter/subscribe", limit: 5, window: 60, label: "newsletter" },
+  { prefix: "/api/actions/simple", limit: 4, window: 300, label: "actions-simple" },
+  { prefix: "/api/analytics/funnel", limit: 20, window: 60, label: "analytics-funnel" },
+  { prefix: "/api/community/bug-reports", limit: 6, window: 60, label: "community-bug-reports" },
+  { prefix: "/api/community/events", limit: 8, window: 60, label: "community-events" },
+  { prefix: "/api/community/promotion-requests", limit: 3, window: 300, label: "promotion-requests" },
+  { prefix: "/api/partners/onboarding-requests", limit: 3, window: 300, label: "partner-onboarding" },
+  { prefix: "/api/chat", limit: 20, window: 60, label: "chat" },
+];
 
 function isPublicException(pathname: string): boolean {
   return PUBLIC_ROUTE_EXCEPTIONS.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
+  );
+}
+
+function shouldNoIndex(pathname: string): boolean {
+  if (isPrivateAppPath(pathname)) {
+    return true;
+  }
+
+  return PRIVATE_SECTION_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
+
+function getPostRateLimitRule(pathname: string): PostRateLimitRule | null {
+  return (
+    POST_RATE_LIMIT_RULES.find(
+      (rule) => pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`),
+    ) ?? null
   );
 }
 
@@ -21,11 +64,18 @@ function nextWithAppHeaders(req: NextRequest): NextResponse {
     "x-cleanmymap-hide-global-header",
     pathname === "/" ? "1" : "0",
   );
-  return NextResponse.next({
+  if (shouldNoIndex(pathname)) {
+    requestHeaders.set("x-cleanmymap-noindex", "1");
+  }
+  const response = NextResponse.next({
     request: {
       headers: requestHeaders,
     },
   });
+  if (shouldNoIndex(pathname)) {
+    response.headers.set("X-Robots-Tag", ROBOTS_NOINDEX_VALUE);
+  }
+  return response;
 }
 
 // Rate limiting basique en mémoire
@@ -67,26 +117,31 @@ const clerkProxy = clerkMiddleware(
     if (req.method === "POST" && pathname.startsWith("/api/")) {
       const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "127.0.0.1";
       const now = Date.now();
-      const record = rateLimitMap.get(ip);
+      const rule = getPostRateLimitRule(pathname);
+      const rateLimitKey = `${ip}:${rule?.label ?? "generic"}`;
+      const limit = rule?.limit ?? LIMIT;
+      const windowMs = (rule?.window ?? WINDOW / 1000) * 1000;
+      const record = rateLimitMap.get(rateLimitKey);
 
       if (record) {
         if (now < record.resetAt) {
-          if (record.count >= LIMIT) {
-            console.warn(`[RateLimit] IP ${ip} blocked on ${pathname}`);
-            return new NextResponse(
-              JSON.stringify({ error: "Too many requests. Please try again later." }),
-              { status: 429, headers: { "Content-Type": "application/json" } }
+          if (record.count >= limit) {
+            console.warn(
+              `[RateLimit] IP ${ip} blocked on ${pathname}${rule ? ` (${rule.label})` : ""}`,
             );
+            return createPublicRateLimitResponse("Too many requests. Please try again later.", {
+              code: "proxy_rate_limited",
+            });
           }
           record.count++;
         } else {
           // Reset window
           record.count = 1;
-          record.resetAt = now + WINDOW;
+          record.resetAt = now + windowMs;
         }
       } else {
         // First request
-        rateLimitMap.set(ip, { count: 1, resetAt: now + WINDOW });
+        rateLimitMap.set(rateLimitKey, { count: 1, resetAt: now + windowMs });
       }
     }
 

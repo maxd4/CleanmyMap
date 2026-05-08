@@ -3,6 +3,8 @@ import { NextResponse } from"next/server";
 import { z } from"zod";
 import {
  defaultCommunityEventOps,
+ CLEANUP_SUPPORT_LEVELS,
+ CLEANUP_WASTE_TYPES,
  parseCommunityEventDescription,
  serializeCommunityEventDescription,
 } from"@/lib/community/event-ops";
@@ -21,6 +23,8 @@ import {
 } from"@/lib/community/event-notification-targets";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { getClerkService, type ClerkUserIdentity as OrganizerIdentity } from"@/lib/services/clerk";
+import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
+import { isIsoDateString } from"@/lib/security/validation";
 
 function parsePositiveInteger(
  raw: string | null,
@@ -77,9 +81,14 @@ function toEventResponseItem(
  capacityTarget: ops.capacityTarget,
  attendanceCount: ops.attendanceCount,
  postMortem: ops.postMortem,
+ cleanupObjective: ops.cleanupObjective,
+ cleanupZone: ops.cleanupZone,
+ cleanupLogisticsNeeds: ops.cleanupLogisticsNeeds,
+ cleanupSupportLevel: ops.cleanupSupportLevel,
+ cleanupWasteTypesExpected: ops.cleanupWasteTypesExpected,
  rsvpCounts: {
- yes,
- maybe,
+  yes,
+  maybe,
  no,
  total: yes + maybe + no,
  },
@@ -92,10 +101,15 @@ const createCommunityEventSchema = z.object({
  title: z.string().trim().min(2).max(200),
  eventDate: z
  .string()
- .regex(/^\d{4}-\d{2}-\d{2}$/,"Date attendue au format YYYY-MM-DD"),
+ .refine(isIsoDateString,"Date attendue au format YYYY-MM-DD"),
  locationLabel: z.string().trim().min(2).max(255),
  description: z.string().trim().max(2000).optional(),
  capacityTarget: z.number().int().min(1).max(200000).optional(),
+ cleanupObjective: z.string().trim().min(2).max(240),
+ cleanupZone: z.string().trim().min(2).max(240),
+ cleanupLogisticsNeeds: z.string().trim().max(1000).optional(),
+ cleanupSupportLevel: z.enum(CLEANUP_SUPPORT_LEVELS),
+ cleanupWasteTypesExpected: z.array(z.enum(CLEANUP_WASTE_TYPES)).min(1).max(5),
 });
 
 
@@ -201,6 +215,15 @@ export async function POST(request: Request) {
  return validationErrorResponse(parsed.error.flatten().fieldErrors);
  }
 
+ const writeRateLimit = await verifyRateLimit({ limit: 6, window: 60, key: userId });
+ const writeRateLimitResponse = createServerRateLimitResponse(
+  writeRateLimit.allowed,
+  writeRateLimit.retryAfter,
+ );
+ if (writeRateLimitResponse) {
+  return writeRateLimitResponse;
+ }
+
  const supabase = getSupabaseServerClient();
 
  try {
@@ -220,11 +243,16 @@ export async function POST(request: Request) {
  event_date: parsed.data.eventDate,
  location_label: parsed.data.locationLabel,
  description: serializeCommunityEventDescription(
- parsed.data.description ?? null,
- {
- ...defaultCommunityEventOps(),
- capacityTarget: parsed.data.capacityTarget ?? null,
- },
+  parsed.data.description ?? null,
+  {
+   ...defaultCommunityEventOps(),
+   capacityTarget: parsed.data.capacityTarget ?? null,
+   cleanupObjective: parsed.data.cleanupObjective,
+   cleanupZone: parsed.data.cleanupZone,
+   cleanupLogisticsNeeds: parsed.data.cleanupLogisticsNeeds ?? null,
+   cleanupSupportLevel: parsed.data.cleanupSupportLevel,
+   cleanupWasteTypesExpected: parsed.data.cleanupWasteTypesExpected,
+  },
  ),
  })
  .select(
@@ -255,6 +283,10 @@ export async function POST(request: Request) {
  { label:"Date", value: parsed.data.eventDate },
  { label:"Lieu", value: parsed.data.locationLabel },
  { label:"Description", value: parsed.data.description ?? "non communiquée" },
+ { label:"Objectif cleanup", value: parsed.data.cleanupObjective },
+ { label:"Zone cleanup", value: parsed.data.cleanupZone },
+ { label:"Soutien souhaité", value: parsed.data.cleanupSupportLevel },
+ { label:"Déchets attendus", value: parsed.data.cleanupWasteTypesExpected.join(", ") },
  { label:"Capacité cible", value: String(parsed.data.capacityTarget ?? "non communiquée") },
  ],
  footer:"L'événement est également visible dans le flux communautaire.",

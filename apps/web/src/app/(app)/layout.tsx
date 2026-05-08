@@ -17,7 +17,7 @@ export default async function AppLayout({
 }>) {
  const { userId, clerkReachable } = await getSafeAuthSession();
   const accountSetup = userId
-    ? await getCurrentUserAccountSetupRequirement()
+    ? await getCurrentUserAccountSetupRequirement().catch(() => ({ requiresSetup: false }))
     : { requiresSetup: false };
 
   if (accountSetup.requiresSetup) {
@@ -33,7 +33,7 @@ export default async function AppLayout({
 
   return (
  <div
- className="flex min-h-screen w-full flex-col bg-[color:var(--bg-canvas)] transition-all duration-300"
+ className="flex min-h-screen w-full flex-col bg-transparent transition-all duration-300"
  data-display-mode={displayMode}
  data-user-profile={currentProfile}
  >
@@ -41,7 +41,7 @@ export default async function AppLayout({
  {userId ? <DisplayModeOnboardingGate /> : null}
 
  <div
- className="flex min-w-0 w-full flex-1 flex-col gap-2 px-4 py-3 pb-12 sm:px-6 sm:py-4 sm:pb-16 xl:px-10 2xl:px-12"
+ className="flex min-w-0 w-full flex-1 flex-col"
  >
  <main className="flex-1">{children}</main>
  </div>

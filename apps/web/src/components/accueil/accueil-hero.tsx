@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, Info, MapPin, LayoutDashboard } from "lucide-react";
+import { Info, MapPin, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
 import type { HomeMetric } from "@/lib/accueil/config";
@@ -30,7 +30,7 @@ const metricAccentStyles = {
 
 export function HomeHero({ metrics }: HomeHeroProps) {
   return (
-    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#1C5769_0%,#1F5E70_44%,#1B5265_100%)] pt-5 sm:pt-6">
+    <section className="relative overflow-hidden bg-transparent pt-4 sm:pt-6">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_45%_at_50%_0%,rgba(34,195,214,0.12),transparent),radial-gradient(ellipse_45%_45%_at_0%_100%,rgba(25,157,139,0.10),transparent)]" />
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -46,15 +46,11 @@ export function HomeHero({ metrics }: HomeHeroProps) {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="relative min-h-[470px] overflow-hidden rounded-[2rem] border border-[#4B7B8C]/22 bg-[#18374E]/94 p-7 shadow-[0_34px_76px_-34px_rgba(6,17,30,0.76)] backdrop-blur-xl sm:p-9 lg:min-h-[515px] lg:p-11"
+            className="relative min-h-[470px] overflow-hidden rounded-[2rem] border border-[#4B7B8C]/22 shadow-[0_34px_76px_-34px_rgba(6,17,30,0.76)] sm:min-h-[515px]"
           >
-            <div className="pointer-events-none absolute inset-0">
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/25 to-transparent" />
-              <div className="absolute -right-28 -top-24 h-64 w-64 rounded-full bg-cyan-400/10 blur-3xl" />
-              <div className="absolute -bottom-28 -left-24 h-72 w-72 rounded-full bg-emerald-400/8 blur-3xl" />
-            </div>
-
-            <div className="relative space-y-8">
+            {/* Layer fond isolé — backdrop-blur UNIQUEMENT ici */}
+            <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[#18374E]/94 backdrop-blur-xl" />
+            <div className="relative z-10 space-y-8 p-7 sm:p-9 lg:p-11">
               <div className="flex items-center justify-end gap-3">
                 <SitePreferencesControls variant="locale" />
               </div>
@@ -76,7 +72,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
               </div>
 
               <p className="max-w-2xl text-[1.1rem] font-medium leading-[1.6] text-white/90">
-                L'outil citoyen pour structurer, mesurer et valoriser vos actions terrain en Île-de-France. 
+                Cultivons l&apos;entraide.
                 <span className="block mt-2 text-[#26C8D8] font-semibold">📍 Carte interactive • 📱 Compagnon GPS • 📊 Hub Opérationnel</span>
               </p>
 
@@ -89,8 +85,8 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                   Ouvrir la Carte
                 </Link>
                 <Link
-                  href="/dashboard"
-                  className="inline-flex h-[56px] items-center justify-center gap-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 px-8 text-[15px] font-bold text-white transition-all hover:bg-white/20 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+                  href="/explorer"
+                  className="inline-flex h-[56px] items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-8 text-[15px] font-bold text-white transition-all hover:bg-white/20 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
                 >
                   <LayoutDashboard size={20} />
                   Accéder au Hub
@@ -103,10 +99,12 @@ export function HomeHero({ metrics }: HomeHeroProps) {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut", delay: 0.05 }}
-            className="relative min-h-[500px] overflow-hidden rounded-[2rem] border border-[#4B7B8C]/18 bg-[#18374E]/94 p-8 shadow-[0_34px_76px_-34px_rgba(6,17,30,0.76)] backdrop-blur-xl sm:p-10"
+            className="relative min-h-[500px] overflow-hidden rounded-[2rem] border border-[#4B7B8C]/18 shadow-[0_34px_76px_-34px_rgba(6,17,30,0.76)]"
           >
+            {/* Layer fond isolé */}
+            <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[#18374E]/94 backdrop-blur-xl" />
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#0F6FFF] via-[#20C6D5] to-[#17C486]" />
-            <div className="relative space-y-8">
+            <div className="relative z-10 space-y-8 p-8 sm:p-10">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="space-y-1">
                   <p className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.34em] text-white sm:text-[12px]">

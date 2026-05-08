@@ -13,6 +13,13 @@ export type CommunityEventItem = {
   capacityTarget: number | null;
   attendanceCount: number | null;
   postMortem: string | null;
+  cleanupObjective: string | null;
+  cleanupZone: string | null;
+  cleanupLogisticsNeeds: string | null;
+  cleanupSupportLevel: "faible" | "moyen" | "fort" | null;
+  cleanupWasteTypesExpected: Array<
+    "megots" | "plastique" | "verre" | "metal" | "mixte"
+  >;
   rsvpCounts: {
     yes: number;
     maybe: number;
@@ -48,6 +55,13 @@ export type CommunityCreateEventPayload = {
   locationLabel: string;
   description?: string;
   capacityTarget?: number;
+  cleanupObjective: string;
+  cleanupZone: string;
+  cleanupLogisticsNeeds?: string;
+  cleanupSupportLevel: "faible" | "moyen" | "fort";
+  cleanupWasteTypesExpected: Array<
+    "megots" | "plastique" | "verre" | "metal" | "mixte"
+  >;
 };
 
 export type CommunityClientErrorCode =

@@ -18,6 +18,7 @@ import {
   toInteger,
   toNumber,
 } from "./lib/sheet-ingestion-core.mjs";
+import { normalizeLabel } from "../src/lib/actions/geometry-core.ts";
 import { resolveBestGeometry } from "../src/lib/actions/geometry-resolution.ts";
 
 const DEFAULT_SHEET_URL =
@@ -133,7 +134,7 @@ async function readAssociationOptions() {
 }
 
 function normalizeSheetText(raw) {
-  return fixMojibake(String(raw || "")).trim();
+  return normalizeLabel(fixMojibake(String(raw || "")));
 }
 
 function serializeActionMeta(meta) {
@@ -215,6 +216,13 @@ function splitEnterpriseAssociation(associationName) {
     enterpriseName: normalized.slice("Entreprise - ".length).trim(),
   };
 }
+
+const retainedScriptHelpers = [
+  serializeActionMeta,
+  buildRouteNotes,
+  splitEnterpriseAssociation,
+];
+void retainedScriptHelpers;
 
 function normalizeStatus(raw) {
   const value = fixMojibake(String(raw || "")).toLowerCase();

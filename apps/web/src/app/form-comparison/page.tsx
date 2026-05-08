@@ -1,6 +1,17 @@
+import type { Metadata } from "next";
 import Link from 'next/link'
 import { CmmCard } from '@/components/ui/cmm-card'
 import { CmmButton } from '@/components/ui/cmm-button'
+
+export const metadata: Metadata = {
+  title: "Comparaison interne des formulaires - CleanMyMap",
+  description:
+    "Vue interne de comparaison entre les formulaires de déclaration, réservée aux comptes connectés.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function FormComparisonPage() {
  return (

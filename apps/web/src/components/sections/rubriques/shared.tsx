@@ -1,128 +1,131 @@
 "use client";
 
-import type { ReactNode } from"react";
-import { useSitePreferences } from"@/components/ui/site-preferences-provider";
-import { RubriquePdfExportButton } from"@/components/ui/rubrique-pdf-export-button";
-import { CmmCard, type CardTone } from"@/components/ui/cmm-card";
-import { CmmButton, CmmButtonGroup } from"@/components/ui/cmm-button";
+import type { ReactNode, ElementType } from "react";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
+import { CmmCard, type CardTone } from "@/components/ui/cmm-card";
+import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
+import { motion } from "framer-motion";
+import { LucideIcon } from "lucide-react";
 
-export type L10n = { fr: string; en: string };
+export type L10n = { fr: string; en: string } | string;
 
-export function t(locale:"fr" |"en", value: L10n): string {
- return value[locale];
+export function t(locale: "fr" | "en", value: L10n): string {
+  if (typeof value === "string") return value;
+  return value[locale];
 }
 
-function RubriqueBlock(props: {
- title: string;
- children: ReactNode;
- tone?: CardTone;
-}) {
- return (
- <CmmCard
- tone={props.tone ??"slate"}
- variant="default"
- size="md"
- header={props.title}
- >
- {props.children}
- </CmmCard>
- );
-}
-
-export function SectionShell(props: {
-  title: L10n;
-  subtitle: L10n;
+interface SectionShellProps {
+  id: string;
+  title?: L10n;
+  subtitle?: L10n;
+  icon?: LucideIcon | ElementType;
+  gradient?: string;
   children: ReactNode;
   summary?: ReactNode;
   traceNote?: ReactNode;
-  links?: Array<{ href: string; label: L10n }>;
-}) {
+  links?: Array<{ href: string; label: { fr: string; en: string } }>;
+  hideHeader?: boolean;
+}
+
+export function SectionShell({
+  id,
+  title,
+  subtitle,
+  icon: Icon,
+  gradient,
+  children,
+  summary,
+  traceNote,
+  links,
+  hideHeader = false,
+}: SectionShellProps) {
   const { locale } = useSitePreferences();
+  const fr = locale === "fr";
+
   return (
     <section
+      id={id}
       data-rubrique-report-root
-      className="space-y-5"
+      className="relative min-h-screen"
     >
-      <CmmCard tone="slate" variant="glass" size="lg" className="rounded-3xl border-slate-800/40 bg-slate-900/40 backdrop-blur-md">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <h1 className="text-2xl font-bold cmm-text-primary tracking-tight">
-            {t(locale, props.title)}
-          </h1>
-          <RubriquePdfExportButton rubriqueTitle={t(locale, props.title)} />
-        </div>
-        <p className="mt-2 cmm-text-small cmm-text-secondary leading-relaxed">
-          {t(locale, props.subtitle)}
-        </p>
-      </CmmCard>
-
-      <div className="grid gap-4">
-        <RubriqueBlock
-          title={locale === "fr" ? "Résumer" : "Summarize"}
-          tone="slate"
-        >
-          <div className="cmm-text-small cmm-text-secondary">
-            {props.summary ??
-              (locale === "fr"
-                ? "Lecture opérationnelle disponible dans la section analyser."
-                : "Operational details available in Analyze section.")}
+      {/* Dynamic Background Gradient */}
+      <div className={`absolute inset-0 bg-gradient-to-b ${gradient || "from-slate-900/20 via-transparent to-transparent"} pointer-events-none -z-10`} />
+      
+      {!hideHeader && title && (
+        <div className="mb-16 space-y-8">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                {Icon && (
+                  <div className="p-3 rounded-2xl bg-white/5 border border-white/10 shadow-xl shadow-black/20">
+                    <Icon size={24} className="text-white/70" />
+                  </div>
+                )}
+                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none">
+                  {t(locale, title)}
+                </h1>
+              </div>
+              {subtitle && (
+                <p className="text-xl text-slate-400 font-medium max-w-2xl leading-relaxed">
+                  {t(locale, subtitle)}
+                </p>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <RubriquePdfExportButton 
+                rubriqueTitle={t(locale, title)} 
+                aria-label={fr ? `Exporter ${t(locale, title)} en PDF` : `Export ${t(locale, title)} to PDF`} 
+              />
+            </div>
           </div>
-        </RubriqueBlock>
+          
+          <div className="h-px w-full bg-gradient-to-r from-white/10 via-white/5 to-transparent" />
+        </div>
+      )}
 
-        <RubriqueBlock title={locale === "fr" ? "Agir" : "Act"} tone="emerald">
-          {props.links ? (
-            <CmmButtonGroup>
-              {props.links.map((link, index) => (
+      {/* Legacy Support for Summarize/Act/Trace if needed, but usually sections handle their own layout now */}
+      {(summary || links || traceNote) ? (
+        <div className="grid gap-8">
+          {summary && (
+            <div className="p-8 rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-xl">
+              <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">{fr ? "Synthèse" : "Summary"}</h3>
+              <div className="text-slate-300 font-medium leading-relaxed">{summary}</div>
+            </div>
+          )}
+          
+          <div className="rounded-[3rem] border border-white/10 bg-slate-950/20 p-4">
+            {children}
+          </div>
+
+          {links && (
+            <div className="flex flex-wrap gap-4 pt-4">
+              {links.map((link) => (
                 <CmmButton
-                  key={`${link.href}-${link.label[locale]}`}
+                  key={link.href}
                   href={link.href}
-                  tone={index === 0 ? "primary" : "secondary"}
+                  tone="secondary"
                   variant="pill"
+                  className="px-8"
                 >
                   {t(locale, link.label)}
                 </CmmButton>
               ))}
-            </CmmButtonGroup>
-          ) : (
-            <p className="cmm-text-small cmm-text-secondary italic">
-              {locale === "fr"
-                ? "Aucune action rapide disponible."
-                : "No quick action available."}
-            </p>
+            </div>
           )}
-        </RubriqueBlock>
 
-        <RubriqueBlock
-          title={locale === "fr" ? "Analyser" : "Analyze"}
-          tone="sky"
-        >
-          <div className="rounded-2xl border border-sky-900/20 bg-slate-950/40 backdrop-blur-sm p-3">
-            {props.children}
-          </div>
-        </RubriqueBlock>
-
-        <RubriqueBlock title={locale === "fr" ? "Tracer" : "Trace"} tone="amber">
-          <div className="space-y-1 cmm-text-caption cmm-text-secondary">
-            <p>
-              <span className="font-semibold">{locale === "fr" ? "Horodatage:" : "Timestamp:"}</span>{" "}
-              {new Intl.DateTimeFormat(locale === "fr" ? "fr-FR" : "en-US", {
-                dateStyle: "medium",
-                timeStyle: "short",
-              }).format(new Date())}
-            </p>
-            <p>
-              <span className="font-semibold">{locale === "fr" ? "Sources:" : "Sources:"}</span>{" "}
-              {locale === "fr"
-                ? "API actions et métriques dérivées."
-                : "Actions API and derived metrics."}
-            </p>
-            {props.traceNote ? (
-              <div className="mt-2 rounded-xl border border-amber-900/20 bg-amber-950/20 px-3 py-2 cmm-text-caption cmm-text-secondary">
-                {props.traceNote}
-              </div>
-            ) : null}
-          </div>
-        </RubriqueBlock>
-      </div>
+          {traceNote && (
+            <div className="mt-8 p-6 rounded-2xl border border-amber-500/10 bg-amber-500/5 text-amber-500/60 text-xs font-medium italic">
+              {traceNote}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="relative">
+          {children}
+        </div>
+      )}
     </section>
   );
 }
@@ -130,52 +133,64 @@ export function SectionShell(props: {
 export function NotFoundSection() {
   const { locale } = useSitePreferences();
   return (
-    <CmmCard tone="rose" size="lg" className="border-rose-900/20 bg-rose-950/20 backdrop-blur-md">
-      <h1 className="text-xl font-bold text-rose-400">
+    <div className="flex flex-col items-center justify-center py-32 px-6 text-center">
+      <div className="w-24 h-24 rounded-[2.5rem] bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 mb-8 shadow-2xl shadow-rose-500/10">
+        <Target size={48} />
+      </div>
+      <h1 className="text-4xl font-black text-white tracking-tight uppercase">
         {locale === "fr" ? "Rubrique introuvable" : "Section not found"}
       </h1>
-      <p className="mt-2 cmm-text-small text-rose-300/80">
+      <p className="mt-4 text-slate-400 font-medium max-w-md">
         {locale === "fr"
-          ? "La rubrique demandée n'est pas définie dans la navigation Next.js."
-          : "The requested section is not defined in Next.js navigation."}
+          ? "Désolé, cette rubrique n'existe pas ou a été déplacée par nos équipes."
+          : "Sorry, this section does not exist or has been moved by our teams."}
       </p>
-    </CmmCard>
+      <CmmButton href="/explorer" tone="primary" className="mt-12 h-16 px-10 rounded-2xl font-black shadow-xl shadow-rose-500/20">
+        {locale === "fr" ? "Explorer le plan" : "Explore map"}
+      </CmmButton>
+    </div>
   );
 }
 
-export function PendingSection(props: {
-  label: L10n;
-  description: L10n;
-  note?: L10n;
-}) {
+export function PendingSection({ label, description, note }: { label: L10n; description: L10n; note?: L10n }) {
   const { locale } = useSitePreferences();
+  const fr = locale === "fr";
+  
   return (
-    <CmmCard tone="amber" size="lg" className="border-amber-900/20 bg-amber-950/20 backdrop-blur-md">
-      <h1 className="text-xl font-bold text-amber-400">
-        {locale === "fr"
-          ? `Rubrique en attente: ${props.label.fr}`
-          : `Section in progress: ${props.label.en}`}
-      </h1>
-      <p className="mt-2 cmm-text-small font-semibold text-amber-300 uppercase tracking-wider">
-        {locale === "fr" ? "But de la rubrique" : "Section purpose"}
-      </p>
-      <p className="mt-1 cmm-text-small text-amber-200/70">{t(locale, props.description)}</p>
-      <p className="mt-3 cmm-text-small text-amber-200/60 italic">
-        {props.note
-          ? t(locale, props.note)
-          : locale === "fr"
-          ? "La route est active, mais le contenu final n'est pas encore livré."
-          : "The route is active, but the final content is not delivered yet."}
-      </p>
-      <CmmButtonGroup className="mt-6">
-        <CmmButton href="/dashboard" tone="secondary" variant="pill">
-          {locale === "fr" ? "Retour au tableau de bord" : "Back to dashboard"}
-        </CmmButton>
-        <CmmButton href="/reports" tone="secondary" variant="pill">
-          {locale === "fr" ? "Ouvrir le reporting" : "Open reporting"}
-        </CmmButton>
-      </CmmButtonGroup>
-    </CmmCard>
+    <div className="relative overflow-hidden rounded-[4rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl p-16 lg:p-24 shadow-2xl text-center">
+      <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[100px] -mr-32 -mt-32" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/5 blur-[100px] -ml-32 -mb-32" />
+
+      <div className="relative z-10 space-y-10">
+        <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs font-black uppercase tracking-[0.3em] text-amber-500">
+          <Sparkles size={16} />
+          {fr ? "Bientôt disponible" : "Coming Soon"}
+        </div>
+        
+        <div className="space-y-6">
+          <h1 className="text-5xl lg:text-7xl font-black text-white tracking-tighter">
+            {t(locale, label)}
+          </h1>
+          <p className="text-xl lg:text-2xl text-slate-400 font-medium max-w-3xl mx-auto leading-relaxed">
+            {t(locale, description)}
+          </p>
+        </div>
+
+        <div className="pt-8">
+          <p className="text-sm text-slate-500 font-black uppercase tracking-widest italic opacity-60">
+            {note ? t(locale, note) : (fr ? "Nos équipes finalisent le contenu technique..." : "Our teams are finalizing technical content...")}
+          </p>
+        </div>
+
+        <CmmButtonGroup className="justify-center pt-12">
+          <CmmButton href="/dashboard" tone="secondary" variant="pill" className="h-14 px-8 font-black uppercase tracking-widest text-xs">
+            {fr ? "Tableau de bord" : "Dashboard"}
+          </CmmButton>
+          <CmmButton href="/explorer" tone="primary" className="h-14 px-8 rounded-full font-black uppercase tracking-widest text-xs shadow-2xl shadow-emerald-500/20">
+            {fr ? "Explorer tout" : "Explore all"}
+          </CmmButton>
+        </CmmButtonGroup>
+      </div>
+    </div>
   );
 }
-

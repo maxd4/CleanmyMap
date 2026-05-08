@@ -2,11 +2,18 @@
 
 import Image from "next/image";
 import { Paperclip, Search, Send, X } from "lucide-react";
+import { memo } from "react";
 import type { ChangeEvent, FormEvent, KeyboardEvent, RefObject } from "react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
+import {
+  CHAT_ATTACHMENT_ACCEPT,
+  isSupportedChatAttachmentFile,
+} from "@/lib/chat/chat-attachments";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import type { ChatUser } from "./chat-types";
+
+const MAX_ATTACHMENT_SIZE_BYTES = 8 * 1024 * 1024;
 
 type ChatComposerProps = {
   activeChannelType: ChatChannelType;
@@ -35,7 +42,7 @@ type ChatComposerProps = {
   canSubmit: boolean;
 };
 
-export function ChatComposer({
+export const ChatComposer = memo(function ChatComposer({
   activeChannelType,
   composerPlaceholder,
   userId,
@@ -63,10 +70,21 @@ export function ChatComposer({
 }: ChatComposerProps) {
   const handleFileSelection = (e: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.size > 2 * 1024 * 1024) {
+    if (selectedFile && !isSupportedChatAttachmentFile(selectedFile)) {
+      onFileChange(null);
+      notifyNetworkToast({
+        title: "Format de fichier non pris en charge",
+        message:
+          "Ce type de fichier n'est pas autorisé ici. Utilise une image, un PDF ou un document courant.",
+      });
+      e.target.value = "";
+      return;
+    }
+    if (selectedFile && selectedFile.size > MAX_ATTACHMENT_SIZE_BYTES) {
+      onFileChange(null);
       notifyNetworkToast({
         title: "Pièce jointe trop volumineuse",
-        message: "Ce fichier dépasse 2 Mo. Choisis une pièce jointe plus légère.",
+        message: "Ce fichier dépasse 8 Mo. Choisis une pièce jointe plus légère.",
         retryLabel: "Choisir un autre fichier",
         onRetry: () => fileInputRef.current?.click(),
       });
@@ -265,6 +283,7 @@ export function ChatComposer({
           type="file"
           ref={fileInputRef}
           hidden
+          accept={CHAT_ATTACHMENT_ACCEPT}
           onChange={handleFileSelection}
         />
         <button
@@ -296,4 +315,4 @@ export function ChatComposer({
       </div>
     </form>
   );
-}
+});

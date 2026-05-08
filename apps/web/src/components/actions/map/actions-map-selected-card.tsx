@@ -35,34 +35,34 @@ export function ActionsMapSelectedCard({ item, onClear }: ActionsMapSelectedCard
   const model = buildSelectedActionCardModel(item);
 
   return (
-    <section className="rounded-[2rem] border border-slate-200/70 bg-white/90 p-5 shadow-xl shadow-slate-200/50 backdrop-blur-xl">
+    <section className="rounded-[2rem] border border-sky-300/16 bg-[rgba(10,31,50,0.92)] p-5 shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-sky-400/16 text-sky-100 ring-1 ring-inset ring-sky-200/18">
               <Layers3 size={16} />
             </span>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-100/70">
                 Sélection carte
               </p>
-              <p className="text-xs font-medium text-slate-500">
+              <p className="text-xs font-medium text-sky-100/58">
                 Détail compact de l&apos;action active
               </p>
             </div>
           </div>
           <div>
-            <h3 className="text-lg font-black tracking-tight text-slate-950">
+            <h3 className="text-lg font-black tracking-tight text-white">
               {model.title}
             </h3>
-            <p className="text-xs font-semibold text-slate-500">{model.subtitle}</p>
+            <p className="text-xs font-semibold text-sky-100/62">{model.subtitle}</p>
           </div>
         </div>
 
         <button
           type="button"
           onClick={onClear}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-900"
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-sky-200/12 bg-[rgba(16,40,64,0.92)] text-sky-100/70 shadow-[0_10px_28px_-18px_rgba(56,189,248,0.24)] transition hover:border-sky-200/28 hover:bg-[rgba(18,47,74,0.96)] hover:text-white"
           aria-label="Désélectionner l'action"
         >
           <X size={16} />
@@ -77,88 +77,88 @@ export function ActionsMapSelectedCard({ item, onClear }: ActionsMapSelectedCard
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Lieu</p>
-          <p className="mt-1 text-sm font-bold text-slate-900">{model.title}</p>
+        <div className="rounded-2xl border border-sky-200/12 bg-[rgba(16,40,64,0.72)] p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/56">Lieu</p>
+          <p className="mt-1 text-sm font-bold text-white">{model.title}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Coordonnées</p>
-          <p className="mt-1 text-sm font-bold text-slate-900">{model.coordinatesLabel}</p>
+        <div className="rounded-2xl border border-sky-200/12 bg-[rgba(16,40,64,0.72)] p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/56">Coordonnées</p>
+          <p className="mt-1 text-sm font-bold text-white">{model.coordinatesLabel}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Géométrie</p>
-          <p className="mt-1 text-sm font-bold text-slate-900">{model.geometryLabel}</p>
-          <p className="mt-1 text-[11px] font-semibold text-slate-500">
+        <div className="rounded-2xl border border-sky-200/12 bg-[rgba(16,40,64,0.72)] p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/56">Géométrie</p>
+          <p className="mt-1 text-sm font-bold text-white">{model.geometryLabel}</p>
+          <p className="mt-1 text-[11px] font-semibold text-sky-100/58">
             {model.geometryPointLabel}
             {model.geometryConfidenceLabel ? ` · ${model.geometryConfidenceLabel}` : ""}
           </p>
         </div>
-        <div className="rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Type</p>
-          <p className="mt-1 text-sm font-bold text-slate-900">{model.recordTypeLabel}</p>
-          <p className="mt-1 text-[11px] font-semibold text-slate-500">{model.placeTypeLabel}</p>
+        <div className="rounded-2xl border border-sky-200/12 bg-[rgba(16,40,64,0.72)] p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/56">Type</p>
+          <p className="mt-1 text-sm font-bold text-white">{model.recordTypeLabel}</p>
+          <p className="mt-1 text-[11px] font-semibold text-sky-100/58">{model.placeTypeLabel}</p>
         </div>
       </div>
 
       <div className="mt-4 grid grid-cols-4 gap-2">
-        <div className="rounded-2xl border border-slate-200/70 bg-white p-3">
-          <div className="flex items-center gap-1.5 text-slate-500">
+        <div className="rounded-2xl border border-sky-200/12 bg-[rgba(16,40,64,0.72)] p-3">
+          <div className="flex items-center gap-1.5 text-sky-100/60">
             <Trash2 size={12} />
             <span className="text-[10px] font-black uppercase">Kg</span>
           </div>
-          <p className="mt-1 text-sm font-black text-slate-900">{model.wasteLabel}</p>
+          <p className="mt-1 text-sm font-black text-white">{model.wasteLabel}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200/70 bg-white p-3">
-          <div className="flex items-center gap-1.5 text-slate-500">
+        <div className="rounded-2xl border border-sky-200/12 bg-[rgba(16,40,64,0.72)] p-3">
+          <div className="flex items-center gap-1.5 text-sky-100/60">
             <Sparkles size={12} />
             <span className="text-[10px] font-black uppercase">Mégots</span>
           </div>
-          <p className="mt-1 text-sm font-black text-slate-900">{model.buttsLabel}</p>
+          <p className="mt-1 text-sm font-black text-white">{model.buttsLabel}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200/70 bg-white p-3">
-          <div className="flex items-center gap-1.5 text-slate-500">
+        <div className="rounded-2xl border border-sky-200/12 bg-[rgba(16,40,64,0.72)] p-3">
+          <div className="flex items-center gap-1.5 text-sky-100/60">
             <Users size={12} />
             <span className="text-[10px] font-black uppercase">Équipe</span>
           </div>
-          <p className="mt-1 text-sm font-black text-slate-900">{model.volunteersLabel}</p>
+          <p className="mt-1 text-sm font-black text-white">{model.volunteersLabel}</p>
         </div>
-        <div className="rounded-2xl border border-slate-200/70 bg-white p-3">
-          <div className="flex items-center gap-1.5 text-slate-500">
+        <div className="rounded-2xl border border-sky-200/12 bg-[rgba(16,40,64,0.72)] p-3">
+          <div className="flex items-center gap-1.5 text-sky-100/60">
             <Clock size={12} />
             <span className="text-[10px] font-black uppercase">Durée</span>
           </div>
-          <p className="mt-1 text-sm font-black text-slate-900">{model.durationLabel}</p>
+          <p className="mt-1 text-sm font-black text-white">{model.durationLabel}</p>
         </div>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 to-white p-3">
+      <div className="mt-4 rounded-2xl border border-sky-200/12 bg-gradient-to-br from-[rgba(16,40,64,0.72)] to-[rgba(17,56,88,0.76)] p-3">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-slate-600">
+          <div className="flex items-center gap-2 text-sky-100/64">
             <Calendar size={12} />
             <span className="text-[10px] font-black uppercase tracking-[0.16em]">Date</span>
           </div>
-          <span className="text-xs font-bold text-slate-900">{model.dateLabel}</span>
+          <span className="text-xs font-bold text-white">{model.dateLabel}</span>
         </div>
         <div className="mt-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-slate-600">
+          <div className="flex items-center gap-2 text-sky-100/64">
             <MapPin size={12} />
             <span className="text-[10px] font-black uppercase tracking-[0.16em]">Source</span>
           </div>
-          <span className="text-xs font-bold text-slate-900">{model.sourceLabel}</span>
+          <span className="text-xs font-bold text-white">{model.sourceLabel}</span>
         </div>
         <div className="mt-3 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-slate-600">
+          <div className="flex items-center gap-2 text-sky-100/64">
             <ShieldCheck size={12} />
             <span className="text-[10px] font-black uppercase tracking-[0.16em]">Trajet</span>
           </div>
-          <span className="text-xs font-bold text-slate-900">{model.routeLabel}</span>
+          <span className="text-xs font-bold text-white">{model.routeLabel}</span>
         </div>
       </div>
 
       {model.notes ? (
-        <div className="mt-4 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3">
-          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Notes</p>
-          <p className="mt-2 text-sm leading-relaxed text-slate-700">{model.notes}</p>
+        <div className="mt-4 rounded-2xl border border-sky-200/12 bg-[rgba(16,40,64,0.68)] p-3">
+          <p className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/56">Notes</p>
+          <p className="mt-2 text-sm leading-relaxed text-sky-50/82">{model.notes}</p>
         </div>
       ) : null}
     </section>

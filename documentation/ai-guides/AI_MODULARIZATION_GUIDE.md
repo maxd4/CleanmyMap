@@ -9,23 +9,26 @@
 
 | Signal | Action |
 |--------|--------|
-| Fichier > 300 lignes **OU** > 10 KB | Modulariser |
+| Fichier > 500 lignes **OU** > 20 KB | Modulariser (priorité haute) |
+| Fichier > 300 lignes **OU** > 12 KB | Évaluer pour modularisation |
 | Plusieurs responsabilités distinctes dans un même fichier | Modulariser |
 | Code difficile à tester unitairement | Extraire dans un hook/helper |
 | Copié-collé entre 2 composants | Extraire en composant réutilisable |
 | `page.tsx` fait du fetch ET du rendu complexe | Séparer Server Component / Client Component |
 
-**Tailles cibles strictes :**
+**Tailles cibles pragmatiques :**
 
-| Type | Lignes max | Taille max |
-|------|-----------|------------|
-| `page.tsx` (Server Component) | 80 | 3 KB |
-| Composant orchestrateur | 150 | 5 KB |
-| Composant complexe | 300 | 10 KB |
-| Composant simple / UI | 150 | 5 KB |
-| Hook | 200 | 7 KB |
-| Config / données statiques | 100 / fichier | 8 KB |
-| Utils / helpers | 150 | 5 KB |
+| Type | Lignes max | Taille max | Notes |
+|------|-----------|------------|-------|
+| `page.tsx` (Server Component) | 150 | 6 KB | Peut aller jusqu'à 200 lignes si simple orchestration |
+| Composant orchestrateur | 300 | 12 KB | Acceptable si bien structuré avec sections claires |
+| Composant complexe | 400 | 15 KB | Limite absolue, au-delà = modulariser |
+| Composant simple / UI | 200 | 8 KB | Peut contenir plusieurs variantes |
+| Hook | 250 | 10 KB | Acceptable si logique cohérente |
+| Config / données statiques | 200 / fichier | 12 KB | Diviser par catégorie si > 15 KB |
+| Utils / helpers | 200 | 8 KB | Regrouper par domaine fonctionnel |
+
+**Principe directeur :** Privilégier la **cohésion fonctionnelle** sur la taille brute. Un fichier de 350 lignes bien organisé avec une seule responsabilité claire est préférable à 5 fichiers de 70 lignes avec des dépendances croisées.
 
 ---
 
@@ -214,19 +217,34 @@ npm run quality:top-heavy       # fichier retiré du top 20
 ### ✅ Toujours faire
 
 1. **Définir les types en premier** — interfaces avant le code.
-2. **Créer `index.ts`** pour chaque nouveau dossier de feature.
+2. **Créer `index.ts`** pour chaque nouveau dossier de feature (optionnel pour petites features < 3 fichiers).
 3. **Extraire la configuration avant les composants** — données séparées du rendu.
 4. **Ne pas modifier la signature publique** — props, hook returns, exports nommés inchangés.
 5. **Tester les fonctions pures** — helpers et hooks avant de supprimer l'original.
-6. **Valider après chaque extraction** — `lint` + `test` à chaque étape, pas seulement à la fin.
+6. **Valider après chaque extraction majeure** — `lint` + `typecheck` après chaque phase, pas nécessairement après chaque fichier.
 
 ### ❌ Ne jamais faire
 
-1. **Sur-modulariser** — un fichier par ligne est contre-productif. Regrouper par responsabilité logique.
+1. **Sur-modulariser** — un fichier par ligne est contre-productif. **Règle des 3 usages** : n'extraire un composant que s'il est réutilisé 3+ fois OU s'il dépasse 150 lignes.
 2. **Créer des dépendances circulaires** — architecture unidirectionnelle obligatoire.
 3. **Utiliser des noms génériques** — `Card`, `Item`, `Component` sont interdits. Préférer `ActionMapPopup`, `HarvestPhotoCard`.
-4. **Copier-coller** sans extraire dans un composant partagé.
+4. **Copier-coller** sans extraire dans un composant partagé (sauf si < 10 lignes et contexte très différent).
 5. **Supprimer le code legacy** avant que les tests soient verts.
+6. **Modulariser prématurément** — attendre qu'un fichier atteigne 400+ lignes ou montre des signes clairs de responsabilités multiples.
+
+### 🎯 Critères de décision : Extraire ou pas ?
+
+**EXTRAIRE si :**
+- Le bloc fait > 100 lignes ET a une responsabilité distincte
+- Le code est réutilisé 3+ fois
+- Le fichier parent dépasse 500 lignes
+- Le bloc est difficile à tester dans son contexte actuel
+
+**NE PAS EXTRAIRE si :**
+- Le bloc fait < 50 lignes
+- Il est fortement couplé au composant parent (utilise 5+ props/states du parent)
+- L'extraction créerait plus de complexité (prop drilling, context nécessaire)
+- Le fichier parent reste < 300 lignes après nettoyage
 
 ---
 

@@ -1,129 +1,164 @@
-import { auth } from"@clerk/nextjs/server";
-import { INITIAL_ANNUAIRE_ENTRIES } from"@/components/sections/rubriques/annuaire-directory-seed";
-import { hasRecentActivity } from"@/components/sections/rubriques/annuaire-helpers";
-import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
-import { PublishedAnnuaireReviewPanel } from"@/components/partners/published-annuaire-review-panel";
-import { getCurrentUserRoleLabel } from"@/lib/authz";
-import { countPartnerOnboardingRequests } from"@/lib/partners/onboarding-requests-store";
-import { listPublishedPartnerAnnuaireEntries } from"@/lib/partners/published-annuaire-entries-store";
+import { auth } from "@clerk/nextjs/server";
+import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
+import { hasRecentActivity } from "@/components/sections/rubriques/annuaire-helpers";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { PublishedAnnuaireReviewPanel } from "@/components/partners/published-annuaire-review-panel";
+import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { countPartnerOnboardingRequests } from "@/lib/partners/onboarding-requests-store";
+import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
+import { getBlockClasses } from "@/lib/ui/block-accents";
+import { cn } from "@/lib/utils";
+import { Network, ShieldCheck, ClipboardCheck, Users, MapPin, AlertCircle } from "lucide-react";
 
 export default async function PartnersDashboardPage() {
- const { userId } = await auth();
- const publishedEntries = await listPublishedPartnerAnnuaireEntries().catch(() => []);
- const currentRole = userId ? await getCurrentUserRoleLabel().catch(() => null) : null;
- const acceptedPublishedEntries = publishedEntries.filter(
- (entry) => entry.publicationStatus ==="accepted",
- );
- const reviewPublishedEntries = publishedEntries.filter(
- (entry) => entry.publicationStatus !=="accepted",
- );
- const allEntries = (() => {
- const seen = new Set<string>();
- const output = [...INITIAL_ANNUAIRE_ENTRIES.slice(0, 0)];
- for (const entry of [...INITIAL_ANNUAIRE_ENTRIES, ...acceptedPublishedEntries]) {
- const key = `${entry.name.trim().toLowerCase()}::${entry.legalIdentity.trim().toLowerCase()}`;
- if (seen.has(key)) {
- continue;
- }
- seen.add(key);
- output.push(entry);
- }
- return output;
- })();
- const totalEntries = allEntries.length;
- const activeEntries = allEntries.filter(
- (entry) =>
- entry.qualificationStatus ==="partenaire_actif" &&
- entry.verificationStatus ==="verifie" &&
- hasRecentActivity(entry.recentActivityAt),
- );
- const staleEntries = allEntries.filter(
- (entry) =>
- entry.verificationStatus !=="verifie" || !hasRecentActivity(entry.recentActivityAt),
- );
- let onboardingRequestCount: number | null = null;
- let onboardingLoadError: string | null = null;
- try {
- onboardingRequestCount = await countPartnerOnboardingRequests();
- } catch (error) {
- console.error("Partner onboarding requests load failed", error);
- onboardingLoadError =
-"Demandes onboarding indisponibles (configuration persistance).";
- }
- const coveredZones = new Set(allEntries.flatMap((entry) => entry.coveredArrondissements));
+  const { userId } = await auth();
+  const classes = getBlockClasses("network");
+  const publishedEntries = await listPublishedPartnerAnnuaireEntries().catch(() => []);
+  const currentRole = userId ? await getCurrentUserRoleLabel().catch(() => null) : null;
+  
+  const acceptedPublishedEntries = publishedEntries.filter(
+    (entry) => entry.publicationStatus === "accepted",
+  );
+  const reviewPublishedEntries = publishedEntries.filter(
+    (entry) => entry.publicationStatus !== "accepted",
+  );
+  const allEntries = (() => {
+    const seen = new Set<string>();
+    const output = [...INITIAL_ANNUAIRE_ENTRIES.slice(0, 0)];
+    for (const entry of [...INITIAL_ANNUAIRE_ENTRIES, ...acceptedPublishedEntries]) {
+      const key = `${entry.name.trim().toLowerCase()}::${entry.legalIdentity.trim().toLowerCase()}`;
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      output.push(entry);
+    }
+    return output;
+  })();
 
- const page = (
- <div className="space-y-4">
- <header className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
- <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
-   Pilotage réseau
- </p>
-  <h1 className="mt-1 text-lg font-semibold cmm-text-primary">Tableau de bord du réseau</h1>
- <p className="mt-1 cmm-text-small cmm-text-secondary">
-   Suivi des demandes, des fiches publiées et des zones couvertes.
- </p>
- </header>
+  const totalEntries = allEntries.length;
+  const activeEntries = allEntries.filter(
+    (entry) =>
+      entry.qualificationStatus === "partenaire_actif" &&
+      entry.verificationStatus === "verifie" &&
+      hasRecentActivity(entry.recentActivityAt),
+  );
+  const staleEntries = allEntries.filter(
+    (entry) =>
+      entry.verificationStatus !== "verifie" || !hasRecentActivity(entry.recentActivityAt),
+  );
+  
+  let onboardingRequestCount: number | null = null;
+  let onboardingLoadError: string | null = null;
+  try {
+    onboardingRequestCount = await countPartnerOnboardingRequests();
+  } catch (error) {
+    console.error("Partner onboarding requests load failed", error);
+    onboardingLoadError = "Demandes onboarding indisponibles (configuration persistance).";
+  }
+  const coveredZones = new Set(allEntries.flatMap((entry) => entry.coveredArrondissements));
 
- <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
- <article className="rounded-lg border border-slate-200 bg-white p-3">
- <p className="cmm-text-caption cmm-text-muted">Fiches publiées</p>
- <p className="text-xl font-semibold cmm-text-primary">{totalEntries}</p>
- </article>
- <article className="rounded-lg border border-slate-200 bg-white p-3">
- <p className="cmm-text-caption cmm-text-muted">Partenaires actifs</p>
- <p className="text-xl font-semibold cmm-text-primary">{activeEntries.length}</p>
- </article>
- <article className="rounded-lg border border-slate-200 bg-white p-3">
- <p className="cmm-text-caption cmm-text-muted">Zones couvertes</p>
- <p className="text-xl font-semibold cmm-text-primary">{coveredZones.size}</p>
- </article>
-<article className="rounded-lg border border-slate-200 bg-white p-3">
-  <p className="cmm-text-caption cmm-text-muted">Demandes en attente de validation</p>
-  <p className="text-xl font-semibold cmm-text-primary">
-  {onboardingRequestCount ??"n/a"}
-  </p>
-  <p className="cmm-text-caption text-amber-600">En attente de votre décision</p>
-  </article>
- <article className="rounded-lg border border-slate-200 bg-white p-3">
- <p className="cmm-text-caption cmm-text-muted">Fiches à revoir</p>
- <p className="text-xl font-semibold cmm-text-primary">{reviewPublishedEntries.length}</p>
- </article>
- <article className="rounded-lg border border-slate-200 bg-white p-3 md:col-span-2">
- <p className="cmm-text-caption cmm-text-muted">Fiches à confirmer</p>
- <p className="text-xl font-semibold cmm-text-primary">{staleEntries.length}</p>
- </article>
- </section>
+  const page = (
+    <div className="w-full max-w-7xl mx-auto space-y-10 pb-20">
+      {/* Premium Header */}
+      <header className="space-y-6 pt-10">
+        <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-slate-400/20 bg-slate-400/5">
+          <Network size={14} className="text-slate-400 animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400/60">Pilotage Réseau</span>
+        </div>
+        <div className="space-y-4">
+          <h1 className="text-6xl md:text-7xl font-black text-white tracking-tighter leading-tight">
+            Gouvernance <br/>des Partenariats
+          </h1>
+          <p className="text-xl text-slate-100/40 max-w-2xl font-medium leading-relaxed">
+            Suivi des demandes d&apos;onboarding, modération des fiches et analyse de la couverture territoriale.
+          </p>
+        </div>
+      </header>
 
- {onboardingLoadError ? (
- <section className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 cmm-text-small text-amber-900">
- {onboardingLoadError}
- </section>
- ) : null}
+      {/* Stats Grid */}
+      <section className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5">
+        {[
+          { label: "Fiches publiées", val: totalEntries, icon: <ClipboardCheck size={20} />, color: "slate" },
+          { label: "Partenaires actifs", val: activeEntries.length, icon: <Users size={20} />, color: "emerald" },
+          { label: "Zones couvertes", val: coveredZones.size, icon: <MapPin size={20} />, color: "sky" },
+          { label: "À valider", val: onboardingRequestCount ?? "n/a", icon: <ShieldCheck size={20} />, color: "amber", sub: "Décision requise" },
+          { label: "Fiches à revoir", val: reviewPublishedEntries.length, icon: <AlertCircle size={20} />, color: "rose" },
+        ].map((card, i) => (
+          <div key={i} className={cn(
+            "p-8 rounded-[2.5rem] border flex flex-col justify-between transition-all duration-700 group relative overflow-hidden",
+            classes.surface,
+            classes.shadow,
+            "hover:border-slate-400/30"
+          )}>
+            <div className={cn("transition-transform group-hover:scale-110 duration-700 mb-6", `text-${card.color}-400`)}>
+              {card.icon}
+            </div>
+            <div className="space-y-1">
+              <p className="text-3xl font-black text-white">{card.val}</p>
+              <p className="text-[9px] font-black uppercase tracking-widest text-white/20">{card.label}</p>
+              {card.sub && <p className="text-[9px] font-bold text-amber-400/60 mt-1">{card.sub}</p>}
+            </div>
+          </div>
+        ))}
+      </section>
 
- <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
- <h2 className="cmm-text-small font-semibold cmm-text-primary">Prochaines décisions</h2>
- <ol className="mt-3 list-decimal space-y-2 pl-5 cmm-text-small cmm-text-secondary">
-<li>Traiter les demandes de partenariat en attente de validation sous 72h ouvrées</li>
-  <li>Revoir les fiches publiées en attente de validation ou de refus</li>
- <li>Renforcer les contributions en zones sous-couvertes.</li>
- <li>Publier les mises à jour de fiches partenaires cette semaine.</li>
- </ol>
- </section>
+      {onboardingLoadError && (
+        <section className="rounded-[2rem] border border-amber-400/20 bg-amber-400/5 p-6 flex items-center gap-4 text-amber-200/60 text-sm font-medium">
+          <AlertCircle size={20} className="text-amber-400 shrink-0" />
+          {onboardingLoadError}
+        </section>
+      )}
 
- {currentRole ==="admin" && reviewPublishedEntries.length > 0 ? (
- <PublishedAnnuaireReviewPanel items={reviewPublishedEntries} />
- ) : null}
- </div>
- );
+      <div className="grid lg:grid-cols-3 gap-10">
+        <section className={cn("lg:col-span-2 p-10 rounded-[3rem] border space-y-8", classes.surface, classes.shadow)}>
+          <div className="flex items-center gap-3 text-slate-400">
+            <ClipboardCheck size={16} />
+            <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40">Feuille de route Prioritaire</h3>
+          </div>
+          <ul className="grid gap-4">
+            {[
+              "Traiter les demandes de partenariat en attente sous 72h",
+              "Revoir les fiches publiées en attente de validation",
+              "Renforcer les contributions en zones sous-couvertes",
+              "Publier les mises à jour de fiches partenaires cette semaine"
+            ].map((item, i) => (
+              <li key={i} className="flex items-center gap-4 p-5 rounded-2xl bg-white/5 border border-white/5 group hover:bg-white/[0.07] transition-all">
+                <span className="w-8 h-8 rounded-lg bg-slate-400/10 flex items-center justify-center text-[10px] font-black text-slate-400 group-hover:bg-slate-400 group-hover:text-black transition-all">0{i+1}</span>
+                <span className="text-sm font-medium text-white/60 group-hover:text-white transition-colors">{item}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
 
- return (
- <ClerkRequiredGate
- isAuthenticated={Boolean(userId)}
- mode="disabled"
-   title="Pilotage réseau"
-   description="Cette vue reste lisible, mais les actions demandent une connexion."
- >
- {page}
- </ClerkRequiredGate>
- );
+        <aside className="space-y-10">
+          <div className="bg-white/5 rounded-[3rem] p-10 space-y-6 border border-white/5 shadow-inner relative overflow-hidden">
+             <div className="absolute top-0 right-0 w-32 h-32 bg-slate-400/5 rounded-full blur-[80px]" />
+             <h3 className="text-xl font-black text-white tracking-tight relative z-10 flex items-center gap-3">
+               <ShieldCheck size={20} className="text-slate-400" />
+               Vérification
+             </h3>
+             <p className="text-sm text-slate-100/40 leading-relaxed font-medium relative z-10">
+               {staleEntries.length} fiches nécessitent une confirmation de données ou une vérification d&apos;activité récente.
+             </p>
+          </div>
+
+          {currentRole === "admin" && reviewPublishedEntries.length > 0 && (
+            <PublishedAnnuaireReviewPanel items={reviewPublishedEntries} />
+          )}
+        </aside>
+      </div>
+    </div>
+  );
+
+  return (
+    <ClerkRequiredGate
+      isAuthenticated={Boolean(userId)}
+      mode="disabled"
+      title="Pilotage réseau"
+      description="Cette vue reste lisible, mais les actions demandent une connexion."
+  >
+      {page}
+    </ClerkRequiredGate>
+  );
 }

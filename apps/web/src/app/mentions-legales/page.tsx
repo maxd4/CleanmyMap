@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Mentions Légales - CleanMyMap",
@@ -23,6 +24,17 @@ export const metadata: Metadata = {
 export default function MentionsLegalesPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+      {/* Navigation de retour */}
+      <div className="mb-8">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Retour à l'accueil
+        </Link>
+      </div>
+
       <div className="space-y-10 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
         <header className="space-y-4">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">

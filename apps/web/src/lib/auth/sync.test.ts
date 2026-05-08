@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const getSupabaseAdminClientMock = vi.hoisted(() => vi.fn());
+const getSupabaseClerkRlsClientMock = vi.hoisted(() => vi.fn(async () => null));
+
+vi.mock("@/lib/supabase/clerk-rls", () => ({
+  getSupabaseClerkRlsClient: getSupabaseClerkRlsClientMock,
+}));
 
 vi.mock("@/lib/supabase/server", () => ({
   getSupabaseAdminClient: getSupabaseAdminClientMock,

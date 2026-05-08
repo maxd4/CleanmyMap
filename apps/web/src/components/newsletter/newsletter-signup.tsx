@@ -1,21 +1,39 @@
 "use client";
 
-import { useState } from"react";
+import { useEffect, useState } from"react";
 import { Send, CheckCircle2, Leaf, Loader2 } from "lucide-react";
 import { ErrorMessage } from"@/components/ui/error-message";
 import { defaultMessageForKind, isAppError, toAppError, type AppError } from"@/lib/errors/app-errors";
 import { notifyNetworkToast } from"@/lib/errors/network-toast";
+import { useSubmissionLock } from "@/hooks/use-submission-lock";
 
 export function NewsletterSignup() {
  const [email, setEmail] = useState("");
  const [consent, setConsent] = useState(false);
+ const [honeypot, setHoneypot] = useState("");
+ const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
  const [status, setStatus] = useState<"idle" |"loading" |"success" |"error">("idle");
  const [message, setMessage] = useState("");
  const [error, setError] = useState<AppError | null>(null);
+ const { acquire, release } = useSubmissionLock();
+
+ useEffect(() => {
+ setFormStartedAt(Date.now());
+ }, []);
 
  const handleSubmit = async (e: React.FormEvent) => {
  e.preventDefault();
  if (!consent) return;
+ if (!acquire()) {
+ setStatus("error");
+ const appError = toAppError(new Error("Un envoi est déjà en cours. Réessayez dans un instant."), {
+ kind: "validation",
+ message: "Un envoi est déjà en cours. Réessayez dans un instant.",
+ });
+ setError(appError);
+ setMessage(appError.message);
+ return;
+ }
 
  setStatus("loading");
  setError(null);
@@ -23,7 +41,13 @@ export function NewsletterSignup() {
  const res = await fetch("/api/newsletter/subscribe", {
  method:"POST",
  headers: {"Content-Type":"application/json" },
- body: JSON.stringify({ email, gdprConsent: consent, source:"community_section" }),
+ body: JSON.stringify({
+ email,
+ gdprConsent: consent,
+ source:"community_section",
+ honeypot,
+ submittedAt: formStartedAt ?? Date.now(),
+ }),
  });
 
  const data = await res.json();
@@ -32,10 +56,21 @@ export function NewsletterSignup() {
  setMessage(data.message);
  } else {
  const appError = toAppError(
- new Error(typeof data.error ==="string" ? data.error : "Impossible de vous inscrire pour le moment."),
+ new Error(
+ typeof data.message ==="string"
+ ? data.message
+ : typeof data.error ==="string"
+ ? data.error
+ : "Impossible de vous inscrire pour le moment.",
+ ),
  {
  kind: res.status === 401 || res.status === 403 ? "permission" : res.status >= 500 ? "server" : "validation",
- message: typeof data.error ==="string" ? data.error : "Impossible de vous inscrire pour le moment.",
+ message:
+ typeof data.message ==="string"
+ ? data.message
+ : typeof data.error ==="string"
+ ? data.error
+ : "Impossible de vous inscrire pour le moment.",
  },
  );
  setStatus("error");
@@ -61,6 +96,8 @@ export function NewsletterSignup() {
  setStatus("error");
  setError(appError);
  setMessage(appError.message);
+ } finally {
+ release();
  }
  };
 
@@ -81,6 +118,17 @@ export function NewsletterSignup() {
 
  return (
  <div className="relative group p-8 md:p-12 rounded-[2.5rem] cmm-surface border shadow-xl overflow-hidden transition-all hover:shadow-2xl hover:border-emerald-500/30">
+ <div className="absolute left-[-9999px] top-auto h-px w-px overflow-hidden opacity-0" aria-hidden="true">
+ <label htmlFor="newsletter-website">Website</label>
+ <input
+ id="newsletter-website"
+ name="website"
+ tabIndex={-1}
+ autoComplete="off"
+ value={honeypot}
+ onChange={(event) => setHoneypot(event.target.value)}
+ />
+ </div>
  {/* Background Decor */}
  <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-emerald-500/5 blur-3xl rounded-full" />
  

@@ -42,6 +42,7 @@ if (hasHttpsProtocol(userInput)) {
 - `lib/supabase/server.ts` ✅ Déjà corrigé
 - `lib/supabase/client.ts` ✅ Déjà corrigé
 - `lib/persistence/runtime-store.ts` ✅ Déjà corrigé
+- `src/lib/security/validation.ts` ✅ Helpers centralisés
 
 ---
 
@@ -113,6 +114,21 @@ import DOMPurify from "dompurify";
 
 ---
 
+### 3. Surfaces publiques et 429 homogènes
+
+#### ✅ À vérifier
+
+- Les formulaires publics utilisent `createPublicRateLimitResponse()`
+- Les réponses 429 contiennent la même structure `error`, `kind`, `status`
+- Les garde-fous `honeypot` et `submittedAt` sont testés par des cas déterministes
+
+#### Référence
+
+- `documentation/security/PRE_MERGE_CHECKLIST.md`
+- `apps/web/src/lib/security/validation.ts`
+
+---
+
 ## 📋 Checklist pour les revues de code
 
 ### URLs
@@ -141,6 +157,7 @@ import DOMPurify from "dompurify";
 - **CodeQL js/xss-through-dom :** https://codeql.github.com/codeql-query-help/javascript/js-xss-through-dom/
 - **OWASP Input Validation :** https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html
 - **OWASP DOM-based XSS :** https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+- **Checklist avant merge :** `documentation/security/PRE_MERGE_CHECKLIST.md`
 
 ---
 
@@ -169,4 +186,3 @@ grep -r "dangerouslySetInnerHTML" apps/web/src --include="*.ts" --include="*.tsx
 | 2026-04-24 | `lib/persistence/runtime-store.ts` | Ajout `hasHttpsProtocol()` helper |
 | 2026-04-24 | `components/actions/action-drawing-map.tsx` | Remplacé `innerHTML` par `textContent` |
 | 2026-04-24 | Ce fichier | Création du guide de référence rapide |
-

@@ -1,62 +1,51 @@
 import { auth } from "@clerk/nextjs/server";
+import Link from "next/link";
 import { Suspense } from "react";
-import { ActionDeclarationForm } from "@/components/actions/action-declaration-form";
 import { DashboardOverviewSection } from "@/components/dashboard/dashboard-overview-section";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
-import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getProfileLabel, getProfilePrimaryAction, toProfile } from "@/lib/profiles";
 import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/lib/i18n/server-translation";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
+import { Shield, Plus, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Mon Dashboard - CleanMyMap',
-  description: 'Suivez votre impact environnemental, déclarez vos actions de nettoyage et consultez vos statistiques personnelles.',
+  title: "Mon Dashboard - CleanMyMap",
+  description: "Suivez votre impact environnemental, déclarez vos actions de nettoyage et consultez vos statistiques personnelles.",
 };
 
 type DashboardOverviewLoaded =
   | { status: "ok"; overview: Awaited<ReturnType<typeof loadPilotageOverview>> }
   | { status: "error"; message: string };
 
-async function loadDashboardOverviewResult(
-  locale: "fr" | "en",
-): Promise<DashboardOverviewLoaded> {
+async function loadDashboardOverviewResult(locale: "fr" | "en"): Promise<DashboardOverviewLoaded> {
   try {
     const supabase = getSupabaseServerClient();
-    const overview = await loadPilotageOverview({
-      supabase,
-      periodDays: 30,
-      limit: 1800,
-    });
+    const overview = await loadPilotageOverview({ supabase, periodDays: 30, limit: 1800 });
     return { status: "ok", overview };
   } catch {
     return {
       status: "error",
-      message:
-        locale === "fr"
-          ? "Les données du tableau de bord sont momentanément indisponibles."
-          : "Dashboard data is temporarily unavailable.",
+      message: locale === "fr"
+        ? "Les données du tableau de bord sont momentanément indisponibles."
+        : "Dashboard data is temporarily unavailable.",
     };
   }
 }
 
 function DashboardOverviewSkeleton() {
   return (
-    <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="space-y-2">
-        <div className="h-4 w-36 animate-pulse rounded bg-slate-100" />
-        <div className="h-7 w-72 animate-pulse rounded bg-slate-100" />
+    <div className="space-y-5 animate-pulse">
+      <div className="grid gap-4 md:grid-cols-3">
+        {[0, 1, 2].map(i => <div key={i} className="h-44 rounded-3xl bg-black/15" />)}
       </div>
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className="h-36 animate-pulse rounded-2xl bg-slate-100" />
-        <div className="h-36 animate-pulse rounded-2xl bg-slate-100" />
-        <div className="h-36 animate-pulse rounded-2xl bg-slate-100" />
-      </div>
-    </section>
+      <div className="h-36 rounded-3xl bg-black/15" />
+    </div>
   );
 }
 
@@ -70,45 +59,15 @@ export default async function DashboardPage() {
         isAuthenticated={false}
         mode="blur"
         title={locale === "fr" ? "Tableau de bord" : "Dashboard"}
-        description={
-          locale === "fr"
-            ? "Cette fonctionnalité nécessite une connexion Clerk."
-            : "This feature requires Clerk sign-in."
-        }
+        description={locale === "fr" ? "Connectez-vous pour accéder à votre tableau de bord." : "Sign in to access your dashboard."}
         lockedPreview={
-          <div className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-            <div className="grid gap-3 md:grid-cols-3">
-              <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
-                  {locale === "fr" ? "Aujourd'hui" : "Today"}
-                </p>
-                <p className="mt-2 cmm-text-small cmm-text-secondary">
-                  {locale === "fr"
-                    ? "Votre dernière activité et les actions en attente de validation."
-                    : "Your latest activity and actions awaiting validation."}
-                </p>
-              </article>
-              <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
-                  {locale === "fr" ? "Action prioritaire" : "Priority action"}
-                </p>
-                <p className="mt-2 cmm-text-small cmm-text-secondary">
-                  {locale === "fr"
-                    ? "Déclarer une action ou reprendre la prochaine tâche."
-                    : "Declare an action or resume the next task."}
-                </p>
-              </article>
-              <article className="rounded-2xl border border-slate-200 bg-white p-4">
-                <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
-                  {locale === "fr" ? "Accès rapides" : "Quick access"}
-                </p>
-                <p className="mt-2 cmm-text-small cmm-text-secondary">
-                  {locale === "fr"
-                    ? "Carte, historique, rapports et raccourcis utiles."
-                    : "Map, history, reports and useful shortcuts."}
-                </p>
-              </article>
-            </div>
+          <div className="grid gap-3 md:grid-cols-3 p-6 rounded-3xl bg-black/20">
+            {["Aujourd'hui", "Priorité", "Accès"].map((label) => (
+              <div key={label} className="rounded-2xl bg-black/15 p-5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white">{label}</p>
+                <div className="mt-3 h-3 w-3/4 rounded bg-black/20" />
+              </div>
+            ))}
           </div>
         }
       >
@@ -117,81 +76,110 @@ export default async function DashboardPage() {
     );
   }
 
-  const [identity, role, displayMode] = await Promise.all([
-    getCurrentUserIdentity(),
-    getCurrentUserRoleLabel(),
+  const [role, displayMode] = await Promise.all([
+    getCurrentUserRoleLabel().catch(() => "benevole" as const),
     getServerDisplayMode(),
   ]);
   const profile = toProfile(role);
   const roleLabel = getProfileLabel(profile, locale);
   const primaryAction = getProfilePrimaryAction(profile);
   const { t } = getTranslation("dashboard", locale);
-  const fallbackActorName = userId ?? "unknown-user";
-  const actorNameOptions =
-    identity?.actorNameOptions && identity.actorNameOptions.length > 0
-      ? identity.actorNameOptions
-      : [fallbackActorName];
-  const defaultActorName = actorNameOptions[0] ?? fallbackActorName;
-
   const overviewPromise = loadDashboardOverviewResult(locale);
 
   return (
-    <div className="flex flex-col gap-6 pt-4 md:pt-6" data-display-mode={displayMode}>
-      <IdentityProfileBanner profile={profile} />
+    <main
+      className="relative min-h-screen overflow-hidden"
+      data-display-mode={displayMode}
+      style={{ background: "#92400e" }}
+    >
+      {/* Fond multicouche — orange soleil profond avec lumière */}
+      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 160% 100% at 50% -15%, #fef08a 0%, #fbbf24 20%, #f97316 50%, #ea580c 75%, #92400e 100%)" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(254,240,138,0.6) 0%, transparent 65%)" }} />
+      <div className="pointer-events-none absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full blur-[120px]" style={{ background: "rgba(251,191,36,0.5)" }} />
+      <div className="pointer-events-none absolute top-1/2 -right-32 h-[450px] w-[450px] rounded-full blur-[100px]" style={{ background: "rgba(249,115,22,0.25)" }} />
+      <div className="pointer-events-none absolute bottom-0 left-1/4 h-[400px] w-[400px] rounded-full blur-[120px]" style={{ background: "rgba(253,224,71,0.2)" }} />
 
-      <header className="space-y-3 rounded-2xl border border-white/40 bg-white/60 p-6 shadow-xl backdrop-blur-md">
-        <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
-          Cockpit quotidien
-        </p>
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight cmm-text-primary">
-            {t("title_v1")}
-          </h1>
-          <p className="cmm-text-small cmm-text-secondary">{t("desc_v1")}</p>
+      <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-24 pt-8 sm:px-8 sm:pt-10">
+
+        {/* ── Configuration active ── */}
+        <IdentityProfileBanner profile={profile} />
+
+        {/* ── Header ── */}
+        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/70">
+              {locale === "fr" ? "Cockpit opérationnel" : "Operational cockpit"}
+            </p>
+            <h1 className="mt-1.5 text-[clamp(3rem,6vw,5.5rem)] font-black leading-[0.92] tracking-[-0.05em] text-white">
+              {t("title_v1")}
+            </h1>
+          </div>
+          <div className="flex items-center gap-2.5 pb-1">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+            <span className="text-sm font-semibold text-white">{roleLabel}</span>
+            <span className="rounded-lg border border-white/20 bg-black/20 px-3 py-1 text-[11px] font-mono font-bold text-white">
+              <Shield size={10} className="inline mr-1.5 text-emerald-400" />
+              {userId.slice(-8).toUpperCase()}
+            </span>
+          </div>
         </div>
-        <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
-          {locale === "fr" ? "Profil actif" : "Active profile"}: {roleLabel}
-        </p>
-      </header>
 
-      <Suspense fallback={<DashboardOverviewSkeleton />}>
-        <DashboardOverviewSection
-          overviewPromise={overviewPromise}
-          locale={locale}
-          profile={profile}
-          primaryAction={primaryAction}
-        />
-      </Suspense>
-
-      <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
-        <div>
-          <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
-            {locale === "fr" ? "Action prioritaire" : "Priority action"}
-          </p>
-          <h2 className="mt-1 text-xl font-semibold cmm-text-primary">
-            {locale === "fr"
-              ? "Déclarer ou compléter une action"
-              : "Declare or complete an action"}
-          </h2>
-          <p className="mt-1 cmm-text-small cmm-text-secondary">
-            {locale === "fr"
-              ? "Le formulaire terrain reste l'entrée directe pour transformer une sortie en impact mesuré."
-              : "The field form remains the direct entry to turn a field visit into measured impact."}
-          </p>
+        {/* ── Résumé décisionnel + Plan de journée ── */}
+        <div className="mt-12">
+          <Suspense fallback={<DashboardOverviewSkeleton />}>
+            <DashboardOverviewSection
+              overviewPromise={overviewPromise}
+              locale={locale}
+              profile={profile}
+              primaryAction={primaryAction}
+            />
+          </Suspense>
         </div>
-        <ActionDeclarationForm
-          actorNameOptions={actorNameOptions}
-          defaultActorName={defaultActorName}
-          userMetadata={{
-            userId: identity?.userId ?? fallbackActorName,
-            username: identity?.username,
-            displayName: identity?.displayName ?? fallbackActorName,
-          }}
-          initialMode="quick"
-        />
-      </section>
 
-      <RolePrimaryActions profile={profile} title={locale === "fr" ? "Accès rapides" : "Quick access"} />
-    </div>
+        {/* ── Séparateur ── */}
+        <div className="mt-14 h-px bg-white/20" />
+
+        {/* ── Action prioritaire ── */}
+        <div className="mt-10 relative overflow-hidden rounded-3xl">
+          {/* Layer fond isolé — règle anti-flou */}
+          <div className="pointer-events-none absolute inset-0 rounded-3xl bg-black/20" />
+          <div className="relative z-10 flex flex-col gap-5 px-7 py-7 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/70">
+                {locale === "fr" ? "Action prioritaire" : "Priority action"}
+              </p>
+              <h2 className="text-2xl font-black tracking-tight text-white">
+                {locale === "fr" ? "Déclarer une action" : "Declare an action"}
+              </h2>
+              <p className="text-base font-medium text-white max-w-md leading-relaxed">
+                {locale === "fr"
+                  ? "Enregistrez une intervention terrain depuis le formulaire dédié."
+                  : "Log a field intervention from the dedicated form."}
+              </p>
+            </div>
+            <Link
+              href="/actions/new"
+              className="group inline-flex h-14 shrink-0 items-center gap-3 rounded-2xl bg-amber-300 px-7 text-[14px] font-black text-amber-950 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.35)] transition-all hover:-translate-y-0.5 hover:bg-amber-200 hover:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.4)]"
+            >
+              <Plus size={18} />
+              {locale === "fr" ? "Ouvrir le formulaire" : "Open the form"}
+              <ArrowRight size={15} className="ml-1 transition-transform group-hover:translate-x-1" />
+            </Link>
+          </div>
+        </div>
+
+        {/* ── Séparateur ── */}
+        <div className="mt-14 h-px bg-white/20" />
+
+        {/* ── Accès rapides ── */}
+        <div className="mt-10">
+          <p className="mb-6 text-[11px] font-bold uppercase tracking-[0.3em] text-white/70">
+            {locale === "fr" ? "Accès rapides" : "Quick access"}
+          </p>
+          <RolePrimaryActions profile={profile} title="" tone="dark" />
+        </div>
+
+      </div>
+    </main>
   );
 }

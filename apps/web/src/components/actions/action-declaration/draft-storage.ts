@@ -1,6 +1,7 @@
 import type { FormState } from "./types";
 
 export const ACTION_DECLARATION_DRAFT_KEY = "cmm_action_draft";
+export const ACTION_DECLARATION_DRAFT_DATE_KEY = "cmm_action_draft_date";
 
 const FORM_STATE_KEYS = [
   "actorName",
@@ -39,7 +40,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-export function hydrateActionDeclarationDraft(fallback: FormState): FormState {
+export function getDraftSavedAt(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(ACTION_DECLARATION_DRAFT_DATE_KEY);
+}
+
+export function clearDraft(): void {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(ACTION_DECLARATION_DRAFT_KEY);
+  window.localStorage.removeItem(ACTION_DECLARATION_DRAFT_DATE_KEY);
+}
+
+export function loadDraft(fallback: FormState): FormState {
   if (typeof window === "undefined") {
     return fallback;
   }

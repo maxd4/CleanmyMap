@@ -1,51 +1,161 @@
 "use client";
 
-import { useSitePreferences } from"@/components/ui/site-preferences-provider";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { SectionShell } from "@/components/sections/rubriques/shared";
+import { Banknote, Landmark, Heart, ShieldCheck, ArrowRight, Sparkles, Target, Coins } from "lucide-react";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 export function FundingSection() {
- const { locale } = useSitePreferences();
- const fr = locale ==="fr";
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
 
- return (
- <div className="space-y-4">
- <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 cmm-text-small text-emerald-900">
- {fr
- ?"Rubrique dédiée au modèle économique local: sponsoring de zones, mécénat écologique et appel au don pour renforcer les actions concrètes sur le terrain."
- :"Section dedicated to the local funding model: zone sponsorship, ecological patronage and donations to strengthen field actions."}
- </div>
+  return (
+    <SectionShell
+      id="funding"
+      title={fr ? "Modèle Économique" : "Economic Model"}
+      subtitle={fr 
+        ? "Transparence, sponsoring de zones et mécénat pour une action environnementale pérenne."
+        : "Transparency, zone sponsorship and patronage for sustainable environmental action."}
+      icon={Banknote}
+      gradient="from-emerald-500/20 via-teal-500/10 to-transparent"
+    >
+      <div className="space-y-12 pt-8">
+        {/* Impact Message */}
+        <div className="p-8 rounded-[3rem] border border-white/5 bg-slate-950/20 backdrop-blur-3xl shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 group">
+           <div className="flex items-center gap-6">
+              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                 <ShieldCheck size={24} />
+              </div>
+              <div className="space-y-1">
+                 <h4 className="text-sm font-black text-white uppercase tracking-widest">{fr ? "Action Indépendante" : "Independent Action"}</h4>
+                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{fr ? "Zéro influence sur la modération" : "Zero influence on moderation"}</p>
+              </div>
+           </div>
+           <p className="text-[11px] font-bold text-slate-400 leading-relaxed max-w-md md:text-right">
+              {fr
+                ?"Rubrique dédiée au modèle économique local: sponsoring de zones, mécénat écologique et appel au don pour renforcer les actions concrètes sur le terrain."
+                :"Section dedicated to the local funding model: zone sponsorship, ecological patronage and donations to strengthen field actions."}
+           </p>
+        </div>
 
- <section className="rounded-xl border border-slate-200 bg-white p-4">
- <h3 className="cmm-text-small font-semibold cmm-text-primary">
- {fr ?"Sponsoring de zones par les entreprises" :"Business-backed zone sponsorship"}
- </h3>
- <ul className="mt-2 list-disc space-y-1 pl-5 cmm-text-small cmm-text-secondary">
- <li>{fr ?"Une entreprise peut soutenir une zone cible avec un budget annuel transparent." :"A company can support a target area with a transparent annual budget."}</li>
- <li>{fr ?"Suivi attendu: actions réalisées, volume traité, qualité des données et évidence cartographique." :"Expected follow-up: completed actions, processed volume, data quality and map evidence."}</li>
- <li>{fr ?"Gouvernance: aucun droit de modération lié au financement." :"Governance: no moderation rights are tied to funding."}</li>
- </ul>
- </section>
+        {/* Funding Tracks Grid */}
+        <div className="grid gap-6 md:grid-cols-3">
+           {/* Section 1: Business Sponsoring */}
+           <motion.div 
+             initial={{ opacity: 0, y: 20 }}
+             whileInView={{ opacity: 1, y: 0 }}
+             className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
+           >
+              <div className="p-4 rounded-2xl w-fit bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+                 <Landmark size={24} />
+              </div>
+              <div className="space-y-4">
+                 <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Sponsoring de Zones" : "Zone Sponsorship"}</h3>
+                 <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                    {fr ? "Engagement des entreprises locales pour soutenir des périmètres géographiques spécifiques." : "Engagement of local businesses to support specific geographic perimeters."}
+                 </p>
+                 <ul className="space-y-3 pt-2">
+                    {[
+                      fr ? "Budget annuel transparent" : "Transparent annual budget",
+                      fr ? "Évidence cartographique" : "Map-based evidence",
+                      fr ? "Gouvernance indépendante" : "Independent governance"
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-3">
+                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/40" />
+                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
+                      </li>
+                    ))}
+                 </ul>
+              </div>
+           </motion.div>
 
- <section className="rounded-xl border border-slate-200 bg-white p-4">
- <h3 className="cmm-text-small font-semibold cmm-text-primary">{fr ?"Mécénat écologique" :"Ecological patronage"}</h3>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
- {fr
- ?"Les structures peuvent financer du matériel, de la logistique, de la formation ou de la capacité d'intervention sans logique de sur-competition entre acteurs."
- :"Organizations can fund equipment, logistics, training or intervention capacity without encouraging unhealthy competition."}
- </p>
- </section>
+           {/* Section 2: Mécénat */}
+           <motion.div 
+             initial={{ opacity: 0, y: 20 }}
+             whileInView={{ opacity: 1, y: 0 }}
+             transition={{ delay: 0.1 }}
+             className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
+           >
+              <div className="p-4 rounded-2xl w-fit bg-blue-500/10 border border-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform">
+                 <Target size={24} />
+              </div>
+              <div className="space-y-4">
+                 <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Mécénat Écologique" : "Ecological Patronage"}</h3>
+                 <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                    {fr ? "Financement de matériel, logistique et formation pour les acteurs de terrain." : "Funding of equipment, logistics and training for field actors."}
+                 </p>
+                 <ul className="space-y-3 pt-2">
+                    {[
+                      fr ? "Capacité d'intervention" : "Intervention capacity",
+                      fr ? "Logistique mutualisée" : "Shared logistics",
+                      fr ? "Zéro sur-compétition" : "Zero over-competition"
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-3">
+                         <div className="h-1.5 w-1.5 rounded-full bg-blue-500/40" />
+                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
+                      </li>
+                    ))}
+                 </ul>
+              </div>
+           </motion.div>
 
- <section className="rounded-xl border border-slate-200 bg-white p-4">
- <h3 className="cmm-text-small font-semibold cmm-text-primary">{fr ?"Appel au don" :"Donation appeal"}</h3>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
- {fr
- ?"Collecte citoyenne orientée impact local: chaque don est rattaché à un périmètre d'action et à des indicateurs de suivi publics."
- :"Civic fundraising focused on local impact: each donation is tied to a scope of action and public follow-up indicators."}
- </p>
- <ul className="mt-2 list-disc space-y-1 pl-5 cmm-text-small cmm-text-secondary">
- <li>{fr ?"Trajectoire d'usage des fonds documentée dans Rapports d'impact." :"Fund usage trajectory documented in Impact reports."}</li>
- <li>{fr ?"Priorisation des besoins terrain urgents et récurrents." :"Prioritization of urgent and recurring field needs."}</li>
- </ul>
- </section>
- </div>
- );
+           {/* Section 3: Donations */}
+           <motion.div 
+             initial={{ opacity: 0, y: 20 }}
+             whileInView={{ opacity: 1, y: 0 }}
+             transition={{ delay: 0.2 }}
+             className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
+           >
+              <div className="p-4 rounded-2xl w-fit bg-rose-500/10 border border-rose-500/20 text-rose-400 group-hover:scale-110 transition-transform">
+                 <Heart size={24} />
+              </div>
+              <div className="space-y-4">
+                 <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Appel au Don" : "Donation Appeal"}</h3>
+                 <p className="text-xs font-bold text-slate-500 leading-relaxed">
+                    {fr ? "Collecte citoyenne orientée vers l'impact local et le suivi communautaire." : "Civic fundraising oriented towards local impact and community monitoring."}
+                 </p>
+                 <ul className="space-y-3 pt-2">
+                    {[
+                      fr ? "Rapports d'impact publics" : "Public impact reports",
+                      fr ? "Priorisation des urgences" : "Urgency prioritization",
+                      fr ? "Traçabilité des fonds" : "Fund traceability"
+                    ].map((item, i) => (
+                      <li key={i} className="flex items-center gap-3">
+                         <div className="h-1.5 w-1.5 rounded-full bg-rose-500/40" />
+                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
+                      </li>
+                    ))}
+                 </ul>
+              </div>
+           </motion.div>
+        </div>
+
+        {/* Partner CTA */}
+        <div className="p-10 rounded-[3.5rem] border border-white/10 bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-12 group overflow-hidden relative">
+           <div className="absolute top-0 right-0 p-20 opacity-10 pointer-events-none rotate-12">
+              <Coins size={300} />
+           </div>
+
+           <div className="relative z-10 space-y-4 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[9px] font-black uppercase tracking-widest">
+                 <Sparkles size={12} className="text-emerald-300" />
+                 {fr ? "Rejoindre l'Action" : "Join the Action"}
+              </div>
+              <h3 className="text-4xl font-black tracking-tighter">{fr ? "Devenez Partenaire" : "Become a Partner"}</h3>
+              <p className="text-lg font-bold text-white/80 max-w-xl leading-relaxed">
+                 {fr 
+                   ? "Engagez votre organisation dans une démarche de propreté urbaine et de préservation environnementale mesurable."
+                   : "Commit your organization to a measurable urban cleanliness and environmental preservation approach."}
+              </p>
+           </div>
+           
+           <button className="relative z-10 flex items-center gap-4 px-10 py-5 rounded-2xl bg-white text-slate-950 text-xs font-black uppercase tracking-[0.3em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
+              {fr ? "Ouvrir le dossier" : "Open the file"}
+              <ArrowRight size={18} />
+           </button>
+        </div>
+      </div>
+    </SectionShell>
+  );
 }

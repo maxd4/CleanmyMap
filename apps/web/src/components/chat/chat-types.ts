@@ -6,6 +6,8 @@ export type ChatMessage = {
   content: string;
   channel_type: ChatChannelType;
   attachment_url?: string;
+  attachment_type?: string | null;
+  attachment_expires_at?: string | null;
   created_at: string;
   sender: {
     display_name: string;

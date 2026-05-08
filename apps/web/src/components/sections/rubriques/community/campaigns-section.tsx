@@ -4,8 +4,9 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Megaphone, Sparkles, Leaf, Copy, Check,
-  Cigarette, Trash2, Droplets, Eye, Info
+  Cigarette, Trash2, Droplets, Eye, Info, Share2
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const CAMPAIGN_THEMES = [
   {
@@ -67,74 +68,110 @@ export function CampaignsSection() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 bg-white/50 backdrop-blur-md border border-slate-200 rounded-[2rem] p-6 shadow-sm">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-rose-500/10 flex items-center justify-center text-rose-600 shadow-inner ring-1 ring-rose-500/20">
-            <Megaphone size={28} />
+    <div className="space-y-12">
+      {/* Header HUD */}
+      <div className="flex flex-col md:flex-row items-center justify-between gap-8 p-8 rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
+        <div className="absolute inset-0 bg-gradient-to-r from-rose-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+        
+        <div className="flex items-center gap-6 relative z-10">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shadow-2xl shadow-rose-500/20">
+            <Megaphone size={32} />
           </div>
           <div>
-            <h3 className="text-2xl font-black tracking-tighter text-slate-900">Kit Campagnes</h3>
-            <p className="text-sm font-medium text-slate-500">Prêts-à-partager pour sensibiliser</p>
+            <h3 className="text-3xl font-black tracking-tight text-white uppercase tracking-[0.05em]">Kit Campagnes</h3>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-1">Prêts-à-partager pour sensibiliser</p>
           </div>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-4 relative z-10">
+           <div className="h-1 w-12 rounded-full bg-slate-800" />
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Opérationnel Terrain</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Stats HUD */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
         {STATS_CARDS.map((stat, i) => (
-          <div key={i} className="p-4 rounded-[2rem] bg-white border border-slate-100 text-center shadow-sm hover:shadow-md transition-shadow">
-            <stat.icon size={20} className={`mx-auto mb-2 text-${stat.color}-500 opacity-70`} />
-            <p className="text-xl font-black text-slate-900 leading-none">{stat.value}</p>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-2">{stat.label}</p>
-          </div>
+          <motion.div 
+            key={i}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="p-6 rounded-[2.5rem] border border-white/5 bg-slate-900/20 backdrop-blur-3xl text-center shadow-xl hover:bg-white/[0.03] transition-all group"
+          >
+            <div className={cn(
+              "mx-auto mb-4 p-2.5 rounded-xl border w-fit transition-transform group-hover:scale-110",
+              stat.color === 'amber' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
+              stat.color === 'blue' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
+              stat.color === 'rose' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' :
+              'bg-slate-500/10 border-slate-500/20 text-slate-400'
+            )}>
+               <stat.icon size={18} />
+            </div>
+            <p className="text-2xl font-black text-white leading-none">{stat.value}</p>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mt-2 group-hover:text-slate-400 transition-colors">{stat.label}</p>
+          </motion.div>
         ))}
       </div>
 
-      <div className="flex gap-2 p-1 bg-slate-100/50 rounded-2xl w-fit">
+      {/* Theme Selector */}
+      <div className="flex flex-wrap gap-3 p-2 bg-slate-950/40 rounded-3xl w-fit border border-white/5 shadow-inner">
         {CAMPAIGN_THEMES.map((theme, i) => (
           <button
             key={theme.id}
             onClick={() => setActiveTheme(i)}
-            className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${
-              activeTheme === i
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
+            className={cn(
+              "relative px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-500",
+              activeTheme === i ? "text-white" : "text-slate-500 hover:text-slate-300"
+            )}
           >
-            {theme.title}
+            <span className="relative z-10">{theme.title}</span>
+            {activeTheme === i && (
+              <motion.div 
+                layoutId="active-theme-bg"
+                className="absolute inset-0 bg-rose-600 rounded-2xl shadow-2xl shadow-rose-600/40"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
           </button>
         ))}
       </div>
 
+      {/* Messages Grid */}
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTheme}
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.02 }}
-          className="grid gap-4"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 20 }}
+          className="grid gap-6"
         >
           {CAMPAIGN_THEMES[activeTheme].messages.map((msg, i) => {
             const msgId = `${CAMPAIGN_THEMES[activeTheme].id}-${i}`;
             return (
-              <div
+              <motion.div
                 key={i}
-                className="group relative p-5 rounded-[2rem] bg-white border border-slate-100 hover:border-rose-200 transition-all shadow-sm hover:shadow-lg hover:shadow-rose-100/20"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="group relative p-8 rounded-[2.5rem] border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] hover:border-rose-500/30 transition-all duration-500 shadow-2xl"
               >
-                <p className="text-base font-medium text-slate-700 pr-12 leading-relaxed">{msg}</p>
-                <button
-                  onClick={() => copyToClipboard(msg, msgId)}
-                  className="absolute top-1/2 -translate-y-1/2 right-4 h-10 w-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-50 hover:text-rose-600 shadow-sm"
-                >
-                  {copiedId === msgId ? <Check size={18} className="text-emerald-500" /> : <Copy size={18} />}
-                </button>
-              </div>
+                <div className="flex items-start justify-between gap-8">
+                  <p className="text-lg font-bold text-slate-200 leading-relaxed group-hover:text-white transition-colors">{msg}</p>
+                  <button
+                    onClick={() => copyToClipboard(msg, msgId)}
+                    className="shrink-0 h-14 w-14 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-600 hover:text-white border border-white/5 shadow-xl transform translate-x-4 group-hover:translate-x-0"
+                  >
+                    {copiedId === msgId ? <Check size={20} className="animate-in zoom-in" /> : <Copy size={20} />}
+                  </button>
+                </div>
+              </motion.div>
             );
           })}
           
-          <div className="flex flex-wrap gap-2 pt-2">
+          <div className="flex flex-wrap gap-3 pt-6">
             {CAMPAIGN_THEMES[activeTheme].hashtags.map((tag, i) => (
-              <span key={i} className="text-xs font-black text-rose-600 bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100">
+              <span key={i} className="text-[10px] font-black text-rose-400 bg-rose-500/10 px-4 py-2 rounded-xl border border-rose-500/20 uppercase tracking-widest hover:bg-rose-500/20 transition-colors cursor-default">
                 {tag}
               </span>
             ))}
@@ -142,14 +179,24 @@ export function CampaignsSection() {
         </motion.div>
       </AnimatePresence>
 
-      <div className="p-5 rounded-[2.5rem] bg-amber-50 border border-amber-100 flex items-start gap-4">
-        <div className="mt-0.5 p-2 bg-amber-100 rounded-xl text-amber-600">
-          <Info size={20} />
+      {/* Tip Banner */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.98 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+        className="p-8 rounded-[3rem] border border-amber-500/20 bg-amber-500/5 backdrop-blur-3xl flex flex-col md:flex-row items-center gap-6 group overflow-hidden relative"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+        <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-400 relative z-10 shadow-2xl shadow-amber-500/20">
+          <Sparkles size={28} className="animate-pulse" />
         </div>
-        <p className="text-sm font-bold text-amber-900 leading-relaxed">
-          <strong>Boostez votre impact</strong> : Partagez ces messages avec vos propres photos de ramassage pour inspirer votre entourage !
+        <p className="text-sm font-bold text-slate-300 leading-relaxed max-w-2xl relative z-10">
+          <strong className="text-amber-400 uppercase tracking-widest text-[10px] block mb-1">Boostez votre impact</strong> 
+          Partagez ces messages avec vos propres photos de ramassage pour inspirer votre entourage et démultiplier l&apos;impact de vos actions !
         </p>
-      </div>
+        <div className="ml-auto relative z-10 hidden md:block">
+           <Share2 size={48} className="text-white opacity-5" />
+        </div>
+      </motion.div>
     </div>
   );
 }

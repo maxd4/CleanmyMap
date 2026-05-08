@@ -40,6 +40,11 @@ function makeEvent(partial: Partial<CommunityEventItem>): CommunityEventItem {
     capacityTarget: partial.capacityTarget ?? 20,
     attendanceCount: partial.attendanceCount ?? 10,
     postMortem: partial.postMortem ?? null,
+    cleanupObjective: partial.cleanupObjective ?? null,
+    cleanupZone: partial.cleanupZone ?? null,
+    cleanupLogisticsNeeds: partial.cleanupLogisticsNeeds ?? null,
+    cleanupSupportLevel: partial.cleanupSupportLevel ?? null,
+    cleanupWasteTypesExpected: partial.cleanupWasteTypesExpected ?? [],
     rsvpCounts: partial.rsvpCounts ?? { yes: 12, maybe: 3, no: 1, total: 16 },
     myRsvpStatus: partial.myRsvpStatus ?? null,
   };

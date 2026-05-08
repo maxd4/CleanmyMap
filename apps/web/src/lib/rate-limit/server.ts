@@ -44,9 +44,12 @@ export function createServerRateLimitResponse(allowed: boolean, retryAfter?: num
   
   return new Response(
     JSON.stringify({
-      error: "Too Many Requests",
-      message: "Rate limit exceeded. Please slow down.",
+      error: "Trop de tentatives. Réessayez dans quelques instants.",
+      message: "Trop de tentatives. Réessayez dans quelques instants.",
+      kind: "network",
+      status: "rate_limited",
       code: "RATE_LIMIT_EXCEEDED",
+      retryAfterSeconds: retryAfter || 60,
     }),
     {
       status: 429,

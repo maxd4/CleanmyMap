@@ -16,10 +16,10 @@ function CommunityFunnelExportCard() {
  Export CSV funnel community
  </a>
  </div>
- <p className="mt-1 cmm-text-caption cmm-text-secondary">
- Export par evenement: RSVP, presence, conversions et actions liees pour
- pilotage hebdomadaire.
- </p>
+<p className="mt-1 cmm-text-caption cmm-text-secondary">
+ Export par evenement: RSVP, présence, conversions, cadrage cleanup et actions
+ liées pour pilotage hebdomadaire.
+</p>
  </div>
  );
 }

@@ -1,7 +1,7 @@
 create table public.missions (
   id uuid primary key default gen_random_uuid(),
-  volunteer_id uuid references public.profiles(id),
-  created_by uuid references public.profiles(id),
+  volunteer_id text references public.profiles(id),
+  created_by text references public.profiles(id),
   label text not null,
   status text not null default 'pending'
     check (status in ('pending','tracking','completed','cancelled')),
@@ -17,12 +17,12 @@ alter table public.missions enable row level security;
 
 -- La bénévole voit ses missions
 create policy "volunteer_read_missions" on public.missions
-  for select using (auth.uid() = volunteer_id);
+  for select using (auth.uid()::text = volunteer_id);
 
 -- L'app mobile peut update status/started_at/ended_at
 create policy "volunteer_update_missions" on public.missions
-  for update using (auth.uid() = volunteer_id)
-  with check (auth.uid() = volunteer_id);
+  for update using (auth.uid()::text = volunteer_id)
+  with check (auth.uid()::text = volunteer_id);
 
 create table public.gps_points (
   id bigint primary key generated always as identity,
@@ -46,7 +46,7 @@ create policy "volunteer_insert_gps" on public.gps_points
   for insert with check (
     exists (
       select 1 from public.missions
-      where id = mission_id and volunteer_id = auth.uid()
+      where id = mission_id and volunteer_id = auth.uid()::text
     )
   );
 
@@ -55,7 +55,7 @@ create policy "volunteer_read_gps" on public.gps_points
   for select using (
     exists (
       select 1 from public.missions
-      where id = mission_id and volunteer_id = auth.uid()
+      where id = mission_id and volunteer_id = auth.uid()::text
     )
   );
 

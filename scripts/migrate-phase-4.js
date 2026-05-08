@@ -158,7 +158,7 @@ La migration vers le formulaire simplifié est maintenant **TERMINÉE** !
 #### 🔄 Routes Mises à Jour
 - \`/declaration\` → Redirection automatique
 - \`/declaration-simple\` → Formulaire principal
-- \`/form-comparison\` → Toujours disponible pour référence
+- Vue de comparaison interne → Réservée aux accès protégés
 - \`/admin/forms\` → Panel d'administration
 
 ### 📊 Résultats Obtenus

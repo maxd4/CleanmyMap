@@ -150,7 +150,7 @@ export function ReportsWebDocument() {
  </div>
  </aside>
 
- <div className="space-y-6">
+ <div className="space-y-6" data-rubrique-report-root>
  <ReportCover
  report={model.report}
  activeScopeLabel={model.activeScopeLabel}

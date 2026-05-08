@@ -1,14 +1,24 @@
 "use client";
 import { useEffect } from "react";
-import Link from "next/link";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
+import { LearnPracticeGuideIntro } from "@/components/learn/learn-practice-guide-intro";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { LearnVisualCard } from "@/components/learn/learn-visual-card";
 import { LEARN_PRACTICE_LINKS } from "@/lib/learning/learn-rubric-data";
 import { recordLearnPageVisit } from "@/lib/learning/learn-progress";
 
 export default function LearnBonnesPratiquesPage() {
   const { locale } = useSitePreferences();
   const links = LEARN_PRACTICE_LINKS[locale];
+  const introTitle = { fr: "Bonnes pratiques", en: "Best practices" };
+  const introQuestion = {
+    fr: "Comment garder le bon réflexe sans alourdir l'action ?",
+    en: "How do we keep the right reflex without slowing the action?",
+  };
+  const introClue = {
+    fr: "Avant / pendant / après : une lecture rapide pour agir juste.",
+    en: "Before / during / after: a quick read to act well.",
+  };
 
   useEffect(() => {
     recordLearnPageVisit("bonnes-pratiques");
@@ -38,39 +48,46 @@ export default function LearnBonnesPratiquesPage() {
         label: { fr: "Voir les ressources", en: "See resources" },
       }}
     >
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-lg"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-600">
-                  {link.title}
-                </p>
-                <p className="mt-2 cmm-text-small cmm-text-secondary">{link.detail}</p>
-              </div>
-              <span className="rounded-full bg-emerald-100 p-2 text-emerald-600 transition group-hover:bg-emerald-200 group-hover:text-emerald-700">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </span>
-            </div>
-          </Link>
-        ))}
+      <div className="space-y-6">
+        <LearnPracticeGuideIntro
+          locale={locale}
+          title={introTitle}
+          question={introQuestion}
+          clue={introClue}
+          cta={{
+            href: links[0]?.href ?? "/sections/recycling",
+            label: { fr: "Ouvrir le premier guide", en: "Open the first guide" },
+          }}
+        />
+
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+              {locale === "fr" ? "Guides courts" : "Short guides"}
+            </p>
+            <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
+              {locale === "fr"
+                ? "Les repères à garder sous la main"
+                : "Keep these cues close at hand"}
+            </h3>
+          </div>
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            {links.length}
+          </span>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {links.map((link, index) => (
+            <LearnVisualCard
+              key={link.href}
+              locale={locale}
+              card={link}
+              index={index + 1}
+              compact
+              className="min-h-full"
+            />
+          ))}
+        </div>
       </div>
     </LearnRubricShell>
   );

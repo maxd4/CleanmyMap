@@ -15,9 +15,9 @@ export type RibbonChrome = {
   boxShadow: string;
 };
 
-const DEFAULT_CANVAS: RgbaColor = { r: 2, g: 6, b: 23, a: 1 };
-const DARK_ANCHOR: RgbaColor = { r: 2, g: 6, b: 23, a: 1 };
-const DARK_ANCHOR_2: RgbaColor = { r: 15, g: 23, b: 42, a: 1 };
+const DEFAULT_CANVAS: RgbaColor = { r: 15, g: 23, b: 42, a: 1 };
+const DARK_ANCHOR: RgbaColor = { r: 15, g: 23, b: 42, a: 1 };
+const DARK_ANCHOR_2: RgbaColor = { r: 30, g: 41, b: 59, a: 1 };
 const LIGHT_ANCHOR: RgbaColor = { r: 255, g: 255, b: 255, a: 1 };
 let colorParserNode: HTMLSpanElement | null = null;
 
@@ -298,23 +298,15 @@ function sampleRibbonBackdropColor(ribbonElement: HTMLElement): RgbaColor {
   return colors.length > 0 ? averageColors(colors) : resolveCanvasBackgroundColor();
 }
 
-export function buildRibbonChrome(baseColor: RgbaColor): RibbonChrome {
-  const luminance = relativeLuminance(baseColor);
-  const isLightBackdrop = luminance > 0.45;
-  const firstWeight = isLightBackdrop ? 0.22 : 0.3;
-  const secondWeight = isLightBackdrop ? 0.16 : 0.24;
-  const thirdWeight = isLightBackdrop ? 0.1 : 0.18;
-
-  const primary = mixColors(baseColor, DARK_ANCHOR, firstWeight);
-  const secondary = mixColors(baseColor, DARK_ANCHOR_2, secondWeight);
-  const highlight = mixColors(baseColor, LIGHT_ANCHOR, thirdWeight);
-  const border = mixColors(baseColor, LIGHT_ANCHOR, isLightBackdrop ? 0.14 : 0.08);
-  const shadowAlpha = isLightBackdrop ? 0.66 : 0.54;
-
+export function buildRibbonChrome(_baseColor: RgbaColor): RibbonChrome {
+  // Ribbon fixe : slate-900 neutre, indépendant de la couleur de la page
+  const bg1 = { r: 15, g: 23, b: 42, a: 0.97 };
+  const bg2 = { r: 22, g: 32, b: 56, a: 0.97 };
+  const bg3 = { r: 30, g: 41, b: 59, a: 0.92 };
   return {
-    backgroundImage: `linear-gradient(135deg, ${rgbaToCss(primary, 0.9)} 0%, ${rgbaToCss(secondary, 0.94)} 50%, ${rgbaToCss(highlight, 0.78)} 100%)`,
-    borderColor: rgbaToCss(border, isLightBackdrop ? 0.3 : 0.2),
-    boxShadow: `0 48px 96px -24px rgba(2, 6, 23, ${shadowAlpha}), 0 18px 34px -26px ${rgbaToCss(baseColor, isLightBackdrop ? 0.18 : 0.12)}`,
+    backgroundImage: `linear-gradient(135deg, ${rgbaToCss(bg1, bg1.a)} 0%, ${rgbaToCss(bg2, bg2.a)} 50%, ${rgbaToCss(bg3, bg3.a)} 100%)`,
+    borderColor: `rgba(255, 255, 255, 0.06)`,
+    boxShadow: `0 1px 0 0 rgba(255, 255, 255, 0.04), 0 4px 24px -8px rgba(0, 0, 0, 0.35)`,
   };
 }
 
@@ -322,8 +314,10 @@ export function useAdaptiveRibbonChrome(
   ribbonRef: RefObject<HTMLElement | null>,
   dependencyKey: string,
 ): RibbonChrome {
+  // Hydration-safe initial value: the server cannot inspect the live backdrop,
+  // so we start from a stable canvas color and refine it after mount.
   const [chrome, setChrome] = useState<RibbonChrome>(() =>
-    buildRibbonChrome(resolveCanvasBackgroundColor()),
+    buildRibbonChrome(DEFAULT_CANVAS),
   );
 
   useEffect(() => {

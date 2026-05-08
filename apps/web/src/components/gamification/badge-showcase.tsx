@@ -5,6 +5,7 @@ import {
  getGamificationBadgeIconName,
 } from"./badge-icon";
 import { BadgeSurface } from"./badge-surface";
+import { Badge3D } from "./badge-3d";
 
 const BADGE_CONFIG: Record<string, { tone:"admin" |"role" |"profile" |"mode" |"gamification" |"neutral"; description: string }> = {
 "Contributeur regulier": { tone:"gamification", description:"Atteindre le niveau 3" },
@@ -44,23 +45,25 @@ export function BadgeShowcase({ badges }: { badges: string[] }) {
  initial={{ scale: 0.8, opacity: 0 }}
  animate={{ scale: 1, opacity: 1 }}
  transition={{ delay: index * 0.1 }}
- className="group flex cursor-help flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white/85 p-3 shadow-sm backdrop-blur-sm transition-transform hover:scale-105"
+ className="group flex cursor-help flex-col items-center justify-center p-2"
  title={config.description}
  aria-label={badge}
  >
- <BadgeSurface
- icon={getGamificationBadgeIconName(badge)}
- label={badge}
- tone={config.tone}
- variant="orb"
- className="border-slate-200/70 bg-white/90 shadow-sm"
- />
- <span className="mt-2 text-center cmm-text-caption font-semibold cmm-text-secondary">
- {badge}
- </span>
- <span className="mt-0.5 text-center cmm-text-caption cmm-text-muted">
- {config.description}
- </span>
+   <Badge3D className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white/85 p-3 shadow-sm backdrop-blur-sm transition-transform">
+     <BadgeSurface
+     icon={getGamificationBadgeIconName(badge)}
+     label={badge}
+     tone={config.tone}
+     variant="orb"
+     className="border-slate-200/70 bg-white/90 shadow-sm"
+     />
+     <span className="mt-2 text-center cmm-text-caption font-semibold cmm-text-secondary">
+     {badge}
+     </span>
+     <span className="mt-0.5 text-center cmm-text-caption cmm-text-muted">
+     {config.description}
+     </span>
+   </Badge3D>
  </motion.div>
  );
  })

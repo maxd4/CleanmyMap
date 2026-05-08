@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "companion-app",
-    "slug": "companion-app",
+    "name": "CleanMyMap GPS",
+    "slug": "cleanmymap-companion",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,31 +10,71 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#f8fafc"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
+      "bundleIdentifier": "fr.cleanmymap.companion",
+      "associatedDomains": [
+        "applinks:cleanmymap.fr"
+      ],
       "infoPlist": {
-        "UIBackgroundModes": [
-          "location",
-          "fetch"
-        ]
+        "UIBackgroundModes": ["location", "fetch"],
+        "NSLocationWhenInUseUsageDescription": "CleanMyMap utilise votre position pour enregistrer votre parcours de nettoyage.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "CleanMyMap suit votre parcours même écran éteint pour enregistrer toute la mission."
       }
     },
     "android": {
+      "package": "fr.cleanmymap.companion",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#f8fafc"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "cleanmymap.fr",
+              "pathPrefix": "/mission/start"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "CleanMyMap suit votre parcours de nettoyage, même écran éteint.",
+          "locationAlwaysPermission": "CleanMyMap suit votre parcours de nettoyage en arrière-plan.",
+          "locationWhenInUsePermission": "CleanMyMap utilise votre position pour enregistrer le parcours.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ]
     ],
-    "scheme": "companion"
+    "scheme": "companion",
+    "extra": {
+      "eas": {
+        "projectId": "TODO_REMPLACER_PAR_EAS_PROJECT_ID"
+      }
+    }
   }
 }

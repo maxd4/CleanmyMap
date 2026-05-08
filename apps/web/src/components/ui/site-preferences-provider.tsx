@@ -7,8 +7,10 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   DEFAULT_DISPLAY_MODE,
   STORAGE_KEYS,
@@ -25,6 +27,7 @@ import {
   siteLocaleStorage,
   siteThemeStorage,
 } from "@/lib/storage/ui-state-storage";
+import { applyLocalePreferenceChange } from "./site-preferences-locale-sync";
 
 type SitePreferencesContextValue = {
   locale: Locale;
@@ -74,6 +77,9 @@ export function SitePreferencesProvider({
   initialDisplayMode,
   initialDisplayModeExplicit = false,
 }: SitePreferencesProviderProps) {
+  const router = useRouter();
+  const shouldRefreshAfterLocaleChange = useRef(false);
+
   const [locale, setLocaleState] = useState<Locale>(() => {
     if (typeof window === "undefined") {
       return STORAGE_DEFAULTS.locale;
@@ -114,10 +120,19 @@ export function SitePreferencesProvider({
       return;
     }
 
-    siteLocaleStorage.write(locale);
-    setCookie(STORAGE_KEYS.locale, locale);
-    document.documentElement.lang = locale;
-  }, [locale]);
+    applyLocalePreferenceChange(locale, shouldRefreshAfterLocaleChange, {
+      writeLocale: (value) => {
+        siteLocaleStorage.write(value);
+      },
+      setCookie,
+      setDocumentLang: (value) => {
+        document.documentElement.lang = value;
+      },
+      refresh: () => {
+        router.refresh();
+      },
+    });
+  }, [locale, router]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

@@ -2,6 +2,15 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
+import {
+  BookOpen,
+  CalendarDays,
+  Leaf,
+  MapPinned,
+  Recycle,
+  Sparkles,
+  TriangleAlert,
+} from "lucide-react";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
@@ -21,6 +30,8 @@ export function LearnRessourcesClient() {
   const isFrench = locale === "fr";
   const sortingCues = [
     {
+      icon: Recycle,
+      tone: "emerald",
       fr: {
         title: "Mégots",
         text: "À part, dans un contenant fermé et au sec.",
@@ -31,6 +42,8 @@ export function LearnRessourcesClient() {
       },
     },
     {
+      icon: BookOpen,
+      tone: "cyan",
       fr: {
         title: "Verre / métal",
         text: "Sacs distincts pour éviter la contamination croisée.",
@@ -41,6 +54,8 @@ export function LearnRessourcesClient() {
       },
     },
     {
+      icon: Leaf,
+      tone: "emerald",
       fr: {
         title: "Plastique",
         text: "Regrouper les matières séparables, sans mélanger le mixte.",
@@ -51,6 +66,8 @@ export function LearnRessourcesClient() {
       },
     },
     {
+      icon: TriangleAlert,
+      tone: "amber",
       fr: {
         title: "Mixte",
         text: "Isoler le non triable et noter la raison terrain.",
@@ -61,6 +78,45 @@ export function LearnRessourcesClient() {
       },
     },
   ] as const;
+
+  const kitCards = [
+    {
+      icon: Sparkles,
+      tone: "amber",
+      label: t("kit.doc1_title"),
+      note: isFrench ? "Repère d'entrée" : "Entry reference",
+    },
+    {
+      icon: MapPinned,
+      tone: "cyan",
+      label: t("kit.doc2_title"),
+      note: isFrench ? "Carte et zone" : "Map and area",
+    },
+    {
+      icon: CalendarDays,
+      tone: "emerald",
+      label: t("kit.doc3_title"),
+      note: isFrench ? "Calendrier utile" : "Useful calendar",
+    },
+    {
+      icon: BookOpen,
+      tone: "violet",
+      label: t("kit.doc4_title"),
+      note: isFrench ? "À relire vite" : "Quick revisit",
+    },
+  ] as const;
+
+  const cueToneClasses = {
+    amber: "text-amber-700",
+    cyan: "text-cyan-700",
+    emerald: "text-emerald-700",
+  } as const;
+
+  const cueBarClasses = {
+    amber: "from-amber-400 to-orange-400",
+    cyan: "from-cyan-400 to-sky-400",
+    emerald: "from-emerald-400 to-lime-400",
+  } as const;
 
   const sortingMistakes = isFrench
     ? [
@@ -112,6 +168,30 @@ export function LearnRessourcesClient() {
               </h2>
             </div>
           </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
+                {isFrench ? "Événements" : "Events"}
+              </p>
+              <p className="mt-2 text-3xl font-black tracking-tight text-slate-900">
+                {LEARN_RESOURCE_EVENTS.length}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-emerald-700">
+                {isFrench ? "Repères" : "Cues"}
+              </p>
+              <p className="mt-2 text-3xl font-black tracking-tight text-emerald-800">4</p>
+            </div>
+            <div className="rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700">
+                {isFrench ? "Visuels" : "Visuals"}
+              </p>
+              <p className="mt-2 text-3xl font-black tracking-tight text-cyan-800">3</p>
+            </div>
+          </div>
+
           <div className="mt-5 h-[540px]">
             <Calendar
               localizer={localizer}
@@ -138,16 +218,25 @@ export function LearnRessourcesClient() {
               {isFrench ? "Kit terrain" : "Field kit"}
             </p>
             <div className="mt-4 grid gap-3">
-              {[t("kit.doc1_title"), t("kit.doc2_title"), t("kit.doc3_title"), t("kit.doc4_title")].map(
-                (item) => (
+              {kitCards.map((card) => {
+                const Icon = card.icon;
+                return (
                   <div
-                    key={item}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold cmm-text-primary"
+                    key={card.label}
+                    className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3"
                   >
-                    {item}
+                    <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
+                      <Icon size={18} className="text-slate-700" aria-hidden="true" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold cmm-text-primary">{card.label}</p>
+                      <p className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500">
+                        {card.note}
+                      </p>
+                    </div>
                   </div>
-                ),
-              )}
+                );
+              })}
             </div>
           </article>
 
@@ -164,14 +253,33 @@ export function LearnRessourcesClient() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 {sortingCues.map((cue) => (
-                  <div
-                    key={cue.fr.title}
-                    className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-                  >
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
-                      {isFrench ? cue.fr.title : cue.en.title}
-                    </p>
-                    <p className="mt-2 text-sm font-medium cmm-text-primary">
+                  <div key={cue.fr.title} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-500">
+                        {isFrench ? cue.fr.title : cue.en.title}
+                      </p>
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-white shadow-sm">
+                        <cue.icon
+                          size={16}
+                          className={cueToneClasses[cue.tone]}
+                          aria-hidden="true"
+                        />
+                      </span>
+                    </div>
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                      <div
+                        className={`h-full rounded-full bg-gradient-to-r ${cueBarClasses[cue.tone]}`}
+                        style={{
+                          width:
+                            cue.tone === "amber"
+                              ? "85%"
+                              : cue.tone === "cyan"
+                                ? "72%"
+                                : "90%",
+                        }}
+                      />
+                    </div>
+                    <p className="mt-3 text-sm font-medium cmm-text-primary">
                       {isFrench ? cue.fr.text : cue.en.text}
                     </p>
                   </div>

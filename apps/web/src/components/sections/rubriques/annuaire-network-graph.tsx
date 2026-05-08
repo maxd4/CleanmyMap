@@ -57,34 +57,25 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
 
   const getColorClass = (type: string) => {
     switch (type) {
-      case 'environnemental': return 'fill-emerald-500 stroke-emerald-400';
-      case 'social': return 'fill-sky-500 stroke-sky-400';
-      case 'humanitaire': return 'fill-rose-500 stroke-rose-400';
+      case 'environnemental': return 'fill-violet-500 stroke-violet-300';
+      case 'social': return 'fill-indigo-500 stroke-indigo-300';
+      case 'humanitaire': return 'fill-fuchsia-500 stroke-fuchsia-300';
       default: return 'fill-violet-500 stroke-violet-400';
     }
   };
 
-  const getGlowClass = (type: string) => {
-    switch (type) {
-      case 'environnemental': return 'shadow-emerald-500/50';
-      case 'social': return 'shadow-sky-500/50';
-      case 'humanitaire': return 'shadow-rose-500/50';
-      default: return 'shadow-violet-500/50';
-    }
-  };
-
   return (
-    <div className="relative w-full h-full bg-slate-950/50 backdrop-blur-3xl overflow-hidden rounded-[2rem] border border-white/5">
+    <div className="relative h-full w-full overflow-hidden rounded-[2rem] border border-violet-300/14 bg-[rgba(20,14,48,0.96)] backdrop-blur-3xl">
       {/* Background Grid / Grid Lines */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none" 
+      <div className="pointer-events-none absolute inset-0 opacity-[0.04]" 
            style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
       
       <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice">
         <defs>
           <linearGradient id="linkGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.05)" />
-            <stop offset="50%" stopColor="rgba(255,255,255,0.15)" />
-            <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
+            <stop offset="0%" stopColor="rgba(196,181,253,0.06)" />
+            <stop offset="50%" stopColor="rgba(196,181,253,0.18)" />
+            <stop offset="100%" stopColor="rgba(196,181,253,0.06)" />
           </linearGradient>
           
           <filter id="glow">
@@ -121,10 +112,10 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
         {/* Nodes */}
         <g className="nodes">
           <AnimatePresence>
-            {nodes.map((node) => {
-              const primaryType = node.types?.[0] ?? "autre";
+        {nodes.map((node) => {
+          const primaryType = node.types?.[0] ?? "autre";
 
-              return (
+          return (
                 <motion.g
                   key={node.id}
                   layout
@@ -170,13 +161,13 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
                     className="pointer-events-none overflow-visible"
                   >
                     <div className="flex flex-col">
-                      <span className="text-[1.8px] font-black tracking-widest text-white/90 uppercase whitespace-nowrap drop-shadow-md">
+                    <span className="whitespace-nowrap text-[1.8px] font-black uppercase tracking-widest text-white/90 drop-shadow-md">
                         {node.name}
                       </span>
                       <span className={cn("text-[1.2px] font-bold opacity-0 group-hover:opacity-70 transition-opacity uppercase tracking-tighter", 
-                        primaryType === "environnemental" ? "text-emerald-400" :
-                        primaryType === "social" ? "text-sky-400" :
-                        primaryType === "humanitaire" ? "text-rose-400" : "text-violet-400"
+                        primaryType === "environnemental" ? "text-violet-300" :
+                        primaryType === "social" ? "text-indigo-300" :
+                        primaryType === "humanitaire" ? "text-fuchsia-300" : "text-violet-300"
                       )}>
                         {node.location}
                       </span>
@@ -190,15 +181,15 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
       </svg>
 
       {/* Stats / Info Overlay */}
-      <div className="absolute bottom-6 right-6 p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 pointer-events-none">
+      <div className="pointer-events-none absolute bottom-6 right-6 rounded-2xl border border-violet-300/14 bg-[rgba(24,17,54,0.92)] p-4 backdrop-blur-xl">
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
-            <span className="text-[10px] font-black tracking-widest text-white/40 uppercase">Maillage</span>
+            <span className="text-[10px] font-black tracking-widest text-violet-100/42 uppercase">Maillage</span>
             <span className="text-xl font-black text-white">{links.length} Liens</span>
           </div>
-          <div className="w-px h-8 bg-white/10" />
+          <div className="h-8 w-px bg-white/10" />
           <div className="flex flex-col">
-            <span className="text-[10px] font-black tracking-widest text-white/40 uppercase">Densité</span>
+            <span className="text-[10px] font-black tracking-widest text-violet-100/42 uppercase">Densité</span>
             <span className="text-xl font-black text-white">Organique</span>
           </div>
         </div>

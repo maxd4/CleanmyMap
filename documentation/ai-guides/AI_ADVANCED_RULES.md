@@ -138,6 +138,7 @@ Avant de modifier l'interface :
 - Vérifier que l'API est prête ou simulée correctement.
 - Consulter le design system.
 - Réutiliser les composants canoniques quand ils existent.
+- **Restriction Homepage** : Ne jamais modifier la homepage (`apps/web/src/app/page.tsx` et ses composants associés dans `apps/web/src/components/accueil/`) sauf demande explicite de l'utilisateur.
 
 Checklist rapide :
 

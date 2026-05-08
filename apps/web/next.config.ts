@@ -27,6 +27,8 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    const isProduction = process.env.NODE_ENV === "production";
+
     return [
       {
         source: "/:path*",
@@ -37,12 +39,16 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
-      {
-        source: "/_next/static/:path*",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      },
+      ...(isProduction
+        ? [
+            {
+              source: "/_next/static/:path*",
+              headers: [
+                { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+              ],
+            },
+          ]
+        : []),
       {
         source: "/:path*.svg",
         headers: [

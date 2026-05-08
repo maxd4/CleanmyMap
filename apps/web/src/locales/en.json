@@ -44,7 +44,7 @@
   "learnHub": {
     "header_suptitle": "Learning path",
     "header_title": "Understand to act",
-    "header_desc": "The hub opens four dedicated pages to read the context, understand orders of magnitude, practice, adopt best practices, and find useful resources. Methodology stays separate.",
+    "header_desc": "The hub acts as an index and resume point: pick up the last step, then reopen the four dedicated pages without duplicating their content. Methodology stays separate.",
     "tabs": {
       "comprendre": "Understand",
       "sentrainer": "Practice",

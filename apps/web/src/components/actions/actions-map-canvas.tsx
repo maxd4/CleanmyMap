@@ -1,20 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import {
-  LayerGroup,
-  LayersControl,
-  MapContainer,
-  Rectangle,
-  TileLayer,
-} from "react-leaflet";
+import { LayerGroup, LayersControl, MapContainer, Rectangle, TileLayer } from "react-leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { MapControls } from "./map/map-controls";
-import {
-  SignalementMarkers,
-  ShapeLayers,
-  InfrastructureMarkers,
-} from "./map/map-layers";
+import { SignalementMarkers, ShapeLayers, InfrastructureMarkers } from "./map/map-layers";
 import { getActionsMapCenter } from "./actions-map-canvas.utils";
 import { buildGreaterParisLeafletBounds } from "@/lib/geo/greater-paris";
 import {
@@ -41,7 +31,7 @@ export function ActionsMapCanvas({
   }
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-white/10 dark:border-white/5 bg-slate-950 shadow-[0_32px_64px_-12px_rgba(15,23,42,0.45)] relative ring-1 ring-black/5">
+    <div className="relative overflow-hidden rounded-[2rem] border border-sky-300/16 bg-[rgba(10,31,50,0.98)] shadow-[0_32px_64px_-12px_rgba(56,189,248,0.28)] ring-1 ring-sky-300/10">
       <div className="pointer-events-none absolute left-3 top-28 z-[1000] flex flex-wrap gap-2 md:top-32">
         {[
           { key: "points" as const, label: "Points" },
@@ -55,10 +45,10 @@ export function ActionsMapCanvas({
               type="button"
               onClick={() => toggleLayer(layer.key)}
               className={[
-                "pointer-events-auto rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] shadow-xl backdrop-blur-xl transition",
+                "pointer-events-auto rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl transition",
                 active
-                  ? "border-emerald-300/40 bg-emerald-500/90 text-white"
-                  : "border-white/10 bg-slate-950/70 text-slate-300 hover:bg-slate-900/90",
+                  ? "border-sky-300/35 bg-sky-400/18 text-sky-50"
+                  : "border-sky-300/12 bg-[rgba(16,40,64,0.9)] text-sky-100/56 hover:border-sky-300/24 hover:text-sky-50",
               ].join(" ")}
               aria-pressed={active}
             >
@@ -72,7 +62,7 @@ export function ActionsMapCanvas({
         center={center}
         zoom={12}
         scrollWheelZoom
-        className="h-[68vh] min-h-[34rem] w-full bg-slate-900 transition-colors duration-500 md:h-[74vh] md:min-h-[42rem]"
+        className="h-[68vh] min-h-[34rem] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500 md:h-[74vh] md:min-h-[42rem]"
       >
         <MapControls center={center} variant="immersive" />
         <LayersControl position="topright">
@@ -93,17 +83,18 @@ export function ActionsMapCanvas({
             <Rectangle
               bounds={greaterParisBounds}
               pathOptions={{
-                color: "#0f766e",
+                color: "#7dd3fc",
                 weight: 2,
                 opacity: 0.9,
                 dashArray: "6 8",
-                fillColor: "#14b8a6",
-                fillOpacity: 0.05,
+                fillColor: "#38bdf8",
+                fillOpacity: 0.06,
               }}
               interactive={false}
             />
           </LayersControl.Overlay>
         </LayersControl>
+
         <LayerGroup>
           <SignalementMarkers
             items={items}
@@ -121,6 +112,7 @@ export function ActionsMapCanvas({
             selectedActionId={selectedActionId}
           />
         </LayerGroup>
+
         <style>{`
           .cmm-infrastructure-marker {
             background: transparent;
@@ -142,7 +134,7 @@ export function ActionsMapCanvas({
             position: absolute;
             width: 32px;
             height: 32px;
-            background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(125, 211, 252, 0.36) 0%, transparent 70%);
             border-radius: 50%;
             animation: pulse-glow 2s infinite;
           }
@@ -150,19 +142,13 @@ export function ActionsMapCanvas({
             position: relative;
             width: 34px;
             height: 34px;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-blur: 8px;
-            border: 2px solid white;
+            background: rgba(16, 40, 64, 0.88);
+            border: 1px solid rgba(125, 211, 252, 0.16);
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-          }
-          html[data-theme="dark"] .cmm-infrastructure-marker__inner {
-            background: rgba(15, 23, 42, 0.8);
-            border-color: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.28);
           }
           .cmm-infrastructure-marker__emoji {
             font-size: 20px;
@@ -173,7 +159,7 @@ export function ActionsMapCanvas({
             100% { transform: scale(0.95); opacity: 0.5; }
           }
           .leaflet-container {
-            background: var(--bg-canvas, #020617);
+            background: var(--bg-canvas, #061423);
           }
         `}</style>
       </MapContainer>

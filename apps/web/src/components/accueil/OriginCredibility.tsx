@@ -33,7 +33,7 @@ const PROOF_CARDS = [
 
 export function OriginCredibility() {
   return (
-    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#06111d_0%,#040913_100%)] py-20 sm:py-24 lg:py-28">
+    <section className="relative overflow-hidden bg-transparent py-12 sm:py-16 lg:py-20">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_46%_50%_at_11%_12%,rgba(8,119,146,0.22),transparent_68%),radial-gradient(ellipse_28%_28%_at_88%_90%,rgba(87,82,211,0.18),transparent_70%),linear-gradient(180deg,rgba(12,40,57,0.42)_0%,rgba(4,9,19,0)_46%)]" />
       <div className="pointer-events-none absolute left-0 top-0 h-[34rem] w-[34rem] rounded-full bg-[radial-gradient(circle,rgba(29,174,205,0.16)_0%,rgba(29,174,205,0.08)_34%,transparent_70%)] blur-3xl" />
       <div className="pointer-events-none absolute bottom-[-8rem] right-[-6rem] h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,rgba(126,92,255,0.16)_0%,rgba(126,92,255,0.06)_36%,transparent_72%)] blur-3xl" />

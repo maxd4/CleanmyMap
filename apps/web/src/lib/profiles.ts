@@ -141,28 +141,28 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       },
     },
     secondaryCTA: {
-      href: "/actions/map",
-      label: { fr: "Consulter la carte", en: "Consult the map" },
+      href: "/sections/community",
+      label: { fr: "Rejoindre un cleanup", en: "Join a cleanup" },
       description: {
-        fr: "Confirmer la priorité terrain autour de vous",
-        en: "Confirm nearby field priorities",
+        fr: "Trouver un événement et aider le terrain",
+        en: "Find an event and help on the ground",
       },
     },
     additionalActions: [
       {
-        href: "/actions/history",
-        label: { fr: "Voir l'historique", en: "View history" },
+        href: "/actions/map",
+        label: { fr: "Vérifier la carte", en: "Check the map" },
         description: {
-          fr: "Suivre les actions validées",
-          en: "Track validated actions",
+          fr: "Confirmer les zones à prioriser autour de vous",
+          en: "Confirm the nearby priority zones",
         },
       },
       {
         href: "/learn/hub",
-        label: { fr: "Apprendre & Progresser", en: "Learn & Progress" },
+        label: { fr: "Kit organisateur", en: "Organizer kit" },
         description: {
-          fr: "Hub éducatif et kit du bénévole",
-          en: "Educational hub and volunteer kit",
+          fr: "Guides, fiches et affiches pour aller plus loin",
+          en: "Guides, checklists and posters to go further",
         },
       },
     ],
@@ -171,29 +171,37 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     primaryCTA: {
       href: "/sections/community",
       label: {
-        fr: "Gérer les opérations",
-        en: "Manage operations",
+        fr: "Organiser un cleanup",
+        en: "Organize a cleanup",
       },
       description: {
-        fr: "Piloter agenda, RSVPs et conversion en actions",
-        en: "Drive agenda, RSVPs and action conversion",
+        fr: "Créer et structurer l'événement collectif",
+        en: "Create and structure the collective event",
       },
     },
     secondaryCTA: {
       href: "/dashboard",
-      label: { fr: "Tableau de bord", en: "Dashboard" },
+      label: { fr: "Gérer les RSVPs", en: "Manage RSVPs" },
       description: {
-        fr: "Voir les alertes et priorités du jour",
-        en: "See daily alerts and priorities",
+        fr: "Suivre l'engagement et les confirmations",
+        en: "Track engagement and confirmations",
       },
     },
     additionalActions: [
       {
-        href: "/reports",
-        label: { fr: "Consulter l'impact", en: "Consult impact" },
+        href: "/sections/messagerie",
+        label: { fr: "Relayer un besoin", en: "Relay a need" },
         description: {
-          fr: "Synthèse exportable multi-horizon",
-          en: "Exportable multi-horizon synthesis",
+          fr: "Diffuser un appel auprès du réseau",
+          en: "Broadcast a request to the network",
+        },
+      },
+      {
+        href: "/reports",
+        label: { fr: "Faire le bilan", en: "Review the outcome" },
+        description: {
+          fr: "Préparer la restitution après action",
+          en: "Prepare the post-action debrief",
         },
       },
     ],
@@ -208,23 +216,28 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       },
     },
     secondaryCTA: {
-      href: "/sections/climate",
-      label: { fr: "Contexte climat", en: "Climate context" },
+      href: "/sections/open-data",
+      label: { fr: "Explorer les données", en: "Explore data" },
       description: {
-        fr: "Croiser impact local, ODD et limites planétaires",
-        en: "Cross local impact with SDGs and boundaries",
+        fr: "Accéder aux jeux de données et aux exports",
+        en: "Access datasets and exports",
       },
     },
     additionalActions: [
       {
-        href: "/sections/climate",
-        label: {
-          fr: "Analyser les signaux",
-          en: "Analyze signals",
-        },
+        href: "/methodologie",
+        label: { fr: "Lire la méthodologie", en: "Read methodology" },
         description: {
-          fr: "Ajouter les signaux météo-climat à l'analyse",
-          en: "Add weather-climate signals to analysis",
+          fr: "Vérifier les calculs, proxies et hypothèses",
+          en: "Review calculations, proxies and assumptions",
+        },
+      },
+      {
+        href: "/prints/report",
+        label: { fr: "Exporter le rapport", en: "Export report" },
+        description: {
+          fr: "Ouvrir la version imprimable consolidée",
+          en: "Open the consolidated printable view",
         },
       },
     ],
@@ -233,40 +246,37 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     primaryCTA: {
       href: "/sponsor-portal",
       label: {
-        fr: "Accéder au portail",
-        en: "Access portal",
+        fr: "Voir la synthèse territoriale",
+        en: "View territorial summary",
       },
       description: {
-        fr: "Pilotage budgétaire et impact territorial",
-        en: "Budget oversight and territorial impact",
+        fr: "Lire la lecture budgétaire et territoriale",
+        en: "Read the budget and territorial overview",
       },
     },
     secondaryCTA: {
       href: "/reports",
-      label: {
-        fr: "Consulter l'impact",
-        en: "Consult impact",
-      },
+      label: { fr: "Lire l'impact", en: "Read impact" },
       description: {
-        fr: "Lecture synthétique des indicateurs",
-        en: "Read synthesized indicators",
+        fr: "Consulter les indicateurs consolidés",
+        en: "Review consolidated indicators",
       },
     },
     additionalActions: [
       {
         href: "/actions/map",
-        label: { fr: "Priorisation terrain", en: "Territorial prioritization" },
+        label: { fr: "Prioriser les zones", en: "Prioritize zones" },
         description: {
-          fr: "Voir les zones à traiter en priorité",
-          en: "View top zones to address",
+          fr: "Repérer les zones à traiter en premier",
+          en: "Spot the zones to address first",
         },
       },
       {
-        href: "/sections/climate",
-        label: { fr: "Développement durable", en: "Sustainability" },
+        href: "/prints/report",
+        label: { fr: "Télécharger le dossier", en: "Download the dossier" },
         description: {
-          fr: "Lecture territoriale comparée intégrée",
-          en: "Integrated cross-area reading",
+          fr: "Partager un document clair et imprimable",
+          en: "Share a clear printable document",
         },
       },
     ],
@@ -275,37 +285,37 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     primaryCTA: {
       href: "/admin",
       label: {
-        fr: "Gérer le backlog",
-        en: "Manage backlog",
+        fr: "Inbox créateur",
+        en: "Creator inbox",
       },
       description: {
-        fr: "Prioriser modération/imports sensibles",
-        en: "Prioritize moderation and sensitive imports",
+        fr: "Traiter les demandes et remontées prioritaires",
+        en: "Handle priority requests and reports",
       },
     },
     secondaryCTA: {
       href: "/reports",
       label: { fr: "Exporter les données", en: "Export data" },
       description: {
-        fr: "CSV/JSON et suivi des opérations",
-        en: "CSV/JSON and operations tracking",
+        fr: "Suivre les exports et les journaux",
+        en: "Track exports and logs",
       },
     },
     additionalActions: [
       {
         href: "/admin/godmode",
-        label: { fr: "Mode Administrateur", en: "Admin Mode" },
+        label: { fr: "Contrôle système", en: "System control" },
         description: {
-          fr: "Accès root et sandbox admin",
-          en: "Root access and admin sandbox",
+          fr: "Ouvrir l'arbitrage et les outils sensibles",
+          en: "Open arbitration and sensitive tools",
         },
       },
       {
         href: "/dashboard",
-        label: { fr: "Vérifier l'état système", en: "Check system health" },
+        label: { fr: "Santé du site", en: "Site health" },
         description: {
-          fr: "Intégrations et uptime",
-          en: "Integrations and uptime",
+          fr: "Contrôler les flux et l'état général",
+          en: "Check flows and overall status",
         },
       },
     ],
@@ -314,37 +324,37 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     primaryCTA: {
       href: "/admin/godmode",
       label: {
-        fr: "Piloter en mode IMU",
-        en: "Run IMU mode",
+        fr: "Arbitrer les cas sensibles",
+        en: "Arbitrate sensitive cases",
       },
       description: {
-        fr: "Accès propriétaire aux arbitrages sensibles",
-        en: "Owner access for sensitive arbitration",
+        fr: "Accès propriétaire aux décisions finales",
+        en: "Owner access to final decisions",
       },
     },
     secondaryCTA: {
-      href: "/dashboard",
-      label: { fr: "Vue d'ensemble", en: "Overview" },
+      href: "/admin",
+      label: { fr: "Inbox créateur", en: "Creator inbox" },
       description: {
-        fr: "Contrôler les indicateurs et la santé du site",
-        en: "Check indicators and site health",
+        fr: "Prioriser les demandes entrantes",
+        en: "Prioritize incoming requests",
       },
     },
     additionalActions: [
       {
-        href: "/reports",
-        label: { fr: "Consulter l'impact", en: "Consult impact" },
+        href: "/dashboard",
+        label: { fr: "Vue d'ensemble", en: "Overview" },
         description: {
-          fr: "Lire la synthèse et les exports",
-          en: "Read synthesis and exports",
+          fr: "Suivre l'activité et la santé du site",
+          en: "Monitor activity and site health",
         },
       },
       {
-        href: "/admin",
-        label: { fr: "Administration", en: "Administration" },
+        href: "/prints/report",
+        label: { fr: "Audit et exports", en: "Audit and exports" },
         description: {
-          fr: "Accès complet aux outils d'administration",
-          en: "Full access to administration tools",
+          fr: "Ouvrir la synthèse imprimable et les rapports",
+          en: "Open the printable summary and reports",
         },
       },
     ],

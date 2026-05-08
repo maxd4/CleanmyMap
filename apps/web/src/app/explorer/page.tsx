@@ -8,101 +8,125 @@ import {
   type NavigationBlockId,
 } from "@/lib/navigation";
 import { getProfileLabel, toProfile } from "@/lib/profiles";
-import {
-  getServerDisplayModePreference,
-  getServerLocale,
-} from "@/lib/server-preferences";
+import { getServerDisplayModePreference, getServerLocale } from "@/lib/server-preferences";
 
 export const metadata: Metadata = {
-  title: 'Carte de propreté Paris - Signaler et découvrir les pollutions',
-  description: 'Explorez la carte interactive de CleanMyMap pour découvrir les signalements de pollution et les actions de nettoyage à Paris. Contribuez à une ville plus propre.',
-  keywords: ['carte propret paris', 'signalement pollution', 'depollution carte', 'cleanwalk carte', 'point sale paris', 'carte dechets'],
-  openGraph: {
-    title: 'Carte propreté Paris - CleanMyMap',
-    description: 'Explorez les pollutions et actions de nettoyage à Paris',
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
+  title: "Explorer CleanMyMap - Plan du site et navigation",
+  description: "Explorez toutes les sections de CleanMyMap : carte interactive, actions de nettoyage, signalements de pollution, communauté de bénévoles écologistes.",
+  robots: { index: true, follow: true },
 };
 
-const BLOCK_PREVIEW_PRIORITY: Record<
-  NavigationBlockId,
-  Partial<Record<NavigationItem["id"], number>>
-> = {
-  home: {
-    dashboard: 1,
-    explorer: 2,
-    profile: 3,
-  },
-  act: {
-    new: 1,
-    route: 2,
-    "trash-spotter": 3,
-  },
-  visualize: {
-    map: 1,
-    sandbox: 2,
-    weather: 3,
-  },
-  impact: {
-    reports: 1,
-    gamification: 2,
-  },
-  network: {
-    network: 1,
-    annuaire: 2,
-    community: 3,
-    "open-data": 5,
-  },
-  connect: {
-    messagerie: 1,
-    dm: 2,
-  },
-  learn: {
-    hub: 1,
-    guide: 2,
-    climate: 3,
-    recycling: 4,
-  },
-  pilot: {
-    admin: 1,
-    sponsor: 2,
-    elus: 3,
-    godmode: 4,
-  },
+const BLOCK_PREVIEW_PRIORITY: Record<NavigationBlockId, Partial<Record<NavigationItem["id"], number>>> = {
+  home:      { dashboard: 1, explorer: 2, profile: 3 },
+  act:       { new: 1, route: 2, "trash-spotter": 3 },
+  visualize: { map: 1, sandbox: 2, weather: 3 },
+  impact:    { reports: 1, gamification: 2 },
+  network:   { network: 1, annuaire: 2, community: 3, "open-data": 5 },
+  connect:   { messagerie: 1, dm: 2 },
+  learn:     { hub: 1, guide: 2, climate: 3, recycling: 4 },
+  pilot:     { admin: 1, sponsor: 2, elus: 3, godmode: 4 },
 };
 
-function getOrderedPreviewItems(
-  blockId: NavigationBlockId,
-  items: NavigationItem[],
-): NavigationItem[] {
-  const blockPriority = BLOCK_PREVIEW_PRIORITY[blockId];
+function getOrderedPreviewItems(blockId: NavigationBlockId, items: NavigationItem[]): NavigationItem[] {
+  const p = BLOCK_PREVIEW_PRIORITY[blockId];
   return [...items].sort((a, b) => {
-    const pa = blockPriority[a.id] ?? 99;
-    const pb = blockPriority[b.id] ?? 99;
-    if (pa !== pb) {
-      return pa - pb;
-    }
-    return a.label.fr.localeCompare(b.label.fr, "fr");
+    const pa = p[a.id] ?? 99, pb = p[b.id] ?? 99;
+    return pa !== pb ? pa - pb : a.label.fr.localeCompare(b.label.fr, "fr");
   });
 }
 
-function getBlockAccent(blockId: NavigationBlockId) {
-  const byBlock = {
-    home: { bar: "bg-[#27C3D9]", glow: "shadow-[#27C3D9]/10", tint: "from-sky-50 to-white", hover: "hover:border-[#27C3D9]/40", ring: "focus-visible:ring-[#27C3D9]/50", text: "text-slate-900", badge: "bg-slate-100 text-slate-700 border-slate-200" },
-    act: { bar: "bg-[#2F80C3]", glow: "shadow-[#2F80C3]/10", tint: "from-blue-50 to-white", hover: "hover:border-[#2F80C3]/40", ring: "focus-visible:ring-[#2F80C3]/50", text: "text-slate-900", badge: "bg-slate-100 text-slate-700 border-slate-200" },
-    visualize: { bar: "bg-[#27C3D9]", glow: "shadow-[#27C3D9]/10", tint: "from-cyan-50 to-white", hover: "hover:border-[#27C3D9]/40", ring: "focus-visible:ring-[#27C3D9]/50", text: "text-slate-900", badge: "bg-slate-100 text-slate-700 border-slate-200" },
-    impact: { bar: "bg-[#18B68F]", glow: "shadow-[#18B68F]/10", tint: "from-emerald-50 to-white", hover: "hover:border-[#18B68F]/40", ring: "focus-visible:ring-[#18B68F]/50", text: "text-slate-900", badge: "bg-slate-100 text-slate-700 border-slate-200" },
-    network: { bar: "bg-[#5B5FCF]", glow: "shadow-[#5B5FCF]/10", tint: "from-indigo-50 to-white", hover: "hover:border-[#5B5FCF]/40", ring: "focus-visible:ring-[#5B5FCF]/50", text: "text-slate-900", badge: "bg-slate-100 text-slate-700 border-slate-200" },
-    connect: { bar: "bg-[#27C3D9]", glow: "shadow-[#27C3D9]/10", tint: "from-sky-50 to-white", hover: "hover:border-[#27C3D9]/40", ring: "focus-visible:ring-[#27C3D9]/50", text: "text-slate-900", badge: "bg-slate-100 text-slate-700 border-slate-200" },
-    learn: { bar: "bg-[#4E9A51]", glow: "shadow-[#4E9A51]/10", tint: "from-green-50 to-white", hover: "hover:border-[#4E9A51]/40", ring: "focus-visible:ring-[#4E9A51]/50", text: "text-slate-900", badge: "bg-slate-100 text-slate-700 border-slate-200" },
-    pilot: { bar: "bg-[#5B5FCF]", glow: "shadow-[#5B5FCF]/10", tint: "from-slate-50 to-white", hover: "hover:border-[#5B5FCF]/40", ring: "focus-visible:ring-[#5B5FCF]/50", text: "text-slate-900", badge: "bg-slate-100 text-slate-700 border-slate-200" },
-
-  } as const;
-  return byBlock[blockId];
-}
+// Charte couleur officielle — même esprit que les sept piliers
+const BLOCK_THEME: Record<NavigationBlockId, {
+  gradient: string;   // bg-gradient-to-br
+  ring: string;       // ring-1
+  iconBg: string;     // fond icône
+  iconColor: string;  // couleur icône + texte accent
+  dot: string;        // pastille coin
+  itemHover: string;  // hover rubriques
+  ctaColor: string;   // couleur texte CTA
+  divider: string;    // séparateur
+}> = {
+  home: {
+    gradient:  "from-amber-400/30 to-amber-300/10",
+    ring:      "ring-amber-400/30",
+    iconBg:    "bg-amber-400/20",
+    iconColor: "text-amber-700",
+    dot:       "bg-amber-500",
+    itemHover: "hover:bg-amber-400/15 hover:text-amber-900",
+    ctaColor:  "text-amber-700",
+    divider:   "bg-amber-300/30",
+  },
+  act: {
+    gradient:  "from-emerald-400/30 to-emerald-300/10",
+    ring:      "ring-emerald-400/30",
+    iconBg:    "bg-emerald-400/20",
+    iconColor: "text-emerald-700",
+    dot:       "bg-emerald-500",
+    itemHover: "hover:bg-emerald-400/15 hover:text-emerald-900",
+    ctaColor:  "text-emerald-700",
+    divider:   "bg-emerald-300/30",
+  },
+  visualize: {
+    gradient:  "from-sky-400/30 to-sky-300/10",
+    ring:      "ring-sky-400/30",
+    iconBg:    "bg-sky-400/20",
+    iconColor: "text-sky-700",
+    dot:       "bg-sky-500",
+    itemHover: "hover:bg-sky-400/15 hover:text-sky-900",
+    ctaColor:  "text-sky-700",
+    divider:   "bg-sky-300/30",
+  },
+  impact: {
+    gradient:  "from-rose-400/30 to-rose-300/10",
+    ring:      "ring-rose-400/30",
+    iconBg:    "bg-rose-400/20",
+    iconColor: "text-rose-700",
+    dot:       "bg-rose-500",
+    itemHover: "hover:bg-rose-400/15 hover:text-rose-900",
+    ctaColor:  "text-rose-700",
+    divider:   "bg-rose-300/30",
+  },
+  network: {
+    gradient:  "from-indigo-400/30 to-indigo-300/10",
+    ring:      "ring-indigo-400/30",
+    iconBg:    "bg-indigo-400/20",
+    iconColor: "text-indigo-700",
+    dot:       "bg-indigo-500",
+    itemHover: "hover:bg-indigo-400/15 hover:text-indigo-900",
+    ctaColor:  "text-indigo-700",
+    divider:   "bg-indigo-300/30",
+  },
+  connect: {
+    gradient:  "from-pink-400/30 to-pink-300/10",
+    ring:      "ring-pink-400/30",
+    iconBg:    "bg-pink-400/20",
+    iconColor: "text-pink-700",
+    dot:       "bg-pink-500",
+    itemHover: "hover:bg-pink-400/15 hover:text-pink-900",
+    ctaColor:  "text-pink-700",
+    divider:   "bg-pink-300/30",
+  },
+  learn: {
+    gradient:  "from-yellow-400/30 to-yellow-300/10",
+    ring:      "ring-yellow-400/30",
+    iconBg:    "bg-yellow-400/20",
+    iconColor: "text-yellow-700",
+    dot:       "bg-yellow-500",
+    itemHover: "hover:bg-yellow-400/15 hover:text-yellow-900",
+    ctaColor:  "text-yellow-700",
+    divider:   "bg-yellow-300/30",
+  },
+  pilot: {
+    gradient:  "from-amber-600/30 to-amber-500/10",
+    ring:      "ring-amber-600/30",
+    iconBg:    "bg-amber-600/20",
+    iconColor: "text-amber-800",
+    dot:       "bg-amber-700",
+    itemHover: "hover:bg-amber-600/15 hover:text-amber-900",
+    ctaColor:  "text-amber-800",
+    divider:   "bg-amber-400/30",
+  },
+};
 
 export default async function ExplorerPage() {
   const [locale, displayModePreference, role] = await Promise.all([
@@ -112,141 +136,119 @@ export default async function ExplorerPage() {
   ]);
   const currentProfile = toProfile(role);
   const profileLabel = getProfileLabel(currentProfile, locale);
-  const spaces = getNavigationSpacesForProfile(
-    currentProfile,
-    displayModePreference.displayMode,
-    locale,
-  );
+  const spaces = getNavigationSpacesForProfile(currentProfile, displayModePreference.displayMode, locale);
   const visibleSpaces = spaces.map((space) => ({
     ...space,
     items: space.items.filter((item) => item.routeId !== "explorer"),
   }));
-  const totalItems = visibleSpaces.reduce((sum, space) => sum + space.items.length, 0);
+  const totalItems = visibleSpaces.reduce((sum, s) => sum + s.items.length, 0);
 
   return (
-    <div className="space-y-3 sm:space-y-5">
-      <div className="relative mx-auto min-h-full w-full max-w-[1600px] space-y-3 px-3 py-4 sm:space-y-5 sm:px-8 sm:py-8 lg:py-12">
-          <section className="relative overflow-hidden rounded-[1.8rem] border border-slate-200 bg-white/50 backdrop-blur-xl p-4 shadow-xl sm:rounded-[2.2rem] sm:p-6 lg:p-7">
-            <div className="pointer-events-none absolute inset-0">
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/25 to-transparent" />
-              <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-cyan-400/12 blur-3xl" />
-              <div className="absolute -bottom-24 -left-16 h-72 w-72 rounded-full bg-emerald-400/12 blur-3xl" />
-            </div>
-            <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.95fr)] lg:items-end">
-              <div className="space-y-2.5 sm:space-y-4">
-                <p className="inline-flex rounded-full border border-slate-200 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-slate-500 sm:text-[12px]">
-                  {locale === "fr" ? "Navigation utilitaire" : "Utility navigation"}
-                </p>
-                <h1 className="max-w-3xl text-[clamp(2rem,7vw,3.6rem)] font-black tracking-tight leading-[0.94] text-slate-900 sm:text-[clamp(2.25rem,4vw,3.6rem)]">
-                  {locale === "fr" ? "Plan du site" : "Site map"}
-                </h1>
-                <p className="max-w-2xl text-sm leading-[1.65] text-slate-600 sm:text-base font-medium">
-                  {locale === "fr"
-                    ? "Vue compacte des rubriques accessibles pour votre profil, avec un accès direct à la bonne page."
-                    : "Compact view of the sections available for your profile, with direct access to the right page."}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-                <div className="rounded-2xl border border-slate-200 bg-white/80 px-3 py-3 shadow-sm backdrop-blur-sm sm:px-4 sm:py-4">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 sm:text-[11px] sm:tracking-[0.18em]">
-                    {locale === "fr" ? "Sections" : "Sections"}
-                  </div>
-                  <div className="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
-                    {spaces.length}
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-white/80 px-3 py-3 shadow-sm backdrop-blur-sm sm:px-4 sm:py-4">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400 sm:text-[11px] sm:tracking-[0.18em]">
-                    {locale === "fr" ? "Rubriques" : "Sections"}
-                  </div>
-                  <div className="mt-1 text-xl font-black tracking-tight text-slate-900 sm:text-2xl">
-                    {totalItems}
-                  </div>
-                </div>
-                <div className="col-span-2 rounded-2xl border border-slate-200 bg-emerald-50/50 px-3 py-3 shadow-sm backdrop-blur-sm sm:col-span-1 sm:px-4 sm:py-4">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-600 sm:text-[11px] sm:tracking-[0.18em]">
-                    {locale === "fr" ? "Profil" : "Profile"}
-                  </div>
-                  <div className="mt-1 text-sm font-bold tracking-tight text-emerald-800 sm:text-base">
-                    {profileLabel}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
+    <div
+      className="relative min-h-screen overflow-hidden font-sans"
+      style={{ background: "#92400e" }}
+    >
+      {/* Fond multicouche orange soleil */}
+      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 160% 100% at 50% -15%, #fef08a 0%, #fbbf24 20%, #f97316 50%, #ea580c 75%, #92400e 100%)" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(254,240,138,0.6) 0%, transparent 65%)" }} />
+      <div className="pointer-events-none absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full blur-[120px]" style={{ background: "rgba(251,191,36,0.5)" }} />
+      <div className="pointer-events-none absolute top-1/2 -right-32 h-[450px] w-[450px] rounded-full blur-[100px]" style={{ background: "rgba(249,115,22,0.25)" }} />
+      <div className="pointer-events-none absolute bottom-0 left-1/4 h-[400px] w-[400px] rounded-full blur-[120px]" style={{ background: "rgba(253,224,71,0.2)" }} />
 
+      <div className="relative z-10 mx-auto w-full max-w-[1400px] px-5 pb-20 pt-8 sm:px-8 sm:pt-10">
 
-          <section className="space-y-6 sm:space-y-10">
-            {visibleSpaces.map((space) => {
-              const orderedItems = getOrderedPreviewItems(space.id, space.items);
-              const firstHref = orderedItems[0]?.href ?? "/dashboard";
-              const accent = getBlockAccent(space.id);
-              return (
-                <article
-                  key={space.id}
-                  id={`bloc-${space.id}`}
-                  className={`scroll-mt-28 overflow-hidden rounded-[2rem] border border-slate-200 bg-gradient-to-br ${accent.tint} p-4 shadow-xl ${accent.glow} transition-all duration-500 hover:border-slate-300 hover:shadow-slate-200/50 sm:rounded-[2.5rem] sm:p-7 lg:p-8`}
-                >
-                  <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5 sm:mb-8 sm:pb-6">
-                    <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                      <div className="relative">
-                        <div className={`absolute -inset-2 rounded-2xl ${accent.bar} opacity-12 blur-xl transition-opacity group-hover:opacity-24`} />
-                        <span className="relative flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-xl shadow-md ring-1 ring-slate-100 sm:h-14 sm:w-14 sm:text-2xl">
-                          {space.icon}
-                        </span>
-                        <span className={`absolute -bottom-1.5 -right-1.5 h-3.5 w-3.5 rounded-full ${accent.bar} border-2 border-[#2C5F77] shadow-sm`} />
-                      </div>
-                      <Link
-                        href={firstHref}
-                        className={`group inline-flex min-h-11 items-center justify-center gap-2.5 rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-900 transition-all duration-300 hover:border-slate-300 hover:bg-slate-50 active:scale-95 shadow-sm sm:min-h-14 sm:px-6 sm:py-3 sm:text-base`}
-                      >
-                        <span className="relative flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-100 transition-colors group-hover:bg-slate-200 sm:h-6 sm:w-6">
-                          <ArrowRight size={14} className="text-slate-600 transition-transform group-hover:translate-x-0.5" />
-                        </span>
-                        {locale === "fr"
-                          ? `Visiter la section ${space.label[locale]}`
-                          : `Visit the ${space.label[locale]} section`}
-                      </Link>
-                    </div>
-                  </div>
-
-                  {orderedItems.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-                      {orderedItems.map((item) => (
-                        <Link
-                          key={item.id}
-                          href={item.href}
-                          title={item.description[locale]}
-                          className={`group flex min-w-0 items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/60 p-3 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-slate-300 hover:bg-white hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 ${accent.ring} sm:p-4`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                              <h3 className="block text-[15px] font-bold leading-tight text-slate-900 transition-colors sm:text-base">
-                                {item.label[locale]}
-                              </h3>
-                              <p className="line-clamp-1 text-[12px] leading-snug text-slate-500 transition-colors group-hover:text-slate-700 sm:text-[13px]">
-                                {item.description[locale]}
-                              </p>
-                            </div>
-                          </div>
-                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400 shadow-sm transition-all duration-300 group-hover:scale-110 ${accent.hover} group-hover:text-slate-900`}>
-                            <ChevronRight size={18} className="transition-transform group-hover:translate-x-0.5" />
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl border border-dashed border-white/14 bg-white/10 px-4 py-3 cmm-text-caption font-semibold uppercase tracking-wider text-white/82">
-                      {locale === "fr"
-                        ? "Cette section ne contient pas encore de rubrique accessible pour votre profil"
-                        : "This section does not yet contain a page available for your profile"}
-                    </div>
-                  )}
-                </article>
-              );
-            })}
-          </section>
+        {/* ── Header ── */}
+        <div className="mb-12 space-y-4">
+          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/70">
+            {locale === "fr" ? "Navigation utilitaire" : "Utility navigation"}
+          </p>
+          <h1 className="text-[clamp(3rem,6vw,5.5rem)] font-black leading-[0.92] tracking-[-0.05em] text-white">
+            {locale === "fr" ? "Explorer" : "Explore"}
+          </h1>
+          <p className="max-w-xl text-base font-medium text-white/75 leading-relaxed">
+            {locale === "fr"
+              ? "Accédez à toutes les rubriques disponibles pour votre profil."
+              : "Access all sections available for your profile."}
+          </p>
+          <div className="flex flex-wrap items-center gap-2.5 pt-1">
+            <span className="rounded-full border border-white/20 bg-black/20 px-3 py-1 text-[11px] font-bold text-white">
+              {visibleSpaces.length} {locale === "fr" ? "blocs" : "blocks"}
+            </span>
+            <span className="rounded-full border border-white/20 bg-black/20 px-3 py-1 text-[11px] font-bold text-white">
+              {totalItems} {locale === "fr" ? "rubriques" : "pages"}
+            </span>
+            <span className="rounded-full border border-white/20 bg-black/20 px-3 py-1 text-[11px] font-bold text-white">
+              {profileLabel}
+            </span>
+          </div>
         </div>
+
+        {/* ── Grille de cartes hub — inspirée des sept piliers ── */}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {visibleSpaces.map((space) => {
+            const orderedItems = getOrderedPreviewItems(space.id, space.items);
+            const firstHref = orderedItems[0]?.href ?? "/dashboard";
+            const t = BLOCK_THEME[space.id];
+
+            return (
+              <div
+                key={space.id}
+                className={`group relative flex min-h-[260px] flex-col overflow-hidden rounded-[1.25rem] bg-gradient-to-br ${t.gradient} ring-1 ${t.ring} p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_48px_-16px_rgba(0,0,0,0.35)] active:translate-y-0`}
+              >
+                {/* Dot coin — identique aux piliers */}
+                <span className={`absolute right-5 top-5 h-2 w-2 rounded-full ${t.dot} opacity-60 transition-opacity group-hover:opacity-100`} />
+
+                {/* Icône + titre — même structure que les piliers */}
+                <div className={`mb-5 flex h-12 w-12 items-center justify-center rounded-[0.9rem] text-xl shadow-lg transition-transform duration-300 group-hover:scale-110 ${t.iconBg}`}>
+                  {space.icon}
+                </div>
+
+                <h2 className="mb-1 text-[17px] font-black leading-tight text-slate-900">
+                  {space.label[locale]}
+                </h2>
+
+                {/* Séparateur coloré */}
+                <div className={`mb-3 h-px w-8 rounded-full ${t.divider}`} />
+
+                {/* Rubriques — liste cliquable compacte */}
+                <div className="flex-1">
+                  {orderedItems.length > 0 ? (
+                    <ul className="space-y-0.5">
+                      {orderedItems.map((item) => (
+                        <li key={item.id}>
+                          <Link
+                            href={item.href}
+                            className={`group/item flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-[13px] font-semibold text-slate-700 transition-all duration-150 ${t.itemHover}`}
+                          >
+                            <span className={`h-1 w-1 shrink-0 rounded-full opacity-50 ${t.dot}`} />
+                            <span className="flex-1 leading-snug">{item.label[locale]}</span>
+                            <ChevronRight
+                              size={11}
+                              className={`shrink-0 opacity-0 transition-all group-hover/item:opacity-70 group-hover/item:translate-x-0.5 ${t.iconColor}`}
+                            />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-[12px] text-slate-500">
+                      {locale === "fr" ? "Aucune rubrique accessible." : "No pages available."}
+                    </p>
+                  )}
+                </div>
+
+                {/* CTA — même style que les piliers */}
+                <div className={`mt-6 flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] ${t.iconColor} opacity-80 transition-opacity group-hover:opacity-100`}>
+                  <Link href={firstHref} className="flex items-center gap-2">
+                    {locale === "fr" ? "Accéder" : "Open"}
+                    <ArrowRight size={13} className="transition-transform duration-300 group-hover:translate-x-1" />
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }

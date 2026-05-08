@@ -14,12 +14,15 @@ import {
   extractZoneContextFromMetadata,
   type ZoneContext,
 } from "@/lib/chat/channels";
+import { isSupportedChatAttachmentMimeType } from "@/lib/chat/chat-attachments";
+import { createChatNotificationsForMessage } from "@/lib/chat/chat-notifications";
+import { mergeRowGroupsById, sortByCreatedAtAsc } from "@/lib/chat/postgrest";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
-import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import {
   reserveDiscussionMessageSlot,
   toDiscussionRateLimitErrorPayload,
 } from "@/lib/community/discussion-rate-limit";
+import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
 
 const CHANNEL_TYPES = [
   "community",
@@ -41,13 +44,38 @@ const sendMessageSchema = z.object({
 
 type CurrentProfileRow = {
   id: string;
+  display_name: string | null;
+  handle: string | null;
   paris_arrondissement: number | null;
   role_label: string | null;
   metadata: Record<string, unknown> | null;
 };
 
+type ChatMessageRow = {
+  id: string;
+  created_at: string;
+  [key: string]: unknown;
+};
+
+type ChatQueryResult<T> = PromiseLike<{
+  data: T[] | null;
+  error: {
+    message: string;
+    code?: string;
+    details?: string;
+  } | null;
+}>;
+
 const messageSelect =
   "*, sender:profiles!sender_id(display_name, handle, avatar_url)";
+
+async function runMessageQuery(query: ChatQueryResult<ChatMessageRow>): Promise<ChatMessageRow[]> {
+  const { data, error } = await query;
+  if (error) {
+    throw error;
+  }
+  return (data ?? []) as ChatMessageRow[];
+}
 
 function parseArrondissement(raw: string | null): number | null {
   if (!raw) {
@@ -63,12 +91,12 @@ function parseArrondissement(raw: string | null): number | null {
 }
 
 async function loadCurrentProfile(
-  adminSupabase: ReturnType<typeof getSupabaseAdminClient>,
+  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
   userId: string,
 ): Promise<CurrentProfileRow | null> {
-  const { data, error } = await adminSupabase
+  const { data, error } = await supabase
     .from("profiles")
-    .select("id, paris_arrondissement, role_label, metadata")
+    .select("id, display_name, handle, paris_arrondissement, role_label, metadata")
     .eq("id", userId)
     .maybeSingle();
 
@@ -80,11 +108,11 @@ async function loadCurrentProfile(
 }
 
 async function resolveBugReportRecipientId(
-  adminSupabase: ReturnType<typeof getSupabaseAdminClient>,
+  supabase: NonNullable<Awaited<ReturnType<typeof getSupabaseClerkRlsClient>>>,
   senderId: string,
   senderRole: string,
 ): Promise<string | null> {
-  const { data: maxData, error: maxError } = await adminSupabase
+  const { data: maxData, error: maxError } = await supabase
     .from("profiles")
     .select("id")
     .in("role_label", ["imu", "max"])
@@ -100,7 +128,7 @@ async function resolveBugReportRecipientId(
     return maxData.id;
   }
 
-  const { data, error } = await adminSupabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("id")
     .eq("role_label", "admin")
@@ -123,10 +151,6 @@ async function resolveBugReportRecipientId(
   return null;
 }
 
-function toVisibilityFilter(userId: string, recipientId: string) {
-  return `and(sender_id.eq.${userId},recipient_id.eq.${recipientId}),and(sender_id.eq.${recipientId},recipient_id.eq.${userId})`;
-}
-
 function buildZoneContext(
   zoneName: string | null,
   arrondissementId: number | null,
@@ -137,16 +161,21 @@ function buildZoneContext(
   };
 }
 
-function quotePostgrestValue(value: string): string {
-  return `"${value.replace(/"/g, '\\"')}"`;
-}
-
 export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) return unauthorizedJsonResponse();
 
   const identity = await getCurrentUserIdentity();
   if (!identity) return unauthorizedJsonResponse();
+
+  const writeRateLimit = await verifyRateLimit({ limit: 20, window: 60, key: userId });
+  const writeRateLimitResponse = createServerRateLimitResponse(
+    writeRateLimit.allowed,
+    writeRateLimit.retryAfter,
+  );
+  if (writeRateLimitResponse) {
+    return writeRateLimitResponse;
+  }
 
   let payload: unknown;
   try {
@@ -158,17 +187,34 @@ export async function POST(request: Request) {
   const parsed = sendMessageSchema.safeParse(payload);
   if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
 
+  if (parsed.data.attachmentUrl) {
+    if (!parsed.data.attachmentType) {
+      return validationErrorResponse({
+        attachmentType: [
+          "Le type de la pièce jointe est requis quand un fichier est envoyé.",
+        ],
+      });
+    }
+
+    if (!isSupportedChatAttachmentMimeType(parsed.data.attachmentType)) {
+      return validationErrorResponse({
+        attachmentType: [
+          "Ce format de pièce jointe n'est pas autorisé. Utilisez une image, un PDF ou un document courant.",
+        ],
+      });
+    }
+  }
+
   const supabase = await getSupabaseClerkRlsClient();
   if (!supabase) {
     return NextResponse.json(
       {
         error: "Connexion sécurisée indisponible",
-        hint: "Configurez un template JWT Clerk Supabase (ou CLERK_SUPABASE_JWT_TEMPLATE) pour activer la lecture/écriture sous RLS.",
+        hint: "Activez l'intégration native Clerk/Supabase dans Supabase et vérifiez que la session Clerk est disponible.",
       },
       { status: 503 },
     );
   }
-  const adminSupabase = getSupabaseAdminClient();
 
   try {
     const quota = await reserveDiscussionMessageSlot(supabase, {
@@ -179,9 +225,8 @@ export async function POST(request: Request) {
       return NextResponse.json(toDiscussionRateLimitErrorPayload(quota), { status: 429 });
     }
 
-    const profile = await loadCurrentProfile(adminSupabase, userId);
+    const profile = await loadCurrentProfile(supabase, userId);
     const metadataZone = extractZoneContextFromMetadata(profile?.metadata ?? null);
-
     const parsedArr = parseArrondissement(parsed.data.arrondissementId?.toString() ?? null);
     const profileArrondissement = profile?.paris_arrondissement ?? parsedArr;
 
@@ -252,7 +297,7 @@ export async function POST(request: Request) {
       }
       case "bug_report": {
         recipientId = await resolveBugReportRecipientId(
-          adminSupabase,
+          supabase,
           userId,
           identity.role,
         );
@@ -274,31 +319,6 @@ export async function POST(request: Request) {
         break;
     }
 
-    const mentions = parsed.data.content.match(/@([a-z0-9_]+)/g);
-    if (mentions) {
-      const handles = mentions.map((mention) => mention.slice(1));
-      const { data: mentionedProfiles } = await supabase
-        .from("profiles")
-        .select("id, display_name")
-        .in("handle", handles);
-
-      if (mentionedProfiles && mentionedProfiles.length > 0) {
-        const notifications = mentionedProfiles
-          .filter((profileRow) => profileRow.id !== userId)
-          .map((profileRow) => ({
-            user_id: profileRow.id,
-            type: "community",
-            title: "Vous avez été tagué ! ✉️",
-            content: "Un membre vous a mentionné dans une discussion.",
-            payload: { fromId: userId, channelType: parsed.data.channelType },
-          }));
-
-        if (notifications.length > 0) {
-          await adminSupabase.from("app_notifications").insert(notifications);
-        }
-      }
-    }
-
     const { data: message, error } = await supabase
       .from("app_messages")
       .insert({
@@ -318,6 +338,12 @@ export async function POST(request: Request) {
       .single();
 
     if (error) return handleApiError(error, "POST /api/chat (insert)");
+
+    try {
+      await createChatNotificationsForMessage(supabase, message.id);
+    } catch (notificationError) {
+      console.warn("[POST /api/chat] Notification fan-out failed:", notificationError);
+    }
 
     return NextResponse.json({ status: "sent", message }, { status: 201 });
   } catch (error) {
@@ -354,7 +380,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         error: "Connexion sécurisée indisponible",
-        hint: "Configurez un template JWT Clerk Supabase (ou CLERK_SUPABASE_JWT_TEMPLATE) pour activer la lecture/écriture sous RLS.",
+        hint: "Activez l'intégration native Clerk/Supabase dans Supabase et vérifiez que la session Clerk est disponible.",
       },
       { status: 503 },
     );
@@ -388,84 +414,142 @@ export async function GET(request: Request) {
     );
   }
 
-  let query = supabase
-    .from("app_messages")
-    .select(messageSelect)
-    .order("created_at", { ascending: false })
-    .limit(50);
+  const createMessageQuery = () =>
+    supabase
+      .from("app_messages")
+      .select(messageSelect)
+      .order("created_at", { ascending: false })
+      .limit(50);
 
-  if (channelType === "community") {
-    query = query.eq("channel_type", "community");
-  } else if (channelType === "dm") {
-    if (!recipientId) {
-      return NextResponse.json(
-        {
-          error: "Destinataire requis",
-          hint: "Choisissez un membre pour charger la conversation privée.",
-        },
-        { status: 400 },
-      );
+  try {
+    if (channelType === "community") {
+      const { data, error } = await createMessageQuery().eq("channel_type", "community");
+      if (error) {
+        throw error;
+      }
+      return NextResponse.json({
+        messages: sortByCreatedAtAsc((data ?? []) as ChatMessageRow[]),
+      });
     }
 
-    query = query
-      .eq("channel_type", "dm")
-      .or(toVisibilityFilter(userId, recipientId));
-  } else if (channelType === "admin_elu") {
-    query = query.eq("channel_type", "admin_elu");
-  } else if (channelType === "territory") {
-    if (!zoneName && !arrondissementId) {
-      return NextResponse.json(
-        {
-          error: "Zone manquante",
-          hint: "Ajoutez une zone (arrondissement ou commune) à votre profil pour ouvrir ce canal.",
-        },
-        { status: 400 },
-      );
+    if (channelType === "dm") {
+      if (!recipientId) {
+        return NextResponse.json(
+          {
+            error: "Destinataire requis",
+            hint: "Choisissez un membre pour charger la conversation privée.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const { data, error } = await createMessageQuery()
+        .eq("channel_type", "dm")
+        .in("sender_id", [userId, recipientId])
+        .in("recipient_id", [userId, recipientId]);
+      if (error) {
+        throw error;
+      }
+
+      return NextResponse.json({
+        messages: sortByCreatedAtAsc((data ?? []) as ChatMessageRow[]),
+      });
     }
 
-    const territory = getTerritoryFilter(zoneContext);
+    if (channelType === "admin_elu") {
+      const { data, error } = await createMessageQuery().eq("channel_type", "admin_elu");
+      if (error) {
+        throw error;
+      }
 
-    const territoryFilters: string[] = [];
-    if (zoneName) {
-      territoryFilters.push(`zone_name.eq.${quotePostgrestValue(zoneName)}`);
-    }
-    if (territory.zoneNames && territory.zoneNames.length > 0) {
-      territoryFilters.push(
-        `zone_name.in.(${territory.zoneNames.map((n) => quotePostgrestValue(n)).join(",")})`,
-      );
-    }
-    if (territory.arrondissementIds && territory.arrondissementIds.length > 0) {
-      territoryFilters.push(`arrondissement_id.in.(${territory.arrondissementIds.join(",")})`);
+      return NextResponse.json({
+        messages: sortByCreatedAtAsc((data ?? []) as ChatMessageRow[]),
+      });
     }
 
-    if (territoryFilters.length > 0) {
-      query = query
-        .eq("channel_type", "territory")
-        .or(territoryFilters.join(","));
-    } else {
-      return NextResponse.json(
-        {
-          error: "Zone invalide",
-          hint: "Votre zone n'est pas reconnue. Veuillez choisir un arrondissement parisien ou une commune de la région.",
-        },
-        { status: 400 },
-      );
-    }
-  } else if (channelType === "bug_report") {
-    query = query
-      .eq("channel_type", "bug_report")
-      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`);
-  }
+    if (channelType === "territory") {
+      if (!zoneName && !arrondissementId) {
+        return NextResponse.json(
+          {
+            error: "Zone manquante",
+            hint: "Ajoutez une zone (arrondissement ou commune) à votre profil pour ouvrir ce canal.",
+          },
+          { status: 400 },
+        );
+      }
 
-  const { data, error } = await query;
-  if (error) {
+      const territory = getTerritoryFilter(zoneContext);
+      const territoryQueries: Promise<ChatMessageRow[]>[] = [];
+
+      if (zoneName) {
+        territoryQueries.push(
+          runMessageQuery(createMessageQuery().eq("channel_type", "territory").eq("zone_name", zoneName)),
+        );
+      }
+      if (territory.zoneNames && territory.zoneNames.length > 0) {
+        territoryQueries.push(
+          runMessageQuery(
+            createMessageQuery().eq("channel_type", "territory").in("zone_name", territory.zoneNames),
+          ),
+        );
+      }
+      if (territory.arrondissementIds && territory.arrondissementIds.length > 0) {
+        territoryQueries.push(
+          runMessageQuery(
+            createMessageQuery()
+              .eq("channel_type", "territory")
+              .in("arrondissement_id", territory.arrondissementIds),
+          ),
+        );
+      }
+
+      if (territoryQueries.length === 0) {
+        return NextResponse.json(
+          {
+            error: "Zone invalide",
+            hint: "Votre zone n'est pas reconnue. Veuillez choisir un arrondissement parisien ou une commune de la région.",
+          },
+          { status: 400 },
+        );
+      }
+
+      const territoryMessages = await Promise.all(territoryQueries);
+      return NextResponse.json({
+        messages: sortByCreatedAtAsc(mergeRowGroupsById(territoryMessages)),
+      });
+    }
+
+    if (channelType === "bug_report") {
+      const [sentMessages, receivedMessages] = await Promise.all([
+        runMessageQuery(
+          createMessageQuery().eq("channel_type", "bug_report").eq("sender_id", userId),
+        ),
+        runMessageQuery(
+          createMessageQuery().eq("channel_type", "bug_report").eq("recipient_id", userId),
+        ),
+      ]);
+
+      return NextResponse.json({
+        messages: sortByCreatedAtAsc(
+          mergeRowGroupsById([sentMessages, receivedMessages]),
+        ),
+      });
+    }
+
+    return NextResponse.json({ messages: [] });
+  } catch (error) {
     console.error("[GET /api/chat] Database Error:", error);
+    const dbError = error as {
+      message?: string;
+      code?: string;
+      details?: string;
+    };
     return NextResponse.json(
       {
         error: "Erreur Base de Données",
-        message: error.message,
-        code: error.code,
-        details: error.details,
+        message: dbError.message ?? "Erreur inconnue",
+        code: dbError.code,
+        details: dbError.details,
         hint:
           channelType === "territory" && !zoneName && !profileArrondissement
             ? "Votre profil n'a pas encore de zone exploitable."
@@ -474,6 +558,4 @@ export async function GET(request: Request) {
       { status: 500 },
     );
   }
-
-  return NextResponse.json({ messages: (data ?? []).reverse() });
 }

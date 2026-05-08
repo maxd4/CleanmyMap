@@ -51,11 +51,15 @@
   - Rate Limiting: `apps/web/src/lib/community/discussion-rate-limit.ts`
   - Message Pruning: `apps/web/supabase/migrations/20260420000015_advanced_chat_core.sql`
   - Authorized Access: `apps/web/src/lib/authz.ts`
+- Homepage & Hero (Protégé) :
+  - `apps/web/src/app/page.tsx`
+  - `apps/web/src/components/accueil/`
 
 ## Repo conventions
 - Keep user-facing copy in French unless feature requires otherwise.
 - Prefer minimal, localized edits.
 - Avoid large refactors in mixed-scope tasks.
+- **Homepage restriction**: Ne jamais modifier la homepage sauf demande explicite de l'utilisateur.
 
 ## Critical validation commands
 - Full workspace tests: `npm run test`

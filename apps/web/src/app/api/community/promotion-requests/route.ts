@@ -5,12 +5,20 @@ import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { sendCreatorInboxEmail } from "@/lib/community/creator-inbox-email";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { appendPromotionRequest } from "@/lib/admin/promotion-requests-store";
+import { createServerRateLimitResponse, verifyRateLimit } from "@/lib/rate-limit/server";
+import {
+  createPublicRateLimitResponse,
+  hasHoneypotSignal,
+  hasRecentSubmission,
+} from "@/lib/security/validation";
 
 export const runtime = "nodejs";
 
 const payloadSchema = z.object({
   requestedRole: z.enum(["elu", "admin"]),
   motivation: z.string().trim().min(10).max(1200),
+  honeypot: z.string().optional().default(""),
+  submittedAt: z.number().int().positive().optional(),
 });
 
 export async function POST(request: Request) {
@@ -50,6 +58,23 @@ export async function POST(request: Request) {
       },
       { status: 400 },
     );
+  }
+
+  if (hasHoneypotSignal(parsed.data.honeypot)) {
+    return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
+  }
+
+  if (hasRecentSubmission(parsed.data.submittedAt)) {
+    return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
+  }
+
+  const writeRateLimit = await verifyRateLimit({ limit: 3, window: 300, key: userId });
+  const writeRateLimitResponse = createServerRateLimitResponse(
+    writeRateLimit.allowed,
+    writeRateLimit.retryAfter,
+  );
+  if (writeRateLimitResponse) {
+    return writeRateLimitResponse;
   }
 
   if (

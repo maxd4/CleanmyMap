@@ -27,8 +27,10 @@ export interface CmmSectionProps {
 /**
  * CmmSection - Section de page avec accent automatique par bloc
  *
- * Simplifie la création de sections cohérentes avec l'accent approprié
- * selon le bloc (home=slate, act=amber, visualize=sky, etc.)
+ * Charte officielle:
+ * - home=amber, act=emerald, visualize=sky
+ * - impact=red, network=indigo, connect=pink
+ * - learn=yellow, pilot=amber (shade foncé)
  *
  * Usage:
  * <CmmSection blockId="impact" title="Impact environnemental">

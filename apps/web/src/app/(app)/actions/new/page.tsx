@@ -20,11 +20,10 @@ export const metadata: Metadata = {
     canonical: "/actions/new",
   },
 };
-import { ActionDeclarationForm } from "@/components/actions/action-declaration-form";
+import { ActionDeclarationForm } from "@/components/actions/action-declaration-form/";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { DecisionPageHeader } from "@/components/ui/decision-page-header";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
-import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import {
@@ -177,22 +176,6 @@ export default async function NewActionPage({
             ? "Déclarer un lieu propre ou une action terrain en trois étapes."
             : "Déclarer une action terrain en trois étapes."
         }
-        summary={
-          <div className="grid gap-3 md:grid-cols-2">
-            <article className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-              <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">Mode actif</p>
-              <p className="text-lg font-semibold cmm-text-primary">
-                {initialMode === "complete" ? "Complet" : "Rapide"}
-              </p>
-            </article>
-            <article className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-              <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">Profil</p>
-              <p className="text-lg font-semibold cmm-text-primary">
-                {getProfileLabel(profile, locale)}
-              </p>
-            </article>
-          </div>
-        }
         primaryAction={primaryActionLink}
         secondaryAction={
           secondaryAction
@@ -221,26 +204,6 @@ export default async function NewActionPage({
               initialMode={initialMode}
               initialRecordType={initialRecordType}
             />
-            <section className="flex flex-col items-center justify-center border-t border-slate-200 pt-8 pb-4">
-              <RubriquePdfExportButton rubriqueTitle="Déclaration de nettoyage" />
-              <p className="mt-2 cmm-text-caption cmm-text-muted">Générer un justificatif administratif de cette saisie</p>
-            </section>
-          </div>
-        }
-        trace={
-          <div className="space-y-2 cmm-text-caption cmm-text-secondary">
-            <p>
-              Horodatage: {new Date().toLocaleString("fr-FR")} | Fiabilité:
-              dépend des champs essentiels fournis à la soumission.
-            </p>
-            <p>
-              Sources: profil utilisateur, endpoint de préfill, formulaire de
-              déclaration.
-            </p>
-            <p>
-              Méthode: validation progressive en saisie, blocage uniquement sur
-              les essentiels au submit. Périmètre: /actions/new.
-            </p>
           </div>
         }
       />
@@ -284,11 +247,6 @@ export default async function NewActionPage({
         initialMode={initialMode}
         initialRecordType={initialRecordType}
       />
-
-      <section className="flex flex-col items-center justify-center border-t border-slate-200 pt-8 pb-4">
-        <RubriquePdfExportButton rubriqueTitle="Déclaration de nettoyage" />
-        <p className="mt-2 cmm-text-caption cmm-text-muted">Générer un justificatif administratif de cette saisie</p>
-      </section>
     </div>
   );
 }

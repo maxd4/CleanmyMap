@@ -10,6 +10,7 @@ Système de design pour agents IA. **TOUJOURS consulter avant toute modification
 - **charte-ui-pro-moderne-futuriste.md** - Charte UI complète
 - **VISUAL_STORYTELLING.md** - Priorité aux visuels sur le texte
 - **principes-visuels.md** - Principes de base
+- **design-system.md** - Contient la palette officielle par bloc (Accents)
 
 ### Composants Canoniques (OBLIGATOIRE)
 - **design-system.md** - Composants à utiliser

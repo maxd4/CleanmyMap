@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import {
   formatAvailabilitySummary,
   formatCoverageSummary,
+  formatPartnerScopeLabel,
   normalizePublicChannelUrl,
   normalizePartnerAvailability,
   normalizePartnerCoverage,
@@ -154,6 +155,10 @@ function averageParisCoordinates(arrondissements: number[]): {
   return { lat, lng };
 }
 
+function franceCenterCoordinates(): { lat: number; lng: number } {
+  return { lat: 46.603354, lng: 1.888334 };
+}
+
 function normalizeContactUrl(
   contactChannel: string,
   contactDetails: string,
@@ -215,8 +220,12 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
 }): PublishedPartnerAnnuaireEntry {
   const coverage = normalizePartnerCoverage(params.request.coverage);
   const availability = normalizePartnerAvailability(params.request.availability);
-  const arrondissements = coverage.arrondissements;
-  const coordinates = averageParisCoordinates(arrondissements);
+  const arrondissements =
+    params.request.partnerScope === "local" ? coverage.arrondissements : [];
+  const coordinates =
+    params.request.partnerScope === "local" && arrondissements.length > 0
+      ? averageParisCoordinates(arrondissements)
+      : franceCenterCoordinates();
   const contactUrl = normalizeContactUrl(
     params.request.contactChannel,
     params.request.contactDetails,
@@ -235,14 +244,37 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
     legalIdentity: params.request.legalIdentity,
     kind: organizationTypeToKind(params.request.organizationType),
     types: organizationTypesToEngagementTypes(params.request.organizationType),
-    description: params.request.motivation.slice(0, 220),
-    location: formatCoverageSummary(coverage),
+    scope: params.request.partnerScope,
+    description: [
+      params.request.motivation.slice(0, 220),
+      params.request.relayActions.trim()
+        ? `Relais: ${params.request.relayActions.trim()}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    location:
+      params.request.partnerScope === "local"
+        ? formatCoverageSummary(coverage)
+        : formatPartnerScopeLabel(params.request.partnerScope),
     lat: coordinates.lat,
     lng: coordinates.lng,
     websiteUrl: websiteUrl ?? undefined,
     coveredArrondissements: arrondissements,
     contributionTypes: params.request.contributionTypes,
     availability: formatAvailabilitySummary(availability),
+    tags: [
+      params.request.partnerScope === "local"
+        ? "Réseau local"
+        : formatPartnerScopeLabel(params.request.partnerScope),
+      ...params.request.contributionTypes.map((type) => {
+        if (type === "materiel") return "Matériel";
+        if (type === "logistique") return "Logistique";
+        if (type === "accueil") return "Accueil";
+        if (type === "financement") return "Financement";
+        return "Communication";
+      }),
+    ],
     primaryChannel: publicChannelUrl
       ? {
           platform: "site web",

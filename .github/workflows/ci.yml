@@ -5,9 +5,11 @@ on:
   pull_request:
 
 jobs:
-  web-quality:
+  fast-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,3 +43,27 @@ jobs:
 
       - name: Web tests
         run: npm run test
+
+  security-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Secret audit
+        run: npm run security:secrets
+
+      - name: Security invariants and targeted tests
+        run: npm run test:security

@@ -1,6 +1,6 @@
 import { NextResponse } from"next/server";
 import { auth } from"@clerk/nextjs/server";
-import { getSupabaseServerClient } from"@/lib/supabase/server";
+import { getSupabaseClerkRlsClient } from"@/lib/supabase/clerk-rls";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 
 /**
@@ -13,7 +13,16 @@ export async function GET() {
  }
 
  try {
- const supabase = getSupabaseServerClient(true); // Service role to bypass custom RLS quirks if any, filtered by user_id
+ const supabase = await getSupabaseClerkRlsClient();
+ if (!supabase) {
+ return NextResponse.json(
+ {
+ error:"Connexion sécurisée indisponible",
+ hint:"Activez l'intégration native Clerk/Supabase et vérifiez que la session Clerk est disponible.",
+ },
+ { status: 503 },
+ );
+ }
  const { data, error } = await supabase
  .from("app_notifications")
  .select("*")
@@ -50,7 +59,16 @@ export async function PATCH(request: Request) {
  return NextResponse.json({ error:"Notification ID required" }, { status: 400 });
  }
 
- const supabase = getSupabaseServerClient(true);
+ const supabase = await getSupabaseClerkRlsClient();
+ if (!supabase) {
+ return NextResponse.json(
+ {
+ error:"Connexion sécurisée indisponible",
+ hint:"Activez l'intégration native Clerk/Supabase et vérifiez que la session Clerk est disponible.",
+ },
+ { status: 503 },
+ );
+ }
  const { error } = await supabase
  .from("app_notifications")
  .update({ read_at: new Date().toISOString() })

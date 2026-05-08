@@ -1,373 +1,481 @@
 "use client";
 
-import Link from"next/link";
-import { useMemo, useState } from"react";
-import useSWR from"swr";
-import { KpiMethodBlock } from"@/components/pilotage/kpi-method-block";
-import { ThirtySecondsSummary } from"@/components/pilotage/thirty-seconds-summary";
-import { PRIORITIZATION_RULESET } from"@/lib/pilotage/constants";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+import useSWR from "swr";
+import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
+import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
+import { PRIORITIZATION_RULESET } from "@/lib/pilotage/constants";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import { SectionShell } from "@/components/sections/rubriques/shared";
+import { 
+  ShieldCheck, 
+  Download, 
+  BarChart3, 
+  AlertCircle, 
+  FileText, 
+  ChevronRight, 
+  Clock, 
+  MapPin, 
+  TrendingUp, 
+  Sparkles, 
+  Target, 
+  ArrowRight,
+  Zap,
+  Building2,
+  CheckCircle2,
+  Activity,
+  Layers,
+  Search,
+  Filter
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 type PilotageOverviewResponse = {
- status:"ok";
- generatedAt: string;
- periodDays: number;
- summary: {
- kpis: Array<{
- label: string;
- value: string;
- previousValue: string;
- deltaAbsolute: string;
- deltaPercent: string;
- interpretation:"positive" |"negative" |"neutral";
- }>;
- alert: {
- severity:"critical" |"high" |"medium" |"low";
- title: string;
- detail: string;
- };
- recommendedAction: { href: string; label: string; reason: string };
- };
- priorities: Array<{
- id: string;
- title: string;
- severity:"critical" |"high" |"medium" |"low";
- score: number;
- reason: string;
- impactEstimate: string;
- suggestedOwner: string;
- recommendedAction: { href: string; label: string };
- evidence: string[];
- engineVersion: string;
- }>;
- methods: Array<{
- id: string;
- kpi: string;
- formula: string;
- source: string;
- recalc: string;
- limits: string;
- }>;
- zones: Array<{
- area: string;
- currentActions: number;
- previousActions: number;
- deltaActionsAbsolute: number;
- currentKg: number;
- previousKg: number;
- deltaKgAbsolute: number;
- deltaActionsPercent: number;
- deltaKgPercent: number;
- currentCoverageRate: number;
- previousCoverageRate: number;
- deltaCoverageRateAbsolute: number;
- deltaCoverageRatePercent: number;
- currentModerationDelayDays: number;
- previousModerationDelayDays: number;
- deltaModerationDelayDaysAbsolute: number;
- deltaModerationDelayDaysPercent: number;
- normalizedScore: number;
- urgency:"critique" |"elevee" |"moderee";
- justification: string;
- recommendedAction: string;
- }>;
+  status: "ok";
+  generatedAt: string;
+  periodDays: number;
+  summary: {
+    kpis: Array<{
+      label: string;
+      value: string;
+      previousValue: string;
+      deltaAbsolute: string;
+      deltaPercent: string;
+      interpretation: "positive" | "negative" | "neutral";
+    }>;
+    alert: {
+      severity: "critical" | "high" | "medium" | "low";
+      title: string;
+      detail: string;
+    };
+    recommendedAction: { href: string; label: string; reason: string };
+  };
+  priorities: Array<{
+    id: string;
+    title: string;
+    severity: "critical" | "high" | "medium" | "low";
+    score: number;
+    reason: string;
+    impactEstimate: string;
+    suggestedOwner: string;
+    recommendedAction: { href: string; label: string };
+    evidence: string[];
+    engineVersion: string;
+  }>;
+  methods: Array<{
+    id: string;
+    kpi: string;
+    formula: string;
+    source: string;
+    recalc: string;
+    limits: string;
+  }>;
+  zones: Array<{
+    area: string;
+    currentActions: number;
+    previousActions: number;
+    deltaActionsAbsolute: number;
+    currentKg: number;
+    previousKg: number;
+    deltaKgAbsolute: number;
+    currentButts: number;
+    previousButts: number;
+    deltaActionsPercent: number;
+    deltaKgPercent: number;
+    currentCoverageRate: number;
+    previousCoverageRate: number;
+    deltaCoverageRateAbsolute: number;
+    deltaCoverageRatePercent: number;
+    currentModerationDelayDays: number;
+    previousModerationDelayDays: number;
+    deltaModerationDelayDaysAbsolute: number;
+    deltaModerationDelayDaysPercent: number;
+    normalizedScore: number;
+    urgency: "critique" | "elevee" | "moderee";
+    justification: string;
+    recommendedAction: string;
+  }>;
 };
 
-const fetchOverview = async (
- url: string,
-): Promise<PilotageOverviewResponse> => {
- const response = await fetch(url, { method:"GET", cache:"no-store" });
- if (!response.ok) {
- const body = await response.text();
- throw new Error(body ||"overview_unavailable");
- }
- return (await response.json()) as PilotageOverviewResponse;
+const fetchOverview = async (url: string): Promise<PilotageOverviewResponse> => {
+  const response = await fetch(url, { method: "GET", cache: "no-store" });
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(body || "overview_unavailable");
+  }
+  return (await response.json()) as PilotageOverviewResponse;
 };
 
 function signedPercent(value: number): string {
- return `${value >= 0 ?"+" :""}${value.toFixed(1)}%`;
+  return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
-function signedValue(value: number, suffix =""): string {
- return `${value >= 0 ?"+" :""}${value.toFixed(1)}${suffix}`;
+export function ElusSection() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
+  const [activeTab, setActiveTab] = useState<"overview" | "zones" | "methods">("overview");
+
+  const { data, isLoading, error } = useSWR(
+    "/api/pilotage/overview",
+    fetchOverview,
+    { refreshInterval: 600000 }
+  );
+
+  if (error) {
+    return (
+      <SectionShell id="pilotage" title="Espace Pilotage" subtitle="Dashboard Institutionnel" icon={ShieldCheck}>
+        <div className="p-20 rounded-[4rem] bg-rose-500/5 border border-rose-500/20 text-center backdrop-blur-3xl">
+          <div className="p-6 w-24 h-24 rounded-[2rem] bg-rose-500/10 text-rose-500 border border-rose-500/20 mx-auto mb-8 shadow-2xl">
+             <AlertCircle size={48} className="animate-pulse" />
+          </div>
+          <h3 className="text-3xl font-black text-white tracking-tighter mb-4">Accès restreint ou indisponible</h3>
+          <p className="text-slate-400 font-bold max-w-md mx-auto leading-relaxed">
+            Le dashboard de pilotage nécessite une authentification institutionnelle de haut niveau ou fait l'objet d'une maintenance technique périodique.
+          </p>
+          <button className="mt-10 px-8 py-4 rounded-2xl bg-white text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl hover:translate-x-2 transition-transform">
+             Demander un accès
+          </button>
+        </div>
+      </SectionShell>
+    );
+  }
+
+  return (
+    <SectionShell
+      id="pilotage"
+      title={fr ? "Pilotage Institutionnel" : "Institutional Pilotage"}
+      subtitle={fr ? "Intelligence territoriale et aide à la décision pour les élus et gestionnaires publics." : "Territorial intelligence and decision support for elected officials and public managers."}
+      icon={ShieldCheck}
+      gradient="from-blue-600/20 via-slate-900/10 to-transparent"
+    >
+      <div className="space-y-16 pt-8">
+        {/* Navigation & Controls HUD */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 px-4">
+           <div className="flex items-center gap-2 p-2 rounded-[2.5rem] bg-slate-950/40 border border-white/5 backdrop-blur-3xl shadow-2xl">
+              {[
+                { id: "overview", label: fr ? "Vue d'ensemble" : "Overview", icon: BarChart3 },
+                { id: "zones", label: fr ? "Priorités Zones" : "Zone Priorities", icon: MapPin },
+                { id: "methods", label: fr ? "Référentiel" : "Reference", icon: FileText },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={cn(
+                    "flex items-center gap-3 px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500",
+                    activeTab === tab.id 
+                      ? "bg-white text-slate-950 shadow-[0_0_40px_rgba(255,255,255,0.2)]" 
+                      : "text-slate-500 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <tab.icon size={14} className={cn(activeTab === tab.id ? "animate-pulse" : "")} />
+                  {tab.label}
+                </button>
+              ))}
+           </div>
+
+           <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-3 px-6 py-4 rounded-2xl bg-white/5 border border-white/5 text-slate-500 text-[9px] font-black uppercase tracking-widest italic">
+                 <Clock size={14} />
+                 {fr ? "Dernière MAJ: il y a 12 min" : "Last Update: 12 min ago"}
+              </div>
+              <button className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-sky-500 hover:text-white transition-all shadow-2xl">
+                 <Download size={14} />
+                 {fr ? "Rapport PDF" : "PDF Report"}
+              </button>
+           </div>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {isLoading ? (
+            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-12">
+               <CmmSkeleton className="h-80 rounded-[4rem]" />
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <CmmSkeleton className="h-48 rounded-[3rem]" />
+                  <CmmSkeleton className="h-48 rounded-[3rem]" />
+                  <CmmSkeleton className="h-48 rounded-[3rem]" />
+               </div>
+            </motion.div>
+          ) : data && (
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+              className="space-y-20"
+            >
+              {activeTab === "overview" && (
+                <div className="space-y-24">
+                   {/* Summary Hero - Dynamic HUD */}
+                   <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
+                      <div className="lg:col-span-8">
+                         <ThirtySecondsSummary summary={data.summary} />
+                      </div>
+                      <div className="lg:col-span-4 p-12 rounded-[4rem] border border-sky-500/30 bg-slate-900/40 backdrop-blur-3xl shadow-[0_0_80px_rgba(14,165,233,0.1)] flex flex-col justify-between group overflow-hidden relative">
+                         <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-125 transition-transform duration-1000">
+                            <Target size={200} className="text-sky-400" />
+                         </div>
+                         
+                         <div className="relative z-10 space-y-8">
+                            <div className="p-5 w-16 h-16 rounded-3xl bg-sky-500/10 border border-sky-500/20 text-sky-400 group-hover:scale-110 transition-transform duration-500 shadow-2xl">
+                               <Sparkles size={28} className="animate-pulse" />
+                            </div>
+                            <div className="space-y-3">
+                               <h4 className="text-3xl font-black text-white tracking-tighter leading-none">Focus Stratégique</h4>
+                               <p className="text-[10px] font-black text-sky-400 uppercase tracking-[0.2em]">Recommandation IA v4.2</p>
+                            </div>
+                            <p className="text-slate-400 font-bold leading-relaxed text-lg">
+                               {data.summary.recommendedAction.reason}
+                            </p>
+                         </div>
+                         <Link 
+                            href={data.summary.recommendedAction.href}
+                            className="relative z-10 mt-12 flex items-center justify-between p-6 rounded-[1.5rem] bg-white text-slate-950 font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl hover:translate-x-3 transition-transform"
+                         >
+                            {data.summary.recommendedAction.label}
+                            <ArrowRight size={18} />
+                         </Link>
+                      </div>
+                   </div>
+
+                   {/* Secondary KPIs / Detailed Analytics */}
+                   <div className="space-y-10">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
+                         <div className="flex items-center gap-4">
+                            <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-500">
+                               <Activity size={20} />
+                            </div>
+                            <h3 className="text-xl font-black text-white tracking-widest uppercase">Deep Analytics & Trends</h3>
+                         </div>
+                         <div className="flex items-center gap-3 bg-white/5 px-4 py-2 rounded-xl border border-white/5">
+                            <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Période: 30 derniers jours</span>
+                            <ChevronRight size={12} className="text-slate-700" />
+                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                         {data.summary.kpis.map((kpi, i) => (
+                           <motion.div
+                              key={i}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              whileInView={{ opacity: 1, scale: 1 }}
+                              viewport={{ once: true }}
+                              transition={{ delay: i * 0.1 }}
+                              className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl group hover:bg-white/5 transition-all relative overflow-hidden"
+                           >
+                              <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.07] transition-opacity">
+                                 <Layers size={100} />
+                              </div>
+                              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
+                                 <div className="w-1.5 h-1.5 rounded-full bg-slate-800" />
+                                 {kpi.label}
+                              </p>
+                              <div className="space-y-3">
+                                 <span className="text-5xl font-black text-white tracking-tighter block">{kpi.value}</span>
+                                 <div className={cn(
+                                   "inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black tracking-tight shadow-2xl",
+                                   kpi.interpretation === "positive" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                                 )}>
+                                    {kpi.interpretation === "positive" ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                    {kpi.deltaPercent}
+                                 </div>
+                              </div>
+                           </motion.div>
+                         ))}
+                      </div>
+                   </div>
+                </div>
+              )}
+
+              {activeTab === "zones" && (
+                <div className="space-y-16">
+                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 px-4">
+                      <div className="space-y-3">
+                         <div className="flex items-center gap-3">
+                            <MapPin size={24} className="text-sky-500" />
+                            <h2 className="text-3xl font-black text-white tracking-tighter uppercase tracking-[0.1em]">Cartographie des Priorités</h2>
+                         </div>
+                         <p className="text-sm font-bold text-slate-500 italic">Analyse sectorielle de la performance opérationnelle du territoire.</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                         <div className="relative group/search">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-600 group-hover/search:text-white transition-colors" size={16} />
+                            <input 
+                               type="text" 
+                               placeholder={fr ? "Filtrer zone..." : "Filter zone..."}
+                               className="bg-slate-950/40 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-xs font-black text-white placeholder-slate-700 outline-none focus:border-sky-500/50 transition-all w-64 backdrop-blur-3xl"
+                            />
+                         </div>
+                         <button className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-500 hover:text-white transition-all">
+                            <Filter size={18} />
+                         </button>
+                      </div>
+                   </div>
+
+                   <div className="overflow-hidden rounded-[3.5rem] border border-white/10 bg-slate-950/40 backdrop-blur-3xl shadow-2xl">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[900px]">
+                           <thead>
+                              <tr className="bg-white/[0.02] border-b border-white/10">
+                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Secteur Opérationnel" : "Operational Sector"}</th>
+                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Volume Actions" : "Action Volume"}</th>
+                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Tonnage Net" : "Net Tonnage"}</th>
+                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "Couverture" : "Coverage"}</th>
+                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">{fr ? "P-Score" : "P-Score"}</th>
+                                 <th className="px-10 py-8 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] text-center">{fr ? "Indice Urgence" : "Urgency Index"}</th>
+                              </tr>
+                           </thead>
+                           <tbody>
+                              {data.zones.map((zone, i) => (
+                                <tr key={i} className="group hover:bg-white/[0.03] transition-all border-b border-white/5 last:border-0">
+                                   <td className="px-10 py-8">
+                                      <div className="flex items-center gap-5">
+                                         <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-500 group-hover:scale-110 group-hover:text-sky-400 transition-all duration-500">
+                                            <MapPin size={18} />
+                                         </div>
+                                         <div className="space-y-1">
+                                            <span className="text-lg font-black text-white tracking-tight block">{zone.area}</span>
+                                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest italic">{fr ? "Périmètre Urbain" : "Urban Perimeter"}</span>
+                                         </div>
+                                      </div>
+                                   </td>
+                                   <td className="px-10 py-8">
+                                      <div className="space-y-1">
+                                         <span className="text-lg font-black text-white block">{zone.currentActions}</span>
+                                         <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tight", zone.deltaActionsPercent >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400")}>
+                                            {zone.deltaActionsPercent >= 0 ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                                            {signedPercent(zone.deltaActionsPercent)}
+                                         </div>
+                                      </div>
+                                   </td>
+                                   <td className="px-10 py-8">
+                                      <div className="space-y-1">
+                                         <span className="text-lg font-black text-white block">{zone.currentKg}kg</span>
+                                         <div className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[9px] font-black tracking-tight", zone.deltaKgPercent >= 0 ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400")}>
+                                            {signedPercent(zone.deltaKgPercent)}
+                                         </div>
+                                      </div>
+                                   </td>
+                                   <td className="px-10 py-8">
+                                      <div className="space-y-3">
+                                         <div className="flex items-center justify-between text-[10px] font-black text-slate-500">
+                                            <span>{(zone.currentCoverageRate * 100).toFixed(0)}%</span>
+                                         </div>
+                                         <div className="w-24 h-1.5 rounded-full bg-slate-900 overflow-hidden border border-white/5">
+                                            <motion.div 
+                                               initial={{ width: 0 }}
+                                               whileInView={{ width: `${zone.currentCoverageRate * 100}%` }}
+                                               transition={{ duration: 1, delay: 0.5 }}
+                                               className="h-full bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.5)]" 
+                                            />
+                                         </div>
+                                      </div>
+                                   </td>
+                                   <td className="px-10 py-8">
+                                      <span className="text-2xl font-black text-white tracking-tighter group-hover:text-sky-400 transition-colors">{(zone.normalizedScore * 10).toFixed(1)}</span>
+                                   </td>
+                                   <td className="px-10 py-8 text-center">
+                                      <span className={cn(
+                                        "inline-flex items-center gap-2 px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl",
+                                        zone.urgency === "critique" ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" : 
+                                        zone.urgency === "elevee" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" : 
+                                        "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                      )}>
+                                         <div className={cn("w-1.5 h-1.5 rounded-full animate-pulse", 
+                                            zone.urgency === "critique" ? "bg-rose-500" : 
+                                            zone.urgency === "elevee" ? "bg-amber-500" : "bg-emerald-500"
+                                         )} />
+                                         {zone.urgency}
+                                      </span>
+                                   </td>
+                                </tr>
+                              ))}
+                           </tbody>
+                        </table>
+                      </div>
+                   </div>
+                   
+                   {/* Contextual Intelligence */}
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div className="p-10 rounded-[3rem] bg-slate-900/40 border border-white/5 backdrop-blur-3xl flex items-start gap-8 group">
+                         <div className="p-4 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 group-hover:rotate-12 transition-transform">
+                            <Info size={24} />
+                         </div>
+                         <div className="space-y-3">
+                            <h4 className="text-lg font-black text-white tracking-tight uppercase tracking-[0.1em]">Intelligence des Scores</h4>
+                            <p className="text-sm font-bold text-slate-500 leading-relaxed italic opacity-80">
+                               {fr ? "Les scores sont recalculés toutes les 24h sur la base de la densité de signalements, de la récurrence et du taux de couverture opérationnelle." : "Scores are recalculated every 24h based on report density, recurrence and operational coverage rate."}
+                            </p>
+                         </div>
+                      </div>
+                      
+                      <div className="p-10 rounded-[3rem] bg-emerald-500/5 border border-emerald-500/10 backdrop-blur-3xl flex items-start gap-8 group">
+                         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+                            <ShieldCheck size={24} />
+                         </div>
+                         <div className="space-y-3">
+                            <h4 className="text-lg font-black text-white tracking-tight uppercase tracking-[0.1em]">Garantie de Précision</h4>
+                            <p className="text-sm font-bold text-slate-500 leading-relaxed italic opacity-80">
+                               Toutes les données sont vérifiées par notre protocole de modération hybride (IA + Validation Humaine) avant d'intégrer le dashboard.
+                            </p>
+                         </div>
+                      </div>
+                   </div>
+                </div>
+              )}
+
+              {activeTab === "methods" && (
+                <div className="space-y-16">
+                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-4">
+                      <div className="space-y-3">
+                         <div className="flex items-center gap-3 text-violet-400">
+                            <FileText size={24} />
+                            <h2 className="text-3xl font-black text-white tracking-tighter uppercase tracking-[0.1em]">Cadre Méthodologique</h2>
+                         </div>
+                         <p className="text-sm font-bold text-slate-500 italic">Transparence algorithmique et sources de données certifiées.</p>
+                      </div>
+                   </div>
+                   
+                   <div className="grid grid-cols-1 gap-10">
+                      {data.methods.map((method, i) => (
+                        <KpiMethodBlock key={method.id} method={method} />
+                      ))}
+                   </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Security & Regulatory HUD */}
+        <div className="p-12 rounded-[4rem] border border-white/5 bg-slate-900/20 backdrop-blur-3xl flex flex-col md:flex-row items-center justify-between gap-12 group overflow-hidden relative">
+           <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+           
+           <div className="flex items-center gap-8 relative z-10">
+              <div className="p-5 rounded-3xl bg-white/5 border border-white/10 text-slate-600 group-hover:text-emerald-400 group-hover:scale-110 transition-all duration-500 shadow-2xl">
+                 <ShieldCheck size={32} />
+              </div>
+              <div className="space-y-2">
+                 <h4 className="text-base font-black text-white uppercase tracking-[0.2em]">{fr ? "Coffre-fort Numérique" : "Digital Vault"}</h4>
+                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.3em] leading-relaxed">
+                    Protocole de sécurité AES-256 <br/>
+                    {fr ? "Accès restreint aux habilitations territoriales" : "Restricted access to territorial clearances"}
+                 </p>
+              </div>
+           </div>
+
+           <div className="flex flex-col items-center md:items-end gap-3 relative z-10">
+              <div className="flex items-center gap-3 bg-emerald-500/10 px-6 py-2.5 rounded-2xl border border-emerald-500/20 shadow-2xl">
+                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                 <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">{fr ? "Certifié RGPD & OpenData" : "GDPR & OpenData Certified"}</span>
+              </div>
+              <span className="text-[9px] font-bold text-slate-700 uppercase tracking-widest italic">ISO 27001 Compliance Pending</span>
+           </div>
+        </div>
+      </div>
+    </SectionShell>
+  );
 }
-
-function ElusSection() {
- const { locale } = useSitePreferences();
- const fr = locale ==="fr";
- const [periodDays, setPeriodDays] = useState<number>(30);
- const { data, isLoading, error } = useSWR(
- `/api/pilotage/overview?days=${periodDays}&limit=2000`,
- fetchOverview,
- );
-
- const summaryKpis = useMemo(() => {
- const kpis = data?.summary.kpis ?? [];
- const [kpi0, kpi1, kpi2] = kpis;
- if (kpi0 && kpi1 && kpi2) {
- return [
- {
- label: kpi0.label,
- value: kpi0.value,
- previousValue: kpi0.previousValue,
- deltaAbsolute: kpi0.deltaAbsolute,
- deltaPercent: kpi0.deltaPercent,
- interpretation: kpi0.interpretation,
- },
- {
- label: kpi1.label,
- value: kpi1.value,
- previousValue: kpi1.previousValue,
- deltaAbsolute: kpi1.deltaAbsolute,
- deltaPercent: kpi1.deltaPercent,
- interpretation: kpi1.interpretation,
- },
- {
- label: kpi2.label,
- value: kpi2.value,
- previousValue: kpi2.previousValue,
- deltaAbsolute: kpi2.deltaAbsolute,
- deltaPercent: kpi2.deltaPercent,
- interpretation: kpi2.interpretation,
- },
- ] as const;
- }
-
- return [
- {
- label: fr ?"Impact terrain" :"Field impact",
- value:"n/a",
- previousValue:"n/a",
- deltaAbsolute:"n/a",
- deltaPercent:"n/a",
- interpretation:"neutral",
- },
- {
- label: fr ?"Mobilisation" :"Mobilization",
- value:"n/a",
- previousValue:"n/a",
- deltaAbsolute:"n/a",
- deltaPercent:"n/a",
- interpretation:"neutral",
- },
- {
- label: fr ?"Qualite data" :"Data quality",
- value:"n/a",
- previousValue:"n/a",
- deltaAbsolute:"n/a",
- deltaPercent:"n/a",
- interpretation:"neutral",
- },
- ] as const;
- }, [data?.summary.kpis]);
-
- return (
- <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-8 items-start">
- {/* GAUCHE : KPI, Synthèse et Exports */}
- <div className="space-y-4">
- <div className="max-w-xs">
- <label className="flex flex-col gap-2 cmm-text-small cmm-text-secondary">
- {fr ?"Fenêtre d&apos;observation" :"Observation window"}
- <select
- value={String(periodDays)}
- onChange={(event) => setPeriodDays(Number(event.target.value))}
- className="rounded-lg border border-slate-300 px-3 py-2 outline-none transition focus:border-emerald-500"
- >
- <option value="7">{fr ?"7 jours" :"7 days"}</option>
- <option value="30">{fr ?"30 jours" :"30 days"}</option>
- <option value="90">{fr ?"90 jours" :"90 days"}</option>
- <option value="180">{fr ?"180 jours" :"180 days"}</option>
- </select>
- </label>
- </div>
-
- <ThirtySecondsSummary
- kpis={summaryKpis}
- alert={data?.summary.alert}
- recommendedAction={{
- href: data?.summary.recommendedAction.href ??"/reports",
- label:
- data?.summary.recommendedAction.label ??
- (fr ?"Ouvrir le reporting" :"Open reporting"),
- }}
- recommendedReason={data?.summary.recommendedAction.reason}
- />
-
- <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
- <h3 className="cmm-text-small font-semibold cmm-text-primary">
- {fr ?"Dossier élu 1-clic" :"One-click elected official pack"}
- </h3>
- <p className="mt-1 cmm-text-small cmm-text-secondary">
- {fr
- ?"Pack institutionnel prêt à partager: KPI clés, comparatifs N-1, priorités territoriales et méthode."
- :"Institutional pack ready to share: key KPIs, year-over-year comparisons, territorial priorities and method."}
- </p>
- <div className="mt-3 flex flex-col gap-2">
- <a
- href={`/api/reports/elus-dossier?days=${periodDays}&format=pdf`}
- className="rounded-lg border border-emerald-300 bg-emerald-600 px-3 py-2 cmm-text-small font-semibold text-white text-center transition hover:bg-emerald-700"
- >
- {fr ?"Télécharger le dossier PDF" :"Download PDF pack"}
- </a>
- <a
- href={`/api/reports/elus-dossier?days=${periodDays}&format=md`}
- className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 cmm-text-small font-semibold text-emerald-800 text-center transition hover:bg-emerald-100"
- >
- {fr ?"Télécharger le dossier partageable" :"Download shareable pack"}
- </a>
- <a
- href={`/api/reports/elus-dossier?days=${periodDays}&format=json`}
- className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small font-semibold cmm-text-secondary text-center transition hover:bg-slate-100"
- >
- {fr ?"Télécharger les données JSON" :"Download JSON data"}
- </a>
- <Link
- href="/reports"
- className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small font-semibold cmm-text-secondary text-center transition hover:bg-slate-100"
- >
- {fr ?"Ouvrir le rapport web complet" :"Open full web report"}
- </Link>
- </div>
- <p className="mt-3 cmm-text-caption cmm-text-muted">
- {fr
- ?"Export 1-clic: inclut la méthode technique et la justification des interprétations."
- :"One-click export: includes the technical method and interpretation rationale."}
- </p>
- </div>
- 
- {data ? (
- <KpiMethodBlock methods={data.methods} title={fr ?"Méthode KPI" :"KPI method"} />
- ) : null}
-
-  {isLoading ? (
-  <div className="space-y-4">
-  <CmmSkeleton variant="title" className="h-5 w-48" />
-  <div className="flex gap-4">
-  <CmmSkeleton className="h-24 flex-1 rounded-xl" />
-  <CmmSkeleton className="h-24 flex-1 rounded-xl" />
-  <CmmSkeleton className="h-24 flex-1 rounded-xl" />
-  </div>
-  <CmmSkeleton className="h-[200px] w-full rounded-xl" />
-  </div>
-  ) : null}
- {error ? (
- <p className="cmm-text-small text-rose-700">
- {fr ?"KPI indisponibles." :"KPIs unavailable."}
- </p>
- ) : null}
- </div>
-
- {/* DROITE : Priorités et Data */}
- <div className="space-y-4">
-
- <div className="grid gap-4 md:grid-cols-2">
- <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
- <h3 className="cmm-text-small font-semibold cmm-text-primary">
- {fr ?"Top zones à traiter" :"Top zones to address"}
- </h3>
- <p className="mt-1 cmm-text-caption cmm-text-secondary">
- {fr ?"Urgences et justifications terrain." :"Urgencies and field justifications."}
- </p>
- <ul className="mt-3 space-y-2 cmm-text-small cmm-text-secondary">
- {(data?.zones ?? []).slice(0, 5).map((zone) => (
- <li
- key={`zone-top-${zone.area}`}
- className="rounded-lg border border-slate-200/80 bg-slate-50/80 dark:bg-slate-800/50 dark:border-slate-700/80 p-3"
- >
- <p className="font-semibold cmm-text-primary">
- {zone.area} - {fr ?"urgence" :"urgency"} {zone.urgency.toUpperCase()}
- </p>
- <p className="cmm-text-caption cmm-text-secondary mt-1">{zone.justification}</p>
- <p className="mt-1 cmm-text-caption">
- <span className="font-semibold cmm-text-secondary">
- {fr ?"Recommandation:" :"Recommendation:"}
- </span>{""}
- {zone.recommendedAction}
- </p>
- </li>
- ))}
-{!isLoading && !error && (data?.zones ?? []).length === 0 ? (
- <li className="rounded-lg border border-slate-200/80 bg-slate-50/80 dark:bg-slate-800/50 dark:border-slate-700/80 p-3 cmm-text-secondary">
- {fr
- ?"Aucune zone prioritaire exploitable ne ressort sur cette fenêtre."
- :"No usable priority zone emerges on this window."}
- </li>
-) : null}
- </ul>
- </div>
-
- <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
- <h3 className="cmm-text-small font-semibold cmm-text-primary">
- {fr ?"Méthode de priorisation" :"Prioritization method"}
- </h3>
- <ul className="mt-3 list-disc space-y-2 pl-5 cmm-text-caption cmm-text-secondary">
- <li>{fr ?"Variables: actions/km2, kg/km2, participation." :"Variables: actions/km2, kg/km2, participation."}</li>
- <li>
- {fr
- ?"Pondérations: impact 35%, volume 35%, participation 20%, pression 10%."
- :"Weights: impact 35%, volume 35%, participation 20%, pressure 10%."}
- </li>
- <li>{fr ?"Fréquence: calculé sur chaque rafraichissement." :"Frequency: recalculated on every refresh."}</li>
- <li>
- {fr ?"Modèle de ciblage" :"Targeting model"} v.{PRIORITIZATION_RULESET.version}.
- </li>
- <li>
- {fr ?"Dernier passage" :"Last run"}: {data ? new Date(data.generatedAt).toLocaleString(fr ?"fr-FR" :"en-GB") :"n/a"}.
- </li>
- </ul>
- </div>
- </div>
-
- <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm overflow-hidden">
- <h3 className="cmm-text-small font-semibold cmm-text-primary mb-3">
- {fr
- ?"Comparaison par zone: période courante vs précédente"
- :"Zone comparison: current period vs previous"}
- </h3>
- <div className="overflow-x-auto rounded-lg border border-slate-100">
- <table className="min-w-full text-left cmm-text-caption whitespace-nowrap">
- <thead className="bg-slate-50 cmm-text-secondary">
- <tr>
- <th className="px-3 py-2 font-semibold">{fr ?"Zone" :"Area"}</th>
- <th className="px-3 py-2 font-semibold">{fr ?"Urgence" :"Urgency"}</th>
- <th className="px-3 py-2 font-semibold">{fr ?"Actions (N)" :"Actions (N)"}</th>
- <th className="px-3 py-2 font-semibold">{fr ?"Delta actions" :"Action delta"}</th>
- <th className="px-3 py-2 font-semibold">{fr ?"Kg (N)" :"Kg (N)"}</th>
- <th className="px-3 py-2 font-semibold">{fr ?"Delta kg" :"Kg delta"}</th>
- <th className="px-3 py-2 font-semibold">{fr ?"Score" :"Score"}</th>
- </tr>
- </thead>
- <tbody className="divide-y divide-slate-100">
- {(data?.zones ?? []).map((zone) => (
- <tr key={zone.area} className="cmm-text-secondary hover:bg-slate-50">
- <td className="px-3 py-2 font-semibold">{zone.area}</td>
- <td className="px-3 py-2 uppercase">{zone.urgency}</td>
- <td className="px-3 py-2">{zone.currentActions}</td>
- <td className="px-3 py-2">
- {signedValue(zone.deltaActionsAbsolute)} | {signedPercent(zone.deltaActionsPercent)}
- </td>
- <td className="px-3 py-2">{zone.currentKg.toFixed(1)}</td>
- <td className="px-3 py-2">
- {signedValue(zone.deltaKgAbsolute,"kg")} | {signedPercent(zone.deltaKgPercent)}
- </td>
- <td className="px-3 py-2 font-medium">{zone.normalizedScore.toFixed(1)}</td>
- </tr>
- ))}
-{!isLoading && !error && (data?.zones ?? []).length === 0 ? (
- <tr className="cmm-text-secondary">
- <td className="px-3 py-3 text-center" colSpan={7}>
- {fr ?"Aucune zone n'est détectée sur cette fenêtre." :"No zone is detected on this window."}
- </td>
- </tr>
-) : null}
- </tbody>
- </table>
- </div>
- </div>
- </div>
- </div>
- );
-}
-
-export { ElusSection };
