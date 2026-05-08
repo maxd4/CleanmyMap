@@ -20,7 +20,7 @@ import { SiteTooltips } from"@/components/ui/site-tooltips";
 import { PageTransition } from"@/components/ui/page-transition";
 import { NetworkToastHost } from"@/components/ui/network-toast";
 import { NotificationBell } from"@/components/navigation/notification-bell";
-import { OrganizationJsonLd, WebSiteJsonLd, FAQJsonLd } from"@/components/seo/structured-data";
+import { OrganizationJsonLd, WebSiteJsonLd, FAQJsonLd } from"@/components/seo/structured-data/";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { getClerkRuntimeConfig } from"@/lib/clerk-session-config";
@@ -118,7 +118,7 @@ initialDisplayModeExplicit={displayModePreference.isExplicit}
   identity={identity}
   />
   {!isAppShell && !hideGlobalHeader ? (
-  <header className="sticky top-[var(--app-header-top-offset,0rem)] z-30 border-b border-[color:var(--border-default)] bg-[color:var(--bg-elevated)] shadow-sm backdrop-blur-xl transition-all duration-300">
+  <header className="sticky top-[var(--app-header-top-offset,0rem)] z-30 border-b border-white/[0.06] bg-[#0f172a]/95 shadow-sm backdrop-blur-xl transition-all duration-300">
    <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4 overflow-x-auto px-4 py-3 scrollbar-none sm:px-8"> <Link href="/" className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-95">
  <Image
  src="/brand/logo-cleanmymap-officiel.svg"

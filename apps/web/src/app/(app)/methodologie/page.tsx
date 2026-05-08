@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { Info, BookOpen, Scaling, Beaker, Sparkles, Zap, Brain, ShieldCheck, MapPin } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { motion } from "framer-motion";
 import { NationalStatsSection } from "@/components/sections/rubriques/national-stats-section";
+import { getBlockClasses } from "@/lib/ui/block-accents";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "Méthodologie - Comment nous calculons l'impact | CleanMyMap",
@@ -28,48 +29,51 @@ export const metadata: Metadata = {
 export default function MethodologiePage() {
   const { factors, sources, version } = IMPACT_PROXY_CONFIG;
   const { t } = useTranslation("methodologie");
+  const classes = getBlockClasses("visualize");
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-6 sm:p-8 xl:px-10 space-y-16">
+    <div className="w-full max-w-7xl mx-auto space-y-16 pb-20">
       {/* Premium Header */}
-      <motion.header 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-6 text-center"
-      >
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-100 shadow-sm mb-4">
-          <Beaker size={14} className="animate-pulse" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">{t("header_suptitle")}</span>
+      <header className="space-y-6 text-center pt-10">
+        <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-sky-400/20 bg-sky-400/5 mb-4">
+          <Beaker size={14} className="text-sky-400 animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-400/60">{t("header_suptitle")}</span>
         </div>
-        <h1 className="text-5xl md:text-6xl font-black tracking-tighter cmm-text-primary">
+        <h1 className="text-6xl md:text-7xl font-black tracking-tighter text-white">
           {t("header_title")}
         </h1>
-        <p className="text-xl cmm-text-secondary max-w-3xl mx-auto font-medium leading-relaxed">
+        <p className="text-xl text-sky-100/40 max-w-3xl mx-auto font-medium leading-relaxed">
           {t("header_desc")}
         </p>
-      </motion.header>
+      </header>
 
       <NationalStatsSection />
 
-      {/* Logic & Transparency Banner - Design Mixte */}
-      <div className="bg-gradient-to-br from-emerald-50 to-blue-50 rounded-[2.5rem] p-8 md:p-12 text-slate-900 relative overflow-hidden shadow-xl border border-emerald-100">
+      {/* Logic & Transparency Banner */}
+      <div className={cn(
+        "rounded-[3rem] p-10 md:p-16 relative overflow-hidden border transition-all duration-700",
+        classes.surface,
+        classes.shadow
+      )}>
         <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-          <ShieldCheck size={300} className="text-emerald-500" />
+          <ShieldCheck size={400} className="text-sky-400" />
         </div>
-        <div className="relative z-10 grid md:grid-cols-2 gap-12 items-center">
-          <div className="space-y-6">
-            <h2 className="text-3xl font-black tracking-tight flex items-center gap-3 text-slate-900">
-              <Brain className="text-emerald-500" />
-              Transparence Algorithmique
+        
+        <div className="relative z-10 grid md:grid-cols-2 gap-16 items-center">
+          <div className="space-y-8">
+            <h2 className="text-4xl font-black tracking-tight flex items-center gap-4 text-white">
+              <Brain className="text-sky-400" />
+              Transparence <br/>Algorithmique
             </h2>
-            <p className="cmm-text-secondary text-lg leading-relaxed font-medium">
-              Chaque donnée terrain est convertie via des coefficients scientifiques (ADEME, GIEC). Un calcul certifié, sans estimation arbitraire.
+            <p className="text-sky-100/40 text-lg leading-relaxed font-medium max-w-md">
+              Chaque donnée terrain est convertie via des coefficients scientifiques rigoureux issus de l&apos;ADEME et du GIEC.
             </p>
             <div className="flex gap-4">
-              <div className="px-4 py-2 bg-white/50 backdrop-blur-sm rounded-xl border border-emerald-200 text-[10px] font-black uppercase tracking-widest text-emerald-700">Version {version}</div>
-              <div className="px-4 py-2 bg-emerald-500 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-500/20">Audit Scientifique OK</div>
+              <div className="px-5 py-2.5 bg-white/5 rounded-xl border border-white/5 text-[10px] font-black uppercase tracking-widest text-sky-400/60">Version {version}</div>
+              <div className="px-5 py-2.5 bg-sky-500 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-sky-500/20">Audit Scientifique OK</div>
             </div>
           </div>
+          
           <div className="grid grid-cols-2 gap-4">
             {[
               { label: 'Données Sources', val: 'ADEME / GIEC', icon: <BookOpen size={16} /> },
@@ -77,10 +81,12 @@ export default function MethodologiePage() {
               { label: 'Marge Erreur', val: '< 2%', icon: <Scaling size={16} /> },
               { label: 'Algorithme', val: 'Linéaire Proxy', icon: <Sparkles size={16} /> },
             ].map((item, i) => (
-              <div key={i} className="bg-white/80 backdrop-blur-sm p-4 rounded-2xl border border-white flex flex-col gap-2 shadow-sm">
-                <div className="text-emerald-600">{item.icon}</div>
-                <div className="text-[10px] font-black uppercase text-slate-400">{item.label}</div>
-                <div className="text-sm font-bold text-slate-800">{item.val}</div>
+              <div key={i} className="bg-white/5 backdrop-blur-sm p-6 rounded-[2rem] border border-white/5 flex flex-col gap-3 shadow-sm group hover:border-sky-400/30 transition-all">
+                <div className="text-sky-400 transition-transform group-hover:scale-110">{item.icon}</div>
+                <div className="space-y-1">
+                  <div className="text-[9px] font-black uppercase text-white/30 tracking-widest">{item.label}</div>
+                  <div className="text-sm font-bold text-sky-100">{item.val}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -88,30 +94,32 @@ export default function MethodologiePage() {
       </div>
 
       {/* Visual Process Flow */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-8 px-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
         {[
-          { icon: <MapPin className="text-sky-500" />, title: "Collecte Terrain", desc: "Données GPS et volumes saisis via l'App" },
-          { icon: <Zap className="text-amber-500" />, title: "Calcul Instantané", desc: "Application des coefficients scientifiques" },
-          { icon: <ShieldCheck className="text-emerald-500" />, title: "Impact Certifié", desc: "Visualisation immédiate de l'impact réel" },
+          { icon: <MapPin className="text-sky-400" />, title: "Collecte Terrain", desc: "Données GPS et volumes saisis via l'App" },
+          { icon: <Zap className="text-amber-400" />, title: "Calcul Instantané", desc: "Application des coefficients scientifiques" },
+          { icon: <ShieldCheck className="text-emerald-400" />, title: "Impact Certifié", desc: "Visualisation immédiate de l'impact réel" },
         ].map((step, i) => (
-          <div key={i} className="flex flex-col items-center text-center space-y-4 p-6 rounded-3xl bg-slate-50/50 border border-slate-100">
-            <div className="w-16 h-16 rounded-2xl bg-white shadow-md flex items-center justify-center">
+          <div key={i} className="group flex flex-col items-center text-center space-y-6 p-10 rounded-[2.5rem] bg-white/5 border border-white/5 hover:border-white/10 transition-all duration-500">
+            <div className="w-20 h-20 rounded-[2rem] bg-white/5 shadow-inner flex items-center justify-center transition-transform group-hover:scale-110 duration-700">
               {step.icon}
             </div>
-            <h3 className="font-black text-slate-900 uppercase tracking-widest text-xs">{step.title}</h3>
-            <p className="text-sm cmm-text-secondary font-medium">{step.desc}</p>
+            <div className="space-y-2">
+              <h3 className="font-black text-white uppercase tracking-[0.2em] text-xs">{step.title}</h3>
+              <p className="text-sm text-sky-100/30 font-medium leading-relaxed">{step.desc}</p>
+            </div>
           </div>
         ))}
       </div>
 
-      <section className="grid gap-8 xl:grid-cols-2">
+      <section className="grid gap-10 xl:grid-cols-2">
         {/* EAU SAVED */}
         <MethodologyCard 
           title={t("cards.water.title")}
           formula={t("cards.water.formula", { val: factors.waterLitersPerCigaretteButt })}
           description={t("cards.water.desc", { val: factors.waterLitersPerCigaretteButt })}
           source={t("cards.water.source", { src: sources.water })}
-          color="blue"
+          color="sky"
           icon={<BookOpen size={24} />}
         />
 
@@ -146,17 +154,15 @@ export default function MethodologiePage() {
         />
       </section>
 
-      <footer className="pt-16 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-8 cmm-text-muted">
-        <div className="cmm-text-caption space-y-2 text-center sm:text-left">
-          <p className="font-black uppercase tracking-widest text-slate-900">CleanMyMap Engine v{version}</p>
-          <p className="font-medium">Tous les calculs sont open-source et vérifiables par les autorités locales.</p>
+      <footer className="pt-20 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-10">
+        <div className="space-y-3 text-center sm:text-left">
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-sky-400/60">CleanMyMap Engine v{version}</p>
+          <p className="text-xs font-bold text-white/30 leading-relaxed max-w-md">Tous les calculs sont open-source et vérifiables par les autorités locales et partenaires scientifiques.</p>
         </div>
-        <div className="flex gap-4">
-          <div 
-            className="px-6 py-3 bg-slate-50/80 backdrop-blur-sm border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center shadow-sm" 
-            dangerouslySetInnerHTML={{ __html: t("footer.partner") }}
-          />
-        </div>
+        <div 
+          className="px-8 py-4 bg-white/5 backdrop-blur-sm border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-sky-100/40 text-center shadow-sm" 
+          dangerouslySetInnerHTML={{ __html: t("footer.partner") }}
+        />
       </footer>
     </div>
   );
@@ -164,41 +170,34 @@ export default function MethodologiePage() {
 
 function MethodologyCard({ title, formula, description, source, color, icon }: any) {
   const colorClasses: any = {
-    blue: "text-blue-600 border-blue-500 bg-blue-50/50 shadow-blue-500/10",
-    emerald: "text-emerald-600 border-emerald-500 bg-emerald-50/50 shadow-emerald-500/10",
-    slate: "text-slate-900 border-slate-900 bg-slate-50/50 shadow-slate-950/10",
-    rose: "text-rose-600 border-rose-500 bg-rose-50/50 shadow-rose-500/10"
+    sky: "text-sky-400 border-sky-400/20 bg-sky-400/5",
+    emerald: "text-emerald-400 border-emerald-400/20 bg-emerald-400/5",
+    slate: "text-slate-400 border-slate-400/20 bg-slate-400/5",
+    rose: "text-rose-400 border-rose-400/20 bg-rose-400/5"
   };
 
   return (
-    <motion.div 
-      whileHover={{ y: -5 }}
-      className="rounded-[2.5rem] border border-slate-100 bg-white/50 backdrop-blur-sm p-8 md:p-10 space-y-6 shadow-xl shadow-slate-200/50 hover:border-slate-200 transition-all"
-    >
-      <div className={cn("flex items-center gap-4", colorClasses[color].split(' ')[0])}>
-        <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner", colorClasses[color].split(' ')[2])}>
+    <div className="group rounded-[3rem] border border-white/5 bg-white/5 p-10 space-y-8 transition-all duration-700 hover:border-white/10 hover:bg-white/[0.07] relative overflow-hidden">
+      <div className={cn("flex items-center gap-5 relative z-10", colorClasses[color].split(' ')[0])}>
+        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner transition-transform group-hover:scale-110 duration-700", colorClasses[color].split(' ')[2])}>
           {icon}
         </div>
-        <h2 className="text-2xl font-black tracking-tight">{title}</h2>
+        <h2 className="text-3xl font-black tracking-tight text-white">{title}</h2>
       </div>
 
-      <div className={cn("p-6 rounded-2xl font-mono text-sm border-l-8 shadow-inner overflow-x-auto", colorClasses[color].split(' ')[1], "bg-slate-50/50")}>
-        <div className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">Équation Scientifique</div>
-        {formula}
+      <div className={cn("p-8 rounded-[2rem] font-mono text-sm border-l-4 shadow-inner relative z-10", colorClasses[color].split(' ')[1], "bg-black/20")}>
+        <div className="text-[9px] font-black uppercase text-white/20 mb-3 tracking-[0.2em]">Équation Scientifique</div>
+        <div className="text-sky-100/80 leading-relaxed">{formula}</div>
       </div>
 
-      <p className="cmm-text-secondary font-medium leading-relaxed">
+      <p className="text-sky-100/40 font-medium leading-relaxed relative z-10">
         {description}
       </p>
 
-      <div className="pt-4 flex items-center gap-2">
-        <div className={cn("w-1.5 h-1.5 rounded-full", colorClasses[color].split(' ')[1].replace('border-', 'bg-'))} />
-        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Source : {source}</span>
+      <div className="pt-6 flex items-center gap-3 relative z-10">
+        <div className={cn("w-2 h-2 rounded-full", colorClasses[color].split(' ')[1].replace('border-', 'bg-').split('/')[0])} />
+        <span className="text-[10px] font-black uppercase tracking-widest text-white/20">Source : {source}</span>
       </div>
-    </motion.div>
+    </div>
   );
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ");
 }

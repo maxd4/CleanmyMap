@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
+import { normalizeLabel } from "../src/lib/actions/geometry-core.ts";
 import { resolveBestGeometry } from "../src/lib/actions/geometry-resolution.ts";
 
 const APP_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -10,16 +11,6 @@ const ENV_LOCAL_PATH = join(APP_DIR, ".env.local");
 const DRAWING_NOTE_PREFIX = "[DRAWING_GEOJSON]";
 const META_PREFIX = "[cmm-meta]";
 const BATCH_SIZE = 200;
-
-const GEOMETRY_CONFIDENCE = {
-  MANUAL_DRAWING: 1,
-  PERSISTED_IMPORTED: 0.92,
-  REFERENCE_GEOMETRY: 0.72,
-  SYNTHETIC_ROUTE: 0.58,
-  LABEL_POLYGON: 0.52,
-  COORDINATE_ELLIPSE: 0.44,
-  POINT_FALLBACK: 0.24,
-};
 
 function parseArgs(argv) {
   const args = new Set(argv.slice(2));
@@ -80,10 +71,6 @@ function resolveEnvValue(key, envFileMap) {
     return fileValue.trim();
   }
   return null;
-}
-
-function normalizeLabel(value) {
-  return typeof value === "string" ? value.trim() : "";
 }
 
 function isRenderableDrawing(drawing) {
@@ -203,86 +190,6 @@ function toGeoJsonString(drawing) {
     type: "Polygon",
     coordinates: [drawing.coordinates.map(([lat, lng]) => [lng, lat])],
   });
-}
-
-function metersToLatitudeDelta(meters) {
-  return meters / 111_320;
-}
-
-function metersToLongitudeDelta(meters, latitude) {
-  const radius = Math.max(0.1, Math.cos((latitude * Math.PI) / 180));
-  return meters / (111_320 * radius);
-}
-
-function buildEllipsePolygon(latitude, longitude, radiusMetersX, radiusMetersY) {
-  const coordinates = [];
-  for (let index = 0; index < 12; index += 1) {
-    const angle = (Math.PI * 2 * index) / 12;
-    const latOffset = metersToLatitudeDelta(radiusMetersY * Math.sin(angle));
-    const lngOffset = metersToLongitudeDelta(
-      radiusMetersX * Math.cos(angle),
-      latitude,
-    );
-    coordinates.push([
-      Number((latitude + latOffset).toFixed(6)),
-      Number((longitude + lngOffset).toFixed(6)),
-    ]);
-  }
-  return { kind: "polygon", coordinates };
-}
-
-function buildSyntheticRoute(latitude, longitude, routeStyle) {
-  const reachMeters = routeStyle === "direct" ? 120 : 180;
-  const latDelta = metersToLatitudeDelta(routeStyle === "direct" ? 20 : 55);
-  const lngDelta = metersToLongitudeDelta(reachMeters, latitude);
-  return {
-    kind: "polyline",
-    coordinates: [
-      [
-        Number((latitude - latDelta).toFixed(6)),
-        Number((longitude - lngDelta).toFixed(6)),
-      ],
-      [latitude, longitude],
-      [
-        Number((latitude + latDelta).toFixed(6)),
-        Number((longitude + lngDelta).toFixed(6)),
-      ],
-    ],
-  };
-}
-
-function hasPreciseLocationLabel(value) {
-  const label = normalizeLabel(value);
-  if (label.length < 10) {
-    return false;
-  }
-  const lowered = label.toLowerCase();
-  if (/\b\d{5}\b/.test(label) || /\b\d+[a-z]?\b/i.test(label)) {
-    return true;
-  }
-  if (label.includes(",") || label.includes("→")) {
-    return true;
-  }
-  return [
-    "rue",
-    "avenue",
-    "av.",
-    "boulevard",
-    "bd",
-    "place",
-    "pl.",
-    "quai",
-    "impasse",
-    "allée",
-    "allee",
-    "villa",
-    "jardin",
-    "parc",
-    "école",
-    "ecole",
-    "mairie",
-    "porte",
-  ].some((token) => lowered.includes(token));
 }
 
 function deriveGeometryForAction(row) {

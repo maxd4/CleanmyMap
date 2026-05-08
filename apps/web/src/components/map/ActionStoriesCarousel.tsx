@@ -1,11 +1,11 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
-import { ActionMapItem } from "@/lib/actions/types";
+import { ArrowRight, Calendar, MapPin, Trash2 } from "lucide-react";
+import type { ActionMapItem } from "@/lib/actions/types";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
-import { MapPin, Calendar, Trash2, ArrowRight } from "lucide-react";
 import {
   mapItemCigaretteButts,
   mapItemLocationLabel,
@@ -47,21 +47,23 @@ export function ActionStoriesCarousel({ items }: ActionStoriesCarouselProps) {
 
   return (
     <div className="relative w-full py-8">
-      <div className="flex items-center justify-between mb-6 px-4">
+      <div className="mb-6 flex items-center justify-between px-4">
         <div>
-          <h3 className="cmm-text-h3 cmm-text-primary">Dernières Actions</h3>
-          <p className="cmm-text-caption text-slate-400 font-bold uppercase tracking-widest">Flux temps réel • {items.length} incidents</p>
+          <h3 className="text-lg font-black tracking-tight text-white">Dernières actions</h3>
+          <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/50">
+            Flux temps réel • {items.length} incidents
+          </p>
         </div>
         <div className="flex gap-2">
-          <button 
-            onClick={() => setIndex(prev => Math.max(0, prev - 1))}
-            className="w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+          <button
+            onClick={() => setIndex((prev) => Math.max(0, prev - 1))}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-sky-300/14 bg-[rgba(16,40,64,0.82)] text-sky-100/74 transition hover:border-sky-300/26 hover:bg-[rgba(18,47,74,0.92)]"
           >
             ←
           </button>
-          <button 
-            onClick={() => setIndex(prev => prev + 1)}
-            className="w-10 h-10 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-white hover:bg-white/10 transition-colors"
+          <button
+            onClick={() => setIndex((prev) => prev + 1)}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-sky-300/14 bg-[rgba(16,40,64,0.82)] text-sky-100/74 transition hover:border-sky-300/26 hover:bg-[rgba(18,47,74,0.92)]"
           >
             →
           </button>
@@ -74,63 +76,62 @@ export function ActionStoriesCarousel({ items }: ActionStoriesCarouselProps) {
             const wasteKg = mapItemWasteKg(item) ?? 0;
             const butts = mapItemCigaretteButts(item) ?? 0;
             return (
-            <motion.div
-              key={item.id}
-              initial={{ x: 300, opacity: 0, scale: 0.8 }}
-              animate={{ 
-                x: i * 40, 
-                z: -i * 50, 
-                opacity: 1 - i * 0.2, 
-                scale: 1 - i * 0.05,
-                zIndex: 10 - i 
-              }}
-              exit={{ x: -300, opacity: 0, scale: 0.8 }}
-              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="absolute inset-0 flex items-center justify-center pointer-events-none"
-            >
-              <CmmCard className="w-full max-w-sm h-full pointer-events-auto overflow-hidden group border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl">
-                {/* Background image mockup */}
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10" />
-                <div 
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                  style={{ backgroundImage: `url(https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=800&auto=format&fit=crop)` }}
-                />
-                
-                <div className="relative z-20 h-full flex flex-col justify-end p-6">
-                  <div className="mb-4">
-                    <span className="px-3 py-1 rounded-full bg-rose-500/80 backdrop-blur-md text-[10px] font-black text-white uppercase tracking-tighter">
-                      Action Urgente
-                    </span>
-                  </div>
-                  
-                  <h4 className="text-xl font-bold text-white mb-2 line-clamp-2">
-                    {formatStoryTitle(item)}
-                  </h4>
-                  
-                  <div className="flex flex-col gap-2 mb-6">
-                    <div className="flex items-center gap-2 text-slate-300">
-                      <MapPin size={14} className="text-emerald-400" />
-                      <span className="text-xs font-medium line-clamp-1">{mapItemLocationLabel(item)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-300">
-                      <Calendar size={14} className="text-sky-400" />
-                      <span className="text-xs font-medium">{formatStoryDate(mapItemObservedAt(item))}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-300">
-                      <Trash2 size={14} className="text-rose-400" />
-                      <span className="text-xs font-medium">
-                        {wasteKg.toFixed(1)}kg · {Math.round(butts)} mégots
+              <motion.div
+                key={item.id}
+                initial={{ x: 300, opacity: 0, scale: 0.8 }}
+                animate={{
+                  x: i * 40,
+                  z: -i * 50,
+                  opacity: 1 - i * 0.2,
+                  scale: 1 - i * 0.05,
+                  zIndex: 10 - i,
+                }}
+                exit={{ x: -300, opacity: 0, scale: 0.8 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              >
+                <CmmCard className="pointer-events-auto h-full w-full max-w-sm overflow-hidden border border-sky-300/14 bg-[rgba(10,31,50,0.88)] shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-3xl group">
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10" />
+                  <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                    style={{ backgroundImage: `url(https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=800&auto=format&fit=crop)` }}
+                  />
+
+                  <div className="relative z-20 flex h-full flex-col justify-end p-6">
+                    <div className="mb-4">
+                      <span className="inline-flex rounded-full border border-sky-300/24 bg-sky-400/16 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-sky-50 backdrop-blur-md">
+                        Action urgente
                       </span>
                     </div>
-                  </div>
 
-                  <CmmButton variant="default" tone="secondary" className="w-full py-3">
-                    Détails de l&apos;intervention <ArrowRight size={14} />
-                  </CmmButton>
-                </div>
-              </CmmCard>
-            </motion.div>
-          );
+                    <h4 className="mb-2 text-xl font-black text-white line-clamp-2">
+                      {formatStoryTitle(item)}
+                    </h4>
+
+                    <div className="mb-6 flex flex-col gap-2">
+                      <div className="flex items-center gap-2 text-sky-100/72">
+                        <MapPin size={14} className="text-sky-300" />
+                        <span className="line-clamp-1 text-xs font-medium">{mapItemLocationLabel(item)}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sky-100/72">
+                        <Calendar size={14} className="text-cyan-300" />
+                        <span className="text-xs font-medium">{formatStoryDate(mapItemObservedAt(item))}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sky-100/72">
+                        <Trash2 size={14} className="text-rose-300" />
+                        <span className="text-xs font-medium">
+                          {wasteKg.toFixed(1)}kg · {Math.round(butts)} mégots
+                        </span>
+                      </div>
+                    </div>
+
+                    <CmmButton variant="default" tone="secondary" className="w-full py-3">
+                      Détails de l&apos;intervention <ArrowRight size={14} />
+                    </CmmButton>
+                  </div>
+                </CmmCard>
+              </motion.div>
+            );
           })}
         </AnimatePresence>
       </div>

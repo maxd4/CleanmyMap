@@ -12,9 +12,8 @@ Cette charte est conçue pour être appliquée rapidement dans les rubriques Nex
 - **Visual Storytelling (Priorité SVG/D3)** : Si une donnée peut être visualisée (ratio, tendance, impact), utilisez un SVG ou un composant D3 plutôt que du texte brut.
 - **Zéro Clavier** : Privilégiez les sélecteurs visuels, sliders et cadrans aux champs de saisie textuelle.
 - **Premium sobre** : effets “glass” et dégradés uniquement en accents, jamais au détriment de l’ergonomie.
-- **Hiérarchie claire** : 1 action primaire, 1 secondaire, le reste utilitaire.
 - **Rythme** : espacement cohérent (mobile dense, desktop respirant).
-- **Cohérence de marque** : palette bleu/vert + touches par bloc (amber/sky/emerald/violet/rose/indigo).
+- **Cohérence de marque** : palette bleu/vert + touches par bloc (amber/emerald/rose/yellow/bronze/indigo/pink).
 
 ---
 
@@ -28,13 +27,16 @@ Cette charte est conçue pour être appliquée rapidement dans les rubriques Nex
 - **Bannir le blanc** : Ne jamais utiliser de fonds blancs ou gris très clairs pour les surfaces. Le blanc est réservé uniquement au texte (`slate-50`).
 
 ### Accents par bloc (Identité visuelle)
+
 Chaque bloc conserve une touche subtile en accents (bordures, glows) pour son identité propre dans l'écrin sombre :
-- **Agir** : `amber`
-- **Visualiser** : `sky`
-- **Impact** : `emerald`
-- **Réseau** : `violet`
-- **Apprendre** : `rose`
-- **Piloter** : `indigo`
+
+- **Accueil** : `amber` (Orange)
+- **Agir** : `emerald` (Vert)
+- **Impact** : `rose` (Rouge)
+- **Apprendre** : `yellow` (Jaune)
+- **Piloter** : `bronze` (Brun)
+- **Réseau** : `indigo` (Indigo / Violet)
+- **Discussion** : `pink` (Rose)
 
 Règle : un bloc = une couleur dominante + neutres `slate`.
 
@@ -84,6 +86,7 @@ Règle : un bloc = une couleur dominante + neutres `slate`.
 ## CTA & Boutons
 
 ### CTA Primaire (Vibrant)
+
 - Fond solide (`emerald-600` ou `amber-600`).
 - Ombre portée forte (`shadow-lg shadow-emerald-900/20`).
 - Hover : `scale-[1.02]` + intensification du glow.
@@ -93,6 +96,7 @@ className="inline-flex h-14 items-center justify-center gap-3 rounded-2xl bg-eme
 ```
 
 ### CTA Secondaire (Glass)
+
 - Bordure fine + fond translucide.
 
 ```tsx
@@ -146,4 +150,3 @@ Rôle : **outil de pilotage** (pas marketing).
 - Stack : Next.js + Tailwind.
 - Ne pas ajouter de dépendance pour suivre cette charte.
 - Préférer des classes Tailwind explicites plutôt que des abstractions prématurées.
-

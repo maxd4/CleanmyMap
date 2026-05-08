@@ -5,7 +5,7 @@ import { extractUserLocationPreferenceFromMetadata } from "@/lib/user-location-p
 import { 
   distanceToParisArrondissementKm
 } from "@/lib/geo/paris-arrondissements";
-import { INITIAL_ANNUAIRE_ENTRIES } from "./annuaire-directory-seed";
+import { INITIAL_ANNUAIRE_ENTRIES } from "./annuaire/seed-index";
 import { 
   ACTOR_CARDS_PAGE_SIZE, 
   type ContributionType, 

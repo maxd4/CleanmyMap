@@ -2,6 +2,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { isAdminRole, isMaxRole, getRoleBadge, getProfileBadge } from "@/lib/authz";
 import { resolveProfile } from "@/lib/profiles";
+import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 
 export type ClerkUserIdentity = {
   userId: string | null;
@@ -71,6 +72,7 @@ export async function getClerkService() {
             });
             const isMax =
               maxUserIds.has(id) ||
+              isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress) ||
               isMaxRole({
                 publicMetadata: user.publicMetadata,
                 privateMetadata: user.privateMetadata,

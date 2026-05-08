@@ -25,8 +25,8 @@ CREATE INDEX IF NOT EXISTS idx_spots_status_created_at ON public.spots(status, c
 CREATE INDEX IF NOT EXISTS idx_messages_channel_type ON public.app_messages(channel_type);
 
 -- === COMMUNITY_EVENTS ===
--- Optimise les événements à venir (filtre sur event_date futur)
-CREATE INDEX IF NOT EXISTS idx_community_events_future ON public.community_events(event_date) WHERE event_date >= CURRENT_DATE;
+-- Optimise les requêtes par date d'événement
+CREATE INDEX IF NOT EXISTS idx_community_events_event_date ON public.community_events(event_date);
 
 -- === PROGRESSION_EVENTS ===
 -- Optimise les requêtes de gamification par statut
@@ -34,4 +34,9 @@ CREATE INDEX IF NOT EXISTS idx_progression_events_status_phase ON public.progres
 
 -- === NEWSLETTER ===
 -- Optimise les requêtes par statut (active/inactive)
-CREATE INDEX IF NOT EXISTS idx_newsletter_status ON public.newsletter_subscriptions(status);
+DO $$
+BEGIN
+  IF to_regclass('public.newsletter_subscriptions') IS NOT NULL THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_newsletter_status ON public.newsletter_subscriptions(status)';
+  END IF;
+END $$;

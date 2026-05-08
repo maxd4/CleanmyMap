@@ -17,7 +17,7 @@ import {
 } from "./payload";
 import { computeActionDataQuality } from "../action-declaration-form.quality";
 import { useActionDeclarationSmartAssist } from "../action-declaration-form.smart-assist";
-import { hydrateActionDeclarationDraft } from "./draft-storage";
+import { loadDraft } from "./draft-storage";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
 import type { FormState, ValidationIssue, PostActionRetentionLoop } from "../action-declaration-form.model";
@@ -51,7 +51,7 @@ export function useActionDeclarationForm({
     : (resolvedActorOptions[0] ?? userMetadata.userId);
 
   const [form, setForm] = useState<FormState>(() =>
-    hydrateActionDeclarationDraft(
+    loadDraft(
       createInitialFormState(resolvedDefaultActorName),
     ),
   );

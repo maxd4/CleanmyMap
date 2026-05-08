@@ -47,6 +47,19 @@ if (hasHttpsProtocol(userInput)) {
 }
 ```
 
+### Helpers réutilisables
+
+- `src/lib/security/validation.ts`
+  - `normalizePublicChannelUrl()`
+  - `isPlaceholderUrl()`
+  - `isPlaceholderHost()`
+
+Ces helpers ajoutent:
+- un parsing explicite via `new URL()`
+- une longueur bornée
+- le rejet des hôtes factices et locaux
+- la prise en charge explicite de `mailto:` et `tel:`
+
 ### Cas spéciaux
 
 #### Vérification du hostname
@@ -99,6 +112,7 @@ function isAbsoluteHttpsUrl(url: string): boolean {
 - [ ] Utiliser `new URL()` avec try/catch pour parser les URLs
 - [ ] Vérifier explicitement `parsed.protocol === "https:"` si HTTPS requis
 - [ ] Pour les hostnames, comparer `parsed.hostname` (pas de substring)
+- [ ] Réutiliser les helpers centralisés au lieu de dupliquer le parsing
 
 ### Références
 

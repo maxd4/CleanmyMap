@@ -53,12 +53,15 @@ Consultez le fichier [CONTRIBUTING.md](./documentation/development/CONTRIBUTING.
 ## 🔧 Modularisation
 Le projet suit un plan de modularisation pour améliorer la maintenabilité.
 
-**📊 Progression : 6.7% (1/15 fichiers)**
+**📊 Progression : 20% (3/15 fichiers)**
 
 **Documentation pour Agents IA** :
 - 🤖 [Guide Complet IA](./documentation/ai-guides/AI_MODULARIZATION_GUIDE.md) - Instructions complètes et réutilisables
+- 🎯 [Principes Pragmatiques](./documentation/ai-guides/MODULARIZATION_PRAGMATIC_PRINCIPLES.md) - Quand et comment modulariser intelligemment
 - 📝 [Aide-Mémoire IA](./documentation/ai-guides/AI_MODULARIZATION_CHEATSHEET.md) - Référence ultra-rapide
 - 📈 [Suivi Progression](./documentation/ai-guides/MODULARIZATION_PROGRESS.md) - Tableau de bord
+
+**Philosophie** : Modulariser intelligemment, pas systématiquement. Privilégier la lisibilité et la cohésion fonctionnelle sur les métriques arbitraires.
 
 **Commandes** :
 ```bash

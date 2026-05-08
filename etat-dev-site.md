@@ -8,7 +8,7 @@ Le site n’est pas prêt pour une première version publique. La base fonctionn
 
 Les surfaces réellement proches d’une mise en ligne publique sont encore peu nombreuses: accueil, Explorer, hub éducatif, rapports, actions et quelques rubriques réseau. Le reste reste soit trop fragile, soit trop dépendant du runtime, soit trop enfermé visuellement, soit trop orienté back-office pour être exposé tel quel.
 
-Les zones les plus faibles sont nettes et doivent être traitées comme des freins de lancement: `admin/forms`, `sign-in`, `sign-up`, `onboarding/localisation`, `form-comparison`, `parcours`, `profil`, `parcours/[profile]`, `sections/[sectionId]` et les écrans très dépendants de Clerk ou de données serveur non garanties.
+Les zones les plus faibles sont nettes et doivent être traitées comme des freins de lancement: `admin/forms`, `sign-in`, `sign-up`, `onboarding/localisation`, la comparaison interne des formulaires, `parcours`, `profil`, `parcours/[profile]`, `sections/[sectionId]` et les écrans très dépendants de Clerk ou de données serveur non garanties.
 
 Deuxième passe:
 
@@ -68,7 +68,7 @@ Axes notés:
 | God Mode                   | `/admin/godmode`           | 55             | 52  | 54  | 57                   | 52            | 60         | 47               | 54          | Fonctionnel partiel | Haute    |
 | Déclaration complète       | `/declaration`             | 77             | 75  | 74  | 73                   | 74            | 72         | 73               | 74          | Utilisable          | Moyenne  |
 | Déclaration simple         | `/declaration-simple`      | 71             | 69  | 70  | 66                   | 68            | 68         | 67               | 68          | Utilisable          | Moyenne  |
-| Comparer les formulaires   | `/form-comparison`         | 58             | 56  | 55  | 53                   | 55            | 54         | 52               | 55          | Fonctionnel partiel | Moyenne  |
+| Comparaison interne        | Interne uniquement         | 58             | 56  | 55  | 53                   | 55            | 54         | 52               | 55          | Fonctionnel partiel | Moyenne  |
 | Méthodologie               | `/methodologie`            | 74             | 72  | 72  | 75                   | 70            | 67         | 76               | 72          | Utilisable          | Moyenne  |
 | Observatoire public        | `/observatoire`            | 82             | 80  | 81  | 80                   | 78            | 75         | 78               | 79          | Presque prêt        | Basse    |
 | Onboarding localisation    | `/onboarding/localisation` | 57             | 55  | 54  | 53                   | 55            | 58         | 50               | 54          | Fonctionnel partiel | Moyenne  |
@@ -128,7 +128,7 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 ## Priorités recommandées
 
 1. Geler le périmètre public de la V1: garder seulement les routes qui peuvent être comprises sans aide et sans rupture visuelle.
-2. Écarter du périmètre public tout ce qui reste fragile: `admin/forms`, `admin/godmode`, `sign-in`, `sign-up`, `onboarding/localisation`, `form-comparison`, `profil`, `parcours`, `parcours/[profile]`, `sections/[sectionId]`.
+2. Écarter du périmètre public tout ce qui reste fragile: `admin/forms`, `admin/godmode`, `sign-in`, `sign-up`, `onboarding/localisation`, la comparaison interne des formulaires, `profil`, `parcours`, `parcours/[profile]`, `sections/[sectionId]`.
 3. Nettoyer en priorité les surfaces visibles de l’entrée de site: accueil, Explorer, hub éducatif, rapports, actions, réseau.
 4. Simplifier les écrans encore trop “bulles / cartes / encadrés” avant toute ouverture publique.
 5. Normaliser les états de vide, d’erreur, de chargement et les retours de formulaire sur les pages réellement exposables.
@@ -150,7 +150,7 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 
 1. Figer le périmètre public à 8 à 10 routes maximum.
    - Garder: `/`, `/explorer`, `/learn/hub`, `/reports`, `/actions/new`, `/actions/map`, `/observatoire`, `/prints/report`, `/partners/network`, `/sponsor-portal`.
-   - Mettre hors vitrine publique: `/admin`, `/admin/forms`, `/admin/godmode`, `/profil`, `/parcours`, `/onboarding/localisation`, `/form-comparison`, `/sign-in`, `/sign-up`, les routes dynamiques non garanties.
+   - Mettre hors vitrine publique: `/admin`, `/admin/forms`, `/admin/godmode`, `/profil`, `/parcours`, `/onboarding/localisation`, la comparaison interne des formulaires, `/sign-in`, `/sign-up`, les routes dynamiques non garanties.
 2. Décider explicitement ce qui est public, ce qui est interne, et ce qui est caché dans la navigation.
 3. Marquer dans le code les pages non publicables comme secondaires ou hors menu principal.
 

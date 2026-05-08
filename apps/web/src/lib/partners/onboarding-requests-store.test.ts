@@ -11,12 +11,14 @@ describe("partner onboarding request store", () => {
       status: "pending_admin_review",
       organizationName: "Klin d'oeil",
       organizationType: "commerce",
+      partnerScope: "local",
       legalIdentity: "Klin d'oeil SAS",
       coverage: {
         arrondissements: [11, 19, 20],
         quartiers: ["Bas Belleville"],
       },
       contributionTypes: ["accueil", "communication"],
+      relayActions: "Diffusion quartier et relais Instagram.",
       availability: {
         slots: [
           {

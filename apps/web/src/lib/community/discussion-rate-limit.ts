@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { buildPublicRateLimitPayload } from "@/lib/security/validation";
 
 export type DiscussionChannel = "discussion_event" | "bug_report";
 
@@ -64,24 +65,40 @@ export async function reserveDiscussionMessageSlot(
 
 export function toDiscussionRateLimitErrorPayload(
   quota: DiscussionRateLimitResult,
-): { error: string; code: "cooldown" | "daily_limit" | "rate_limited"; retryAfterSeconds?: number } {
+): {
+  error: string;
+  kind: "validation";
+  status: "rate_limited";
+  code: "cooldown" | "daily_limit" | "rate_limited";
+  retryAfterSeconds?: number;
+} {
   if (quota.reason === "cooldown") {
     return {
-      error: "Tu as deja publie un message recemment. Reessaie dans quelques secondes.",
+      ...buildPublicRateLimitPayload(
+        "Tu as deja publie un message recemment. Reessaie dans quelques secondes.",
+        {
+          code: "cooldown",
+          retryAfterSeconds: quota.retryAfterSeconds ?? 30,
+        },
+      ),
       code: "cooldown",
-      retryAfterSeconds: quota.retryAfterSeconds ?? 30,
     };
   }
 
   if (quota.reason === "daily_limit") {
     return {
-      error: "Quota quotidien atteint (10 messages par jour). Reviens demain.",
+      ...buildPublicRateLimitPayload(
+        "Quota quotidien atteint (10 messages par jour). Reviens demain.",
+        { code: "daily_limit" },
+      ),
       code: "daily_limit",
     };
   }
 
   return {
-    error: "Publication temporairement limitee.",
+    ...buildPublicRateLimitPayload("Publication temporairement limitee.", {
+      code: "rate_limited",
+    }),
     code: "rate_limited",
   };
 }

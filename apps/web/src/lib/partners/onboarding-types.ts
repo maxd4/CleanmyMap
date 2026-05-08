@@ -1,3 +1,9 @@
+import {
+  isPlaceholderUrl as isPlaceholderUrlHelper,
+  normalizePublicChannelUrl as normalizePublicChannelUrlHelper,
+  is24HourTimeString,
+} from "@/lib/security/validation";
+
 export const ORGANIZATION_TYPES = [
   "association",
   "commerce",
@@ -6,6 +12,14 @@ export const ORGANIZATION_TYPES = [
 ] as const;
 
 export type OrganizationType = (typeof ORGANIZATION_TYPES)[number];
+
+export const PARTNER_SCOPES = [
+  "local",
+  "national",
+  "france",
+] as const;
+
+export type PartnerScope = (typeof PARTNER_SCOPES)[number];
 
 export const CONTRIBUTION_TYPES = [
   "materiel",
@@ -79,9 +93,11 @@ export type PublicChannel = {
 export type PartnerOnboardingRequestInput = {
   organizationName: string;
   organizationType: OrganizationType;
+  partnerScope: PartnerScope;
   legalIdentity: string;
   coverage: PartnerCoverage;
   contributionTypes: ContributionType[];
+  relayActions: string;
   availability: PartnerAvailability;
   contactName: string;
   contactChannel: string;
@@ -90,8 +106,6 @@ export type PartnerOnboardingRequestInput = {
 };
 
 export type PartnerTrustState = "trusted" | "pending" | "incomplete";
-
-const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
 
 export function formatParisArrondissementLabel(value: number): string {
   return value === 1 ? "1er" : `${value}e`;
@@ -123,51 +137,18 @@ function extractArrondissementsFromText(text: string): number[] {
 }
 
 function normalizeTime(value: unknown): string | null {
-  if (typeof value !== "string") {
+  if (!is24HourTimeString(value)) {
     return null;
   }
-  const trimmed = value.trim();
-  if (!TIME_PATTERN.test(trimmed)) {
-    return null;
-  }
-  return trimmed;
+  return value.trim();
 }
 
 export function isPlaceholderUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    const host = parsed.hostname.toLowerCase();
-    return (
-      host === "example.com" ||
-      host.endsWith(".example.com") ||
-      host === "example.org" ||
-      host.endsWith(".example.org") ||
-      host === "example.net" ||
-      host.endsWith(".example.net") ||
-      host === "localhost" ||
-      host === "127.0.0.1" ||
-      host === "::1"
-    );
-  } catch {
-    return false;
-  }
+  return isPlaceholderUrlHelper(url);
 }
 
 export function normalizePublicChannelUrl(value: unknown): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return null;
-  }
-  if (/^https?:\/\//i.test(trimmed) && trimmed.length < 2048) {
-    return isPlaceholderUrl(trimmed) ? null : trimmed;
-  }
-  if (trimmed.startsWith("mailto:") || trimmed.startsWith("tel:")) {
-    return trimmed;
-  }
-  return null;
+  return normalizePublicChannelUrlHelper(value);
 }
 
 export function normalizePartnerCoverage(value: unknown): PartnerCoverage {
@@ -276,6 +257,16 @@ export function formatCoverageSummary(coverage: PartnerCoverage): string {
   return parts.length > 0 ? parts.join(" · ") : "Périmètre à confirmer";
 }
 
+export function formatPartnerScopeLabel(scope: PartnerScope): string {
+  if (scope === "local") {
+    return "Réseau local";
+  }
+  if (scope === "national") {
+    return "Association nationale";
+  }
+  return "Couverture France";
+}
+
 export function formatAvailabilitySlot(slot: PartnerAvailabilitySlot): string {
   const dayLabel = WEEKDAY_OPTIONS.find((option) => option.value === slot.day)?.label ?? slot.day;
   return `${dayLabel} ${slot.start}-${slot.end}`;
@@ -361,7 +352,11 @@ export function buildPartnerWhyThisStructureMatters(entry: {
   coveredArrondissements: number[];
   contributionTypes: ContributionType[];
   location: string;
+  partnerScope?: PartnerScope;
 }): string {
+  if (entry.partnerScope === "national" || entry.partnerScope === "france") {
+    return `Pourquoi cette structure compte: elle élargit la diffusion à l'échelle ${formatPartnerScopeLabel(entry.partnerScope).toLowerCase()} et facilite les relais de terrain.`;
+  }
   const coverage = formatCoverageSummary({
     arrondissements: entry.coveredArrondissements,
     quartiers: [],

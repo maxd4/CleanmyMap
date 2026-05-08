@@ -23,5 +23,6 @@ You are an AI assistant helping a developer build CleanMyMap. Follow these stric
 3. Keep Client Components (`"use client"`) as thin as possible. Fetch data via SWR or Server Actions.
 4. **Leaflet integration**: Node.js crashes if `window` is accessed during SSR. All map components must use `next/dynamic` with `{ ssr: false }`.
 5. Write in French for all public facing text (`label`, `title`, `description`) unless localized explicitly via `{ fr: "...", en: "..." }`.
+6. **Homepage restriction**: Ne jamais modifier la homepage (`apps/web/src/app/page.tsx` et ses composants associés dans `apps/web/src/components/accueil/`) sauf demande explicite de l'utilisateur.
 
 When generating or editing code, ALWAYS preserve the semantic meaning and avoid deleting necessary type definitions.

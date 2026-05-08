@@ -1,7 +1,7 @@
 import { auth } from"@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { z } from"zod";
-import { getSupabaseAdminClient } from"@/lib/supabase/server";
+import { getSupabaseClerkRlsClient } from"@/lib/supabase/clerk-rls";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
 
@@ -26,7 +26,16 @@ export async function PATCH(request: Request) {
  const parsed = updateHandleSchema.safeParse(payload);
  if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
 
- const supabase = getSupabaseAdminClient();
+ const supabase = await getSupabaseClerkRlsClient();
+ if (!supabase) {
+ return NextResponse.json(
+ {
+ error:"Connexion sécurisée indisponible",
+ hint:"Activez l'intégration native Clerk/Supabase et vérifiez que la session Clerk est disponible.",
+ },
+ { status: 503 },
+ );
+ }
 
  try {
  // Check uniqueness

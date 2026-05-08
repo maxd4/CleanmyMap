@@ -9,6 +9,7 @@ import {
   buildPersonalImpactMethodology,
   computePersonalImpactMetrics,
 } from "./progression-impact";
+import { loadUserAnnualImpactStats, getUserAnnualImpact, getCurrentMonthlyMilestone } from "./annual-reset";
 import {
   actionQualityScoreFromRow,
   fetchActionById,
@@ -28,6 +29,7 @@ import type {
   PersonalImpactMetrics,
   PersonalTimelineItem,
   PostActionRetentionLoop,
+  MonthlyMilestone,
 } from "./progression-types";
 import { toFloat, toInt } from "./progression-utils";
 
@@ -53,6 +55,7 @@ type UserProgressionResponse = {
     timeline: PersonalTimelineItem[];
     mapPoints: PersonalTimelineItem[];
   };
+  monthlyMilestone: MonthlyMilestone;
 };
 
 function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
@@ -86,11 +89,9 @@ async function buildIndividualLeaderboard(
       .select(
         "user_id, xp_total, xp_validated, xp_pending, current_level, potential_level",
       )
-      .order("xp_validated", { ascending: false })
-      .order("xp_total", { ascending: false })
-      .limit(120),
+      .limit(1000), // Note: Fetch more profiles to allow proper annual sorting
     loadUserLabelSummary(supabase),
-    loadUserImpactStats(supabase),
+    loadUserAnnualImpactStats(supabase), // Use Annual impact for the score
   ]);
 
   if (profilesResult.error) {
@@ -121,10 +122,10 @@ async function buildIndividualLeaderboard(
       };
 
       const score =
-        toFloat(row.xp_validated, 0) +
         impact.qualityAverage * 3 +
         Math.min(300, impact.wasteKg) * 0.2 +
         impact.validatedActions * 0.5;
+        // Notice we don't add lifetime xp_validated here to have a purely annual ranking.
 
       return {
         rank: 0,
@@ -169,7 +170,7 @@ export async function getUserProgression(
 ): Promise<UserProgressionResponse> {
   await backfillUserProgression(supabase, userId);
 
-  const [profileResult, stats, rows, individualItems] = await Promise.all([
+  const [profileResult, stats, rows, individualItems, annualImpact] = await Promise.all([
     supabase
       .from("progression_profiles")
       .select(
@@ -180,6 +181,7 @@ export async function getUserProgression(
     loadUserProgressionStats(supabase, userId),
     loadActionRowsForUser(supabase, userId),
     buildIndividualLeaderboard(supabase),
+    getUserAnnualImpact(supabase, userId),
   ]);
 
   if (profileResult.error) {
@@ -250,6 +252,7 @@ export async function getUserProgression(
           item.manualDrawing !== null,
       ),
     },
+    monthlyMilestone: getCurrentMonthlyMilestone(annualImpact.wasteKg),
   };
 }
 

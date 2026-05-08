@@ -32,8 +32,8 @@ export function formatDeltaLine(
  const abs = current - previous;
  const pct =
  previous === 0 ? (current === 0 ? 0 : 100) : (abs / previous) * 100;
- const tone =
- abs > 0 ?"text-emerald-700" : abs < 0 ?"text-rose-700" :"cmm-text-secondary";
+  const tone =
+    abs > 0 ? "text-emerald-400" : abs < 0 ? "text-rose-400" : "text-slate-500";
  return {
  text: `${formatSigned(abs, digits)} ${unit} (${formatSigned(pct, 1)}%)`,
  tone,

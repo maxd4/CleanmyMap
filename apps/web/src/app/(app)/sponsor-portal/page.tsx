@@ -1,212 +1,226 @@
 import { 
- TrendingUp, 
- Euro, 
- Users, 
- Leaf, 
- Map as MapIcon,
- Download,
- Info 
-} from"lucide-react";
-import Link from"next/link";
-import { getSupabaseServerClient } from"@/lib/supabase/server";
-import { loadPilotageOverview } from"@/lib/pilotage/overview";
-import { IMPACT_PROXY_CONFIG } from"@/lib/gamification/impact-proxy-config";
-import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
-import { getSafeAuthSession } from"@/lib/auth/safe-session";
+  TrendingUp, 
+  Euro, 
+  Users, 
+  Leaf, 
+  Map as MapIcon,
+  Download,
+  Info,
+  ShieldCheck,
+  Zap,
+  ArrowRight,
+  Activity
+} from "lucide-react";
+import Link from "next/link";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { loadPilotageOverview } from "@/lib/pilotage/overview";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { getBlockClasses } from "@/lib/ui/block-accents";
+import { cn } from "@/lib/utils";
 
 const SPONSOR_WINDOW_DAYS = 730;
 
 async function loadSponsorOverview() {
- const supabase = getSupabaseServerClient();
- return loadPilotageOverview({
- supabase, // Wider default view for sponsors
- periodDays: SPONSOR_WINDOW_DAYS,
- limit: 5000,
- });
+  const supabase = getSupabaseServerClient();
+  return loadPilotageOverview({
+    supabase, // Wider default view for sponsors
+    periodDays: SPONSOR_WINDOW_DAYS,
+    limit: 5000,
+  });
 }
 
 export default async function SponsorPortalPage() {
- const { userId, clerkReachable } = await getSafeAuthSession();
- const overview = await loadSponsorOverview();
- const factors = IMPACT_PROXY_CONFIG.factors;
- const observedUntil = new Date();
- const observedFrom = new Date(observedUntil);
- observedFrom.setDate(observedFrom.getDate() - SPONSOR_WINDOW_DAYS + 1);
- const observationWindowLabel = `${observedFrom.toLocaleDateString("fr-FR")} -> ${observedUntil.toLocaleDateString("fr-FR")}`;
+  const { userId, clerkReachable } = await getSafeAuthSession();
+  const overview = await loadSponsorOverview();
+  const factors = IMPACT_PROXY_CONFIG.factors;
+  const observedUntil = new Date();
+  const observedFrom = new Date(observedUntil);
+  observedFrom.setDate(observedFrom.getDate() - SPONSOR_WINDOW_DAYS + 1);
+  const observationWindowLabel = `${observedFrom.toLocaleDateString("fr-FR")} -> ${observedUntil.toLocaleDateString("fr-FR")}`;
+  const classes = getBlockClasses("pilot");
 
- // Calculs ROI
- const totalKg = overview.comparison.current.impactVolumeKg;
- const totalEuroSaved = Math.round(totalKg * factors.euroSavedPerWasteKg);
- const totalCo2 = Math.round(totalKg * factors.co2KgPerWasteKg);
- const totalVolunteers = overview.comparison.current.mobilizationCount;
- const observedZones = overview.zones.slice(0, 3);
+  // Calculs ROI
+  const totalKg = overview.comparison.current.impactVolumeKg;
+  const totalEuroSaved = Math.round(totalKg * factors.euroSavedPerWasteKg);
+  const totalCo2 = Math.round(totalKg * factors.co2KgPerWasteKg);
+  const totalVolunteers = overview.comparison.current.mobilizationCount;
+  const observedZones = overview.zones.slice(0, 3);
 
- const page = (
- <div className="w-full space-y-12 bg-slate-50 p-4 md:p-8 min-h-screen">
- <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
- <div className="space-y-2">
- <div className="flex items-center gap-2 text-amber-600 font-bold uppercase tracking-widest cmm-text-caption">
- <TrendingUp size={16} />
- Gouvernance / sponsors
- </div>
- <h1 className="text-4xl font-bold tracking-tight cmm-text-primary">
- Impact territorial et ROI
- </h1>
- <p className="cmm-text-muted max-w-xl">
- Suivez la valeur générée par la mobilisation citoyenne pour votre ville et votre stratégie ESG.
- </p>
- <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
- Fenêtre d&apos;observation: {observationWindowLabel} ({SPONSOR_WINDOW_DAYS} jours glissants)
- </p>
- </div>
- <div className="flex gap-3">
- <button className="flex items-center gap-2 rounded-xl bg-slate-900 px-6 py-3 cmm-text-small font-bold text-white transition hover:bg-slate-800">
- <Download size={18} /> Exporter le bilan annuel
- </button>
- </div>
- </header>
+  const page = (
+    <div className="w-full max-w-[1600px] mx-auto space-y-24 pb-24">
+      {/* Premium Cockpit Header */}
+      <header className="relative space-y-12 pt-16">
+        <div className="absolute -top-24 -left-24 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
+        
+        <div className="flex flex-wrap gap-3">
+          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-amber-400/20 bg-amber-400/5 backdrop-blur-md">
+            <TrendingUp size={14} className="text-amber-400 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-400">Gouvernance & Impact</span>
+          </div>
+          <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/5 rounded-full border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 backdrop-blur-md">
+            <ShieldCheck size={12} className="text-amber-400/60" />
+            {observationWindowLabel}
+          </div>
+        </div>
 
- <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 cmm-text-small text-amber-900">
- Les KPI ci-dessous couvrent une fenêtre longue pour la lecture stratégique.
- Pour comparer avec les vues 30/90 jours, gardez le même périmètre temporel.
- </section>
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
+          <div className="space-y-6">
+            <h1 className="text-7xl md:text-8xl xl:text-9xl font-black text-white tracking-tighter leading-[0.85] uppercase">
+              ROI <br/>Stratégique
+            </h1>
+            <p className="text-2xl text-white/30 max-w-2xl font-medium leading-tight tracking-tight">
+              Analyse de la valeur territoriale générée par la mobilisation citoyenne et conformité aux standards ESG.
+            </p>
+          </div>
+          
+          <button className="group flex items-center gap-4 rounded-[2rem] bg-white px-10 py-7 text-[10px] font-black uppercase tracking-[0.2em] text-black transition-all hover:bg-amber-400 active:scale-95 shadow-2xl shadow-white/10">
+            <Download size={20} />
+            Exporter le bilan certifié
+          </button>
+        </div>
+      </header>
 
- {/* ROI CARDS */}
- <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
- <div className="bg-amber-600 text-white p-8 rounded-3xl shadow-xl shadow-amber-600/20 flex flex-col justify-between aspect-square">
- <Euro size={32} className="opacity-50" />
- <div>
- <p className="text-4xl font-bold">{totalEuroSaved.toLocaleString()} €</p>
- <p className="cmm-text-caption uppercase font-bold tracking-widest mt-2 opacity-80">Économie de voirie</p>
- </div>
- </div>
- 
- <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between aspect-square">
- <Leaf size={32} className="text-emerald-500" />
- <div>
- <p className="text-4xl font-bold cmm-text-primary">{totalCo2.toLocaleString()} kg</p>
- <p className="cmm-text-caption uppercase font-bold tracking-widest mt-2 cmm-text-muted">CO2 évité (estimé)</p>
- </div>
- </div>
+      {/* ROI CARDS - High Impact Tiles */}
+      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {[
+          { label: "Économie de voirie", val: `${totalEuroSaved.toLocaleString()} €`, icon: <Euro size={28} />, color: "amber", trend: "+12%" },
+          { label: "CO2 évité (estimé)", val: `${totalCo2.toLocaleString()} kg`, icon: <Leaf size={28} />, color: "emerald", trend: "+8%" },
+          { label: "Mobilisation citoyenne", val: totalVolunteers.toLocaleString(), icon: <Users size={28} />, color: "sky", trend: "+24%" },
+          { label: "Masse extraite", val: `${totalKg.toLocaleString()} kg`, icon: <MapIcon size={28} />, color: "rose", trend: "+15%" },
+        ].map((card, i) => (
+          <div key={i} className="group relative overflow-hidden p-10 rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-3xl transition-all duration-500 hover:bg-white/10 hover:border-white/10 aspect-square flex flex-col justify-between">
+            <div className="flex justify-between items-start">
+              <div className={cn("p-4 rounded-2xl bg-white/5 transition-transform group-hover:scale-110 duration-500", `text-${card.color}-400`)}>
+                {card.icon}
+              </div>
+              <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">{card.trend}</span>
+            </div>
+            
+            <div className="space-y-2">
+              <p className="text-6xl font-black text-white tracking-tighter leading-none">
+                {card.val}
+              </p>
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40">
+                {card.label}
+              </p>
+            </div>
+          </div>
+        ))}
+      </section>
 
- <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between aspect-square">
- <Users size={32} className="text-blue-500" />
- <div>
- <p className="text-4xl font-bold cmm-text-primary">{totalVolunteers.toLocaleString()}</p>
- <p className="cmm-text-caption uppercase font-bold tracking-widest mt-2 cmm-text-muted">Mobilisation citoyenne</p>
- </div>
- </div>
+      {/* Detailed Insights */}
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="p-12 rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-2xl space-y-12">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-amber-400/10 flex items-center justify-center">
+              <Activity size={18} className="text-amber-400" />
+            </div>
+            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-white/40">Périmètre de pilotage</h3>
+          </div>
+          
+          <div className="space-y-6">
+            <p className="text-3xl font-bold text-white tracking-tight leading-tight">
+              Analyse consolidée sur l&apos;ensemble de votre réseau territorial.
+            </p>
+            <p className="text-lg text-white/30 leading-relaxed font-medium">
+              Ce portail agrège les données de mobilisation pour offrir une lecture macroscopique de l&apos;impact environnemental et social.
+            </p>
+          </div>
 
- <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between aspect-square">
- <MapIcon size={32} className="text-rose-500" />
- <div>
- <p className="text-4xl font-bold cmm-text-primary">{totalKg.toLocaleString()} kg</p>
- <p className="cmm-text-caption uppercase font-bold tracking-widest mt-2 cmm-text-muted">Déchets extraits</p>
- </div>
- </div>
- </section>
+          <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/5">
+            {[
+              { label: "Période", val: `${SPONSOR_WINDOW_DAYS}j` },
+              { label: "Contrats", val: overview.contracts.length },
+              { label: "Zones", val: overview.zones.length },
+            ].map((stat, i) => (
+              <div key={i} className="space-y-1">
+                <p className="text-[9px] font-black uppercase tracking-widest text-white/20">{stat.label}</p>
+                <p className="text-2xl font-black text-white">{stat.val}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
- <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
- <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4">
- <div className="flex items-center gap-2 cmm-text-primary font-bold uppercase tracking-widest cmm-text-caption">
- <Info size={16} className="text-amber-500" />
- Réseau suivi
- </div>
- <p className="cmm-text-small cmm-text-secondary leading-relaxed">
- Le portail affiche un périmètre plus large pour garder une lecture utile du réseau.
- La fenêtre d&apos;observation couvre deux ans.
- </p>
- <div className="grid sm:grid-cols-3 gap-3 cmm-text-small">
- <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">Fenêtre</p>
- <p className="mt-1 font-semibold cmm-text-primary">{SPONSOR_WINDOW_DAYS} jours</p>
- </div>
- <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">Contrats chargés</p>
- <p className="mt-1 font-semibold cmm-text-primary">{overview.contracts.length}</p>
- </div>
- <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">Zones analysées</p>
- <p className="mt-1 font-semibold cmm-text-primary">{overview.zones.length}</p>
- </div>
- </div>
- </div>
+        <div className="rounded-[3rem] p-12 border border-white/5 bg-white/5 backdrop-blur-2xl space-y-10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+          
+          <div className="flex items-center justify-between relative z-10">
+            <h3 className="text-2xl font-black text-white tracking-tight uppercase">Points Chauds</h3>
+            <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">TEMPS RÉEL</span>
+          </div>
 
- <div className="bg-slate-900 rounded-3xl p-8 text-white space-y-4 relative overflow-hidden">
- <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl" />
- <h3 className="text-xl font-bold relative z-10">Zones prioritaires</h3>
- <ul className="space-y-3 relative z-10">
- {observedZones.length > 0 ? (
- observedZones.map((zone) => (
- <li key={zone.area} className="rounded-2xl border border-white/10 bg-white/5 p-4">
- <p className="font-semibold text-white">{zone.area}</p>
- <p className="mt-1 cmm-text-small text-slate-300">
- Score {zone.normalizedScore.toFixed(1)} | priorité {zone.urgency}
- </p>
- <p className="mt-1 cmm-text-caption cmm-text-muted">{zone.recommendedAction}</p>
- </li>
- ))
- ) : (
- <li className="rounded-2xl border border-white/10 bg-white/5 p-4 cmm-text-small text-slate-300">
- Aucune zone prioritaire détectée sur la fenêtre courante.
- </li>
- )}
- </ul>
- </div>
- </section>
+          <div className="space-y-4 relative z-10">
+            {observedZones.length > 0 ? (
+              observedZones.map((zone) => (
+                <div key={zone.area} className="group p-6 rounded-[2rem] border border-white/5 bg-white/5 transition-all hover:bg-white/10">
+                  <div className="flex justify-between items-center mb-4">
+                    <p className="font-black text-white text-[11px] uppercase tracking-widest">{zone.area}</p>
+                    <div className="text-[10px] font-black text-amber-400">
+                      SCORE {zone.normalizedScore.toFixed(1)}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                      Priorité : <span className="text-amber-400">{zone.urgency}</span>
+                    </p>
+                  </div>
+                  <p className="text-xs font-semibold text-white/60 group-hover:text-white transition-colors">{zone.recommendedAction}</p>
+                </div>
+              ))
+            ) : (
+              <div className="p-12 text-center text-white/20 font-black uppercase tracking-widest text-[10px]">
+                Silence Radio • Aucune zone critique
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
- {/* DETAILS GRID */}
- <div className="grid lg:grid-cols-3 gap-8">
- {/* ROI Explanation */}
- <div className="lg:col-span-2 space-y-6">
- <div className="bg-white p-8 rounded-3xl border border-slate-200 space-y-6">
- <h3 className="text-xl font-bold flex items-center gap-2">
- <Info className="text-amber-500" size={20} />
- Méthode ROI
- </h3>
- <p className="cmm-text-secondary cmm-text-small leading-relaxed">
- L&apos;économie de voirie repose sur un coût moyen de <strong>1,50€ par kilogramme</strong> de déchet collecté. Le calcul intègre le matériel, les trajets et le traitement.
- </p>
- <div className="pt-4 border-t border-slate-100 italic cmm-text-caption cmm-text-muted">
- Note: Ce calcul est un proxy validé par le conseil scientifique CleanMyMap v1.
- </div>
- <Link 
- href="/methodologie" 
- className="inline-block cmm-text-caption font-bold text-amber-600 hover:underline"
- >
- Voir le protocole complet →
- </Link>
- </div>
- </div>
+      {/* Protocol Transparency */}
+      <section className="relative group p-12 rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-2xl overflow-hidden transition-all hover:bg-white/[0.07]">
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-amber-400/5 rounded-full blur-[120px] pointer-events-none transition-all group-hover:bg-amber-400/10" />
+        
+        <div className="max-w-4xl space-y-10 relative z-10">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-400/10 flex items-center justify-center">
+              <Zap size={24} className="text-amber-400" />
+            </div>
+            <h3 className="text-3xl font-black text-white tracking-tighter uppercase">Rigueur Scientifique</h3>
+          </div>
+          
+          <div className="space-y-6">
+            <p className="text-2xl text-white/40 leading-tight font-medium tracking-tight">
+              Chaque kilogramme collecté génère une économie directe de <strong className="text-white">1,50€</strong> pour la collectivité. Ce calcul est certifié par nos protocoles de mesure d&apos;impact environnemental.
+            </p>
+            
+            <Link 
+              href="/methodologie" 
+              className="inline-flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.3em] text-amber-400 hover:text-white transition-all group"
+            >
+              Accéder au livre blanc méthodologique
+              <ArrowRight size={16} className="transition-transform group-hover:translate-x-2" />
+            </Link>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 
- {/* Call to Active */}
- <div className="bg-slate-900 rounded-3xl p-8 text-white space-y-6 relative overflow-hidden">
- <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl" />
- <h3 className="text-xl font-bold relative z-10">Renforcer l&apos;engagement</h3>
- <p className="cmm-text-muted cmm-text-small leading-relaxed relative z-10">
- Plus la qualité des actions est élevée, plus le ROI est précis.
- Encouragez l&apos;usage du mode &quot;Expert&quot; pour les déclarations.
- </p>
- <button className="w-full py-4 bg-emerald-600 rounded-2xl font-bold cmm-text-small hover:bg-emerald-700 transition relative z-10">
- Lancer un challenge local
- </button>
- </div>
- </div>
- </div>
- );
-
- return (
- <ClerkRequiredGate
- isAuthenticated={Boolean(userId)}
- mode="disabled"
- title="Portail décideur"
- description={
- clerkReachable
- ?"La vue reste lisible, mais les actions sont réservées aux comptes connectés."
- :"Connexion Clerk temporairement indisponible. La vue reste lisible, les actions restent désactivées."
- }
- >
- {page}
- </ClerkRequiredGate>
- );
+  return (
+    <ClerkRequiredGate
+      isAuthenticated={Boolean(userId)}
+      mode="disabled"
+      title="Accès Portail Décideur"
+      description={
+        clerkReachable
+          ? "Connectez-vous pour débloquer les fonctions d'export et les détails granulaires."
+          : "Le service d'authentification est indisponible. Lecture seule activée."
+      }
+    >
+      {page}
+    </ClerkRequiredGate>
+  );
 }

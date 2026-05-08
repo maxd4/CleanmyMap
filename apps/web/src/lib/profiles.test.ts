@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { getProfileLabel, normalizeProfileRole, resolveProfile } from "./profiles";
+import { getProfileActions, getProfileLabel, normalizeProfileRole, resolveProfile, PROFILE_ORDER, type AppProfile } from "./profiles";
+
+const EXPECTED_PROFILE_ACTIONS: Record<AppProfile, readonly string[]> = {
+  benevole: ["/actions/new", "/sections/community", "/actions/map", "/learn/hub"],
+  coordinateur: ["/sections/community", "/dashboard", "/sections/messagerie", "/reports"],
+  scientifique: ["/reports", "/sections/open-data", "/methodologie", "/prints/report"],
+  elu: ["/sponsor-portal", "/reports", "/actions/map", "/prints/report"],
+  admin: ["/admin", "/reports", "/admin/godmode", "/dashboard"],
+  max: ["/admin/godmode", "/admin", "/dashboard", "/prints/report"],
+};
 
 describe("profile aliases", () => {
   it("keeps IMU as the displayed label for the top profile", () => {
@@ -16,5 +25,18 @@ describe("profile aliases", () => {
         isMax: false,
       }),
     ).toBe("max");
+  });
+});
+
+describe("profile quick access", () => {
+  PROFILE_ORDER.forEach((profile) => {
+    it(`exposes four distinct actions for ${profile}`, () => {
+      const actions = getProfileActions(profile);
+      const hrefs = actions.map((action) => action.href);
+
+      expect(actions).toHaveLength(4);
+      expect(hrefs).toEqual(EXPECTED_PROFILE_ACTIONS[profile]);
+      expect(new Set(hrefs).size).toBe(4);
+    });
   });
 });

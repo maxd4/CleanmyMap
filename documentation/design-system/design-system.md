@@ -19,11 +19,25 @@ Toutes les couleurs et arrondis critiques doivent utiliser les variables globale
 | `--glass-border` | `rgba(255, 255, 255, 0.1)` | Bordures subtiles. |
 | `--glass-blur` | `blur(12px)` | Effet de profondeur. |
 
-## 3. Stratégie de Styling
+## 3. Palette de Couleurs par Bloc (Accents)
+Chaque bloc du site possède une identité visuelle propre via une couleur d'accent dédiée.
+
+| Bloc | Couleur d'accent | Identifiant technique |
+| :--- | :--- | :--- |
+| **Accueil** | Orange (`amber`) | `home` |
+| **Agir** | Vert (`emerald`) | `act` |
+| **Visualiser** | Bleu ciel (`sky`) | `visualize` |
+| **Impact** | Rouge (`rose`) | `impact` |
+| **Réseau** | Indigo (`indigo`) | `network` |
+| **Discussion** | Rose (`pink`) | `connect` |
+| **Apprendre** | Jaune (`yellow`) | `learn` |
+| **Piloter** | Brun (`bronze`) | `pilot` |
+
+## 4. Stratégie de Styling
 1.  **Tailwind CSS** : Utilisé pour la **mise en page** (flex, grid, spacing, sizing) et les états simples.
 2.  **Vanilla CSS / CSS Modules** : Utilisé pour les **effets premium complexes** (gradients animés, flous de profondeur, micro-interactions) que Tailwind rend illisibles ou impossibles.
 
-## 4. Patterns de Composants "Signature"
+## 5. Patterns de Composants "Signature"
 
 ### Le "Glass Container"
 ```tsx

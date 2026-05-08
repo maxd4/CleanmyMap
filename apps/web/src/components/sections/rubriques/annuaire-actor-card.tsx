@@ -11,8 +11,9 @@ import {
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { Info, MapPin, MessageSquare, ShieldCheck, Clock, Star } from "lucide-react";
+import { Info, MapPin, MessageSquare, ShieldCheck, Clock, Star, Target, Zap, Building2, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 type AnnuaireActorCardProps = {
   entry: EnrichedAnnuaireEntry;
@@ -35,224 +36,136 @@ export function AnnuaireActorCard({
 
   return (
     <CmmCard
-      tone={isFeatured ? "violet" : isTrusted ? "violet" : isIncomplete ? "rose" : "amber"}
-      variant={isFeatured ? "elevated" : "default"}
+      variant="elevated"
       className={cn(
-        "group relative flex flex-col transition-all duration-500",
+        "group relative flex flex-col overflow-hidden rounded-[2.5rem] border transition-all duration-500 backdrop-blur-3xl p-8",
         isFeatured
-          ? "ring-2 ring-violet-200 shadow-xl scale-[1.02]"
-          : "hover:shadow-xl hover:-translate-y-1 hover:border-violet-200"
+          ? "bg-violet-900/40 border-violet-500/40 shadow-[0_0_50px_rgba(139,92,246,0.15)] ring-1 ring-violet-500/50"
+          : "bg-slate-900/40 border-white/10 hover:bg-white/[0.05] hover:border-white/20 shadow-2xl"
       )}
     >
-      {/* Dynamic Accent Bar */}
-      <div className={cn(
-        "absolute top-0 left-0 right-0 h-1 transition-opacity",
-        isFeatured ? "bg-violet-600 opacity-100" : "bg-violet-400 opacity-0 group-hover:opacity-100"
-      )} />
-
-      {/* Badges Flottants */}
-      <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-10">
+      {/* Dynamic Status Badges */}
+      <div className="absolute top-6 right-6 flex flex-wrap justify-end gap-2 z-10">
         {isFeatured && (
-          <div className="relative">
-            <div className="absolute inset-0 bg-violet-400 blur-sm opacity-40 rounded-full" />
-            <span className="relative inline-flex items-center gap-1.5 rounded-full bg-violet-600 px-3 py-1 text-[10px] font-black tracking-widest text-white shadow-lg">
-              <Star size={10} className="fill-current" />
-              {fr ? "À LA UNE" : "FEATURED"}
-            </span>
-          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/20 border border-violet-500/30 px-3 py-1 text-[9px] font-black tracking-widest text-violet-300 shadow-2xl">
+            <Star size={10} className="fill-current text-amber-400 animate-pulse" />
+            {fr ? "À LA UNE" : "FEATURED"}
+          </span>
         )}
-        {!isFeatured && isTrusted && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-[10px] font-bold text-violet-700 border border-violet-200 shadow-sm">
-            <ShieldCheck size={12} className="text-violet-500" />
-            {fr ? "VÉRIFIÉ" : "VERIFIED"}
+        {isTrusted && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1 text-[9px] font-black tracking-widest text-emerald-400 shadow-2xl">
+            <ShieldCheck size={10} />
+            {fr ? "CERTIFIÉ" : "CERTIFIED"}
           </span>
         )}
         {hasRecentPartnerUpdate(entry) && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold text-indigo-700 border border-indigo-200 shadow-sm">
-            <div className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-            </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-500/10 border border-sky-500/20 px-3 py-1 text-[9px] font-black tracking-widest text-sky-400 shadow-2xl">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-sky-500"></span>
+            </span>
             {fr ? "ACTIF" : "ACTIVE"}
           </span>
         )}
       </div>
 
-      <div className="flex-1 space-y-4">
-        {/* En-tête */}
-        <div className="space-y-2">
+      <div className="flex-1 space-y-6">
+        {/* Header - Identification */}
+        <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] font-black tracking-widest text-slate-400 uppercase border border-slate-700/50">
+            <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-[9px] font-black tracking-widest text-slate-500 uppercase">
               {ENTITY_LABELS[entry.kind]}
             </span>
-            {entry.tags?.slice(0, 2).map(tag => (
-              <span key={tag} className="cmm-text-caption font-bold px-2 py-0.5 rounded-md bg-emerald-950/40 text-emerald-400 border border-emerald-500/20">
-                {tag}
+            {entry.tags?.slice(0, 3).map(tag => (
+              <span key={tag} className="px-2.5 py-1 rounded-lg bg-violet-500/5 text-[9px] font-black tracking-widest text-violet-400 border border-violet-500/10">
+                {tag.toUpperCase()}
               </span>
             ))}
           </div>
           <h3 className={cn(
-            "font-bold cmm-text-primary group-hover:text-violet-700 transition-colors leading-tight",
-            isFeatured ? "cmm-text-h4" : "cmm-text-body text-lg"
+            "font-black tracking-tight leading-tight transition-colors",
+            isFeatured ? "text-2xl text-white group-hover:text-violet-300" : "text-xl text-white group-hover:text-violet-300"
           )}>
             {entry.name}
           </h3>
         </div>
 
-        {/* Description courte et scannable */}
-        <p className={cn(
-          "cmm-text-caption cmm-text-secondary leading-relaxed",
-          isFeatured ? "line-clamp-3" : "line-clamp-2"
-        )}>
+        {/* Narrative description */}
+        <p className="text-sm font-medium leading-relaxed text-slate-400 line-clamp-2 opacity-80">
           {entry.description}
         </p>
 
-        {/* Localisation simple */}
-        <div className="flex items-center gap-2 cmm-text-caption cmm-text-muted pt-1">
-          <div className="p-1 rounded-md bg-slate-50 border border-slate-100">
-            <MapPin size={12} className="text-violet-400" />
+        {/* Key Operational Metrics */}
+        <div className="grid grid-cols-1 gap-4 pt-4 border-t border-white/5">
+          <div className="flex items-center justify-between text-[10px]">
+             <div className="flex items-center gap-3">
+                <MapPin size={12} className="text-slate-600" />
+                <span className="font-black text-slate-500 uppercase tracking-widest">{fr ? "Périmètre" : "Scope"}</span>
+             </div>
+             <span className="font-bold text-white uppercase">{formatCoverage(entry.coveredArrondissements, entry.location)}</span>
           </div>
-          <span className="font-medium">{entry.location}</span>
-          {entry.distanceKm !== null && (
-            <div className="ml-auto flex items-center gap-1 font-black text-violet-600 bg-violet-50 px-2 py-0.5 rounded-lg border border-violet-100/50">
-              {entry.distanceKm.toFixed(1)} km
-            </div>
-          )}
-        </div>
-
-        {/* Grille d'infos compacte */}
-        <div className="grid grid-cols-1 gap-3 pt-4 border-t border-slate-800/60">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-lg bg-slate-800 p-1.5 text-slate-400 border border-slate-700 group-hover:bg-emerald-900/40 group-hover:text-emerald-400 transition-colors">
-              <MapPin size={14} />
-            </div>
-            <div className="space-y-0.5">
-              <span className="block font-black cmm-text-secondary uppercase tracking-widest text-[9px] opacity-60">
-                {fr ? "Zone de couverture" : "Coverage zone"}
-              </span>
-              <span className="cmm-text-caption font-bold cmm-text-primary leading-tight block">
-                {formatCoverage(entry.coveredArrondissements, entry.location)}
-              </span>
-            </div>
+          <div className="flex items-center justify-between text-[10px]">
+             <div className="flex items-center gap-3">
+                <Clock size={12} className="text-slate-600" />
+                <span className="font-black text-slate-500 uppercase tracking-widest">{fr ? "Disponibilité" : "Availability"}</span>
+             </div>
+             <span className="font-bold text-white uppercase">{entry.availability}</span>
           </div>
-
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-lg bg-slate-800 p-1.5 text-slate-400 border border-slate-700 group-hover:bg-emerald-900/40 group-hover:text-emerald-400 transition-colors">
-              <Clock size={14} />
-            </div>
-            <div className="space-y-0.5">
-              <span className="block font-black cmm-text-secondary uppercase tracking-widest text-[9px] opacity-60">
-                {fr ? "Disponibilité" : "Availability"}
-              </span>
-              <span className="cmm-text-caption font-bold cmm-text-primary leading-tight block">
-                {entry.availability}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-lg bg-slate-800 p-1.5 text-slate-400 border border-slate-700 group-hover:bg-emerald-900/40 group-hover:text-emerald-400 transition-colors">
-              <Info size={14} />
-            </div>
-            <div className="space-y-0.5">
-              <span className="block font-black cmm-text-secondary uppercase tracking-widest text-[9px] opacity-60">
-                {fr ? "Contribution" : "Contribution"}
-              </span>
-              <span className="cmm-text-caption font-bold cmm-text-primary leading-tight block">
+          <div className="flex items-center justify-between text-[10px]">
+             <div className="flex items-center gap-3">
+                <Zap size={12} className="text-slate-600" />
+                <span className="font-black text-slate-500 uppercase tracking-widest">{fr ? "Impact" : "Impact"}</span>
+             </div>
+             <span className="font-bold text-white uppercase line-clamp-1 max-w-[120px] text-right">
                 {entry.contributionTypes.map((item) => CONTRIBUTION_LABELS[item]).join(", ")}
-              </span>
-            </div>
+             </span>
           </div>
         </div>
 
-        {/* Trust/Status Section */}
+        {/* Trust Insight / Context */}
         <div className="pt-2">
           {isTrusted ? (
-            <div className="relative overflow-hidden rounded-xl border border-violet-100 bg-gradient-to-br from-violet-50/80 to-white p-3 shadow-sm">
-              <div className="absolute top-0 left-0 w-1 h-full bg-violet-400" />
-              <div className="flex items-start justify-between">
-                <p className="cmm-text-caption text-violet-900 italic leading-relaxed">
-                  <span className="font-black not-italic text-violet-700 mr-1.5 uppercase text-[9px] tracking-wider">
-                    💡 {fr ? "Pourquoi ce partenaire ?" : "Why this partner?"}
-                  </span>
-                  {getPartnerWhyThisStructureMatters(entry)}
-                </p>
-                <button
-                  type="button"
-                  aria-label={fr ? "Méthode de confiance" : "Trust methodology"}
-                  data-tooltip-content={fr ? "Méthode basée sur la complétude, la fraîcheur et l'activité terrain." : "Based on completeness, freshness and field activity."}
-                  data-tooltip-placement="top"
-                  className="ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full text-violet-400 cursor-help"
-                >
-                  <Info size={14} />
-                </button>
+            <div className="relative overflow-hidden rounded-[1.5rem] border border-violet-500/20 bg-violet-500/5 p-5 shadow-inner">
+              <div className="flex items-start gap-4">
+                 <div className="p-2 rounded-xl bg-violet-500/10 text-violet-400">
+                    <Sparkles size={14} />
+                 </div>
+                 <p className="text-[11px] font-bold text-slate-300 italic leading-relaxed">
+                    {getPartnerWhyThisStructureMatters(entry)}
+                 </p>
               </div>
             </div>
           ) : (
             <div className={cn(
-              "relative overflow-hidden rounded-xl border border-dashed p-3 shadow-sm",
-              isIncomplete ? "border-rose-200 bg-rose-50/50 text-rose-900" : "border-amber-200 bg-amber-50/50 text-amber-900"
+              "relative overflow-hidden rounded-[1.5rem] border border-dashed p-4",
+              isIncomplete ? "border-rose-500/30 bg-rose-500/5 text-rose-300" : "border-amber-500/30 bg-amber-500/5 text-amber-300"
             )}>
-              <div className="flex items-start justify-between">
-                <p className="cmm-text-caption italic leading-relaxed">
-                  <span className={cn(
-                    "font-black not-italic mr-1.5 uppercase text-[9px] tracking-wider",
-                    isIncomplete ? "text-rose-700" : "text-amber-700"
-                  )}>
-                    ⚠️ {fr ? "Status restreint" : "Restricted status"}
-                  </span>
-                  {isIncomplete
-                    ? (fr ? "Données insuffisantes pour garantir la qualité habituelle." : "Insufficient data to guarantee usual quality.")
-                    : (fr ? "Validation humaine en cours. Prudence recommandée." : "Human validation in progress. Caution recommended.")}
-                </p>
-                <button
-                  type="button"
-                  aria-label={fr ? "Méthode de score" : "Score method"}
-                  data-tooltip-content={fr ? "Score calculé selon la fraîcheur, la complétude et les contacts vérifiés." : "Score based on freshness, completeness and verified contacts."}
-                  data-tooltip-placement="top"
-                  className={cn("ml-2 inline-flex h-5 w-5 items-center justify-center rounded-full cursor-help", isIncomplete ? "text-rose-400" : "text-amber-400")}
-                >
-                  <Info size={14} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {showInternalContact && entry.internalAdminContact && (
-            <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 cmm-text-caption text-amber-900 shadow-inner">
-              <p className="font-black uppercase tracking-widest text-[9px] mb-2 text-amber-700 opacity-80">{fr ? "Accès Interne" : "Internal Access"}</p>
-              <div className="grid grid-cols-1 gap-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-amber-800">{fr ? "Référent :" : "Referent:"}</span>
-                  <span className="font-medium">{entry.internalAdminContact.referentName}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-amber-800">Email :</span>
-                  <span className="font-medium underline decoration-amber-300">{entry.internalAdminContact.email}</span>
-                </div>
+              <div className="flex items-center gap-3">
+                 <Info size={14} className="opacity-60" />
+                 <p className="text-[10px] font-black uppercase tracking-widest">
+                   {isIncomplete ? (fr ? "Données partielles" : "Partial Data") : (fr ? "Vérification en cours" : "Validation Pending")}
+                 </p>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="mt-6 flex flex-col sm:flex-row gap-3 pt-5 border-t border-slate-800/60">
+      {/* Action System */}
+      <div className="mt-8 flex items-center gap-4 pt-6 border-t border-white/5">
         <CmmButton
-          variant="default"
-          size="sm"
-          className="flex-1 rounded-xl font-bold border-slate-800 bg-slate-900 hover:border-emerald-500/50 hover:bg-slate-800 transition-all"
+          variant="secondary"
+          className="flex-1 h-12 rounded-xl bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all shadow-2xl"
           onClick={() => onFocusMap(entry.id)}
         >
-          <MapPin size={14} className="mr-2 text-emerald-500" />
-          {fr ? "Voir Carte" : "Map"}
+          <MapPin size={14} className="mr-2 text-violet-400" />
+          {fr ? "Localiser" : "Locate"}
         </CmmButton>
+        
         {entry.primaryChannel ? (
           <CmmButton
-            variant="default"
-            tone="primary"
-            size="sm"
-            className="flex-1 rounded-xl bg-violet-600 hover:bg-violet-700 text-white border-none shadow-lg shadow-violet-100 hover:shadow-violet-200 transition-all group/btn"
+            variant="primary"
+            className="flex-1 h-12 rounded-xl bg-violet-600 border-none text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-violet-500 transition-all shadow-[0_10px_30px_rgba(139,92,246,0.2)] group/btn"
             asChild
           >
             <a href={entry.primaryChannel.url} target="_blank" rel="noopener noreferrer">
@@ -261,19 +174,19 @@ export function AnnuaireActorCard({
             </a>
           </CmmButton>
         ) : (
-          <div className="flex-1 flex items-center justify-center rounded-xl border border-dashed border-slate-800 bg-slate-900/40 px-3 py-2 cmm-text-caption font-bold text-slate-500">
-            {fr ? "Canal à confirmer" : "Channel to confirm"}
+          <div className="flex-1 h-12 flex items-center justify-center rounded-xl border border-dashed border-white/10 bg-slate-950/40 px-3 text-[10px] font-black uppercase tracking-widest text-slate-600">
+            {fr ? "Indisponible" : "N/A"}
           </div>
         )}
       </div>
 
-      {/* Footer Meta */}
-      <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-        <span>MAJ: {entry.lastUpdatedAt}</span>
-        <span className="flex items-center gap-1 italic opacity-70">
-          <Clock size={10} />
-          {formatFreshness(entry.lastUpdatedAt)}
-        </span>
+      {/* Subtle Footer Meta */}
+      <div className="mt-6 flex items-center justify-between opacity-40">
+         <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">ID: {entry.id.split('-')[0]}</span>
+         <div className="flex items-center gap-2">
+            <Clock size={10} className="text-slate-500" />
+            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">{formatFreshness(entry.lastUpdatedAt)}</span>
+         </div>
       </div>
     </CmmCard>
   );

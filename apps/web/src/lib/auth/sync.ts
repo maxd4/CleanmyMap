@@ -3,12 +3,17 @@ import { env } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { isAdminRole, isMaxRole } from "@/lib/authz";
 import { resolveProfile } from "@/lib/profiles";
+import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 
 const MAX_HANDLE_LENGTH = 30;
 
 type ProfileRow = {
   id: string;
   handle: string | null;
+};
+
+export type SyncClerkUserOptions = {
+  allowServiceRoleFallback?: boolean;
 };
 
 function parseUserIds(raw: string | undefined): Set<string> {
@@ -115,14 +120,28 @@ function describeSyncError(error: unknown): string {
   }
 }
 
+async function resolveWritableClient(allowServiceRoleFallback: boolean) {
+  if (!allowServiceRoleFallback) {
+    return null;
+  }
+
+  return getSupabaseAdminClient();
+}
+
 /**
  * Syncs a Clerk user profile to the Supabase 'profiles' table.
- * Uses the Admin client to ensure sync happens even if RLS is tight.
+ * Prefers the Clerk/RLS client and only falls back to the admin client when explicitly allowed.
  */
-export async function syncClerkUserToSupabase(user: User | null) {
+export async function syncClerkUserToSupabase(
+  user: User | null,
+  options: SyncClerkUserOptions = {},
+) {
   if (!user) return null;
 
-  const supabase = getSupabaseAdminClient();
+  const supabase = await resolveWritableClient(options.allowServiceRoleFallback ?? true);
+  if (!supabase) {
+    return null;
+  }
   const adminUserIds = parseUserIds(env.CLERK_ADMIN_USER_IDS);
   const maxUserIds = parseUserIds(env.CLERK_MAX_USER_IDS);
 
@@ -131,6 +150,7 @@ export async function syncClerkUserToSupabase(user: User | null) {
     privateMetadata: user.privateMetadata,
   });
   const isMax =
+    isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress) ||
     isMaxRole({
       publicMetadata: user.publicMetadata,
       privateMetadata: user.privateMetadata,

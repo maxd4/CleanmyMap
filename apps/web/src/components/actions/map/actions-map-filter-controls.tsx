@@ -64,13 +64,13 @@ export function ActionsMapFilterControls({
   return (
     <div className="grid w-full gap-3 lg:grid-cols-[repeat(4,minmax(9rem,1fr))_auto]">
       <label className="flex flex-col gap-1">
-        <span className="text-[10px] font-bold uppercase text-slate-500">
+        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/60">
           Période
         </span>
         <select
           value={String(filters.days)}
           onChange={(event) => onDaysChange(Number(event.target.value))}
-          className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+          className="h-11 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-3 text-sm font-bold text-white shadow-[0_10px_28px_-18px_rgba(56,189,248,0.28)] outline-none transition focus:border-sky-300/42 focus:ring-4 focus:ring-sky-400/12"
         >
           <option value="90">90 derniers jours</option>
           <option value={String(initialDays)}>Année en cours</option>
@@ -79,7 +79,7 @@ export function ActionsMapFilterControls({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-[10px] font-bold uppercase text-slate-500">
+        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/60">
           Statut
         </span>
         <select
@@ -87,7 +87,7 @@ export function ActionsMapFilterControls({
           onChange={(event) =>
             onStatusChange(event.target.value as ActionStatus | "all")
           }
-          className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+          className="h-11 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-3 text-sm font-bold text-white shadow-[0_10px_28px_-18px_rgba(56,189,248,0.28)] outline-none transition focus:border-sky-300/42 focus:ring-4 focus:ring-sky-400/12"
         >
           {STATUS_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -98,7 +98,7 @@ export function ActionsMapFilterControls({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-[10px] font-bold uppercase text-slate-500">
+        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/60">
           Impact
         </span>
         <select
@@ -106,7 +106,7 @@ export function ActionsMapFilterControls({
           onChange={(event) =>
             onImpactChange(event.target.value as ActionImpactLevel | "all")
           }
-          className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+          className="h-11 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-3 text-sm font-bold text-white shadow-[0_10px_28px_-18px_rgba(56,189,248,0.28)] outline-none transition focus:border-sky-300/42 focus:ring-4 focus:ring-sky-400/12"
         >
           {IMPACT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -117,13 +117,13 @@ export function ActionsMapFilterControls({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-[10px] font-bold uppercase text-slate-500">
+        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/60">
           Qualité
         </span>
         <select
           value={String(filters.qualityMin)}
           onChange={(event) => onQualityMinChange(Number(event.target.value))}
-          className="h-11 rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+          className="h-11 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-3 text-sm font-bold text-white shadow-[0_10px_28px_-18px_rgba(56,189,248,0.28)] outline-none transition focus:border-sky-300/42 focus:ring-4 focus:ring-sky-400/12"
         >
           {QUALITY_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -136,14 +136,14 @@ export function ActionsMapFilterControls({
       <button
         type="button"
         onClick={onReset}
-        className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold uppercase text-slate-600 shadow-sm transition hover:bg-slate-50 lg:mt-auto"
+        className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.9)] px-4 text-xs font-black uppercase tracking-[0.16em] text-sky-100/78 shadow-[0_10px_28px_-18px_rgba(56,189,248,0.28)] transition hover:border-sky-300/30 hover:bg-[rgba(18,47,74,0.95)] lg:mt-auto"
       >
         <RotateCcw size={14} />
         Reset
       </button>
 
       <div className="lg:col-span-5">
-        <div className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase text-slate-500">
+        <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/60">
           <SlidersHorizontal size={13} />
           Catégories visibles
         </div>
@@ -157,10 +157,10 @@ export function ActionsMapFilterControls({
                 aria-pressed={selected}
                 onClick={() => onCategoryToggle(category.value)}
                 className={[
-                  "rounded-xl border px-3 py-2 text-xs font-bold transition",
+                  "rounded-2xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition",
                   selected
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                    : "border-slate-200 bg-white text-slate-400",
+                    ? "border-sky-300/35 bg-sky-400/18 text-sky-50 shadow-[0_10px_28px_-18px_rgba(56,189,248,0.35)]"
+                    : "border-sky-300/12 bg-[rgba(16,40,64,0.88)] text-sky-100/58 hover:border-sky-300/24 hover:text-sky-50",
                 ].join(" ")}
               >
                 {category.label}

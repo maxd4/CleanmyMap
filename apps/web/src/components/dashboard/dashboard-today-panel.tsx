@@ -1,117 +1,160 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { ArrowRight, Activity, Clock, ShieldCheck, AlertCircle } from "lucide-react";
 import type { DashboardTodayState } from "@/lib/dashboard/today";
+import { cn } from "@/lib/utils";
 
 type DashboardTodayPanelProps = {
   state: DashboardTodayState;
 };
 
-function tileBorderClass(label: string): string {
-  if (label.includes("traiter") || label.includes("review")) {
-    return "border-amber-200 bg-amber-50";
-  }
-  if (label.includes("action")) {
-    return "border-emerald-200 bg-emerald-50";
-  }
-  if (label.includes("activité") || label.includes("activity")) {
-    return "border-sky-200 bg-sky-50";
-  }
-  return "border-slate-200 bg-slate-50";
+function tileAccent(label: string) {
+  if (label.includes("traiter") || label.includes("review"))
+    return { icon: "text-amber-300 bg-amber-400/20 border-amber-400/30", bar: "bg-amber-400" };
+  if (label.includes("action"))
+    return { icon: "text-emerald-300 bg-emerald-400/20 border-emerald-400/30", bar: "bg-emerald-400" };
+  return { icon: "text-sky-300 bg-sky-400/20 border-sky-400/30", bar: "bg-sky-400" };
 }
+
+function getTileIcon(label: string) {
+  if (label.includes("traiter") || label.includes("review")) return <ShieldCheck size={16} />;
+  if (label.includes("action")) return <Activity size={16} />;
+  return <Clock size={16} />;
+}
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 14 },
+  show: (i: number) => ({ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.1 + i * 0.08, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] } }),
+};
 
 export function DashboardTodayPanel({ state }: DashboardTodayPanelProps) {
   return (
-    <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+    <section className="mt-8 space-y-5">
+
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-3 px-1">
         <div>
-          <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
-            {state.kind === "error"
-              ? "Synthèse du jour"
-              : state.kind === "empty"
-                ? "Aujourd'hui"
-                : "Aujourd'hui"}
+          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/70">
+            {state.kind === "error" ? "Diagnostic" : "Plan de journée"}
           </p>
-          <h2 className="mt-1 text-xl font-semibold cmm-text-primary">
+          <h2 className="mt-1 text-[clamp(2.5rem,5vw,4rem)] font-black leading-[0.93] tracking-[-0.04em] text-white">
             {state.kind === "error"
-              ? "Lecture temporairement indisponible"
+              ? "Synthèse indisponible"
               : state.kind === "empty"
-                ? "Pas encore d'activité sur cette fenêtre"
-                : "Ce qu'il faut lire maintenant"}
+                ? "Calme plat"
+                : "Aujourd'hui"}
           </h2>
         </div>
-        {"syncedAtLabel" in state ? (
-          <p className="cmm-text-caption font-semibold cmm-text-muted">
-            Dernière synchro {state.syncedAtLabel}
-          </p>
-        ) : null}
+        {"syncedAtLabel" in state && (
+          <div className="flex items-center gap-2 rounded-full border border-white/20 bg-black/20 px-3 py-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-white">
+              Sync {state.syncedAtLabel}
+            </span>
+          </div>
+        )}
       </div>
 
+      {/* Tiles ready */}
       {state.kind === "ready" ? (
-        <div className="grid gap-3 md:grid-cols-3">
-          {[
-            state.latestActivity,
-            state.validation,
-            state.nextAction,
-          ].map((tile) => (
-            <article
-              key={tile.label}
-              className={`rounded-2xl border px-4 py-4 ${tileBorderClass(tile.label)}`}
-            >
-              <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
-                {tile.label}
-              </p>
-              <p className="mt-2 text-lg font-semibold cmm-text-primary">
-                {tile.title}
-              </p>
-              <p className="mt-1 cmm-text-small cmm-text-secondary">
-                {tile.detail}
-              </p>
-              <p className="mt-2 cmm-text-caption cmm-text-muted">{tile.meta}</p>
-              {tile.label.includes("Next action") ||
-              tile.label.includes("Prochaine action") ? (
-                <Link
-                  href={state.nextAction.href}
-                  className="mt-3 inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-primary transition hover:bg-slate-100"
-                >
-                  {state.nextAction.title}
-                </Link>
-              ) : null}
-            </article>
-          ))}
+        <div className="grid gap-4 md:grid-cols-3">
+          {[state.latestActivity, state.validation, state.nextAction].map((tile, i) => {
+            const accent = tileAccent(tile.label);
+            return (
+              <motion.article
+                key={tile.label}
+                custom={i}
+                initial="hidden"
+                animate="show"
+                variants={fadeUp}
+                className="group relative overflow-hidden rounded-3xl border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.4)]"
+              >
+                {/* Fond sombre isolé */}
+                <div className="pointer-events-none absolute inset-0 rounded-3xl bg-black/30 transition-colors duration-300 group-hover:bg-black/35" />
+                {/* Barre colorée top */}
+                <div className={cn("absolute inset-x-0 top-0 h-[3px] z-10", accent.bar)} />
+
+                <div className="relative z-10 p-6">
+                  {/* Header tile */}
+                  <div className="flex items-center justify-between mb-5">
+                    <div className={cn("flex items-center justify-center rounded-xl border p-2.5", accent.icon)}>
+                      {getTileIcon(tile.label)}
+                    </div>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
+                      {tile.label}
+                    </p>
+                  </div>
+
+                  {/* Contenu */}
+                  <div className="space-y-2">
+                    <p className="text-xl font-black tracking-tight text-white leading-snug">
+                      {tile.title}
+                    </p>
+                    <p className="text-sm text-white/75 leading-relaxed line-clamp-3">
+                      {tile.detail}
+                    </p>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-white/40">
+                      {tile.meta}
+                    </span>
+                    {(tile.label.includes("Next action") || tile.label.includes("Prochaine action")) && (
+                      <Link
+                        href={state.nextAction.href}
+                        className="group/link flex items-center gap-1.5 text-[11px] font-bold text-amber-300 hover:text-amber-200 transition-colors"
+                      >
+                        Exécuter
+                        <ArrowRight size={11} className="transition-transform group-hover/link:translate-x-0.5" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </motion.article>
+            );
+          })}
         </div>
       ) : (
-        <div
-          className={`rounded-2xl border px-4 py-4 ${
-            state.kind === "error"
-              ? "border-rose-200 bg-rose-50"
-              : "border-amber-200 bg-amber-50"
-          }`}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="relative overflow-hidden rounded-3xl border border-white/10"
         >
-          <p
-            className={`cmm-text-caption font-semibold uppercase tracking-[0.14em] ${
-              state.kind === "error" ? "text-rose-700" : "text-amber-700"
-            }`}
-          >
-            {state.kind === "error" ? "Erreur" : "Aucune activité"}
-          </p>
-          <p
-            className={`mt-2 text-lg font-semibold ${
-              state.kind === "error" ? "text-rose-900" : "cmm-text-primary"
-            }`}
-          >
-            {state.kind === "error"
-              ? state.message
-              : state.message}
-          </p>
-          <p className="mt-1 cmm-text-small cmm-text-secondary">
-            Les autres blocs du cockpit restent utilisables.
-          </p>
-          <Link
-            href={state.nextAction.href}
-            className="mt-4 inline-flex rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-primary transition hover:bg-slate-100"
-          >
-            {state.nextAction.title}
-          </Link>
-        </div>
+          <div className="pointer-events-none absolute inset-0 rounded-3xl bg-black/30" />
+          <div className="relative z-10 p-7">
+            <div className="flex items-start gap-5">
+              <div className="shrink-0 rounded-2xl bg-white/10 p-3 text-white">
+                <AlertCircle size={22} />
+              </div>
+              <div className="flex-1 space-y-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
+                    {state.kind === "error" ? "Interruption de flux" : "Fenêtre vide"}
+                  </p>
+                  <h3 className="mt-1 text-xl font-black text-white">
+                    {state.kind === "error" ? state.message : "Aucune activité récente"}
+                  </h3>
+                  <p className="mt-1.5 text-sm text-white/75 leading-relaxed max-w-xl">
+                    {state.kind === "error"
+                      ? "Nos services tentent de rétablir la connexion. Les autres modules restent opérationnels."
+                      : "C'est le moment idéal pour planifier une nouvelle intervention ou valider les rapports en attente."}
+                  </p>
+                </div>
+                <Link
+                  href={state.nextAction.href}
+                  className="group/cta inline-flex items-center gap-2.5 rounded-2xl bg-amber-300 px-5 py-3 text-[13px] font-black text-amber-950 shadow-[0_4px_16px_-4px_rgba(0,0,0,0.3)] transition-all hover:-translate-y-0.5 hover:bg-amber-200"
+                >
+                  {state.nextAction.title}
+                  <ArrowRight size={14} className="transition-transform group-hover/cta:translate-x-1" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </motion.div>
       )}
     </section>
   );

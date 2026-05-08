@@ -38,14 +38,20 @@ type QuizSrsTableClient = {
   };
 };
 
+type AccessTokenProvider = () => Promise<string | null>;
+
 /**
  * Charge les données SRS pour une liste de questions
  */
-export async function loadQuizSRSData(userId: string | null, questionIds: string[]): Promise<Record<string, SRSStats>> {
+export async function loadQuizSRSData(
+  userId: string | null,
+  questionIds: string[],
+  accessTokenProvider?: AccessTokenProvider,
+): Promise<Record<string, SRSStats>> {
   const data: Record<string, SRSStats> = {};
 
   if (userId) {
-    const supabase = getSupabaseBrowserClient() as unknown as QuizSrsTableClient;
+    const supabase = getSupabaseBrowserClient(accessTokenProvider) as unknown as QuizSrsTableClient;
     const { data: dbData, error } = await supabase
       .from("quiz_srs")
       .select("*")
@@ -90,9 +96,13 @@ export async function loadQuizSRSData(userId: string | null, questionIds: string
 /**
  * Sauvegarde l'état SRS d'une question
  */
-export async function saveQuizSRSState(userId: string | null, stats: SRSStats): Promise<void> {
+export async function saveQuizSRSState(
+  userId: string | null,
+  stats: SRSStats,
+  accessTokenProvider?: AccessTokenProvider,
+): Promise<void> {
   if (userId) {
-    const supabase = getSupabaseBrowserClient() as unknown as QuizSrsTableClient;
+    const supabase = getSupabaseBrowserClient(accessTokenProvider) as unknown as QuizSrsTableClient;
     const { error } = await supabase
       .from("quiz_srs")
       .upsert({

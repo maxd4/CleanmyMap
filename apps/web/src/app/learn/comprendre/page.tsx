@@ -1,13 +1,19 @@
 "use client";
 import { useEffect } from "react";
+import { LearnComprendreVisualIntro } from "@/components/learn/learn-comprendre-visual-intro";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
 import { ImpactOrderOfMagnitudeSection } from "@/components/learn/impact-order-of-magnitude";
 import { GIECContent } from "@/components/learn/giac-content";
 import { PlanetaryBoundariesInteractive } from "@/components/learn/planetary-boundaries";
 import { SustainableGoalsInteractive } from "@/components/learn/sustainable-goals";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
 import { recordLearnPageVisit } from "@/lib/learning/learn-progress";
 
 export default function LearnComprendrePage() {
+  const { locale } = useSitePreferences();
+  const understandCard = LEARN_OVERVIEW_CARDS[locale][0];
+
   useEffect(() => {
     recordLearnPageVisit("comprendre");
   }, []);
@@ -37,6 +43,21 @@ export default function LearnComprendrePage() {
       }}
     >
       <div className="space-y-8">
+        <LearnComprendreVisualIntro
+          locale={locale}
+          card={understandCard}
+          question={locale === "fr" ? "Comprendre avant d'agir" : "Understand before acting"}
+          clue={
+            locale === "fr"
+              ? "Repères, ordres de grandeur et méthode se lisent ensemble avant de passer au geste."
+              : "Cues, orders of magnitude and method are read together before moving to action."
+          }
+          action={{
+            href: "/learn/sentrainer",
+            label: locale === "fr" ? "Passer au quiz" : "Go to quiz",
+          }}
+          className="border-violet-200 bg-white/88"
+        />
         <ImpactOrderOfMagnitudeSection />
         <GIECContent />
         <PlanetaryBoundariesInteractive />

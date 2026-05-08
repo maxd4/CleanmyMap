@@ -9,7 +9,7 @@ import { CmmSkeleton } from '@/components/ui/cmm-skeleton'
 
 // Lazy load the complex form to avoid bundle bloat
 const ComplexActionForm = dynamic(() => 
- import('./action-declaration-form').then(mod => ({ default: mod.ActionDeclarationForm })),
+ import('./action-declaration-form/').then(mod => ({ default: mod.ActionDeclarationForm })),
  { 
  loading: () => (
  <div className="w-full cmm-surface rounded-3xl border p-6 space-y-6 shadow-sm">

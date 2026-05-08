@@ -1,7 +1,10 @@
 import { requireAdminAccess } from"@/lib/authz";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 import { computeEventConversions } from"@/lib/community/engagement";
-import { parseCommunityEventDescription } from"@/lib/community/event-ops";
+import {
+ formatCleanupWasteTypesLabel,
+ parseCommunityEventDescription,
+} from"@/lib/community/event-ops";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import type { CommunityEventRow, EventRsvpRow } from"@/types/database";
 import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
@@ -112,6 +115,11 @@ export async function GET(request: Request) {
  capacityTarget: ops.capacityTarget,
  attendanceCount: ops.attendanceCount,
  postMortem: ops.postMortem,
+ cleanupObjective: ops.cleanupObjective,
+ cleanupZone: ops.cleanupZone,
+ cleanupLogisticsNeeds: ops.cleanupLogisticsNeeds,
+ cleanupSupportLevel: ops.cleanupSupportLevel,
+ cleanupWasteTypesExpected: ops.cleanupWasteTypesExpected,
  rsvpCounts: { yes, maybe, no, total: yes + maybe + no },
  myRsvpStatus: null,
  };
@@ -146,6 +154,11 @@ export async function GET(request: Request) {
 "rsvp_maybe",
 "rsvp_no",
 "attendance_count",
+"cleanup_objective",
+"cleanup_zone",
+"cleanup_logistics_needs",
+"cleanup_support_level",
+"cleanup_waste_types_expected",
 "linked_actions",
 "fill_rate_pct",
 "rsvp_to_attendance_pct",
@@ -165,6 +178,11 @@ export async function GET(request: Request) {
  row.rsvpMaybe,
  row.rsvpNo,
  row.attendanceCount,
+ row.cleanupObjective,
+ row.cleanupZone,
+ row.cleanupLogisticsNeeds,
+ row.cleanupSupportLevel,
+ formatCleanupWasteTypesLabel(row.cleanupWasteTypesExpected),
  row.linkedActions,
  row.fillRate,
  row.rsvpToAttendanceRate,

@@ -97,7 +97,7 @@
   "learnHub": {
     "header_suptitle": "Parcours pédagogique",
     "header_title": "Comprendre pour agir",
-    "header_desc": "Le hub ouvre quatre pages dédiées pour comprendre le contexte, lire des ordres de grandeur, s'entraîner, adopter de bonnes pratiques et retrouver les ressources utiles. La méthodologie reste séparée.",
+    "header_desc": "Le hub sert d'index et de reprise: on retrouve la dernière étape, puis on rouvre les quatre pages dédiées sans dupliquer leur contenu. La méthodologie reste séparée.",
     "tabs": {
       "comprendre": "Comprendre",
       "sentrainer": "S'entraîner",

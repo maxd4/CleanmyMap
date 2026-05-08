@@ -27,6 +27,9 @@ Fallback statique:
 - Validation d'entree stricte
 - Controle de role avant operations sensibles
 - Journalisation des operations admin
+- Sur les formulaires publics, anti-spam deterministe (`honeypot`, `submittedAt`)
+- Reponses 429 homogenes sur les surfaces publiques
+- Permissions minimales sur les jobs CI qui appellent ces routes
 
 ## Zones sensibles
 - `/api/admin/*`

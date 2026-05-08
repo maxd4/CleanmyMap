@@ -9,12 +9,14 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
       request: {
         organizationName: "Bas Belleville Atelier",
         organizationType: "commerce",
+        partnerScope: "local",
         legalIdentity: "Bas Belleville Atelier SAS",
         coverage: {
           arrondissements: [10, 11, 18],
           quartiers: ["Bas Belleville"],
         },
         contributionTypes: ["accueil", "communication"],
+        relayActions: "Diffusion de quartier et relais commerçant.",
         availability: {
           slots: [
             {
@@ -60,12 +62,14 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
       request: {
         organizationName: "Partner Test",
         organizationType: "commerce",
+        partnerScope: "local",
         legalIdentity: "Partner Test SAS",
         coverage: {
           arrondissements: [11],
           quartiers: [],
         },
         contributionTypes: ["accueil"],
+        relayActions: "",
         availability: {
           slots: [
             {
@@ -85,5 +89,40 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
     expect(isPlaceholderUrl("https://example.com/partner-test")).toBe(true);
     expect(entry.primaryChannel).toBeUndefined();
     expect(entry.websiteUrl).toBeUndefined();
+  });
+
+  it("keeps national partners out of the Paris arrondissement logic", () => {
+    const entry = buildPublishedPartnerAnnuaireEntry({
+      requestId: "req-789",
+      request: {
+        organizationName: "Gestes Propres",
+        organizationType: "association",
+        partnerScope: "national",
+        legalIdentity: "Gestes Propres",
+        coverage: {
+          arrondissements: [],
+          quartiers: [],
+        },
+        contributionTypes: ["communication", "logistique"],
+        relayActions: "Diffusion nationale et relais d'antennes locales.",
+        availability: {
+          slots: [
+            {
+              day: "mon",
+              start: "09:00",
+              end: "17:00",
+            },
+          ],
+        },
+        contactName: "Coordination nationale",
+        contactChannel: "Site web",
+        contactDetails: "https://gestespropres.org",
+        motivation: "Association nationale de référence pour les relais terrain.",
+      },
+    });
+
+    expect(entry.location).toBe("Association nationale");
+    expect(entry.coveredArrondissements).toEqual([]);
+    expect(entry.lat).toBeCloseTo(46.603354, 6);
   });
 });

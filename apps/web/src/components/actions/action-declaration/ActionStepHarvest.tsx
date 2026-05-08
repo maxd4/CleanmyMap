@@ -88,6 +88,13 @@ export function ActionStepHarvest({
             sourceLabel={sourceLabel}
             confidenceLabel={confidenceLabel}
             onWasteKgChange={(value) => updateField("wasteKg", value)}
+            wastePlastiqueKg={form.wastePlastiqueKg}
+            wasteVerreKg={form.wasteVerreKg}
+            wasteMetalKg={form.wasteMetalKg}
+            wasteMixteKg={form.wasteMixteKg}
+            triQuality={form.triQuality}
+            notes={form.notes}
+            onTriChange={(key, value) => updateField(key, value)}
           />
           <HarvestMegotsSection
             wasteMegotsKg={form.wasteMegotsKg}

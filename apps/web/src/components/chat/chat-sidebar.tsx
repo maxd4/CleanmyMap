@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import type { LucideIcon } from "lucide-react";
 
 import type { ChatChannelType } from "@/lib/chat/channels";
@@ -24,7 +25,7 @@ type ChatSidebarProps = {
   onSelectChannel: (channelType: ChatChannelType) => void;
 };
 
-export function ChatSidebar({
+export const ChatSidebar = memo(function ChatSidebar({
   channels,
   currentChannelType,
   onSelectChannel,
@@ -48,4 +49,4 @@ export function ChatSidebar({
       ))}
     </aside>
   );
-}
+});

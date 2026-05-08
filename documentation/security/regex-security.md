@@ -72,6 +72,16 @@ function parseStrings(raw: string): string[] {
 }
 ```
 
+### 4. Préférer les helpers explicites
+
+Quand le format est structuré, préférer un parseur dédié plutôt qu'une regex.
+
+Exemples dans le repo:
+
+- `src/lib/security/validation.ts::isIsoDateString()`
+- `src/lib/security/validation.ts::is24HourTimeString()`
+- `src/lib/security/validation.ts::normalizePublicChannelUrl()`
+
 ## Patterns sûrs
 
 ### 1. Quantificateurs bornés
@@ -181,6 +191,7 @@ function collectHumanStrings(raw: string): string[] {
 - [ ] `new URL()` préféré à `startsWith("https://")`
 - [ ] Pas de lookahead/arrière avec quantificateurs
 - [ ] Regex de test ont des alternatives explicites (pas de `.*`)
+- [ ] Les formats simples utilisent un helper explicite quand c'est possible
 
 ## Références
 

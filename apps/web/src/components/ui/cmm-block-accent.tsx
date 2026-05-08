@@ -1,41 +1,51 @@
 "use client";
 
-import { cn } from"@/lib/utils";
+import { cn } from "@/lib/utils";
 import {
- type BlockAccent,
- type BlockId,
- getAccentClasses,
- getBlockAccent,
- getBlockClasses,
-} from"@/lib/ui/block-accents";
+  type BlockAccent,
+  type BlockId,
+  getAccentClasses,
+  getBlockAccent,
+  getBlockClasses,
+} from "@/lib/ui/block-accents";
 
-export type AccentElement ="dot" |"bar" |"ring" |"gradient";
+export type AccentElement = "dot" | "bar" | "ring" | "gradient" | "glow";
 
 export interface CmmBlockAccentProps {
- /** Accent à utiliser (direct) */
- accent?: BlockAccent;
- /** Section pour dériver l'accent (alternative) */
- blockId?: BlockId;
- /** Type d'élément d'accent */
- element?: AccentElement;
- /** Position de la barre (si element='bar') */
- barPosition?:"left" |"right" |"top" |"bottom";
- /** Taille du dot (si element='dot') */
- dotSize?:"sm" |"md" |"lg";
- /** Appliquer l'accent au survol uniquement */
- hoverOnly?: boolean;
- /** Classes additionnelles */
- className?: string;
- /** Contenu enfant (optionnel) */
- children?: React.ReactNode;
+  /** Accent à utiliser (direct) */
+  accent?: BlockAccent;
+  /** Section pour dériver l'accent (alternative) */
+  blockId?: BlockId;
+  /** Type d'élément d'accent */
+  element?: AccentElement;
+  /** Position de la barre (si element='bar') */
+  barPosition?: "left" | "right" | "top" | "bottom";
+  /** Taille du dot (si element='dot') */
+  dotSize?: "sm" | "md" | "lg";
+  /** Appliquer l'accent au survol uniquement */
+  hoverOnly?: boolean;
+  /** Classes additionnelles */
+  className?: string;
+  /** Contenu enfant (optionnel) */
+  children?: React.ReactNode;
 }
 
 /**
  * CmmBlockAccent - Élément d'accent par bloc
  *
+ * Charte officielle:
+ * - Accueil   : amber   (Orange)
+ * - Agir      : emerald (Vert)
+ * - Visualiser: sky     (Bleu ciel)
+ * - Impact    : red     (Rouge)
+ * - Réseau    : indigo  (Indigo/Violet)
+ * - Discussion: pink    (Rose)
+ * - Apprendre : yellow  (Jaune)
+ * - Piloter   : amber   (Brun)
+ *
  * Règles de la charte:
- * - Accent = 1 des 4 éléments max: dot, bar, ring, gradient
- * - Interdit: glow permanent, blur sur texte, gradients saturés
+ * - Accent = 1 des 4 éléments max: dot, bar, ring, gradient, glow
+ * - Interdit: glow permanent aggressif, blur sur texte
  * - Gradient subtil: 5-10% max
  *
  * Usage:
@@ -44,110 +54,124 @@ export interface CmmBlockAccentProps {
  * <CmmCard accent="sky">...</CmmCard>
  */
 export function CmmBlockAccent({
- accent: accentProp,
- blockId,
- element ="dot",
- barPosition ="left",
- dotSize ="md",
- hoverOnly = false,
- className,
- children,
+  accent: accentProp,
+  blockId,
+  element = "dot",
+  barPosition = "left",
+  dotSize = "md",
+  hoverOnly = false,
+  className,
+  children,
 }: CmmBlockAccentProps) {
- const accentKey: BlockAccent = accentProp ?? (blockId ? getBlockAccent(blockId) :"emerald");
+  const accentKey: BlockAccent = accentProp ?? (blockId ? getBlockAccent(blockId) : "emerald");
 
- if (!accentProp && !blockId) {
- console.warn("CmmBlockAccent: either accent or blockId must be provided");
- return null;
- }
+  if (!accentProp && !blockId) {
+    console.warn("CmmBlockAccent: either accent or blockId must be provided");
+    return null;
+  }
 
- const classes = getAccentClasses(accentKey);
+  const classes = getAccentClasses(accentKey);
 
- // Dot - petit cercle indicatif
- if (element ==="dot") {
- const sizeClasses = {
- sm:"h-1.5 w-1.5",
- md:"h-2 w-2",
- lg:"h-2.5 w-2.5",
- }[dotSize];
+  // Dot - petit cercle indicatif avec micro-glow
+  if (element === "dot") {
+    const sizeClasses = {
+      sm: "h-1.5 w-1.5",
+      md: "h-2 w-2",
+      lg: "h-2.5 w-2.5",
+    }[dotSize];
 
- return (
- <span
- className={cn(
-"inline-block rounded-full",
- sizeClasses,
- classes.dot,
- hoverOnly &&"opacity-60",
- hoverOnly &&"group-hover:opacity-100",
- className
- )}
- />
- );
- }
-
- // Bar - barre latérale sur cards
- if (element ==="bar") {
- const positionClasses = {
- left:"absolute left-0 top-0 bottom-0 w-1 rounded-l",
- right:"absolute right-0 top-0 bottom-0 w-1 rounded-r",
- top:"absolute top-0 left-0 right-0 h-1 rounded-t",
- bottom:"absolute bottom-0 left-0 right-0 h-1 rounded-b",
- }[barPosition];
-
- return (
- <span
- className={cn(
- positionClasses,
- classes.dot, // utilise la couleur du dot pour la barre
- hoverOnly &&"opacity-0",
- hoverOnly &&"group-hover:opacity-100",
-"transition-opacity",
- className
- )}
- />
- );
- }
-
- // Ring - anneau léger pour focus/hover
- if (element ==="ring") {
- return (
- <span
- className={cn(
-"absolute inset-0 rounded-inherit ring-2",
- classes.ring,
-"ring-opacity-0",
- !hoverOnly &&"focus-within:ring-opacity-100",
-"group-hover:ring-opacity-50",
-"transition-all",
- className
- )}
- />
- );
- }
-
- // Gradient - gradient subtil (5-10% max)
-  if (element ==="gradient") {
     return (
       <span
         className={cn(
-          "absolute inset-0 opacity-[0.05]",
-          "bg-gradient-to-br",
-          accentKey ==="slate" &&"from-[#2F80C3] to-transparent",
-          accentKey ==="amber" &&"from-[#18B68F] to-transparent",
-          accentKey ==="sky" &&"from-[#27C3D9] to-transparent",
-          accentKey ==="emerald" &&"from-[#18B68F] to-transparent",
-          accentKey ==="violet" &&"from-[#5B5FCF] to-transparent",
-          accentKey ==="rose" &&"from-[#4E9A51] to-transparent",
-          accentKey ==="indigo" &&"from-[#5B5FCF] to-transparent",
-          hoverOnly &&"opacity-0",
-          hoverOnly &&"group-hover:opacity-[0.05]",
-          "transition-opacity",
+          "relative inline-block rounded-full transition-all duration-300",
+          sizeClasses,
+          classes.dot,
+          classes.glow,
+          hoverOnly && "opacity-60",
+          hoverOnly && "group-hover:opacity-100",
           className
         )}
- />
- );
- }
+      >
+        <span className={cn("absolute inset-0 rounded-full animate-pulse opacity-40", classes.dot)} />
+      </span>
+    );
+  }
 
- return children ?? null;
+  // Bar - barre latérale sur cards avec glow
+  if (element === "bar") {
+    const positionClasses = {
+      left: "absolute left-0 top-0 bottom-0 w-1 rounded-r-sm",
+      right: "absolute right-0 top-0 bottom-0 w-1 rounded-l-sm",
+      top: "absolute top-0 left-0 right-0 h-1 rounded-b-sm",
+      bottom: "absolute bottom-0 left-0 right-0 h-1 rounded-t-sm",
+    }[barPosition];
+
+    return (
+      <span
+        className={cn(
+          positionClasses,
+          classes.dot,
+          classes.glow,
+          hoverOnly && "opacity-0",
+          hoverOnly && "group-hover:opacity-100",
+          "transition-all duration-500",
+          className
+        )}
+      />
+    );
+  }
+
+  // Ring - anneau léger pour focus/hover
+  if (element === "ring") {
+    return (
+      <span
+        className={cn(
+          "absolute inset-0 rounded-inherit ring-1",
+          classes.ring,
+          "ring-opacity-0",
+          !hoverOnly && "focus-within:ring-opacity-100",
+          "group-hover:ring-opacity-100",
+          "transition-all duration-300",
+          className
+        )}
+      />
+    );
+  }
+
+  // Gradient - gradient multi-stop riche (10-15% opacité max pour profondeur)
+  if (element === "gradient") {
+    return (
+      <span
+        className={cn(
+          "absolute inset-0 opacity-[0.12]",
+          "bg-gradient-to-br",
+          classes.gradient,
+          hoverOnly && "opacity-0",
+          hoverOnly && "group-hover:opacity-[0.15]",
+          "transition-opacity duration-500",
+          className
+        )}
+      />
+    );
+  }
+
+  // Glow - Halo de lumière diffus
+  if (element === "glow") {
+    return (
+      <span
+        className={cn(
+          "absolute inset-0 pointer-events-none opacity-40",
+          classes.glow,
+          hoverOnly && "opacity-0",
+          hoverOnly && "group-hover:opacity-60",
+          "transition-opacity duration-700",
+          className
+        )}
+      />
+    );
+  }
+
+  return children ?? null;
 }
 
 /**
@@ -155,95 +179,71 @@ export function CmmBlockAccent({
  * Usage dans les composants de page/rubrique
  */
 export function useBlockAccent(blockId: BlockId) {
- return {
- accent: getBlockClasses(blockId),
- accentKey: blockId,
- classes: getBlockClasses(blockId),
- };
+  return {
+    accent: getBlockClasses(blockId),
+    accentKey: blockId,
+    classes: getBlockClasses(blockId),
+  };
 }
 
 /**
  * Wrapper de card avec accent de bloc
  */
 export interface CmmBlockCardProps {
- blockId: BlockId;
- children: React.ReactNode;
- className?: string;
- /** Type d'accent visuel */
- accentType?:"bar" |"ring" |"dot" |"gradient" |"none";
- /** Position de la barre si accentType='bar' */
- barPosition?:"left" |"right" |"top" |"bottom";
+  blockId: BlockId;
+  children: React.ReactNode;
+  className?: string;
+  /** Type d'accent visuel */
+  accentType?: "bar" | "ring" | "dot" | "gradient" | "glow" | "none";
+  /** Position de la barre si accentType='bar' */
+  barPosition?: "left" | "right" | "top" | "bottom";
 }
 
 export function CmmBlockCard({
- blockId,
- children,
- className,
- accentType ="bar",
- barPosition ="left",
+  blockId,
+  children,
+  className,
+  accentType = "bar",
+  barPosition = "left",
 }: CmmBlockCardProps) {
- const accent = getBlockClasses(blockId);
+  const accent = getBlockClasses(blockId);
+  // Source de vérité : getBlockAccent() lit BLOCK_ACCENT_MAP
+  const accentKey = getBlockAccent(blockId);
 
- return (
- <div
- className={cn(
-"relative overflow-hidden rounded-2xl border p-5",
- accent.surface,
- accent.border,
-"shadow-sm",
- className
- )}
- >
- {/* Accent visuel selon le type */}
- {accentType ==="bar" && (
- <CmmBlockAccent
- accent={blockId ==="home" ?"slate" :
- blockId ==="act" ?"amber" :
- blockId ==="visualize" ?"sky" :
- blockId ==="impact" ?"emerald" :
- blockId ==="network" ?"violet" :
- blockId ==="learn" ?"rose" :"indigo"}
- element="bar"
- barPosition={barPosition}
- />
- )}
- {accentType ==="dot" && (
- <div className="absolute right-5 top-5">
- <CmmBlockAccent
- accent={blockId ==="home" ?"slate" :
- blockId ==="act" ?"amber" :
- blockId ==="visualize" ?"sky" :
- blockId ==="impact" ?"emerald" :
- blockId ==="network" ?"violet" :
- blockId ==="learn" ?"rose" :"indigo"}
- element="dot"
- />
- </div>
- )}
- {accentType ==="ring" && (
- <CmmBlockAccent
- accent={blockId ==="home" ?"slate" :
- blockId ==="act" ?"amber" :
- blockId ==="visualize" ?"sky" :
- blockId ==="impact" ?"emerald" :
- blockId ==="network" ?"violet" :
- blockId ==="learn" ?"rose" :"indigo"}
- element="ring"
- />
- )}
- {accentType ==="gradient" && (
- <CmmBlockAccent
- accent={blockId ==="home" ?"slate" :
- blockId ==="act" ?"amber" :
- blockId ==="visualize" ?"sky" :
- blockId ==="impact" ?"emerald" :
- blockId ==="network" ?"violet" :
- blockId ==="learn" ?"rose" :"indigo"}
- element="gradient"
- />
- )}
+  return (
+    <div
+      className={cn(
+        "group relative overflow-hidden rounded-[2rem] border p-6 transition-all duration-500",
+        accent.surface,
+        accent.border,
+        "hover:border-white/20",
+        accent.shadow,
+        className
+      )}
+    >
+      {/* Accent visuel selon le type */}
+      {accentType === "bar" && (
+        <CmmBlockAccent accent={accentKey} element="bar" barPosition={barPosition} />
+      )}
+      {accentType === "dot" && (
+        <div className="absolute right-6 top-6">
+          <CmmBlockAccent accent={accentKey} element="dot" />
+        </div>
+      )}
+      {accentType === "ring" && (
+        <CmmBlockAccent accent={accentKey} element="ring" />
+      )}
+      {accentType === "gradient" && (
+        <CmmBlockAccent accent={accentKey} element="gradient" />
+      )}
+      {accentType === "glow" && (
+        <CmmBlockAccent accent={accentKey} element="glow" hoverOnly />
+      )}
 
- {children}
- </div>
- );
+      {/* Contenu avec léger z-index pour rester au-dessus des glows */}
+      <div className="relative z-10">
+        {children}
+      </div>
+    </div>
+  );
 }

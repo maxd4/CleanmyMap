@@ -118,7 +118,7 @@ Ombres:       Soft uniquement (pas de elevated/hero)
 AVANT (exhaustif)                    APRÈS (minimaliste)
 ────────────────────────────────────────────────────────
 Mesh gradient + grain               Fond uni --bg-canvas
-5 couleurs d'accent                 1 couleur (éméralde)
+Accents vibrants par bloc            Accents sobres par bloc
 Cards avec glassmorphism            Cards flat légères
 Shadow-elevated                     Shadow-soft ou none
 Typo gradient                       Typo couleur unie
@@ -268,7 +268,7 @@ const displayMode = document.documentElement.dataset.displayMode || "exhaustif";
 - [ ] Fond uni sans gradient
 - [ ] Pas de blur sur surfaces
 - [ ] Ombres soft uniquement
-- [ ] Émeraude seule couleur d'accent
+- [ ] Accents par bloc présents mais sobres
 - [ ] Animations fade uniquement
 - [ ] Espacement augmenté
 

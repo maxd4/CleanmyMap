@@ -14,17 +14,21 @@ function hasHttpsProtocol(url: string | undefined): boolean {
 
 export async function getSupabaseClerkRlsClient(): Promise<SupabaseClient | null> {
   const { getToken } = await auth();
-  const template = env.CLERK_SUPABASE_JWT_TEMPLATE?.trim() || "supabase";
-  const token = await getToken({ template }).catch(() => null);
-
-  if (!token) {
-    return null;
-  }
+  const token = await getToken().catch(() => null);
 
   const url = env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!hasHttpsProtocol(url) || !anonKey || anonKey.length < 20) {
+    return null;
+  }
+
+  if (!token) {
+    if (process.env.NODE_ENV !== "test") {
+      console.warn(
+        "[Supabase RLS] Clerk session token unavailable; native Clerk/Supabase access is not ready.",
+      );
+    }
     return null;
   }
 
@@ -34,10 +38,6 @@ export async function getSupabaseClerkRlsClient(): Promise<SupabaseClient | null
       autoRefreshToken: false,
       detectSessionInUrl: false,
     },
-    global: {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    },
+    accessToken: async () => token,
   });
 }

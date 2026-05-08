@@ -1,10 +1,8 @@
 "use client";
 
-
-import { MapPin, Navigation, Route, Map as MapIcon, Crosshair, HelpCircle } from "lucide-react";
+import { MapPin, Navigation, Crosshair, Route, CheckCircle2, AlertCircle, Loader2, MapPinOff, Pencil, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
-import { CmmButton } from "@/components/ui/cmm-button";
 import type { FormState } from "../action-declaration-form.model";
 import type { ActionDrawing } from "@/lib/actions/types";
 import type { UpdateFormField } from "./types";
@@ -31,6 +29,132 @@ interface ActionStepLocationProps {
   onAutofillGps: () => void;
 }
 
+// ─── GPS button ───────────────────────────────────────────────────────────────
+
+function GpsButton({
+  status,
+  message,
+  onAutofill,
+}: {
+  status: ActionStepLocationProps["gpsStatus"];
+  message: string | null;
+  onAutofill: () => void;
+}) {
+  const isLocating = status === "locating";
+  const isSuccess = status === "success";
+  const isError = status === "error";
+
+  return (
+    <div className="space-y-1.5">
+      <button
+        type="button"
+        onClick={onAutofill}
+        disabled={isLocating}
+        aria-label="Utiliser ma géolocalisation"
+        className={cn(
+          "flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all",
+          isSuccess
+            ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+            : isError
+              ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
+              : "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 active:scale-[0.98]",
+          isLocating && "cursor-not-allowed opacity-70"
+        )}
+      >
+        {isLocating ? (
+          <Loader2 size={16} className="animate-spin" />
+        ) : isSuccess ? (
+          <CheckCircle2 size={16} />
+        ) : isError ? (
+          <AlertCircle size={16} />
+        ) : (
+          <Crosshair size={16} />
+        )}
+        {isLocating
+          ? "Localisation en cours…"
+          : isSuccess
+            ? "Position détectée"
+            : isError
+              ? "Réessayer la géolocalisation"
+              : "Utiliser ma position GPS"}
+      </button>
+
+      {message && (
+        <p className={cn(
+          "text-xs px-1",
+          isError ? "text-rose-500" : "text-slate-400"
+        )}>
+          {isError && "⚠ "}{message}
+        </p>
+      )}
+      {isError && !message && (
+        <p className="text-xs text-rose-500 px-1">
+          Accès à la position refusé. Activez la géolocalisation dans les paramètres du navigateur.
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ─── Address input ────────────────────────────────────────────────────────────
+
+function AddressInput({
+  id,
+  icon: Icon,
+  label,
+  placeholder,
+  value,
+  onChange,
+  optional,
+}: {
+  id: string;
+  icon: React.ElementType;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+  optional?: boolean;
+}) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+        {label}
+        {optional && (
+          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-400">
+            optionnel
+          </span>
+        )}
+      </span>
+      <div className="relative">
+        <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+          <Icon size={15} />
+        </div>
+        <input
+          id={id}
+          type="text"
+          placeholder={placeholder}
+          className="w-full h-11 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </div>
+    </label>
+  );
+}
+
+// ─── Section title ────────────────────────────────────────────────────────────
+
+function SectionTitle({ color, children }: { color: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <span className={cn("h-1 w-5 rounded-full", color)} />
+      <h3 className="text-xs font-bold text-slate-500 uppercase tracking-[0.18em]">{children}</h3>
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
 export function ActionStepLocation({
   form,
   updateField,
@@ -44,187 +168,191 @@ export function ActionStepLocation({
   onAutofillGps,
 }: ActionStepLocationProps) {
   const isCleanPlaceMode = recordType === "clean_place";
-  const manualDrawingSummary = summarizeActionDrawingValidation(manualDrawing);
-  const routePreviewSummary = summarizeActionDrawingValidation(routePreviewDrawing);
-  const displayedDrawing =
-    manualDrawingSummary.normalized ?? routePreviewSummary.normalized;
-  const displayedDrawingSummary = manualDrawingSummary.normalized
-    ? manualDrawingSummary
-    : routePreviewSummary;
-  const isUsingManualDrawing = Boolean(manualDrawingSummary.normalized);
+
+  const manualSummary = summarizeActionDrawingValidation(manualDrawing);
+  const previewSummary = summarizeActionDrawingValidation(routePreviewDrawing);
+  const displayedDrawing = manualSummary.normalized ?? previewSummary.normalized;
+  const activeSummary = manualSummary.normalized ? manualSummary : previewSummary;
+  const isManual = Boolean(manualSummary.normalized);
+  const hasDrawing = Boolean(displayedDrawing);
+
+  const statusTone = isManual
+    ? manualSummary.tone
+    : hasDrawing
+      ? previewSummary.tone
+      : "neutral";
+
   const statusStyles = {
-    success:
-      "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800/60 dark:bg-emerald-950/40 dark:text-emerald-100",
-    warning:
-      "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-100",
-    error:
-      "border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-100",
-    neutral:
-      "border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200",
+    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    warning: "border-amber-200 bg-amber-50 text-amber-700",
+    error: "border-rose-200 bg-rose-50 text-rose-700",
+    neutral: "border-slate-200 bg-slate-50 text-slate-500",
   } as const;
 
-  const statusLabel = isUsingManualDrawing
-    ? "Tracé manuel validé"
-    : displayedDrawing
-      ? "Aperçu automatique"
-      : "Aucun tracé";
-  const statusMessage = isUsingManualDrawing
-    ? manualDrawingSummary.message
-    : displayedDrawing
-      ? `${routePreviewSummary.message} Dessine un tracé manuel pour verrouiller la zone.`
-      : "Ajoute un départ ou un tracé pour obtenir un aperçu plus précis.";
-  const statusTone = isUsingManualDrawing
-    ? manualDrawingSummary.tone
-    : displayedDrawing
-      ? routePreviewSummary.tone
-      : "neutral";
-  const pointCountLabel = displayedDrawing
-    ? formatGeometryPointCount(displayedDrawingSummary.pointCount)
-    : "Aucun point";
-
-  
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* 1. Address Inputs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="h-1.5 w-8 rounded-full bg-sky-500 shadow-[0_0_12px_rgba(14,165,233,0.5)]" />
-            <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
-              {isCleanPlaceMode ? "Géolocalisation du lieu propre" : "Itinéraire de collecte"}
-            </h3>
-          </div>
+    <div className="space-y-6 pb-28 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
-          <div className="space-y-4">
-            <div className="relative group">
-              <div className="absolute left-6 top-1/2 -translate-y-1/2 text-sky-500">
-                <MapPin size={20} strokeWidth={2.5} />
-              </div>
-              <input
-                type="text"
-                placeholder={isCleanPlaceMode ? "Lieu propre (ex: Square du quartier)" : "Départ (ex: Rue de Rivoli)"}
-                className="w-full h-16 pl-14 pr-6 rounded-2xl bg-white border border-slate-200 shadow-sm focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-bold text-slate-900"
-                value={form.departureLocationLabel}
-                onChange={(e) => updateField("departureLocationLabel", e.target.value)}
-              />
-            </div>
+      {/* ── Ligne 1 : Adresses + GPS + type de parcours ─────────────────── */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+        <SectionTitle color="bg-sky-500">
+          {isCleanPlaceMode ? "Géolocalisation du lieu" : "Itinéraire de collecte"}
+        </SectionTitle>
 
-            <div className="relative group">
-              <div className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400">
-                <Navigation size={20} strokeWidth={2.5} />
-              </div>
-              <input
-                type="text"
-                placeholder={isCleanPlaceMode ? "Complément du lieu (optionnel)" : "Arrivée (laissez vide si identique au départ)"}
-                className="w-full h-16 pl-14 pr-6 rounded-2xl bg-white border border-slate-200 shadow-sm focus:ring-4 focus:ring-sky-500/10 focus:border-sky-500 transition-all font-bold text-slate-900"
-                value={form.arrivalLocationLabel}
-                onChange={(e) => updateField("arrivalLocationLabel", e.target.value)}
-              />
-            </div>
+        <p className="text-xs text-slate-400 -mt-2">
+          {isCleanPlaceMode
+            ? "Indiquez l'adresse du lieu propre ou utilisez votre position GPS."
+            : "Saisissez le départ et l'arrivée, ou utilisez votre position GPS. L'arrivée est optionnelle si vous revenez au point de départ."}
+        </p>
 
-            <div className="flex items-center gap-4 pt-2">
-              <CmmButton
-                tone={gpsStatus === "success" ? "primary" : "secondary"}
-                variant="default"
-                size="sm"
-                className="h-12 rounded-xl flex-1 font-black uppercase tracking-widest text-[10px]"
-                onClick={onAutofillGps}
-                ariaLabel={gpsStatus === "locating" ? "Localisation en cours" : "Utiliser ma géolocalisation"}
-              >
-                <Crosshair size={14} className={cn("mr-2", gpsStatus === "locating" && "animate-spin")} />
-                {gpsStatus === "locating" ? "Localisation..." : "Utiliser ma géolocalisation"}
-              </CmmButton>
-
-              {!isCleanPlaceMode ? (
-                <div className="flex items-center gap-2 px-4 h-12 rounded-xl bg-slate-100 border border-slate-200">
-                  <Route size={14} className="text-slate-400" />
-                  <select
-                    className="bg-transparent border-none outline-none text-[10px] font-black uppercase tracking-widest text-slate-700"
-                    value={form.routeStyle}
-                    onChange={(e) =>
-                      updateField("routeStyle", e.target.value as FormState["routeStyle"])
-                    }
-                  >
-                    <option value="direct">Direct</option>
-                    <option value="souple">Souple</option>
-                  </select>
-                </div>
-              ) : null}
-            </div>
-            
-            {gpsMessage && (
-              <p className="px-4 text-[10px] font-bold text-sky-700 italic">
-                * {gpsMessage}
-              </p>
-            )}
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <AddressInput
+            id="departure"
+            icon={MapPin}
+            label={isCleanPlaceMode ? "Adresse du lieu" : "Départ"}
+            placeholder={isCleanPlaceMode ? "Ex : Square des Batignolles" : "Ex : Rue de Rivoli, Paris"}
+            value={form.departureLocationLabel}
+            onChange={(v) => updateField("departureLocationLabel", v)}
+          />
+          <AddressInput
+            id="arrival"
+            icon={Navigation}
+            label={isCleanPlaceMode ? "Complément" : "Arrivée"}
+            placeholder={isCleanPlaceMode ? "Précision (optionnel)" : "Ex : Place de la République"}
+            value={form.arrivalLocationLabel}
+            onChange={(v) => updateField("arrivalLocationLabel", v)}
+            optional
+          />
         </div>
 
-        {/* 2. Interactive Map */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="h-1.5 w-8 rounded-full bg-slate-900 shadow-[0_0_12px_rgba(15,23,42,0.3)]" />
-              <h3 className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
-                {isCleanPlaceMode ? "Point géographique" : "Tracé Géographique"}
-              </h3>
-            </div>
-            <div className="flex items-center gap-1 text-[10px] font-black text-slate-400 tracking-widest uppercase">
-              <HelpCircle size={12} />
-              {isCleanPlaceMode
-                ? "Situez le lieu propre sur la carte Paris + proche banlieue"
-                : "Dessinez votre parcours sur la carte Paris + proche banlieue"}
-            </div>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <GpsButton status={gpsStatus} message={gpsMessage} onAutofill={onAutofillGps} />
 
-          <div className="relative h-[340px] rounded-[2.5rem] bg-slate-100 border border-slate-200 overflow-hidden shadow-inner group">
-            <ActionDrawingMap
-              drawing={displayedDrawing}
-              onDrawingChange={setManualDrawing}
-              readOnly={false}
-              isCleanPlace={isCleanPlaceMode}
-            />
-            
-            {/* Map Controls Glass Overlay */}
-            <div className="absolute bottom-6 right-6 flex flex-col gap-2">
-              <button className="h-12 w-12 rounded-2xl bg-white/90 backdrop-blur-xl shadow-xl border border-white/50 flex items-center justify-center text-slate-600 hover:text-sky-600 transition-colors" aria-label="Ouvrir l'aperçu de la carte">
-                <MapIcon size={20} />
-              </button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 shadow-sm">
-            <div className="space-y-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em]",
-                    statusStyles[statusTone],
-                  )}
+          {!isCleanPlaceMode && (
+            <label className="block space-y-1.5">
+              <span className="text-xs font-medium text-slate-500">Type de tracé</span>
+              <div className="relative">
+                <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+                  <Route size={15} />
+                </div>
+                <select
+                  className="w-full h-11 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 appearance-none cursor-pointer"
+                  value={form.routeStyle}
+                  onChange={(e) => updateField("routeStyle", e.target.value as FormState["routeStyle"])}
                 >
-                  {statusLabel}
-                </span>
-                <span className="text-[11px] font-semibold text-slate-500">
-                  {pointCountLabel}
-                </span>
+                  <option value="direct">Direct — ligne droite entre les points</option>
+                  <option value="souple">Souple — suit les rues et chemins</option>
+                </select>
               </div>
-              <p className="text-[11px] leading-snug text-slate-500">
-                {statusMessage}
-              </p>
-            </div>
-
-            {manualDrawingSummary.normalized && onResetManualDrawing ? (
-              <button
-                type="button"
-                onClick={onResetManualDrawing}
-                className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-slate-600 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-700"
-              >
-                Réinitialiser le tracé
-              </button>
-            ) : null}
-          </div>
+            </label>
+          )}
         </div>
       </div>
+
+      {/* ── Ligne 2a : Carte (desktop/tablette uniquement) ───────────────── */}
+      <div className="hidden md:block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <SectionTitle color="bg-slate-700">
+            {isCleanPlaceMode ? "Point géographique" : "Tracé géographique"}
+          </SectionTitle>
+          <p className="text-[10px] text-slate-400">
+            {isCleanPlaceMode
+              ? "Situez le lieu sur la carte"
+              : "Dessinez votre parcours ou renseignez une adresse pour générer un tracé"}
+          </p>
+        </div>
+
+        {/* Carte */}
+        <div className="relative h-[420px] rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+          <ActionDrawingMap
+            drawing={displayedDrawing}
+            onDrawingChange={setManualDrawing}
+            readOnly={false}
+            isCleanPlace={isCleanPlaceMode}
+          />
+
+          {/* Overlay si aucun tracé */}
+          {!hasDrawing && (
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/60 backdrop-blur-[2px]">
+              <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-center shadow-sm">
+                <Pencil size={20} className="mx-auto mb-2 text-slate-400" />
+                <p className="text-sm font-semibold text-slate-700">Aucun tracé</p>
+                <p className="mt-1 text-xs text-slate-400">
+                  Saisissez une adresse de départ ou dessinez directement sur la carte
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Résumé tracé */}
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={cn(
+              "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold",
+              statusStyles[statusTone]
+            )}>
+              {isManual ? "Tracé manuel" : hasDrawing ? "Aperçu automatique" : "Aucun tracé"}
+            </span>
+            {hasDrawing && (
+              <span className="text-xs text-slate-500">
+                {formatGeometryPointCount(activeSummary.pointCount)}
+              </span>
+            )}
+          </div>
+
+          {isManual && onResetManualDrawing && (
+            <button
+              type="button"
+              onClick={onResetManualDrawing}
+              aria-label="Effacer le tracé manuel"
+              className="flex items-center gap-1.5 rounded-lg border border-rose-100 bg-white px-3 py-1.5 text-xs font-medium text-rose-500 hover:bg-rose-50 transition-colors"
+            >
+              <X size={13} />
+              Effacer
+            </button>
+          )}
+
+          {!hasDrawing && (
+            <span className="text-xs text-slate-400">
+              Saisissez un départ, utilisez le GPS ou dessinez sur la carte
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* ── Ligne 2b : Zone texte mobile (remplace la carte) ────────────── */}
+      <div className="md:hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+        <div className="flex items-center gap-2">
+          <MapPinOff size={15} className="text-slate-400" />
+          <SectionTitle color="bg-slate-400">Précisions du parcours</SectionTitle>
+        </div>
+        <p className="text-xs text-slate-400 -mt-2">
+          Décrivez les rues, zones ou étapes de votre parcours. Un admin pourra retracer le tracé depuis ces informations.
+        </p>
+        <textarea
+          rows={5}
+          placeholder="Ex : Départ rue de Rivoli, passage par les quais, retour par le boulevard Saint-Germain…"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 resize-none"
+          value={form.routeAdjustmentMessage}
+          onChange={(e) => updateField("routeAdjustmentMessage", e.target.value)}
+        />
+      </div>
+
+      {/* ── Précisions parcours (desktop aussi) ─────────────────────────── */}
+      <div className="hidden md:block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+        <SectionTitle color="bg-slate-400">Précisions du parcours</SectionTitle>
+        <p className="text-xs text-slate-400 -mt-2">
+          Optionnel — décrivez les rues ou zones si le tracé est imprécis ou absent.
+        </p>
+        <textarea
+          rows={3}
+          placeholder="Ex : Départ rue de Rivoli, passage par les quais, retour par le boulevard Saint-Germain…"
+          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 resize-none"
+          value={form.routeAdjustmentMessage}
+          onChange={(e) => updateField("routeAdjustmentMessage", e.target.value)}
+        />
+      </div>
+
     </div>
   );
 }

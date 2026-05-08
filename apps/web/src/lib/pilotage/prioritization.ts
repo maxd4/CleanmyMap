@@ -133,7 +133,7 @@ function territorialPriority(zones: ZoneComparisonRow[]): OperationalPriority {
       impactEstimate:
         "Maintien d'un niveau de surveillance sans surcharge operationnelle.",
       suggestedOwner: "Coordination territoriale",
-      recommendedAction: { href: "/sections/elus", label: "Suivre les zones" },
+      recommendedAction: { href: "/pilotage", label: "Suivre le pilotage" },
       evidence: ["Zone prioritaire: n/a"],
       engineVersion: PRIORITIZATION_RULESET.version,
     };
@@ -155,8 +155,8 @@ function territorialPriority(zones: ZoneComparisonRow[]): OperationalPriority {
       "Reduction ciblee de la pression locale via allocation terrain prioritaire.",
     suggestedOwner: "Coordination territoriale",
     recommendedAction: {
-      href: "/sections/elus",
-      label: "Voir priorisation territoriale",
+      href: "/pilotage",
+      label: "Ouvrir le pilotage",
     },
     evidence: [
       `Score normalise: ${top.normalizedScore.toFixed(1)}`,

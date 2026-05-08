@@ -1,172 +1,177 @@
 "use client";
 
-import { useMemo } from"react";
-import useSWR from"swr";
-import { fetchActions, fetchMapActions } from"@/lib/actions/http";
-import { useSitePreferences } from"@/components/ui/site-preferences-provider";
+import { useMemo } from "react";
+import useSWR from "swr";
+import { motion, AnimatePresence } from "framer-motion";
+import { fetchActions, fetchMapActions } from "@/lib/actions/http";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { RecyclingQuestionAssistant } from "./recycling-question-assistant";
+import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import { 
+  RecyclingKpiGrid, 
+  RecyclingWorkflowCard, 
+  RecyclingDataUsageCard,
+  RecyclingStreamTable,
+  RecyclingQualitySummary
+} from "./recycling-components";
+import { AlertCircle, Recycle, Sparkles, MapPin, Search } from "lucide-react";
+import { SectionShell } from "@/components/sections/rubriques/shared";
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+};
 
 export function RecyclingSection() {
- const { locale } = useSitePreferences();
- const fr = locale ==="fr";
- const actions = useSWR(["section-recycling-actions"], () =>
- fetchActions({ status:"approved", limit: 350 }),
- );
- const map = useSWR(["section-recycling-map"], () =>
- fetchMapActions({ status:"approved", days: 365, limit: 300 }),
- );
- const breakdown = useSWR("section-recycling-breakdown", async () => {
- const response = await fetch("/api/recycling/breakdown", {
- method:"GET",
- cache:"no-store",
- });
- if (!response.ok) {
- throw new Error("breakdown_unavailable");
- }
- return (await response.json()) as {
- totalKg: number;
- lines: Array<{
- category: string;
- kg: number;
- sharePercent: number;
- entries: number;
- }>;
- triQuality: { elevee: number; moyenne: number; faible: number };
- generatedAt: string;
- };
- });
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
+  
+  const actions = useSWR(["section-recycling-actions"], () =>
+    fetchActions({ status: "approved", limit: 350 }),
+  );
+  const map = useSWR(["section-recycling-map"], () =>
+    fetchMapActions({ status: "approved", days: 365, limit: 300 }),
+  );
+  
+  const breakdown = useSWR("section-recycling-breakdown", async () => {
+    const response = await fetch("/api/recycling/breakdown", {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      throw new Error("breakdown_unavailable");
+    }
+    return (await response.json()) as {
+      totalKg: number;
+      lines: Array<{
+        category: string;
+        kg: number;
+        sharePercent: number;
+        entries: number;
+      }>;
+      triQuality: { elevee: number; moyenne: number; faible: number };
+      generatedAt: string;
+    };
+  });
 
- const stats = useMemo(() => {
- const items = actions.data?.items ?? [];
- const totalKg = items.reduce(
- (acc, item) => acc + Number(item.waste_kg || 0),
- 0,
- );
- const totalButts = items.reduce(
- (acc, item) => acc + Number(item.cigarette_butts || 0),
- 0,
- );
- const avgKg = items.length > 0 ? totalKg / items.length : 0;
- const withTrace = (map.data?.items ?? []).filter((item) =>
- (item.contract?.geometry.kind ?? item.geometry_kind ??"point") !=="point",
- ).length;
- const mixedIndex =
- totalKg > 0
- ? Math.max(
- 0,
- 100 - Math.round((totalButts / Math.max(totalKg, 1)) * 0.8),
- )
- : 0;
- return {
- totalKg,
- totalButts,
- avgKg,
- withTrace,
- mixedIndex,
- count: items.length,
- };
- }, [actions.data?.items, map.data?.items]);
+  const stats = useMemo(() => {
+    const items = actions.data?.items ?? [];
+    const totalKg = items.reduce((acc, item) => acc + Number(item.waste_kg || 0), 0);
+    const totalButts = items.reduce((acc, item) => acc + Number(item.cigarette_butts || 0), 0);
+    const avgKg = items.length > 0 ? totalKg / items.length : 0;
+    const withTrace = (map.data?.items ?? []).filter((item) =>
+      (item.contract?.geometry.kind ?? item.geometry_kind ?? "point") !== "point",
+    ).length;
+    const mixedIndex = totalKg > 0 ? Math.max(0, 100 - Math.round((totalButts / Math.max(totalKg, 1)) * 0.8)) : 0;
+    
+    return { totalKg, totalButts, avgKg, withTrace, mixedIndex, count: items.length };
+  }, [actions.data?.items, map.data?.items]);
 
- const isLoading = actions.isLoading || map.isLoading;
- const hasError = Boolean(actions.error || map.error);
+  const isLoading = actions.isLoading || map.isLoading || breakdown.isLoading;
+  const hasError = Boolean(actions.error || map.error || breakdown.error);
 
- return (
- <div className="space-y-4">
- <RecyclingQuestionAssistant />
- <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
- {/* GAUCHE : KPIs et Workflow */}
- <div className="space-y-4">
- <div className="grid gap-3 md:grid-cols-2">
- <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
- <p className="cmm-text-caption font-bold uppercase tracking-wider cmm-text-muted">{fr ?"Volume triable" :"Sortable volume"}</p>
- <p className="mt-1 text-2xl font-bold cmm-text-primary">{stats.totalKg.toFixed(1)} kg</p>
- </article>
- <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
- <p className="cmm-text-caption font-bold uppercase tracking-wider cmm-text-muted">Mégots</p>
- <p className="mt-1 text-2xl font-bold cmm-text-primary">{stats.totalButts}</p>
- </article>
- <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
- <p className="cmm-text-caption font-bold uppercase tracking-wider cmm-text-muted">{fr ?"Traçabilité géo" :"Geo traceability"}</p>
- <p className="mt-1 text-2xl font-bold cmm-text-primary">{stats.withTrace}</p>
- </article>
- <article className="rounded-xl border border-slate-200 bg-slate-50 p-3 shadow-sm">
- <p className="cmm-text-caption font-bold uppercase tracking-wider cmm-text-muted">{fr ?"Indice tri propre" :"Clean sorting index"}</p>
- <p className="mt-1 text-2xl font-bold cmm-text-primary">{stats.mixedIndex}/100</p>
- </article>
- </div>
+  return (
+    <SectionShell
+      id="recycling"
+      title={fr ? "Cycle des Ressources" : "Resource Cycle"}
+      subtitle={fr ? "Suivi de la valorisation, des flux de tri et optimisation circulaire." : "Tracking recovery, sorting flows, and circular optimization."}
+      icon={Recycle}
+      gradient="from-emerald-500/20 via-slate-500/10 to-transparent"
+    >
+      <div className="space-y-16 pt-8">
+        {/* Top Control & Search Bar */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 p-6 rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+            <Sparkles size={80} className="text-emerald-400" />
+          </div>
 
- <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
- <h2 className="cmm-text-small font-semibold cmm-text-primary">{fr ?"Workflow filière (trier - qualifier - orienter)" :"Sorting workflow (sort - qualify - route)"}</h2>
- <ul className="mt-2 list-disc pl-5 cmm-text-small cmm-text-secondary space-y-1">
- <li>Mégots: contenant fermé, étiquette volume, stockage sec.</li>
- <li>Verre/métal: sacs distincts pour éviter contamination croisée.</li>
- <li>Plastique: prioriser PET/PEHD séparables, limiter les mélanges.</li>
- <li>Mixte: isoler le non triable et documenter la raison terrain.</li>
- <li className="font-semibold">Moyenne actuelle: {stats.avgKg.toFixed(1)} kg par intervention.</li>
- </ul>
- </article>
- 
- <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
- <h2 className="cmm-text-small font-semibold cmm-text-primary">{fr ?"Exploitation des données" :"Data use"}</h2>
- <ul className="mt-2 list-disc pl-5 cmm-text-small cmm-text-secondary space-y-1">
- <li>Associer catégorie de déchet dans les commentaires.</li>
- <li>Documenter zone de collecte par trace/polygone.</li>
- <li>Exporter CSV/JSON pour partage collectivités.</li>
- <li>Vérifier modération avant analyse scientifique.</li>
- </ul>
- </article>
- </div>
+          <div className="space-y-3 relative z-10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <Recycle size={18} />
+              </div>
+              <h3 className="text-xs font-black text-white uppercase tracking-[0.2em]">
+                {fr ? "Flux de Valorisation" : "Recovery Flows"}
+              </h3>
+            </div>
+            <div className="flex items-center gap-4 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+              <span className="flex items-center gap-1.5"><MapPin size={12} className="text-slate-400" /> {fr ? "Périmètre Global" : "Global Scope"}</span>
+              <div className="w-1 h-1 rounded-full bg-white/10" />
+              <span className="flex items-center gap-1.5"><Sparkles size={12} className="text-slate-400" /> {fr ? "Intelligence Circulaire" : "Circular Intelligence"}</span>
+            </div>
+          </div>
 
- {/* DROITE : Données réelles filières */}
- <div className="space-y-4">
- <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
- <h2 className="cmm-text-small font-semibold cmm-text-primary">{fr ?"Pilotage par filière" :"Line management"}</h2>
- {isLoading ? (<p className="cmm-text-small cmm-text-muted mt-2">{fr ?"Chargement des indicateurs de tri..." :"Loading sorting indicators..."}</p>) : null}
- {hasError ? (<p className="cmm-text-small text-rose-700 mt-2">{fr ?"Données de tri indisponibles." :"Sorting data unavailable."}</p>) : null}
- 
- {breakdown.isLoading ? (<p className="mt-2 cmm-text-small cmm-text-muted">{fr ?"Chargement des filières..." :"Loading sorting streams..."}</p>) : null}
- {breakdown.error ? (<p className="mt-2 cmm-text-small text-rose-700">{fr ?"Agrégation filière indisponible." :"Sorting aggregation unavailable."}</p>) : null}
- 
- {breakdown.data ? (
- <div className="mt-3 space-y-3">
- <div className="overflow-x-auto rounded-lg border border-slate-100">
- <table className="min-w-full text-left cmm-text-small">
- <thead className="bg-slate-50 cmm-text-secondary">
- <tr>
- <th className="px-3 py-2 font-semibold">{fr ?"Filière" :"Stream"}</th>
- <th className="px-3 py-2 font-semibold">{fr ?"Volume (kg)" :"Volume (kg)"}</th>
- <th className="px-3 py-2 font-semibold">{fr ?"Part" :"Share"}</th>
- <th className="px-3 py-2 font-semibold">{fr ?"Actions source" :"Source actions"}</th>
- </tr>
- </thead>
- <tbody className="divide-y divide-slate-100">
- {breakdown.data.lines.map((line) => (
- <tr key={line.category} className="cmm-text-secondary hover:bg-slate-50 transition-colors">
- <td className="px-3 py-2 capitalize font-medium">{line.category}</td>
- <td className="px-3 py-2">{line.kg.toFixed(1)}</td>
- <td className="px-3 py-2">
- <span className="inline-block w-8">{line.sharePercent.toFixed(1)}%</span>
- </td>
- <td className="px-3 py-2">{line.entries}</td>
- </tr>
- ))}
- </tbody>
- </table>
- </div>
- <div className="rounded-lg bg-slate-50 p-3">
- <p className="cmm-text-caption font-semibold cmm-text-secondary">{fr ?"Qualité de tri signalée :" :"Reported sorting quality:"}</p>
- <p className="cmm-text-caption cmm-text-secondary mt-1">
- {fr ?"Élevée" :"High"}: <span className="font-semibold text-emerald-600">{breakdown.data.triQuality.elevee}</span> •
- {fr ?"Moyenne" :"Medium"}: <span className="font-semibold text-amber-600">{breakdown.data.triQuality.moyenne}</span> •
- {fr ?"Faible" :"Low"}: <span className="font-semibold text-rose-600">{breakdown.data.triQuality.faible}</span>
- </p>
- </div>
- </div>
- ) : null}
- </article>
- </div>
- </div>
- </div>
- );
+          <div className="relative z-10 flex gap-4">
+             <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 group hover:border-emerald-500/30 transition-all cursor-pointer">
+                <Search size={16} className="group-hover:text-emerald-400 transition-colors" />
+                <span className="text-[10px] font-black uppercase tracking-widest">{fr ? "Rechercher une filière" : "Search a stream"}</span>
+             </div>
+          </div>
+        </motion.div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            <div className="lg:col-span-8 space-y-12">
+               <CmmSkeleton className="h-48 rounded-[2.5rem]" />
+               <CmmSkeleton className="h-[500px] rounded-[3rem]" />
+            </div>
+            <div className="lg:col-span-4 space-y-12">
+               <CmmSkeleton className="h-96 rounded-[3rem]" />
+               <CmmSkeleton className="h-64 rounded-[3rem]" />
+            </div>
+          </div>
+        ) : hasError ? (
+          <div className="p-20 text-center rounded-[3rem] border border-white/5 bg-slate-900/20 backdrop-blur-xl">
+            <AlertCircle className="mx-auto text-rose-500 mb-6" size={48} />
+            <h3 className="text-2xl font-black text-white mb-2">Flux non disponibles</h3>
+            <p className="text-slate-400">Une erreur est survenue lors de la récupération des données de recyclage.</p>
+          </div>
+        ) : (
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start"
+          >
+            <div className="lg:col-span-8 space-y-16">
+              <motion.div variants={itemVariants}>
+                <RecyclingKpiGrid stats={stats} fr={fr} />
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <RecyclingStreamTable breakdown={breakdown.data} fr={fr} />
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <RecyclingWorkflowCard fr={fr} />
+                <RecyclingDataUsageCard fr={fr} />
+              </motion.div>
+            </div>
+
+            <div className="lg:col-span-4 space-y-12">
+              <motion.div variants={itemVariants}>
+                <RecyclingQualitySummary quality={breakdown.data?.triQuality} fr={fr} />
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <RecyclingQuestionAssistant fr={fr} />
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </SectionShell>
+  );
 }

@@ -1,7 +1,7 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { env } from "@/lib/env";
 
-let cachedClient: ReturnType<typeof createClient> | null = null;
+let cachedClient: SupabaseClient | null = null;
 
 /**
  * Validates URL has https protocol (CodeQL-safe alternative to startsWith checks)
@@ -17,8 +17,10 @@ function hasHttpsProtocol(url: string | undefined): boolean {
   }
 }
 
-export function getSupabaseBrowserClient() {
-  if (cachedClient) return cachedClient;
+export function getSupabaseBrowserClient(
+  accessToken?: () => Promise<string | null>,
+) {
+  if (!accessToken && cachedClient) return cachedClient;
 
   const url = env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -35,7 +37,13 @@ export function getSupabaseBrowserClient() {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  cachedClient = createClient(url!, anonKey);
-  return cachedClient;
+  const client = accessToken
+    ? createClient(url!, anonKey, { accessToken })
+    : createClient(url!, anonKey);
+
+  if (!accessToken) {
+    cachedClient = client;
+  }
+
+  return client;
 }

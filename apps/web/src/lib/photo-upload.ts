@@ -58,8 +58,13 @@ export class PhotoUploadService {
   }
 
   async uploadMultiplePhotos(files: File[], actionId: string): Promise<PhotoUploadResult[]> {
-    const uploadPromises = files.map(file => this.uploadPhoto(file, actionId))
-    return Promise.all(uploadPromises)
+    const results: PhotoUploadResult[] = []
+
+    for (const file of files.slice(0, 10)) {
+      results.push(await this.uploadPhoto(file, actionId))
+    }
+
+    return results
   }
 
   private isValidImageFile(file: File): boolean {

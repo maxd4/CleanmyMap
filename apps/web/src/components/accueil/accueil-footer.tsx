@@ -32,8 +32,8 @@ function InstagramMark({
 
 export function HomeFooter() {
   return (
-    <footer className="relative w-full overflow-hidden border-t border-white/5 bg-slate-950">
-      <div className="absolute inset-0 bg-gradient-to-br from-[#061a14] via-slate-950 to-slate-950 opacity-90" />
+    <footer className="relative w-full overflow-hidden border-t border-white/5 bg-transparent">
+      <div className="absolute inset-0 bg-[#061a14]/60 backdrop-blur-xl" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 py-12 sm:py-16">
         <div className="flex flex-col items-center justify-between gap-12 lg:flex-row lg:gap-8">

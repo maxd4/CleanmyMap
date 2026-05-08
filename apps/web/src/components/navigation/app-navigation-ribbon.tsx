@@ -65,6 +65,7 @@ export function AppNavigationRibbon({
   }, [currentProfile, displayMode, locale]);
 
   const activeSpaceId = getActiveSpaceForPath(currentProfile, pathname, displayMode);
+  const activeSpace = spaces.find((space) => space.id === activeSpaceId) ?? null;
 
   const preferencesPlacement = useDropdownPlacement({
     isOpen: preferencesOpen,
@@ -172,19 +173,19 @@ export function AppNavigationRibbon({
   }, []);
 
   return (
-    <div className="sticky top-[var(--app-ribbon-top-offset,0rem)] z-50 mx-auto w-full max-w-[1800px] px-2 sm:px-4 xl:px-6">
+    <div className="sticky top-[var(--app-ribbon-top-offset,0rem)] z-50 w-full">
       <nav
         ref={ribbonRef}
         aria-label={locale === "fr" ? "Barre de navigation principale" : "Main navigation bar"}
         className={cn(
-          "w-full overflow-visible rounded-[2rem] border bg-[color:var(--bg-elevated)] transition-all duration-300",
+          "w-full border-b bg-[color:var(--bg-elevated)] transition-all duration-300",
           isScrolled
-            ? "shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]"
-            : "shadow-[0_20px_40px_-28px_rgba(2,6,23,0.7)]",
+            ? "shadow-[0_8px_24px_-8px_rgba(2,6,23,0.6)]"
+            : "shadow-[0_4px_12px_-4px_rgba(2,6,23,0.4)]",
         )}
         style={ribbonChrome}
       >
-        <div className="flex min-w-0 items-center gap-2 px-3 py-3 sm:px-4 lg:gap-3 xl:px-5">
+        <div className="mx-auto flex max-w-[1800px] min-w-0 items-center gap-2 px-4 py-3 sm:px-6 lg:gap-3 xl:px-8">
           <p className="sr-only">
             {locale === "fr" ? "Profil actif" : "Active profile"}: {profileLabel}
           </p>
@@ -204,6 +205,7 @@ export function AppNavigationRibbon({
             <AppNavigationTreeMenu
               key={`desktop-tree-${pathname}`}
               activeSpaceId={activeSpaceId}
+              activeSpaceLabel={activeSpace?.label[locale] ?? null}
               idBase="desktop-navigation-tree"
               locale={locale}
               onTrackNavigation={onTrackNavigation}
@@ -218,6 +220,7 @@ export function AppNavigationRibbon({
               <AppNavigationTreeMenu
                 key={`mobile-tree-${pathname}`}
                 activeSpaceId={activeSpaceId}
+                activeSpaceLabel={activeSpace?.label[locale] ?? null}
                 idBase="mobile-navigation-tree"
                 locale={locale}
                 onTrackNavigation={onTrackNavigation}
@@ -376,12 +379,18 @@ export function AppNavigationRibbon({
             <Show when="signed-out">
               <div className="hidden items-center gap-2 md:flex">
                 <SignInButton mode="modal">
-                  <button className="inline-flex min-h-11 items-center justify-center rounded-full px-3 cmm-text-caption font-bold text-white/82 transition hover:text-white">
+                  <button 
+                    aria-label={locale === "fr" ? "Se connecter à CleanMyMap" : "Sign in to CleanMyMap"}
+                    className="inline-flex min-h-11 items-center justify-center rounded-full px-3 cmm-text-caption font-bold text-white/82 transition hover:text-white"
+                  >
                     {locale === "fr" ? "Connexion" : "Sign in"}
                   </button>
                 </SignInButton>
                 <SignUpButton mode="modal">
-                  <button className="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-4 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] active:scale-95">
+                  <button 
+                    aria-label={locale === "fr" ? "Créer un compte CleanMyMap" : "Sign up for CleanMyMap"}
+                    className="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-4 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] active:scale-95"
+                  >
                     {locale === "fr" ? "S'inscrire" : "Sign up"}
                   </button>
                 </SignUpButton>

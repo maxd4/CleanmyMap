@@ -1,5 +1,5 @@
 import { describe, expect, it } from"vitest";
-import { INITIAL_ANNUAIRE_ENTRIES } from"./annuaire-directory-seed";
+import { INITIAL_ANNUAIRE_ENTRIES } from"./annuaire/seed-index";
 import {
  buildDashboardStats,
  hasRecentActivity,

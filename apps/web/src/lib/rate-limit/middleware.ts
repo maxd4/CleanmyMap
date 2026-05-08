@@ -72,13 +72,17 @@ export async function rateLimitMiddleware(request: NextRequest, options: RouteHa
     window: config.window,
   });
 
+  const retryAfterSeconds = result.retryAfter || config.window;
   const response = NextResponse.json(
-    { 
-      error: "Too Many Requests",
-      message: `Rate limit exceeded. Please try again in ${result.retryAfter || config.window} seconds.`,
+    {
+      error: "Trop de tentatives. Réessayez dans quelques instants.",
+      message: "Trop de tentatives. Réessayez dans quelques instants.",
+      kind: "network",
+      status: "rate_limited",
       code: "RATE_LIMIT_EXCEEDED",
+      retryAfterSeconds,
     },
-    { 
+    {
       status: 429,
       headers: {
         "X-RateLimit-Limit": String(result.limit),
@@ -86,7 +90,7 @@ export async function rateLimitMiddleware(request: NextRequest, options: RouteHa
         "X-RateLimit-Reset": String(result.reset),
         ...(result.retryAfter ? { "Retry-After": String(result.retryAfter) } : {}),
       },
-    }
+    },
   );
 
   if (!result.success) {

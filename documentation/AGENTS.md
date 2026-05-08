@@ -19,8 +19,10 @@
 - Do not hide errors; state blockers explicitly.
 - Run targeted validations for modified logic.
 - Preserve existing behavior unless change is required by the task.
+- Never open or use a browser unless the user explicitly asks for browser-based inspection, navigation, or testing.
 - **Règle Scientifique** : Toujours sourcer et faire apparaître toutes les données, hypothèses et formules de calcul sur le site web à l'endroit dédié (page Méthodologie ou Tooltips).
 - **Qualité & i18n** : Lire `documentation/development/QUALITY_GUIDE.md` avant de modifier des chaînes utilisateur, messages, formulaires ou interfaces. Ce guide couvre les conventions d'internationalisation, orthographe, accessibilité et empty states.
+- **Homepage restriction** : Ne jamais modifier la homepage (`apps/web/src/app/page.tsx` et ses composants associés dans `apps/web/src/components/accueil/`) sauf demande explicite de l'utilisateur.
 
 ## Design System & UI
 

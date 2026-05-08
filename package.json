@@ -20,6 +20,7 @@
     "analyze:heavy-files": "node scripts/analyze-heavy-files.mjs",
     "modularize:report": "node scripts/generate-modularization-report.mjs",
     "test": "npm run test -w apps/web",
+    "test:security": "npm run test:security -w apps/web",
     "test:regression-gates": "npm run test:regression-gates -w apps/web",
     "prepush:guard": "powershell -ExecutionPolicy Bypass -File scripts/pre_push_guard.ps1",
     "checks": "powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1",

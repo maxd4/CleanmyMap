@@ -3,8 +3,10 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { MissionMap } from '@/components/missions/mission-map';
 import { MissionQR } from '@/components/missions/mission-qr';
-import { MapPin, Clock, Trophy, Share2 } from 'lucide-react';
+import { MapPin, Clock, Trophy, Share2, Zap, Droplets, ShieldCheck } from 'lucide-react';
 import { CmmButton } from '@/components/ui/cmm-button';
+import { getBlockClasses } from '@/lib/ui/block-accents';
+import { cn } from '@/lib/utils';
 
 // Note: en production, utilisez le vrai client Supabase de l'app (ex: createServerComponentClient)
 const supabase = createClient(
@@ -15,6 +17,7 @@ const FALLBACK_STARTED_AT = new Date(Date.now() - 3600000).toISOString();
 
 export default async function MissionPage({ params }: { params: { id: string } }) {
   const { id } = params;
+  const classes = getBlockClasses("act");
 
   // Récupération de la mission
   const { data: mission, error: missionError } = await supabase
@@ -22,11 +25,6 @@ export default async function MissionPage({ params }: { params: { id: string } }
     .select('*, profiles(name, avatar_url)')
     .eq('id', id)
     .single();
-
-  if (missionError || !mission) {
-    // Si la DB n'est pas encore initialisée, on affiche une page mockée ou on renvoie 404
-    // return notFound();
-  }
 
   // Fallback si la DB n'a pas les données
   const m = mission || {
@@ -59,93 +57,139 @@ export default async function MissionPage({ params }: { params: { id: string } }
   const isPending = m.status === 'pending';
 
   return (
-    <div className="w-full max-w-5xl mx-auto p-6 sm:p-8 xl:px-10 space-y-12">
-      {/* En-tête */}
-      <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <span className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-widest ${
-              m.status === 'completed' ? 'bg-emerald-100 text-emerald-700' :
-              isTracking ? 'bg-rose-100 text-rose-700 animate-pulse' :
-              'bg-slate-100 text-slate-700'
-            }`}>
-              {m.status === 'completed' ? 'Terminée' : isTracking ? 'En cours' : 'En attente'}
+    <div className="w-full max-w-7xl mx-auto space-y-12 pb-20">
+      {/* Premium Header */}
+      <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-8 pt-10">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className={cn(
+              "px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
+              m.status === 'completed' ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/20" :
+              isTracking ? "bg-rose-400/10 text-rose-400 border-rose-400/20 animate-pulse" :
+              "bg-white/5 text-white/40 border-white/10"
+            )}>
+              {m.status === 'completed' ? 'Mission Terminée' : isTracking ? 'Action en cours' : 'Mission Planifiée'}
             </span>
-            <span className="text-sm cmm-text-muted font-medium">Mission #{id.split('-')[0]}</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/20">Identifiant #{id.split('-')[0]}</span>
           </div>
-          <h1 className="text-4xl font-black cmm-text-primary tracking-tight">{m.label}</h1>
+          <h1 className="text-5xl md:text-6xl font-black text-white tracking-tighter leading-tight">
+            {m.label}
+          </h1>
         </div>
 
-        <CmmButton tone="secondary" className="rounded-xl flex items-center gap-2">
-          <Share2 size={16} /> Partager l'impact
+        <CmmButton tone="secondary" className={cn("rounded-2xl flex items-center gap-2 border px-6 py-4 transition-all duration-300 hover:scale-[1.02]", classes.surface, classes.border)}>
+          <Share2 size={16} className="text-emerald-400" />
+          <span className="text-xs font-black uppercase tracking-widest">Partager l'impact</span>
         </CmmButton>
       </header>
 
       {/* Contenu principal */}
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-3 gap-10">
         
         {/* Colonne gauche (Stats / QR) */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {isPending ? (
             <MissionQR missionId={id} />
           ) : (
-            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-3xl border border-slate-100 shadow-sm space-y-6">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <Trophy size={20} className="text-amber-500" />
-                Impact Mesuré
+            <div className={cn(
+              "p-8 rounded-[2.5rem] border space-y-8 transition-all duration-700",
+              classes.surface,
+              classes.shadow
+            )}>
+              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-3">
+                <Trophy size={14} className="text-amber-400" />
+                Impact Certifié
               </h3>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-100/50">
-                  <p className="text-[10px] font-black uppercase text-emerald-600/80 mb-1">Distance</p>
-                  <p className="text-2xl font-black text-emerald-700">
-                    {m.distance_m ? (m.distance_m / 1000).toFixed(1) : 0} <span className="text-sm font-bold">km</span>
+                <div className="bg-white/5 rounded-[2rem] p-6 border border-white/5 group hover:border-emerald-400/30 transition-all">
+                  <div className="flex items-center gap-2 text-emerald-400 mb-3">
+                    <MapPin size={14} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Distance</span>
+                  </div>
+                  <p className="text-3xl font-black text-white">
+                    {m.distance_m ? (m.distance_m / 1000).toFixed(1) : 0} <span className="text-sm font-bold text-white/20">km</span>
                   </p>
                 </div>
                 
-                <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100/50">
-                  <p className="text-[10px] font-black uppercase text-blue-600/80 mb-1">Durée</p>
-                  <p className="text-2xl font-black text-blue-700">
-                    {m.duration_s ? Math.round(m.duration_s / 60) : 0} <span className="text-sm font-bold">min</span>
+                <div className="bg-white/5 rounded-[2rem] p-6 border border-white/5 group hover:border-sky-400/30 transition-all">
+                  <div className="flex items-center gap-2 text-sky-400 mb-3">
+                    <Clock size={14} />
+                    <span className="text-[9px] font-black uppercase tracking-widest">Durée</span>
+                  </div>
+                  <p className="text-3xl font-black text-white">
+                    {m.duration_s ? Math.round(m.duration_s / 60) : 0} <span className="text-sm font-bold text-white/20">min</span>
                   </p>
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-slate-100 space-y-3">
-                <p className="text-sm font-medium flex justify-between">
-                  <span className="cmm-text-secondary">CO2 évité estimé</span>
-                  <span className="font-bold text-emerald-600">~{m.distance_m ? (m.distance_m * 0.15).toFixed(1) : 0} kg</span>
-                </p>
-                <p className="text-sm font-medium flex justify-between">
-                  <span className="cmm-text-secondary">Volume d'eau préservé</span>
-                  <span className="font-bold text-blue-600">~{m.distance_m ? Math.round(m.distance_m * 2.5) : 0} L</span>
-                </p>
+              <div className="space-y-4 pt-4 border-t border-white/5">
+                <div className="flex items-center justify-between group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-400/10 flex items-center justify-center text-emerald-400">
+                      <Zap size={14} />
+                    </div>
+                    <span className="text-sm font-medium text-white/40 group-hover:text-white/60 transition-colors">CO2 évité estimé</span>
+                  </div>
+                  <span className="font-black text-emerald-400">~{m.distance_m ? (m.distance_m * 0.15).toFixed(1) : 0} kg</span>
+                </div>
+                <div className="flex items-center justify-between group">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-sky-400/10 flex items-center justify-center text-sky-400">
+                      <Droplets size={14} />
+                    </div>
+                    <span className="text-sm font-medium text-white/40 group-hover:text-white/60 transition-colors">Eau préservée</span>
+                  </div>
+                  <span className="font-black text-sky-400">~{m.distance_m ? Math.round(m.distance_m * 2.5) : 0} L</span>
+                </div>
               </div>
             </div>
           )}
 
-          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
-            <h4 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4">Informations</h4>
-            <ul className="space-y-4">
-              <li className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                <Clock size={16} className="text-slate-400" />
-                {new Date(m.started_at).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}
+          <div className={cn("p-8 rounded-[2.5rem] border transition-all duration-500 bg-white/5 border-white/5 shadow-sm")}>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 mb-6">Informations Logistiques</h4>
+            <ul className="space-y-6">
+              <li className="flex items-center gap-4 group">
+                <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-white/40 transition-transform group-hover:scale-110">
+                  <Clock size={16} />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-white/20">Départ le</p>
+                  <p className="text-sm font-bold text-white/80">{new Date(m.started_at).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                </div>
               </li>
-              <li className="flex items-center gap-3 text-sm font-medium text-slate-700">
-                <MapPin size={16} className="text-slate-400" />
-                Paris, Île-de-France
+              <li className="flex items-center gap-4 group">
+                <div className="w-10 h-10 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-white/40 transition-transform group-hover:scale-110">
+                  <MapPin size={16} />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-white/20">Localisation</p>
+                  <p className="text-sm font-bold text-white/80">Paris, Île-de-France</p>
+                </div>
               </li>
             </ul>
           </div>
         </div>
 
         {/* Colonne droite (Carte) */}
-        <div className="lg:col-span-2">
-          <MissionMap points={gpsPoints} />
+        <div className="lg:col-span-2 space-y-6">
+          <div className="rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl relative group">
+            <MissionMap points={gpsPoints} />
+            <div className="absolute top-6 right-6 px-4 py-2 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white opacity-0 group-hover:opacity-100 transition-opacity">
+              Tracé GPS Certifié
+            </div>
+          </div>
           
-          <div className="mt-4 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex gap-3">
-            <p className="text-sm text-amber-800 font-medium">
-              💡 <strong className="font-black">Certifié par CleanMyMap.</strong> Ce tracé a été enregistré en direct via l'application Compagnon, garantissant l'authenticité de l'impact écologique.
+          <div className={cn(
+            "p-8 rounded-[2.5rem] border flex gap-6 items-start transition-all duration-500 hover:border-amber-400/30",
+            "bg-amber-400/5 border-amber-400/10"
+          )}>
+            <div className="w-12 h-12 rounded-2xl bg-amber-400/20 flex items-center justify-center text-amber-400 shrink-0">
+              <ShieldCheck size={24} />
+            </div>
+            <p className="text-sm text-amber-100/60 font-medium leading-relaxed">
+              <strong className="font-black text-amber-400 uppercase tracking-widest text-xs block mb-2">Preuve d'Impact</strong>
+              Ce tracé a été enregistré en direct via l'application Compagnon, garantissant l'authenticité de l'impact écologique mesuré sur le terrain.
             </p>
           </div>
         </div>

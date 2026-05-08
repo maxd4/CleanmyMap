@@ -43,11 +43,11 @@ import { CmmSection, CmmSectionGroup, CmmPageLayout } from "@/components/ui/cmm-
 ```typescript
 // Classes d'accent par bloc (ajoutées dans globals.css)
 <div className="cmm-accent-impact p-4 rounded-lg">
-  Section avec accent impact (emerald)
+  Section avec accent impact (rose/rouge)
 </div>
 
 <div className="cmm-accent-act p-4 rounded-lg">
-  Section avec accent action (amber)
+  Section avec accent action (emerald/vert)
 </div>
 
 // Dots d'accent
@@ -56,7 +56,7 @@ import { CmmSection, CmmSectionGroup, CmmPageLayout } from "@/components/ui/cmm-
 
 // Rings d'accent
 <div className="cmm-ring-network ring-2 rounded-lg p-4">
-  Élément avec ring réseau (violet)
+  Élément avec ring réseau (indigo)
 </div>
 ```
 

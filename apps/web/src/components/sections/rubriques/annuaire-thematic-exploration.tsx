@@ -1,7 +1,7 @@
 import React from "react";
-import { CmmCard } from "@/components/ui/cmm-card";
-import { Leaf, Heart, Users, Trash2, Wind, Info } from "lucide-react";
+import { Leaf, Heart, Users, Trash2, Wind, Info, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface AnnuaireThematicExplorationProps {
   fr: boolean;
@@ -19,112 +19,120 @@ export function AnnuaireThematicExploration({
       id: "environnement", 
       label: fr ? "Environnement" : "Environment", 
       icon: Leaf, 
-      color: "emerald",
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/20",
       desc: fr ? "Protection de la biodiversité et des écosystèmes." : "Protection of biodiversity and ecosystems."
-    },
+    }, 
     { 
       id: "social", 
       label: fr ? "Social" : "Social", 
       icon: Users, 
-      color: "blue",
+      color: "text-sky-400",
+      bg: "bg-sky-500/10",
+      border: "border-sky-500/20",
       desc: fr ? "Inclusion, partage et lien social local." : "Inclusion, sharing and local social links."
     },
     { 
       id: "humanitaire", 
       label: fr ? "Humanitaire" : "Humanitarian", 
       icon: Heart, 
-      color: "rose",
+      color: "text-rose-400",
+      bg: "bg-rose-500/10",
+      border: "border-rose-500/20",
       desc: fr ? "Aide d'urgence et soutien aux plus fragiles." : "Emergency aid and support for the most fragile."
     },
     { 
       id: "propreté", 
-      label: fr ? "Propreté Urbaine" : "Urban Cleaning", 
+      label: fr ? "Propreté" : "Cleaning", 
       icon: Trash2, 
-      color: "amber",
+      color: "text-amber-400",
+      bg: "bg-amber-500/10",
+      border: "border-amber-500/20",
       desc: fr ? "Gestion des déchets et propreté de l'espace public." : "Waste management and public space cleanliness."
     },
     { 
       id: "climat", 
       label: fr ? "Climat" : "Climate", 
       icon: Wind, 
-      color: "sky",
+      color: "text-indigo-400",
+      bg: "bg-indigo-500/10",
+      border: "border-indigo-500/20",
       desc: fr ? "Actions directes contre le réchauffement climatique." : "Direct actions against global warming."
     },
     { 
       id: "sensibilisation", 
       label: fr ? "Sensibilisation" : "Awareness", 
       icon: Info, 
-      color: "indigo",
+      color: "text-violet-400",
+      bg: "bg-violet-500/10",
+      border: "border-violet-500/20",
       desc: fr ? "Éducation et formation aux enjeux citoyens." : "Education and training on civic issues."
     },
   ];
 
   return (
-    <div className="space-y-12">
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2">
-          <span className="h-px w-8 bg-violet-300" />
-          <span className="text-[10px] font-black tracking-[0.3em] text-violet-600 uppercase">
-            {fr ? "Exploration Thématique" : "Thematic Exploration"}
-          </span>
-          <span className="h-px w-8 bg-violet-300" />
-        </div>
-        <h2 className="cmm-text-h2 cmm-text-primary tracking-tight">
-          {fr ? "Trouvez l'acteur qu'il vous faut" : "Find the actor you need"}
-        </h2>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {themes.map((theme) => {
-          const Icon = theme.icon;
-          const isActive = activeTag === theme.id;
-          const tone = (theme.color === "blue" ? "sky" : theme.color) as any;
-          
-          return (
-            <button
-              key={theme.id}
-              onClick={() => onSelectTag(theme.id)}
-              className={cn(
-                "text-left group transition-all duration-500 rounded-[2rem] focus:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 focus-visible:ring-offset-2",
-                isActive ? "scale-105" : "hover:scale-102"
-              )}
-            >
-              <CmmCard 
-                tone={tone} 
-                variant={isActive ? "elevated" : "muted"}
-                className={cn(
-                  "p-8 h-full rounded-[2rem] transition-all duration-500 border-none",
-                  isActive 
-                    ? "bg-white shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-2 ring-violet-500" 
-                    : "bg-white/50 backdrop-blur-sm border border-slate-100 hover:bg-white hover:shadow-xl"
-                )}
-              >
-                <div className="flex flex-col gap-6">
-                  <div className={cn(
-                    "w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500",
-                    isActive 
-                      ? `bg-${tone}-500 text-white shadow-lg shadow-${tone}-200` 
-                      : "bg-slate-100 text-slate-400 group-hover:bg-violet-50 group-hover:text-violet-600"
-                  )}>
-                    <Icon size={28} />
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className={cn(
-                      "text-xl font-black tracking-tight transition-colors",
-                      isActive ? "text-slate-900" : "text-slate-600 group-hover:text-violet-700"
-                    )}>
-                      {theme.label}
-                    </h4>
-                    <p className="text-sm font-medium text-slate-400 leading-relaxed line-clamp-2">
-                      {theme.desc}
-                    </p>
-                  </div>
-                </div>
-              </CmmCard>
-            </button>
-          );
-        })}
-      </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+      {themes.map((theme, i) => {
+        const Icon = theme.icon;
+        const isActive = activeTag === theme.id;
+        
+        return (
+          <motion.button
+            key={theme.id}
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            viewport={{ once: true }}
+            onClick={() => onSelectTag(theme.id)}
+            className={cn(
+              "text-left group relative p-6 rounded-[2.5rem] border transition-all duration-500 backdrop-blur-xl overflow-hidden",
+              isActive 
+                ? "bg-white/10 border-white/20 shadow-2xl scale-105" 
+                : "bg-white/5 border-white/5 hover:bg-white/[0.08] hover:border-white/10"
+            )}
+          >
+            {isActive && (
+              <motion.div 
+                layoutId="active-theme-glow"
+                className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-indigo-500/10 -z-10"
+              />
+            )}
+            
+            <div className="space-y-6 relative z-10">
+              <div className={cn(
+                "flex h-12 w-12 items-center justify-center rounded-2xl transition-all duration-500 border",
+                isActive 
+                  ? "bg-white text-slate-950 border-white shadow-2xl scale-110" 
+                  : cn("bg-slate-950/40 text-slate-400 group-hover:scale-110 group-hover:text-white transition-transform", theme.border)
+              )}>
+                <Icon size={20} />
+              </div>
+              <div className="space-y-2">
+                <h4 className={cn(
+                  "text-sm font-black uppercase tracking-[0.2em] transition-colors",
+                  isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300"
+                )}>
+                  {theme.label}
+                </h4>
+                <p className={cn(
+                  "text-[10px] font-bold leading-relaxed transition-opacity line-clamp-2",
+                  isActive ? "text-white/80" : "text-slate-600 opacity-0 group-hover:opacity-100"
+                )}>
+                  {theme.desc}
+                </p>
+              </div>
+            </div>
+            
+            <div className={cn(
+               "absolute -right-8 -bottom-8 opacity-5 transition-all duration-700 group-hover:scale-125 group-hover:opacity-10",
+               theme.color
+            )}>
+               <Icon size={120} />
+            </div>
+          </motion.button>
+        );
+      })}
     </div>
   );
 }

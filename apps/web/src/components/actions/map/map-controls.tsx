@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMap } from "react-leaflet";
-import { LatLngTuple } from "leaflet";
+import { type LatLngTuple } from "leaflet";
 import {
   buildNominatimSearchUrl,
   parseNominatimCoordinates,
@@ -76,7 +76,7 @@ export function MapControls({
     >
       <form
         onSubmit={handleSearch}
-        className="flex overflow-hidden rounded-2xl border cmm-border-color bg-white/80 dark:bg-slate-900/80 shadow-xl shadow-slate-950/10 backdrop-blur-xl transition hover:bg-white/95 dark:hover:bg-slate-900/95"
+        className="flex overflow-hidden rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl transition hover:bg-[rgba(18,47,74,0.96)]"
       >
         <input
           type="text"
@@ -84,19 +84,20 @@ export function MapControls({
           aria-label="Rechercher une adresse ou un lieu à Paris et proche banlieue"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-48 px-4 py-2 cmm-text-small outline-none bg-transparent cmm-text-primary placeholder:text-slate-400"
+          className="w-48 bg-transparent px-4 py-2 text-sm font-medium text-white outline-none placeholder:text-sky-100/36"
         />
         <button
           type="submit"
           disabled={isSearching}
           aria-label={isSearching ? "Recherche en cours" : "Lancer la recherche"}
-          className="bg-emerald-500 px-4 py-2 cmm-text-small font-bold text-white transition hover:bg-emerald-600 disabled:opacity-50"
+          className="bg-sky-500 px-4 py-2 text-sm font-black text-white transition hover:bg-sky-400 disabled:opacity-50"
         >
           {isSearching ? "..." : "🔍"}
         </button>
       </form>
+
       {searchError ? (
-        <p className="max-w-72 rounded-2xl border border-amber-300/50 bg-amber-50/90 px-4 py-2 text-[11px] font-semibold leading-snug text-amber-900 shadow-xl shadow-amber-950/5 backdrop-blur-xl dark:border-amber-700/40 dark:bg-amber-950/40 dark:text-amber-100">
+        <p className="max-w-72 rounded-2xl border border-amber-300/20 bg-[rgba(63,40,8,0.88)] px-4 py-2 text-[11px] font-semibold leading-snug text-amber-100 shadow-[0_24px_56px_-32px_rgba(245,158,11,0.22)] backdrop-blur-xl">
           {searchError}
         </p>
       ) : null}
@@ -105,7 +106,7 @@ export function MapControls({
         type="button"
         onClick={() => map.fitBounds(greaterParisBounds, { padding: [32, 32] })}
         aria-label="Recentrer sur le périmètre Paris et proche banlieue"
-        className="flex w-fit items-center gap-2 rounded-2xl border border-teal-500/20 bg-teal-50/80 px-4 py-2 cmm-text-small font-bold text-teal-700 shadow-xl shadow-teal-950/10 backdrop-blur-xl transition hover:bg-teal-100/90 dark:border-teal-400/20 dark:bg-teal-950/40 dark:text-teal-300 dark:hover:bg-teal-900/60"
+        className="flex w-fit items-center gap-2 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-4 py-2 text-sm font-black text-sky-100/82 shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl transition hover:border-sky-300/30 hover:bg-[rgba(18,47,74,0.96)]"
       >
         <span>🗺️</span> Périmètre
       </button>
@@ -114,15 +115,15 @@ export function MapControls({
         type="button"
         onClick={() => map.flyTo(center, 12)}
         aria-label="Recentrer la carte"
-        className="flex w-fit items-center gap-2 rounded-2xl border cmm-border-color bg-white/80 px-4 py-2 cmm-text-small font-bold cmm-text-secondary shadow-xl shadow-slate-950/10 backdrop-blur-xl transition hover:bg-white/95 hover:cmm-text-primary dark:bg-slate-900/80 dark:hover:bg-slate-900/95"
+        className="flex w-fit items-center gap-2 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-4 py-2 text-sm font-black text-sky-100/82 shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl transition hover:border-sky-300/30 hover:bg-[rgba(18,47,74,0.96)]"
       >
-        <span>📍</span> Reset Vue
+        <span>📍</span> Reset vue
       </button>
 
       <a
         href="/methodologie"
         aria-label="Ouvrir la méthodologie"
-        className="flex w-fit items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-50/80 dark:bg-emerald-950/40 px-4 py-2 cmm-text-small font-bold text-emerald-700 dark:text-emerald-400 shadow-xl shadow-emerald-950/10 backdrop-blur-xl transition hover:bg-emerald-100/90 dark:hover:bg-emerald-900/60"
+        className="flex w-fit items-center gap-2 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-4 py-2 text-sm font-black text-sky-100/82 shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl transition hover:border-sky-300/30 hover:bg-[rgba(18,47,74,0.96)]"
       >
         <span>🔬</span> Méthodologie
       </a>

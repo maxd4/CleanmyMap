@@ -20,6 +20,22 @@ interface EcologicalTimelineProps {
 }
 
 export function EcologicalTimeline({ actions }: EcologicalTimelineProps) {
+  if (actions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-emerald-100 rounded-[2.5rem] bg-emerald-50/30 text-center">
+        <div className="p-4 bg-white rounded-full shadow-sm border border-emerald-50 text-emerald-400 mb-4">
+          <Trash2 size={32} />
+        </div>
+        <p className="text-sm font-black text-emerald-900 uppercase tracking-widest mb-1">
+          Timeline Vierge
+        </p>
+        <p className="text-xs font-semibold text-emerald-700/60 max-w-[200px] leading-relaxed">
+          Les actions d&apos;impact s&apos;afficheront ici chronologiquement une fois validées.
+        </p>
+      </div>
+    );
+  }
+
   // Sort actions by date descending
   const sortedActions = [...actions].sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()

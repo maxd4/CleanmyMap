@@ -7,6 +7,7 @@ import {
 } from "./domain-language";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
+import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 
 type ClerkMetadata = Record<string, unknown> | null | undefined;
 
@@ -217,6 +218,21 @@ function resolveActorNameFromClerk(
   return normalizedOptions[0];
 }
 
+async function getClerkUser(
+  client: Awaited<ReturnType<typeof clerkClient>>,
+  userId: string,
+): Promise<User> {
+  try {
+    return await client.users.getUser(userId);
+  } catch (error) {
+    const msg =
+      error instanceof Error && error.message
+        ? error.message
+        : `Clerk getUser failed for ${userId}`;
+    throw new Error(msg, { cause: error });
+  }
+}
+
 function describeBackgroundSyncError(error: unknown): string {
   if (error instanceof Error) {
     return error.message || error.name;
@@ -305,7 +321,10 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
 
   try {
     const client = await clerkClient();
-    const user = await client.users.getUser(userId);
+    const user = await getClerkUser(client, userId);
+    if (isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress)) {
+      return { ok: true, userId };
+    }
     if (
       isAdminRole({
         publicMetadata: user.publicMetadata,
@@ -353,7 +372,7 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
     const client = await clerkClient();
     const user = await normalizeLegacyOwnerMetadata(
       client,
-      await client.users.getUser(userId),
+      await getClerkUser(client, userId),
     );
     const maxUserIds = parseMaxUserIds(
       env.CLERK_MAX_USER_IDS,
@@ -361,6 +380,7 @@ export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
     );
     if (
       maxUserIds.has(userId) ||
+      isCreatorInboxEmail(user.primaryEmailAddress?.emailAddress) ||
       isMaxRole({
         publicMetadata: user.publicMetadata,
         privateMetadata: user.privateMetadata,
@@ -409,13 +429,13 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
   try {
     const client = await clerkClient();
     const [fetchedUser, currentLevel] = await Promise.all([
-      client.users.getUser(userId),
+      getClerkUser(client, userId),
       loadUserCurrentLevel(userId),
     ]);
     const user = await normalizeLegacyOwnerMetadata(client, fetchedUser);
 
     // Passive sync: avoid blocking UI but ensure data consistency
-    syncClerkUserToSupabase(user).catch((err) => {
+    syncClerkUserToSupabase(user, { allowServiceRoleFallback: false }).catch((err) => {
       console.warn(
         `[Authz] Background sync skipped for ${userId}: ${describeBackgroundSyncError(err)}`,
       );
@@ -429,6 +449,7 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
       });
     const isMax =
       maxUserIds.has(userId) ||
+      isCreatorInboxEmail(fetchedUser.primaryEmailAddress?.emailAddress) ||
       isMaxRole({
         publicMetadata: user.publicMetadata,
         privateMetadata: user.privateMetadata,

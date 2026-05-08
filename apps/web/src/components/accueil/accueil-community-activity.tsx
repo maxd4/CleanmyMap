@@ -26,7 +26,7 @@ export function HomeCommunityActivity({
   activity,
 }: HomeCommunityActivityProps) {
   return (
-    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#06111f_0%,#071420_100%)] py-20 sm:py-24 lg:py-28">
+    <section className="relative overflow-hidden bg-transparent py-12 sm:py-16 lg:py-20">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_38%_at_18%_18%,rgba(39,195,217,0.12),transparent),radial-gradient(ellipse_45%_42%_at_84%_60%,rgba(88,94,207,0.10),transparent)]" />
       <div className="relative mx-auto flex max-w-7xl flex-col gap-12 px-4 sm:px-8 lg:flex-row lg:items-center lg:gap-16">
         <div className="flex-1 space-y-6">

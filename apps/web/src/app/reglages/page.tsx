@@ -1,0 +1,269 @@
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Settings, User, Bell, Eye, MapPin } from "lucide-react";
+import type { Metadata } from "next";
+import { getCurrentUserIdentity } from "@/lib/authz";
+import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
+
+export const metadata: Metadata = {
+  title: "Réglages - CleanMyMap",
+  description: "Configurez vos préférences CleanMyMap : notifications, affichage, localisation et paramètres de compte.",
+  keywords: ["réglages", "paramètres", "préférences", "configuration", "CleanMyMap"],
+  robots: {
+    index: false, // Page privée
+    follow: false,
+  },
+};
+
+export default async function ReglagesPage() {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
+  const [identity, displayMode, locale] = await Promise.all([
+    getCurrentUserIdentity(),
+    getServerDisplayMode(),
+    getServerLocale(),
+  ]);
+
+  const isFrench = locale === "fr";
+
+  return (
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-white px-4 py-8">
+      {/* Effets visuels subtils */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -left-20 top-20 h-64 w-64 rounded-full bg-slate-400/6 blur-3xl" />
+        <div className="absolute -right-16 bottom-20 h-72 w-72 rounded-full bg-slate-400/4 blur-3xl" />
+      </div>
+
+      <div className="relative mx-auto max-w-4xl">
+        {/* Navigation de retour */}
+        <div className="mb-8">
+          <Link
+            href="/profil"
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 transition-colors hover:text-slate-900"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {isFrench ? "Retour au profil" : "Back to profile"}
+          </Link>
+        </div>
+
+        <div className="space-y-8">
+          {/* En-tête */}
+          <header className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100">
+                <Settings className="h-6 w-6 text-slate-600" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
+                  {isFrench ? "Configuration" : "Configuration"}
+                </p>
+                <h1 className="text-3xl font-black tracking-tight text-slate-900">
+                  {isFrench ? "Réglages" : "Settings"}
+                </h1>
+              </div>
+            </div>
+            <p className="max-w-2xl text-base leading-relaxed text-slate-600">
+              {isFrench
+                ? "Personnalisez votre expérience CleanMyMap selon vos préférences et besoins."
+                : "Customize your CleanMyMap experience according to your preferences and needs."}
+            </p>
+          </header>
+
+          {/* Sections de réglages */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Profil et compte */}
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+                  <User className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    {isFrench ? "Profil et compte" : "Profile and account"}
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    {isFrench ? "Informations personnelles" : "Personal information"}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {isFrench ? "Nom d'affichage" : "Display name"}
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    {identity?.displayName || (isFrench ? "Non défini" : "Not set")}
+                  </p>
+                </div>
+                
+                <Link
+                  href="/profil"
+                  className="block rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:border-slate-300 hover:bg-slate-100"
+                >
+                  <p className="text-sm font-semibold text-slate-900">
+                    {isFrench ? "Gérer le profil complet" : "Manage full profile"}
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    {isFrench ? "Badges, progression, statistiques" : "Badges, progress, statistics"}
+                  </p>
+                </Link>
+              </div>
+            </section>
+
+            {/* Affichage */}
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
+                  <Eye className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    {isFrench ? "Affichage" : "Display"}
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    {isFrench ? "Interface et navigation" : "Interface and navigation"}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {isFrench ? "Mode d'affichage" : "Display mode"}
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    {displayMode === "exhaustif" 
+                      ? (isFrench ? "Exhaustif (toutes les options)" : "Exhaustive (all options)")
+                      : (isFrench ? "Essentiel (options principales)" : "Essential (main options)")
+                    }
+                  </p>
+                </div>
+                
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {isFrench ? "Langue" : "Language"}
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    {locale === "fr" ? "Français" : "English"}
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            {/* Notifications */}
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+                  <Bell className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    {isFrench ? "Notifications" : "Notifications"}
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    {isFrench ? "Alertes et rappels" : "Alerts and reminders"}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
+                <p className="text-sm font-medium text-slate-600 text-center">
+                  {isFrench 
+                    ? "Section réservée pour une prochaine phase"
+                    : "Reserved section for a later phase"}
+                </p>
+              </div>
+            </section>
+
+            {/* Localisation */}
+            <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-100">
+                  <MapPin className="h-5 w-5 text-cyan-600" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-slate-900">
+                    {isFrench ? "Localisation" : "Location"}
+                  </h2>
+                  <p className="text-sm text-slate-600">
+                    {isFrench ? "Zone d'action préférée" : "Preferred action area"}
+                  </p>
+                </div>
+              </div>
+              
+              <Link
+                href="/onboarding/localisation"
+                className="block rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:border-slate-300 hover:bg-slate-100"
+              >
+                <p className="text-sm font-semibold text-slate-900">
+                  {isFrench ? "Modifier la localisation" : "Change location"}
+                </p>
+                <p className="text-sm text-slate-600 mt-1">
+                  {isFrench 
+                    ? "Arrondissement et type de zone d'intervention"
+                    : "District and intervention area type"}
+                </p>
+              </Link>
+            </section>
+          </div>
+
+          {/* Actions rapides */}
+          <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-lg">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">
+              {isFrench ? "Actions rapides" : "Quick actions"}
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:border-slate-300 hover:bg-slate-100"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                  <Settings className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {isFrench ? "Tableau de bord" : "Dashboard"}
+                  </p>
+                </div>
+              </Link>
+              
+              <Link
+                href="/profil"
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:border-slate-300 hover:bg-slate-100"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+                  <User className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {isFrench ? "Mon profil" : "My profile"}
+                  </p>
+                </div>
+              </Link>
+              
+              <Link
+                href="/accueil"
+                className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition-colors hover:border-slate-300 hover:bg-slate-100"
+              >
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                  <ArrowLeft className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    {isFrench ? "Accueil" : "Home"}
+                  </p>
+                </div>
+              </Link>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}

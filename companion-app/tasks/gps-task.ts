@@ -1,22 +1,47 @@
+/**
+ * gps-task.ts — Tâche background TaskManager
+ *
+ * Ce fichier DOIT être importé au niveau racine de l'app (index.ts)
+ * AVANT registerRootComponent, sinon la tâche ne sera pas enregistrée
+ * quand l'OS réveille l'app en background.
+ *
+ * TODO (plugin natif Android) :
+ *  - Ajouter dans AndroidManifest.xml :
+ *    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+ *    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+ *  - Le foregroundService config ci-dessous gère la notification persistante Android.
+ *
+ * TODO (plugin natif iOS) :
+ *  - Vérifier que UIBackgroundModes contient "location" dans app.json → ios.infoPlist
+ *    (déjà configuré dans ce repo).
+ *  - Sur iOS, timeInterval n'est pas garanti — l'OS peut différer jusqu'à 15 min.
+ *    Combiner avec significantLocationChange pour les réveils fiables.
+ */
+
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
 import { supabase } from '../lib/supabase';
 import { getStoredMissionId, bufferPoint, flushBuffer } from '../lib/storage';
+import { GPS_TASK_NAME } from '../lib/tracking-service';
+import type { MissionLocationInsert } from '../types/mission';
 
-export const TASK_NAME = 'GPS_TRACKING';
-
-TaskManager.defineTask(TASK_NAME, async ({ data, error }) => {
-  if (error || !data) {
-    console.error('Error in TaskManager:', error);
+// Enregistrement de la tâche — doit être au top-level du module
+TaskManager.defineTask(GPS_TASK_NAME, async ({ data, error }) => {
+  if (error) {
+    console.error('[GPS Task] Erreur TaskManager:', error.message);
     return;
   }
+  if (!data) return;
 
   const { locations } = data as { locations: Location.LocationObject[] };
   const missionId = await getStoredMissionId();
-  if (!missionId) return;
+  if (!missionId) {
+    console.warn('[GPS Task] Aucun missionId en storage — tâche ignorée.');
+    return;
+  }
 
   for (const loc of locations) {
-    const point = {
+    const point: MissionLocationInsert = {
       mission_id: missionId,
       latitude: loc.coords.latitude,
       longitude: loc.coords.longitude,
@@ -25,48 +50,19 @@ TaskManager.defineTask(TASK_NAME, async ({ data, error }) => {
       recorded_at: new Date(loc.timestamp).toISOString(),
     };
 
-    // Tenter l'envoi direct
     const { error: insertError } = await supabase.from('gps_points').insert(point);
+
     if (insertError) {
-      console.warn('Network error, buffering point', insertError);
+      // Hors ligne ou erreur réseau : buffer local
+      console.warn('[GPS Task] Insert échoué, buffer:', insertError.message);
       await bufferPoint(point);
+    } else {
+      console.log(
+        `[GPS Task] Point enregistré: ${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}`
+      );
     }
   }
 
-  // Tenter de vider le buffer à chaque réveil background
+  // Tentative de flush du buffer à chaque réveil
   await flushBuffer();
 });
-
-export async function startTrackingTask() {
-  const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
-  if (foregroundStatus !== 'granted') {
-    alert('Permission Foreground requise');
-    return;
-  }
-
-  const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-  if (backgroundStatus !== 'granted') {
-    alert('Permission Background requise pour continuer écran éteint');
-    return;
-  }
-
-  await Location.startLocationUpdatesAsync(TASK_NAME, {
-    accuracy: Location.Accuracy.Balanced,    // ~100m, économise la batterie
-    timeInterval: 5 * 60 * 1000,             // 5 min (Android)
-    distanceInterval: 50,                    // 50m minimum entre 2 points
-    deferredUpdatesInterval: 5 * 60 * 1000,  // iOS deferred updates
-    showsBackgroundLocationIndicator: true,   // Indicateur bleu iOS
-    foregroundService: {                      // Notification persistante Android
-      notificationTitle: 'CleanMyMap en cours',
-      notificationBody: 'Enregistrement de votre parcours',
-      notificationColor: '#10b981', // emerald-500
-    },
-  });
-}
-
-export async function stopTrackingTask() {
-  const isRegistered = await TaskManager.isTaskRegisteredAsync(TASK_NAME);
-  if (isRegistered) {
-    await Location.stopLocationUpdatesAsync(TASK_NAME);
-  }
-}

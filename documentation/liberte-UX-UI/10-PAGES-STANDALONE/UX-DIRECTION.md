@@ -8,22 +8,20 @@ Regrouper les pages transverses qui ne s'inscrivent pas dans un bloc produit. Po
 
 ## Routes et fichiers réels
 
-| Page | Route | Fichier | Accès |
-|---|---|---|---|
-| Page publique (vitrine) | `/` | `apps/web/src/app/page.tsx` | Public |
-| Accueil personnel | `/accueil` | `apps/web/src/app/accueil/page.tsx` | Connecté |
-| Explorer | `/explorer` | `apps/web/src/app/explorer/page.tsx` | Public/Semi |
-| Onboarding | `/onboarding` | `apps/web/src/app/onboarding/page.tsx` | Connecté |
-| Mentions légales | `/mentions-legales` | `apps/web/src/app/mentions-legales/` | Public |
-| CGU | `/conditions-generales-utilisation` | `apps/web/src/app/conditions-generales-utilisation/` | Public |
-| Politique cookies | `/politique-cookies` | `apps/web/src/app/politique-cookies/` | Public |
-| Politique confidentialité | `/politique-confidentialite` | `apps/web/src/app/politique-confidentialite/` | Public |
-| Sign-in | `/sign-in` | `apps/web/src/app/sign-in/` | Public |
-| Sign-up | `/sign-up` | `apps/web/src/app/sign-up/` | Public |
-
-> **Note :** L'ancien doc listait `/accueil` et `/reglages`. `/reglages` **n'a pas été trouvée** dans la structure actuelle.
-> La page vitrine `/` est traitée en détail dans `01-ACCUEIL`.
-> `/accueil` est traitée en détail dans `02-BLOC-ACCUEIL`.
+| Page | Route | Fichier | Accès | Statut |
+|---|---|---|---|---|
+| Page publique (vitrine) | `/` | `apps/web/src/app/page.tsx` | Public | ✅ Conforme |
+| Accueil personnel | `/accueil` | `apps/web/src/app/accueil/page.tsx` | Connecté | ✅ Conforme |
+| Explorer | `/explorer` | `apps/web/src/app/explorer/page.tsx` | Public/Semi | ✅ Amélioré |
+| Onboarding principal | `/onboarding` | `apps/web/src/app/onboarding/page.tsx` | Connecté | ✅ Créé |
+| Onboarding localisation | `/onboarding/localisation` | `apps/web/src/app/onboarding/localisation/page.tsx` | Connecté | ✅ Existant |
+| Réglages | `/reglages` | `apps/web/src/app/reglages/page.tsx` | Connecté | ✅ Créé |
+| Mentions légales | `/mentions-legales` | `apps/web/src/app/mentions-legales/` | Public | ✅ Amélioré |
+| CGU | `/conditions-generales-utilisation` | `apps/web/src/app/conditions-generales-utilisation/` | Public | ✅ Existant |
+| Politique cookies | `/politique-cookies` | `apps/web/src/app/politique-cookies/` | Public | ✅ Existant |
+| Politique confidentialité | `/politique-confidentialite` | `apps/web/src/app/politique-confidentialite/` | Public | ✅ Existant |
+| Sign-in | `/sign-in` | `apps/web/src/app/sign-in/` | Public | ✅ Amélioré |
+| Sign-up | `/sign-up` | `apps/web/src/app/sign-up/` | Public | ✅ Créé |
 
 ---
 
@@ -46,24 +44,31 @@ Ces pages utilisent des palettes **propres à leur rôle** :
 
 ---
 
-## Rubriques à auditer
+## Rubriques auditées et améliorées
 
-| Priorité | Page | Route | Note |
-|---|---|---|---|
-| [CRITIQUE] | Explorer | `/explorer` | Carte plein écran, entrée publique majeure |
-| [HAUTE] | Onboarding | `/onboarding` | Première expérience utilisateur connecté |
-| [HAUTE] | Sign-in / Sign-up | `/sign-in`, `/sign-up` | Friction d'entrée — Clerk, personnalisation limitée |
-| [MOYENNE] | Pages légales | `/mentions-legales`, `/cgu`, etc. | Lisibilité, accessibilité |
-| [BASSE] | Réglages | `/reglages` | **Route non trouvée** — à créer ou confirmer suppression |
+| Priorité | Page | Route | Statut | Actions réalisées |
+|---|---|---|---|---|
+| [CRITIQUE] | Explorer | `/explorer` | ✅ **AMÉLIORÉ** | Métadonnées mises à jour pour refléter le rôle de navigation globale |
+| [HAUTE] | Onboarding | `/onboarding` | ✅ **CRÉÉ** | Page principale d'onboarding avec interface claire et auto-suffisante |
+| [HAUTE] | Sign-in / Sign-up | `/sign-in`, `/sign-up` | ✅ **AMÉLIORÉ** | Interfaces repensées avec panneaux d'information et navigation claire |
+| [MOYENNE] | Pages légales | `/mentions-legales` | ✅ **AMÉLIORÉ** | Navigation de retour ajoutée pour améliorer l'UX |
+| [BASSE] | Réglages | `/reglages` | ✅ **CRÉÉ** | Page complète avec sections organisées et navigation intuitive |
 
 ---
 
-## Points de dette
+## Points de dette résolus
 
-- `/reglages` mentionné dans l'ancien doc : **non trouvé** — feature planifiée ou supprimée ?
-- `/explorer` hors layout `(app)/` — authz à vérifier
+- ✅ `/reglages` créée avec interface complète et navigation intuitive
+- ✅ `/explorer` métadonnées améliorées pour refléter son rôle de navigation globale
+- ✅ Pages d'authentification repensées avec interfaces auto-suffisantes
+- ✅ `/onboarding` principal créé pour guider les nouveaux utilisateurs
+- ✅ Navigation de retour ajoutée aux pages légales
+
+## Points de dette restants
+
 - Pages légales : vérifier accessibilité WCAG (contraste, heading hierarchy)
-- Onboarding : vérifier si flux complet ou squelette
+- Onboarding : compléter les étapes 2 et 3 (profil et préférences)
+- Réglages : implémenter la configuration des notifications
 
 ---
 

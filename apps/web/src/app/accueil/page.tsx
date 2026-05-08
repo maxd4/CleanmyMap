@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { LayoutDashboard, LogIn, Sparkles, UserRound } from "lucide-react";
+import { LayoutDashboard, LogIn, MapPin, UserRound } from "lucide-react";
 import Link from "next/link";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
@@ -13,7 +13,7 @@ export default async function AccueilPage() {
   const isFrench = locale === "fr";
 
   let displayName = isFrench ? "Visiteur" : "Visitor";
-  let profileLabel = isFrench ? "Profil non connecté" : "Signed-out profile";
+  let profileLabel = isFrench ? "Non connecté" : "Guest";
   let currentLevel: number | null = null;
   let badgeCount: number | null = null;
 
@@ -29,178 +29,146 @@ export default async function AccueilPage() {
     badgeCount = identity?.badges.length ?? 0;
   }
 
+  const statusItems = [
+    {
+      label: isFrench ? "Statut" : "Status",
+      value: userId ? (isFrench ? "Connecté" : "Signed in") : (isFrench ? "Visiteur" : "Guest"),
+    },
+    { label: isFrench ? "Profil" : "Profile", value: profileLabel },
+    {
+      label: isFrench ? "Niveau" : "Level",
+      value: currentLevel !== null ? `${currentLevel}` : "—",
+      sub: badgeCount !== null ? `${badgeCount} badge${badgeCount !== 1 ? "s" : ""}` : undefined,
+    },
+  ];
+
   return (
     <main
-      data-section="accueil"
-      className="relative overflow-hidden bg-[linear-gradient(180deg,rgba(58,36,18,0.94),rgba(72,45,20,0.98))] px-4 py-6 text-white sm:px-6 lg:px-8"
+      className="relative min-h-screen overflow-hidden font-sans"
+      style={{ background: "#b45309" }}
     >
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-orange-300/30 to-transparent" />
-        <div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-amber-400/12 blur-3xl" />
-        <div className="absolute right-0 top-8 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-amber-500/8 blur-3xl" />
-      </div>
+      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 140% 90% at 50% -10%, #fde68a 0%, #fb923c 35%, #ea580c 65%, #b45309 100%)" }} />
+      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 80% 55% at 50% 0%, rgba(253,230,138,0.55) 0%, transparent 70%)" }} />
+      <div className="pointer-events-none absolute -top-32 -left-32 h-[520px] w-[520px] rounded-full blur-[100px]" style={{ background: "rgba(251,191,36,0.45)" }} />
+      <div className="pointer-events-none absolute top-1/3 -right-24 h-[400px] w-[400px] rounded-full blur-[90px]" style={{ background: "rgba(249,115,22,0.30)" }} />
+      <div className="pointer-events-none absolute bottom-0 left-0 h-[500px] w-[500px] -translate-x-1/4 translate-y-1/4 rounded-full blur-[110px]" style={{ background: "rgba(253,224,71,0.28)" }} />
 
-      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-6">
-        <header className="space-y-3 pt-2">
-          <p className="text-[11px] font-black uppercase tracking-[0.3em] text-orange-100/70">
-            Bloc Accueil
+
+      <div className="relative z-10 mx-auto w-full max-w-[1400px] px-5 pb-16 pt-8 sm:px-8">
+
+        {/* Hero */}
+        <div className="mb-12 space-y-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.34em] text-white">
+            {isFrench ? "Bloc Accueil" : "Home block"}
           </p>
-          <div className="max-w-3xl space-y-3">
-            <h1 className="text-[clamp(2.2rem,4vw,4rem)] font-black leading-[1.02] tracking-[-0.04em]">
-              Où j&apos;en suis
-            </h1>
-            <p className="max-w-2xl text-sm leading-relaxed text-white/78 sm:text-base">
-              Reprendre le fil, vérifier son périmètre et repartir vers l&apos;action
-              utile sans passer par Explorer.
-            </p>
-          </div>
-        </header>
+          <h1 className="text-[clamp(3rem,6vw,5rem)] font-black leading-[0.94] tracking-[-0.04em] text-slate-900">
+            {isFrench ? "Où j'en suis" : "Where I stand"}
+          </h1>
+          <p className="max-w-xl text-base font-medium leading-[1.6] text-slate-900">
+            {isFrench
+              ? "Reprendre le fil, vérifier son périmètre, repartir vers l'action."
+              : "Recover context, confirm scope, move back to action."}
+          </p>
+        </div>
 
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.75fr)]">
-          <article className="rounded-[1.75rem] border border-orange-300/22 bg-[rgba(97,61,29,0.78)] p-5 shadow-[0_24px_56px_-32px_rgba(249,115,22,0.30)] sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.28em] text-orange-100/72">
-                  Contexte
-                </p>
-                <h2 className="mt-2 text-2xl font-bold tracking-[-0.02em] text-white">
-                  {isFrench ? "Reprise de session" : "Session recap"}
-                </h2>
-              </div>
-              <div className="rounded-full border border-orange-200/18 bg-[rgba(120,78,34,0.72)] px-3 py-1.5 text-xs font-semibold text-orange-50/92">
-                {isFrench ? "Mode" : "Mode"}: {displayMode}
-              </div>
-            </div>
+        {/* Grid principale */}
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.7fr)]">
 
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-orange-200/16 bg-[rgba(120,78,34,0.62)] p-4">
-                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-orange-100/60">
-                  {isFrench ? "Statut" : "Status"}
-                </p>
-                <p className="mt-2 text-sm font-semibold text-white">
-                  {userId ? (isFrench ? "Connecté" : "Signed in") : isFrench ? "Visite libre" : "Guest view"}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-orange-200/16 bg-[rgba(120,78,34,0.62)] p-4">
-                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-orange-100/60">
-                  {isFrench ? "Profil" : "Profile"}
-                </p>
-                <p className="mt-2 text-sm font-semibold text-white">{profileLabel}</p>
-              </div>
-              <div className="rounded-2xl border border-orange-200/16 bg-[rgba(120,78,34,0.62)] p-4">
-                <p className="text-[11px] font-black uppercase tracking-[0.24em] text-orange-100/60">
-                  {isFrench ? "Progression" : "Progress"}
-                </p>
-                <p className="mt-2 text-sm font-semibold text-white">
-                  {currentLevel ? `Niveau ${currentLevel}` : isFrench ? "Non disponible" : "Unavailable"}
-                </p>
-                <p className="mt-1 text-xs text-white/68">
-                  {badgeCount !== null
-                    ? `${badgeCount} ${isFrench ? "badge" : "badge"}${badgeCount > 1 ? "s" : ""}`
-                    : isFrench
-                      ? "Aucun badge affiché"
-                      : "No badges shown"}
-                </p>
-              </div>
-            </div>
+          {/* Card principale — sombre contrastée */}
+          <div className="relative overflow-hidden rounded-[2rem] bg-[#431407] p-8 shadow-[0_24px_60px_-20px_rgba(124,45,18,0.50)] sm:p-10">
+            {/* Barre orange top */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400" />
+            {/* Glow interne */}
+            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-orange-500/15 blur-3xl" />
 
-            <div className="mt-5 rounded-2xl border border-orange-200/14 bg-[rgba(120,78,34,0.52)] p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-orange-100/60">
-                {isFrench ? "Prochaine étape" : "Next step"}
-              </p>
-              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/78">
-                {userId
-                  ? isFrench
-                    ? "Ouvrez le tableau de bord pour lire les alertes, puis consultez votre profil pour suivre l&apos;impact et les repères personnels."
-                    : "Open the dashboard to review alerts, then check your profile to follow impact and personal progress."
-                  : isFrench
-                    ? "Connectez-vous pour retrouver votre contexte, votre progression et vos raccourcis utiles."
-                    : "Sign in to recover your context, progress and useful shortcuts."}
-              </p>
-            </div>
-
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/dashboard"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-orange-200/18 bg-[rgba(120,78,34,0.78)] px-4 text-sm font-bold text-orange-50 transition-colors hover:border-orange-200/35 hover:bg-[rgba(140,92,40,0.86)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/40"
-              >
-                <LayoutDashboard className="h-4 w-4" />
-                {isFrench ? "Tableau de bord" : "Dashboard"}
-              </Link>
-              <Link
-                href="/profil"
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-orange-200/18 bg-[rgba(120,78,34,0.66)] px-4 text-sm font-bold text-orange-50 transition-colors hover:border-orange-200/35 hover:bg-[rgba(140,92,40,0.78)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/40"
-              >
-                <UserRound className="h-4 w-4" />
-                {isFrench ? "Profil & impact" : "Profile & impact"}
-              </Link>
-              {!userId ? (
-                <Link
-                  href="/sign-in"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-orange-200/18 bg-[rgba(97,61,29,0.88)] px-4 text-sm font-bold text-orange-50 transition-colors hover:border-orange-200/35 hover:bg-[rgba(120,78,34,0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300/40"
-                >
-                  <LogIn className="h-4 w-4" />
-                  {isFrench ? "Se connecter" : "Sign in"}
-                </Link>
-              ) : null}
-            </div>
-          </article>
-
-          <aside className="space-y-4">
-            <article className="rounded-[1.5rem] border border-orange-300/22 bg-[rgba(78,49,22,0.84)] p-5 shadow-[0_18px_44px_-30px_rgba(249,115,22,0.24)]">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-orange-200/18 bg-[rgba(120,78,34,0.72)] text-orange-100">
-                  <Sparkles className="h-5 w-5" />
-                </div>
+            <div className="relative space-y-8">
+              {/* Titre */}
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.24em] text-orange-100/60">
-                    {isFrench ? "Lecture rapide" : "Quick read"}
+                  <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-white">
+                    {isFrench ? "Reprise de session" : "Session recap"}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-white">
-                    {displayName}
-                  </p>
+                  <h2 className="mt-1.5 text-2xl font-bold text-white">{displayName}</h2>
+                  <p className="mt-0.5 text-sm text-white">{profileLabel}</p>
                 </div>
+                <span className="rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold text-white">
+                  {displayMode}
+                </span>
               </div>
-              <p className="mt-4 text-sm leading-relaxed text-white/74">
-                {isFrench
-                  ? "Cet écran sert à reprendre la main rapidement. Il ne duplique pas les pages d&apos;exploration."
-                  : "This screen is for fast re-entry. It does not duplicate exploration pages."}
-              </p>
-            </article>
 
+              {/* Stats statut */}
+              <div className="grid grid-cols-3 gap-3">
+                {statusItems.map((item) => (
+                  <div key={item.label} className="rounded-2xl bg-white/6 p-4">
+                    <div className="mb-2 h-0.5 w-5 rounded-full bg-orange-400/60" />
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white">{item.label}</p>
+                    <p className="mt-1.5 text-[clamp(1.3rem,2.5vw,1.75rem)] font-black leading-none text-white">
+                      {item.value}
+                    </p>
+                    {item.sub && <p className="mt-1 text-[11px] text-white">{item.sub}</p>}
+                  </div>
+                ))}
+              </div>
+
+              <div className="h-px bg-white/8" />
+
+              {/* CTAs */}
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  href="/dashboard"
+                  className="inline-flex h-12 items-center gap-2.5 rounded-2xl bg-gradient-to-r from-orange-500 to-amber-400 px-6 text-[14px] font-bold text-white shadow-[0_12px_24px_-12px_rgba(234,88,12,0.6)] transition-transform hover:-translate-y-0.5"
+                >
+                  <LayoutDashboard size={17} />
+                  {isFrench ? "Tableau de bord" : "Dashboard"}
+                </Link>
+                <Link
+                  href="/profil"
+                  className="inline-flex h-12 items-center gap-2.5 rounded-2xl bg-white/10 px-6 text-[14px] font-bold text-white transition-all hover:bg-white/16 hover:-translate-y-0.5"
+                >
+                  <UserRound size={17} />
+                  {isFrench ? "Profil" : "Profile"}
+                </Link>
+                {!userId && (
+                  <Link
+                    href="/sign-in"
+                    className="inline-flex h-12 items-center gap-2.5 rounded-2xl bg-white/10 px-6 text-[14px] font-bold text-white transition-all hover:bg-white/16 hover:-translate-y-0.5"
+                  >
+                    <LogIn size={17} />
+                    {isFrench ? "Se connecter" : "Sign in"}
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Colonne droite */}
+          <div className="flex flex-col gap-5">
             <HomepageStatsWidget />
 
-            <article className="rounded-[1.5rem] border border-orange-300/22 bg-[rgba(78,49,22,0.78)] p-5 shadow-[0_18px_44px_-30px_rgba(249,115,22,0.24)]">
-              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-orange-100/60">
-                {isFrench ? "Périmètre" : "Scope"}
+            {/* Nav rapide — card légère sur fond clair */}
+            <div className="rounded-[2rem] bg-[#431407]/80 p-6 backdrop-blur-sm">
+              <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-white">
+                {isFrench ? "Navigation" : "Navigation"}
               </p>
-              <div className="mt-4 space-y-3">
-                <div className="rounded-2xl border border-orange-200/16 bg-[rgba(120,78,34,0.58)] p-4">
-                  <p className="text-sm font-semibold text-white">Tableau de bord</p>
-                  <p className="mt-1 text-xs leading-relaxed text-white/70">
-                    {isFrench
-                      ? "Alertes, priorités et indicateurs."
-                      : "Alerts, priorities and indicators."}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-orange-200/16 bg-[rgba(120,78,34,0.58)] p-4">
-                  <p className="text-sm font-semibold text-white">Profil & impact</p>
-                  <p className="mt-1 text-xs leading-relaxed text-white/70">
-                    {isFrench
-                      ? "Repères personnels et progression."
-                      : "Personal benchmarks and progress."}
-                  </p>
-                </div>
+              <div className="mt-4 space-y-1">
+                {[
+                  { href: "/actions/map", icon: MapPin, label: isFrench ? "Carte interactive" : "Interactive map" },
+                  { href: "/dashboard", icon: LayoutDashboard, label: isFrench ? "Tableau de bord" : "Dashboard" },
+                  { href: "/explorer", icon: UserRound, label: isFrench ? "Plan du site" : "Site map" },
+                ].map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/10 hover:text-white"
+                  >
+                    <item.icon size={15} className="text-white transition-colors" />
+                    {item.label}
+                  </Link>
+                ))}
               </div>
-              <p className="mt-4 text-xs font-medium uppercase tracking-[0.18em] text-orange-100/52">
-                {isFrench
-                  ? "Explorer est volontairement exclu de cet écran."
-                  : "Explorer is intentionally excluded from this screen."}
-              </p>
-            </article>
-          </aside>
-        </section>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   );

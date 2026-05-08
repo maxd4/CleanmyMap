@@ -51,14 +51,14 @@ export type NavigationSpace = {
 };
 
 const SPACE_DEFINITIONS: Record<NavigationBlockId, NavigationSpaceMeta> = {
-  home: { id: "home", label: { fr: "Accueil", en: "Home" }, icon: "🏠", color: "text-slate-600" },
-  act: { id: "act", label: { fr: "Agir", en: "Act" }, icon: "⚡", color: "text-amber-600" },
+  home: { id: "home", label: { fr: "Accueil", en: "Home" }, icon: "🏠", color: "text-amber-600" },
+  act: { id: "act", label: { fr: "Agir", en: "Act" }, icon: "⚡", color: "text-emerald-600" },
   visualize: { id: "visualize", label: { fr: "Visualiser", en: "Visualize" }, icon: "🗺️", color: "text-sky-600" },
-  impact: { id: "impact", label: { fr: "Impact", en: "Impact" }, icon: "📊", color: "text-emerald-600" },
-  network: { id: "network", label: { fr: "Réseau", en: "Network" }, icon: "🤝", color: "text-violet-600" },
+  impact: { id: "impact", label: { fr: "Impact", en: "Impact" }, icon: "📊", color: "text-red-600" },
+  network: { id: "network", label: { fr: "Réseau", en: "Network" }, icon: "🤝", color: "text-indigo-600" },
   connect: { id: "connect", label: { fr: "Échanges", en: "Connect" }, icon: "💬", color: "text-pink-600" },
-  learn: { id: "learn", label: { fr: "Apprendre", en: "Learn" }, icon: "📚", color: "text-rose-600" },
-  pilot: { id: "pilot", label: { fr: "Piloter", en: "Govern" }, icon: "🎯", color: "text-indigo-600" },
+  learn: { id: "learn", label: { fr: "Apprendre", en: "Learn" }, icon: "📚", color: "text-yellow-600" },
+  pilot: { id: "pilot", label: { fr: "Piloter", en: "Govern" }, icon: "🎯", color: "text-amber-800" },
 };
 const FIXED_SPACE_ORDER: NavigationBlockId[] = [
   "home",
@@ -113,6 +113,7 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "weather",
   "elus",
   "admin",
+  "pilotage",
   "learn-comprendre",
   "learn-sentrainer",
   "learn-bonnes-pratiques",
@@ -130,6 +131,7 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "messagerie",
   "annuaire",
   "admin",
+  "pilotage",
   "learn-comprendre",
   "learn-sentrainer",
   "learn-bonnes-pratiques",
@@ -168,7 +170,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
       "learn-bonnes-pratiques",
       "learn-ressources",
     ],
-    pilot: ["elus"],
+    pilot: ["pilotage", "elus"],
   },
   scientifique: {
     home: ["dashboard", "explorer", "profile"],
@@ -232,7 +234,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
       "learn-bonnes-pratiques",
       "learn-ressources",
     ],
-    pilot: ["godmode", "admin", "sponsor", "elus"],
+    pilot: ["pilotage", "godmode", "admin", "sponsor", "elus"],
   },
 };
 

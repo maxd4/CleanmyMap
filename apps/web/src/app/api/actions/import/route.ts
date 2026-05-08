@@ -17,6 +17,7 @@ import {
 } from"@/lib/admin/response";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 import { acquireBackpressure, releaseBackpressure } from"@/lib/backpressure";
+import { isIsoDateString } from"@/lib/security/validation";
 
 export const runtime ="nodejs";
 const IMPORT_CONFIRM_PHRASE ="CONFIRMER IMPORT";
@@ -32,7 +33,7 @@ const importActionSchema = z.object({
  .optional(),
  actionDate: z
  .string()
- .regex(/^\d{4}-\d{2}-\d{2}$/,"Date attendue au format YYYY-MM-DD"),
+ .refine(isIsoDateString,"Date attendue au format YYYY-MM-DD"),
  locationLabel: z.string().trim().min(2).max(255),
  latitude: z.number().min(-90).max(90).nullable().optional(),
  longitude: z.number().min(-180).max(180).nullable().optional(),

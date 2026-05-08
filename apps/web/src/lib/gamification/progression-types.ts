@@ -118,8 +118,8 @@ export type IndividualLeaderboardItem = {
   actorName: string;
   associationName: string;
   score: number;
-  xpValidated: number;
-  xpTotal: number;
+  xpValidated: number; // For Lifetime display
+  xpTotal: number; // For Lifetime display
   currentLevel: number;
   potentialLevel: number;
   qualityAverage: number;
@@ -127,6 +127,16 @@ export type IndividualLeaderboardItem = {
   wasteKg: number;
   totalButts: number;
   badges: string[];
+};
+
+export type MonthlyMilestone = {
+  id: string;
+  month: number;
+  year: number;
+  description: string;
+  targetKg: number;
+  currentKg: number;
+  isCompleted: boolean;
 };
 
 export type CollectiveLeaderboardItem = {

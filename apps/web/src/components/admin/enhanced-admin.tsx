@@ -171,13 +171,12 @@ export function EnhancedAdmin() {
  >
  Test Simple Form
  </CmmButton>
- <CmmButton 
- onClick={() => window.open('/form-comparison', '_blank')}
- variant="ghost"
- className="w-full"
- >
- View Comparison
- </CmmButton>
+ <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-3">
+ <p className="text-sm font-medium text-slate-900">Vue de comparaison interne</p>
+ <p className="mt-1 cmm-text-small text-slate-600">
+ Réservée aux accès directs pendant la phase de migration.
+ </p>
+ </div>
  </div>
  </CmmCard>
  </div>

@@ -1,129 +1,142 @@
-import Link from"next/link";
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { Info, ArrowRight, AlertTriangle, ShieldCheck, TrendingUp, TrendingDown, Minus, Target, Sparkles, Activity } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type SummaryKpi = {
- label: string;
- value: string;
- previousValue: string;
- deltaAbsolute?: string;
- deltaPercent?: string;
- interpretation?:"positive" |"negative" |"neutral";
+  label: string;
+  value: string;
+  previousValue: string;
+  deltaAbsolute?: string;
+  deltaPercent?: string;
+  interpretation?: "positive" | "negative" | "neutral";
 };
 
 type ThirtySecondsSummaryProps = {
- kpis: readonly [SummaryKpi, SummaryKpi, SummaryKpi];
- alert?: {
- severity:"critical" |"high" |"medium" |"low";
- title: string;
- detail: string;
- };
- recommendedAction: { href: string; label: string };
- recommendedReason?: string;
+  summary: {
+    kpis: Array<SummaryKpi>;
+    alert?: {
+      severity: "critical" | "high" | "medium" | "low";
+      title: string;
+      detail: string;
+    };
+  };
 };
 
-function interpretationTone(value: SummaryKpi["interpretation"]): string {
- if (value ==="positive") {
- return"border-emerald-200 bg-emerald-50 text-emerald-800";
- }
- if (value ==="negative") {
- return"border-rose-200 bg-rose-50 text-rose-800";
- }
- return"border-amber-200 bg-amber-50 text-amber-800";
+function deltaStyles(v: SummaryKpi["interpretation"]) {
+  if (v === "positive") return { color: "text-emerald-400", bg: "bg-emerald-500/10", icon: TrendingUp };
+  if (v === "negative") return { color: "text-rose-400", bg: "bg-rose-500/10", icon: TrendingDown };
+  return { color: "text-slate-500", bg: "bg-white/5", icon: Minus };
 }
 
-function alertTone(
- value: NonNullable<ThirtySecondsSummaryProps["alert"]>["severity"],
-): string {
- if (value ==="critical") {
- return"border-rose-200 bg-rose-50 text-rose-800";
- }
- if (value ==="high") {
- return"border-amber-200 bg-amber-50 text-amber-800";
- }
- if (value ==="medium") {
- return"border-slate-300 bg-slate-50 cmm-text-primary";
- }
- return"border-emerald-200 bg-emerald-50 text-emerald-800";
+function alertStyles(severity: string) {
+  if (severity === "critical" || severity === "high")
+    return { border: "border-rose-500/30", bg: "bg-rose-500/5", text: "text-rose-400", badge: "bg-rose-500/20 text-rose-300", glow: "shadow-[0_0_50px_rgba(244,63,94,0.1)]" };
+  if (severity === "medium")
+    return { border: "border-amber-500/30", bg: "bg-amber-500/5", text: "text-amber-400", badge: "bg-amber-500/20 text-amber-300", glow: "shadow-[0_0_50px_rgba(245,158,11,0.1)]" };
+  return { border: "border-white/10", bg: "bg-white/5", text: "text-slate-400", badge: "bg-white/10 text-slate-300", glow: "" };
 }
 
-export function ThirtySecondsSummary({
- kpis,
- alert,
- recommendedAction,
- recommendedReason,
-}: ThirtySecondsSummaryProps) {
- return (
- <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm [data-display-mode='sobre']_&:bg-white [data-display-mode='sobre']_&:border-slate-300 [data-display-mode='sobre']_&:p-4">
- <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-emerald-800 [data-display-mode='sobre']_&:cmm-text-muted">
- Résumé décisionnel
- </p>
- <div className="mt-3 grid gap-3 md:grid-cols-3">
- {kpis.map((kpi) => (
- <article
- key={kpi.label}
- className="rounded-xl border border-emerald-200 bg-white px-4 py-3 [data-display-mode='sobre']_&:border-slate-200 [data-display-mode='sobre']_&:p-3"
- >
- <div className="flex items-center justify-between">
- <p className="cmm-text-caption font-bold uppercase tracking-widest cmm-text-muted">
- {kpi.label}
- </p>
- <Link 
- href="/methodologie" 
- className="cmm-text-caption font-bold text-emerald-600 hover:text-emerald-700 exhaustive-only"
- title="Consulter la méthodologie scientifique"
- >
- ⓘ INFO
- </Link>
- </div>
- <p className="mt-1 text-2xl font-bold cmm-text-primary tracking-tight">
- {kpi.value}
- </p>
- <p className="mt-0.5 cmm-text-caption font-bold cmm-text-muted uppercase">
- N-1: {kpi.previousValue}
- </p>
- <div
- className={`mt-2 rounded-lg border-l-4 px-3 py-1.5 cmm-text-caption font-bold exhaustive-only ${interpretationTone(kpi.interpretation)} [data-display-mode='sobre']_&:bg-transparent [data-display-mode='sobre']_&:border-l-slate-400 [data-display-mode='sobre']_&:px-2`}
- >
- <div className="flex justify-between">
- <span>Delta abs:</span> 
- <span className="cmm-text-primary">{kpi.deltaAbsolute ??"n/a"}</span>
- </div>
- <div className="flex justify-between">
- <span>Delta %:</span>
- <span className="cmm-text-primary">{kpi.deltaPercent ??"n/a"}</span>
- </div>
- </div>
- </article>
- ))}
- </div>
- {alert ? (
- <div
- className={`mt-4 rounded-xl border-l-[6px] px-5 py-4 ${alertTone(alert.severity)} [data-display-mode='sobre']_&:bg-slate-50 [data-display-mode='sobre']_&:border-l-slate-800`}
- >
- <p className="cmm-text-caption font-bold uppercase tracking-widest opacity-80">
- Alerte prioritaire
- </p>
- <p className="mt-1 cmm-text-small font-bold">{alert.title}</p>
- <p className="mt-1 cmm-text-caption exhaustive-only opacity-90 leading-relaxed">{alert.detail}</p>
- </div>
- ) : null}
- <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-emerald-200 bg-white px-5 py-4 [data-display-mode='sobre']_&:border-slate-200 [data-display-mode='sobre']_&:p-3">
- <div className="flex items-center gap-3">
- <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
- <div>
- <p className="cmm-text-caption font-bold cmm-text-primary uppercase tracking-wide">Action recommandée</p>
- {recommendedReason ? (
- <p className="cmm-text-caption cmm-text-muted exhaustive-only font-medium">{recommendedReason}</p>
- ) : null}
- </div>
- </div>
- <Link
- href={recommendedAction.href}
- className="rounded-lg bg-emerald-600 px-4 py-2 cmm-text-caption font-bold text-white hover:bg-emerald-700 transition shadow-sm [data-display-mode='sobre']_&:bg-slate-900 [data-display-mode='sobre']_&:shadow-none"
- >
- {recommendedAction.label.toUpperCase()}
- </Link>
- </div>
- </section>
+export function ThirtySecondsSummary({ summary }: ThirtySecondsSummaryProps) {
+  const { kpis, alert } = summary;
 
- );
+  return (
+    <div className="space-y-8">
+      {/* Alert Section (If exists) */}
+      {alert && (() => {
+        const styles = alertStyles(alert.severity);
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+              "p-10 rounded-[3rem] border backdrop-blur-3xl relative overflow-hidden group",
+              styles.border, styles.bg, styles.glow
+            )}
+          >
+            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+               <AlertTriangle size={160} className={styles.text} />
+            </div>
+
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-8 relative z-10">
+              <div className={cn("p-5 rounded-3xl bg-white/5 border border-white/10 shadow-2xl group-hover:scale-110 transition-transform duration-500", styles.text)}>
+                <AlertTriangle size={32} className="animate-pulse" />
+              </div>
+              <div className="space-y-4 flex-1">
+                <div className="flex items-center gap-3">
+                  <span className={cn("px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl", styles.badge)}>
+                    {alert.severity === "critical" ? "Critique" : alert.severity === "high" ? "Urgent" : "Attention"}
+                  </span>
+                  <div className="h-1 w-1 rounded-full bg-slate-700" />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Protocole d'Alerte Alpha</span>
+                </div>
+                <h4 className="text-3xl font-black text-white tracking-tighter leading-none">{alert.title}</h4>
+                <p className="text-sm font-bold text-slate-400 leading-relaxed max-w-3xl opacity-80">{alert.detail}</p>
+              </div>
+              <button className="shrink-0 px-8 py-4 rounded-2xl bg-white text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] hover:translate-x-2 transition-transform shadow-2xl flex items-center gap-3">
+                 Résoudre
+                 <ArrowRight size={16} />
+              </button>
+            </div>
+          </motion.div>
+        );
+      })()}
+
+      {/* KPI Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {kpis.map((kpi, i) => {
+          const styles = deltaStyles(kpi.interpretation);
+          const DeltaIcon = styles.icon;
+          
+          return (
+            <motion.div
+              key={kpi.label}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden group hover:bg-white/5 transition-all"
+            >
+              <div className="absolute top-0 right-0 h-32 w-32 bg-white/5 blur-3xl rounded-full translate-x-16 -translate-y-16" />
+              
+              <div className="relative z-10 space-y-8">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                     <div className="p-2 rounded-lg bg-white/5 border border-white/5 text-slate-600">
+                        <Activity size={14} />
+                     </div>
+                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{kpi.label}</span>
+                  </div>
+                  <Link href="/methodologie" className="p-2 rounded-lg bg-white/5 text-slate-600 hover:text-white hover:bg-white/10 transition-all">
+                    <Info size={14} />
+                  </Link>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-baseline gap-3">
+                     <p className="text-6xl font-black text-white tracking-tighter">{kpi.value}</p>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-tight", styles.bg, styles.color)}>
+                      <DeltaIcon size={12} />
+                      {kpi.deltaPercent}
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-600 italic">vs last period</span>
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-white/5">
+                   <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic">
+                      Previous baseline: <span className="text-slate-400 font-black">{kpi.previousValue}</span>
+                   </p>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }

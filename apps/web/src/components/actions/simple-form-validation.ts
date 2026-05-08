@@ -9,15 +9,19 @@ export interface SimpleActionFormData {
  organizerName: string
  organizerEmail: string
  isPublic: boolean
+ honeypot?: string
+ submittedAt?: number | null
 }
 
 export interface FormErrors {
+ form?: string
  title?: string
  location?: string
  date?: string
  participantCount?: string
  organizerName?: string
  organizerEmail?: string
+ photos?: string
 }
 
 export function validateSimpleForm(data: SimpleActionFormData): FormErrors {

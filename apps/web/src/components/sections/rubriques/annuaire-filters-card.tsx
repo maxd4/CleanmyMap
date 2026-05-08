@@ -1,6 +1,5 @@
 import React from "react";
 import Link from "next/link";
-import { CmmCard } from "@/components/ui/cmm-card";
 import { cn } from "@/lib/utils";
 import { 
   KIND_FILTERS, 
@@ -10,6 +9,8 @@ import {
   type ZoneFilter 
 } from "./annuaire-filters";
 import { PARIS_ARRONDISSEMENTS, type ParisArrondissement } from "@/lib/geo/paris-arrondissements";
+import { Search, MapPin, Building2, Zap, RotateCcw, AlertCircle, PlusCircle, ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface AnnuaireFiltersCardProps {
   fr: boolean;
@@ -41,35 +42,15 @@ export function AnnuaireFiltersCard({
   resultsCount,
 }: AnnuaireFiltersCardProps) {
   return (
-    <CmmCard tone="emerald" variant="elevated" animateEntrance className="space-y-6 relative overflow-hidden ring-1 ring-emerald-500/30 bg-slate-950/80">
-      {/* Decorative background element */}
-      <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      
-      <div className="flex flex-wrap items-start justify-between gap-4 relative z-10">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="h-1 w-4 rounded-full bg-emerald-500" />
-            <p className="cmm-text-caption font-black uppercase tracking-[0.2em] text-emerald-500">
-              {fr ? "Exploration" : "Discovery"}
-            </p>
-          </div>
-          <h2 className="cmm-text-h4 cmm-text-primary">
-            {fr ? "Trouver un partenaire" : "Find a partner"}
-          </h2>
-        </div>
-        <div className="rounded-xl border border-emerald-500/20 bg-emerald-950/20 px-4 py-2 cmm-text-caption text-emerald-400 font-medium shadow-sm backdrop-blur-md">
-          {fr
-            ? "Filtrez par type ou secteur pour affiner le réseau."
-            : "Filter by type or area to refine the network."}
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-2 relative z-10">
-        <div className="space-y-2">
-          <span className="cmm-text-caption font-black cmm-text-secondary uppercase tracking-widest text-[10px] opacity-70">
-            {fr ? "Mots-clés" : "Keywords"}
+    <div className="space-y-10 relative z-10">
+      {/* Search & Area Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-3">
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+            {fr ? "Recherche textuelle" : "Text search"}
           </span>
           <div className="relative group">
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-violet-400 transition-colors" />
             <input
               value={searchTerm}
               onChange={(event) => {
@@ -77,16 +58,17 @@ export function AnnuaireFiltersCard({
                 setSearchTerm(event.target.value);
               }}
               placeholder={fr ? "Nom, mission, mot-clé..." : "Name, mission, keyword..."}
-              className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 cmm-text-small cmm-text-primary transition-all group-focus-within:border-emerald-500/50 group-focus-within:ring-4 group-focus-within:ring-emerald-500/10 focus:outline-none shadow-inner"
+              className="w-full h-14 rounded-2xl border border-white/5 bg-slate-950/40 pl-14 pr-6 text-sm font-bold text-white shadow-inner transition-all placeholder:text-slate-600 focus:outline-none focus:border-violet-500/40 focus:ring-4 focus:ring-violet-500/10"
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <span className="cmm-text-caption font-black cmm-text-secondary uppercase tracking-widest text-[10px] opacity-70">
-            {fr ? "Secteur géographique" : "Geographic area"}
+        <div className="space-y-3">
+          <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+            {fr ? "Rayon d'action" : "Action radius"}
           </span>
-          <div className="relative">
+          <div className="relative group">
+            <MapPin size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-violet-400 transition-colors" />
             <select
               value={String(zoneFilter)}
               onChange={(event) => {
@@ -99,7 +81,7 @@ export function AnnuaireFiltersCard({
                 setActorCardsPage(1);
                 setZoneFilter(Number.parseInt(raw, 10) as ParisArrondissement);
               }}
-              className="w-full rounded-xl border border-slate-800 bg-slate-900/60 px-4 py-3 cmm-text-small cmm-text-primary transition-all focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/10 focus:outline-none shadow-inner appearance-none cursor-pointer"
+              className="w-full h-14 cursor-pointer appearance-none rounded-2xl border border-white/5 bg-slate-950/40 pl-14 pr-12 text-sm font-bold text-white shadow-inner transition-all focus:border-violet-500/40 focus:outline-none focus:ring-4 focus:ring-violet-500/10"
             >
               <option value="all">{fr ? "Tout Paris" : "All Paris"}</option>
               {targetArrondissement ? <option value="nearby">{fr ? "Proches de moi" : "Nearby"}</option> : null}
@@ -109,17 +91,19 @@ export function AnnuaireFiltersCard({
                 </option>
               ))}
             </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 4.5 3 3 3-3"/></svg>
-            </div>
+            <ChevronDown size={18} className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-600" />
           </div>
         </div>
       </div>
 
-      <div className="space-y-3 pt-2 relative z-10">
-        <span className="cmm-text-caption font-black cmm-text-secondary uppercase tracking-widest text-[10px] opacity-70">
-          {fr ? "Type de structure" : "Structure type"}
-        </span>
+      {/* Type Filter */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+           <Building2 size={14} className="text-slate-500" />
+           <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+              {fr ? "Type de structure" : "Structure type"}
+           </span>
+        </div>
         <div className="flex flex-wrap gap-2">
           {KIND_FILTERS.map((item) => (
             <button
@@ -129,10 +113,10 @@ export function AnnuaireFiltersCard({
                 setFilterKind(item.value);
               }}
               className={cn(
-                "rounded-xl px-4 py-2 cmm-text-caption font-bold transition-all duration-300 border shadow-sm",
+                "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border",
                 filterKind === item.value
-                  ? "bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-900/40 -translate-y-0.5"
-                  : "bg-slate-900/60 border-slate-800 cmm-text-secondary hover:border-emerald-500/50 hover:bg-slate-800"
+                  ? "border-violet-500 bg-violet-600/20 text-violet-300 shadow-lg scale-105"
+                  : "border-white/5 bg-white/5 text-slate-500 hover:border-white/20 hover:text-white"
               )}
             >
               {item.label}
@@ -141,10 +125,14 @@ export function AnnuaireFiltersCard({
         </div>
       </div>
 
-      <div className="space-y-3 pt-2 relative z-10">
-        <span className="cmm-text-caption font-black cmm-text-secondary uppercase tracking-widest text-[10px] opacity-70">
-          {fr ? "Besoin ou aide proposée" : "Need or help offered"}
-        </span>
+      {/* Contribution Filter */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-3">
+           <Zap size={14} className="text-slate-500" />
+           <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
+              {fr ? "Leviers & Besoins" : "Levers & Needs"}
+           </span>
+        </div>
         <div className="flex flex-wrap gap-2">
           {CONTRIBUTION_FILTERS.map((item) => (
             <button
@@ -154,10 +142,10 @@ export function AnnuaireFiltersCard({
                 setFilterContribution(item.value as ContributionType | "all");
               }}
               className={cn(
-                "rounded-xl px-4 py-2 cmm-text-caption font-bold transition-all duration-300 border shadow-sm",
+                "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border",
                 filterContribution === item.value
-                  ? "bg-cyan-600 border-cyan-600 text-white shadow-lg shadow-cyan-900/40 -translate-y-0.5"
-                  : "bg-slate-900/60 border-slate-800 cmm-text-secondary hover:border-cyan-500/50 hover:bg-slate-800"
+                  ? "border-violet-500 bg-violet-600/20 text-violet-300 shadow-lg scale-105"
+                  : "border-white/5 bg-white/5 text-slate-500 hover:border-white/20 hover:text-white"
               )}
             >
               {item.label}
@@ -166,42 +154,52 @@ export function AnnuaireFiltersCard({
         </div>
       </div>
 
-      {resultsCount === 0 ? (
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-5 shadow-xl animate-in fade-in slide-in-from-top-4 duration-500 relative z-10">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 rounded-full bg-amber-500/20 text-amber-500 border border-amber-500/30">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      {/* Empty State / Reset */}
+      <AnimatePresence>
+        {resultsCount === 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="p-8 rounded-[2rem] border border-amber-500/20 bg-amber-500/5 backdrop-blur-3xl"
+          >
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+               <div className="flex items-start gap-6">
+                  <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400">
+                     <AlertCircle size={24} />
+                  </div>
+                  <div className="space-y-2">
+                     <h4 className="text-sm font-black text-white uppercase tracking-widest">{fr ? "Aucun résultat" : "No results"}</h4>
+                     <p className="text-xs font-bold text-slate-400 leading-relaxed max-w-sm">
+                        {fr ? "Essayez d'élargir le périmètre ou de retirer certains filtres." : "Try widening the radius or removing some filters."}
+                     </p>
+                  </div>
+               </div>
+               <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => {
+                      setZoneFilter("all");
+                      setFilterKind("all");
+                      setFilterContribution("all");
+                      setSearchTerm("");
+                    }}
+                    className="flex items-center gap-3 px-6 py-3 rounded-xl border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all"
+                  >
+                    <RotateCcw size={14} />
+                    {fr ? "Réinitialiser" : "Reset"}
+                  </button>
+                  <Link
+                    href="/partners/onboarding"
+                    className="flex items-center gap-3 px-6 py-3 rounded-xl bg-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl hover:scale-105 transition-all"
+                  >
+                    <PlusCircle size={14} />
+                    {fr ? "Proposer" : "Propose"}
+                  </Link>
+               </div>
             </div>
-            <p className="cmm-text-body font-bold text-amber-500">
-              {fr ? "Aucune structure ne correspond à ces filtres" : "No structure matches these filters"}
-            </p>
-          </div>
-          <p className="cmm-text-caption text-amber-200/50 mb-5 leading-relaxed">
-            {fr
-              ? "Essayez d'élargir le périmètre, de retirer un filtre ou de changer de mot-clé. Si la structure manque, vous pouvez aussi la proposer."
-              : "Try widening the area, removing one filter or changing the keyword. If the structure is missing, you can also propose it."}
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Link
-              href="/partners/onboarding"
-              className="rounded-xl bg-amber-500 px-5 py-2.5 cmm-text-small font-black text-white transition-all hover:bg-amber-600 hover:shadow-lg shadow-md uppercase tracking-wider"
-            >
-              {fr ? "Proposer une structure" : "Propose a structure"}
-            </Link>
-            <button
-              onClick={() => {
-                setZoneFilter("all");
-                setFilterKind("all");
-                setFilterContribution("all");
-                setSearchTerm("");
-              }}
-              className="rounded-xl border border-slate-800 bg-slate-900 px-5 py-2.5 cmm-text-small font-bold text-slate-300 transition-all hover:bg-slate-800 shadow-sm"
-            >
-              {fr ? "Réinitialiser les filtres" : "Reset filters"}
-            </button>
-          </div>
-        </div>
-      ) : null}
-    </CmmCard>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

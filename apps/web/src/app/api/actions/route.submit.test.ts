@@ -185,4 +185,22 @@ describe("POST /api/actions", () => {
       location: "Lieu propre test",
     });
   }, 15000);
+
+  it("rejects unauthenticated submissions", async () => {
+    authMock.mockResolvedValueOnce({ userId: null });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "action",
+        }),
+      }),
+    );
+
+    const body = (await response.json()) as { error?: string };
+    expect(response.status).toBe(401);
+    expect(body.error).toBe("Vous devez vous reconnecter pour continuer.");
+  });
 });

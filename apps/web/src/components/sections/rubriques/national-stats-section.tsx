@@ -1,12 +1,34 @@
 "use client";
 
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { motion } from "framer-motion";
-import { TrendingDown, Globe, Wallet, User, Clock, Droplets, Info, Users, Trash2, TrendingUp, BarChart3 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { 
+  TrendingDown, 
+  Globe, 
+  Wallet, 
+  User, 
+  Clock, 
+  Droplets, 
+  Info, 
+  Users, 
+  Trash2, 
+  TrendingUp, 
+  BarChart3, 
+  ArrowRight, 
+  Quote, 
+  Sparkles, 
+  Target,
+  ShieldCheck,
+  Zap,
+  Leaf
+} from "lucide-react";
 import Link from "next/link";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
-import { CmmSkeleton, SkeletonGrid } from "@/components/ui/cmm-skeleton";
+import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import { SectionShell } from "@/components/sections/rubriques/shared";
+import { memo } from "react";
+import { cn } from "@/lib/utils";
 
 interface NationalStat {
   value: string;
@@ -14,6 +36,8 @@ interface NationalStat {
   title: string;
   desc: string;
   equivalent?: string;
+  icon: any;
+  color: string;
 }
 
 const CONTEXT_STATS: Record<string, NationalStat> = {
@@ -23,30 +47,40 @@ const CONTEXT_STATS: Record<string, NationalStat> = {
     title: "Tonnage annuel",
     desc: "de déchets abandonnés chaque année en France métropolitaine",
     equivalent: "Soit l'équivalent de 100 Tours Eiffel",
+    icon: Trash2,
+    color: "text-amber-400"
   },
   cost: {
     value: "1.2Mds",
     unit: "€",
     title: "Coût annuel",
     desc: "dépensés par les collectivités pour le nettoyage des déchets sauvages",
+    icon: Wallet,
+    color: "text-rose-400"
   },
   perCapita: {
     value: "32",
     unit: "kg",
     title: "Par habitant",
     desc: "de déchets abandonnés annuellement par habitant",
+    icon: User,
+    color: "text-blue-400"
   },
   decomposition: {
     value: "450",
     unit: "ans",
-    title: "Temps de décomposition",
+    title: "Décomposition",
     desc: "pour un plastique classique dans la nature",
+    icon: Clock,
+    color: "text-purple-400"
   },
   waterImpact: {
     value: "80%",
     unit: "",
     title: "Pollution aquatique",
     desc: "des déchets abandonnés finissent dans les cours d'eau et les océans",
+    icon: Droplets,
+    color: "text-sky-400"
   },
 };
 
@@ -56,6 +90,19 @@ const STAT_SOURCES: Record<string, string> = {
   perCapita: "ADEME 2023",
   decomposition: "Scientific literature",
   waterImpact: "Ocean Conservancy",
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
 };
 
 function formatNumber(num: number): string {
@@ -83,218 +130,175 @@ function computePlatformStats(actions: any[]) {
   };
 }
 
-function PlatformStatsSection() {
-  const { data, isLoading } = useSWR("platform-stats", () => 
-    fetchActions({ status: "approved", limit: 5000 }), 
-    { revalidateOnFocus: false }
-  );
-  
-  const stats = data?.items ? computePlatformStats(data.items) : null;
-  
-  const statItems = [
-    { label: "Déchets collectés", value: stats ? `${formatNumber(stats.totalKg)} kg` : "...", icon: Trash2, bgClass: "bg-emerald-500/10", textClass: "text-emerald-600" },
-    { label: "Actions validées", value: stats ? formatNumber(stats.totalActions) : "...", icon: TrendingUp, bgClass: "bg-rose-500/10", textClass: "text-rose-600" },
-    { label: "Bénévoles actifs", value: stats ? formatNumber(stats.totalVolunteers) : "...", icon: Users, bgClass: "bg-orange-500/10", textClass: "text-orange-600" },
-    { label: "Heures bénévoles", value: stats ? `${stats.hours}h` : "...", icon: Clock, bgClass: "bg-amber-500/10", textClass: "text-amber-600" },
-  ];
-  
-  if (isLoading) {
-    return (
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: i * 0.1 }}
-            className="relative overflow-hidden rounded-[2rem] bg-white border border-slate-100 p-6 shadow-xl"
-          >
-            <CmmSkeleton variant="rectangular" className="w-10 h-10 rounded-2xl mb-4" />
-            <CmmSkeleton variant="text" className="h-8 w-24 mb-2" />
-            <CmmSkeleton variant="text" className="h-3 w-32" />
-          </motion.div>
-        ))}
-      </div>
-    );
-  }
-  
-  return (
-    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {statItems.map((item, i) => (
-        <motion.div
-          key={item.label}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: i * 0.1 }}
-          className="relative overflow-hidden rounded-[2rem] bg-white border border-slate-100 p-6 shadow-xl"
-        >
-          <div className={`w-10 h-10 rounded-2xl ${item.bgClass} flex items-center justify-center mb-4`}>
-            <item.icon size={18} className={item.textClass} />
-          </div>
-          <p className="text-2xl font-black tracking-tight cmm-text-primary">{item.value}</p>
-          <p className="text-xs font-medium text-slate-500 uppercase tracking-widest mt-1">{item.label}</p>
-        </motion.div>
-      ))}
-    </div>
-  );
-}
-
-function BarometerSection() {
-  const { t } = useTranslation("nationalStats");
-  
-  const barometerData = [
-    { label: "Français préoccupés par la propreté", value: "78%", trend: "+5%" },
-    { label: "Considèrent la problématique grave", value: "65%", trend: "+8%" },
-    { label: "Sont prêts à participer à des opérations", value: "42%", trend: "+3%" },
-  ];
-  
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <BarChart3 size={24} className="text-yellow-500" />
-        <h3 className="text-xl font-black tracking-tight cmm-text-primary">Baromètre national</h3>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-3">
-        {barometerData.map((item, i) => (
-          <motion.div
-            key={item.label}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.15 }}
-            className="p-6 rounded-[2rem] bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-100/50 shadow-sm"
-          >
-            <p className="text-3xl font-black text-amber-600">{item.value}</p>
-            <p className="text-sm font-medium cmm-text-secondary mt-2">{item.label}</p>
-            <span className="inline-block mt-3 text-xs font-bold text-amber-700 bg-amber-100/50 px-2 py-1 rounded-full">
-              {item.trend} vs N-1
-            </span>
-          </motion.div>
-        ))}
-      </div>
-      <p className="text-xs text-slate-400 text-center">Source : Enquête IFOP pour Gestes Propres 2024</p>
-    </div>
-  );
-}
-
 export function NationalStatsSection() {
-  const { t } = useTranslation("nationalStats");
+  const { t, locale } = useTranslation();
+  const fr = locale === "fr";
 
-  const contextStats = [
-    { key: "annualToll", icon: Globe, iconColor: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/20", textColor: "text-rose-600" },
-    { key: "cost", icon: Wallet, iconColor: "text-orange-500", bg: "bg-orange-500/10", border: "border-orange-500/20", textColor: "text-orange-600" },
-    { key: "perCapita", icon: User, iconColor: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20", textColor: "text-amber-600" },
-    { key: "decomposition", icon: Clock, iconColor: "text-yellow-500", bg: "bg-yellow-500/10", border: "border-yellow-500/20", textColor: "text-yellow-600" },
-    { key: "waterImpact", icon: Droplets, iconColor: "text-emerald-500", bg: "bg-emerald-500/10", border: "border-emerald-500/20", textColor: "text-emerald-600" },
-  ];
+  const { data, isLoading, error } = useSWR(["national-platform-stats"], () =>
+    fetchActions({ status: "approved", limit: 5000 }),
+  );
+
+  const platformStats = data ? computePlatformStats(data.items) : null;
 
   return (
-    <section className="w-full max-w-7xl mx-auto p-6 sm:p-8 xl:px-10 space-y-16">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center space-y-4"
-      >
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/10 text-rose-600 border border-rose-100 shadow-sm">
-          <TrendingDown size={14} className="animate-pulse" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em]">{t("header_suptitle")}</span>
-        </div>
-        <h2 className="text-3xl md:text-4xl font-black tracking-tight cmm-text-primary">{t("header_title")}</h2>
-        <p className="text-lg cmm-text-secondary max-w-2xl mx-auto font-medium leading-relaxed">{t("header_desc")}</p>
-      </motion.div>
-
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5">
-        {contextStats.map((stat, index) => {
-          const data = CONTEXT_STATS[stat.key];
-          if (!data) {
-            return null;
-          }
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.key}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={`relative overflow-hidden rounded-[2rem] border ${stat.border} bg-white p-6 shadow-xl shadow-slate-200/50 `}
-            >
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Icon size={80} className={stat.iconColor} />
-              </div>
-              <div className="relative z-10 space-y-3">
-                <div className={`w-10 h-10 rounded-2xl ${stat.bg} flex items-center justify-center`}>
-                  <Icon size={18} className={stat.textColor} />
+    <SectionShell
+      id="impact-national"
+      title={fr ? "Échelle & Impact" : "Scale & Impact"}
+      subtitle={fr ? "Perspective globale et contribution de la plateforme à l'effort national." : "Global perspective and platform contribution to the national effort."}
+      icon={Globe}
+      gradient="from-sky-500/20 via-slate-500/10 to-transparent"
+    >
+      <div className="space-y-24 pt-8">
+        {/* Context Grid - National Perspective */}
+        <div className="space-y-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 px-4">
+             <div className="space-y-4">
+                <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 shadow-2xl">
+                   <Target size={14} />
+                   {fr ? "Le Défi National" : "The National Challenge"}
                 </div>
-                <div className="space-y-1">
-                  <div className="flex items-baseline gap-1">
-                    <span className={`text-3xl font-black tracking-tight ${stat.textColor}`}>{data.value}</span>
-                    {data.unit && <span className="text-sm font-bold text-slate-500">{data.unit}</span>}
+                <h2 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-tight">
+                   L'état des lieux <br/> métropolitain
+                </h2>
+             </div>
+             <p className="max-w-md text-lg text-slate-400 font-bold leading-relaxed opacity-80">
+                {fr ? "Comprendre l'ampleur du problème pour mieux dimensionner nos solutions locales." : "Understand the scale of the problem to better size our local solutions."}
+             </p>
+          </div>
+
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          >
+            {Object.entries(CONTEXT_STATS).map(([key, stat], i) => (
+              <motion.article
+                key={key}
+                variants={itemVariants}
+                className="group relative overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 p-10 backdrop-blur-3xl shadow-2xl transition-all hover:bg-white/5"
+              >
+                <div className="relative z-10 space-y-8">
+                  <div className={cn(
+                    "flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-950/40 border border-white/10 shadow-2xl group-hover:scale-110 transition-transform duration-500",
+                    stat.color
+                  )}>
+                    <stat.icon size={32} />
                   </div>
-                  <p className="text-xs font-black uppercase tracking-widest text-slate-400">{data.title}</p>
+                  <div>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-5xl font-black tracking-tighter text-white">{stat.value}</p>
+                      <p className="text-xl font-black text-slate-500 uppercase tracking-tighter">{stat.unit}</p>
+                    </div>
+                    <p className="mt-2 text-sm font-black text-white uppercase tracking-widest">{stat.title}</p>
+                  </div>
+                  <div className="space-y-4">
+                    <p className="text-sm font-bold text-slate-400 leading-relaxed opacity-80">{stat.desc}</p>
+                    {stat.equivalent && (
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-widest text-slate-500 italic">
+                        {stat.equivalent}
+                      </div>
+                    )}
+                  </div>
+                  <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+                     <span className="text-[9px] font-black uppercase tracking-widest text-slate-600">Source: {STAT_SOURCES[key]}</span>
+                     <Info size={12} className="text-slate-700" />
+                  </div>
                 </div>
-                <p className="text-sm cmm-text-secondary font-medium leading-relaxed">{data.desc}</p>
-                {data.equivalent && (
-                  <div className="pt-2 text-xs font-medium text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg">{data.equivalent}</div>
-                )}
-                <p className="text-[10px] font-medium text-slate-400 pt-2 border-t border-slate-100 ">Source: {STAT_SOURCES[stat.key]}</p>
+                <div className={cn(
+                  "absolute -right-16 -bottom-16 opacity-5 transition-all duration-1000 group-hover:scale-125 group-hover:opacity-10",
+                  stat.color
+                )}>
+                  <stat.icon size={250} />
+                </div>
+              </motion.article>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Platform Contribution - Hero Impact Section */}
+        {isLoading ? (
+          <CmmSkeleton className="h-[500px] rounded-[4rem]" />
+        ) : platformStats && (
+          <motion.section 
+            initial={{ opacity: 0, scale: 0.98 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="relative p-12 md:p-20 rounded-[4rem] border border-sky-500/30 bg-slate-900/40 backdrop-blur-3xl shadow-[0_0_100px_rgba(14,165,233,0.1)] overflow-hidden group"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 via-blue-500/5 to-transparent opacity-50" />
+            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+               <Sparkles size={300} className="text-sky-400" />
+            </div>
+
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+              <div className="space-y-12">
+                <div className="space-y-6">
+                  <div className="inline-flex items-center gap-3 px-5 py-2 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-[10px] font-black uppercase tracking-[0.3em] text-sky-400 shadow-2xl">
+                    <Sparkles size={16} className="animate-pulse" />
+                    {fr ? "Impact de la Plateforme" : "Platform Impact"}
+                  </div>
+                  <h2 className="text-5xl md:text-6xl font-black text-white tracking-tighter leading-tight">
+                    Notre contribution <br/> collective
+                  </h2>
+                  <p className="text-xl text-slate-400 font-bold leading-relaxed max-w-lg opacity-80">
+                    {fr ? "Chaque geste sur le terrain se transforme en indicateur de changement positif pour le territoire." : "Every action on the field transforms into a positive change indicator for the territory."}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <p className="text-5xl font-black text-white tracking-tighter">{formatNumber(platformStats.totalKg)}</p>
+                    <p className="text-[10px] font-black text-sky-400 uppercase tracking-[0.2em]">KG Collectés</p>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-5xl font-black text-white tracking-tighter">{formatNumber(platformStats.totalVolunteers)}</p>
+                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">Bénévoles Actifs</p>
+                  </div>
+                </div>
               </div>
-            </motion.div>
-          );
-        })}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[
+                  { label: fr ? "Eau préservée" : "Water saved", val: `${formatNumber(platformStats.waterSaved)}L`, icon: Droplets, color: "text-sky-400", bg: "bg-sky-500/5", border: "border-sky-500/10" },
+                  { label: fr ? "CO2 Évité" : "CO2 Avoided", val: `${formatNumber(platformStats.co2Avoided)}kg`, icon: Leaf, color: "text-emerald-400", bg: "bg-emerald-500/5", border: "border-emerald-500/10" },
+                  { label: fr ? "Actions menées" : "Actions led", val: platformStats.totalActions, icon: Zap, color: "text-amber-400", bg: "bg-amber-500/5", border: "border-amber-500/10" },
+                  { label: fr ? "Heures terrain" : "Field hours", val: platformStats.hours, icon: Clock, color: "text-indigo-400", bg: "bg-indigo-500/5", border: "border-indigo-500/10" },
+                ].map((item, i) => (
+                  <div key={i} className={cn("p-8 rounded-[2.5rem] border backdrop-blur-xl group/card hover:bg-white/5 transition-all", item.bg, item.border)}>
+                     <item.icon size={24} className={cn("mb-6 group-hover/card:scale-125 transition-transform duration-500", item.color)} />
+                     <p className="text-2xl font-black text-white tracking-tight">{item.val}</p>
+                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mt-1">{item.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.section>
+        )}
+
+        {/* Final Methodology Callout */}
+        <div className="p-12 rounded-[3rem] border border-white/5 bg-slate-900/20 backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-8 relative overflow-hidden group">
+           <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
+              <BarChart3 size={120} className="text-slate-400" />
+           </div>
+           <div className="flex items-start gap-8 relative z-10">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-500">
+                 <Info size={28} />
+              </div>
+              <div className="space-y-2 max-w-2xl">
+                 <h4 className="text-lg font-black text-white tracking-tight uppercase tracking-[0.1em]">{fr ? "Rigueur des données" : "Data Rigor"}</h4>
+                 <p className="text-sm font-bold text-slate-400 leading-relaxed opacity-80">
+                    Les indicateurs de la plateforme sont calculés selon les ratios de l'ADEME et les publications scientifiques de référence (ex: 1 mégot pollue 500L d'eau). Notre base de données est auditable et ouverte aux chercheurs.
+                 </p>
+              </div>
+           </div>
+           <Link href="/about/methodology" className="relative z-10 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white hover:text-slate-950 transition-all flex items-center gap-3">
+              En savoir plus
+              <ArrowRight size={16} />
+           </Link>
+        </div>
       </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="space-y-6"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-            <Trash2 size={18} className="text-emerald-600" />
-          </div>
-          <h3 className="text-xl font-black tracking-tight cmm-text-primary">Impact de la communauté CleanMyMap</h3>
-        </div>
-        <p className="text-sm cmm-text-secondary max-w-2xl">
-          Voici ce que la communauté a accompli ensemble. Ces chiffres sont mis à jour en temps réel à partir des actions déclarées et validées.
-        </p>
-        <PlatformStatsSection />
-      </motion.div>
-
-      <BarometerSection />
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="flex flex-col sm:flex-row items-center justify-between gap-6 p-6 rounded-[2rem] bg-slate-50/50 backdrop-blur-sm border border-slate-100 "
-      >
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-slate-200 flex items-center justify-center">
-            <Info size={20} className="text-slate-600" />
-          </div>
-          <div>
-            <p className="text-sm font-bold cmm-text-primary">Sources</p>
-            <p className="text-xs cmm-text-muted space-y-1">
-              <span className="block">📊 Baromètre : IFOP pour Gestes Propres 2024</span>
-              <span className="block">🏛️ Stats nationales : ADEME 2023 • Ministère Transition écologique</span>
-              <span className="block">♻️ Platform stats : Données CleanMyMap en temps réel</span>
-            </p>
-          </div>
-        </div>
-        <Link href="/methodologie" className="px-6 py-3 bg-slate-900 text-white rounded-full text-sm font-bold hover:opacity-90 transition-opacity">
-          {t("cta.label")}
-        </Link>
-      </motion.div>
-
-      <motion.blockquote
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.6 }}
-        className="text-center p-8 rounded-[2rem] bg-gradient-to-r from-emerald-500/10 to-rose-500/10 border border-emerald-100/50 backdrop-blur-md"
-      >
-        <p className="text-xl font-medium italic cmm-text-primary">"{t("quote.text", { defaultValue: "Seul on va plus vite, ensemble on nettoie plus loin." })}"</p>
-        <p className="text-sm font-bold text-slate-500 mt-2">— {t("quote.author", { defaultValue: "La communauté CleanMyMap" })}</p>
-      </motion.blockquote>
-    </section>
+    </SectionShell>
   );
 }

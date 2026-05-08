@@ -14,6 +14,12 @@ import {
  reserveDiscussionMessageSlot,
  toDiscussionRateLimitErrorPayload,
 } from"@/lib/community/discussion-rate-limit";
+import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
+import {
+ createPublicRateLimitResponse,
+ hasHoneypotSignal,
+ hasRecentSubmission,
+} from"@/lib/security/validation";
 
 export const runtime ="nodejs";
 
@@ -23,6 +29,8 @@ const payloadSchema = z.object({
  description: z.string().trim().min(10).max(3000),
  pagePath: z.string().trim().min(1).max(240).optional().nullable(),
  source: z.enum(["discussion_form", "feedback_section", "feedback_discussion"]).optional(),
+ honeypot: z.string().optional().default(""),
+ submittedAt: z.number().int().positive().optional(),
 });
 
 const statusUpdateSchema = z.object({
@@ -46,13 +54,30 @@ export async function POST(request: Request) {
 
  const parsed = payloadSchema.safeParse(payload);
  if (!parsed.success) {
- return NextResponse.json(
+  return NextResponse.json(
  {
  error:"Invalid payload",
  details: parsed.error.flatten().fieldErrors,
  },
- { status: 400 },
+    { status: 400 },
+   );
+ }
+
+ if (hasHoneypotSignal(parsed.data.honeypot)) {
+  return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
+ }
+
+ if (hasRecentSubmission(parsed.data.submittedAt)) {
+  return createPublicRateLimitResponse("Impossible d'envoyer la demande pour le moment.");
+ }
+
+ const writeRateLimit = await verifyRateLimit({ limit: 4, window: 300, key: userId });
+ const writeRateLimitResponse = createServerRateLimitResponse(
+  writeRateLimit.allowed,
+  writeRateLimit.retryAfter,
  );
+ if (writeRateLimitResponse) {
+  return writeRateLimitResponse;
  }
 
  const supabase = getSupabaseServerClient();

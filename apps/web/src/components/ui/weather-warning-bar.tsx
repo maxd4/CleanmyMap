@@ -9,6 +9,12 @@ export function WeatherWarningBar() {
  const [isVisible, setIsVisible] = useState(false);
  const [error, setError] = useState(false);
  const barRef = useRef<HTMLDivElement | null>(null);
+ const isMounted = useRef(false);
+
+ useEffect(() => {
+ isMounted.current = true;
+ return () => { isMounted.current = false; };
+ }, []);
 
  useEffect(() => {
  // Attempt only if we have geo permission or silently fail
@@ -20,13 +26,14 @@ export function WeatherWarningBar() {
  position.coords.latitude,
  position.coords.longitude,
  );
+ if (!isMounted.current) return;
  if (weather.riskScore !=="none") {
  setData(weather);
  setIsVisible(true);
  }
  } catch (err) {
  console.error("Météo fetch error:", err);
- setError(true);
+ if (isMounted.current) setError(true);
  }
  },
  () => {
@@ -78,6 +85,8 @@ export function WeatherWarningBar() {
  return (
  <div
  ref={barRef}
+ role="alert"
+ aria-live="assertive"
  className={`relative z-[60] flex items-center justify-between px-4 py-2 text-white shadow-lg animate-in slide-in-from-top duration-500 ${bgClass}`}
  >
  <div className="flex items-center gap-3">
