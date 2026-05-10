@@ -2,11 +2,10 @@
 
 import type { ReactNode, ElementType } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { CmmCard, type CardTone } from "@/components/ui/cmm-card";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { motion } from "framer-motion";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, Sparkles, Target } from "lucide-react";
 
 export type L10n = { fr: string; en: string } | string;
 
@@ -73,12 +72,7 @@ export function SectionShell({
               )}
             </div>
             
-            <div className="flex items-center gap-4">
-              <RubriquePdfExportButton 
-                rubriqueTitle={t(locale, title)} 
-                aria-label={fr ? `Exporter ${t(locale, title)} en PDF` : `Export ${t(locale, title)} to PDF`} 
-              />
-            </div>
+            <div className="hidden md:block" aria-hidden="true" />
           </div>
           
           <div className="h-px w-full bg-gradient-to-r from-white/10 via-white/5 to-transparent" />

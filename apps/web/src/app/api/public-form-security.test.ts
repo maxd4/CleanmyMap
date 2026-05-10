@@ -254,4 +254,51 @@ describe("public form security guardrails", () => {
     expect(uploadMultiplePhotosMock).toHaveBeenCalledWith(expect.any(Array), "action-test-1");
     expect(actionsInsertMock).toHaveBeenCalledTimes(1);
   });
+
+  it("returns a photo warning when the action photo bucket is missing", async () => {
+    uploadMultiplePhotosMock.mockResolvedValueOnce([
+      {
+        url: "",
+        path: "",
+        error: "Le bucket public Supabase 'action-photos' est manquant. Crée-le et rends-le public pour activer les uploads photo.",
+      },
+    ]);
+
+    const { POST } = await import("./actions/simple/route");
+    const formData = new FormData();
+    formData.set("title", "Action test");
+    formData.set("description", "Description valide pour le test");
+    formData.set("location", "Paris");
+    formData.set("date", "2026-05-07");
+    formData.set("participantCount", "2");
+    formData.set("wasteAmount", "0");
+    formData.set("organizerName", "Test User");
+    formData.set("organizerEmail", testEmail);
+    formData.set("isPublic", "true");
+    formData.set("honeypot", "");
+    formData.set("submittedAt", String(Date.now() - 5000));
+    formData.append("photos", new File(["photo"], "photo.jpg", { type: "image/jpeg" }));
+
+    const response = await POST(
+      new Request("http://localhost/api/actions/simple", {
+        method: "POST",
+        body: formData,
+      }),
+    );
+
+    const body = (await response.json()) as {
+      success?: boolean;
+      id?: string;
+      photoCount?: number;
+      photoWarning?: string;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      success: true,
+      id: "action-test-1",
+      photoCount: 0,
+      photoWarning: "Le bucket public Supabase 'action-photos' est manquant. Crée-le et rends-le public pour activer les uploads photo.",
+    });
+  });
 });

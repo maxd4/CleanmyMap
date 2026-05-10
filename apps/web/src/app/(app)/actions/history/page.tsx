@@ -3,7 +3,6 @@ import { ActionsHistoryList } from"@/components/actions/actions-history-list";
 import { DecisionPageHeader } from"@/components/ui/decision-page-header";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
 import { PageReadingTemplate } from"@/components/ui/page-reading-template";
-import { RubriquePdfExportButton } from"@/components/ui/rubrique-pdf-export-button";
 import { isFeatureEnabled } from"@/lib/feature-flags";
 
 export default async function ActionsHistoryPage() {
@@ -128,25 +127,6 @@ export default async function ActionsHistoryPage() {
  primaryAction={{ href:"/actions/new", label:"Déclarer" }}
  secondaryAction={{ href:"/reports", label:"Ouvrir reporting" }}
  analysis={<ActionsHistoryList />}
- trace={
- <div className="space-y-2 cmm-text-caption cmm-text-secondary">
- <p>
- Horodatage: {new Date().toLocaleString("fr-FR")} | Fiabilité:
- dépend du score qualité API par ligne.
- </p>
- <p>
- Sources: API actions enrichie score/grade/flags, historique
- utilisateur.
- </p>
- <p>
- Méthode: score standardisé (complétude, cohérence, géoloc, trace,
- fraîcheur). Périmètre: /actions/history.
- </p>
- <div className="pt-1">
- <RubriquePdfExportButton rubriqueTitle="Historique terrain" />
- </div>
- </div>
- }
  />
  );
  }
@@ -171,9 +151,9 @@ export default async function ActionsHistoryPage() {
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
  Tracer
  </p>
- <div className="mt-2">
- <RubriquePdfExportButton rubriqueTitle="Historique terrain" />
- </div>
+ <p className="mt-2 cmm-text-small cmm-text-secondary">
+ L&apos;export PDF est disponible directement dans la liste filtrable.
+ </p>
  </section>
 
  <ActionsHistoryList />

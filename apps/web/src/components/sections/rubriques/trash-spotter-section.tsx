@@ -5,12 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useTrashSpotter } from "./use-trash-spotter";
-import { 
-  SpotterKpiGrid, 
-  SpotterForm, 
-  SpotterRecentList, 
-  ActionsMapFeed 
-} from "./trash-spotter-components";
+import { SpotterKpiGrid, SpotterForm, SpotterRecentList, ActionsMapFeed } from "./trash-spotter-components";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 
 const containerVariants = {
@@ -51,16 +47,16 @@ export function TrashSpotterSection() {
       subtitle={fr ? "Signalement rapide et cartographie collaborative des zones à traiter." : "Quick reporting and collaborative mapping of areas to treat."}
       icon={Target}
       gradient="from-amber-500/20 via-orange-500/10 to-transparent"
-    >
-      <div className="space-y-12 pt-8">
+    >      <div className="space-y-12 pt-8">
         {/* Header Alert Card */}
-        <motion.div 
+        <RubriqueCard 
           initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="rounded-[3rem] border border-amber-500/20 bg-amber-500/5 p-8 lg:p-12 backdrop-blur-3xl shadow-2xl flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group"
+          themeColor="amber"
+          watermarkIcon={AlertCircle}
+          watermarkSize={200}
+          className="p-8 lg:p-12 flex flex-col md:flex-row items-center gap-10 group"
         >
-          <div className="absolute -right-24 -bottom-24 w-64 h-64 bg-amber-500/10 blur-[100px] rounded-full pointer-events-none" />
-          
           <div className="relative z-10 flex h-24 w-24 shrink-0 items-center justify-center rounded-[2rem] bg-amber-500/10 text-amber-500 border border-amber-500/20 shadow-2xl shadow-amber-500/10 group-hover:scale-110 transition-transform duration-700">
             <AlertCircle size={44} className="animate-pulse" />
           </div>
@@ -79,7 +75,7 @@ export function TrashSpotterSection() {
                 : "Contribute to the cleanliness of your territory by reporting illegal dumping in seconds."}
             </p>
           </div>
-        </motion.div>
+        </RubriqueCard>
 
         {/* KPI Grid */}
         <AnimatePresence mode="wait">
@@ -105,12 +101,13 @@ export function TrashSpotterSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           
           {/* Left Side: Form */}
-          <motion.div 
-            className="lg:col-span-5"
+          <RubriqueCard 
+            className="lg:col-span-5 p-8"
             variants={itemVariants}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true }}
+            themeColor="amber"
+            withTopBar={true}
           >
             <SpotterForm
               fr={fr}
@@ -123,7 +120,7 @@ export function TrashSpotterSection() {
               spotMessage={spotMessage}
               onCreateSpot={onCreateSpot}
             />
-          </motion.div>
+          </RubriqueCard>
 
           {/* Right Side: Feed & Map */}
           <div className="lg:col-span-7 space-y-12">
@@ -149,9 +146,14 @@ export function TrashSpotterSection() {
                 viewport={{ once: true }}
                 className="space-y-12"
               >
-                <motion.div variants={itemVariants}>
+                <RubriqueCard 
+                  variants={itemVariants}
+                  themeColor="amber"
+                  withTopBar={true}
+                  className="p-8"
+                >
                   <SpotterRecentList fr={fr} recent={quality.recent} />
-                </motion.div>
+                </RubriqueCard>
 
                 <motion.div variants={itemVariants} className="space-y-6">
                   <div className="flex items-center justify-between px-2">

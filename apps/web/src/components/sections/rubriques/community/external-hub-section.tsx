@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 
 interface ResourceLink {
   label: string;
@@ -47,12 +48,13 @@ function ExternalHubCard({ title, icon, links, color }: ExternalHubCardProps) {
   };
 
   return (
-    <motion.div 
+    <RubriqueCard 
       initial={{ opacity: 0, y: 10 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
+      themeColor={color}
       className={cn(
-        "group relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 backdrop-blur-3xl transition-all hover:border-white/20",
+        "group p-8",
         colorGlowMap[color]
       )}
     >
@@ -109,7 +111,7 @@ function ExternalHubCard({ title, icon, links, color }: ExternalHubCardProps) {
           </a>
         ))}
       </div>
-    </motion.div>
+    </RubriqueCard>
   );
 }
 
@@ -211,10 +213,12 @@ export function ExternalHubSection() {
         ))}
       </div>
       
-      <motion.div 
+      <RubriqueCard 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
-        className="rounded-[3rem] bg-slate-900/60 border border-white/10 p-10 backdrop-blur-3xl shadow-2xl relative overflow-hidden group"
+        themeColor="emerald"
+        withTopBar={false}
+        className="p-10"
       >
         <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-500/10 blur-[120px] -translate-y-1/2 translate-x-1/2 transition-opacity group-hover:opacity-100 opacity-50" />
         <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-blue-500/5 blur-[100px] translate-y-1/2 -translate-x-1/2" />
@@ -239,7 +243,7 @@ export function ExternalHubSection() {
             <ArrowRight size={20} className="transition-transform group-hover/btn:translate-x-1" />
           </button>
         </div>
-      </motion.div>
+      </RubriqueCard>
     </section>
   );
 }

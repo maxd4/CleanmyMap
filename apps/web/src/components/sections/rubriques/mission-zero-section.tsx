@@ -6,6 +6,7 @@ import {
   Shield, ArrowRight, CheckCircle2, Sparkles, MapPin, BarChart3
 } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { RubriqueCard, RubriqueTheme } from "@/components/ui/rubrique-card";
 import { cn } from "@/lib/utils";
 
 const FIVE_PILLARS = [
@@ -92,8 +93,12 @@ export function MissionZeroSection() {
     >
       <div className="space-y-16 pt-8">
         {/* Intro Card */}
-        <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/20 backdrop-blur-3xl shadow-2xl flex flex-col md:flex-row items-center justify-between gap-10 group">
-           <div className="flex items-center gap-8">
+        <RubriqueCard 
+          themeColor="violet"
+          withTopBar={false}
+          className="p-10 flex flex-col md:flex-row items-center justify-between gap-10 group"
+        >
+           <div className="flex items-center gap-8 relative z-10">
               <div className="p-5 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-violet-400 group-hover:scale-110 transition-transform duration-700">
                  <Sparkles size={32} />
               </div>
@@ -102,22 +107,24 @@ export function MissionZeroSection() {
                  <p className="text-sm font-bold text-slate-500 uppercase tracking-widest">Protocole d'engagement territorial</p>
               </div>
            </div>
-           <p className="text-sm font-bold text-slate-400 leading-relaxed max-w-md md:text-right">
+           <p className="relative z-10 text-sm font-bold text-slate-400 leading-relaxed max-w-md md:text-right">
               CleanMyMap accompagne les territoires dans une démarche de labellisation informelle basée sur 5 piliers fondamentaux de l'action publique environnementale.
            </p>
-        </div>
+        </RubriqueCard>
 
         {/* Pillars Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
            {FIVE_PILLARS.map((pillar, idx) => {
               const Icon = pillar.icon;
               return (
-                <motion.div
+                <RubriqueCard
                   key={pillar.id}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}
-                  className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl group hover:bg-white/5 transition-all flex flex-col justify-between"
+                  themeColor={pillar.color as RubriqueTheme}
+                  withTopBar={false}
+                  className="p-8 group hover:bg-white/5 transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-6">
                     <div className={cn(
@@ -150,19 +157,21 @@ export function MissionZeroSection() {
                      En savoir plus
                      <ArrowRight size={14} />
                   </button>
-                </motion.div>
+                </RubriqueCard>
               );
            })}
         </div>
 
         {/* Call to Action */}
-        <div className="p-10 rounded-[3.5rem] border border-white/10 bg-gradient-to-br from-violet-600 to-indigo-700 text-white shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-12 relative overflow-hidden">
-           <div className="absolute top-0 right-0 p-20 opacity-10 pointer-events-none">
-              <Target size={300} />
-           </div>
-           
+        <RubriqueCard 
+          themeColor="violet"
+          watermarkIcon={Target}
+          watermarkSize={300}
+          withTopBar={false}
+          className="p-10 flex flex-col lg:flex-row items-center justify-between gap-12"
+        >
            <div className="relative z-10 space-y-4 text-center lg:text-left">
-              <h3 className="text-4xl font-black tracking-tighter">Prêt pour la labellisation ?</h3>
+              <h3 className="text-4xl font-black text-white tracking-tighter leading-tight">Prêt pour la labellisation ?</h3>
               <p className="text-lg font-bold text-white/80 max-w-xl">
                  Demandez un audit de territoire gratuit pour évaluer votre maturité sur les 5 piliers de la Mission Zéro Déchet.
               </p>
@@ -172,7 +181,7 @@ export function MissionZeroSection() {
               Démarrer l'audit
               <ArrowRight size={18} />
            </button>
-        </div>
+        </RubriqueCard>
       </div>
     </SectionShell>
   );

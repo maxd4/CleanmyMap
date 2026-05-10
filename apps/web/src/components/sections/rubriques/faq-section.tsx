@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { HelpCircle, ChevronDown, User, Building2, Heart, Users, Search, Sparkles, MessageCircleQuestion } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { cn } from "@/lib/utils";
 
 interface FAQItem {
@@ -173,26 +174,37 @@ export function FAQSection() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
            <AnimatePresence mode="popLayout">
               {filteredItems.map((item, idx) => (
-                <motion.div
+                <RubriqueCard
                   key={item.question}
                   layout
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3, delay: idx * 0.05 }}
+                  themeColor={
+                    item.category === 'citoyen' ? 'blue' :
+                    item.category === 'benevole' ? 'rose' :
+                    item.category === 'mairie' ? 'indigo' :
+                    'emerald'
+                  }
+                  withTopBar={false}
                   className={cn(
-                    "rounded-[2.5rem] border transition-all duration-500 overflow-hidden",
-                    openItems.includes(item.question) 
-                      ? "bg-white/5 border-white/20 shadow-2xl" 
-                      : "bg-slate-900/40 border-white/5 hover:border-white/10"
+                    "transition-all duration-500 overflow-hidden",
+                    openItems.includes(item.question) ? "shadow-2xl" : ""
                   )}
                 >
                   <button
                     onClick={() => toggleItem(item.question)}
-                    className="w-full text-left p-8 flex items-start justify-between gap-6 group"
+                    className="w-full text-left p-8 flex items-start justify-between gap-6 group relative z-10"
                   >
                     <div className="space-y-2">
-                       <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 group-hover:text-blue-400 transition-colors">
+                       <span className={cn(
+                         "text-[9px] font-black uppercase tracking-widest transition-colors",
+                         item.category === 'citoyen' ? 'text-blue-400' :
+                         item.category === 'benevole' ? 'text-rose-400' :
+                         item.category === 'mairie' ? 'text-indigo-400' :
+                         'text-emerald-400'
+                       )}>
                           {item.category}
                        </span>
                        <h4 className="text-lg font-black text-white tracking-tight leading-snug group-hover:translate-x-1 transition-transform">
@@ -201,7 +213,7 @@ export function FAQSection() {
                     </div>
                     <div className={cn(
                       "mt-4 p-2 rounded-xl bg-white/5 border border-white/5 transition-transform duration-500",
-                      openItems.includes(item.question) ? "rotate-180 bg-blue-500/20 border-blue-500/30 text-blue-400" : "text-slate-500"
+                      openItems.includes(item.question) ? "rotate-180 bg-white/10 border-white/20 text-white" : "text-slate-500"
                     )}>
                        <ChevronDown size={20} />
                     </div>
@@ -213,6 +225,7 @@ export function FAQSection() {
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
+                        className="relative z-10"
                       >
                         <div className="px-8 pb-8 text-slate-400 text-sm font-medium leading-relaxed border-t border-white/5 pt-6">
                            {item.answer}
@@ -220,7 +233,7 @@ export function FAQSection() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </motion.div>
+                </RubriqueCard>
               ))}
            </AnimatePresence>
         </div>
@@ -245,8 +258,12 @@ export function FAQSection() {
         )}
 
         {/* Support CTA */}
-        <div className="p-10 rounded-[3rem] border border-white/5 bg-blue-600/10 backdrop-blur-3xl flex flex-col md:flex-row items-center justify-between gap-8 group">
-           <div className="flex items-center gap-6">
+        <RubriqueCard 
+          themeColor="blue"
+          withTopBar={false}
+          className="p-10 flex flex-col md:flex-row items-center justify-between gap-8 group"
+        >
+           <div className="flex items-center gap-6 relative z-10">
               <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-blue-400">
                  <Sparkles size={28} />
               </div>
@@ -255,10 +272,10 @@ export function FAQSection() {
                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Notre équipe support vous répond sous 24h</p>
               </div>
            </div>
-           <button className="px-8 py-4 rounded-xl border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all">
+           <button className="relative z-10 px-8 py-4 rounded-xl border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all">
               Contacter le support
            </button>
-        </div>
+        </RubriqueCard>
       </div>
     </SectionShell>
   );

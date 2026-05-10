@@ -22,7 +22,11 @@ export function OpenDataSection() {
     >
       <div className="space-y-12 pt-8">
         {/* Intro Highlight */}
-        <div className="p-8 rounded-[3rem] border border-white/5 bg-slate-950/20 backdrop-blur-3xl shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 group">
+        <RubriqueCard 
+          themeColor="cyan"
+          withTopBar={false}
+          className="p-8 flex flex-col md:flex-row items-center justify-between gap-8 group"
+        >
            <div className="flex items-center gap-6">
               <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
                  <Globe size={24} />
@@ -37,15 +41,18 @@ export function OpenDataSection() {
                 ? "Données ouvertes pour accélérer la coopération locale : API, export JSON et cadre réutilisable pour chercheurs et collectivités."
                 : "Open data to accelerate local cooperation: API access, JSON export and a reusable framework for researchers and cities."}
            </p>
-        </div>
+        </RubriqueCard>
 
         {/* Feature Grid */}
         <div className="grid gap-6 md:grid-cols-3">
            {/* Section 1 */}
-           <motion.div 
+           <RubriqueCard 
              initial={{ opacity: 0, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
-             className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
+             themeColor="blue"
+             watermarkIcon={FileJson}
+             watermarkSize={160}
+             className="p-8 space-y-6 group"
            >
               <div className="p-4 rounded-2xl w-fit bg-blue-500/10 border border-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform">
                  <FileJson size={24} />
@@ -54,25 +61,28 @@ export function OpenDataSection() {
                  <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Formats d'échange" : "Exchange Formats"}</h3>
                  <ul className="space-y-3">
                     {[
-                      fr ? "Exports JSON/CSV auditables" : "Auditable JSON/CSV exports",
-                      fr ? "Données géolocalisées" : "Geolocated data",
-                      fr ? "Métadonnées de version" : "Version metadata"
+                       fr ? "Exports JSON/CSV auditables" : "Auditable JSON/CSV exports",
+                       fr ? "Données géolocalisées" : "Geolocated data",
+                       fr ? "Métadonnées de version" : "Version metadata"
                     ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3">
-                         <div className="h-1.5 w-1.5 rounded-full bg-blue-500/40" />
-                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
-                      </li>
+                       <li key={i} className="flex items-center gap-3">
+                          <div className="h-1.5 w-1.5 rounded-full bg-blue-500/40" />
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
+                       </li>
                     ))}
                  </ul>
               </div>
-           </motion.div>
+           </RubriqueCard>
 
            {/* Section 2 */}
-           <motion.div 
+           <RubriqueCard 
              initial={{ opacity: 0, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.1 }}
-             className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
+             themeColor="fuchsia"
+             watermarkIcon={Code}
+             watermarkSize={160}
+             className="p-8 space-y-6 group"
            >
               <div className="p-4 rounded-2xl w-fit bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-400 group-hover:scale-110 transition-transform">
                  <Code size={24} />
@@ -81,25 +91,28 @@ export function OpenDataSection() {
                  <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Accès Chercheurs" : "Researcher Access"}</h3>
                  <ul className="space-y-3">
                     {[
-                      fr ? "API cartographie temps réel" : "Real-time mapping API",
-                      fr ? "Indicateurs d'impact" : "Impact indicators",
-                      fr ? "Historique utilisateur" : "User history trends"
+                       fr ? "API cartographie temps réel" : "Real-time mapping API",
+                       fr ? "Indicateurs d'impact" : "Impact indicators",
+                       fr ? "Historique utilisateur" : "User history trends"
                     ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3">
-                         <div className="h-1.5 w-1.5 rounded-full bg-fuchsia-500/40" />
-                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
-                      </li>
+                       <li key={i} className="flex items-center gap-3">
+                          <div className="h-1.5 w-1.5 rounded-full bg-fuchsia-500/40" />
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
+                       </li>
                     ))}
                  </ul>
               </div>
-           </motion.div>
+           </RubriqueCard>
 
            {/* Section 3 */}
-           <motion.div 
+           <RubriqueCard 
              initial={{ opacity: 0, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.2 }}
-             className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
+             themeColor="emerald"
+             watermarkIcon={ShieldCheck}
+             watermarkSize={160}
+             className="p-8 space-y-6 group"
            >
               <div className="p-4 rounded-2xl w-fit bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
                  <ShieldCheck size={24} />
@@ -108,36 +121,39 @@ export function OpenDataSection() {
                  <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Villes & Territoires" : "Cities & Territories"}</h3>
                  <ul className="space-y-3">
                     {[
-                      fr ? "Interopérabilité municipale" : "Municipal interoperability",
-                      fr ? "Observatoires locaux" : "Local observatories",
-                      fr ? "Gouvernance de données" : "Data governance"
+                       fr ? "Interopérabilité municipale" : "Municipal interoperability",
+                       fr ? "Observatoires locaux" : "Local observatories",
+                       fr ? "Gouvernance de données" : "Data governance"
                     ].map((item, i) => (
-                      <li key={i} className="flex items-center gap-3">
-                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/40" />
-                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
-                      </li>
+                       <li key={i} className="flex items-center gap-3">
+                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/40" />
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
+                       </li>
                     ))}
                  </ul>
               </div>
-           </motion.div>
+           </RubriqueCard>
         </div>
 
         {/* Technical Callout */}
-        <div className="p-10 rounded-[3.5rem] border border-white/10 bg-gradient-to-br from-cyan-600 to-blue-700 text-white shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-12 group">
-           <div className="space-y-4 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[9px] font-black uppercase tracking-widest">
-                 <Sparkles size={12} className="text-cyan-300" />
+        <div className="p-10 rounded-[3.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl overflow-hidden relative shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-12 group">
+           <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/20 to-blue-700/20 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+           <div className="absolute -right-24 -bottom-24 w-64 h-64 bg-cyan-500/10 blur-[100px] rounded-full pointer-events-none" />
+           
+           <div className="relative z-10 space-y-4 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[9px] font-black uppercase tracking-widest text-cyan-400">
+                 <Sparkles size={12} />
                  {fr ? "Documentation Technique" : "Technical Documentation"}
               </div>
-              <h3 className="text-4xl font-black tracking-tighter">{fr ? "Connectez vos outils" : "Connect your tools"}</h3>
-              <p className="text-lg font-bold text-white/80 max-w-xl leading-relaxed">
+              <h3 className="text-4xl font-black tracking-tighter text-white">{fr ? "Connectez vos outils" : "Connect your tools"}</h3>
+              <p className="text-lg font-bold text-slate-400 max-w-xl leading-relaxed">
                  {fr 
                    ? "CleanMyMap fournit une documentation Swagger/OpenAPI complète pour faciliter l'intégration de nos données dans vos propres écosystèmes."
                    : "CleanMyMap provides full Swagger/OpenAPI documentation to facilitate data integration into your own ecosystems."}
               </p>
            </div>
            
-           <button className="flex items-center gap-4 px-10 py-5 rounded-2xl bg-white text-slate-950 text-xs font-black uppercase tracking-[0.3em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
+           <button className="relative z-10 flex items-center gap-4 px-10 py-5 rounded-2xl bg-cyan-500 text-slate-950 text-xs font-black uppercase tracking-[0.3em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
               {fr ? "Accéder à l'API" : "Access API"}
               <ArrowRight size={18} />
            </button>

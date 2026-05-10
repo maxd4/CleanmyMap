@@ -28,11 +28,12 @@ describe("LearnPracticeGuideIntro", () => {
       }),
     );
 
-    expect(markup).toContain("Guide visuel");
+    expect(markup).toContain("Lecture rapide");
     expect(markup).toContain("Bonnes pratiques");
-    expect(markup).toContain("Avant / pendant / après");
-    expect(markup).toContain("Checklist courte");
-    expect(markup).toContain("Réflexe utile");
+    expect(markup).toContain("Séquence");
+    expect(markup).toContain("Préparer");
+    expect(markup).toContain("Rester lisible");
+    expect(markup).toContain("Clore proprement");
     expect(markup).toContain("Séquence utile");
     expect(markup).toContain("Avant");
     expect(markup).toContain("Pendant");

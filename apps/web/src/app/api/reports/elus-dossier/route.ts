@@ -13,6 +13,7 @@ import type { PersonalImpactMethodology } from"@/lib/gamification/progression-ty
 import { buildPilotageOverviewFromContracts } from"@/lib/pilotage/overview";
 import type { ZoneComparisonRow } from"@/lib/pilotage/prioritization";
 import { buildDeliverableFilename } from"@/lib/reports/deliverable-name";
+import { buildSimplePdf } from "@/lib/pdf-export/simple-pdf";
 import { filterActionContractsByScope } from"@/lib/reports/scope";
 import { requireAdminAccess } from"@/lib/authz";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
@@ -206,105 +207,6 @@ function sanitizeLineForPdf(value: string): string {
  .replace(/^##\s+/g,"")
  .replace(/\*\*/g,"")
  .replace(/\t/g,"");
-}
-
-function escapePdfText(value: string): string {
- return value
- .replace(/\\/g,"\\\\")
- .replace(/\(/g,"\\(")
- .replace(/\)/g,"\\)")
- .replace(/\r/g,"")
- .replace(/\n/g,"");
-}
-
-function buildSimplePdf(lines: string[]): Uint8Array {
- const pageWidth = 595;
- const pageHeight = 842;
- const marginX = 40;
- const marginTop = 40;
- const lineHeight = 14;
- const usableHeight = pageHeight - marginTop * 2;
- const maxLinesPerPage = Math.max(20, Math.floor(usableHeight / lineHeight));
- const pages: string[][] = [];
- for (let index = 0; index < lines.length; index += maxLinesPerPage) {
- pages.push(lines.slice(index, index + maxLinesPerPage));
- }
- if (pages.length === 0) {
- pages.push(["Dossier elu - Donnees indisponibles"]);
- }
-
- const pageObjectIds: number[] = [];
- const contentObjectIds: number[] = [];
- const baseObjectId = 3;
- for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
- const pageObjectId = baseObjectId + pageIndex * 2;
- const contentObjectId = pageObjectId + 1;
- pageObjectIds.push(pageObjectId);
- contentObjectIds.push(contentObjectId);
- }
- const fontObjectId = baseObjectId + pages.length * 2;
-
- const kids = pageObjectIds.map((id) => `${id} 0 R`).join("");
- const objectById = new Map<number, string>();
- objectById.set(1,"<< /Type /Catalog /Pages 2 0 R >>");
- objectById.set(
- 2,
- `<< /Type /Pages /Kids [${kids}] /Count ${pageObjectIds.length} >>`,
- );
-
- for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
- const pageObjectId = pageObjectIds[pageIndex]!;
- const contentObjectId = contentObjectIds[pageIndex]!;
- objectById.set(
- pageObjectId,
- `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontObjectId} 0 R >> >> /Contents ${contentObjectId} 0 R >>`,
- );
-
- const pageLines = pages[pageIndex] ?? [];
- let y = pageHeight - marginTop;
- const textOps: string[] = ["BT","/F1 11 Tf"];
- for (const rawLine of pageLines) {
- const line = escapePdfText(rawLine);
- textOps.push(`1 0 0 1 ${marginX} ${y} Tm (${line}) Tj`);
- y -= lineHeight;
- }
- textOps.push("ET");
- const streamContent = textOps.join("\n");
- objectById.set(
- contentObjectId,
- `<< /Length ${streamContent.length} >>\nstream\n${streamContent}\nendstream`,
- );
- }
- objectById.set(
- fontObjectId,
-"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
- );
-
- let pdf ="%PDF-1.4\n";
- const offsets: number[] = [0];
- let currentOffset = pdf.length;
- const maxObjectId = fontObjectId;
- for (let objectId = 1; objectId <= maxObjectId; objectId += 1) {
- const body = objectById.get(objectId);
- if (!body) {
- throw new Error(`PDF object ${objectId} missing`);
- }
- const object = `${objectId} 0 obj\n${body}\nendobj\n`;
- offsets[objectId] = currentOffset;
- pdf += object;
- currentOffset += object.length;
- }
-
- const xrefOffset = pdf.length;
- pdf += `xref\n0 ${maxObjectId + 1}\n`;
- pdf +="0000000000 65535 f \n";
- for (let objectId = 1; objectId <= maxObjectId; objectId += 1) {
- const offset = offsets[objectId] ?? 0;
- pdf += `${String(offset).padStart(10,"0")} 00000 n \n`;
- }
- pdf += `trailer\n<< /Size ${maxObjectId + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
-
- return new TextEncoder().encode(pdf);
 }
 
 export async function GET(request: Request) {

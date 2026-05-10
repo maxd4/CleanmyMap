@@ -80,7 +80,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
     default: "CleanMyMap | Dépollution Urbaine Paris & Carte Propréte",
-    template: "%s | CleanMyMap - Cleanwalk Paris",
+    template: "%s | CleanMyMap - Écologie & Impact Terrain",
   },
   description:
     "CMM : la carte de propreté Paris. Signalez les pollutions, organisez des cleanwalks, declarez vos actions de depollution. Rejoignez 10 000+ benevoles pour une ville plus propre. Ecologie, developpement durable, action citoyenne.",

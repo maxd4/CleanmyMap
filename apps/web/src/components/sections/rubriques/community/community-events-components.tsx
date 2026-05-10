@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { Calendar, MapPin, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatCleanupSupportLabel } from "@/lib/community/event-ops";
+import { formatCleanupSupportLabel, formatCleanupWasteTypesLabel } from "@/lib/community/event-ops";
 import { CommunityEventItem, CommunityRsvpStatus } from "@/lib/community/http";
 import { formatFrDate, toRsvpLabel } from "./helpers";
 import { formatPct } from "./kpis";
@@ -234,6 +234,11 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
             {event.cleanupLogisticsNeeds && (
               <span className="rounded-xl bg-white/5 border border-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-400">
                 Logistique: {event.cleanupLogisticsNeeds}
+              </span>
+            )}
+            {event.cleanupWasteTypesExpected.length > 0 && (
+              <span className="rounded-xl bg-white/5 border border-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-cyan-400">
+                Déchets attendus: {formatCleanupWasteTypesLabel(event.cleanupWasteTypesExpected)}
               </span>
             )}
           </div>

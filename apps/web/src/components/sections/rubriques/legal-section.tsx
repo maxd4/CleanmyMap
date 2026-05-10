@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { AlertTriangle, Building2, Cookie, FileText, Scale, Shield, Users, ArrowRight, Sparkles, ExternalLink } from "lucide-react";
 import type { ElementType } from "react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { RubriqueCard, RubriqueTheme } from "@/components/ui/rubrique-card";
 import { cn } from "@/lib/utils";
 
 type LegalCard = {
@@ -81,8 +82,12 @@ export function LegalSection() {
     >
       <div className="space-y-12 pt-8">
         {/* Compliance Status */}
-        <div className="p-8 rounded-[3rem] border border-white/5 bg-slate-950/20 backdrop-blur-3xl shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 group">
-           <div className="flex items-center gap-6">
+        <RubriqueCard 
+          themeColor="emerald"
+          withTopBar={false}
+          className="p-8 flex flex-col md:flex-row items-center justify-between gap-8 group"
+        >
+           <div className="flex items-center gap-6 relative z-10">
               <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
                  <Shield size={24} />
               </div>
@@ -91,10 +96,10 @@ export function LegalSection() {
                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Dernière mise à jour : 01 Mai 2024</p>
               </div>
            </div>
-           <p className="text-[11px] font-bold text-slate-400 leading-relaxed max-w-md md:text-right">
+           <p className="relative z-10 text-[11px] font-bold text-slate-400 leading-relaxed max-w-md md:text-right">
               CleanMyMap s'engage à protéger vos données personnelles conformément au Règlement Général sur la Protection des Données (RGPD).
            </p>
-        </div>
+        </RubriqueCard>
 
         {/* Cards Grid */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -102,16 +107,19 @@ export function LegalSection() {
             const Icon = card.icon;
             
             const cardContent = (
-              <motion.article
+              <RubriqueCard
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
+                themeColor={card.color as RubriqueTheme}
+                watermarkIcon={Icon}
+                withTopBar={false}
                 className={cn(
-                  "p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl group transition-all flex flex-col justify-between h-full",
+                  "p-8 group transition-all flex flex-col justify-between h-full min-h-[320px]",
                   card.href ? "hover:bg-white/5" : "cursor-default"
                 )}
               >
-                <div className="space-y-6">
+                <div className="space-y-6 relative z-10">
                    <div className={cn(
                      "p-4 rounded-2xl w-fit border shadow-2xl group-hover:scale-110 transition-transform duration-500",
                      card.color === 'blue' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' :
@@ -125,22 +133,24 @@ export function LegalSection() {
                    </div>
 
                    <div className="space-y-3">
-                      <h4 className="text-xl font-black text-white tracking-tight leading-tight">{card.title}</h4>
-                      <p className="text-xs font-bold text-slate-400 leading-relaxed">{card.summary}</p>
+                      <h4 className="text-xl font-black text-white tracking-tight leading-tight uppercase">{card.title}</h4>
+                      <p className="text-[13px] font-bold text-slate-400 leading-relaxed">{card.summary}</p>
                    </div>
                 </div>
 
-                {card.href ? (
-                  <div className="mt-8 flex items-center justify-between w-full p-4 rounded-xl bg-white/5 border border-white/5 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:bg-white/10 group-hover:text-white transition-all">
-                     {card.cta || "Consulter"}
-                     <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                  </div>
-                ) : (
-                  <div className="mt-8 p-4 rounded-xl border border-dashed border-white/10 text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">
-                     En cours de rédaction
-                  </div>
-                )}
-              </motion.article>
+                <div className="relative z-10">
+                  {card.href ? (
+                    <div className="mt-8 flex items-center justify-between w-full p-4 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:bg-white/10 group-hover:text-white transition-all">
+                       {card.cta || "Consulter"}
+                       <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  ) : (
+                    <div className="mt-8 p-4 rounded-xl border border-dashed border-white/10 text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] text-center">
+                       En cours de rédaction
+                    </div>
+                  )}
+                </div>
+              </RubriqueCard>
             );
 
             return card.href ? (
@@ -157,32 +167,44 @@ export function LegalSection() {
 
         {/* Action Form Links */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
-           <Link href="/sections/rgpd-request" className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/20 backdrop-blur-3xl shadow-xl flex items-center justify-between group hover:bg-white/5 transition-all">
-              <div className="flex items-center gap-6">
-                 <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 group-hover:text-white transition-colors">
-                    <Sparkles size={20} />
-                 </div>
-                 <div className="space-y-1">
-                    <h4 className="text-sm font-black text-white uppercase tracking-widest">Demande RGPD</h4>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Exercer vos droits (accès, suppression...)</p>
-                 </div>
-              </div>
-              <ExternalLink size={18} className="text-slate-600 group-hover:text-white group-hover:scale-110 transition-all" />
+           <Link href="/sections/rgpd-request" className="block group">
+             <RubriqueCard 
+               themeColor="sky" 
+               withTopBar={false} 
+               className="p-8 flex items-center justify-between group-hover:bg-white/5 transition-all"
+             >
+               <div className="flex items-center gap-6 relative z-10">
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400 group-hover:text-white transition-colors">
+                     <Sparkles size={20} />
+                  </div>
+                  <div className="space-y-1">
+                     <h4 className="text-sm font-black text-white uppercase tracking-widest">Demande RGPD</h4>
+                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Exercer vos droits (accès, suppression...)</p>
+                  </div>
+               </div>
+               <ExternalLink size={18} className="text-slate-600 group-hover:text-white group-hover:scale-110 transition-all relative z-10" />
+             </RubriqueCard>
            </Link>
 
-           <div className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/20 backdrop-blur-3xl shadow-xl flex items-center justify-between group">
-              <div className="flex items-center gap-6">
-                 <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400">
-                    <AlertTriangle size={20} />
-                 </div>
-                 <div className="space-y-1">
-                    <h4 className="text-sm font-black text-white uppercase tracking-widest">Signaler un abus</h4>
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Contenu inapproprié ou illégal</p>
-                 </div>
-              </div>
-              <button className="text-[9px] font-black text-slate-600 uppercase tracking-widest hover:text-white transition-colors">
-                 Formulaire
-              </button>
+           <div className="block group">
+             <RubriqueCard 
+               themeColor="amber" 
+               withTopBar={false} 
+               className="p-8 flex items-center justify-between"
+             >
+               <div className="flex items-center gap-6 relative z-10">
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400">
+                     <AlertTriangle size={20} />
+                  </div>
+                  <div className="space-y-1">
+                     <h4 className="text-sm font-black text-white uppercase tracking-widest">Signaler un abus</h4>
+                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Contenu inapproprié ou illégal</p>
+                  </div>
+               </div>
+               <button className="relative z-10 text-[9px] font-black text-slate-600 uppercase tracking-widest hover:text-white transition-colors">
+                  Formulaire
+               </button>
+             </RubriqueCard>
            </div>
         </div>
       </div>

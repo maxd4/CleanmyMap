@@ -110,22 +110,22 @@ export const ChatComposer = memo(function ChatComposer({
   return (
     <form
       onSubmit={onSubmit}
-      className="p-6 border-t border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md"
+      className="p-6 border-t border-white/5 bg-white/5 backdrop-blur-xl"
     >
       {sendError ? (
-        <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-950/20 px-4 py-3 text-xs font-bold text-rose-700 dark:text-rose-400 animate-in fade-in zoom-in-95">
+        <div className="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-400 animate-in fade-in zoom-in-95">
           {sendError}
         </div>
       ) : null}
 
       {activeChannelType === "dm" ? (
-        <div className="mb-4 rounded-3xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/70">
+        <div className="mb-4 rounded-3xl border border-white/5 bg-white/5 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
                 Destinataire
               </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-slate-500">
                 Sélectionnez le membre avec qui ouvrir la conversation.
               </p>
             </div>
@@ -133,7 +133,7 @@ export const ChatComposer = memo(function ChatComposer({
               <button
                 type="button"
                 onClick={onClearRecipient}
-                className="rounded-full border border-slate-200 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:bg-white dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="rounded-full border border-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-white/5"
               >
                 Changer
               </button>
@@ -141,8 +141,8 @@ export const ChatComposer = memo(function ChatComposer({
           </div>
 
           {selectedRecipient ? (
-            <div className="mt-3 flex items-center gap-3 rounded-2xl border border-violet-100 bg-white px-3 py-3 dark:border-violet-900/40 dark:bg-slate-950/80">
-              <div className="h-10 w-10 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800">
+            <div className="mt-3 flex items-center gap-3 rounded-2xl border border-violet-500/20 bg-violet-500/5 px-3 py-3">
+              <div className="h-10 w-10 overflow-hidden rounded-2xl bg-white/10">
                 {selectedRecipient.avatar_url ? (
                   <Image
                     src={selectedRecipient.avatar_url}
@@ -154,10 +154,10 @@ export const ChatComposer = memo(function ChatComposer({
                 ) : null}
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-black cmm-text-primary">
+                <p className="truncate text-sm font-black text-white">
                   {selectedRecipient.display_name}
                 </p>
-                <p className="truncate text-xs cmm-text-muted">
+                <p className="truncate text-xs text-slate-400">
                   @{selectedRecipient.handle}
                 </p>
               </div>
@@ -177,21 +177,21 @@ export const ChatComposer = memo(function ChatComposer({
                   }}
                   onFocus={() => onRecipientPickerOpenChange(true)}
                   placeholder="Rechercher un membre"
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-10 py-3 text-sm font-medium outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-500/10 dark:border-slate-700 dark:bg-slate-950 dark:focus:border-violet-500"
+                  className="w-full rounded-2xl border border-white/10 bg-white/5 px-10 py-3 text-sm font-medium text-white outline-none transition focus:border-violet-500/50 focus:ring-4 focus:ring-violet-500/10"
                 />
               </div>
 
               {isRecipientPickerOpen ? (
-                <div className="max-h-52 overflow-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+                <div className="max-h-52 overflow-auto rounded-2xl border border-white/10 bg-slate-900 p-2 shadow-2xl">
                   {dmSuggestions.length > 0 ? (
                     dmSuggestions.map((candidate) => (
                       <button
                         key={candidate.id}
                         type="button"
                         onClick={() => onSelectRecipient(candidate)}
-                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-900"
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
                       >
-                        <div className="h-9 w-9 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+                        <div className="h-9 w-9 overflow-hidden rounded-xl bg-white/10">
                           {candidate.avatar_url ? (
                             <Image
                               src={candidate.avatar_url}
@@ -203,17 +203,17 @@ export const ChatComposer = memo(function ChatComposer({
                           ) : null}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-bold cmm-text-primary">
+                          <p className="truncate text-sm font-bold text-white">
                             {candidate.display_name}
                           </p>
-                          <p className="truncate text-xs cmm-text-muted">
+                          <p className="truncate text-xs text-slate-400">
                             @{candidate.handle}
                           </p>
                         </div>
                       </button>
                     ))
                   ) : (
-                    <p className="px-3 py-4 text-sm cmm-text-muted">
+                    <p className="px-3 py-4 text-sm text-slate-500">
                       Aucun membre trouvé.
                     </p>
                   )}
@@ -225,15 +225,15 @@ export const ChatComposer = memo(function ChatComposer({
       ) : null}
 
       {showMentions && mentionSuggestions.length > 0 ? (
-        <div className="mb-3 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-950">
+        <div className="mb-3 rounded-2xl border border-white/10 bg-slate-900 p-2 shadow-2xl">
           {mentionSuggestions.map((candidate) => (
             <button
               key={candidate.id}
               type="button"
               onClick={() => onInsertMention(candidate.handle)}
-              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-900"
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-white/5"
             >
-              <div className="h-9 w-9 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800">
+              <div className="h-9 w-9 overflow-hidden rounded-xl bg-white/10">
                 {candidate.avatar_url ? (
                   <Image
                     src={candidate.avatar_url}
@@ -245,10 +245,10 @@ export const ChatComposer = memo(function ChatComposer({
                 ) : null}
               </div>
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold cmm-text-primary">
+                <p className="truncate text-sm font-bold text-white">
                   {candidate.display_name}
                 </p>
-                <p className="truncate text-xs cmm-text-muted">
+                <p className="truncate text-xs text-slate-400">
                   @{candidate.handle}
                 </p>
               </div>
@@ -258,19 +258,19 @@ export const ChatComposer = memo(function ChatComposer({
       ) : null}
 
       {file ? (
-        <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-violet-200 bg-violet-50 px-4 py-3 text-xs dark:border-violet-900/40 dark:bg-violet-950/20">
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-violet-500/20 bg-violet-500/10 px-4 py-3 text-xs">
           <div className="min-w-0">
-            <p className="font-black uppercase tracking-widest text-violet-700 dark:text-violet-300">
+            <p className="font-black uppercase tracking-widest text-violet-400">
               Pièce jointe
             </p>
-            <p className="truncate font-medium text-violet-900/80 dark:text-violet-100/80">
+            <p className="truncate font-medium text-slate-200">
               {file.name}
             </p>
           </div>
           <button
             type="button"
             onClick={() => onFileChange(null)}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-violet-200 bg-white px-3 py-1 font-black uppercase tracking-widest text-violet-700 transition hover:bg-violet-100 dark:border-violet-900/40 dark:bg-slate-950 dark:text-violet-300 dark:hover:bg-violet-950/40"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-white/5 px-3 py-1 font-black uppercase tracking-widest text-slate-300 transition hover:bg-white/10"
           >
             <X size={12} />
             Retirer
@@ -278,7 +278,7 @@ export const ChatComposer = memo(function ChatComposer({
         </div>
       ) : null}
 
-      <div className="relative flex items-end gap-3 bg-slate-50 dark:bg-slate-900/80 rounded-3xl p-3 border border-transparent focus-within:border-violet-500/30 focus-within:bg-white dark:focus-within:bg-slate-800 transition-all duration-300 shadow-inner">
+      <div className="relative flex items-end gap-3 bg-white/5 rounded-3xl p-3 border border-white/5 focus-within:border-violet-500/30 focus-within:bg-white/10 transition-all duration-300 shadow-inner">
         <input
           type="file"
           ref={fileInputRef}
@@ -291,7 +291,7 @@ export const ChatComposer = memo(function ChatComposer({
           disabled={!userId || isSending || isUploading}
           onClick={() => fileInputRef.current?.click()}
           aria-label="Joindre un fichier"
-          className="p-3 text-slate-400 hover:text-violet-500 hover:bg-white dark:hover:bg-slate-700 rounded-2xl transition-all disabled:opacity-30"
+          className="p-3 text-slate-400 hover:text-violet-400 hover:bg-white/5 rounded-2xl transition-all disabled:opacity-30"
         >
           <Paperclip size={20} />
         </button>
@@ -301,7 +301,7 @@ export const ChatComposer = memo(function ChatComposer({
           onChange={onMessageChange}
           onKeyDown={handleComposerKeyDown}
           disabled={!userId || isSending || isUploading}
-          className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium py-3 px-1 max-h-40 resize-none placeholder:text-slate-400"
+          className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium py-3 px-1 max-h-40 resize-none text-white placeholder:text-slate-500"
           placeholder={userId ? composerPlaceholder : "Connectez-vous pour participer"}
         />
         <button

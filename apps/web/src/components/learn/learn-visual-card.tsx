@@ -31,11 +31,11 @@ const TONE_CLASSES: Record<
 > = {
   amber: {
     shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.94))]",
-    badge: "border-amber-200 bg-amber-100 text-amber-900",
-    glow: "from-amber-400/28 via-orange-300/18 to-transparent",
-    border: "hover:border-amber-300",
-    accent: "text-amber-700",
-    fill: "bg-amber-700",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    glow: "from-yellow-300/24 via-amber-200/14 to-transparent",
+    border: "hover:border-yellow-300",
+    accent: "text-yellow-700",
+    fill: "bg-yellow-700",
   },
   cyan: {
     shell: "bg-[linear-gradient(180deg,rgba(236,254,255,0.98),rgba(255,255,255,0.94))]",
@@ -112,7 +112,7 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
                 key={dot}
                 className={cn(
                   "h-2.5 rounded-full",
-                  dot <= 2 ? "bg-cyan-300" : dot === 3 ? "bg-amber-300" : "bg-emerald-300",
+                  dot <= 2 ? "bg-cyan-300" : dot === 3 ? "bg-yellow-300" : "bg-emerald-300",
                 )}
               />
             ))}
@@ -134,7 +134,7 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
             className={cn(
               "rounded-xl border shadow-sm",
               index === 1 || index === 4 || index === 7
-                ? "border-amber-200 bg-amber-100"
+                ? "border-yellow-200 bg-yellow-100"
                 : index === 2 || index === 6
                   ? "border-cyan-200 bg-cyan-100"
                   : "border-slate-200 bg-white",
@@ -158,7 +158,7 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
   if (motif === "resources") {
     return (
       <div className="relative flex h-full items-center justify-center">
-        <div className="grid h-24 w-24 place-items-center rounded-3xl border border-amber-200 bg-white shadow-sm">
+        <div className="grid h-24 w-24 place-items-center rounded-3xl border border-yellow-200 bg-white shadow-sm">
           <Icon size={24} className={iconTone} />
         </div>
         <div className="absolute bottom-2 right-2 rounded-2xl border border-slate-200 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 shadow-sm">
@@ -258,10 +258,10 @@ export function LearnVisualCard({
 
       <div className="flex flex-1 flex-col justify-between p-5">
         <div className="space-y-2">
-          <h3 className="text-lg font-black tracking-tight cmm-text-primary">
+          <h3 className="line-clamp-2 text-lg font-black tracking-tight cmm-text-primary">
             {card.title}
           </h3>
-          <p className="text-sm leading-relaxed cmm-text-secondary">
+          <p className="line-clamp-2 text-sm leading-relaxed cmm-text-secondary">
             {card.detail}
           </p>
         </div>

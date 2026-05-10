@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { CHAPTERS } from"@/components/reports/web-document/constants";
 import { ReportsWebSections } from"@/components/reports/web-document/sections";
 import { useReportsWebDocumentModel } from"@/components/reports/web-document/use-reports-web-document-model";
@@ -20,6 +21,39 @@ export function ReportsWebDocument() {
  accountCoverage.hasMeasurableBase &&
  accountCoverage.missingCreatedByClerkId > 0;
  const hasAccountCoverageBase = accountCoverage.hasMeasurableBase;
+ const pdfData = useMemo(
+ () => ({
+ title: `Rapport Reporting - ${model.activeScopeLabel}`,
+ summary: [
+ `Périmètre: ${model.activeScopeLabel}`,
+ `Actions consolidées: ${model.report.totals.actions}`,
+ `Qualité de données: ${model.report.quality.completenessScore.toFixed(0)}% de complétude, ${model.report.quality.coherenceScore.toFixed(0)}% de cohérence.`,
+ ],
+ stats: [
+ { label:"Actions", value: model.report.totals.actions },
+ { label:"Masse collectée", value: `${model.report.totals.kg.toFixed(1)} kg` },
+ { label:"Mégots", value: model.report.totals.butts },
+ { label:"Bénévoles", value: model.report.totals.volunteers },
+ { label:"Couverture géographique", value: `${model.report.map.geoCoverage.toFixed(1)}%` },
+ { label:"Événements communauté", value: model.report.community.totalEvents },
+ ],
+ rows: model.exportRows,
+ columns: [
+ { key:"Date", label:"Date" },
+ { key:"Lieu", label:"Lieu" },
+ { key:"Compte", label:"Compte" },
+ { key:"Association", label:"Association" },
+ { key:"Masse_Kg", label:"Masse (kg)" },
+ { key:"Megots", label:"Mégots" },
+ { key:"Bénévoles", label:"Bénévoles" },
+ { key:"Durée_Min", label:"Durée (min)" },
+ { key:"Type", label:"Type" },
+ { key:"Source", label:"Source" },
+ ],
+ generatedAt: model.report.generatedAt,
+ }),
+ [model.activeScopeLabel, model.exportRows, model.report],
+ );
 
  return (
  <section className="rounded-3xl border border-slate-200 bg-gradient-to-b from-white via-[#f7fafd] to-white shadow-sm">
@@ -107,7 +141,12 @@ export function ReportsWebDocument() {
  </p>
  <div className="mt-4 flex flex-wrap gap-2">
  <RubriquePdfExportButton
- rubriqueTitle={`Reporting - ${model.activeScopeLabel}`}
+ rubrique="reporting"
+ periode={`annee_${new Date().getFullYear()}`}
+ organizationType={model.activeScopeLabel}
+ defaultTitle={`Rapport Reporting - ${model.activeScopeLabel}`}
+ data={pdfData}
+ disabled={model.isLoading || model.hasError}
  />
  <RubriqueExcelExportButton
  rubriqueTitle={`Reporting - ${model.activeScopeLabel}`}

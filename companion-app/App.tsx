@@ -1,461 +1,565 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
-  ScrollView,
+  Dimensions,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-} from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { supabase } from './lib/supabase';
+} from 'react-native'
+import { StatusBar } from 'expo-status-bar'
+import * as Linking from 'expo-linking'
+import * as ImagePicker from 'expo-image-picker'
+import { Ionicons } from '@expo/vector-icons'
+import { supabase } from './lib/supabase'
 import {
+  getBackgroundTrackingWarning,
+  getMission,
+  restoreActiveTracking,
+  saveMissionAction,
   startTracking,
   stopTracking,
-  restoreActiveTracking,
-  getMission,
-} from './lib/tracking-service';
-import type { Mission, MissionLocation, TrackingPhase } from './types/mission';
+} from './lib/tracking-service'
+import { getBufferCount } from './lib/storage'
+import { uploadMissionPhoto } from './lib/storage-upload'
+import type { Mission, MissionActionType, TrackingPhase } from './types/mission'
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+const { width } = Dimensions.get('window')
 
 function formatDuration(startedAt: string): string {
-  const seconds = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000);
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) return `${h}h ${m}min`;
-  if (m > 0) return `${m}min ${s}s`;
-  return `${s}s`;
-}
+  const seconds = Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const remainingSeconds = seconds % 60
 
-function formatCoords(loc: MissionLocation): string {
-  return `${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)}`;
+  if (hours > 0) return `${hours}h ${minutes}m`
+  if (minutes > 0) return `${minutes}m ${remainingSeconds}s`
+  return `${remainingSeconds}s`
 }
-
-// ─── Composant principal ─────────────────────────────────────────────────────
 
 export default function App() {
-  const [session, setSession] = useState<any>(null);
-  const [phase, setPhase] = useState<TrackingPhase>('idle');
-  const [mission, setMission] = useState<Mission | null>(null);
-  const [lastLocation, setLastLocation] = useState<MissionLocation | null>(null);
-  const [missionIdInput, setMissionIdInput] = useState('');
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [duration, setDuration] = useState('');
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [session, setSession] = useState<any>(null)
+  const [phase, setPhase] = useState<TrackingPhase>('idle')
+  const [mission, setMission] = useState<Mission | null>(null)
+  const [missionIdInput, setMissionIdInput] = useState('')
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [duration, setDuration] = useState('')
+  const [bufferCount, setBufferCount] = useState(0)
+  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const trackingWarning = getBackgroundTrackingWarning()
 
-  // ── Initialisation ──────────────────────────────────────────────────────────
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const bufferTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    const { data: listener } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => setSession(currentSession))
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession))
 
-    // Restaurer une mission active si l'app a été redémarrée
     restoreActiveTracking().then(async (id) => {
-      if (!id) return;
-      const result = await getMission(id);
+      if (!id) return
+
+      const result = await getMission(id)
       if (result.ok && result.data.status === 'tracking') {
-        setMission(result.data);
-        setPhase('tracking');
-        startDurationTimer(result.data.started_at ?? new Date().toISOString());
+        setMission(result.data)
+        setPhase('tracking')
+        startDurationTimer(result.data.started_at ?? new Date().toISOString())
       }
-    });
+    })
+
+    const handleDeepLink = (event: { url: string }) => {
+      const { queryParams } = Linking.parse(event.url)
+      if (queryParams?.id) {
+        setMissionIdInput(queryParams.id as string)
+      }
+    }
+
+    const subscription = Linking.addEventListener('url', handleDeepLink)
+
+    Linking.getInitialURL().then((url) => {
+      if (url) {
+        handleDeepLink({ url })
+      }
+    })
+
+    bufferTimerRef.current = setInterval(async () => {
+      const count = await getBufferCount()
+      setBufferCount(count)
+    }, 5000)
 
     return () => {
-      listener.subscription.unsubscribe();
-      stopDurationTimer();
-    };
-  }, []);
+      listener.subscription.unsubscribe()
+      subscription.remove()
+      stopDurationTimer()
+      if (bufferTimerRef.current) clearInterval(bufferTimerRef.current)
+    }
+  }, [])
 
-  // ── Timer durée ─────────────────────────────────────────────────────────────
   function startDurationTimer(startedAt: string) {
-    setDuration(formatDuration(startedAt));
-    timerRef.current = setInterval(() => setDuration(formatDuration(startedAt)), 10_000);
+    setDuration(formatDuration(startedAt))
+    timerRef.current = setInterval(() => setDuration(formatDuration(startedAt)), 1000)
   }
+
   function stopDurationTimer() {
-    if (timerRef.current) clearInterval(timerRef.current);
+    if (timerRef.current) clearInterval(timerRef.current)
   }
 
-  // ── Auth anonyme (dev uniquement) ───────────────────────────────────────────
-  async function handleAnonymousLogin() {
-    setPhase('requesting');
-    const { error } = await supabase.auth.signInAnonymously();
-    if (error) setErrorMsg(error.message);
-    setPhase('idle');
-  }
-
-  // ── Démarrer le trajet ──────────────────────────────────────────────────────
   async function handleStart() {
-    setErrorMsg(null);
-    const id = missionIdInput.trim();
+    setErrorMsg(null)
+    const id = missionIdInput.trim()
+
     if (!id) {
-      setErrorMsg('Entrez un identifiant de mission.');
-      return;
+      setErrorMsg('ID manquant')
+      return
     }
+
     if (!session) {
-      setErrorMsg('Vous devez être connecté.');
-      return;
+      setErrorMsg('Non connecté')
+      return
     }
 
-    setPhase('requesting');
+    if (trackingWarning) {
+      setErrorMsg(trackingWarning)
+      Alert.alert('Build requis', trackingWarning)
+      return
+    }
 
-    // TODO : ici, en production, l'ID viendra d'un deep link ou d'un QR scan
-    // (voir architecture_gps_companion.md § 8 — Deep Link / QR Code)
-    const result = await startTracking(id);
+    setPhase('requesting')
+    const result = await startTracking(id)
 
     if (!result.ok) {
-      setErrorMsg(result.error);
-      setPhase('error');
-      return;
+      setErrorMsg(result.error)
+      setPhase('idle')
+      return
     }
 
-    setMission(result.data);
-    setPhase('tracking');
-    startDurationTimer(result.data.started_at ?? new Date().toISOString());
+    setMission(result.data)
+    setPhase('tracking')
+    startDurationTimer(result.data.started_at ?? new Date().toISOString())
   }
 
-  // ── Terminer le trajet ──────────────────────────────────────────────────────
   async function handleStop() {
-    if (!mission) return;
-    setErrorMsg(null);
-    setPhase('stopping');
-    stopDurationTimer();
+    if (!mission) return
 
-    const result = await stopTracking(mission.id);
+    setPhase('stopping')
+    stopDurationTimer()
 
+    const result = await stopTracking(mission.id)
     if (!result.ok) {
-      setErrorMsg(result.error);
-      setPhase('error');
-      return;
+      setErrorMsg(result.error)
+      setPhase('tracking')
+      return
     }
 
-    Alert.alert(
-      'Mission terminée 🎉',
-      'Bravo ! Vos statistiques seront calculées et visibles sur le site.',
-    );
-    setMission(null);
-    setLastLocation(null);
-    setMissionIdInput('');
-    setPhase('idle');
+    setMission(null)
+    setPhase('idle')
   }
 
-  // ─── Rendu ──────────────────────────────────────────────────────────────────
+  async function handleTakePhoto() {
+    if (!mission) return
 
-  // Loading / transition
+    const { status } = await ImagePicker.requestCameraPermissionsAsync()
+    if (status !== 'granted') {
+      Alert.alert('Permission refusée', "L'accès à la caméra est requis pour cette action.")
+      return
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.7,
+    })
+
+    if (!result.canceled && result.assets && result.assets[0]) {
+      setActionLoading('photo')
+      const photoUri = result.assets[0].uri
+
+      const { publicUrl, error } = await uploadMissionPhoto(mission.id, photoUri)
+
+      if (error) {
+        Alert.alert('Erreur Upload', error)
+        setActionLoading(null)
+        return
+      }
+
+      const recordResult = await saveMissionAction(
+        mission.id,
+        'photo',
+        undefined,
+        'Photo du terrain',
+        publicUrl,
+      )
+      setActionLoading(null)
+
+      if (recordResult.ok) {
+        Alert.alert('Succès', 'Photo enregistrée et liée à la mission.')
+      }
+    }
+  }
+
+  async function handleRecordAction(type: MissionActionType, label: string) {
+    if (!mission) return
+
+    if (type === 'photo') {
+      handleTakePhoto()
+      return
+    }
+
+    setActionLoading(type)
+    const result = await saveMissionAction(mission.id, type)
+    setActionLoading(null)
+
+    if (result.ok) {
+      Alert.alert('Enregistré', `${label} enregistré avec succès.`)
+    } else {
+      Alert.alert('Action mise en tampon', "Hors ligne ? L'action sera synchronisée plus tard.")
+    }
+  }
+
   if (phase === 'requesting' || phase === 'stopping') {
     return (
-      <View style={styles.center}>
+      <View style={styles.darkCenter}>
         <ActivityIndicator size="large" color="#10b981" />
-        <Text style={styles.loadingText}>
-          {phase === 'stopping' ? 'Finalisation…' : 'Démarrage…'}
-        </Text>
-        <StatusBar style="dark" />
+        <Text style={styles.hudLabel}>{phase === 'stopping' ? 'TRANSMISSION...' : 'INITIALISATION...'}</Text>
       </View>
-    );
+    )
   }
 
-  // Écran de connexion
   if (!session) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.appTitle}>CleanMyMap GPS</Text>
-        <Text style={styles.subtitle}>Connectez-vous pour commencer une mission.</Text>
-        {/* TODO : remplacer par Supabase Magic Link ou OAuth en production */}
-        <TouchableOpacity style={styles.btnPrimary} onPress={handleAnonymousLogin}>
-          <Text style={styles.btnText}>Connexion anonyme (test)</Text>
+      <View style={styles.darkCenter}>
+        <Text style={styles.hudTitle}>CLEANMYMAP</Text>
+        <Text style={styles.hudSubtitle}>SATELLITE COMPANION</Text>
+        <TouchableOpacity style={styles.hudBtnPrimary} onPress={() => supabase.auth.signInAnonymously()}>
+          <Text style={styles.hudBtnText}>AUTH ANONYME</Text>
         </TouchableOpacity>
-        {errorMsg && <Text style={styles.error}>{errorMsg}</Text>}
-        <StatusBar style="dark" />
       </View>
-    );
+    )
   }
 
-  // Écran de tracking actif
   if (phase === 'tracking' && mission) {
     return (
-      <ScrollView contentContainerStyle={styles.container}>
-        <StatusBar style="dark" />
+      <View style={styles.darkContainer}>
+        <StatusBar style="light" />
 
-        {/* Statut */}
-        <View style={styles.statusBadge}>
-          <View style={styles.statusDot} />
-          <Text style={styles.statusText}>Enregistrement actif</Text>
+        <View style={styles.hudHeader}>
+          <View>
+            <Text style={styles.hudLabel}>MISSION ACTIVE</Text>
+            <Text style={styles.hudTitleSmall}>{mission.label}</Text>
+          </View>
+          <View style={styles.hudStatus}>
+            <View style={styles.hudStatusDot} />
+            <Text style={styles.hudStatusText}>LIVE</Text>
+          </View>
         </View>
 
-        {/* Infos mission */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Mission</Text>
-          <Text style={styles.cardValue} numberOfLines={2}>{mission.label}</Text>
-          <Text style={styles.cardMeta}>ID : {mission.id}</Text>
+        <View style={styles.hudStatsRow}>
+          <View style={styles.hudStatBox}>
+            <Text style={styles.hudStatLabel}>DURÉE</Text>
+            <Text style={styles.hudStatValue}>{duration}</Text>
+          </View>
+          <View style={styles.hudStatBox}>
+            <Text style={styles.hudStatLabel}>SYNC BUFFER</Text>
+            <Text style={[styles.hudStatValue, bufferCount > 0 && { color: '#fbbf24' }]}>{bufferCount}</Text>
+          </View>
         </View>
 
-        {/* Durée */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Durée</Text>
-          <Text style={styles.durationText}>{duration || '…'}</Text>
+        <View style={styles.actionGridContainer}>
+          <Text style={styles.hudLabelSection}>ENREGISTREMENT RAPIDE</Text>
+          <View style={styles.actionGrid}>
+            <ActionButton
+              icon="trash-outline"
+              label="DÉCHET TROUVÉ"
+              color="#fbbf24"
+              loading={actionLoading === 'trash_found'}
+              onPress={() => handleRecordAction('trash_found', 'Déchet trouvé')}
+            />
+            <ActionButton
+              icon="checkmark-done-outline"
+              label="RAMASSÉ"
+              color="#10b981"
+              loading={actionLoading === 'trash_collected'}
+              onPress={() => handleRecordAction('trash_collected', 'Déchet ramassé')}
+            />
+            <ActionButton
+              icon="camera-outline"
+              label="PHOTO"
+              color="#a78bfa"
+              loading={actionLoading === 'photo'}
+              onPress={() => handleRecordAction('photo', 'Photo')}
+            />
+            <ActionButton
+              icon="warning-outline"
+              label="DANGER"
+              color="#f87171"
+              loading={actionLoading === 'hazard'}
+              onPress={() => handleRecordAction('hazard', 'Danger signalé')}
+            />
+          </View>
         </View>
 
-        {/* Dernier point GPS */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Dernier point GPS</Text>
-          {lastLocation ? (
-            <>
-              <Text style={styles.cardValue}>{formatCoords(lastLocation)}</Text>
-              {lastLocation.accuracy_m != null && (
-                <Text style={styles.cardMeta}>
-                  Précision : ±{Math.round(lastLocation.accuracy_m)} m
-                </Text>
-              )}
-              <Text style={styles.cardMeta}>
-                {new Date(lastLocation.recorded_at).toLocaleTimeString('fr-FR')}
-              </Text>
-            </>
-          ) : (
-            <Text style={styles.cardMeta}>En attente du premier fix GPS…</Text>
-          )}
-        </View>
+        <View style={{ flex: 1 }} />
 
-        <Text style={styles.hint}>
-          Vous pouvez éteindre l'écran. Le suivi continue en arrière-plan.
-        </Text>
-
-        {errorMsg && <Text style={styles.error}>{errorMsg}</Text>}
-
-        <TouchableOpacity style={styles.btnDanger} onPress={handleStop}>
-          <Text style={styles.btnText}>Terminer le trajet</Text>
+        <TouchableOpacity style={styles.hudBtnDanger} onPress={handleStop}>
+          <Text style={styles.hudBtnText}>TERMINER LA MISSION</Text>
         </TouchableOpacity>
-      </ScrollView>
-    );
+      </View>
+    )
   }
 
-  // Écran d'accueil / saisie de mission
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <StatusBar style="dark" />
+    <View style={styles.darkContainer}>
+      <StatusBar style="light" />
+      <Text style={styles.hudTitle}>CLEANMYMAP</Text>
+      <Text style={styles.hudSubtitle}>PRET POUR MISSION</Text>
+      {trackingWarning ? (
+        <View style={styles.warningBanner}>
+          <Text style={styles.warningTitle}>EXPO GO INCOMPATIBLE</Text>
+          <Text style={styles.warningText}>{trackingWarning}</Text>
+        </View>
+      ) : null}
 
-      <Text style={styles.appTitle}>CleanMyMap GPS</Text>
-      <Text style={styles.subtitle}>
-        Entrez l'identifiant de votre mission ou scannez le QR code.
-      </Text>
+      {errorMsg ? (
+        <View style={styles.errorBanner}>
+          <Text style={styles.errorText}>{errorMsg}</Text>
+        </View>
+      ) : null}
 
-      {/* Champ mission_id */}
-      {/* TODO : ajouter un bouton "Scanner QR" via expo-barcode-scanner */}
-      <View style={styles.inputWrapper}>
-        <Text style={styles.inputLabel}>Identifiant de mission</Text>
+      <View style={styles.hudInputWrapper}>
+        <Text style={styles.hudLabel}>IDENTIFIANT MISSION</Text>
         <TextInput
-          style={styles.input}
+          style={styles.hudInput}
           value={missionIdInput}
           onChangeText={setMissionIdInput}
-          placeholder="ex: 3fa85f64-5717-4562-b3fc-2c963f66afa6"
-          placeholderTextColor="#94a3b8"
-          autoCapitalize="none"
-          autoCorrect={false}
+          placeholder="XXXX-XXXX-XXXX"
+          placeholderTextColor="#475569"
         />
       </View>
 
-      {errorMsg && (
-        <View style={styles.errorBox}>
-          <Text style={styles.error}>{errorMsg}</Text>
-        </View>
-      )}
-
-      <TouchableOpacity style={styles.btnPrimary} onPress={handleStart}>
-        <Text style={styles.btnText}>▶ Démarrer le trajet</Text>
+      <TouchableOpacity
+        style={[styles.hudBtnPrimary, trackingWarning && styles.hudBtnPrimaryDisabled]}
+        onPress={handleStart}
+        disabled={Boolean(trackingWarning)}
+      >
+        <Text style={styles.hudBtnText}>DÉMARRER</Text>
       </TouchableOpacity>
-
-      <Text style={styles.userInfo}>
-        Connecté en tant que : {session.user?.email ?? session.user?.id?.slice(0, 8) + '…'}
-      </Text>
-    </ScrollView>
-  );
+    </View>
+  )
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const COLORS = {
-  primary: '#10b981',   // emerald-500
-  danger: '#ef4444',    // red-500
-  bg: '#f8fafc',        // slate-50
-  card: '#ffffff',
-  text: '#0f172a',      // slate-900
-  muted: '#64748b',     // slate-500
-  subtle: '#94a3b8',    // slate-400
-  border: '#e2e8f0',    // slate-200
-  error: '#ef4444',
-};
+function ActionButton({
+  icon,
+  label,
+  color,
+  onPress,
+  loading,
+}: {
+  icon: keyof typeof Ionicons.glyphMap
+  label: string
+  color: string
+  onPress: () => void
+  loading?: boolean
+}) {
+  return (
+    <TouchableOpacity style={[styles.actionBtn, { borderColor: `${color}40` }]} onPress={onPress} disabled={loading}>
+      {loading ? <ActivityIndicator size="small" color={color} /> : <Ionicons name={icon} size={28} color={color} />}
+      <Text style={[styles.actionBtnLabel, { color }]}>{label}</Text>
+    </TouchableOpacity>
+  )
+}
 
 const styles = StyleSheet.create({
-  center: {
+  darkCenter: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: '#020617',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
-    gap: 16,
   },
-  container: {
-    flexGrow: 1,
-    backgroundColor: COLORS.bg,
+  darkContainer: {
+    flex: 1,
+    backgroundColor: '#020617',
     padding: 24,
-    gap: 16,
-    paddingTop: 72,
-    paddingBottom: 48,
+    paddingTop: 64,
   },
-  appTitle: {
-    fontSize: 30,
-    fontWeight: '800',
-    color: COLORS.text,
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: COLORS.muted,
-    lineHeight: 22,
-    marginBottom: 8,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: COLORS.muted,
-    marginTop: 12,
-  },
-  // Status badge
-  statusBadge: {
+  hudHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#d1fae5', // emerald-100
-    borderRadius: 24,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 32,
+  },
+  hudLabel: {
+    color: '#64748b',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 2,
     marginBottom: 4,
   },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: COLORS.primary,
+  hudLabelSection: {
+    color: '#64748b',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 16,
+    textAlign: 'center',
   },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#065f46', // emerald-900
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  // Cards
-  card: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    gap: 4,
-  },
-  cardLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.subtle,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: 2,
-  },
-  cardValue: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  cardMeta: {
-    fontSize: 12,
-    color: COLORS.muted,
-  },
-  durationText: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: COLORS.primary,
+  hudTitle: {
+    color: '#f8fafc',
+    fontSize: 32,
+    fontWeight: '900',
     letterSpacing: -1,
   },
-  hint: {
-    fontSize: 13,
-    color: COLORS.muted,
-    textAlign: 'center',
-    fontStyle: 'italic',
-    paddingHorizontal: 8,
+  hudTitleSmall: {
+    color: '#f8fafc',
+    fontSize: 18,
+    fontWeight: '800',
   },
-  // Input
-  inputWrapper: {
-    gap: 6,
-  },
-  inputLabel: {
+  hudSubtitle: {
+    color: '#10b981',
     fontSize: 12,
-    fontWeight: '700',
-    color: COLORS.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontWeight: '900',
+    letterSpacing: 4,
+    marginBottom: 40,
   },
-  input: {
-    backgroundColor: COLORS.card,
+  hudStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#10b98120',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 14,
-    color: COLORS.text,
-    fontFamily: 'monospace',
+    borderColor: '#10b98140',
   },
-  // Buttons
-  btnPrimary: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 14,
-    paddingVertical: 16,
+  hudStatusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10b981',
+    marginRight: 6,
+  },
+  hudStatusText: {
+    color: '#10b981',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  hudStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 32,
+  },
+  hudStatBox: {
+    flex: 1,
+    backgroundColor: '#1e293b',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  hudStatLabel: {
+    color: '#94a3b8',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  hudStatValue: {
+    color: '#f8fafc',
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  actionGridContainer: {
+    marginTop: 16,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  actionBtn: {
+    width: (width - 48 - 12) / 2,
+    aspectRatio: 1,
+    backgroundColor: '#1e293b',
+    borderRadius: 24,
+    borderWidth: 2,
     alignItems: 'center',
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
+    justifyContent: 'center',
+    gap: 12,
   },
-  btnDanger: {
-    backgroundColor: COLORS.danger,
-    borderRadius: 14,
-    paddingVertical: 16,
+  actionBtnLabel: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  hudInputWrapper: {
+    marginBottom: 24,
+  },
+  hudInput: {
+    backgroundColor: '#1e293b',
+    borderRadius: 16,
+    padding: 16,
+    color: '#f8fafc',
+    fontSize: 16,
+    fontWeight: '700',
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  hudBtnPrimary: {
+    backgroundColor: '#10b981',
+    paddingVertical: 20,
+    borderRadius: 16,
     alignItems: 'center',
-    shadowColor: COLORS.danger,
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
-    marginTop: 8,
   },
-  btnText: {
+  hudBtnPrimaryDisabled: {
+    backgroundColor: '#475569',
+  },
+  hudBtnDanger: {
+    backgroundColor: '#ef4444',
+    paddingVertical: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  hudBtnText: {
     color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
-    letterSpacing: 0.3,
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 2,
   },
-  // Errors
-  errorBox: {
-    backgroundColor: '#fef2f2',
-    borderRadius: 10,
-    padding: 12,
+  warningBanner: {
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#fecaca',
+    borderColor: '#f59e0b55',
+    backgroundColor: '#f59e0b14',
+    padding: 16,
+    marginBottom: 24,
   },
-  error: {
-    color: COLORS.error,
+  warningTitle: {
+    color: '#fbbf24',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  warningText: {
+    color: '#fde68a',
     fontSize: 13,
+    lineHeight: 19,
     fontWeight: '600',
   },
-  userInfo: {
-    fontSize: 12,
-    color: COLORS.subtle,
-    textAlign: 'center',
-    marginTop: 8,
+  errorBanner: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#ef444455',
+    backgroundColor: '#ef444414',
+    padding: 16,
+    marginBottom: 24,
   },
-});
+  errorText: {
+    color: '#fca5a5',
+    fontSize: 13,
+    lineHeight: 19,
+    fontWeight: '600',
+  },
+})

@@ -4,6 +4,11 @@ import {
   FileSearch, 
   Settings,
   AlertTriangle,
+  Zap,
+  Info,
+  Users,
+  Activity,
+  History
 } from"lucide-react";
 import type { Metadata } from "next";
 import { BusinessAlertsPanel } from"@/components/dashboard/business-alerts-panel";
@@ -25,9 +30,10 @@ import { isAdminLikeProfile } from"@/lib/profiles";
 import { getProfilePrimaryAction, toProfile } from"@/lib/profiles";
 import { getServerLocale } from"@/lib/server-preferences";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
-import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { NavigationGrid, type NavigationGridItem } from"@/components/ui/navigation-grid";
+import { SectionShell } from "@/components/sections/rubriques/shared";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 
 export const metadata: Metadata = {
   title: 'Administration - CleanMyMap',
@@ -35,18 +41,17 @@ export const metadata: Metadata = {
 };
 
 async function loadAdminOverview() {
- const supabase = getSupabaseServerClient();
- return loadPilotageOverview({
- supabase,
- periodDays: 30,
- limit: 1800,
- });
+  const supabase = getSupabaseServerClient();
+  return loadPilotageOverview({
+    supabase,
+    periodDays: 30,
+    limit: 1800,
+  });
 }
 
 export default async function AdminPage() {
   const { userId } = await auth();
   const locale = await getServerLocale();
-  const classes = getBlockClasses("pilot");
 
   if (!userId) {
     return (
@@ -56,7 +61,7 @@ export default async function AdminPage() {
         title="Pilotage administratif"
         description="Accès réservé aux comptes Clerk autorisés."
         lockedPreview={
-          <div className={cn("grid gap-6 md:grid-cols-3 rounded-[3rem] border p-8", classes.surface)}>
+          <div className="grid gap-6 md:grid-cols-3 rounded-[3rem] border border-white/5 p-8 bg-slate-900/40 backdrop-blur-2xl">
             {[
               { label: "Supervision", desc: "Alertes et priorités de l'administration." },
               { label: "Modération", desc: "Actions réservées au back-office connecté." },
@@ -85,18 +90,20 @@ export default async function AdminPage() {
 
   if (!isAdminLikeProfile(profile)) {
     return (
-      <section className="rounded-[3rem] border border-amber-500/20 bg-amber-500/5 p-12 text-center">
-        <div className="inline-flex p-4 rounded-3xl bg-amber-400/10 text-amber-400 mb-6">
-          <ShieldCheck size={32} />
-        </div>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400/60">Accès Restreint</p>
-        <h1 className="mt-4 text-4xl font-black tracking-tight text-white">
-          Privilèges administrateur requis
-        </h1>
-        <p className="mt-4 text-sm text-amber-100/40 max-w-md mx-auto leading-relaxed">
-          Votre compte actuel ne dispose pas des autorisations nécessaires pour accéder au pilotage système. Contactez un administrateur Clerk.
-        </p>
-      </section>
+      <div className="p-12">
+        <RubriqueCard themeColor="amber" withTopBar={false} className="p-12 text-center">
+          <div className="inline-flex p-4 rounded-3xl bg-amber-400/10 text-amber-400 mb-6">
+            <ShieldCheck size={32} />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400/60">Accès Restreint</p>
+          <h1 className="mt-4 text-4xl font-black tracking-tight text-white">
+            Privilèges administrateur requis
+          </h1>
+          <p className="mt-4 text-sm text-amber-100/40 max-w-md mx-auto leading-relaxed">
+            Votre compte actuel ne dispose pas des autorisations nécessaires pour accéder au pilotage système. Contactez un administrateur Clerk.
+          </p>
+        </RubriqueCard>
+      </div>
     );
   }
 
@@ -124,6 +131,42 @@ export default async function AdminPage() {
   const moderationAudit = {
     success: adminAudit.filter(item => item.outcome === "success").length,
     error: adminAudit.filter(item => item.outcome === "error").length,
+  };
+  const adminPdfData = {
+    title: "Rapport administration CleanMyMap",
+    summary: [
+      "Synthèse des flux administratifs visibles sur la console.",
+      `Rôle actif: ${profile}.`,
+      overview
+        ? `Fenêtre pilotage: ${overview.periodDays} jours, générée le ${new Date(overview.generatedAt).toLocaleString("fr-FR")}.`
+        : "Indicateurs pilotage indisponibles au moment de l'export.",
+    ],
+    stats: [
+      { label: "Onboarding partenaires en attente", value: onboardingStatus.pending },
+      { label: "Publications annuaire en attente", value: publicationStatus.pending },
+      { label: "Opérations admin réussies", value: moderationAudit.success },
+      { label: "Opérations admin en erreur", value: moderationAudit.error },
+      ...(overview
+        ? overview.summary.kpis.map((kpi) => ({
+            label: kpi.label,
+            value: kpi.value,
+            detail: `N-1 ${kpi.previousValue}, delta ${kpi.deltaAbsolute}`,
+          }))
+        : []),
+    ],
+    rows: adminAudit.slice(0, 25).map((item) => ({
+      Date: item.at,
+      Action: item.operationType,
+      Cible: item.targetId ?? "n/a",
+      Résultat: item.outcome,
+    })),
+    columns: [
+      { key: "Date", label: "Date" },
+      { key: "Action", label: "Action" },
+      { key: "Cible", label: "Cible" },
+      { key: "Résultat", label: "Résultat" },
+    ],
+    ...(overview ? { generatedAt: overview.generatedAt } : {}),
   };
 
   const navigationItems: NavigationGridItem[] = [
@@ -173,11 +216,15 @@ export default async function AdminPage() {
     },
   ];
 
-  const kpis = overview ? overview.summary.kpis : [];
-
   return (
-    <main className="min-h-screen bg-[#050505] text-white p-6 md:p-12 selection:bg-amber-400/30">
-      <div className="max-w-[1400px] mx-auto space-y-24">
+    <SectionShell
+      id="admin"
+      title="Pilotage Système"
+      subtitle="Console d'administration centrale pour la supervision des flux, la modération et la gestion des privilèges."
+      icon={ShieldCheck}
+      gradient="from-amber-600/20 via-slate-500/10 to-transparent"
+    >
+      <div className="space-y-20 pt-8">
         
         {/* Résumé Décisionnel (ThirtySecondsSummary) */}
         {overview && (
@@ -192,90 +239,61 @@ export default async function AdminPage() {
           />
         )}
 
-        {/* Header Premium High-Impact */}
-        <header className="relative py-12 md:py-20 overflow-hidden">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px] -z-10 animate-pulse" />
-          
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-12 relative z-10">
-            <div className="space-y-8 max-w-4xl">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-amber-400/10 border border-amber-400/20 text-amber-400">
-                  <ShieldCheck size={24} />
-                </div>
-                <div className="h-px w-12 bg-white/10" />
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/30">Administration Centrale</span>
-              </div>
-              
-              <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.85] text-white">
-                Pilotage Système.
-              </h1>
-              
-              <div className="flex flex-wrap items-center gap-8">
-                <div className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.5)]" />
-                  <p className="text-sm font-black uppercase tracking-widest text-white/60">
-                    Console Back-Office
-                  </p>
-                </div>
-                <div className="h-8 w-px bg-white/5 hidden md:block" />
-                <div className="flex items-center gap-4">
-                  <RubriquePdfExportButton rubriqueTitle="Administration" />
-                </div>
-              </div>
-            </div>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-3 px-6 py-2.5 rounded-full border border-amber-400/20 bg-amber-400/5 backdrop-blur-md">
+            <Zap size={14} className="text-amber-400 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-400">Console Active</span>
           </div>
-        </header>
+          <RubriquePdfExportButton
+            rubrique="administration"
+            periode={`30_jours_${new Date().getFullYear()}`}
+            organizationType="admin"
+            defaultTitle="Rapport administration"
+            data={adminPdfData}
+            className="w-full max-w-xl"
+          />
+        </div>
 
         {/* Navigation Grid Premium */}
-        <section className={cn(
-          "rounded-[3rem] border border-white/5 bg-white/[0.02] backdrop-blur-2xl p-12 transition-all duration-700",
-          "hover:border-white/10 hover:bg-white/[0.04]"
-        )}>
-          <div className="mb-10">
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Accès Rapides</p>
-            <h2 className="text-3xl font-black tracking-tight text-white mt-2">Navigation Opérationnelle</h2>
-          </div>
+        <RubriqueCard themeColor="slate" withTopBar={true} topBarContent="Accès Rapides" className="p-12">
           <NavigationGrid items={navigationItems} columns={{ default: 1, sm: 2, md: 4, xl: 4 }} />
-        </section>
+        </RubriqueCard>
 
         {profile === "max" && (
           <>
-            <section className={cn(
-              "rounded-[3rem] border p-12 relative overflow-hidden transition-all duration-700",
-              classes.surface
-            )}>
-              <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-amber-500/5 rounded-full blur-[100px] -z-10" />
+            <RubriqueCard 
+              themeColor="amber" 
+              withTopBar={true} 
+              topBarContent="Inbox Créateur"
+              watermarkIcon={Activity}
+              className="p-12"
+            >
               <div className="mb-10">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-400/40">Inbox Créateur</p>
                 <h2 className="text-4xl font-black tracking-tight text-white mt-2">Demandes de Collaboration</h2>
                 <p className="mt-4 text-sm text-amber-100/40 max-w-2xl leading-relaxed">
                   Supervision des flux entrants : promotion, événements et partenariats stratégiques.
                 </p>
               </div>
               <CreatorInboxPanel initialItems={creatorInboxItems} />
-            </section>
+            </RubriqueCard>
 
-            <section className={cn(
-              "rounded-[3rem] border p-12 relative overflow-hidden transition-all duration-700",
-              classes.surface
-            )}>
-              <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
+            <RubriqueCard 
+              themeColor="slate" 
+              withTopBar={true} 
+              topBarContent="Gestion de Flotte"
+              watermarkIcon={Users}
+              className="p-12"
+            >
               <div className="mb-10">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-400/40">Gestion de Flotte</p>
                 <h2 className="text-4xl font-black tracking-tight text-white mt-2">Comptes & Rôles</h2>
               </div>
               <RoleManagementPanel initialAccounts={roleAccounts} currentUserId={userId} />
-            </section>
+            </RubriqueCard>
           </>
         )}
 
         <div id="governance" className="space-y-12">
-          <section className="rounded-[3rem] border border-white/5 bg-white/[0.02] backdrop-blur-2xl p-12">
-            <div className="mb-10">
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Governance Monitor</p>
-              <h2 className="text-4xl font-black tracking-tight text-white mt-2">Indicateurs Métier</h2>
-            </div>
-
+          <RubriqueCard themeColor="slate" withTopBar={true} topBarContent="Governance Monitor" className="p-12">
             <div className="grid gap-8 md:grid-cols-3">
               {[
                 { title: "Onboarding Partenaires", stats: onboardingStatus, color: "text-blue-400" },
@@ -297,21 +315,19 @@ export default async function AdminPage() {
                 </article>
               ))}
             </div>
-          </section>
+          </RubriqueCard>
         </div>
 
-        <div id="alerts" className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/20 via-transparent to-rose-500/10 rounded-[3.5rem] blur-xl opacity-20" />
-          <div className="relative rounded-[3rem] border border-white/5 bg-white/[0.02] backdrop-blur-2xl p-12">
+        <div id="alerts" className="relative">
+          <RubriqueCard themeColor="amber" withTopBar={true} topBarContent="Business Alerts" className="p-12">
             <BusinessAlertsPanel />
-          </div>
+          </RubriqueCard>
         </div>
 
-        <div id="moderation" className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500/20 via-transparent to-sky-500/10 rounded-[3.5rem] blur-xl opacity-20" />
-          <div className="relative rounded-[3rem] border border-white/5 bg-white/[0.02] backdrop-blur-2xl p-12">
+        <div id="moderation" className="relative">
+          <RubriqueCard themeColor="emerald" withTopBar={true} topBarContent="Modération Terrain" watermarkIcon={History} className="p-12">
             <ActionsReportPanel />
-          </div>
+          </RubriqueCard>
         </div>
 
         <div className="rounded-[3rem] border border-white/5 bg-white/5 p-4">
@@ -319,13 +335,16 @@ export default async function AdminPage() {
         </div>
 
         <footer className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 opacity-30">
-          <p className="text-[10px] font-bold uppercase tracking-widest">CleanMyMap Cockpit v4.2.0 • Admin Edition</p>
+          <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest">
+            <Info size={12} />
+            <span>CleanMyMap Cockpit v4.2.0 • Admin Edition</span>
+          </div>
           <div className="flex gap-8">
             <span className="text-[10px] font-bold uppercase tracking-widest">Region: EU-WEST-3</span>
             <span className="text-[10px] font-bold uppercase tracking-widest">Node: {userId.slice(0, 4).toUpperCase()}</span>
           </div>
         </footer>
       </div>
-    </main>
+    </SectionShell>
   );
 }

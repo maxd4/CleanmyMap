@@ -13,6 +13,7 @@ import {
   HubCategory,
 } from "./community-section-components";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Info, Sparkles, MapPin, Target } from "lucide-react";
 
@@ -79,14 +80,14 @@ export function CommunitySection() {
     >
       <div className="space-y-12 pb-20">
         {/* Modernized Control Bar */}
-        <motion.div 
+        <RubriqueCard 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 p-8 rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden"
+          themeColor="emerald"
+          watermarkIcon={Sparkles}
+          watermarkSize={80}
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-8"
         >
-          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-            <Sparkles size={80} className="text-emerald-500" />
-          </div>
 
           <div className="space-y-4 relative z-10">
             <div className="flex items-center gap-3">
@@ -113,7 +114,7 @@ export function CommunitySection() {
               fr={fr}
             />
           </div>
-        </motion.div>
+        </RubriqueCard>
 
         {/* Views Container with Staggered Entrance */}
         <AnimatePresence mode="wait">

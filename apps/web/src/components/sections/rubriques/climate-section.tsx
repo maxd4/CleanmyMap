@@ -15,6 +15,7 @@ import {
 } from "./climate-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, RefreshCw, Leaf, Globe, Wind, ArrowRight, Info, Sparkles } from "lucide-react";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -151,8 +152,12 @@ export function ClimateSection() {
                 <div className="space-y-12">
                   <motion.div variants={itemVariants} className="grid gap-8 md:grid-cols-2">
                     <ClimateAlertBanner indicator={priorityIndicator} fr={fr} />
-                    <div className="flex items-center gap-8 rounded-[3rem] border border-emerald-500/20 bg-emerald-500/5 p-8 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
-                      <div className="absolute -right-12 -top-12 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full" />
+                    
+                    <RubriqueCard 
+                      themeColor="emerald"
+                      withTopBar={false}
+                      className="flex items-center gap-8 p-8"
+                    >
                       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400 shadow-xl shadow-emerald-500/20">
                         <RefreshCw className="h-8 w-8 animate-spin-slow" />
                       </div>
@@ -161,35 +166,37 @@ export function ClimateSection() {
                         <p className="text-xl font-black text-white tracking-tight">Sync. active</p>
                         <p className="text-xs text-slate-400 font-medium">{fr ? "Calculé à l'instant" : "Calculated just now"}</p>
                       </div>
-                    </div>
+                    </RubriqueCard>
                   </motion.div>
 
-                  <motion.div variants={itemVariants} className="relative group">
-                    <div className="p-12 rounded-[4rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl relative overflow-hidden shadow-2xl">
-                      <div className="absolute top-0 right-0 p-16 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000 group-hover:opacity-[0.05]">
-                        <Globe size={240} className="text-white" />
+                  <RubriqueCard 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    themeColor="blue"
+                    watermarkIcon={Globe}
+                    watermarkSize={200}
+                    className="p-12 group"
+                  >
+                    <div className="relative z-10 space-y-8">
+                      <div className="flex items-center gap-6">
+                        <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-lg shadow-blue-500/10">
+                          <Wind size={28} className="text-blue-400" />
+                        </div>
+                        <h3 className="text-3xl font-black text-white tracking-tighter">Focus Ocean & Eaux</h3>
                       </div>
-                      <div className="relative z-10 space-y-8">
-                        <div className="flex items-center gap-6">
-                          <div className="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-lg shadow-blue-500/10">
-                            <Wind size={28} className="text-blue-400" />
-                          </div>
-                          <h3 className="text-3xl font-black text-white tracking-tighter">Focus Ocean & Eaux</h3>
-                        </div>
-                        <p className="text-slate-300 text-xl leading-relaxed max-w-3xl font-medium">
-                          {fr 
-                            ? "80% des déchets abandonnés finissent dans les cours d'eau. Vos actions empêchent cette fuite plastique vers les océans, protégeant directement la biodiversité marine."
-                            : "80% of abandoned waste ends up in waterways. Your actions prevent this plastic leakage to the oceans, directly protecting marine biodiversity."}
-                        </p>
-                        <div className="pt-4">
-                          <button className="flex items-center gap-3 text-blue-400 font-black text-xs uppercase tracking-[0.3em] hover:text-blue-300 transition-colors group">
-                            {fr ? "En savoir plus sur l'impact hydrique" : "Learn more about water impact"}
-                            <ArrowRight size={14} className="group-hover:translate-x-2 transition-transform" />
-                          </button>
-                        </div>
+                      <p className="text-slate-300 text-xl leading-relaxed max-w-3xl font-medium">
+                        {fr 
+                          ? "80% des déchets abandonnés finissent dans les cours d'eau. Vos actions empêchent cette fuite plastique vers les océans, protégeant directement la biodiversité marine."
+                          : "80% of abandoned waste ends up in waterways. Your actions prevent this plastic leakage to the oceans, directly protecting marine biodiversity."}
+                      </p>
+                      <div className="pt-4">
+                        <button className="flex items-center gap-3 text-blue-400 font-black text-xs uppercase tracking-[0.3em] hover:text-blue-300 transition-colors group/btn">
+                          {fr ? "En savoir plus sur l'impact hydrique" : "Learn more about water impact"}
+                          <ArrowRight size={14} className="group-hover/btn:translate-x-2 transition-transform" />
+                        </button>
                       </div>
                     </div>
-                  </motion.div>
+                  </RubriqueCard>
                 </div>
 
                 <div className="space-y-12">

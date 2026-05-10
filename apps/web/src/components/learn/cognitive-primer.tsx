@@ -29,24 +29,24 @@ const STATE_TONES: Record<
   { chip: string; text: string; dot: string }
 > = {
   new: {
-    chip: "border-cyan-500/20 bg-cyan-500/10 text-cyan-100",
+    chip: "border-cyan-200 bg-cyan-50 text-cyan-900",
     text: "cmm-text-secondary",
-    dot: "bg-cyan-300",
+    dot: "bg-cyan-500",
   },
   failed: {
-    chip: "border-rose-500/20 bg-rose-500/10 text-rose-100",
+    chip: "border-rose-200 bg-rose-50 text-rose-900",
     text: "cmm-text-secondary",
-    dot: "bg-rose-300",
+    dot: "bg-rose-500",
   },
   due: {
-    chip: "border-amber-500/20 bg-amber-500/10 text-amber-100",
+    chip: "border-amber-200 bg-amber-50 text-amber-900",
     text: "cmm-text-secondary",
-    dot: "bg-amber-300",
+    dot: "bg-amber-500",
   },
   mastered: {
-    chip: "border-emerald-500/20 bg-emerald-500/10 text-emerald-100",
+    chip: "border-emerald-200 bg-emerald-50 text-emerald-900",
     text: "cmm-text-secondary",
-    dot: "bg-emerald-300",
+    dot: "bg-emerald-500",
   },
 };
 
@@ -145,7 +145,7 @@ export function CognitivePrimer({
             </div>
 
             <div className="mt-4 flex items-start gap-2 rounded-xl border border-[color:var(--border-default)] bg-[color:var(--bg-elevated)]/82 px-3 py-2.5">
-              <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" aria-hidden="true" />
+              <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-cyan-600" aria-hidden="true" />
               <div>
                 <p className="cmm-text-caption font-bold uppercase tracking-[0.16em] cmm-text-muted">
                   {locale === "fr" ? "Prochaine révision" : "Next review"}

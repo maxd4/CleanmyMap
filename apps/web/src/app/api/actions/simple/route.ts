@@ -154,12 +154,18 @@ export async function POST(request: Request) {
     }
 
     let photoUrls: string[] = [];
+    let photoWarning: string | null = null;
     if (parsed.data.photos && parsed.data.photos.length > 0) {
       try {
         const uploadResults = await photoUploadService.uploadMultiplePhotos(
           parsed.data.photos,
           data.id,
         );
+
+        const firstUploadError = uploadResults.find((result) => result.error)?.error ?? null;
+        if (firstUploadError) {
+          photoWarning = firstUploadError;
+        }
 
         photoUrls = uploadResults
           .filter((result) => !result.error)
@@ -183,6 +189,7 @@ export async function POST(request: Request) {
       message: "Action déclarée avec succès",
       id: data.id,
       photoCount: photoUrls.length,
+      ...(photoWarning ? { photoWarning } : {}),
     });
   } catch (error) {
     console.error("API Error:", error);

@@ -14,7 +14,6 @@ import { ReportsWindowComparisonsSection } from"@/components/reports/reports-win
 import { ReportsWebDocument } from"@/components/reports/reports-web-document";
 import { DecisionPageHeader } from"@/components/ui/decision-page-header";
 import { PageReadingTemplate } from"@/components/ui/page-reading-template";
-import { RubriquePdfExportButton } from"@/components/ui/rubrique-pdf-export-button";
 import { AnimatedImpactMetrics } from "@/components/reports/AnimatedImpactMetrics";
 import { RadialProgressGauge } from "@/components/reports/RadialProgressGauge";
 import { EcologicalTimeline } from "@/components/reports/EcologicalTimeline";
