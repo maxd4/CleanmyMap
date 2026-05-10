@@ -58,7 +58,7 @@
     "postcss": "^8.5.0"
   },
   "dependencies": {
-    "posthog-js": "^1.372.9",
-    "posthog-node": "^5.33.3"
+    "posthog-js": "^1.372.10",
+    "posthog-node": "^5.33.4"
   }
 }
