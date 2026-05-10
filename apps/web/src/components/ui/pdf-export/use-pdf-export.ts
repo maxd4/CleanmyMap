@@ -1,7 +1,12 @@
-import { useState, useMemo, useEffect } from "react";
-import { normalizeDeliverableRubrique, buildDeliverableBaseName } from "@/lib/reports/deliverable-name";
-import { generatePdfHtml } from "@/lib/pdf-export/generate-pdf-html";
-import type { ReportModel } from "@/components/reports/web-document/types";
+import { useEffect, useMemo, useState } from "react";
+import {
+  buildPdfReportFilename,
+  buildPdfReportLines,
+  buildSimplePdf,
+  hasPdfReportData,
+  type PdfReportData,
+  type PdfReportPayload,
+} from "@/lib/pdf-export/simple-pdf";
 
 export type ExportHistoryEntry = {
   id: string;
@@ -10,20 +15,35 @@ export type ExportHistoryEntry = {
   generatedAt: string;
 };
 
-const STORAGE_KEY = "cleanmymap.rubrique_export_history.v1";
+type UsePdfExportParams = {
+  rubrique: string;
+  periode: string;
+  organizationType: string;
+  defaultTitle: string;
+  data?: PdfReportData | null;
+  disabled?: boolean;
+  onGenerate?: (payload: PdfReportPayload) => void | Promise<void>;
+};
+
+const STORAGE_KEY = "cleanmymap.rubrique_export_history.v2";
 const MAX_HISTORY = 12;
 
 function readHistoryFromStorage(): ExportHistoryEntry[] {
-  if (typeof window === "undefined") {
-    return [];
-  }
+  if (typeof window === "undefined") return [];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as ExportHistoryEntry[];
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item) => item && typeof item === "object")
-      .filter((item) => typeof item.id === "string" && typeof item.rubrique === "string" && typeof item.filename === "string" && typeof item.generatedAt === "string")
+    return parsed
+      .filter((item) => item && typeof item === "object")
+      .filter(
+        (item) =>
+          typeof item.id === "string" &&
+          typeof item.rubrique === "string" &&
+          typeof item.filename === "string" &&
+          typeof item.generatedAt === "string",
+      )
       .slice(0, MAX_HISTORY);
   } catch {
     return [];
@@ -34,90 +54,96 @@ function writeHistoryToStorage(entries: ExportHistoryEntry[]): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY)));
   } catch {
-    // ignore
+    // Local storage can be unavailable in private or locked contexts.
   }
 }
 
-export function usePdfExport(rubriqueTitle: string, targetSelector: string) {
-  const [state, setState] = useState<"idle" | "pending" | "error">("idle");
+function downloadPdf(filename: string, lines: string[]): void {
+  const bytes = buildSimplePdf(lines);
+  const blob = new Blob([bytes], { type: "application/pdf" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
+export function usePdfExport(params: UsePdfExportParams) {
+  const [state, setState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
-  const [customRubrique, setCustomRubrique] = useState<string>("");
-  const [orgType, setOrgType] = useState<"global" | "association" | "entreprise">("global");
-  const [selectedOrg, setSelectedOrg] = useState<string>("");
+  const [customTitle, setCustomTitle] = useState<string>("");
+  const [organizationName, setOrganizationName] = useState<string>("");
   const [history, setHistory] = useState<ExportHistoryEntry[]>(() => readHistoryFromStorage());
 
-  const rubriqueSlug = useMemo(
-    () => normalizeDeliverableRubrique(customRubrique.trim() || rubriqueTitle),
-    [customRubrique, rubriqueTitle],
-  );
   const filename = useMemo(
-    () => `${buildDeliverableBaseName({ rubrique: rubriqueSlug })}.pdf`,
-    [rubriqueSlug],
+    () => buildPdfReportFilename({ rubrique: params.rubrique, periode: params.periode }),
+    [params.rubrique, params.periode],
   );
+  const hasData = hasPdfReportData(params.data);
+  const isDisabled = Boolean(params.disabled || !hasData || state === "pending");
+  const title = customTitle.trim() || params.data?.title || params.defaultTitle;
 
   useEffect(() => {
     writeHistoryToStorage(history);
   }, [history]);
 
-  function exportRubriquePdf() {
+  async function exportRubriquePdf() {
+    if (isDisabled) {
+      setState("error");
+      setMessage("Aucune donnée exploitable à exporter pour cette page.");
+      return;
+    }
+
     setState("pending");
     setMessage(null);
 
-    const printWindow = window.open("", "_blank", "noopener,noreferrer");
-    if (!printWindow) {
-      setState("error");
-      setMessage("Autorise les popups pour generer le PDF.");
-      return;
-    }
-
-    const root = document.querySelector<HTMLElement>(targetSelector);
-    if (!root) {
-      printWindow.close();
-      setState("error");
-      setMessage("Contenu de rubrique introuvable.");
-      return;
-    }
-
-    const reportData = (window as any).__REPORT_DATA__ as ReportModel;
-    const organizationName = selectedOrg || "Entité non spécifiée";
-    const deliverableId = `CMM-RP-${Math.random().toString(36).substring(2, 9).toUpperCase()}-${new Date().getFullYear()}`;
+    const generatedAt = new Date().toISOString();
+    const payload: PdfReportPayload = {
+      title,
+      rubrique: params.rubrique,
+      periode: params.periode,
+      organizationType: params.organizationType,
+      organizationName,
+      data: {
+        ...params.data!,
+        generatedAt,
+      },
+    };
 
     try {
-      const html = generatePdfHtml(reportData, organizationName, selectedOrg, deliverableId);
+      if (params.onGenerate) {
+        await params.onGenerate(payload);
+      } else {
+        downloadPdf(filename, buildPdfReportLines(payload));
+      }
 
-      printWindow.document.open();
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.focus();
-
-      const newEntry: ExportHistoryEntry = {
-        id: deliverableId,
-        rubrique: rubriqueSlug,
-        filename,
-        generatedAt: new Date().toISOString(),
-      };
-      setHistory(prev => [newEntry, ...prev]);
-
-      setState("idle");
-    } catch (err) {
-      printWindow.close();
+      const id = `CMM-PDF-${Math.random().toString(36).slice(2, 9).toUpperCase()}`;
+      setHistory((prev) => [
+        { id, rubrique: params.rubrique, filename, generatedAt },
+        ...prev,
+      ]);
+      setState("success");
+      setMessage("Rapport PDF généré.");
+    } catch {
       setState("error");
-      setMessage("Erreur lors de la génération du PDF.");
+      setMessage("Impossible de générer le PDF. Vérifiez les données puis réessayez.");
     }
   }
 
   return {
     state,
     message,
-    customRubrique,
-    setCustomRubrique,
-    orgType,
-    setOrgType,
-    selectedOrg,
-    setSelectedOrg,
+    customTitle,
+    setCustomTitle,
+    organizationName,
+    setOrganizationName,
     history,
-    rubriqueSlug,
     filename,
-    exportRubriquePdf
+    hasData,
+    isDisabled,
+    exportRubriquePdf,
   };
 }

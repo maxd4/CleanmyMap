@@ -16,6 +16,7 @@ import {
 } from "./recycling-components";
 import { AlertCircle, Recycle, Sparkles, MapPin, Search } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -88,15 +89,13 @@ export function RecyclingSection() {
     >
       <div className="space-y-16 pt-8">
         {/* Top Control & Search Bar */}
-        <motion.div 
+        <RubriqueCard 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 p-6 rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden"
+          themeColor="emerald"
+          withTopBar={false}
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 p-8 group"
         >
-          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-            <Sparkles size={80} className="text-emerald-400" />
-          </div>
-
           <div className="space-y-3 relative z-10">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
@@ -114,12 +113,12 @@ export function RecyclingSection() {
           </div>
 
           <div className="relative z-10 flex gap-4">
-             <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 group hover:border-emerald-500/30 transition-all cursor-pointer">
-                <Search size={16} className="group-hover:text-emerald-400 transition-colors" />
+             <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400 group/search hover:border-emerald-500/30 transition-all cursor-pointer">
+                <Search size={16} className="group-hover/search:text-emerald-400 transition-colors" />
                 <span className="text-[10px] font-black uppercase tracking-widest">{fr ? "Rechercher une filière" : "Search a stream"}</span>
              </div>
           </div>
-        </motion.div>
+        </RubriqueCard>
 
         {isLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
@@ -154,20 +153,24 @@ export function RecyclingSection() {
                 <RecyclingStreamTable breakdown={breakdown.data} fr={fr} />
               </motion.div>
 
-              <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <RecyclingWorkflowCard fr={fr} />
-                <RecyclingDataUsageCard fr={fr} />
-              </motion.div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <RubriqueCard themeColor="emerald" withTopBar={true} className="p-8">
+                  <RecyclingWorkflowCard fr={fr} />
+                </RubriqueCard>
+                <RubriqueCard themeColor="emerald" withTopBar={true} className="p-8">
+                  <RecyclingDataUsageCard fr={fr} />
+                </RubriqueCard>
+              </div>
             </div>
 
             <div className="lg:col-span-4 space-y-12">
-              <motion.div variants={itemVariants}>
+              <RubriqueCard themeColor="emerald" withTopBar={true} className="p-8">
                 <RecyclingQualitySummary quality={breakdown.data?.triQuality} fr={fr} />
-              </motion.div>
+              </RubriqueCard>
 
-              <motion.div variants={itemVariants}>
+              <RubriqueCard themeColor="emerald" withTopBar={true} className="p-8">
                 <RecyclingQuestionAssistant fr={fr} />
-              </motion.div>
+              </RubriqueCard>
             </div>
           </motion.div>
         )}

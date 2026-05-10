@@ -65,8 +65,8 @@ const STEP_CARDS: StepCard[] = [
     tone: "violet",
     label: { fr: "Avant", en: "Before" },
     detail: {
-      fr: "Préparer le kit, la zone et le rôle de chacun.",
-      en: "Prepare the kit, the area, and each person's role.",
+      fr: "Préparer le kit, la zone et le rôle.",
+      en: "Prepare the kit, area, and role.",
     },
   },
   {
@@ -75,8 +75,8 @@ const STEP_CARDS: StepCard[] = [
     tone: "cyan",
     label: { fr: "Pendant", en: "During" },
     detail: {
-      fr: "Garder le tri simple, le rythme clair et le terrain lisible.",
-      en: "Keep sorting simple, the pace clear, and the field readable.",
+      fr: "Garder le tri simple et le rythme lisible.",
+      en: "Keep sorting simple and the pace readable.",
     },
   },
   {
@@ -85,8 +85,8 @@ const STEP_CARDS: StepCard[] = [
     tone: "emerald",
     label: { fr: "Après", en: "After" },
     detail: {
-      fr: "Vérifier, ranger et transmettre le bon récapitulatif.",
-      en: "Check, store, and hand off the right summary.",
+      fr: "Vérifier, ranger et transmettre.",
+      en: "Check, store, and hand off.",
     },
   },
 ];
@@ -160,7 +160,7 @@ export function LearnPracticeGuideIntro({
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-100 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-emerald-900">
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              {locale === "fr" ? "Guide visuel" : "Visual guide"}
+              {locale === "fr" ? "Lecture rapide" : "Quick read"}
             </span>
             <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">
               {title[locale]}
@@ -176,18 +176,30 @@ export function LearnPracticeGuideIntro({
             </p>
           </div>
 
+          <div className="rounded-[1.35rem] border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center justify-between gap-3 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+              <span>{locale === "fr" ? "Séquence" : "Sequence"}</span>
+              <span>{locale === "fr" ? "Avant / pendant / après" : "Before / during / after"}</span>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <span className="h-2 rounded-full bg-violet-200" />
+              <span className="h-2 rounded-full bg-cyan-200" />
+              <span className="h-2 rounded-full bg-emerald-200" />
+            </div>
+          </div>
+
           <div className="grid gap-3 sm:grid-cols-3">
             <QuickCue
               icon={Compass}
-              label={locale === "fr" ? "Avant / pendant / après" : "Before / during / after"}
+              label={locale === "fr" ? "Préparer" : "Prep"}
             />
             <QuickCue
               icon={ListChecks}
-              label={locale === "fr" ? "Checklist courte" : "Short checklist"}
+              label={locale === "fr" ? "Rester lisible" : "Stay readable"}
             />
             <QuickCue
               icon={ShieldCheck}
-              label={locale === "fr" ? "Réflexe utile" : "Useful reflex"}
+              label={locale === "fr" ? "Clore proprement" : "Close cleanly"}
             />
           </div>
 
@@ -207,12 +219,39 @@ export function LearnPracticeGuideIntro({
                 {locale === "fr" ? "Séquence utile" : "Useful sequence"}
               </p>
               <h3 className="mt-1 text-xl font-black tracking-tight text-slate-900">
-                {locale === "fr" ? "La logique avant l'action" : "Logic before action"}
+                {locale === "fr" ? "Lire vite, agir juste" : "Read fast, act right"}
               </h3>
             </div>
             <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-100 text-emerald-900">
               <Target className="h-5 w-5" aria-hidden="true" />
             </span>
+          </div>
+
+          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="rounded-[1.2rem] border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                01
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-700">
+                {locale === "fr" ? "Préparer" : "Prep"}
+              </p>
+            </div>
+            <div className="rounded-[1.2rem] border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                02
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-700">
+                {locale === "fr" ? "Rester lisible" : "Stay readable"}
+              </p>
+            </div>
+            <div className="rounded-[1.2rem] border border-slate-200 bg-slate-50 p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                03
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-700">
+                {locale === "fr" ? "Clore proprement" : "Close cleanly"}
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-3">
@@ -236,11 +275,6 @@ export function LearnPracticeGuideIntro({
               <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-white text-slate-500 shadow-sm">
                 <Compass className="h-5 w-5" aria-hidden="true" />
               </span>
-            </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <span className="h-2 rounded-full bg-violet-200" />
-              <span className="h-2 rounded-full bg-cyan-200" />
-              <span className="h-2 rounded-full bg-emerald-200" />
             </div>
           </div>
         </div>

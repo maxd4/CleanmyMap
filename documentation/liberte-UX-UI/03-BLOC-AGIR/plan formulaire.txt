@@ -1,3 +1,81 @@
+plan pour corriger les erreurs et warning du repo 
+
+remet un footer complet sur le Dashboard aussi. Dans ton format minimal, ajoute le mentra "Cultivons l'entraide" il est important.
+
+
+
+
+
+
+
+Corrige le ruban de navigation principal.
+
+Problèmes observés :
+- Le ruban/header est trop sombre visuellement.
+- Les menus déroulants se ferment trop facilement au survol.
+- Cause probable : le dropdown n’est pas parfaitement rattaché au bouton du ruban. Quand la souris passe entre le bouton et la bulle du menu, elle traverse une zone vide, ce qui déclenche la fermeture.
+
+Objectifs UI :
+1. Utiliser une couleur cohérente avec la colorimétrique de la page affichée en dessous sans casser l’identité visuelle actuelle.
+2. Améliorer le contraste et la lisibilité des éléments du header.
+3. Rendre les menus déroulants stables au survol.
+4. Supprimer l’effet “je dois passer la souris très vite sinon le menu se ferme”.
+5. Optimiser les boutons pour qu'il y ai un vide homogène entre les boutons
+
+Corrections attendues :
+- Repérer le composant du header/navbar principal.
+- Repérer les composants des menus déroulants : Échanges, Réglages, Feedback, Badges, profil, ou tout autre dropdown du ruban.
+- Corriger la logique de hover/focus pour que le menu reste ouvert quand la souris passe du bouton vers le panneau déroulant.
+- S’assurer qu’il n’y a aucun gap non interactif entre le bouton et le dropdown.
+
+Solution technique recommandée :
+- Envelopper le bouton et le dropdown dans un même conteneur `relative group`.
+- Positionner le dropdown avec `absolute` dans ce même conteneur.
+- Le ruban doit prendre toute la largeur disponible de la fenetre
+- Ajouter une zone invisible de liaison entre le bouton et le dropdown, par exemple :
+  - un `div` ou pseudo-élément transparent
+  - hauteur 8 à 16px
+  - `pointer-events-auto`
+  - placé entre le bouton et le panneau
+- Ne pas utiliser une marge verticale qui crée un trou de hover.
+- Remplacer les `mt-*` problématiques par du padding interne ou par une zone de hover invisible.
+- Ajouter une petite temporisation de fermeture si nécessaire, par exemple 120–200 ms, pour éviter les fermetures brutales.
+- Le menu doit aussi rester accessible au clavier : focus, tabulation, Escape pour fermer si déjà implémenté.
+
+Amélioration visuelle du ruban :
+- Rendre le fond du header moins noir/sombre.
+- Utiliser une teinte navy/bleu-gris plus claire et plus premium.
+- Garder une séparation subtile avec le contenu : border-bottom ou shadow légère.
+- Harmoniser les boutons du ruban avec le design system CMM :
+  - fond semi-transparent plus clair
+  - bordures visibles mais discrètes
+  - texte lisible
+  - hover plus doux
+  - transitions fluides
+- Ne pas rendre le ruban trop lumineux : il doit rester cohérent avec l’interface sombre actuelle.
+
+Contraintes :
+- Ne modifie pas la structure globale de navigation si ce n’est pas nécessaire.
+- Ne casse aucune route ni aucun lien.
+- Ne supprime aucun menu existant.
+- Utilise les composants et tokens déjà présents dans le projet si disponibles.
+- Respecte Next.js, React, TypeScript et Tailwind v4.
+- Vérifie desktop et mobile.
+- Sur mobile, les dropdowns doivent fonctionner au clic/tap, pas uniquement au hover.
+
+Critères de validation :
+- Le menu reste ouvert quand on déplace lentement la souris du bouton vers le dropdown.
+- Aucun menu ne se ferme à cause d’un espace vide entre le bouton et le panneau.
+- Le header paraît moins sombre et plus lisible.
+- Les animations sont fluides.
+- La navigation reste accessible clavier.
+- Aucun warning TypeScript ou lint lié aux fichiers modifiés.
+
+
+
+
+
+
 
 
 
@@ -73,6 +151,15 @@ Une section de navigation premium, plus unique, plus claire, avec des cartes ins
 
 
 
+
+
+
+
+
+
+
+
+
 Corrige les incohérences entre FormState, UI et payload du formulaire bénévole.
 
 Objectif :
@@ -94,6 +181,7 @@ Contraintes :
 
 Livrable :
 Audit rapide, fichiers modifiés, corrections appliquées, vérification du payload final.
+
 
 
 

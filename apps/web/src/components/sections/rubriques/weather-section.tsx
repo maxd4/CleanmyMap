@@ -14,6 +14,7 @@ import {
   KitChecklist,
 } from "./weather-components";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { motion, AnimatePresence } from "framer-motion";
 import { CloudRain, Package, Wind, Thermometer, ShieldCheck, Sparkles, MapPin } from "lucide-react";
 
@@ -51,14 +52,14 @@ export function WeatherSection() {
     >
       <div className="space-y-12 pt-8">
         {/* Navigation & Context Bar */}
-        <motion.div 
+        <RubriqueCard 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 p-6 rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden"
+          themeColor={activeTab === 'weather' ? "blue" : "amber"}
+          watermarkIcon={activeTab === 'weather' ? Wind : ShieldCheck}
+          watermarkSize={80}
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 p-6"
         >
-          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-            {activeTab === 'weather' ? <Wind size={80} className="text-blue-400" /> : <ShieldCheck size={80} className="text-amber-400" />}
-          </div>
 
           <div className="space-y-3 relative z-10">
             <div className="flex items-center gap-3">
@@ -84,7 +85,7 @@ export function WeatherSection() {
               fr={fr}
             />
           </div>
-        </motion.div>
+        </RubriqueCard>
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -115,12 +116,12 @@ export function WeatherSection() {
                     </motion.div>
                   )}
                   
-                  <motion.div variants={itemVariants} className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/20 text-center space-y-4">
-                    <Thermometer className="mx-auto text-slate-500" size={32} />
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                  <RubriqueCard variants={itemVariants} themeColor="slate" withTopBar={false} className="p-8 text-center space-y-4">
+                    <Thermometer className="mx-auto text-slate-500 relative z-10" size={32} />
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest relative z-10">
                       {fr ? "Données Météo-France & OpenWeather" : "Data from Meteo-France & OpenWeather"}
                     </p>
-                  </motion.div>
+                  </RubriqueCard>
                 </div>
 
                 <div className="lg:col-span-8 space-y-12">

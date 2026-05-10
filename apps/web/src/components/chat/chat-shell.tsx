@@ -137,6 +137,7 @@ export function ChatShell({
     mentionSuggestions,
     dmSuggestions,
     sendChatMessage,
+    isLive,
   } = useChatData({
     activeChannelType,
     selectedRecipientId: selectedRecipient?.id ?? null,
@@ -146,6 +147,7 @@ export function ChatShell({
     mentionQuery,
     recipientQuery,
     currentUserId: userId,
+    supabase,
   });
 
   const { handleSend } = useChatSubmit({
@@ -198,10 +200,10 @@ export function ChatShell({
       value: discussionGuidance.visibilityLabel,
     },
     {
-      label: locale === "fr" ? "Activité" : "Activity",
-      value: formatRecentActivityLabel(locale, lastMessageAt),
+      label: locale === "fr" ? "Statut" : "Status",
+      value: isLive ? (locale === "fr" ? "Direct" : "Live") : "Polling",
     },
-  ], [activeChannelType, discussionGuidance.audienceLabel, discussionGuidance.visibilityLabel, locale, lastMessageAt]);
+  ], [activeChannelType, discussionGuidance.audienceLabel, discussionGuidance.visibilityLabel, locale, isLive]);
 
   useEffect(() => {
     if (scrollRef.current && viewMode === "messages") {
@@ -322,14 +324,14 @@ export function ChatShell({
   }, [setMessage, setShowMentions, setSendError, activeChannelType, selectedRecipient, setIsRecipientPickerOpen]);
 
   return (
-    <div className="flex flex-col h-[700px] rounded-[2.5rem] border border-pink-200/20 overflow-hidden shadow-2xl relative bg-[linear-gradient(180deg,rgba(73,27,56,0.98),rgba(39,16,31,0.98))]">
+    <div className="flex flex-col h-[750px] rounded-[3rem] border border-white/10 overflow-hidden shadow-2xl relative bg-slate-900/40 backdrop-blur-3xl">
       <div className="flex flex-1 overflow-hidden">
         <ChatSidebar
           channels={sidebarChannels}
           currentChannelType={activeChannelType}
           onSelectChannel={handleSelectChannel}
         />
-        <div className="flex-1 flex flex-col relative bg-[rgba(255,248,251,0.96)] dark:bg-slate-950">
+        <div className="flex-1 flex flex-col relative bg-white/5 dark:bg-slate-950/20">
           <ChatHeader
             activeChannelType={activeChannelType}
             activeChannelLabel={activeChannelLabel}
@@ -363,7 +365,7 @@ export function ChatShell({
             <>
               <div
                 ref={scrollRef}
-                className="flex-1 p-6 overflow-y-auto space-y-2 custom-scrollbar"
+                className="flex-1 p-6 overflow-y-auto space-y-4 custom-scrollbar"
               >
                 {feedState === "loading" && <ChatLoadingState />}
                 {feedState === "degraded" && <ChatDegradedState error={messagesError} />}
@@ -388,13 +390,19 @@ export function ChatShell({
 
               {feedState !== "degraded" && feedState !== "empty" ? (
                 <div className="px-6 pb-4">
-                  <div className="flex items-center gap-3 rounded-[1.5rem] border border-pink-100/40 bg-[rgba(255,248,251,0.92)] px-4 py-3 shadow-sm dark:border-slate-800 dark:bg-slate-950/70">
-                    <span className="rounded-full bg-pink-100 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-pink-700 dark:bg-slate-900 dark:text-slate-300">
+                  <div className="flex items-center gap-3 rounded-[1.5rem] border border-white/5 bg-white/5 px-4 py-3 shadow-sm dark:bg-slate-900/40">
+                    <span className="rounded-full bg-violet-500/20 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-violet-400">
                       {discussionGuidance.channelGoal}
                     </span>
-                    <p className="min-w-0 text-xs cmm-text-secondary">
+                    <p className="min-w-0 text-xs text-slate-400">
                       {discussionGuidance.composerHint}
                     </p>
+                    {isLive && (
+                      <div className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[9px] font-black uppercase tracking-widest text-emerald-500">Live</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : null}

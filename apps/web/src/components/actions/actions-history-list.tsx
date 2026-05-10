@@ -16,6 +16,7 @@ import type {
 } from"@/lib/actions/types";
 import { swrRecentViewOptions } from"@/lib/swr-config";
 import { CmmSkeleton } from"@/components/ui/cmm-skeleton";
+import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 
 function formatDate(value: string): string {
  const parsed = new Date(value);
@@ -149,6 +150,56 @@ export function ActionsHistoryList() {
  const selectedOperational = selectedItem?.contract
  ? getActionOperationalContext(selectedItem.contract)
  : null;
+ const pdfRows = useMemo(
+ () =>
+ filteredItems.map((item: ActionListItem) => {
+ const quality = qualityById.get(item.id);
+ const operational = item.contract ? getActionOperationalContext(item.contract) : null;
+ return {
+ Date: item.action_date,
+ Bénévole: item.actor_name ||"Anonyme",
+ Lieu: item.location_label,
+ Type: formatRecordType(item),
+ Kg: mapItemWasteKg(item as any) ?? 0,
+ Mégots: mapItemCigaretteButts(item as any) ?? 0,
+ Statut: item.status,
+ Qualité: quality ? `${quality.grade} (${quality.score}/100)` :"n/a",
+ Contexte: operational?.placeTypeLabel ??"n/a",
+ };
+ }),
+ [filteredItems, qualityById],
+ );
+ const pdfData = useMemo(
+ () => ({
+ title:"Rapport historique terrain",
+ summary: [
+ `Statut filtré: ${statusFilter}.`,
+ `Grade qualité: ${qualityFilter}.`,
+ toFixOnly ? "Vue limitée aux enregistrements à corriger." : "Vue complète selon filtres actifs.",
+ search.trim() ? `Recherche active: ${search.trim()}.` : "Aucune recherche texte active.",
+ ],
+ stats: [
+ { label:"Lignes visibles", value: filteredItems.length },
+ { label:"Actions approuvées visibles", value: filteredItems.filter((item) => item.status ==="approved").length },
+ { label:"Qualité A", value: filteredItems.filter((item) => qualityById.get(item.id)?.grade ==="A").length },
+ { label:"Qualité B", value: filteredItems.filter((item) => qualityById.get(item.id)?.grade ==="B").length },
+ { label:"Qualité C", value: filteredItems.filter((item) => qualityById.get(item.id)?.grade ==="C").length },
+ ],
+ rows: pdfRows,
+ columns: [
+ { key:"Date", label:"Date" },
+ { key:"Bénévole", label:"Bénévole" },
+ { key:"Lieu", label:"Lieu" },
+ { key:"Type", label:"Type" },
+ { key:"Kg", label:"Kg" },
+ { key:"Mégots", label:"Mégots" },
+ { key:"Statut", label:"Statut" },
+ { key:"Qualité", label:"Qualité" },
+ { key:"Contexte", label:"Contexte" },
+ ],
+ }),
+ [filteredItems, pdfRows, qualityById, qualityFilter, search, statusFilter, toFixOnly],
+ );
  const selectedLostPoints = selectedQuality
  ? Math.max(0, 100 - selectedQuality.score)
  : 0;
@@ -184,6 +235,17 @@ export function ActionsHistoryList() {
  >
  {isValidating ?"Actualisation..." :"Rafraichir"}
  </button>
+ </div>
+
+ <div className="mt-4">
+ <RubriquePdfExportButton
+ rubrique="historique_terrain"
+ periode={`filtre_${statusFilter}_${new Date().getFullYear()}`}
+ organizationType="profil"
+ defaultTitle="Rapport historique terrain"
+ data={pdfData}
+ disabled={isLoading || Boolean(error) || filteredItems.length === 0}
+ />
  </div>
 
  <div className="mt-4 grid gap-3 md:grid-cols-3">

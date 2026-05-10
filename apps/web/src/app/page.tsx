@@ -105,7 +105,6 @@ export default async function HomePage() {
       <HomeBenefits benefits={HOME_BENEFITS} />
       <HomeCommunityActivity activity={communityActivity} />
       <OriginCredibility />
-      <HomeFooter />
     </div>
   );
 }

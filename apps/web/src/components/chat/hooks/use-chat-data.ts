@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import useSWR from "swr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { getChatFeedState, type ChatFeedState } from "../chat-feed-state";
 import type { ChatChannelType } from "@/lib/chat/channels";
@@ -22,6 +23,7 @@ type UseChatDataParams = {
   mentionQuery: string;
   recipientQuery: string;
   currentUserId?: string;
+  supabase?: SupabaseClient;
 };
 
 type SendChatMessageParams = {
@@ -96,6 +98,7 @@ export function useChatData({
   mentionQuery,
   recipientQuery,
   currentUserId,
+  supabase,
 }: UseChatDataParams) {
   const messagesKey = buildMessagesKey({
     activeChannelType,
@@ -118,10 +121,7 @@ export function useChatData({
         }`
       : null;
 
-  const {
-    data: mentionUsersData,
-  } = useSWR<ChatUsersResponse>(mentionUsersKey, fetcher);
-
+  const { data: mentionUsersData } = useSWR<ChatUsersResponse>(mentionUsersKey, fetcher);
   const { data: dmUsersData } = useSWR<ChatUsersResponse>(dmUsersKey, fetcher);
 
   const {
@@ -130,8 +130,68 @@ export function useChatData({
     isLoading,
     mutate: mutateMessages,
   } = useSWR<ChatMessagesResponse>(messagesKey, fetcher, {
-    refreshInterval: 30000,
+    // Polling significantly reduced as we use Realtime, but kept as a safety fallback
+    refreshInterval: 60000,
+    revalidateOnFocus: true,
   });
+
+  // Real-time subscription
+  useEffect(() => {
+    if (!supabase || !messagesKey) return;
+
+    const channel = supabase
+      .channel("chat-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "app_messages",
+        },
+        (payload) => {
+          const newMsg = payload.new as any;
+          
+          // Basic filtering to avoid excessive revalidations
+          // We trigger revalidation if the channel type matches
+          if (newMsg.channel_type === activeChannelType) {
+            // Further filtering for DMs or Territory
+            if (activeChannelType === "dm") {
+              if (
+                (newMsg.sender_id === currentUserId && newMsg.recipient_id === selectedRecipientId) ||
+                (newMsg.sender_id === selectedRecipientId && newMsg.recipient_id === currentUserId)
+              ) {
+                mutateMessages();
+              }
+            } else if (activeChannelType === "territory") {
+              // Match by zone or arrondissement
+              if (
+                (newMsg.zone_name && newMsg.zone_name === effectiveZone) ||
+                (newMsg.arrondissement_id && newMsg.arrondissement_id === territoryFocus)
+              ) {
+                mutateMessages();
+              }
+            } else {
+              // Global channels (community, admin_elu, etc.)
+              mutateMessages();
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [
+    supabase,
+    messagesKey,
+    activeChannelType,
+    selectedRecipientId,
+    currentUserId,
+    effectiveZone,
+    territoryFocus,
+    mutateMessages,
+  ]);
 
   const messages = messagesData?.messages ?? [];
   const feedState: ChatFeedState = getChatFeedState({
@@ -209,5 +269,6 @@ export function useChatData({
     mentionSuggestions,
     dmSuggestions,
     sendChatMessage,
+    isLive: !!supabase,
   };
 }

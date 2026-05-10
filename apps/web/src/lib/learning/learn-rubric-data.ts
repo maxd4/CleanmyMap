@@ -71,14 +71,14 @@ export const LEARN_OVERVIEW_CARDS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/learn/bonnes-pratiques",
       title: "Bonnes pratiques",
-      detail: "Retrouver les gestes utiles et les guides courts.",
+      detail: "Guides courts, gestes utiles et séquence avant / pendant / après.",
       visual: {
         tone: "emerald",
         motif: "guides",
         badge: { fr: "Gestes utiles", en: "Useful gestures" },
         chips: [
           { fr: "Avant / pendant / après", en: "Before / during / after" },
-          { fr: "Guides courts", en: "Short guides" },
+          { fr: "Lecture rapide", en: "Quick scan" },
         ],
         stats: [
           { value: "1", label: { fr: "checklist", en: "checklist" } },
@@ -89,14 +89,14 @@ export const LEARN_OVERVIEW_CARDS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/learn/ressources",
       title: "Ressources",
-      detail: "Accéder au kit, aux repères et aux rendez-vous utiles.",
+      detail: "Kit terrain, repères de tri et événements utiles.",
       visual: {
         tone: "amber",
         motif: "resources",
         badge: { fr: "Kit terrain", en: "Field kit" },
         chips: [
-          { fr: "Agenda", en: "Agenda" },
-          { fr: "Repères", en: "References" },
+          { fr: "Kit", en: "Kit" },
+          { fr: "Tri", en: "Sorting" },
         ],
         stats: [
           { value: "12", label: { fr: "repères", en: "references" } },
@@ -145,14 +145,14 @@ export const LEARN_OVERVIEW_CARDS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/learn/bonnes-pratiques",
       title: "Best practices",
-      detail: "Find useful gestures and short guides.",
+      detail: "Short guides, useful gestures and a before / during / after sequence.",
       visual: {
         tone: "emerald",
         motif: "guides",
         badge: { fr: "Gestes utiles", en: "Useful gestures" },
         chips: [
           { fr: "Avant / pendant / après", en: "Before / during / after" },
-          { fr: "Guides courts", en: "Short guides" },
+          { fr: "Lecture rapide", en: "Quick scan" },
         ],
         stats: [
           { value: "1", label: { fr: "checklist", en: "checklist" } },
@@ -163,14 +163,14 @@ export const LEARN_OVERVIEW_CARDS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/learn/ressources",
       title: "Resources",
-      detail: "Access the kit, references and useful events.",
+      detail: "Field kit, sorting cues and useful events.",
       visual: {
         tone: "amber",
         motif: "resources",
         badge: { fr: "Kit terrain", en: "Field kit" },
         chips: [
-          { fr: "Agenda", en: "Agenda" },
-          { fr: "Repères", en: "References" },
+          { fr: "Kit", en: "Kit" },
+          { fr: "Tri", en: "Sorting" },
         ],
         stats: [
           { value: "12", label: { fr: "repères", en: "references" } },
@@ -186,7 +186,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/sections/recycling",
       title: "Que faire des déchets ?",
-      detail: "Repères de tri, Q&A et seconde vie.",
+      detail: "Repères de tri, Q&A rapide et seconde vie.",
       visual: {
         tone: "emerald",
         motif: "guides",
@@ -228,7 +228,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/actions/map",
       title: "Carte d'entraînement",
-      detail: "Vérifier la zone avant de partir sur le terrain.",
+      detail: "Vérifier la zone avant de partir.",
       visual: {
         tone: "amber",
         motif: "path",
@@ -242,7 +242,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/actions/new",
       title: "Déclarer une action",
-      detail: "Passer rapidement du geste au suivi mesuré.",
+      detail: "Passer du geste au suivi mesuré.",
       visual: {
         tone: "emerald",
         motif: "quiz",
@@ -256,7 +256,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/sections/trash-spotter",
       title: "Signalement Déchets",
-      detail: "Remonter un hotspot avec le bon contexte.",
+      detail: "Remonter un point avec le bon contexte.",
       visual: {
         tone: "violet",
         motif: "resources",
@@ -272,7 +272,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/sections/recycling",
       title: "What to do with waste",
-      detail: "Sorting cues, Q&A and second life.",
+      detail: "Sorting cues, quick Q&A and second life.",
       visual: {
         tone: "emerald",
         motif: "guides",
@@ -314,7 +314,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/actions/map",
       title: "Training map",
-      detail: "Check the area before heading to the field.",
+      detail: "Check the area before leaving.",
       visual: {
         tone: "amber",
         motif: "path",
@@ -328,7 +328,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/actions/new",
       title: "Declare an action",
-      detail: "Turn a gesture into a measured record quickly.",
+      detail: "Turn a gesture into a measured record.",
       visual: {
         tone: "emerald",
         motif: "quiz",
@@ -342,7 +342,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     {
       href: "/sections/trash-spotter",
       title: "Trash spotting",
-      detail: "Report a hotspot with the right context.",
+      detail: "Report a point with the right context.",
       visual: {
         tone: "violet",
         motif: "resources",
@@ -359,14 +359,14 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
 export const LEARN_RESOURCE_EVENTS: LearnEvent[] = [
   {
     title: "Grande Collecte de Printemps - Paris 14",
-    start: new Date(2026, 3, 25, 10, 0),
-    end: new Date(2026, 3, 25, 14, 0),
+    start: new Date(2026, 4, 16, 10, 0),
+    end: new Date(2026, 4, 16, 14, 0),
     allDay: false,
   },
   {
     title: "Atelier Recyclage Créatif",
-    start: new Date(2026, 3, 28, 18, 0),
-    end: new Date(2026, 3, 28, 20, 0),
+    start: new Date(2026, 4, 21, 18, 0),
+    end: new Date(2026, 4, 21, 20, 0),
     allDay: false,
   },
 ];

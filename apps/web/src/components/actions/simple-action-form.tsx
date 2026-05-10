@@ -27,6 +27,7 @@ export function SimpleActionForm() {
  const [errors, setErrors] = useState<FormErrors>({})
  const [isSubmitting, setIsSubmitting] = useState(false)
  const [submitSuccess, setSubmitSuccess] = useState(false)
+ const [submitWarning, setSubmitWarning] = useState<string | null>(null)
  const [honeypot, setHoneypot] = useState("")
  const [formStartedAt, setFormStartedAt] = useState<number | null>(null)
  const { acquire, release } = useSubmissionLock()
@@ -94,12 +95,13 @@ useEffect(() => {
       throw new Error(payload?.message || payload?.error || "Une erreur réseau a empêché l'envoi de votre déclaration. Veuillez réessayer.")
  }
  
- await response.json()
+ const payload = (await response.json().catch(() => null)) as { photoWarning?: string } | null
  analytics.trackFormComplete()
  metrics.complete()
  setSubmitSuccess(true)
+ setSubmitWarning(payload?.photoWarning ?? null)
  setForm(initialForm)
- setErrors({})
+ setErrors(payload?.photoWarning ? { form: payload.photoWarning } : {})
  } catch (error) {
  console.error('Submission error:', error)
     setErrors({
@@ -131,10 +133,14 @@ useEffect(() => {
  return (
  <CmmCard className="max-w-2xl mx-auto text-center py-8">
  <div className="space-y-4">
+ {submitWarning ? <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 cmm-text-small text-amber-900">{submitWarning}</p> : null}
  <div className="text-green-600 text-4xl">✓</div>
  <h2 className="text-2xl font-bold text-green-800">Action déclarée avec succès !</h2>
  <p className="cmm-text-secondary">Votre action de dépollution a été enregistrée.</p>
- <CmmButton onClick={() => setSubmitSuccess(false)}>Nouvelle déclaration</CmmButton>
+ <CmmButton onClick={() => {
+ setSubmitSuccess(false)
+ setSubmitWarning(null)
+ }}>Nouvelle déclaration</CmmButton>
  </div>
  </CmmCard>
  )

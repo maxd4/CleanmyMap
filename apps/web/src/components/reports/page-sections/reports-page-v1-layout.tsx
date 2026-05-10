@@ -1,7 +1,6 @@
 import { CognitiveCueStrip } from "@/components/learn/cognitive-cue-strip";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { DecisionPageHeader } from "@/components/ui/decision-page-header";
-import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { ReportsWindowComparisonsSection } from "@/components/reports/reports-window-comparisons-section";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
@@ -65,7 +64,6 @@ export function ReportsPageV1Layout({
           Tracer
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
-          <RubriquePdfExportButton rubriqueTitle="Reporting et pilotage" />
           <RubriqueExcelExportButton
             rubriqueTitle="Reporting et pilotage"
             data={contracts.map(toReportsExportRow)}

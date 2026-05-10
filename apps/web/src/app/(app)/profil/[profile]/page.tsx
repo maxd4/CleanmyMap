@@ -15,6 +15,9 @@ import {
   isAppProfile,
   toProfile,
 } from "@/lib/profiles";
+import { SectionShell } from "@/components/sections/rubriques/shared";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { User, Shield, Settings, Zap } from "lucide-react";
 
 type ProfilPageProps = {
   params: Promise<{ profile: string }>;
@@ -35,7 +38,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
         title="Parcours personnalisé"
         description="Connectez-vous pour accéder au parcours lié à votre profil."
         lockedPreview={
-          <div className="rounded-3xl bg-black/30 p-6">
+          <div className="rounded-3xl bg-black/30 p-6 border border-white/5 backdrop-blur-xl">
             <p className="text-[10px] font-bold uppercase tracking-wide text-white/60">
               Profil {normalized}
             </p>
@@ -61,81 +64,77 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
   const switchableProfiles = isAdmin ? getSwitchableProfiles(activeProfile) : [activeProfile];
 
   return (
-    <div
-      className="relative min-h-screen overflow-hidden font-sans"
-      style={{ background: "#92400e" }}
+    <SectionShell
+      id="profile"
+      title={profileLabel}
+      subtitle={`${profileSubtitle}. Gérez votre compte et accédez à vos outils privilégiés.`}
+      icon={User}
+      gradient="from-amber-600/20 via-orange-500/10 to-transparent"
     >
-      {/* Fond multicouche — cohérent avec dashboard */}
-      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 160% 100% at 50% -15%, #fef08a 0%, #fbbf24 20%, #f97316 50%, #ea580c 75%, #92400e 100%)" }} />
-      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 70% 50% at 50% 0%, rgba(254,240,138,0.6) 0%, transparent 65%)" }} />
-      <div className="pointer-events-none absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full blur-[120px]" style={{ background: "rgba(251,191,36,0.5)" }} />
-      <div className="pointer-events-none absolute top-1/2 -right-32 h-[450px] w-[450px] rounded-full blur-[100px]" style={{ background: "rgba(249,115,22,0.25)" }} />
-      <div className="pointer-events-none absolute bottom-0 left-1/4 h-[400px] w-[400px] rounded-full blur-[120px]" style={{ background: "rgba(253,224,71,0.2)" }} />
-
-      <div className="relative z-10 mx-auto max-w-[1400px] px-5 pb-24 pt-8 sm:px-8 sm:pt-10 space-y-12">
-
-        {/* ── Header ── */}
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/70">
-            Profil d&apos;accueil
-          </p>
-          <h1 className="mt-1.5 text-[clamp(3.5rem,7vw,6rem)] font-black leading-[0.92] tracking-[-0.05em] text-white">
-            {profileLabel}
-          </h1>
-          <p className="mt-3 text-lg font-medium text-white/75">{profileSubtitle}.</p>
-        </div>
-
-        {/* ── Séparateur ── */}
-        <div className="h-px bg-white/20" />
-
+      <div className="space-y-12 pt-8">
+        
         {/* ── Actions recommandées ── */}
-        <div>
-          <p className="mb-5 text-[11px] font-bold uppercase tracking-[0.3em] text-white/70">
-            Actions recommandées
-          </p>
-          <RolePrimaryActions profile={normalized} title="" tone="dark" />
-        </div>
+        <RubriqueCard 
+          themeColor="amber" 
+          withTopBar={true} 
+          topBarContent="Accès Prioritaires"
+          watermarkIcon={Zap}
+          className="p-12"
+        >
+          <div className="relative z-10">
+            <RolePrimaryActions profile={normalized} title="" tone="dark" />
+          </div>
+        </RubriqueCard>
 
-        {/* ── Séparateur ── */}
-        <div className="h-px bg-white/20" />
-
-        {/* ── Promotion ── */}
-        <PromotionRequestForm currentRole={activeProfile} />
+        {/* ── Promotion & Évolution ── */}
+        <RubriqueCard 
+          themeColor="slate" 
+          withTopBar={true} 
+          topBarContent="Évolution du Compte"
+          watermarkIcon={Shield}
+          className="p-12"
+        >
+          <PromotionRequestForm currentRole={activeProfile} />
+        </RubriqueCard>
 
         {/* ── Changer de profil ── */}
         {switchableProfiles.length > 1 && (
-          <>
-            <div className="h-px bg-white/20" />
-            <div>
-              <p className="mb-4 text-[11px] font-bold uppercase tracking-[0.3em] text-white/70">
-                {isAdmin ? "Changer de profil" : "Profil actif"}
-              </p>
-              <div className="flex flex-wrap gap-2.5">
-                {switchableProfiles.map((p) => (
-                  <Link
-                    key={p}
-                    href={getProfileEntryPath(p)}
-                    className={
-                      p === activeProfile
-                        ? "rounded-xl border border-amber-900/40 bg-amber-900 px-4 py-2.5 text-sm font-bold text-amber-100 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.3)] transition-all hover:-translate-y-0.5"
-                        : "rounded-xl border border-amber-200/60 bg-amber-100 px-4 py-2.5 text-sm font-semibold text-amber-900 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.15)] transition-all hover:-translate-y-0.5 hover:bg-amber-50 hover:border-amber-300"
-                    }
-                  >
-                    {getProfileLabel(p, "fr")}
-                  </Link>
-                ))}
-              </div>
+          <RubriqueCard 
+            themeColor="slate" 
+            withTopBar={true} 
+            topBarContent={isAdmin ? "Switch de Profil (Admin)" : "Identité Active"}
+            className="p-12"
+          >
+            <div className="flex flex-wrap gap-4">
+              {switchableProfiles.map((p) => (
+                <Link
+                  key={p}
+                  href={getProfileEntryPath(p)}
+                  className={
+                    p === activeProfile
+                      ? "rounded-2xl border border-amber-400/30 bg-amber-400/10 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-2xl transition-all hover:-translate-y-1"
+                      : "rounded-2xl border border-white/5 bg-white/5 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-slate-400 transition-all hover:-translate-y-1 hover:bg-white/10 hover:text-white"
+                  }
+                >
+                  {getProfileLabel(p, "fr")}
+                </Link>
+              ))}
             </div>
-          </>
+          </RubriqueCard>
         )}
 
-        {/* ── Séparateur ── */}
-        <div className="h-px bg-white/20" />
-
         {/* ── Paramètres ── */}
-        <AccountSettingsSection />
+        <RubriqueCard 
+          themeColor="slate" 
+          withTopBar={true} 
+          topBarContent="Configuration"
+          watermarkIcon={Settings}
+          className="p-12"
+        >
+          <AccountSettingsSection />
+        </RubriqueCard>
 
       </div>
-    </div>
+    </SectionShell>
   );
 }

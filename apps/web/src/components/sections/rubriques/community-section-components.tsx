@@ -188,10 +188,13 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
       </div>
 
       <aside className="lg:col-span-4 space-y-8">
-        <div className="p-8 rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
-            <Sparkles size={120} className="text-amber-400" />
-          </div>
+        <RubriqueCard 
+          themeColor="amber"
+          watermarkIcon={Sparkles}
+          watermarkSize={120}
+          withTopBar={false}
+          className="p-8"
+        >
           <div className="relative z-10 space-y-6">
             <h4 className="text-xl font-black text-white tracking-tight">{fr ? "Restez informé" : "Stay informed"}</h4>
             <p className="text-slate-400 text-sm leading-relaxed">
@@ -199,7 +202,7 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
             </p>
             <NewsletterSignup fr={fr} />
           </div>
-        </div>
+        </RubriqueCard>
 
         <div className="p-8 rounded-[3rem] border border-emerald-500/10 bg-emerald-500/5 backdrop-blur-3xl shadow-2xl">
           <div className="space-y-6">

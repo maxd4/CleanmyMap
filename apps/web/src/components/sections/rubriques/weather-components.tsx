@@ -29,6 +29,7 @@ import { OPERATIONAL_ZONES, evaluateWeatherRisk } from "@/lib/weather/ops-weathe
 import type { OperationalZone, WeatherRiskAssessment, InterventionWindow } from "@/lib/weather/ops-weather";
 import { formatDateTimeShort } from "@/components/sections/rubriques/helpers";
 import type { WeatherPoint, WeatherDay, WeatherPeriod, PackType } from "./weather-types";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { cn } from "@/lib/utils";
 
 // --- Components ---
@@ -101,8 +102,12 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
   fr: boolean;
 }) {
   return (
-    <div className="p-8 rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-8">
-      <div className="flex items-center gap-4">
+    <RubriqueCard 
+      themeColor="blue"
+      withTopBar={false}
+      className="p-8 space-y-8"
+    >
+      <div className="flex items-center gap-4 relative z-10">
         <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20">
           <MapPin size={20} className="text-blue-400" />
         </div>
@@ -112,7 +117,7 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
         </div>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-6 relative z-10">
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setZoneMode("auto")}
@@ -152,7 +157,7 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
           </div>
         </div>
       </div>
-    </div>
+    </RubriqueCard>
   );
 });
 
@@ -161,15 +166,14 @@ export const WeatherRiskAlert = memo(function WeatherRiskAlert({ currentRisk, fr
   const isWarning = currentRisk.riskLevel === "warning";
 
   return (
-    <motion.article
+    <RubriqueCard
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className={cn(
-        "relative overflow-hidden rounded-[2.5rem] border p-8 backdrop-blur-3xl shadow-2xl space-y-8",
-        isDanger ? "border-rose-500/30 bg-rose-500/5" : isWarning ? "border-amber-500/30 bg-amber-500/5" : "border-emerald-500/30 bg-emerald-500/5"
-      )}
+      themeColor={isDanger ? "rose" : isWarning ? "amber" : "emerald"}
+      withTopBar={false}
+      className="p-8 space-y-8"
     >
-      <div className="flex items-start gap-6">
+      <div className="flex items-start gap-6 relative z-10">
         <div className={cn(
           "p-4 rounded-2xl border shadow-2xl animate-pulse",
           isDanger ? "bg-rose-500/20 border-rose-500/30 text-rose-500" : isWarning ? "bg-amber-500/20 border-amber-500/30 text-amber-500" : "bg-emerald-500/20 border-emerald-500/30 text-emerald-500"
@@ -189,7 +193,7 @@ export const WeatherRiskAlert = memo(function WeatherRiskAlert({ currentRisk, fr
         </div>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid gap-6 relative z-10">
         <div className="p-6 rounded-3xl bg-white/5 border border-white/5 space-y-4">
           <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">{fr ? "Matériel conseillé" : "Recommended gear"}</p>
           <div className="flex flex-wrap gap-2">
@@ -213,7 +217,7 @@ export const WeatherRiskAlert = memo(function WeatherRiskAlert({ currentRisk, fr
           </ul>
         </div>
       </div>
-    </motion.article>
+    </RubriqueCard>
   );
 });
 
@@ -261,27 +265,29 @@ export const WeatherForecast = memo(function WeatherForecast({
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
         {(activePeriod === 'now' ? nowcasting : j13).slice(0, 5).map((point: any, i: number) => (
-          <motion.div
+          <RubriqueCard
             key={i}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
-            className="p-8 rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl text-center space-y-6 group hover:scale-105 transition-all"
+            themeColor={point.temp > 20 ? "amber" : "blue"}
+            withTopBar={false}
+            className="p-8 text-center space-y-6 group hover:scale-105 transition-all"
           >
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-blue-400 transition-colors">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-blue-400 transition-colors relative z-10">
               {point.time || point.day}
             </p>
-            <div className="flex justify-center text-white/80 group-hover:scale-125 transition-transform duration-500">
+            <div className="flex justify-center text-white/80 group-hover:scale-125 transition-transform duration-500 relative z-10">
               {point.temp > 20 ? <Sun size={32} className="text-amber-400" /> : <Cloud size={32} className="text-blue-400" />}
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 relative z-10">
               <p className="text-3xl font-black text-white tracking-tighter">{Math.round(point.temp)}°</p>
               <div className="flex items-center justify-center gap-3 text-slate-500 text-[10px] font-black uppercase tracking-widest">
                 <span className="flex items-center gap-1"><Droplets size={10} className="text-blue-500" /> {point.pop}%</span>
                 <span className="flex items-center gap-1"><Wind size={10} className="text-slate-400" /> {point.wind}kmh</span>
               </div>
             </div>
-          </motion.div>
+          </RubriqueCard>
         ))}
       </div>
     </div>
@@ -350,8 +356,12 @@ export const KitConfiguration = memo(function KitConfiguration({
   fr: boolean;
 }) {
   return (
-    <div className="p-10 rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-10">
-      <div className="space-y-4">
+    <RubriqueCard 
+      themeColor="amber"
+      withTopBar={false}
+      className="p-10 space-y-10"
+    >
+      <div className="space-y-4 relative z-10">
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
             <Package size={20} />
@@ -363,7 +373,7 @@ export const KitConfiguration = memo(function KitConfiguration({
         </p>
       </div>
 
-      <div className="space-y-10">
+      <div className="space-y-10 relative z-10">
         <div className="grid grid-cols-3 gap-3">
           {(['solo', 'team', 'school'] as const).map((type) => (
             <button
@@ -402,7 +412,7 @@ export const KitConfiguration = memo(function KitConfiguration({
           </div>
         </div>
       </div>
-    </div>
+    </RubriqueCard>
   );
 });
 

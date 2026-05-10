@@ -10,6 +10,7 @@ import { SectionShell } from "@/components/sections/rubriques/shared";
 import { Users, MapPin, TrendingUp, ShieldCheck, ArrowRight, Zap, Trophy, Target } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 
 function extractArea(label: string): string {
   const normalized = label.toLowerCase();
@@ -61,14 +62,13 @@ export function ActorsSection() {
     >
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10 pt-8 items-start">
         {/* GAUCHE : Pression territoriale */}
-        <motion.article 
+        <RubriqueCard 
           initial={{ opacity: 0, x: -20 }}
           whileInView={{ opacity: 1, x: 0 }}
-          className="rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl relative overflow-hidden"
+          themeColor="indigo"
+          watermarkIcon={TrendingUp}
+          watermarkSize={160}
         >
-          <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-             <TrendingUp size={160} className="text-indigo-400" />
-          </div>
 
           <div className="flex items-center gap-4 mb-10">
              <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
@@ -121,7 +121,7 @@ export function ActorsSection() {
               )}
             </ul>
           )}
-        </motion.article>
+        </RubriqueCard>
 
         {/* DROITE : Fiches partenaires */}
         <div className="space-y-6">
@@ -147,12 +147,14 @@ export function ActorsSection() {
             ) : (
               <AnimatePresence mode="popLayout">
                 {partnerCards.map((card, idx) => (
-                  <motion.article 
+                  <RubriqueCard 
                     key={card.actor}
                     initial={{ opacity: 0, scale: 0.95 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     transition={{ delay: idx * 0.05 }}
-                    className="group rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl hover:bg-white/5 transition-all flex flex-col justify-between"
+                    themeColor="indigo"
+                    withTopBar={false}
+                    className="flex flex-col justify-between"
                   >
                     <div className="space-y-6">
                       <div className="flex items-start justify-between gap-4">
@@ -200,7 +202,7 @@ export function ActorsSection() {
                          <ArrowRight size={16} className="text-blue-400 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
-                  </motion.article>
+                  </RubriqueCard>
                 ))}
               </AnimatePresence>
             )}

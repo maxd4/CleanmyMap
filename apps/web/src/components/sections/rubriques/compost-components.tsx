@@ -14,6 +14,7 @@ import {
   Sparkles
 } from "lucide-react";
 import type { CompostPoint } from "@/lib/learning/compost-guide-data";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 
 const iconMap = {
   home: Home,
@@ -41,7 +42,11 @@ export const CompostReflexGrid = memo(function CompostReflexGrid({
             transition={{ delay: idx * 0.1, duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
             className="group relative"
           >
-            <div className="h-full bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 hover:bg-slate-800/60 transition-all duration-500 overflow-hidden">
+            <RubriqueCard 
+              themeColor="emerald"
+              withTopBar={false}
+              className="h-full"
+            >
               <div className="absolute -right-8 -bottom-8 opacity-5 group-hover:scale-125 group-hover:opacity-10 transition-all duration-700">
                 <Icon size={160} className="text-white" />
               </div>
@@ -59,7 +64,7 @@ export const CompostReflexGrid = memo(function CompostReflexGrid({
                   </p>
                 </div>
               </div>
-            </div>
+            </RubriqueCard>
           </motion.div>
         );
       })}
@@ -77,13 +82,14 @@ export const CompostRulesList = memo(function CompostRulesList({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       {rules.map((rule, idx) => (
-        <motion.div 
+        <RubriqueCard 
           key={idx} 
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ delay: idx * 0.1 }}
-          className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 relative overflow-hidden group"
+          themeColor="emerald"
+          withTopBar={false}
         >
           <div className="absolute top-0 right-0 p-8 opacity-5">
             <Zap size={100} className="text-white rotate-12" />
@@ -109,7 +115,7 @@ export const CompostRulesList = memo(function CompostRulesList({
               </motion.li>
             ))}
           </ul>
-        </motion.div>
+        </RubriqueCard>
       ))}
     </div>
   );
@@ -167,21 +173,27 @@ export const OfficialMapsList = memo(function OfficialMapsList({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ delay: idx * 0.05 }}
-          className="block group bg-slate-900/40 border border-white/10 rounded-[2rem] p-6 hover:bg-slate-800/60 hover:border-emerald-500/50 transition-all duration-500"
+          className="block group"
         >
-          <div className="flex justify-between items-start gap-6">
-            <div className="space-y-2">
-              <h5 className="text-xl font-black text-white group-hover:text-emerald-400 transition-colors tracking-tight">
-                {fr ? link.title.fr : link.title.en}
-              </h5>
-              <p className="text-slate-500 text-sm font-medium leading-relaxed">
-                {fr ? link.description.fr : link.description.en}
-              </p>
+          <RubriqueCard 
+            themeColor="emerald"
+            withTopBar={false}
+            className="p-6 transition-all duration-500 hover:border-emerald-500/50"
+          >
+            <div className="flex justify-between items-start gap-6">
+              <div className="space-y-2">
+                <h5 className="text-xl font-black text-white group-hover:text-emerald-400 transition-colors tracking-tight">
+                  {fr ? link.title.fr : link.title.en}
+                </h5>
+                <p className="text-slate-500 text-sm font-medium leading-relaxed">
+                  {fr ? link.description.fr : link.description.en}
+                </p>
+              </div>
+              <div className="p-3 rounded-xl bg-white/5 text-slate-500 group-hover:text-emerald-400 group-hover:bg-emerald-500/10 transition-all">
+                <ExternalLink size={20} />
+              </div>
             </div>
-            <div className="p-3 rounded-xl bg-white/5 text-slate-500 group-hover:text-emerald-400 group-hover:bg-emerald-500/10 transition-all">
-              <ExternalLink size={20} />
-            </div>
-          </div>
+          </RubriqueCard>
         </motion.a>
       ))}
     </div>
@@ -198,12 +210,14 @@ export const SelectedPointsGrid = memo(function SelectedPointsGrid({
   return (
     <div className="space-y-6">
       {points.map((point, idx) => (
-        <motion.div 
+        <RubriqueCard 
           key={point.id} 
           initial={{ opacity: 0, scale: 0.98 }}
           whileInView={{ opacity: 1, scale: 1 }}
           transition={{ delay: idx * 0.05 }}
-          className="bg-slate-900/60 border border-white/10 rounded-[2rem] p-6 hover:border-emerald-500/30 transition-all group"
+          themeColor="emerald"
+          withTopBar={false}
+          className="p-6 hover:border-emerald-500/30 transition-all group"
         >
           <div className="flex justify-between items-start gap-4">
             <div className="space-y-3">
@@ -228,7 +242,7 @@ export const SelectedPointsGrid = memo(function SelectedPointsGrid({
               {point.region === "paris" ? "Paris" : point.region === "petite_couronne" ? (fr ? "Petite Couronne" : "Inner Ring") : (fr ? "Grande Couronne" : "Outer Ring")}
             </span>
           </div>
-        </motion.div>
+        </RubriqueCard>
       ))}
     </div>
   );

@@ -10,6 +10,7 @@ export interface PhotoUploadResult {
 export class PhotoUploadService {
   private supabase = getSupabaseBrowserClient()
   private bucket = 'action-photos'
+  private bucketHint = "Le bucket public Supabase 'action-photos' est manquant. Crée-le et rends-le public pour activer les uploads photo."
 
   async uploadPhoto(file: File, actionId: string): Promise<PhotoUploadResult> {
     try {
@@ -34,12 +35,16 @@ export class PhotoUploadService {
         .from(this.bucket)
         .upload(fileName, preparedFile, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
         })
 
       if (error) {
         console.error('Upload error:', error)
-        return { url: '', path: '', error: 'Impossible d\'envoyer la photo. Veuillez vérifier votre connexion et réessayer.' }
+        if (this.isMissingBucketError(error)) {
+          return { url: '', path: '', error: this.bucketHint }
+        }
+
+        return { url: '', path: '', error: "Impossible d'envoyer la photo. Veuillez vérifier votre connexion et réessayer." }
       }
 
       const { data: { publicUrl } } = this.supabase.storage
@@ -53,7 +58,11 @@ export class PhotoUploadService {
 
     } catch (error) {
       console.error('Photo upload service error:', error)
-      return { url: '', path: '', error: 'Une erreur technique est survenue lors de l\'upload. Si le problème persiste, contactez le support.' }
+      if (this.isMissingBucketError(error)) {
+        return { url: '', path: '', error: this.bucketHint }
+      }
+
+      return { url: '', path: '', error: "Une erreur technique est survenue lors de l'upload. Si le problème persiste, contactez le support." }
     }
   }
 
@@ -70,6 +79,33 @@ export class PhotoUploadService {
   private isValidImageFile(file: File): boolean {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
     return validTypes.includes(file.type)
+  }
+
+  private isMissingBucketError(error: unknown): boolean {
+    if (!error || typeof error !== 'object') {
+      return false
+    }
+
+    const candidate = error as {
+      message?: unknown
+      details?: unknown
+      hint?: unknown
+      statusCode?: unknown
+    }
+
+    const message = [candidate.message, candidate.details, candidate.hint]
+      .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      .join(' ')
+      .toLowerCase()
+
+    return (
+      message.includes(this.bucket) &&
+      (message.includes('bucket') ||
+        message.includes('not found') ||
+        message.includes('does not exist') ||
+        message.includes('404') ||
+        String(candidate.statusCode ?? '').includes('404'))
+    )
   }
 
   async deletePhoto(path: string): Promise<boolean> {

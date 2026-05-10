@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Info, ArrowRight, AlertTriangle, ShieldCheck, TrendingUp, TrendingDown, Minus, Target, Sparkles, Activity } from "lucide-react";
+import { Info, ArrowRight, AlertTriangle, TrendingUp, TrendingDown, Minus, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type SummaryKpi = {
@@ -14,15 +14,30 @@ type SummaryKpi = {
   interpretation?: "positive" | "negative" | "neutral";
 };
 
-type ThirtySecondsSummaryProps = {
-  summary: {
-    kpis: Array<SummaryKpi>;
-    alert?: {
-      severity: "critical" | "high" | "medium" | "low";
-      title: string;
-      detail: string;
-    };
-  };
+type SummaryAlert = {
+  severity: "critical" | "high" | "medium" | "low";
+  title: string;
+  detail: string;
+};
+
+type SummaryAction = {
+  href: string;
+  label: string;
+  reason?: string;
+};
+
+type SummaryLike = {
+  kpis?: Array<SummaryKpi>;
+  alert?: SummaryAlert;
+  recommendedAction?: SummaryAction;
+};
+
+export type ThirtySecondsSummaryProps = {
+  summary?: SummaryLike;
+  kpis?: Array<SummaryKpi>;
+  alert?: SummaryAlert;
+  recommendedAction?: SummaryAction;
+  recommendedReason?: string;
 };
 
 function deltaStyles(v: SummaryKpi["interpretation"]) {
@@ -39,104 +54,203 @@ function alertStyles(severity: string) {
   return { border: "border-white/10", bg: "bg-white/5", text: "text-slate-400", badge: "bg-white/10 text-slate-300", glow: "" };
 }
 
-export function ThirtySecondsSummary({ summary }: ThirtySecondsSummaryProps) {
-  const { kpis, alert } = summary;
+type NormalizedThirtySecondsSummary = {
+  kpis: Array<SummaryKpi>;
+  alert?: SummaryAlert;
+  recommendedAction?: SummaryAction;
+  recommendedReason?: string;
+};
+
+export function normalizeThirtySecondsSummaryProps(
+  props: ThirtySecondsSummaryProps,
+): NormalizedThirtySecondsSummary {
+  const summary = props.summary;
+
+  return {
+    kpis: summary?.kpis ?? props.kpis ?? [],
+    alert: summary?.alert ?? props.alert,
+    recommendedAction: summary?.recommendedAction ?? props.recommendedAction,
+    recommendedReason:
+      summary?.recommendedAction?.reason ?? props.recommendedReason,
+  };
+}
+
+export function ThirtySecondsSummary(props: ThirtySecondsSummaryProps) {
+  const { kpis, alert, recommendedAction, recommendedReason } =
+    normalizeThirtySecondsSummaryProps(props);
+  const hasKpis = kpis.length > 0;
+  const actionLabel = recommendedAction?.label;
+  const actionHref = recommendedAction?.href;
+  const actionReason = recommendedReason?.trim();
+  const alertStyle = alert ? alertStyles(alert.severity) : null;
 
   return (
     <div className="space-y-8">
-      {/* Alert Section (If exists) */}
-      {alert && (() => {
-        const styles = alertStyles(alert.severity);
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={cn(
-              "p-10 rounded-[3rem] border backdrop-blur-3xl relative overflow-hidden group",
-              styles.border, styles.bg, styles.glow
-            )}
-          >
-            <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-               <AlertTriangle size={160} className={styles.text} />
-            </div>
+      {alert ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={cn(
+            "group relative overflow-hidden rounded-[3rem] border p-10 backdrop-blur-3xl",
+            alertStyle?.border,
+            alertStyle?.bg,
+            alertStyle?.glow,
+          )}
+        >
+          <div className="pointer-events-none absolute right-0 top-0 p-12 opacity-5 transition-transform duration-1000 group-hover:scale-110">
+            <AlertTriangle size={160} className={alertStyle?.text} />
+          </div>
 
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-8 relative z-10">
-              <div className={cn("p-5 rounded-3xl bg-white/5 border border-white/10 shadow-2xl group-hover:scale-110 transition-transform duration-500", styles.text)}>
-                <AlertTriangle size={32} className="animate-pulse" />
-              </div>
-              <div className="space-y-4 flex-1">
-                <div className="flex items-center gap-3">
-                  <span className={cn("px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl", styles.badge)}>
-                    {alert.severity === "critical" ? "Critique" : alert.severity === "high" ? "Urgent" : "Attention"}
-                  </span>
-                  <div className="h-1 w-1 rounded-full bg-slate-700" />
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Protocole d'Alerte Alpha</span>
-                </div>
-                <h4 className="text-3xl font-black text-white tracking-tighter leading-none">{alert.title}</h4>
-                <p className="text-sm font-bold text-slate-400 leading-relaxed max-w-3xl opacity-80">{alert.detail}</p>
-              </div>
-              <button className="shrink-0 px-8 py-4 rounded-2xl bg-white text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] hover:translate-x-2 transition-transform shadow-2xl flex items-center gap-3">
-                 Résoudre
-                 <ArrowRight size={16} />
-              </button>
+          <div className="relative z-10 flex flex-col items-start gap-8 md:flex-row md:items-center">
+            <div
+              className={cn(
+                "rounded-3xl border border-white/10 bg-white/5 p-5 shadow-2xl transition-transform duration-500 group-hover:scale-110",
+                alertStyle?.text,
+              )}
+            >
+              <AlertTriangle size={32} className="animate-pulse" />
             </div>
-          </motion.div>
-        );
-      })()}
+            <div className="flex-1 space-y-4">
+              <div className="flex items-center gap-3">
+                <span
+                  className={cn(
+                    "rounded-full px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl",
+                    alertStyle?.badge,
+                  )}
+                >
+                  {alert.severity === "critical"
+                    ? "Critique"
+                    : alert.severity === "high"
+                      ? "Urgent"
+                      : "Attention"}
+                </span>
+                <div className="h-1 w-1 rounded-full bg-slate-700" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                  Protocole d&apos;Alerte Alpha
+                </span>
+              </div>
+              <h4 className="text-3xl font-black leading-none tracking-tighter text-white">
+                {alert.title}
+              </h4>
+              <p className="max-w-3xl text-sm font-bold leading-relaxed text-slate-400 opacity-80">
+                {alert.detail}
+              </p>
+            </div>
+            <button className="shrink-0 flex items-center gap-3 rounded-2xl bg-white px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl transition-transform hover:translate-x-2">
+              Résoudre
+              <ArrowRight size={16} />
+            </button>
+          </div>
+        </motion.div>
+      ) : null}
 
       {/* KPI Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {kpis.map((kpi, i) => {
-          const styles = deltaStyles(kpi.interpretation);
-          const DeltaIcon = styles.icon;
-          
-          return (
-            <motion.div
-              key={kpi.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden group hover:bg-white/5 transition-all"
-            >
-              <div className="absolute top-0 right-0 h-32 w-32 bg-white/5 blur-3xl rounded-full translate-x-16 -translate-y-16" />
-              
-              <div className="relative z-10 space-y-8">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                     <div className="p-2 rounded-lg bg-white/5 border border-white/5 text-slate-600">
+      {hasKpis ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {kpis.map((kpi, i) => {
+            const styles = deltaStyles(kpi.interpretation);
+            const DeltaIcon = styles.icon;
+
+            return (
+              <motion.div
+                key={kpi.label}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="group relative overflow-hidden rounded-[3rem] border border-white/5 bg-slate-900/40 p-10 shadow-2xl backdrop-blur-3xl transition-all hover:bg-white/5"
+              >
+                <div className="absolute right-0 top-0 h-32 w-32 rounded-full bg-white/5 blur-3xl translate-x-16 -translate-y-16" />
+
+                <div className="relative z-10 space-y-8">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg border border-white/5 bg-white/5 p-2 text-slate-600">
                         <Activity size={14} />
-                     </div>
-                     <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">{kpi.label}</span>
-                  </div>
-                  <Link href="/methodologie" className="p-2 rounded-lg bg-white/5 text-slate-600 hover:text-white hover:bg-white/10 transition-all">
-                    <Info size={14} />
-                  </Link>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-baseline gap-3">
-                     <p className="text-6xl font-black text-white tracking-tighter">{kpi.value}</p>
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-tight", styles.bg, styles.color)}>
-                      <DeltaIcon size={12} />
-                      {kpi.deltaPercent}
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+                        {kpi.label}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-600 italic">vs last period</span>
+                    <Link
+                      href="/methodologie"
+                      className="rounded-lg bg-white/5 p-2 text-slate-600 transition-all hover:bg-white/10 hover:text-white"
+                    >
+                      <Info size={14} />
+                    </Link>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-baseline gap-3">
+                      <p className="text-6xl font-black tracking-tighter text-white">
+                        {kpi.value}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black tracking-tight",
+                          styles.bg,
+                          styles.color,
+                        )}
+                      >
+                        <DeltaIcon size={12} />
+                        {kpi.deltaPercent}
+                      </div>
+                      <span className="text-[10px] font-bold italic text-slate-600">
+                        vs last period
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="border-t border-white/5 pt-6">
+                    <p className="text-[10px] font-bold italic leading-relaxed text-slate-500">
+                      Previous baseline:{" "}
+                      <span className="font-black text-slate-400">
+                        {kpi.previousValue}
+                      </span>
+                    </p>
                   </div>
                 </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-[3rem] border border-white/5 bg-slate-900/40 p-10 text-center backdrop-blur-3xl">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            Synthèse indisponible
+          </p>
+          <h4 className="mt-3 text-2xl font-black tracking-tighter text-white">
+            Aucun KPI à afficher
+          </h4>
+          <p className="mt-3 text-sm font-medium leading-relaxed text-slate-400">
+            Les données de pilotage n&apos;ont pas encore été chargées pour cette vue.
+          </p>
+        </div>
+      )}
 
-                <div className="pt-6 border-t border-white/5">
-                   <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic">
-                      Previous baseline: <span className="text-slate-400 font-black">{kpi.previousValue}</span>
-                   </p>
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
+      {actionLabel && actionHref ? (
+        <div className="flex flex-col gap-4 rounded-[3rem] border border-white/5 bg-white/5 p-6 backdrop-blur-3xl md:flex-row md:items-center md:justify-between">
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+              Action recommandée
+            </p>
+            {actionReason ? (
+              <p className="max-w-3xl text-sm font-medium leading-relaxed text-slate-300">
+                {actionReason}
+              </p>
+            ) : null}
+          </div>
+          <Link
+            href={actionHref}
+            className="inline-flex shrink-0 items-center gap-3 rounded-2xl bg-white px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl transition-transform hover:translate-x-2"
+          >
+            {actionLabel}
+            <ArrowRight size={16} />
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

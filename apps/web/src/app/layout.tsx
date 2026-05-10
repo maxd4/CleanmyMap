@@ -21,6 +21,7 @@ import { PageTransition } from"@/components/ui/page-transition";
 import { NetworkToastHost } from"@/components/ui/network-toast";
 import { NotificationBell } from"@/components/navigation/notification-bell";
 import { OrganizationJsonLd, WebSiteJsonLd, FAQJsonLd } from"@/components/seo/structured-data/";
+import { HomeFooter } from "@/components/accueil";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { getClerkRuntimeConfig } from"@/lib/clerk-session-config";
@@ -182,6 +183,7 @@ initialDisplayModeExplicit={displayModePreference.isExplicit}
  </main>
 <ConditionalAnalytics />
   <CookieConsentBanner />
+  <HomeFooter />
   </PostHogProvider>
  </ClerkLocalizationProvider>
  </SitePreferencesProvider>

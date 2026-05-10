@@ -5,7 +5,6 @@ import { RadialProgressGauge } from "@/components/reports/RadialProgressGauge";
 import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigation-grid";
 import { ReportsWindowComparisonsSection } from "@/components/reports/reports-window-comparisons-section";
 import { EcologicalTimeline } from "@/components/reports/EcologicalTimeline";
-import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
@@ -133,39 +132,6 @@ export function ReportsPageV2Layout({
             </div>
           </div>
         }
-        trace={
-          <div className="space-y-2 cmm-text-caption cmm-text-secondary">
-            <p>
-              Horodatage:{""}
-              {overview
-                ? new Date(overview.generatedAt).toLocaleString("fr-FR")
-                : "indisponible"}{""}
-              | Fiabilite:{""}
-              {overview
-                ? "badge par fenêtre 30/90/365 jours"
-                : "faible (données absentes)"}
-            </p>
-            <p>
-              Sources: module pilotage overview, actions normalisées,
-              agrégations reporting.
-            </p>
-            <p>
-              Méthode: comparatifs N vs N-1, priorisation automatique et
-              limites documentées par KPI.
-            </p>
-            <p>
-              Périmètre: espace Rapports d&apos;impact (exports + synthèse
-              multi-horizon).
-            </p>
-            <div className="flex gap-2 pt-2">
-              <RubriquePdfExportButton rubriqueTitle="Reporting et pilotage" />
-              <RubriqueExcelExportButton
-                rubriqueTitle="Reporting et pilotage"
-                data={contracts.map(toReportsExportRow)}
-              />
-            </div>
-          </div>
-        }
       />
 
       <div className="space-y-8">
@@ -242,7 +208,6 @@ export function ReportsPageV2Layout({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <RubriquePdfExportButton rubriqueTitle="Reporting et pilotage" />
             <RubriqueExcelExportButton
               rubriqueTitle="Reporting et pilotage"
               data={contracts.map(toReportsExportRow)}

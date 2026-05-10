@@ -28,12 +28,12 @@ export default function LearnBonnesPratiquesPage() {
     <LearnRubricShell
       title={{ fr: "Bonnes pratiques", en: "Best practices" }}
       subtitle={{
-        fr: "Les gestes utiles avant, pendant et après l'action",
-        en: "Useful gestures before, during and after action",
+        fr: "Guides courts, gestes utiles, séquence avant / pendant / après",
+        en: "Short guides, useful gestures, before / during / after sequence",
       }}
       description={{
-        fr: "Une sélection courte de guides et d'entrées opérationnelles pour garder le bon réflexe sans se confondre avec le bloc Agir.",
-        en: "A short selection of guides and operational entries to keep the right reflex without overlapping the Act block.",
+        fr: "Des guides courts pour lire vite, choisir le bon geste et éviter de répéter le hub ou le bloc Agir.",
+        en: "Short guides to read fast, choose the right gesture and avoid repeating the hub or the Act block.",
       }}
       backHref="/learn/hub"
       backLabel={{ fr: "Retour au hub", en: "Back to hub" }}
@@ -60,7 +60,7 @@ export default function LearnBonnesPratiquesPage() {
           }}
         />
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-end justify-between gap-3">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
               {locale === "fr" ? "Guides courts" : "Short guides"}
@@ -70,6 +70,11 @@ export default function LearnBonnesPratiquesPage() {
                 ? "Les repères à garder sous la main"
                 : "Keep these cues close at hand"}
             </h3>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+              {locale === "fr"
+                ? "Chaque carte va droit au geste utile et reste à lire en quelques secondes."
+                : "Each card goes straight to the useful gesture and stays readable in a few seconds."}
+            </p>
           </div>
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
             {links.length}
