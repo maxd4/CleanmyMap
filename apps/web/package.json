@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "@clerk/localizations": "^4.6.0",
-    "@clerk/nextjs": "7.3.1",
+    "@clerk/nextjs": "7.3.3",
     "@pinecone-database/pinecone": "^7.1.0",
     "@radix-ui/react-tabs": "^1.1.13",
     "@sentry/nextjs": "^10.51.0",
@@ -75,7 +75,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^10",
-    "eslint-config-next": "16.2.4",
+    "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
     "typescript": "^6",
     "vitest": "^4.1.5"
