@@ -48,7 +48,7 @@
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
     "lucide-react": "^1.14.0",
-    "next": "16.2.3",
+    "next": "16.2.6",
     "posthog-js": "^1.372.9",
     "posthog-node": "^5.33.3",
     "qrcode.react": "^4.2.0",
