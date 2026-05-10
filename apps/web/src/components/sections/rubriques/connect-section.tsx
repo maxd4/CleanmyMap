@@ -96,7 +96,8 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
                     className="space-y-12"
                   >
                     <DiscussionBadgesPanel />
-                    <div className="rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl overflow-hidden shadow-2xl relative">
+                    <div className="rounded-[2.5rem] border border-white/10 bg-black/30 backdrop-blur-3xl overflow-hidden shadow-2xl relative transition-colors hover:bg-black/40">
+                      <div className="absolute inset-x-0 top-0 h-[3px] z-10 bg-fuchsia-500" />
                       <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
                         <Sparkles size={80} className="text-fuchsia-400" />
                       </div>
@@ -115,8 +116,9 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className="rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl overflow-hidden shadow-2xl relative"
+                    className="rounded-[2.5rem] border border-white/10 bg-black/30 backdrop-blur-3xl overflow-hidden shadow-2xl relative transition-colors hover:bg-black/40"
                   >
+                     <div className="absolute inset-x-0 top-0 h-[3px] z-10 bg-fuchsia-500" />
                      <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
                         <MessageSquare size={80} className="text-purple-400" />
                       </div>

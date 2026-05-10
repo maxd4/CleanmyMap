@@ -12,6 +12,7 @@ import {
 } from "react-leaflet";
 import { Leaf, MapPin, Sparkles } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 import type { CompostPoint } from "@/lib/learning/compost-guide-data";
 
 type CompostMapCanvasProps = {
@@ -72,7 +73,11 @@ export function CompostMapCanvas({ points }: CompostMapCanvasProps) {
   }, [points]);
 
   return (
-    <div className="overflow-hidden rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl">
+    <RubriqueCard 
+      themeColor="emerald" 
+      withTopBar={false}
+      className="p-0"
+    >
       <div className="border-b border-white/5 bg-white/5 px-8 py-6">
         <div className="flex items-center justify-between">
            <div className="flex items-center gap-4">
@@ -156,6 +161,6 @@ export function CompostMapCanvas({ points }: CompostMapCanvasProps) {
            </div>
         </div>
       </div>
-    </div>
+    </RubriqueCard>
   );
 }

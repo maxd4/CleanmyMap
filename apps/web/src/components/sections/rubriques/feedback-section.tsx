@@ -2,12 +2,10 @@
 
 import { useMemo } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { FeedbackHeader } from "./feedback/feedback-header";
 import { QuestionnaireCard } from "./feedback/questionnaire-card";
 import { QUESTIONNAIRES } from "./feedback/questionnaire-config";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { MessageSquare, Mail, Sparkles, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 type FeedbackSectionProps = {
   pagePath?: string;
@@ -20,7 +18,6 @@ export function FeedbackSection({
 }: FeedbackSectionProps = {}) {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
-
   const pagePath = useMemo(() => {
     if (pagePathOverride) {
       return pagePathOverride;
@@ -30,6 +27,30 @@ export function FeedbackSection({
     }
     return window.location.pathname;
   }, [pagePathOverride]);
+
+  const supportPrefill = useMemo<Partial<Record<string, string>> | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const hasPrefill =
+      params.has("subject") ||
+      params.has("context") ||
+      params.has("steps") ||
+      params.has("expected");
+
+    if (!hasPrefill) {
+      return null;
+    }
+
+    return {
+      subject: params.get("subject") ?? "",
+      context: params.get("context") ?? "",
+      steps: params.get("steps") ?? "",
+      expected: params.get("expected") ?? "",
+    };
+  }, []);
 
   return (
     <SectionShell
@@ -50,6 +71,7 @@ export function FeedbackSection({
                 questionnaire={questionnaire}
                 pagePath={pagePath}
                 source={source}
+                initialValues={questionnaire.id === "bug" ? supportPrefill ?? undefined : undefined}
               />
             </div>
           ))}

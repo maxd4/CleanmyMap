@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
-import type { QuestionnaireConfig, L10n } from "./questionnaire-config";
+import type { QuestionnaireConfig } from "./questionnaire-config";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -32,15 +32,19 @@ export function QuestionnaireCard({
   questionnaire,
   pagePath,
   source,
+  initialValues,
 }: {
   questionnaire: QuestionnaireConfig;
   pagePath: string;
   source: "feedback_section" | "feedback_discussion";
+  initialValues?: Partial<Record<string, string>>;
 }) {
   const { locale } = useSitePreferences();
   const { isLoaded, isSignedIn } = useUser();
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(questionnaire.fields.map((field) => [field.key, ""])),
+    Object.fromEntries(
+      questionnaire.fields.map((field) => [field.key, initialValues?.[field.key] ?? ""]),
+    ),
   );
   const [honeypot, setHoneypot] = useState("");
   const [formStartedAt, setFormStartedAt] = useState<number | null>(null);
@@ -50,6 +54,26 @@ export function QuestionnaireCard({
   useEffect(() => {
     setFormStartedAt(Date.now());
   }, []);
+
+  useEffect(() => {
+    if (!initialValues) {
+      return;
+    }
+
+    setValues((current) => {
+      const hasUserInput = Object.values(current).some((value) => value.trim().length > 0);
+      if (hasUserInput) {
+        return current;
+      }
+
+      return Object.fromEntries(
+        questionnaire.fields.map((field) => [
+          field.key,
+          initialValues[field.key] ?? "",
+        ]),
+      );
+    });
+  }, [initialValues, questionnaire.fields]);
 
   const canSubmit = questionnaire.fields.every((field) => {
     const value = values[field.key]?.trim() ?? "";

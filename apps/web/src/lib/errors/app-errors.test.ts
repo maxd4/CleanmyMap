@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   AppError,
+  buildSupportHref,
+  buildSupportIssuePrefill,
   defaultActionsForKind,
   defaultMessageForKind,
   defaultTitleForKind,
@@ -22,6 +24,40 @@ describe("app-errors", () => {
     expect(defaultTitleForKind("permission")).toContain("Accès");
     expect(defaultMessageForKind("network")).toContain("Connexion");
     expect(defaultActionsForKind("validation")[0]?.type).toBe("fix-field");
+    expect(defaultActionsForKind("server")[1]?.href).toContain("/sections/feedback");
+  });
+
+  it("builds a support prefill from runtime error context", () => {
+    const prefill = buildSupportIssuePrefill({
+      message: "Le module a planté",
+      code: "TypeError",
+      referenceCode: "digest-123",
+      pagePath: "/sections/feedback",
+      timestamp: "2026-05-10T10:00:00.000Z",
+      userId: "user_123",
+      sessionId: "sess_456",
+      source: "runtime_error_page",
+    });
+
+    expect(prefill.subject).toContain("/sections/feedback");
+    expect(prefill.context).toContain("Message: Le module a planté");
+    expect(prefill.context).toContain("Code: TypeError");
+    expect(prefill.context).toContain("Identifiant utilisateur: user_123");
+    expect(prefill.steps).toContain("Reproduire");
+    expect(prefill.expected).toContain("fonctionner normalement");
+  });
+
+  it("builds an internal support href instead of mailto", () => {
+    const href = buildSupportHref({
+      message: "Erreur de rendu",
+      pagePath: "/reports",
+    });
+
+    expect(href).toContain("/sections/feedback");
+    expect(href).toContain("subject=");
+    expect(href).toContain("context=");
+    expect(href).toContain("#bug");
+    expect(href).not.toContain("mailto:");
   });
 
   it("normalizes unknown errors into AppError", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Info,
   Hash,
@@ -51,7 +51,7 @@ export const CONNECT_TABS: ConnectTabItem[] = [
 
 export const ConnectHero = memo(function ConnectHero({ fr }: { fr: boolean }) {
   return (
-    <div className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 px-8 py-16 text-white shadow-2xl lg:py-24 backdrop-blur-3xl">
+    <div className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-black/30 px-8 py-16 text-white shadow-2xl lg:py-24 backdrop-blur-3xl">
       <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/10 via-purple-500/5 to-transparent opacity-50" />
       <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
         <Globe size={300} className="text-fuchsia-400" />
@@ -66,18 +66,14 @@ export const ConnectHero = memo(function ConnectHero({ fr }: { fr: boolean }) {
         </div>
 
         <div className="space-y-6">
-          <h1 className="text-5xl font-black leading-tight tracking-tighter sm:text-6xl md:text-7xl bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+          <h1 className="text-[clamp(2.5rem,5vw,4rem)] font-black leading-[0.93] tracking-[-0.04em] text-white">
             {fr ? (
               <>
-                Parlez au bon endroit,
-                <br />
-                dès le premier message.
+                Parlez au bon endroit,<br />dès le premier message.
               </>
             ) : (
               <>
-                Speak in the right place,
-                <br />
-                from the first message.
+                Speak in the right place,<br />from the first message.
               </>
             )}
           </h1>
@@ -94,30 +90,47 @@ export const ConnectHero = memo(function ConnectHero({ fr }: { fr: boolean }) {
               title: fr ? "Publier en communauté" : "Post to community",
               text: fr ? "Pour une coordination visible." : "For visible coordination.",
               icon: Users,
-              color: "text-emerald-400"
+              accent: { icon: "text-emerald-300 bg-emerald-400/20 border-emerald-400/30", bar: "bg-emerald-400" }
             },
             {
               title: fr ? "Écrire en privé" : "Write privately",
               text: fr ? "Pour un échange confidentiel." : "For confidential exchange.",
               icon: Lock,
-              color: "text-blue-400"
+              accent: { icon: "text-blue-300 bg-blue-400/20 border-blue-400/30", bar: "bg-blue-400" }
             },
             {
               title: fr ? "Ancrer un sujet local" : "Anchor a local topic",
               text: fr ? "Pour un secteur précis." : "For a specific sector.",
               icon: MapPin,
-              color: "text-amber-400"
+              accent: { icon: "text-amber-300 bg-amber-400/20 border-amber-400/30", bar: "bg-amber-400" }
             },
           ].map((item) => (
             <div
               key={item.title}
-              className="group p-6 rounded-[2rem] border border-white/5 bg-white/5 text-left backdrop-blur-md hover:border-white/20 transition-all hover:translate-y-[-4px]"
+              className="group relative overflow-hidden rounded-3xl border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_12px_40px_-8px_rgba(217,70,239,0.2)] text-left"
             >
-              <item.icon size={24} className={cn("mb-4", item.color)} />
-              <p className="text-xs font-black uppercase tracking-widest text-white mb-2">
-                {item.title}
-              </p>
-              <p className="text-xs leading-relaxed text-slate-500 font-bold group-hover:text-slate-300 transition-colors">{item.text}</p>
+              <div className="pointer-events-none absolute inset-0 rounded-3xl bg-black/30 transition-colors duration-300 group-hover:bg-black/35" />
+              <div className={cn("absolute inset-x-0 top-0 h-[3px] z-10", item.accent.bar)} />
+
+              <div className="relative z-10 p-6">
+                <div className="flex items-center justify-between mb-5">
+                  <div className={cn("flex items-center justify-center rounded-xl border p-2.5", item.accent.icon)}>
+                    <item.icon size={16} />
+                  </div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
+                    {fr ? "Objectif" : "Goal"}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-xl font-black tracking-tight text-white leading-snug">
+                    {item.title}
+                  </p>
+                  <p className="text-sm text-white/75 leading-relaxed">
+                    {item.text}
+                  </p>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -126,7 +139,7 @@ export const ConnectHero = memo(function ConnectHero({ fr }: { fr: boolean }) {
           {CHANNEL_STATS.map((stat) => (
             <div
               key={stat.label.fr}
-              className="inline-flex items-center gap-3 rounded-xl border border-white/5 bg-white/5 px-4 py-2 backdrop-blur-sm group hover:bg-white/10 transition-colors"
+              className="inline-flex items-center gap-3 rounded-xl border border-white/5 bg-black/30 px-4 py-2 backdrop-blur-sm group hover:bg-black/50 transition-colors"
             >
               <stat.icon size={14} className={stat.color} />
               <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-white transition-colors">
@@ -153,7 +166,7 @@ export const ConnectTabs = memo(function ConnectTabs({
   fr: boolean;
 }) {
   return (
-    <div className="p-2 bg-slate-950/60 border border-white/10 rounded-[2.5rem] backdrop-blur-3xl shadow-2xl flex gap-2">
+    <div className="p-2 bg-black/40 border border-white/5 rounded-[2.5rem] backdrop-blur-3xl shadow-2xl flex gap-2">
       {CONNECT_TABS.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
@@ -162,22 +175,22 @@ export const ConnectTabs = memo(function ConnectTabs({
             onClick={() => setActiveTab(tab.id)}
             className={cn(
               "relative flex items-center gap-4 px-8 py-4 rounded-[1.75rem] transition-all duration-500 group overflow-hidden",
-              isActive ? "text-white" : "text-slate-500 hover:text-slate-200"
+              isActive ? "text-fuchsia-300" : "text-slate-500 hover:text-white"
             )}
           >
             {isActive && (
               <motion.div
                 layoutId="connect-tab-active"
-                className="absolute inset-0 bg-gradient-to-br from-fuchsia-600 to-purple-700 shadow-2xl -z-10"
+                className="absolute inset-0 bg-fuchsia-500/10 border border-fuchsia-500/20 shadow-[0_0_30px_rgba(217,70,239,0.15)] -z-10"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
-            <tab.icon size={20} className={isActive ? "text-white" : "text-slate-500 group-hover:text-fuchsia-400"} />
-            <div className="text-left">
-              <span className="text-xs font-black uppercase tracking-widest block">
+            <tab.icon size={20} className={cn("transition-transform group-hover:scale-110", isActive ? "text-fuchsia-400" : "text-slate-500 group-hover:text-white")} />
+            <div className="text-left relative z-10">
+              <span className="text-[11px] font-black uppercase tracking-widest block">
                 {fr ? tab.label.fr : tab.label.en}
               </span>
-              <span className={cn("text-[9px] font-black uppercase tracking-[0.2em] opacity-60 block mt-0.5", isActive ? "text-white" : "text-slate-600")}>
+              <span className={cn("text-[9px] font-black uppercase tracking-[0.2em] block mt-0.5", isActive ? "text-fuchsia-300/70" : "text-slate-600 group-hover:text-slate-400")}>
                 {fr ? tab.desc.fr : tab.desc.en}
               </span>
             </div>
@@ -187,6 +200,8 @@ export const ConnectTabs = memo(function ConnectTabs({
     </div>
   );
 });
+
+import { RubriqueCard, RubriqueCardIcon } from "@/components/ui/rubrique-card";
 
 export const ConnectGuide = memo(function ConnectGuide({
   activeTab,
@@ -203,39 +218,39 @@ export const ConnectGuide = memo(function ConnectGuide({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <motion.div 
-        layout
-        className="rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 backdrop-blur-3xl shadow-2xl relative overflow-hidden group"
+      <RubriqueCard 
+        themeColor="fuchsia" 
+        watermarkIcon={Info}
+        watermarkSize={100}
       >
-        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-700">
-          <Info size={100} className="text-fuchsia-400" />
-        </div>
-        <div className="flex items-start gap-8 relative z-10">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-400 shadow-2xl">
-            <Info size={24} />
-          </div>
-          <div className="space-y-4">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-fuchsia-400 mb-1">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
+          <RubriqueCardIcon 
+            icon={Info} 
+            themeColor="fuchsia" 
+            className="animate-pulse"
+          />
+          <div className="space-y-4 flex-1">
+            <div className="flex items-center gap-3">
+              <span className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl bg-fuchsia-500/20 text-fuchsia-300">
                 {activeTab === "dm" ? (fr ? "Confidentialité" : "Privacy") : (fr ? "Intelligence Collective" : "Collective Intelligence")}
-              </p>
-              <h2 className="text-2xl font-black text-white tracking-tight">
-                {activeTab === "dm" ? (fr ? "Échange direct et confidentiel" : "Direct and confidential exchange") : (fr ? "Canaux Thématiques" : "Thematic Channels")}
-              </h2>
+              </span>
             </div>
-            <p className="text-sm font-bold text-slate-400 leading-relaxed max-w-3xl">
+            <h2 className="text-3xl font-black text-white tracking-tighter leading-none">
+              {activeTab === "dm" ? (fr ? "Échange direct et confidentiel" : "Direct and confidential exchange") : (fr ? "Canaux Thématiques" : "Thematic Channels")}
+            </h2>
+            <p className="text-sm font-bold text-slate-400 leading-relaxed max-w-3xl opacity-80">
               {activeTab === "discussions" 
                 ? (fr ? "Choisissez un canal puis envoyez un message court. Communauté pour le groupe, privé pour un échange direct, territoire pour le local, feedback pour le produit." : "Choose one channel, then send a short message. Community for the group, private for one-to-one, territory for local topics, feedback for the product.")
                 : currentTabGuide.cardSummary}
             </p>
             <div className="flex items-center gap-4 pt-2">
-              <div className="px-4 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-500 italic">
+              <div className="px-4 py-1.5 rounded-lg bg-black/50 border border-white/10 text-[9px] font-black uppercase tracking-widest text-slate-500 italic">
                 {currentTabGuide.visibilityLabel}
               </div>
             </div>
           </div>
         </div>
-      </motion.div>
+      </RubriqueCard>
     </div>
   );
 });
@@ -253,10 +268,11 @@ export const ConnectAnnouncement = memo(function ConnectAnnouncement({
 }) {
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 backdrop-blur-3xl shadow-2xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+      <div className="rounded-[2.5rem] border border-white/10 bg-black/30 p-8 backdrop-blur-3xl shadow-2xl relative overflow-hidden group transition-colors hover:bg-black/40">
+        <div className="absolute inset-x-0 top-0 h-[3px] z-10 bg-fuchsia-500" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
           <div className="space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-400">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
               {fr ? "Accélération Spontanée" : "Spontaneous Boost"}
             </p>
             <h3 className="text-xl font-black text-white tracking-tight">
@@ -267,14 +283,14 @@ export const ConnectAnnouncement = memo(function ConnectAnnouncement({
             <button
               type="button"
               onClick={() => setAnnouncementTemplate(null)}
-              className="px-6 py-2 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white transition-all"
+              className="px-6 py-2 rounded-xl bg-black/50 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white hover:bg-black/70 transition-all"
             >
               {fr ? "Effacer le template" : "Clear template"}
             </button>
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 relative z-10">
           {[
             {
               key: "relais_associatif" as const,
@@ -299,13 +315,15 @@ export const ConnectAnnouncement = memo(function ConnectAnnouncement({
                 type="button"
                 onClick={() => setAnnouncementTemplate(option.key)}
                 className={cn(
-                  "flex items-center gap-4 px-6 py-4 rounded-2xl border transition-all text-left group",
+                  "flex items-center gap-4 px-6 py-4 rounded-[1.5rem] border transition-all duration-300 text-left group",
                   isActive
-                    ? "bg-fuchsia-600 border-fuchsia-400 text-white shadow-xl shadow-fuchsia-600/20"
-                    : "bg-white/5 border-white/5 text-slate-500 hover:border-white/20 hover:text-white"
+                    ? "bg-fuchsia-500/20 border-fuchsia-400/50 text-fuchsia-300 shadow-[0_4px_16px_-4px_rgba(217,70,239,0.3)] hover:-translate-y-0.5 hover:bg-fuchsia-500/30"
+                    : "bg-black/30 border-white/10 text-slate-500 hover:border-white/25 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.4)]"
                 )}
               >
-                <option.icon size={16} className={cn("transition-transform group-hover:scale-110", isActive ? "text-white" : "text-slate-500")} />
+                <div className={cn("flex items-center justify-center rounded-xl p-2", isActive ? "bg-fuchsia-400/20" : "bg-white/5 group-hover:bg-white/10")}>
+                  <option.icon size={16} className={cn("transition-transform group-hover:scale-110", isActive ? "text-fuchsia-300" : "text-slate-500 group-hover:text-white")} />
+                </div>
                 <span className="text-[11px] font-black uppercase tracking-widest">
                   {option.label}
                 </span>

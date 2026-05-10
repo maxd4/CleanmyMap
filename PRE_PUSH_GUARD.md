@@ -10,6 +10,17 @@ npm run prepush:guard
 
 La commande doit être lancée depuis la racine du repo.
 
+Pour automatiser le contrôle avant commit et push dans ce clone, installe les hooks Git versionnés une seule fois :
+
+```powershell
+npm run hooks:install
+```
+
+Ensuite :
+
+- `pre-commit` exécute `npm run precommit:guard`
+- `pre-push` exécute `npm run prepush:guard`
+
 Cette commande exécute dans l’ordre:
 
 1. `npm run lint`
