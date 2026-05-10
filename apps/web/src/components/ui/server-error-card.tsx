@@ -5,7 +5,7 @@ import { RefreshCw, LifeBuoy } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmCard } from "@/components/ui/cmm-card";
 import { ErrorMessage } from "@/components/ui/error-message";
-import { SUPPORT_EMAIL } from "@/lib/errors/app-errors";
+import { buildSupportHref } from "@/lib/errors/app-errors";
 
 type ServerErrorCardProps = {
   title?: string;
@@ -26,7 +26,7 @@ export function ServerErrorCard({
   referenceCode,
   retryLabel = "Réessayer",
   onRetry,
-  supportHref = `mailto:${SUPPORT_EMAIL}`,
+  supportHref = buildSupportHref(),
   supportLabel = "Contacter le support",
   className,
 }: ServerErrorCardProps) {

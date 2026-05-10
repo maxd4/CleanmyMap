@@ -16,6 +16,17 @@ export type AppErrorAction = {
   href?: string;
 };
 
+export type SupportIssueContext = {
+  message?: string | null;
+  code?: string | null;
+  referenceCode?: string | null;
+  pagePath?: string | null;
+  timestamp?: string | Date | null;
+  userId?: string | null;
+  sessionId?: string | null;
+  source?: string | null;
+};
+
 export type AppErrorOptions = {
   kind: AppErrorKind;
   message: string;
@@ -30,9 +41,96 @@ export type AppErrorOptions = {
   source?: string;
 };
 
-export const SUPPORT_EMAIL = "maxence.drm@gmail.com";
+const SUPPORT_FORM_PATH = "/sections/feedback";
 export const DEFAULT_SIGN_IN_HREF = "/sign-in";
 export const DEFAULT_DASHBOARD_HREF = "/profil";
+
+function sanitizeSupportValue(value: string, maxLength = 220): string {
+  const compact = value.replace(/\s+/g, " ").trim();
+  if (compact.length <= maxLength) {
+    return compact;
+  }
+  return `${compact.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
+function formatSupportTimestamp(timestamp: string | Date): string {
+  const date = typeof timestamp === "string" ? new Date(timestamp) : timestamp;
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+}
+
+export function buildSupportIssuePrefill(context: SupportIssueContext = {}): {
+  subject: string;
+  context: string;
+  steps: string;
+  expected: string;
+} {
+  const pagePath = context.pagePath ? sanitizeSupportValue(context.pagePath, 180) : "";
+  const message = context.message ? sanitizeSupportValue(context.message, 260) : "";
+  const code = context.code ? sanitizeSupportValue(context.code, 100) : "";
+  const referenceCode = context.referenceCode
+    ? sanitizeSupportValue(context.referenceCode, 100)
+    : "";
+  const userId = context.userId ? sanitizeSupportValue(context.userId, 120) : "";
+  const sessionId = context.sessionId ? sanitizeSupportValue(context.sessionId, 120) : "";
+  const source = context.source ? sanitizeSupportValue(context.source, 120) : "";
+  const timestamp =
+    context.timestamp instanceof Date || typeof context.timestamp === "string"
+      ? formatSupportTimestamp(context.timestamp)
+      : "";
+
+  const subject = pagePath
+    ? `Erreur technique sur ${pagePath}`
+    : "Erreur technique sur le site";
+
+  const contextLines = [
+    message ? `Message: ${message}` : null,
+    code ? `Code: ${code}` : null,
+    referenceCode ? `Référence: ${referenceCode}` : null,
+    pagePath ? `Page: ${pagePath}` : null,
+    userId ? `Identifiant utilisateur: ${userId}` : null,
+    sessionId ? `Identifiant session: ${sessionId}` : null,
+    timestamp ? `Date / heure: ${timestamp}` : null,
+    source ? `Source: ${source}` : null,
+  ].filter(Boolean) as string[];
+
+  return {
+    subject,
+    context: contextLines.join("\n"),
+    steps: [
+      "1. Ouvrir la page indiquée ci-dessus.",
+      "2. Reproduire l'action qui a déclenché le problème.",
+      "3. Ajouter une capture ou un détail complémentaire si nécessaire.",
+    ].join("\n"),
+    expected: pagePath
+      ? "La page devrait fonctionner normalement sans erreur technique."
+      : "Le support devrait pouvoir reproduire et diagnostiquer le problème rapidement.",
+  };
+}
+
+export function buildSupportHref(context: SupportIssueContext = {}): string {
+  const prefill = buildSupportIssuePrefill(context);
+  const hasMeaningfulContext =
+    Boolean(context.message) ||
+    Boolean(context.code) ||
+    Boolean(context.referenceCode) ||
+    Boolean(context.pagePath) ||
+    Boolean(context.userId) ||
+    Boolean(context.sessionId) ||
+    Boolean(context.source) ||
+    Boolean(context.timestamp);
+
+  if (!hasMeaningfulContext) {
+    return `${SUPPORT_FORM_PATH}#bug`;
+  }
+
+  const params = new URLSearchParams();
+  params.set("subject", prefill.subject);
+  params.set("context", prefill.context);
+  params.set("steps", prefill.steps);
+  params.set("expected", prefill.expected);
+  params.set("source", context.source ?? "runtime_error");
+  return `${SUPPORT_FORM_PATH}?${params.toString()}#bug`;
+}
 
 export class AppError extends Error {
   readonly kind: AppErrorKind;
@@ -129,7 +227,7 @@ export function defaultActionsForKind(kind: AppErrorKind): AppErrorAction[] {
     default:
       return [
         { type: "retry", label: "Réessayer" },
-        { type: "support", label: "Contacter le support", href: `mailto:${SUPPORT_EMAIL}` },
+        { type: "support", label: "Contacter le support", href: buildSupportHref() },
       ];
   }
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Leaf, Info, MapPin, Users, ArrowRight, Sparkles, BookOpen, Trash2, ShieldCheck, Zap } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import {
@@ -10,7 +11,6 @@ import {
   type CompostPoint,
 } from "@/lib/learning/compost-guide-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { CompostMapCanvas } from "./compost-map-canvas";
 import {
   CompostReflexGrid,
   CompostRulesList,
@@ -20,6 +20,19 @@ import {
 } from "./compost-components";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
+
+const CompostMapCanvas = dynamic(
+  () => import("./compost-map-canvas").then((mod) => mod.CompostMapCanvas),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center bg-slate-950 text-[10px] font-black uppercase tracking-widest text-slate-500">
+        Loading map...
+      </div>
+    ),
+  },
+);
 
 const steps = [
   {
@@ -68,7 +81,11 @@ export function CompostSection() {
     >
       <div className="space-y-20 pt-12">
         {/* Navigation / Hero Link Row */}
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-8 p-10 rounded-[3.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl group">
+        <RubriqueCard 
+          themeColor="emerald" 
+          withTopBar={false}
+          className="flex flex-col lg:flex-row items-center justify-between gap-8 p-10"
+        >
            <div className="flex items-center gap-8">
               <div className="p-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform duration-700">
                  <Sparkles size={32} />
@@ -96,7 +113,7 @@ export function CompostSection() {
                 <Zap size={16} />
               </button>
            </div>
-        </div>
+        </RubriqueCard>
 
         {/* Section 1: Strategies */}
         <div className="space-y-8">
@@ -140,10 +157,13 @@ export function CompostSection() {
 
         {/* Section 3: Rules & Steps */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10">
-           <motion.div 
+           <RubriqueCard 
              initial={{ opacity: 0, x: -20 }}
              whileInView={{ opacity: 1, x: 0 }}
-             className="rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl p-10 shadow-2xl space-y-10"
+             themeColor="emerald"
+             watermarkIcon={ShieldCheck}
+             watermarkSize={160}
+             className="space-y-10 p-10"
            >
               <div className="flex items-center gap-4">
                  <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
@@ -161,7 +181,7 @@ export function CompostSection() {
                    </div>
                  ))}
               </div>
-           </motion.div>
+           </RubriqueCard>
 
            <div className="space-y-10">
               <div className="flex items-center gap-4 px-4">

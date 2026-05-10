@@ -3,8 +3,8 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import useSWR from "swr";
-import { useSitePreferences } from "@/components/providers/site-preferences-provider";
-import { SectionShell } from "../section-shell";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { SectionShell } from "@/components/sections/rubriques/shared";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { LeaderboardTable } from "./leaderboard-table";
 import { PersonalProgress } from "./personal-progress";
@@ -34,7 +34,7 @@ async function fetchJson<T>(url: string): Promise<T> {
   return body as T;
 }
 
-export default function GamificationSection() {
+export function GamificationSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
   const [scope, setScope] = useState<"individual" | "collective">("individual");
@@ -207,3 +207,5 @@ export default function GamificationSection() {
     </SectionShell>
   );
 }
+
+export default GamificationSection;

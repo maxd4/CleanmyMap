@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect } from"react";
+import { useEffect, useMemo } from"react";
+import { useAuth } from"@clerk/nextjs";
+import { usePathname } from"next/navigation";
 import * as Sentry from"@sentry/nextjs";
 import { VibrantBackground } from"@/components/ui/vibrant-background";
 import { ServerErrorCard } from"@/components/ui/server-error-card";
+import { buildSupportHref } from"@/lib/errors/app-errors";
 import { isSentryEnabled } from "@/lib/observability/sentry";
 
 export default function Error({
@@ -14,6 +17,20 @@ export default function Error({
  reset: () => void;
 }) {
  const isSentryConfigured = isSentryEnabled();
+ const { userId, sessionId } = useAuth();
+ const pathname = usePathname();
+
+ const supportHref = useMemo(() => {
+  return buildSupportHref({
+    message: error.message,
+    code: error.name !== "Error" ? error.name : null,
+    referenceCode: error.digest ?? null,
+    pagePath: pathname,
+    userId: userId ?? null,
+    sessionId: sessionId ?? null,
+    source: "runtime_error_page",
+  });
+ }, [error.digest, error.message, error.name, pathname, sessionId, userId]);
 
  useEffect(() => {
  if (isSentryConfigured) {
@@ -36,7 +53,7 @@ export default function Error({
     }
     referenceCode={error.digest}
     onRetry={() => reset()}
-    supportHref="mailto:maxence.drm@gmail.com"
+    supportHref={supportHref}
     supportLabel="Contacter le support"
   />
  </div>
