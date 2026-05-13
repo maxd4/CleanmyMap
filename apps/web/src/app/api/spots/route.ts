@@ -4,6 +4,7 @@ import { z } from"zod";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { getCurrentUserIdentity, pickTraceableActorName } from"@/lib/authz";
 import { trackSpotCreated } from"@/lib/gamification/progression";
+import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
 import { trackServerEvent } from"@/lib/analytics.server";
@@ -155,10 +156,15 @@ export async function POST(request: Request) {
  }
 
  // Business Tracking
- await trackServerEvent(userId,"spot_created", {
+ const consentGranted = hasAnalyticsConsentCookie(request.headers.get("cookie"));
+ if (consentGranted) {
+  await trackServerEvent(userId,"spot_created", {
  waste_type: inserted.data.waste_type,
  location: inserted.data.label
- });
+  }, {
+   consentGranted,
+  });
+ }
 
  return NextResponse.json(
  { status:"created", source:"spots", item: inserted.data },

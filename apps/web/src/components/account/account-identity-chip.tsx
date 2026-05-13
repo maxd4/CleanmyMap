@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { UserIdentity } from "@/lib/authz";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { IdentityBadge } from "@/components/ui/identity-badge";
@@ -43,17 +43,66 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
     return getSwitchableProfiles(identity.role);
   }, [identity.role]);
   const roleMenuRef = useRef<HTMLDetailsElement | null>(null);
+  const roleCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roleMenuPlacement = useDropdownPlacement({
     isOpen: isRoleMenuOpen,
     triggerRef: roleMenuRef,
     minPanelWidth: 288,
   });
   const badgeMenuRef = useRef<HTMLDetailsElement | null>(null);
+  const badgeCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const badgeMenuPlacement = useDropdownPlacement({
     isOpen: isBadgeMenuOpen,
     triggerRef: badgeMenuRef,
     minPanelWidth: 272,
   });
+
+  const openRoleMenu = () => {
+    if (roleCloseTimerRef.current) {
+      clearTimeout(roleCloseTimerRef.current);
+      roleCloseTimerRef.current = null;
+    }
+    setIsRoleMenuOpen(true);
+  };
+
+  const closeRoleMenuAfterHover = () => {
+    if (roleCloseTimerRef.current) {
+      clearTimeout(roleCloseTimerRef.current);
+    }
+    roleCloseTimerRef.current = setTimeout(() => {
+      setIsRoleMenuOpen(false);
+      roleCloseTimerRef.current = null;
+    }, 160);
+  };
+
+  const openBadgeMenu = () => {
+    if (badgeCloseTimerRef.current) {
+      clearTimeout(badgeCloseTimerRef.current);
+      badgeCloseTimerRef.current = null;
+    }
+    setIsBadgeMenuOpen(true);
+  };
+
+  const closeBadgeMenuAfterHover = () => {
+    if (badgeCloseTimerRef.current) {
+      clearTimeout(badgeCloseTimerRef.current);
+    }
+    badgeCloseTimerRef.current = setTimeout(() => {
+      setIsBadgeMenuOpen(false);
+      badgeCloseTimerRef.current = null;
+    }, 160);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (roleCloseTimerRef.current) {
+        clearTimeout(roleCloseTimerRef.current);
+      }
+      if (badgeCloseTimerRef.current) {
+        clearTimeout(badgeCloseTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleRoleMutation = async (targetProfile: AppProfile | null) => {
     if (!targetProfile || isUpdatingRole) {
@@ -109,13 +158,15 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             ref={roleMenuRef}
             open={isRoleMenuOpen}
             onToggle={(event) => setIsRoleMenuOpen(event.currentTarget.open)}
+            onMouseEnter={openRoleMenu}
+            onMouseLeave={closeRoleMenuAfterHover}
             className="relative"
           >
             <summary
               aria-haspopup="menu"
               aria-expanded={isRoleMenuOpen}
               aria-controls="account-role-menu-panel"
-            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full px-3 cmm-text-caption font-bold cmm-text-secondary transition active:scale-95 [&::-webkit-details-marker]:hidden"
+            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white/88 transition hover:border-cyan-200/32 hover:bg-white/14 active:scale-95 [&::-webkit-details-marker]:hidden"
           >
             <IdentityBadge
               icon={roleBadge.icon}
@@ -132,10 +183,20 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
               />
             </summary>
             <div
-              id="account-role-menu-panel"
               className={cn(
-                "cmm-dropdown-panel cmm-surface-elevated absolute z-40 w-72 rounded-[1.25rem] p-3 shadow-xl",
-                roleMenuPlacement.openUp ? "bottom-full mb-3" : "top-full mt-3",
+                "absolute z-40 h-3 w-full",
+                roleMenuPlacement.openUp ? "bottom-full" : "top-full",
+              )}
+              onMouseEnter={openRoleMenu}
+              aria-hidden="true"
+            />
+            <div
+              id="account-role-menu-panel"
+              onMouseEnter={openRoleMenu}
+              onMouseLeave={closeRoleMenuAfterHover}
+              className={cn(
+                "cmm-dropdown-panel cmm-surface-elevated absolute z-40 w-72 rounded-[1.15rem] p-3 shadow-xl",
+                roleMenuPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
                 roleMenuPlacement.alignRight ? "right-0" : "left-0",
               )}
             >
@@ -210,12 +271,14 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
           ref={badgeMenuRef}
           open={isBadgeMenuOpen}
           onToggle={(event) => setIsBadgeMenuOpen(event.currentTarget.open)}
+          onMouseEnter={openBadgeMenu}
+          onMouseLeave={closeBadgeMenuAfterHover}
           className="group relative"
         >
           <summary
             aria-expanded={isBadgeMenuOpen}
             aria-controls="account-badges-menu-panel"
-            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full px-3 cmm-text-caption font-bold cmm-text-secondary transition active:scale-95 [&::-webkit-details-marker]:hidden"
+            className="cmm-dropdown-trigger flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-cyan-100/12 bg-white/8 px-3 cmm-text-caption font-bold text-white/82 transition hover:border-cyan-200/32 hover:bg-white/14 hover:text-white active:scale-95 [&::-webkit-details-marker]:hidden"
           >
             <BadgePictogram name="award" size={14} className="cmm-text-secondary" />
             <span className="hidden sm:inline">
@@ -230,10 +293,20 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             />
           </summary>
           <div
-            id="account-badges-menu-panel"
             className={cn(
-              "cmm-dropdown-panel cmm-surface-elevated absolute z-40 w-64 rounded-[1.25rem] p-3 shadow-xl",
-              badgeMenuPlacement.openUp ? "bottom-full mb-3" : "top-full mt-3",
+              "absolute z-40 h-3 w-full",
+              badgeMenuPlacement.openUp ? "bottom-full" : "top-full",
+            )}
+            onMouseEnter={openBadgeMenu}
+            aria-hidden="true"
+          />
+          <div
+            id="account-badges-menu-panel"
+            onMouseEnter={openBadgeMenu}
+            onMouseLeave={closeBadgeMenuAfterHover}
+            className={cn(
+              "cmm-dropdown-panel cmm-surface-elevated absolute z-40 w-64 rounded-[1.15rem] p-3 shadow-xl",
+              badgeMenuPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
               badgeMenuPlacement.alignRight ? "right-0" : "left-0",
             )}
           >

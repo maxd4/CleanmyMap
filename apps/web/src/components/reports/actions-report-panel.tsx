@@ -1,49 +1,58 @@
 "use client";
 
-import { StepConfirm } from"@/components/reports/admin-workflow/step-confirm";
-import { StepFilter } from"@/components/reports/admin-workflow/step-filter";
-import { StepJournal } from"@/components/reports/admin-workflow/step-journal";
-import { StepPreview } from"@/components/reports/admin-workflow/step-preview";
-import { useAdminWorkflow } from"@/components/reports/admin-workflow/use-admin-workflow";
+import { StepConfirm } from "@/components/reports/admin-workflow/step-confirm";
+import { StepFilter } from "@/components/reports/admin-workflow/step-filter";
+import { StepJournal } from "@/components/reports/admin-workflow/step-journal";
+import { StepPreview } from "@/components/reports/admin-workflow/step-preview";
+import { useAdminWorkflow } from "@/components/reports/admin-workflow/use-admin-workflow";
+import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
 
+/**
+ * Standardized Admin Workflow Panel.
+ * Uses AdminPanelShell for UI consistency and software sobriety.
+ */
 export function ActionsReportPanel() {
- const workflow = useAdminWorkflow();
+  const workflow = useAdminWorkflow();
 
- return (
- <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
- <h2 className="text-xl font-semibold cmm-text-primary">
- Workflow admin guide: moderation / import / export
- </h2>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
- Parcours en 4 etapes: filtrer -&gt; previsualiser -&gt; confirmer -&gt;
- journaliser.
- </p>
+  return (
+    <AdminPanelShell
+      title="Workflow Administration"
+      subtitle="Parcours guidé : filtrage, prévisualisation, confirmation et journalisation."
+    >
+      <div className="space-y-8">
+        <div className="grid gap-6">
+          <StepFilter workflow={workflow} />
+          <StepPreview workflow={workflow} />
+          <StepConfirm workflow={workflow} />
+          <StepJournal workflow={workflow} />
+        </div>
 
- <StepFilter workflow={workflow} />
- <StepPreview workflow={workflow} />
- <StepConfirm workflow={workflow} />
- <StepJournal workflow={workflow} />
+        <div className="mt-8 pt-6 border-t border-white/5 space-y-2">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+            Exports directs
+          </p>
+          <div className="flex gap-4 text-[10px] font-mono text-emerald-400/60">
+            <code className="bg-emerald-500/5 px-2 py-1 rounded">CSV: {workflow.csvExportUrl}</code>
+            <code className="bg-emerald-500/5 px-2 py-1 rounded">JSON: {workflow.jsonExportUrl}</code>
+          </div>
+        </div>
 
- <div className="mt-4 space-y-1 cmm-text-caption cmm-text-muted">
- <p>
- CSV: <code>{workflow.csvExportUrl}</code>
- </p>
- <p>
- JSON: <code>{workflow.jsonExportUrl}</code>
- </p>
- </div>
+        {workflow.lastSuccessMessage && (
+          <div className="rounded-2xl border border-emerald-500/10 bg-emerald-500/5 p-4">
+            <p className="text-xs font-medium text-emerald-400">
+              {workflow.lastSuccessMessage}
+            </p>
+          </div>
+        )}
 
- {workflow.lastSuccessMessage ? (
- <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 cmm-text-small text-emerald-700">
- {workflow.lastSuccessMessage}
- </p>
- ) : null}
-
- {workflow.errorMessage ? (
- <p className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 cmm-text-small text-rose-700">
- {workflow.errorMessage}
- </p>
- ) : null}
- </section>
- );
+        {workflow.errorMessage && (
+          <div className="rounded-2xl border border-rose-500/10 bg-rose-500/5 p-4">
+            <p className="text-xs font-medium text-rose-400">
+              {workflow.errorMessage}
+            </p>
+          </div>
+        )}
+      </div>
+    </AdminPanelShell>
+  );
 }

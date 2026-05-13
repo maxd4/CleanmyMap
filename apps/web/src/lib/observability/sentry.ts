@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { env, isConfigured } from "@/lib/env";
 
 function isTruthyFlag(value: string | undefined): boolean {
   if (!value) {
@@ -10,5 +10,14 @@ function isTruthyFlag(value: string | undefined): boolean {
 }
 
 export function isSentryEnabled(): boolean {
-  return isTruthyFlag(env.NEXT_PUBLIC_SENTRY_ENABLED ? "1" : undefined);
+  return isTruthyFlag(env.NEXT_PUBLIC_SENTRY_ENABLED) && getSentryDsn() !== null;
+}
+
+export function getSentryDsn(): string | null {
+  const dsn = env.NEXT_PUBLIC_SENTRY_DSN;
+  if (!isConfigured(dsn)) {
+    return null;
+  }
+
+  return dsn!.trim();
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { hasAnalyticsConsent } from "@/lib/analytics-consent";
 import posthog from "posthog-js";
 import {
   getPostHogDeprecatedEnvWarnings,
@@ -16,6 +17,10 @@ export function isPostHogInitialized(): boolean {
 
 export function initPostHogClient(enableAnalytics = true) {
   if (initialized) return posthog;
+
+  if (!hasAnalyticsConsent()) {
+    return null;
+  }
 
   const key = getPostHogKey();
   if (!key) {

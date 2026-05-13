@@ -1,9 +1,22 @@
 # Latest Session
 
-**Dernière mise à jour :** 2026-04-27
+**Dernière mise à jour :** 2026-05-13
 **Status :** UPDATED
 
 ## Travaux accomplis (Cette session)
+
+### 0. Exécution rapide des messages `ateliers_DU`
+- **Sécurité publication** : correction de `scripts/pre-release-check.mjs`, ajout de `npm run pre-release:check`, validation OK sans exposition détectée dans le bundle client.
+- **Audit des écarts restant** : création de `documentation/plans/ateliers_DU_execution_rapide.md` pour distinguer les lots absorbés, partiels et encore ouverts.
+- **Observabilité admin** : enrichissement de `/api/services` avec résumé, niveaux de sévérité et timeline courte, exposés dans le panneau admin de supervision.
+- **Tests de contrat exports/services** : ajout de tests ciblés sur `/api/services`, `/api/reports/actions.csv`, `/api/reports/actions.json`, `/api/reports/elus-dossier` et helpers dashboard/exports.
+- **Convergence exports serveur** : mise en place d'un contrat commun de headers et de noms de livrables pour les exports CSV/JSON/PDF.
+- **Convergence exports web** : harmonisation des libellés, messages d'erreur et états de chargement des exports CSV/PDF via un helper UI commun.
+- **Tests UI exports** : ajout d'une couverture statique sur les boutons d'export CSV/PDF pour figer les libellés et les noms de livrables côté interface.
+- **Traçabilité documentaire** : création de `documentation/architecture/traceability-matrix.md` pour relier rubrique, route, composant, API et source de donnée.
+- **Stratégie de sortie technique** : création de `documentation/operations/vendor-exit-strategy.md` pour documenter la mitigation du lock-in Vercel/Supabase.
+- **Validation institutionnelle** : création de `documentation/plans/dossier_validation_institutionnelle.md` comme point d'entrée entre audit d'impact, gouvernance, sobriété et maintenance.
+- **Journal d'impact DU** : mise à jour de `documentation/plans/journal_impact_DU.md` avec les améliorations absorbées du plan d'écarts supprimé.
 
 ### 1. Transformation Visuelle "Film" & Thème Sombre Douce
 - **Stabilisation Thème Unique** : Abandon du mode clair au profit d'une esthétique "Sombre Douce" (Slate-950, Emerald, Cyan).
@@ -20,13 +33,19 @@
 - **Simplification** : Seuls `modularization_plan.md`, `LANCER_SITE_LOCAL.bat` et les configs standard (git, package.json) subsistent à la racine.
 
 ## En attente d'exécution (Next & Risks)
+- **Observabilité admin** : compléter le lot message 3 avec timeline courte des incidents et vue centralisée plus narrative.
+- **Tests de non-régression** : compléter la couverture explicite de `/dashboard`, `/reports`, `/actions/map` et des endpoints d'export critiques.
+- **Campagnes multi-actions** : industrialiser le modèle, l'API et l'UI de suivi.
+- **Convergence PDF/CSV** : lot rapide borne; ne rouvrir que si une divergence fonctionnelle reapparait.
+- **Section renderer** : planifier le découpage sans régression visible.
 - **Modularisation** : Exécuter le plan (`modularization_plan.md`) en commençant par `apps/web/src/app/page.tsx` et le contrat de données.
 - **Section DM** : Finaliser l'interface des Messages Privés (`/sections/dm`).
 - **Stabilité Tests** : Stabiliser le timeout dans `route.submit.test.ts`.
 - **PostHog** : Finaliser la migration vers `NEXT_PUBLIC_POSTHOG_KEY`.
 
 ## Risks
+- **Lots DU restants** : une partie des messages `ateliers_DU` reste à exécuter, surtout sur les flux lourds (campagnes, exports, refactor `section-renderer`).
+- **Traçabilité vs réalité** : la matrice de traçabilité est une v1 documentaire et doit rester synchronisée avec le code.
 - **Dette Lint** : Non-conformité lint globale encore présente.
 - **Complexité Framer Motion** : Veiller à ce que les animations `layoutId` ne créent pas de conflits de rendu sur mobile.
 - **Chemins Documentation** : Risque de liens brisés dans d'autres docs suite à la migration racine (audit des liens à prévoir).
-

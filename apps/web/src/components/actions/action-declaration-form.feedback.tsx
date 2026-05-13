@@ -107,7 +107,7 @@ export function ActionDeclarationFormFeedback({
           <div className="flex flex-wrap gap-2">
             {createdId && (
               <Link
-                href={`/actions/${createdId}`}
+                href={`/actions/history?declaration=${encodeURIComponent(createdId)}`}
                 prefetch
                 className="flex items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 transition"
               >

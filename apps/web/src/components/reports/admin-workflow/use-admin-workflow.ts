@@ -4,6 +4,7 @@ import { useEffect, useMemo } from"react";
 import useSWR from"swr";
 import { fetchActions } from"@/lib/actions/http";
 import { evaluateActionQuality } from"@/lib/actions/quality";
+import type { ActionListItem } from"@/lib/actions/types";
 import { swrRecentViewOptions } from"@/lib/swr-config";
 import {
  buildReportScopeOptions,
@@ -16,7 +17,11 @@ import {
  fetchAdminOperationAudit,
 } from"./services";
 import { useAdminWorkflowState } from"./state";
-import type { AdminWorkflowController } from"./types";
+import type {
+ ActionModerationEditDraft,
+ AdminWorkflowController,
+ CleanPlaceModerationEditDraft,
+} from"./types";
 
 export { buildExportQuery, parseAdminApiError } from"./helpers";
 
@@ -83,30 +88,31 @@ export function useAdminWorkflow(): AdminWorkflowController {
  () => buildReportScopeOptions(preview.data?.items ?? []),
  [preview.data?.items],
  );
+ const { scopeKind, scopeValue, setScopeValue } = state;
 
  useEffect(() => {
- if (state.scopeKind ==="global") {
- if (state.scopeValue !=="") {
- state.setScopeValue("");
+ if (scopeKind ==="global") {
+ if (scopeValue !=="") {
+ setScopeValue("");
  }
  return;
  }
  const options =
- state.scopeKind ==="account"
+ scopeKind ==="account"
  ? scopeOptions.accounts
- : state.scopeKind ==="association"
+ : scopeKind ==="association"
  ? scopeOptions.associations
  : scopeOptions.arrondissements;
  if (options.length === 0) {
- if (state.scopeValue !=="") {
- state.setScopeValue("");
+ if (scopeValue !=="") {
+ setScopeValue("");
  }
  return;
  }
- if (!options.some((option) => option.value === state.scopeValue)) {
- state.setScopeValue(options[0].value);
+ if (!options.some((option) => option.value === scopeValue)) {
+ setScopeValue(options[0].value);
  }
- }, [scopeOptions, state.scopeKind, state.scopeValue]);
+ }, [scopeOptions, scopeKind, scopeValue, setScopeValue]);
 
  const previewRows = useMemo(() => {
  return filterReportScopeItems(preview.data?.items ?? [], scope)
@@ -117,9 +123,60 @@ export function useAdminWorkflow(): AdminWorkflowController {
  }));
  }, [preview.data?.items, scope]);
 
- function selectActionForModeration(actionId: string) {
- state.setModerationEntityType("action");
- state.setModerationId(actionId);
+ function buildActionEditDraft(item: ActionListItem): ActionModerationEditDraft {
+ const metadata = item.contract?.metadata;
+ const drawing = item.manual_drawing ?? metadata?.manualDrawing ?? null;
+ const wasteBreakdown = item.waste_breakdown ?? metadata?.wasteBreakdown ?? null;
+ return {
+ actorName: item.actor_name ?? metadata?.actorName ?? "",
+ associationName: item.association_name ?? metadata?.associationName ?? "",
+ actionDate: item.action_date,
+ locationLabel: item.location_label,
+ departureLocationLabel: metadata?.departureLocationLabel ?? "",
+ arrivalLocationLabel: metadata?.arrivalLocationLabel ?? "",
+ routeStyle: metadata?.routeStyle ??"souple",
+ routeAdjustmentMessage: metadata?.routeAdjustmentMessage ?? "",
+ latitude: item.latitude === null ? "" : String(item.latitude),
+ longitude: item.longitude === null ? "" : String(item.longitude),
+ wasteKg: String(item.waste_kg ?? 0),
+ cigaretteButts: String(item.cigarette_butts ?? 0),
+ volunteersCount: String(item.volunteers_count ?? 1),
+ durationMinutes: String(item.duration_minutes ?? 0),
+ notes: item.notes_plain ?? item.notes ?? metadata?.notesPlain ?? metadata?.notes ?? "",
+ placeType: metadata?.placeType ?? "",
+ submissionMode: item.submission_mode ?? metadata?.submissionMode ??"complete",
+ wasteMegotsKg:
+ wasteBreakdown?.megotsKg === undefined ? "" : String(wasteBreakdown.megotsKg),
+ wasteMegotsCondition: wasteBreakdown?.megotsCondition ??"propre",
+ wastePlastiqueKg:
+ wasteBreakdown?.plastiqueKg === undefined ? "" : String(wasteBreakdown.plastiqueKg),
+ wasteVerreKg:
+ wasteBreakdown?.verreKg === undefined ? "" : String(wasteBreakdown.verreKg),
+ wasteMetalKg:
+ wasteBreakdown?.metalKg === undefined ? "" : String(wasteBreakdown.metalKg),
+ wasteMixteKg:
+ wasteBreakdown?.mixteKg === undefined ? "" : String(wasteBreakdown.mixteKg),
+ triQuality: wasteBreakdown?.triQuality ??"moyenne",
+ manualDrawingJson: drawing ? JSON.stringify(drawing, null, 2) : "",
+ };
+ }
+
+ function buildCleanPlaceEditDraft(item: ActionListItem): CleanPlaceModerationEditDraft {
+ return {
+ label: item.location_label,
+ wasteType: item.record_type ?? "clean_place",
+ latitude: item.latitude === null ? "" : String(item.latitude),
+ longitude: item.longitude === null ? "" : String(item.longitude),
+ notes: item.notes_plain ?? item.notes ?? "",
+ };
+ }
+
+ function selectActionForModeration(item: ActionListItem) {
+ const isCleanPlace = item.source ==="spots" || item.record_type ==="clean_place" || item.record_type ==="other";
+ state.setModerationEntityType(isCleanPlace ?"clean_place" :"action");
+ state.setModerationId(item.id);
+ state.setActionEditDraft(isCleanPlace ? null : buildActionEditDraft(item));
+ state.setCleanPlaceEditDraft(isCleanPlace ? buildCleanPlaceEditDraft(item) : null);
  state.resetModerationConfirmationState();
  }
 
@@ -149,12 +206,16 @@ export function useAdminWorkflow(): AdminWorkflowController {
  const setModerationEntityTypeWithReset: AdminWorkflowController["setModerationEntityType"] =
  (value) => {
  state.setModerationEntityType(value);
+ state.setActionEditDraft(null);
+ state.setCleanPlaceEditDraft(null);
  state.resetModerationConfirmationState();
  };
  const setModerationIdWithReset: AdminWorkflowController["setModerationId"] = (
  value,
  ) => {
  state.setModerationId(value);
+ state.setActionEditDraft(null);
+ state.setCleanPlaceEditDraft(null);
  state.resetModerationConfirmationState();
  };
  const setActionStatusWithReset: AdminWorkflowController["setActionStatus"] = (
@@ -205,12 +266,16 @@ export function useAdminWorkflow(): AdminWorkflowController {
  moderationJournal: state.moderationJournal,
  moderationConfirmed: state.moderationConfirmed,
  moderationConfirmationText: state.moderationConfirmationText,
+ actionEditDraft: state.actionEditDraft,
+ cleanPlaceEditDraft: state.cleanPlaceEditDraft,
  setModerationEntityType: setModerationEntityTypeWithReset,
  setModerationId: setModerationIdWithReset,
  setActionStatus: setActionStatusWithReset,
  setCleanPlaceStatus: setCleanPlaceStatusWithReset,
  setModerationConfirmed: state.setModerationConfirmed,
  setModerationConfirmationText: state.setModerationConfirmationText,
+ setActionEditDraft: state.setActionEditDraft,
+ setCleanPlaceEditDraft: state.setCleanPlaceEditDraft,
  previewRows,
  previewLoading: preview.isLoading,
  previewError: Boolean(preview.error),

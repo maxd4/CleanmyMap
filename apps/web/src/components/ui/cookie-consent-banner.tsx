@@ -4,17 +4,14 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cookie, X } from "lucide-react";
 import {
+  getAnalyticsConsentCookieDecision,
+  syncAnalyticsConsentCookie,
+} from "@/lib/analytics-consent";
+import {
   cookieConsentStorage,
   notifyCookieConsentChanged,
   type CookieConsentState,
 } from "@/lib/storage/ui-state-storage";
-
-export function hasAnalyticsConsent(): boolean {
-  const consent =
-    cookieConsentStorage.read() ??
-    ({ choice: null, timestamp: null, analytics: false } as const);
-  return consent.choice === "accepted" && consent.analytics;
-}
 
 export function CookieConsentBanner() {
   const [isClient, setIsClient] = useState(false);
@@ -31,7 +28,10 @@ export function CookieConsentBanner() {
   const consent: CookieConsentState = isClient
     ? cookieConsentStorage.read() ?? { choice: null, timestamp: null, analytics: false }
     : { choice: null, timestamp: null, analytics: false };
-  const showBanner = isClient && consent.choice === null;
+  const showBanner =
+    isClient &&
+    consent.choice === null &&
+    getAnalyticsConsentCookieDecision(document.cookie) === null;
   
   const handleAccept = (analytics: boolean) => {
     cookieConsentStorage.write({
@@ -39,6 +39,7 @@ export function CookieConsentBanner() {
       timestamp: Date.now(),
       analytics,
     });
+    syncAnalyticsConsentCookie(analytics);
     notifyCookieConsentChanged();
     forceRender((value) => value + 1);
   };
@@ -49,6 +50,7 @@ export function CookieConsentBanner() {
       timestamp: Date.now(),
       analytics: false,
     });
+    syncAnalyticsConsentCookie(false);
     notifyCookieConsentChanged();
     forceRender((value) => value + 1);
   };

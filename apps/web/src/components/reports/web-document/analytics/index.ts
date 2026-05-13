@@ -227,9 +227,9 @@ function computeAreaStats(mapApprovedActions: ActionMapItem[]) {
 export function computeReportModel(input: ReportModelInput): ReportModel {
   const now = input.now ?? new Date();
   const nowMs = now.getTime();
-  const allItems = input.allItems;
-  const approvedItems = input.approvedItems;
-  const mapItems = input.mapItems;
+  const allItems = input.allItems.filter((item) => item.status === "approved");
+  const approvedItems = input.approvedItems.filter((item) => item.status === "approved");
+  const mapItems = input.mapItems.filter((item) => item.status === "approved");
   const events = input.events;
 
   const approvedActions = approvedItems.filter((item) => normalizeListType(item) === "action");

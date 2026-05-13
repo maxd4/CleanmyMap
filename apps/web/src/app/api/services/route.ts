@@ -4,15 +4,13 @@ import { requireAdminAccess } from"@/lib/authz";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
 import { isPostHogConfigured } from"@/lib/posthog/config";
 import { SERVICE_DEFINITIONS, type ServiceHealthState } from"@/lib/services/registry";
+import {
+ buildServiceHealthSummary,
+ buildServiceIncidentTimeline,
+ enrichServiceStatuses,
+} from"@/lib/services/health";
 
 export const runtime ="nodejs";
-
-type ServiceStatusInfo = {
- state: ServiceHealthState;
- label: string;
- description: string;
- category:"critical" |"optional" |"external";
-};
 
 function getServiceState(id: string): ServiceHealthState {
  switch (id) {
@@ -69,26 +67,21 @@ export async function GET() {
  return adminAccessErrorJsonResponse(access);
  }
 
- const services = Object.fromEntries(
- SERVICE_DEFINITIONS.map((definition) => [
- definition.id,
- {
- state: getServiceState(definition.id),
- label: definition.label,
- description: definition.description,
- category: definition.category,
- } as ServiceStatusInfo,
- ]),
- ) as Record<string, ServiceStatusInfo>;
+ const generatedAt = new Date().toISOString();
+ const services = enrichServiceStatuses(SERVICE_DEFINITIONS, getServiceState);
 
  const missing = Object.entries(services)
- .filter(([, service]) => service.state ==="missing")
+ .filter(([, service]) => service.state ==="missing" || service.state ==="defer")
  .map(([service]) => service);
+ const summary = buildServiceHealthSummary(services, generatedAt);
+ const timeline = buildServiceIncidentTimeline(services, generatedAt);
 
  return NextResponse.json({
- status:"ok",
+ status: summary.globalState === "ok" ? "ok" : "degraded",
  services,
  missing,
- timestamp: new Date().toISOString(),
+ summary,
+ timeline,
+ timestamp: generatedAt,
  });
 }

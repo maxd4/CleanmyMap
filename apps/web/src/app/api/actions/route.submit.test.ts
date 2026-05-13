@@ -11,6 +11,7 @@ const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const createActionMock = vi.hoisted(() => vi.fn());
 const emitActionCreatedMock = vi.hoisted(() => vi.fn());
 const emitSpotCreatedMock = vi.hoisted(() => vi.fn());
+const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@clerk/nextjs/server", () => ({
   auth: authMock,
@@ -23,6 +24,10 @@ vi.mock("@/lib/authz", () => ({
 
 vi.mock("@/lib/gamification/progression", () => ({
   buildPostActionRetentionLoop: buildPostActionRetentionLoopMock,
+}));
+
+vi.mock("@/lib/analytics-consent", () => ({
+  hasAnalyticsConsentCookie: hasAnalyticsConsentCookieMock,
 }));
 
 vi.mock("@/lib/events/emit", () => ({
@@ -64,6 +69,7 @@ describe("POST /api/actions", () => {
     buildPostActionRetentionLoopMock.mockResolvedValue(null);
     emitActionCreatedMock.mockResolvedValue({ delivered: 1, failed: 0 });
     emitSpotCreatedMock.mockResolvedValue({ delivered: 1, failed: 0 });
+    hasAnalyticsConsentCookieMock.mockReturnValue(true);
   });
 
   it("creates an action from the dashboard form payload", async () => {
@@ -180,10 +186,17 @@ describe("POST /api/actions", () => {
       label: "Lieu propre test",
       wasteType: "clean_place",
     });
-    expect(trackServerEventMock).toHaveBeenCalledWith("user-test-1", "spot_created", {
-      waste_type: "clean_place",
-      location: "Lieu propre test",
-    });
+    expect(trackServerEventMock).toHaveBeenCalledWith(
+      "user-test-1",
+      "spot_created",
+      {
+        waste_type: "clean_place",
+        location: "Lieu propre test",
+      },
+      {
+        consentGranted: true,
+      },
+    );
   }, 15000);
 
   it("rejects unauthenticated submissions", async () => {

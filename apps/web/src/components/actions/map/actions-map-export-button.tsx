@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { FileSpreadsheet } from "lucide-react";
 import { buildActionsCsv, buildActionsCsvFilename } from "@/lib/reports/csv";
+import { buildExportUiCopy } from "@/lib/reports/export-ui";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { toActionsMapCsvRows } from "./actions-map-export.utils";
 
@@ -13,6 +14,7 @@ type ActionsMapExportButtonProps = {
 export function ActionsMapExportButton({ items }: ActionsMapExportButtonProps) {
   const [isExporting, setIsExporting] = useState(false);
   const filename = useMemo(() => buildActionsCsvFilename(), []);
+  const copy = useMemo(() => buildExportUiCopy({ format: "csv", subject: "Vue filtree" }), []);
   const canExport = items.length > 0;
 
   function handleExport() {
@@ -38,7 +40,7 @@ export function ActionsMapExportButton({ items }: ActionsMapExportButtonProps) {
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Erreur export CSV carte:", error);
-      alert("Impossible de générer l'export CSV de la carte. Réessaie après avoir ajusté les filtres.");
+      alert(copy.errorMessage);
     } finally {
       setIsExporting(false);
     }
@@ -49,11 +51,12 @@ export function ActionsMapExportButton({ items }: ActionsMapExportButtonProps) {
       type="button"
       onClick={handleExport}
       disabled={!canExport || isExporting}
+      title={filename}
       className="inline-flex items-center gap-2 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-sky-100/78 transition hover:border-sky-300/30 hover:bg-[rgba(18,47,74,0.95)] disabled:cursor-not-allowed disabled:opacity-50"
       aria-label="Exporter la vue filtrée de la carte au format CSV"
     >
       <FileSpreadsheet size={16} aria-hidden="true" />
-      {isExporting ? "Export..." : "Exporter la vue"}
+      {isExporting ? copy.pendingLabel : copy.triggerLabel}
     </button>
   );
 }

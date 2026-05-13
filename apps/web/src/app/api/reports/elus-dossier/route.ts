@@ -12,7 +12,7 @@ import {
 import type { PersonalImpactMethodology } from"@/lib/gamification/progression-types";
 import { buildPilotageOverviewFromContracts } from"@/lib/pilotage/overview";
 import type { ZoneComparisonRow } from"@/lib/pilotage/prioritization";
-import { buildDeliverableFilename } from"@/lib/reports/deliverable-name";
+import { buildDeliverableHeaders } from"@/lib/reports/http";
 import { buildSimplePdf } from "@/lib/pdf-export/simple-pdf";
 import { filterActionContractsByScope } from"@/lib/reports/scope";
 import { requireAdminAccess } from"@/lib/authz";
@@ -332,19 +332,21 @@ export async function GET(request: Request) {
  ],
  };
 
- const headers: Record<string, string> = {
-"Cache-Control":"no-store",
- };
+ const { headers } = buildDeliverableHeaders({
+ rubrique:"reports_elus_dossier",
+ extension: format === "pdf" ? "pdf" : format === "md" ? "md" : "json",
+ contentType:
+ format === "pdf"
+ ? "application/pdf"
+ : format === "md"
+ ? "text/markdown; charset=utf-8"
+ : "application/json; charset=utf-8",
+ });
  if (isTruncated) {
  headers["X-Export-Warning"] ="Dataset truncated to limit";
  }
 
  if (format ==="pdf") {
- const filename = buildDeliverableFilename({
- rubrique:"reports_elus_dossier",
- extension:"pdf",
- date: new Date(),
- });
  const markdown = buildMarkdownPack(payload);
  const lines = markdown
  .split("\n")
@@ -356,9 +358,6 @@ export async function GET(request: Request) {
  pdfBytes.byteOffset + pdfBytes.byteLength,
  ) as ArrayBuffer;
 
- headers["Content-Type"] ="application/pdf";
- headers["Content-Disposition"] = `attachment; filename="${filename}"`;
-
  return new Response(pdfBuffer, {
  status: 200,
  headers,
@@ -366,30 +365,13 @@ export async function GET(request: Request) {
  }
 
  if (format ==="md") {
- const filename = buildDeliverableFilename({
- rubrique:"reports_elus_dossier",
- extension:"md",
- date: new Date(),
- });
  const markdown = buildMarkdownPack(payload);
-
- headers["Content-Type"] ="text/markdown; charset=utf-8";
- headers["Content-Disposition"] = `attachment; filename="${filename}"`;
 
  return new Response(markdown, {
  status: 200,
  headers,
  });
  }
-
- const filename = buildDeliverableFilename({
- rubrique:"reports_elus_dossier",
- extension:"json",
- date: new Date(),
- });
-
- headers["Content-Type"] ="application/json; charset=utf-8";
- headers["Content-Disposition"] = `attachment; filename="${filename}"`;
 
  return new Response(JSON.stringify(payload, null, 2), {
  status: 200,

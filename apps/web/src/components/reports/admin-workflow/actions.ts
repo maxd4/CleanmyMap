@@ -1,11 +1,15 @@
 import {
  ModerationClientError,
+ type AdminActionEditPayload,
+ type AdminCleanPlaceEditPayload,
  postAdminModeration,
  type ModerationPayload,
 } from"@/lib/admin/moderation-client";
 import { buildDeliverableFilename } from"@/lib/reports/deliverable-name";
 import type {
  AsyncState,
+ ActionModerationEditDraft,
+ CleanPlaceModerationEditDraft,
  ImportDryRunSummary,
  ModerationJournalEntry,
 } from"./types";
@@ -39,6 +43,8 @@ export type AdminWorkflowActionState = {
  cleanPlaceStatus:"new" |"validated" |"cleaned";
  moderationConfirmed: boolean;
  moderationConfirmationText: string;
+ actionEditDraft: ActionModerationEditDraft | null;
+ cleanPlaceEditDraft: CleanPlaceModerationEditDraft | null;
  setModerationResult: Setter<string | null>;
  resetModerationConfirmationState: () => void;
  pushModerationJournal: (entry: ModerationJournalEntry) => void;
@@ -76,6 +82,9 @@ function buildModerationPayload(
  id: trimmedId,
  status: state.actionStatus,
  confirmPhrase: state.moderationConfirmationText,
+ edits: state.actionEditDraft
+ ? buildActionEditPayload(state.actionEditDraft)
+ : undefined,
  };
  }
 
@@ -84,6 +93,102 @@ function buildModerationPayload(
  id: trimmedId,
  status: state.cleanPlaceStatus,
  confirmPhrase: state.moderationConfirmationText,
+ edits: state.cleanPlaceEditDraft
+ ? buildCleanPlaceEditPayload(state.cleanPlaceEditDraft)
+ : undefined,
+ };
+}
+
+function toOptionalText(value: string): string | null {
+ const trimmed = value.trim();
+ return trimmed ? trimmed : null;
+}
+
+function toRequiredText(value: string, fieldLabel: string): string {
+ const trimmed = value.trim();
+ if (!trimmed) {
+ throw new Error(`${fieldLabel} est obligatoire pour enregistrer les corrections admin.`);
+ }
+ return trimmed;
+}
+
+function toOptionalNumber(value: string, fieldLabel: string): number | null {
+ const trimmed = value.trim();
+ if (!trimmed) {
+ return null;
+ }
+ const parsed = Number(trimmed);
+ if (!Number.isFinite(parsed)) {
+ throw new Error(`${fieldLabel} doit être un nombre valide.`);
+ }
+ return parsed;
+}
+
+function toRequiredNumber(value: string, fieldLabel: string): number {
+ const parsed = toOptionalNumber(value, fieldLabel);
+ if (parsed === null) {
+ throw new Error(`${fieldLabel} est obligatoire pour enregistrer les corrections admin.`);
+ }
+ return parsed;
+}
+
+function parseManualDrawing(value: string): AdminActionEditPayload["manualDrawing"] {
+ const trimmed = value.trim();
+ if (!trimmed) {
+ return null;
+ }
+ const parsed = JSON.parse(trimmed) as AdminActionEditPayload["manualDrawing"];
+ if (!parsed || typeof parsed !=="object") {
+ throw new Error("Le tracé manuel doit être un JSON valide.");
+ }
+ return parsed;
+}
+
+function buildActionEditPayload(
+ draft: ActionModerationEditDraft,
+): AdminActionEditPayload {
+ const wasteBreakdown = {
+ megotsKg: toOptionalNumber(draft.wasteMegotsKg,"Mégots kg") ?? undefined,
+ megotsCondition: draft.wasteMegotsCondition,
+ plastiqueKg: toOptionalNumber(draft.wastePlastiqueKg,"Plastique kg") ?? undefined,
+ verreKg: toOptionalNumber(draft.wasteVerreKg,"Verre kg") ?? undefined,
+ metalKg: toOptionalNumber(draft.wasteMetalKg,"Métal kg") ?? undefined,
+ mixteKg: toOptionalNumber(draft.wasteMixteKg,"Mixte kg") ?? undefined,
+ triQuality: draft.triQuality,
+ };
+
+ return {
+ actorName: toOptionalText(draft.actorName),
+ associationName: toOptionalText(draft.associationName),
+ actionDate: toRequiredText(draft.actionDate,"Date d'action"),
+ locationLabel: toRequiredText(draft.locationLabel,"Lieu"),
+ departureLocationLabel: toOptionalText(draft.departureLocationLabel),
+ arrivalLocationLabel: toOptionalText(draft.arrivalLocationLabel),
+ routeStyle: draft.routeStyle,
+ routeAdjustmentMessage: toOptionalText(draft.routeAdjustmentMessage),
+ latitude: toOptionalNumber(draft.latitude,"Latitude"),
+ longitude: toOptionalNumber(draft.longitude,"Longitude"),
+ wasteKg: toRequiredNumber(draft.wasteKg,"Poids total"),
+ cigaretteButts: Math.trunc(toRequiredNumber(draft.cigaretteButts,"Mégots")),
+ volunteersCount: Math.trunc(toRequiredNumber(draft.volunteersCount,"Bénévoles")),
+ durationMinutes: Math.trunc(toRequiredNumber(draft.durationMinutes,"Durée")),
+ notes: toOptionalText(draft.notes),
+ placeType: toOptionalText(draft.placeType),
+ submissionMode: draft.submissionMode,
+ wasteBreakdown,
+ manualDrawing: parseManualDrawing(draft.manualDrawingJson),
+ };
+}
+
+function buildCleanPlaceEditPayload(
+ draft: CleanPlaceModerationEditDraft,
+): AdminCleanPlaceEditPayload {
+ return {
+ label: toRequiredText(draft.label,"Lieu"),
+ wasteType: toOptionalText(draft.wasteType),
+ latitude: toOptionalNumber(draft.latitude,"Latitude"),
+ longitude: toOptionalNumber(draft.longitude,"Longitude"),
+ notes: toOptionalText(draft.notes),
  };
 }
 
@@ -230,8 +335,9 @@ export function createAdminWorkflowActions(
  state.setErrorMessage(null);
  state.setModerationResult(null);
 
- const payload = buildModerationPayload(state, trimmedId);
+ let payload: ModerationPayload;
  try {
+ payload = buildModerationPayload(state, trimmedId);
  const result = await postAdminModeration(payload);
  state.setModerationState("success");
  state.setModerationResult(JSON.stringify(result, null, 2));
@@ -255,9 +361,12 @@ export function createAdminWorkflowActions(
  state.setErrorMessage(message);
  state.pushModerationJournal({
  at: new Date().toISOString(),
- entityType: payload.entityType,
- id: payload.id,
- targetStatus: payload.status,
+ entityType: state.moderationEntityType,
+ id: trimmedId,
+ targetStatus:
+ state.moderationEntityType ==="action"
+ ? state.actionStatus
+ : state.cleanPlaceStatus,
  outcome:"error",
  message,
  });

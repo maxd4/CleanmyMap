@@ -47,6 +47,16 @@ describe("actions map filters utils", () => {
     expect(filters.visibleCategories.green).toBe(true);
   });
 
+  it("normalizes legacy all or rejected status filters to approved", () => {
+    expect(
+      normalizeActionsMapFilters({ statusFilter: "all" }, 90).statusFilter,
+    ).toBe("approved");
+    expect(
+      normalizeActionsMapFilters({ statusFilter: "rejected" }, 90)
+        .statusFilter,
+    ).toBe("approved");
+  });
+
   it("reads defaults when storage is empty or invalid", () => {
     expect(readActionsMapFiltersFromStorage(buildStorage(), 30).days).toBe(30);
     expect(
@@ -62,7 +72,7 @@ describe("actions map filters utils", () => {
     const filters = normalizeActionsMapFilters(
       {
         days: 3650,
-        statusFilter: "all",
+        statusFilter: "pending",
         impactFilter: "critique",
         qualityMin: 70,
         visibleCategories: { violet: false },

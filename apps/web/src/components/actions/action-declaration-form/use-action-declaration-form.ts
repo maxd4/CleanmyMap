@@ -11,9 +11,15 @@ import {
   buildCreateActionPayload,
   createInitialFormState,
   isDrawingValid,
+  OTHER_VOLUNTEER_ASSOCIATION_VALUE,
   prepareCreateActionPayload,
 } from "../action-declaration/payload";
-import { loadDraft, getDraftSavedAt, clearDraft, ACTION_DECLARATION_DRAFT_DATE_KEY } from "../action-declaration/draft-storage";
+import {
+  clearDraft,
+  loadDraftSnapshot,
+  saveDraft,
+  type ActionDeclarationDraftSnapshot,
+} from "../action-declaration/draft-storage";
 import { summarizeActionDrawingValidation } from "../map/actions-map-geometry.utils";
 import { computeActionDataQuality } from "../action-declaration-form.quality";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
@@ -53,17 +59,20 @@ export function useActionDeclarationForm({
   )
     ? defaultActorName
     : (resolvedActorOptions[0] ?? userMetadata.userId);
+  const createCleanForm = () =>
+    createInitialFormState(resolvedDefaultActorName, initialRecordType);
+  const coerceRecordType = (draft: FormState): FormState =>
+    initialRecordType === "clean_place"
+      ? { ...draft, recordType: "clean_place" }
+      : draft;
 
-  const [form, setForm] = useState<FormState>(() =>
-    (() => {
-      const draft = loadDraft(
-        createInitialFormState(resolvedDefaultActorName, initialRecordType),
-      );
-      return initialRecordType === "clean_place"
-        ? { ...draft, recordType: "clean_place" }
-        : draft;
-    })(),
-  );
+  const [form, setForm] = useState<FormState>(() => createCleanForm());
+  const [pendingDraft, setPendingDraft] = useState<ActionDeclarationDraftSnapshot | null>(() => {
+    const snapshot = loadDraftSnapshot(createCleanForm());
+    return snapshot
+      ? { ...snapshot, form: coerceRecordType(snapshot.form) }
+      : null;
+  });
   const [manualDrawingEnabled] = useState<boolean>(true);
   const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(null);
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
@@ -80,10 +89,6 @@ export function useActionDeclarationForm({
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([1]));
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
-  const [showDraftBanner, setShowDraftBanner] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return Boolean(getDraftSavedAt());
-  });
   const hasTrackedStartRef = useRef<boolean>(false);
 
   const isCleanPlaceMode = form.recordType === "clean_place";
@@ -93,7 +98,9 @@ export function useActionDeclarationForm({
   const nextStep = () => {
     setHasAttemptedSubmit(true);
     if (currentStep === 1) {
-      if (!form.actionDate || !form.associationName) return;
+      const stepOneIssues = getStepOneValidationIssues(form);
+      setValidationIssues(stepOneIssues);
+      if (stepOneIssues.length > 0) return;
     }
     if (currentStep === 2) {
       const hasWaste = parseFloat(form.wasteKg) > 0 || parseFloat(form.wasteMegotsKg) > 0;
@@ -103,6 +110,7 @@ export function useActionDeclarationForm({
     setVisitedSteps((prev) => new Set([...prev, next]));
     setCurrentStep(next);
     setHasAttemptedSubmit(false);
+    setValidationIssues([]);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -111,22 +119,25 @@ export function useActionDeclarationForm({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  useEffect(() => {
-    setCurrentStep((prev) => Math.min(prev, totalSteps));
+  function handleResumeDraft() {
+    if (!pendingDraft) return;
+    setForm(coerceRecordType(pendingDraft.form));
+    setDraftSavedAt(pendingDraft.savedAt);
+    setPendingDraft(null);
+    setCurrentStep(1);
+    setVisitedSteps(new Set([1]));
     setHasAttemptedSubmit(false);
-  }, [totalSteps]);
+  }
 
-  useEffect(() => {
-    if (submissionState !== "success") {
-      localStorage.setItem("cmm_action_draft", JSON.stringify(form));
-      const now = new Date().toISOString();
-      localStorage.setItem(ACTION_DECLARATION_DRAFT_DATE_KEY, now);
-      setDraftSavedAt(now);
-    } else {
-      clearDraft();
-      setDraftSavedAt(null);
-    }
-  }, [form, submissionState]);
+  function handleIgnoreDraft() {
+    clearDraft();
+    setPendingDraft(null);
+    setDraftSavedAt(null);
+    setForm(createCleanForm());
+    setCurrentStep(1);
+    setVisitedSteps(new Set([1]));
+    setHasAttemptedSubmit(false);
+  }
 
   const drawingIsValid = isDrawingValid(manualDrawing);
   const isEntrepriseMode = form.associationName === ENTREPRISE_ASSOCIATION_OPTION;
@@ -246,12 +257,21 @@ export function useActionDeclarationForm({
       hasTrackedStartRef.current = true;
       trackFunnel("start_form", declarationMode);
     }
-    setForm((prev) => ({ ...prev, [key]: value }));
+    const nextForm = { ...form, [key]: value };
+    if (!pendingDraft && submissionState !== "success") {
+      setDraftSavedAt(saveDraft(nextForm));
+    }
+    if (key === "recordType") {
+      const nextTotalSteps = value === "clean_place" ? 2 : 4;
+      setCurrentStep((prev) => Math.min(prev, nextTotalSteps));
+      setHasAttemptedSubmit(false);
+    }
+    setForm(nextForm);
   }
 
   function normalizeFormBeforeSubmit(f: FormState): FormState {
     const normalized = { ...f };
-    if (normalized.associationName === "__autre_benevole__") {
+    if (normalized.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE) {
       normalized.associationName = "Action spontanée";
     }
     if (!normalized.locationLabel.trim() && normalized.departureLocationLabel.trim()) {
@@ -262,6 +282,16 @@ export function useActionDeclarationForm({
 
   async function handleConfirmSubmit() {
     if (submissionState === "pending") return;
+    const stepOneIssues = getStepOneValidationIssues(form);
+    if (stepOneIssues.length > 0) {
+      setValidationIssues(stepOneIssues);
+      setHasAttemptedSubmit(true);
+      setErrorMessage(stepOneIssues[0]?.message ?? null);
+      setSubmissionState("error");
+      setShowConfirmation(false);
+      setCurrentStep(1);
+      return;
+    }
 
     if (declarationMode === "complete" && !hasValidDrawing && !isCleanPlaceMode) {
       setValidationIssues([
@@ -304,7 +334,7 @@ export function useActionDeclarationForm({
       setShowConfirmation(false);
       clearDraft();
       setDraftSavedAt(null);
-      setShowDraftBanner(false);
+      setPendingDraft(null);
     } catch (error: unknown) {
       setSubmissionState("error");
       setErrorMessage(
@@ -336,8 +366,8 @@ export function useActionDeclarationForm({
     setShowConfirmation,
     visitedSteps,
     draftSavedAt,
-    showDraftBanner,
-    setShowDraftBanner,
+    pendingDraftSavedAt: pendingDraft?.savedAt ?? null,
+    showDraftBanner: Boolean(pendingDraft),
     currentStep,
     setCurrentStep,
     isCleanPlaceMode,
@@ -357,6 +387,39 @@ export function useActionDeclarationForm({
     handlePhotoUpload,
     clearPhotos,
     updateField,
+    handleResumeDraft,
+    handleIgnoreDraft,
     handleConfirmSubmit,
   };
+}
+
+function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
+  const issues: ValidationIssue[] = [];
+
+  if (!form.associationName.trim()) {
+    issues.push({
+      field: "associationName",
+      message: "Sélectionnez une structure ou “Autre bénévole”.",
+    });
+  }
+
+  if (
+    form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE &&
+    !form.actorName.trim()
+  ) {
+    issues.push({
+      field: "associationName",
+      message:
+        "Renseignez le nom ou pseudo du bénévole avant de continuer.",
+    });
+  }
+
+  if (!form.actionDate.trim()) {
+    issues.push({
+      field: "actionDate",
+      message: "Indiquez la date de l’action avant de continuer.",
+    });
+  }
+
+  return issues;
 }

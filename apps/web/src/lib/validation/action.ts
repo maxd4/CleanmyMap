@@ -31,6 +31,7 @@ const manualDrawingSchema = z
 
 const wasteBreakdownSchema = z.object({
   megotsKg: z.number().min(0).max(100000).optional(),
+  megotsCondition: z.enum(["propre", "humide", "mouille"]).optional(),
   plastiqueKg: z.number().min(0).max(100000).optional(),
   verreKg: z.number().min(0).max(100000).optional(),
   metalKg: z.number().min(0).max(100000).optional(),

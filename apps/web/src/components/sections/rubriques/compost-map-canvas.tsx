@@ -10,6 +10,8 @@ import {
   TileLayer,
   useMap,
 } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+
 import { Leaf, MapPin, Sparkles } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { RubriqueCard } from "@/components/ui/rubrique-card";

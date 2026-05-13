@@ -52,7 +52,7 @@ function GpsButton({
         disabled={isLocating}
         aria-label="Utiliser ma géolocalisation"
         className={cn(
-          "flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all",
+          "flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30",
           isSuccess
             ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
             : isError
@@ -305,7 +305,7 @@ export function ActionStepLocation({
               type="button"
               onClick={onResetManualDrawing}
               aria-label="Effacer le tracé manuel"
-              className="flex items-center gap-1.5 rounded-lg border border-rose-100 bg-white px-3 py-1.5 text-xs font-medium text-rose-500 hover:bg-rose-50 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg border border-rose-100 bg-white px-3 py-1.5 text-xs font-medium text-rose-500 transition-colors hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"
             >
               <X size={13} />
               Effacer

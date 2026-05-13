@@ -46,8 +46,8 @@ export function ActionDeclarationFormConfirmation({
           </div>
           <p className="text-sm text-slate-600 pl-6">
             {isCleanPlaceMode
-              ? "Vérifiez les informations avant l'envoi du signalement."
-              : "Vérifiez les informations avant l'envoi"}
+              ? "Cette fenêtre apparaît avant l'envoi. Modifier revient au formulaire, confirmer transmet le signalement."
+              : "Cette fenêtre apparaît avant l'envoi. Modifier revient au formulaire, confirmer transmet la déclaration."}
           </p>
         </div>
 
@@ -248,7 +248,7 @@ export function ActionDeclarationFormConfirmation({
             disabled={isSubmitting}
             className="flex-1 rounded-2xl border-2 border-slate-300 bg-white px-6 py-4 text-base font-bold text-slate-700 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-400 hover:shadow-lg active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Modifier
+            Modifier avant envoi
           </button>
           <button
             type="button"
@@ -256,7 +256,7 @@ export function ActionDeclarationFormConfirmation({
             disabled={isSubmitting}
             className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-4 text-base font-bold text-white shadow-[0_8px_32px_-6px_rgba(6,182,212,0.5)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-8px_rgba(6,182,212,0.6)] hover:from-emerald-400 hover:to-cyan-400 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? "Envoi en cours..." : "Confirmer l'envoi"}
+            {isSubmitting ? "Envoi en cours..." : "Confirmer et envoyer"}
           </button>
         </div>
       </div>

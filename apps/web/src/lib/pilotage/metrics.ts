@@ -3,7 +3,7 @@ import {
   type ActionDataContract,
 } from "../actions/data-contract";
 import { evaluateActionQuality } from "../actions/quality";
-import { PILOTAGE_FORMULA_VERSION, PILOTAGE_THRESHOLDS } from "./constants";
+import { DIGITAL_IMPACT_CONSTANTS, PILOTAGE_FORMULA_VERSION, PILOTAGE_THRESHOLDS } from "./constants";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -15,6 +15,8 @@ export type PilotageWindowMetrics = {
   coverageRate: number;
   moderationDelayDays: number;
   pendingCount: number;
+  iurIndex: number;
+  anomaliesCount: number;
   reliability: {
     level: "elevee" | "moyenne" | "faible";
     score: number;
@@ -49,6 +51,8 @@ export type PilotageComparisonResult = {
     qualityScore: PilotageMetricComparison;
     coverageRate: PilotageMetricComparison;
     moderationDelayDays: PilotageMetricComparison;
+    iurIndex: PilotageMetricComparison;
+    anomaliesCount: PilotageMetricComparison;
   };
 };
 
@@ -147,6 +151,7 @@ function isGeolocated(contract: ActionDataContract): boolean {
 function computeWindowMetrics(
   records: ActionDataContract[],
   windowEndMs: number,
+  periodDays: number,
 ): PilotageWindowMetrics {
   const approved = records.filter((record) => record.status === "approved");
   const pending = records.filter((record) => record.status === "pending");
@@ -204,6 +209,8 @@ function computeWindowMetrics(
     coverageRate: round1(coverageRate),
     moderationDelayDays: round1(median(pendingAges)),
     pendingCount: pending.length,
+    iurIndex: round1(impactVolumeKg / ((DIGITAL_IMPACT_CONSTANTS.ANNUAL_COST_KG_CO2E / DIGITAL_IMPACT_CONSTANTS.DAYS_PER_YEAR) * periodDays)),
+    anomaliesCount: approved.filter(a => (Number(a.metadata.wasteKg) > 500 && !a.metadata.traceNote) || !a.dates.observedAt).length,
     reliability: buildReliability({
       approvedActions,
       completeness,
@@ -277,8 +284,8 @@ export function computePilotageComparison(
     );
   });
 
-  const current = computeWindowMetrics(currentRecords, nowMs);
-  const previous = computeWindowMetrics(previousRecords, currentFloorMs);
+  const current = computeWindowMetrics(currentRecords, nowMs, periodDays);
+  const previous = computeWindowMetrics(previousRecords, currentFloorMs, periodDays);
 
   return {
     formulaVersion: PILOTAGE_FORMULA_VERSION,
@@ -316,6 +323,16 @@ export function computePilotageComparison(
         current.moderationDelayDays,
         previous.moderationDelayDays,
         true,
+      ),
+      iurIndex: compareMetric(
+        current.iurIndex,
+        previous.iurIndex,
+        false,
+      ),
+      anomaliesCount: compareMetric(
+        current.anomaliesCount,
+        previous.anomaliesCount,
+        true, // Better when lower
       ),
     },
   };

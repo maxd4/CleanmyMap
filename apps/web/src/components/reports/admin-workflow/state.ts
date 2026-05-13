@@ -9,7 +9,9 @@ import type {
  ModerationEntityType,
 } from"@/lib/admin/moderation-client";
 import type {
+ ActionModerationEditDraft,
  AsyncState,
+ CleanPlaceModerationEditDraft,
  ImportDryRunSummary,
  ModerationJournalEntry,
 } from"./types";
@@ -82,6 +84,10 @@ export function useAdminWorkflowState() {
  useState<boolean>(false);
  const [moderationConfirmationText, setModerationConfirmationText] =
  useState<string>("");
+ const [actionEditDraft, setActionEditDraft] =
+ useState<ActionModerationEditDraft | null>(null);
+ const [cleanPlaceEditDraft, setCleanPlaceEditDraft] =
+ useState<CleanPlaceModerationEditDraft | null>(null);
 
  const canConfirmImport = useMemo(
  () =>
@@ -164,6 +170,10 @@ export function useAdminWorkflowState() {
  setModerationConfirmed,
  moderationConfirmationText,
  setModerationConfirmationText,
+ actionEditDraft,
+ setActionEditDraft,
+ cleanPlaceEditDraft,
+ setCleanPlaceEditDraft,
  canConfirmImport,
  clearImportConfirmationState,
  resetModerationConfirmationState,

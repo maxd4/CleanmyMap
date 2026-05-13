@@ -22,12 +22,30 @@ export type ServiceStatusInfo = {
   label: string;
   description: string;
   category: "critical" | "optional" | "external";
+  severity?: "ok" | "warning" | "critical";
+  statusMessage?: string;
 };
 
 export type ServicesPayload = {
-  status: "ok";
+  status: "ok" | "degraded";
   services: Record<string, ServiceStatusInfo>;
   missing: string[];
+  summary?: {
+    globalState: "ok" | "degraded";
+    criticalReadyCount: number;
+    criticalAlertCount: number;
+    optionalAlertCount: number;
+    externalTrackedCount: number;
+    generatedAt: string;
+  };
+  timeline?: Array<{
+    id: string;
+    service: string;
+    severity: "warning" | "critical";
+    title: string;
+    detail: string;
+    happenedAt: string;
+  }>;
   timestamp: string;
 };
 

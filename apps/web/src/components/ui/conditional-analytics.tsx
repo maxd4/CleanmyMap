@@ -3,10 +3,10 @@
 import { useSyncExternalStore } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { hasAnalyticsConsent } from "@/lib/analytics-consent";
 import {
   COOKIE_CONSENT_CHANGE_EVENT,
 } from "@/lib/storage/ui-state-storage";
-import { hasAnalyticsConsent } from "./cookie-consent-banner";
 
 function subscribe(onStoreChange: () => void): () => void {
   if (typeof window === "undefined") {

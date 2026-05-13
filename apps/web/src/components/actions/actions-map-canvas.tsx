@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { LayerGroup, LayersControl, MapContainer, Rectangle, TileLayer } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { MapControls } from "./map/map-controls";
 import { SignalementMarkers, ShapeLayers, InfrastructureMarkers } from "./map/map-layers";

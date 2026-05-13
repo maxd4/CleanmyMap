@@ -29,8 +29,6 @@ import { getProfileLabel, toProfile } from"@/lib/profiles";
 import { getServerDisplayModePreference, getServerLocale } from"@/lib/server-preferences";
 import { metadata as appMetadata } from"@/lib/metadata";
 import type { CSSProperties } from "react";
-import"leaflet/dist/leaflet.css";
-import"leaflet-draw/dist/leaflet.draw.css";
 import"./globals.css";
 
 /* Font configuration - Optimized loading via next/font */

@@ -2,23 +2,16 @@
 
 import { memo } from "react";
 import { motion } from "framer-motion";
-import type { SpotType, SpotFormStatus } from "./trash-spotter-types";
 import { 
   Target, 
-  Clock, 
+  Clock,
   CheckCircle2, 
   Globe, 
   MapPin, 
   Navigation, 
   Plus, 
   Map as MapIcon, 
-  Info, 
-  AlertCircle, 
-  Sparkles,
   ChevronRight,
-  MessageSquare,
-  BarChart3,
-  Search
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,26 +20,23 @@ import { cn } from "@/lib/utils";
 export const SpotterKpiGrid = memo(function SpotterKpiGrid({
   fr,
   total,
-  pending,
   approved,
   geoCoverage,
 }: {
   fr: boolean;
   total: number;
-  pending: number;
   approved: number;
   geoCoverage: string;
 }) {
   const kpis = [
-    { label: fr ? "Signalements" : "Reports", value: total, icon: Target, tone: "blue" },
-    { label: fr ? "En attente" : "Pending", value: pending, icon: Clock, tone: "amber" },
+    { label: fr ? "Signalements validés" : "Approved reports", value: total, icon: Target, tone: "blue" },
     { label: fr ? "Validés" : "Approved", value: approved, icon: CheckCircle2, tone: "emerald" },
     { label: fr ? "Couverture" : "Coverage", value: geoCoverage, icon: Globe, tone: "purple" },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-      {kpis.map((kpi, i) => (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+      {kpis.map((kpi) => (
         <motion.div
           key={kpi.label}
           whileHover={{ y: -5, scale: 1.02 }}

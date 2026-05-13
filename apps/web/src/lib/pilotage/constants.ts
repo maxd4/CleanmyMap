@@ -24,3 +24,14 @@ export const PRIORITIZATION_RULESET = {
     coverage: 0.15,
   },
 } as const;
+
+/**
+ * Coûts numériques issus de l'audit d'impact (impact_IA.md)
+ * Utilisés pour le calcul de l'IUR (Indice d'Utilité Réelle).
+ */
+export const DIGITAL_IMPACT_CONSTANTS = {
+  // Estimation annuelle du coût numérique global (Dev + Infrastructure + Usage)
+  ANNUAL_COST_KG_CO2E: 345,
+  // Moyenne de jours par mois pour le prorata
+  DAYS_PER_YEAR: 365.25,
+} as const;

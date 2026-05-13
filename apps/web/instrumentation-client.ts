@@ -1,11 +1,13 @@
 import * as Sentry from "@sentry/nextjs";
-import { isSentryEnabled } from "@/lib/observability/sentry";
+import { getSentryDsn, isSentryEnabled } from "@/lib/observability/sentry";
 
-if (isSentryEnabled()) {
+const dsn = getSentryDsn();
+
+if (isSentryEnabled() && dsn) {
   Sentry.init({
-    dsn: process.env["NEXT_PUBLIC_SENTRY_DSN"],
+    dsn,
     tracesSampleRate: 0.1,
-    enabled: Boolean(process.env["NEXT_PUBLIC_SENTRY_DSN"]),
+    enabled: true,
   });
 }
 

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { ActionImpactLevel, ActionStatus } from "@/lib/actions/types";
+import type { ActionImpactLevel } from "@/lib/actions/types";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import {
   buildDefaultActionsMapFilters,
   readActionsMapFiltersFromStorage,
   writeActionsMapFiltersToStorage,
   type ActionsMapFilters,
+  type ActionsMapStatusFilter,
 } from "./actions-map-filters.utils";
 
 export function useActionsMapFilters(initialDays: number) {
@@ -28,7 +29,7 @@ export function useActionsMapFilters(initialDays: number) {
     filters,
     setDays: (days: number) =>
       setFilters((current) => ({ ...current, days })),
-    setStatusFilter: (statusFilter: ActionStatus | "all") =>
+    setStatusFilter: (statusFilter: ActionsMapStatusFilter) =>
       setFilters((current) => ({ ...current, statusFilter })),
     setImpactFilter: (impactFilter: ActionImpactLevel | "all") =>
       setFilters((current) => ({ ...current, impactFilter })),

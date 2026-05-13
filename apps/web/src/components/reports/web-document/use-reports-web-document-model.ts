@@ -24,7 +24,7 @@ export function useReportsWebDocumentModel() {
  ["report-web-actions-all"],
  () =>
  fetchActions({
- status:"all",
+ status:"approved",
  limit: 200,
  days: 365,
  types:"all",
@@ -46,7 +46,7 @@ export function useReportsWebDocumentModel() {
  ["report-web-map-all"],
  () =>
  fetchMapActions({
- status:"all",
+ status:"approved",
  limit: 300,
  days: 365,
  types:"all",

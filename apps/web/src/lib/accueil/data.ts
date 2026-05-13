@@ -63,7 +63,7 @@ function getAccueilVisibleContracts(
   floorDate: string,
 ) {
   return contracts.filter((contract) => {
-    if (contract.status === "rejected") {
+    if (contract.status !== "approved") {
       return false;
     }
     if (isLikelyTestContract(contract)) {

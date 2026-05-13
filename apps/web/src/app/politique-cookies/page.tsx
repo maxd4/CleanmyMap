@@ -75,9 +75,12 @@ export default function PolitiqueCookiesPage() {
             traceurs non essentiels. Le choix est mémorisé pendant 1 an.
           </p>
           <p className="text-sm leading-6 text-slate-600">
-            Important : la clé <code className="rounded bg-slate-100 px-1 py-0.5">cleanmymap_cookie_consent</code>{" "}
-            est enregistrée dans <strong>localStorage</strong>. Ce n&apos;est pas un
-            cookie au sens strict, malgré son nom historique.
+            La préférence est enregistrée dans <strong>localStorage</strong>{" "}
+            et synchronisée avec un cookie technique{" "}
+            <code className="rounded bg-slate-100 px-1 py-0.5">
+              cleanmymap_analytics_consent
+            </code>{" "}
+            pour appliquer le choix côté navigateur et côté serveur.
           </p>
         </section>
 

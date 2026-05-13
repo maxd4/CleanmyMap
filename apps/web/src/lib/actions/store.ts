@@ -22,7 +22,7 @@ import {
 /** @deprecated Use ActionRow from @/types/database */
 export type StoredAction = ActionRow;
 
-function buildPersistedNotes(payload: CreateActionPayload): string | null {
+export function buildPersistedNotes(payload: CreateActionPayload): string | null {
   const baseWithMetadata = appendActionMetadataToNotes(payload.notes, {
     submissionMode: payload.submissionMode,
     wasteBreakdown: payload.wasteBreakdown,

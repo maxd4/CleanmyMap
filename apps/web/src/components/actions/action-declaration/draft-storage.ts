@@ -3,6 +3,11 @@ import type { FormState } from "./types";
 export const ACTION_DECLARATION_DRAFT_KEY = "cmm_action_draft";
 export const ACTION_DECLARATION_DRAFT_DATE_KEY = "cmm_action_draft_date";
 
+export type ActionDeclarationDraftSnapshot = {
+  form: FormState;
+  savedAt: string | null;
+};
+
 const FORM_STATE_KEYS = [
   "actorName",
   "associationName",
@@ -51,20 +56,27 @@ export function clearDraft(): void {
   window.localStorage.removeItem(ACTION_DECLARATION_DRAFT_DATE_KEY);
 }
 
-export function loadDraft(fallback: FormState): FormState {
+export function saveDraft(form: FormState, savedAt = new Date().toISOString()): string | null {
+  if (typeof window === "undefined") return null;
+  window.localStorage.setItem(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify(form));
+  window.localStorage.setItem(ACTION_DECLARATION_DRAFT_DATE_KEY, savedAt);
+  return savedAt;
+}
+
+export function loadDraftSnapshot(fallback: FormState): ActionDeclarationDraftSnapshot | null {
   if (typeof window === "undefined") {
-    return fallback;
+    return null;
   }
 
   try {
     const saved = window.localStorage.getItem(ACTION_DECLARATION_DRAFT_KEY);
     if (!saved) {
-      return fallback;
+      return null;
     }
 
     const parsed: unknown = JSON.parse(saved);
     if (!isRecord(parsed)) {
-      return fallback;
+      return null;
     }
 
     const next = { ...fallback } as Record<keyof FormState, string>;
@@ -76,8 +88,15 @@ export function loadDraft(fallback: FormState): FormState {
       }
     }
 
-    return next as FormState;
+    return {
+      form: next as FormState,
+      savedAt: getDraftSavedAt(),
+    };
   } catch {
-    return fallback;
+    return null;
   }
+}
+
+export function loadDraft(fallback: FormState): FormState {
+  return loadDraftSnapshot(fallback)?.form ?? fallback;
 }
