@@ -18,6 +18,9 @@
     "check:lockfile-policy": "node scripts/check-lockfile-policy.mjs",
     "quality:top-heavy": "node scripts/check-top-heavy-files.mjs --enforce",
     "analyze:heavy-files": "node scripts/analyze-heavy-files.mjs",
+    "pre-release:check": "node scripts/pre-release-check.mjs --exit-on-error",
+    "metrics:cicd": "node scripts/cicd-metrics-report.mjs",
+    "metrics:jsonl": "node scripts/summarize-jsonl.mjs",
     "modularize:report": "node scripts/generate-modularization-report.mjs",
     "test": "npm run test -w apps/web",
     "test:security": "npm run test:security -w apps/web",
@@ -54,13 +57,20 @@
   },
   "overrides": {
     "dompurify": "3.4.0",
+    "fast-uri": "3.1.2",
+    "ajv": {
+      "fast-uri": "3.1.2"
+    },
+    "next@16.2.6": {
+      "postcss": "8.5.10"
+    },
+    "postcss": "8.5.10",
     "protobufjs": "7.5.5",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "uuid": "^11.0.0",
-    "postcss": "^8.5.0"
+    "uuid": "^11.0.0"
   },
   "dependencies": {
-    "posthog-js": "^1.372.9",
-    "posthog-node": "^5.33.3"
+    "posthog-js": "^1.373.4",
+    "posthog-node": "^5.33.7"
   }
 }

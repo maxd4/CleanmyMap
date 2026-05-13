@@ -8,6 +8,8 @@ import {
   Popup,
   LayersControl,
 } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+
 import L from "leaflet";
 import { cn } from "@/lib/utils";
 import { getEntryTrustState } from "./annuaire-helpers";

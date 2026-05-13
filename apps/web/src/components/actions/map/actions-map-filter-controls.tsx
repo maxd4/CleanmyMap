@@ -1,15 +1,16 @@
 "use client";
 
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
-import type { ActionImpactLevel, ActionStatus } from "@/lib/actions/types";
+import type { ActionImpactLevel } from "@/lib/actions/types";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
-import type { ActionsMapFilters } from "./actions-map-filters.utils";
+import type {
+  ActionsMapFilters,
+  ActionsMapStatusFilter,
+} from "./actions-map-filters.utils";
 
-const STATUS_OPTIONS: Array<{ value: ActionStatus | "all"; label: string }> = [
-  { value: "approved", label: "Validées" },
-  { value: "pending", label: "En attente de validation" },
-  { value: "rejected", label: "Rejetées" },
-  { value: "all", label: "Tous statuts" },
+const STATUS_OPTIONS: Array<{ value: ActionsMapStatusFilter; label: string }> = [
+  { value: "pending", label: "En cours de validation" },
+  { value: "approved", label: "Actions validées" },
 ];
 
 const IMPACT_OPTIONS: Array<{
@@ -44,7 +45,7 @@ type ActionsMapFilterControlsProps = {
   filters: ActionsMapFilters;
   initialDays: number;
   onDaysChange: (days: number) => void;
-  onStatusChange: (status: ActionStatus | "all") => void;
+  onStatusChange: (status: ActionsMapStatusFilter) => void;
   onImpactChange: (impact: ActionImpactLevel | "all") => void;
   onQualityMinChange: (qualityMin: number) => void;
   onCategoryToggle: (category: MarkerCategory) => void;
@@ -85,7 +86,7 @@ export function ActionsMapFilterControls({
         <select
           value={filters.statusFilter}
           onChange={(event) =>
-            onStatusChange(event.target.value as ActionStatus | "all")
+            onStatusChange(event.target.value as ActionsMapStatusFilter)
           }
           className="h-11 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-3 text-sm font-bold text-white shadow-[0_10px_28px_-18px_rgba(56,189,248,0.28)] outline-none transition focus:border-sky-300/42 focus:ring-4 focus:ring-sky-400/12"
         >

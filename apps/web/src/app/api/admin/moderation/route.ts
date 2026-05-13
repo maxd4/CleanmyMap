@@ -2,15 +2,17 @@ import { z } from"zod";
 import { requireAdminAccess } from"@/lib/authz";
 import { getSupabaseAdminClient, getSupabaseServerClient } from"@/lib/supabase/server";
 import {
+ actionEditsSchema,
+ buildAdminActionUpdates,
+ buildAdminCleanPlaceUpdates,
+ cleanPlaceEditsSchema,
+} from"@/lib/admin/action-moderation-edits";
+import {
  copyValidatedActionToLocalStore,
  copyValidatedSpotToLocalStore,
 } from"@/lib/data/local-sync";
 import { appendAdminOperationAudit } from"@/lib/admin/operation-audit";
-import {
-  trackActionValidationBonus,
-  trackSpotValidationBonus,
-} from"@/lib/gamification/progression";
-import { emitActionValidated, emitActionRejected, emitSpotValidated } from"@/lib/events/emit";
+import { emitActionValidated, emitSpotValidated } from"@/lib/events/emit";
 import {
  adminErrorResponse,
  adminSuccessResponse,
@@ -26,6 +28,7 @@ const actionPayloadSchema = z.object({
  id: z.string().trim().min(1),
  status: z.enum(["pending","approved","rejected"]),
  confirmPhrase: z.string().trim().max(120).optional(),
+ edits: actionEditsSchema,
 });
 
 const cleanPlacePayloadSchema = z.object({
@@ -33,6 +36,7 @@ const cleanPlacePayloadSchema = z.object({
  id: z.string().trim().min(1),
  status: z.enum(["new","validated","cleaned"]),
  confirmPhrase: z.string().trim().max(120).optional(),
+ edits: cleanPlaceEditsSchema,
 });
 
 const moderationPayloadSchema = z.union([
@@ -57,10 +61,14 @@ async function updateActionStatus(
  supabase: ReturnType<typeof getSupabaseServerClient>,
  id: string,
  status:"pending" |"approved" |"rejected",
+ edits?: z.infer<typeof actionEditsSchema>,
 ): Promise<{ source:"actions" |"submissions"; found: boolean }> {
+ const updates = edits
+ ? await buildAdminActionUpdates(supabase, id, status, edits)
+ : { status };
  const primary = await supabase
  .from("actions")
- .update({ status })
+ .update(updates)
  .eq("id", id)
  .select("id")
  .maybeSingle();
@@ -88,10 +96,11 @@ async function updateSpotStatus(
  supabase: ReturnType<typeof getSupabaseServerClient>,
  id: string,
  status:"new" |"validated" |"cleaned",
+ edits?: z.infer<typeof cleanPlaceEditsSchema>,
 ): Promise<boolean> {
  const updated = await supabase
  .from("spots")
- .update({ status })
+ .update(buildAdminCleanPlaceUpdates(status, edits))
  .eq("id", id)
  .select("id")
  .maybeSingle();
@@ -178,6 +187,7 @@ export async function POST(request: Request) {
  supabase,
  parsed.data.id,
  parsed.data.status,
+ parsed.data.edits,
  );
  if (!statusUpdate.found) {
  await appendAdminOperationAudit({
@@ -233,6 +243,7 @@ let copied = false;
  targetStatus: parsed.data.status,
  sourceTable: statusUpdate.source,
  copiedToLocalValidatedStore: copied,
+ editedFields: parsed.data.edits ? Object.keys(parsed.data.edits) : [],
  },
  });
 
@@ -252,6 +263,7 @@ let copied = false;
  supabase,
  parsed.data.id,
  parsed.data.status,
+ parsed.data.edits,
  );
  if (!updated) {
  await appendAdminOperationAudit({
@@ -309,6 +321,7 @@ let copied = false;
  targetStatus: parsed.data.status,
  sourceTable:"spots",
  copiedToLocalValidatedStore: copied,
+ editedFields: parsed.data.edits ? Object.keys(parsed.data.edits) : [],
  },
  });
 

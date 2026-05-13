@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import L, { type LeafletEvent } from "leaflet";
 import"leaflet-draw";
 import { MapContainer, TileLayer, useMap } from"react-leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet-draw/dist/leaflet.draw.css";
+
 import type { ActionDrawing } from"@/lib/actions/types";
 
 import {
@@ -147,6 +150,9 @@ function DrawingController({
  const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
  const button = L.DomUtil.create('a', 'cmm-undo-btn', container);
  button.textContent ="↩"; // CodeQL-safe: static text, not HTML
+ button.href ="#";
+ button.setAttribute("role", "button");
+ button.setAttribute("aria-label", "Effacer le tracé dessiné");
  button.title ="Effacer le tracé";
  button.style.cursor ="pointer";
  button.style.fontSize ="16px";
@@ -170,6 +176,11 @@ function DrawingController({
  if (undoButton) {
  map.addControl(undoButton);
  }
+
+ applyMapControlAccessibilityLabels(map.getContainer());
+ const labelTimer = window.setTimeout(() => {
+ applyMapControlAccessibilityLabels(map.getContainer());
+ }, 0);
 
  async function normalizeAndEmit(layer: DrawingLayer) {
  const rawDrawing = extractDrawing(layer);
@@ -246,6 +257,7 @@ function DrawingController({
  if (undoButton) {
  map.removeControl(undoButton);
  }
+ window.clearTimeout(labelTimer);
  map.removeLayer(layerGroup);
  layerGroupRef.current = null;
  };
@@ -279,6 +291,39 @@ function DrawingController({
  }, [value, drawColor]);
 
  return null;
+}
+
+function MapControlAccessibilityLabels() {
+ const map = useMap();
+
+ useEffect(() => {
+  applyMapControlAccessibilityLabels(map.getContainer());
+ }, [map]);
+
+ return null;
+}
+
+function applyMapControlAccessibilityLabels(container: HTMLElement): void {
+ const labels: Array<[string, string]> = [
+  [".leaflet-control-zoom-in", "Zoomer sur la carte"],
+  [".leaflet-control-zoom-out", "Dézoomer sur la carte"],
+  [".leaflet-draw-draw-polyline", "Dessiner un tracé"],
+  [".leaflet-draw-draw-polygon", "Dessiner une zone"],
+  [".leaflet-draw-edit-edit", "Modifier le tracé dessiné"],
+  [".leaflet-draw-edit-remove", "Effacer un tracé dessiné"],
+  [".leaflet-draw-actions a", "Action de dessin sur la carte"],
+ ];
+
+ for (const [selector, label] of labels) {
+  container.querySelectorAll<HTMLElement>(selector).forEach((element) => {
+   if (!element.getAttribute("aria-label")) {
+    element.setAttribute("aria-label", label);
+   }
+   if (element.tagName === "A" && !element.getAttribute("role")) {
+    element.setAttribute("role", "button");
+   }
+  });
+ }
 }
 
 type ActionDrawingMapProps = {
@@ -340,6 +385,7 @@ export function ActionDrawingMap({
  className="bg-white"
  style={mapStyle}
  >
+ <MapControlAccessibilityLabels />
  {/* Couche de base avec noms de rues */}
  <TileLayer
  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

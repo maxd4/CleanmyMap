@@ -195,6 +195,55 @@ function coveragePriority(
   };
 }
 
+function sobrietyPriority(
+  comparison: PilotageComparisonResult,
+): OperationalPriority {
+  const iur = comparison.current.iurIndex;
+  // Si l'IUR est inférieur à 1, l'impact numérique dépasse l'impact terrain (DANGER)
+  const risk = Math.max(0, (2.0 - iur) * 20); 
+  const score = round1(Math.min(100, risk));
+
+  return {
+    id: "sobriety",
+    title: "Optimiser le rendement écologique (IUR)",
+    severity: severityFromScore(score),
+    score,
+    reason: "L'indice d'utilité réelle est trop bas. L'infrastructure consomme trop par rapport à l'impact terrain généré.",
+    impactEstimate: "Meilleure justification du projet devant les instances écologiques et baisse de l'empreinte carbone.",
+    suggestedOwner: "Lead Architect / Sobriety Officer",
+    recommendedAction: {
+      href: "/documentation/ai-guides/impact_IA.md",
+      label: "Consulter l'audit",
+    },
+    evidence: [`IUR Actuel: ${iur.toFixed(2)}`, "Seuil cible: > 2.00"],
+    engineVersion: PRIORITIZATION_RULESET.version,
+  };
+}
+
+function dataIntegrityPriority(
+  comparison: PilotageComparisonResult,
+): OperationalPriority {
+  const anomalies = comparison.current.anomaliesCount;
+  const risk = Math.min(100, anomalies * 15);
+  const score = round1(risk);
+
+  return {
+    id: "data-integrity",
+    title: "Nettoyage du registre de données",
+    severity: severityFromScore(score),
+    score,
+    reason: `Détection de ${anomalies} anomalies de saisie (Impact suspect ou date manquante).`,
+    impactEstimate: "Fiabilisation des rapports institutionnels et de l'IUR global.",
+    suggestedOwner: "Data Steward",
+    recommendedAction: {
+      href: "/admin",
+      label: "Vérifier le registre",
+    },
+    evidence: [`Anomalies détectées: ${anomalies}`, "Seuil tolérance: 2"],
+    engineVersion: PRIORITIZATION_RULESET.version,
+  };
+}
+
 export function buildOperationalPriorities(params: {
   comparison: PilotageComparisonResult;
   zones: ZoneComparisonRow[];
@@ -204,6 +253,8 @@ export function buildOperationalPriorities(params: {
     qualityPriority(params.comparison),
     territorialPriority(params.zones),
     coveragePriority(params.comparison),
+    sobrietyPriority(params.comparison),
+    dataIntegrityPriority(params.comparison),
   ];
 
   return all
@@ -214,7 +265,11 @@ export function buildOperationalPriorities(params: {
           ? item.score * PRIORITIZATION_RULESET.weights.quality
           : item.id.startsWith("territorial")
             ? item.score * PRIORITIZATION_RULESET.weights.territorial
-            : item.score * PRIORITIZATION_RULESET.weights.coverage;
+            : item.id.startsWith("sobriety")
+              ? item.score * 0.30 
+              : item.id.startsWith("data-integrity")
+                ? item.score * 0.25
+                : item.score * PRIORITIZATION_RULESET.weights.coverage;
       return {
         ...item,
         score: round1(weightedScore * 3),

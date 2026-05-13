@@ -34,6 +34,8 @@ export function SystemStatusPanel() {
  const hasError = Boolean(uptime.error || services.error);
 
  const uptimeSummary = uptime.data ? summarizeUptime(uptime.data) : null;
+ const serviceSummary = services.data?.summary ?? null;
+ const serviceTimeline = services.data?.timeline ?? [];
 
  return (
  <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -137,13 +139,102 @@ export function SystemStatusPanel() {
  </article>
  </div>
 
+ <div className="grid gap-3 md:grid-cols-4">
+ <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+ <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
+ Services critiques OK
+ </p>
+ <p className="mt-1 text-lg font-semibold cmm-text-primary">
+ {serviceSummary?.criticalReadyCount ?? 0}
+ </p>
+ </article>
+ <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+ <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
+ Services critiques en alerte
+ </p>
+ <p className="mt-1 text-lg font-semibold cmm-text-primary">
+ {serviceSummary?.criticalAlertCount ?? 0}
+ </p>
+ </article>
+ <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+ <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
+ Services optionnels en alerte
+ </p>
+ <p className="mt-1 text-lg font-semibold cmm-text-primary">
+ {serviceSummary?.optionalAlertCount ?? 0}
+ </p>
+ </article>
+ <article className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+ <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
+ Integrations externes suivies
+ </p>
+ <p className="mt-1 text-lg font-semibold cmm-text-primary">
+ {serviceSummary?.externalTrackedCount ?? 0}
+ </p>
+ </article>
+ </div>
+
+ {serviceTimeline.length > 0 ? (
+ <article className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+ <div className="flex items-center justify-between gap-3">
+ <div>
+ <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
+ Timeline courte des alertes
+ </p>
+ <p className="mt-1 cmm-text-small cmm-text-secondary">
+ Vue synthétique des services à surveiller ou à corriger en priorité.
+ </p>
+ </div>
+ <p className="cmm-text-caption cmm-text-muted">
+ {serviceSummary?.generatedAt
+ ? new Date(serviceSummary.generatedAt).toLocaleString("fr-FR")
+ : ""}
+ </p>
+ </div>
+ <ol className="mt-4 space-y-3">
+ {serviceTimeline.map((event) => (
+ <li
+ key={event.id}
+ className="rounded-lg border border-slate-200 bg-white px-3 py-3"
+ >
+ <div className="flex flex-wrap items-center justify-between gap-2">
+ <p className="font-semibold cmm-text-primary">{event.title}</p>
+ <span
+ className={`rounded-full px-2 py-0.5 cmm-text-caption font-semibold uppercase tracking-wide ${
+ event.severity === "critical"
+ ? "bg-rose-100 text-rose-700"
+ : "bg-amber-100 text-amber-700"
+ }`}
+ >
+ {event.severity === "critical" ? "Critique" : "Surveillance"}
+ </span>
+ </div>
+ <p className="mt-1 cmm-text-small cmm-text-secondary">{event.detail}</p>
+ <p className="mt-1 cmm-text-caption cmm-text-muted">
+ {event.service} · {new Date(event.happenedAt).toLocaleString("fr-FR")}
+ </p>
+ </li>
+ ))}
+ </ol>
+ </article>
+ ) : (
+ <article className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+ <p className="font-semibold text-emerald-800">Aucune alerte récente</p>
+ <p className="mt-1 cmm-text-small text-emerald-700">
+ Tous les services supervisés sont dans un état nominal ou externe sans incident remonté.
+ </p>
+ </article>
+ )}
+
  <div className="overflow-x-auto">
  <table className="min-w-full text-left cmm-text-small">
  <thead>
  <tr className="border-b border-slate-200 cmm-text-muted">
  <th className="px-2 py-2 font-medium">Service</th>
  <th className="px-2 py-2 font-medium">Description</th>
+ <th className="px-2 py-2 font-medium">Criticite</th>
  <th className="px-2 py-2 font-medium">Niveau</th>
+ <th className="px-2 py-2 font-medium">Lecture</th>
  <th className="px-2 py-2 font-medium">Etat brut</th>
  </tr>
  </thead>
@@ -161,6 +252,9 @@ export function SystemStatusPanel() {
  <td className="px-2 py-2 cmm-text-caption cmm-text-secondary">
  {service.description}
  </td>
+ <td className="px-2 py-2 cmm-text-caption uppercase tracking-wide">
+ {service.category}
+ </td>
  <td className="px-2 py-2">
  <span
  className={`rounded-full px-2 py-0.5 cmm-text-caption font-semibold uppercase tracking-wide ${
@@ -171,6 +265,9 @@ export function SystemStatusPanel() {
  >
  {labelText}
  </span>
+ </td>
+ <td className="px-2 py-2 cmm-text-caption cmm-text-secondary">
+ {"statusMessage" in service ? service.statusMessage : ""}
  </td>
  <td className="px-2 py-2 font-mono cmm-text-caption">{service.state}</td>
  </tr>

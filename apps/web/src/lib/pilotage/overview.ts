@@ -69,7 +69,7 @@ export async function loadPilotageOverview(
   const floorDate = buildDateFloor(Math.max(params.periodDays * 2, 730));
   const { items: contracts } = await fetchUnifiedActionContracts(params.supabase, {
     limit,
-    status: null,
+    status: "approved",
     floorDate,
     requireCoordinates: false,
     types: (params.types ?? null) as ActionEntityType[] | null,

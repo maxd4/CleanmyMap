@@ -38,6 +38,7 @@ export function RubriquePdfExportButton({
     setOrganizationName,
     history,
     filename,
+    copy,
     hasData,
     isDisabled,
     exportRubriquePdf,
@@ -73,10 +74,10 @@ export function RubriquePdfExportButton({
             size="sm"
             disabled={isDisabled}
             onClick={() => void exportRubriquePdf()}
-            ariaLabel={`Générer le rapport PDF ${defaultTitle}`}
+            ariaLabel={`Exporter le rapport PDF ${defaultTitle}`}
             className="shrink-0"
           >
-            {state === "pending" ? "Préparation..." : "Générer PDF"}
+            {state === "pending" ? copy.pendingLabel : copy.triggerLabel}
           </CmmButton>
         </div>
 

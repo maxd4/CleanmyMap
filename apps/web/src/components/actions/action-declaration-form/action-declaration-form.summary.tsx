@@ -1,0 +1,137 @@
+"use client";
+
+import { cn } from "@/lib/utils";
+
+type SummaryRowProps = {
+  label: string;
+  value: string;
+  strong?: boolean;
+  tone?: "slate" | "emerald";
+};
+
+export function SummaryRow({
+  label,
+  value,
+  strong = false,
+  tone = "slate",
+}: SummaryRowProps) {
+  return (
+    <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2">
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+        {label}
+      </p>
+      <p
+        className={cn(
+          "mt-0.5 text-sm font-semibold leading-snug",
+          strong ? "text-slate-950" : tone === "emerald" ? "text-emerald-700" : "text-slate-700",
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+export function formatDraftDate(value: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("fr-FR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(date);
+}
+
+export function formatActionDate(value: string): string {
+  if (!value) return "Date non renseignée";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(date);
+}
+
+export function formatWasteSummary(wasteKg: string, megotsKg: string): string {
+  const waste = Number(wasteKg);
+  const megots = Number(megotsKg);
+  const parts: string[] = [];
+
+  if (Number.isFinite(waste) && waste > 0) {
+    parts.push(`${formatKgValue(waste)} kg déchets`);
+  }
+  if (Number.isFinite(megots) && megots > 0) {
+    parts.push(`${formatKgValue(megots)} kg mégots`);
+  }
+
+  return parts.length > 0 ? parts.join(" · ") : "Aucune quantité saisie";
+}
+
+function formatKgValue(value: number): string {
+  return (value < 1 ? value.toFixed(2) : value.toFixed(1)).replace(".", ",");
+}
+
+type FormProgressSummaryProps = {
+  currentStep: number;
+  totalSteps: number;
+  actionDate: string;
+  wasteKg: string;
+  megotsKg: string;
+  draftSavedAt: string | null;
+  compact?: boolean;
+};
+
+export function FormProgressSummary({
+  currentStep,
+  totalSteps,
+  actionDate,
+  wasteKg,
+  megotsKg,
+  draftSavedAt,
+  compact = false,
+}: FormProgressSummaryProps) {
+  const stepLabel = `Étape ${currentStep}/${totalSteps}`;
+  const dateLabel = formatActionDate(actionDate);
+  const wasteLabel = formatWasteSummary(wasteKg, megotsKg);
+
+  if (compact) {
+    return (
+      <aside
+        aria-label="Récapitulatif de la déclaration"
+        className="sticky top-2 z-20 mb-4 rounded-2xl border border-slate-200/70 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-md lg:hidden"
+      >
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <span className="font-black text-emerald-700">{stepLabel}</span>
+          <span className="text-slate-300">•</span>
+          <span className="font-semibold text-slate-700">{dateLabel}</span>
+          <span className="text-slate-300">•</span>
+          <span className="font-semibold text-slate-700">{wasteLabel}</span>
+          {draftSavedAt ? (
+            <>
+              <span className="text-slate-300">•</span>
+              <span className="font-semibold text-emerald-700">Brouillon sauvegardé</span>
+            </>
+          ) : null}
+        </div>
+      </aside>
+    );
+  }
+
+  return (
+    <aside
+      aria-label="Récapitulatif de la déclaration"
+      className="sticky top-24 hidden rounded-3xl border border-slate-200/70 bg-white/90 p-4 shadow-lg shadow-slate-200/50 backdrop-blur-md lg:block"
+    >
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+        Récapitulatif
+      </p>
+      <div className="mt-4 space-y-3">
+        <SummaryRow label="Progression" value={stepLabel} strong />
+        <SummaryRow label="Date" value={dateLabel} />
+        <SummaryRow label="Récolte" value={wasteLabel} />
+        <SummaryRow
+          label="Brouillon"
+          value={draftSavedAt ? `Sauvegardé ${draftSavedAt}` : "Pas encore modifié"}
+          tone={draftSavedAt ? "emerald" : "slate"}
+        />
+      </div>
+    </aside>
+  );
+}

@@ -157,7 +157,7 @@ export default function PolitiqueConfidentialitePage() {
           <DataList
             items={[
               "Préférences d'interface : langue, thème et mode d'affichage.",
-              "La clé `cleanmymap_cookie_consent` est stockée dans `localStorage` pour mémoriser le choix de consentement.",
+              "Le choix de consentement est mémorisé dans `localStorage` et reflété par un cookie technique côté navigateur pour permettre l'application de la préférence aux requêtes serveur.",
               "Les préférences `cleanmymap.locale` et `cleanmymap.display_mode` sont écrites dans `localStorage` et reflétées dans des cookies SameSite=Lax lorsqu'elles sont actives.",
               "Analytics PostHog, Vercel Analytics et Vercel Speed Insights sont déclenchés uniquement si l'utilisateur accepte les cookies analytiques.",
               "PostHog est configuré sur l'hôte UE par défaut via `eu.i.posthog.com`.",
@@ -222,7 +222,7 @@ export default function PolitiqueConfidentialitePage() {
               "Resend : envoi d'emails transactionnels et de notification.",
               "PostHog : analytics si et seulement si le consentement est donné.",
               "Vercel Analytics et Speed Insights : mesure d'audience et performance avec consentement.",
-              "Sentry : erreurs techniques uniquement si la variable d'environnement d'activation est présente.",
+              "Sentry : erreurs techniques uniquement si la variable d'environnement d'activation est présente et si une DSN est configurée.",
               "Autorités compétentes : uniquement lorsque la loi l'exige.",
             ]}
           />

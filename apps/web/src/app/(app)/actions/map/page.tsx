@@ -59,12 +59,12 @@ export default function ActionsMapPage() {
   const handleStatusChange = useCallback((statusValue: typeof statusFilter) => {
     setSelectedActionId(null);
     setStatusFilter(statusValue);
-  }, [setStatusFilter, statusFilter]);
+  }, [setStatusFilter]);
 
   const handleImpactChange = useCallback((impactValue: typeof impactFilter) => {
     setSelectedActionId(null);
     setImpactFilter(impactValue);
-  }, [setImpactFilter, impactFilter]);
+  }, [setImpactFilter]);
 
   const handleQualityMinChange = useCallback((qualityValue: number) => {
     setSelectedActionId(null);
@@ -90,11 +90,28 @@ export default function ActionsMapPage() {
       limit: 300,
     }),
   );
+  const approvedStatsQuery = useSWR(["map-page-approved-kpis", days, impactFilter, qualityMin], () =>
+    fetchMapActions({
+      status: "approved",
+      days,
+      impact: impactFilter === "all" ? undefined : impactFilter,
+      qualityMin: qualityMin > 0 ? qualityMin : undefined,
+      limit: 300,
+    }),
+  );
 
   const mapItems = useMemo(() => mapDataQuery.data?.items ?? [], [mapDataQuery.data?.items]);
+  const approvedStatsItems = useMemo(
+    () => approvedStatsQuery.data?.items ?? [],
+    [approvedStatsQuery.data?.items],
+  );
   const filteredMapItems = useMemo(
     () => mapItems.filter((item) => isVisibleWithCategoryFilter(item, visibleCategories)),
     [mapItems, visibleCategories],
+  );
+  const approvedFilteredItems = useMemo(
+    () => approvedStatsItems.filter((item) => isVisibleWithCategoryFilter(item, visibleCategories)),
+    [approvedStatsItems, visibleCategories],
   );
   const selectedAction = useMemo(
     () => filteredMapItems.find((item) => item.id === selectedActionId) ?? null,
@@ -103,7 +120,7 @@ export default function ActionsMapPage() {
   const visibleCount = filteredMapItems.length;
   const loadedCount = mapItems.length;
   
-  const stats = useMapKpiStats(filteredMapItems);
+  const stats = useMapKpiStats(approvedFilteredItems);
 
   const surfaceCard = cn("rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden", classes.shadow);
 
@@ -121,7 +138,7 @@ export default function ActionsMapPage() {
             </div>
             <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/5 rounded-full border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 backdrop-blur-md">
               <Zap size={12} className="text-sky-400/60" />
-              {visibleCount} Points Actifs
+              {stats.actions} Points Validés
             </div>
           </div>
 
@@ -259,7 +276,7 @@ export default function ActionsMapPage() {
                     <div className="animate-in fade-in zoom-in-95 duration-700">
                       <ActionsVisualizationPanel
                         days={days}
-                        status={statusFilter}
+                        status="approved"
                         impact={impactFilter}
                         qualityMin={qualityMin}
                         visibleCategories={visibleCategories}
@@ -303,5 +320,3 @@ export default function ActionsMapPage() {
     </main>
   );
 }
-
-

@@ -108,6 +108,25 @@ describe("action declaration payload helpers", () => {
     expect(payload.recordType).toBe("clean_place");
   });
 
+  it("normalizes the other volunteer UI sentinel before payload creation", () => {
+    const form = buildBaseForm();
+    form.actorName = "Bénévole invité";
+    form.associationName = "__autre_benevole__";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "quick",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.actorName).toBe("Bénévole invité");
+    expect(payload.associationName).toBe("Action spontanée");
+  });
+
   it("normalizes duplicate drawing points before building the payload", () => {
     const form = buildBaseForm();
     const drawing: ActionDrawing = {
@@ -169,6 +188,28 @@ describe("action declaration payload helpers", () => {
  expect(payload.notes).toContain("Collecte de test");
  expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
  });
+
+  it("keeps synchronized megots count and weight coherent in the payload", () => {
+    const form = buildBaseForm();
+    form.cigaretteButtsCount = "10000";
+    form.wasteMegotsKg = "2.000";
+    form.wasteMegotsCondition = "propre";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.cigaretteButts).toBe(10000);
+    expect(payload.cigaretteButtsCount).toBe(10000);
+    expect(payload.wasteBreakdown?.megotsKg).toBe(2);
+    expect(payload.wasteBreakdown?.megotsCondition).toBe("propre");
+  });
 
   it("prefers a ready route preview before submission", async () => {
     const form = buildBaseForm();

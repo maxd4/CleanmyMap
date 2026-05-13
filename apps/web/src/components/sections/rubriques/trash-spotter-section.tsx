@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Target, Sparkles, MapPin, Search, Info, Plus } from "lucide-react";
+import { AlertCircle, Target, Sparkles, MapPin, Info } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
@@ -89,7 +89,6 @@ export function TrashSpotterSection() {
               <SpotterKpiGrid
                 fr={fr}
                 total={quality.total}
-                pending={quality.pending}
                 approved={quality.approved}
                 geoCoverage={quality.total > 0 ? `${Math.round((quality.withCoords / quality.total) * 100)}%` : "n/a"}
               />
@@ -175,7 +174,7 @@ export function TrashSpotterSection() {
                     <ActionsMapFeed
                       types={["clean_place", "spot"]}
                       days={180}
-                      statusFilter="all"
+                      statusFilter="approved"
                       impactFilter="all"
                       qualityMin={0}
                     />

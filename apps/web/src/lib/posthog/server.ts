@@ -34,7 +34,12 @@ export async function trackServerEvent(
   userId: string | null,
   event: string,
   properties: Record<string, unknown> = {},
+  options: { consentGranted?: boolean } = {},
 ): Promise<boolean> {
+  if (!options.consentGranted) {
+    return false;
+  }
+
   const client = getPostHogServerClient();
   if (!client) {
     return false;

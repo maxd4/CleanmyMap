@@ -11,7 +11,6 @@ type HarvestMegotsSectionProps = {
   wasteMegotsCondition: ActionMegotsCondition;
   megotsKg: number;
   megotsCount: number;
-  cigaretteButtsCount: number;
   comparisonTone: "emerald" | "orange";
   megotsCurrentPerVolunteer: number;
   wasteBenchmarkPerVolunteer: number;
@@ -29,7 +28,6 @@ export function HarvestMegotsSection({
   wasteMegotsCondition,
   megotsKg,
   megotsCount,
-  cigaretteButtsCount,
   comparisonTone,
   megotsCurrentPerVolunteer,
   wasteBenchmarkPerVolunteer,
@@ -55,7 +53,7 @@ export function HarvestMegotsSection({
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900">Mégots collectés</p>
-            <p className="text-xs text-slate-400">Masse ou nombre — synchronisés</p>
+            <p className="text-xs text-slate-500">Le nombre et le poids restent synchronisés</p>
           </div>
         </div>
         {megotsCount > 0 && (
@@ -80,6 +78,9 @@ export function HarvestMegotsSection({
             onChange={(e) => onMegotsWeightChange(e.target.value)}
             placeholder="Ex : 0,25"
           />
+          <span className="block text-[10px] leading-snug text-slate-400">
+            Saisie manuelle possible. Le nombre est recalculé avec l’état choisi.
+          </span>
         </label>
 
         <label className="block space-y-1.5">
@@ -94,6 +95,9 @@ export function HarvestMegotsSection({
             <option value="humide">Humide</option>
             <option value="mouille">Très mouillé</option>
           </select>
+          <span className="block text-[10px] leading-snug text-slate-400">
+            L’état modifie le poids estimé par mégot.
+          </span>
         </label>
       </div>
 
@@ -118,16 +122,24 @@ export function HarvestMegotsSection({
           <span>0</span>
           <span>10 000</span>
         </div>
+        <p className="text-[10px] leading-snug text-slate-500">
+          Le slider renseigne le nombre. CleanMyMap convertit ce nombre en poids estimé pour l’envoi.
+        </p>
       </div>
 
       {/* Auto-conversion */}
       {megotsCount > 0 && (
-        <div className="flex items-center justify-between rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-          <p className="text-xs text-amber-800">
-            Conversion automatique
-          </p>
-          <p className="text-sm font-bold text-amber-900">
-            {formatKg(megotsKg)} kg
+        <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold text-amber-800">
+              Poids estimé envoyé
+            </p>
+            <p className="text-sm font-bold text-amber-900">
+              {formatKg(megotsKg)} kg
+            </p>
+          </div>
+          <p className="mt-1 text-[10px] leading-snug text-amber-700">
+            Synchronisation active : {formatCount(megotsCount)} mégots ≈ {formatKg(megotsKg)} kg selon l’état “{wasteMegotsCondition}”.
           </p>
         </div>
       )}

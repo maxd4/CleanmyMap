@@ -1,86 +1,76 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from"vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
-const adminAccessErrorJsonResponseMock = vi.hoisted(() => vi.fn());
 const isPostHogConfiguredMock = vi.hoisted(() => vi.fn());
 
-const envMock = vi.hoisted(() => ({
- NEXT_PUBLIC_SUPABASE_URL:"https://example.supabase.co",
- NEXT_PUBLIC_SUPABASE_ANON_KEY:"anon",
- SUPABASE_SERVICE_ROLE_KEY:"service",
- NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:"pk_test",
- CLERK_SECRET_KEY:"sk_test",
- SENTRY_DSN:"https://dsn.example",
- NEXT_PUBLIC_SENTRY_DSN: undefined,
- RESEND_API_KEY:"re_test",
- RESEND_FROM_EMAIL:"contact@mail.cleanmymap.fr",
- PINECONE_API_KEY:"",
- STRIPE_SECRET_KEY:"",
- STRIPE_WEBHOOK_SECRET:"",
- UPSTASH_REDIS_REST_URL:"",
- UPSTASH_REDIS_REST_TOKEN:"",
- QSTASH_TOKEN:"",
- CLOUDFLARE_API_TOKEN:"",
- UPTIMEROBOT_API_KEY:"",
-}));
-
 vi.mock("@/lib/authz", () => ({
- requireAdminAccess: requireAdminAccessMock,
+  requireAdminAccess: requireAdminAccessMock,
 }));
 
 vi.mock("@/lib/http/auth-responses", () => ({
- adminAccessErrorJsonResponse: adminAccessErrorJsonResponseMock,
+  adminAccessErrorJsonResponse: (payload: unknown) =>
+    new Response(JSON.stringify(payload), { status: 403 }),
 }));
 
 vi.mock("@/lib/posthog/config", () => ({
- isPostHogConfigured: isPostHogConfiguredMock,
-}));
-
-vi.mock("@/lib/env", () => ({
- env: envMock,
- isConfigured: (value: string | undefined) =>
- Boolean(value && value.trim().length > 0),
+  isPostHogConfigured: isPostHogConfiguredMock,
 }));
 
 describe("GET /api/services", () => {
- beforeEach(() => {
- requireAdminAccessMock.mockResolvedValue({ ok: true });
- adminAccessErrorJsonResponseMock.mockReturnValue(
- Response.json({ error:"forbidden" }, { status: 403 }),
- );
- isPostHogConfiguredMock.mockReturnValue(true);
- envMock.CLOUDFLARE_API_TOKEN ="";
- envMock.UPTIMEROBOT_API_KEY ="";
- });
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
+    isPostHogConfiguredMock.mockReturnValue(false);
+    delete process.env["VERCEL"];
+    delete process.env["VERCEL_ENV"];
+    delete process.env["SENTRY_DSN"];
+    delete process.env["NEXT_PUBLIC_SENTRY_DSN"];
+    delete process.env["RESEND_API_KEY"];
+    delete process.env["RESEND_FROM_EMAIL"];
+    delete process.env["PINECONE_API_KEY"];
+    delete process.env["STRIPE_SECRET_KEY"];
+    delete process.env["STRIPE_WEBHOOK_SECRET"];
+    delete process.env["UPSTASH_REDIS_REST_URL"];
+    delete process.env["UPSTASH_REDIS_REST_TOKEN"];
+    delete process.env["QSTASH_TOKEN"];
+    delete process.env["UPTIMEROBOT_API_KEY"];
+    delete process.env["CLOUDFLARE_API_TOKEN"];
+    delete process.env["CLERK_SECRET_KEY"];
+    delete process.env["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"];
+    delete process.env["SUPABASE_SERVICE_ROLE_KEY"];
+    delete process.env["NEXT_PUBLIC_SUPABASE_URL"];
+    delete process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"];
+  });
 
- afterEach(() => {
- vi.clearAllMocks();
- });
+  it("returns a degraded summary with timeline when critical services are missing", async () => {
+    const { GET } = await import("./route");
 
- it("returns cloudflare and uptimerobot as ready when keys are configured", async () => {
- envMock.CLOUDFLARE_API_TOKEN ="cf_token";
- envMock.UPTIMEROBOT_API_KEY ="uptime_token";
+    const response = await GET();
+    const payload = (await response.json()) as {
+      status: string;
+      missing: string[];
+      summary: { globalState: string; criticalAlertCount: number };
+      timeline: Array<{ service: string; severity: string }>;
+      services: Record<string, { severity: string; statusMessage: string }>;
+    };
 
- const { GET } = await import("./route");
- const response = await GET();
- const body = (await response.json()) as {
-  services: Record<string, { state: string }>;
- };
+    expect(response.status).toBe(200);
+    expect(payload.status).toBe("degraded");
+    expect(payload.summary.globalState).toBe("degraded");
+    expect(payload.summary.criticalAlertCount).toBeGreaterThan(0);
+    expect(payload.timeline.length).toBeGreaterThan(0);
+    expect(payload.services.supabase?.severity).toBe("critical");
+    expect(payload.services.supabase?.statusMessage).toContain("Supabase");
+    expect(payload.missing).toContain("supabase");
+  });
 
- expect(response.status).toBe(200);
- expect(body.services["cloudflare"]?.state).toBe("ready");
- expect(body.services["uptimerobot"]?.state).toBe("ready");
- });
+  it("returns 403 when admin access is denied", async () => {
+    requireAdminAccessMock.mockResolvedValueOnce({ ok: false, reason: "forbidden" });
+    const { GET } = await import("./route");
 
- it("returns cloudflare and uptimerobot as external when keys are missing", async () => {
- const { GET } = await import("./route");
- const response = await GET();
- const body = (await response.json()) as {
-  services: Record<string, { state: string }>;
- };
+    const response = await GET();
 
- expect(response.status).toBe(200);
- expect(body.services["cloudflare"]?.state).toBe("external");
- expect(body.services["uptimerobot"]?.state).toBe("external");
- });
+    expect(response.status).toBe(403);
+  });
 });

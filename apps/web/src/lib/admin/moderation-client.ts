@@ -1,6 +1,42 @@
+import type {
+  ActionDrawing,
+  ActionSubmissionMode,
+  ActionWasteBreakdown,
+} from "@/lib/actions/types";
+
 export type ModerationEntityType = "action" | "clean_place";
 export type ModerationActionStatus = "pending" | "approved" | "rejected";
 export type ModerationCleanPlaceStatus = "new" | "validated" | "cleaned";
+
+export type AdminActionEditPayload = {
+  actorName?: string | null;
+  associationName?: string | null;
+  actionDate?: string;
+  locationLabel?: string;
+  departureLocationLabel?: string | null;
+  arrivalLocationLabel?: string | null;
+  routeStyle?: "direct" | "souple" | null;
+  routeAdjustmentMessage?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  wasteKg?: number;
+  cigaretteButts?: number;
+  volunteersCount?: number;
+  durationMinutes?: number;
+  notes?: string | null;
+  placeType?: string | null;
+  submissionMode?: ActionSubmissionMode | null;
+  wasteBreakdown?: ActionWasteBreakdown | null;
+  manualDrawing?: ActionDrawing | null;
+};
+
+export type AdminCleanPlaceEditPayload = {
+  label?: string;
+  wasteType?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  notes?: string | null;
+};
 
 export type ModerationPayload =
   | {
@@ -8,12 +44,14 @@ export type ModerationPayload =
       id: string;
       status: ModerationActionStatus;
       confirmPhrase: string;
+      edits?: AdminActionEditPayload;
     }
   | {
       entityType: "clean_place";
       id: string;
       status: ModerationCleanPlaceStatus;
       confirmPhrase: string;
+      edits?: AdminCleanPlaceEditPayload;
     };
 
 export type ModerationSuccessResponse = {

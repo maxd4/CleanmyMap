@@ -20,12 +20,12 @@ import { CmmButton } from "@/components/ui/cmm-button";
 import { ActionDeclarationFormConfirmation } from "../action-declaration-form-confirmation";
 import { ActionDeclarationFormFeedback } from "../action-declaration-form.feedback";
 import { createInitialFormState } from "../action-declaration/payload";
-import { clearDraft } from "../action-declaration/draft-storage";
 import { ActionStepIdentity } from "../action-declaration/ActionStepIdentity";
 import { ActionStepHarvest } from "../action-declaration/ActionStepHarvest";
 import { ActionStepLocation } from "../action-declaration/ActionStepLocation";
 import { ActionStepReview } from "../action-declaration/ActionStepReview";
 import { useActionDeclarationForm } from "./use-action-declaration-form";
+import { FormProgressSummary, formatDraftDate } from "./action-declaration-form.summary";
 
 type ActionDeclarationFormProps = {
   actorNameOptions: string[];
@@ -61,8 +61,8 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     setShowConfirmation,
     visitedSteps,
     draftSavedAt,
+    pendingDraftSavedAt,
     showDraftBanner,
-    setShowDraftBanner,
     currentStep,
     setCurrentStep,
     isCleanPlaceMode,
@@ -76,8 +76,13 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     handlePhotoUpload,
     clearPhotos,
     updateField,
+    handleResumeDraft,
+    handleIgnoreDraft,
     handleConfirmSubmit,
   } = useActionDeclarationForm(props);
+
+  const formattedDraftSavedAt = formatDraftDate(draftSavedAt);
+  const formattedPendingDraftSavedAt = formatDraftDate(pendingDraftSavedAt);
 
   async function onSubmit(e?: FormEvent) {
     if (e) e.preventDefault();
@@ -100,27 +105,48 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
       <div className="w-full space-y-6 mt-6 px-4 md:px-6">
         {/* Bannière brouillon */}
         {showDraftBanner && (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm shadow-amber-900/5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-2">
               <History size={15} className="text-amber-600 shrink-0" />
-              <p className="text-xs font-medium text-amber-800">
-                Brouillon restauré
-                {draftSavedAt ? ` — ${new Intl.DateTimeFormat("fr-FR", { dateStyle: "short", timeStyle: "short" }).format(new Date(draftSavedAt))}` : ""}
-              </p>
+              <div>
+                <p className="text-sm font-bold text-amber-950">
+                  Reprendre votre déclaration
+                  {formattedPendingDraftSavedAt ? ` du ${formattedPendingDraftSavedAt}` : ""}
+                </p>
+                <p className="mt-0.5 text-xs font-medium text-amber-800">
+                  Un brouillon local existe sur cet appareil. Il ne sera restauré que si vous le confirmez.
+                </p>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                clearDraft();
-                setShowDraftBanner(false);
-                setForm(createInitialFormState(resolvedDefaultActorName, props.initialRecordType ?? "action"));
-              }}
-              className="text-xs font-semibold text-amber-700 hover:text-amber-900 underline"
-            >
-              Effacer
-            </button>
+            <div className="flex flex-wrap gap-2 sm:justify-end">
+              <button
+                type="button"
+                onClick={handleResumeDraft}
+                className="rounded-full bg-amber-900 px-4 py-2 text-xs font-black text-white transition hover:bg-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-800 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50"
+              >
+                Reprendre
+              </button>
+              <button
+                type="button"
+                onClick={handleIgnoreDraft}
+                className="rounded-full border border-amber-300 bg-white/80 px-4 py-2 text-xs font-bold text-amber-900 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-800 focus-visible:ring-offset-2 focus-visible:ring-offset-amber-50"
+              >
+                Ignorer / recommencer
+              </button>
+            </div>
           </div>
         )}
+
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-5">
+        <FormProgressSummary
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          actionDate={form.actionDate}
+          wasteKg={form.wasteKg}
+          megotsKg={form.wasteMegotsKg}
+          draftSavedAt={formattedDraftSavedAt}
+          compact
+        />
 
         {/* Stepper + Form fused */}
         <section className="relative overflow-hidden rounded-[2.5rem] border border-slate-200/60 bg-white/95 shadow-2xl shadow-slate-200/50 backdrop-blur-xl min-h-[500px] flex flex-col">
@@ -164,6 +190,8 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                     type="button"
                     disabled={!isClickable}
                     onClick={() => isClickable && setCurrentStep(step.id)}
+                    aria-label={`Aller à l’étape ${step.id} : ${step.label}`}
+                    aria-current={isCurrent ? "step" : undefined}
                     className={cn(
                       "h-10 w-10 md:h-12 md:w-12 rounded-2xl flex items-center justify-center transition-all duration-500",
                       isPast ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20 cursor-pointer hover:scale-105" :
@@ -219,10 +247,10 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                 <Download size={14} />
                 Exporter
               </button>
-              {draftSavedAt && (
-                <span className="flex items-center gap-1 text-[10px] text-slate-400">
+              {formattedDraftSavedAt && !showDraftBanner && (
+                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">
                   <Save size={11} />
-                  Sauvegardé
+                  Brouillon sauvegardé · {formattedDraftSavedAt}
                 </span>
               )}
             </div>
@@ -333,6 +361,16 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
           </div>
         </section>
 
+        <FormProgressSummary
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          actionDate={form.actionDate}
+          wasteKg={form.wasteKg}
+          megotsKg={form.wasteMegotsKg}
+          draftSavedAt={formattedDraftSavedAt}
+        />
+        </div>
+
         <ActionDeclarationFormFeedback
           submissionState={submissionState}
           createdId={createdId}
@@ -346,6 +384,11 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         />
+      </div>
+    </>
+  );
+}
+
       </div>
     </>
   );

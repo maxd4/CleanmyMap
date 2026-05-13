@@ -16,6 +16,7 @@ import type { DeclarationMode, FormState } from"./types";
 import { normalizeActionDrawing } from"../map/actions-map-geometry.utils";
 
 export const PARK_PLACE_TYPE ="Bois/Parc/Jardin/Square/Sentier";
+export const OTHER_VOLUNTEER_ASSOCIATION_VALUE = "__autre_benevole__";
 
 export const associationOptionLabels: Record<string, string> = {
   "Action spontanée":
@@ -176,6 +177,8 @@ export function buildCreateActionPayload(params: {
 
  const associationName = isEntrepriseMode
  ? buildEntrepriseAssociationName(form.enterpriseName)
+ : form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE
+ ? "Action spontanée"
  : form.associationName;
  const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount);
  const estimatedButtsFromWeight =

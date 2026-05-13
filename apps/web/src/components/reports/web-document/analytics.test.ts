@@ -177,11 +177,11 @@ describe("reports web analytics", () => {
  now: new Date("2026-03-25T12:00:00.000Z"),
  });
  expect(report.totals.actions).toBe(1);
- expect(report.moderation.pending).toBe(1);
- expect(report.moderation.rejected).toBe(1);
+ expect(report.moderation.pending).toBe(0);
+ expect(report.moderation.rejected).toBe(0);
  expect(report.community.sourceBuckets.citoyen).toBe(1);
- expect(report.community.sourceBuckets.associatif).toBe(1);
- expect(report.community.sourceBuckets.institutionnel).toBe(1);
+ expect(report.community.sourceBuckets.associatif).toBe(0);
+ expect(report.community.sourceBuckets.institutionnel).toBe(0);
  expect(report.impactMethodology.formulas).toHaveLength(4);
  expect(report.impactMethodology.proxyVersion.length).toBeGreaterThan(0);
  });

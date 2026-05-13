@@ -58,7 +58,7 @@ export default async function AccueilPage() {
 
         {/* Hero */}
         <div className="mb-12 space-y-3">
-          <p className="text-[11px] font-bold uppercase tracking-[0.34em] text-white">
+          <p className="text-[11px] font-bold uppercase tracking-[0.34em] text-orange-950/75">
             {isFrench ? "Bloc Accueil" : "Home block"}
           </p>
           <h1 className="text-[clamp(3rem,6vw,5rem)] font-black leading-[0.94] tracking-[-0.04em] text-slate-900">

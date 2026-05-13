@@ -12,6 +12,7 @@ import {
 } from"@/lib/actions/unified-source";
 import { buildActionInsights } from"@/lib/actions/insights";
 import { filterActionContractsByScope, type ReportScope } from"@/lib/reports/scope";
+import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import {
  buildPostActionRetentionLoop as buildActionRetentionLoop,
  trackActionCreated,
@@ -247,10 +248,15 @@ emitSpotCreated({
     wasteType: inserted.data.waste_type,
   });
 
-  await trackServerEvent(userId,"spot_created", {
+  const consentGranted = hasAnalyticsConsentCookie(request.headers.get("cookie"));
+  if (consentGranted) {
+    await trackServerEvent(userId,"spot_created", {
  waste_type: inserted.data.waste_type,
  location: inserted.data.label,
- });
+    }, {
+      consentGranted,
+    });
+  }
 
  return NextResponse.json(
  { status:"created", id: inserted.data.id, source:"spots", retentionLoop: null },

@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from"react";
 import type { ActionQualityResult } from"@/lib/actions/quality";
 import type {
  ActionListItem,
+ ActionMegotsCondition,
  ActionStatus,
  ActionSubmissionMode,
  ActionWasteBreakdown,
@@ -60,6 +61,42 @@ export type PreviewRow = {
  quality: ActionQualityResult;
 };
 
+export type ActionModerationEditDraft = {
+ actorName: string;
+ associationName: string;
+ actionDate: string;
+ locationLabel: string;
+ departureLocationLabel: string;
+ arrivalLocationLabel: string;
+ routeStyle: "direct" |"souple";
+ routeAdjustmentMessage: string;
+ latitude: string;
+ longitude: string;
+ wasteKg: string;
+ cigaretteButts: string;
+ volunteersCount: string;
+ durationMinutes: string;
+ notes: string;
+ placeType: string;
+ submissionMode: ActionSubmissionMode;
+ wasteMegotsKg: string;
+ wasteMegotsCondition: ActionMegotsCondition;
+ wastePlastiqueKg: string;
+ wasteVerreKg: string;
+ wasteMetalKg: string;
+ wasteMixteKg: string;
+ triQuality: "faible" |"moyenne" |"elevee";
+ manualDrawingJson: string;
+};
+
+export type CleanPlaceModerationEditDraft = {
+ label: string;
+ wasteType: string;
+ latitude: string;
+ longitude: string;
+ notes: string;
+};
+
 export type AdminWorkflowController = {
  status: ActionStatus |"all";
  days: number;
@@ -103,18 +140,22 @@ export type AdminWorkflowController = {
  moderationJournal: ModerationJournalEntry[];
  moderationConfirmed: boolean;
  moderationConfirmationText: string;
+ actionEditDraft: ActionModerationEditDraft | null;
+ cleanPlaceEditDraft: CleanPlaceModerationEditDraft | null;
  setModerationEntityType: Dispatch<SetStateAction<ModerationEntityType>>;
  setModerationId: Dispatch<SetStateAction<string>>;
  setActionStatus: Dispatch<SetStateAction<ModerationActionStatus>>;
  setCleanPlaceStatus: Dispatch<SetStateAction<ModerationCleanPlaceStatus>>;
  setModerationConfirmed: Dispatch<SetStateAction<boolean>>;
  setModerationConfirmationText: Dispatch<SetStateAction<string>>;
+ setActionEditDraft: Dispatch<SetStateAction<ActionModerationEditDraft | null>>;
+ setCleanPlaceEditDraft: Dispatch<SetStateAction<CleanPlaceModerationEditDraft | null>>;
 
  previewRows: PreviewRow[];
  previewLoading: boolean;
  previewError: boolean;
  reloadPreview: () => void;
- selectActionForModeration: (actionId: string) => void;
+ selectActionForModeration: (item: ActionListItem) => void;
 
  auditItems: AdminOperationAuditItem[];
  auditLoading: boolean;

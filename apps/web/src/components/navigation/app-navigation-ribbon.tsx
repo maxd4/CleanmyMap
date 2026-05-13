@@ -40,6 +40,8 @@ export function AppNavigationRibbon({
   const ribbonRef = useRef<HTMLElement | null>(null);
   const preferencesTriggerRef = useRef<HTMLElement | null>(null);
   const feedbackTriggerRef = useRef<HTMLElement | null>(null);
+  const preferencesCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const feedbackCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -89,26 +91,50 @@ export function AppNavigationRibbon({
   }
 
   function closeFeedbackMenu() {
+    if (feedbackCloseTimerRef.current) {
+      clearTimeout(feedbackCloseTimerRef.current);
+      feedbackCloseTimerRef.current = null;
+    }
     setIsFeedbackOpen(false);
   }
 
   function openPreferencesMenu() {
+    if (preferencesCloseTimerRef.current) {
+      clearTimeout(preferencesCloseTimerRef.current);
+      preferencesCloseTimerRef.current = null;
+    }
     setPreferencesOwnerPath(pathname);
     setIsPreferencesOpen(true);
   }
 
   function closePreferencesMenu() {
-    setIsPreferencesOpen(false);
+    if (preferencesCloseTimerRef.current) {
+      clearTimeout(preferencesCloseTimerRef.current);
+    }
+    preferencesCloseTimerRef.current = setTimeout(() => {
+      setIsPreferencesOpen(false);
+      preferencesCloseTimerRef.current = null;
+    }, 160);
   }
 
   function openFeedbackMenu() {
+    if (feedbackCloseTimerRef.current) {
+      clearTimeout(feedbackCloseTimerRef.current);
+      feedbackCloseTimerRef.current = null;
+    }
     setFeedbackOwnerPath(pathname);
     setIsPreferencesOpen(false);
     setIsFeedbackOpen(true);
   }
 
   function closeFeedbackMenuOnHover() {
-    setIsFeedbackOpen(false);
+    if (feedbackCloseTimerRef.current) {
+      clearTimeout(feedbackCloseTimerRef.current);
+    }
+    feedbackCloseTimerRef.current = setTimeout(() => {
+      setIsFeedbackOpen(false);
+      feedbackCloseTimerRef.current = null;
+    }, 160);
   }
 
   const feedbackLinks = [
@@ -169,6 +195,12 @@ export function AppNavigationRibbon({
     return () => {
       document.removeEventListener("pointerdown", closeMenusOnOutsideClick);
       document.removeEventListener("keydown", closeMenusOnEscape);
+      if (preferencesCloseTimerRef.current) {
+        clearTimeout(preferencesCloseTimerRef.current);
+      }
+      if (feedbackCloseTimerRef.current) {
+        clearTimeout(feedbackCloseTimerRef.current);
+      }
     };
   }, []);
 
@@ -185,7 +217,7 @@ export function AppNavigationRibbon({
         )}
         style={ribbonChrome}
       >
-        <div className="mx-auto flex max-w-[1800px] min-w-0 items-center gap-2 px-4 py-3 sm:px-6 lg:gap-3 xl:px-8">
+        <div className="flex w-full min-w-0 items-center gap-2 px-4 py-2.5 sm:px-6 lg:gap-3 xl:px-8">
           <p className="sr-only">
             {locale === "fr" ? "Profil actif" : "Active profile"}: {profileLabel}
           </p>
@@ -248,7 +280,7 @@ export function AppNavigationRibbon({
                 aria-label={locale === "fr" ? "Menu des préférences d'affichage et langue" : "Display and language preferences menu"}
                 aria-expanded={preferencesOpen}
                 aria-controls="preferences-menu-panel"
-                className="cmm-dropdown-trigger inline-flex min-h-11 list-none items-center justify-center gap-2 rounded-full border border-white/14 bg-white/10 px-3 text-white/82 transition-colors hover:border-cyan-300/40 hover:bg-white/16 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 xl:px-4 [&::-webkit-details-marker]:hidden"
+                className="cmm-dropdown-trigger inline-flex min-h-11 list-none items-center justify-center gap-2 rounded-full border border-cyan-100/18 bg-white/14 px-3 text-white/90 transition-colors hover:border-cyan-200/42 hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 xl:px-4 [&::-webkit-details-marker]:hidden"
               >
                 <Settings2 className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                 <span className="hidden xl:inline cmm-text-caption font-bold uppercase tracking-[0.14em]">
@@ -265,37 +297,47 @@ export function AppNavigationRibbon({
 
               <AnimatePresence initial={false}>
                 {preferencesOpen ? (
-                  <motion.div
-                    key="preferences-menu-panel"
-                    id="preferences-menu-panel"
-                    aria-label={locale === "fr" ? "Préférences d'affichage et langue" : "Display and language preferences"}
-                    onMouseEnter={openPreferencesMenu}
-                    onMouseLeave={closePreferencesMenu}
-                    initial={{ opacity: 0, y: preferencesPlacement.openUp ? 8 : -8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: preferencesPlacement.openUp ? 8 : -8, scale: 0.98 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className={cn(
-                      "cmm-dropdown-panel absolute z-50 w-80 rounded-[1.5rem] border p-4 shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
-                      preferencesPlacement.openUp ? "bottom-full mb-3" : "top-full mt-3",
-                      preferencesPlacement.alignRight ? "right-0" : "left-0",
-                    )}
-                    style={{
-                      backgroundImage: ribbonChrome.backgroundImage,
-                      borderColor: ribbonChrome.borderColor,
-                    }}
-                  >
-                    <SitePreferencesControls />
-                    <div className="mt-3 border-t border-white/10 pt-3">
-                      <Link
-                        href="/onboarding/localisation?next=/profil"
-                        onClick={() => onTrackNavigation("/onboarding/localisation?next=/profil", locale === "fr" ? "Préférences de compte" : "Account preferences", null)}
-                        className="inline-flex min-h-11 w-full items-center justify-center rounded-2xl border border-white/10 bg-white/8 px-4 py-3 cmm-text-small font-semibold text-white/90 transition hover:border-cyan-300/40 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
-                      >
-                        {locale === "fr" ? "Préférences de compte" : "Account preferences"}
-                      </Link>
-                    </div>
-                  </motion.div>
+                  <>
+                    <div
+                      className={cn(
+                        "absolute z-50 h-3 w-full",
+                        preferencesPlacement.openUp ? "bottom-full" : "top-full",
+                      )}
+                      onMouseEnter={openPreferencesMenu}
+                      aria-hidden="true"
+                    />
+                    <motion.div
+                      key="preferences-menu-panel"
+                      id="preferences-menu-panel"
+                      aria-label={locale === "fr" ? "Préférences d'affichage et langue" : "Display and language preferences"}
+                      onMouseEnter={openPreferencesMenu}
+                      onMouseLeave={closePreferencesMenu}
+                      initial={{ opacity: 0, y: preferencesPlacement.openUp ? 8 : -8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: preferencesPlacement.openUp ? 8 : -8, scale: 0.98 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className={cn(
+                        "cmm-dropdown-panel absolute z-50 w-80 rounded-[1.25rem] border p-4 shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
+                        preferencesPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
+                        preferencesPlacement.alignRight ? "right-0" : "left-0",
+                      )}
+                      style={{
+                        backgroundImage: ribbonChrome.backgroundImage,
+                        borderColor: ribbonChrome.borderColor,
+                      }}
+                    >
+                      <SitePreferencesControls />
+                      <div className="mt-3 border-t border-white/10 pt-3">
+                        <Link
+                          href="/onboarding/localisation?next=/profil"
+                          onClick={() => onTrackNavigation("/onboarding/localisation?next=/profil", locale === "fr" ? "Préférences de compte" : "Account preferences", null)}
+                          className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-cyan-100/14 bg-white/10 px-4 py-3 cmm-text-small font-semibold text-white/92 transition hover:border-cyan-300/40 hover:bg-white/16 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+                        >
+                          {locale === "fr" ? "Préférences de compte" : "Account preferences"}
+                        </Link>
+                      </div>
+                    </motion.div>
+                  </>
                 ) : null}
               </AnimatePresence>
             </details>
@@ -319,7 +361,7 @@ export function AppNavigationRibbon({
                 aria-label={locale === "fr" ? "Menu Feedback" : "Feedback menu"}
                 aria-expanded={feedbackOpen}
                 aria-controls="feedback-menu-panel"
-                className="cmm-dropdown-trigger inline-flex min-h-11 list-none items-center justify-center gap-2 rounded-full border border-white/14 bg-white/10 px-3 text-white/82 transition-colors hover:border-cyan-300/40 hover:bg-white/16 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 xl:px-4 [&::-webkit-details-marker]:hidden"
+                className="cmm-dropdown-trigger inline-flex min-h-11 list-none items-center justify-center gap-2 rounded-full border border-cyan-100/18 bg-white/14 px-3 text-white/90 transition-colors hover:border-cyan-200/42 hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 xl:px-4 [&::-webkit-details-marker]:hidden"
               >
                 <MessageSquare className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
                 <span className="hidden xl:inline cmm-text-caption font-bold uppercase tracking-[0.14em]">
@@ -336,42 +378,52 @@ export function AppNavigationRibbon({
 
               <AnimatePresence initial={false}>
                 {feedbackOpen ? (
-                  <motion.div
-                    key="feedback-menu-panel"
-                    id="feedback-menu-panel"
-                    aria-label={locale === "fr" ? "Options de feedback" : "Feedback options"}
-                    onMouseEnter={openFeedbackMenu}
-                    onMouseLeave={closeFeedbackMenuOnHover}
-                    initial={{ opacity: 0, y: feedbackPlacement.openUp ? 8 : -8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: feedbackPlacement.openUp ? 8 : -8, scale: 0.98 }}
-                    transition={{ duration: 0.15, ease: "easeOut" }}
-                    className={cn(
-                      "cmm-dropdown-panel absolute z-50 w-72 rounded-[1.25rem] border p-2 shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
-                      feedbackPlacement.openUp ? "bottom-full mb-3" : "top-full mt-3",
-                      feedbackPlacement.alignRight ? "right-0" : "left-0",
-                    )}
-                    style={{
-                      backgroundImage: ribbonChrome.backgroundImage,
-                      borderColor: ribbonChrome.borderColor,
-                    }}
-                  >
-                    <div className="space-y-1">
-                      {feedbackLinks.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          onClick={() => {
-                            onTrackNavigation(item.href, item.label, null);
-                            closeFeedbackMenu();
-                          }}
-                          className="flex w-full items-center rounded-xl px-3 py-2.5 text-left cmm-text-small font-semibold text-white/86 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
-                        >
-                          {item.label}
-                        </Link>
-                      ))}
-                    </div>
-                  </motion.div>
+                  <>
+                    <div
+                      className={cn(
+                        "absolute z-50 h-3 w-full",
+                        feedbackPlacement.openUp ? "bottom-full" : "top-full",
+                      )}
+                      onMouseEnter={openFeedbackMenu}
+                      aria-hidden="true"
+                    />
+                    <motion.div
+                      key="feedback-menu-panel"
+                      id="feedback-menu-panel"
+                      aria-label={locale === "fr" ? "Options de feedback" : "Feedback options"}
+                      onMouseEnter={openFeedbackMenu}
+                      onMouseLeave={closeFeedbackMenuOnHover}
+                      initial={{ opacity: 0, y: feedbackPlacement.openUp ? 8 : -8, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: feedbackPlacement.openUp ? 8 : -8, scale: 0.98 }}
+                      transition={{ duration: 0.15, ease: "easeOut" }}
+                      className={cn(
+                        "cmm-dropdown-panel absolute z-50 w-72 rounded-[1.15rem] border p-2 shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
+                        feedbackPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
+                        feedbackPlacement.alignRight ? "right-0" : "left-0",
+                      )}
+                      style={{
+                        backgroundImage: ribbonChrome.backgroundImage,
+                        borderColor: ribbonChrome.borderColor,
+                      }}
+                    >
+                      <div className="space-y-1">
+                        {feedbackLinks.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => {
+                              onTrackNavigation(item.href, item.label, null);
+                              closeFeedbackMenu();
+                            }}
+                            className="flex w-full items-center rounded-xl px-3 py-2.5 text-left cmm-text-small font-semibold text-white/90 transition hover:bg-white/12 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+                          >
+                            {item.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </motion.div>
+                  </>
                 ) : null}
               </AnimatePresence>
             </details>

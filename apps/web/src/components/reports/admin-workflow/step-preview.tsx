@@ -67,7 +67,7 @@ export function StepPreview({ workflow }: StepPreviewProps) {
  </td>
  <td className="px-2 py-2">
  <button
- onClick={() => workflow.selectActionForModeration(row.item.id)}
+ onClick={() => workflow.selectActionForModeration(row.item)}
  className="rounded border border-slate-300 px-2 py-0.5 cmm-text-caption hover:bg-slate-100"
  >
  Moderer

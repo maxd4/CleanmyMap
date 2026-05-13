@@ -21,6 +21,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PLACE_TYPE_OPTIONS } from "@/lib/actions/place-type-options";
 import { ASSOCIATION_SELECTION_OPTIONS, buildEntrepriseAssociationName } from "@/lib/actions/association-options";
+import { OTHER_VOLUNTEER_ASSOCIATION_VALUE } from "./payload";
 import type { FormState } from "../action-declaration-form.model";
 
 const PLACE_TYPE_CONFIG: Record<string, { icon: LucideIcon; label: string; sub: string }> = {
@@ -69,16 +70,21 @@ function Field({ icon: Icon, children, className }: { icon: LucideIcon; children
 export function ActionStepIdentity({ form, updateField, userMetadata, recordType, hasAttemptedSubmit }: Props) {
   const isCleanPlaceMode = recordType === "clean_place";
   const isEntreprise = form.associationName === "Entreprise" || form.associationName.startsWith("Entreprise - ");
-  const isAutreBénévole = form.associationName === "__autre_benevole__";
+  const isAutreBénévole = form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE;
   const missingDate = hasAttemptedSubmit && !form.actionDate;
   const missingAssociation = hasAttemptedSubmit && !form.associationName;
+  const missingOtherVolunteerName =
+    hasAttemptedSubmit && isAutreBénévole && !form.actorName.trim();
+  const associationErrorId = "action-association-error";
+  const dateErrorId = "action-date-error";
+  const otherVolunteerErrorId = "action-other-volunteer-error";
 
   const [autreBenevoleName, setAutreBenevoleName] = useState(isAutreBénévole ? form.actorName : "");
 
   function handleAssociationChange(val: string) {
     updateField("associationName", val);
     if (val !== "Entreprise") updateField("enterpriseName", "");
-    if (val !== "__autre_benevole__") {
+    if (val !== OTHER_VOLUNTEER_ASSOCIATION_VALUE) {
       updateField("actorName", userMetadata.displayName ?? userMetadata.username ?? "");
     }
   }
@@ -148,14 +154,16 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
             <Field icon={ChevronDown}>
               <select
                 className={cn(inputCls, "appearance-none cursor-pointer", missingAssociation && inputErrCls)}
-                value={isAutreBénévole ? "__autre_benevole__" : form.associationName}
+                value={isAutreBénévole ? OTHER_VOLUNTEER_ASSOCIATION_VALUE : form.associationName}
                 onChange={(e) => handleAssociationChange(e.target.value)}
+                aria-invalid={missingAssociation}
+                aria-describedby={missingAssociation ? associationErrorId : undefined}
               >
                 <optgroup label="Fréquents">
                   {[...ASSOCIATION_SELECTION_OPTIONS].filter((o) => POPULAR.has(o)).map((o) => (
                     <option key={o} value={o}>{o}</option>
                   ))}
-                  <option value="__autre_benevole__">Autre bénévole</option>
+                  <option value={OTHER_VOLUNTEER_ASSOCIATION_VALUE}>Autre bénévole</option>
                 </optgroup>
                 <optgroup label="Associations">
                   {[...ASSOCIATION_SELECTION_OPTIONS].filter((o) => !POPULAR.has(o)).sort().map((o) => (
@@ -164,7 +172,11 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
                 </optgroup>
               </select>
             </Field>
-            {missingAssociation && <p className="text-xs text-rose-500 pl-1">La structure est requise.</p>}
+            {missingAssociation && (
+              <p id={associationErrorId} className="pl-1 text-xs font-medium text-rose-600">
+                Sélectionnez une structure ou “Autre bénévole”.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -174,9 +186,15 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
                 className={cn(inputCls, missingDate && inputErrCls)}
                 value={form.actionDate}
                 onChange={(e) => updateField("actionDate", e.target.value)}
+                aria-invalid={missingDate}
+                aria-describedby={missingDate ? dateErrorId : undefined}
               />
             </Field>
-            {missingDate && <p className="text-xs text-rose-500 pl-1">La date est requise.</p>}
+            {missingDate && (
+              <p id={dateErrorId} className="pl-1 text-xs font-medium text-rose-600">
+                Indiquez la date de l’action avant de continuer.
+              </p>
+            )}
           </div>
         </div>
 
@@ -203,14 +221,24 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
             <Field icon={User}>
               <input
                 type="text"
-                className={inputCls}
+                className={cn(inputCls, missingOtherVolunteerName && inputErrCls)}
                 placeholder="Nom ou pseudo du bénévole"
                 value={autreBenevoleName}
                 onChange={(e) => handleAutreBenevoleName(e.target.value)}
                 maxLength={80}
+                aria-invalid={missingOtherVolunteerName}
+                aria-describedby={
+                  missingOtherVolunteerName ? otherVolunteerErrorId : undefined
+                }
               />
             </Field>
-            <p className="text-xs text-slate-400 pl-1">Vous déclarez cette action au nom d&apos;un autre bénévole.</p>
+            {missingOtherVolunteerName ? (
+              <p id={otherVolunteerErrorId} className="pl-1 text-xs font-medium text-rose-600">
+                Renseignez le nom ou pseudo du bénévole pour éviter une déclaration anonyme.
+              </p>
+            ) : (
+              <p className="text-xs text-slate-400 pl-1">Vous déclarez cette action au nom d&apos;un autre bénévole.</p>
+            )}
           </div>
         )}
       </div>

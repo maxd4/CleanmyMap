@@ -5,20 +5,19 @@ import {
 } from "@/components/actions/map-marker-categories";
 
 export const ACTIONS_MAP_FILTERS_STORAGE_KEY = "cmm_actions_map_filters";
+export type ActionsMapStatusFilter = Extract<ActionStatus, "approved" | "pending">;
 
 export type ActionsMapFilters = {
   days: number;
-  statusFilter: ActionStatus | "all";
+  statusFilter: ActionsMapStatusFilter;
   impactFilter: ActionImpactLevel | "all";
   qualityMin: number;
   visibleCategories: Record<MarkerCategory, boolean>;
 };
 
-const VALID_STATUSES = new Set<ActionStatus | "all">([
-  "all",
+const VALID_STATUSES = new Set<ActionsMapStatusFilter>([
   "approved",
   "pending",
-  "rejected",
 ]);
 
 const VALID_IMPACTS = new Set<ActionImpactLevel | "all">([
@@ -85,7 +84,7 @@ export function normalizeActionsMapFilters(
   return {
     days: clampInteger(source.days, 1, 3650, defaults.days),
     statusFilter: VALID_STATUSES.has(source.statusFilter ?? "approved")
-      ? (source.statusFilter as ActionStatus | "all")
+      ? (source.statusFilter as ActionsMapStatusFilter)
       : defaults.statusFilter,
     impactFilter: VALID_IMPACTS.has(source.impactFilter ?? "all")
       ? (source.impactFilter as ActionImpactLevel | "all")

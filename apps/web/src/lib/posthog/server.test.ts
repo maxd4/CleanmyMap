@@ -39,6 +39,8 @@ describe("posthog server integration", () => {
 
     const result = await trackServerEvent("user_123", "spot_created", {
       location: "Paris",
+    }, {
+      consentGranted: true,
     });
 
     expect(result).toBe(true);
@@ -59,6 +61,20 @@ describe("posthog server integration", () => {
 
   it("is a safe no-op when PostHog is not configured", async () => {
     getPostHogKeyMock.mockReturnValue(null);
+    const { trackServerEvent } = await import("./server");
+
+    const result = await trackServerEvent("user_123", "spot_created", {
+      location: "Paris",
+    }, {
+      consentGranted: true,
+    });
+
+    expect(result).toBe(false);
+    expect(postHogCtorMock).not.toHaveBeenCalled();
+    expect(captureMock).not.toHaveBeenCalled();
+  });
+
+  it("is a safe no-op when analytics consent is missing", async () => {
     const { trackServerEvent } = await import("./server");
 
     const result = await trackServerEvent("user_123", "spot_created", {

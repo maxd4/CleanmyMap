@@ -14,7 +14,7 @@ export function useCommunityHighlights() {
     mutate: reloadHighlights,
   } = useSWR(
     ["section-community-feed"],
-    () => fetchActions({ status: "all", limit: 600, days: 365, types: "action" }),
+    () => fetchActions({ status: "approved", limit: 600, days: 365, types: "action" }),
     swrLiveFeedOptions,
   );
 

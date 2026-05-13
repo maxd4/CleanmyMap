@@ -27,7 +27,7 @@ export function useTrashSpotter(fr: boolean) {
   const { data, isLoading, error, mutate } = useSWR(
     ["section-trash-spotter"],
     () => fetchMapActions({
-      status: "all",
+      status: "approved",
       days: 180,
       limit: 250,
       types: ["clean_place", "spot"],
@@ -65,38 +65,6 @@ export function useTrashSpotter(fr: boolean) {
 
     setSpotState("pending");
 
-    // Optimistic Update
-    await mutate(async (currentData) => {
-      if (!currentData) return currentData;
-      return {
-        ...currentData,
-        items: [
-          {
-            id: `temp-${Date.now()}`,
-            status: "pending",
-            action_date: new Date().toISOString(),
-            location_label: label,
-            latitude: latitude ?? null,
-            longitude: longitude ?? null,
-            waste_kg: null,
-            cigarette_butts: null,
-            created_by_clerk_id: null,
-            contract: {
-              id: `temp-${Date.now()}`,
-              type: spotType,
-              status: "pending",
-              source: "optimistic",
-              location: { label, latitude: latitude ?? null, longitude: longitude ?? null },
-              geometry: { kind: "point", coordinates: [], geojson: null, confidence: null, geometrySource: "manual", origin: "manual" },
-              dates: { observedAt: new Date().toISOString(), createdAt: new Date().toISOString(), importedAt: null, validatedAt: null },
-              metadata: { actorName: null, notes: spotNotes.trim() || null, notesPlain: spotNotes.trim() || null, volunteersCount: 1, durationMinutes: 0, wasteKg: null, cigaretteButts: null, manualDrawing: null }
-            }
-          },
-          ...currentData.items
-        ]
-      };
-    }, { revalidate: false });
-
     try {
       const result = await createSpot({
         type: spotType,
@@ -124,11 +92,10 @@ export function useTrashSpotter(fr: boolean) {
       const type = mapItemType(item);
       return type === "clean_place" || type === "spot";
     });
-    const pending = items.filter((i) => i.status === "pending").length;
-    const approved = items.filter((i) => i.status === "approved").length;
-    const withCoords = items.filter((i) => i.latitude !== null && i.longitude !== null).length;
-    const recent = [...items].sort((a, b) => b.action_date.localeCompare(a.action_date)).slice(0, 6);
-    return { pending, approved, withCoords, total: items.length, recent };
+    const approved = items.filter((i) => i.status === "approved");
+    const withCoords = approved.filter((i) => i.latitude !== null && i.longitude !== null).length;
+    const recent = [...approved].sort((a, b) => b.action_date.localeCompare(a.action_date)).slice(0, 6);
+    return { approved: approved.length, withCoords, total: approved.length, recent };
   }, [data?.items]);
 
   return {

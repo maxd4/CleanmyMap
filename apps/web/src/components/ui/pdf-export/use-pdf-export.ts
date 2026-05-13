@@ -7,6 +7,7 @@ import {
   type PdfReportData,
   type PdfReportPayload,
 } from "@/lib/pdf-export/simple-pdf";
+import { buildExportUiCopy } from "@/lib/reports/export-ui";
 
 export type ExportHistoryEntry = {
   id: string;
@@ -82,6 +83,7 @@ export function usePdfExport(params: UsePdfExportParams) {
     () => buildPdfReportFilename({ rubrique: params.rubrique, periode: params.periode }),
     [params.rubrique, params.periode],
   );
+  const copy = useMemo(() => buildExportUiCopy({ format: "pdf", subject: "Rapport" }), []);
   const hasData = hasPdfReportData(params.data);
   const isDisabled = Boolean(params.disabled || !hasData || state === "pending");
   const title = customTitle.trim() || params.data?.title || params.defaultTitle;
@@ -126,10 +128,10 @@ export function usePdfExport(params: UsePdfExportParams) {
         ...prev,
       ]);
       setState("success");
-      setMessage("Rapport PDF généré.");
+      setMessage(copy.successMessage);
     } catch {
       setState("error");
-      setMessage("Impossible de générer le PDF. Vérifiez les données puis réessayez.");
+      setMessage(copy.errorMessage);
     }
   }
 
@@ -142,6 +144,7 @@ export function usePdfExport(params: UsePdfExportParams) {
     setOrganizationName,
     history,
     filename,
+    copy,
     hasData,
     isDisabled,
     exportRubriquePdf,

@@ -1,9 +1,9 @@
 import {
  buildActionsCsv,
- buildActionsCsvFilename,
  buildDateFloor,
  resolveReportQuery,
 } from"@/lib/reports/csv";
+import { buildDeliverableHeaders } from"@/lib/reports/http";
 import { filterActionContractsByScope } from"@/lib/reports/scope";
 import { requireAdminAccess } from"@/lib/authz";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
@@ -96,14 +96,12 @@ export async function GET(request: Request) {
  }));
 
  const csv = buildActionsCsv(rows);
- const filename = buildActionsCsvFilename();
  const withBom = `\uFEFF${csv}`;
-
- const headers: Record<string, string> = {
-"Content-Type":"text/csv; charset=utf-8",
-"Content-Disposition": `attachment; filename="${filename}"`,
-"Cache-Control":"no-store",
- };
+ const { headers } = buildDeliverableHeaders({
+ rubrique:"export_actions",
+ extension:"csv",
+ contentType:"text/csv; charset=utf-8",
+ });
  if (isTruncated) {
  headers["X-Export-Warning"] ="Dataset truncated to limit";
  }

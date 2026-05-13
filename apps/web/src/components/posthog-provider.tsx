@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
+import {
+  getAnalyticsConsentDecision,
+  hasAnalyticsConsent,
+  syncAnalyticsConsentCookie,
+} from "@/lib/analytics-consent";
 import { initPostHogClient, isPostHogInitialized } from "@/lib/posthog/client";
 import {
   COOKIE_CONSENT_CHANGE_EVENT,
 } from "@/lib/storage/ui-state-storage";
-import { hasAnalyticsConsent } from "./ui/cookie-consent-banner";
 
 function subscribe(onStoreChange: () => void): () => void {
   if (typeof window === "undefined") {
@@ -22,9 +26,18 @@ function subscribe(onStoreChange: () => void): () => void {
 }
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  const hasConsent = useSyncExternalStore(subscribe, hasAnalyticsConsent, () => false);
+  const consentDecision = useSyncExternalStore(
+    subscribe,
+    getAnalyticsConsentDecision,
+    () => null,
+  );
+  const hasConsent =
+    consentDecision !== null ? consentDecision : hasAnalyticsConsent();
 
   useEffect(() => {
+    if (consentDecision !== null) {
+      syncAnalyticsConsentCookie(consentDecision);
+    }
     if (hasConsent && !isPostHogInitialized()) {
       const posthog = initPostHogClient(true);
       if (posthog) {
@@ -33,7 +46,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
         });
       }
     }
-  }, [hasConsent]);
+  }, [consentDecision, hasConsent]);
   
   return <>{children}</>;
 }

@@ -68,6 +68,8 @@ function createState(
  cleanPlaceStatus:"validated",
  moderationConfirmed: true,
  moderationConfirmationText:"CONFIRMER MODERATION",
+ actionEditDraft: null,
+ cleanPlaceEditDraft: null,
  setModerationResult: vi.fn(),
  resetModerationConfirmationState: vi.fn(),
  pushModerationJournal: vi.fn(),
@@ -138,6 +140,69 @@ describe("admin workflow actions", () => {
  expect.objectContaining({
  outcome:"error",
  id:"action-1",
+ }),
+ );
+ });
+
+ it("sends selected form field corrections with moderation", async () => {
+ vi.mocked(postAdminModeration).mockResolvedValueOnce({
+ status:"ok",
+ entityType:"action",
+ id:"action-1",
+ });
+ const state = createState({
+ actionEditDraft: {
+ actorName:"Marie Admin",
+ associationName:"Action spontanée",
+ actionDate:"2026-04-22",
+ locationLabel:"Canal Saint-Martin",
+ departureLocationLabel:"Départ",
+ arrivalLocationLabel:"Arrivée",
+ routeStyle:"souple",
+ routeAdjustmentMessage:"",
+ latitude:"48.87",
+ longitude:"2.36",
+ wasteKg:"3.2",
+ cigaretteButts:"120",
+ volunteersCount:"4",
+ durationMinutes:"75",
+ notes:"Corrigé par admin",
+ placeType:"Canal",
+ submissionMode:"complete",
+ wasteMegotsKg:"0.4",
+ wasteMegotsCondition:"humide",
+ wastePlastiqueKg:"1",
+ wasteVerreKg:"",
+ wasteMetalKg:"",
+ wasteMixteKg:"",
+ triQuality:"moyenne",
+ manualDrawingJson:"",
+ },
+ });
+ const actions = createAdminWorkflowActions({
+ state,
+ csvExportUrl:"/api/reports/actions.csv",
+ jsonExportUrl:"/api/reports/actions.json",
+ mutatePreview: vi.fn(),
+ });
+
+ await actions.onModerateEntity();
+
+ expect(postAdminModeration).toHaveBeenCalledWith(
+ expect.objectContaining({
+ entityType:"action",
+ id:"action-1",
+ status:"approved",
+ edits: expect.objectContaining({
+ actionDate:"2026-04-22",
+ locationLabel:"Canal Saint-Martin",
+ wasteKg: 3.2,
+ wasteBreakdown: expect.objectContaining({
+ megotsKg: 0.4,
+ megotsCondition:"humide",
+ plastiqueKg: 1,
+ }),
+ }),
  }),
  );
  });

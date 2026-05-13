@@ -3,12 +3,36 @@ import type {
   ModerationCleanPlaceStatus,
   ModerationEntityType,
 } from"@/lib/admin/moderation-client";
-import type { AdminWorkflowController } from"./types";
+import type {
+  ActionModerationEditDraft,
+  AdminWorkflowController,
+  CleanPlaceModerationEditDraft,
+} from"./types";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type StepConfirmProps = {
   workflow: AdminWorkflowController;
 };
+
+function updateActionDraft<K extends keyof ActionModerationEditDraft>(
+ workflow: AdminWorkflowController,
+ key: K,
+ value: ActionModerationEditDraft[K],
+) {
+ workflow.setActionEditDraft((draft) =>
+ draft ? { ...draft, [key]: value } : draft,
+ );
+}
+
+function updateCleanPlaceDraft<K extends keyof CleanPlaceModerationEditDraft>(
+ workflow: AdminWorkflowController,
+ key: K,
+ value: CleanPlaceModerationEditDraft[K],
+) {
+ workflow.setCleanPlaceEditDraft((draft) =>
+ draft ? { ...draft, [key]: value } : draft,
+ );
+}
 
 export function StepConfirm({ workflow }: StepConfirmProps) {
   const { locale } = useSitePreferences();
@@ -197,6 +221,212 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  </button>
  </div>
  </div>
+ {workflow.moderationEntityType ==="action" && workflow.actionEditDraft ? (
+ <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3">
+ <p className="cmm-text-caption font-semibold uppercase tracking-wide text-emerald-800">
+ Correction des champs du formulaire
+ </p>
+ <p className="mt-1 cmm-text-caption text-emerald-900/75">
+ Les valeurs ci-dessous viennent de la déclaration sélectionnée. Elles sont
+ enregistrées avec le statut lors de la confirmation.
+ </p>
+ <div className="mt-3 grid gap-3 md:grid-cols-3">
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Auteur
+ <input
+ value={workflow.actionEditDraft.actorName}
+ onChange={(event) => updateActionDraft(workflow,"actorName",event.target.value)}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ />
+ </label>
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Association
+ <input
+ value={workflow.actionEditDraft.associationName}
+ onChange={(event) => updateActionDraft(workflow,"associationName",event.target.value)}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ />
+ </label>
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Date
+ <input
+ type="date"
+ value={workflow.actionEditDraft.actionDate}
+ onChange={(event) => updateActionDraft(workflow,"actionDate",event.target.value)}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ />
+ </label>
+ </div>
+ <div className="mt-3 grid gap-3 md:grid-cols-3">
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950 md:col-span-3">
+ Lieu affiché
+ <input
+ value={workflow.actionEditDraft.locationLabel}
+ onChange={(event) => updateActionDraft(workflow,"locationLabel",event.target.value)}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ />
+ </label>
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Départ
+ <input
+ value={workflow.actionEditDraft.departureLocationLabel}
+ onChange={(event) => updateActionDraft(workflow,"departureLocationLabel",event.target.value)}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ />
+ </label>
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Arrivée
+ <input
+ value={workflow.actionEditDraft.arrivalLocationLabel}
+ onChange={(event) => updateActionDraft(workflow,"arrivalLocationLabel",event.target.value)}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ />
+ </label>
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Style de trajet
+ <select
+ value={workflow.actionEditDraft.routeStyle}
+ onChange={(event) => updateActionDraft(workflow,"routeStyle",event.target.value as ActionModerationEditDraft["routeStyle"])}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ >
+ <option value="souple">Souple</option>
+ <option value="direct">Direct</option>
+ </select>
+ </label>
+ </div>
+ <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Ajustement de trajet
+ <input
+ value={workflow.actionEditDraft.routeAdjustmentMessage}
+ onChange={(event) => updateActionDraft(workflow,"routeAdjustmentMessage",event.target.value)}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ />
+ </label>
+ <div className="mt-3 grid gap-3 md:grid-cols-4">
+ {[
+ ["latitude","Latitude"],
+ ["longitude","Longitude"],
+ ["wasteKg","Poids total kg"],
+ ["cigaretteButts","Mégots"],
+ ["volunteersCount","Bénévoles"],
+ ["durationMinutes","Durée min"],
+ ["wasteMegotsKg","Mégots kg"],
+ ["wastePlastiqueKg","Plastique kg"],
+ ["wasteVerreKg","Verre kg"],
+ ["wasteMetalKg","Métal kg"],
+ ["wasteMixteKg","Mixte kg"],
+ ].map(([key, label]) => (
+ <label key={key} className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ {label}
+ <input
+ inputMode="decimal"
+ value={workflow.actionEditDraft[key as keyof ActionModerationEditDraft] as string}
+ onChange={(event) =>
+ updateActionDraft(
+ workflow,
+ key as keyof ActionModerationEditDraft,
+ event.target.value as never,
+ )
+ }
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ />
+ </label>
+ ))}
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ État mégots
+ <select
+ value={workflow.actionEditDraft.wasteMegotsCondition}
+ onChange={(event) => updateActionDraft(workflow,"wasteMegotsCondition",event.target.value as ActionModerationEditDraft["wasteMegotsCondition"])}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ >
+ <option value="propre">Propre</option>
+ <option value="humide">Humide</option>
+ <option value="mouille">Mouillé</option>
+ </select>
+ </label>
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Qualité tri
+ <select
+ value={workflow.actionEditDraft.triQuality}
+ onChange={(event) => updateActionDraft(workflow,"triQuality",event.target.value as ActionModerationEditDraft["triQuality"])}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ >
+ <option value="faible">Faible</option>
+ <option value="moyenne">Moyenne</option>
+ <option value="elevee">Élevée</option>
+ </select>
+ </label>
+ </div>
+ <div className="mt-3 grid gap-3 md:grid-cols-2">
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Type de lieu
+ <input
+ value={workflow.actionEditDraft.placeType}
+ onChange={(event) => updateActionDraft(workflow,"placeType",event.target.value)}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ />
+ </label>
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Mode
+ <select
+ value={workflow.actionEditDraft.submissionMode}
+ onChange={(event) => updateActionDraft(workflow,"submissionMode",event.target.value as ActionModerationEditDraft["submissionMode"])}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ >
+ <option value="quick">Rapide</option>
+ <option value="complete">Complet</option>
+ </select>
+ </label>
+ </div>
+ <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Notes
+ <textarea
+ rows={3}
+ value={workflow.actionEditDraft.notes}
+ onChange={(event) => updateActionDraft(workflow,"notes",event.target.value)}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
+ />
+ </label>
+ <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Tracé manuel JSON
+ <textarea
+ rows={4}
+ value={workflow.actionEditDraft.manualDrawingJson}
+ onChange={(event) => updateActionDraft(workflow,"manualDrawingJson",event.target.value)}
+ className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-mono font-normal outline-none transition focus:border-emerald-600"
+ />
+ </label>
+ </div>
+ ) : null}
+ {workflow.moderationEntityType ==="clean_place" && workflow.cleanPlaceEditDraft ? (
+ <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3">
+ <p className="cmm-text-caption font-semibold uppercase tracking-wide text-emerald-800">
+ Correction du signalement
+ </p>
+ <div className="mt-3 grid gap-3 md:grid-cols-2">
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Lieu
+ <input value={workflow.cleanPlaceEditDraft.label} onChange={(event) => updateCleanPlaceDraft(workflow,"label",event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600" />
+ </label>
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Type
+ <input value={workflow.cleanPlaceEditDraft.wasteType} onChange={(event) => updateCleanPlaceDraft(workflow,"wasteType",event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600" />
+ </label>
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Latitude
+ <input inputMode="decimal" value={workflow.cleanPlaceEditDraft.latitude} onChange={(event) => updateCleanPlaceDraft(workflow,"latitude",event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600" />
+ </label>
+ <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Longitude
+ <input inputMode="decimal" value={workflow.cleanPlaceEditDraft.longitude} onChange={(event) => updateCleanPlaceDraft(workflow,"longitude",event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600" />
+ </label>
+ </div>
+ <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
+ Notes
+ <textarea rows={3} value={workflow.cleanPlaceEditDraft.notes} onChange={(event) => updateCleanPlaceDraft(workflow,"notes",event.target.value)} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600" />
+ </label>
+ </div>
+ ) : null}
  <label className="mt-3 flex items-center gap-2 cmm-text-caption cmm-text-secondary">
  <input
  type="checkbox"

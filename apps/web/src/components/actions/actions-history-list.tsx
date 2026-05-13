@@ -136,6 +136,10 @@ export function ActionsHistoryList() {
  }
  return output;
  }, [filteredItems]);
+ const approvedFilteredItems = useMemo(
+ () => filteredItems.filter((item) => item.status ==="approved"),
+ [filteredItems],
+ );
 
  const selectedItem = useMemo(
  () =>
@@ -152,7 +156,7 @@ export function ActionsHistoryList() {
  : null;
  const pdfRows = useMemo(
  () =>
- filteredItems.map((item: ActionListItem) => {
+ approvedFilteredItems.map((item: ActionListItem) => {
  const quality = qualityById.get(item.id);
  const operational = item.contract ? getActionOperationalContext(item.contract) : null;
  return {
@@ -167,7 +171,7 @@ export function ActionsHistoryList() {
  Contexte: operational?.placeTypeLabel ??"n/a",
  };
  }),
- [filteredItems, qualityById],
+ [approvedFilteredItems, qualityById],
  );
  const pdfData = useMemo(
  () => ({
@@ -179,11 +183,10 @@ export function ActionsHistoryList() {
  search.trim() ? `Recherche active: ${search.trim()}.` : "Aucune recherche texte active.",
  ],
  stats: [
- { label:"Lignes visibles", value: filteredItems.length },
- { label:"Actions approuvées visibles", value: filteredItems.filter((item) => item.status ==="approved").length },
- { label:"Qualité A", value: filteredItems.filter((item) => qualityById.get(item.id)?.grade ==="A").length },
- { label:"Qualité B", value: filteredItems.filter((item) => qualityById.get(item.id)?.grade ==="B").length },
- { label:"Qualité C", value: filteredItems.filter((item) => qualityById.get(item.id)?.grade ==="C").length },
+ { label:"Actions validées exportées", value: approvedFilteredItems.length },
+ { label:"Qualité A", value: approvedFilteredItems.filter((item) => qualityById.get(item.id)?.grade ==="A").length },
+ { label:"Qualité B", value: approvedFilteredItems.filter((item) => qualityById.get(item.id)?.grade ==="B").length },
+ { label:"Qualité C", value: approvedFilteredItems.filter((item) => qualityById.get(item.id)?.grade ==="C").length },
  ],
  rows: pdfRows,
  columns: [
@@ -198,7 +201,7 @@ export function ActionsHistoryList() {
  { key:"Contexte", label:"Contexte" },
  ],
  }),
- [filteredItems, pdfRows, qualityById, qualityFilter, search, statusFilter, toFixOnly],
+ [approvedFilteredItems, pdfRows, qualityById, qualityFilter, search, statusFilter, toFixOnly],
  );
  const selectedLostPoints = selectedQuality
  ? Math.max(0, 100 - selectedQuality.score)
@@ -244,7 +247,7 @@ export function ActionsHistoryList() {
  organizationType="profil"
  defaultTitle="Rapport historique terrain"
  data={pdfData}
- disabled={isLoading || Boolean(error) || filteredItems.length === 0}
+ disabled={isLoading || Boolean(error) || approvedFilteredItems.length === 0}
  />
  </div>
 

@@ -1,5 +1,5 @@
 import { buildDateFloor, resolveReportQuery } from"@/lib/reports/csv";
-import { buildDeliverableFilename } from"@/lib/reports/deliverable-name";
+import { buildDeliverableHeaders } from"@/lib/reports/http";
 import { filterActionContractsByScope } from"@/lib/reports/scope";
 import { requireAdminAccess } from"@/lib/authz";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
@@ -95,19 +95,15 @@ export async function GET(request: Request) {
  sourceHealth,
  items: enrichedItems,
  };
- const filename = buildDeliverableFilename({
+ const { headers } = buildDeliverableHeaders({
  rubrique:"export_actions",
  extension:"json",
- date: new Date(),
+ contentType:"application/json; charset=utf-8",
  });
 
  return new Response(JSON.stringify(payload, null, 2), {
  status: 200,
- headers: {
-"Content-Type":"application/json; charset=utf-8",
-"Content-Disposition": `attachment; filename=\"${filename}\"`,
-"Cache-Control":"no-store",
- },
+ headers,
  });
  } catch (error) {
  const message = error instanceof Error ? error.message :"Unknown error";

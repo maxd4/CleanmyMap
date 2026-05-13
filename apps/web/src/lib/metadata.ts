@@ -132,7 +132,7 @@ export const metadata: Metadata = {
       "La carte citoyenne de depollution. Signalez, nettoyez, agissez pour l'environnement. Developpement durable, benevolat, action citoyenne, coordination communautaire.",
     images: [
       {
-        url: "/brand/nouveau-logo.png",
+        url: "/brand/logo-cleanmymap.webp",
         width: 1200,
         height: 630,
         alt: "CleanMyMap - Carte propreté Paris et cleanwalks - Écologie",
@@ -144,7 +144,7 @@ export const metadata: Metadata = {
     title: "CleanMyMap - Dépollution Paris & Carte Propréte",
     description:
       "La carte citoyenne de depollution. Signalez, nettoyez, agissez pour l'environnement.",
-    images: ["/brand/nouveau-logo.png"],
+    images: ["/brand/logo-cleanmymap.webp"],
   },
   robots: {
     index: true,

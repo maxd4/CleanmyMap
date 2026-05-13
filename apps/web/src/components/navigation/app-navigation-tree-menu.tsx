@@ -39,6 +39,7 @@ export function AppNavigationTreeMenu({
   const [openSpaceId, setOpenSpaceId] = useState<NavigationSpace["id"] | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const placement = useDropdownPlacement({
     isOpen,
@@ -87,6 +88,33 @@ export function AppNavigationTreeMenu({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+      }
+    };
+  }, []);
+
+  const openMenu = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+    setIsOpen(true);
+    setOpenSpaceId(activeSpaceId ?? spaces[0]?.id ?? null);
+  };
+
+  const closeMenuAfterHover = () => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+    }
+    closeTimerRef.current = setTimeout(() => {
+      setIsOpen(false);
+      closeTimerRef.current = null;
+    }, 160);
+  };
+
   const toggleMenu = () => {
     setIsOpen((current) => {
       const next = !current;
@@ -100,13 +128,8 @@ export function AppNavigationTreeMenu({
   return (
     <div
       className="relative shrink-0"
-      onMouseEnter={() => {
-        setIsOpen(true);
-        setOpenSpaceId(activeSpaceId ?? spaces[0]?.id ?? null);
-      }}
-      onMouseLeave={() => {
-        setIsOpen(false);
-      }}
+      onMouseEnter={openMenu}
+      onMouseLeave={closeMenuAfterHover}
     >
       <button
         ref={triggerRef}
@@ -118,8 +141,8 @@ export function AppNavigationTreeMenu({
         className={cn(
           "inline-flex min-h-11 min-w-[10rem] items-center justify-center gap-2 rounded-full border px-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
           activeSpaceLabel
-            ? "border-blue-300/35 bg-gradient-to-r from-[#2F6EF7] via-[#356BF2] to-[#4D80FF] text-white shadow-[0_18px_36px_-20px_rgba(47,92,240,0.55)] hover:border-blue-200/50 hover:from-[#3468FF] hover:via-[#4475FF] hover:to-[#5E8CFF]"
-            : "border-white/14 bg-white/10 text-white hover:border-cyan-300/40 hover:bg-white/16",
+            ? "border-blue-200/45 bg-gradient-to-r from-[#2F6EF7] via-[#356BF2] to-[#4D80FF] text-white shadow-[0_18px_36px_-20px_rgba(47,92,240,0.55)] hover:border-blue-100/60 hover:from-[#3468FF] hover:via-[#4475FF] hover:to-[#5E8CFF]"
+            : "border-cyan-100/18 bg-white/14 text-white/92 hover:border-cyan-200/42 hover:bg-white/20 hover:text-white",
           isOpen && activeSpaceLabel && "border-blue-200/55",
           isOpen && !activeSpaceLabel && "border-cyan-300/45 bg-white/16",
         )}
@@ -174,6 +197,8 @@ export function AppNavigationTreeMenu({
                 placement.openUp ? "lg:bottom-full lg:top-auto lg:mb-3" : "lg:mt-3",
                 placement.alignRight ? "lg:right-0" : "lg:left-0",
               )}
+              onMouseEnter={openMenu}
+              onMouseLeave={closeMenuAfterHover}
               style={panelStyle}
             >
               <div className="flex items-center justify-end border-b border-white/10 px-3 py-2.5 sm:px-4">
@@ -291,6 +316,14 @@ export function AppNavigationTreeMenu({
                 </div>
               </div>
             </motion.div>
+            <div
+              className={cn(
+                "absolute z-50 hidden h-3 w-full lg:block",
+                placement.openUp ? "bottom-full" : "top-full",
+              )}
+              onMouseEnter={openMenu}
+              aria-hidden="true"
+            />
           </>
         ) : null}
       </AnimatePresence>

@@ -103,6 +103,23 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
     difficulty: "novice",
   },
   {
+    id: "n5",
+    type: "multiple-choice",
+    category: "IA & environnement",
+    question:
+      "Quel est l'effet réel d'une requête IA courte sur l'électricité consommée ? (0,24 Wh, soit environ 2 secondes de consommation électrique d'un foyer français moyen)",
+    answer: "C'est très faible à l'unité, mais cela compte quand on multiplie les requêtes",
+    options: [
+      "C'est très faible à l'unité, mais cela compte quand on multiplie les requêtes",
+      "C'est équivalent à une journée entière d'un foyer",
+      "C'est plus élevé qu'un trajet en voiture de 100 km",
+      "C'est négligeable même à grande échelle",
+    ],
+    explanation:
+      "Une requête isolée pèse peu, mais l'impact devient significatif quand on additionne des milliers ou des millions d'appels.",
+    difficulty: "novice",
+  },
+  {
     id: "i1",
     type: "multiple-choice",
     category: "Limites planétaires",
@@ -163,6 +180,28 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
     difficulty: "intermédiaire",
   },
   {
+    id: "i7",
+    type: "multiple-choice",
+    category: "IA & environnement",
+    question: "À quoi correspondent 20 kgCO2e en voiture moyenne ? (≈ 100 km à 193 gCO2e/km)",
+    answer: "Environ 100 km",
+    options: ["Environ 10 km", "Environ 100 km", "Environ 1 000 km", "Environ 10 000 km"],
+    explanation:
+      "Avec un facteur moyen de 193,2 gCO2e/km, 20 kgCO2e correspondent à un peu plus de 100 km de voiture. C'est un ordre de grandeur pédagogique, pas une équivalence universelle.",
+    difficulty: "intermédiaire",
+  },
+  {
+    id: "i8",
+    type: "multiple-choice",
+    category: "IA & environnement",
+    question: "À quoi correspondent 100 kWh pour un foyer français moyen ? (≈ 9 jours sur la base de 4 111 kWh/an)",
+    answer: "Environ 9 jours",
+    options: ["Environ 1 jour", "Environ 9 jours", "Environ 1 mois", "Environ 1 an"],
+    explanation:
+      "Sur une base moyenne de 4 111 kWh par an, 100 kWh représentent un peu moins de 9 jours de consommation électrique d'un foyer. L'équivalence varie selon la taille du foyer et ses usages.",
+    difficulty: "intermédiaire",
+  },
+  {
     id: "x1",
     type: "multiple-choice",
     category: "GIEC",
@@ -181,6 +220,23 @@ const QUIZ_QUESTIONS: QuizQuestion[] = [
     answer: "100 à 1000 fois supérieur",
     options: ["10 fois supérieur", "50 fois supérieur", "100 à 1000 fois supérieur", "Plus de 5000 fois supérieur"],
     explanation: "Nous traversons la sixième extinction de masse, causée par l'activité humaine.",
+    difficulty: "expert",
+  },
+  {
+    id: "x6",
+    type: "multiple-choice",
+    category: "IA & environnement",
+    question:
+      "Pourquoi les comparaisons d'impact IA en km de voiture ou en jours d'électricité doivent-elles rester prudentes ?",
+    answer: "Parce que le résultat dépend du périmètre, du véhicule, du foyer et du mix électrique",
+    options: [
+      "Parce que le résultat dépend du périmètre, du véhicule, du foyer et du mix électrique",
+      "Parce que ces équivalences sont toujours exactes à 100 %",
+      "Parce que l'énergie d'une IA ne peut jamais être comparée",
+      "Parce que la voiture et l'électricité n'ont aucun lien avec le climat",
+    ],
+    explanation:
+      "Ce sont des repères pédagogiques utiles, pas des conversions universelles. Le bon chiffre dépend du modèle, du contexte d'usage, de la région du datacenter et du type de véhicule ou de foyer retenu.",
     difficulty: "expert",
   },
   {

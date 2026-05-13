@@ -284,10 +284,10 @@ export function ActionStepReview({
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900">
-              {isCleanPlaceMode ? "Publier le lieu propre" : "Publier la déclaration"}
+              {isCleanPlaceMode ? "Dernière vérification" : "Dernière vérification"}
             </p>
             <p className="text-xs text-slate-400 mt-0.5">
-              Action irréversible — la déclaration sera soumise à validation.
+              Ce bouton ouvre une confirmation. Rien n&apos;est envoyé tant que vous ne confirmez pas.
             </p>
           </div>
         </div>
@@ -308,7 +308,7 @@ export function ActionStepReview({
           ) : (
             <>
               <ClipboardCheck size={17} />
-              {isCleanPlaceMode ? "Publier mon lieu propre" : "Publier ma déclaration"}
+              {isCleanPlaceMode ? "Vérifier avant envoi" : "Vérifier avant envoi"}
             </>
           )}
         </CmmButton>

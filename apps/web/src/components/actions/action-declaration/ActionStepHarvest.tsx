@@ -59,7 +59,6 @@ export function ActionStepHarvest({
     wasteCurrentPerVolunteer,
     wasteBenchmarkPerVolunteer,
     wasteDeltaPercent,
-    cigaretteButtsCount,
     megotsKg,
     megotsCount,
     megotsCurrentPerVolunteer,
@@ -101,7 +100,6 @@ export function ActionStepHarvest({
             wasteMegotsCondition={form.wasteMegotsCondition}
             megotsKg={megotsKg}
             megotsCount={megotsCount}
-            cigaretteButtsCount={cigaretteButtsCount}
             comparisonTone={comparisonTone}
             megotsCurrentPerVolunteer={megotsCurrentPerVolunteer}
             wasteBenchmarkPerVolunteer={wasteBenchmarkPerVolunteer}
