@@ -51,7 +51,7 @@
   },
   "homepage": "https://github.com/maxd4/CleanMyMap#readme",
   "devDependencies": {
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.60.0",
     "playwright": "^1.59.1",
     "sharp": "^0.34.5"
   },
@@ -71,6 +71,6 @@
   },
   "dependencies": {
     "posthog-js": "^1.373.4",
-    "posthog-node": "^5.33.7"
+    "posthog-node": "^5.34.1"
   }
 }
