@@ -793,7 +793,7 @@ Parmi les usages malveillants déjà identifiés figurent la désinformation, la
 Dans un cadre de soutenance, il est plus juste de parler ici de **risques CBRN** ou de **risques catastrophiques** que de se focaliser sur un exemple isolé : l’enjeu n’est pas qu’un modèle choisirait spontanément la violence, mais que des capacités générales très puissantes peuvent réduire certaines barrières d’accès à des scénarios dangereux.
 Le rapport souligne aussi que des systèmes plus **agentiques** peuvent accroître les risques en réduisant la part de supervision humaine directe [13].
 
-Le résumé vidéo consacré à un modèle présenté comme très avancé en cybersécurité doit être traité avec prudence, car il ne remplace pas une documentation technique primaire.
+Dans le cas du modèle Mythos developpé par Anthropic, Mythos n'a pas été rendu public car il a présenté des capacité d'attaque en cybersécurité.
 Il apporte toutefois un signal utile pour ce rapport : à mesure que les modèles deviennent capables d’explorer du code, de déléguer à des sous-agents, de tester des hypothèses et de chercher des vulnérabilités, l’équilibre entre défense et attaque peut évoluer [21].
 Pour CleanMyMap, cela renforce une règle déjà retenue : ne pas donner à des agents IA des permissions étendues, ne pas leur confier d’opérations destructrices, et maintenir une validation humaine sur la sécurité, les dépendances et les déploiements.
 
@@ -1050,10 +1050,10 @@ Elle est un levier sous contrainte, dont l'usage doit rester proportionné, mesu
 - [17] Kenneth Payne, *AI Arms and Influence: Frontier Models Exhibit Sophisticated Reasoning in Simulated Nuclear Crises* (arXiv preprint, 16 février 2026). [Lien](https://arxiv.org/abs/2602.14740)
 - [18] King's College London, *King's study finds AI chose nuclear signalling in 95% of simulated crises*. [Lien](https://www.kcl.ac.uk/news/artificial-intelligence-under-nuclear-pressure-first-large-scale-kings-study-reveals-how-ai-models-reason-and-escalate-under-crisis)
 - [19] Vidéo YouTube fournie comme source secondaire sur l'IA de frontière, les imaginaires sociotechniques et les risques d'escalade. [Lien](https://www.youtube.com/watch?v=av8BfUkfCVI)
-- [20] Vidéo YouTube résumée dans `alignement.md`, *Pourquoi ChatGPT a manipulé des ados*, **source secondaire de cadrage** sur anthropomorphisme, conversations longues, santé mentale et dépendance émotionnelle. [Lien](https://www.youtube.com/watch?v=fbAfLv7CBic)
-- [21] Vidéo YouTube résumée dans `claude_mythos.md`, *Il faut qu'on parle de Claude Mythos*, **source secondaire de cadrage** sur modèles agentiques, cybersécurité, créativité narrative et limites d'interprétation. [Lien](https://www.youtube.com/watch?v=JBaBAg4ny6U)
-- [22] Vidéo YouTube résumée dans `IA_artiste.md`, *Pourquoi l’IA ne remplacera pas les artistes*, **source secondaire de cadrage** sur consentement, valeur du travail créatif, aura, intention et substitution économique. [Lien](https://www.youtube.com/watch?v=B_MR20jqR48)
-- [23] Vidéo YouTube résumée dans `IA_travail.md`, *Le jeu dans lequel on vit est en train de changer*, **source secondaire de cadrage** sur transformation du travail, valeur des compétences et identité professionnelle. [Lien](https://www.youtube.com/watch?v=waoKjITpot0)
+- [20] Vidéo YouTube *Pourquoi ChatGPT a manipulé des ados*, **source secondaire de cadrage** sur anthropomorphisme, conversations longues, santé mentale et dépendance émotionnelle. [Lien](https://www.youtube.com/watch?v=fbAfLv7CBic)
+- [21] Vidéo YouTube *Il faut qu'on parle de Claude Mythos*, **source secondaire de cadrage** sur modèles agentiques, cybersécurité, créativité narrative et limites d'interprétation. [Lien](https://www.youtube.com/watch?v=JBaBAg4ny6U)
+- [22] Vidéo YouTube *Pourquoi l’IA ne remplacera pas les artistes*, **source secondaire de cadrage** sur consentement, valeur du travail créatif, aura, intention et substitution économique. [Lien](https://www.youtube.com/watch?v=B_MR20jqR48)
+- [23] Vidéo YouTube *Le jeu dans lequel on vit est en train de changer*, **source secondaire de cadrage** sur transformation du travail, valeur des compétences et identité professionnelle. [Lien](https://www.youtube.com/watch?v=waoKjITpot0)
 
 Ces risques doivent être mis en balance avec des bénéfices possibles : accélération du développement, meilleure structuration documentaire, génération de tests, repérage d’incohérences et aide au refactoring.
 La règle de décision reste toutefois inchangée : l’IA doit être utilisée comme **assistant**, jamais comme **autorité**.
