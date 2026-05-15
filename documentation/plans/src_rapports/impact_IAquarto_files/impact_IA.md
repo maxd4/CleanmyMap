@@ -18,10 +18,6 @@ Ce rapport a été structuré, rédigé et relu avec l'aide d'outils d'IA géné
 - **Pour formuler des prompts d'amélioration du site afin de limiter son impact** : s'appuyer surtout sur la [Partie II](#partie-ii-empreinte-environnementale-et-materielle), la [Partie V](#partie-v-bilan-systemique-dette-compensation-et-limites) et la [Partie VI](#partie-vi-plan-de-reduction-des-impacts), en gardant l’IUR de la [Partie IV](#partie-iv-utilite-reelle-de-cleanmymap) comme critère de décision.
 :::
 
---------------------------------------------------
-
-{{< pagebreak >}}
-
 # Résumé exécutif {#resume-executif}
 
 Le document assume son propre mode de production : il a été préparé avec assistance IA, puis organisé et relu humainement. Cette transparence ne remplace pas la vérification ; elle invite au contraire à considérer le rapport comme un document auditable, dont les éventuelles coquilles, erreurs et omissions doivent s'il vous plaît être signalées à [contact@cleanmymap.fr](mailto:contact@cleanmymap.fr).
@@ -48,10 +44,6 @@ Le fil directeur du rapport est le suivant : **l’IA n’est justifiable que si
 
 L'usage de l'IA est défendable s'il reste **responsable, limité, mesuré et relu humainement**. Il doit être réduit, recentré ou refusé si l'utilité terrain n'est pas démontrée, si les risques sociaux augmentent, si les dépendances deviennent non maîtrisables ou si le coût numérique progresse plus vite que le bénéfice environnemental ou social.
 
---------------------------------------------------
-
-{{< pagebreak >}}
-
 # Partie I — Cadre, périmètre et méthode {#partie-i-cadre-perimetre-et-methode}
 
 Cette partie fixe le cadre de preuve du bilan : ce qui est directement mesuré dans le dépôt, ce qui relève d'une hypothèse déclarative, les ordres de grandeur retenus, et les limites de validité de l'exercice.
@@ -77,9 +69,46 @@ Le périmètre technique observé est celui d'un monorepo Next.js/React, API, Su
 Ce rapport vise donc la transparence sur les hypothèses et sur les limites de preuve, et ne reprend les apports des ateliers DU que lorsqu'ils ont déjà été transformés en améliorations absorbées par le projet.
 Le cadrage environnemental détaillé de l’usage de l’IA, des scénarios de consommation et des incertitudes de calcul figure en Partie II.
 
-Le détail chiffré du dépôt, de l’historique Git et du périmètre technique observé est placé en **Annexe A — Statistiques du dépôt**.
+Le détail chiffré du dépôt, de l’historique Git et du périmètre technique observé est placé dans la section **Statistiques du dépôt**.
 
 ## Hypothèses utilisées
+
+### Statistiques du dépôt
+
+Cette annexe conserve la photographie documentaire du dépôt utilisée dans tout le bilan.
+
+| Métrique | Valeur (Photographie au 13/05/2026) |
+|---|---|
+| **Fichiers source (filtrés)** | **1 366** |
+| **Lignes source totales** | **223 822** |
+| TypeScript / React (`.ts`, `.tsx`) | ~195 000 |
+| SQL / Supabase (`.sql`) | ~2 500 |
+| Python / Scripts (`.py`, `.mjs`) | ~18 000 |
+| Style / CSS (`.css`) | ~4 000 |
+| Autres (Markdown, JSON, etc.) | ~4 322 |
+
+| Historique Git | Valeur |
+|---|---|
+| Commits (20 fév. → 13 mai 2026) | 177 |
+| Insertions totales | 425 324 lignes |
+| Suppressions totales | 246 930 lignes |
+
+Le ratio insertions/lignes actuelles (~3,3×) indique beaucoup de churn et de refactor, cohérent avec un développement itératif assisté par IA.
+
+Périmètre technique observé :
+
+- Frontend : Next.js 16, React 19, Tailwind, Leaflet, Recharts, Framer Motion
+- Backend/API : 45 routes API Next.js
+- Auth : Clerk côté web, Supabase Auth côté app compagnon
+- Base de données : Supabase, migrations SQL, scripts d’import/sync
+- Analytics : PostHog, Vercel Analytics, Speed Insights
+- Observabilité : Sentry
+- Email : Resend
+- Paiement/dons : Stripe
+- Infra complémentaire : Upstash Redis/QStash, Pinecone déclaré, Vercel
+- Mobile : app Expo/React Native connectée à Supabase
+- Legacy : Python, SQLite, scripts et tests historiques, plusieurs fichiers de prises de notes dans la documentation par l'utilisateur
+
 
 - Projet créé le 20 février 2026
 - 10 semaines actives retenues jusqu'au 13 mai 2026
@@ -97,6 +126,1502 @@ Ces hypothèses servent de base commune aux estimations environnementales et aux
 | Antigravity (Google models) | ~20 h | Amélioration, modularisation |
 
 ### Productivité apparente
+
+### Détail des calculs
+
+Cette annexe rassemble les hypothèses de calcul utilisées dans le mémoire, sans modifier les ordres de grandeur retenus dans le corps principal.
+
+#### Hypothèse horaire de développement assisté par IA
+
+- Projet créé le 20 février 2026
+
+- 10 semaines actives retenues jusqu’au 13 mai 2026
+
+- 8 h/semaine code IA + 2 h/semaine optimisation prompts
+
+- **Total estimé : 100 h de développement assisté par IA**
+
+Le calendrier complet allant du 20 février au 12 mai 2026 couvre environ 11,6 semaines. L’hypothèse de 100 heures doit donc être lue comme une estimation déclarative prudente, non comme une mesure automatique.
+
+#### Répartition par outil
+
+|Outil / mode|Part horaire estimée|Heures sur 100 h|Usage principal|
+|---|---|---|---|
+|ChatGPT / Codex / LLM équivalent|55 %|55 h|cadrage, génération, refactor, documentation, debug|
+|Claude / autre LLM conversationnel|20 %|20 h|comparaison, reformulation, synthèse|
+|GitHub Copilot / autocomplétion|15 %|15 h|complétion locale, suggestions de code|
+|Outils non IA mais induits par l’usage IA|10 %|10 h|tests, validation, ajustements après propositions IA|
+
+Cette répartition reste une hypothèse de travail méthodologique.
+
+#### Productivité apparente
+
+En retenant **223 822 lignes source** pour **100 h** de développement assisté par IA, la productivité apparente serait d’environ :
+
+#### 223 822 / 100 ≈2 238 lignes source par heure
+
+Cette valeur n’est pas une productivité humaine réelle. Elle agrège du code utile, du code remplacé, du refactor, de la configuration, du SQL, des scripts, du Markdown et du churn Git.
+
+#### Indice d’utilité réelle (IUR)
+
+La définition principale de l’IUR figure en Partie IV. La formule utilisée est :
+
+#### IUR = Impact Terrain (Déchets localisés/retirés) / Coût Numérique Global (CO2e + H2O)
+
+L’IUR n’est pas un indicateur financier. Il sert à vérifier que le bénéfice terrain progresse plus vite que le coût numérique global.
+
+Le numérateur doit rester lié à des éléments observables : actions réalisées, zones nettoyées, déchets localisés ou retirés, rapports transmis, participants mobilisés, données réutilisées par une association ou une collectivité. Le dénominateur regroupe les coûts numériques et matériels estimés : consommation électrique, émissions carbone, eau, stockage, transferts, services tiers et dette matérielle lorsque celle-ci est documentable.
+
+L’IUR doit être interprété en tendance plutôt qu’en valeur absolue. Une version du site est préférable si, à utilité terrain égale, elle consomme moins de ressources; ou si, à coût numérique comparable, elle déclenche davantage d’actions utiles. À l’inverse, une version qui augmente les pages, scripts, photos, requêtes et services tiers sans effet terrain mesurable dégrade l’IUR.
+
+Exemples d’améliorations favorables à l’IUR :
+
+- réduire la taille moyenne des photos sans perte probatoire;
+
+- rendre un rapport plus facile à transmettre à une collectivité;
+
+- simplifier le formulaire pour augmenter les signalements complets;
+
+- supprimer une page ou un service peu utilisé;
+
+- remplacer une fonctionnalité IA par une règle déterministe suffisante;
+
+- limiter les notifications aux cas réellement utiles.
+
+Exemples de décisions défavorables à l’IUR :
+
+- ajouter une IA de recommandation sans preuve d’usage;
+
+- conserver plusieurs dashboards pour une même information;
+
+- multiplier les badges, animations ou classements sans action terrain;
+
+- stocker des photos haute résolution sans durée de conservation;
+
+- suivre des événements analytics qui ne guident aucune décision.
+
+#### Logique des scénarios de coût
+
+Les calculs environnementaux du mémoire reposent sur une combinaison de :
+
+- données observables dans le dépôt;
+
+- hypothèses d’usage de l’IA;
+
+- fourchettes d’intensité énergétique, carbone, hydrique et matérielle issues de la littérature;
+
+- scénarios prudents, intermédiaires et hauts pour éviter un faux sentiment de précision.
+
+Le rapport retient volontairement des ordres de grandeur plutôt que des valeurs trop précises. Les postes mesurables localement sont limités : taille du dépôt, nombre de fichiers, structure applicative, présence de routes API, dépendances, usages déclarés et hypothèses horaires. Les postes non mesurés directement sont encadrés par des scénarios : intensité électrique des modèles, localisation des data centers, mix électrique, refroidissement, durée des sessions, builds, stockage, consultation de cartes et usages futurs.
+
+Les scénarios doivent être lus ainsi :
+
+|Scénario|Fonction|Interprétation|
+|---|---|---|
+|Bas|borne minimale plausible|utile pour éviter de surestimer l’impact|
+|||sans preuve|
+|Central prudent|hypothèse de travail|utilisé pour discuter l’arbitrage principal|
+|Haut|borne de vigilance|utile pour vérifier que la conclusion reste|
+|||prudente|
+
+Le scénario central utilisé dans le corps principal conserve les ordres de grandeur déjà retenus : environ **100 kWh** , **20 kgCO2e** et **100 L** comme repères annuels ou de développement selon le bloc concerné. Ces chiffres ne doivent pas être lus comme une mesure instrumentée, mais comme un cadre de prudence pour comparer l’impact numérique à l’utilité terrain.
+
+#### Hypothèses de consommation électrique
+
+La consommation électrique du développement assisté par IA dépend de plusieurs couches :
+
+- temps de génération ou d’inférence des modèles;
+
+- nombre de relances, prompts, corrections et itérations;
+
+- builds locaux et distants déclenchés par les modifications;
+
+- tests, CI/CD, previews et validations;
+
+- stockage et consultation de documentation, logs et rapports.
+
+L’estimation ne sépare pas parfaitement ces couches. Elle agrège l’usage IA, le travail de développement induit et les effets techniques associés. Cette limite méthodologique est assumée : le rapport vise un ordre de grandeur défendable, non un inventaire instrumenté minute par minute.
+
+La conséquence pratique est que la réduction future ne doit pas viser seulement les prompts IA. Elle doit aussi viser les boucles qui les accompagnent : relances inutiles, builds déclenchés par de simples changements documentaires, previews redondantes, tests lourds non ciblés et refactorisations produisant beaucoup de churn.
+
+#### Hypothèses carbone et eau
+
+Le passage de l’électricité au carbone dépend du mix électrique, de la localisation du calcul, du moment de consommation, du type de data center et du périmètre retenu. Le passage à l’eau dépend du refroidissement, de l’eau directe consommée, de l’eau associée à la production d’électricité et des méthodes de comptabilité utilisées.
+
+Le rapport conserve donc une lecture prudente :
+
+- ne pas réduire l’impact IA au seul carbone;
+
+- ne pas présenter l’eau comme mesurée précisément si elle ne l’est pas;
+
+- distinguer l’ordre de grandeur du développement assisté par IA, l’usage futur du site et l’impression du rapport;
+
+- rappeler que les impacts matériels, hydriques et sociaux peuvent rester significatifs même lorsque le carbone paraît modéré.
+
+Les valeurs **100 kWh** , **20 kgCO2e** et **100 L** servent de repères pour comparer les choix, pas de certification. Elles doivent être réévaluées si des logs d’usage, factures cloud, métriques de stockage ou données fournisseurs deviennent disponibles.
+
+#### Hypothèses liées à l’impression du rapport
+
+L’impression du rapport est traitée comme un poste matériel complémentaire, car un rapport d’audit peut lui-même devenir un support physique consommateur de papier, encre, toner, énergie, transport et fin de vie.
+
+Les ordres de grandeur retenus dans le corps principal sont conservés :
+
+- **0,4 à 0,7 kgCO2e** pour un exemplaire noir et blanc recto-verso optimisé;
+
+- **1 à 1,4 kgCO2e** pour un exemplaire couleur recto simple;
+
+- **10 à 14 kgCO2e** pour 10 exemplaires couleur;
+
+- **20 à 28 kgCO2e** pour 20 exemplaires couleur.
+
+Ces valeurs servent à montrer un effet d’échelle. Un exemplaire isolé reste faible par rapport au développement assisté par IA, mais un tirage multiplié peut atteindre le même ordre de grandeur carbone. L’analyse reste volontairement prudente sur les impacts non carbonés : eau, fibres, bois, blanchiment, encres, toners, plastification, reliure et déchets.
+
+#### Incertitudes et contrôles à prévoir
+
+Les principales incertitudes restantes concernent :
+
+- le nombre réel de requêtes IA et leur type;
+
+- la localisation des calculs;
+
+- la part de modèles légers ou lourds;
+
+- le volume de builds déclenchés par les itérations;
+
+- le stockage réel des photos en production;
+
+- le trafic futur sur les cartes et rapports;
+
+- le taux d’impression réelle du rapport;
+
+- le nombre d’actions terrain réellement attribuables à CleanMyMap.
+
+Pour une version future plus instrumentée, les contrôles les plus utiles seraient :
+
+- journal mensuel des usages IA par type de tâche;
+
+- export des durées et fréquences de builds;
+
+- mesure du poids des pages principales;
+
+- volume mensuel de stockage photo;
+
+- nombre d’exports ou rapports réellement téléchargés;
+
+- nombre de signalements transformés en actions;
+
+- suivi des impressions physiques du rapport.
+
+Ces contrôles permettraient de transformer les ordres de grandeur en mesures plus solides sans changer le cadre de raisonnement.
+
+#### Annexe C — Audit technique de sobriété (diagnostic détaillé)
+
+[!NOTE] **Rattachement éditorial** : cette section prolonge la **Partie I — Méthodologie et diagnostic** . Elle documente le coût technique réel du frontend, du backend, des dépendances et des usages IA.
+
+Cette section identifie les principaux postes de consommation numérique, énergétique et computationnelle visibles dans le dépôt au 13 mai 2026. Elle ne remplace pas une mesure Lighthouse, WebPageTest, `next build --analyze` ou traces de production, mais elle permet de repérer les sources probables de surcoût à partir de l’architecture, du code, des dépendances et des workflows, en s’appuyant sur une démarche de sobriété numérique. [1]
+
+Cette section sert donc de contrepoint à la précédente : une utilité forte ne suffit pas si elle repose sur une architecture trop coûteuse pour l’usage réellement rendu, conformément aux recommandations du W3C. [36]
+
+Repères locaux utilisés : application Next.js/React dans `apps/web` , 57 fichiers de routes API, 237 fichiers déclarés comme composants ou modules client, 89 imports de `framer-motion` , 71 usages de SWR, 57 occurrences de `fetch(` dans `apps/web/src` , 23 occurrences de `no-store` , 3 exports `revalidate` , assets publics PNG jusqu’à environ 738 Ko, Leaflet et Leaflet Draw présents, analytics PostHog/Vercel/Sentry conditionnées par consentement ou configuration.
+
+#### Cartographie des coûts numériques
+
+|Zone|Source de coût|Mécanisme|Impact probable|Confiance|Solution concrète|
+|---|---|---|---|---|---|
+|Frontend global|Client components|plus de JavaScript|moyen à fort|élevée|réduire les|
+||nombreux|à hydrater, plus de|||composants`use`|
+|||rendu côté|||`client`, isoler|
+|||navigateur|||l’interactivité par|
+||||||îlot|
+|Animations|`framer-motion`|bundle plus lourd,|moyen|élevée|réserver Framer|
+||importé|calculs d’animation,|||Motion aux|
+||massivement|re-renders|||interactions clés,|
+||||||CSS transitions|
+||||||ailleurs|
+|Cartographie|Leaflet, React|scripts lourds, tuiles|fort sur pages carte|élevée|chargement|
+||Leaflet, clusters,|réseau, rendu DOM|||dynamique strict,|
+||Leaflet Draw|des marqueurs|||cluster serveur ou|
+||||||pagination spatiale|
+|CSS global|CSS Leaflet chargé|feuilles de style|faible à moyen|élevée|importer CSS|
+||dans`layout.tsx`|envoyées même|||seulement dans les|
+|||hors carte|||segments|
+||||||cartographiques|
+|Données temps|SWR + refresh|revalidation|moyen à fort selon|moyenne|désactiver refresh|
+|réel|global 30 s|automatique et|pages||par défaut, activer|
+|||appels répétés|||seulement chat/live|
+|API|57 routes API|surface serveur|moyen|élevée|fusionner routes|
+|||large, validations,|||proches, cache|
+|||appels DB et logs|||contrôlé, budget|
+||||||endpoints|
+|Stockage|photos d’actions|upload, stockage,|fort si usage terrain|élevée|compression client,|
+||Supabase Storage|backups,|réel||quotas, durée de|
+|||consultation|||conservation,|
+|||répétée|||miniatures|
+|Analytics|PostHog, Vercel|événements,|moyen|élevée|consentement|
+||Analytics, Speed|scripts, stockage,|||strict, sampling,|
+||Insights, funnel|traitement externe|||événements|
+||local||||actionnables|
+||||||uniquement|
+|Observabilité|Sentry|collecte d’erreurs,|faible à moyen|moyenne|garder seulement|
+|||sourcemaps, traces|||erreurs critiques,|
+|||éventuelles|||sampling faible|
+|CI/CD|deux jobs GitHub|calcul répété à|moyen|élevée|chemins filtrés, jobs|
+||avec`npm ci`,|chaque push et PR|||mutualisés, tests|
+||typecheck, lint,||||lourds planifiés|
+||tests|||||
+
+|Zone|Source de coût|Mécanisme|Impact probable|Confiance|Solution concrète|
+|---|---|---|---|---|---|
+|Builds|Next.js/Vercel|compilation, traces,|moyen|moyenne|ignorer docs-only,|
+||previews|déploiements|||regrouper|
+|||temporaires|||Dependabot, limiter|
+||||||previews|
+|IA|Pinecone déclaré,|risque d’activation|faible actuel, fort|moyenne|feature flag,|
+||OpenAI dans config|coûteuse sans|potentiel||mesure par appel|
+||Supabase, textes|preuve d’utilité|||IA, fallback|
+||“IA”||||déterministe|
+|Rapports/export|`html-to-image`,|génération|moyen sur rapports|moyenne|exports|
+||PDF HTML,|client/serveur,|||asynchrones,|
+||CSV/JSON|mémoire, payloads|||cache, limiter|
+||||||graphiques lourds|
+|Dépendances|`xlsx`,|poids bundle ou|faible à moyen|moyenne|import dynamique,|
+||`react-big-calendar`,|maintenance si|||suppression si|
+||`swiper`,|chargés côté client|||usage marginal|
+||`canvas-confetti`|||||
+
+Les coûts dominants ne sont pas les pages statiques ou le texte. Les coûts probables sont concentrés dans quatre familles : carte interactive, hydratation React, stockage photo et répétition des appels réseau/CI.
+
+#### Analyse frontend
+
+Le frontend est riche, visuel et très interactif. Cette richesse améliore l’expérience sur certains parcours, mais elle augmente la dette de sobriété.
+
+#### Problème 1 : hydratation excessive
+
+Mécanisme : beaucoup de composants client et de hooks ( `useSWR` , `useEffect` , `useState` ) déplacent du travail vers le navigateur. Chaque page interactive impose téléchargement JavaScript, parsing, hydratation et re-renders.
+
+Impact probable : moyen à fort sur mobile, surtout sur pages carte, rapports, sections pédagogiques et dashboards. Confiance : élevée, car 237 fichiers contiennent `use client` .
+
+Solution : transformer les zones statiques en Server Components, garder l’interactivité dans de petits composants îlots, et éviter que des sections éditoriales complètes soient rendues côté client.
+
+#### Problème 2 : Framer Motion utilisé comme outil d’animation généraliste
+
+Mécanisme : `framer-motion` est importé dans 89 fichiers. La librairie est puissante mais disproportionnée pour des fades, hover, apparitions simples ou petits compteurs.
+
+Impact probable : moyen. Le coût dépend du tree-shaking et des pages réellement chargées, mais l’usage large augmente le bundle, le coût de rendu et la maintenance.
+
+#### Confiance : élevée
+
+Solution : conserver Framer Motion pour transitions complexes réellement utiles, remplacer les animations décoratives par CSS, supprimer les animations non essentielles sur mobile ou `prefers-reduced-motion` .
+
+#### Problème 3 : cartographie lourde
+
+Mécanisme : Leaflet, React Leaflet, Leaflet Draw, clusters et tuiles cartographiques peuvent générer beaucoup de DOM, requêtes réseau et calculs côté client. Les pages carte concentrent les coûts de rendu.
+
+Impact probable : fort sur `/actions/map` , composants `actions-map-canvas` , `action-drawing-map` , `mission-map` , annuaire/compost maps.
+
+#### Confiance : élevée
+
+Solution : charger la carte uniquement à l’ouverture de l’onglet carte, limiter le nombre de points transmis, pré-agréger côté serveur, mettre en cache les résultats par zone, proposer une vue liste par défaut sur mobile.
+
+#### Problème 4 : CSS et dépendances cartographiques globales
+
+Mécanisme : `layout.tsx` importe les CSS Leaflet et Leaflet Draw globalement. Même les pages sans carte peuvent recevoir du CSS inutile.
+
+Impact probable : faible à moyen, mais facile à corriger.
+
+Confiance : élevée.
+
+Solution : déplacer ces imports vers les composants ou layouts cartographiques, ou vers un segment route dédié.
+
+#### Problème 5 : composants probablement énergivores
+
+Composants à surveiller :
+
+- `actions-map-canvas.tsx` et `map-layers.tsx` : rendu carte, clusters, marqueurs;
+
+- `action-drawing-map.tsx` : dessin Leaflet Draw, gestion mobile, événements carte;
+
+- `chat-shell` et `use-chat-data.ts` : SWR, realtime Supabase, messages, utilisateurs;
+
+- `reports-web-document.tsx` et `use-reports-web-document-model.ts` : multiples requêtes SWR, agrégations, exports;
+
+- `analytics-cockpit` et composants rapports animés : graphiques et calculs;
+
+- `accueil-*` , `rubriques/*` , `learn/*` utilisant Framer Motion : animations nombreuses;
+
+- `profil/impact/page.tsx` : `html-to-image` , confetti, gamification.
+
+Impact probable : fort pour cartes et rapports, moyen pour animations, faible à moyen pour confetti/QR/export ponctuel.
+
+Confiance : moyenne à élevée.
+
+Solution : instrumentation par page avec bundle analyzer, React Profiler, Web Vitals et mesure du nombre de requêtes par navigation.
+
+#### Estimation du poids moyen des pages
+
+Sans build analyzer, l’estimation doit rester prudente :
+
+|Type de page|Poids transféré probable hors cache|Commentaire|
+|---|---|---|
+|page texte simple/legal|150 à 400 Ko|surtout framework, CSS, layout,|
+|||auth/analytics si activés|
+|page accueil riche|500 Ko à 1,5 Mo|animations, composants visuels,|
+|||éventuelles images|
+|page rapport/dashboard|700 Ko à 2 Mo|graphiques, SWR, agrégations,|
+|||exports|
+|page carte|1 à 3 Mo ou plus|Leaflet, clusters, tuiles, données|
+|||points|
+|page avec gros assets docs|+500 Ko à +2,6 Mo|les PNG publics de documentation|
+|||totalisent plusieurs Mo|
+
+Ces chiffres ne sont pas des mesures de production. Ils indiquent les ordres de grandeur à mesurer par `next build --analyze` et tests réseau.
+
+#### Analyse backend
+
+Le backend est large : routes API d’actions, carte, rapports, admin, chat, communauté, newsletter, notifications, pilotage, santé, Stripe, services, météo, itinéraire. Cette richesse crée des coûts de calcul et de maintenance.
+
+#### Endpoints probablement les plus coûteux
+
+|Endpoint ou famille|Mécanisme de coût|Impact probable|Confiance|Solution|
+|---|---|---|---|---|
+|`/api/chat`|gros fichier route,|moyen à fort|élevée|pagination stricte,|
+||plusieurs requêtes|||cache utilisateurs,|
+||Supabase, notifications,|||limiter realtime|
+||filtres utilisateurs||||
+|`/api/actions/map`|données|fort si carte populaire|élevée|tuilage logique,|
+||cartographiques|||bounding box, cache 1|
+||publiques, filtres,|||à 10 min, champs|
+||payload de points|||minimaux|
+|`/api/reports/actions.csv`<br>export potentiellement||moyen à fort|élevée|cache par période,|
+|et`.json`|large,`no-store`|||export asynchrone,|
+|||||limites de lignes|
+
+|Endpoint ou famille|Mécanisme de coût|Impact probable|Confiance|Solution|
+|---|---|---|---|---|
+|`/api/reports/elus-dossier`<br>génération dossier,||moyen|moyenne|pré-calculer indicateurs,|
+||`no-store`, logique|||cache court|
+||volumineuse||||
+|`/api/community/events`|plusieurs requêtes|moyen|élevée|pagination, cache,|
+||Supabase, listes|||index DB|
+||publiques||||
+|`/api/admin/moderation`|mises à jour et|moyen|élevée|batch contrôlé, logs|
+||sélections multi-tables|||limités|
+|`/api/route/recommend`|recommandation|moyen|moyenne|cache par zone, éviter|
+||d’itinéraire, logique|||IA distante si|
+||potentiellement|||heuristique suffit|
+||complexe||||
+|`/api/analytics/funnel`|collecte fréquente|moyen si trafic|moyenne|sampling et agrégation|
+||d’événements|||côté client|
+|`/api/health`,|checks récurrents|faible à moyen|moyenne|fréquence basse, cache|
+|`/api/services`,||||très court|
+|`/api/uptime`|||||
+
+#### Problème : **`no-store` fréquent**
+
+Mécanisme : 23 occurrences de `no-store` empêchent la réutilisation de réponses. C’est légitime pour données privées ou exports sensibles, mais coûteux pour rapports publics ou données peu volatiles.
+
+Impact probable : moyen.
+
+Confiance : élevée.
+
+Solution : distinguer privé/public, utiliser `revalidate` , `ETag` , `Cache-Control: stale-while-revalidate` , et des caches par période ou territoire.
+
+#### Problème : agrégations répétées
+
+Mécanisme : dashboards et rapports peuvent recalculer des totaux, séries mensuelles, zones, qualité de données et métriques à chaque session.
+
+Impact probable : moyen à fort si les rapports deviennent consultés.
+
+Confiance : moyenne.
+
+Solution : tables matérialisées ou vues pré-calculées, refresh programmé, cache applicatif par période.
+
+#### Analyse réseau et stockage
+
+Le réseau et le stockage sont les postes écologiques les plus concrets du projet.
+
+#### Images
+
+Les assets publics visibles sont raisonnables en nombre. **Optimisation réalisée (Mai 2026)** : le logo principal ( `logo-cleanmymap.webp` ) a été converti de PNG (511 Ko) en WebP (58 Ko), soit une réduction de **88%** . Cependant, plusieurs PNG de documentation restent lourds : environ 738 Ko, 615 Ko, 590 Ko, 499 Ko et 162 Ko. Le coût principal futur vient surtout des photos terrain uploadées vers Supabase Storage.
+
+Impact probable : fort à long terme.
+
+Confiance : élevée.
+
+Solutions :
+
+— continuer la conversion des PNG de documentation en WebP/AVIF;
+
+- créer des miniatures pour cartes et listes;
+
+- compresser côté client avant upload;
+
+- fixer une taille maximale, par exemple 1600 px côté long et 300 à 500 Ko par photo;
+
+- supprimer ou archiver les photos non utiles après validation.
+
+#### Références de l’Annexe C — audit technique de sobriété
+
+— [1] ADEME, *Lancez votre démarche de numérique responsable* . Lien
+
+- [2] W3C, *Sustainability Web Guidelines (Draft)* , (2024). Lien
+
+#### Vidéos
+
+Aucune présence évidente de vidéos publiques dans `apps/web/public` . Le risque vidéo actuel semble faible.
+
+Impact probable : faible aujourd’hui.
+
+Confiance : moyenne.
+
+Solution : éviter l’ajout de vidéos autoplay; préférer image poster + lien externe si besoin.
+
+#### Fonts
+
+Le dépôt ne montre pas de gros fichiers de fonts publics. Le coût vient plutôt des classes, du CSS et du framework que de fichiers fonts locaux.
+
+Impact probable : faible.
+
+Confiance : moyenne.
+
+Solution : limiter les variantes, préférer fonts système si l’identité visuelle le permet.
+
+#### Requêtes réseau redondantes
+
+SWR est utilisé largement. Le fichier `swr-config.ts` définit un `refreshInterval` global à 30 secondes pour les flux live. Si cette valeur s’applique trop largement, elle peut revalider des données qui ne changent pas souvent.
+
+Impact probable : moyen à fort selon propagation de la config.
+
+Confiance : moyenne.
+
+Solution : aucun intervalle global par défaut; refresh explicite seulement pour chat, statut ou événements live; désactiver `revalidateOnFocus` sur rapports lourds.
+
+#### Analyse CI/CD
+
+La CI GitHub exécute deux jobs principaux sur `push` et `pull_request` : `fast-checks` et `security-checks` . Les deux font checkout, setup Node, `npm ci` , secret audit, puis tests ou contrôles.
+
+Mécanismes de coût :
+
+— `npm ci` répété dans deux jobs;
+
+— typecheck, lint et tests à chaque push et PR;
+
+— Dependabot hebdomadaire sur racine, `apps/web` et GitHub Actions;
+
+- previews Vercel probables hors GitHub Actions;
+
+- build Next.js côté Vercel pour chaque changement pertinent.
+
+Impact probable : moyen. Ce n’est pas le principal poste au faible trafic, mais c’est un coût cumulatif invisible. Confiance : élevée.
+
+Solutions :
+
+- **Réalisé (Mai 2026)** : ajout de filtres de chemins ( `paths-ignore` ) pour éviter le déclenchement de la CI lourde lors de modifications de documentation ou d’assets;
+
+— mutualiser l’installation ou utiliser un job unique avec étapes conditionnelles;
+
+— garder tests sécurité ciblés, mais éviter de relancer toute la chaîne pour changements non applicatifs;
+
+— regrouper Dependabot et limiter les previews complètes;
+
+— définir un budget : builds/mois, minutes CI/mois, builds échoués/mois.
+
+#### Analyse des dépendances
+
+Dépendances à surveiller :
+
+|Dépendance|Risque sobriété|Impact probable|Confiance|Action|
+|---|---|---|---|---|
+|`framer-motion`|usage très large pour|moyen|élevée|réduire et remplacer par|
+||animations|||CSS|
+
+|Dépendance|Risque sobriété|Impact probable|Confiance|Action|
+|---|---|---|---|---|
+|`leaflet`,|carte lourde et tuiles|fort sur carte|élevée|lazy load, bbox, clusters|
+|`react-leaflet`,||||pré-calculés|
+|`leaflet-draw`, cluster|||||
+|`recharts`|graphiques dashboard|moyen|moyenne|charger uniquement|
+|||||rapports|
+|`react-big-calendar`|calendrier lourd pour|faible à moyen|moyenne|remplacer si usage|
+||ressources|||simple|
+|`html-to-image`|export image coûteux|faible à moyen ponctuel|moyenne|charger à la demande|
+|`xlsx`|dépendance lourde,|moyen|moyenne|limiter aux scripts|
+||source CDN tarball|||serveur/admin,|
+|||||envisager CSV|
+|`posthog-js`+|analytics client/serveur|moyen|élevée|sampling et|
+|`posthog-node`||||événements minimaux|
+|`@sentry/nextjs`|instrumentation|faible à moyen|moyenne|activation stricte, pas de|
+|||||traces par défaut|
+|`@pinecone-database/pinecone`<br>service IA/vectoriel||faible actuel, fort si|moyenne|retirer si non utilisé en|
+|||activé||production|
+|`canvas-confetti`|animation décorative|faible|élevée|supprimer ou lazy load|
+|`swiper`|carrousels|faible à moyen|faible|vérifier usage réel,|
+|||||supprimer si inutilisé|
+
+Le problème n’est pas l’existence d’une librairie lourde, mais son chargement sur des pages où elle n’apporte pas d’utilité proportionnée.
+
+#### Optimisations prioritaires
+
+#### Réalisées (Mai 2026)
+
+1. **Isolation CSS Leaflet** : Déplacement des CSS Leaflet hors du layout global vers un chargement dynamique.
+
+2. **Filtrage CI/CD** : Ajout de filtres de chemins ( `paths-ignore` ) pour la documentation.
+
+[!NOTE] **Optimisation Assets** : Logo converti en WebP ( **-88% de poids** ), réduisant drastiquement la bande passante consommée.
+
+1. **Modularisation Sobriété** : Extraction des données du `recycling-assistant` et du composant `FormProgressSummary` pour réduire la complexité et améliorer la performance.
+
+#### Faible effort / fort impact (À faire)
+
+1. Désactiver le refresh SWR global et le rendre opt-in.
+
+2. Continuer la compression des PNG publics lourds en WebP/AVIF.
+
+3. Mettre des limites strictes aux photos uploadées.
+
+4. Réduire les événements analytics aux décisions produit utiles.
+
+5. Charger `html-to-image` , confetti, calendrier et graphiques uniquement à la demande.
+
+#### Fort effort / fort impact
+
+1. Refondre les pages carte autour de bounding boxes, pagination spatiale et agrégations serveur.
+
+2. Convertir les sections statiques client en Server Components.
+
+3. Pré-calculer les rapports et dashboards lourds.
+
+4. Supprimer ou fusionner les routes API redondantes.
+
+5. Établir une architecture de données unique Supabase avec exports maîtrisés.
+
+#### Micro-optimisations
+
+— remplacer certaines animations Framer Motion par CSS;
+
+- supprimer confetti sur mobile ou mode économie;
+
+- limiter `revalidateOnFocus` sur SWR;
+
+- réduire les imports d’icônes si le tree-shaking ne suffit pas;
+
+- réduire les logs console côté client.
+
+#### Gains négligeables ou secondaires
+
+- optimiser les SVG déjà très petits;
+
+- chercher des gains sur les pages légales statiques avant les cartes;
+
+- supprimer quelques classes CSS isolées;
+
+- micro-optimiser du texte ou des composants rarement visités.
+
+#### Estimation des gains possibles
+
+|Action|Gain potentiel|Confiance|
+|---|---|---|
+|Compression images + miniatures|-30 % à -80 % sur médias transférés|élevée|
+|Lazy loading strict des cartes|-300 Ko à -1,5 Mo sur pages non carte|moyenne|
+|Réduction Framer Motion|-50 à -200 Ko JS selon routes|moyenne|
+|SWR opt-in au lieu de refresh global|-20 % à -70 % de requêtes sur dashboards inactifs|moyenne|
+|Cache rapports/exports|-30 % à -90 % de calcul serveur sur consultations|moyenne|
+||répétées||
+|CI filtrée docs-only|-10 % à -40 % de minutes CI selon activité|moyenne|
+|Suppression dépendances inutilisées|gain variable, surtout maintenance|moyenne|
+
+Gain global plausible : **20 % à 40 %** de réduction des coûts numériques courants sans perte d’utilité, surtout via médias, cartes, caching et CI. Un gain supérieur, **40 % à 60 %** , demanderait une simplification produit plus nette : moins de dashboards, moins de gamification, moins de pages secondaires, moins de services SaaS actifs.
+
+#### Architecture alternative plus sobre
+
+Architecture recommandée :
+
+- **Core public léger** : accueil, déclaration simple, carte, rapports publics, méthodologie. Pages majoritairement Server Components.
+
+- **Carte isolée** : segment dédié, import dynamique Leaflet, données par bbox, cluster serveur, vue liste par défaut mobile.
+
+- **API réduite** : routes regroupées par domaine, cache court sur lectures publiques, `no-store` réservé au privé.
+
+- **Données sobres** : Supabase source de vérité, photos compressées, miniatures, rétention, exports CSV/JSON simples.
+
+- **Analytics minimales** : consentement, sampling, événements centrés sur actions réelles, pas de tracking décoratif.
+
+- **CI graduée** : contrôles rapides par défaut, tests lourds programmés, previews ignorées pour docs-only.
+
+- **IA optionnelle** : aucun appel IA dans les parcours critiques tant qu’une heuristique suffit; mesure par appel, budget mensuel, fallback sans IA.
+
+- **Fonctions secondaires figées** : chat, gamification avancée, sponsor portal, sandbox, calendrier et vectoriel seulement si usage prouvé.
+
+Fonctionnalités pouvant être simplifiées ou supprimées avec faible perte d’utilité si les métriques restent faibles :
+
+- confetti, badges décoratifs, classements;
+
+- carrousels et animations d’accueil non essentielles;
+
+- dashboards qui dupliquent les rapports;
+
+- chat si la coordination se fait déjà par email ou messagerie existante;
+
+- sponsor portal s’il n’y a pas de sponsors actifs;
+
+- calendrier riche si une liste d’événements suffit;
+
+- IA de tri/recommandation si elle n’améliore pas réellement l’action terrain;
+
+- exports visuels complexes si CSV/PDF simple répond au besoin.
+
+#### Conclusion critique
+
+CleanMyMap n’est pas un projet intrinsèquement gaspilleur : sa finalité terrain peut justifier une application web, une carte, une base de données et des rapports. Mais son niveau de sophistication est déjà supérieur au strict nécessaire pour coordonner des actions locales.
+
+Les plus gros risques de sobriété sont invisibles : hydratation React généralisée, animations partout, revalidations SWR, routes API nombreuses, exports non cachés, CI répétée, stockage photo et multiplication des services tiers. Ce sont des coûts diffus, faciles à ignorer parce qu’ils ne se voient pas dans l’interface.
+
+La stratégie la plus crédible consiste à mesurer puis réduire : poids par page, requêtes par session, stockage par action, builds par mois, événements analytics par utilisateur et temps de maintenance par fonctionnalité. La sobriété ne doit pas être une couche esthétique ou un argument marketing; elle doit devenir une règle d’arbitrage produit.
+
+En synthèse, le projet peut rester soutenable s’il garde le noyau action-carte-rapport et traite le reste comme optionnel. À l’inverse, si chaque idée utile devient une page, un service, une animation, une métrique et une route API, la dette écologique et technique progressera plus vite que l’utilité réelle.
+
+#### Annexe D — Dépendances technologiques détaillées
+
+Cette section examine CleanMyMap comme un projet inscrit dans une infrastructure numérique mondiale concentrée : clouds, plateformes d’authentification, bases managées, analytics, observabilité, IA, paiement, e-mail, monitoring et stores éventuels. Elle vise moins à refuser toute dépendance externe qu’à distinguer ce qui reste raisonnable, ce qui devient dangereux et ce qui est véritablement critique.
+
+Le point décisif n’est pas seulement technique : l’architecture retenue engage aussi une dépendance économique, juridique et géopolitique.
+
+#### Cartographie des dépendances
+
+Inventaire visible dans le dépôt :
+
+|Dépendance|Rôle dans le projet|Type|Criticité|Remplaçabilité|
+|---|---|---|---|---|
+|Vercel|hébergement, runtime|plateforme cloud|critique|moyenne à difficile|
+||Next.js, previews, env,|propriétaire|||
+||déploiement||||
+|Supabase|base Postgres, Storage,|BaaS/Postgres managé|critique|moyenne|
+||RLS, clients, migrations,||||
+||données métier||||
+|Clerk|authentification,|auth propriétaire|critique|difficile|
+||sessions, rôles,||||
+||middleware, metadata||||
+||utilisateurs||||
+|Resend|e-mails transactionnels,|SaaS e-mail|raisonnable à|facile à moyenne|
+||contact, notifications||dangereuse||
+|Stripe|paiements, webhooks,|paiement propriétaire|raisonnable à|moyenne|
+||sponsor/dons éventuels||dangereuse||
+|PostHog|analytics client/serveur,|analytics SaaS/open|dangereuse si centrale|moyenne|
+||comportement|core|||
+||utilisateur||||
+|Sentry|erreurs, stabilité,|observabilité|raisonnable|moyenne|
+||instrumentation Next|SaaS/open source|||
+|Upstash Redis/QStash|cache, files, tâches|serverless data/queue|dangereuse si critique|moyenne|
+||asynchrones||||
+|Pinecone|recherche vectorielle /|base vectorielle|dangereuse si activée|moyenne à difficile|
+||IA sémantique|propriétaire|||
+||potentielle||||
+
+#### Références de l’Annexe D — dépendances technologiques
+
+- [1] Commission Européenne, *Data Act — Rules for a fair and innovative data economy* , (2022). (Concerne l’interopérabilité et le changement de fournisseur cloud).
+
+— [2] European Union Research, *Cloud Vendor Lock-In : Causes, Impacts, and Solutions* , (2021).
+
+- [3] GAIA-X Association, *Technical Architecture Release 24.04* , (2024). (Souveraineté des données en Europe).
+
+|Dépendance|Usage|Type|Risque|Niveau de criticité|
+|---|---|---|---|---|
+|OpenAI API key dans|IA possible côté|modèle IA fermé|dangereuse à critique si|moyenne à difficile|
+|config Supabase|Supabase||production||
+||Studio/fonctions||||
+|Google Sheets API|import/export|plateforme Google|dangereuse si source|facile à moyenne|
+||opérationnel,||de vérité||
+||synchronisation de||||
+||données||||
+|Google OAuth/token|authentification service|API Google|dépendance auxiliaire|moyenne|
+|endpoints|account pour Sheets||||
+
+|Dépendance|Usage|Type|Risque|Niveau de criticité|
+|---|---|---|---|---|
+|Cloudflare|DNS/CDN/protection|infra réseau propriétaire|raisonnable à|moyenne|
+||potentiel||dangereuse||
+|UptimeRobot|monitoring externe|SaaS monitoring|raisonnable|facile|
+|OSRM public|calcul d’itinéraires ou|API/service|raisonnable si fallback|facile à moyenne|
+||fallback routing|cartographique|||
+|Leaflet/OpenStreetMap|carte côté client et tuiles|bibliothèque libre +|raisonnable|moyenne|
+||selon fournisseur|données ouvertes|||
+|GitHub Actions|CI/CD|plateforme développeur|dangereuse si unique|moyenne|
+|||propriétaire|||
+|Dependabot|mises à jour|automatisation GitHub|raisonnable|facile|
+||dépendances||||
+|npm registry|distribution de|registre central|critique écosystème|difficile|
+||dépendances JS||||
+|Next.js/React|framework et runtime|open source fortement|critique technique|difficile|
+||applicatif|lié à Vercel/Meta|||
+|Apple/Twilio/S3 config|options|plateformes externes|optionnelle|variable|
+|Supabase|auth/SMS/storage||||
+||configurables||||
+
+Classification synthétique :
+
+- **Dépendances critiques** : Vercel, Supabase, Clerk, npm, Next.js/React.
+
+- **Dépendances dangereuses si elles deviennent centrales** : Pinecone, OpenAI, Google Sheets, Upstash/QStash, PostHog, Stripe, GitHub Actions.
+
+- **Dépendances raisonnables si elles restent remplaçables** : Sentry, Resend, Cloudflare, UptimeRobot, OSRM, Dependabot.
+
+La criticité d’une dépendance ne se limite pas à sa disponibilité technique. Elle dépend aussi de la quantité de données qu’elle traite, de la facilité de migration, de la maturité des alternatives, du nombre de parcours qui l’utilisent, de la sensibilité juridique associée et de la capacité de l’équipe à maintenir un remplacement. Une dépendance peut donc être acceptable aujourd’hui et devenir dangereuse demain si elle devient la source de vérité ou si elle bloque un parcours essentiel.
+
+Critères pratiques utilisés pour lire cette cartographie :
+
+- **centralité fonctionnelle** : le service bloque-t-il le signalement, la carte, l’identité, le stockage ou les exports?
+
+- **portabilité des données** : les données peuvent-elles sortir en SQL, CSV, JSON ou fichiers standards?
+
+- **remplaçabilité technique** : existe-t-il une alternative raisonnable sans réécrire tout le produit?
+
+- **exposition juridique** : le service traite-t-il des données personnelles, photos, logs, paiements ou communications?
+
+- **coût de sortie** : la migration demande-t-elle quelques paramètres, une reprise de données ou une refonte complète?
+
+#### Analyse de centralisation
+
+Le projet dépend d’un petit nombre d’acteurs et d’écosystèmes dominants :
+
+- **Vercel/Next.js** pour le déploiement et le modèle applicatif;
+
+- **Supabase** pour la base, le stockage, les politiques RLS et les scripts opérationnels;
+
+- **Clerk** pour l’identité, les sessions et l’autorisation;
+
+- **Google** pour certaines sources et synchronisations Sheets;
+
+- **Stripe** pour la monétisation ou les paiements;
+
+- **PostHog/Sentry** pour l’observation du comportement et des erreurs;
+
+- **Pinecone/OpenAI** pour la couche IA/vectorielle potentielle;
+
+- **GitHub/npm** pour le développement, les dépendances et la chaîne CI.
+
+Cette centralisation est fonctionnelle. Elle permet d’aller vite, de sécuriser rapidement et de réduire le besoin d’administration système. Elle a aussi un coût systémique : le projet devient dépendant des prix, quotas, politiques d’usage,
+
+availability zones, conditions contractuelles, API et décisions de plateformes extérieures.
+
+Le verrouillage le plus fort n’est pas seulement technique. Il est aussi organisationnel : plus les scripts, runbooks, dashboards et habitudes de maintenance s’appuient sur ces services, plus la migration devient coûteuse même si le code reste modifiable.
+
+#### Analyse géopolitique
+
+La majorité des services critiques ou structurants sont liés à des entreprises américaines ou à des infrastructures fortement intégrées au cloud américain : Vercel, GitHub/Microsoft, Google, Stripe, Sentry, PostHog selon hébergement, Pinecone, OpenAI, Upstash selon régions, npm et potentiellement Cloudflare.
+
+Enjeux géopolitiques :
+
+- **Souveraineté des données** : données d’utilisateurs, actions, photos, coordonnées, messages, analytics et logs peuvent dépendre de juridictions et sous-traitants hors contrôle local.
+
+- **Extrateritorialité juridique** : selon fournisseurs, région d’hébergement et contrat, des règles non européennes peuvent s’appliquer ou créer une incertitude.
+
+- **Pouvoir de plateforme** : changement de prix, quotas, restrictions, fermeture de compte ou modification d’API peut affecter le projet sans décision locale.
+
+- **Concentration du savoir-faire** : le projet devient plus facile à maintenir pour des développeurs habitués à ces plateformes, mais moins autonome pour une association locale.
+
+- **Dépendance IA fermée** : si l’IA devient centrale, le projet dépend de modèles opaques, coûteux, peu auditables et soumis à des politiques d’accès externes.
+
+- **Dépendance aux stores** : si une application mobile Expo/React Native ou companion app devait être distribuée via Apple/Google, une couche supplémentaire de validation, commission, règles et dépendance serait ajoutée.
+
+Le risque n’est pas que ces services soient “mauvais” par nature. Le risque est que l’infrastructure d’un projet écologique local dépende d’une pile mondiale centralisée dont les intérêts, coûts et règles peuvent diverger des besoins locaux.
+
+#### Risques systémiques
+
+|Scénario de rupture|Effet immédiat|Gravité|Probabilité|Commentaire|
+|---|---|---|---|---|
+|Supabase|carte, déclarations,|critique|moyenne|point de défaillance|
+|indisponible|profils, rapports et|||central|
+||stockage touchés||||
+|Clerk indisponible|connexion, droits,|critique|moyenne|la partie publique|
+||admin, profil,|||peut survivre|
+||espaces privés|||partiellement|
+||bloqués||||
+|Vercel indisponible|site et API|critique|faible à moyenne|dépend aussi|
+||indisponibles si pas|||DNS/CDN|
+||de déploiement||||
+||alternatif||||
+|Google Sheets|import/export|moyen|moyenne|grave seulement si|
+|coupé|opérationnel|||source de vérité|
+||perturbé||||
+|Resend coupé|e-mails et|moyen|moyenne|contournable|
+||notifications|||manuellement|
+||sortantes stoppés||||
+|Stripe coupé|paiement/dons/sponsor|moyen|faible à moyenne|pas coeur terrain|
+||affectés||||
+|PostHog/Sentry|perte de mesure et|faible à moyen|moyenne|ne devrait pas|
+|coupés|observabilité|||bloquer l’usage|
+|Upstash/QStash|files/cache/tâches|moyen|moyenne|dépend du niveau|
+|coupé|async affectées|||d’usage réel|
+|Pinecone/OpenAI|fonctions|faible actuel, fort si central|moyenne|doit rester optionnel|
+|coupés|IA/vectorielles||||
+||indisponibles||||
+
+|Scénario de rupture|Effet immédiat|Gravité|Probabilité|Commentaire|
+|---|---|---|---|---|
+|npm/GitHub coupés|maintenance, CI et|fort pour évolution|faible à moyenne|n’empêche pas|
+||déploiement|||forcément le site|
+||perturbés|||déjà en ligne|
+
+Estimation du risque systémique global : **élevé pour l’autonomie** , **modéré pour le fonctionnement quotidien tant que les grands fournisseurs restent disponibles** , **élevé en cas de migration forcée** .
+
+Le projet pourrait continuer partiellement sans certains services :
+
+- pages statiques, documentation, méthodologie et contenus publics peuvent survivre avec un export statique;
+
+- données déjà exportées en CSV/JSON peuvent rester exploitables;
+
+- carte simple peut fonctionner avec données statiques et tuiles ouvertes;
+
+- rapports simples peuvent être générés hors ligne si les données sont exportées.
+
+Le projet cesserait immédiatement ou fortement de fonctionner sans :
+
+- Supabase pour données dynamiques et stockage;
+
+- Clerk pour auth, rôles et accès privés;
+
+- Vercel ou équivalent pour runtime web/API;
+
+- npm/GitHub pour maintenance moderne, si aucune archive locale reproductible n’existe.
+
+#### Résilience du projet
+
+Points de résilience existants :
+
+- Supabase repose sur PostgreSQL, technologie plus portable qu’une base entièrement propriétaire;
+
+- le dépôt contient des migrations SQL et scripts d’export/import;
+
+- certaines données peuvent être exportées en CSV/JSON;
+
+- plusieurs services optionnels sont configurés pour être désactivables ou absents;
+
+- Sentry est conditionné par un flag;
+
+- PostHog est lié au consentement;
+
+- le projet a une documentation opérationnelle et des runbooks.
+
+Fragilités :
+
+- auth Clerk profondément intégrée aux sessions, rôles, metadata et guards;
+
+- dépendance de déploiement à Vercel et à l’écosystème Next;
+
+- Supabase utilisé comme base, storage, RLS et point central de persistance;
+
+- variables publiques de fallback Supabase/Clerk dans `env.ts` , utiles au développement mais révélatrices d’un couplage fort;
+
+- Google Sheets encore présent dans les flux d’import/export;
+
+- Pinecone/OpenAI disponibles dans la configuration, ce qui crée un risque d’extension IA propriétaire;
+
+- GitHub Actions et Dependabot structurent la maintenance.
+
+Résilience estimée :
+
+- **Court terme** : correcte si les fournisseurs fonctionnent.
+
+- **Incident ponctuel** : moyenne, car quelques fallback existent mais pas pour les services critiques.
+
+- **Migration forcée** : difficile, surtout pour Clerk + Supabase Storage/RLS + Vercel.
+
+- **Autonomie associative** : faible à moyenne, car les compétences nécessaires sont celles d’une plateforme SaaS moderne.
+
+Cette résilience doit être testée avant d’être considérée comme acquise. Un export disponible en théorie ne suffit pas si personne ne sait le restaurer, si le schéma n’est pas documenté ou si les fichiers médias restent séparés des données métier. La résilience réelle suppose donc des exercices simples : restaurer un export, publier une carte
+
+statique, désactiver un service non critique, vérifier qu’une page publique fonctionne sans analytics et confirmer qu’une action terrain peut encore être organisée en mode dégradé.
+
+Le mode dégradé minimal devrait conserver :
+
+- une page publique de méthodologie;
+
+- une carte ou liste exportée des signalements utiles;
+
+- un formulaire ou canal de secours;
+
+- un export des actions et preuves;
+
+- une documentation indiquant comment continuer sans les services les plus propriétaires.
+
+#### Alternatives possibles
+
+||Alternative open source ou plus||
+|---|---|---|
+|Dépendance actuelle|souveraine|Compromis|
+|Vercel|serveur VPS européen, Scalingo, Clever|plus d’administration, moins de confort|
+||Cloud, CapRover, Dokku, Fly.io selon|previews|
+||région||
+|Supabase managé|PostgreSQL self-hosted,|perte de simplicité, maintenance|
+||Neon/Crunchy/Scaleway DB, Supabase|backups/RLS/storage|
+||self-host||
+|Supabase Storage|S3 compatible européen, MinIO,|gestion quotas, CDN et permissions à|
+||Scaleway Object Storage, Garage|refaire|
+|Clerk|Auth.js, Keycloak, Zitadel, Ory, Supabase|migration utilisateurs complexe|
+||Auth||
+|Resend|SMTP domaine, Mailjet/Brevo européen,|délivrabilité et maintenance|
+||Postal self-host||
+|Stripe|virement, HelloAsso, Mollie, PayPlug,|intégrations différentes, conformité|
+||Stripe limité aux paiements||
+|PostHog SaaS|Matomo, Plausible self-host, Umami, logs|moins de granularité produit|
+||anonymisés||
+|Sentry SaaS|GlitchTip, Sentry self-host, logs structurés|maintenance infra|
+|Upstash/QStash|Redis self-host, BullMQ, pg-boss, cron|administration et supervision|
+||serveur||
+|Pinecone|pgvector, Qdrant, Weaviate, Chroma|qualité, ops, intégration à maintenir|
+|OpenAI|modèles locaux via Ollama, Mistral,|qualité variable, matériel local|
+||Llama.cpp, heuristiques déterministes||
+|Google Sheets|CSV versionné, Baserow, NocoDB, Grist,|formation utilisateur|
+||table Supabase admin||
+|GitHub Actions|Forgejo/Gitea Actions, GitLab CI,|migration devops|
+||Woodpecker||
+|UptimeRobot|Healthchecks.io, Better Stack, cron|coût/maintenance|
+||self-host||
+|OSRM public|OSRM self-host, Valhalla, GraphHopper,|données carto et serveur à maintenir|
+||OpenRouteService||
+
+Alternatives réellement prioritaires :
+
+1. Préparer une sortie Supabase par exports SQL/CSV réguliers.
+
+2. Isoler Clerk derrière une couche d’auth interne.
+
+3. Garder l’IA optionnelle et remplaçable par heuristique.
+
+4. Éviter Google Sheets comme source de vérité.
+
+5. Limiter PostHog/Sentry à l’amélioration technique, pas à une dépendance produit.
+
+#### Stratégie de réduction des dépendances
+
+#### Étape 1 — cartographier et contractualiser
+
+— maintenir un registre des services actifs : utilité, données traitées, criticité, coût, région, propriétaire, plan de sortie;
+
+- documenter explicitement les dépendances critiques, dangereuses et raisonnables;
+
+- ajouter une revue trimestrielle des dépendances.
+
+#### Étape 2 — isoler techniquement
+
+— conserver des adapters pour Clerk, Stripe, Resend, PostHog, Sentry, Upstash, Pinecone;
+
+- interdire les appels directs aux SDK propriétaires hors modules dédiés;
+
+- documenter les formats de données indépendamment des SDK.
+
+#### Étape 3 — rendre les données portables
+
+— export SQL + CSV automatisé;
+
+- schéma public documenté;
+
+- sauvegarde régulière des photos avec index;
+
+- politique de rétention et purge;
+
+- tests de restauration au moins semestriels.
+
+#### Étape 4 — réduire les dépendances optionnelles
+
+— ne pas activer Pinecone/OpenAI en production sans preuve d’impact;
+
+- supprimer ou désactiver les services non utilisés;
+
+- préférer CSV/JSON à des intégrations propriétaires lourdes;
+
+- limiter analytics à des métriques actionnables.
+
+#### Étape 5 — préparer un mode dégradé
+
+— version statique des pages publiques;
+
+- carte publique à partir d’un export JSON;
+
+- formulaire de secours simple;
+
+- documentation “comment continuer sans plateforme”;
+
+- export de rapports hors ligne.
+
+#### Étape 6 — envisager une migration sobre
+
+- si le projet grossit : hébergement européen, base Postgres portable, auth open source ou européenne;
+
+- — si le projet reste petit : ne pas migrer trop tôt, mais garantir exports et réversibilité.
+
+Cette stratégie doit éviter deux excès. Le premier serait de tout migrer trop tôt vers une infrastructure auto-hébergée plus lourde que le besoin réel. Le second serait de repousser toute réversibilité jusqu’au moment où la migration devient urgente. La solution intermédiaire est de documenter les sorties, tester les exports, isoler les SDK et supprimer les dépendances non utilisées avant toute grande migration.
+
+#### Conclusion critique
+
+CleanMyMap est un projet à finalité locale et écologique, mais son infrastructure repose largement sur une pile centralisée : Vercel, Supabase, Clerk, GitHub/npm, Google, Stripe, PostHog, Sentry, Resend, Upstash, Pinecone et potentiellement OpenAI. Cette dépendance est compréhensible pour développer vite, mais elle affaiblit la souveraineté numérique du projet.
+
+La dépendance la plus critique est le triptyque **Vercel + Supabase + Clerk** : il porte l’hébergement, les données et l’identité. Tant que ce triptyque fonctionne, le projet est efficace. Si l’un de ces piliers devient indisponible, trop coûteux ou juridiquement problématique, la migration sera coûteuse.
+
+Toutes les dépendances ne sont pas également préoccupantes. Sentry, Resend, UptimeRobot ou Cloudflare peuvent rester raisonnables si elles sont remplaçables. Supabase et Clerk sont plus structurantes. Pinecone, OpenAI, Google Sheets et PostHog deviennent dangereuses si elles passent d’outils optionnels à conditions de fonctionnement.
+
+En synthèse, le projet doit éviter de confondre vitesse de développement et autonomie. La stratégie crédible n’est pas de tout auto-héberger immédiatement. Elle consiste plutôt à rendre chaque couche remplaçable, à exporter les données, à limiter l’IA fermée aux usages non critiques et à conserver un mode minimal qui fonctionne sans les services les plus propriétaires.
+
+#### Dette écologique et technique future du projet web
+
+Cette section évalue la dette future du projet. Elle cherche à estimer ce que CleanMyMap risque de coûter dans le temps en maintenance, mises à jour, hébergement, dépendances, builds, corrections et énergie numérique cumulée. L’analyse repose sur l’état local du dépôt au 13 mai 2026 : monorepo centré sur `apps/web` , application Next.js/React, 57 fichiers sous `apps/web/src/app/api` , nombreuses pages produit, migrations Supabase, CI GitHub, Dependabot et une pile SaaS déjà large.
+
+#### Analyse architecture et dépendances
+
+L’architecture est celle d’une application web moderne riche, construite autour d’un monorepo avec une application Next.js App Router. Le coeur fonctionnel couvre plusieurs parcours : déclaration d’action, carte interactive, signalement, historique, rapports, observatoire, espace profil, parcours éducatifs, portails partenaires, sponsor portal, pilotage, administration, import/export de données et supervision.
+
+Le projet ne se limite donc pas à un site vitrine. Il combine :
+
+- un frontend React/Next.js avec cartes Leaflet, graphiques Recharts, animations Framer Motion, exports visuels, QR codes et composants interactifs;
+
+- des routes API nombreuses pour actions, rapports, admin, analytics, newsletter, notifications, partenaires, pilotage, Stripe, santé système, services et recommandations;
+
+- une base Supabase avec migrations SQL, RLS, stockage de photos, miroirs de données et scripts d’import;
+
+- une authentification Clerk, avec synchronisation partielle vers Supabase;
+
+- des services tiers pour email, paiement, analytics, observabilité, files ou tâches asynchrones;
+
+- une couche documentaire et opérationnelle importante : guides de qualité, sécurité, import Google Sheets, prédéploiement, monitoring, architecture.
+
+Cette architecture est cohérente avec une plateforme associative ou territoriale ambitieuse. En revanche, elle est déjà plus complexe qu’un outil minimal de coordination locale. La dette future vient surtout de cette largeur fonctionnelle : beaucoup de routes, de pages, de services et de parcours doivent rester compatibles entre eux.
+
+Les dépendances les plus structurantes sont :
+
+|Zone|Dépendances ou services|Dette future associée|
+|---|---|---|
+|Hébergement et framework|Next.js 16, React 19, Vercel|mises à jour fréquentes, changements|
+|||d’API, build serverless, dépendance|
+|||plateforme|
+|Authentification|Clerk, synchronisation Supabase|verrouillage fonctionnel, migrations de|
+|||modèle utilisateur, gestion des droits|
+|Données|Supabase, migrations, RLS, Storage|maintenance SQL, politiques de sécurité,|
+|||sauvegardes, stockage photos|
+|Observabilité|Sentry, PostHog, Vercel Analytics, Speed|volume d’événements, confidentialité,|
+||Insights|coûts cachés, bruit analytique|
+|Communication|Resend, notifications|délivrabilité, quotas, RGPD, gestion|
+|||désabonnement|
+|Paiement|Stripe|dépendance réglementaire et technique,|
+|||webhooks à maintenir|
+|Tâches et cache|Upstash Redis/QStash|service supplémentaire à surveiller et|
+|||renouveler|
+|Recherche/vectoriel|Pinecone déclaré|risque de dépendance IA/vectorielle si|
+|||activé sans usage essentiel|
+|Données externes|Google Sheets import/export|fragilité des formats, droits, service|
+|||account, synchronisation|
+|Frontend lourd|Leaflet, clusters, graphiques, calendrier,|poids JavaScript, compatibilité navigateur,|
+||animations, exports image, xlsx|coût de bundle|
+
+La dette écologique et technique est donc distribuée : aucune dépendance n’est aberrante isolément, mais leur addition crée un coût d’entretien durable.
+
+#### Dette technique actuelle
+
+La dette technique actuelle est modérée à élevée. Elle n’indique pas un projet dégradé, mais un projet très large pour une taille d’équipe probablement limitée.
+
+Les facteurs de dette les plus visibles sont :
+
+- **surface fonctionnelle étendue** : carte, déclarations, rapports, gamification, apprentissage, partenaires, admin, sponsor, pilotage, notifications, chat ou recommandations. Chaque domaine ajoute ses propres cas limites;
+
+- **surface API importante** : 57 fichiers sous `apps/web/src/app/api` , donc beaucoup de contrats HTTP, validations, erreurs, droits et tests à maintenir;
+
+- **nombreuses migrations Supabase** : bon signe de structuration, mais aussi dette de schéma, de RLS, d’index, de compatibilité et de restauration;
+
+- **multiplication des services SaaS** : chaque clé, webhook, SDK ou quota devient un point de maintenance;
+
+- **données hybrides** : Supabase, miroirs locaux, imports Google Sheets, archives et scripts de synchronisation. Cette pluralité augmente le risque de divergence;
+
+- **fonctionnalités avancées pas toujours indispensables** : gamification, portails multiples, sandbox, sponsoring, analytics avancées, IA/vectoriel, exports enrichis;
+
+- **frontends cartographiques et analytiques coûteux** : cartes, clusters, graphiques, tableaux et exports sont utiles mais augmentent le poids, le temps de rendu et les tests visuels;
+
+- **dépendances npm nombreuses** : elles accélèrent le développement mais imposent des mises à jour de sécurité, compatibilité et bundle.
+
+Dette technique utile : certaines couches sont défendables, notamment Supabase, Clerk, carte, reporting, tests, CI et documentation opérationnelle. Elles soutiennent un service réel.
+
+Dette technique discutable : les modules qui augmentent le temps passé sans augmenter fortement le nombre d’actions terrain, par exemple badges décoratifs, classements, pages secondaires peu utilisées, portails avancés sans public actif, analytics trop fines ou intégrations IA non prouvées.
+
+#### Dette écologique future
+
+La dette écologique future ne dépend pas seulement de l’hébergement actuel. Elle dépend de la maintenance continue : builds, previews, logs, stockage, backups, analytics, uploads photo, dépendances, IA de développement et renouvellement des appareils utilisés pour faire évoluer le projet.
+
+Les postes les plus coûteux à long terme sont probablement :
+
+|Poste|Pourquoi il peut croître|Risque écologique|
+|---|---|---|
+|Photos et médias Supabase Storage|chaque action peut produire des images|stockage durable, backups, transfert,|
+||lourdes|consultations répétées|
+|Carte interactive|tuiles, clusters, scripts cartographiques|transfert réseau et rendu client, surtout|
+|||mobile|
+|CI/CD et previews|Dependabot, tests, Vercel builds, CodeQL|consommation cumulée à chaque PR ou|
+|||mise à jour|
+|Analytics et observabilité|PostHog, Sentry, Vercel Analytics|événements nombreux, stockage et|
+|||traitement hors site|
+|Routes API et base de données|requêtes, agrégations, rapports, exports|charge serveur proportionnelle aux|
+|||usages et dashboards|
+|IA de développement|assistance au code, refactorisations, tests|coût invisible à chaque évolution du projet|
+||générés||
+|IA applicative éventuelle|recommandation, vision, vectoriel,|coût élevé si utilisée pour des tâches non|
+||Pinecone/OpenAI|critiques|
+|Notifications et emails|campagnes, rappels, newsletter|bruit numérique et stockage côté|
+|||destinataire|
+
+Le coût absolu peut rester faible si l’audience est limitée et si les images sont compressées. En revanche, le coût cumulé sur plusieurs années peut devenir significatif si le projet conserve toutes ses couches, multiplie les builds,
+
+stocke les médias sans durée de conservation, active des analytics détaillées et ajoute de l’IA à des parcours qui pourraient rester déterministes.
+
+Une partie de cette dette ne peut pas être supprimée techniquement : un outil de coordination a besoin d’un serveur, d’une base, d’une carte et de sécurité. La question n’est donc pas de viser un impact nul, mais de limiter le coût par action réellement utile.
+
+#### Risques de dépendance
+
+Le risque de dépendance technologique est élevé, parce que le projet combine plusieurs plateformes propriétaires ou semi-propriétaires. Chaque service apporte une valeur immédiate, mais chacun crée une contrainte future.
+
+Principaux risques :
+
+- **Vercel** : forte intégration avec Next.js, previews, serverless, analytics et déploiement. Une migration reste possible, mais elle demanderait des adaptations runtime, build, env et monitoring.
+
+- **Supabase** : dépendance au modèle Postgres/RLS/Storage. C’est relativement portable car fondé sur PostgreSQL, mais les politiques RLS, storage buckets et clients SDK créent un coût de sortie.
+
+- **Clerk** : dépendance forte pour auth, sessions, middleware et modèle utilisateur. Remplacer Clerk demanderait une reprise des comptes, droits, guards et données liées.
+
+- **Stripe** : dépendance acceptable pour paiement, mais webhooks, conformité et tests doivent rester à jour.
+
+- **Resend** : dépendance faible à moyenne; remplaçable, mais la délivrabilité et les templates peuvent créer de l’inertie.
+
+- **PostHog/Sentry/Vercel Analytics** : utiles pour corriger, mais peuvent devenir une collecte par défaut plutôt qu’un outil décisionnel.
+
+- **Upstash/QStash** : utile pour files ou cache, mais ajoute un service à surveiller.
+
+- **Pinecone/OpenAI ou autre IA externe** : risque fort si le projet rend des fonctions essentielles dépendantes d’une API IA payante ou propriétaire.
+
+- **Google Sheets** : utile pour import ou administration, mais fragile si les formats, accès ou quotas changent.
+
+Le risque d’obsolescence rapide est particulièrement lié au couple Next.js/React/Clerk/Vercel. Ces outils évoluent vite. Le projet devra probablement absorber régulièrement des changements de middleware, routing, server actions, instrumentation, packages et politiques de sécurité.
+
+#### Projection à long terme
+
+Sur 5 à 10 ans, la durée de vie réelle du projet dépendra moins du code initial que de sa capacité à réduire sa surface.
+
+Projection raisonnable :
+
+- **Durée de vie probable si le coeur est simplifié** : 5 à 10 ans, car les besoins de coordination terrain, carte, preuve d’action et reporting resteront pertinents.
+
+- **Durée de vie probable si toutes les couches restent actives** : 1 à 3 ans avant accumulation forte de dette, fatigue de maintenance ou réécriture partielle.
+
+- **Maintenabilité actuelle** : moyenne. Les scripts, tests, documentation et CI aident, mais la largeur fonctionnelle augmente le coût cognitif.
+
+- **Robustesse** : moyenne à bonne pour les parcours encadrés par tests et scripts; plus fragile pour les intégrations optionnelles, portails secondaires et synchronisations externes.
+
+- **Portabilité** : moyenne à faible. La base Postgres aide, mais Clerk, Vercel, Supabase Storage, analytics et services serverless réduisent la liberté de migration.
+
+- **Capacité à rester utile** : bonne si le projet reste centré sur déclarer, visualiser, organiser, prouver et exporter. Faible si l’objectif glisse vers une plateforme sociale complète.
+
+Estimation de code futur probable :
+
+|Trajectoire|Code futur probable|Builds/déploiements probables|Commentaire|
+|---|---|---|---|
+|Maintenance minimale|+2 000 à +8 000 lignes sur 2 ans|12 à 60 builds/an|corrections, dépendances,|
+||||petites adaptations|
+|Croissance modérée|+10 000 à +30 000 lignes sur 2 ans|50 à 150 builds/an|nouveaux rapports,|
+||||parcours partenaires,|
+||||qualité données|
+
+|Trajectoire|Code futur probable|Builds/déploiements probables|Commentaire|
+|---|---|---|---|
+|Forte croissance|+40 000 lignes ou plus|150 à 500 builds/an|support, modération, perf,|
+||||refontes, nouvelles|
+||||intégrations|
+|Abandon partiel|peu de code, mais dette dormante|builds rares puis urgents|risques sécurité,|
+||||dépendances obsolètes,|
+||||données périmées|
+|Réécriture future|forte quantité temporaire|nombreux builds courts|coût écologique et humain|
+||||élevé, souvent évitable|
+||||par simplification|
+
+Ces valeurs sont des ordres de grandeur, pas des mesures. Elles servent à rendre visible le coût futur d’une plateforme qui continuerait à s’étendre.
+
+#### Scénarios d’évolution
+
+#### Scénario 1 — maintenance minimale
+
+Le projet conserve ses fonctions centrales : déclaration, carte, profil, rapports, méthodologie, administration minimale et exports. Les autres couches sont figées ou supprimées.
+
+- Coût humain : environ 1 à 2 jours par mois.
+
+- Coût financier : faible à modéré, principalement hébergement, base, domaine, emails et monitoring minimal.
+
+- Coût écologique : limité si les images sont compressées, les logs réduits et les builds regroupés.
+
+- Risque : fonctionnalités secondaires vieillissantes si elles restent visibles.
+
+- Durabilité : bonne si une discipline de suppression est appliquée.
+
+#### Scénario 2 — croissance modérée
+
+Le projet gagne des associations, quelques collectivités, des rapports plus solides et une meilleure qualité de données. Les portails partenaires deviennent utiles, mais l’IA reste ponctuelle.
+
+— Coût humain : 4 à 10 heures par semaine.
+
+- Coût financier : hausse progressive des quotas Supabase, Vercel, emails et analytics.
+
+- Coût écologique : acceptable si les indicateurs d’usage pilotent les choix.
+
+- Risque : multiplication de demandes locales spécifiques.
+
+- Durabilité : correcte si l’équipe refuse les fonctionnalités non mesurées.
+
+#### Scénario 3 — forte croissance
+
+CleanMyMap devient une plateforme multi-acteurs avec modération, API publique, gros volumes photos, statistiques, sponsor portal, partenaires, notifications et IA de recommandation.
+
+- Coût humain : 0,3 à 1 ETP technique, plus support/modération.
+
+- Coût financier : significatif, surtout stockage, base, logs, emails, monitoring et SaaS.
+
+- Coût écologique : en forte hausse par stockage, consultation carte, builds, logs et IA.
+
+- Risque : dépendance plateforme, complexité sécurité, dette produit.
+
+- Durabilité : seulement si une gouvernance technique stricte existe.
+
+#### Scénario 4 — abandon partiel
+
+Le site reste en ligne mais les dépendances, données et parcours ne sont plus activement maintenus.
+
+- Coût humain : faible en apparence, élevé lors des incidents.
+
+- Coût financier : abonnements et services oubliés.
+
+- Coût écologique : gaspillage si données, logs, analytics et stockages continuent sans utilité.
+
+- Risque : sécurité, RGPD, données obsolètes, mauvaise expérience utilisateur.
+
+- Durabilité : faible. Un projet dormant devrait être archivé proprement ou réduit à une version statique.
+
+**Scénario 5 — réécriture future**
+
+Une réécriture devient tentante si les couches actuelles se contredisent ou si les services choisis deviennent trop coûteux.
+
+- Coût humain : élevé, probablement plusieurs semaines à plusieurs mois.
+
+- Coût financier : double run temporaire, migration, tests, support.
+
+- Coût écologique : nombreux builds, IA de développement, duplication d’environnements.
+
+- Risque : perte de fonctionnalités utiles, régression de données, fatigue projet.
+
+- Durabilité : mauvaise si la réécriture sert à ajouter plus de complexité; utile seulement si elle réduit drastiquement le périmètre.
+
+#### Simplifications possibles
+
+Les simplifications les plus durables ne consistent pas à micro-optimiser chaque composant. Elles consistent à réduire les couches qui ne participent pas directement à l’utilité terrain.
+
+Simplifications structurelles prioritaires :
+
+1. **Définir un noyau produit non négociable** Noyau recommandé : déclarer une action, ajouter une preuve, afficher sur carte, organiser ou rejoindre une action, produire un rapport simple, modérer les données, exporter les résultats. Tout le reste devrait être classé en expérimental, optionnel ou supprimable.
+
+2. **Mettre les fonctionnalités secondaires derrière des flags** Gamification avancée, chat, sponsor portal, sandbox, recommandations IA, vectoriel, classements ou dashboards lourds ne devraient pas être chargés ni maintenus comme coeur du produit tant que leur utilité n’est pas prouvée.
+
+3. **Réduire les services actifs** Conserver uniquement les services qui servent un usage mesuré. Par exemple : Supabase + Clerk + Resend + Sentry minimal peuvent être suffisants au début. PostHog, Pinecone, Upstash, analytics multiples ou workflows avancés doivent justifier leur présence par une décision concrète.
+
+4. **Consolider la donnée** Supabase devrait devenir la source de vérité principale. Google Sheets peut rester un outil d’import/export, pas une base parallèle. Les miroirs locaux ou archives doivent être explicitement documentés comme temporaires ou de sauvegarde.
+
+5. **Limiter les médias** Compression client stricte, dimensions maximales, formats WebP/AVIF, durée de conservation, quotas par action et suppression des doublons. C’est probablement l’un des meilleurs leviers écologiques.
+
+6. **Alléger le frontend** Charger Leaflet, graphiques, calendrier, export image et xlsx seulement sur les pages qui en ont besoin. Les pages simples doivent rester légères.
+
+7. **Rationaliser CI/CD** Tests rapides sur chaque PR, tests lourds programmés ou déclenchés manuellement, regroupement Dependabot, pas de preview complète pour changements documentaires, cache build contrôlé.
+
+8. **Prévoir une sortie de service** Documenter comment exporter les données, désactiver analytics, archiver les images, couper les services SaaS et publier une version statique si le projet ralentit.
+
+#### Matrice d’arbitrage IA : dette technique vs dette écologique
+
+|Fonctionnalité|Dette Technique créée|Dette Écologique réduite|Bilan Net|
+|---|---|---|---|
+|**Optimisation WebP/AVIF via**|Faible (un script de plus)|**Forte**(Bande passante -80%)|Positif|
+|**script IA**||||
+|**Refacto Code (Complexité**|Moyenne (code plus dense)|**Moyenne**(CPU client|Positif|
+|**cyclomatique)**||préservé)||
+|**Système de Chatbot (IA**|**Haute**(Dépendance API)|Nulle|**Négatif**|
+|**Générative)**||||
+|**Génération de carte statique**|Faible|**Moyenne**(Moins de JS au|Positif|
+|||client)||
+
+*Note : Cette matrice guide nos décisions de développement. Nous refusons les gains techniques s’ils entraînent une dette écologique injustifiée.*
+
+#### Recommandations de durabilité
+
+Recommandations techniques :
+
+— fixer un budget de bundle par page et mesurer les pages carte, rapport et dashboard;
+
+- fixer un budget de routes API critiques et supprimer ou fusionner les routes redondantes;
+
+- maintenir une liste officielle des services actifs, avec propriétaire, coût, utilité, données traitées et plan de sortie;
+
+- isoler Clerk, Stripe, Resend, PostHog, Sentry, Upstash et Pinecone derrière des modules d’adaptation;
+
+- refuser toute fonction IA applicative tant qu’un algorithme déterministe suffit;
+
+- limiter l’usage de l’IA de développement aux tâches à fort effet : tests, refactorisations, documentation critique, audit sécurité;
+
+- conserver des exports ouverts des données utiles : CSV, JSON, schéma SQL documenté;
+
+- appliquer une politique de rétention : photos, logs, événements analytics, exports, messages et notifications;
+
+- faire un audit trimestriel de sobriété : poids pages, événements analytics, builds, stockage, dépendances, routes inutilisées.
+
+Recommandations organisationnelles :
+
+- nommer un responsable de la dette technique et écologique, même bénévole;
+
+- décider chaque trimestre des fonctionnalités à supprimer, pas seulement de celles à ajouter;
+
+- maintenir un registre public ou interne : dépendances, coûts, incidents, raisons de conservation;
+
+- mesurer l’utilité réelle : actions déclarées, actions réalisées, kg ou volumes estimés, participants, exports utilisés, associations actives;
+
+- comparer ces métriques aux coûts : Mo transférés, requêtes, stockage, builds, événements analytics, temps de maintenance;
+
+- documenter les choix sobres comme des décisions de projet, pas comme des renoncements.
+
+#### Conclusion critique
+
+CleanMyMap a une utilité potentielle réelle, mais sa dette future est déjà significative parce que l’architecture vise une plateforme complète : carte, action terrain, données, reporting, partenaires, administration, observabilité, analytics, paiement, notifications et possibilités IA.
+
+La dette écologique future ne viendra probablement pas d’une seule requête ou d’un seul serveur. Elle viendra de l’accumulation : photos conservées, cartes consultées, builds répétés, logs, analytics, dépendances mises à jour, services SaaS actifs, IA utilisée pour continuer à développer et fonctionnalités secondaires maintenues sans usage fort.
+
+Le choix technique le plus durable n’est pas d’ajouter une couche verte au-dessus du projet. C’est de réduire son périmètre actif à ce qui transforme réellement une attention numérique en action locale utile. Le projet peut rester pertinent dans 5 à 10 ans s’il privilégie un noyau robuste, portable, mesurable et sobre. Il risque au contraire une obsolescence rapide s’il conserve toutes les ambitions d’une grande plateforme sans équipe, budget et gouvernance adaptés.
+
+Conclusion nette : la durabilité réelle de CleanMyMap dépendra moins du fournisseur d’hébergement que de sa capacité à supprimer, mutualiser, mesurer et refuser les fonctionnalités qui n’augmentent pas clairement le nombre ou la qualité des actions écologiques concrètes.
+
+[1] Commission Européenne, *Data Governance Act* , (2022).
+[2] ANSSI, *Souveraineté numérique et Cloud* , (2023).
+[3] Cigref, *Souveraineté numérique : de quoi parle-t-on?* , (2021).
+
+#### Introduction
+
+Explorons l’impact majeur de l’intelligence artificielle (IA), notamment à travers les travaux de Google DeepMind et d’autres laboratoires de recherche avancée, dans plusieurs domaines scientifiques : biologie, chimie, physique, mathématiques, climatologie, neurosciences, histoire, accessibilité et politiques publiques.
+
+Montrons comment les systèmes d’IA modernes accélèrent considérablement les découvertes scientifiques et avancées sociales en explorant des espaces de possibilités immenses, impossibles à parcourir manuellement par les chercheurs humains seuls. L’IA ne remplace pas les scientifiques, mais elle devient un outil capable de proposer, optimiser et parfois révéler des solutions inédites.
+
+**Note importante sur la validation :** Bien que ces résultats soient spectaculaires, il s’agit d’avancées de recherche qui nécessitent systématiquement une **validation humaine ou expérimentale** (laboratoire, essais cliniques, preuves mathématiques formelles) avant toute application à grande échelle ou mise en production.
+
+Cependant, la concentration croissante de cette puissance scientifique entre les mains de quelques grandes entreprises privées, principalement américaines, soulève des enjeux éthiques, industriels et géopolitiques majeurs concernant l’avenir de la science comme bien commun.
+
+#### Découverte massive de nouveaux matériaux cristallins
+
+Le système GNoME [38] développé par DeepMind identifie plus de 2,2 millions de structures cristallines candidates, dont environ 380 000 sont considérées comme potentiellement stables. Cette avancée change radicalement l’échelle de la découverte de matériaux, alors que l’humanité n’en avait répertorié qu’environ 48 000 en plusieurs siècles de recherche.
+
+L’IA ne crée pas instantanément des matériaux exploitables industriellement, mais elle accélère considérablement l’exploration théorique de nouvelles possibilités chimiques et physiques.
+
+#### AlphaFold révolutionne la biologie structurale
+
+AlphaFold est une IA capable de prédire la structure tridimensionnelle des protéines à partir de leur séquence d’acides aminés. Une tâche qui pouvait demander des années d’expérimentation est désormais réalisée en quelques minutes avec une précision remarquable.
+
+Cette avancée transforme profondément la biologie structurale, la recherche médicale et la compréhension du vivant. Le prix Nobel de chimie 2024 a notamment récompensé Demis Hassabis et John Jumper pour AlphaFold, ainsi que David Baker pour ses travaux sur le design computationnel de protéines.
+
+Limite importante : AlphaFold et ses successeurs améliorent fortement la prédiction structurale et certaines interactions biomoléculaires, mais ne remplacent pas l’expérience et ne modélisent pas parfaitement toute la dynamique réelle dans les cellules vivantes.
+
+#### Découverte de nouveaux antibiotiques par IA
+
+L’IA permet d’identifier de nouvelles molécules antibiotiques, comme l’halicine découverte en 2020. [40] Cette molécule possède un mécanisme d’action original contre certaines bactéries résistantes.
+
+Cependant, découvrir une molécule n’est qu’une première étape. Les essais cliniques, les validations toxicologiques et les contraintes réglementaires restent extrêmement longs et coûteux. L’IA accélère donc la phase de découverte, sans supprimer les exigences de sécurité du développement pharmaceutique.
+
+#### Cartographie ultra-détaillée du cerveau humain
+
+Des techniques combinant IA et imagerie haute résolution permettent la cartographie nanométrique de fragments du cerveau humain. Cette approche révèle une complexité neuronale encore plus importante qu’attendu.
+
+Malgré ces avancées, comprendre pleinement le fonctionnement du cerveau reste un immense défi scientifique. Ces travaux rappellent l’humilité nécessaire face à la complexité du vivant.
+
+#### Synthèse automatisée de matériaux
+
+Des laboratoires robotisés utilisent l’IA pour sélectionner puis synthétiser automatiquement certains matériaux prometteurs identifiés numériquement.
+
+La majorité des matériaux prédits restent toutefois difficiles à produire ou inutilisables industriellement. Le passage entre simulation numérique et application concrète demeure une étape critique.
+
+#### Contrôle du plasma et fusion nucléaire
+
+DeepMind applique l’apprentissage profond au contrôle des plasmas dans les réacteurs Tokamak de fusion nucléaire. Les systèmes IA optimisent la gestion des champs magnétiques et explorent de nouvelles configurations physiques.
+
+Cette approche nourrit l’espoir d’une meilleure maîtrise de la fusion nucléaire, potentielle source d’énergie propre et abondante. L’IA ne “résout” pas encore la fusion, mais elle améliore fortement certaines capacités de contrôle et de simulation.
+
+#### Révolution des prévisions météorologiques
+
+Des modèles IA comme GenCast [41] améliorent fortement la rapidité et la précision des prévisions météorologiques à moyen terme.
+
+Ces systèmes peuvent surpasser certains modèles traditionnels sur plusieurs indicateurs tout en utilisant moins de ressources computationnelles. Cela représente un enjeu important pour l’anticipation des catastrophes climatiques et la gestion des risques environnementaux.
+
+#### Déchiffrement des rouleaux carbonisés du Vésuve
+
+L’IA permet de lire progressivement des textes antiques carbonisés [43] lors de l’éruption du Vésuve il y a près de 2000 ans.
+
+Des algorithmes analysent les variations internes du papyrus numérisé pour reconstituer des caractères invisibles à l’œil humain. Cette avancée offre la possibilité de redécouvrir des œuvres philosophiques perdues depuis l’Antiquité.
+
+#### Structure du langage chez les cachalots
+
+L’analyse IA des communications des cachalots [42] révèle des structures répétitives et organisées dans leurs “codas” sonores.
+
+Ces résultats suggèrent l’existence d’une communication plus complexe qu’imaginé chez certains cétacés et remettent en question l’idée que les systèmes de communication sophistiqués seraient exclusivement humains.
+
+#### Résolution de problèmes mathématiques avancés
+
+Des systèmes comme AlphaProof montrent des capacités importantes en raisonnement mathématique formel.
+
+L’IA peut désormais résoudre certains problèmes complexes de niveau olympique en produisant des démonstrations structurées, montrant une progression importante au-delà du simple calcul automatique.
+
+#### Création de protéines artificielles
+
+Des modèles d’IA générative permettent désormais de concevoir des protéines inédites adaptées à des fonctions précises : médecine, dépollution, industrie ou biotechnologies.
+
+L’IA ne se contente donc plus d’analyser le vivant existant; elle participe à l’invention de nouvelles structures biologiques artificielles.
+
+#### Cartographie complète du cerveau de la drosophile
+
+Le cerveau entier de la drosophile (mouche du vinaigre) a été cartographié avec une précision inédite.
+
+Cette avancée fournit un modèle précieux pour comprendre l’organisation neuronale et étudier certaines maladies neurodégénératives humaines.
+
+#### AlphaMissense
+
+Il permet d’évaluer la dangerosité potentielle de millions de mutations génétiques humaines. [44] Cet outil pourrait aider à mieux comprendre les maladies rares et à orienter le diagnostic génétique, tout en nécessitant une validation clinique humaine.
+
+#### AlphaDev
+
+Il a découvert de nouveaux algorithmes de tri plus efficaces que certaines solutions conçues par des programmeurs humains. Ces améliorations ont été intégrées à des bibliothèques informatiques utilisées à très grande échelle.
+
+#### FunSearch
+
+Il a permis de produire de nouvelles constructions mathématiques et de meilleures stratégies pour certains problèmes d’optimisation. Cela montre que l’IA peut contribuer à la recherche mathématique, à condition que ses résultats soient vérifiables.
+
+#### Astronomie
+
+En astronomie, des outils IA analysent les archives de grands télescopes comme Hubble et détectent des objets atypiques passés inaperçus. L’IA devient ainsi un outil puissant pour explorer les masses de données accumulées par les observatoires.
+
+#### Conception de protéines artificielles
+
+L’IA accélère la conception de protéines artificielles, notamment pour créer des molécules antibactériennes ou thérapeutiques. Ces résultats restent à valider expérimentalement, mais ils ouvrent une nouvelle phase de recherche biomédicale.
+
+#### Références de l’Annexe E — avancées scientifiques
+
+- [1] Nobel Prize in Chemistry 2024 (Hassabis, Jumper, Baker for AlphaFold and Computational Protein Design). Lien
+
+- [2] Merchant et al. (Google DeepMind), *Scaling deep learning for materials discovery (GNoME)* , Nature, (2023). DOI :10.1038/s41586-023-06735-9
+
+- [3] Jumper et al., *Highly accurate protein structure prediction with AlphaFold* , Nature, (2021). DOI :10.1038/s41586021-03819-2
+
+- [4] Stokes et al., *A Deep Learning Approach to Antibiotic Discovery (Halicine)* , Cell, (2020). DOI :10.1016/j.cell.2020.01.021
+
+- [5] DeepMind, *GenCast : Diffusion-based ensemble forecasting for medium-range weather* , (2023/2024).
+
+- [6] Project CETI, *Decoding the communication of sperm whales* , (2024). Lien
+
+- [7] Vesuvius Challenge, *The first scrolls have been read* , (2024). Lien
+
+- [8] Cheng, J., et al., *Accurate prediction of variant effects with AlphaMissense* , Science, (2023).
+
 
 - Code final : **~1 293 lignes source / heure IA** (129 340 / 100 h)
 - Churn Git : ~4 253 lignes insérées / heure IA et ~2 469 lignes supprimées / heure IA
@@ -234,10 +1759,6 @@ En résumé, Codex est pratique pour travailler vite sur du code avec un forfait
 > L'extension Amazon Q sur VS Code propose un large quota sur Sonnet 4.5 après création d'un compte Amazon AWS et vérification de carte bancaire nomminative à 1 euro.
 
 > Ces usages gratuits sur plusieurs comptes doublent approximativement l'utilisation IA hebdomadaire par rapport à l'abonnement ChatGPT Plus à 20 euros avec Codex seul. N'ayant pas d'ordinateur puissant, le choix d'un modèle local à été abandonné et acheter un nouvel ordinateur dédié aurait une ACV significative.
-
---------------------------------------------------
-
-{{< pagebreak >}}
 
 # Partie II — Empreinte environnementale et matérielle {#partie-ii-empreinte-environnementale-et-materielle}
 
@@ -607,10 +2128,6 @@ Autrement dit, l’ACV décrit ce que le projet coûte matériellement ; la Part
 - [5] UNITAR / ITU, *Global E-waste Monitor 2024*. [Lien](https://ewastemonitor.info/the-global-e-waste-monitor-2024/)
 - [6] WHO, *Children and digital dumpsites: e-waste exposure and child health*. [Lien](https://www.who.int/publications/i/item/9789240023901)
 
---------------------------------------------------
-
-{{< pagebreak >}}
-
 # Partie III — Analyse sociale, humaine et politique de l’IA {#partie-iii-analyse-sociale-humaine-et-politique-de-lia}
 
 ## Analyse sociale et humanitaire
@@ -787,21 +2304,24 @@ Dans un projet institutionnel, une image, un texte, un logo ou une campagne gén
 
 ### IA de frontière, simulations stratégiques et risques militaires ou catastrophiques
 
-La littérature récente insiste aussi sur les risques de **mésusage**.
-L’International AI Safety Report 2025 distingue les risques issus d’usages malveillants, les risques de dysfonctionnement et les risques systémiques [13].
-Parmi les usages malveillants déjà identifiés figurent la désinformation, la manipulation, certaines formes de cyberattaque, ainsi que des risques liés aux domaines biologiques et chimiques.
-Dans un cadre de soutenance, il est plus juste de parler ici de **risques CBRN** ou de **risques catastrophiques** que de se focaliser sur un exemple isolé : l’enjeu n’est pas qu’un modèle choisirait spontanément la violence, mais que des capacités générales très puissantes peuvent réduire certaines barrières d’accès à des scénarios dangereux.
-Le rapport souligne aussi que des systèmes plus **agentiques** peuvent accroître les risques en réduisant la part de supervision humaine directe [13].
+La littérature récente sur la sûreté de l’IA insiste aussi sur les risques de mésusage. L’International AI Safety Report 2025 distingue trois grandes familles de risques : les usages malveillants, les dysfonctionnements et les risques systémiques [13]. Parmi les usages malveillants déjà documentés figurent notamment la désinformation, la manipulation de l’opinion, la fraude, certaines formes de cyberattaque, ainsi que des risques liés aux domaines biologiques et chimiques [13].
 
-Dans le cas du modèle Mythos developpé par Anthropic, Mythos n'a pas été rendu public car il a présenté des capacité d'attaque en cybersécurité.
-Il apporte toutefois un signal utile pour ce rapport : à mesure que les modèles deviennent capables d’explorer du code, de déléguer à des sous-agents, de tester des hypothèses et de chercher des vulnérabilités, l’équilibre entre défense et attaque peut évoluer [21].
-Pour CleanMyMap, cela renforce une règle déjà retenue : ne pas donner à des agents IA des permissions étendues, ne pas leur confier d’opérations destructrices, et maintenir une validation humaine sur la sécurité, les dépendances et les déploiements.
+Dans un cadre de soutenance, il est préférable de parler ici de risques CBRN, de risques cyber et de risques catastrophiques plutôt que de se focaliser sur un exemple spectaculaire isolé. L’enjeu n’est pas qu’un modèle “voudrait” spontanément produire de la violence. Le risque principal est plus structurel : des modèles généralistes très puissants peuvent réduire certaines barrières d’accès à des tâches dangereuses, accélérer la recherche d’informations sensibles, automatiser des étapes techniques et rendre des acteurs malveillants plus efficaces qu’auparavant [13].
+
+Cette vigilance augmente avec les systèmes dits agentiques. Ces systèmes ne se limitent plus à répondre à une question : ils peuvent planifier, utiliser des outils, parcourir du code, déléguer des sous-tâches et agir sur un environnement numérique. Le rapport international souligne que cette autonomie peut réduire la supervision humaine directe et compliquer la gestion du risque, notamment lorsque les agents sont exposés à des instructions malveillantes, à des outils puissants ou à des environnements difficiles à contrôler [13].
+
+Le cas de Claude Mythos Preview, développé par Anthropic, illustre cette tension entre utilité défensive et risque de mésusage. Anthropic présente Mythos comme un modèle généraliste particulièrement performant sur des tâches de cybersécurité, utilisé dans le cadre du Project Glasswing pour aider des partenaires à identifier et corriger des vulnérabilités critiques [21]. Le modèle n’a pas été rendu disponible au grand public : son accès est restreint, sur invitation, dans un cadre de recherche et de cybersécurité défensive [21]. Cette formulation est plus précise que de dire simplement que le modèle aurait été “bloqué” ou “censuré”.
+
+Pour ce rapport, Mythos constitue surtout un signal de changement d’échelle. À mesure que les modèles deviennent capables d’explorer du code, de tester des hypothèses, de raisonner sur des systèmes complexes et d’assister la découverte de vulnérabilités, l’équilibre entre défense et attaque peut évoluer. Une même capacité peut servir à sécuriser un logiciel critique ou, si elle est mal encadrée, à faciliter un usage offensif. Le problème n’est donc pas seulement la puissance du modèle, mais le couple formé par ses capacités, ses accès, ses outils, son degré d’autonomie et le niveau de supervision humaine.
+
+Pour CleanMyMap, cette analyse ne signifie pas que le projet serait exposé à des risques militaires ou catastrophiques comparables. CleanMyMap n’est pas un projet de défense, ne manipule pas de systèmes critiques et ne doit pas intégrer d’IA autonome à haut risque. En revanche, cette discussion renforce une règle de gouvernance déjà retenue : ne jamais accorder à des agents IA des permissions larges par défaut. Les outils IA utilisés pour le développement doivent rester confinés, contrôlés et révocables.
+
+Concrètement, CleanMyMap doit maintenir plusieurs garde-fous : pas d’accès IA aux secrets, aux clés API ou aux données personnelles ; pas d’opération destructive sans validation humaine ; pas de déploiement automatique non relu ; pas de migration de base de données acceptée par simple suggestion du modèle ; pas d’agent capable de modifier seul l’infrastructure de production. Les décisions de sécurité, de dépendances, de stockage, d’authentification et de déploiement doivent rester sous responsabilité humaine identifiable.
+
+Plus les modèles deviennent capables, autonomes et intégrés à des outils, plus leur usage doit être proportionné, audité et limité aux bénéfices réellement démontrés. Pour CleanMyMap, cela justifie un principe simple : l’IA peut assister, mais elle ne doit jamais devenir une couche autonome de décision, d’administration ou de sécurité.
 
 Les débats récents sur l’**IA de frontière** ajoutent une dimension militaire et stratégique à cette analyse.
-Une étude institutionnellement rattachée à King’s College London, conduite par **Kenneth Payne** et publiée en préprint sous le titre *AI Arms and Influence: Frontier Models Exhibit Sophisticated Reasoning in Simulated Nuclear Crises* (février 2026), rapporte que certaines simulations de crise nucléaire menées avec des modèles de pointe ont produit des propositions d’escalade, y compris nucléaire, dans une grande partie des scénarios testés [17][18].
-Il faut toutefois formuler ce résultat avec prudence.
-Il ne signifie pas que “l’IA choisit la bombe” comme un fait général.
-Il signifie plus sobrement que **certaines simulations ou expérimentations rapportées montrent que des modèles peuvent proposer des réponses d’escalade dans des scénarios militaires sensibles**.
+Une étude institutionnellement rattachée à King’s College London, conduite par **Kenneth Payne** et publiée en préprint sous le titre *AI Arms and Influence: Frontier Models Exhibit Sophisticated Reasoning in Simulated Nuclear Crises* (février 2026), rapporte que certaines simulations de crise nucléaire menées avec des modèles de pointe ont produit des propositions d’escalade jusqu'à utiliser l'arme nucléaire dans 80 % des cas, même pour des modèles avancés tel que gemini 3.1. [17][18].**Certaines simulations ou expérimentations rapportées montrent que des modèles peuvent proposer des réponses d’escalade dans des scénarios militaires sensibles**.
 
 Ces résultats dépendent fortement :
 
@@ -907,6 +2427,343 @@ Ces exemples imposent une nuance importante : l’IA n’est pas un bien en soi,
 Ce sont précisément ces conditions que CleanMyMap doit reprendre à son échelle.
 
 ### Lecture par Objectifs de développement durable
+
+#### Détail des ODD
+
+## Transition depuis les avancées scientifiques vers les ODD
+
+L’intelligence artificielle transforme profondément la recherche scientifique moderne. Elle accélère les découvertes, explore des espaces immenses de possibilités et ouvre de nouveaux champs d’innovation dans presque toutes les disciplines scientifiques.
+
+L’IA ne constitue pas une “science autonome” remplaçant l’humain, mais un outil de recherche d’une puissance inédite capable d’augmenter considérablement les capacités scientifiques humaines.
+
+Cependant, cette révolution technologique s’accompagne de nouveaux défis majeurs : souveraineté scientifique, accès aux infrastructures de calcul, contrôle des données, dépendance industrielle et gouvernance des connaissances.
+
+L’avenir dépendra donc autant des progrès techniques de l’IA que des choix politiques, éthiques et économiques qui encadreront son développement et son utilisation.
+
+L’IA peut être utile à presque tous les Objectifs de développement durable, mais elle devient néfaste quand elle augmente les inégalités, automatise des décisions sensibles, consomme beaucoup de ressources pour des usages peu utiles, ou renforce la dépendance aux grandes plateformes. Les 17 ODD [45] constituent le cadre officiel adopté par l’ONU en 2015; l’ONU estime que l’IA peut aider à accélérer une grande partie des ODD, mais seulement si elle est encadrée.
+
+Voici le classement le plus pertinent.
+
+|ODD|IA plutôt utile quand…|IA plutôt néfaste quand…|
+|---|---|---|
+|**ODD 1 — Pas**|Elle aide à cibler les aides, repérer|Elle automatise l’exclusion, note les personnes pauvres, refuse des|
+|**de pauvreté**|les besoins, simplifier les|aides sans recours humain.|
+||démarches sociales.||
+|**ODD 2 — Faim**|Elle optimise l’agriculture, prédit les|Elle favorise une agriculture industrielle dépendante de plateformes,|
+|**“zéro”**|rendements, détecte les maladies|capteurs et données privées.|
+||des cultures.||
+|**ODD 3 — Santé**|Elle aide au diagnostic, au tri|Elle discrimine des patients, exploite des données de santé ou remplace|
+|**et bien-être**|médical, à la recherche, à la|abusivement le jugement médical.|
+||prévention.||
+|**ODD 4 —**|Elle personnalise l’apprentissage,|Elle favorise la triche, l’illusion de compétence, la dépendance, ou|
+|**Éducation de**|aide les élèves, traduit, rend le|creuse l’écart entre élèves équipés et non équipés.|
+|**qualité**|savoir plus accessible.||
+|**ODD 5 —**|Elle détecte des discriminations,|Elle reproduit les biais sexistes des données, discrimine à l’embauche|
+|**Égalité femmes-**|facilite l’accès à l’information et à|ou amplifie les violences numériques.|
+|**hommes**|certains services.||
+|**ODD 6 — Eau**|Elle détecte les fuites, optimise les|Elle aggrave les conflits locaux d’usage de l’eau autour des data centers.|
+|**propre**|réseaux, surveille la qualité de||
+||l’eau.||
+|**ODD 7 —**|Elle optimise les réseaux|Elle augmente fortement la demande électrique si les usages explosent|
+|**Énergie propre**|électriques, prédit la production|sans sobriété.|
+||renouvelable, réduit les pertes.||
+|**ODD 8 —**|Elle automatise des tâches|Elle précarise certains métiers, intensifie le travail, invisibilise les|
+|**Travail décent**|pénibles, aide les petites structures,|travailleurs de l’annotation et de la modération.|
+||augmente les capacités de||
+||production.||
+|**ODD 9 —**|Elle accélère la recherche, la|Elle concentre l’innovation chez quelques acteurs qui contrôlent|
+|**Industrie,**|maintenance, la logistique, la|modèles, cloud et puces.|
+|**innovation,**|conception technique.||
+|**infrastructures**|||
+|**ODD 10 —**|Elle peut rendre des outils|Elle creuse l’écart entre ceux qui ont données, calcul, argent et|
+|**Inégalités**|puissants accessibles à des petites|compétences, et ceux qui n’y ont pas accès.|
+|**réduites**|équipes ou pays moins dotés.||
+|**ODD 11 — Villes**|Elle optimise transports, énergie,|Elle devient un outil de surveillance urbaine ou de contrôle social.|
+|**durables**|déchets, voirie, cartographie des||
+||besoins.||
+
+|ODD|IA plutôt utile quand…|IA plutôt néfaste quand…|
+|---|---|---|
+|**ODD 12 —**|Elle aide à réduire le gaspillage,|Elle stimule la surproduction de contenus, la publicité ciblée,|
+|**Consommation**|prévoir les stocks, analyser les|l’obsolescence et la consommation numérique inutile.|
+|**responsable**|cycles de vie.||
+|**ODD 13 —**|Elle améliore les prévisions,|Elle consomme beaucoup d’énergie pour des usages à faible utilité|
+|**Climat**|optimise l’énergie, modélise les|sociale. L’ITU [4] indique que l’IA peut aider les ODD, mais souligne|
+||risques, aide à réduire les|aussi la nécessité de gouvernance pour éviter les effets négatifs.|
+||émissions.||
+|**ODD 14 — Vie**|Elle surveille pollution, pêche|Elle contribue indirectement à la pression énergétique, minière et|
+|**aquatique**|illégale, qualité de l’eau,|matérielle du numérique.|
+||biodiversité marine.||
+|**ODD 15 — Vie**|Elle aide à suivre la déforestation,|Elle dépend de matériel numérique dont l’extraction peut abîmer des|
+|**terrestre**|les espèces, les incendies, les sols.|milieux naturels.|
+|**ODD 16 — Paix,**|Elle aide à analyser des données|Elle produit deepfakes, surveillance, manipulation politique, décisions|
+|**justice,**|publiques, détecter corruption ou|opaques. L’ONU[45]et l’ITU[46] [47]alertent notamment sur les|
+|**institutions**|désinformation.|risques de deepfakes et de désinformation.|
+|**ODD 17 —**|Elle facilite la coopération, la|Elle renforce la dépendance aux grandes entreprises privées et aux|
+|**Partenariats**|traduction, le partage de données|pays qui contrôlent l’infrastructure IA.|
+||et la coordination.||
+
+## Références de l’Annexe F — ODD
+
+- [1] ONU (UN), *Objectifs de développement durable* . Lien
+
+- [2] ITU (UIT), *AI for Good - Accelerating the United Nations Sustainable Development Goals* . Lien
+
+- [3] UNESCO, *Recommendation on the Ethics of Artificial Intelligence* , (2021). Lien
+
+- [4] ITU, *Artificial Intelligence and the Environment* , (2024).
+
+L’IA est particulièrement utile pour les ODD où l’analyse de données, la prédiction, l’optimisation ou l’accessibilité jouent un rôle important : santé, éducation, énergie, climat, villes durables, agriculture, biodiversité et gestion de l’eau. Elle peut aider à mieux mesurer, prévoir et coordonner l’action humaine. En revanche, elle devient problématique lorsqu’elle touche aux droits humains, à l’accès aux services essentiels, à la surveillance, au travail ou aux inégalités; les ODD les plus sensibles sont donc ceux liés à la pauvreté, au travail décent, aux inégalités, à la justice et aux institutions.
+
+Dans ton cas, ton projet d’engagement bénévole peut être relié positivement à :
+
+|ODD|||Lien avec ton projet|
+|---|---|---|---|
+|**ODD**|**11**|**— Villes durables**|actions locales de propreté, amélioration de l’espace public|
+|**ODD**|**12**|**— Consommation responsable**|sensibilisation aux déchets, mégots, pollution urbaine|
+|**ODD**|**13**|**— Climat**|réflexion sur l’impact numérique et sobriété des usages|
+|**ODD**|**14**|**— Vie aquatique**|réduction des mégots pouvant contaminer l’eau|
+|**ODD**|**15**|**— Vie terrestre**|retrait de déchets de l’environnement urbain|
+|**ODD**|**17**|**— Partenariats**|mobilisation de bénévoles, associations, citoyens|
+
+Mais tu peux aussi reconnaître les risques :
+
+|Risque IA|ODD concerné|
+|---|---|
+|Dépendance à Codex, OpenAI, Claude, Vercel, Supabase, Stripe, etc.|ODD 9, 10, 17|
+|Consommation électrique et eau des data centers|ODD 6, 7, 13|
+|Travail invisible de l’annotation/modération|ODD 8, 10|
+|Inégalités d’accès aux outils IA|ODD 4, 10|
+|Données utilisateurs et surveillance potentielle|ODD 16|
+|Production excessive de code, churn, complexité technique|ODD 12, 13|
+
+## Annexe G — Questions fréquentes du jury
+
+##### Réponses aux objections possibles
+
+- **Question : Pourquoi utiliser l’IA si elle consomme de l’énergie? Réponse courte :** Parce que son usage reste ici un moyen et non une finalité. Elle a servi à accélérer le développement, améliorer la qualité, renforcer la documentation et les tests, dans des ordres de grandeur limités à l’échelle du projet et sous contrainte de sobriété.
+
+- **Question : Votre projet ne risque-t-il pas d’ajouter du numérique à un problème physique? Réponse courte :** Ce risque existe si l’outil ne change rien au terrain. CleanMyMap n’est défendable que s’il réduit les frictions réelles : signalements dispersés, photos non centralisées, doublons, pertes d’information, coordination lente et reporting difficile.
+
+- **Question : Comment éviter que le site devienne une usine à gaz? Réponse courte :** En gardant un noyau fonctionnel sobre : signalement, carte, cleanwalks, photos compressées, modération et export simple. Les couches plus lourdes ne doivent être ajoutées ou conservées que si les usages prouvent leur utilité.
+
+- **Question : Comment prouvez-vous que les bénéfices terrain existent vraiment? Réponse courte :** Par des indicateurs concrets : nombre de signalements validés, cleanwalks organisées, participants, déchets retirés, zones nettoyées, rapports transmis et actions qui n’auraient probablement pas eu lieu sans la plateforme.
+
+- **Question : Pourquoi ne pas utiliser seulement des outils existants comme Google Maps ou un tableur? Réponse courte :** Ces outils peuvent dépanner, mais ils laissent souvent les données dispersées entre cartes bricolées, fichiers, messages et photos. CleanMyMap vise justement à centraliser signalement, historique, preuve et coordination dans un même flux plus exploitable.
+
+- **Question : Comment limitez-vous les effets rebonds liés aux déplacements? Réponse courte :** En faisant de la carte et de l’historique des outils d’orientation, pas de simple consultation. L’objectif est d’éviter les repérages inutiles, de mieux regrouper les actions et de concentrer les déplacements sur les interventions réellement utiles.
+
+- **Question : Comment protégez-vous les données des utilisateurs? Réponse courte :** En limitant les données collectées, en encadrant les accès, en anonymisant ce qui doit l’être et en refusant d’envoyer à l’IA des informations sensibles, des secrets techniques ou des données personnelles non nécessaires.
+
+- **Question : Que se passe-t-il si les services cloud deviennent trop chers ou indisponibles? Réponse courte :** C’est un risque identifié. Il est partiellement réduit par une architecture exportable, des formats simples, la possibilité de revenir à des usages plus sobres et la vigilance portée à ne pas rendre le projet dépendant d’une seule brique critique évitable.
+
+- **Question : L’IA est-elle vraiment neutre? Réponse courte :** Non. Ses réponses dépendent de ses données d’entraînement, de son alignement, du contexte, de la langue et des garde-fous. Dans CleanMyMap, cela impose de limiter l’IA à des tâches d’assistance non sensibles, de relire ses sorties et de ne jamais lui déléguer une autorité décisionnelle.
+
+## Questions de contexte scientifique et institutionnel
+
+Les questions ci-dessous ne remplacent pas les réponses d’objection de la Partie VII ni la FAQ complète de l’Annexe G. Elles servent seulement à replacer l’IA dans un contexte scientifique plus large lorsque le jury interroge les bénéfices généraux de cette technologie.
+
+- Qu’est-ce qu’AlphaFold? AlphaFold est une IA capable de prédire la structure tridimensionnelle des protéines à partir de leur séquence moléculaire.
+
+- L’IA remplace-t-elle les chercheurs? Non. L’IA accélère la recherche et aide à explorer des hypothèses, mais les validations expérimentales, l’interprétation scientifique et les applications restent majoritairement humaines.
+
+- Pourquoi les découvertes IA ne deviennent-elles pas immédiatement des applications concrètes? Parce que les validations industrielles, médicales et réglementaires restent longues, coûteuses et complexes.
+
+- Quels sont les risques liés à la concentration de l’IA? La dépendance envers quelques entreprises peut limiter l’accès aux connaissances, orienter les priorités scientifiques et créer des déséquilibres géopolitiques importants.
+
+- Comment l’IA aide-t-elle les neurosciences? Grâce à l’analyse d’images massives et à la cartographie neuronale ultra-détaillée permettant d’étudier les connexions du cerveau.
+
+##### Analyse critique du rôle de l’IA
+
+L’usage d’outils d’IA générative comme ChatGPT ou Codex dans un projet web environnemental ne peut pas être évalué uniquement par le gain de vitesse. Il faut aussi examiner la qualité technique, la fiabilité des contenus, les risques de dépendance, la gouvernance des décisions et la cohérence avec les objectifs écologiques du projet. Dans
+
+le cas de CleanMyMap, l’IA n’est pertinente que si elle renforce la capacité à agir sur la propreté urbaine sans dégrader la rigueur du produit ni la responsabilité environnementale.
+
+##### Apports concrets de l’IA pour le développement du site
+
+- Rapidité d’exécution : l’IA accélère les tâches de cadrage, de rédaction technique, de structuration et de prototypage.
+
+- Productivité technique : génération de premiers jets de code, aide au refactor, proposition de tests, accélération du debug.
+
+- Idéation et structuration : transformation de notes brutes en plans exploitables, décomposition en lots, priorisation des dépendances.
+
+- Accessibilité technique : réduction du seuil d’entrée sur des sujets complexes (architecture, tests, instrumentation, documentation).
+
+- Support éditorial : reformulation de contenus, clarté des messages, harmonisation de la tonalité entre pages.
+
+- Appui opérationnel : accélération de la production de docs, checklists, runbooks et synthèses pour coordination équipe/jury.
+
+Appliqués à CleanMyMap, ces apports sont pertinents lorsque l’IA sert des objectifs concrets : meilleure lisibilité des parcours, meilleure qualité des livrables, meilleure capacité de pilotage et réduction du temps perdu sur des tâches répétitives.
+
+##### Limites, risques et effets pervers
+
+- Superficialité : l’IA peut fournir des réponses plausibles mais fragiles, surtout sans vérification contextuelle du repo.
+
+- Hallucinations et erreurs : références techniques, juridiques ou factuelles potentiellement inexactes.
+
+- Dette technique : génération rapide de code hétérogène, couplage excessif, conventions incohérentes.
+
+- Standardisation excessive : interfaces et formulations trop génériques, perte d’adéquation aux usages réels des utilisateurs.
+
+- Baisse d’esprit critique : risque de valider trop vite des propositions non testées.
+
+- Risques sécurité/confidentialité : exposition de données sensibles si les prompts incluent des informations personnelles ou internes inutiles.
+
+- Mauvais arbitrages architecture : optimisation locale rapide au détriment de la maintenabilité globale.
+
+- Impact environnemental indirect : même si l’impact unitaire peut paraître modeste, le volume cumulé de requêtes, d’itérations et d’agents peut devenir significatif.
+
+- **Effet Rebond (Paradoxe de Jevons)** : La facilité de développement accrue par l’IA peut inciter à créer des fonctionnalités superflues ( *feature creep* ), annulant ainsi les gains de sobriété réalisés sur le code lui-même.
+
+- **Inflation de code (AI-driven Bloat)** : L’IA a tendance à générer plus de code que nécessaire si elle n’est pas contrainte par une exigence de minimalisme extrême.
+
+##### Compromis à arbitrer
+
+Compromis 1 - Vitesse vs fiabilité : l’IA augmente la vitesse de production, mais cette vitesse est utile uniquement si les sorties sont vérifiées (tests, revue humaine, cohérence produit).
+
+Compromis 2 - Productivité vs qualité architecture : un gain de court terme peut fabriquer de la dette long terme si les décisions ne sont pas tracées et rationalisées.
+
+Compromis 3 - Assistance vs dépendance : l’IA doit rester un accélérateur. Elle ne remplace ni la capacité d’analyse de l’équipe ni la prise de décision.
+
+##### Synthèse de la position responsable
+
+En conclusion de cette analyse critique, notre position face à l’IA n’est ni le rejet par principe, ni l’adoption aveugle. La règle centrale est plus simple : **l’IA n’est justifiée que si elle produit un gain environnemental, social ou opérationnel supérieur à son coût réel, tout en restant ciblée, sobre et relue humainement** .
+
+Nous pratiquons une **IA sous surveillance** :
+
+- **Surveillance environnementale** : On n’utilise l’IA que si elle apporte un bénéfice de sobriété (meilleur code, assets plus légers) ou de rapidité de mise sur le marché d’une solution écologique.
+
+- **Surveillance sociale** : L’IA n’est jamais la source de vérité pour nos conseils de recyclage ou nos informations juridiques sans une validation humaine experte.
+
+- **Surveillance technique** : Nous luttons contre l’inflation de code (AI-driven bloat) en refusant les fonctionnalités superflues proposées par les modèles.
+
+Notre choix est donc conditionnel et non idéologique : utiliser l’IA lorsqu’elle augmente clairement l’utilité nette du projet, puis la limiter dès qu’elle ajoute surtout du volume, de la dépendance ou du bruit numérique.
+
+Compromis 4 - Efficacité numérique vs cohérence écologique : utiliser intensivement l’IA pour un projet environnemental peut créer une tension de crédibilité si la sobriété numérique n’est pas intégrée (prompts mieux ciblés, moins d’itérations inutiles, priorisation des tâches à forte valeur).
+
+##### Conditions d’un usage responsable et pertinent de l’IA
+
+- Gouvernance claire : définir ce que l’IA peut proposer et ce que seul l’humain peut valider.
+
+- Vérification systématique : lint/tests/revue code et vérification factuelle pour les contenus.
+
+- Hygiène des données : minimisation des données envoyées, anonymisation, exclusion des informations sensibles.
+
+- Traçabilité des décisions : distinguer suggestion IA, décision produit et validation technique finale.
+
+- Cadre de qualité : conventions de code, standards UX, schéma d’événements, checklist pre-release.
+
+- Cohérence environnementale : réserver l’IA aux usages à forte valeur (architecture, qualité, documentation critique), éviter les itérations peu utiles.
+
+- Transparence : expliciter les zones assistées par IA et les contrôles humains associés.
+
+##### Grille de décision pour l’intégration d’une fonctionnalité IA
+
+Cette grille sert à décider si une nouvelle fonctionnalité IA mérite d’être intégrée dans CleanMyMap. Elle ne remplace pas le jugement de l’équipe; elle le structure.
+
+|Question|Réponse attendue pour aller plus loin|Si la réponse est non|
+|---|---|---|
+|1. La tâche est-elle réellement utile au|Elle améliore directement la coordination,|La fonctionnalité doit être repoussée ou|
+|terrain?|la qualité des données, la mobilisation ou|supprimée.|
+||la lecture des actions.||
+|2. Peut-elle être réalisée sans IA avec|Non : une règle simple ne suffit pas, ou|Préférer une règle métier, un|
+|une règle simple?|dégraderait nettement l’utilité.|automatisme déterministe ou une|
+|||interface plus simple.|
+|3. L’IA réduit-elle du temps humain ou|Elle réduit des tâches répétitives, des|L’usage n’est pas justifié; conserver une|
+|améliore-t-elle la qualité?|erreurs ou des délais, ou elle améliore la|solution non IA.|
+||pertinence du résultat.||
+|4. Le modèle utilisé est-il proportionné à|Le plus petit modèle ou la méthode la plus|Le périmètre doit être réduit ou la|
+|la tâche?|sobre suffit à obtenir le résultat attendu.|fonctionnalité abandonnée.|
+|5. Les données envoyées sont-elles non|Les données sont minimisées,|Ne pas envoyer ces données; revoir le|
+|sensibles?|anonymisées et sans information critique.|design ou bloquer l’usage.|
+|6. L’impact environnemental est-il limité?|Les appels sont rares, l’usage est borné,|Réduire la fréquence, simplifier le flux ou|
+||le stockage est maîtrisé et l’hébergement|renoncer à l’IA.|
+||est sobre.||
+|7. La sortie est-elle relue ou validée par|Oui, systématiquement pour les contenus,|La sortie ne doit pas être publiée telle|
+|un humain?|le code critique et les décisions sensibles.|quelle.|
+|8. L’usage est-il mesurable et|Oui : journal d’usage, métriques, feature|L’intégration est trop risquée et ne doit|
+|désactivable?|flag ou possibilité de coupure nette.|pas être retenue.|
+
+**Règle de décision** : une fonctionnalité IA ne doit être intégrée que si elle répond positivement à la majorité de ces critères.
+
+##### Matrice synthétique risque / réponse / preuve
+
+|||Réponse prévue||||
+|---|---|---|---|---|---|
+|Risque identifié|Impact potentiel|dans CleanMyMap|Preuve / source|Indicateur de suivi|Niveau de priorité|
+|Consommation|Émissions, coût|Modèles légers,|Logs de build,|kWh estimés par|Haute|
+|électrique|d’usage, charge|cache, limitation|rapport d’usage IA,|mois, nombre||
+||serveur|des appels IA|configuration des|d’appels IA||
+||||modèles|||
+
+|||Réponse prévue||||
+|---|---|---|---|---|---|
+|Risque identifié|Impact potentiel|dans CleanMyMap|Preuve / source|Indicateur de suivi|Niveau de priorité|
+|Consommation|Stress hydrique,|Limiter les sessions|Section ACV,|Estimation eau,|Haute|
+|d’eau|refroidissement des|lourdes, réduire les|hypothèses eau,|durée des sessions||
+||data centers|rechargements,|choix|lourdes||
+|||privilégier un|d’hébergement|||
+|||hébergement sobre|documentés|||
+|Stockage excessif|Stockage,|Compression, taille|Règles d’upload,|Volume stocké,|Haute|
+|de photos|transferts,|max, purge ou|scripts de|nombre de photos||
+||ralentissement,|archivage des|traitement, audits|hors seuil||
+||coût cloud|images inutiles|de volume|||
+|Dépendance aux|Lock-in, variation|Abstractions,|Inventaire des|Nombre de|Haute|
+|plateformes cloud|des prix, fragilité|exports,|services, plan de|services||
+||technique|documentation des|sortie,|remplaçables sans||
+|||services critiques,|documentation|rupture||
+|||alternatives|d’architecture|||
+|||prévues||||
+|Dette technique|Complexité, bugs,|Revue humaine,|PR relues, tests CI,|Taux de PR relues,|Haute|
+|liée au code IA|maintenance plus|tests, check-list de|journal|bugs post-merge||
+||coûteuse|sortie IA|d’amélioration IA|||
+|Confidentialité des|Fuite|Anonymisation,|Gouvernance IA,|Prompts sans|Haute|
+|données|d’informations,|données interdites,|règles de prompt,|données sensibles,||
+||risque RGPD|contrôle avant|contrôle|incidents||
+|||prompt|pré-publication|||
+|Effets rebonds liés|Émissions|Privilégier les|Parcours terrain,|Distance moyenne|Moyenne à haute|
+|aux déplacements|indirectes, trajets|actions proches,|formulaires|par action, part||
+||évitables|regrouper les|d’action,|d’actions locales||
+|||déplacements|cartographie locale|||
+|Infobésité|Surcharge|Simplification des|Audit UX, liste des|Nombre d’écrans,|Moyenne|
+||cognitive, baisse|écrans, hiérarchie|pages, suivi des|taux d’abandon,||
+||d’usage utile|claire, notifications|parcours|temps de lecture||
+|||limitées||||
+|Travail invisible lié|Coût social et|Usage ciblé,|Partie sociale du|Journal d’usage IA,|Haute|
+|à l’IA|humanitaire|transparence, pas|rapport, synthèse|décisions relues||
+||sous-estimé|d’usage massif|jury, journal|humainement||
+|||sans valeur réelle|d’impact DU|||
+|Fin de vie du|Déchets|Prolongation des|ACV, stratégie de|Nombre d’appareils|Moyenne à haute|
+|matériel numérique|électroniques,|appareils, réemploi,|réemploi, suivi des|prolongés ou||
+||pollution locale|recyclage certifié|filières|orientés vers une||
+|||||filière||
+
+Cette matrice n’a pas pour fonction de promettre l’absence de risque. Elle sert à montrer que chaque risque identifié dispose d’une réponse opérationnelle, d’un point de contrôle et d’une trace vérifiable, afin que l’arbitrage IA reste lisible devant un jury comme devant l’équipe projet.
+
+##### Apports méthodologiques des ateliers DU à l’usage de l’IA
+
+Les ateliers DU ont clarifié un point utile pour CleanMyMap : l’IA n’a d’intérêt que si elle renforce un système sociotechnique déjà lisible. Autrement dit, elle n’est pas la finalité du projet. Elle devient acceptable lorsqu’elle améliore la coordination entre acteurs, la traçabilité des choix, la qualité du reporting et la capacité d’arbitrage institutionnel, plutôt que de produire davantage de surface numérique pour elle-même. Les idées issues des ateliers DU n’entrent donc pas ici comme un backlog, mais comme des critères, choix ou améliorations déjà absorbés dans le projet lorsqu’ils ont réellement renforcé l’utilité, la sobriété ou la gouvernance.
+
+Cette lecture rejoint le pilotage par indicateurs : un outil assisté par IA doit être jugé sur sa capacité à rendre l’action plus mesurable, plus explicable et plus utile, et non sur la seule vitesse de production. Dans CleanMyMap, cela légitime l’usage de l’IA pour structurer la documentation, fiabiliser le code, mieux formuler les contrôles et accélérer la production de livrables lorsque cette accélération améliore réellement la coordination, la lisibilité institutionnelle et la sobriété de l’équipe.
+
+##### Limites restantes de gouvernance IA
+
+Malgré ce cadre, plusieurs limites restent ouvertes. La première est l’hétérogénéité de qualité des données : si les flux amont restent imparfaits, l’IA peut amplifier des interprétations fragiles au lieu de les corriger. La deuxième est le risque d’effet rebond et d’inflation de code : plus l’outil rend la production facile, plus il faut une discipline explicite pour refuser les fonctionnalités secondaires et les abstractions peu utiles.
+
+S’ajoutent à cela des limites structurelles déjà visibles dans le dépôt : dépendance technologique à des services propriétaires, besoin d’une validation humaine pérenne sur les contenus et le code, et exigence d’exportabilité réelle pour conserver une autonomie technique minimale. Ces points ne rendent pas l’usage de l’IA incohérent, mais ils imposent de la traiter comme un levier sous contrainte et non comme une solution auto-justifiée.
+
+##### Conclusion synthétique
+
+En synthèse, l’IA est utile pour CleanMyMap lorsqu’elle sert une logique d’amélioration mesurable : mieux structurer, mieux coder, mieux tester et mieux communiquer. Elle devient contre-productive dès qu’elle remplace le jugement critique, dégrade la cohérence technique ou affaiblit la responsabilité environnementale du projet. La bonne posture reste pragmatique : IA pour accélérer, humain pour arbitrer, vérifier et assumer la décision finale.
+
+Une fois cette position clarifiée, il faut encore la traduire en priorités concrètes sur le produit et dans l’organisation.
+
+**Coût énergétique : pourquoi ne pas considérer l’IA comme incompatible avec le projet?** Le rapport ne nie pas le coût énergétique de l’IA.
+
+- **Mode dégradé** : Fonctionnement minimal permettant de maintenir les usages essentiels lorsqu’un service externe est indisponible.
+
+- **WUE (Water Usage Effectiveness)** : Indicateur mesurant l’efficacité de l’utilisation de l’eau dans un data center (Litre d’eau par kWh consommé)
+
 
 L’IA est souvent présentée comme un accélérateur potentiel des Objectifs de développement durable (ODD), mais cette promesse n’est valable que sous conditions.
 Le même outil peut aider un objectif dans un contexte et l’aggraver dans un autre.
@@ -1060,10 +2917,6 @@ La règle de décision reste toutefois inchangée : l’IA doit être utilisée 
 Elle n’est socialement défendable dans CleanMyMap que si elle améliore réellement l’efficacité, la qualité ou l’accessibilité du développement sans accroître de manière disproportionnée la dépendance, l’exposition de données, la dilution des responsabilités ou les usages sans valeur ajoutée.
 
 La Partie IV change donc de focale : après les risques et garde-fous, il faut vérifier si l’utilité réelle produite par le site compense suffisamment ces charges.
-
---------------------------------------------------
-
-{{< pagebreak >}}
 
 # Partie IV — Utilité réelle de CleanMyMap {#partie-iv-utilite-reelle-de-cleanmymap}
 
@@ -2104,1892 +3957,7 @@ Pour éviter d’alourdir cette conclusion, la table consolidée des sources est
 
 Comme le rapport a été produit avec assistance IA puis relu humainement, il peut encore contenir des erreurs matérielles, coquilles ou liens devenus obsolètes. Les signalements peuvent être envoyés à [contact@cleanmymap.fr](mailto:contact@cleanmymap.fr), afin de conserver une version corrigible et traçable.
 
---------------------------------------------------
-
-{{< pagebreak >}}
-
-# Annexes {#annexes .unnumbered}
-
-## Annexe A — Statistiques du dépôt {#annexe-a-statistiques-du-depot .unnumbered}
-
-Cette annexe conserve la photographie documentaire du dépôt utilisée dans tout le bilan.
-
-| Métrique | Valeur (Photographie au 13/05/2026) |
-|---|---|
-| **Fichiers source (filtrés)** | **1 366** |
-| **Lignes source totales** | **223 822** |
-| TypeScript / React (`.ts`, `.tsx`) | ~195 000 |
-| SQL / Supabase (`.sql`) | ~2 500 |
-| Python / Scripts (`.py`, `.mjs`) | ~18 000 |
-| Style / CSS (`.css`) | ~4 000 |
-| Autres (Markdown, JSON, etc.) | ~4 322 |
-
-| Historique Git | Valeur |
-|---|---|
-| Commits (20 fév. → 13 mai 2026) | 177 |
-| Insertions totales | 425 324 lignes |
-| Suppressions totales | 246 930 lignes |
-
-Le ratio insertions/lignes actuelles (~3,3×) indique beaucoup de churn et de refactor, cohérent avec un développement itératif assisté par IA.
-
-Périmètre technique observé :
-
-- Frontend : Next.js 16, React 19, Tailwind, Leaflet, Recharts, Framer Motion
-- Backend/API : 45 routes API Next.js
-- Auth : Clerk côté web, Supabase Auth côté app compagnon
-- Base de données : Supabase, migrations SQL, scripts d’import/sync
-- Analytics : PostHog, Vercel Analytics, Speed Insights
-- Observabilité : Sentry
-- Email : Resend
-- Paiement/dons : Stripe
-- Infra complémentaire : Upstash Redis/QStash, Pinecone déclaré, Vercel
-- Mobile : app Expo/React Native connectée à Supabase
-- Legacy : Python, SQLite, scripts et tests historiques, plusieurs fichiers de prises de notes dans la documentation par l'utilisateur
-
---------------------------------------------------
-
-{{< pagebreak >}}
-
-## Annexe B — Détail des calculs
-
-Cette annexe rassemble les hypothèses de calcul utilisées dans le mémoire, sans modifier les ordres de grandeur retenus dans le corps principal.
-
-## Hypothèse horaire de développement assisté par IA
-
-- Projet créé le 20 février 2026
-
-- 10 semaines actives retenues jusqu’au 13 mai 2026
-
-- 8 h/semaine code IA + 2 h/semaine optimisation prompts
-
-- **Total estimé : 100 h de développement assisté par IA**
-
-Le calendrier complet allant du 20 février au 12 mai 2026 couvre environ 11,6 semaines. L’hypothèse de 100 heures doit donc être lue comme une estimation déclarative prudente, non comme une mesure automatique.
-
-## Répartition par outil
-
-|Outil / mode|Part horaire estimée|Heures sur 100 h|Usage principal|
-|---|---|---|---|
-|ChatGPT / Codex / LLM équivalent|55 %|55 h|cadrage, génération, refactor, documentation, debug|
-|Claude / autre LLM conversationnel|20 %|20 h|comparaison, reformulation, synthèse|
-|GitHub Copilot / autocomplétion|15 %|15 h|complétion locale, suggestions de code|
-|Outils non IA mais induits par l’usage IA|10 %|10 h|tests, validation, ajustements après propositions IA|
-
-Cette répartition reste une hypothèse de travail méthodologique.
-
-## Productivité apparente
-
-En retenant **223 822 lignes source** pour **100 h** de développement assisté par IA, la productivité apparente serait d’environ :
-
-## 223 822 / 100 ≈2 238 lignes source par heure
-
-Cette valeur n’est pas une productivité humaine réelle. Elle agrège du code utile, du code remplacé, du refactor, de la configuration, du SQL, des scripts, du Markdown et du churn Git.
-
-## Indice d’utilité réelle (IUR)
-
-La définition principale de l’IUR figure en Partie IV. La formule utilisée est :
-
-## IUR = Impact Terrain (Déchets localisés/retirés) / Coût Numérique Global (CO2e + H2O)
-
-L’IUR n’est pas un indicateur financier. Il sert à vérifier que le bénéfice terrain progresse plus vite que le coût numérique global.
-
-Le numérateur doit rester lié à des éléments observables : actions réalisées, zones nettoyées, déchets localisés ou retirés, rapports transmis, participants mobilisés, données réutilisées par une association ou une collectivité. Le dénominateur regroupe les coûts numériques et matériels estimés : consommation électrique, émissions carbone, eau, stockage, transferts, services tiers et dette matérielle lorsque celle-ci est documentable.
-
-L’IUR doit être interprété en tendance plutôt qu’en valeur absolue. Une version du site est préférable si, à utilité terrain égale, elle consomme moins de ressources; ou si, à coût numérique comparable, elle déclenche davantage d’actions utiles. À l’inverse, une version qui augmente les pages, scripts, photos, requêtes et services tiers sans effet terrain mesurable dégrade l’IUR.
-
-Exemples d’améliorations favorables à l’IUR :
-
-- réduire la taille moyenne des photos sans perte probatoire;
-
-- rendre un rapport plus facile à transmettre à une collectivité;
-
-- simplifier le formulaire pour augmenter les signalements complets;
-
-- supprimer une page ou un service peu utilisé;
-
-- remplacer une fonctionnalité IA par une règle déterministe suffisante;
-
-- limiter les notifications aux cas réellement utiles.
-
-Exemples de décisions défavorables à l’IUR :
-
-- ajouter une IA de recommandation sans preuve d’usage;
-
-- conserver plusieurs dashboards pour une même information;
-
-- multiplier les badges, animations ou classements sans action terrain;
-
-- stocker des photos haute résolution sans durée de conservation;
-
-- suivre des événements analytics qui ne guident aucune décision.
-
-## Logique des scénarios de coût
-
-Les calculs environnementaux du mémoire reposent sur une combinaison de :
-
-- données observables dans le dépôt;
-
-- hypothèses d’usage de l’IA;
-
-- fourchettes d’intensité énergétique, carbone, hydrique et matérielle issues de la littérature;
-
-- scénarios prudents, intermédiaires et hauts pour éviter un faux sentiment de précision.
-
-Le rapport retient volontairement des ordres de grandeur plutôt que des valeurs trop précises. Les postes mesurables localement sont limités : taille du dépôt, nombre de fichiers, structure applicative, présence de routes API, dépendances, usages déclarés et hypothèses horaires. Les postes non mesurés directement sont encadrés par des scénarios : intensité électrique des modèles, localisation des data centers, mix électrique, refroidissement, durée des sessions, builds, stockage, consultation de cartes et usages futurs.
-
-Les scénarios doivent être lus ainsi :
-
-|Scénario|Fonction|Interprétation|
-|---|---|---|
-|Bas|borne minimale plausible|utile pour éviter de surestimer l’impact|
-|||sans preuve|
-|Central prudent|hypothèse de travail|utilisé pour discuter l’arbitrage principal|
-|Haut|borne de vigilance|utile pour vérifier que la conclusion reste|
-|||prudente|
-
-Le scénario central utilisé dans le corps principal conserve les ordres de grandeur déjà retenus : environ **100 kWh** , **20 kgCO2e** et **100 L** comme repères annuels ou de développement selon le bloc concerné. Ces chiffres ne doivent pas être lus comme une mesure instrumentée, mais comme un cadre de prudence pour comparer l’impact numérique à l’utilité terrain.
-
-## Hypothèses de consommation électrique
-
-La consommation électrique du développement assisté par IA dépend de plusieurs couches :
-
-- temps de génération ou d’inférence des modèles;
-
-- nombre de relances, prompts, corrections et itérations;
-
-- builds locaux et distants déclenchés par les modifications;
-
-- tests, CI/CD, previews et validations;
-
-- stockage et consultation de documentation, logs et rapports.
-
-L’estimation ne sépare pas parfaitement ces couches. Elle agrège l’usage IA, le travail de développement induit et les effets techniques associés. Cette limite méthodologique est assumée : le rapport vise un ordre de grandeur défendable, non un inventaire instrumenté minute par minute.
-
-La conséquence pratique est que la réduction future ne doit pas viser seulement les prompts IA. Elle doit aussi viser les boucles qui les accompagnent : relances inutiles, builds déclenchés par de simples changements documentaires, previews redondantes, tests lourds non ciblés et refactorisations produisant beaucoup de churn.
-
-## Hypothèses carbone et eau
-
-Le passage de l’électricité au carbone dépend du mix électrique, de la localisation du calcul, du moment de consommation, du type de data center et du périmètre retenu. Le passage à l’eau dépend du refroidissement, de l’eau directe consommée, de l’eau associée à la production d’électricité et des méthodes de comptabilité utilisées.
-
-Le rapport conserve donc une lecture prudente :
-
-- ne pas réduire l’impact IA au seul carbone;
-
-- ne pas présenter l’eau comme mesurée précisément si elle ne l’est pas;
-
-- distinguer l’ordre de grandeur du développement assisté par IA, l’usage futur du site et l’impression du rapport;
-
-- rappeler que les impacts matériels, hydriques et sociaux peuvent rester significatifs même lorsque le carbone paraît modéré.
-
-Les valeurs **100 kWh** , **20 kgCO2e** et **100 L** servent de repères pour comparer les choix, pas de certification. Elles doivent être réévaluées si des logs d’usage, factures cloud, métriques de stockage ou données fournisseurs deviennent disponibles.
-
-## Hypothèses liées à l’impression du rapport
-
-L’impression du rapport est traitée comme un poste matériel complémentaire, car un rapport d’audit peut lui-même devenir un support physique consommateur de papier, encre, toner, énergie, transport et fin de vie.
-
-Les ordres de grandeur retenus dans le corps principal sont conservés :
-
-- **0,4 à 0,7 kgCO2e** pour un exemplaire noir et blanc recto-verso optimisé;
-
-- **1 à 1,4 kgCO2e** pour un exemplaire couleur recto simple;
-
-- **10 à 14 kgCO2e** pour 10 exemplaires couleur;
-
-- **20 à 28 kgCO2e** pour 20 exemplaires couleur.
-
-Ces valeurs servent à montrer un effet d’échelle. Un exemplaire isolé reste faible par rapport au développement assisté par IA, mais un tirage multiplié peut atteindre le même ordre de grandeur carbone. L’analyse reste volontairement prudente sur les impacts non carbonés : eau, fibres, bois, blanchiment, encres, toners, plastification, reliure et déchets.
-
-## Incertitudes et contrôles à prévoir
-
-Les principales incertitudes restantes concernent :
-
-- le nombre réel de requêtes IA et leur type;
-
-- la localisation des calculs;
-
-- la part de modèles légers ou lourds;
-
-- le volume de builds déclenchés par les itérations;
-
-- le stockage réel des photos en production;
-
-- le trafic futur sur les cartes et rapports;
-
-- le taux d’impression réelle du rapport;
-
-- le nombre d’actions terrain réellement attribuables à CleanMyMap.
-
-Pour une version future plus instrumentée, les contrôles les plus utiles seraient :
-
-- journal mensuel des usages IA par type de tâche;
-
-- export des durées et fréquences de builds;
-
-- mesure du poids des pages principales;
-
-- volume mensuel de stockage photo;
-
-- nombre d’exports ou rapports réellement téléchargés;
-
-- nombre de signalements transformés en actions;
-
-- suivi des impressions physiques du rapport.
-
-Ces contrôles permettraient de transformer les ordres de grandeur en mesures plus solides sans changer le cadre de raisonnement.
-
-## Annexe C — Audit technique de sobriété (diagnostic détaillé)
-
-[!NOTE] **Rattachement éditorial** : cette section prolonge la **Partie I — Méthodologie et diagnostic** . Elle documente le coût technique réel du frontend, du backend, des dépendances et des usages IA.
-
-Cette section identifie les principaux postes de consommation numérique, énergétique et computationnelle visibles dans le dépôt au 13 mai 2026. Elle ne remplace pas une mesure Lighthouse, WebPageTest, `next build --analyze` ou traces de production, mais elle permet de repérer les sources probables de surcoût à partir de l’architecture, du code, des dépendances et des workflows, en s’appuyant sur une démarche de sobriété numérique. [1]
-
-Cette section sert donc de contrepoint à la précédente : une utilité forte ne suffit pas si elle repose sur une architecture trop coûteuse pour l’usage réellement rendu, conformément aux recommandations du W3C. [36]
-
-Repères locaux utilisés : application Next.js/React dans `apps/web` , 57 fichiers de routes API, 237 fichiers déclarés comme composants ou modules client, 89 imports de `framer-motion` , 71 usages de SWR, 57 occurrences de `fetch(` dans `apps/web/src` , 23 occurrences de `no-store` , 3 exports `revalidate` , assets publics PNG jusqu’à environ 738 Ko, Leaflet et Leaflet Draw présents, analytics PostHog/Vercel/Sentry conditionnées par consentement ou configuration.
-
-## Cartographie des coûts numériques
-
-|Zone|Source de coût|Mécanisme|Impact probable|Confiance|Solution concrète|
-|---|---|---|---|---|---|
-|Frontend global|Client components|plus de JavaScript|moyen à fort|élevée|réduire les|
-||nombreux|à hydrater, plus de|||composants`use`|
-|||rendu côté|||`client`, isoler|
-|||navigateur|||l’interactivité par|
-||||||îlot|
-|Animations|`framer-motion`|bundle plus lourd,|moyen|élevée|réserver Framer|
-||importé|calculs d’animation,|||Motion aux|
-||massivement|re-renders|||interactions clés,|
-||||||CSS transitions|
-||||||ailleurs|
-|Cartographie|Leaflet, React|scripts lourds, tuiles|fort sur pages carte|élevée|chargement|
-||Leaflet, clusters,|réseau, rendu DOM|||dynamique strict,|
-||Leaflet Draw|des marqueurs|||cluster serveur ou|
-||||||pagination spatiale|
-|CSS global|CSS Leaflet chargé|feuilles de style|faible à moyen|élevée|importer CSS|
-||dans`layout.tsx`|envoyées même|||seulement dans les|
-|||hors carte|||segments|
-||||||cartographiques|
-|Données temps|SWR + refresh|revalidation|moyen à fort selon|moyenne|désactiver refresh|
-|réel|global 30 s|automatique et|pages||par défaut, activer|
-|||appels répétés|||seulement chat/live|
-|API|57 routes API|surface serveur|moyen|élevée|fusionner routes|
-|||large, validations,|||proches, cache|
-|||appels DB et logs|||contrôlé, budget|
-||||||endpoints|
-|Stockage|photos d’actions|upload, stockage,|fort si usage terrain|élevée|compression client,|
-||Supabase Storage|backups,|réel||quotas, durée de|
-|||consultation|||conservation,|
-|||répétée|||miniatures|
-|Analytics|PostHog, Vercel|événements,|moyen|élevée|consentement|
-||Analytics, Speed|scripts, stockage,|||strict, sampling,|
-||Insights, funnel|traitement externe|||événements|
-||local||||actionnables|
-||||||uniquement|
-|Observabilité|Sentry|collecte d’erreurs,|faible à moyen|moyenne|garder seulement|
-|||sourcemaps, traces|||erreurs critiques,|
-|||éventuelles|||sampling faible|
-|CI/CD|deux jobs GitHub|calcul répété à|moyen|élevée|chemins filtrés, jobs|
-||avec`npm ci`,|chaque push et PR|||mutualisés, tests|
-||typecheck, lint,||||lourds planifiés|
-||tests|||||
-
-|Zone|Source de coût|Mécanisme|Impact probable|Confiance|Solution concrète|
-|---|---|---|---|---|---|
-|Builds|Next.js/Vercel|compilation, traces,|moyen|moyenne|ignorer docs-only,|
-||previews|déploiements|||regrouper|
-|||temporaires|||Dependabot, limiter|
-||||||previews|
-|IA|Pinecone déclaré,|risque d’activation|faible actuel, fort|moyenne|feature flag,|
-||OpenAI dans config|coûteuse sans|potentiel||mesure par appel|
-||Supabase, textes|preuve d’utilité|||IA, fallback|
-||“IA”||||déterministe|
-|Rapports/export|`html-to-image`,|génération|moyen sur rapports|moyenne|exports|
-||PDF HTML,|client/serveur,|||asynchrones,|
-||CSV/JSON|mémoire, payloads|||cache, limiter|
-||||||graphiques lourds|
-|Dépendances|`xlsx`,|poids bundle ou|faible à moyen|moyenne|import dynamique,|
-||`react-big-calendar`,|maintenance si|||suppression si|
-||`swiper`,|chargés côté client|||usage marginal|
-||`canvas-confetti`|||||
-
-Les coûts dominants ne sont pas les pages statiques ou le texte. Les coûts probables sont concentrés dans quatre familles : carte interactive, hydratation React, stockage photo et répétition des appels réseau/CI.
-
-## Analyse frontend
-
-Le frontend est riche, visuel et très interactif. Cette richesse améliore l’expérience sur certains parcours, mais elle augmente la dette de sobriété.
-
-## Problème 1 : hydratation excessive
-
-Mécanisme : beaucoup de composants client et de hooks ( `useSWR` , `useEffect` , `useState` ) déplacent du travail vers le navigateur. Chaque page interactive impose téléchargement JavaScript, parsing, hydratation et re-renders.
-
-Impact probable : moyen à fort sur mobile, surtout sur pages carte, rapports, sections pédagogiques et dashboards. Confiance : élevée, car 237 fichiers contiennent `use client` .
-
-Solution : transformer les zones statiques en Server Components, garder l’interactivité dans de petits composants îlots, et éviter que des sections éditoriales complètes soient rendues côté client.
-
-## Problème 2 : Framer Motion utilisé comme outil d’animation généraliste
-
-Mécanisme : `framer-motion` est importé dans 89 fichiers. La librairie est puissante mais disproportionnée pour des fades, hover, apparitions simples ou petits compteurs.
-
-Impact probable : moyen. Le coût dépend du tree-shaking et des pages réellement chargées, mais l’usage large augmente le bundle, le coût de rendu et la maintenance.
-
-## Confiance : élevée
-
-Solution : conserver Framer Motion pour transitions complexes réellement utiles, remplacer les animations décoratives par CSS, supprimer les animations non essentielles sur mobile ou `prefers-reduced-motion` .
-
-## Problème 3 : cartographie lourde
-
-Mécanisme : Leaflet, React Leaflet, Leaflet Draw, clusters et tuiles cartographiques peuvent générer beaucoup de DOM, requêtes réseau et calculs côté client. Les pages carte concentrent les coûts de rendu.
-
-Impact probable : fort sur `/actions/map` , composants `actions-map-canvas` , `action-drawing-map` , `mission-map` , annuaire/compost maps.
-
-## Confiance : élevée
-
-Solution : charger la carte uniquement à l’ouverture de l’onglet carte, limiter le nombre de points transmis, pré-agréger côté serveur, mettre en cache les résultats par zone, proposer une vue liste par défaut sur mobile.
-
-## Problème 4 : CSS et dépendances cartographiques globales
-
-Mécanisme : `layout.tsx` importe les CSS Leaflet et Leaflet Draw globalement. Même les pages sans carte peuvent recevoir du CSS inutile.
-
-Impact probable : faible à moyen, mais facile à corriger.
-
-Confiance : élevée.
-
-Solution : déplacer ces imports vers les composants ou layouts cartographiques, ou vers un segment route dédié.
-
-## Problème 5 : composants probablement énergivores
-
-Composants à surveiller :
-
-- `actions-map-canvas.tsx` et `map-layers.tsx` : rendu carte, clusters, marqueurs;
-
-- `action-drawing-map.tsx` : dessin Leaflet Draw, gestion mobile, événements carte;
-
-- `chat-shell` et `use-chat-data.ts` : SWR, realtime Supabase, messages, utilisateurs;
-
-- `reports-web-document.tsx` et `use-reports-web-document-model.ts` : multiples requêtes SWR, agrégations, exports;
-
-- `analytics-cockpit` et composants rapports animés : graphiques et calculs;
-
-- `accueil-*` , `rubriques/*` , `learn/*` utilisant Framer Motion : animations nombreuses;
-
-- `profil/impact/page.tsx` : `html-to-image` , confetti, gamification.
-
-Impact probable : fort pour cartes et rapports, moyen pour animations, faible à moyen pour confetti/QR/export ponctuel.
-
-Confiance : moyenne à élevée.
-
-Solution : instrumentation par page avec bundle analyzer, React Profiler, Web Vitals et mesure du nombre de requêtes par navigation.
-
-## Estimation du poids moyen des pages
-
-Sans build analyzer, l’estimation doit rester prudente :
-
-|Type de page|Poids transféré probable hors cache|Commentaire|
-|---|---|---|
-|page texte simple/legal|150 à 400 Ko|surtout framework, CSS, layout,|
-|||auth/analytics si activés|
-|page accueil riche|500 Ko à 1,5 Mo|animations, composants visuels,|
-|||éventuelles images|
-|page rapport/dashboard|700 Ko à 2 Mo|graphiques, SWR, agrégations,|
-|||exports|
-|page carte|1 à 3 Mo ou plus|Leaflet, clusters, tuiles, données|
-|||points|
-|page avec gros assets docs|+500 Ko à +2,6 Mo|les PNG publics de documentation|
-|||totalisent plusieurs Mo|
-
-Ces chiffres ne sont pas des mesures de production. Ils indiquent les ordres de grandeur à mesurer par `next build --analyze` et tests réseau.
-
-## Analyse backend
-
-Le backend est large : routes API d’actions, carte, rapports, admin, chat, communauté, newsletter, notifications, pilotage, santé, Stripe, services, météo, itinéraire. Cette richesse crée des coûts de calcul et de maintenance.
-
-## Endpoints probablement les plus coûteux
-
-|Endpoint ou famille|Mécanisme de coût|Impact probable|Confiance|Solution|
-|---|---|---|---|---|
-|`/api/chat`|gros fichier route,|moyen à fort|élevée|pagination stricte,|
-||plusieurs requêtes|||cache utilisateurs,|
-||Supabase, notifications,|||limiter realtime|
-||filtres utilisateurs||||
-|`/api/actions/map`|données|fort si carte populaire|élevée|tuilage logique,|
-||cartographiques|||bounding box, cache 1|
-||publiques, filtres,|||à 10 min, champs|
-||payload de points|||minimaux|
-|`/api/reports/actions.csv`<br>export potentiellement||moyen à fort|élevée|cache par période,|
-|et`.json`|large,`no-store`|||export asynchrone,|
-|||||limites de lignes|
-
-|Endpoint ou famille|Mécanisme de coût|Impact probable|Confiance|Solution|
-|---|---|---|---|---|
-|`/api/reports/elus-dossier`<br>génération dossier,||moyen|moyenne|pré-calculer indicateurs,|
-||`no-store`, logique|||cache court|
-||volumineuse||||
-|`/api/community/events`|plusieurs requêtes|moyen|élevée|pagination, cache,|
-||Supabase, listes|||index DB|
-||publiques||||
-|`/api/admin/moderation`|mises à jour et|moyen|élevée|batch contrôlé, logs|
-||sélections multi-tables|||limités|
-|`/api/route/recommend`|recommandation|moyen|moyenne|cache par zone, éviter|
-||d’itinéraire, logique|||IA distante si|
-||potentiellement|||heuristique suffit|
-||complexe||||
-|`/api/analytics/funnel`|collecte fréquente|moyen si trafic|moyenne|sampling et agrégation|
-||d’événements|||côté client|
-|`/api/health`,|checks récurrents|faible à moyen|moyenne|fréquence basse, cache|
-|`/api/services`,||||très court|
-|`/api/uptime`|||||
-
-## Problème : **`no-store` fréquent**
-
-Mécanisme : 23 occurrences de `no-store` empêchent la réutilisation de réponses. C’est légitime pour données privées ou exports sensibles, mais coûteux pour rapports publics ou données peu volatiles.
-
-Impact probable : moyen.
-
-Confiance : élevée.
-
-Solution : distinguer privé/public, utiliser `revalidate` , `ETag` , `Cache-Control: stale-while-revalidate` , et des caches par période ou territoire.
-
-## Problème : agrégations répétées
-
-Mécanisme : dashboards et rapports peuvent recalculer des totaux, séries mensuelles, zones, qualité de données et métriques à chaque session.
-
-Impact probable : moyen à fort si les rapports deviennent consultés.
-
-Confiance : moyenne.
-
-Solution : tables matérialisées ou vues pré-calculées, refresh programmé, cache applicatif par période.
-
-## Analyse réseau et stockage
-
-Le réseau et le stockage sont les postes écologiques les plus concrets du projet.
-
-## Images
-
-Les assets publics visibles sont raisonnables en nombre. **Optimisation réalisée (Mai 2026)** : le logo principal ( `logo-cleanmymap.webp` ) a été converti de PNG (511 Ko) en WebP (58 Ko), soit une réduction de **88%** . Cependant, plusieurs PNG de documentation restent lourds : environ 738 Ko, 615 Ko, 590 Ko, 499 Ko et 162 Ko. Le coût principal futur vient surtout des photos terrain uploadées vers Supabase Storage.
-
-Impact probable : fort à long terme.
-
-Confiance : élevée.
-
-Solutions :
-
-— continuer la conversion des PNG de documentation en WebP/AVIF;
-
-- créer des miniatures pour cartes et listes;
-
-- compresser côté client avant upload;
-
-- fixer une taille maximale, par exemple 1600 px côté long et 300 à 500 Ko par photo;
-
-- supprimer ou archiver les photos non utiles après validation.
-
-## Références de l’Annexe C — audit technique de sobriété
-
-— [1] ADEME, *Lancez votre démarche de numérique responsable* . Lien
-
-- [2] W3C, *Sustainability Web Guidelines (Draft)* , (2024). Lien
-
-## Vidéos
-
-Aucune présence évidente de vidéos publiques dans `apps/web/public` . Le risque vidéo actuel semble faible.
-
-Impact probable : faible aujourd’hui.
-
-Confiance : moyenne.
-
-Solution : éviter l’ajout de vidéos autoplay; préférer image poster + lien externe si besoin.
-
-## Fonts
-
-Le dépôt ne montre pas de gros fichiers de fonts publics. Le coût vient plutôt des classes, du CSS et du framework que de fichiers fonts locaux.
-
-Impact probable : faible.
-
-Confiance : moyenne.
-
-Solution : limiter les variantes, préférer fonts système si l’identité visuelle le permet.
-
-## Requêtes réseau redondantes
-
-SWR est utilisé largement. Le fichier `swr-config.ts` définit un `refreshInterval` global à 30 secondes pour les flux live. Si cette valeur s’applique trop largement, elle peut revalider des données qui ne changent pas souvent.
-
-Impact probable : moyen à fort selon propagation de la config.
-
-Confiance : moyenne.
-
-Solution : aucun intervalle global par défaut; refresh explicite seulement pour chat, statut ou événements live; désactiver `revalidateOnFocus` sur rapports lourds.
-
-## Analyse CI/CD
-
-La CI GitHub exécute deux jobs principaux sur `push` et `pull_request` : `fast-checks` et `security-checks` . Les deux font checkout, setup Node, `npm ci` , secret audit, puis tests ou contrôles.
-
-Mécanismes de coût :
-
-— `npm ci` répété dans deux jobs;
-
-— typecheck, lint et tests à chaque push et PR;
-
-— Dependabot hebdomadaire sur racine, `apps/web` et GitHub Actions;
-
-- previews Vercel probables hors GitHub Actions;
-
-- build Next.js côté Vercel pour chaque changement pertinent.
-
-Impact probable : moyen. Ce n’est pas le principal poste au faible trafic, mais c’est un coût cumulatif invisible. Confiance : élevée.
-
-Solutions :
-
-- **Réalisé (Mai 2026)** : ajout de filtres de chemins ( `paths-ignore` ) pour éviter le déclenchement de la CI lourde lors de modifications de documentation ou d’assets;
-
-— mutualiser l’installation ou utiliser un job unique avec étapes conditionnelles;
-
-— garder tests sécurité ciblés, mais éviter de relancer toute la chaîne pour changements non applicatifs;
-
-— regrouper Dependabot et limiter les previews complètes;
-
-— définir un budget : builds/mois, minutes CI/mois, builds échoués/mois.
-
-## Analyse des dépendances
-
-Dépendances à surveiller :
-
-|Dépendance|Risque sobriété|Impact probable|Confiance|Action|
-|---|---|---|---|---|
-|`framer-motion`|usage très large pour|moyen|élevée|réduire et remplacer par|
-||animations|||CSS|
-
-|Dépendance|Risque sobriété|Impact probable|Confiance|Action|
-|---|---|---|---|---|
-|`leaflet`,|carte lourde et tuiles|fort sur carte|élevée|lazy load, bbox, clusters|
-|`react-leaflet`,||||pré-calculés|
-|`leaflet-draw`, cluster|||||
-|`recharts`|graphiques dashboard|moyen|moyenne|charger uniquement|
-|||||rapports|
-|`react-big-calendar`|calendrier lourd pour|faible à moyen|moyenne|remplacer si usage|
-||ressources|||simple|
-|`html-to-image`|export image coûteux|faible à moyen ponctuel|moyenne|charger à la demande|
-|`xlsx`|dépendance lourde,|moyen|moyenne|limiter aux scripts|
-||source CDN tarball|||serveur/admin,|
-|||||envisager CSV|
-|`posthog-js`+|analytics client/serveur|moyen|élevée|sampling et|
-|`posthog-node`||||événements minimaux|
-|`@sentry/nextjs`|instrumentation|faible à moyen|moyenne|activation stricte, pas de|
-|||||traces par défaut|
-|`@pinecone-database/pinecone`<br>service IA/vectoriel||faible actuel, fort si|moyenne|retirer si non utilisé en|
-|||activé||production|
-|`canvas-confetti`|animation décorative|faible|élevée|supprimer ou lazy load|
-|`swiper`|carrousels|faible à moyen|faible|vérifier usage réel,|
-|||||supprimer si inutilisé|
-
-Le problème n’est pas l’existence d’une librairie lourde, mais son chargement sur des pages où elle n’apporte pas d’utilité proportionnée.
-
-## Optimisations prioritaires
-
-## Réalisées (Mai 2026)
-
-1. **Isolation CSS Leaflet** : Déplacement des CSS Leaflet hors du layout global vers un chargement dynamique.
-
-2. **Filtrage CI/CD** : Ajout de filtres de chemins ( `paths-ignore` ) pour la documentation.
-
-[!NOTE] **Optimisation Assets** : Logo converti en WebP ( **-88% de poids** ), réduisant drastiquement la bande passante consommée.
-
-1. **Modularisation Sobriété** : Extraction des données du `recycling-assistant` et du composant `FormProgressSummary` pour réduire la complexité et améliorer la performance.
-
-## Faible effort / fort impact (À faire)
-
-1. Désactiver le refresh SWR global et le rendre opt-in.
-
-2. Continuer la compression des PNG publics lourds en WebP/AVIF.
-
-3. Mettre des limites strictes aux photos uploadées.
-
-4. Réduire les événements analytics aux décisions produit utiles.
-
-5. Charger `html-to-image` , confetti, calendrier et graphiques uniquement à la demande.
-
-## Fort effort / fort impact
-
-1. Refondre les pages carte autour de bounding boxes, pagination spatiale et agrégations serveur.
-
-2. Convertir les sections statiques client en Server Components.
-
-3. Pré-calculer les rapports et dashboards lourds.
-
-4. Supprimer ou fusionner les routes API redondantes.
-
-5. Établir une architecture de données unique Supabase avec exports maîtrisés.
-
-## Micro-optimisations
-
-— remplacer certaines animations Framer Motion par CSS;
-
-- supprimer confetti sur mobile ou mode économie;
-
-- limiter `revalidateOnFocus` sur SWR;
-
-- réduire les imports d’icônes si le tree-shaking ne suffit pas;
-
-- réduire les logs console côté client.
-
-## Gains négligeables ou secondaires
-
-- optimiser les SVG déjà très petits;
-
-- chercher des gains sur les pages légales statiques avant les cartes;
-
-- supprimer quelques classes CSS isolées;
-
-- micro-optimiser du texte ou des composants rarement visités.
-
-## Estimation des gains possibles
-
-|Action|Gain potentiel|Confiance|
-|---|---|---|
-|Compression images + miniatures|-30 % à -80 % sur médias transférés|élevée|
-|Lazy loading strict des cartes|-300 Ko à -1,5 Mo sur pages non carte|moyenne|
-|Réduction Framer Motion|-50 à -200 Ko JS selon routes|moyenne|
-|SWR opt-in au lieu de refresh global|-20 % à -70 % de requêtes sur dashboards inactifs|moyenne|
-|Cache rapports/exports|-30 % à -90 % de calcul serveur sur consultations|moyenne|
-||répétées||
-|CI filtrée docs-only|-10 % à -40 % de minutes CI selon activité|moyenne|
-|Suppression dépendances inutilisées|gain variable, surtout maintenance|moyenne|
-
-Gain global plausible : **20 % à 40 %** de réduction des coûts numériques courants sans perte d’utilité, surtout via médias, cartes, caching et CI. Un gain supérieur, **40 % à 60 %** , demanderait une simplification produit plus nette : moins de dashboards, moins de gamification, moins de pages secondaires, moins de services SaaS actifs.
-
-## Architecture alternative plus sobre
-
-Architecture recommandée :
-
-- **Core public léger** : accueil, déclaration simple, carte, rapports publics, méthodologie. Pages majoritairement Server Components.
-
-- **Carte isolée** : segment dédié, import dynamique Leaflet, données par bbox, cluster serveur, vue liste par défaut mobile.
-
-- **API réduite** : routes regroupées par domaine, cache court sur lectures publiques, `no-store` réservé au privé.
-
-- **Données sobres** : Supabase source de vérité, photos compressées, miniatures, rétention, exports CSV/JSON simples.
-
-- **Analytics minimales** : consentement, sampling, événements centrés sur actions réelles, pas de tracking décoratif.
-
-- **CI graduée** : contrôles rapides par défaut, tests lourds programmés, previews ignorées pour docs-only.
-
-- **IA optionnelle** : aucun appel IA dans les parcours critiques tant qu’une heuristique suffit; mesure par appel, budget mensuel, fallback sans IA.
-
-- **Fonctions secondaires figées** : chat, gamification avancée, sponsor portal, sandbox, calendrier et vectoriel seulement si usage prouvé.
-
-Fonctionnalités pouvant être simplifiées ou supprimées avec faible perte d’utilité si les métriques restent faibles :
-
-- confetti, badges décoratifs, classements;
-
-- carrousels et animations d’accueil non essentielles;
-
-- dashboards qui dupliquent les rapports;
-
-- chat si la coordination se fait déjà par email ou messagerie existante;
-
-- sponsor portal s’il n’y a pas de sponsors actifs;
-
-- calendrier riche si une liste d’événements suffit;
-
-- IA de tri/recommandation si elle n’améliore pas réellement l’action terrain;
-
-- exports visuels complexes si CSV/PDF simple répond au besoin.
-
-## Conclusion critique
-
-CleanMyMap n’est pas un projet intrinsèquement gaspilleur : sa finalité terrain peut justifier une application web, une carte, une base de données et des rapports. Mais son niveau de sophistication est déjà supérieur au strict nécessaire pour coordonner des actions locales.
-
-Les plus gros risques de sobriété sont invisibles : hydratation React généralisée, animations partout, revalidations SWR, routes API nombreuses, exports non cachés, CI répétée, stockage photo et multiplication des services tiers. Ce sont des coûts diffus, faciles à ignorer parce qu’ils ne se voient pas dans l’interface.
-
-La stratégie la plus crédible consiste à mesurer puis réduire : poids par page, requêtes par session, stockage par action, builds par mois, événements analytics par utilisateur et temps de maintenance par fonctionnalité. La sobriété ne doit pas être une couche esthétique ou un argument marketing; elle doit devenir une règle d’arbitrage produit.
-
-En synthèse, le projet peut rester soutenable s’il garde le noyau action-carte-rapport et traite le reste comme optionnel. À l’inverse, si chaque idée utile devient une page, un service, une animation, une métrique et une route API, la dette écologique et technique progressera plus vite que l’utilité réelle.
-
-## Annexe D — Dépendances technologiques détaillées
-
-Cette section examine CleanMyMap comme un projet inscrit dans une infrastructure numérique mondiale concentrée : clouds, plateformes d’authentification, bases managées, analytics, observabilité, IA, paiement, e-mail, monitoring et stores éventuels. Elle vise moins à refuser toute dépendance externe qu’à distinguer ce qui reste raisonnable, ce qui devient dangereux et ce qui est véritablement critique.
-
-Le point décisif n’est pas seulement technique : l’architecture retenue engage aussi une dépendance économique, juridique et géopolitique.
-
-## Cartographie des dépendances
-
-Inventaire visible dans le dépôt :
-
-|Dépendance|Rôle dans le projet|Type|Criticité|Remplaçabilité|
-|---|---|---|---|---|
-|Vercel|hébergement, runtime|plateforme cloud|critique|moyenne à difficile|
-||Next.js, previews, env,|propriétaire|||
-||déploiement||||
-|Supabase|base Postgres, Storage,|BaaS/Postgres managé|critique|moyenne|
-||RLS, clients, migrations,||||
-||données métier||||
-|Clerk|authentification,|auth propriétaire|critique|difficile|
-||sessions, rôles,||||
-||middleware, metadata||||
-||utilisateurs||||
-|Resend|e-mails transactionnels,|SaaS e-mail|raisonnable à|facile à moyenne|
-||contact, notifications||dangereuse||
-|Stripe|paiements, webhooks,|paiement propriétaire|raisonnable à|moyenne|
-||sponsor/dons éventuels||dangereuse||
-|PostHog|analytics client/serveur,|analytics SaaS/open|dangereuse si centrale|moyenne|
-||comportement|core|||
-||utilisateur||||
-|Sentry|erreurs, stabilité,|observabilité|raisonnable|moyenne|
-||instrumentation Next|SaaS/open source|||
-|Upstash Redis/QStash|cache, files, tâches|serverless data/queue|dangereuse si critique|moyenne|
-||asynchrones||||
-|Pinecone|recherche vectorielle /|base vectorielle|dangereuse si activée|moyenne à difficile|
-||IA sémantique|propriétaire|||
-||potentielle||||
-
-## Références de l’Annexe D — dépendances technologiques
-
-- [1] Commission Européenne, *Data Act — Rules for a fair and innovative data economy* , (2022). (Concerne l’interopérabilité et le changement de fournisseur cloud).
-
-— [2] European Union Research, *Cloud Vendor Lock-In : Causes, Impacts, and Solutions* , (2021).
-
-- [3] GAIA-X Association, *Technical Architecture Release 24.04* , (2024). (Souveraineté des données en Europe).
-
-|Dépendance|Usage|Type|Risque|Niveau de criticité|
-|---|---|---|---|---|
-|OpenAI API key dans|IA possible côté|modèle IA fermé|dangereuse à critique si|moyenne à difficile|
-|config Supabase|Supabase||production||
-||Studio/fonctions||||
-|Google Sheets API|import/export|plateforme Google|dangereuse si source|facile à moyenne|
-||opérationnel,||de vérité||
-||synchronisation de||||
-||données||||
-|Google OAuth/token|authentification service|API Google|dépendance auxiliaire|moyenne|
-|endpoints|account pour Sheets||||
-
-|Dépendance|Usage|Type|Risque|Niveau de criticité|
-|---|---|---|---|---|
-|Cloudflare|DNS/CDN/protection|infra réseau propriétaire|raisonnable à|moyenne|
-||potentiel||dangereuse||
-|UptimeRobot|monitoring externe|SaaS monitoring|raisonnable|facile|
-|OSRM public|calcul d’itinéraires ou|API/service|raisonnable si fallback|facile à moyenne|
-||fallback routing|cartographique|||
-|Leaflet/OpenStreetMap|carte côté client et tuiles|bibliothèque libre +|raisonnable|moyenne|
-||selon fournisseur|données ouvertes|||
-|GitHub Actions|CI/CD|plateforme développeur|dangereuse si unique|moyenne|
-|||propriétaire|||
-|Dependabot|mises à jour|automatisation GitHub|raisonnable|facile|
-||dépendances||||
-|npm registry|distribution de|registre central|critique écosystème|difficile|
-||dépendances JS||||
-|Next.js/React|framework et runtime|open source fortement|critique technique|difficile|
-||applicatif|lié à Vercel/Meta|||
-|Apple/Twilio/S3 config|options|plateformes externes|optionnelle|variable|
-|Supabase|auth/SMS/storage||||
-||configurables||||
-
-Classification synthétique :
-
-- **Dépendances critiques** : Vercel, Supabase, Clerk, npm, Next.js/React.
-
-- **Dépendances dangereuses si elles deviennent centrales** : Pinecone, OpenAI, Google Sheets, Upstash/QStash, PostHog, Stripe, GitHub Actions.
-
-- **Dépendances raisonnables si elles restent remplaçables** : Sentry, Resend, Cloudflare, UptimeRobot, OSRM, Dependabot.
-
-La criticité d’une dépendance ne se limite pas à sa disponibilité technique. Elle dépend aussi de la quantité de données qu’elle traite, de la facilité de migration, de la maturité des alternatives, du nombre de parcours qui l’utilisent, de la sensibilité juridique associée et de la capacité de l’équipe à maintenir un remplacement. Une dépendance peut donc être acceptable aujourd’hui et devenir dangereuse demain si elle devient la source de vérité ou si elle bloque un parcours essentiel.
-
-Critères pratiques utilisés pour lire cette cartographie :
-
-- **centralité fonctionnelle** : le service bloque-t-il le signalement, la carte, l’identité, le stockage ou les exports?
-
-- **portabilité des données** : les données peuvent-elles sortir en SQL, CSV, JSON ou fichiers standards?
-
-- **remplaçabilité technique** : existe-t-il une alternative raisonnable sans réécrire tout le produit?
-
-- **exposition juridique** : le service traite-t-il des données personnelles, photos, logs, paiements ou communications?
-
-- **coût de sortie** : la migration demande-t-elle quelques paramètres, une reprise de données ou une refonte complète?
-
-## Analyse de centralisation
-
-Le projet dépend d’un petit nombre d’acteurs et d’écosystèmes dominants :
-
-- **Vercel/Next.js** pour le déploiement et le modèle applicatif;
-
-- **Supabase** pour la base, le stockage, les politiques RLS et les scripts opérationnels;
-
-- **Clerk** pour l’identité, les sessions et l’autorisation;
-
-- **Google** pour certaines sources et synchronisations Sheets;
-
-- **Stripe** pour la monétisation ou les paiements;
-
-- **PostHog/Sentry** pour l’observation du comportement et des erreurs;
-
-- **Pinecone/OpenAI** pour la couche IA/vectorielle potentielle;
-
-- **GitHub/npm** pour le développement, les dépendances et la chaîne CI.
-
-Cette centralisation est fonctionnelle. Elle permet d’aller vite, de sécuriser rapidement et de réduire le besoin d’administration système. Elle a aussi un coût systémique : le projet devient dépendant des prix, quotas, politiques d’usage,
-
-availability zones, conditions contractuelles, API et décisions de plateformes extérieures.
-
-Le verrouillage le plus fort n’est pas seulement technique. Il est aussi organisationnel : plus les scripts, runbooks, dashboards et habitudes de maintenance s’appuient sur ces services, plus la migration devient coûteuse même si le code reste modifiable.
-
-## Analyse géopolitique
-
-La majorité des services critiques ou structurants sont liés à des entreprises américaines ou à des infrastructures fortement intégrées au cloud américain : Vercel, GitHub/Microsoft, Google, Stripe, Sentry, PostHog selon hébergement, Pinecone, OpenAI, Upstash selon régions, npm et potentiellement Cloudflare.
-
-Enjeux géopolitiques :
-
-- **Souveraineté des données** : données d’utilisateurs, actions, photos, coordonnées, messages, analytics et logs peuvent dépendre de juridictions et sous-traitants hors contrôle local.
-
-- **Extrateritorialité juridique** : selon fournisseurs, région d’hébergement et contrat, des règles non européennes peuvent s’appliquer ou créer une incertitude.
-
-- **Pouvoir de plateforme** : changement de prix, quotas, restrictions, fermeture de compte ou modification d’API peut affecter le projet sans décision locale.
-
-- **Concentration du savoir-faire** : le projet devient plus facile à maintenir pour des développeurs habitués à ces plateformes, mais moins autonome pour une association locale.
-
-- **Dépendance IA fermée** : si l’IA devient centrale, le projet dépend de modèles opaques, coûteux, peu auditables et soumis à des politiques d’accès externes.
-
-- **Dépendance aux stores** : si une application mobile Expo/React Native ou companion app devait être distribuée via Apple/Google, une couche supplémentaire de validation, commission, règles et dépendance serait ajoutée.
-
-Le risque n’est pas que ces services soient “mauvais” par nature. Le risque est que l’infrastructure d’un projet écologique local dépende d’une pile mondiale centralisée dont les intérêts, coûts et règles peuvent diverger des besoins locaux.
-
-## Risques systémiques
-
-|Scénario de rupture|Effet immédiat|Gravité|Probabilité|Commentaire|
-|---|---|---|---|---|
-|Supabase|carte, déclarations,|critique|moyenne|point de défaillance|
-|indisponible|profils, rapports et|||central|
-||stockage touchés||||
-|Clerk indisponible|connexion, droits,|critique|moyenne|la partie publique|
-||admin, profil,|||peut survivre|
-||espaces privés|||partiellement|
-||bloqués||||
-|Vercel indisponible|site et API|critique|faible à moyenne|dépend aussi|
-||indisponibles si pas|||DNS/CDN|
-||de déploiement||||
-||alternatif||||
-|Google Sheets|import/export|moyen|moyenne|grave seulement si|
-|coupé|opérationnel|||source de vérité|
-||perturbé||||
-|Resend coupé|e-mails et|moyen|moyenne|contournable|
-||notifications|||manuellement|
-||sortantes stoppés||||
-|Stripe coupé|paiement/dons/sponsor|moyen|faible à moyenne|pas coeur terrain|
-||affectés||||
-|PostHog/Sentry|perte de mesure et|faible à moyen|moyenne|ne devrait pas|
-|coupés|observabilité|||bloquer l’usage|
-|Upstash/QStash|files/cache/tâches|moyen|moyenne|dépend du niveau|
-|coupé|async affectées|||d’usage réel|
-|Pinecone/OpenAI|fonctions|faible actuel, fort si central|moyenne|doit rester optionnel|
-|coupés|IA/vectorielles||||
-||indisponibles||||
-
-|Scénario de rupture|Effet immédiat|Gravité|Probabilité|Commentaire|
-|---|---|---|---|---|
-|npm/GitHub coupés|maintenance, CI et|fort pour évolution|faible à moyenne|n’empêche pas|
-||déploiement|||forcément le site|
-||perturbés|||déjà en ligne|
-
-Estimation du risque systémique global : **élevé pour l’autonomie** , **modéré pour le fonctionnement quotidien tant que les grands fournisseurs restent disponibles** , **élevé en cas de migration forcée** .
-
-Le projet pourrait continuer partiellement sans certains services :
-
-- pages statiques, documentation, méthodologie et contenus publics peuvent survivre avec un export statique;
-
-- données déjà exportées en CSV/JSON peuvent rester exploitables;
-
-- carte simple peut fonctionner avec données statiques et tuiles ouvertes;
-
-- rapports simples peuvent être générés hors ligne si les données sont exportées.
-
-Le projet cesserait immédiatement ou fortement de fonctionner sans :
-
-- Supabase pour données dynamiques et stockage;
-
-- Clerk pour auth, rôles et accès privés;
-
-- Vercel ou équivalent pour runtime web/API;
-
-- npm/GitHub pour maintenance moderne, si aucune archive locale reproductible n’existe.
-
-## Résilience du projet
-
-Points de résilience existants :
-
-- Supabase repose sur PostgreSQL, technologie plus portable qu’une base entièrement propriétaire;
-
-- le dépôt contient des migrations SQL et scripts d’export/import;
-
-- certaines données peuvent être exportées en CSV/JSON;
-
-- plusieurs services optionnels sont configurés pour être désactivables ou absents;
-
-- Sentry est conditionné par un flag;
-
-- PostHog est lié au consentement;
-
-- le projet a une documentation opérationnelle et des runbooks.
-
-Fragilités :
-
-- auth Clerk profondément intégrée aux sessions, rôles, metadata et guards;
-
-- dépendance de déploiement à Vercel et à l’écosystème Next;
-
-- Supabase utilisé comme base, storage, RLS et point central de persistance;
-
-- variables publiques de fallback Supabase/Clerk dans `env.ts` , utiles au développement mais révélatrices d’un couplage fort;
-
-- Google Sheets encore présent dans les flux d’import/export;
-
-- Pinecone/OpenAI disponibles dans la configuration, ce qui crée un risque d’extension IA propriétaire;
-
-- GitHub Actions et Dependabot structurent la maintenance.
-
-Résilience estimée :
-
-- **Court terme** : correcte si les fournisseurs fonctionnent.
-
-- **Incident ponctuel** : moyenne, car quelques fallback existent mais pas pour les services critiques.
-
-- **Migration forcée** : difficile, surtout pour Clerk + Supabase Storage/RLS + Vercel.
-
-- **Autonomie associative** : faible à moyenne, car les compétences nécessaires sont celles d’une plateforme SaaS moderne.
-
-Cette résilience doit être testée avant d’être considérée comme acquise. Un export disponible en théorie ne suffit pas si personne ne sait le restaurer, si le schéma n’est pas documenté ou si les fichiers médias restent séparés des données métier. La résilience réelle suppose donc des exercices simples : restaurer un export, publier une carte
-
-statique, désactiver un service non critique, vérifier qu’une page publique fonctionne sans analytics et confirmer qu’une action terrain peut encore être organisée en mode dégradé.
-
-Le mode dégradé minimal devrait conserver :
-
-- une page publique de méthodologie;
-
-- une carte ou liste exportée des signalements utiles;
-
-- un formulaire ou canal de secours;
-
-- un export des actions et preuves;
-
-- une documentation indiquant comment continuer sans les services les plus propriétaires.
-
-## Alternatives possibles
-
-||Alternative open source ou plus||
-|---|---|---|
-|Dépendance actuelle|souveraine|Compromis|
-|Vercel|serveur VPS européen, Scalingo, Clever|plus d’administration, moins de confort|
-||Cloud, CapRover, Dokku, Fly.io selon|previews|
-||région||
-|Supabase managé|PostgreSQL self-hosted,|perte de simplicité, maintenance|
-||Neon/Crunchy/Scaleway DB, Supabase|backups/RLS/storage|
-||self-host||
-|Supabase Storage|S3 compatible européen, MinIO,|gestion quotas, CDN et permissions à|
-||Scaleway Object Storage, Garage|refaire|
-|Clerk|Auth.js, Keycloak, Zitadel, Ory, Supabase|migration utilisateurs complexe|
-||Auth||
-|Resend|SMTP domaine, Mailjet/Brevo européen,|délivrabilité et maintenance|
-||Postal self-host||
-|Stripe|virement, HelloAsso, Mollie, PayPlug,|intégrations différentes, conformité|
-||Stripe limité aux paiements||
-|PostHog SaaS|Matomo, Plausible self-host, Umami, logs|moins de granularité produit|
-||anonymisés||
-|Sentry SaaS|GlitchTip, Sentry self-host, logs structurés|maintenance infra|
-|Upstash/QStash|Redis self-host, BullMQ, pg-boss, cron|administration et supervision|
-||serveur||
-|Pinecone|pgvector, Qdrant, Weaviate, Chroma|qualité, ops, intégration à maintenir|
-|OpenAI|modèles locaux via Ollama, Mistral,|qualité variable, matériel local|
-||Llama.cpp, heuristiques déterministes||
-|Google Sheets|CSV versionné, Baserow, NocoDB, Grist,|formation utilisateur|
-||table Supabase admin||
-|GitHub Actions|Forgejo/Gitea Actions, GitLab CI,|migration devops|
-||Woodpecker||
-|UptimeRobot|Healthchecks.io, Better Stack, cron|coût/maintenance|
-||self-host||
-|OSRM public|OSRM self-host, Valhalla, GraphHopper,|données carto et serveur à maintenir|
-||OpenRouteService||
-
-Alternatives réellement prioritaires :
-
-1. Préparer une sortie Supabase par exports SQL/CSV réguliers.
-
-2. Isoler Clerk derrière une couche d’auth interne.
-
-3. Garder l’IA optionnelle et remplaçable par heuristique.
-
-4. Éviter Google Sheets comme source de vérité.
-
-5. Limiter PostHog/Sentry à l’amélioration technique, pas à une dépendance produit.
-
-## Stratégie de réduction des dépendances
-
-## Étape 1 — cartographier et contractualiser
-
-— maintenir un registre des services actifs : utilité, données traitées, criticité, coût, région, propriétaire, plan de sortie;
-
-- documenter explicitement les dépendances critiques, dangereuses et raisonnables;
-
-- ajouter une revue trimestrielle des dépendances.
-
-## Étape 2 — isoler techniquement
-
-— conserver des adapters pour Clerk, Stripe, Resend, PostHog, Sentry, Upstash, Pinecone;
-
-- interdire les appels directs aux SDK propriétaires hors modules dédiés;
-
-- documenter les formats de données indépendamment des SDK.
-
-## Étape 3 — rendre les données portables
-
-— export SQL + CSV automatisé;
-
-- schéma public documenté;
-
-- sauvegarde régulière des photos avec index;
-
-- politique de rétention et purge;
-
-- tests de restauration au moins semestriels.
-
-## Étape 4 — réduire les dépendances optionnelles
-
-— ne pas activer Pinecone/OpenAI en production sans preuve d’impact;
-
-- supprimer ou désactiver les services non utilisés;
-
-- préférer CSV/JSON à des intégrations propriétaires lourdes;
-
-- limiter analytics à des métriques actionnables.
-
-## Étape 5 — préparer un mode dégradé
-
-— version statique des pages publiques;
-
-- carte publique à partir d’un export JSON;
-
-- formulaire de secours simple;
-
-- documentation “comment continuer sans plateforme”;
-
-- export de rapports hors ligne.
-
-## Étape 6 — envisager une migration sobre
-
-- si le projet grossit : hébergement européen, base Postgres portable, auth open source ou européenne;
-
-- — si le projet reste petit : ne pas migrer trop tôt, mais garantir exports et réversibilité.
-
-Cette stratégie doit éviter deux excès. Le premier serait de tout migrer trop tôt vers une infrastructure auto-hébergée plus lourde que le besoin réel. Le second serait de repousser toute réversibilité jusqu’au moment où la migration devient urgente. La solution intermédiaire est de documenter les sorties, tester les exports, isoler les SDK et supprimer les dépendances non utilisées avant toute grande migration.
-
-## Conclusion critique
-
-CleanMyMap est un projet à finalité locale et écologique, mais son infrastructure repose largement sur une pile centralisée : Vercel, Supabase, Clerk, GitHub/npm, Google, Stripe, PostHog, Sentry, Resend, Upstash, Pinecone et potentiellement OpenAI. Cette dépendance est compréhensible pour développer vite, mais elle affaiblit la souveraineté numérique du projet.
-
-La dépendance la plus critique est le triptyque **Vercel + Supabase + Clerk** : il porte l’hébergement, les données et l’identité. Tant que ce triptyque fonctionne, le projet est efficace. Si l’un de ces piliers devient indisponible, trop coûteux ou juridiquement problématique, la migration sera coûteuse.
-
-Toutes les dépendances ne sont pas également préoccupantes. Sentry, Resend, UptimeRobot ou Cloudflare peuvent rester raisonnables si elles sont remplaçables. Supabase et Clerk sont plus structurantes. Pinecone, OpenAI, Google Sheets et PostHog deviennent dangereuses si elles passent d’outils optionnels à conditions de fonctionnement.
-
-En synthèse, le projet doit éviter de confondre vitesse de développement et autonomie. La stratégie crédible n’est pas de tout auto-héberger immédiatement. Elle consiste plutôt à rendre chaque couche remplaçable, à exporter les données, à limiter l’IA fermée aux usages non critiques et à conserver un mode minimal qui fonctionne sans les services les plus propriétaires.
-
-## Dette écologique et technique future du projet web
-
-Cette section évalue la dette future du projet. Elle cherche à estimer ce que CleanMyMap risque de coûter dans le temps en maintenance, mises à jour, hébergement, dépendances, builds, corrections et énergie numérique cumulée. L’analyse repose sur l’état local du dépôt au 13 mai 2026 : monorepo centré sur `apps/web` , application Next.js/React, 57 fichiers sous `apps/web/src/app/api` , nombreuses pages produit, migrations Supabase, CI GitHub, Dependabot et une pile SaaS déjà large.
-
-## Analyse architecture et dépendances
-
-L’architecture est celle d’une application web moderne riche, construite autour d’un monorepo avec une application Next.js App Router. Le coeur fonctionnel couvre plusieurs parcours : déclaration d’action, carte interactive, signalement, historique, rapports, observatoire, espace profil, parcours éducatifs, portails partenaires, sponsor portal, pilotage, administration, import/export de données et supervision.
-
-Le projet ne se limite donc pas à un site vitrine. Il combine :
-
-- un frontend React/Next.js avec cartes Leaflet, graphiques Recharts, animations Framer Motion, exports visuels, QR codes et composants interactifs;
-
-- des routes API nombreuses pour actions, rapports, admin, analytics, newsletter, notifications, partenaires, pilotage, Stripe, santé système, services et recommandations;
-
-- une base Supabase avec migrations SQL, RLS, stockage de photos, miroirs de données et scripts d’import;
-
-- une authentification Clerk, avec synchronisation partielle vers Supabase;
-
-- des services tiers pour email, paiement, analytics, observabilité, files ou tâches asynchrones;
-
-- une couche documentaire et opérationnelle importante : guides de qualité, sécurité, import Google Sheets, prédéploiement, monitoring, architecture.
-
-Cette architecture est cohérente avec une plateforme associative ou territoriale ambitieuse. En revanche, elle est déjà plus complexe qu’un outil minimal de coordination locale. La dette future vient surtout de cette largeur fonctionnelle : beaucoup de routes, de pages, de services et de parcours doivent rester compatibles entre eux.
-
-Les dépendances les plus structurantes sont :
-
-|Zone|Dépendances ou services|Dette future associée|
-|---|---|---|
-|Hébergement et framework|Next.js 16, React 19, Vercel|mises à jour fréquentes, changements|
-|||d’API, build serverless, dépendance|
-|||plateforme|
-|Authentification|Clerk, synchronisation Supabase|verrouillage fonctionnel, migrations de|
-|||modèle utilisateur, gestion des droits|
-|Données|Supabase, migrations, RLS, Storage|maintenance SQL, politiques de sécurité,|
-|||sauvegardes, stockage photos|
-|Observabilité|Sentry, PostHog, Vercel Analytics, Speed|volume d’événements, confidentialité,|
-||Insights|coûts cachés, bruit analytique|
-|Communication|Resend, notifications|délivrabilité, quotas, RGPD, gestion|
-|||désabonnement|
-|Paiement|Stripe|dépendance réglementaire et technique,|
-|||webhooks à maintenir|
-|Tâches et cache|Upstash Redis/QStash|service supplémentaire à surveiller et|
-|||renouveler|
-|Recherche/vectoriel|Pinecone déclaré|risque de dépendance IA/vectorielle si|
-|||activé sans usage essentiel|
-|Données externes|Google Sheets import/export|fragilité des formats, droits, service|
-|||account, synchronisation|
-|Frontend lourd|Leaflet, clusters, graphiques, calendrier,|poids JavaScript, compatibilité navigateur,|
-||animations, exports image, xlsx|coût de bundle|
-
-La dette écologique et technique est donc distribuée : aucune dépendance n’est aberrante isolément, mais leur addition crée un coût d’entretien durable.
-
-## Dette technique actuelle
-
-La dette technique actuelle est modérée à élevée. Elle n’indique pas un projet dégradé, mais un projet très large pour une taille d’équipe probablement limitée.
-
-Les facteurs de dette les plus visibles sont :
-
-- **surface fonctionnelle étendue** : carte, déclarations, rapports, gamification, apprentissage, partenaires, admin, sponsor, pilotage, notifications, chat ou recommandations. Chaque domaine ajoute ses propres cas limites;
-
-- **surface API importante** : 57 fichiers sous `apps/web/src/app/api` , donc beaucoup de contrats HTTP, validations, erreurs, droits et tests à maintenir;
-
-- **nombreuses migrations Supabase** : bon signe de structuration, mais aussi dette de schéma, de RLS, d’index, de compatibilité et de restauration;
-
-- **multiplication des services SaaS** : chaque clé, webhook, SDK ou quota devient un point de maintenance;
-
-- **données hybrides** : Supabase, miroirs locaux, imports Google Sheets, archives et scripts de synchronisation. Cette pluralité augmente le risque de divergence;
-
-- **fonctionnalités avancées pas toujours indispensables** : gamification, portails multiples, sandbox, sponsoring, analytics avancées, IA/vectoriel, exports enrichis;
-
-- **frontends cartographiques et analytiques coûteux** : cartes, clusters, graphiques, tableaux et exports sont utiles mais augmentent le poids, le temps de rendu et les tests visuels;
-
-- **dépendances npm nombreuses** : elles accélèrent le développement mais imposent des mises à jour de sécurité, compatibilité et bundle.
-
-Dette technique utile : certaines couches sont défendables, notamment Supabase, Clerk, carte, reporting, tests, CI et documentation opérationnelle. Elles soutiennent un service réel.
-
-Dette technique discutable : les modules qui augmentent le temps passé sans augmenter fortement le nombre d’actions terrain, par exemple badges décoratifs, classements, pages secondaires peu utilisées, portails avancés sans public actif, analytics trop fines ou intégrations IA non prouvées.
-
-## Dette écologique future
-
-La dette écologique future ne dépend pas seulement de l’hébergement actuel. Elle dépend de la maintenance continue : builds, previews, logs, stockage, backups, analytics, uploads photo, dépendances, IA de développement et renouvellement des appareils utilisés pour faire évoluer le projet.
-
-Les postes les plus coûteux à long terme sont probablement :
-
-|Poste|Pourquoi il peut croître|Risque écologique|
-|---|---|---|
-|Photos et médias Supabase Storage|chaque action peut produire des images|stockage durable, backups, transfert,|
-||lourdes|consultations répétées|
-|Carte interactive|tuiles, clusters, scripts cartographiques|transfert réseau et rendu client, surtout|
-|||mobile|
-|CI/CD et previews|Dependabot, tests, Vercel builds, CodeQL|consommation cumulée à chaque PR ou|
-|||mise à jour|
-|Analytics et observabilité|PostHog, Sentry, Vercel Analytics|événements nombreux, stockage et|
-|||traitement hors site|
-|Routes API et base de données|requêtes, agrégations, rapports, exports|charge serveur proportionnelle aux|
-|||usages et dashboards|
-|IA de développement|assistance au code, refactorisations, tests|coût invisible à chaque évolution du projet|
-||générés||
-|IA applicative éventuelle|recommandation, vision, vectoriel,|coût élevé si utilisée pour des tâches non|
-||Pinecone/OpenAI|critiques|
-|Notifications et emails|campagnes, rappels, newsletter|bruit numérique et stockage côté|
-|||destinataire|
-
-Le coût absolu peut rester faible si l’audience est limitée et si les images sont compressées. En revanche, le coût cumulé sur plusieurs années peut devenir significatif si le projet conserve toutes ses couches, multiplie les builds,
-
-stocke les médias sans durée de conservation, active des analytics détaillées et ajoute de l’IA à des parcours qui pourraient rester déterministes.
-
-Une partie de cette dette ne peut pas être supprimée techniquement : un outil de coordination a besoin d’un serveur, d’une base, d’une carte et de sécurité. La question n’est donc pas de viser un impact nul, mais de limiter le coût par action réellement utile.
-
-## Risques de dépendance
-
-Le risque de dépendance technologique est élevé, parce que le projet combine plusieurs plateformes propriétaires ou semi-propriétaires. Chaque service apporte une valeur immédiate, mais chacun crée une contrainte future.
-
-Principaux risques :
-
-- **Vercel** : forte intégration avec Next.js, previews, serverless, analytics et déploiement. Une migration reste possible, mais elle demanderait des adaptations runtime, build, env et monitoring.
-
-- **Supabase** : dépendance au modèle Postgres/RLS/Storage. C’est relativement portable car fondé sur PostgreSQL, mais les politiques RLS, storage buckets et clients SDK créent un coût de sortie.
-
-- **Clerk** : dépendance forte pour auth, sessions, middleware et modèle utilisateur. Remplacer Clerk demanderait une reprise des comptes, droits, guards et données liées.
-
-- **Stripe** : dépendance acceptable pour paiement, mais webhooks, conformité et tests doivent rester à jour.
-
-- **Resend** : dépendance faible à moyenne; remplaçable, mais la délivrabilité et les templates peuvent créer de l’inertie.
-
-- **PostHog/Sentry/Vercel Analytics** : utiles pour corriger, mais peuvent devenir une collecte par défaut plutôt qu’un outil décisionnel.
-
-- **Upstash/QStash** : utile pour files ou cache, mais ajoute un service à surveiller.
-
-- **Pinecone/OpenAI ou autre IA externe** : risque fort si le projet rend des fonctions essentielles dépendantes d’une API IA payante ou propriétaire.
-
-- **Google Sheets** : utile pour import ou administration, mais fragile si les formats, accès ou quotas changent.
-
-Le risque d’obsolescence rapide est particulièrement lié au couple Next.js/React/Clerk/Vercel. Ces outils évoluent vite. Le projet devra probablement absorber régulièrement des changements de middleware, routing, server actions, instrumentation, packages et politiques de sécurité.
-
-## Projection à long terme
-
-Sur 5 à 10 ans, la durée de vie réelle du projet dépendra moins du code initial que de sa capacité à réduire sa surface.
-
-Projection raisonnable :
-
-- **Durée de vie probable si le coeur est simplifié** : 5 à 10 ans, car les besoins de coordination terrain, carte, preuve d’action et reporting resteront pertinents.
-
-- **Durée de vie probable si toutes les couches restent actives** : 1 à 3 ans avant accumulation forte de dette, fatigue de maintenance ou réécriture partielle.
-
-- **Maintenabilité actuelle** : moyenne. Les scripts, tests, documentation et CI aident, mais la largeur fonctionnelle augmente le coût cognitif.
-
-- **Robustesse** : moyenne à bonne pour les parcours encadrés par tests et scripts; plus fragile pour les intégrations optionnelles, portails secondaires et synchronisations externes.
-
-- **Portabilité** : moyenne à faible. La base Postgres aide, mais Clerk, Vercel, Supabase Storage, analytics et services serverless réduisent la liberté de migration.
-
-- **Capacité à rester utile** : bonne si le projet reste centré sur déclarer, visualiser, organiser, prouver et exporter. Faible si l’objectif glisse vers une plateforme sociale complète.
-
-Estimation de code futur probable :
-
-|Trajectoire|Code futur probable|Builds/déploiements probables|Commentaire|
-|---|---|---|---|
-|Maintenance minimale|+2 000 à +8 000 lignes sur 2 ans|12 à 60 builds/an|corrections, dépendances,|
-||||petites adaptations|
-|Croissance modérée|+10 000 à +30 000 lignes sur 2 ans|50 à 150 builds/an|nouveaux rapports,|
-||||parcours partenaires,|
-||||qualité données|
-
-|Trajectoire|Code futur probable|Builds/déploiements probables|Commentaire|
-|---|---|---|---|
-|Forte croissance|+40 000 lignes ou plus|150 à 500 builds/an|support, modération, perf,|
-||||refontes, nouvelles|
-||||intégrations|
-|Abandon partiel|peu de code, mais dette dormante|builds rares puis urgents|risques sécurité,|
-||||dépendances obsolètes,|
-||||données périmées|
-|Réécriture future|forte quantité temporaire|nombreux builds courts|coût écologique et humain|
-||||élevé, souvent évitable|
-||||par simplification|
-
-Ces valeurs sont des ordres de grandeur, pas des mesures. Elles servent à rendre visible le coût futur d’une plateforme qui continuerait à s’étendre.
-
-## Scénarios d’évolution
-
-## Scénario 1 — maintenance minimale
-
-Le projet conserve ses fonctions centrales : déclaration, carte, profil, rapports, méthodologie, administration minimale et exports. Les autres couches sont figées ou supprimées.
-
-- Coût humain : environ 1 à 2 jours par mois.
-
-- Coût financier : faible à modéré, principalement hébergement, base, domaine, emails et monitoring minimal.
-
-- Coût écologique : limité si les images sont compressées, les logs réduits et les builds regroupés.
-
-- Risque : fonctionnalités secondaires vieillissantes si elles restent visibles.
-
-- Durabilité : bonne si une discipline de suppression est appliquée.
-
-## Scénario 2 — croissance modérée
-
-Le projet gagne des associations, quelques collectivités, des rapports plus solides et une meilleure qualité de données. Les portails partenaires deviennent utiles, mais l’IA reste ponctuelle.
-
-— Coût humain : 4 à 10 heures par semaine.
-
-- Coût financier : hausse progressive des quotas Supabase, Vercel, emails et analytics.
-
-- Coût écologique : acceptable si les indicateurs d’usage pilotent les choix.
-
-- Risque : multiplication de demandes locales spécifiques.
-
-- Durabilité : correcte si l’équipe refuse les fonctionnalités non mesurées.
-
-## Scénario 3 — forte croissance
-
-CleanMyMap devient une plateforme multi-acteurs avec modération, API publique, gros volumes photos, statistiques, sponsor portal, partenaires, notifications et IA de recommandation.
-
-- Coût humain : 0,3 à 1 ETP technique, plus support/modération.
-
-- Coût financier : significatif, surtout stockage, base, logs, emails, monitoring et SaaS.
-
-- Coût écologique : en forte hausse par stockage, consultation carte, builds, logs et IA.
-
-- Risque : dépendance plateforme, complexité sécurité, dette produit.
-
-- Durabilité : seulement si une gouvernance technique stricte existe.
-
-## Scénario 4 — abandon partiel
-
-Le site reste en ligne mais les dépendances, données et parcours ne sont plus activement maintenus.
-
-- Coût humain : faible en apparence, élevé lors des incidents.
-
-- Coût financier : abonnements et services oubliés.
-
-- Coût écologique : gaspillage si données, logs, analytics et stockages continuent sans utilité.
-
-- Risque : sécurité, RGPD, données obsolètes, mauvaise expérience utilisateur.
-
-- Durabilité : faible. Un projet dormant devrait être archivé proprement ou réduit à une version statique.
-
-**Scénario 5 — réécriture future**
-
-Une réécriture devient tentante si les couches actuelles se contredisent ou si les services choisis deviennent trop coûteux.
-
-- Coût humain : élevé, probablement plusieurs semaines à plusieurs mois.
-
-- Coût financier : double run temporaire, migration, tests, support.
-
-- Coût écologique : nombreux builds, IA de développement, duplication d’environnements.
-
-- Risque : perte de fonctionnalités utiles, régression de données, fatigue projet.
-
-- Durabilité : mauvaise si la réécriture sert à ajouter plus de complexité; utile seulement si elle réduit drastiquement le périmètre.
-
-## Simplifications possibles
-
-Les simplifications les plus durables ne consistent pas à micro-optimiser chaque composant. Elles consistent à réduire les couches qui ne participent pas directement à l’utilité terrain.
-
-Simplifications structurelles prioritaires :
-
-1. **Définir un noyau produit non négociable** Noyau recommandé : déclarer une action, ajouter une preuve, afficher sur carte, organiser ou rejoindre une action, produire un rapport simple, modérer les données, exporter les résultats. Tout le reste devrait être classé en expérimental, optionnel ou supprimable.
-
-2. **Mettre les fonctionnalités secondaires derrière des flags** Gamification avancée, chat, sponsor portal, sandbox, recommandations IA, vectoriel, classements ou dashboards lourds ne devraient pas être chargés ni maintenus comme coeur du produit tant que leur utilité n’est pas prouvée.
-
-3. **Réduire les services actifs** Conserver uniquement les services qui servent un usage mesuré. Par exemple : Supabase + Clerk + Resend + Sentry minimal peuvent être suffisants au début. PostHog, Pinecone, Upstash, analytics multiples ou workflows avancés doivent justifier leur présence par une décision concrète.
-
-4. **Consolider la donnée** Supabase devrait devenir la source de vérité principale. Google Sheets peut rester un outil d’import/export, pas une base parallèle. Les miroirs locaux ou archives doivent être explicitement documentés comme temporaires ou de sauvegarde.
-
-5. **Limiter les médias** Compression client stricte, dimensions maximales, formats WebP/AVIF, durée de conservation, quotas par action et suppression des doublons. C’est probablement l’un des meilleurs leviers écologiques.
-
-6. **Alléger le frontend** Charger Leaflet, graphiques, calendrier, export image et xlsx seulement sur les pages qui en ont besoin. Les pages simples doivent rester légères.
-
-7. **Rationaliser CI/CD** Tests rapides sur chaque PR, tests lourds programmés ou déclenchés manuellement, regroupement Dependabot, pas de preview complète pour changements documentaires, cache build contrôlé.
-
-8. **Prévoir une sortie de service** Documenter comment exporter les données, désactiver analytics, archiver les images, couper les services SaaS et publier une version statique si le projet ralentit.
-
-## Matrice d’arbitrage IA : dette technique vs dette écologique
-
-|Fonctionnalité|Dette Technique créée|Dette Écologique réduite|Bilan Net|
-|---|---|---|---|
-|**Optimisation WebP/AVIF via**|Faible (un script de plus)|**Forte**(Bande passante -80%)|Positif|
-|**script IA**||||
-|**Refacto Code (Complexité**|Moyenne (code plus dense)|**Moyenne**(CPU client|Positif|
-|**cyclomatique)**||préservé)||
-|**Système de Chatbot (IA**|**Haute**(Dépendance API)|Nulle|**Négatif**|
-|**Générative)**||||
-|**Génération de carte statique**|Faible|**Moyenne**(Moins de JS au|Positif|
-|||client)||
-
-*Note : Cette matrice guide nos décisions de développement. Nous refusons les gains techniques s’ils entraînent une dette écologique injustifiée.*
-
-## Recommandations de durabilité
-
-Recommandations techniques :
-
-— fixer un budget de bundle par page et mesurer les pages carte, rapport et dashboard;
-
-- fixer un budget de routes API critiques et supprimer ou fusionner les routes redondantes;
-
-- maintenir une liste officielle des services actifs, avec propriétaire, coût, utilité, données traitées et plan de sortie;
-
-- isoler Clerk, Stripe, Resend, PostHog, Sentry, Upstash et Pinecone derrière des modules d’adaptation;
-
-- refuser toute fonction IA applicative tant qu’un algorithme déterministe suffit;
-
-- limiter l’usage de l’IA de développement aux tâches à fort effet : tests, refactorisations, documentation critique, audit sécurité;
-
-- conserver des exports ouverts des données utiles : CSV, JSON, schéma SQL documenté;
-
-- appliquer une politique de rétention : photos, logs, événements analytics, exports, messages et notifications;
-
-- faire un audit trimestriel de sobriété : poids pages, événements analytics, builds, stockage, dépendances, routes inutilisées.
-
-Recommandations organisationnelles :
-
-- nommer un responsable de la dette technique et écologique, même bénévole;
-
-- décider chaque trimestre des fonctionnalités à supprimer, pas seulement de celles à ajouter;
-
-- maintenir un registre public ou interne : dépendances, coûts, incidents, raisons de conservation;
-
-- mesurer l’utilité réelle : actions déclarées, actions réalisées, kg ou volumes estimés, participants, exports utilisés, associations actives;
-
-- comparer ces métriques aux coûts : Mo transférés, requêtes, stockage, builds, événements analytics, temps de maintenance;
-
-- documenter les choix sobres comme des décisions de projet, pas comme des renoncements.
-
-## Conclusion critique
-
-CleanMyMap a une utilité potentielle réelle, mais sa dette future est déjà significative parce que l’architecture vise une plateforme complète : carte, action terrain, données, reporting, partenaires, administration, observabilité, analytics, paiement, notifications et possibilités IA.
-
-La dette écologique future ne viendra probablement pas d’une seule requête ou d’un seul serveur. Elle viendra de l’accumulation : photos conservées, cartes consultées, builds répétés, logs, analytics, dépendances mises à jour, services SaaS actifs, IA utilisée pour continuer à développer et fonctionnalités secondaires maintenues sans usage fort.
-
-Le choix technique le plus durable n’est pas d’ajouter une couche verte au-dessus du projet. C’est de réduire son périmètre actif à ce qui transforme réellement une attention numérique en action locale utile. Le projet peut rester pertinent dans 5 à 10 ans s’il privilégie un noyau robuste, portable, mesurable et sobre. Il risque au contraire une obsolescence rapide s’il conserve toutes les ambitions d’une grande plateforme sans équipe, budget et gouvernance adaptés.
-
-Conclusion nette : la durabilité réelle de CleanMyMap dépendra moins du fournisseur d’hébergement que de sa capacité à supprimer, mutualiser, mesurer et refuser les fonctionnalités qui n’augmentent pas clairement le nombre ou la qualité des actions écologiques concrètes.
-
-[1] Commission Européenne, *Data Governance Act* , (2022).
-[2] ANSSI, *Souveraineté numérique et Cloud* , (2023).
-[3] Cigref, *Souveraineté numérique : de quoi parle-t-on?* , (2021).
-
-## Introduction
-
-Explorons l’impact majeur de l’intelligence artificielle (IA), notamment à travers les travaux de Google DeepMind et d’autres laboratoires de recherche avancée, dans plusieurs domaines scientifiques : biologie, chimie, physique, mathématiques, climatologie, neurosciences, histoire, accessibilité et politiques publiques.
-
-Montrons comment les systèmes d’IA modernes accélèrent considérablement les découvertes scientifiques et avancées sociales en explorant des espaces de possibilités immenses, impossibles à parcourir manuellement par les chercheurs humains seuls. L’IA ne remplace pas les scientifiques, mais elle devient un outil capable de proposer, optimiser et parfois révéler des solutions inédites.
-
-**Note importante sur la validation :** Bien que ces résultats soient spectaculaires, il s’agit d’avancées de recherche qui nécessitent systématiquement une **validation humaine ou expérimentale** (laboratoire, essais cliniques, preuves mathématiques formelles) avant toute application à grande échelle ou mise en production.
-
-Cependant, la concentration croissante de cette puissance scientifique entre les mains de quelques grandes entreprises privées, principalement américaines, soulève des enjeux éthiques, industriels et géopolitiques majeurs concernant l’avenir de la science comme bien commun.
-
-## Découverte massive de nouveaux matériaux cristallins
-
-Le système GNoME [38] développé par DeepMind identifie plus de 2,2 millions de structures cristallines candidates, dont environ 380 000 sont considérées comme potentiellement stables. Cette avancée change radicalement l’échelle de la découverte de matériaux, alors que l’humanité n’en avait répertorié qu’environ 48 000 en plusieurs siècles de recherche.
-
-L’IA ne crée pas instantanément des matériaux exploitables industriellement, mais elle accélère considérablement l’exploration théorique de nouvelles possibilités chimiques et physiques.
-
-## AlphaFold révolutionne la biologie structurale
-
-AlphaFold est une IA capable de prédire la structure tridimensionnelle des protéines à partir de leur séquence d’acides aminés. Une tâche qui pouvait demander des années d’expérimentation est désormais réalisée en quelques minutes avec une précision remarquable.
-
-Cette avancée transforme profondément la biologie structurale, la recherche médicale et la compréhension du vivant. Le prix Nobel de chimie 2024 a notamment récompensé Demis Hassabis et John Jumper pour AlphaFold, ainsi que David Baker pour ses travaux sur le design computationnel de protéines.
-
-Limite importante : AlphaFold et ses successeurs améliorent fortement la prédiction structurale et certaines interactions biomoléculaires, mais ne remplacent pas l’expérience et ne modélisent pas parfaitement toute la dynamique réelle dans les cellules vivantes.
-
-## Découverte de nouveaux antibiotiques par IA
-
-L’IA permet d’identifier de nouvelles molécules antibiotiques, comme l’halicine découverte en 2020. [40] Cette molécule possède un mécanisme d’action original contre certaines bactéries résistantes.
-
-Cependant, découvrir une molécule n’est qu’une première étape. Les essais cliniques, les validations toxicologiques et les contraintes réglementaires restent extrêmement longs et coûteux. L’IA accélère donc la phase de découverte, sans supprimer les exigences de sécurité du développement pharmaceutique.
-
-## Cartographie ultra-détaillée du cerveau humain
-
-Des techniques combinant IA et imagerie haute résolution permettent la cartographie nanométrique de fragments du cerveau humain. Cette approche révèle une complexité neuronale encore plus importante qu’attendu.
-
-Malgré ces avancées, comprendre pleinement le fonctionnement du cerveau reste un immense défi scientifique. Ces travaux rappellent l’humilité nécessaire face à la complexité du vivant.
-
-## Synthèse automatisée de matériaux
-
-Des laboratoires robotisés utilisent l’IA pour sélectionner puis synthétiser automatiquement certains matériaux prometteurs identifiés numériquement.
-
-La majorité des matériaux prédits restent toutefois difficiles à produire ou inutilisables industriellement. Le passage entre simulation numérique et application concrète demeure une étape critique.
-
-## Contrôle du plasma et fusion nucléaire
-
-DeepMind applique l’apprentissage profond au contrôle des plasmas dans les réacteurs Tokamak de fusion nucléaire. Les systèmes IA optimisent la gestion des champs magnétiques et explorent de nouvelles configurations physiques.
-
-Cette approche nourrit l’espoir d’une meilleure maîtrise de la fusion nucléaire, potentielle source d’énergie propre et abondante. L’IA ne “résout” pas encore la fusion, mais elle améliore fortement certaines capacités de contrôle et de simulation.
-
-## Révolution des prévisions météorologiques
-
-Des modèles IA comme GenCast [41] améliorent fortement la rapidité et la précision des prévisions météorologiques à moyen terme.
-
-Ces systèmes peuvent surpasser certains modèles traditionnels sur plusieurs indicateurs tout en utilisant moins de ressources computationnelles. Cela représente un enjeu important pour l’anticipation des catastrophes climatiques et la gestion des risques environnementaux.
-
-## Déchiffrement des rouleaux carbonisés du Vésuve
-
-L’IA permet de lire progressivement des textes antiques carbonisés [43] lors de l’éruption du Vésuve il y a près de 2000 ans.
-
-Des algorithmes analysent les variations internes du papyrus numérisé pour reconstituer des caractères invisibles à l’œil humain. Cette avancée offre la possibilité de redécouvrir des œuvres philosophiques perdues depuis l’Antiquité.
-
-## Structure du langage chez les cachalots
-
-L’analyse IA des communications des cachalots [42] révèle des structures répétitives et organisées dans leurs “codas” sonores.
-
-Ces résultats suggèrent l’existence d’une communication plus complexe qu’imaginé chez certains cétacés et remettent en question l’idée que les systèmes de communication sophistiqués seraient exclusivement humains.
-
-## Résolution de problèmes mathématiques avancés
-
-Des systèmes comme AlphaProof montrent des capacités importantes en raisonnement mathématique formel.
-
-L’IA peut désormais résoudre certains problèmes complexes de niveau olympique en produisant des démonstrations structurées, montrant une progression importante au-delà du simple calcul automatique.
-
-## Création de protéines artificielles
-
-Des modèles d’IA générative permettent désormais de concevoir des protéines inédites adaptées à des fonctions précises : médecine, dépollution, industrie ou biotechnologies.
-
-L’IA ne se contente donc plus d’analyser le vivant existant; elle participe à l’invention de nouvelles structures biologiques artificielles.
-
-## Cartographie complète du cerveau de la drosophile
-
-Le cerveau entier de la drosophile (mouche du vinaigre) a été cartographié avec une précision inédite.
-
-Cette avancée fournit un modèle précieux pour comprendre l’organisation neuronale et étudier certaines maladies neurodégénératives humaines.
-
-## AlphaMissense
-
-Il permet d’évaluer la dangerosité potentielle de millions de mutations génétiques humaines. [44] Cet outil pourrait aider à mieux comprendre les maladies rares et à orienter le diagnostic génétique, tout en nécessitant une validation clinique humaine.
-
-## AlphaDev
-
-Il a découvert de nouveaux algorithmes de tri plus efficaces que certaines solutions conçues par des programmeurs humains. Ces améliorations ont été intégrées à des bibliothèques informatiques utilisées à très grande échelle.
-
-## FunSearch
-
-Il a permis de produire de nouvelles constructions mathématiques et de meilleures stratégies pour certains problèmes d’optimisation. Cela montre que l’IA peut contribuer à la recherche mathématique, à condition que ses résultats soient vérifiables.
-
-## Astronomie
-
-En astronomie, des outils IA analysent les archives de grands télescopes comme Hubble et détectent des objets atypiques passés inaperçus. L’IA devient ainsi un outil puissant pour explorer les masses de données accumulées par les observatoires.
-
-## Conception de protéines artificielles
-
-L’IA accélère la conception de protéines artificielles, notamment pour créer des molécules antibactériennes ou thérapeutiques. Ces résultats restent à valider expérimentalement, mais ils ouvrent une nouvelle phase de recherche biomédicale.
-
-## Références de l’Annexe E — avancées scientifiques
-
-- [1] Nobel Prize in Chemistry 2024 (Hassabis, Jumper, Baker for AlphaFold and Computational Protein Design). Lien
-
-- [2] Merchant et al. (Google DeepMind), *Scaling deep learning for materials discovery (GNoME)* , Nature, (2023). DOI :10.1038/s41586-023-06735-9
-
-- [3] Jumper et al., *Highly accurate protein structure prediction with AlphaFold* , Nature, (2021). DOI :10.1038/s41586021-03819-2
-
-- [4] Stokes et al., *A Deep Learning Approach to Antibiotic Discovery (Halicine)* , Cell, (2020). DOI :10.1016/j.cell.2020.01.021
-
-- [5] DeepMind, *GenCast : Diffusion-based ensemble forecasting for medium-range weather* , (2023/2024).
-
-- [6] Project CETI, *Decoding the communication of sperm whales* , (2024). Lien
-
-- [7] Vesuvius Challenge, *The first scrolls have been read* , (2024). Lien
-
-- [8] Cheng, J., et al., *Accurate prediction of variant effects with AlphaMissense* , Science, (2023).
-
---------------------------------------------------
-
-{{< pagebreak >}}
-
-## Annexe F — IA et Objectifs de développement durable
-
-## Transition depuis les avancées scientifiques vers les ODD
-
-L’intelligence artificielle transforme profondément la recherche scientifique moderne. Elle accélère les découvertes, explore des espaces immenses de possibilités et ouvre de nouveaux champs d’innovation dans presque toutes les disciplines scientifiques.
-
-L’IA ne constitue pas une “science autonome” remplaçant l’humain, mais un outil de recherche d’une puissance inédite capable d’augmenter considérablement les capacités scientifiques humaines.
-
-Cependant, cette révolution technologique s’accompagne de nouveaux défis majeurs : souveraineté scientifique, accès aux infrastructures de calcul, contrôle des données, dépendance industrielle et gouvernance des connaissances.
-
-L’avenir dépendra donc autant des progrès techniques de l’IA que des choix politiques, éthiques et économiques qui encadreront son développement et son utilisation.
-
-L’IA peut être utile à presque tous les Objectifs de développement durable, mais elle devient néfaste quand elle augmente les inégalités, automatise des décisions sensibles, consomme beaucoup de ressources pour des usages peu utiles, ou renforce la dépendance aux grandes plateformes. Les 17 ODD [45] constituent le cadre officiel adopté par l’ONU en 2015; l’ONU estime que l’IA peut aider à accélérer une grande partie des ODD, mais seulement si elle est encadrée.
-
-Voici le classement le plus pertinent.
-
-|ODD|IA plutôt utile quand…|IA plutôt néfaste quand…|
-|---|---|---|
-|**ODD 1 — Pas**|Elle aide à cibler les aides, repérer|Elle automatise l’exclusion, note les personnes pauvres, refuse des|
-|**de pauvreté**|les besoins, simplifier les|aides sans recours humain.|
-||démarches sociales.||
-|**ODD 2 — Faim**|Elle optimise l’agriculture, prédit les|Elle favorise une agriculture industrielle dépendante de plateformes,|
-|**“zéro”**|rendements, détecte les maladies|capteurs et données privées.|
-||des cultures.||
-|**ODD 3 — Santé**|Elle aide au diagnostic, au tri|Elle discrimine des patients, exploite des données de santé ou remplace|
-|**et bien-être**|médical, à la recherche, à la|abusivement le jugement médical.|
-||prévention.||
-|**ODD 4 —**|Elle personnalise l’apprentissage,|Elle favorise la triche, l’illusion de compétence, la dépendance, ou|
-|**Éducation de**|aide les élèves, traduit, rend le|creuse l’écart entre élèves équipés et non équipés.|
-|**qualité**|savoir plus accessible.||
-|**ODD 5 —**|Elle détecte des discriminations,|Elle reproduit les biais sexistes des données, discrimine à l’embauche|
-|**Égalité femmes-**|facilite l’accès à l’information et à|ou amplifie les violences numériques.|
-|**hommes**|certains services.||
-|**ODD 6 — Eau**|Elle détecte les fuites, optimise les|Elle aggrave les conflits locaux d’usage de l’eau autour des data centers.|
-|**propre**|réseaux, surveille la qualité de||
-||l’eau.||
-|**ODD 7 —**|Elle optimise les réseaux|Elle augmente fortement la demande électrique si les usages explosent|
-|**Énergie propre**|électriques, prédit la production|sans sobriété.|
-||renouvelable, réduit les pertes.||
-|**ODD 8 —**|Elle automatise des tâches|Elle précarise certains métiers, intensifie le travail, invisibilise les|
-|**Travail décent**|pénibles, aide les petites structures,|travailleurs de l’annotation et de la modération.|
-||augmente les capacités de||
-||production.||
-|**ODD 9 —**|Elle accélère la recherche, la|Elle concentre l’innovation chez quelques acteurs qui contrôlent|
-|**Industrie,**|maintenance, la logistique, la|modèles, cloud et puces.|
-|**innovation,**|conception technique.||
-|**infrastructures**|||
-|**ODD 10 —**|Elle peut rendre des outils|Elle creuse l’écart entre ceux qui ont données, calcul, argent et|
-|**Inégalités**|puissants accessibles à des petites|compétences, et ceux qui n’y ont pas accès.|
-|**réduites**|équipes ou pays moins dotés.||
-|**ODD 11 — Villes**|Elle optimise transports, énergie,|Elle devient un outil de surveillance urbaine ou de contrôle social.|
-|**durables**|déchets, voirie, cartographie des||
-||besoins.||
-
-|ODD|IA plutôt utile quand…|IA plutôt néfaste quand…|
-|---|---|---|
-|**ODD 12 —**|Elle aide à réduire le gaspillage,|Elle stimule la surproduction de contenus, la publicité ciblée,|
-|**Consommation**|prévoir les stocks, analyser les|l’obsolescence et la consommation numérique inutile.|
-|**responsable**|cycles de vie.||
-|**ODD 13 —**|Elle améliore les prévisions,|Elle consomme beaucoup d’énergie pour des usages à faible utilité|
-|**Climat**|optimise l’énergie, modélise les|sociale. L’ITU [4] indique que l’IA peut aider les ODD, mais souligne|
-||risques, aide à réduire les|aussi la nécessité de gouvernance pour éviter les effets négatifs.|
-||émissions.||
-|**ODD 14 — Vie**|Elle surveille pollution, pêche|Elle contribue indirectement à la pression énergétique, minière et|
-|**aquatique**|illégale, qualité de l’eau,|matérielle du numérique.|
-||biodiversité marine.||
-|**ODD 15 — Vie**|Elle aide à suivre la déforestation,|Elle dépend de matériel numérique dont l’extraction peut abîmer des|
-|**terrestre**|les espèces, les incendies, les sols.|milieux naturels.|
-|**ODD 16 — Paix,**|Elle aide à analyser des données|Elle produit deepfakes, surveillance, manipulation politique, décisions|
-|**justice,**|publiques, détecter corruption ou|opaques. L’ONU[45]et l’ITU[46] [47]alertent notamment sur les|
-|**institutions**|désinformation.|risques de deepfakes et de désinformation.|
-|**ODD 17 —**|Elle facilite la coopération, la|Elle renforce la dépendance aux grandes entreprises privées et aux|
-|**Partenariats**|traduction, le partage de données|pays qui contrôlent l’infrastructure IA.|
-||et la coordination.||
-
-## Références de l’Annexe F — ODD
-
-- [1] ONU (UN), *Objectifs de développement durable* . Lien
-
-- [2] ITU (UIT), *AI for Good - Accelerating the United Nations Sustainable Development Goals* . Lien
-
-- [3] UNESCO, *Recommendation on the Ethics of Artificial Intelligence* , (2021). Lien
-
-- [4] ITU, *Artificial Intelligence and the Environment* , (2024).
-
-L’IA est particulièrement utile pour les ODD où l’analyse de données, la prédiction, l’optimisation ou l’accessibilité jouent un rôle important : santé, éducation, énergie, climat, villes durables, agriculture, biodiversité et gestion de l’eau. Elle peut aider à mieux mesurer, prévoir et coordonner l’action humaine. En revanche, elle devient problématique lorsqu’elle touche aux droits humains, à l’accès aux services essentiels, à la surveillance, au travail ou aux inégalités; les ODD les plus sensibles sont donc ceux liés à la pauvreté, au travail décent, aux inégalités, à la justice et aux institutions.
-
-Dans ton cas, ton projet d’engagement bénévole peut être relié positivement à :
-
-|ODD|||Lien avec ton projet|
-|---|---|---|---|
-|**ODD**|**11**|**— Villes durables**|actions locales de propreté, amélioration de l’espace public|
-|**ODD**|**12**|**— Consommation responsable**|sensibilisation aux déchets, mégots, pollution urbaine|
-|**ODD**|**13**|**— Climat**|réflexion sur l’impact numérique et sobriété des usages|
-|**ODD**|**14**|**— Vie aquatique**|réduction des mégots pouvant contaminer l’eau|
-|**ODD**|**15**|**— Vie terrestre**|retrait de déchets de l’environnement urbain|
-|**ODD**|**17**|**— Partenariats**|mobilisation de bénévoles, associations, citoyens|
-
-Mais tu peux aussi reconnaître les risques :
-
-|Risque IA|ODD concerné|
-|---|---|
-|Dépendance à Codex, OpenAI, Claude, Vercel, Supabase, Stripe, etc.|ODD 9, 10, 17|
-|Consommation électrique et eau des data centers|ODD 6, 7, 13|
-|Travail invisible de l’annotation/modération|ODD 8, 10|
-|Inégalités d’accès aux outils IA|ODD 4, 10|
-|Données utilisateurs et surveillance potentielle|ODD 16|
-|Production excessive de code, churn, complexité technique|ODD 12, 13|
-
-## Annexe G — Questions fréquentes du jury
-
-### Réponses aux objections possibles
-
-- **Question : Pourquoi utiliser l’IA si elle consomme de l’énergie? Réponse courte :** Parce que son usage reste ici un moyen et non une finalité. Elle a servi à accélérer le développement, améliorer la qualité, renforcer la documentation et les tests, dans des ordres de grandeur limités à l’échelle du projet et sous contrainte de sobriété.
-
-- **Question : Votre projet ne risque-t-il pas d’ajouter du numérique à un problème physique? Réponse courte :** Ce risque existe si l’outil ne change rien au terrain. CleanMyMap n’est défendable que s’il réduit les frictions réelles : signalements dispersés, photos non centralisées, doublons, pertes d’information, coordination lente et reporting difficile.
-
-- **Question : Comment éviter que le site devienne une usine à gaz? Réponse courte :** En gardant un noyau fonctionnel sobre : signalement, carte, cleanwalks, photos compressées, modération et export simple. Les couches plus lourdes ne doivent être ajoutées ou conservées que si les usages prouvent leur utilité.
-
-- **Question : Comment prouvez-vous que les bénéfices terrain existent vraiment? Réponse courte :** Par des indicateurs concrets : nombre de signalements validés, cleanwalks organisées, participants, déchets retirés, zones nettoyées, rapports transmis et actions qui n’auraient probablement pas eu lieu sans la plateforme.
-
-- **Question : Pourquoi ne pas utiliser seulement des outils existants comme Google Maps ou un tableur? Réponse courte :** Ces outils peuvent dépanner, mais ils laissent souvent les données dispersées entre cartes bricolées, fichiers, messages et photos. CleanMyMap vise justement à centraliser signalement, historique, preuve et coordination dans un même flux plus exploitable.
-
-- **Question : Comment limitez-vous les effets rebonds liés aux déplacements? Réponse courte :** En faisant de la carte et de l’historique des outils d’orientation, pas de simple consultation. L’objectif est d’éviter les repérages inutiles, de mieux regrouper les actions et de concentrer les déplacements sur les interventions réellement utiles.
-
-- **Question : Comment protégez-vous les données des utilisateurs? Réponse courte :** En limitant les données collectées, en encadrant les accès, en anonymisant ce qui doit l’être et en refusant d’envoyer à l’IA des informations sensibles, des secrets techniques ou des données personnelles non nécessaires.
-
-- **Question : Que se passe-t-il si les services cloud deviennent trop chers ou indisponibles? Réponse courte :** C’est un risque identifié. Il est partiellement réduit par une architecture exportable, des formats simples, la possibilité de revenir à des usages plus sobres et la vigilance portée à ne pas rendre le projet dépendant d’une seule brique critique évitable.
-
-- **Question : L’IA est-elle vraiment neutre? Réponse courte :** Non. Ses réponses dépendent de ses données d’entraînement, de son alignement, du contexte, de la langue et des garde-fous. Dans CleanMyMap, cela impose de limiter l’IA à des tâches d’assistance non sensibles, de relire ses sorties et de ne jamais lui déléguer une autorité décisionnelle.
-
-## Questions de contexte scientifique et institutionnel
-
-Les questions ci-dessous ne remplacent pas les réponses d’objection de la Partie VII ni la FAQ complète de l’Annexe G. Elles servent seulement à replacer l’IA dans un contexte scientifique plus large lorsque le jury interroge les bénéfices généraux de cette technologie.
-
-- Qu’est-ce qu’AlphaFold? AlphaFold est une IA capable de prédire la structure tridimensionnelle des protéines à partir de leur séquence moléculaire.
-
-- L’IA remplace-t-elle les chercheurs? Non. L’IA accélère la recherche et aide à explorer des hypothèses, mais les validations expérimentales, l’interprétation scientifique et les applications restent majoritairement humaines.
-
-- Pourquoi les découvertes IA ne deviennent-elles pas immédiatement des applications concrètes? Parce que les validations industrielles, médicales et réglementaires restent longues, coûteuses et complexes.
-
-- Quels sont les risques liés à la concentration de l’IA? La dépendance envers quelques entreprises peut limiter l’accès aux connaissances, orienter les priorités scientifiques et créer des déséquilibres géopolitiques importants.
-
-- Comment l’IA aide-t-elle les neurosciences? Grâce à l’analyse d’images massives et à la cartographie neuronale ultra-détaillée permettant d’étudier les connexions du cerveau.
-
-### Analyse critique du rôle de l’IA
-
-L’usage d’outils d’IA générative comme ChatGPT ou Codex dans un projet web environnemental ne peut pas être évalué uniquement par le gain de vitesse. Il faut aussi examiner la qualité technique, la fiabilité des contenus, les risques de dépendance, la gouvernance des décisions et la cohérence avec les objectifs écologiques du projet. Dans
-
-le cas de CleanMyMap, l’IA n’est pertinente que si elle renforce la capacité à agir sur la propreté urbaine sans dégrader la rigueur du produit ni la responsabilité environnementale.
-
-### Apports concrets de l’IA pour le développement du site
-
-- Rapidité d’exécution : l’IA accélère les tâches de cadrage, de rédaction technique, de structuration et de prototypage.
-
-- Productivité technique : génération de premiers jets de code, aide au refactor, proposition de tests, accélération du debug.
-
-- Idéation et structuration : transformation de notes brutes en plans exploitables, décomposition en lots, priorisation des dépendances.
-
-- Accessibilité technique : réduction du seuil d’entrée sur des sujets complexes (architecture, tests, instrumentation, documentation).
-
-- Support éditorial : reformulation de contenus, clarté des messages, harmonisation de la tonalité entre pages.
-
-- Appui opérationnel : accélération de la production de docs, checklists, runbooks et synthèses pour coordination équipe/jury.
-
-Appliqués à CleanMyMap, ces apports sont pertinents lorsque l’IA sert des objectifs concrets : meilleure lisibilité des parcours, meilleure qualité des livrables, meilleure capacité de pilotage et réduction du temps perdu sur des tâches répétitives.
-
-### Limites, risques et effets pervers
-
-- Superficialité : l’IA peut fournir des réponses plausibles mais fragiles, surtout sans vérification contextuelle du repo.
-
-- Hallucinations et erreurs : références techniques, juridiques ou factuelles potentiellement inexactes.
-
-- Dette technique : génération rapide de code hétérogène, couplage excessif, conventions incohérentes.
-
-- Standardisation excessive : interfaces et formulations trop génériques, perte d’adéquation aux usages réels des utilisateurs.
-
-- Baisse d’esprit critique : risque de valider trop vite des propositions non testées.
-
-- Risques sécurité/confidentialité : exposition de données sensibles si les prompts incluent des informations personnelles ou internes inutiles.
-
-- Mauvais arbitrages architecture : optimisation locale rapide au détriment de la maintenabilité globale.
-
-- Impact environnemental indirect : même si l’impact unitaire peut paraître modeste, le volume cumulé de requêtes, d’itérations et d’agents peut devenir significatif.
-
-- **Effet Rebond (Paradoxe de Jevons)** : La facilité de développement accrue par l’IA peut inciter à créer des fonctionnalités superflues ( *feature creep* ), annulant ainsi les gains de sobriété réalisés sur le code lui-même.
-
-- **Inflation de code (AI-driven Bloat)** : L’IA a tendance à générer plus de code que nécessaire si elle n’est pas contrainte par une exigence de minimalisme extrême.
-
-### Compromis à arbitrer
-
-Compromis 1 - Vitesse vs fiabilité : l’IA augmente la vitesse de production, mais cette vitesse est utile uniquement si les sorties sont vérifiées (tests, revue humaine, cohérence produit).
-
-Compromis 2 - Productivité vs qualité architecture : un gain de court terme peut fabriquer de la dette long terme si les décisions ne sont pas tracées et rationalisées.
-
-Compromis 3 - Assistance vs dépendance : l’IA doit rester un accélérateur. Elle ne remplace ni la capacité d’analyse de l’équipe ni la prise de décision.
-
-### Synthèse de la position responsable
-
-En conclusion de cette analyse critique, notre position face à l’IA n’est ni le rejet par principe, ni l’adoption aveugle. La règle centrale est plus simple : **l’IA n’est justifiée que si elle produit un gain environnemental, social ou opérationnel supérieur à son coût réel, tout en restant ciblée, sobre et relue humainement** .
-
-Nous pratiquons une **IA sous surveillance** :
-
-- **Surveillance environnementale** : On n’utilise l’IA que si elle apporte un bénéfice de sobriété (meilleur code, assets plus légers) ou de rapidité de mise sur le marché d’une solution écologique.
-
-- **Surveillance sociale** : L’IA n’est jamais la source de vérité pour nos conseils de recyclage ou nos informations juridiques sans une validation humaine experte.
-
-- **Surveillance technique** : Nous luttons contre l’inflation de code (AI-driven bloat) en refusant les fonctionnalités superflues proposées par les modèles.
-
-Notre choix est donc conditionnel et non idéologique : utiliser l’IA lorsqu’elle augmente clairement l’utilité nette du projet, puis la limiter dès qu’elle ajoute surtout du volume, de la dépendance ou du bruit numérique.
-
-Compromis 4 - Efficacité numérique vs cohérence écologique : utiliser intensivement l’IA pour un projet environnemental peut créer une tension de crédibilité si la sobriété numérique n’est pas intégrée (prompts mieux ciblés, moins d’itérations inutiles, priorisation des tâches à forte valeur).
-
-### Conditions d’un usage responsable et pertinent de l’IA
-
-- Gouvernance claire : définir ce que l’IA peut proposer et ce que seul l’humain peut valider.
-
-- Vérification systématique : lint/tests/revue code et vérification factuelle pour les contenus.
-
-- Hygiène des données : minimisation des données envoyées, anonymisation, exclusion des informations sensibles.
-
-- Traçabilité des décisions : distinguer suggestion IA, décision produit et validation technique finale.
-
-- Cadre de qualité : conventions de code, standards UX, schéma d’événements, checklist pre-release.
-
-- Cohérence environnementale : réserver l’IA aux usages à forte valeur (architecture, qualité, documentation critique), éviter les itérations peu utiles.
-
-- Transparence : expliciter les zones assistées par IA et les contrôles humains associés.
-
-### Grille de décision pour l’intégration d’une fonctionnalité IA
-
-Cette grille sert à décider si une nouvelle fonctionnalité IA mérite d’être intégrée dans CleanMyMap. Elle ne remplace pas le jugement de l’équipe; elle le structure.
-
-|Question|Réponse attendue pour aller plus loin|Si la réponse est non|
-|---|---|---|
-|1. La tâche est-elle réellement utile au|Elle améliore directement la coordination,|La fonctionnalité doit être repoussée ou|
-|terrain?|la qualité des données, la mobilisation ou|supprimée.|
-||la lecture des actions.||
-|2. Peut-elle être réalisée sans IA avec|Non : une règle simple ne suffit pas, ou|Préférer une règle métier, un|
-|une règle simple?|dégraderait nettement l’utilité.|automatisme déterministe ou une|
-|||interface plus simple.|
-|3. L’IA réduit-elle du temps humain ou|Elle réduit des tâches répétitives, des|L’usage n’est pas justifié; conserver une|
-|améliore-t-elle la qualité?|erreurs ou des délais, ou elle améliore la|solution non IA.|
-||pertinence du résultat.||
-|4. Le modèle utilisé est-il proportionné à|Le plus petit modèle ou la méthode la plus|Le périmètre doit être réduit ou la|
-|la tâche?|sobre suffit à obtenir le résultat attendu.|fonctionnalité abandonnée.|
-|5. Les données envoyées sont-elles non|Les données sont minimisées,|Ne pas envoyer ces données; revoir le|
-|sensibles?|anonymisées et sans information critique.|design ou bloquer l’usage.|
-|6. L’impact environnemental est-il limité?|Les appels sont rares, l’usage est borné,|Réduire la fréquence, simplifier le flux ou|
-||le stockage est maîtrisé et l’hébergement|renoncer à l’IA.|
-||est sobre.||
-|7. La sortie est-elle relue ou validée par|Oui, systématiquement pour les contenus,|La sortie ne doit pas être publiée telle|
-|un humain?|le code critique et les décisions sensibles.|quelle.|
-|8. L’usage est-il mesurable et|Oui : journal d’usage, métriques, feature|L’intégration est trop risquée et ne doit|
-|désactivable?|flag ou possibilité de coupure nette.|pas être retenue.|
-
-**Règle de décision** : une fonctionnalité IA ne doit être intégrée que si elle répond positivement à la majorité de ces critères.
-
-### Matrice synthétique risque / réponse / preuve
-
-|||Réponse prévue||||
-|---|---|---|---|---|---|
-|Risque identifié|Impact potentiel|dans CleanMyMap|Preuve / source|Indicateur de suivi|Niveau de priorité|
-|Consommation|Émissions, coût|Modèles légers,|Logs de build,|kWh estimés par|Haute|
-|électrique|d’usage, charge|cache, limitation|rapport d’usage IA,|mois, nombre||
-||serveur|des appels IA|configuration des|d’appels IA||
-||||modèles|||
-
-|||Réponse prévue||||
-|---|---|---|---|---|---|
-|Risque identifié|Impact potentiel|dans CleanMyMap|Preuve / source|Indicateur de suivi|Niveau de priorité|
-|Consommation|Stress hydrique,|Limiter les sessions|Section ACV,|Estimation eau,|Haute|
-|d’eau|refroidissement des|lourdes, réduire les|hypothèses eau,|durée des sessions||
-||data centers|rechargements,|choix|lourdes||
-|||privilégier un|d’hébergement|||
-|||hébergement sobre|documentés|||
-|Stockage excessif|Stockage,|Compression, taille|Règles d’upload,|Volume stocké,|Haute|
-|de photos|transferts,|max, purge ou|scripts de|nombre de photos||
-||ralentissement,|archivage des|traitement, audits|hors seuil||
-||coût cloud|images inutiles|de volume|||
-|Dépendance aux|Lock-in, variation|Abstractions,|Inventaire des|Nombre de|Haute|
-|plateformes cloud|des prix, fragilité|exports,|services, plan de|services||
-||technique|documentation des|sortie,|remplaçables sans||
-|||services critiques,|documentation|rupture||
-|||alternatives|d’architecture|||
-|||prévues||||
-|Dette technique|Complexité, bugs,|Revue humaine,|PR relues, tests CI,|Taux de PR relues,|Haute|
-|liée au code IA|maintenance plus|tests, check-list de|journal|bugs post-merge||
-||coûteuse|sortie IA|d’amélioration IA|||
-|Confidentialité des|Fuite|Anonymisation,|Gouvernance IA,|Prompts sans|Haute|
-|données|d’informations,|données interdites,|règles de prompt,|données sensibles,||
-||risque RGPD|contrôle avant|contrôle|incidents||
-|||prompt|pré-publication|||
-|Effets rebonds liés|Émissions|Privilégier les|Parcours terrain,|Distance moyenne|Moyenne à haute|
-|aux déplacements|indirectes, trajets|actions proches,|formulaires|par action, part||
-||évitables|regrouper les|d’action,|d’actions locales||
-|||déplacements|cartographie locale|||
-|Infobésité|Surcharge|Simplification des|Audit UX, liste des|Nombre d’écrans,|Moyenne|
-||cognitive, baisse|écrans, hiérarchie|pages, suivi des|taux d’abandon,||
-||d’usage utile|claire, notifications|parcours|temps de lecture||
-|||limitées||||
-|Travail invisible lié|Coût social et|Usage ciblé,|Partie sociale du|Journal d’usage IA,|Haute|
-|à l’IA|humanitaire|transparence, pas|rapport, synthèse|décisions relues||
-||sous-estimé|d’usage massif|jury, journal|humainement||
-|||sans valeur réelle|d’impact DU|||
-|Fin de vie du|Déchets|Prolongation des|ACV, stratégie de|Nombre d’appareils|Moyenne à haute|
-|matériel numérique|électroniques,|appareils, réemploi,|réemploi, suivi des|prolongés ou||
-||pollution locale|recyclage certifié|filières|orientés vers une||
-|||||filière||
-
-Cette matrice n’a pas pour fonction de promettre l’absence de risque. Elle sert à montrer que chaque risque identifié dispose d’une réponse opérationnelle, d’un point de contrôle et d’une trace vérifiable, afin que l’arbitrage IA reste lisible devant un jury comme devant l’équipe projet.
-
-### Apports méthodologiques des ateliers DU à l’usage de l’IA
-
-Les ateliers DU ont clarifié un point utile pour CleanMyMap : l’IA n’a d’intérêt que si elle renforce un système sociotechnique déjà lisible. Autrement dit, elle n’est pas la finalité du projet. Elle devient acceptable lorsqu’elle améliore la coordination entre acteurs, la traçabilité des choix, la qualité du reporting et la capacité d’arbitrage institutionnel, plutôt que de produire davantage de surface numérique pour elle-même. Les idées issues des ateliers DU n’entrent donc pas ici comme un backlog, mais comme des critères, choix ou améliorations déjà absorbés dans le projet lorsqu’ils ont réellement renforcé l’utilité, la sobriété ou la gouvernance.
-
-Cette lecture rejoint le pilotage par indicateurs : un outil assisté par IA doit être jugé sur sa capacité à rendre l’action plus mesurable, plus explicable et plus utile, et non sur la seule vitesse de production. Dans CleanMyMap, cela légitime l’usage de l’IA pour structurer la documentation, fiabiliser le code, mieux formuler les contrôles et accélérer la production de livrables lorsque cette accélération améliore réellement la coordination, la lisibilité institutionnelle et la sobriété de l’équipe.
-
-### Limites restantes de gouvernance IA
-
-Malgré ce cadre, plusieurs limites restent ouvertes. La première est l’hétérogénéité de qualité des données : si les flux amont restent imparfaits, l’IA peut amplifier des interprétations fragiles au lieu de les corriger. La deuxième est le risque d’effet rebond et d’inflation de code : plus l’outil rend la production facile, plus il faut une discipline explicite pour refuser les fonctionnalités secondaires et les abstractions peu utiles.
-
-S’ajoutent à cela des limites structurelles déjà visibles dans le dépôt : dépendance technologique à des services propriétaires, besoin d’une validation humaine pérenne sur les contenus et le code, et exigence d’exportabilité réelle pour conserver une autonomie technique minimale. Ces points ne rendent pas l’usage de l’IA incohérent, mais ils imposent de la traiter comme un levier sous contrainte et non comme une solution auto-justifiée.
-
-### Conclusion synthétique
-
-En synthèse, l’IA est utile pour CleanMyMap lorsqu’elle sert une logique d’amélioration mesurable : mieux structurer, mieux coder, mieux tester et mieux communiquer. Elle devient contre-productive dès qu’elle remplace le jugement critique, dégrade la cohérence technique ou affaiblit la responsabilité environnementale du projet. La bonne posture reste pragmatique : IA pour accélérer, humain pour arbitrer, vérifier et assumer la décision finale.
-
-Une fois cette position clarifiée, il faut encore la traduire en priorités concrètes sur le produit et dans l’organisation.
-
-**Coût énergétique : pourquoi ne pas considérer l’IA comme incompatible avec le projet?** Le rapport ne nie pas le coût énergétique de l’IA.
-
-- **Mode dégradé** : Fonctionnement minimal permettant de maintenir les usages essentiels lorsqu’un service externe est indisponible.
-
-- **WUE (Water Usage Effectiveness)** : Indicateur mesurant l’efficacité de l’utilisation de l’eau dans un data center (Litre d’eau par kWh consommé)
-
---------------------------------------------------
-
-{{< pagebreak >}}
-
-## Annexe I — Table des sources {#annexe-i-table-des-sources .unnumbered}
+# Bibliographie et Sources
 
 Cette table regroupe les sources globales mobilisées dans plusieurs parties du document. Les références spécifiques déjà attachées à certaines sections restent conservées à leur emplacement d’origine ou dans les annexes correspondantes.
 
