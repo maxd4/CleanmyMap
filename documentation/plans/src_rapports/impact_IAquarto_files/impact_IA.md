@@ -75,8 +75,6 @@ Le détail chiffré du dépôt, de l’historique Git et du périmètre techniqu
 
 ### Statistiques du dépôt
 
-Cette annexe conserve la photographie documentaire du dépôt utilisée dans tout le bilan.
-
 | Métrique | Valeur (Photographie au 13/05/2026) |
 |---|---|
 | **Fichiers source (filtrés)** | **1 366** |
@@ -109,7 +107,6 @@ Périmètre technique observé :
 - Mobile : app Expo/React Native connectée à Supabase
 - Legacy : Python, SQLite, scripts et tests historiques, plusieurs fichiers de prises de notes dans la documentation par l'utilisateur
 
-
 - Projet créé le 20 février 2026
 - 10 semaines actives retenues jusqu'au 13 mai 2026
 - 8 h/semaine code IA + 2 h/semaine optimisation prompts
@@ -128,8 +125,6 @@ Ces hypothèses servent de base commune aux estimations environnementales et aux
 ### Productivité apparente
 
 ### Détail des calculs
-
-Cette annexe rassemble les hypothèses de calcul utilisées dans le mémoire, sans modifier les ordres de grandeur retenus dans le corps principal.
 
 #### Hypothèse horaire de développement assisté par IA
 
@@ -1622,7 +1617,6 @@ L’IA accélère la conception de protéines artificielles, notamment pour cré
 
 - [8] Cheng, J., et al., *Accurate prediction of variant effects with AlphaMissense* , Science, (2023).
 
-
 - Code final : **~1 293 lignes source / heure IA** (129 340 / 100 h)
 - Churn Git : ~4 253 lignes insérées / heure IA et ~2 469 lignes supprimées / heure IA
 
@@ -2304,13 +2298,13 @@ Dans un projet institutionnel, une image, un texte, un logo ou une campagne gén
 
 ### IA de frontière, simulations stratégiques et risques militaires ou catastrophiques
 
-La littérature récente sur la sûreté de l’IA insiste aussi sur les risques de mésusage. L’International AI Safety Report 2025 distingue trois grandes familles de risques : les usages malveillants, les dysfonctionnements et les risques systémiques [13]. Parmi les usages malveillants déjà documentés figurent notamment la désinformation, la manipulation de l’opinion, la fraude, certaines formes de cyberattaque, ainsi que des risques liés aux domaines biologiques et chimiques [13].
+La littérature récente sur la sûreté de l’IA insiste aussi sur les risques de mésusage. L’International AI Safety Report 2025 distingue trois grandes familles de risques : les usages malveillants, les dysfonctionnements et les risques systémiques [13]. Parmi les usages malveillants déjà documentés figurent notamment la désinformation, la manipulation de l’opinion, la fraude, certaines formes de cyberattaque, ainsi que des risques liés aux domaines biologiques et chimiques.
 
 Dans un cadre de soutenance, il est préférable de parler ici de risques CBRN, de risques cyber et de risques catastrophiques plutôt que de se focaliser sur un exemple spectaculaire isolé. L’enjeu n’est pas qu’un modèle “voudrait” spontanément produire de la violence. Le risque principal est plus structurel : des modèles généralistes très puissants peuvent réduire certaines barrières d’accès à des tâches dangereuses, accélérer la recherche d’informations sensibles, automatiser des étapes techniques et rendre des acteurs malveillants plus efficaces qu’auparavant [13].
 
 Cette vigilance augmente avec les systèmes dits agentiques. Ces systèmes ne se limitent plus à répondre à une question : ils peuvent planifier, utiliser des outils, parcourir du code, déléguer des sous-tâches et agir sur un environnement numérique. Le rapport international souligne que cette autonomie peut réduire la supervision humaine directe et compliquer la gestion du risque, notamment lorsque les agents sont exposés à des instructions malveillantes, à des outils puissants ou à des environnements difficiles à contrôler [13].
 
-Le cas de Claude Mythos Preview, développé par Anthropic, illustre cette tension entre utilité défensive et risque de mésusage. Anthropic présente Mythos comme un modèle généraliste particulièrement performant sur des tâches de cybersécurité, utilisé dans le cadre du Project Glasswing pour aider des partenaires à identifier et corriger des vulnérabilités critiques [21]. Le modèle n’a pas été rendu disponible au grand public : son accès est restreint, sur invitation, dans un cadre de recherche et de cybersécurité défensive [21]. Cette formulation est plus précise que de dire simplement que le modèle aurait été “bloqué” ou “censuré”.
+Le cas de Claude Mythos Preview, développé par Anthropic, illustre cette tension entre utilité défensive et risque de mésusage. Anthropic présente Mythos comme un modèle généraliste particulièrement performant sur des tâches de cybersécurité, utilisé dans le cadre du Project Glasswing pour aider des partenaires à identifier et corriger des vulnérabilités critiques. Le modèle n’a pas été rendu disponible au grand public : son accès est restreint, sur invitation, dans un cadre de recherche et de cybersécurité défensive [21]. Cette formulation est plus précise que de dire simplement que le modèle aurait été “bloqué” ou “censuré”.
 
 Pour ce rapport, Mythos constitue surtout un signal de changement d’échelle. À mesure que les modèles deviennent capables d’explorer du code, de tester des hypothèses, de raisonner sur des systèmes complexes et d’assister la découverte de vulnérabilités, l’équilibre entre défense et attaque peut évoluer. Une même capacité peut servir à sécuriser un logiciel critique ou, si elle est mal encadrée, à faciliter un usage offensif. Le problème n’est donc pas seulement la puissance du modèle, mais le couple formé par ses capacités, ses accès, ses outils, son degré d’autonomie et le niveau de supervision humaine.
 
@@ -2763,7 +2757,6 @@ Une fois cette position clarifiée, il faut encore la traduire en priorités con
 - **Mode dégradé** : Fonctionnement minimal permettant de maintenir les usages essentiels lorsqu’un service externe est indisponible.
 
 - **WUE (Water Usage Effectiveness)** : Indicateur mesurant l’efficacité de l’utilisation de l’eau dans un data center (Litre d’eau par kWh consommé)
-
 
 L’IA est souvent présentée comme un accélérateur potentiel des Objectifs de développement durable (ODD), mais cette promesse n’est valable que sous conditions.
 Le même outil peut aider un objectif dans un contexte et l’aggraver dans un autre.
@@ -3696,8 +3689,6 @@ En synthèse, la crédibilité du projet dépend aussi de ce qu'il fait hors du 
 
 ## Sobriété numérique du site
 
-Après les actions complémentaires hors site, cette section revient sur le produit lui-même.
-Cette section regroupe les décisions opérationnelles à appliquer au produit.
 Elle résume l'audit détaillé et la dette future en un plan d'action court, orienté réduction effective.
 Elle traduit en décisions techniques les constats des parties précédentes : réduire les coûts observés par l’ACV, limiter les dépendances et maintenir un niveau d’utilité compatible avec l’IUR visé.
 
@@ -3808,7 +3799,6 @@ Une fois les priorités techniques posées, il faut encore les convertir en règ
 
 ### Principes directeurs à retenir
 
-Cette section ne rouvre pas le débat analytique.
 Elle convertit les constats précédents en règles de pilotage, de contrôle et de priorisation applicables au projet.
 
 La traduction opérationnelle repose sur un socle simple : des indicateurs lisibles, un arbitrage explicite entre utilité et coût numérique, une gouvernance humaine assumée, une formalisation des limites connues et une priorisation stricte des usages IA à forte valeur. Le but n'est pas d'industrialiser l'IA partout, mais de l'autoriser seulement lorsqu'elle renforce la fiabilité, la traçabilité et la sobriété du produit.
@@ -3952,8 +3942,6 @@ Le vrai enjeu n’est donc pas seulement de lancer le service, mais de conserver
 Un projet écologiquement cohérent n’est pas celui qui refuse la croissance de l’usage utile ; c’est celui qui empêche cette croissance de se traduire mécaniquement par une croissance incontrôlée du poids technique et des dépendances.
 
 ---
-
-Pour éviter d’alourdir cette conclusion, la table consolidée des sources est conservée en **Annexe I — Table des sources**.
 
 Comme le rapport a été produit avec assistance IA puis relu humainement, il peut encore contenir des erreurs matérielles, coquilles ou liens devenus obsolètes. Les signalements peuvent être envoyés à [contact@cleanmymap.fr](mailto:contact@cleanmymap.fr), afin de conserver une version corrigible et traçable.
 
