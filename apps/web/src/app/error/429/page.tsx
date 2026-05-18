@@ -1,7 +1,10 @@
 import { Gauge } from "lucide-react";
 import Link from "next/link";
+import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export default function RateLimitErrorPage() {
+  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
       <div className="max-w-md w-full text-center space-y-6">
@@ -44,7 +47,7 @@ export default function RateLimitErrorPage() {
         </div>
 
         <p className="text-xs cmm-text-muted">
-          Si le problème persiste, contactez-nous à maxence.drm@gmail.com
+          Si le problème persiste, contactez-nous à {contactEmail}
         </p>
       </div>
     </div>

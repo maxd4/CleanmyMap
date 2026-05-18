@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Mail } from "lucide-react";
+import { resolvePublicContactEmail } from "@/lib/email-config";
 
 function InstagramMark({
   className,
@@ -61,6 +62,7 @@ export function HomeFooter({ variant }: HomeFooterProps) {
   const pathname = usePathname() ?? "/";
   const resolvedVariant = variant ?? (shouldUseFullFooter(pathname) ? "full" : "compact");
   const isCompact = resolvedVariant === "compact";
+  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   if (isCompact) {
     return (
@@ -120,7 +122,7 @@ export function HomeFooter({ variant }: HomeFooterProps) {
               </p>
             </div>
             <Link
-              href="/sections/feedback"
+              href="/contact"
               className="group inline-flex min-h-10 max-w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.055] px-3.5 py-2.5 text-center transition-all hover:border-emerald-300/45 hover:bg-white/[0.095] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/50 sm:justify-start"
             >
               <span className="text-sm font-semibold leading-snug text-slate-100 transition-colors group-hover:text-white">
@@ -132,14 +134,14 @@ export function HomeFooter({ variant }: HomeFooterProps) {
           {/* Centre : Liens de contact compacts */}
           <div className="flex min-w-0 flex-wrap justify-center gap-2.5 lg:justify-center">
             <a
-              href="mailto:maxence.drm@gmail.com"
+              href={`mailto:${contactEmail}`}
               className="group flex min-h-10 max-w-full items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.055] px-3.5 py-2 transition-all hover:border-emerald-300/45 hover:bg-white/[0.095] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/50"
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-300/14 transition-colors group-hover:bg-emerald-300/22">
                 <Mail size={16} className="text-emerald-200" />
               </div>
               <span className="min-w-0 truncate text-xs font-bold text-slate-100 transition-colors group-hover:text-white sm:text-sm">
-                maxence.drm@gmail.com
+                {contactEmail}
               </span>
             </a>
             <a

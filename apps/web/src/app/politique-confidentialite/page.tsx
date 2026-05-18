@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { RgpdRequestForm } from "@/components/sections/rubriques/rgpd-request-form";
+import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité - CleanMyMap",
@@ -42,6 +43,8 @@ function DataList({ items }: { items: string[] }) {
 }
 
 export default function PolitiqueConfidentialitePage() {
+  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="space-y-10 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
@@ -68,10 +71,10 @@ export default function PolitiqueConfidentialitePage() {
             <p className="text-sm leading-6 text-slate-600">
               <strong>CleanMyMap</strong> - contact :{" "}
               <a
-                href="mailto:maxence.drm@gmail.com"
+                href={`mailto:${contactEmail}`}
                 className="font-medium text-emerald-700 hover:underline"
               >
-                maxence.drm@gmail.com
+                {contactEmail}
               </a>
               . Le point de contact RGPD est la même adresse email.
             </p>
@@ -310,10 +313,10 @@ export default function PolitiqueConfidentialitePage() {
             d&apos;accès, de rectification, d&apos;effacement ou de portabilité. Vous
             pouvez aussi écrire directement à{" "}
             <a
-              href="mailto:maxence.drm@gmail.com"
+              href={`mailto:${contactEmail}`}
               className="font-medium text-emerald-700 hover:underline"
             >
-              maxence.drm@gmail.com
+              {contactEmail}
             </a>
             .
           </p>
@@ -341,10 +344,10 @@ export default function PolitiqueConfidentialitePage() {
           <p className="mt-2 text-sm leading-6 text-slate-600">
             Questions RGPD, support ou exercice de droits :{" "}
             <a
-              href="mailto:maxence.drm@gmail.com"
+              href={`mailto:${contactEmail}`}
               className="font-medium text-emerald-700 hover:underline"
             >
-              maxence.drm@gmail.com
+              {contactEmail}
             </a>
           </p>
           <p className="mt-2 text-sm leading-6 text-slate-600">

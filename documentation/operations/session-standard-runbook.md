@@ -61,3 +61,16 @@ npm run session:close -- --done "<resume>" --next "<prochaine etape>" --risk "<r
 
 Critere de succes:
 - `documentation/du/session/latest-session.md` mis a jour proprement.
+
+## Regles de validation de lot
+
+- Chaque lot doit livrer les changements effectifs, les tests executes et les risques restants.
+- Aucun lot n'est considere termine sans verification de non-regression.
+- Toute decision structurante doit etre tracee : choix retenu, alternatives ecartees et impact attendu.
+
+## Definition of done minimale
+
+- lint, typecheck et tests pertinents au vert ;
+- pas de regression sur les routes ou endpoints critiques ;
+- documentation mise a jour quand le lot modifie un comportement, une regle ou un runbook ;
+- risque residuel explicite et formule de maniere actionnable.

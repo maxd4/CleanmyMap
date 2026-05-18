@@ -6,6 +6,7 @@ import { AnalyticsCockpit } from"@/components/reports/analytics-cockpit";
 import Image from"next/image";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
+import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";
 
 async function loadFullAuditData() {
   const supabase = getSupabaseServerClient();
@@ -84,7 +85,10 @@ export default async function PrintReportPage() {
  return (
  <div className="bg-white min-h-screen p-0 sm:p-12 print:p-0">
  {/* HEADER PROFESSIONNEL */}
- <header className="flex justify-between items-start border-b-2 border-slate-900 pb-8 mb-12">
+ <header
+ className="flex justify-between items-start border-b-2 pb-8 mb-12"
+ style={{ borderColor: reportPdfColors.navy }}
+ >
  <div className="space-y-2">
  <div className="flex items-center gap-3 cmm-text-primary font-bold text-2xl tracking-tighter">
  <Image
@@ -125,7 +129,10 @@ export default async function PrintReportPage() {
 
  {/* ANALYTICS BLOCK */}
  <section className="space-y-6 mb-12">
- <h2 className="text-xl font-bold cmm-text-primary uppercase tracking-tight border-l-4 border-emerald-500 pl-4">
+ <h2
+ className="text-xl font-bold cmm-text-primary uppercase tracking-tight border-l-4 pl-4"
+ style={{ borderColor: reportPdfColors.green }}
+ >
  Analyse mensuelle
  </h2>
  <div className="border border-slate-100 p-6 rounded-2xl bg-slate-50/50">

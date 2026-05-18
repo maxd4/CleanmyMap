@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
   title: "Conditions d'utilisation - CleanMyMap",
@@ -19,6 +20,8 @@ export const metadata: Metadata = {
 };
 
 export default function ConditionsGeneralesUtilisationPage() {
+  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="space-y-10 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
@@ -175,10 +178,10 @@ export default function ConditionsGeneralesUtilisationPage() {
           <p className="mt-2 text-sm leading-6 text-slate-600">
             Questions juridiques :{" "}
             <a
-              href="mailto:maxence.drm@gmail.com"
+              href={`mailto:${contactEmail}`}
               className="font-medium text-emerald-700 hover:underline"
             >
-              maxence.drm@gmail.com
+              {contactEmail}
             </a>
           </p>
         </section>

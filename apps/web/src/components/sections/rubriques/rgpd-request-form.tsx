@@ -4,16 +4,21 @@ import { useState } from "react";
 import { Mail, Send, CheckCircle, AlertCircle, Shield, Info, ArrowUpRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { resolvePublicContactEmail } from "@/lib/email-config";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 
 type RequestType = "access" | "rectification" | "erasure" | "portability" | "other";
 type RequestStatus = "idle" | "sending" | "success" | "error";
 
 export function RgpdRequestForm() {
+  const { locale } = useSitePreferences();
+  const fr = locale === "fr";
   const [requestType, setRequestType] = useState<RequestType>("erasure");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<RequestStatus>("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   const requestTypeLabels: Record<RequestType, { fr: string; en: string }> = {
     access: { fr: "Droit d'accès (obtenir mes données)", en: "Right of access" },
@@ -42,7 +47,7 @@ export function RgpdRequestForm() {
     setStatus("sending");
     setErrorMessage("");
 
-    const mailtoLink = `mailto:maxence.drm@gmail.com?subject=${subjectByType[requestType]}&body=${encodeURIComponent(
+    const mailtoLink = `mailto:${contactEmail}?subject=${subjectByType[requestType]}&body=${encodeURIComponent(
       `Type de demande: ${requestTypeLabels[requestType].fr}\n\nEmail: ${email}\n\nMessage:\n${message}\n\n---\nCe message a été envoyé via le formulaire RGPD de CleanMyMap.\nDate: ${new Date().toLocaleString("fr-FR")}`
     )}`;
 

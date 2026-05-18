@@ -88,6 +88,11 @@
         "source": "SOURCE: Estimation basée sur les coûts de propreté urbaine moyens (Moyenne observée : 1500€ / tonne)."
       }
     },
+    "audit": {
+      "title": "Bilan d’Impact IA 2026",
+      "desc": "Consultez notre audit complet sur l'usage de l'Intelligence Artificielle au sein de CleanMyMap : impacts environnementaux, sociaux et analyse systémique.",
+      "cta": "Télécharger l'audit (PDF)"
+    },
     "footer": {
       "version": "Protocol Version: {version}",
       "copyright": "© 2026 CleanMyMap Scientific Committee.",

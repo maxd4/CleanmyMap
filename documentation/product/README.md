@@ -28,6 +28,7 @@ Documentation produit pour agents IA. Contexte métier et vision.
 ### Visual First
 - **visual-first-audit-global.md** - Audit visual-first
 - **visual-first-priorites.md** - Priorités visual-first
+- **../design-system/cleanmymap-ui-ux-pro-max.md** - Règles UX/UI pour écrans opérationnels
 
 ### Partenariats
 - **partnerships/** - Propositions de partenariats
@@ -45,6 +46,7 @@ Documentation produit pour agents IA. Contexte métier et vision.
 1. Consulter **decisions-en-attente.md**
 2. Respecter **SCIENTIFIC_PROTOCOL.md** pour les données
 3. Suivre **visual-first-priorites.md** pour l'UI
+4. Pour les surfaces admin, analytics, formulaires et validation, appliquer aussi **../design-system/cleanmymap-ui-ux-pro-max.md**
 
 ### Pour Comprendre les Utilisateurs
 1. Lire **parcours-utilisateurs.md**

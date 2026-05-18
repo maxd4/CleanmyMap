@@ -19,8 +19,8 @@ import {
 } from"@/lib/partners/onboarding-requests-store";
 import { getCurrentUserIdentity } from"@/lib/authz";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
+import { resolveContactEmail, resolveEmailFrom } from "@/lib/email-config";
 import { getResendClient } from"@/lib/services/resend";
-import { env } from"@/lib/env";
 import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
 import {
   createPublicRateLimitResponse,
@@ -84,12 +84,13 @@ const onboardingSchema = z.object({
 
 async function tryNotifyAdmins(payload: z.infer<typeof onboardingSchema>) {
  const resend = getResendClient();
- if (!resend || !env.RESEND_FROM_EMAIL) {
+ const from = resolveEmailFrom();
+ if (!resend || !from) {
  return;
  }
 
  const to ="partenaires@cleanmymap.fr";
- const replyTo = env.RESEND_REPLY_TO || env.RESEND_FROM_EMAIL;
+ const replyTo = resolveContactEmail();
 const html = `
 <h2>Nouvelle demande onboarding commercant engage</h2>
 <p><strong>Organisation:</strong> ${payload.organizationName}</p>
@@ -105,7 +106,7 @@ const html = `
  `;
 
  await resend.emails.send({
- from: env.RESEND_FROM_EMAIL,
+ from,
  to,
  subject: `[CleanMyMap] Demande onboarding partenaire - ${payload.organizationName}`,
  html,

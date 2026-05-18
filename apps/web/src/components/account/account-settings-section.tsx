@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { Settings, Trash2, Shield, Mail, AlertTriangle } from "lucide-react";
+import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export function AccountSettingsSection() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-white/10">
@@ -74,7 +76,7 @@ export function AccountSettingsSection() {
                 </div>
                 <div className="flex gap-2">
                   <a
-                    href="mailto:maxence.drm@gmail.com?subject=Demande%20RGPD%20-%20Suppression%20de%20compte"
+                    href={`mailto:${contactEmail}?subject=Demande%20RGPD%20-%20Suppression%20de%20compte`}
                     className="inline-flex items-center gap-2 rounded-full bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-rose-700"
                   >
                     Envoyer la demande
@@ -92,7 +94,7 @@ export function AccountSettingsSection() {
         </div>
 
         <p className="text-xs text-slate-500 mt-5">
-          Pour toute question sur vos données, contactez : maxence.drm@gmail.com
+          Pour toute question sur vos données, contactez : {contactEmail}
         </p>
       </div>
     </section>

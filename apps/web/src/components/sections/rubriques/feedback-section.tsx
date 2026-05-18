@@ -6,6 +6,7 @@ import { QuestionnaireCard } from "./feedback/questionnaire-card";
 import { QUESTIONNAIRES } from "./feedback/questionnaire-config";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { MessageSquare, Mail, Sparkles, ArrowRight } from "lucide-react";
+import { resolvePublicContactEmail } from "@/lib/email-config";
 
 type FeedbackSectionProps = {
   pagePath?: string;
@@ -51,6 +52,7 @@ export function FeedbackSection({
       expected: params.get("expected") ?? "",
     };
   }, []);
+  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   return (
     <SectionShell
@@ -104,7 +106,7 @@ export function FeedbackSection({
                   : "Email remains available if the reply needs to go beyond standardized forms."}
               </p>
               <a
-                href="mailto:maxence.drm@gmail.com"
+                href={`mailto:${contactEmail}`}
                 className="inline-flex h-16 items-center gap-4 rounded-2xl bg-white px-8 text-xs font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl hover:scale-105 active:scale-95 transition-all"
               >
                 {fr ? "Écrire un mail" : "Write an email"}

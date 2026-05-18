@@ -1,7 +1,9 @@
 // Structured data for organization and local business schemas
 import { JsonLd } from "./json-ld-wrapper";
+import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export function OrganizationJsonLd() {
+  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
   const data = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -16,7 +18,7 @@ export function OrganizationJsonLd() {
     ],
     contactPoint: {
       "@type": "ContactPoint",
-      email: "maxence.drm@gmail.com",
+      email: contactEmail,
       contactType: "Customer Service",
     },
     areaServed: {

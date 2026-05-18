@@ -27,7 +27,10 @@ describe("GET /api/services", () => {
     delete process.env["SENTRY_DSN"];
     delete process.env["NEXT_PUBLIC_SENTRY_DSN"];
     delete process.env["RESEND_API_KEY"];
+    delete process.env["EMAIL_FROM"];
+    delete process.env["CONTACT_EMAIL"];
     delete process.env["RESEND_FROM_EMAIL"];
+    delete process.env["RESEND_REPLY_TO"];
     delete process.env["PINECONE_API_KEY"];
     delete process.env["STRIPE_SECRET_KEY"];
     delete process.env["STRIPE_WEBHOOK_SECRET"];
@@ -63,6 +66,22 @@ describe("GET /api/services", () => {
     expect(payload.services.supabase?.severity).toBe("critical");
     expect(payload.services.supabase?.statusMessage).toContain("Supabase");
     expect(payload.missing).toContain("supabase");
+  });
+
+  it("marks resend as ready when sender and contact inbox are configured", async () => {
+    process.env["RESEND_API_KEY"] = "re_test_key";
+    process.env["EMAIL_FROM"] = "CleanMyMap <noreply@cleanmymap.fr>";
+    process.env["CONTACT_EMAIL"] = "contact@cleanmymap.fr";
+
+    const { GET } = await import("./route");
+
+    const response = await GET();
+    const payload = (await response.json()) as {
+      services: Record<string, { state: string }>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(payload.services.resend?.state).toBe("ready");
   });
 
   it("returns 403 when admin access is denied", async () => {

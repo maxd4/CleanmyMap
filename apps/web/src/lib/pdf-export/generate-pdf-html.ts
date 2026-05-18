@@ -3,6 +3,7 @@ import { generateRadarChartSvg } from "@/lib/reports/master-pack/components/rada
 import { computeExecutiveNarrative } from "@/lib/reports/master-pack/analytics/executive";
 import { toFrNumber, toFrInt, toFrDate } from "@/components/reports/web-document/analytics";
 import type { ReportModel } from "@/components/reports/web-document/types";
+import { buildOfficialReportCss } from "./report-pdf-theme";
 
 export function collectHeadStyles(): string {
   if (typeof document === "undefined") return "";
@@ -38,15 +39,15 @@ export function generatePdfHtml(
       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
         <circle cx="50" cy="50" r="45" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="2 2" />
         <circle cx="50" cy="50" r="38" fill="#10b981" fill-opacity="0.1" />
-        <text x="50" y="45" text-anchor="middle" font-family="Outfit" font-size="8" fill="#10b981" font-weight="bold">DATA CERTIFIED</text>
-        <text x="50" y="55" text-anchor="middle" font-family="Outfit" font-size="12" fill="white" font-weight="bold">v3.0</text>
-        <text x="50" y="65" text-anchor="middle" font-family="monospace" font-size="6" fill="#10b981">TRUSTED SOURCE</text>
+        <text x="50" y="45" text-anchor="middle" font-family="Inter" font-size="8" fill="#10b981" font-weight="bold">DONNÉES</text>
+        <text x="50" y="55" text-anchor="middle" font-family="Inter" font-size="12" fill="white" font-weight="bold">CMM</text>
+        <text x="50" y="65" text-anchor="middle" font-family="monospace" font-size="6" fill="#10b981">SOURCE CMM</text>
       </svg>
     </div>
     <div style="flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
       <div style="font-family: monospace; font-size: 10px; color: #475569; letter-spacing: 0.2em; margin-bottom: 20px;">LIVRABLE OFFICIEL #${deliverableId}</div>
-      <h1 style="font-family: 'Outfit'; font-size: 56px; font-weight: 700; background: linear-gradient(to right, #22d3ee, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0;">Master Pack</h1>
-      <h2 style="font-family: 'Outfit'; font-size: 32px; font-weight: 400; color: #94a3b8; margin: 8px 0 0 0;">Rapport d'Impact Institutionnel</h2>
+      <h1 style="font-family: 'Inter'; font-size: 48px; font-weight: 750; color: #f8fafc; margin: 0;">Master Pack</h1>
+      <h2 style="font-family: 'Inter'; font-size: 26px; font-weight: 500; color: #cbd5e1; margin: 8px 0 0 0;">Rapport d'impact institutionnel</h2>
       <div style="margin-top: 60px; padding: 20px; border-left: 4px solid #10b981; background: rgba(255,255,255,0.03);">
         <div style="color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em;">Périmètre d'Analyse</div>
         <div style="font-size: 24px; color: white; margin-top: 8px; font-family: 'Outfit';">${organizationName}</div>
@@ -82,7 +83,7 @@ export function generatePdfHtml(
   tocPage.style.padding = "60px";
   tocPage.innerHTML = `
     <div style="font-size: 12px; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.1em;">Navigation</div>
-    <h2 class="section-title-print" style="margin-top: 0;">Table des Matières</h2>
+    <h2 class="section-title-print" style="margin-top: 0;">Sommaire</h2>
     <p style="color: #475569; margin-bottom: 60px;">Ce rapport institutionnel est structuré en 7 parties clés pour un pilotage complet du territoire.</p>
     <div style="display: flex; flex-direction: column; gap: 2px;">
       ${MASTER_PACK_CHAPTERS.filter(c => c.id !== "sommaire").map((chapter, i) => `
@@ -440,13 +441,14 @@ export function generatePdfHtml(
   const styles = collectHeadStyles();
   const printStyles = `
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+    ${buildOfficialReportCss()}
     @page { size: A4; margin: 0; }
     body { font-family: 'Inter', sans-serif; color: #0f172a; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
     .master-pack-container { background: #fff; }
-    .report-cover { height: 297mm; width: 210mm; background: radial-gradient(circle at top right, #083344, #020617); color: white; display: flex; flex-direction: column; padding: 80px; position: relative; overflow: hidden; page-break-after: always; }
+    .report-cover { height: 297mm; width: 210mm; background: linear-gradient(135deg, #17303b, #1a365d); color: white; display: flex; flex-direction: column; padding: 80px; position: relative; overflow: hidden; page-break-after: always; }
     .report-cover::before { content: ""; position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"); opacity: 0.03; pointer-events: none; }
     .data-seal { position: absolute; top: 80px; right: 80px; width: 120px; height: 120px; }
-    .section-title-print { font-family: 'Outfit', sans-serif; font-size: 42px; font-weight: 700; color: #0f172a; margin-bottom: 24px; border-bottom: 4px solid #10b981; display: inline-block; }
+    .section-title-print { font-family: 'Inter', sans-serif; font-size: 34px; font-weight: 750; color: #1A365D; margin-bottom: 24px; border-bottom: 2px solid #B8C8D0; display: inline-block; }
     .page-break { page-break-before: always; min-height: 297mm; box-sizing: border-box; }
     a { text-decoration: none; }
     @media print {

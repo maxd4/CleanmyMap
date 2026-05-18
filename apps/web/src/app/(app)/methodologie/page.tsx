@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
-import { Info, BookOpen, Scaling, Beaker, Sparkles, Zap, Brain, ShieldCheck, MapPin } from "lucide-react";
+import { Info, BookOpen, Scaling, Beaker, Sparkles, Zap, Brain, ShieldCheck, MapPin, Download } from "lucide-react";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { NationalStatsSection } from "@/components/sections/rubriques/national-stats-section";
 import { getBlockClasses } from "@/lib/ui/block-accents";
@@ -153,6 +153,32 @@ export default function MethodologiePage() {
           icon={<Scaling size={24} />}
         />
       </section>
+
+      {/* Audit Report Section */}
+      <div className="bg-sky-500/10 rounded-[3rem] p-12 border border-sky-400/20 relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+          <ShieldCheck size={200} className="text-sky-400" />
+        </div>
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
+          <div className="space-y-4 text-center md:text-left">
+            <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-4 justify-center md:justify-start">
+              <ShieldCheck className="text-sky-400" />
+              {t("audit.title")}
+            </h2>
+            <p className="text-sky-100/60 max-w-xl font-medium leading-relaxed">
+              {t("audit.desc")}
+            </p>
+          </div>
+          <a 
+            href="/docs/impact_IA_CleanMyMap.pdf" 
+            target="_blank"
+            className="px-10 py-5 bg-sky-500 hover:bg-sky-400 text-white rounded-[2rem] font-black uppercase tracking-widest text-[10px] flex items-center gap-3 transition-all shadow-xl shadow-sky-500/20 group-hover:scale-105"
+          >
+            <Download size={16} />
+            {t("audit.cta")}
+          </a>
+        </div>
+      </div>
 
       <footer className="pt-20 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-10">
         <div className="space-y-3 text-center sm:text-left">

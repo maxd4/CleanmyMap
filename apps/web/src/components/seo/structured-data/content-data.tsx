@@ -1,7 +1,9 @@
 // Structured data for content, reviews, events, and media
 import { JsonLd } from "./json-ld-wrapper";
+import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export function FAQJsonLd() {
+  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
   const data = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -83,7 +85,7 @@ export function FAQJsonLd() {
         name: "Comment cooperate avec CleanMyMap pour mon association ou collectivite ?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "CleanMyMap est ouvert aux partenariats avec associations, collectivites et entreprises pour des operations de propretE urbaine.Contactez-nous via maxence.drm@gmail.com pour discuter d'une collaboration. Partenariat, coordination des benevoles, mutualisation des ressources.",
+          text: `CleanMyMap est ouvert aux partenariats avec associations, collectivites et entreprises pour des operations de propretE urbaine. Contactez-nous via ${contactEmail} pour discuter d'une collaboration. Partenariat, coordination des benevoles, mutualisation des ressources.`,
         },
       },
     ],

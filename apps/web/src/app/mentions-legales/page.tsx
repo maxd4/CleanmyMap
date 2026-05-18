@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
   title: "Mentions Légales - CleanMyMap",
@@ -22,6 +23,8 @@ export const metadata: Metadata = {
 };
 
 export default function MentionsLegalesPage() {
+  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       {/* Navigation de retour */}
@@ -112,10 +115,10 @@ export default function MentionsLegalesPage() {
             <p className="mt-2 text-sm text-slate-600">
               Pour toute demande RGPD ou question juridique, contactez{" "}
               <a
-                href="mailto:maxence.drm@gmail.com"
+                href={`mailto:${contactEmail}`}
                 className="font-medium text-emerald-700 hover:underline"
               >
-                maxence.drm@gmail.com
+                {contactEmail}
               </a>
               .
             </p>

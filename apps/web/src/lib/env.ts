@@ -58,6 +58,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_POSTHOG_REGION: z.enum(["eu", "us"]).optional(),
   NEXT_PUBLIC_SENTRY_DSN: optionalUrl,
   NEXT_PUBLIC_SENTRY_ENABLED: optionalBoolean,
+  NEXT_PUBLIC_CONTACT_EMAIL: z.string().optional(),
 
   CLERK_SECRET_KEY: z.string().optional(),
   CLERK_ADMIN_USER_IDS: z.string().optional(),
@@ -70,6 +71,8 @@ const envSchema = z.object({
   SENTRY_DSN: optionalUrl,
   SENTRY_ORG: z.string().optional(),
   SENTRY_PROJECT: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
+  CONTACT_EMAIL: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM_EMAIL: z.string().optional(),
   RESEND_REPLY_TO: z.string().optional(),

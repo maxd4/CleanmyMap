@@ -17,7 +17,7 @@ describe("RubriquePdfExportButton", () => {
       }),
     );
 
-    expect(markup).toContain("Exporter PDF");
+    expect(markup).toContain("Ouvrir le rapport PDF");
     expect(markup).toContain("rapport_tableau_de_bord_2026_05.pdf");
     expect(markup).toContain("Exporter le rapport PDF Bilan mensuel");
   });
