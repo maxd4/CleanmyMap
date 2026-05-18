@@ -90,7 +90,7 @@ export function appendActionMetadataToNotes(
     metaPayload.arrivalLocationLabel = metadata.arrivalLocationLabel;
   }
   if (metadata.routeStyle) {
-    metaPayload.routeStyle = metadata.routeStyle;
+    metaPayload.routeStyle = "souple";
   }
   if (metadata.routeAdjustmentMessage?.trim()) {
     metaPayload.routeAdjustmentMessage = metadata.routeAdjustmentMessage.trim();
@@ -196,7 +196,7 @@ export function extractActionMetadataFromNotes(
       arrivalLocationLabel = parsed.arrivalLocationLabel.trim();
     }
     if (parsed.routeStyle === "direct" || parsed.routeStyle === "souple") {
-      routeStyle = parsed.routeStyle;
+      routeStyle = "souple";
     }
     if (
       typeof parsed.routeAdjustmentMessage === "string" &&

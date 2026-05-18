@@ -29,6 +29,7 @@ interface ActionStepReviewProps {
   dataQuality: ActionDataQualityResult;
   isSubmitting: boolean;
   onSubmit: () => void;
+  showSubmitButton?: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -109,6 +110,7 @@ export function ActionStepReview({
   dataQuality,
   isSubmitting,
   onSubmit,
+  showSubmitButton = true,
 }: ActionStepReviewProps) {
   const isCleanPlaceMode =
     payload.recordType === "clean_place" || payload.recordType === "spot";
@@ -123,7 +125,7 @@ export function ActionStepReview({
       : "Toutes les données semblent cohérentes. Merci pour cette contribution.";
 
   return (
-    <div className="space-y-5 pb-28 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
       {/* ── 1. Score de fiabilité ────────────────────────────────────────── */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -173,7 +175,7 @@ export function ActionStepReview({
       </section>
 
       {/* ── 2. Cartes résumé ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
 
         {/* Récolte */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -193,15 +195,15 @@ export function ActionStepReview({
           )}
         </section>
 
-        {/* Tracé */}
+        {/* Localisation */}
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <SectionTitle color="bg-sky-500">Le tracé</SectionTitle>
+          <SectionTitle color="bg-sky-500">La localisation</SectionTitle>
           {payload.manualDrawing ? (
             <>
               <DataRow
                 icon={Route}
                 label="Type"
-                value={payload.manualDrawing.kind === "polygon" ? "Polygone" : "Itinéraire"}
+                value={payload.manualDrawing.kind === "polygon" ? "Zone libre" : "Repère ajusté"}
               />
               <DataRow
                 icon={MapPin}
@@ -211,21 +213,21 @@ export function ActionStepReview({
               <DataRow
                 icon={CheckCircle2}
                 label="Statut"
-                value="Tracé manuel validé"
+                value="Localisation validée"
                 valueClass="text-emerald-700"
               />
             </>
           ) : payload.departureLocationLabel ? (
             <>
-              <DataRow icon={MapPin} label="Départ" value={fmtLocation(payload.departureLocationLabel)} />
-              <DataRow icon={Route} label="Arrivée" value={fmtLocation(payload.arrivalLocationLabel)} />
+              <DataRow icon={MapPin} label="Lieu" value={fmtLocation(payload.departureLocationLabel)} />
+              <DataRow icon={Route} label="Complément" value={fmtLocation(payload.arrivalLocationLabel)} />
               <DataRow icon={Info} label="Précision" value="Aperçu automatique" valueClass="text-amber-600" />
             </>
           ) : (
             <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 space-y-1">
-              <p className="text-xs font-semibold text-amber-800">Aucun tracé disponible</p>
+              <p className="text-xs font-semibold text-amber-800">Aucune localisation détaillée</p>
               <p className="text-xs text-amber-700">
-                L&apos;envoi reste possible. Vous pouvez retourner à l&apos;étape 3 pour ajouter un parcours.
+                L&apos;envoi reste possible. Vous pouvez revenir à l&apos;étape Localisation pour ajouter des précisions.
               </p>
             </div>
           )}
@@ -277,42 +279,44 @@ export function ActionStepReview({
       )}
 
       {/* ── 4. Bouton final ──────────────────────────────────────────────── */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-        <div className="flex items-start gap-3">
-          <div className="h-8 w-8 shrink-0 rounded-xl bg-emerald-100 flex items-center justify-center">
-            <ShieldCheck size={15} className="text-emerald-600" />
+      {showSubmitButton && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="h-8 w-8 shrink-0 rounded-xl bg-emerald-100 flex items-center justify-center">
+              <ShieldCheck size={15} className="text-emerald-600" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-900">
+                {isCleanPlaceMode ? "Dernière vérification" : "Dernière vérification"}
+              </p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Ce bouton ouvre une confirmation. Rien n&apos;est envoyé tant que vous ne confirmez pas.
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-900">
-              {isCleanPlaceMode ? "Dernière vérification" : "Dernière vérification"}
-            </p>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Ce bouton ouvre une confirmation. Rien n&apos;est envoyé tant que vous ne confirmez pas.
-            </p>
-          </div>
-        </div>
 
-        <CmmButton
-          tone="primary"
-          variant="default"
-          size="lg"
-          className="w-full h-13 rounded-xl font-semibold text-base flex items-center justify-center gap-2"
-          onClick={onSubmit}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 size={17} className="animate-spin" />
-              Envoi en cours…
-            </>
-          ) : (
-            <>
-              <ClipboardCheck size={17} />
-              {isCleanPlaceMode ? "Vérifier avant envoi" : "Vérifier avant envoi"}
-            </>
-          )}
-        </CmmButton>
-      </section>
+          <CmmButton
+            tone="primary"
+            variant="default"
+            size="md"
+            className="w-full h-11 rounded-xl font-semibold text-sm flex items-center justify-center gap-2"
+            onClick={onSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Envoi en cours…
+              </>
+            ) : (
+              <>
+                <ClipboardCheck size={16} />
+                {isCleanPlaceMode ? "Vérifier avant envoi" : "Vérifier avant envoi"}
+              </>
+            )}
+          </CmmButton>
+        </section>
+      )}
 
     </div>
   );

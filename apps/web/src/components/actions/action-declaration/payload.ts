@@ -189,14 +189,14 @@ export function buildCreateActionPayload(params: {
  )
  : undefined;
 
- return {
+  return {
  actorName: form.actorName.trim() || undefined,
  associationName,
  actionDate: form.actionDate,
  locationLabel: routeLocationLabel,
  departureLocationLabel: departureLocationLabel || undefined,
  arrivalLocationLabel: arrivalLocationLabel || undefined,
- routeStyle: form.routeStyle,
+ routeStyle: "souple",
  routeAdjustmentMessage: form.routeAdjustmentMessage.trim() || undefined,
  recordType: form.recordType,
  latitude: quickMode ? undefined : latitude,

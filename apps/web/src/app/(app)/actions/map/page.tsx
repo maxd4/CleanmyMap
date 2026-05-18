@@ -32,6 +32,8 @@ export default function ActionsMapPage() {
     filters,
     setDays,
     setStatusFilter,
+    setImpactFilter,
+    setQualityMin,
     toggleCategory,
     resetFilters,
   } = useActionsMapFilters(INITIAL_DAYS);
@@ -58,6 +60,16 @@ export default function ActionsMapPage() {
     setSelectedActionId(null);
     setStatusFilter(statusValue);
   }, [setStatusFilter]);
+
+  const handleImpactChange = useCallback((impactValue: typeof impactFilter) => {
+    setSelectedActionId(null);
+    setImpactFilter(impactValue);
+  }, [setImpactFilter]);
+
+  const handleQualityMinChange = useCallback((qualityValue: number) => {
+    setSelectedActionId(null);
+    setQualityMin(qualityValue);
+  }, [setQualityMin]);
 
   const handleCategoryToggle = useCallback((category: MarkerCategory) => {
     setSelectedActionId(null);
@@ -188,12 +200,14 @@ export default function ActionsMapPage() {
                 initialDays={INITIAL_DAYS}
                 visibleCount={visibleCount}
                 loadedCount={loadedCount}
-                filteredMapItems={filteredMapItems}
-                onDaysChange={handleDaysChange}
-                onStatusChange={handleStatusChange}
-                onCategoryToggle={handleCategoryToggle}
-                onReset={handleResetFilters}
-              />
+              filteredMapItems={filteredMapItems}
+              onDaysChange={handleDaysChange}
+              onStatusChange={handleStatusChange}
+              onImpactChange={handleImpactChange}
+              onQualityMinChange={handleQualityMinChange}
+              onCategoryToggle={handleCategoryToggle}
+              onReset={handleResetFilters}
+            />
             </div>
 
             <aside className="space-y-12 self-start xl:sticky xl:top-8">

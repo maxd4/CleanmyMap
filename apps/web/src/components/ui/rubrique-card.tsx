@@ -10,6 +10,7 @@ export type RubriqueTheme = "fuchsia" | "amber" | "emerald" | "sky" | "rose" | "
 export interface RubriqueCardProps extends Omit<HTMLMotionProps<"div">, "children"> {
   themeColor?: RubriqueTheme;
   watermarkIcon?: LucideIcon;
+  topBarContent?: ReactNode;
   children: ReactNode;
   className?: string;
   withHover?: boolean;
@@ -63,6 +64,7 @@ const topBarClasses: Record<RubriqueTheme, string> = {
 export function RubriqueCard({ 
   themeColor = "fuchsia", 
   watermarkIcon: WatermarkIcon, 
+  topBarContent,
   children, 
   className,
   withHover = true,
@@ -82,7 +84,16 @@ export function RubriqueCard({
     >
       {/* Barre d'accentuation dynamique */}
       {withTopBar && (
-        <div className={cn("absolute inset-x-0 top-0 h-[3px] z-10", themeClasses[themeColor])} />
+        <div className="absolute inset-x-0 top-0 z-10 px-8 pt-6">
+          <div className="flex items-center gap-4">
+            <div className={cn("h-[3px] flex-1 rounded-full", themeClasses[themeColor])} />
+            {topBarContent && (
+              <div className="rounded-full border border-white/10 bg-black/25 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white/60 backdrop-blur-xl">
+                {topBarContent}
+              </div>
+            )}
+          </div>
+        </div>
       )}
       
       {/* Icône en filigrane */}

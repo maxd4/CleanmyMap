@@ -282,20 +282,15 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  />
  </label>
- <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Style de trajet
- <select
- value={workflow.actionEditDraft.routeStyle}
- onChange={(event) => updateActionDraft(workflow,"routeStyle",event.target.value as ActionModerationEditDraft["routeStyle"])}
- className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
- >
- <option value="souple">Souple</option>
- <option value="direct">Direct</option>
- </select>
- </label>
+ <div className="flex flex-col gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 cmm-text-caption font-semibold text-emerald-950">
+ Réglage appliqué
+ <span className="inline-flex w-fit rounded-full bg-white px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-emerald-700">
+ Souple
+ </span>
  </div>
+</div>
  <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Ajustement de trajet
+ Précisions de localisation
  <input
  value={workflow.actionEditDraft.routeAdjustmentMessage}
  onChange={(event) => updateActionDraft(workflow,"routeAdjustmentMessage",event.target.value)}
@@ -388,7 +383,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  />
  </label>
  <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
- Tracé manuel JSON
+ Localisation JSON
  <textarea
  rows={4}
  value={workflow.actionEditDraft.manualDrawingJson}

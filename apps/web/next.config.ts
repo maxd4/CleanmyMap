@@ -39,16 +39,6 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
         ],
       },
-      ...(isProduction
-        ? [
-            {
-              source: "/_next/static/:path*",
-              headers: [
-                { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-              ],
-            },
-          ]
-        : []),
       {
         source: "/:path*.svg",
         headers: [

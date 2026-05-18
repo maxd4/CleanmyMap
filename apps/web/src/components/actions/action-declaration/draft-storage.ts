@@ -88,6 +88,8 @@ export function loadDraftSnapshot(fallback: FormState): ActionDeclarationDraftSn
       }
     }
 
+    next.routeStyle = "souple";
+
     return {
       form: next as FormState,
       savedAt: getDraftSavedAt(),

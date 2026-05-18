@@ -332,16 +332,17 @@ export async function GET(request: Request) {
  ],
  };
 
- const { headers } = buildDeliverableHeaders({
- rubrique:"reports_elus_dossier",
- extension: format === "pdf" ? "pdf" : format === "md" ? "md" : "json",
- contentType:
+ const { headers: responseHeaders } = buildDeliverableHeaders({
+  rubrique:"reports_elus_dossier",
+  extension: format === "pdf" ? "pdf" : format === "md" ? "md" : "json",
+  contentType:
  format === "pdf"
  ? "application/pdf"
  : format === "md"
  ? "text/markdown; charset=utf-8"
- : "application/json; charset=utf-8",
+    : "application/json; charset=utf-8",
  });
+ const headers: Record<string, string> = { ...responseHeaders };
  if (isTruncated) {
  headers["X-Export-Warning"] ="Dataset truncated to limit";
  }

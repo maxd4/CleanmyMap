@@ -100,7 +100,7 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
   }
 
   return (
-    <div className="space-y-8 pb-28 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
       {/* ── 1. Type d'action ─────────────────────────────────────────────── */}
       <div>

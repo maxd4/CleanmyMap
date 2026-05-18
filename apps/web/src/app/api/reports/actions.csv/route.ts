@@ -97,11 +97,12 @@ export async function GET(request: Request) {
 
  const csv = buildActionsCsv(rows);
  const withBom = `\uFEFF${csv}`;
- const { headers } = buildDeliverableHeaders({
- rubrique:"export_actions",
- extension:"csv",
- contentType:"text/csv; charset=utf-8",
+ const { headers: responseHeaders } = buildDeliverableHeaders({
+  rubrique:"export_actions",
+  extension:"csv",
+  contentType:"text/csv; charset=utf-8",
  });
+ const headers: Record<string, string> = { ...responseHeaders };
  if (isTruncated) {
  headers["X-Export-Warning"] ="Dataset truncated to limit";
  }

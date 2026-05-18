@@ -22,16 +22,8 @@ export const metadata: Metadata = {
 };
 import { ActionDeclarationForm } from "@/components/actions/action-declaration-form/";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
-import { DecisionPageHeader } from "@/components/ui/decision-page-header";
-import { PageReadingTemplate } from "@/components/ui/page-reading-template";
-import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
+import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
-import {
-  getProfileLabel,
-  getProfilePrimaryAction,
-  getProfileSecondaryAction,
-  toProfile,
-} from "@/lib/profiles";
 import { getServerLocale } from "@/lib/server-preferences";
 import { CognitiveCueStrip } from "@/components/learn/cognitive-cue-strip";
 
@@ -128,13 +120,7 @@ export default async function NewActionPage({
     );
   }
 
-  const [identity, role] = await Promise.all([
-    getCurrentUserIdentity(),
-    getCurrentUserRoleLabel(),
-  ]);
-  const profile = toProfile(role);
-  const primaryAction = getProfilePrimaryAction(profile);
-  const secondaryAction = getProfileSecondaryAction(profile);
+  const identity = await getCurrentUserIdentity();
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const params = searchParams ? await searchParams : undefined;
   const fromEventIdRaw = params?.["fromEventId"];
@@ -151,12 +137,6 @@ export default async function NewActionPage({
       ? identity.actorNameOptions
       : [fallbackActorName];
   const defaultActorName = actorNameOptions[0] ?? fallbackActorName;
-  const primaryActionLink = primaryAction
-    ? { href: primaryAction.href, label: primaryAction.label[locale] }
-    : {
-        href: "/actions/history",
-        label: locale === "fr" ? "Voir l'historique" : "View history",
-      };
 
   // Préparer les métadonnées utilisateur automatiques
   const userMetadata = {
@@ -168,64 +148,33 @@ export default async function NewActionPage({
 
   if (pageTemplateV2Enabled) {
     return (
-      <PageReadingTemplate
-        context={`Profil ${getProfileLabel(profile, locale)}`}
-        title={initialRecordType === "clean_place" ? "Déclarer un lieu propre" : "Déclarer une action"}
-        objective={
-          initialRecordType === "clean_place"
-            ? "Déclarer un lieu propre ou une action terrain en trois étapes."
-            : "Déclarer une action terrain en trois étapes."
-        }
-        primaryAction={primaryActionLink}
-        secondaryAction={
-          secondaryAction
-            ? { href: secondaryAction.href, label: secondaryAction.label[locale] }
-            : undefined
-        }
-        analysis={
-          <div className="space-y-8">
-            <CognitiveCueStrip
-              locale={locale}
-              rubricId="actions"
-              question={actionCue.question}
-              clue={actionCue.clue}
-              chips={[
-                locale === "fr" ? "Feedback immédiat" : "Immediate feedback",
-                locale === "fr" ? "Rappel à revoir" : "Review reminder",
-                locale === "fr" ? "Mini-défi" : "Mini challenge",
-              ]}
-              action={{ href: "/actions/history", label: actionCue.actionLabel }}
-            />
-            <ActionDeclarationForm
-              actorNameOptions={actorNameOptions}
-              defaultActorName={defaultActorName}
-              userMetadata={userMetadata}
-              linkedEventId={fromEventId ?? undefined}
-              initialMode={initialMode}
-              initialRecordType={initialRecordType}
-            />
-          </div>
-        }
-      />
+      <div className="space-y-8">
+        <CognitiveCueStrip
+          locale={locale}
+          rubricId="actions"
+          question={actionCue.question}
+          clue={actionCue.clue}
+          chips={[
+            locale === "fr" ? "Feedback immédiat" : "Immediate feedback",
+            locale === "fr" ? "Rappel à revoir" : "Review reminder",
+            locale === "fr" ? "Mini-défi" : "Mini challenge",
+          ]}
+          action={{ href: "/actions/history", label: actionCue.actionLabel }}
+        />
+        <ActionDeclarationForm
+          actorNameOptions={actorNameOptions}
+          defaultActorName={defaultActorName}
+          userMetadata={userMetadata}
+          linkedEventId={fromEventId ?? undefined}
+          initialMode={initialMode}
+          initialRecordType={initialRecordType}
+        />
+      </div>
     );
   }
 
   return (
     <div data-rubrique-report-root className="space-y-4">
-      <DecisionPageHeader
-        context={`Profil ${getProfileLabel(profile, locale)}`}
-        title={initialRecordType === "clean_place" ? "Déclarer un lieu propre" : "Déclarer une action"}
-        objective={
-          initialRecordType === "clean_place"
-            ? "Saisir rapidement un lieu propre ou une action terrain en trois étapes."
-            : "Saisir rapidement une action terrain en trois étapes."
-        }
-        actions={[
-          { href: "/actions/map", label: "Carte" },
-          { href: "/actions/history", label: "Historique" },
-        ]}
-      />
-
       <CognitiveCueStrip
         locale={locale}
         rubricId="actions"
