@@ -87,45 +87,16 @@ export function useActionDeclarationForm({
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
-  const [visitedSteps, setVisitedSteps] = useState<Set<number>>(new Set([1]));
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const hasTrackedStartRef = useRef<boolean>(false);
 
   const isCleanPlaceMode = form.recordType === "clean_place";
-  const totalSteps = isCleanPlaceMode ? 2 : 4;
-  const [currentStep, setCurrentStep] = useState<number>(1);
-
-  const nextStep = () => {
-    setHasAttemptedSubmit(true);
-    if (currentStep === 1) {
-      const stepOneIssues = getStepOneValidationIssues(form);
-      setValidationIssues(stepOneIssues);
-      if (stepOneIssues.length > 0) return;
-    }
-    if (currentStep === 2) {
-      const hasWaste = parseFloat(form.wasteKg) > 0 || parseFloat(form.wasteMegotsKg) > 0;
-      if (!hasWaste && declarationMode === "complete" && !isCleanPlaceMode) return;
-    }
-    const next = Math.min(currentStep + 1, totalSteps);
-    setVisitedSteps((prev) => new Set([...prev, next]));
-    setCurrentStep(next);
-    setHasAttemptedSubmit(false);
-    setValidationIssues([]);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  const prevStep = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
 
   function handleResumeDraft() {
     if (!pendingDraft) return;
     setForm(coerceRecordType(pendingDraft.form));
     setDraftSavedAt(pendingDraft.savedAt);
     setPendingDraft(null);
-    setCurrentStep(1);
-    setVisitedSteps(new Set([1]));
     setHasAttemptedSubmit(false);
   }
 
@@ -134,8 +105,6 @@ export function useActionDeclarationForm({
     setPendingDraft(null);
     setDraftSavedAt(null);
     setForm(createCleanForm());
-    setCurrentStep(1);
-    setVisitedSteps(new Set([1]));
     setHasAttemptedSubmit(false);
   }
 
@@ -258,12 +227,13 @@ export function useActionDeclarationForm({
       trackFunnel("start_form", declarationMode);
     }
     const nextForm = { ...form, [key]: value };
+    if (key === "routeStyle") {
+      nextForm.routeStyle = "souple";
+    }
     if (!pendingDraft && submissionState !== "success") {
       setDraftSavedAt(saveDraft(nextForm));
     }
     if (key === "recordType") {
-      const nextTotalSteps = value === "clean_place" ? 2 : 4;
-      setCurrentStep((prev) => Math.min(prev, nextTotalSteps));
       setHasAttemptedSubmit(false);
     }
     setForm(nextForm);
@@ -271,6 +241,7 @@ export function useActionDeclarationForm({
 
   function normalizeFormBeforeSubmit(f: FormState): FormState {
     const normalized = { ...f };
+    normalized.routeStyle = "souple";
     if (normalized.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE) {
       normalized.associationName = "Action spontanée";
     }
@@ -289,7 +260,6 @@ export function useActionDeclarationForm({
       setErrorMessage(stepOneIssues[0]?.message ?? null);
       setSubmissionState("error");
       setShowConfirmation(false);
-      setCurrentStep(1);
       return;
     }
 
@@ -364,26 +334,19 @@ export function useActionDeclarationForm({
     hasAttemptedSubmit,
     showConfirmation,
     setShowConfirmation,
-    visitedSteps,
     draftSavedAt,
     pendingDraftSavedAt: pendingDraft?.savedAt ?? null,
     showDraftBanner: Boolean(pendingDraft),
-    currentStep,
-    setCurrentStep,
     isCleanPlaceMode,
-    totalSteps,
-    
+
     // Computed & payload
     payload,
     dataQuality,
     effectiveRoutePreviewDrawing,
-    
+
     // Smart Assist state
     smartAssist,
 
-    // Methods
-    nextStep,
-    prevStep,
     handlePhotoUpload,
     clearPhotos,
     updateField,
@@ -399,7 +362,7 @@ function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
   if (!form.associationName.trim()) {
     issues.push({
       field: "associationName",
-      message: "Sélectionnez une structure ou “Autre bénévole”.",
+      message: "Sélectionnez une structure ou “Autre bénévole” avant l’envoi.",
     });
   }
 
@@ -410,14 +373,14 @@ function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
     issues.push({
       field: "associationName",
       message:
-        "Renseignez le nom ou pseudo du bénévole avant de continuer.",
+        "Renseignez le nom ou pseudo du bénévole avant l’envoi.",
     });
   }
 
   if (!form.actionDate.trim()) {
     issues.push({
       field: "actionDate",
-      message: "Indiquez la date de l’action avant de continuer.",
+      message: "Indiquez la date de l’action avant l’envoi.",
     });
   }
 

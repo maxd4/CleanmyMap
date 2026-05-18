@@ -69,25 +69,23 @@ function formatKgValue(value: number): string {
 }
 
 type FormProgressSummaryProps = {
-  currentStep: number;
-  totalSteps: number;
   actionDate: string;
   wasteKg: string;
   megotsKg: string;
   draftSavedAt: string | null;
   compact?: boolean;
+  showProgress?: boolean;
 };
 
 export function FormProgressSummary({
-  currentStep,
-  totalSteps,
   actionDate,
   wasteKg,
   megotsKg,
   draftSavedAt,
   compact = false,
+  showProgress = true,
 }: FormProgressSummaryProps) {
-  const stepLabel = `Étape ${currentStep}/${totalSteps}`;
+  const stepLabel = showProgress ? "Formulaire continu" : "Synthèse";
   const dateLabel = formatActionDate(actionDate);
   const wasteLabel = formatWasteSummary(wasteKg, megotsKg);
 
@@ -99,7 +97,7 @@ export function FormProgressSummary({
       >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
           <span className="font-black text-emerald-700">{stepLabel}</span>
-          <span className="text-slate-300">•</span>
+          {showProgress ? <span className="text-slate-300">•</span> : null}
           <span className="font-semibold text-slate-700">{dateLabel}</span>
           <span className="text-slate-300">•</span>
           <span className="font-semibold text-slate-700">{wasteLabel}</span>
@@ -120,10 +118,10 @@ export function FormProgressSummary({
       className="sticky top-24 hidden rounded-3xl border border-slate-200/70 bg-white/90 p-4 shadow-lg shadow-slate-200/50 backdrop-blur-md lg:block"
     >
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
-        Récapitulatif
+        {showProgress ? "Récapitulatif" : "Synthèse"}
       </p>
       <div className="mt-4 space-y-3">
-        <SummaryRow label="Progression" value={stepLabel} strong />
+        {showProgress ? <SummaryRow label="Progression" value={stepLabel} strong /> : null}
         <SummaryRow label="Date" value={dateLabel} />
         <SummaryRow label="Récolte" value={wasteLabel} />
         <SummaryRow

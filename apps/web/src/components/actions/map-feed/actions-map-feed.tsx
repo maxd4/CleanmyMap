@@ -74,7 +74,7 @@ export function ActionsMapFeed({
     mapCanvasError,
     MapCanvas,
     selectedActionId,
-    onOpenAction,
+    onOpenAction: onOpenAction ?? (() => {}),
     onReload: () => void feedData.reload(),
     showIntro,
     fullViewport,

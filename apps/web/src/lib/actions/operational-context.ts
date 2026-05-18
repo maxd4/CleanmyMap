@@ -31,7 +31,7 @@ export function formatRouteStyleLabel(
   routeStyle: "direct" | "souple" | null | undefined,
 ): string {
   if (routeStyle === "direct") {
-    return "Trajet direct";
+    return "Trajet souple";
   }
   if (routeStyle === "souple") {
     return "Trajet souple";
@@ -57,7 +57,10 @@ export function getActionOperationalContext(
 ): ActionOperationalContext {
   const metadata = contract?.metadata ?? null;
   const placeType = normalizeContextText(metadata?.placeType);
-  const routeStyle = metadata?.routeStyle ?? null;
+  const routeStyle =
+    metadata?.routeStyle === "direct" || metadata?.routeStyle === "souple"
+      ? "souple"
+      : null;
   const routeAdjustmentMessage = normalizeContextText(
     metadata?.routeAdjustmentMessage,
   );

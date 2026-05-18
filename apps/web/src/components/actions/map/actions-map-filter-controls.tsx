@@ -27,6 +27,8 @@ type ActionsMapFilterControlsProps = {
   initialDays: number;
   onDaysChange: (days: number) => void;
   onStatusChange: (status: ActionsMapStatusFilter) => void;
+  onImpactChange: (impact: ActionsMapFilters["impactFilter"]) => void;
+  onQualityMinChange: (quality: number) => void;
   onCategoryToggle: (category: MarkerCategory) => void;
   onReset: () => void;
 };
@@ -36,11 +38,13 @@ export function ActionsMapFilterControls({
   initialDays,
   onDaysChange,
   onStatusChange,
+  onImpactChange,
+  onQualityMinChange,
   onCategoryToggle,
   onReset,
 }: ActionsMapFilterControlsProps) {
   return (
-    <div className="grid w-full gap-3 lg:grid-cols-[repeat(2,minmax(9rem,1fr))_auto]">
+    <div className="grid w-full gap-3 lg:grid-cols-[repeat(2,minmax(9rem,1fr))_repeat(2,minmax(11rem,1fr))_auto]">
       <label className="flex flex-col gap-1">
         <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
           Période
@@ -52,7 +56,7 @@ export function ActionsMapFilterControls({
         >
           <option value={String(initialDays)}>Année en cours</option>
           <option value="3650">Historique complet</option>
-        </select>
+          </select>
       </label>
 
       <label className="flex flex-col gap-1">
@@ -71,7 +75,43 @@ export function ActionsMapFilterControls({
               {option.label}
             </option>
           ))}
+          </select>
+      </label>
+
+      <label className="flex flex-col gap-1">
+        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
+          Impact
+        </span>
+        <select
+          value={filters.impactFilter}
+          onChange={(event) =>
+            onImpactChange(event.target.value as ActionsMapFilters["impactFilter"])
+          }
+          className="h-11 rounded-2xl border border-cyan-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(8,145,178,0.18)] outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-400/12"
+        >
+          <option value="all">Tous les impacts</option>
+          <option value="faible">Faible</option>
+          <option value="moyen">Moyen</option>
+          <option value="fort">Fort</option>
+          <option value="critique">Critique</option>
         </select>
+      </label>
+
+      <label className="flex flex-col gap-1">
+        <span className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
+          <span>Qualité min.</span>
+          <span className="text-slate-500">{filters.qualityMin}%</span>
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={filters.qualityMin}
+          onChange={(event) => onQualityMinChange(Number(event.target.value))}
+          className="h-11 w-full cursor-pointer accent-cyan-600"
+          aria-label="Filtre de qualité minimale"
+        />
       </label>
 
       <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Navigation, Crosshair, Route, CheckCircle2, AlertCircle, Loader2, MapPinOff, Pencil, X } from "lucide-react";
+import { MapPin, Navigation, Crosshair, CheckCircle2, AlertCircle, Loader2, MapPinOff, Pencil, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
 import type { FormState } from "../action-declaration-form.model";
@@ -190,18 +190,18 @@ export function ActionStepLocation({
   } as const;
 
   return (
-    <div className="space-y-6 pb-28 animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
-      {/* ── Ligne 1 : Adresses + GPS + type de parcours ─────────────────── */}
+      {/* ── Ligne 1 : Adresses + GPS + localisation ─────────────────────── */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
         <SectionTitle color="bg-sky-500">
-          {isCleanPlaceMode ? "Géolocalisation du lieu" : "Itinéraire de collecte"}
+          {isCleanPlaceMode ? "Géolocalisation du lieu" : "Localisation de collecte"}
         </SectionTitle>
 
         <p className="text-xs text-slate-400 -mt-2">
           {isCleanPlaceMode
             ? "Indiquez l'adresse du lieu propre ou utilisez votre position GPS."
-            : "Saisissez le départ et l'arrivée, ou utilisez votre position GPS. L'arrivée est optionnelle si vous revenez au point de départ."}
+            : "Indiquez l'adresse du lieu ou utilisez votre position GPS."}
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -224,26 +224,19 @@ export function ActionStepLocation({
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <GpsButton status={gpsStatus} message={gpsMessage} onAutofill={onAutofillGps} />
 
           {!isCleanPlaceMode && (
-            <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-slate-500">Type de tracé</span>
-              <div className="relative">
-                <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
-                  <Route size={15} />
-                </div>
-                <select
-                  className="w-full h-11 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-900 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 appearance-none cursor-pointer"
-                  value={form.routeStyle}
-                  onChange={(e) => updateField("routeStyle", e.target.value as FormState["routeStyle"])}
-                >
-                  <option value="direct">Direct — ligne droite entre les points</option>
-                  <option value="souple">Souple — suit les rues et chemins</option>
-                </select>
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+              <div>
+                <p className="text-xs font-medium text-emerald-700">Souple par défaut</p>
+                <p className="mt-0.5 text-sm font-semibold text-emerald-900">Réglage appliqué</p>
               </div>
-            </label>
+              <span className="rounded-full bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700">
+                Actif
+              </span>
+            </div>
           )}
         </div>
       </div>
@@ -252,12 +245,12 @@ export function ActionStepLocation({
       <div className="hidden md:block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
         <div className="flex items-center justify-between gap-3">
           <SectionTitle color="bg-slate-700">
-            {isCleanPlaceMode ? "Point géographique" : "Tracé géographique"}
+            {isCleanPlaceMode ? "Point géographique" : "Aperçu de localisation"}
           </SectionTitle>
           <p className="text-[10px] text-slate-400">
             {isCleanPlaceMode
               ? "Situez le lieu sur la carte"
-              : "Dessinez votre parcours ou renseignez une adresse pour générer un tracé"}
+              : "Situez le lieu sur la carte ou renseignez une adresse"}
           </p>
         </div>
 
@@ -270,28 +263,28 @@ export function ActionStepLocation({
             isCleanPlace={isCleanPlaceMode}
           />
 
-          {/* Overlay si aucun tracé */}
+          {/* Overlay si aucun repère */}
           {!hasDrawing && (
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/60 backdrop-blur-[2px]">
               <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-center shadow-sm">
                 <Pencil size={20} className="mx-auto mb-2 text-slate-400" />
-                <p className="text-sm font-semibold text-slate-700">Aucun tracé</p>
+                <p className="text-sm font-semibold text-slate-700">Aucun repère</p>
                 <p className="mt-1 text-xs text-slate-400">
-                  Saisissez une adresse de départ ou dessinez directement sur la carte
+                  Saisissez une adresse ou utilisez le GPS pour placer le lieu
                 </p>
               </div>
             </div>
           )}
         </div>
 
-        {/* Résumé tracé */}
+        {/* Résumé localisation */}
         <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={cn(
               "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold",
               statusStyles[statusTone]
             )}>
-              {isManual ? "Tracé manuel" : hasDrawing ? "Aperçu automatique" : "Aucun tracé"}
+              {isManual ? "Repère manuel" : hasDrawing ? "Aperçu automatique" : "Aucun repère"}
             </span>
             {hasDrawing && (
               <span className="text-xs text-slate-500">
@@ -304,7 +297,7 @@ export function ActionStepLocation({
             <button
               type="button"
               onClick={onResetManualDrawing}
-              aria-label="Effacer le tracé manuel"
+              aria-label="Effacer le repère manuel"
               className="flex items-center gap-1.5 rounded-lg border border-rose-100 bg-white px-3 py-1.5 text-xs font-medium text-rose-500 transition-colors hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"
             >
               <X size={13} />
@@ -314,7 +307,7 @@ export function ActionStepLocation({
 
           {!hasDrawing && (
             <span className="text-xs text-slate-400">
-              Saisissez un départ, utilisez le GPS ou dessinez sur la carte
+              Saisissez un lieu, utilisez le GPS ou placez un repère sur la carte
             </span>
           )}
         </div>
@@ -324,10 +317,10 @@ export function ActionStepLocation({
       <div className="md:hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
         <div className="flex items-center gap-2">
           <MapPinOff size={15} className="text-slate-400" />
-          <SectionTitle color="bg-slate-400">Précisions du parcours</SectionTitle>
+          <SectionTitle color="bg-slate-400">Précisions de localisation</SectionTitle>
         </div>
         <p className="text-xs text-slate-400 -mt-2">
-          Décrivez les rues, zones ou étapes de votre parcours. Un admin pourra retracer le tracé depuis ces informations.
+          Décrivez les rues ou zones concernées. Un admin pourra compléter la localisation depuis ces informations.
         </p>
         <textarea
           rows={5}
@@ -338,11 +331,11 @@ export function ActionStepLocation({
         />
       </div>
 
-      {/* ── Précisions parcours (desktop aussi) ─────────────────────────── */}
+      {/* ── Précisions localisation (desktop aussi) ─────────────────────── */}
       <div className="hidden md:block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-        <SectionTitle color="bg-slate-400">Précisions du parcours</SectionTitle>
+        <SectionTitle color="bg-slate-400">Précisions de localisation</SectionTitle>
         <p className="text-xs text-slate-400 -mt-2">
-          Optionnel — décrivez les rues ou zones si le tracé est imprécis ou absent.
+          Optionnel — décrivez les rues ou zones si la localisation est imprécise.
         </p>
         <textarea
           rows={3}

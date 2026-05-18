@@ -1,22 +1,16 @@
 "use client";
 
-import { type FormEvent } from "react";
+import { type ElementType, type FormEvent } from "react";
 import {
   User,
-  Scale,
-  Route as RouteIcon,
   ClipboardCheck,
-  CheckCircle2,
-  ChevronRight,
   Sparkles,
-  ChevronLeft,
   Download,
   Save,
   History,
 } from "lucide-react";
 import { exportFormAsPdf } from "@/lib/actions/export-form-pdf";
 import { cn } from "@/lib/utils";
-import { CmmButton } from "@/components/ui/cmm-button";
 import { ActionDeclarationFormConfirmation } from "../action-declaration-form-confirmation";
 import { ActionDeclarationFormFeedback } from "../action-declaration-form.feedback";
 import { createInitialFormState } from "../action-declaration/payload";
@@ -25,7 +19,11 @@ import { ActionStepHarvest } from "../action-declaration/ActionStepHarvest";
 import { ActionStepLocation } from "../action-declaration/ActionStepLocation";
 import { ActionStepReview } from "../action-declaration/ActionStepReview";
 import { useActionDeclarationForm } from "./use-action-declaration-form";
-import { FormProgressSummary, formatDraftDate } from "./action-declaration-form.summary";
+import {
+  formatActionDate,
+  formatDraftDate,
+  formatWasteSummary,
+} from "./action-declaration-form.summary";
 
 type ActionDeclarationFormProps = {
   actorNameOptions: string[];
@@ -40,6 +38,99 @@ type ActionDeclarationFormProps = {
   initialMode?: "quick" | "complete";
   initialRecordType?: "action" | "clean_place";
 };
+
+function SectionDivider({
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  icon: ElementType;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
+        <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+          <Icon size={14} className="text-emerald-600" />
+          <span className="cmm-text-caption font-bold uppercase tracking-[0.18em] text-slate-600">
+            {title}
+          </span>
+        </div>
+        <span className="h-px flex-1 bg-slate-200/80" />
+      </div>
+      <p className="max-w-3xl text-left text-sm leading-6 text-slate-500">
+        {subtitle}
+      </p>
+    </div>
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+      <span className="text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
+        {label}
+      </span>
+      <span className="max-w-[58%] text-right text-sm font-semibold leading-5 text-slate-900">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function RubricAside({
+  eyebrow,
+  title,
+  summary,
+  rows,
+  note,
+  tone = "emerald",
+}: {
+  eyebrow: string;
+  title: string;
+  summary: string;
+  rows: Array<{ label: string; value: string }>;
+  note?: string;
+  tone?: "emerald" | "sky" | "violet" | "slate";
+}) {
+  const toneClasses = {
+    emerald: "text-emerald-700",
+    sky: "text-sky-700",
+    violet: "text-violet-700",
+    slate: "text-slate-700",
+  } as const;
+
+  return (
+    <aside className="rounded-[1.75rem] border border-slate-200 bg-slate-50/80 p-5 shadow-sm">
+      <p className={cn("text-[11px] font-black uppercase tracking-[0.18em]", toneClasses[tone])}>
+        {eyebrow}
+      </p>
+      <h3 className="mt-2 text-lg font-black tracking-tight text-slate-900">
+        {title}
+      </h3>
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        {summary}
+      </p>
+      <div className="mt-4 space-y-3">
+        {rows.map((row) => (
+          <SummaryRow key={row.label} label={row.label} value={row.value} />
+        ))}
+      </div>
+      {note ? (
+        <p className="mt-4 text-sm leading-6 text-slate-500">
+          {note}
+        </p>
+      ) : null}
+    </aside>
+  );
+}
 
 export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
   const {
@@ -59,20 +150,14 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     hasAttemptedSubmit,
     showConfirmation,
     setShowConfirmation,
-    visitedSteps,
     draftSavedAt,
     pendingDraftSavedAt,
     showDraftBanner,
-    currentStep,
-    setCurrentStep,
     isCleanPlaceMode,
-    totalSteps,
     payload,
     dataQuality,
     effectiveRoutePreviewDrawing,
     smartAssist,
-    nextStep,
-    prevStep,
     handlePhotoUpload,
     clearPhotos,
     updateField,
@@ -137,136 +222,97 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
           </div>
         )}
 
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-5">
-        <FormProgressSummary
-          currentStep={currentStep}
-          totalSteps={totalSteps}
-          actionDate={form.actionDate}
-          wasteKg={form.wasteKg}
-          megotsKg={form.wasteMegotsKg}
-          draftSavedAt={formattedDraftSavedAt}
-          compact
-        />
-
-        {/* Stepper + Form fused */}
-        <section className="relative overflow-hidden rounded-[2.5rem] border border-slate-200/60 bg-white/95 shadow-2xl shadow-slate-200/50 backdrop-blur-xl min-h-[500px] flex flex-col">
-          {/* Progress bar */}
-          <div className="absolute top-0 left-0 h-1 bg-slate-100 w-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400 transition-all duration-700 ease-out"
-              style={{ width: `${(currentStep / totalSteps) * 100}%` }}
-            />
-          </div>
-
-          {/* Stepper */}
-          <div className="flex justify-between items-center px-6 md:px-10 pt-6 pb-4 border-b border-slate-100">
-            {(
-              isCleanPlaceMode
-                ? [
-                    { id: 1, label: "Identité", icon: User },
-                    { id: 2, label: "Lieu propre", icon: ClipboardCheck },
-                  ]
-                : [
-                    { id: 1, label: "Identité", icon: User },
-                    { id: 2, label: "Récolte", icon: Scale },
-                    { id: 3, label: "Parcours", icon: RouteIcon },
-                    { id: 4, label: "Validation", icon: ClipboardCheck },
-                  ]
-            ).map((step) => {
-              const Icon = step.icon;
-              const isPast = currentStep > step.id;
-              const isCurrent = currentStep === step.id;
-              const isClickable = visitedSteps.has(step.id) && !isCurrent;
-
-              return (
-                <div
-                  key={step.id}
-                  className={cn(
-                    "flex flex-col items-center gap-2 relative z-10",
-                    isCleanPlaceMode ? "w-1/2" : "w-1/4",
-                  )}
-                >
-                  <button
-                    type="button"
-                    disabled={!isClickable}
-                    onClick={() => isClickable && setCurrentStep(step.id)}
-                    aria-label={`Aller à l’étape ${step.id} : ${step.label}`}
-                    aria-current={isCurrent ? "step" : undefined}
-                    className={cn(
-                      "h-10 w-10 md:h-12 md:w-12 rounded-2xl flex items-center justify-center transition-all duration-500",
-                      isPast ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/20 cursor-pointer hover:scale-105" :
-                        isCurrent ? "bg-white border-2 border-emerald-500 text-emerald-600 scale-110 shadow-xl shadow-emerald-500/10 cursor-default" :
-                          "bg-slate-50 border border-slate-200 text-slate-400 cursor-not-allowed"
-                    )}
-                  >
-                    {isPast ? <CheckCircle2 size={18} /> : <Icon size={18} />}
-                  </button>
-                  <p className={cn(
-                    "text-[9px] font-black tracking-widest uppercase hidden md:block transition-colors duration-300",
-                    isCurrent ? "text-emerald-700" : isPast ? "text-slate-600" : "text-slate-400"
-                  )}>
-                    {step.label}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Form body */}
-          <div className="p-6 md:p-10 flex-1 flex flex-col">
-            {/* Subtle background glow */}
-            <div className="absolute -top-40 -right-40 w-96 h-96 bg-emerald-100/40 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Contextual Step Header */}
-            <div className="mb-8 pb-6 border-b border-slate-100 relative z-10 flex items-start justify-between gap-4">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-1 mb-4">
+        <section className="relative overflow-hidden rounded-[2.5rem] border border-slate-200/60 bg-white/95 shadow-2xl shadow-slate-200/50 backdrop-blur-xl">
+          <div className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-emerald-100/40 blur-3xl pointer-events-none" />
+          <div className="p-6 md:p-10 space-y-8">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-1 mb-3">
                   <Sparkles size={14} className="text-emerald-500" />
-                  <span className="cmm-text-caption font-bold text-emerald-700 uppercase tracking-widest">
-                    Étape {currentStep} sur {totalSteps}
+                  <span className="cmm-text-caption font-bold text-emerald-700 uppercase tracking-[0.18em]">
+                    Formulaire continu
                   </span>
                 </div>
-                <h2 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
-                  {currentStep === 1 && (isCleanPlaceMode ? "Qui a déclaré ce lieu propre ?" : "Qui a mené cette action ?")}
-                  {currentStep === 2 && (isCleanPlaceMode ? "Lieu propre et localisation" : "Déchets et mégots")}
-                  {!isCleanPlaceMode && currentStep === 3 && "Géolocalisation du parcours"}
-                  {!isCleanPlaceMode && currentStep === 4 && "Vérification et envoi"}
+                <h2 className="text-[clamp(1.5rem,2.8vw,2.35rem)] font-bold tracking-tight text-slate-900">
+                  Déclarer une action
                 </h2>
-                <p className="mt-2 text-slate-500 font-medium">
-                  {currentStep === 1 && (isCleanPlaceMode ? "Choisissez le mode de déclaration pour un lieu propre ou une action terrain." : "Identifiez la structure ou le bénévole pour valoriser votre engagement local." )}
-                  {currentStep === 2 && (isCleanPlaceMode ? "Ajoute le lieu, une photo et un court contexte. La validation finale arrive juste après." : "Remplissez d'abord les déchets collectés puis la déclaration des mégots. Les comparaisons par bénévole sont intégrées directement dans chaque carte.")}
-                  {!isCleanPlaceMode && currentStep === 3 && "Tracez ou localisez votre itinéraire. Cela permet de cartographier précisément les zones traitées."}
-                  {!isCleanPlaceMode && currentStep === 4 && "Vérifiez vos informations avant de valider officiellement votre déclaration."}
+                <p className="mt-2 max-w-xl text-sm md:text-[0.98rem] leading-6 font-medium text-slate-500">
+                  Tous les champs sont visibles sur une seule page. Quatre rubriques structurent
+                  la saisie: identité, récolte, parcours, validation.
                 </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                    <User size={11} className="text-emerald-600" />
+                    4 rubriques
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                    <ClipboardCheck size={11} className="text-sky-600" />
+                    {formatActionDate(form.actionDate)}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                    <Sparkles size={11} className="text-emerald-600" />
+                    {formatWasteSummary(form.wasteKg, form.wasteMegotsKg)}
+                  </span>
+                  {formattedDraftSavedAt && !showDraftBanner && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-700">
+                      <Save size={11} />
+                      Brouillon · {formattedDraftSavedAt}
+                    </span>
+                  )}
+                </div>
               </div>
-              <button
-                type="button"
-                onClick={() => exportFormAsPdf(form, resolvedDefaultActorName)}
-                className="shrink-0 flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:border-emerald-300 hover:text-emerald-700 transition-all shadow-sm"
-              >
-                <Download size={14} />
-                Exporter
-              </button>
-              {formattedDraftSavedAt && !showDraftBanner && (
-                <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700">
-                  <Save size={11} />
-                  Brouillon sauvegardé · {formattedDraftSavedAt}
-                </span>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => exportFormAsPdf(form, resolvedDefaultActorName)}
+                  className="shrink-0 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-600 shadow-sm transition-all hover:border-emerald-300 hover:text-emerald-700"
+                >
+                  <Download size={13} />
+                  Exporter
+                </button>
+              </div>
             </div>
 
-            <div className="flex-1 relative z-10 flex flex-col">
-              {currentStep === 1 && (
-                <ActionStepIdentity
-                  form={form}
-                  updateField={updateField}
-                  userMetadata={props.userMetadata}
-                  recordType={form.recordType}
-                  hasAttemptedSubmit={hasAttemptedSubmit}
+            <div className="space-y-10">
+              <section className="space-y-5">
+                <SectionDivider
+                  icon={User}
+                  title="Identité"
+                  subtitle="Qui déclare, quelle structure porte l’action et à quelle date elle se rattache."
                 />
-              )}
-              {currentStep === 2 && (
-                <div className="space-y-6">
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <ActionStepIdentity
+                    form={form}
+                    updateField={updateField}
+                    userMetadata={props.userMetadata}
+                    recordType={form.recordType}
+                    hasAttemptedSubmit={hasAttemptedSubmit}
+                  />
+                  <RubricAside
+                    eyebrow="Résumé identité"
+                    title="Points de départ"
+                    summary="La base administrative de la déclaration est prête à être contrôlée en un coup d’œil."
+                    rows={[
+                      { label: "Acteur", value: form.actorName.trim() || resolvedDefaultActorName },
+                      { label: "Structure", value: form.associationName.trim() || "Non renseignée" },
+                      { label: "Date", value: formatActionDate(form.actionDate) },
+                      { label: "Type", value: form.recordType === "clean_place" ? "Lieu propre" : "Action terrain" },
+                    ]}
+                    note="La rubrique identité doit rester compacte pour réduire les retours visuels inutiles."
+                    tone="emerald"
+                  />
+                </div>
+              </section>
+
+              <div className="h-px bg-slate-200/80" />
+
+              <section className="space-y-5">
+                <SectionDivider
+                  icon={Sparkles}
+                  title="Récolte"
+                  subtitle="Les volumes, mégots, photos et indices de collecte qui alimentent le résumé et l’impact."
+                />
+                <div className="grid gap-4 xl:grid-cols-2">
                   <ActionStepHarvest
                     form={form}
                     updateField={updateField}
@@ -282,6 +328,37 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                     onPhotoUpload={handlePhotoUpload}
                     onClearPhotos={clearPhotos}
                   />
+                  <RubricAside
+                    eyebrow="Résumé récolte"
+                    title="Volume et complétude"
+                    summary="Le bloc latéral rappelle ce qui sera transmis pour la lecture de l’impact et de la fiabilité."
+                    rows={[
+                      { label: "Déchets", value: formatWasteSummary(form.wasteKg, form.wasteMegotsKg) },
+                      { label: "Mégots", value: form.wasteMegotsKg.trim() || "0 kg" },
+                      {
+                        label: "Participants",
+                        value:
+                          Number(form.volunteersCount) > 0
+                            ? `${Number(form.volunteersCount)} personne${Number(form.volunteersCount) > 1 ? "s" : ""}`
+                            : "Non renseigné",
+                      },
+                      { label: "Photos", value: `${photoAssets.length} photo${photoAssets.length > 1 ? "s" : ""}` },
+                    ]}
+                    note="La récolte reste la partie la plus dense du formulaire, donc le résumé doit rester très court."
+                    tone="sky"
+                  />
+                </div>
+              </section>
+
+              <div className="h-px bg-slate-200/80" />
+
+              <section className="space-y-5">
+                <SectionDivider
+                  icon={ClipboardCheck}
+                  title="Parcours"
+                  subtitle="Le lieu, le trajet et le géo-aperçu qui servent à situer l’action sans alourdir la lecture."
+                />
+                <div className="grid gap-4 xl:grid-cols-2">
                   <ActionStepLocation
                     form={form}
                     updateField={updateField}
@@ -294,82 +371,55 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                     onAutofillGps={smartAssist.autofillGps}
                     recordType={form.recordType}
                   />
+                  <RubricAside
+                    eyebrow="Résumé parcours"
+                    title="Trajet et géolocalisation"
+                    summary="Le formulaire conserve ici uniquement les repères de lecture les plus utiles."
+                    rows={[
+                      { label: "Départ", value: form.departureLocationLabel.trim() || "À renseigner" },
+                      { label: "Arrivée", value: form.arrivalLocationLabel.trim() || "Boucle locale" },
+                      { label: "Trajet", value: "Souple" },
+                      { label: "GPS", value: smartAssist.gpsStatus === "success" ? "Position détectée" : smartAssist.gpsStatus === "locating" ? "Recherche..." : smartAssist.gpsStatus === "error" ? "Erreur" : "Disponible" },
+                    ]}
+                    note="Le parcours reste central pour la qualité cartographique, mais la lecture doit tenir dans un panneau simple."
+                    tone="violet"
+                  />
                 </div>
-              )}
-              {!isCleanPlaceMode && currentStep === 3 && (
-                <ActionStepLocation
-                  form={form} updateField={updateField} manualDrawing={manualDrawing}
-                  setManualDrawing={setManualDrawing} routePreviewDrawing={effectiveRoutePreviewDrawing}
-                  onResetManualDrawing={() => setManualDrawing(null)}
-                  gpsStatus={smartAssist.gpsStatus} gpsMessage={smartAssist.gpsMessage} onAutofillGps={smartAssist.autofillGps}
-                  recordType={form.recordType}
-                />
-              )}
-              {!isCleanPlaceMode && currentStep === 4 && (
-                <ActionStepReview
-                  payload={payload} dataQuality={dataQuality}
-                  isSubmitting={submissionState === "pending"} onSubmit={() => onSubmit()}
-                />
-              )}
-            </div>
+              </section>
 
-            {(currentStep < totalSteps || (isCleanPlaceMode && currentStep === totalSteps)) && (
-              <div className="mt-8 sticky bottom-0 z-20 -mx-6 -mb-6 md:-mx-10 md:-mb-10 p-4 md:p-6 bg-white/80 backdrop-blur-md border-t border-slate-100 flex items-center justify-between">
-                <CmmButton
-                  variant="ghost"
-                  className={cn("h-12 md:h-14 font-medium text-slate-500 hover:text-slate-800", currentStep === 1 && "invisible")}
-                  onClick={prevStep}
-                >
-                  <ChevronLeft size={18} className="mr-2" /> Retour
-                </CmmButton>
-                <CmmButton
-                  tone="primary"
-                  className="h-12 md:h-14 px-8 md:px-10 rounded-2xl font-bold text-sm md:text-base shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all hover:-translate-y-0.5"
-                  onClick={isCleanPlaceMode && currentStep === totalSteps ? () => onSubmit() : nextStep}
-                >
-                  {currentStep === 1 && "Continuer"}
-                  {currentStep === 2 && (isCleanPlaceMode ? "Vérifier" : "Continuer")}
-                  {!isCleanPlaceMode && currentStep === 3 && "Vérifier"}
-                  <ChevronRight size={18} className="ml-2" />
-                </CmmButton>
-              </div>
-            )}
-            {!isCleanPlaceMode && currentStep === totalSteps && (
-              <div className="mt-8 sticky bottom-0 z-20 -mx-6 -mb-6 md:-mx-10 md:-mb-10 p-4 md:p-6 bg-white/80 backdrop-blur-md border-t border-slate-100 flex items-center justify-between">
-                <CmmButton
-                  tone="primary"
-                  className="h-12 md:h-14 px-8 md:px-10 rounded-2xl font-bold text-sm md:text-base"
-                  onClick={prevStep}
-                >
-                  <ChevronLeft size={18} className="mr-2" /> Retour
-                </CmmButton>
-                <CmmButton
-                  tone="secondary"
-                  className="h-12 md:h-14 px-8 md:px-10 rounded-2xl font-bold text-sm md:text-base"
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({ title: "CleanMyMap", url: window.location.href }).catch(() => {});
-                    } else {
-                      navigator.clipboard.writeText(window.location.href).catch(() => {});
-                    }
-                  }}
-                >
-                  Partager
-                </CmmButton>
-              </div>
-            )}
+              <div className="h-px bg-slate-200/80" />
+
+              <section className="space-y-5">
+                <SectionDivider
+                  icon={ClipboardCheck}
+                  title="Validation"
+                  subtitle="La vérification finale avant confirmation, avec le score, les alertes et le récapitulatif d’envoi."
+                />
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <ActionStepReview
+                    payload={payload}
+                    dataQuality={dataQuality}
+                    isSubmitting={submissionState === "pending"}
+                    onSubmit={() => onSubmit()}
+                  />
+                  <RubricAside
+                    eyebrow="Résumé validation"
+                    title="Avant l’envoi"
+                    summary="Cette colonne rappelle l’état du dossier et ce qui sera confirmé au clic."
+                    rows={[
+                      { label: "Score", value: `${dataQuality.score}/100` },
+                      { label: "Alertes", value: `${dataQuality.warnings.length} point${dataQuality.warnings.length > 1 ? "s" : ""}` },
+                      { label: "Tracé", value: payload.manualDrawing ? "Présent" : "Aperçu automatique" },
+                      { label: "Statut", value: submissionState === "pending" ? "Envoi en cours" : "Prêt à valider" },
+                    ]}
+                    note="La validation reste la dernière étape, mais la structure doit aider à confirmer rapidement les données."
+                    tone="slate"
+                  />
+                </div>
+              </section>
+            </div>
           </div>
         </section>
-
-        <FormProgressSummary
-          currentStep={currentStep}
-          totalSteps={totalSteps}
-          actionDate={form.actionDate}
-          wasteKg={form.wasteKg}
-          megotsKg={form.wasteMegotsKg}
-          draftSavedAt={formattedDraftSavedAt}
-        />
-        </div>
 
         <ActionDeclarationFormFeedback
           submissionState={submissionState}
@@ -380,7 +430,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
           retentionLoop={retentionLoop}
           onReset={() => {
             setForm(createInitialFormState(resolvedDefaultActorName, props.initialRecordType ?? "action"));
-            setCurrentStep(1);
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         />

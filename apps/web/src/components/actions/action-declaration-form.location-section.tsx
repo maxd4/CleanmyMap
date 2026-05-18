@@ -26,7 +26,6 @@ type ActionDeclarationLocationSectionProps = {
  effectiveManualDrawingEnabled: boolean;
  onDepartureLocationChange: (value: string) => void;
  onArrivalLocationChange: (value: string) => void;
- onRouteStyleChange: (value:"direct" |"souple") => void;
  onManualDrawingChange: (drawing: ActionDrawing | null) => void;
  onManualDrawingEnabledChange: (enabled: boolean) => void;
  onLatitudeChange: (value: string) => void;
@@ -48,7 +47,6 @@ export function ActionDeclarationLocationSection({
  effectiveManualDrawingEnabled,
  onDepartureLocationChange,
  onArrivalLocationChange,
- onRouteStyleChange,
  onManualDrawingChange,
  onManualDrawingEnabledChange,
  onLatitudeChange,
@@ -68,29 +66,29 @@ Localisation
 </h3>
 </div>
  <span className="rounded-full bg-white px-3 py-1 cmm-text-caption font-semibold cmm-text-secondary">
- 2. Tracer
+ 2. Localisation
  </span>
  </div>
  <div className="flex flex-wrap items-start justify-between gap-3">
 <div className="space-y-1">
 <p className="cmm-text-small font-bold text-sky-900">
- Lieu / tracé <span className="text-emerald-500">*</span>
+ Lieu / repère <span className="text-emerald-500">*</span>
 </p>
 <p className="cmm-text-caption text-sky-800">
- Départ obligatoire. Arrivée vide = boucle locale dans Paris + proche banlieue.
+ Lieu principal obligatoire. Complément optionnel.
 </p>
 </div>
  <div className="rounded-full bg-white px-3 py-1 cmm-text-caption font-semibold text-sky-900">
- {form.departureLocationLabel.trim() ||"Départ à renseigner"}
+ {form.departureLocationLabel.trim() ||"Lieu à renseigner"}
  {form.arrivalLocationLabel.trim()
- ? ` → ${form.arrivalLocationLabel.trim()}`
- :" (boucle locale)"}
+ ? ` + ${form.arrivalLocationLabel.trim()}`
+ :""
  </div>
  </div>
 
  <div className="mt-4 grid gap-3 md:grid-cols-2">
  <label className="flex flex-col gap-2 cmm-text-small font-semibold text-sky-950">
- Départ du tracé <span className="text-emerald-500">*</span>
+ Lieu principal <span className="text-emerald-500">*</span>
  <input
  type="text"
  className="rounded-xl border border-sky-200 bg-white px-4 py-3 cmm-text-primary outline-none transition focus:border-sky-400"
@@ -101,7 +99,7 @@ Localisation
  </label>
 
  <label className="flex flex-col gap-2 cmm-text-small font-semibold text-sky-950">
- Arrivée du tracé
+ Complément
  <input
  type="text"
  className="rounded-xl border border-sky-200 bg-white px-4 py-3 cmm-text-primary outline-none transition focus:border-sky-400"
@@ -119,33 +117,26 @@ Localisation
  onAutofillGps={onAutofillGps}
  />
 
- <label className="flex items-center gap-2 rounded-full border border-sky-200 bg-white px-3 py-2 cmm-text-caption font-semibold text-sky-900">
- Style de parcours
- <select
- value={form.routeStyle}
- onChange={(event) =>
- onRouteStyleChange(event.target.value as"direct" |"souple")
- }
- className="bg-transparent outline-none"
- >
- <option value="souple">Souple</option>
- <option value="direct">Direct</option>
- </select>
- </label>
+ <div className="flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 cmm-text-caption font-semibold text-emerald-900">
+ <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-emerald-700">
+ Souple
+ </span>
+ <span className="text-emerald-800/75">par défaut</span>
  </div>
+</div>
 
  <div className="mt-4 rounded-2xl border border-sky-200 bg-white p-4 shadow-sm">
  <div className="flex flex-wrap items-center justify-between gap-3">
  <div>
  <p className="cmm-text-caption uppercase tracking-[0.14em] text-sky-500">
- Aperçu & tracé
+ Aperçu de localisation
  </p>
  <p className="cmm-text-small cmm-text-secondary">
  {isQuickMode
- ?"L'aperçu se base sur le lieu ou le départ saisi."
+ ?"L'aperçu se base sur le lieu saisi."
  : effectiveManualDrawingEnabled
- ?"Dessine ou corrige le tracé directement sur la carte."
- :"Active le tracé manuel pour confirmer la zone nettoyée."}
+ ?"Ajuste le repère directement sur la carte."
+ :"Active l'ajustement manuel pour préciser la zone."}
  </p>
  </div>
  {!isQuickMode ? (
@@ -158,7 +149,7 @@ Localisation
  }
  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
  />
- Tracé manuel
+ Ajustement manuel
  </label>
  ) : null}
  </div>
@@ -194,7 +185,7 @@ Localisation
 
  {!displayDrawing ? (
 <div className="mt-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 cmm-text-small cmm-text-muted">
- Saisis un lieu ou un départ pour voir l&apos;aperçu dans le périmètre Paris + proche banlieue. En mode complet, active le tracé manuel pour dessiner la zone.
+ Saisis un lieu pour voir l&apos;aperçu dans le périmètre Paris + proche banlieue. En mode complet, active l&apos;ajustement manuel pour dessiner la zone.
 </div>
 ) : null}
  </div>
@@ -229,7 +220,7 @@ Localisation
  </label>
 
  <label className="md:col-span-2 flex flex-col gap-2 cmm-text-small font-semibold text-sky-950">
- Message pour ajuster le trajet
+ Précisions de localisation
  <textarea
  value={form.routeAdjustmentMessage}
  onChange={(event) =>
