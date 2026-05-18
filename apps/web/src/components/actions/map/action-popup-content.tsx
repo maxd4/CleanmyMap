@@ -157,11 +157,11 @@ export function ActionPopupContent({
               <div className="rounded-full border border-slate-200 bg-white/90 p-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                 <MapPin size={13} className="cmm-text-secondary" />
               </div>
-              <p className="cmm-text-caption font-bold uppercase tracking-[0.16em] cmm-text-muted">
+              <p className="cmm-text-caption font-bold uppercase tracking-[0.16em] text-slate-600">
                 {recordTypeLabel}
               </p>
             </div>
-            <h3 className="cmm-text-body font-bold leading-tight cmm-text-primary">
+            <h3 className="cmm-text-body font-bold leading-tight text-slate-950">
               {locationLabel}
             </h3>
           </div>
@@ -174,7 +174,7 @@ export function ActionPopupContent({
                   fill="transparent"
                   stroke="currentColor"
                   strokeWidth="4"
-                  className="text-slate-100 dark:text-slate-800"
+                  className="text-slate-200 dark:text-slate-800"
                 />
                 <circle
                   cx="28"
@@ -202,7 +202,7 @@ export function ActionPopupContent({
         <div className="flex flex-wrap gap-1.5">
           <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/90 px-2.5 py-1 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
             <div className={`w-1.5 h-1.5 rounded-full ${geometryTone.accent} animate-pulse`} />
-            <span className="cmm-text-caption font-semibold cmm-text-secondary">
+            <span className="cmm-text-caption font-semibold text-slate-700">
               {statusLabel}
             </span>
           </div>
@@ -256,39 +256,39 @@ export function ActionPopupContent({
       {/* Main Metrics Grid */}
       <div className="grid grid-cols-2 gap-px bg-slate-200 dark:bg-slate-800 border-y border-slate-200 dark:border-slate-800">
         <div className="bg-white dark:bg-slate-900 p-4 space-y-1">
-          <div className="flex items-center gap-2 cmm-text-muted">
+          <div className="flex items-center gap-2 text-slate-600">
             <Trash2 size={12} />
             <span className="cmm-text-caption font-bold uppercase tracking-wider">Déchets</span>
           </div>
-          <p className="text-xl font-bold cmm-text-primary tracking-tight">
-            {formatNumber(wasteKg)} <span className="cmm-text-caption font-semibold opacity-60">kg</span>
+          <p className="text-xl font-bold text-slate-950 tracking-tight">
+            {formatNumber(wasteKg)} <span className="cmm-text-caption font-semibold text-slate-500">kg</span>
           </p>
         </div>
         <div className="bg-white dark:bg-slate-900 p-4 space-y-1">
-          <div className="flex items-center gap-2 cmm-text-muted">
+          <div className="flex items-center gap-2 text-slate-600">
             <Sparkles size={12} className="text-amber-500" />
             <span className="cmm-text-caption font-bold uppercase tracking-wider">Mégots</span>
           </div>
-          <p className="text-xl font-bold cmm-text-primary tracking-tight">
+          <p className="text-xl font-bold text-slate-950 tracking-tight">
             {formatNumber(butts)}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-900 p-4 space-y-1">
-          <div className="flex items-center gap-2 cmm-text-muted">
+          <div className="flex items-center gap-2 text-slate-600">
             <Users size={12} />
             <span className="cmm-text-caption font-bold uppercase tracking-wider">Équipe</span>
           </div>
-          <p className="text-xl font-bold cmm-text-primary tracking-tight">
-            {formatNumber(volunteers)} <span className="cmm-text-caption font-semibold opacity-60">pers.</span>
+          <p className="text-xl font-bold text-slate-950 tracking-tight">
+            {formatNumber(volunteers)} <span className="cmm-text-caption font-semibold text-slate-500">pers.</span>
           </p>
         </div>
         <div className="bg-white dark:bg-slate-900 p-4 space-y-1">
-          <div className="flex items-center gap-2 cmm-text-muted">
+          <div className="flex items-center gap-2 text-slate-600">
             <Clock size={12} />
             <span className="cmm-text-caption font-bold uppercase tracking-wider">Temps</span>
           </div>
-          <p className="text-xl font-bold cmm-text-primary tracking-tight">
-            {formatNumber(durationMinutes)} <span className="cmm-text-caption font-semibold opacity-60">min</span>
+          <p className="text-xl font-bold text-slate-950 tracking-tight">
+            {formatNumber(durationMinutes)} <span className="cmm-text-caption font-semibold text-slate-500">min</span>
           </p>
         </div>
       </div>
@@ -316,7 +316,7 @@ export function ActionPopupContent({
                  <div className="rounded-full bg-indigo-50 p-1.5 text-indigo-600 ring-1 ring-inset ring-indigo-200/60 dark:bg-indigo-900/30 dark:ring-indigo-800/50">
                    <Shield size={14} />
                  </div>
-                 <p className="cmm-text-small font-semibold cmm-text-primary">{associationName}</p>
+                 <p className="cmm-text-small font-semibold text-slate-950">{associationName}</p>
                </div>
              )}
              {(departure || arrival) && (
@@ -325,8 +325,8 @@ export function ActionPopupContent({
                    <ArrowRight size={14} />
                  </div>
                  <div className="cmm-text-caption space-y-0.5">
-                   {departure && <p className="cmm-text-secondary"><span className="font-bold">Dép.</span> {departure}</p>}
-                   {arrival && <p className="cmm-text-secondary"><span className="font-bold">Arr.</span> {arrival}</p>}
+                   {departure && <p className="text-slate-700"><span className="font-bold">Dép.</span> {departure}</p>}
+                   {arrival && <p className="text-slate-700"><span className="font-bold">Arr.</span> {arrival}</p>}
                  </div>
                </div>
              )}
@@ -338,7 +338,7 @@ export function ActionPopupContent({
           <div className="relative overflow-hidden rounded-2xl border border-slate-200/70 bg-gradient-to-br from-slate-50 to-white p-4 shadow-sm group dark:border-slate-800 dark:from-slate-900/70 dark:to-slate-900/30">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-slate-300 via-slate-200 to-slate-300 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700" />
             <p className="cmm-text-caption font-bold uppercase tracking-wider cmm-text-muted mb-2">Bilan terrain</p>
-            <p className="cmm-text-small cmm-text-primary leading-relaxed italic line-clamp-3 group-hover:line-clamp-none transition-all">
+            <p className="cmm-text-small text-slate-800 leading-relaxed italic line-clamp-3 group-hover:line-clamp-none transition-all">
               &quot;{notes}&quot;
             </p>
           </div>
@@ -346,11 +346,11 @@ export function ActionPopupContent({
 
         {/* Metadata Footer */}
         <div className="flex items-center justify-between cmm-text-caption pt-2 border-t border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-1.5 cmm-text-muted">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <Calendar size={12} />
             <span>{observedAt}</span>
           </div>
-          <div className="flex items-center gap-1.5 cmm-text-muted">
+          <div className="flex items-center gap-1.5 text-slate-500">
             <ExternalLink size={12} />
             <span>Source: {contract?.source ?? item.source ?? "n/a"}</span>
           </div>
@@ -360,13 +360,13 @@ export function ActionPopupContent({
         {updateHref ? (
           <a
             href={updateHref}
-            className="group relative flex items-center justify-center gap-2 w-full overflow-hidden rounded-2xl bg-slate-900 dark:bg-emerald-600 px-4 py-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-slate-950/10"
+            className="group relative flex items-center justify-center gap-2 w-full overflow-hidden rounded-2xl bg-cyan-200 px-4 py-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-slate-950/10"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-white/10 to-emerald-500/0 translate-x-[-100%] transition-transform duration-1000 group-hover:translate-x-[100%]" />
-            <span className="cmm-text-small font-bold text-white">
+            <span className="cmm-text-small font-bold text-slate-950">
               {score > 0 ? "Déclarer une action" : "Mettre à jour la zone"}
             </span>
-            <ArrowRight size={16} className="text-white/70 transition-transform group-hover:translate-x-1" />
+            <ArrowRight size={16} className="text-slate-700 transition-transform group-hover:translate-x-1" />
           </a>
         ) : (
           <div className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-center dark:border-slate-700 dark:bg-slate-800/60">

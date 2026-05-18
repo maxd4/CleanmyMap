@@ -14,8 +14,11 @@ export function ActionsMapFeed({
   impactFilter,
   qualityMin,
   presentation = "default",
+  showIntro = true,
+  fullViewport = false,
   visibleCategories = DEFAULT_VISIBLE_CATEGORIES,
   selectedActionId = null,
+  onOpenAction,
 }: ActionsMapFeedProps) {
   const feedData = useMapFeedData({
     types,
@@ -71,7 +74,10 @@ export function ActionsMapFeed({
     mapCanvasError,
     MapCanvas,
     selectedActionId,
+    onOpenAction,
     onReload: () => void feedData.reload(),
+    showIntro,
+    fullViewport,
   };
 
   return (

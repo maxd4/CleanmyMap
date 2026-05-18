@@ -8,7 +8,7 @@ import Link from"next/link";
 import { LogIn, UserPlus, Map as MapIcon } from "lucide-react";
 import type { Metadata } from"next";
 import { headers } from"next/headers";
-import { Inter, Outfit } from"next/font/google";
+import { Inter } from"next/font/google";
 import { AccountIdentityChip } from"@/components/account/account-identity-chip";
 import { AppNavigationRibbon } from"@/components/navigation/app-navigation-ribbon";
 import { PostHogProvider } from"@/components/posthog-provider";
@@ -32,13 +32,6 @@ import type { CSSProperties } from "react";
 import"./globals.css";
 
 /* Font configuration - Optimized loading via next/font */
-const outfit = Outfit({
- subsets: ["latin"],
- display:"swap",
- variable:"--font-outfit",
- weight: ["400","500","600","700"],
-});
-
 const inter = Inter({
  subsets: ["latin"],
  display:"swap",
@@ -77,7 +70,7 @@ export default async function RootLayout({
   const appHeaderTopOffset = hideGlobalHeader ? "0rem" : "4.75rem";
 
 return (
-        <html className={`h-full antialiased ${outfit.variable} ${inter.variable}`} suppressHydrationWarning data-theme="mixed">
+    <html className={`h-full antialiased ${inter.variable}`} suppressHydrationWarning data-theme="mixed">
   <head>
     <OrganizationJsonLd />
     <WebSiteJsonLd />

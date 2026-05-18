@@ -85,26 +85,42 @@ export function SandboxSection() {
   return (
     <SectionShell 
       id="sandbox"
-      title={fr ? "Carte d'entrainement" : "Sandmap"}
-      subtitle={fr 
-        ? "Espace d'entrainement technique pour tester la carte, vérifier les filtres et contrôler l'état du système." 
-        : "Technical training space to test the map, verify filters and monitor system health."}
       icon={Terminal}
-      gradient="from-slate-500/20 via-blue-500/10 to-transparent"
+      gradient="from-cyan-100 via-cyan-50 to-transparent"
+      hideHeader
     >
-      <div className="space-y-10 pt-12 pb-20">
+      <div className="space-y-10 pt-12 pb-20 text-slate-950">
+        <header className="space-y-4">
+          <div className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-cyan-100 px-5 py-2">
+            <Terminal size={14} className="text-cyan-700" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-950">
+              {fr ? "Carte d'entrainement" : "Training map"}
+            </span>
+          </div>
+          <div className="max-w-3xl space-y-3">
+            <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-950">
+              {fr ? "Tester la carte sans risque" : "Test the map safely"}
+            </h1>
+            <p className="text-lg md:text-xl font-medium leading-relaxed text-slate-700">
+              {fr
+                ? "Espace d'entrainement technique pour vérifier les filtres, les points API et l'état du système avec une lecture claire et contrastée."
+                : "Technical training space to verify filters, API points and system health with a clear, high-contrast reading."}
+            </p>
+          </div>
+        </header>
+
         {/* Health Monitoring Dashboard */}
-        <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-10">
+        <div className="p-10 rounded-[3rem] border border-cyan-200/80 bg-cyan-50/95 backdrop-blur-3xl shadow-[0_24px_56px_-32px_rgba(8,145,178,0.18)] space-y-10">
           <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-6">
-              <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+              <div className="p-4 rounded-2xl bg-cyan-100 border border-cyan-200 text-cyan-700">
                 <Activity size={24} />
               </div>
               <div className="space-y-1">
-                <h3 className="text-xl font-black text-white tracking-tight">
+                <h3 className="text-xl font-black text-slate-950 tracking-tight">
                   {fr ? "État Technique" : "Technical Health"}
                 </h3>
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
                   {fr ? "Surveillance en temps réel" : "Real-time monitoring"}
                 </p>
               </div>
@@ -113,7 +129,7 @@ export function SandboxSection() {
             <button
               onClick={() => void mutate()}
               disabled={isValidating}
-              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black text-white uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-50"
+              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-cyan-100 border border-cyan-200 text-[10px] font-black text-slate-950 uppercase tracking-widest hover:bg-cyan-200 transition-all disabled:opacity-50"
             >
               <RefreshCw size={14} className={cn(isValidating && "animate-spin")} />
               {isValidating ? (fr ? "Actualisation..." : "Refreshing...") : (fr ? "Rafraîchir" : "Refresh")}
@@ -121,29 +137,29 @@ export function SandboxSection() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-8 rounded-[2rem] bg-white/5 border border-white/5 space-y-4">
-              <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{fr ? "Statut" : "Status"}</p>
+            <div className="p-8 rounded-[2rem] bg-white border border-cyan-200/80 space-y-4">
+              <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">{fr ? "Statut" : "Status"}</p>
               <div className="flex items-center gap-3">
                 <div className={cn("w-2 h-2 rounded-full", (data?.ok || data?.status === 'ok') ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-amber-500")} />
-                <p className="text-lg font-black text-white uppercase">
+                <p className="text-lg font-black text-slate-950 uppercase">
                   {isLoading ? "..." : error ? (fr ? "Indisponible" : "Unavailable") : (data?.status ?? (data?.ok ? "Online" : "Offline"))}
                 </p>
               </div>
             </div>
 
-            <div className="p-8 rounded-[2rem] bg-white/5 border border-white/5 space-y-4">
-              <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{fr ? "Service" : "Service"}</p>
-              <div className="flex items-center gap-3 text-blue-400">
+            <div className="p-8 rounded-[2rem] bg-white border border-cyan-200/80 space-y-4">
+              <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">{fr ? "Service" : "Service"}</p>
+              <div className="flex items-center gap-3 text-cyan-700">
                 <Server size={20} />
-                <p className="text-lg font-black text-white">{data?.service ?? "cleanmymap"}</p>
+                <p className="text-lg font-black text-slate-950">{data?.service ?? "cleanmymap"}</p>
               </div>
             </div>
 
-            <div className="p-8 rounded-[2rem] bg-white/5 border border-white/5 space-y-4">
-              <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">{fr ? "Horodatage" : "Timestamp"}</p>
-              <div className="flex items-center gap-3 text-slate-400">
+            <div className="p-8 rounded-[2rem] bg-white border border-cyan-200/80 space-y-4">
+              <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">{fr ? "Horodatage" : "Timestamp"}</p>
+              <div className="flex items-center gap-3 text-slate-700">
                 <Clock size={20} />
-                <p className="text-xs font-mono font-bold leading-none">{data?.timestamp ?? "—"}</p>
+                <p className="text-xs font-mono font-bold leading-none text-slate-950">{data?.timestamp ?? "—"}</p>
               </div>
             </div>
           </div>
@@ -152,12 +168,12 @@ export function SandboxSection() {
         {/* Entry Points & Runbooks */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_1.5fr] gap-10">
           {/* Quick Entry Points */}
-          <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-8">
+          <div className="p-10 rounded-[3rem] border border-cyan-200/80 bg-cyan-50/95 backdrop-blur-3xl shadow-[0_24px_56px_-32px_rgba(8,145,178,0.18)] space-y-8">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-2xl bg-white/5 border border-white/10 text-slate-400">
+              <div className="p-3 rounded-2xl bg-cyan-100 border border-cyan-200 text-cyan-700">
                 <Search size={20} />
               </div>
-              <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Points d'accès API" : "API Access Points"}</h3>
+              <h3 className="text-xl font-black text-slate-950 tracking-tight">{fr ? "Points d'accès API" : "API Access Points"}</h3>
             </div>
             
             <div className="space-y-3">
@@ -171,28 +187,28 @@ export function SandboxSection() {
                   href={link.path}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-between p-5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/20 transition-all group"
+                  className="flex items-center justify-between p-5 rounded-2xl bg-white border border-cyan-200/80 hover:bg-cyan-100 hover:border-cyan-300 transition-all group"
                 >
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">{link.label}</p>
-                    <code className="text-xs font-mono text-slate-300">GET {link.path}</code>
+                    <p className="text-[10px] font-black text-cyan-700 uppercase tracking-widest">{link.label}</p>
+                    <code className="text-xs font-mono text-slate-700">GET {link.path}</code>
                   </div>
-                  <ExternalLink size={16} className="text-slate-500 group-hover:text-white transition-colors" />
+                  <ExternalLink size={16} className="text-slate-500 group-hover:text-slate-950 transition-colors" />
                 </a>
               ))}
             </div>
           </div>
 
           {/* Versioned Runbooks */}
-          <div className="p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-8">
+          <div className="p-10 rounded-[3rem] border border-cyan-200/80 bg-cyan-50/95 backdrop-blur-3xl shadow-[0_24px_56px_-32px_rgba(8,145,178,0.18)] space-y-8">
             <div className="flex flex-wrap items-center justify-between gap-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <div className="p-3 rounded-2xl bg-emerald-100 border border-emerald-200 text-emerald-700">
                   <ShieldCheck size={20} />
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Runbook Checks" : "Runbook Checks"}</h3>
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+                  <h3 className="text-xl font-black text-slate-950 tracking-tight">{fr ? "Runbook Checks" : "Runbook Checks"}</h3>
+                  <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">
                     v{runbook.data?.version ?? "0.0.0"} — Target &lt; 5min
                   </p>
                 </div>
@@ -203,7 +219,7 @@ export function SandboxSection() {
                   <button
                     key={profile}
                     onClick={() => void triggerRunbook(profile as any)}
-                    className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black text-white uppercase tracking-widest hover:bg-emerald-500 hover:text-slate-950 transition-all"
+                    className="px-4 py-2 rounded-lg bg-white border border-cyan-200/80 text-[9px] font-black text-slate-950 uppercase tracking-widest hover:bg-cyan-200 hover:border-cyan-300 transition-all"
                   >
                     Run {profile.toUpperCase()}
                   </button>
@@ -218,32 +234,32 @@ export function SandboxSection() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
-                  className="p-6 rounded-[1.5rem] bg-white/5 border border-white/5 group hover:bg-white/10 transition-all"
+                  className="p-6 rounded-[1.5rem] bg-white border border-cyan-200/80 group hover:bg-cyan-100 transition-all"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <p className="text-xs font-black text-white uppercase tracking-widest">{check.profile}</p>
+                      <p className="text-xs font-black text-slate-950 uppercase tracking-widest">{check.profile}</p>
                     </div>
-                    <span className="text-[10px] font-mono text-slate-500">
+                    <span className="text-[10px] font-mono text-slate-600">
                       {check.lastRunAt ? formatDateTimeShort(check.lastRunAt) : "Never"}
                     </span>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-6 mb-4">
                     <div className="space-y-1">
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">{fr ? "Durée" : "Duration"}</p>
-                      <p className="text-sm font-black text-white">{check.durationSeconds}s</p>
+                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{fr ? "Durée" : "Duration"}</p>
+                      <p className="text-sm font-black text-slate-950">{check.durationSeconds}s</p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Status</p>
-                      <p className="text-sm font-black text-emerald-400 uppercase tracking-widest">{check.status}</p>
+                      <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Status</p>
+                      <p className="text-sm font-black text-emerald-700 uppercase tracking-widest">{check.status}</p>
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-white/5 flex flex-wrap gap-2">
+                  <div className="pt-4 border-t border-cyan-200/80 flex flex-wrap gap-2">
                     {check.notes.map((note, idx) => (
-                      <span key={idx} className="px-2 py-1 rounded-md bg-white/5 text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                      <span key={idx} className="px-2 py-1 rounded-md bg-cyan-100 text-[9px] font-bold text-slate-700 uppercase tracking-widest">
                         {note}
                       </span>
                     ))}

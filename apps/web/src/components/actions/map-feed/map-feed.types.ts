@@ -10,6 +10,7 @@ import type { MarkerCategory } from "@/components/actions/map-marker-categories"
 export type ActionsMapCanvasComponent = ComponentType<{
   items: ActionMapItem[];
   selectedActionId?: string | null;
+  fullViewport?: boolean;
 }>;
 
 export type ActionsMapFeedProps = {
@@ -19,6 +20,9 @@ export type ActionsMapFeedProps = {
   impactFilter: ActionImpactLevel | "all";
   qualityMin: number;
   presentation?: "default" | "immersive";
+  showIntro?: boolean;
+  fullViewport?: boolean;
   visibleCategories?: Record<MarkerCategory, boolean>;
   selectedActionId?: string | null;
+  onOpenAction?: (actionId: string) => void;
 };

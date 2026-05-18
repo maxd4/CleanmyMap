@@ -46,13 +46,13 @@ export function HomepageStatsWidget() {
       <div className="flex items-center justify-between mb-5 relative z-10">
         <div className="flex items-center gap-2">
            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
-           <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white">
+           <p className="cmm-text-caption font-semibold tracking-[0.12em] text-white">
              Impact collectif
            </p>
         </div>
         <Link 
            href="/methodologie" 
-           className="text-[9px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors flex items-center gap-1"
+           className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-500 hover:text-white transition-colors flex items-center gap-1"
         >
           Méthodologie
           <ArrowUpRight size={10} />
@@ -74,7 +74,7 @@ export function HomepageStatsWidget() {
             <div key={item.label} className="text-center p-4 rounded-2xl bg-white/5 border border-white/5 group/item hover:bg-white/10 transition-all duration-300">
               <item.icon className={cn("w-4 h-4 mx-auto mb-2 opacity-60 group-hover/item:opacity-100 transition-opacity", item.color)} />
               <p className="text-xl font-black text-white tracking-tighter leading-none mb-1">{item.value}</p>
-              <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">{item.label}</p>
+              <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-500">{item.label}</p>
             </div>
           ))}
         </div>

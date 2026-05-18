@@ -16,6 +16,16 @@ Concretement, ne pas creer de dossier du type :
 Tout travail doit rester dans :
 `C:\Users\sophi\Desktop\MAXENCE\business\CleanmyMap-main`
 
+## Règle UI de lisibilité
+
+Sur les héros et titres de page, éviter les retours à la ligne décoratifs. Priorité:
+1. réduire la taille,
+2. réduire le tracking,
+3. réduire la largeur utile,
+4. réorganiser le bloc sur mobile.
+
+Un titre ou sous-titre doit tenir sur une seule ligne sur desktop standard si c’est possible sans nuire à la lisibilité.
+
 Si une isolation Git est necessaire, demander d'abord l'accord explicite de l'utilisateur et expliquer :
 - le nom du dossier qui serait cree ;
 - la raison precise ;

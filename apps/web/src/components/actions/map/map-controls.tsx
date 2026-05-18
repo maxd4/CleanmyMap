@@ -7,10 +7,7 @@ import {
   buildNominatimSearchUrl,
   parseNominatimCoordinates,
 } from "./map-controls.utils";
-import {
-  buildGreaterParisLeafletBounds,
-  isWithinGreaterParisBounds,
-} from "@/lib/geo/greater-paris";
+import { isWithinGreaterParisBounds } from "@/lib/geo/greater-paris";
 
 export function MapControls({
   center,
@@ -20,7 +17,6 @@ export function MapControls({
   variant?: "default" | "immersive";
 }) {
   const map = useMap();
-  const greaterParisBounds = buildGreaterParisLeafletBounds();
   const [search, setSearch] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -71,12 +67,12 @@ export function MapControls({
     <div
       className={[
         "absolute left-3 z-[1000] flex flex-col gap-2",
-        variant === "immersive" ? "top-3 md:top-4" : "top-20",
+        variant === "immersive" ? "top-4 md:top-5 max-w-[min(19rem,calc(100vw-1.5rem))]" : "top-20",
       ].join(" ")}
     >
       <form
         onSubmit={handleSearch}
-        className="flex overflow-hidden rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl transition hover:bg-[rgba(18,47,74,0.96)]"
+        className="flex overflow-hidden rounded-2xl border border-cyan-200/80 bg-white shadow-[0_24px_56px_-32px_rgba(8,145,178,0.18)] backdrop-blur-xl transition hover:bg-cyan-50"
       >
         <input
           type="text"
@@ -84,49 +80,32 @@ export function MapControls({
           aria-label="Rechercher une adresse ou un lieu à Paris et proche banlieue"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-48 bg-transparent px-4 py-2 text-sm font-medium text-white outline-none placeholder:text-sky-100/36"
+          className="w-48 bg-transparent px-4 py-2 text-sm font-medium text-slate-950 outline-none placeholder:text-slate-400"
         />
         <button
           type="submit"
           disabled={isSearching}
           aria-label={isSearching ? "Recherche en cours" : "Lancer la recherche"}
-          className="bg-sky-500 px-4 py-2 text-sm font-black text-white transition hover:bg-sky-400 disabled:opacity-50"
+          className="bg-cyan-200 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-cyan-300 disabled:opacity-50"
         >
           {isSearching ? "..." : "🔍"}
         </button>
       </form>
 
       {searchError ? (
-        <p className="max-w-72 rounded-2xl border border-amber-300/20 bg-[rgba(63,40,8,0.88)] px-4 py-2 text-[11px] font-semibold leading-snug text-amber-100 shadow-[0_24px_56px_-32px_rgba(245,158,11,0.22)] backdrop-blur-xl">
+        <p className="max-w-72 rounded-2xl border border-amber-200/70 bg-amber-50 px-4 py-2 text-[11px] font-semibold leading-snug text-slate-700 shadow-[0_24px_56px_-32px_rgba(245,158,11,0.18)] backdrop-blur-xl">
           {searchError}
         </p>
       ) : null}
 
       <button
         type="button"
-        onClick={() => map.fitBounds(greaterParisBounds, { padding: [32, 32] })}
-        aria-label="Recentrer sur le périmètre Paris et proche banlieue"
-        className="flex w-fit items-center gap-2 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-4 py-2 text-sm font-black text-sky-100/82 shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl transition hover:border-sky-300/30 hover:bg-[rgba(18,47,74,0.96)]"
-      >
-        <span>🗺️</span> Périmètre
-      </button>
-
-      <button
-        type="button"
         onClick={() => map.flyTo(center, 12)}
         aria-label="Recentrer la carte"
-        className="flex w-fit items-center gap-2 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-4 py-2 text-sm font-black text-sky-100/82 shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl transition hover:border-sky-300/30 hover:bg-[rgba(18,47,74,0.96)]"
+        className="flex w-fit items-center gap-2 rounded-2xl border border-cyan-200/80 bg-cyan-100 px-4 py-2 text-sm font-black text-slate-950 shadow-[0_24px_56px_-32px_rgba(8,145,178,0.18)] backdrop-blur-xl transition hover:border-cyan-300 hover:bg-cyan-200"
       >
         <span>📍</span> Reset vue
       </button>
-
-      <a
-        href="/methodologie"
-        aria-label="Ouvrir la méthodologie"
-        className="flex w-fit items-center gap-2 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-4 py-2 text-sm font-black text-sky-100/82 shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl transition hover:border-sky-300/30 hover:bg-[rgba(18,47,74,0.96)]"
-      >
-        <span>🔬</span> Méthodologie
-      </a>
     </div>
   );
 }

@@ -388,8 +388,3 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     </>
   );
 }
-
-      </div>
-    </>
-  );
-}

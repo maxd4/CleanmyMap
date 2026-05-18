@@ -211,17 +211,6 @@ export default async function ObservatoirePage() {
           </div>
         </section>
 
-        {/* Footer Info */}
-        <div className="pt-16 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.3em] text-white/20">
-            <span>Open Data v2.4</span>
-            <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-            <span>Mise à jour quotidienne</span>
-          </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/10">
-            © {new Date().getFullYear()} CleanMyMap Cockpit • Tous droits réservés
-          </p>
-        </div>
       </div>
     </SectionShell>
   );
