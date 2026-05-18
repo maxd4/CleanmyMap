@@ -152,6 +152,14 @@ Système typographique complet avec échelle cohérente, paire de polices optimi
 - ✅ UI components: ratio minimum 3:1
 - ❌ Éviter texte clair sur fond pastel sans vérification
 
+### Règle de lisibilité des héros
+
+- Les titres et sous-titres de hero doivent, autant que possible, tenir sur une seule ligne sur desktop standard.
+- Si une ligne casse, réduire d'abord la taille, l'espacement ou la largeur du bloc avant d'ajouter des sauts de ligne manuels.
+- N'utiliser `whitespace-nowrap` que pour les hero courts, les labels ou les CTA dont la lisibilité reste bonne sur tablette et desktop.
+- Éviter les retours à la ligne décoratifs dans les zones d'accroche: un hero doit rester compact, lisible et laisser apparaître rapidement le contenu suivant.
+- Sur mobile, privilégier la réorganisation verticale plutôt que le forçage de coupures texte arbitraires.
+
 ---
 
 ## Fichiers Modifiés

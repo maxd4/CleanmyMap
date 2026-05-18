@@ -5,7 +5,6 @@ import {
   Settings,
   AlertTriangle,
   Zap,
-  Info,
   Users,
   Activity,
   History
@@ -334,16 +333,6 @@ export default async function AdminPage() {
           <RolePrimaryActions profile={profile} />
         </div>
 
-        <footer className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 opacity-30">
-          <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest">
-            <Info size={12} />
-            <span>CleanMyMap Cockpit v4.2.0 • Admin Edition</span>
-          </div>
-          <div className="flex gap-8">
-            <span className="text-[10px] font-bold uppercase tracking-widest">Region: EU-WEST-3</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest">Node: {userId.slice(0, 4).toUpperCase()}</span>
-          </div>
-        </footer>
       </div>
     </SectionShell>
   );

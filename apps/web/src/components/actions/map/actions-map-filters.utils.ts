@@ -5,7 +5,7 @@ import {
 } from "@/components/actions/map-marker-categories";
 
 export const ACTIONS_MAP_FILTERS_STORAGE_KEY = "cmm_actions_map_filters";
-export type ActionsMapStatusFilter = Extract<ActionStatus, "approved" | "pending">;
+export type ActionsMapStatusFilter = ActionStatus | "all";
 
 export type ActionsMapFilters = {
   days: number;
@@ -16,8 +16,8 @@ export type ActionsMapFilters = {
 };
 
 const VALID_STATUSES = new Set<ActionsMapStatusFilter>([
+  "all",
   "approved",
-  "pending",
 ]);
 
 const VALID_IMPACTS = new Set<ActionImpactLevel | "all">([
@@ -64,7 +64,7 @@ export function buildDefaultActionsMapFilters(
 ): ActionsMapFilters {
   return {
     days: clampInteger(initialDays, 1, 3650, 90),
-    statusFilter: "approved",
+    statusFilter: "all",
     impactFilter: "all",
     qualityMin: 0,
     visibleCategories: { ...DEFAULT_VISIBLE_CATEGORIES },
@@ -82,8 +82,11 @@ export function normalizeActionsMapFilters(
       : {};
 
   return {
-    days: clampInteger(source.days, 1, 3650, defaults.days),
-    statusFilter: VALID_STATUSES.has(source.statusFilter ?? "approved")
+    days: (() => {
+      const normalizedDays = clampInteger(source.days, 1, 3650, defaults.days);
+      return normalizedDays === 90 ? defaults.days : normalizedDays;
+    })(),
+    statusFilter: VALID_STATUSES.has(source.statusFilter ?? "all")
       ? (source.statusFilter as ActionsMapStatusFilter)
       : defaults.statusFilter,
     impactFilter: VALID_IMPACTS.has(source.impactFilter ?? "all")

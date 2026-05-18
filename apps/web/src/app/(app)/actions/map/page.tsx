@@ -4,7 +4,8 @@ import { useCallback, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import useSWR from "swr";
-import { BarChart3, Compass, MapPinned, Table2, ArrowRight, Zap } from "lucide-react";
+import { BarChart3, Compass, MapPinned, Table2, ArrowRight } from "lucide-react";
+import { buildHomeMetrics } from "@/lib/accueil/config";
 import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
 import { ActionsMapTable } from "@/components/actions/actions-map-table";
 import { ActionsVisualizationPanel } from "@/components/actions/actions-visualization-panel";
@@ -13,7 +14,8 @@ import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-f
 import { isVisibleWithCategoryFilter } from "@/components/actions/map-marker-categories";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import { fetchMapActions } from "@/lib/actions/http";
-import { getBlockClasses } from "@/lib/ui/block-accents";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import type { ActionMapItem } from "@/lib/actions/types";
 import { cn } from "@/lib/utils";
 import { useMapKpiStats } from "./_hooks/use-map-kpi-stats";
 import { MapKpiRibbon } from "./_components/map-kpi-ribbon";
@@ -30,8 +32,6 @@ export default function ActionsMapPage() {
     filters,
     setDays,
     setStatusFilter,
-    setImpactFilter,
-    setQualityMin,
     toggleCategory,
     resetFilters,
   } = useActionsMapFilters(INITIAL_DAYS);
@@ -44,8 +44,6 @@ export default function ActionsMapPage() {
   const [railTab, setRailTab] = useState<"insights" | "journal">("insights");
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   
-  const classes = getBlockClasses("visualize");
-
   const handleSelectAction = (actionId: string) => {
     setSelectedActionId((current) => (current === actionId ? null : actionId));
     setRailTab("journal");
@@ -60,16 +58,6 @@ export default function ActionsMapPage() {
     setSelectedActionId(null);
     setStatusFilter(statusValue);
   }, [setStatusFilter]);
-
-  const handleImpactChange = useCallback((impactValue: typeof impactFilter) => {
-    setSelectedActionId(null);
-    setImpactFilter(impactValue);
-  }, [setImpactFilter]);
-
-  const handleQualityMinChange = useCallback((qualityValue: number) => {
-    setSelectedActionId(null);
-    setQualityMin(qualityValue);
-  }, [setQualityMin]);
 
   const handleCategoryToggle = useCallback((category: MarkerCategory) => {
     setSelectedActionId(null);
@@ -90,28 +78,10 @@ export default function ActionsMapPage() {
       limit: 300,
     }),
   );
-  const approvedStatsQuery = useSWR(["map-page-approved-kpis", days, impactFilter, qualityMin], () =>
-    fetchMapActions({
-      status: "approved",
-      days,
-      impact: impactFilter === "all" ? undefined : impactFilter,
-      qualityMin: qualityMin > 0 ? qualityMin : undefined,
-      limit: 300,
-    }),
-  );
-
   const mapItems = useMemo(() => mapDataQuery.data?.items ?? [], [mapDataQuery.data?.items]);
-  const approvedStatsItems = useMemo(
-    () => approvedStatsQuery.data?.items ?? [],
-    [approvedStatsQuery.data?.items],
-  );
   const filteredMapItems = useMemo(
     () => mapItems.filter((item) => isVisibleWithCategoryFilter(item, visibleCategories)),
     [mapItems, visibleCategories],
-  );
-  const approvedFilteredItems = useMemo(
-    () => approvedStatsItems.filter((item) => isVisibleWithCategoryFilter(item, visibleCategories)),
-    [approvedStatsItems, visibleCategories],
   );
   const selectedAction = useMemo(
     () => filteredMapItems.find((item) => item.id === selectedActionId) ?? null,
@@ -119,203 +89,194 @@ export default function ActionsMapPage() {
   );
   const visibleCount = filteredMapItems.length;
   const loadedCount = mapItems.length;
-  
-  const stats = useMapKpiStats(approvedFilteredItems);
+  const stats = useMapKpiStats(filteredMapItems);
+  const impactMetrics = useMemo(
+    () =>
+      buildHomeMetrics(
+        {
+          wasteKg: stats.wasteKg,
+          butts: stats.butts,
+          volunteers: stats.volunteers,
+          co2AvoidedKg: stats.wasteKg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg,
+          waterSavedLiters: Math.round(stats.butts * IMPACT_PROXY_CONFIG.factors.waterLitersPerCigaretteButt),
+          euroSaved: Math.round(stats.wasteKg * IMPACT_PROXY_CONFIG.factors.euroSavedPerWasteKg),
+        },
+        visibleCount > 0,
+      ),
+    [stats.butts, stats.volunteers, stats.wasteKg, visibleCount],
+  );
 
-  const surfaceCard = cn("rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden", classes.shadow);
+  const surfaceCard = "rounded-[3rem] border border-cyan-200/70 bg-cyan-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden shadow-[0_24px_56px_-32px_rgba(8,145,178,0.24)]";
 
   return (
-    <main className={cn("min-h-screen text-white pb-24", classes.gradientDeep)}>
-      <div className="mx-auto max-w-[1700px] px-6 py-8 space-y-16">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(103,232,249,0.35),transparent_28%),radial-gradient(circle_at_top_right,rgba(186,230,253,0.55),transparent_24%),linear-gradient(180deg,#ecfeff_0%,#f0f9ff_45%,#f8fafc_100%)] text-slate-950 pb-24">
+      <div className="mx-auto max-w-[1680px] px-6 py-8 space-y-10">
         {/* Premium Header - Lecture Spatiale */}
-        <header className="relative space-y-12 pt-16">
+        <header className="relative space-y-8 pt-10 lg:pt-12">
           <div className="absolute -top-24 -left-24 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
           
           <div className="flex flex-wrap gap-3">
-            <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-sky-400/20 bg-sky-400/5 backdrop-blur-md">
-              <Compass size={14} className="text-sky-400 animate-spin-slow" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-400">Visualiser / Cartographie</span>
-            </div>
-            <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/5 rounded-full border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 backdrop-blur-md">
-              <Zap size={12} className="text-sky-400/60" />
-              {stats.actions} Points Validés
+            <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-cyan-200/90 bg-cyan-100/90 backdrop-blur-md">
+              <Compass size={14} className="text-cyan-700 animate-spin-slow" />
+              <span className="cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">Visualiser / cartographie</span>
             </div>
           </div>
 
-          <div className="flex flex-col xl:flex-row items-start xl:items-end justify-between gap-12">
-            <div className="space-y-6">
-              <h1 className="text-7xl md:text-8xl xl:text-9xl font-black text-white tracking-tighter leading-[0.85] uppercase">
-                Lecture <br />Spatiale
+          <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)] xl:gap-8">
+            <div className="max-w-4xl space-y-5">
+              <h1 className="text-[clamp(2.4rem,5.2vw,5.7rem)] leading-[0.92] tracking-[-0.05em] text-slate-950 font-bold lg:whitespace-nowrap">
+                Cartographie des actions
               </h1>
-              <p className="max-w-2xl text-2xl font-medium leading-tight tracking-tight text-white/30">
-                Analysez la distribution de la pollution, comparez les points d&apos;impact et vérifiez la qualité géographique des données en temps réel.
+              <p className="text-[clamp(0.95rem,1.6vw,1.25rem)] font-medium leading-[1.42] text-slate-700/90 lg:whitespace-nowrap">
+                Visualisez les interventions, suivez leur répartition et pilotez les données terrain en temps réel.
               </p>
-            </div>
-            
-            <div className={cn("p-10 rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-2xl flex items-center gap-12 min-w-[400px]", classes.shadow)}>
-              <div className="space-y-2">
-                <p className="text-[10px] font-black uppercase tracking-widest text-sky-400/40">Couverture Géo</p>
-                <p className="text-6xl font-black text-white tracking-tighter leading-none">{stats.geocoverage}%</p>
-              </div>
-              <div className="w-px h-16 bg-white/5" />
-              <div className="flex flex-col gap-3">
-                <Link href="/actions/new" className="flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-sky-400 hover:text-sky-300 transition-colors group">
-                  Déclarer <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+              <div className="flex flex-wrap items-center gap-3 pt-1">
+                <Link href="/actions/new" className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-cyan-200 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition-colors hover:bg-cyan-100">
+                  Déclarer <ArrowRight size={14} className="transition-transform hover:translate-x-1" />
                 </Link>
-                <Link href="/observatoire" className="flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-white/20 hover:text-white/40 transition-colors">
+                <Link href="/observatoire" className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white">
                   Observatoire <ArrowRight size={14} />
+                </Link>
+                <Link href="/methodologie" className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-cyan-700 transition-colors hover:text-slate-950 hover:bg-white">
+                  Méthodologie <ArrowRight size={14} />
                 </Link>
               </div>
             </div>
           </div>
         </header>
 
-        {isPublicVisitor && (
-          <section className={cn(surfaceCard, "p-12 border-sky-400/20")}>
-            <div className="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between relative z-10">
-              <div className="space-y-2">
-                <p className="text-2xl font-black uppercase tracking-tighter text-sky-100/90">Accès Visiteur Public</p>
-                <p className="text-lg text-sky-100/30 font-medium tracking-tight">La carte est consultable librement. Connectez-vous pour exporter ou déclarer.</p>
+        <section className="relative left-1/2 right-1/2 mx-auto w-[calc(100vw-1rem)] -translate-x-1/2 lg:w-[calc(100vw-1.5rem)]">
+          <ActionsMapFeed
+            presentation="immersive"
+            showIntro={false}
+            fullViewport
+            days={days}
+            statusFilter={statusFilter}
+            impactFilter={impactFilter}
+            qualityMin={qualityMin}
+            visibleCategories={visibleCategories}
+            selectedActionId={selectedActionId}
+            onOpenAction={handleSelectAction}
+          />
+        </section>
+
+        <div className="mx-auto max-w-[1680px] px-6 space-y-12">
+          {isPublicVisitor && (
+            <section className={cn(surfaceCard, "p-12 border-cyan-200/80")}>
+              <div className="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between relative z-10">
+                <div className="space-y-2">
+                  <p className="text-2xl font-semibold tracking-[-0.02em] text-slate-950">Accès visiteur public</p>
+                  <p className="text-lg text-slate-700 font-medium tracking-tight">La carte est consultable librement. Connectez-vous pour exporter ou déclarer.</p>
+                </div>
+                <Link
+                  href="/sign-in"
+                  className="inline-flex shrink-0 items-center justify-center rounded-[2rem] bg-cyan-300 px-10 py-5 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950 transition-all hover:bg-cyan-200 hover:-translate-y-1 shadow-2xl shadow-cyan-300/30 active:scale-95"
+                >
+                  IDENTIFICATION
+                </Link>
               </div>
-              <Link
-                href="/sign-in"
-                className="inline-flex shrink-0 items-center justify-center rounded-[2rem] bg-sky-400 px-10 py-5 text-xs font-black tracking-widest text-slate-950 transition-all hover:bg-sky-300 hover:-translate-y-1 shadow-2xl shadow-sky-400/30 active:scale-95"
-              >
-                IDENTIFICATION
-              </Link>
-            </div>
-          </section>
-        )}
-
-        <MapKpiRibbon stats={stats} />
-
-        {/* Main Cockpit Interface */}
-        <div className="grid gap-12 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-12">
-            <MapControlTower
-              filters={filters}
-              initialDays={INITIAL_DAYS}
-              visibleCount={visibleCount}
-              loadedCount={loadedCount}
-              filteredMapItems={filteredMapItems}
-              onDaysChange={handleDaysChange}
-              onStatusChange={handleStatusChange}
-              onImpactChange={handleImpactChange}
-              onQualityMinChange={handleQualityMinChange}
-              onCategoryToggle={handleCategoryToggle}
-              onReset={handleResetFilters}
-            />
-
-            {/* Map Feed - Immersive Surface */}
-            <section className={cn(surfaceCard, "p-2 min-h-[700px] border-white/10")}>
-              <ActionsMapFeed
-                presentation="immersive"
-                days={days}
-                statusFilter={statusFilter}
-                impactFilter={impactFilter}
-                qualityMin={qualityMin}
-                visibleCategories={visibleCategories}
-                selectedActionId={selectedActionId}
-              />
             </section>
-          </div>
+          )}
 
-          {/* Side Control Rail */}
-          <aside className="space-y-12 self-start xl:sticky xl:top-8">
-            <div className={cn(surfaceCard, "p-10 space-y-10")}>
-              {selectedAction ? (
-                <div className="animate-in fade-in slide-in-from-top-4 duration-700">
-                  <ActionsMapSelectedCard item={selectedAction} onClear={() => setSelectedActionId(null)} />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
-                  <div className="w-24 h-24 rounded-[2rem] bg-white/5 border border-white/5 text-white/10 flex items-center justify-center">
-                    <MapPinned size={48} strokeWidth={1.5} />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-xs font-black text-white/30 uppercase tracking-[0.3em]">Cible non assignée</p>
-                    <p className="text-sm text-white/10 font-medium max-w-[200px] mx-auto">Sélectionnez un point d&apos;impact sur la carte pour engager l&apos;analyse.</p>
-                  </div>
-                </div>
-              )}
+          <MapKpiRibbon metrics={impactMetrics} />
 
-              <div className="space-y-8">
-                <div className="relative flex w-full rounded-[2rem] border border-white/5 bg-white/5 p-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setRailTab("insights")}
-                    className={cn(
-                      "relative z-10 flex w-1/2 items-center justify-center gap-3 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500",
-                      railTab === "insights" ? "text-white" : "text-white/20 hover:text-white/40"
-                    )}
-                  >
-                    <BarChart3 size={16} />
-                    Analytique
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRailTab("journal")}
-                    className={cn(
-                      "relative z-10 flex w-1/2 items-center justify-center gap-3 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500",
-                      railTab === "journal" ? "text-white" : "text-white/20 hover:text-white/40"
-                    )}
-                  >
-                    <Table2 size={16} />
-                    Journal
-                  </button>
-                  <div
-                    className="absolute left-1.5 top-1.5 bottom-1.5 w-[calc(50%-4.5px)] rounded-[1.5rem] bg-white/5 border border-white/10 shadow-2xl transition-transform duration-700 ease-out"
-                    style={{
-                      transform: railTab === "insights" ? "translateX(0)" : "translateX(calc(100% + 6px))",
-                    }}
-                  />
-                </div>
-
-                <div className="min-h-[450px]">
-                  {railTab === "insights" ? (
-                    <div className="animate-in fade-in zoom-in-95 duration-700">
-                      <ActionsVisualizationPanel
-                        days={days}
-                        status="approved"
-                        impact={impactFilter}
-                        qualityMin={qualityMin}
-                        visibleCategories={visibleCategories}
-                        compact
-                      />
-                    </div>
-                  ) : (
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                      <ActionsMapTable
-                        items={filteredMapItems}
-                        compact
-                        selectedActionId={selectedActionId}
-                        onSelectAction={handleSelectAction}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
+          {/* Main Cockpit Interface */}
+          <div className="grid gap-12 xl:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-12">
+              <MapControlTower
+                filters={filters}
+                initialDays={INITIAL_DAYS}
+                visibleCount={visibleCount}
+                loadedCount={loadedCount}
+                filteredMapItems={filteredMapItems}
+                onDaysChange={handleDaysChange}
+                onStatusChange={handleStatusChange}
+                onCategoryToggle={handleCategoryToggle}
+                onReset={handleResetFilters}
+              />
             </div>
 
-            <MapSupervision />
-          </aside>
+            <aside className="space-y-12 self-start xl:sticky xl:top-8">
+              <div className={cn(surfaceCard, "p-10 space-y-10")}>
+                {selectedAction ? (
+                  <div className="animate-in fade-in slide-in-from-top-4 duration-700">
+                    <ActionsMapSelectedCard item={selectedAction} onClear={() => setSelectedActionId(null)} />
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
+                    <div className="w-24 h-24 rounded-[2rem] bg-cyan-100 border border-cyan-200 text-cyan-900/30 flex items-center justify-center">
+                      <MapPinned size={48} strokeWidth={1.5} />
+                    </div>
+                    <div className="space-y-2">
+                      <p className="cmm-text-caption font-semibold tracking-[0.14em] text-slate-700">Cible non assignée</p>
+                      <p className="text-sm text-slate-600 font-medium max-w-[200px] mx-auto">Sélectionnez un point d&apos;impact sur la carte pour engager l&apos;analyse.</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-8">
+                  <div className="relative flex w-full rounded-[2rem] border border-cyan-200/80 bg-cyan-50/90 p-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setRailTab("insights")}
+                      className={cn(
+                        "relative z-10 flex w-1/2 items-center justify-center gap-3 py-4 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
+                        railTab === "insights" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
+                      )}
+                    >
+                      <BarChart3 size={16} />
+                      Analytique
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setRailTab("journal")}
+                      className={cn(
+                        "relative z-10 flex w-1/2 items-center justify-center gap-3 py-4 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
+                        railTab === "journal" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
+                      )}
+                    >
+                      <Table2 size={16} />
+                      Journal
+                    </button>
+                    <div
+                      className="absolute left-1.5 top-1.5 bottom-1.5 w-[calc(50%-4.5px)] rounded-[1.5rem] bg-cyan-200 border border-cyan-300 shadow-2xl transition-transform duration-700 ease-out"
+                      style={{
+                        transform: railTab === "insights" ? "translateX(0)" : "translateX(calc(100% + 6px))",
+                      }}
+                    />
+                  </div>
+
+                  <div className="min-h-[450px]">
+                    {railTab === "insights" ? (
+                      <div className="animate-in fade-in zoom-in-95 duration-700">
+                        <ActionsVisualizationPanel
+                          days={days}
+                          status="approved"
+                          impact={impactFilter}
+                          qualityMin={qualityMin}
+                          visibleCategories={visibleCategories}
+                          compact
+                        />
+                      </div>
+                    ) : (
+                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <ActionsMapTable
+                          items={filteredMapItems}
+                          compact
+                          selectedActionId={selectedActionId}
+                          onSelectAction={handleSelectAction}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <MapSupervision />
+            </aside>
+          </div>
         </div>
 
-        <footer className="pt-16 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="flex items-center gap-6 text-[10px] font-black uppercase tracking-[0.3em] text-white/20">
-            <span>Cockpit Cartographie v2.4</span>
-            <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-            <span>Flux Certifié Temps Réel</span>
-          </div>
-          <div className="flex items-center gap-8">
-            <p className="text-[10px] font-black uppercase tracking-widest text-white/10">
-              Système de Coordonnées WGS84
-            </p>
-            <p className="text-[10px] font-black uppercase tracking-widest text-sky-400/30">
-              Sync : {new Date().toLocaleTimeString()}
-            </p>
-          </div>
-        </footer>
       </div>
     </main>
   );

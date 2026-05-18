@@ -81,6 +81,9 @@ Couleur d'accent charte : **`sky`**
 - Filtres regroupés par familles compréhensibles
 - Toujours distinguer : vue, filtre, légende, détails
 - Les panneaux secondaires ne doivent pas masquer la carte plus que nécessaire
+- Le hero de la page carte doit rester compact: titre et sous-titre idéalement sur une ligne chacun sur desktop, sans retours à la ligne décoratifs.
+- Si un texte d'accroche déborde, réduire d'abord la taille, le tracking ou la largeur utile avant d'imposer des coupures manuelles.
+- Préférer une réorganisation responsive du bloc sur mobile plutôt qu'un empilement de lignes forcées.
 
 ---
 

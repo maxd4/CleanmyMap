@@ -1,7 +1,6 @@
 "use client";
 
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
-import type { ActionImpactLevel } from "@/lib/actions/types";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import type {
   ActionsMapFilters,
@@ -9,26 +8,8 @@ import type {
 } from "./actions-map-filters.utils";
 
 const STATUS_OPTIONS: Array<{ value: ActionsMapStatusFilter; label: string }> = [
-  { value: "pending", label: "En cours de validation" },
+  { value: "all", label: "Toutes les actions" },
   { value: "approved", label: "Actions validées" },
-];
-
-const IMPACT_OPTIONS: Array<{
-  value: ActionImpactLevel | "all";
-  label: string;
-}> = [
-  { value: "all", label: "Tous impacts" },
-  { value: "faible", label: "Faible" },
-  { value: "moyen", label: "Moyen" },
-  { value: "fort", label: "Fort" },
-  { value: "critique", label: "Critique" },
-];
-
-const QUALITY_OPTIONS = [
-  { value: 0, label: "Qualité 0+" },
-  { value: 50, label: "Qualité 50+" },
-  { value: 70, label: "Qualité 70+" },
-  { value: 85, label: "Qualité 85+" },
 ];
 
 const CATEGORY_LABELS: Array<{ value: MarkerCategory; label: string }> = [
@@ -46,8 +27,6 @@ type ActionsMapFilterControlsProps = {
   initialDays: number;
   onDaysChange: (days: number) => void;
   onStatusChange: (status: ActionsMapStatusFilter) => void;
-  onImpactChange: (impact: ActionImpactLevel | "all") => void;
-  onQualityMinChange: (qualityMin: number) => void;
   onCategoryToggle: (category: MarkerCategory) => void;
   onReset: () => void;
 };
@@ -57,30 +36,27 @@ export function ActionsMapFilterControls({
   initialDays,
   onDaysChange,
   onStatusChange,
-  onImpactChange,
-  onQualityMinChange,
   onCategoryToggle,
   onReset,
 }: ActionsMapFilterControlsProps) {
   return (
-    <div className="grid w-full gap-3 lg:grid-cols-[repeat(4,minmax(9rem,1fr))_auto]">
+    <div className="grid w-full gap-3 lg:grid-cols-[repeat(2,minmax(9rem,1fr))_auto]">
       <label className="flex flex-col gap-1">
-        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/60">
+        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
           Période
         </span>
         <select
           value={String(filters.days)}
           onChange={(event) => onDaysChange(Number(event.target.value))}
-          className="h-11 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-3 text-sm font-bold text-white shadow-[0_10px_28px_-18px_rgba(56,189,248,0.28)] outline-none transition focus:border-sky-300/42 focus:ring-4 focus:ring-sky-400/12"
+          className="h-11 rounded-2xl border border-cyan-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(8,145,178,0.18)] outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-400/12"
         >
-          <option value="90">90 derniers jours</option>
           <option value={String(initialDays)}>Année en cours</option>
           <option value="3650">Historique complet</option>
         </select>
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/60">
+        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
           Statut
         </span>
         <select
@@ -88,45 +64,9 @@ export function ActionsMapFilterControls({
           onChange={(event) =>
             onStatusChange(event.target.value as ActionsMapStatusFilter)
           }
-          className="h-11 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-3 text-sm font-bold text-white shadow-[0_10px_28px_-18px_rgba(56,189,248,0.28)] outline-none transition focus:border-sky-300/42 focus:ring-4 focus:ring-sky-400/12"
+          className="h-11 rounded-2xl border border-cyan-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(8,145,178,0.18)] outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-400/12"
         >
           {STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/60">
-          Impact
-        </span>
-        <select
-          value={filters.impactFilter}
-          onChange={(event) =>
-            onImpactChange(event.target.value as ActionImpactLevel | "all")
-          }
-          className="h-11 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-3 text-sm font-bold text-white shadow-[0_10px_28px_-18px_rgba(56,189,248,0.28)] outline-none transition focus:border-sky-300/42 focus:ring-4 focus:ring-sky-400/12"
-        >
-          {IMPACT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      <label className="flex flex-col gap-1">
-        <span className="text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/60">
-          Qualité
-        </span>
-        <select
-          value={String(filters.qualityMin)}
-          onChange={(event) => onQualityMinChange(Number(event.target.value))}
-          className="h-11 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.92)] px-3 text-sm font-bold text-white shadow-[0_10px_28px_-18px_rgba(56,189,248,0.28)] outline-none transition focus:border-sky-300/42 focus:ring-4 focus:ring-sky-400/12"
-        >
-          {QUALITY_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -137,14 +77,14 @@ export function ActionsMapFilterControls({
       <button
         type="button"
         onClick={onReset}
-        className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-sky-300/16 bg-[rgba(16,40,64,0.9)] px-4 text-xs font-black uppercase tracking-[0.16em] text-sky-100/78 shadow-[0_10px_28px_-18px_rgba(56,189,248,0.28)] transition hover:border-sky-300/30 hover:bg-[rgba(18,47,74,0.95)] lg:mt-auto"
+        className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-cyan-200/80 bg-cyan-100 px-4 text-xs font-black uppercase tracking-[0.16em] text-slate-950 shadow-[0_10px_28px_-18px_rgba(8,145,178,0.18)] transition hover:border-cyan-300 hover:bg-cyan-200 lg:mt-auto"
       >
         <RotateCcw size={14} />
         Reset
       </button>
 
       <div className="lg:col-span-5">
-        <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/60">
+        <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-700">
           <SlidersHorizontal size={13} />
           Catégories visibles
         </div>
@@ -160,8 +100,8 @@ export function ActionsMapFilterControls({
                 className={[
                   "rounded-2xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition",
                   selected
-                    ? "border-sky-300/35 bg-sky-400/18 text-sky-50 shadow-[0_10px_28px_-18px_rgba(56,189,248,0.35)]"
-                    : "border-sky-300/12 bg-[rgba(16,40,64,0.88)] text-sky-100/58 hover:border-sky-300/24 hover:text-sky-50",
+                  ? "border-cyan-300 bg-cyan-200 text-slate-950 shadow-[0_10px_28px_-18px_rgba(8,145,178,0.24)]"
+                  : "border-cyan-200 bg-white text-slate-700 hover:border-cyan-300 hover:text-slate-950",
                 ].join(" ")}
               >
                 {category.label}

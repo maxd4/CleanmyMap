@@ -1,13 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { LayerGroup, LayersControl, MapContainer, Rectangle, TileLayer } from "react-leaflet";
+import { LayerGroup, LayersControl, MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { MapControls } from "./map/map-controls";
 import { SignalementMarkers, ShapeLayers, InfrastructureMarkers } from "./map/map-layers";
 import { getActionsMapCenter } from "./actions-map-canvas.utils";
-import { buildGreaterParisLeafletBounds } from "@/lib/geo/greater-paris";
 import {
   DEFAULT_VISIBLE_MAP_LAYERS,
   toggleVisibleMapLayer,
@@ -17,14 +16,15 @@ import {
 type ActionsMapCanvasProps = {
   items: ActionMapItem[];
   selectedActionId?: string | null;
+  fullViewport?: boolean;
 };
 
 export function ActionsMapCanvas({
   items,
   selectedActionId = null,
+  fullViewport = false,
 }: ActionsMapCanvasProps) {
   const center = useMemo(() => getActionsMapCenter(items), [items]);
-  const greaterParisBounds = useMemo(() => buildGreaterParisLeafletBounds(), []);
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_MAP_LAYERS);
 
   function toggleLayer(key: VisibleMapLayerKey) {
@@ -63,7 +63,11 @@ export function ActionsMapCanvas({
         center={center}
         zoom={12}
         scrollWheelZoom
-        className="h-[68vh] min-h-[34rem] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500 md:h-[74vh] md:min-h-[42rem]"
+        className={
+          fullViewport
+            ? "h-[100dvh] min-h-[100dvh] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500"
+            : "h-[68vh] min-h-[34rem] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500 md:h-[74vh] md:min-h-[42rem]"
+        }
       >
         <MapControls center={center} variant="immersive" />
         <LayersControl position="topright">
@@ -79,21 +83,6 @@ export function ActionsMapCanvas({
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
             />
           </LayersControl.BaseLayer>
-
-          <LayersControl.Overlay checked name="Périmètre Grand Paris">
-            <Rectangle
-              bounds={greaterParisBounds}
-              pathOptions={{
-                color: "#7dd3fc",
-                weight: 2,
-                opacity: 0.9,
-                dashArray: "6 8",
-                fillColor: "#38bdf8",
-                fillOpacity: 0.06,
-              }}
-              interactive={false}
-            />
-          </LayersControl.Overlay>
         </LayersControl>
 
         <LayerGroup>

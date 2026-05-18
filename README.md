@@ -6,6 +6,11 @@ Plateforme citoyenne pour déclarer, visualiser et exporter des actions de dépo
 - Code actif (runtime) : Application Next.js dans `apps/web`.
 - Le code historique en Python est archivé dans `legacy/` et ne fait plus partie du runtime actif.
 
+## Règle UI de lisibilité
+- Sur les héros et titres de page, éviter les retours à la ligne décoratifs.
+- Priorité d'ajustement: réduire la taille, réduire le tracking, réduire la largeur utile, puis réorganiser le bloc sur mobile.
+- Un titre ou sous-titre doit tenir sur une seule ligne sur desktop standard si cela reste lisible.
+
 ## Prérequis
 - Node.js 20+
 - npm 9+

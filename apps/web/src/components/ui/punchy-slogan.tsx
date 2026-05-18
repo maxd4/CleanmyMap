@@ -42,7 +42,6 @@ export function PunchySlogan() {
  transition={{ duration: 0.5, delay: i * 0.15 }}
  className="text-3xl font-bold leading-none tracking-tighter text-emerald-950 sm:text-5xl md:text-6xl"
  style={{
- fontFamily: 'var(--font-outfit), sans-serif',
  filter:"drop-shadow(0 1px 1px rgba(0,0,0,0.05))"
  }}
  >

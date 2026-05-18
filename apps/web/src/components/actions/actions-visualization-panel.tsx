@@ -60,7 +60,6 @@ export function ActionsVisualizationPanel({
 
     let wasteKg = 0;
     let butts = 0;
-    let geolocated = 0;
     let volunteers = 0;
     let citizenHours = 0;
     const impacts = new Map<ImpactLevel, number>();
@@ -78,9 +77,6 @@ export function ActionsVisualizationPanel({
       const durationMinutes = Number(item.contract?.metadata.durationMinutes || 0);
       volunteers += volunteersCount;
       citizenHours += (volunteersCount * Math.max(0, durationMinutes)) / 60;
-      if (item.latitude !== null && item.longitude !== null) {
-        geolocated += 1;
-      }
 
       const level =
         item.impact_level && IMPACT_LEVELS.includes(item.impact_level as ImpactLevel)
@@ -121,8 +117,6 @@ export function ActionsVisualizationPanel({
         butts,
         volunteers,
         citizenHours,
-        geocoveragePct:
-          mapItems.length > 0 ? Math.round((geolocated / mapItems.length) * 100) : 0,
       },
       zoneRows,
       monthRows,
@@ -139,30 +133,30 @@ export function ActionsVisualizationPanel({
     <div className={mainClass}>
       <div className={cn("flex flex-wrap items-center justify-between gap-4", compact ? "px-2" : "px-4")}>
         <div className="space-y-1">
-          <h2 className="text-xs font-black uppercase tracking-[0.4em] text-sky-400">Lecture Spatiale</h2>
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/20">Flux Cockpit en temps réel</p>
+          <h2 className="cmm-text-caption font-semibold tracking-[0.14em] text-cyan-700">Lecture spatiale</h2>
+          <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600">Flux cockpit en temps réel</p>
         </div>
       </div>
 
       {loading && (
-        <div className="flex h-48 items-center justify-center rounded-[2rem] bg-white/5 border border-dashed border-white/10">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/20 animate-pulse">Synchronisation...</p>
+        <div className="flex h-48 items-center justify-center rounded-[2rem] bg-white border border-dashed border-cyan-200/80">
+          <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600 animate-pulse">Synchronisation...</p>
         </div>
       )}
 
       {error && (
-        <div className="p-8 rounded-[2rem] bg-rose-400/5 border border-rose-400/20 text-center">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-400">Flux momentanément interrompu</p>
+        <div className="p-8 rounded-[2rem] bg-rose-50 border border-rose-200/70 text-center">
+          <p className="cmm-text-caption font-semibold tracking-[0.12em] text-rose-700">Flux momentanément interrompu</p>
         </div>
       )}
 
       {!loading && !error && (
         <>
           <div className="grid gap-6 lg:grid-cols-2">
-            <article className="rounded-[2.5rem] border border-white/5 bg-white/5 p-8 relative overflow-hidden group hover:bg-white/10 transition-all duration-500">
+            <article className="rounded-[2.5rem] border border-cyan-200/80 bg-white p-8 relative overflow-hidden group hover:bg-cyan-50 transition-all duration-500">
               <div className="flex items-center justify-between gap-4 mb-8">
-                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Tendance Mensuelle</h3>
-                <span className="text-[10px] font-black uppercase tracking-widest text-sky-400">{model.totals.actions} pts</span>
+                <h3 className="cmm-text-caption font-semibold tracking-[0.14em] text-slate-600">Tendance mensuelle</h3>
+                <span className="cmm-text-caption font-semibold tracking-[0.12em] text-cyan-700">{model.totals.actions} actions visibles</span>
               </div>
 
               <div className="relative h-40 w-full mt-4">
@@ -200,11 +194,11 @@ export function ActionsVisualizationPanel({
                     />
                   </svg>
                 ) : (
-                  <div className="flex h-full items-center justify-center text-[10px] font-black uppercase tracking-widest text-white/10">Data Low</div>
+                  <div className="flex h-full items-center justify-center cmm-text-caption font-semibold tracking-[0.12em] text-slate-500">Data low</div>
                 )}
                 <div className="mt-6 flex justify-between px-1">
                   {model.monthRows.map((row) => (
-                    <span key={row.label} className="text-[9px] font-black uppercase tracking-tighter text-white/20">
+                    <span key={row.label} className="cmm-text-caption font-semibold tracking-[0.08em] text-slate-500">
                       {row.label.split("-")[1]}
                     </span>
                   ))}
@@ -212,8 +206,8 @@ export function ActionsVisualizationPanel({
               </div>
             </article>
 
-            <article className="rounded-[2.5rem] border border-white/5 bg-white/5 p-8 group hover:bg-white/10 transition-all duration-500">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40 mb-8">Profil d&apos;Impact</h3>
+            <article className="rounded-[2.5rem] border border-cyan-200/80 bg-white p-8 group hover:bg-cyan-50 transition-all duration-500">
+              <h3 className="cmm-text-caption mb-8 font-semibold tracking-[0.14em] text-slate-600">Profil d&apos;impact</h3>
               <div className="flex items-center justify-center gap-10 h-40">
                 <div className="relative h-32 w-32 shrink-0">
                   <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 32 32">
@@ -246,11 +240,11 @@ export function ActionsVisualizationPanel({
                         />
                       );
                     })}
-                    <circle cx="16" cy="16" r="10" fill="rgba(255,255,255,0.05)" />
+                    <circle cx="16" cy="16" r="10" fill="rgba(255,255,255,0.65)" />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-lg font-black text-white leading-none">{model.totals.actions}</span>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-white/20 mt-1">TOTAL</span>
+                    <span className="text-lg font-black text-slate-950 leading-none">{model.totals.actions}</span>
+                    <span className="cmm-text-caption mt-1 font-semibold tracking-[0.12em] text-slate-500">Total</span>
                   </div>
                 </div>
 
@@ -265,8 +259,8 @@ export function ActionsVisualizationPanel({
                           row.level === "moyen" ? "bg-sky-500" : "bg-emerald-500"
                         )}
                       />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/40">
-                        {row.level} • <span className="text-white">{row.count}</span>
+                      <span className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600">
+                        {row.level} • <span className="text-slate-950">{row.count}</span>
                       </span>
                     </div>
                   ))}
@@ -275,10 +269,9 @@ export function ActionsVisualizationPanel({
             </article>
           </div>
 
-          <article className="rounded-[2.5rem] border border-white/5 bg-white/5 p-8 group hover:bg-white/10 transition-all duration-500">
+          <article className="rounded-[2.5rem] border border-cyan-200/80 bg-white p-8 group hover:bg-cyan-50 transition-all duration-500">
             <div className="flex items-center justify-between gap-4 mb-8">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Volume par Zone</h3>
-              <span className="text-[10px] font-black uppercase tracking-widest text-sky-400">{model.totals.geocoveragePct}% Coopération Géo</span>
+              <h3 className="cmm-text-caption font-semibold tracking-[0.14em] text-slate-600">Volume par zone</h3>
             </div>
 
             <div className="space-y-6">
@@ -290,12 +283,12 @@ export function ActionsVisualizationPanel({
                   return (
                     <div key={row.zone} className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-black text-white uppercase tracking-tight">{row.zone}</span>
-                        <span className="text-[10px] font-black text-white/40 uppercase tracking-widest">
+                        <span className="text-sm font-semibold tracking-[-0.01em] text-slate-950">{row.zone}</span>
+                        <span className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600">
                           {row.actions} Actions • {row.wasteKg.toFixed(1)}kg
                         </span>
                       </div>
-                      <div className="h-1.5 w-full rounded-full bg-white/5 overflow-hidden">
+                      <div className="h-1.5 w-full rounded-full bg-cyan-100 overflow-hidden">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-sky-500 to-sky-300 transition-all duration-1000 ease-out"
                           style={{ width: `${percentage}%` }}
@@ -306,7 +299,7 @@ export function ActionsVisualizationPanel({
                 })
               ) : (
                 <div className="py-12 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white/10">Aucune zone détectée</p>
+                  <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-500">Aucune zone détectée</p>
                 </div>
               )}
             </div>

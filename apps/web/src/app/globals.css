@@ -168,7 +168,7 @@ html[data-theme="dark"] {
 
   /* Font families */
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-outfit), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-inter), system-ui, -apple-system, sans-serif;
 
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-bg-dark: rgba(15, 23, 42, 0.6);
@@ -308,11 +308,11 @@ html[data-theme="dark"] {
   }
 
   .cmm-text-small {
-    font: var(--weight-small) var(--size-small)/var(--leading-small) var(--font-body);
+    font: var(--weight-small) var(--size-small)/var(--leading-small) var(--font-body-text);
   }
 
   .cmm-text-caption {
-    font: var(--weight-caption) var(--size-caption)/var(--leading-caption) var(--font-body);
+    font: var(--weight-caption) var(--size-caption)/var(--leading-caption) var(--font-body-text);
   }
 
   /* Couleurs texte sémantiques (préfixe cmm- pour éviter conflit Tailwind v4) */

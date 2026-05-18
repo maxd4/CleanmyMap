@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import {
   CircleMarker,
   Marker,
@@ -107,6 +108,17 @@ export function SignalementMarkers({
   visible?: boolean;
   selectedActionId?: string | null;
 }) {
+  const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
+
+  useEffect(() => {
+    if (!selectedActionId) {
+      return;
+    }
+
+    const layer = layerRefs.current[selectedActionId];
+    layer?.openPopup?.();
+  }, [selectedActionId]);
+
   if (!visible) {
     return null;
   }
@@ -137,6 +149,13 @@ export function SignalementMarkers({
         return (
           <CircleMarker
             key={`point-${item.id}`}
+            ref={(layer) => {
+              if (layer) {
+                layerRefs.current[item.id] = layer;
+              } else {
+                delete layerRefs.current[item.id];
+              }
+            }}
             center={geometry.anchor ?? [coords.latitude, coords.longitude]}
             radius={renderStyle.pointRadius ?? (isFallbackPoint ? 4.5 : 6) + (isSelected ? 2 : 0)}
             pathOptions={{
@@ -174,6 +193,17 @@ export function ShapeLayers({
   visible?: boolean;
   selectedActionId?: string | null;
 }) {
+  const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
+
+  useEffect(() => {
+    if (!selectedActionId) {
+      return;
+    }
+
+    const layer = layerRefs.current[selectedActionId];
+    layer?.openPopup?.();
+  }, [selectedActionId]);
+
   if (!visible) {
     return null;
   }
@@ -202,6 +232,13 @@ export function ShapeLayers({
           return (
             <Polygon
               key={`shape-${item.id}`}
+              ref={(layer) => {
+                if (layer) {
+                  layerRefs.current[item.id] = layer;
+                } else {
+                  delete layerRefs.current[item.id];
+                }
+              }}
               positions={geometry.positions}
               pathOptions={{
                 color: color,
@@ -236,6 +273,13 @@ export function ShapeLayers({
         return (
           <Polyline
             key={`shape-${item.id}`}
+            ref={(layer) => {
+              if (layer) {
+                layerRefs.current[item.id] = layer;
+              } else {
+                delete layerRefs.current[item.id];
+              }
+            }}
             positions={geometry.positions}
             pathOptions={{
               color: color,
@@ -278,6 +322,17 @@ export function InfrastructureMarkers({
   visible?: boolean;
   selectedActionId?: string | null;
 }) {
+  const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
+
+  useEffect(() => {
+    if (!selectedActionId) {
+      return;
+    }
+
+    const layer = layerRefs.current[selectedActionId];
+    layer?.openPopup?.();
+  }, [selectedActionId]);
+
   if (!visible) {
     return null;
   }
@@ -299,6 +354,13 @@ export function InfrastructureMarkers({
         return (
           <Marker
             key={`infrastructure-${item.id}`}
+            ref={(layer) => {
+              if (layer) {
+                layerRefs.current[item.id] = layer;
+              } else {
+                delete layerRefs.current[item.id];
+              }
+            }}
             position={anchor}
             interactive={true}
             icon={divIcon({
