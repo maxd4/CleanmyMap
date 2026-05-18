@@ -3,6 +3,7 @@
 import type { ChapterAudience } from"./types";
 import { toFrNumber } from"./analytics";
 import type { MonthRow } from"./types";
+import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";
 
 export function ReportPage(props: {
  id: string;
@@ -24,7 +25,12 @@ export function ReportPage(props: {
  id={props.id}
  className="scroll-mt-28 break-after-page rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_35px_-24px_rgba(15,23,42,0.65)] last:break-after-auto"
  >
- <div className="border-b border-slate-200 bg-gradient-to-r from-[#0f4c5c] via-[#1f5d7f] to-[#24426f] p-[1cm] text-white">
+ <div
+ className="border-b border-slate-200 p-[1cm] text-white"
+ style={{
+ background: `linear-gradient(135deg, ${reportPdfColors.teal}, ${reportPdfColors.navy})`,
+ }}
+ >
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.18em] text-slate-200">
  {props.kicker}
  </p>
@@ -82,7 +88,7 @@ export function ReportTable(props: { headers: string[]; rows: string[][] }) {
  return (
  <div className="print-break-inside-avoid overflow-x-auto rounded-2xl border border-slate-200">
  <table className="min-w-full text-left cmm-text-small">
- <thead className="bg-[#1e3a67] text-slate-100">
+ <thead style={{ backgroundColor: reportPdfColors.navy, color: "#f8fafc" }}>
  <tr>
  {props.headers.map((header) => (
  <th key={header} className="px-3 py-2 font-semibold">
@@ -129,8 +135,11 @@ export function MonthlyBars(props: { rows: MonthRow[] }) {
  <span className="font-semibold uppercase tracking-wide cmm-text-muted">{row.month}</span>
  <div className="h-2.5 overflow-hidden rounded-full bg-slate-200">
  <div
- className="h-full rounded-full bg-gradient-to-r from-[#2b6d89] to-[#62a4b8]"
- style={{ width: `${Math.max(4, Math.round((row.kg / maxKg) * 100))}%` }}
+ className="h-full rounded-full"
+ style={{
+ width: `${Math.max(4, Math.round((row.kg / maxKg) * 100))}%`,
+ background: `linear-gradient(90deg, ${reportPdfColors.teal}, ${reportPdfColors.green})`,
+ }}
  />
  </div>
  <span className="font-semibold">{toFrNumber(row.kg)} kg</span>
@@ -157,7 +166,7 @@ export function GeoCoverageRing(props: { coveragePercent: number; tracePercent: 
  cy="58"
  r="48"
  fill="none"
- stroke="#1f6d86"
+ stroke={reportPdfColors.teal}
  strokeWidth="10"
  strokeLinecap="round"
  strokeDasharray={`${dash} ${circumference}`}

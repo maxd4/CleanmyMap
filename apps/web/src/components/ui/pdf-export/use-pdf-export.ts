@@ -7,6 +7,7 @@ import {
   type PdfReportData,
   type PdfReportPayload,
 } from "@/lib/pdf-export/simple-pdf";
+import { buildOfficialReportHtml } from "@/lib/pdf-export/official-report-html";
 import { buildExportUiCopy } from "@/lib/reports/export-ui";
 
 export type ExportHistoryEntry = {
@@ -72,6 +73,18 @@ function downloadPdf(filename: string, lines: string[]): void {
   URL.revokeObjectURL(url);
 }
 
+function openPrintableReport(html: string): boolean {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) return false;
+
+  printWindow.document.open();
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+
+  return true;
+}
+
 export function usePdfExport(params: UsePdfExportParams) {
   const [state, setState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -119,7 +132,10 @@ export function usePdfExport(params: UsePdfExportParams) {
       if (params.onGenerate) {
         await params.onGenerate(payload);
       } else {
-        downloadPdf(filename, buildPdfReportLines(payload));
+        const opened = openPrintableReport(buildOfficialReportHtml(payload));
+        if (!opened) {
+          downloadPdf(filename, buildPdfReportLines(payload));
+        }
       }
 
       const id = `CMM-PDF-${Math.random().toString(36).slice(2, 9).toUpperCase()}`;
@@ -128,7 +144,7 @@ export function usePdfExport(params: UsePdfExportParams) {
         ...prev,
       ]);
       setState("success");
-      setMessage(copy.successMessage);
+      setMessage("Rapport ouvert. Utilisez Enregistrer en PDF dans la fenêtre d'impression.");
     } catch {
       setState("error");
       setMessage(copy.errorMessage);

@@ -67,6 +67,9 @@ export function RubriquePdfExportButton({
             <p className="mt-1 truncate cmm-text-caption cmm-text-secondary">
               {filename}
             </p>
+            <p className="mt-1 cmm-text-caption cmm-text-muted">
+              Ouvre une version A4 imprimable ; choisissez ensuite Enregistrer en PDF.
+            </p>
           </div>
           <CmmButton
             type="button"
@@ -77,7 +80,7 @@ export function RubriquePdfExportButton({
             ariaLabel={`Exporter le rapport PDF ${defaultTitle}`}
             className="shrink-0"
           >
-            {state === "pending" ? copy.pendingLabel : copy.triggerLabel}
+            {state === "pending" ? copy.pendingLabel : "Ouvrir le rapport PDF"}
           </CmmButton>
         </div>
 

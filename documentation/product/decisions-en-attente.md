@@ -26,3 +26,7 @@ Fallback statique:
 - Niveau de priorisation des recommandations proactives Itineraire IA.
 - Strategie d'ouverture API externe (quota, auth, format).
 - Cadre de calibration des proxys d'impact par territoire.
+- Ordre final des priorites DU selon le calendrier reel de livraison.
+- Niveau de profondeur attendu pour le module data quality.
+- Perimetre exact du PDF web complet attendu pour validation academique.
+- Seuils minimaux de qualite et de performance pour cloturer chaque lot critique.

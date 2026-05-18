@@ -1,8 +1,44 @@
-# Journal d'Impact : Ateliers DU Engagement x CleanMyMap
+# Journal d'Impact : Ateliers DU x Audit IA x Ajouts de code
 
-Ce journal documente les améliorations concrètes apportées au projet CleanMyMap en application directe des enseignements suivis lors du DU Engagement à l'Université. Il sert de preuve de la transformation de la théorie en pratique opérationnelle.
+Ce journal ne conserve que les **ajouts de code** réalisés en lien direct avec :
 
----
+- les apprentissages issus des ateliers du DU ;
+- les besoins de gouvernance, de sobriété et de fiabilité formalisés dans `documentation/plans/impact_IA.md`.
+
+Il ne sert ni de backlog, ni de plan d'action général, ni de dossier institutionnel.
+Les priorités actives restent dans [documentation/plans/ateliers_DU.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans/ateliers_DU.md).
+La seule zone de directives encore exploitables ici est l'**annexe A**.
+
+Ce cadre poursuit deux objectifs. D'abord, montrer un impact reel des ateliers sur le projet web avec une lecture critique, structuree et credible. Ensuite, disposer d'un support de pilotage capable de justifier les choix techniques, environnementaux et institutionnels devant un jury ou un partenaire externe.
+
+### Concepts cles appliques
+
+- **Diagnostic territorial et ecologique** : objectiver a la fois la pollution locale et le cout numerique du service, puis relier declaration, carte, historique, reporting et IUR.
+- **Cartographie des acteurs** : clarifier les roles entre benevoles, associations, decideurs publics et equipe admin pour reduire les confusions de perimetre.
+- **Participation citoyenne** : simplifier l'entree dans l'action avec declaration terrain, suivi et CTA adaptes aux roles.
+- **Pilotage par indicateurs** : faire reposer les arbitrages sur des indicateurs lisibles, tracables et autant que possible automatises.
+- **Evaluation critique et gouvernance de la sobriete** : instituer l'autocritique via l'audit IA, le role de Responsable Sobriete et la prise en compte des effets rebond.
+
+### Historique condense des implementations
+
+- **Fondation** : routes coeur, rubriques, sections metier, collecte terrain.
+- **Pilotage** : APIs metier, reporting, exports, moderation admin, securisation de base.
+- **Consolidation** : navigation parcours/espace, standardisation des pages, dedoublonnage, fiabilisation funnel.
+- **Maturite cible** : observabilite unifiee, qualite de donnees, historisation des livrables, runbooks et verification finale transverse.
+
+### Difficultes structurantes et enseignements
+
+- arbitrages continus entre richesse fonctionnelle et lisibilite ;
+- prevention des doublons inter-pages et des redondances documentaires ;
+- stabilisation des metriques et de leur interpretation ;
+- vigilance permanente sur le vendor lock-in, l'effet rebond et la validation humaine.
+
+### Synthese des apports conserves
+
+- distinction utile entre deja implemente, hors perimetre et chantiers encore ouverts ;
+- priorisation par phases pour limiter les regressions ;
+- importance de la securite, de l'observabilite, de la qualite de donnees et de la tracabilite ;
+- conversion des ateliers DU en cadre d'execution concret, mesurable et critique.
 
 ## 1. Axe : Évaluation critique et Sobriété Numérique
 
@@ -74,8 +110,9 @@ Ce journal documente les améliorations concrètes apportées au projet CleanMyM
 | **Optimisation Poids Plume** | 🚀 En cours | Réduction du logo de **88%** et bundle splitting pour les cartes (Leaflet), réduisant la conso batterie mobile. |
 | **Tests de non-régression ciblés (Directive 5)** | 🟡 Partiellement réalisé | Renforcement de tests sur la modération admin, la validation d'actions, les filtres de carte, le stockage brouillon, l'analytics consent, `/api/services`, les endpoints critiques d'export (`actions.csv`, `actions.json`, `elus-dossier`) et les boutons UI d'export CSV/PDF. La couverture UI de `/dashboard` et `/reports` reste à consolider. |
 | **Convergence exports web (Directive 11)** | ✅ Réalisé | Uniformisation des headers de livrables et des noms de fichiers pour CSV/JSON/PDF côté serveur via un helper commun, puis harmonisation des libellés/messages front d'export CSV/PDF avec `buildExportUiCopy`, couverte par des tests serveur et UI statiques. |
-| **Standardisation des Prompts (Action C)** | 📅 À faire | Réduction du bruit numérique en limitant les itérations inutiles avec l'IA. |
-| **Fiabilité des Indicateurs (Action J)** | 📅 À faire | Protocole de revue mensuelle pour garantir que les "tonnes de déchets" affichées sont réelles. |
+| **Standardisation des Prompts (Action C)** | ✅ Réalisé | Réduction du bruit numérique via `PROMPT_GUIDE.md`. |
+| **Fiabilité des Indicateurs (Action J)** | ✅ Réalisé | Protocole de revue via `METRICS_RELIABILITY_PROTOCOL.md`. |
+| **Protection des Données (Action D)** | ✅ Réalisé | Politique de sécurité via `DATA_PROTECTION_POLICY.md`. |
 
 ---
 
@@ -84,7 +121,8 @@ Ce journal documente les améliorations concrètes apportées au projet CleanMyM
 **Clôture documentaire du plan supprimé :**
 Le plan d'écarts supprimé a été absorbé dans ce journal. Les améliorations effectivement implémentées sont désormais tracées ici comme références de preuve, avec distinction explicite entre `réalisé`, `partiellement réalisé` et `à faire`.
 
----
+**Nettoyage du backlog de session :**
+Les prompts deja executes ont ete retires des fichiers de pilotage actifs. Les prompts restants ont ete regroupes par priorite operationnelle dans `documentation/plans/ateliers_DU.md`. `documentation/plans/ateliers_DU_execution_rapide.md` devient une trace d'execution et non un second backlog.
 
 ## 6. Annexe A - Bibliothèque de pilotage IA
 
@@ -92,11 +130,11 @@ Le plan d'écarts supprimé a été absorbé dans ce journal. Les améliorations
 
 | Action | Directive | État | Preuve attendue | Contrôle associé |
 | :--- | :--- | :--- | :--- | :--- |
-| **B - Validation humaine des contenus environnementaux** | Ajouter un workflow de validation humaine des contenus environnementaux et institutionnels : brouillon, revue, publication, avec responsable identifié avant mise en ligne. | 📅 À faire | Workflow documenté, rôle assigné, exemple de contenu passé en revue. | Vérification des chiffres, interprétations, promesses d'impact et niveau de preuve. |
-| **C - Standardisation des usages IA utiles** | Créer un guide de prompts internes par cas d'usage (code, documentation, UX, debug) avec exemples courts, contraintes, critères d'acceptation et cas à éviter. | 📅 À faire | Guide versionné, exemples validés, usage référencé dans la contribution. | Réduction des itérations redondantes et des usages IA peu utiles. |
-| **D - Protection des données sensibles** | Ajouter une politique d'usage IA du projet : données interdites, anonymisation minimale, exemples autorisés/interdits, contrôle avant partage vers un service externe. | 📅 À faire | Politique écrite, checklist de partage, cas d'usage interdits explicités. | Contrôle des données personnelles, des secrets et des données sensibles exposées. |
-| **G - Clarté des messages environnementaux** | Réaliser un audit de clarté des contenus environnementaux et proposer une version harmonisée : messages clés, preuves, limites, incertitudes et distinction fait/hypothèse. | 📅 À faire | Référentiel éditorial, avant/après de contenus, validation humaine explicite. | Contrôle du vocabulaire, du niveau de preuve et de la cohérence institutionnelle. |
-| **J - Fiabilité des indicateurs** | Ajouter des contrôles de cohérence des indicateurs (funnel, engagement, exports) et un protocole de revue mensuelle des métriques avec seuils d'alerte. | 📅 À faire | Protocole de revue, tableau de bord contrôlé, anomalies documentées. | Vérification de la cohérence analytics et de l'interprétation des métriques. |
+| **B - Validation humaine des contenus environnementaux** | Ajouter un workflow de validation humaine des contenus environnementaux et institutionnels. | ✅ Réalisé | `CONTENT_VALIDATION_WORKFLOW.md` | Vérification des chiffres et interprétations. |
+| **C - Standardisation des usages IA utiles** | Créer un guide de prompts internes par cas d'usage (code, documentation, UX, debug). | ✅ Réalisé | `PROMPT_GUIDE.md` | Réduction des itérations redondantes. |
+| **D - Protection des données sensibles** | Ajouter une politique d'usage IA du projet : données interdites, anonymisation minimale. | ✅ Réalisé | `DATA_PROTECTION_POLICY.md` | Contrôle des données personnelles et secrets. |
+| **G - Clarté des messages environnementaux** | Réaliser un audit de clarté des contenus environnementaux et proposer une version harmonisée. | ✅ Réalisé | `CONTENT_VALIDATION_WORKFLOW.md` | Contrôle du vocabulaire et de la cohérence. |
+| **J - Fiabilité des indicateurs** | Ajouter des contrôles de cohérence des indicateurs et un protocole de revue mensuelle. | ✅ Réalisé | `METRICS_RELIABILITY_PROTOCOL.md` | Vérification de la cohérence analytics. |
 
 ---
 

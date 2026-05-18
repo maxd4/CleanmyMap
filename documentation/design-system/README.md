@@ -32,10 +32,23 @@ Système de design pour agents IA. **TOUJOURS consulter avant toute modification
 
 ### Patterns
 - **patterns-cartes-filtres-etats.md** - Patterns cartes/filtres/états
+- **cleanmymap-ui-ux-pro-max.md** - Synthèse CleanMyMap des règles UI/UX Pro Max
 
 ---
 
 ## 🤖 Règles Strictes pour IA
+
+### Priorité opérationnelle CleanMyMap
+
+Avant toute modification UI sur une page métier, lire aussi :
+`cleanmymap-ui-ux-pro-max.md`
+
+Objectif :
+- garder une UI dense mais lisible
+- sécuriser les formulaires et états asynchrones
+- éviter les décalages de layout
+- maintenir une navigation clavier correcte
+- conserver une ergonomie robuste sur mobile et desktop
 
 ### ✅ TOUJOURS FAIRE
 
@@ -69,6 +82,19 @@ Système de design pour agents IA. **TOUJOURS consulter avant toute modification
    // exhaustif | minimaliste | sobre
    ```
 
+5. **Traiter les écrans pilotage/admin comme des surfaces opérationnelles**
+   ```text
+   Utiliser grilles, tableaux, KPI, filtres, états vides et confirmations claires.
+   Eviter les compositions marketing ou les cartes décoratives inutiles.
+   ```
+
+6. **Stabiliser les interactions**
+   ```text
+   Réserver l'espace des contenus asynchrones.
+   Afficher un état de chargement explicite.
+   Désactiver les actions pendant les soumissions async.
+   ```
+
 ### ❌ NE JAMAIS FAIRE
 
 1. **Ne pas utiliser de tailles arbitraires**
@@ -96,6 +122,16 @@ Système de design pour agents IA. **TOUJOURS consulter avant toute modification
    
    // ✅ UTILISER
    className="cmm-text-primary"
+   ```
+
+4. **Ne pas traiter une page métier comme une landing page**
+   ```text
+   Pas de hero décoratif sur les surfaces admin, validation, analytics, formulaires complexes.
+   ```
+
+5. **Ne pas laisser un formulaire sans feedback accessible**
+   ```text
+   Les erreurs doivent être lisibles, proches du champ, et annoncées pour les lecteurs d'écran.
    ```
 
 ---
@@ -150,7 +186,10 @@ cmm-surface, cmm-surface-muted, cmm-panel, cmm-card
 □ Pas de text-primary (Tailwind)
 □ Display modes respectés
 □ Visuels prioritaires sur texte
-```
+□ Etats async visibles et stables
+□ Navigation clavier vérifiée
+□ Pas de scroll horizontal mobile
+``` 
 
 ---
 

@@ -1,5 +1,5 @@
 import { getResendClient } from "./resend";
-import { env } from "@/lib/env";
+import { resolveEmailFrom, resolveEmailReplyTo } from "@/lib/email-config";
 
 export type EmailPayload = {
   to: string | string[];
@@ -15,18 +15,25 @@ export type EmailPayload = {
  */
 export async function sendEmail(payload: EmailPayload) {
   const resend = getResendClient();
-  const from =
-    payload.from ||
-    env.RESEND_FROM_EMAIL ||
-    "CleanMyMap <contact@mail.cleanmymap.fr>";
-  const replyTo = payload.replyTo || env.RESEND_REPLY_TO || env.RESEND_FROM_EMAIL;
+  const from = payload.from?.trim() || resolveEmailFrom();
+  const replyTo = payload.replyTo?.trim() || resolveEmailReplyTo();
 
   if (!resend) {
     console.warn("[Email Service] No RESEND_API_KEY found. Logging email instead:", {
-      ...payload,
+      to: payload.to,
+      subject: payload.subject,
       from,
+      replyTo,
     });
     return { id: "mock_id", status: "mocked" };
+  }
+
+  if (!from) {
+    console.error("[Email Service] Missing sender configuration", {
+      to: payload.to,
+      subject: payload.subject,
+    });
+    return { id: null, status: "missing_config" };
   }
 
   try {
@@ -44,7 +51,13 @@ export async function sendEmail(payload: EmailPayload) {
 
     return { id: data?.id, status: "sent" };
   } catch (error) {
-    console.error("[Email Service] Failed to send email:", error);
+    console.error("[Email Service] Failed to send email", {
+      to: payload.to,
+      subject: payload.subject,
+      from,
+      replyTo,
+      error: error instanceof Error ? error.message : String(error),
+    });
     throw error;
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from"next/server";
 import { env, isConfigured } from"@/lib/env";
 import { requireAdminAccess } from"@/lib/authz";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
+import { resolveContactEmail, resolveEmailFrom } from "@/lib/email-config";
 import { isPostHogConfigured } from"@/lib/posthog/config";
 import { SERVICE_DEFINITIONS, type ServiceHealthState } from"@/lib/services/registry";
 import {
@@ -36,7 +37,9 @@ function getServiceState(id: string): ServiceHealthState {
  ?"ready"
  :"missing";
  case"resend":
- return isConfigured(env.RESEND_API_KEY) && isConfigured(env.RESEND_FROM_EMAIL)
+ return isConfigured(env.RESEND_API_KEY) &&
+ isConfigured(resolveEmailFrom()) &&
+ isConfigured(resolveContactEmail())
  ?"ready"
  :"missing";
  case"posthog":

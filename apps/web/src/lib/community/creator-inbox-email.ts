@@ -1,4 +1,9 @@
 import { env } from "@/lib/env";
+import {
+  resolveContactEmail,
+  resolveEmailFrom,
+  resolveEmailReplyTo,
+} from "@/lib/email-config";
 import { getResendClient } from "@/lib/services/resend";
 import { sendEmail } from "@/lib/services/email";
 
@@ -14,7 +19,7 @@ function escapeHtml(value: string): string {
 export function resolveCreatorInboxRecipients(extraRecipients: string[] = []): string[] {
   const candidates = [
     env.CREATOR_INBOX_EMAIL,
-    env.RESEND_REPLY_TO,
+    resolveContactEmail(),
     ...extraRecipients,
   ]
     .map((value) => value?.trim())
@@ -24,7 +29,7 @@ export function resolveCreatorInboxRecipients(extraRecipients: string[] = []): s
 }
 
 export function resolveCreatorReplyTo(): string | undefined {
-  return env.RESEND_REPLY_TO?.trim() || env.RESEND_FROM_EMAIL?.trim();
+  return resolveEmailReplyTo();
 }
 
 export async function sendCreatorInboxEmail(params: {
@@ -36,7 +41,7 @@ export async function sendCreatorInboxEmail(params: {
   extraRecipients?: string[];
 }): Promise<boolean> {
   const resend = getResendClient();
-  const from = env.RESEND_FROM_EMAIL?.trim();
+  const from = resolveEmailFrom();
   const to = resolveCreatorInboxRecipients(params.extraRecipients);
   if (!resend || !from || to.length === 0) {
     return false;

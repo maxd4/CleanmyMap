@@ -13,6 +13,7 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 
 ### Avant Toute Modification
 1. **UI** → Lire **design-system/README.md** (CRITIQUE)
+   Puis lire **design-system/cleanmymap-ui-ux-pro-max.md** pour les écrans opérationnels, formulaires, pilotage, validation et analytics
 2. **Sécurité** → Lire **security/README.md** (CRITIQUE)
 3. **Architecture** → Consulter **architecture/README.md**
 4. **Code** → Consulter **development/README.md**
@@ -153,6 +154,7 @@ documentation/
 - ✅ Lire AGENTS.md au démarrage
 - ✅ Lire latest-session.md pour continuité
 - ✅ Consulter design-system/ avant UI
+- ✅ Appliquer `cleanmymap-ui-ux-pro-max.md` sur les surfaces métier denses
 - ✅ Consulter security/ avant code sensible
 - ✅ Respecter les standards de development/
 - ✅ Documenter les décisions importantes

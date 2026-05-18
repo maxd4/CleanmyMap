@@ -4,6 +4,7 @@ import { BarChart3, FileText, ShieldCheck, Target, TriangleAlert } from"lucide-r
 import { MetricCard, InsightBox, ReportTable } from"./ui";
 import type { ReportModel } from"./types";
 import { buildExecutiveNarrative, toFrInt, toFrNumber } from"./analytics";
+import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";
 
 type ReportCoverProps = {
  report: ReportModel;
@@ -22,7 +23,12 @@ export function ReportCover({
  return (
  <section className="break-after-page rounded-[28px] border border-slate-200 bg-white shadow-[0_16px_35px_-24px_rgba(15,23,42,0.65)] overflow-hidden">
  <div className="grid gap-0 lg:grid-cols-[1.15fr_0.85fr]">
- <div className="bg-gradient-to-br from-[#0f4c5c] via-[#1f5d7f] to-[#23426c] p-[1.15cm] text-white">
+ <div
+ className="p-[1.15cm] text-white"
+ style={{
+ background: `linear-gradient(135deg, ${reportPdfColors.teal}, ${reportPdfColors.navy})`,
+ }}
+ >
  <div className="flex flex-wrap items-center gap-2 cmm-text-caption font-semibold uppercase tracking-[0.2em] text-white/70">
  <ShieldCheck size={14} />
  Rapport d&apos;impact institutionnel

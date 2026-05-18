@@ -6,6 +6,10 @@ import {
   hasPdfReportData,
   type PdfReportPayload,
 } from "./simple-pdf";
+import {
+  buildOfficialReportHtml,
+  renderOfficialMarkdown,
+} from "./official-report-html";
 
 const payload: PdfReportPayload = {
   title: "Rapport test",
@@ -57,5 +61,39 @@ describe("simple PDF export", () => {
 
     expect(new TextDecoder().decode(pdf.slice(0, 8))).toBe("%PDF-1.4");
     expect(pdf.byteLength).toBeGreaterThan(200);
+  });
+
+  it("builds an official printable report html", () => {
+    const html = buildOfficialReportHtml(payload);
+
+    expect(html).toContain("<!doctype html>");
+    expect(html).toContain("Livrable officiel CleanMyMap");
+    expect(html).toContain("Rapport test");
+    expect(html).toContain("Sommaire");
+    expect(html).toContain("Indicateurs");
+    expect(html).toContain("Données visibles");
+    expect(html).toContain("Méthode et limites");
+  });
+
+  it("renders the controlled markdown grammar and escapes html", () => {
+    const html = renderOfficialMarkdown([
+      "# Titre",
+      "",
+      "::: important",
+      "- **Point** utile",
+      "- <script>alert(1)</script>",
+      ":::",
+      "",
+      "| Colonne | Valeur |",
+      "|---|---|",
+      "| A | <img src=x onerror=alert(1)> |",
+    ].join("\n"));
+
+    expect(html).toContain("cmm-callout important");
+    expect(html).toContain("<strong>Point</strong>");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+    expect(html).toContain("&lt;img src=x onerror=alert(1)&gt;");
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain("<img src=x");
   });
 });

@@ -21,8 +21,10 @@ Recommended for production:
 
 - `CLERK_ADMIN_USER_IDS`
 - `RESEND_API_KEY`
-- `RESEND_FROM_EMAIL`
-- `RESEND_REPLY_TO` (optional, reply target for outbound emails)
+- `EMAIL_FROM`
+- `CONTACT_EMAIL`
+- `NEXT_PUBLIC_CONTACT_EMAIL` for public mailto links and contact labels
+- `RESEND_FROM_EMAIL` and `RESEND_REPLY_TO` are still accepted as legacy aliases
 - `CREATOR_INBOX_EMAIL` (optional, creator inbox target for operational notifications)
 - `VISION_TRAINING_ENABLED` (`1` to reactivate vision training persistence, disabled by default)
 - `RESEND_TEST_TOKEN` (optional, for `/api/send` test endpoint without admin session)
@@ -94,10 +96,12 @@ npm run data:cleanup:supabase
 
 - Required:
   - `RESEND_API_KEY`
-  - `RESEND_FROM_EMAIL` (must be on your verified domain, e.g. `contact@mail.cleanmymap.fr`)
-- Optional:
-  - `RESEND_REPLY_TO` (professional inbox that receives user replies, e.g. `contact@cleanmymap.fr` or Gmail)
-  - `CREATOR_INBOX_EMAIL` (creator inbox for operational requests; falls back to `RESEND_REPLY_TO`)
+  - `EMAIL_FROM` (must use your verified domain, e.g. `CleanMyMap <noreply@cleanmymap.fr>`)
+  - `CONTACT_EMAIL` (reply-to and inbox target, e.g. `contact@cleanmymap.fr`)
+  - `NEXT_PUBLIC_CONTACT_EMAIL` (public contact value for client-rendered links and labels)
+  - Optional:
+  - `RESEND_FROM_EMAIL` and `RESEND_REPLY_TO` for backward compatibility with older deployments
+  - `CREATOR_INBOX_EMAIL` (creator inbox for operational requests; falls back to `CONTACT_EMAIL`)
   - `RESEND_TEST_TOKEN` to authorize test calls without admin session.
 
 Example:
@@ -106,7 +110,7 @@ Example:
 curl -X POST http://localhost:3000/api/send \
   -H "content-type: application/json" \
   -H "x-resend-test-token: $RESEND_TEST_TOKEN" \
-  -d '{"to":"maxence.deroome@gmail.com","subject":"Hello World","html":"<p>Test OK</p>"}'
+  -d '{"to":"contact@cleanmymap.fr","subject":"Hello World","html":"<p>Test OK</p>"}'
 ```
 
 ## Operational safety

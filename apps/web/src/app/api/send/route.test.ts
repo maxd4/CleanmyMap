@@ -5,8 +5,8 @@ const resendSendMock = vi.hoisted(() => vi.fn());
 const getResendClientMock = vi.hoisted(() => vi.fn());
 const envMock = vi.hoisted(() => ({
  RESEND_API_KEY:"re_test_key",
- RESEND_FROM_EMAIL:"contact@mail.cleanmymap.fr" as string | undefined,
- RESEND_REPLY_TO:"maxence@cleanmymap.fr" as string | undefined,
+ EMAIL_FROM:"CleanMyMap <noreply@cleanmymap.fr>" as string | undefined,
+ CONTACT_EMAIL:"contact@cleanmymap.fr" as string | undefined,
  RESEND_TEST_TOKEN:"local-token" as string | undefined,
 }));
 
@@ -29,10 +29,10 @@ describe("POST /api/send", () => {
  getResendClientMock.mockReturnValue({
  emails: { send: resendSendMock },
  });
- envMock.RESEND_FROM_EMAIL ="contact@mail.cleanmymap.fr";
- envMock.RESEND_REPLY_TO ="maxence@cleanmymap.fr";
+ envMock.EMAIL_FROM ="CleanMyMap <noreply@cleanmymap.fr>";
+ envMock.CONTACT_EMAIL ="contact@cleanmymap.fr";
  envMock.RESEND_TEST_TOKEN ="local-token";
- });
+});
 
  afterEach(() => {
  vi.clearAllMocks();
@@ -48,7 +48,7 @@ describe("POST /api/send", () => {
 "x-resend-test-token":"local-token",
  },
  body: JSON.stringify({
- to:"maxence.deroome@gmail.com",
+ to:"contact@cleanmymap.fr",
  subject:"Hello World",
  html:"<p>Test OK</p>",
  }),
@@ -64,20 +64,21 @@ describe("POST /api/send", () => {
  expect(response.status).toBe(200);
  expect(body.ok).toBe(true);
  expect(body.id).toBe("email_123");
- expect(body.to).toBe("maxence.deroome@gmail.com");
+ expect(body.to).toBe("contact@cleanmymap.fr");
  expect(resendSendMock).toHaveBeenCalledWith({
- from:"contact@mail.cleanmymap.fr",
- to:"maxence.deroome@gmail.com",
+ from:"CleanMyMap <noreply@cleanmymap.fr>",
+ to:"contact@cleanmymap.fr",
  subject:"Hello World",
  html:"<p>Test OK</p>",
- replyTo:"maxence@cleanmymap.fr",
+ replyTo:"contact@cleanmymap.fr",
  });
  expect(requireAdminAccessMock).not.toHaveBeenCalled();
  });
 
  it("returns 503 when resend is not configured", async () => {
  const { POST } = await import("./route");
- envMock.RESEND_FROM_EMAIL = undefined;
+ envMock.EMAIL_FROM = undefined;
+ envMock.CONTACT_EMAIL = undefined;
 
  const response = await POST(
  new Request("http://localhost/api/send", {
