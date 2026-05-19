@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
         { max: 500, skipBlankLines: true, skipComments: true },
       ],
       "@typescript-eslint/no-explicit-any": "warn",
+      "react/display-name": "off",
       "react/no-unescaped-entities": "warn",
       "react-hooks/purity": "warn",
       "react-hooks/set-state-in-effect": "warn",
@@ -24,6 +25,8 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    "eslint.config.mjs",
+    "next.config.ts",
     "next-env.d.ts",
   ]),
 ]);
