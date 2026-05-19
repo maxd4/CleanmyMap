@@ -23,6 +23,7 @@ Documentation opérationnelle pour agents IA.
 ### Sessions & Mémoire IA
 - **agent-memory-governance.md** ⭐ - Gouvernance mémoire IA
 - **session-standard-runbook.md** - Runbook sessions standard
+- **quality-audit-snapshot.md** - État court du contrôle qualité courant
 
 ### Changelog
 - **CHANGELOG.md** - Historique des changements

@@ -59,7 +59,7 @@ export const DOMAIN_GLOSSARY: Record<
   parcours:
     "Projection UX du role dans la navigation, sans dupliquer les pages.",
   espace:
-    "Bloc stable de navigation transverse (Accueil et Pilotage, Agir, Cartographie et Impact, Réseau & Discussions, Apprendre).",
+    "Bloc stable de navigation transverse (Accueil & Pilotage, Agir, Cartographie & Impact, Réseau & Discussions, Apprendre).",
   rubrique: "Entree de navigation rattachee a un espace et a une route.",
   page: "Route applicative rendue (app-route) ou section rendue via /sections/[sectionId].",
   cta_primary: "Action principale affichee pour le parcours courant.",

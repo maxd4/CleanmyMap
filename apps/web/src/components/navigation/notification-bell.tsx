@@ -140,12 +140,12 @@ export function NotificationBell() {
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="relative rounded-full p-2 transition-colors hover:bg-pink-100 dark:hover:bg-slate-800"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/88 shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)] transition-all hover:border-pink-200/28 hover:bg-pink-400/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300/40"
         aria-label={`Notifications (${unreadCount} non lues)`}
         aria-expanded={isOpen}
       >
         <Bell
-          className={`h-5 w-5 ${unreadCount > 0 ? "text-pink-500 animate-swing" : "cmm-text-muted dark:cmm-text-muted"}`}
+          className={`h-5 w-5 ${unreadCount > 0 ? "text-pink-300 animate-swing" : "text-white/70"}`}
           aria-hidden="true"
         />
         {unreadCount > 0 ? (
@@ -166,26 +166,26 @@ export function NotificationBell() {
             onClick={() => setIsOpen(false)}
             aria-label={locale === "fr" ? "Fermer les notifications" : "Close notifications"}
           />
-          <div className="absolute right-0 z-50 mt-2 w-80 max-h-[32rem] overflow-hidden rounded-3xl border border-pink-100/40 bg-[rgba(255,248,251,0.96)] shadow-2xl backdrop-blur-xl dark:bg-slate-900/95">
-            <div className="flex items-center justify-between border-b border-pink-100/60 p-4 dark:border-slate-800">
+          <div className="absolute right-0 z-50 mt-2 w-80 max-h-[32rem] overflow-hidden rounded-[1.5rem] border border-white/10 bg-slate-950/88 shadow-[0_32px_70px_-34px_rgba(2,6,23,0.96)] backdrop-blur-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 p-4">
               <h3 className="font-bold uppercase tracking-widest cmm-text-caption cmm-text-primary dark:text-white">
                 {locale === "fr" ? "Centre de notifications" : "Notifications"}
               </h3>
               {loading ? (
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-pink-500 border-t-transparent" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-pink-400 border-t-transparent" />
               ) : null}
             </div>
 
             <div className="max-h-96 overflow-y-auto custom-scrollbar">
               {notifications.length === 0 ? (
                 <div className="space-y-2 p-12 text-center">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full cmm-surface-muted text-slate-300">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/6 text-white/50">
                     <Check size={24} />
                   </div>
-                  <p className="font-bold uppercase tracking-tighter cmm-text-caption cmm-text-muted">
+                  <p className="font-bold uppercase tracking-tighter cmm-text-caption text-white/70">
                     {locale === "fr" ? "Aucune notification active" : "No active notifications"}
                   </p>
-                  <p className="cmm-text-caption cmm-text-muted">
+                  <p className="cmm-text-caption text-white/54">
                     {locale === "fr"
                       ? "Vous n'avez rien de nouveau à traiter pour le moment."
                       : "You have nothing new to review right now."}
@@ -200,16 +200,16 @@ export function NotificationBell() {
                       key={notification.id}
                       type="button"
                       onClick={() => void handleNotificationClick(notification)}
-                      className={`flex w-full border-b border-pink-50 p-4 text-left transition-colors hover:bg-pink-50 dark:border-slate-800 dark:hover:bg-slate-800/50 ${
-                        isUnread ? "bg-pink-500/5" : ""
+                      className={`flex w-full border-b border-white/6 p-4 text-left transition-colors hover:bg-white/6 ${
+                        isUnread ? "bg-pink-400/6" : ""
                       }`}
                     >
                       <div className="mr-3 mt-1 flex-shrink-0">
                         <div
                           className={`rounded-xl p-2 ${
                             isUnread
-                              ? "bg-white shadow-sm dark:bg-slate-800"
-                              : "cmm-surface-muted/50 opacity-60"
+                              ? "bg-white/10 shadow-sm"
+                              : "bg-white/6 opacity-70"
                           }`}
                         >
                           {getNotificationIcon(notification.type)}
@@ -219,12 +219,12 @@ export function NotificationBell() {
                         <div className="flex items-center justify-between gap-3">
                           <span
                             className={`truncate font-bold tracking-tight cmm-text-caption ${
-                              isUnread ? "cmm-text-primary dark:text-white" : "cmm-text-muted"
+                              isUnread ? "text-white" : "text-white/60"
                             }`}
                           >
                             {notification.title}
                           </span>
-                          <span className="shrink-0 cmm-text-caption cmm-text-muted">
+                          <span className="shrink-0 cmm-text-caption text-white/50">
                             {formatDistanceToNow(new Date(notification.created_at), {
                               addSuffix: true,
                               locale: locale === "fr" ? fr : enUS,
@@ -234,14 +234,14 @@ export function NotificationBell() {
                         <p
                           className={`leading-relaxed cmm-text-caption ${
                             isUnread
-                              ? "cmm-text-secondary dark:cmm-text-muted"
-                              : "cmm-text-muted opacity-80"
+                              ? "text-white/72"
+                              : "text-white/54"
                           }`}
                         >
                           {notification.content}
                         </p>
                         {!isUnread ? null : (
-                          <span className="mt-2 inline-flex items-center gap-1 font-bold uppercase tracking-widest text-pink-600 dark:text-pink-400 cmm-text-caption">
+                          <span className="mt-2 inline-flex items-center gap-1 font-bold uppercase tracking-widest text-pink-300 cmm-text-caption">
                             <MessageSquare size={12} />
                             {locale === "fr" ? "Ouvrir" : "Open"}
                           </span>
@@ -253,10 +253,10 @@ export function NotificationBell() {
               )}
             </div>
 
-            <div className="bg-pink-50/50 p-4 text-center dark:bg-slate-800/20">
+            <div className="border-t border-white/10 bg-white/4 p-4 text-center">
               <button
                 type="button"
-                className="font-bold uppercase tracking-widest cmm-text-caption cmm-text-muted transition-colors hover:cmm-text-secondary dark:hover:text-slate-200"
+                className="font-bold uppercase tracking-widest cmm-text-caption text-white/60 transition-colors hover:text-white"
                 onClick={() => setIsOpen(false)}
               >
                 {locale === "fr" ? "Fermer" : "Close"}

@@ -140,14 +140,14 @@ export function AppNavigationBlockDropdown({
         onClick={handleButtonClick}
         onKeyDown={handleKeyDown}
         className={cn(
-          "inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[1rem] border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+          "group inline-flex h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-[1.1rem] border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
           isActiveSpace
             ? "border-white/18 bg-white/16 text-white shadow-[0_20px_40px_-26px_rgba(2,6,23,0.56)]"
             : "border-white/10 bg-white/[0.075] text-white/86 hover:border-white/18 hover:bg-white/[0.12] hover:text-white",
         )}
         title={space.label[locale]}
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.85rem] border border-white/12 bg-white/10 text-[15px] leading-none shadow-[0_10px_20px_-14px_rgba(2,6,23,0.7)]">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.95rem] border border-white/12 bg-white/10 text-[18px] leading-none shadow-[0_10px_20px_-14px_rgba(2,6,23,0.7)] transition-transform duration-150 group-hover:scale-105">
           {space.icon}
         </span>
         <span className="sr-only">{space.label[locale]}</span>
@@ -228,7 +228,7 @@ export function AppNavigationBlockDropdown({
                           title={item.description[locale]}
                           onClick={() => handleTrackNavigation(item)}
                           className={cn(
-                            "block rounded-2xl border px-3 py-2.75 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
+                            "block rounded-2xl border px-3 py-2.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
                             isActiveItem
                               ? "border-white/18 bg-white/16 text-white"
                               : "border-white/10 bg-white/[0.06] text-white/86 hover:border-white/18 hover:bg-white/[0.11] hover:text-white",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { toPng } from "html-to-image";
 import confetti from "canvas-confetti";
@@ -12,6 +12,10 @@ import { useUser } from "@clerk/nextjs";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
+import {
+  fetchCurrentAccountIdentity,
+  type CurrentAccountIdentity,
+} from "@/lib/account/current-account-identity";
 
 type ImpactPageProgression = {
   currentLevel: number;
@@ -42,12 +46,42 @@ export default function ImpactProfilePage() {
   const { locale } = useSitePreferences();
   const cardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [currentAccountIdentity, setCurrentAccountIdentity] =
+    useState<CurrentAccountIdentity | null>(null);
+  const userId = user?.id;
   const classes = getBlockClasses("impact");
 
   const { data: meData, isLoading } = useSWR<GamificationMeResponse>(
     "gamification-me",
     () => fetchJson<GamificationMeResponse>("/api/gamification/me"),
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!userId) {
+      setCurrentAccountIdentity(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    fetchCurrentAccountIdentity()
+      .then((identity) => {
+        if (!cancelled) {
+          setCurrentAccountIdentity(identity);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCurrentAccountIdentity(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   const handleDownload = async () => {
     if (!cardRef.current) return;
@@ -58,7 +92,11 @@ export default function ImpactProfilePage() {
         backgroundColor: "#450a0a" // Dark Red background for export
       });
       const link = document.createElement("a");
-      link.download = `CleanMyMap-Impact-${user?.firstName || "Contributeur"}.png`;
+      link.download = `CleanMyMap-Impact-${
+        currentAccountIdentity?.displayName ||
+        user?.firstName ||
+        "Contributeur"
+      }.png`;
       link.href = dataUrl;
       link.click();
       confetti({
@@ -147,7 +185,11 @@ export default function ImpactProfilePage() {
         {/* Visual Preview */}
         <div className="flex justify-center sticky top-24">
           <ImpactCard 
-            userName={user?.fullName || "Contributeur anonyme"}
+            userName={
+              currentAccountIdentity?.displayName ||
+              user?.fullName ||
+              "Contributeur anonyme"
+            }
             level={prog?.currentLevel || 1}
             rank={prog?.dynamicRanking?.rank ?? null}
             totalKg={prog?.impact?.wasteKg || 0}

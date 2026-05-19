@@ -1,7 +1,15 @@
 # Latest Session
 
-**Dernière mise à jour :** 2026-05-13
+**Dernière mise à jour :** 2026-05-19
 **Status :** UPDATED
+
+## Snapshot qualité courant
+
+- `npm run typecheck -w apps/web` passe.
+- `npm run test:security -w apps/web` passe.
+- `npm run lint -w apps/web` passe avec warnings tolérés en développement.
+- Les runs et deployments GitHub obsolètes ont été purgés.
+- Le point d’entrée pour le prochain audit est [documentation/maintenance/quality-audit-snapshot.md](../../maintenance/quality-audit-snapshot.md).
 
 ## Travaux accomplis (Cette session)
 
@@ -32,6 +40,13 @@
 - **Migration** : Déplacement de tous les fichiers non essentiels à la racine vers `documentation/`, `scripts/`, ou `backups/logs/`.
 - **Simplification** : Seuls `modularization_plan.md`, `LANCER_SITE_LOCAL.bat` et les configs standard (git, package.json) subsistent à la racine.
 
+### 4. Gouvernance Design System & Documentation
+- **Canon clarifié** : `documentation/design-system/design-system.md` a été remplacé par `design-system-legacy.md` pour marquer explicitement le statut historique.
+- **Déplacements** : `standards-visuels.md` a été déplacé vers `documentation/ai-guides/standards-visuels.md` et `feedback-ruban-plan.md` vers `documentation/plans/feedback-ruban-plan.md`.
+- **Index réécrit** : `documentation/design-system/README.md` distingue désormais code live, docs canoniques, legacy et hors périmètre.
+- **Liens corrigés** : mises à jour de `AI_DEVELOPER_GUIDE.md`, `display-modes-implementation.md`, `USAGE_GUIDE.md`, `AGENTS.md` et `ai-guides/README.md`.
+- **Découverte** : ajout du guide `documentation/ai-guides/standards-visuels.md` dans l’index des guides IA.
+
 ## En attente d'exécution (Next & Risks)
 - **Observabilité admin** : compléter le lot message 3 avec timeline courte des incidents et vue centralisée plus narrative.
 - **Tests de non-régression** : compléter la couverture explicite de `/dashboard`, `/reports`, `/actions/map` et des endpoints d'export critiques.
@@ -46,6 +61,7 @@
 ## Risks
 - **Lots DU restants** : une partie des messages `ateliers_DU` reste à exécuter, surtout sur les flux lourds (campagnes, exports, refactor `section-renderer`).
 - **Traçabilité vs réalité** : la matrice de traçabilité est une v1 documentaire et doit rester synchronisée avec le code.
-- **Dette Lint** : Non-conformité lint globale encore présente.
+- **Dette Lint** : warnings restants acceptés pour le moment; le snapshot qualité courant sert de backlog de priorisation.
 - **Complexité Framer Motion** : Veiller à ce que les animations `layoutId` ne créent pas de conflits de rendu sur mobile.
 - **Chemins Documentation** : Risque de liens brisés dans d'autres docs suite à la migration racine (audit des liens à prévoir).
+- **Références historiques** : certains bookmarks ou commentaires peuvent encore pointer vers l’ancien `design-system.md`; surveiller les retours d’usage avant suppression définitive des mentions résiduelles.

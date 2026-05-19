@@ -77,23 +77,24 @@ export async function GET() {
  }
  }
 
- const preferredLocation =
- [...locationCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
- const preferredAssociation =
- [...associationCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
- ASSOCIATION_SELECTION_OPTIONS[0];
- const firstAction = recent[0];
+  const preferredLocation =
+  [...locationCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const preferredAssociation =
+  [...associationCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+  ASSOCIATION_SELECTION_OPTIONS[0];
+  const firstAction = recent[0];
+  const locationLabel = preferredLocation ?? firstAction?.location_label ?? "";
 
- return NextResponse.json({
- status:"ok",
- prefill: {
- actionDate: new Date().toISOString().slice(0, 10),
- actorName: identity?.displayName ?? firstAction?.actor_name ?? userId,
- associationName: preferredAssociation,
- locationLabel: preferredLocation,
- volunteersCount: median(volunteersSamples, 1),
- durationMinutes: median(durationSamples, 60),
- },
+  return NextResponse.json({
+  status:"ok",
+  prefill: {
+  actionDate: new Date().toISOString().slice(0, 10),
+  actorName: identity?.displayName ?? firstAction?.actor_name ?? userId,
+  associationName: preferredAssociation,
+  locationLabel,
+  volunteersCount: median(volunteersSamples, 1),
+  durationMinutes: median(durationSamples, 60),
+  },
  basedOn: { recentDeclarations: recent.length },
  });
  } catch (error) {

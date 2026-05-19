@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getNavigationLabels,
+  getNavigationCategoriesForProfile,
   getNavigationProfileOverview,
   getNavigationSpacesForProfile,
   getPilotFallbackItems,
@@ -148,12 +149,42 @@ describe("navigation display modes", () => {
       "dashboard",
       "explorer",
       "profile",
+      "feedback",
       "pilotage",
       "admin",
       "sponsor",
       "elus",
       "godmode",
     ]);
+  });
+
+  it("uses sentence case labels in visible navigation items", () => {
+    const homeSpace = getNavigationSpacesForProfile(
+      "max",
+      "exhaustif",
+    ).find((space) => space.id === "home");
+    const learnSpace = getNavigationSpacesForProfile(
+      "benevole",
+      "exhaustif",
+    ).find((space) => space.id === "learn");
+    const visualizeSpace = getNavigationSpacesForProfile(
+      "coordinateur",
+      "exhaustif",
+    ).find((space) => space.id === "visualize");
+
+    expect(homeSpace?.items.map((item) => item.label.fr)).toEqual([
+      "Tableau de bord",
+      "Sommaire",
+      "Profil",
+      "Feedback",
+      "Pilotage",
+      "Administration",
+      "Espace décideur",
+      "Gouvernance",
+      "Mode administrateur",
+    ]);
+    expect(learnSpace?.items.map((item) => item.label.fr)).toContain("S'entraîner");
+    expect(visualizeSpace?.items.map((item) => item.label.fr)).toContain("Rapports d'impact");
   });
 
   it("hides the empty pilot space for benevole", () => {
@@ -183,6 +214,15 @@ describe("navigation display modes", () => {
     ]);
     expect(fallback[0]?.label.fr).toBe("Tableau de bord");
     expect(fallback[1]?.label.fr).toBe("Rapports d'impact");
+  });
+
+  it("places feedback in the pilotage category", () => {
+    const categories = getNavigationCategoriesForProfile("max", "exhaustif");
+    const pilotageCategory = categories.find((category) => category.id === "pilotage");
+    const communityCategory = categories.find((category) => category.id === "community");
+
+    expect(pilotageCategory?.items.map((item) => item.routeId)).toContain("feedback");
+    expect(communityCategory?.items.map((item) => item.routeId)).not.toContain("feedback");
   });
 
   it("limits profile switch entries to active profile for non-admin users", () => {

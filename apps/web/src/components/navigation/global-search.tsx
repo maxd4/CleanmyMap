@@ -9,6 +9,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { getNavigationSpacesForProfile } from "@/lib/navigation";
 import type { AppProfile } from "@/lib/profiles";
+import type { DisplayMode, Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
 
 type GlobalSearchProps = {
@@ -19,8 +20,8 @@ type SearchItem = ReturnType<typeof buildSearchItems>[number];
 
 function buildSearchItems(
   currentProfile: AppProfile,
-  displayMode: ReturnType<typeof useSitePreferences>["displayMode"],
-  locale: ReturnType<typeof useSitePreferences>["locale"],
+  displayMode: DisplayMode,
+  locale: Locale,
 ) {
   const spaces = getNavigationSpacesForProfile(currentProfile, displayMode, locale);
   return spaces.flatMap((space) =>
@@ -112,17 +113,17 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
       <button
         type="button"
         onClick={toggle}
-        className="group inline-flex min-h-11 w-full items-center justify-between gap-3 rounded-full border border-white/10 bg-white/8 px-4 text-white/90 shadow-[0_18px_38px_-30px_rgba(2,6,23,0.95)] backdrop-blur-xl transition-all hover:border-cyan-200/24 hover:bg-white/12 hover:text-white active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+        className="group inline-flex min-h-10 w-full items-center justify-between gap-2.5 rounded-full border border-white/10 bg-white/8 px-3.5 text-white/90 shadow-[0_18px_38px_-30px_rgba(2,6,23,0.95)] backdrop-blur-xl transition-all hover:border-cyan-200/24 hover:bg-white/12 hover:text-white active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
         title={locale === "fr" ? "Rechercher (Ctrl+K)" : "Search (Ctrl+K)"}
         aria-label={locale === "fr" ? "Rechercher" : "Search"}
       >
-        <span className="flex min-w-0 items-center gap-2.5">
+        <span className="flex min-w-0 items-center gap-2">
           <Search className="h-4.5 w-4.5 shrink-0 text-cyan-100 transition-transform group-hover:scale-110" aria-hidden="true" />
           <span className="truncate cmm-text-caption font-black uppercase tracking-[0.14em]">
             {locale === "fr" ? "Rechercher" : "Search"}
           </span>
         </span>
-        <kbd className="hidden shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/18 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/56 sm:inline-flex">
+        <kbd className="hidden shrink-0 items-center gap-1 rounded-full border border-white/10 bg-black/18 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/56 sm:inline-flex">
           <Command size={10} />
           K
         </kbd>
@@ -269,7 +270,7 @@ export function GlobalSearch({ currentProfile }: GlobalSearchProps) {
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
                     <span className="rounded border border-slate-800 bg-slate-900 px-1 py-0.5">↑↓</span>
-                    {locale === "fr" ? "Naviguer" : "Navigate"}
+                    {locale === "fr" ? "Parcourir" : "Browse"}
                   </div>
                   <div className="flex items-center gap-1.5 text-[10px] font-medium text-slate-500">
                     <span className="rounded border border-slate-800 bg-slate-900 px-1 py-0.5">ESC</span>

@@ -18,7 +18,7 @@ Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionR
 - `/components/ui/` : Composants génériques et réutilisables (Boutons, Modals, Wrappers).
 - `/components/actions/` : Tout le flux de collecte terrain (Formulaires de déclaration, Cartes des déchets).
 - `/components/sections/rubriques/` : Le cœur de l'UI. Chaque "rubrique" (ex: Annuaire, Météo, Classement) est un composant isolé ici. Ne mets pas de logique globale dans ces fichiers.
-- `/lib/sections-registry.ts` : Registre central de toutes les vues `Rubriques`. Si tu crées un nouveau module dans le site, tu **dois** l'enregistrer ici pour qu'il apparaisse dans le routeur et la navigation.
+- `/lib/sections-registry/config.ts` : Registre central de toutes les vues `Rubriques`. Si tu crées un nouveau module dans le site, tu **dois** l'enregistrer ici pour qu'il apparaisse dans le routeur et la navigation.
 
 ## 3. Données et Intégration (Supabase + Clerk)
 - Clerk gère l'authentification. Les métadonnées rôles sont sur `publicMetadata.role`. 
@@ -28,11 +28,12 @@ Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionR
 
 ## 4. Règles d'Architecture & Gouvernance
 1. **Gouvernance Globale** : Avant toute modification structurale, consulte la couche de gouvernance dans `documentation/` :
-   - [Design System](./documentation/design/charte-ui-pro-moderne-futuriste.md) (Règles visuelles Premium).
-   - [Display Modes](./documentation/design/display-modes-chartes.md) (Chartes des 3 modes).
-   - [Typography](./documentation/design/TYPOGRAPHY_SYSTEM.md) (Système typographique).
-   - [Data Governance](./documentation/technical/data-governance.md) (Contrats et Ingestion).
-   - [API Standard](./documentation/technical/api-standard.md) (Erreurs et Sécurité).
+   - [Design System](../design-system/README.md) (index de gouvernance visuelle).
+   - [Design Charter](../design-system/charte-ui-pro-moderne-futuriste.md) (Règles visuelles Premium).
+   - [Display Modes](../design-system/display-modes-chartes.md) (Chartes des 3 modes).
+   - [Typography](../design-system/TYPOGRAPHY_SYSTEM.md) (Système typographique).
+   - [Data Governance](../technical/data-governance.md) (Contrats et Ingestion).
+   - [API Standard](../technical/api-standard.md) (Erreurs et Sécurité).
 3. **Nomenclature Utilisateur** : Utilise toujours les noms engageants pour les rubriques FR (ex: "Signalement Déchets" au lieu de "Trash Spotter", "Mon Profil & Impact" au lieu de "Compte", "Entraide Locale" au lieu de "Discussion").
 4. **Pas de logique lourde en Client Components** : Isole la data-fetching côté serveur.
 5. **Dynamic Imports pour Leaflet** : Obligatoire pour éviter les crashs SSR.

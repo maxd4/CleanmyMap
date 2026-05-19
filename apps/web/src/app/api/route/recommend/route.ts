@@ -139,56 +139,57 @@ export async function POST(request: Request) {
  })
  .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
 
- const selected = candidates.slice(0, Math.max(constraints.maxStops * 2, 8));
- if (selected.length === 0) {
- return NextResponse.json({
- status:"ok",
- stops: [],
- scoreBreakdown: { impact: 0, distance: 0, constraints: 0, global: 0 },
- constraintsApplied: constraints,
- tradeoffs: [
-"Aucun point geolocalise disponible pour les contraintes selectionnees.",
- ],
- proactiveAssistant: {
- ...defaultRouteAssistantPayload(),
- },
- });
- }
+  const selected = candidates.slice(0, Math.max(constraints.maxStops * 2, 8));
+  const routeStart = selected[0];
+  if (routeStart === undefined) {
+    return NextResponse.json({
+      status: "ok",
+      stops: [],
+      scoreBreakdown: { impact: 0, distance: 0, constraints: 0, global: 0 },
+      constraintsApplied: constraints,
+      tradeoffs: [
+        "Aucun point geolocalise disponible pour les contraintes selectionnees.",
+      ],
+      proactiveAssistant: {
+        ...defaultRouteAssistantPayload(),
+      },
+    });
+  }
 
- const impactWeight = constraints.impactVsDistance / 100;
- const distanceWeight = 1 - impactWeight;
- const routeStart = selected[0];
- if (!routeStart) {
- return NextResponse.json({
- status:"ok",
- stops: [],
- scoreBreakdown: { impact: 0, distance: 0, constraints: 0, global: 0 },
- constraintsApplied: constraints,
- tradeoffs: ["Aucun point exploitable n'a pu être retenu."],
- proactiveAssistant: {
- ...defaultRouteAssistantPayload(),
- },
- });
- }
- const route: StopCandidate[] = [routeStart];
- const unvisited = selected.slice(1);
+  const impactWeight = constraints.impactVsDistance / 100;
+  const distanceWeight = 1 - impactWeight;
+  const route: StopCandidate[] = [routeStart];
+  const unvisited = selected.slice(1);
 
- while (route.length < constraints.maxStops && unvisited.length > 0) {
- const current = route[route.length - 1]!;
- let bestIndex = 0;
- let bestValue = Number.NEGATIVE_INFINITY;
- for (let i = 0; i < unvisited.length; i += 1) {
- const candidate = unvisited[i]!;
- const dist = distanceKm(current, candidate);
- const composite =
- candidate.score * impactWeight - dist * 8 * distanceWeight;
- if (composite > bestValue) {
- bestValue = composite;
- bestIndex = i;
- }
- }
- route.push(unvisited.splice(bestIndex, 1)[0]!);
- }
+  while (route.length < constraints.maxStops && unvisited.length > 0) {
+    const current = route[route.length - 1];
+    if (!current) {
+      break;
+    }
+
+    let bestIndex = 0;
+    let bestValue = Number.NEGATIVE_INFINITY;
+    for (let i = 0; i < unvisited.length; i += 1) {
+      const candidate = unvisited[i];
+      if (!candidate) {
+        continue;
+      }
+
+      const dist = distanceKm(current, candidate);
+      const composite = candidate.score * impactWeight - dist * 8 * distanceWeight;
+      if (composite > bestValue) {
+        bestValue = composite;
+        bestIndex = i;
+      }
+    }
+
+    const next = unvisited.splice(bestIndex, 1)[0];
+    if (!next) {
+      break;
+    }
+
+    route.push(next);
+  }
 
  const stops = route.map((item, index) => {
  const prev = index > 0 ? route[index - 1] : null;

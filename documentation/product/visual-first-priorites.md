@@ -1,42 +1,33 @@
 # Visual-first priorites
 
-Top 10 des zones ou le visuel remplace le plus de texte et reduit le temps de comprehension.
+Top des pages ou le visuel apporte le plus de clarté et réduit le temps de comprehension.
 
-## Classement priorise
-1. **Onboarding dev**  
-   Cible: `documentation/index-par-objectif.md`  
-   Impact: demarrage contributeur en < 5 min (ou agir, quoi valider, ou risquer regression).
-2. **System overview architecture**  
-   Cible: `documentation/architecture/system-overview.md`  
-   Impact: lecture immediate du flux front/API/data sans prose longue.
-3. **Modules et dependances**  
-   Cible: `documentation/architecture/modules-cles-et-dependances.md`  
-   Impact: localisation rapide des zones code par type de demande.
-4. **Front/back boundaries**  
-   Cible: `documentation/architecture/frontend-backend-boundaries.md`  
-   Impact: reduction des erreurs de placement (UI vs API vs lib domaine).
-5. **Pipeline import data**  
-   Cible: `documentation/data/pipeline-import.md`  
-   Impact: reduction des erreurs d'import via sequence visuelle des etapes.
-6. **Schema normalisation data**  
-   Cible: `documentation/data/schema-normalisation.md`  
-   Impact: meilleur alignement sur les contrats de donnees.
-7. **API vigilance securite**  
-   Cible: `documentation/securite/api-vigilance.md`  
-   Impact: controle rapide des checks obligatoires avant merge/deploy.
-8. **AuthN/AuthZ regles**  
-   Cible: `documentation/securite/authz-authn-regles.md`  
-   Impact: evite regressions d'acces sur routes sensibles.
-9. **Runbook incidents**  
-   Cible: `documentation/exploitation/incidents-frequents-et-reprise.md`  
-   Impact: baisse du MTTR avec arbre de decision incident.
-10. **Runbook monitoring/deploiement**  
-   Cibles: `documentation/exploitation/runbook-monitoring-logs.md`, `documentation/exploitation/runbook-deploiement.md`  
-   Impact: execution operationnelle standardisee (avant/pendant/apres deploy).
+```mermaid
+flowchart LR
+  A["Audit visuel"] --> B["Hub produit"]
+  B --> C["Index par objectif"]
+  B --> D["Vision"]
+  B --> E["Parcours"]
+  B --> F["Matrice"]
+  B --> G["Roadmap"]
+```
 
-## Couverture demandee
-- Onboarding: priorites 1, 4.
-- Architecture: priorites 2, 3.
-- Data: priorites 5, 6.
-- Securite: priorites 7, 8.
-- Runbooks: priorites 9, 10.
+## Classement
+
+1. [documentation/index-par-objectif.md](../index-par-objectif.md) - table d'orientation generale
+2. [documentation/product/vision-et-objectifs.md](./vision-et-objectifs.md) - vision produit
+3. [documentation/product/matrice-rubriques.md](./matrice-rubriques.md) - correspondance rubriques / sections
+4. [documentation/product/parcours-utilisateurs.md](./parcours-utilisateurs.md) - parcours et persona
+5. [documentation/product/roadmap-priorisee.md](./roadmap-priorisee.md) - ordre d'execution
+6. [documentation/product/SCIENTIFIC_PROTOCOL.md](./SCIENTIFIC_PROTOCOL.md) - methodologie des indicateurs
+7. [documentation/architecture/system-overview.md](../architecture/system-overview.md) - vue d'ensemble technique
+8. [documentation/architecture/modules-cles-et-dependances.md](../architecture/modules-cles-et-dependances.md) - dépendances et zones cles
+9. [documentation/security/authz-authn-regles.md](../security/authz-authn-regles.md) - regles d'acces
+10. [documentation/operations/incidents-frequents-et-reprise.md](../operations/incidents-frequents-et-reprise.md) - reprise et incidents
+
+## Criteres de choix
+
+- si une page sert a decider, le visuel doit montrer la structure ;
+- si une page sert a executer, le visuel doit montrer les etapes ;
+- si une page sert a controler, le visuel doit montrer les points de vigilance ;
+- si une page sert a comparer, le visuel doit montrer la relation entre les blocs.

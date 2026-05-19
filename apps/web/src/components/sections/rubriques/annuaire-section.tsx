@@ -43,7 +43,7 @@ export function AnnuaireSection() {
   return (
     <SectionShell
       id="annuaire"
-      title={fr ? "Annuaire des Acteurs" : "Actors Directory"}
+      title={fr ? "Annuaire des acteurs" : "Actors directory"}
       subtitle={fr ? "Explorez l'écosystème engagé pour un territoire propre et durable." : "Explore the ecosystem committed to a clean and sustainable territory."}
       icon={Globe}
       gradient="from-violet-600/20 via-indigo-500/10 to-transparent"

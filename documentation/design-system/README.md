@@ -1,198 +1,114 @@
-# Design System - Guide IA
+# Design System - Gouvernance IA
 
-Système de design pour agents IA. **TOUJOURS consulter avant toute modification UI.**
-
----
-
-## 🎨 Fichiers Essentiels pour IA
-
-### Charte Visuelle (PRIORITÉ ABSOLUE)
-- **charte-ui-pro-moderne-futuriste.md** - Charte UI complète
-- **VISUAL_STORYTELLING.md** - Priorité aux visuels sur le texte
-- **principes-visuels.md** - Principes de base
-- **design-system.md** - Contient la palette officielle par bloc (Accents)
-
-### Composants Canoniques (OBLIGATOIRE)
-- **design-system.md** - Composants à utiliser
-- **USAGE_GUIDE.md** - Guide d'utilisation
-
-### Modes d'Affichage
-- **display-modes-chartes.md** - 3 modes : exhaustif, minimaliste, sobre
-- **display-modes-implementation.md** - Implémentation technique
-- **theme-visibility-rules.md** - Règles de visibilité
-
-### Typographie
-- **TYPOGRAPHY_SYSTEM.md** - Système typographique complet
-- **standards-visuels.md** - Standards visuels
-
-### Animations & Interactions
-- **ANIMATION_LIBRARY.md** - Bibliothèque d'animations
-- **cursor-system.md** - Système de curseurs
-- **THEME_SOMBRE_DOUCE.md** - Thème sombre
-
-### Patterns
-- **patterns-cartes-filtres-etats.md** - Patterns cartes/filtres/états
-- **cleanmymap-ui-ux-pro-max.md** - Synthèse CleanMyMap des règles UI/UX Pro Max
+Système de référence pour tout travail UI. À lire avant toute modification visuelle ou navigation.
 
 ---
 
-## 🤖 Règles Strictes pour IA
+## Règle de priorité
 
-### Priorité opérationnelle CleanMyMap
+1. Le **code live** prime toujours sur la documentation.
+2. Les **tokens et couleurs** vivent dans `apps/web/src/app/globals.css` et `apps/web/src/lib/ui/block-accents.ts`.
+3. La **navigation et les rubriques** vivent dans `apps/web/src/lib/navigation.ts` et `apps/web/src/lib/sections-registry/config.ts`.
+4. Les **composants réutilisables** vivent dans `apps/web/src/components/ui/*` et `apps/web/src/components/navigation/*`.
+5. La **documentation visuelle** complète la lecture, mais ne remplace jamais le code.
 
-Avant toute modification UI sur une page métier, lire aussi :
-`cleanmymap-ui-ux-pro-max.md`
-
-Objectif :
-- garder une UI dense mais lisible
-- sécuriser les formulaires et états asynchrones
-- éviter les décalages de layout
-- maintenir une navigation clavier correcte
-- conserver une ergonomie robuste sur mobile et desktop
-
-### ✅ TOUJOURS FAIRE
-
-1. **Lire la charte avant toute UI**
-   ```
-   Fichier: charte-ui-pro-moderne-futuriste.md
-   ```
-
-2. **Utiliser les composants canoniques**
-   ```tsx
-   // ✅ BON
-   import { CmmCard } from '@/components/ui/cmm-card';
-   import { CmmButton } from '@/components/ui/cmm-button';
-   
-   // ❌ MAUVAIS
-   import { Card } from 'shadcn';
-   ```
-
-3. **Utiliser les classes typographiques**
-   ```tsx
-   // ✅ BON
-   <h1 className="cmm-text-h1 cmm-text-primary">
-   
-   // ❌ MAUVAIS
-   <h1 className="text-[24px] font-extrabold">
-   ```
-
-4. **Respecter les modes d'affichage**
-   ```tsx
-   const { displayMode } = useSitePreferences();
-   // exhaustif | minimaliste | sobre
-   ```
-
-5. **Traiter les écrans pilotage/admin comme des surfaces opérationnelles**
-   ```text
-   Utiliser grilles, tableaux, KPI, filtres, états vides et confirmations claires.
-   Eviter les compositions marketing ou les cartes décoratives inutiles.
-   ```
-
-6. **Stabiliser les interactions**
-   ```text
-   Réserver l'espace des contenus asynchrones.
-   Afficher un état de chargement explicite.
-   Désactiver les actions pendant les soumissions async.
-   ```
-
-### ❌ NE JAMAIS FAIRE
-
-1. **Ne pas utiliser de tailles arbitraires**
-   ```tsx
-   // ❌ INTERDIT
-   className="text-[10px] text-[11px]"
-   
-   // ✅ UTILISER
-   className="cmm-text-small cmm-text-caption"
-   ```
-
-2. **Ne pas utiliser font-extrabold**
-   ```tsx
-   // ❌ INTERDIT
-   className="font-extrabold"
-   
-   // ✅ UTILISER
-   className="cmm-text-h1" // déjà bold
-   ```
-
-3. **Ne pas utiliser text-primary de Tailwind**
-   ```tsx
-   // ❌ INTERDIT (conflit Tailwind v4)
-   className="text-primary"
-   
-   // ✅ UTILISER
-   className="cmm-text-primary"
-   ```
-
-4. **Ne pas traiter une page métier comme une landing page**
-   ```text
-   Pas de hero décoratif sur les surfaces admin, validation, analytics, formulaires complexes.
-   ```
-
-5. **Ne pas laisser un formulaire sans feedback accessible**
-   ```text
-   Les erreurs doivent être lisibles, proches du champ, et annoncées pour les lecteurs d'écran.
-   ```
+Si un document contredit le code live, la source d’exécution gagne.
 
 ---
 
-## 📊 Workflow IA pour UI
+## Où chercher quoi
 
-```
-1. Lire charte-ui-pro-moderne-futuriste.md
-   ↓
-2. Consulter VISUAL_STORYTELLING.md (priorité visuels)
-   ↓
-3. Utiliser composants de design-system.md
-   ↓
-4. Appliquer typographie de TYPOGRAPHY_SYSTEM.md
-   ↓
-5. Respecter display-modes-chartes.md
-   ↓
-6. Valider avec USAGE_GUIDE.md
-```
-
----
-
-## 🎯 Composants Canoniques
-
-```tsx
-// Cards
-import { CmmCard } from '@/components/ui/cmm-card';
-
-// Buttons
-import { CmmButton } from '@/components/ui/cmm-button';
-
-// Typography - Classes CSS
-cmm-text-h1, cmm-text-h2, cmm-text-h3, cmm-text-h4
-cmm-text-body, cmm-text-small, cmm-text-caption
-
-// Colors - Classes CSS
-cmm-text-primary, cmm-text-secondary, cmm-text-muted, cmm-text-inverse
-
-// Surfaces - Classes CSS
-cmm-surface, cmm-surface-muted, cmm-panel, cmm-card
-```
+| Besoin | Fichier canonique |
+|---|---|
+| Charte UI premium | `charte-ui-pro-moderne-futuriste.md` |
+| Mode d’affichage | `display-modes-chartes.md` |
+| Implémentation des modes | `display-modes-implementation.md` |
+| Palette par bloc / rubrique | `BLOC_COLOR_SYSTEM_PREMIUM.md` |
+| Typographie | `TYPOGRAPHY_SYSTEM.md` |
+| Règles de visibilité | `theme-visibility-rules.md` |
+| Storytelling visuel | `VISUAL_STORYTELLING.md` |
+| Animations et transitions | `ANIMATION_LIBRARY.md` |
+| Curseurs | `cursor-system.md` |
+| Patterns cartes / filtres / états | `patterns-cartes-filtres-etats.md` |
+| Règles UI opérationnelles CleanMyMap | `cleanmymap-ui-ux-pro-max.md` |
+| Guide d’usage canonique | `USAGE_GUIDE.md` |
+| Planche visuelle exhaustive | `../design-system-board.dynamic.html` |
+| Snapshot figé de contrôle | `../design-system-board.html` |
+| Régénération | `npm run design-system:board` |
 
 ---
 
-## 🚨 Checklist Avant Commit UI
+## Sources de vérité côté code
 
-```
-□ Charte consultée
-□ Composants canoniques utilisés
-□ Classes cmm-* utilisées (pas text-[Xpx])
-□ Pas de font-extrabold
-□ Pas de text-primary (Tailwind)
-□ Display modes respectés
-□ Visuels prioritaires sur texte
-□ Etats async visibles et stables
-□ Navigation clavier vérifiée
-□ Pas de scroll horizontal mobile
-``` 
+- `apps/web/src/app/globals.css` : tokens globaux, surfaces, blur, glow, ombres, glassmorphism.
+- `apps/web/src/lib/ui/block-accents.ts` : couleurs de bloc, accents de rubrique, correspondances visuelles.
+- `apps/web/src/lib/navigation.ts` : blocs visibles, libellés, ordre de navigation, accessibilité.
+- `apps/web/src/lib/sections-registry/config.ts` : routes et rubriques enregistrées.
+- `apps/web/src/components/ui/*` : boutons, cards, pills, inputs, panels et primitives réutilisables.
+- `apps/web/src/components/navigation/*` : ruban, menus, recherche, notifications, contexte utilisateur.
+- `../design-system-board.dynamic.html` : planche de référence à privilégier, générée à partir des sources canoniques.
+- `../design-system-board.html` : snapshot figé, utile pour contrôle visuel et comparaison.
+- `npm run design-system:board` : régénère la copie dynamique et le JSON intermédiaire.
 
 ---
 
-**Optimisé pour** : Agents IA  
-**Priorité** : CRITIQUE - Lire avant toute modification UI  
-**Dernière mise à jour** : 2025-01-XX
+## Règles d’usage
+
+### Toujours faire
+
+- Lire `charte-ui-pro-moderne-futuriste.md` avant toute UI.
+- Utiliser les composants canoniques au lieu de recréer des primitives.
+- Utiliser les classes `cmm-*` pour la typographie et les surfaces.
+- Respecter les trois modes d’affichage.
+- Garder les états async lisibles, stables et accessibles.
+- Préserver la lisibilité mobile sans casser la densité desktop.
+
+### Ne jamais faire
+
+- Réintroduire des tailles arbitraires comme `text-[10px]`.
+- Utiliser `font-extrabold` quand les classes canoniques suffisent.
+- Utiliser `text-primary` Tailwind au lieu des tokens `cmm-text-*`.
+- Traiter une page métier comme une landing page décorative.
+- Laisser un formulaire sans feedback accessible.
+
+---
+
+## Priorité par zone
+
+### UI opérationnelle
+Pour les écrans pilotage, admin, analytics et formulaires complexes :
+- privilégier les grilles, tableaux, KPI, filtres et états vides clairs;
+- limiter le décor non fonctionnel;
+- garder les interactions clavier et les confirmations visibles.
+
+### UI d’exploration
+Pour la home, l’explorer et les blocs :
+- prioriser les cartes, les accents de bloc et les états hover / actif;
+- garder la hiérarchie visuelle simple;
+- aligner les couleurs sur les tokens du projet.
+
+---
+
+## Documents historiques ou de compatibilité
+
+- `design-system-legacy.md` : ancien agrégat, conservé uniquement pour référence.
+- `THEME_SOMBRE_DOUCE.md` : héritage visuel, utile pour comprendre la transition, pas une règle unique.
+
+---
+
+## Hors du dossier design-system
+
+- `../ai-guides/standards-visuels.md` : standards de visuels de documentation.
+- `../plans/feedback-ruban-plan.md` : plan de travail ponctuel, pas une source de vérité UI.
+
+---
+
+## Checklist avant livraison UI
+
+- Charte consultée.
+- Composants canoniques utilisés.
+- Tokens CSS cohérents.
+- Modes d’affichage respectés.
+- États hover / actif / focus vérifiés.
+- Pas de débordement mobile.
+- Pas de doublon de source de vérité.

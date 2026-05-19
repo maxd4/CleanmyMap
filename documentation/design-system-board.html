@@ -1,0 +1,2168 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>CleanMyMap - Planche visuelle du design system (dynamique)</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --paper: rgba(255, 255, 255, 0.84);
+      --paper-strong: rgba(255, 255, 255, 0.96);
+      --text: #10172a;
+      --muted: #000000;
+      --muted-strong: #000000;
+      --line: rgba(15, 23, 42, 0.08);
+      --line-strong: rgba(15, 23, 42, 0.14);
+      --shadow-soft: 0 16px 40px -28px rgba(15, 23, 42, 0.34);
+      --shadow-deep: 0 30px 80px -48px rgba(15, 23, 42, 0.46);
+      --r-xs: 10px;
+      --r-sm: 14px;
+      --r-md: 18px;
+      --r-lg: 24px;
+      --r-xl: 32px;
+      --display: "Outfit", "Segoe UI", system-ui, sans-serif;
+      --body: "Inter", "Segoe UI", system-ui, sans-serif;
+      --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      --accent-primary: #10b981;
+      --accent-vibrant: #38bdf8;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: var(--body);
+      background:
+        radial-gradient(circle at 0% 0%, rgba(16, 185, 129, 0.10), transparent 30%),
+        radial-gradient(circle at 100% 0%, rgba(56, 189, 248, 0.10), transparent 28%),
+        radial-gradient(circle at 100% 100%, rgba(245, 158, 11, 0.10), transparent 28%),
+        linear-gradient(180deg, #fbfaf7 0%, #f1f5f9 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+      background-size: 52px 52px;
+      opacity: 0.28;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.32), transparent 86%);
+    }
+
+    h1, h2, h3, h4 {
+      margin: 0;
+      font-family: var(--display);
+      letter-spacing: -0.04em;
+      text-wrap: balance;
+    }
+
+    p { margin: 0; }
+
+    .board {
+      position: relative;
+      z-index: 1;
+      width: min(1740px, calc(100vw - 28px));
+      margin: 14px auto 28px;
+      border: 1px solid var(--line);
+      border-radius: 34px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.84);
+      box-shadow: var(--shadow-deep);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.36fr 0.92fr;
+      gap: 18px;
+      padding: 28px;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.88)),
+        radial-gradient(circle at top left, rgba(16, 185, 129, 0.10), transparent 42%),
+        radial-gradient(circle at top right, rgba(56, 189, 248, 0.10), transparent 40%);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(16, 185, 129, 0.16);
+      background: rgba(16, 185, 129, 0.08);
+      color: #0f766e;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #10b981, #38bdf8);
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.10);
+      flex: none;
+    }
+
+    .hero h1 {
+      margin-top: 14px;
+      max-width: 14ch;
+      font-size: clamp(46px, 5.1vw, 78px);
+      line-height: 0.92;
+    }
+
+    .hero .lead {
+      max-width: 64ch;
+      margin-top: 14px;
+      color: var(--muted-strong);
+      font-size: 15px;
+      line-height: 1.72;
+    }
+
+    .chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--muted-strong);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      box-shadow: 0 8px 24px -24px rgba(15, 23, 42, 0.22);
+    }
+
+    .chip strong {
+      color: var(--text);
+      font-weight: 900;
+      letter-spacing: 0.02em;
+    }
+
+    .hero-aside {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      align-content: start;
+    }
+
+    .stat {
+      min-height: 116px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 247, 250, 0.92));
+      box-shadow: var(--shadow-soft);
+    }
+
+    .stat .k {
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .stat .v {
+      margin-top: 8px;
+      font-size: 30px;
+      font-weight: 900;
+      line-height: 0.94;
+      letter-spacing: -0.05em;
+    }
+
+    .stat .d {
+      margin-top: 8px;
+      color: var(--muted-strong);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .hero-source {
+      grid-column: 1 / -1;
+      min-height: 132px;
+      padding: 16px 18px;
+      border-radius: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: white;
+      background:
+        radial-gradient(circle at top right, rgba(56, 189, 248, 0.22), transparent 40%),
+        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.18), transparent 42%),
+        linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.90));
+      box-shadow: var(--shadow-soft);
+    }
+
+    .hero-source .k {
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .hero-source .v {
+      margin-top: 8px;
+      font-size: 20px;
+      font-weight: 900;
+      line-height: 1.05;
+    }
+
+    .hero-source .d {
+      margin-top: 8px;
+      color: #ffffff;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .section {
+      padding: 26px 28px 30px;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    .section-head h2 {
+      font-size: clamp(26px, 2.05vw, 34px);
+      line-height: 0.98;
+    }
+
+    .section-head .sub {
+      max-width: 68ch;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .section-head .ref {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      text-align: right;
+      line-height: 1.45;
+    }
+
+    .section-head .ref strong {
+      color: var(--text);
+      font-weight: 900;
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .palette-card {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .palette-card .tone {
+      height: 132px;
+      margin: 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.48);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.22),
+        0 24px 40px -32px rgba(15, 23, 42, 0.36);
+    }
+
+    .palette-card .body {
+      padding: 0 16px 16px;
+    }
+
+    .palette-card .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .palette-card .name {
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.05;
+    }
+
+    .palette-card .token {
+      flex: none;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.80);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .palette-card .value {
+      margin-top: 8px;
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted-strong);
+      word-break: break-word;
+    }
+
+    .palette-card .use {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .block-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .block-card {
+      display: flex;
+      flex-direction: column;
+      min-height: 500px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .block-band {
+      height: 112px;
+      margin: 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.20);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        0 24px 44px -34px rgba(15, 23, 42, 0.36);
+    }
+
+    .block-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 16px;
+    }
+
+    .block-icon {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 16px;
+      color: white;
+      font-size: 22px;
+      box-shadow: 0 18px 34px -24px rgba(15, 23, 42, 0.44);
+      flex: none;
+    }
+
+    .block-name {
+      min-width: 0;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1.05;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .block-code {
+      margin-left: auto;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .block-summary {
+      padding: 10px 16px 12px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .block-specs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 0 16px 12px;
+    }
+
+    .spec {
+      min-height: 50px;
+      padding: 8px 10px 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.80);
+    }
+
+    .spec .k {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .spec .v {
+      margin-top: 4px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 700;
+      word-break: break-word;
+      line-height: 1.25;
+    }
+
+    .block-items {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 0 16px 16px;
+      flex: 1;
+    }
+
+    .block-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 88px;
+      padding: 10px 10px 9px;
+      border: 1px solid rgba(15, 23, 42, 0.08);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    .block-item .bar {
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgb(var(--accent-rgb) / 1), rgb(var(--accent-rgb) / 0.34));
+    }
+
+    .block-item .label {
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .block-item .meta {
+      color: var(--muted-strong);
+      font-size: 9px;
+      font-weight: 800;
+      line-height: 1.3;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .block-item .route {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .block-item .state {
+      align-self: flex-start;
+      margin-top: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 24px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--muted-strong);
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .block-item .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: rgb(var(--accent-rgb) / 1);
+      box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.14);
+      flex: none;
+    }
+
+    .tech-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 0 4px;
+      margin-top: 14px;
+    }
+
+    .tech-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.78);
+      color: var(--muted-strong);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .dual-grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 14px;
+    }
+
+    .panel {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .panel-head {
+      padding: 18px 18px 0;
+    }
+
+    .panel-head h3 {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .panel-head p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .panel-body {
+      padding: 16px 16px 18px;
+    }
+
+    .token-groups {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .group {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .group .name {
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.15;
+    }
+
+    .kv-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .kv {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      min-height: 42px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.92));
+    }
+
+    .kv .k {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .kv .v {
+      color: var(--muted-strong);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      text-align: right;
+      word-break: break-word;
+    }
+
+    .effects {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .effect {
+      min-height: 138px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.84);
+    }
+
+    .effect .sample {
+      position: relative;
+      overflow: hidden;
+      height: 62px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.92);
+    }
+
+    .effect .sample::before {
+      content: "";
+      position: absolute;
+      inset: 14px auto auto 14px;
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.96), rgba(56, 189, 248, 0.96));
+      box-shadow: 0 18px 34px -24px rgba(16, 185, 129, 0.75);
+    }
+
+    .effect .sample::after {
+      content: attr(data-code);
+      position: absolute;
+      right: 14px;
+      bottom: 12px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      color: rgba(255, 255, 255, 0.92);
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      backdrop-filter: blur(12px);
+      white-space: nowrap;
+    }
+
+    .effect h4 {
+      font-size: 14px;
+      line-height: 1.1;
+    }
+
+    .effect p {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .component {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .component .head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 18px 0;
+    }
+
+    .component .head h3 {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .component .head .tag {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .component .body {
+      padding: 16px 18px 18px;
+    }
+
+    .context-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .context-tile {
+      min-height: 92px;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(circle at top right, rgba(16,185,129,.08), transparent 42%),
+        linear-gradient(180deg, rgba(255,255,255,.92), rgba(245,247,250,.88));
+    }
+
+    .context-title {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .context-value {
+      margin-top: 8px;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 900;
+      line-height: 1.15;
+    }
+
+    .context-meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .button-row,
+    .state-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid transparent;
+      border-radius: 18px;
+      min-height: 42px;
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      cursor: default;
+      user-select: none;
+      font-family: var(--body);
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .btn.primary {
+      background: var(--accent-primary);
+      color: white;
+      box-shadow: 0 16px 34px -26px rgba(16, 185, 129, 0.44);
+    }
+
+    .btn.secondary {
+      background: white;
+      color: var(--text);
+      border-color: var(--line);
+    }
+
+    .btn.ghost {
+      background: rgba(255, 255, 255, 0.42);
+      color: var(--muted-strong);
+      border-color: rgba(15, 23, 42, 0.08);
+    }
+
+    .btn.pill {
+      border-radius: 999px;
+      padding-inline: 18px;
+    }
+
+    .pill-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.80);
+      color: var(--muted-strong);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .pill-chip .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #10b981, #38bdf8);
+      flex: none;
+    }
+
+    .field-stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    .field-label {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .field,
+    .select,
+    .textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.90);
+      color: var(--text);
+      padding: 13px 14px;
+      font-family: var(--body);
+      font-size: 14px;
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    }
+
+    .field::placeholder,
+    .textarea::placeholder {
+      color: #7b879a;
+    }
+
+    .field:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: rgba(16, 185, 129, 0.38);
+      box-shadow:
+        0 0 0 3px rgba(16, 185, 129, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.26);
+    }
+
+    .textarea {
+      min-height: 90px;
+      resize: vertical;
+    }
+
+    .split-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .nav-preview {
+      overflow: hidden;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background:
+        radial-gradient(circle at top right, rgba(56, 189, 248, 0.12), transparent 40%),
+        radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.10), transparent 44%),
+        linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.92));
+      box-shadow: 0 28px 52px -34px rgba(15, 23, 42, 0.54);
+    }
+
+    .nav-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      height: 44px;
+      padding: 0 12px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #22d3ee, #14b8a6);
+      color: white;
+      font-weight: 900;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+
+    .nav-pill,
+    .nav-icon {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 38px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .nav-pill {
+      padding: 0 14px;
+    }
+
+    .nav-icon {
+      width: 40px;
+      justify-content: center;
+    }
+
+    .nav-spacer { flex: 1; }
+
+    .nav-search {
+      min-width: 280px;
+      padding: 0 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+
+    .nav-search .hint {
+      margin-left: auto;
+      color: #ffffff;
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+    }
+
+    .nav-body {
+      padding: 12px;
+    }
+
+    .nav-note {
+      margin: 0 0 10px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.06);
+      color: #ffffff;
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .nav-blocks {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .nav-block {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      font-size: 20px;
+    }
+
+    .nav-block::after {
+      content: attr(data-title);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 10px);
+      transform: translateX(-50%);
+      padding: 7px 9px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.96);
+      color: white;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      opacity: 0;
+      pointer-events: none;
+      white-space: nowrap;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .nav-block:hover::after {
+      opacity: 1;
+      transform: translateX(-50%) translateY(-2px);
+    }
+
+    .dropdowns {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .dropdown {
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: white;
+    }
+
+    .dropdown .mini {
+      color: #ffffff;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .dropdown .entry {
+      padding: 9px 10px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      margin-top: 8px;
+    }
+
+    .dropdown .entry strong {
+      display: block;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .dropdown .entry span {
+      display: block;
+      margin-top: 4px;
+      color: #ffffff;
+      font-family: var(--mono);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      word-break: break-word;
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card,
+    .card-card {
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    .stat-card {
+      padding: 14px;
+      min-height: 120px;
+    }
+
+    .stat-bar,
+    .card-bar {
+      height: 3px;
+      border-radius: 999px;
+      margin-bottom: 12px;
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-vibrant));
+    }
+
+    .stat-card h4,
+    .card-card h4 {
+      font-size: 16px;
+      line-height: 1.1;
+    }
+
+    .stat-card p,
+    .card-card p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .card-card {
+      padding: 14px;
+      min-height: 160px;
+    }
+
+    .rules-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .rule {
+      min-height: 184px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--paper);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .rule .tag {
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    .rule h3 {
+      margin-top: 8px;
+      font-size: 18px;
+      line-height: 1.05;
+    }
+
+    .rule p {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .rule ul {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    .rule li {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      color: var(--text);
+      font-size: 12px;
+      line-height: 1.42;
+    }
+
+    .rule li::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      margin-top: 6px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, var(--accent-primary), var(--accent-vibrant));
+      flex: none;
+    }
+
+    .footer {
+      padding: 0 28px 26px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .footer strong {
+      color: var(--text);
+    }
+
+    @media (max-width: 1480px) {
+      .hero,
+      .dual-grid,
+      .component-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .palette-grid,
+      .rules-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .block-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 1080px) {
+      .block-grid,
+      .cards-grid,
+      .effects,
+      .token-groups,
+      .palette-grid,
+      .rules-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-aside,
+      .dropdowns,
+      .split-fields,
+      .context-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero h1 {
+        max-width: none;
+      }
+    }
+
+    @media print {
+      @page { size: A4 portrait; margin: 1cm; }
+      body, html {
+        background: white !important;
+        color: black !important;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+      }
+      body::before { display: none !important; }
+      .board {
+        width: 100% !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="board">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">CleanMyMap design system board</div>
+        <h1>Planche visuelle premium</h1>
+        <p class="lead">
+          Une planche compacte qui rassemble les vraies couleurs, les tokens, les effets, les composants UI et les
+          règles de composition du projet dans un format pensé pour la lecture rapide et l’export PNG.
+        </p>
+        <div class="chip-row">
+          <div class="chip"><strong>Sources</strong> globals.css / block-accents.ts / navigation.ts / sections-registry/config.ts / components/ui / components/navigation</div>
+          <div class="chip"><strong>Format</strong> HTML autonome</div>
+          <div class="chip"><strong>Usage</strong> charte / export / IA</div>
+        </div>
+      </div>
+
+      <div class="hero-aside">
+        <article class="stat">
+          <div class="k">Tokens</div>
+          <div class="v">8</div>
+          <div class="d">Palette de base et surfaces canoniques.</div>
+        </article>
+        <article class="stat">
+          <div class="k">Blocs</div>
+          <div class="v">5</div>
+          <div class="d">Accueil, Agir, Cartographie, Réseau, Apprendre.</div>
+        </article>
+        <article class="stat">
+          <div class="k">Effets</div>
+          <div class="v">6</div>
+          <div class="d">Blur, backdrop blur, glow, gradients, ombres, glass.</div>
+        </article>
+        <article class="stat">
+          <div class="k">UI</div>
+          <div class="v">22</div>
+          <div class="d">Boutons, champs, navbar, cards et états.</div>
+        </article>
+        <article class="hero-source">
+          <div class="k">Snapshot technique</div>
+          <div class="v">Sélection canonique du système visuel réel</div>
+          <div class="d">
+            La planche reste autonome, lisible à grande largeur et alignée avec les fichiers sources du dépôt.
+            La copie dynamique est régénérée à partir des mêmes sources canoniques et reste exportable en PNG.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>Palette principale</h2>
+          <p class="sub">Les variables globales du canvas, des surfaces, des textes et des actions. Chaque carte montre le nom du token, sa valeur et son rôle.</p>
+        </div>
+        <div class="ref">Référence<br><strong>apps/web/src/app/globals.css</strong></div>
+      </div>
+      <div class="palette-grid" id="palette-grid"></div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>Couleurs par bloc et par rubrique</h2>
+          <p class="sub">Chaque bloc visible est accompagné d’une famille de rubriques. Les cartes gardent les vrais libellés complets, et les raccourcis du ruban restent compactés uniquement par contrainte d’espace.</p>
+        </div>
+        <div class="ref">Références<br><strong>block-accents.ts</strong> + <strong>sections-registry/config.ts</strong></div>
+      </div>
+      <div class="block-grid" id="block-grid"></div>
+      <div class="tech-strip">
+        <div class="tech-chip">Ruban compact = libellés abrégés</div>
+        <div class="tech-chip">Cartes de bloc = noms complets</div>
+        <div class="tech-chip">Accents techniques conservés: impact / échanges / pilotage</div>
+        <div class="tech-chip">Surfaces 60/30/10 par bloc</div>
+        <div class="tech-chip">Glows doubles: focal + ambient</div>
+        <div class="tech-chip">Rayons: 8 / 16 / 24 / full</div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>Tokens, variables et effets visuels</h2>
+          <p class="sub">Les variables CSS et les effets de profondeur sont présentés sous forme de cartes compactes, avec davantage d’échantillons que de prose.</p>
+        </div>
+        <div class="ref">Références<br><strong>globals.css</strong> + classes utilitaires</div>
+      </div>
+
+      <div class="dual-grid">
+        <article class="panel">
+          <div class="panel-head">
+            <h3>Tokens réels</h3>
+            <p>Couleurs, surfaces, bords, rayons, typographie et ombres. Les couples token / valeur restent lisibles d’un coup d’œil.</p>
+          </div>
+          <div class="panel-body">
+            <div class="token-groups" id="token-groups"></div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <h3>Effets visuels</h3>
+            <p>Blur, backdrop blur, glow, gradients, ombres et glassmorphism sont illustrés par des échantillons concrets.</p>
+          </div>
+          <div class="panel-body">
+            <div class="effects" id="effects-grid"></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>Sélection canonique de composants UI</h2>
+          <p class="sub">Une sélection canonique des primitives les plus visibles du projet: boutons, champs, navbar, dropdowns, cards, shell et états visuels.</p>
+        </div>
+        <div class="ref">Références<br><strong>components/ui</strong> + <strong>components/navigation</strong></div>
+      </div>
+
+      <div class="component-grid">
+        <article class="component">
+          <div class="head">
+            <h3>Boutons et pills</h3>
+            <div class="tag">CMM / BUTTONS</div>
+          </div>
+          <div class="body">
+            <div class="button-row">
+              <button class="btn primary">Primaire</button>
+              <button class="btn secondary">Secondaire</button>
+              <button class="btn ghost">Muet</button>
+              <button class="btn primary pill">Pilule</button>
+              <button class="btn secondary pill">Ghost</button>
+            </div>
+            <div style="height: 12px"></div>
+            <div class="state-row">
+              <span class="pill-chip"><span class="dot"></span>Badge actif</span>
+              <span class="pill-chip">Statut stable</span>
+              <span class="pill-chip">Pill petite</span>
+            </div>
+          </div>
+        </article>
+
+        <article class="component">
+          <div class="head">
+            <h3>Champs et sélecteurs</h3>
+            <div class="tag">INPUTS / SELECT</div>
+          </div>
+          <div class="body">
+            <div class="field-stack">
+              <div>
+                <div class="field-label">Input texte</div>
+                <input class="field" value="Recherche d'une zone ou d'un lieu" />
+              </div>
+              <div class="split-fields">
+                <div>
+                  <div class="field-label">Select</div>
+                  <select class="select">
+                    <option>Accueil &amp; Pilotage</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="field-label">Focus ring</div>
+                  <input class="field" value="État focus visible" />
+                </div>
+              </div>
+              <div>
+                <div class="field-label">Textarea</div>
+                <textarea class="textarea">Surface nette, lisible et stable sur grande largeur.</textarea>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="component">
+          <div class="head">
+            <h3>Navbar et dropdowns</h3>
+            <div class="tag">NAVIGATION / MENUS</div>
+          </div>
+          <div class="body">
+            <div class="nav-preview">
+              <div class="nav-top">
+                <div class="nav-logo">CMM</div>
+                <div class="nav-pill">Sommaire</div>
+                <div class="nav-block" data-title="Accueil">🏠</div>
+                <div class="nav-block" data-title="Agir">⚡</div>
+                <div class="nav-block" data-title="Cartographie">🗺️</div>
+                <div class="nav-block" data-title="Réseau">🤝</div>
+                <div class="nav-block" data-title="Apprendre">📚</div>
+                <div class="nav-spacer"></div>
+                <div class="nav-pill nav-search">Rechercher <span class="hint">⌘ K</span></div>
+                <div class="nav-icon" title="Réglages">⚙</div>
+                <div class="nav-icon" title="Feedback">💬</div>
+              </div>
+              <div class="nav-note">Le ruban utilise des icônes et des libellés compacts. Les cartes de bloc gardent les noms complets comme source canonique.</div>
+              <div class="nav-body">
+                <div class="dropdowns">
+                  <div class="dropdown">
+                    <div class="mini">Sommaire</div>
+                    <div class="entry"><strong>Tableau de Bord</strong><span>/dashboard</span></div>
+                    <div class="entry"><strong>Explorer</strong><span>/explorer</span></div>
+                  </div>
+                  <div class="dropdown">
+                    <div class="mini">Rubriques</div>
+                    <div class="entry"><strong>Déclarer une Action</strong><span>/actions/new</span></div>
+                    <div class="entry"><strong>Météo Terrain</strong><span>/sections/weather</span></div>
+                  </div>
+                  <div class="dropdown">
+                    <div class="mini">Panneau analytique</div>
+                    <div class="entry"><strong>Rapports d'Impact</strong><span>/reports</span></div>
+                    <div class="entry"><strong>Progression &amp; Badges</strong><span>/sections/gamification</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="component">
+          <div class="head">
+            <h3>Cards et états</h3>
+            <div class="tag">CARDS / STATS</div>
+          </div>
+          <div class="body">
+            <div class="cards-grid">
+              <article class="stat-card">
+                <div class="stat-bar"></div>
+                <h4>Stat KPI</h4>
+                <p>12 480 signalements qualifiés<br>+14 % depuis le mois dernier.</p>
+              </article>
+              <article class="stat-card">
+                <div class="stat-bar"></div>
+                <h4>Card analytique</h4>
+                <p>Courbe, barre de statut, label compact et bordure douce.</p>
+              </article>
+              <article class="stat-card">
+                <div class="stat-bar"></div>
+                <h4>Surface glass</h4>
+                <p>Backdrop léger, bordures atténuées et profondeur lisible.</p>
+              </article>
+            </div>
+            <div style="height: 12px"></div>
+            <div class="card-card">
+              <div class="card-bar"></div>
+              <h4>Panneau analytique</h4>
+              <p>Hiérarchie claire, marges respirantes, contrastes nets et accent de bloc.</p>
+              <div class="chip-row">
+                <div class="pill-chip">24 px radius</div>
+                <div class="pill-chip">Border default</div>
+                <div class="pill-chip">Backdrop blur</div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="component">
+          <div class="head">
+            <h3>Shell et contexte</h3>
+            <div class="tag">USER / SHELL</div>
+          </div>
+          <div class="body">
+            <div class="context-grid">
+              <div class="context-tile">
+                <div class="context-title">Contexte utilisateur</div>
+                <div class="context-value">IMU / local preview / niveau</div>
+                <div class="context-meta">Avatar, rôle, identité</div>
+              </div>
+              <div class="context-tile">
+                <div class="context-title">Footer</div>
+                <div class="context-value">Glows chauds, hiérarchie douce</div>
+                <div class="context-meta">Fin de page, signal d’archive</div>
+              </div>
+              <div class="context-tile">
+                <div class="context-title">Consentement</div>
+                <div class="context-value">Bannière cookies / analytics</div>
+                <div class="context-meta">Acceptation, préférence, mémoire</div>
+              </div>
+              <div class="context-tile">
+                <div class="context-title">Chargement / overlay</div>
+                <div class="context-value">Skeleton, toast, transition</div>
+                <div class="context-meta">État stable et lisible</div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-head">
+        <div>
+          <h2>Règles globales</h2>
+          <p class="sub">Le poster termine par les règles de composition qui évitent les dérives visuelles: rayons, hiérarchie des fonds, contraste, espacements et états.</p>
+        </div>
+        <div class="ref">Lecture rapide<br><strong>essentiel / stable / accessible</strong></div>
+      </div>
+
+      <div class="rules-grid">
+        <article class="rule">
+          <div class="tag">Rayons</div>
+          <h3>8 / 16 / 24 / full</h3>
+          <p>Le système garde une progression nette entre tags, champs, cartes et sections.</p>
+          <ul>
+            <li>8 px pour les micros-badges.</li>
+            <li>16 px pour les controls et champs.</li>
+            <li>24 px pour les cards majeures.</li>
+          </ul>
+        </article>
+        <article class="rule">
+          <div class="tag">Fonds</div>
+          <h3>Hiérarchie claire</h3>
+          <p>Canvas clair, surfaces élevées blanches, surfaces secondaires grises et glassmorphism retenu.</p>
+          <ul>
+            <li>Le fond ne doit pas écraser les cartes.</li>
+            <li>Le glissement entre niveaux reste subtil.</li>
+          </ul>
+        </article>
+        <article class="rule">
+          <div class="tag">Contraste</div>
+          <h3>Lisibilité d’abord</h3>
+          <p>Le texte principal reste sombre sur fond clair et les états actifs sont clairement séparés.</p>
+          <ul>
+            <li>Focus visible sur clavier.</li>
+            <li>Hover lisible, jamais décoratif.</li>
+          </ul>
+        </article>
+        <article class="rule">
+          <div class="tag">Espacements</div>
+          <h3>Grille régulière</h3>
+          <p>La base 8 px pilote l’ensemble. Les sections respirent, les micro-composants restent compacts.</p>
+          <ul>
+            <li>12-14 px pour les labels.</li>
+            <li>18-24 px pour les panneaux et cards.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <div class="footer">
+      <strong>Note de source:</strong> cette planche synthétise une sélection canonique du système visuel du dépôt à
+      partir des fichiers de design system, des tokens globaux et des composants réels. Le fichier reste autonome pour
+      l’export PNG, la revue rapide et la documentation.
+    </div>
+  </main>
+
+      <script>
+
+    const palette = [
+  {
+    "name": "Background",
+    "token": "--background",
+    "value": "#fafaf9",
+    "use": "Canvas général",
+    "tone": "linear-gradient(180deg, #fafaf9, #f5f5f4)"
+  },
+  {
+    "name": "Foreground",
+    "token": "--foreground",
+    "value": "#0f172a",
+    "use": "Texte principal",
+    "tone": "linear-gradient(180deg, #f8fafc, #0f172a)"
+  },
+  {
+    "name": "Accent primaire",
+    "token": "--accent-primary",
+    "value": "#10b981",
+    "use": "Actions / succès",
+    "tone": "linear-gradient(180deg, #bcebdc, #10b981)"
+  },
+  {
+    "name": "Accent vibrant",
+    "token": "--accent-vibrant",
+    "value": "#38bdf8",
+    "use": "Liens / focus",
+    "tone": "linear-gradient(180deg, #b3e6fc, #38bdf8)"
+  },
+  {
+    "name": "Surface élevée",
+    "token": "--bg-elevated",
+    "value": "#ffffff",
+    "use": "Cartes / panneaux",
+    "tone": "linear-gradient(180deg, #ffffff, #f5f5f4)"
+  },
+  {
+    "name": "Surface douce",
+    "token": "--bg-muted",
+    "value": "#f5f5f4",
+    "use": "Blocs secondaires",
+    "tone": "linear-gradient(180deg, #f5f5f4, #f7f7f6)"
+  },
+  {
+    "name": "Bordure par défaut",
+    "token": "--border-default",
+    "value": "rgba(15, 23, 42, 0.08)",
+    "use": "Contours subtils",
+    "tone": "linear-gradient(180deg, rgba(15,23,42,.10), rgba(15,23,42,.04))"
+  },
+  {
+    "name": "Focus ring",
+    "token": "--focus-ring",
+    "value": "rgba(16, 185, 129, 0.3)",
+    "use": "Focus clavier",
+    "tone": "linear-gradient(180deg, rgba(16,185,129,.34), rgba(56,189,248,.20))"
+  }
+];
+    const blocks = [
+  {
+    "id": "home",
+    "name": "Accueil et Pilotage",
+    "code": "home",
+    "icon": "🏠",
+    "rgb": "245 158 11",
+    "gradient": "linear-gradient(180deg, #fef3c7, #fde68a 58%, #fcd34d)",
+    "gradientDeep": "from-[#fef3c7] via-[#fde68a] to-[#fcd34d]",
+    "surface": "bg-white/95",
+    "surfaceMuted": "bg-amber-50",
+    "borderStrong": "border-amber-300",
+    "summary": "Tableau de Bord, Explorer, Mon Impact",
+    "items": [
+      {
+        "label": "Tableau de Bord",
+        "route": "/dashboard",
+        "sourceCategory": "Accueil et Pilotage",
+        "exposedBlock": "Accueil et Pilotage",
+        "meta": "Accueil et Pilotage"
+      },
+      {
+        "label": "Explorer",
+        "route": "/explorer",
+        "sourceCategory": "Guide & outils",
+        "exposedBlock": "Accueil et Pilotage",
+        "meta": "Guide & outils / Accueil et Pilotage"
+      },
+      {
+        "label": "Mon Impact",
+        "route": "/profil",
+        "sourceCategory": "Accueil et Pilotage",
+        "exposedBlock": "Accueil et Pilotage",
+        "meta": "Accueil et Pilotage"
+      }
+    ]
+  },
+  {
+    "id": "act",
+    "name": "Agir",
+    "code": "act",
+    "icon": "⚡",
+    "rgb": "16 185 129",
+    "gradient": "linear-gradient(180deg, #eef9f0, #e4f5e8 58%, #d9f0de)",
+    "gradientDeep": "from-[#eef9f0] via-[#e4f5e8] to-[#d9f0de]",
+    "surface": "bg-[rgba(243,251,246,0.94)] backdrop-blur-xl",
+    "surfaceMuted": "bg-[rgba(236,248,240,0.84)] backdrop-blur-md",
+    "borderStrong": "border-emerald-300/80",
+    "summary": "Déclarer une Action, Itinéraire Prioritaire, Météo Terrain, Mode d'Emploi",
+    "items": [
+      {
+        "label": "Déclarer une Action",
+        "route": "/actions/new",
+        "sourceCategory": "Actions terrain",
+        "exposedBlock": "Agir",
+        "meta": "Actions terrain / Agir"
+      },
+      {
+        "label": "Itinéraire Prioritaire",
+        "route": "/sections/route",
+        "sourceCategory": "Actions terrain",
+        "exposedBlock": "Agir",
+        "meta": "Actions terrain / Agir"
+      },
+      {
+        "label": "Météo Terrain",
+        "route": "/sections/weather",
+        "sourceCategory": "Actions terrain",
+        "exposedBlock": "Agir",
+        "meta": "Actions terrain / Agir"
+      },
+      {
+        "label": "Mode d'Emploi",
+        "route": "/sections/guide",
+        "sourceCategory": "Actions terrain",
+        "exposedBlock": "Agir",
+        "meta": "Actions terrain / Agir"
+      },
+      {
+        "label": "Signalement Déchets",
+        "route": "/sections/trash-spotter",
+        "sourceCategory": "Communauté",
+        "exposedBlock": "Agir",
+        "meta": "Communauté / Agir"
+      }
+    ]
+  },
+  {
+    "id": "visualize",
+    "name": "Cartographie et Impact",
+    "code": "visualize",
+    "icon": "🗺️",
+    "rgb": "14 165 233",
+    "gradient": "linear-gradient(180deg, #00080f, #001422 58%, #001e32)",
+    "gradientDeep": "from-[#00080f] via-[#001422] to-[#001e32]",
+    "surface": "bg-[rgba(0,18,32,0.78)] backdrop-blur-xl",
+    "surfaceMuted": "bg-[rgba(0,12,22,0.55)] backdrop-blur-md",
+    "borderStrong": "border-sky-400/38",
+    "summary": "Carte des actions, Carte d'Entraînement, Rapports d'Impact, Progression & Badges",
+    "items": [
+      {
+        "label": "Carte des actions",
+        "route": "/actions/map",
+        "sourceCategory": "Actions terrain",
+        "exposedBlock": "Cartographie et Impact",
+        "meta": "Actions terrain / Cartographie et Impact"
+      },
+      {
+        "label": "Carte d'Entraînement",
+        "route": "/sections/sandbox",
+        "sourceCategory": "Actions terrain",
+        "exposedBlock": "Cartographie et Impact",
+        "meta": "Actions terrain / Cartographie et Impact"
+      },
+      {
+        "label": "Rapports d'Impact",
+        "route": "/reports",
+        "sourceCategory": "Accueil et Pilotage",
+        "exposedBlock": "Cartographie et Impact",
+        "meta": "Accueil et Pilotage / Cartographie et Impact"
+      },
+      {
+        "label": "Progression & Badges",
+        "route": "/sections/gamification",
+        "sourceCategory": "Communauté",
+        "exposedBlock": "Cartographie et Impact",
+        "meta": "Communauté / Cartographie et Impact"
+      }
+    ]
+  },
+  {
+    "id": "network",
+    "name": "Réseau & Discussions",
+    "code": "network",
+    "icon": "🤝",
+    "rgb": "99 102 241",
+    "gradient": "linear-gradient(180deg, #04020f, #08041e 58%, #0e082e)",
+    "gradientDeep": "from-[#04020f] via-[#08041e] to-[#0e082e]",
+    "surface": "bg-[rgba(8,4,24,0.78)] backdrop-blur-xl",
+    "surfaceMuted": "bg-[rgba(5,2,16,0.55)] backdrop-blur-md",
+    "borderStrong": "border-indigo-400/38",
+    "summary": "Cartographie Partenaire, Vie de la Communauté, Canaux de Discussion, Observatoire Public",
+    "items": [
+      {
+        "label": "Cartographie Partenaire",
+        "route": "/partners/network",
+        "sourceCategory": "Communauté",
+        "exposedBlock": "Réseau & Discussions",
+        "meta": "Communauté / Réseau & Discussions"
+      },
+      {
+        "label": "Vie de la Communauté",
+        "route": "/sections/community",
+        "sourceCategory": "Communauté",
+        "exposedBlock": "Réseau & Discussions",
+        "meta": "Communauté / Réseau & Discussions"
+      },
+      {
+        "label": "Canaux de Discussion",
+        "route": "/sections/messagerie",
+        "sourceCategory": "Communauté",
+        "exposedBlock": "Réseau & Discussions",
+        "meta": "Communauté / Réseau & Discussions"
+      },
+      {
+        "label": "Observatoire Public",
+        "route": "/sections/open-data",
+        "sourceCategory": "Communauté",
+        "exposedBlock": "Réseau & Discussions",
+        "meta": "Communauté / Réseau & Discussions"
+      }
+    ]
+  },
+  {
+    "id": "learn",
+    "name": "Apprendre",
+    "code": "learn",
+    "icon": "📚",
+    "rgb": "234 179 8",
+    "gradient": "linear-gradient(180deg, #0c0b00, #181500 58%, #241f00)",
+    "gradientDeep": "from-[#0c0b00] via-[#181500] to-[#241f00]",
+    "surface": "bg-[rgba(20,18,0,0.78)] backdrop-blur-xl",
+    "surfaceMuted": "bg-[rgba(14,12,0,0.55)] backdrop-blur-md",
+    "borderStrong": "border-yellow-400/38",
+    "summary": "Hub Éducatif, Comprendre l'Enjeu, S'entraîner, Bonnes Pratiques",
+    "items": [
+      {
+        "label": "Hub Éducatif",
+        "route": "/learn/hub",
+        "sourceCategory": "Guide & outils",
+        "exposedBlock": "Apprendre",
+        "meta": "Guide & outils / Apprendre"
+      },
+      {
+        "label": "Comprendre l'Enjeu",
+        "route": "/learn/comprendre",
+        "sourceCategory": "Analyse & contexte",
+        "exposedBlock": "Apprendre",
+        "meta": "Analyse & contexte / Apprendre"
+      },
+      {
+        "label": "S'entraîner",
+        "route": "/learn/sentrainer",
+        "sourceCategory": "Guide & outils",
+        "exposedBlock": "Apprendre",
+        "meta": "Guide & outils / Apprendre"
+      },
+      {
+        "label": "Bonnes Pratiques",
+        "route": "/learn/bonnes-pratiques",
+        "sourceCategory": "Guide & outils",
+        "exposedBlock": "Apprendre",
+        "meta": "Guide & outils / Apprendre"
+      },
+      {
+        "label": "Ressources & Kits",
+        "route": "/learn/ressources",
+        "sourceCategory": "Guide & outils",
+        "exposedBlock": "Apprendre",
+        "meta": "Guide & outils / Apprendre"
+      }
+    ]
+  }
+];
+    const tokenGroups = [
+  {
+    "name": "Palette de base",
+    "items": [
+      [
+        "--background",
+        "#fafaf9"
+      ],
+      [
+        "--foreground",
+        "#0f172a"
+      ],
+      [
+        "--accent-primary",
+        "#10b981"
+      ],
+      [
+        "--accent-vibrant",
+        "#38bdf8"
+      ]
+    ]
+  },
+  {
+    "name": "Surfaces",
+    "items": [
+      [
+        "--bg-canvas",
+        "#fafaf9"
+      ],
+      [
+        "--bg-elevated",
+        "#ffffff"
+      ],
+      [
+        "--bg-muted",
+        "#f5f5f4"
+      ],
+      [
+        "--glass-bg",
+        "rgba(255, 255, 255, 0.7)"
+      ]
+    ]
+  },
+  {
+    "name": "Bords et focus",
+    "items": [
+      [
+        "--border-default",
+        "rgba(15, 23, 42, 0.08)"
+      ],
+      [
+        "--border-strong",
+        "rgba(15, 23, 42, 0.16)"
+      ],
+      [
+        "--focus-ring",
+        "rgba(16, 185, 129, 0.3)"
+      ],
+      [
+        "--glass-border",
+        "rgba(255, 255, 255, 0.4)"
+      ]
+    ]
+  },
+  {
+    "name": "Ombres et profondeur",
+    "items": [
+      [
+        "--shadow-premium",
+        "0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 4px 6px -2px rgba(0, 0, 0, 0.01)"
+      ],
+      [
+        "--shadow-vibrant",
+        "0 20px 25px -5px rgba(16, 185, 129, 0.1), 0 10px 10px -5px rgba(16, 185, 129, 0.04)"
+      ],
+      [
+        "--shadow-soft",
+        "0 10px 24px -18px rgba(15, 23, 42, 0.28)"
+      ],
+      [
+        "--shadow-elevated",
+        "0 22px 52px -42px rgba(15, 23, 42, 0.42)"
+      ]
+    ]
+  },
+  {
+    "name": "Rayons",
+    "items": [
+      [
+        "--radius-sm",
+        "0.5rem"
+      ],
+      [
+        "--radius-md",
+        "1rem"
+      ],
+      [
+        "--radius-lg",
+        "1.5rem"
+      ],
+      [
+        "--radius-full",
+        "9999px"
+      ]
+    ]
+  },
+  {
+    "name": "Typographie",
+    "items": [
+      [
+        "--font-display",
+        "system-ui"
+      ],
+      [
+        "--font-base",
+        "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
+      ],
+      [
+        "--text-h1",
+        "3.157rem"
+      ],
+      [
+        "--text-body",
+        "1rem"
+      ]
+    ]
+  }
+];
+    const effects = [
+  {
+    "title": "Blur",
+    "code": "blur(16px)",
+    "text": "Flou léger pour détacher un calque d'information.",
+    "style": "background:\n        linear-gradient(135deg, rgba(255,255,255,.78), rgba(15,23,42,.08)),\n        repeating-linear-gradient(45deg, rgba(15,23,42,.12) 0 12px, rgba(255,255,255,.40) 12px 24px);\n        backdrop-filter: blur(16px);"
+  },
+  {
+    "title": "Backdrop blur",
+    "code": "backdrop-blur-xl",
+    "text": "Le fond reste lisible, la surface gagne en profondeur.",
+    "style": "background:\n        radial-gradient(circle at 20% 20%, rgba(56,189,248,.26), transparent 32%),\n        radial-gradient(circle at 78% 72%, rgba(16,185,129,.22), transparent 30%),\n        linear-gradient(135deg, rgba(8, 15, 26, .88), rgba(15, 23, 42, .78));\n        backdrop-filter: blur(20px);"
+  },
+  {
+    "title": "Glow",
+    "code": "focal + ambient",
+    "text": "Deux couches: un cœur proche et un halo large.",
+    "style": "background:\n        radial-gradient(circle at 30% 26%, rgba(16,185,129,.98), rgba(16,185,129,.28) 36%, transparent 58%),\n        radial-gradient(circle at 72% 68%, rgba(56,189,248,.88), rgba(56,189,248,.24) 30%, transparent 58%),\n        linear-gradient(135deg, rgba(4, 11, 24, .92), rgba(15, 23, 42, .88));\n        box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.1), 0 10px 10px -5px rgba(16, 185, 129, 0.04);"
+  },
+  {
+    "title": "Gradients",
+    "code": "180deg / 3 stops",
+    "text": "Dégradés directionnels de l'accent vers une teinte plus profonde.",
+    "style": "background: linear-gradient(135deg, #10b981, #38bdf8);"
+  },
+  {
+    "title": "Ombres",
+    "code": "soft + elevated",
+    "text": "Système doux, jamais massif ni trop contrasté.",
+    "style": "background:\n        linear-gradient(180deg, rgba(255,255,255,.96), rgba(244,245,247,.92));\n        box-shadow: 0 10px 24px -18px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(15,23,42,.06);"
+  },
+  {
+    "title": "Glassmorphism",
+    "code": "surface premium",
+    "text": "Contours subtils, transparence contrôlée et blur contenu.",
+    "style": "background:\n        linear-gradient(135deg, rgba(255,255,255,.82), rgba(255,255,255,.42)),\n        radial-gradient(circle at 24% 18%, rgba(255,255,255,.72), transparent 24%);\n        border: 1px solid rgba(255, 255, 255, 0.4);\n        backdrop-filter: blur(16px);"
+  }
+];
+
+    const paletteGrid = document.getElementById("palette-grid");
+    const blockGrid = document.getElementById("block-grid");
+    const tokenGroupsEl = document.getElementById("token-groups");
+    const effectsGrid = document.getElementById("effects-grid");
+
+    paletteGrid.innerHTML = palette.map((item) => `
+      <article class="palette-card">
+        <div class="tone" style="background:${item.tone};"></div>
+        <div class="body">
+          <div class="top">
+            <div class="name">${item.name}</div>
+            <div class="token">${item.token}</div>
+          </div>
+          <div class="value">${item.value}</div>
+          <div class="use">${item.use}</div>
+        </div>
+      </article>
+    `).join("");
+
+    blockGrid.innerHTML = blocks.map((block) => `
+      <article class="block-card">
+        <div class="block-band" style="background:${block.gradient};"></div>
+        <div class="block-head">
+          <div class="block-icon" style="background: linear-gradient(135deg, rgb(${block.rgb} / 0.96), rgb(${block.rgb} / 0.78));">${block.icon}</div>
+          <div class="block-name">${block.name}</div>
+          <div class="block-code">${block.code}</div>
+        </div>
+        <div class="block-summary">${block.summary}</div>
+        <div class="block-specs">
+          <div class="spec"><div class="k">gradientDeep</div><div class="v">${block.gradientDeep}</div></div>
+          <div class="spec"><div class="k">surface</div><div class="v">${block.surface}</div></div>
+          <div class="spec"><div class="k">surfaceMuted</div><div class="v">${block.surfaceMuted}</div></div>
+          <div class="spec"><div class="k">borderStrong</div><div class="v">${block.borderStrong}</div></div>
+        </div>
+        <div class="block-items">
+          ${block.items.map((item) => `
+            <article class="block-item" style="--accent-rgb:${block.rgb};">
+              <div class="bar"></div>
+              <div class="label">${item.label}</div>
+              <div class="meta">${item.meta}</div>
+              <div class="route">${item.route}</div>
+              <div class="state"><span class="dot"></span>Accessible</div>
+            </article>
+          `).join("")}
+        </div>
+      </article>
+    `).join("");
+
+    tokenGroupsEl.innerHTML = tokenGroups.map((group) => `
+      <article class="group">
+        <div class="name">${group.name}</div>
+        <div class="kv-list">
+          ${group.items.map(([key, value]) => `
+            <div class="kv">
+              <div class="k">${key}</div>
+              <div class="v">${value}</div>
+            </div>
+          `).join("")}
+        </div>
+      </article>
+    `).join("");
+
+    effectsGrid.innerHTML = effects.map((effect) => `
+      <article class="effect">
+        <div class="sample" data-code="${effect.code}" style="${effect.style}"></div>
+        <h4>${effect.title}</h4>
+        <p>${effect.text}</p>
+      </article>
+    `).join("");
+  
+  </script>
+</body>
+</html>

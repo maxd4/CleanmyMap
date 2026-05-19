@@ -191,6 +191,6 @@ Nouveau système:
 ---
 
 ## Documentation liée
-- `documentation/design/display-modes-chartes.md` - Chartes détaillées
-- `documentation/design/P0-changes-log.md` - Log P0
-- `documentation/design/P1-changes-log.md` - Log P1
+- `documentation/design-system/display-modes-chartes.md` - Chartes détaillées
+- `documentation/design-system/theme-visibility-rules.md` - Règles de visibilité par mode
+- `documentation/design-system/THEME_SOMBRE_DOUCE.md` - Héritage visuel et transition historique

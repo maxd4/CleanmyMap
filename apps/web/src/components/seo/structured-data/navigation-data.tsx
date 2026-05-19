@@ -84,7 +84,7 @@ export function SiteNavigationJsonLd() {
       },
       {
         "@type": "SiteNavigationElement",
-        name: "Explorer",
+        name: "Sommaire",
         description: "Carte interactive des signalements et actions de dépollution",
         url: "https://cleanmymap.fr/explorer",
       },
@@ -132,7 +132,7 @@ export function BreadcrumbJsonLd() {
       {
         "@type": "ListItem",
         position: 2,
-        name: "Explorer la carte",
+        name: "Sommaire",
         item: "https://cleanmymap.fr/explorer",
       },
       {

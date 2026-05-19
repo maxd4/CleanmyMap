@@ -20,7 +20,7 @@ type MockState = {
 };
 
 function createSupabaseMock(options: {
-  existingProfile?: { id: string; handle: string | null } | null;
+  existingProfile?: { id: string; handle: string | null; display_name_mode?: string | null } | null;
   takenHandles?: Record<string, string | null>;
   upsertError?: unknown;
 }) {
@@ -42,7 +42,7 @@ function createSupabaseMock(options: {
   }));
 
   const maybeSingle = vi.fn(async () => {
-    if (state.select === "id, handle" && state.filterColumn === "id") {
+    if (state.select?.includes("display_name_mode") && state.filterColumn === "id") {
       return {
         data: options.existingProfile ?? null,
         error: null,
@@ -114,6 +114,7 @@ describe("syncClerkUserToSupabase", () => {
       expect.objectContaining({
         handle: "custom_handle",
         display_name: "Maxence Demo",
+        display_name_mode: "full_name",
       }),
       { onConflict: "id" },
     );
@@ -148,6 +149,7 @@ describe("syncClerkUserToSupabase", () => {
       expect.objectContaining({
         handle: "max_123456",
         display_name: "Max",
+        display_name_mode: "full_name",
       }),
       { onConflict: "id" },
     );
@@ -179,6 +181,7 @@ describe("syncClerkUserToSupabase", () => {
       expect.objectContaining({
         role_label: "admin",
         display_name: "Ada Admin",
+        display_name_mode: "full_name",
       }),
       { onConflict: "id" },
     );
@@ -210,6 +213,43 @@ describe("syncClerkUserToSupabase", () => {
       expect.objectContaining({
         role_label: "imu",
         display_name: "Max Owner",
+        display_name_mode: "full_name",
+      }),
+      { onConflict: "id" },
+    );
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
+  it("preserves a pseudo display preference during sync", async () => {
+    const { supabase, upsert } = createSupabaseMock({
+      existingProfile: {
+        id: "user_2",
+        handle: "custom_handle",
+        display_name_mode: "pseudo",
+      },
+    });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await syncClerkUserToSupabase({
+      id: "user_2",
+      username: "handle_mode",
+      emailAddresses: [],
+      imageUrl: "https://example.com/avatar.png",
+      publicMetadata: {},
+      privateMetadata: {},
+      firstName: "Mode",
+      lastName: "Pseudo",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        handle: "custom_handle",
+        display_name_mode: "pseudo",
+        display_name: "handle_mode",
       }),
       { onConflict: "id" },
     );

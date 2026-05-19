@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Compass, Menu } from "lucide-react";
+import { ChevronDown, List, Menu } from "lucide-react";
 import Link from "next/link";
 import type { NavigationSpace, NavigationItem } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
@@ -150,10 +150,10 @@ export function AppNavigationTreeMenu({
           )}
           aria-hidden="true"
         >
-          <Compass className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <List className="h-4 w-4 shrink-0" aria-hidden="true" />
         </span>
         <span className="cmm-text-caption font-bold uppercase tracking-[0.16em]">
-          {locale === "fr" ? "Naviguer" : "Navigate"}
+          {locale === "fr" ? "Sommaire" : "Summary"}
         </span>
         <ChevronDown
           className={cn("h-4 w-4 shrink-0 transition-transform", isOpen && "rotate-180")}
@@ -177,11 +177,11 @@ export function AppNavigationTreeMenu({
               id={`${idBase}-panel`}
               role="dialog"
               aria-modal="false"
-              aria-label={
-                locale === "fr"
-                  ? "Navigation par sections et rubriques"
-                  : "Navigation by sections and pages"
-              }
+                aria-label={
+                  locale === "fr"
+                    ? "Sommaire des sections et rubriques"
+                    : "Summary of sections and pages"
+                }
               tabIndex={-1}
               initial={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}

@@ -1,7 +1,14 @@
 import { auth, clerkClient, type User } from "@clerk/nextjs/server";
 import { headers } from "next/headers";
 import { env } from "./env";
-import { resolveProfile, type AppProfile, type AppRoleLabel } from "./profiles";
+import {
+  resolveProfile,
+  type AppProfile,
+  type AppRoleLabel,
+  type DisplayNameMode,
+  normalizeDisplayNameMode,
+  resolveAccountDisplayName,
+} from "./profiles";
 import {
   getEffectiveAccessForSessionRole,
   type EffectiveAccess,
@@ -40,6 +47,8 @@ export type AccountBadge = {
 export type UserIdentity = {
   userId: string;
   displayName: string;
+  displayNameMode?: DisplayNameMode;
+  handle: string;
   firstName: string | null;
   username: string;
   email: string | null;
@@ -174,6 +183,31 @@ async function loadUserCurrentLevel(userId: string): Promise<number> {
     return Number.isFinite(level) && level >= 1 ? Math.trunc(level) : 1;
   } catch {
     return 1;
+  }
+}
+
+type StoredProfileRow = {
+  display_name: string | null;
+  display_name_mode: string | null;
+  handle: string | null;
+};
+
+async function loadStoredProfile(userId: string): Promise<StoredProfileRow | null> {
+  try {
+    const supabase = getSupabaseServerClient();
+    const result = await supabase
+      .from("profiles")
+      .select("display_name, display_name_mode, handle")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (result.error) {
+      return null;
+    }
+
+    return (result.data as StoredProfileRow | null) ?? null;
+  } catch {
+    return null;
   }
 }
 
@@ -457,6 +491,7 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
     return {
       userId: devBypass.userId,
       displayName: devBypass.displayName,
+      handle: devBypass.username,
       firstName: null,
       username: devBypass.username,
       email: null,
@@ -483,9 +518,10 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
 
   try {
     const client = await clerkClient();
-    const [fetchedUser, currentLevel] = await Promise.all([
+    const [fetchedUser, currentLevel, storedProfile] = await Promise.all([
       getClerkUser(client, userId),
       loadUserCurrentLevel(userId),
+      loadStoredProfile(userId),
     ]);
     const user = await normalizeLegacyOwnerMetadata(client, fetchedUser);
 
@@ -518,13 +554,24 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
 
     const firstName = user.firstName?.trim() || "";
     const lastName = user.lastName?.trim() || "";
-    const fullName = `${firstName} ${lastName}`.trim();
     const username =
       user.username?.trim() ||
       user.primaryEmailAddress?.emailAddress?.trim() ||
       user.primaryPhoneNumber?.phoneNumber?.trim() ||
       userId;
     const email = user.primaryEmailAddress?.emailAddress?.trim() || null;
+    const displayNameMode = normalizeDisplayNameMode(
+      storedProfile?.display_name_mode,
+    );
+    const displayName = 
+      resolveAccountDisplayName({
+        firstName,
+        lastName,
+        username,
+        userId,
+        mode: displayNameMode,
+      }) || storedProfile?.display_name?.trim() || username;
+    const handle = storedProfile?.handle?.trim() || username;
 
     const actorNameOptions = buildActorNameOptions(
       firstName || null,
@@ -539,7 +586,9 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
 
     return {
       userId,
-      displayName: fullName || username,
+      displayName,
+      displayNameMode,
+      handle,
       firstName: firstName || null,
       username,
       email,
@@ -562,6 +611,8 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
     return {
       userId,
       displayName: userId,
+      displayNameMode: "full_name",
+      handle: userId,
       firstName: null,
       username: userId,
       email: null,
@@ -584,6 +635,8 @@ export const __authz_testables = {
   mapBadgeIdsToBadges,
   buildActorNameOptions,
   resolveActorNameFromClerk,
+  normalizeDisplayNameMode,
+  resolveAccountDisplayName,
 };
 
 async function getDevAuthBypassSession() {

@@ -46,6 +46,7 @@ Liste complete des rubriques et pages disponibles du site (ordre d'importance)
 41. Onboarding localisation
 
 HEATMAP VISUELLE (utilite x impact) PAR RUBRIQUE
+
 ```mermaid
 quadrantChart
   title Rubriques comparees (utilite x impact)
@@ -74,12 +75,15 @@ quadrantChart
   "Gouvernance": [0.83, 0.88]
   "Administration": [0.85, 0.90]
 ```
+
 Fallback statique:
+
 ```md
 ![Rubriques utilite impact heatmap fallback](./archive/fallback-rubriques-utilite-impact-heatmap.png)
 ```
 
 VISUEL RADAR SIMPLIFIE (projection par blocs)
+
 ```mermaid
 flowchart LR
   A[Accueil<br/>U:4 I:4] --> B[Agir<br/>U:5 I:5]
@@ -90,7 +94,9 @@ flowchart LR
   F --> G[Piloter<br/>U:5 I:5]
   G --> A
 ```
+
 Fallback statique:
+
 ```md
 ![Rubriques utilite impact radar fallback](./archive/fallback-rubriques-utilite-impact-radar.png)
 ```
@@ -98,107 +104,126 @@ Fallback statique:
 Organisation par blocs et rubriques
 
 1) Accueil
+
 - Page racine `/`.
 - Contenu utilisateur : hero, chiffres d'impact, call-to-action "Se connecter", "Visiter le site en tant qu'invité", "Déclarer une action" et accès aux rapports.
 - Utilite : premier point d'entrée public pour comprendre le projet, tester le parcours et conduire le visiteur vers l'engagement citoyen.
 - Impact : augmente la conversion des visiteurs en déclarants, améliore l'adoption des pages clefs et donne une entrée claire vers les rubriques sign-in / guest.
 
-2) Agir
+1) Agir
 
 Déclarer une action `/actions/new`
+
 - Formulaire terrain prioritaire, Clerk intervient uniquement à la validation.
 - Utilite : capter rapidement une action de depollution.
 - Impact : accélère l'augmentation du volume de données terrain et alimente la carte, les rapports et le pilotage.
 
 Carte des actions `/actions/map`
+
 - Carte géolocalisée des actions et hotspots.
 - Utilite : visualiser les lieux d'intervention fiables.
 - Impact : améliore la priorisation locale et réduit les doublons.
 
 Carte d'entrainement `/sections/sandbox`
+
 - Sandbox séparée pour tester filtres, couches et navigation cartographique.
 - Utilite : explorer sans engagement et valider les comportements de la carte.
 - Impact : réduit les erreurs d'utilisation de l'outil cartographique.
 
 Itinéraire IA `/sections/route`
+
 - Recommandations dynamiques : où agir aujourd'hui.
 - Utilite : transformer la data en parcours d'action.
 - Impact : rend les sorties plus efficaces et ciblées.
 
 Mode d'emploi `/sections/guide`
+
 - Guide terrain et bonnes pratiques.
 - Utilite : réduire les erreurs de terrain.
 - Impact : opérations plus sûres et plus fluides.
 
 Que faire des déchets ? `/sections/recycling`
+
 - Guide de tri, valorisation et filières.
 - Utilite : prolonger la valeur des ressources collectées.
 - Impact : réduit le volume de déchets finaux.
 
 Signalement Déchets `/sections/trash-spotter`
+
 - Rapport de hotspots de pollution.
 - Utilite : détecter rapidement les zones critiques.
 - Impact : raccourcit le délai entre observation et traitement.
 
 Météo `/sections/weather`
+
 - Conditions terrain et fenêtres d'action.
 - Disponibilité : visible dans le bloc Agir pour les parcours terrain.
 - Utilite : choisir le bon moment, le bon niveau de sécurité et le bon kit avant de partir.
 - Impact : limite les sorties improductives et améliore la qualité opérationnelle.
 
 Historique `/actions/history`
+
 - Route existante mais `availability: hidden` dans le registre.
 - Note : pas exposée dans le ruban standard, accessible via chemin direct ou certaines pages internes.
 
-3) Visualiser
+1) Visualiser
 
-4) Impact
+2) Impact
 
 Rapports d'impact `/reports`
+
 - Synthèses et exports pour élus, chercheurs et partenaires.
 - Utilite : rendre les résultats partageables et défendables.
 - Impact : crédibilité renforcée pour financement et arbitrage.
 
 Progression & Badges `/sections/gamification`
+
 - Indicateurs personnels, niveaux et badges.
 - Utilite : motiver par la progression individuelle et collective.
 - Impact : fidélisation et retour utilisateur accrus.
 
-5) Réseau
+1) Réseau
 
 Opérations collectives `/sections/community`
+
 - Organisation des actions de groupe.
 - Utilite : réduire l'isolement des bénévoles.
 - Impact : plus d'actions locales coordonnées.
 
 Messagerie Pro `/sections/messagerie`
+
 - Canal de coordination.
 - Utilite : fluidifier l'entraide.
 - Impact : moins de frictions organisationnelles.
 
 Annuaire partenaires `/sections/annuaire`
+
 - Fiches et contacts de partenaires.
 - Utilite : trouver les bons acteurs locaux.
 - Impact : accélère les mises en relation.
 
 Découvrir le réseau `/partners/network`
+
 - Vue du réseau engagé.
 - Utilite : cartographier les partenaires mobilisés.
 - Impact : facilite la collaboration institutionnelle.
 
 Observatoire Public `/sections/open-data`
+
 - Données ouvertes, API et exports.
 - Utilite : ouvrir les données aux chercheurs et collectivités.
 - Impact : favorise la réutilisation et la transparence.
 
 Soutenir le Projet `/sections/funding`
+
 - Sponsoring de zones et mécénat.
 - Utilite : structurer le modèle économique.
 - Impact : finance durable des actions citoyennes.
 
-6) Apprendre
+1) Apprendre
 
 Hub Éducatif `/learn/hub`
+
 - Quatre rubriques internes : Comprendre, S'entraîner, Bonnes pratiques, Ressources.
 - Utilite : centraliser l'entrée du bloc et rediriger vers les pages dédiées sans mélanger les usages.
 - Impact : améliore la qualité des interventions, la reprise mobile et la continuité de lecture.
@@ -208,52 +233,61 @@ Hub Éducatif `/learn/hub`
 - Les 4 rubriques disposent maintenant de pages dédiées accessibles depuis la navigation.
 
 Comprendre l'Enjeu `/sections/climate`
+
 - Contexte climat et enjeux durables.
 - Utilite : relier l'action locale aux ODD.
 - Impact : meilleures décisions et compréhension partagée.
 
 Kit terrain `/sections/kit`
+
 - Checklist et matériel.
 - Utilite : standardiser la préparation.
 - Impact : moins d'oublis et plus de fluidité.
 
-7) Piloter
+1) Piloter
 
 Profil & impact `/profil`
+
 - Paramètres de compte et visibilité des données.
 - Utilite : point central de gestion utilisateur.
 - Impact : personnalisation du parcours et confiance.
 
 Tableau de bord `/dashboard`
+
 - Vue synthèse des indicateurs.
 - Utilite : piloter l'activité.
 - Impact : décisions plus rapides.
 
 Gouvernance `/sections/elus`
+
 - Résultats pour les décideurs publics.
 - Disponibilité : `coordinateur`, `scientifique`, `elu`, `admin`.
 - Utilite : transformer la donnée en arbitrage.
 - Impact : allocations plus pertinentes.
 
 Portail Décideur `/sponsor-portal`
+
 - Espace ROI et impact territorial.
 - Disponibilité : `elu` et `admin`.
 - Utilite : donner un outil dédié aux décideurs.
 - Impact : facilite le pilotage institutionnel.
 
 Administration `/admin`
+
 - Modération et supervision.
 - Disponibilité : `admin` uniquement.
 - Utilite : garantir la fiabilité des données.
 - Impact : protection contre les abus.
 
 God Mode `/admin/godmode`
+
 - Supervision master admin.
 - Disponibilité : `admin` uniquement.
 - Utilite : outils avancés de maintenance.
 - Impact : support technique et gouvernance renforcés.
 
 Notes sur les rôles
+
 - Le bloc `pilot` n'est activé que pour certains profils ; les bénévoles ne voient pas les rubriques de gouvernance et d'administration dans le ruban standard.
 - `Météo` vit dans le bloc `Agir` et sert de filtre opérationnel avant sortie terrain.
 - `Portail Décideur` et `Gouvernance` sont exposés différemment selon le rôle : `elu` et `admin` ont un accès plus large, tandis que `coordinateur` et `scientifique` voient principalement `Gouvernance`.

@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useCallback } from "react";
+import { useEffect, useMemo, useCallback, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import {
+  fetchCurrentAccountIdentity,
+  type CurrentAccountIdentity,
+} from "@/lib/account/current-account-identity";
 import { FeedbackSection } from "@/components/sections/rubriques/feedback-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
@@ -59,6 +63,8 @@ export function ChatShell({
   const pathname = usePathname();
   const userId = user?.id;
   const supabase = useMemo(() => getSupabaseBrowserClient(() => getToken()), [getToken]);
+  const [currentAccountIdentity, setCurrentAccountIdentity] =
+    useState<CurrentAccountIdentity | null>(null);
 
   const {
     activeChannelType,
@@ -130,6 +136,43 @@ export function ChatShell({
     [effectiveZone]
   );
 
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!userId) {
+      setCurrentAccountIdentity(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    fetchCurrentAccountIdentity()
+      .then((identity) => {
+        if (!cancelled) {
+          setCurrentAccountIdentity(identity);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCurrentAccountIdentity(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  const senderDisplayName =
+    currentAccountIdentity?.displayName ||
+    user?.fullName ||
+    user?.username ||
+    "Moi";
+  const senderHandle =
+    currentAccountIdentity?.handle ||
+    user?.username ||
+    "moi";
+
   const {
     messages,
     messagesError,
@@ -154,6 +197,8 @@ export function ChatShell({
     submitLockRef,
     userId,
     user,
+    senderDisplayName,
+    senderHandle,
     message,
     file,
     isSending,

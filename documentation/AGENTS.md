@@ -8,11 +8,11 @@
 - **Amélioration Continue & Esprit Critique (Kaizen)** : Adopter une mentalité Kaizen EN PERMANENCE. Ne considérez JAMAIS une rubrique comme parfaite. Proposez des améliorations dès qu'une opportunité est détectée. Gardez un regard critique sur le fond (logique) et la forme (UI). Soyez force de proposition pour des nouveautés.
 
 ## Mandatory startup context
-- Read `documentation/project_context.md` before substantial work.
-- Read `documentation/sessions/history/latest-session.md` to continue from the latest state.
-- **Modularisation** : Si la tâche implique de modulariser du code, lire `documentation/ai-guides/AI_MODULARIZATION_GUIDE.md` pour le processus complet.
-- **Règles Avancées** : Lire `documentation/ai-guides/AI_ADVANCED_RULES.md` pour validation prompts, cohérence et actions pertinentes.
-- **Mindset Kaizen** : Lire `documentation/development/AI_MINDSET_KAIZEN.md` pour l'esprit d'amélioration continue (audit Fond & Forme après chaque intervention).
+- Read `project_context.md` before substantial work.
+- Read `sessions/history/latest-session.md` to continue from the latest state.
+- **Modularisation** : Si la tâche implique de modulariser du code, lire `ai-guides/AI_MODULARIZATION_GUIDE.md` pour le processus complet.
+- **Règles Avancées** : Lire `ai-guides/AI_ADVANCED_RULES.md` pour validation prompts, cohérence et actions pertinentes.
+- **Mindset Kaizen** : Lire `development/AI_MINDSET_KAIZEN.md` pour l'esprit d'amélioration continue (audit Fond & Forme après chaque intervention).
 
 ## Execution rules
 - Keep changes scoped to the requested task.
@@ -21,16 +21,16 @@
 - Preserve existing behavior unless change is required by the task.
 - Never open or use a browser unless the user explicitly asks for browser-based inspection, navigation, or testing.
 - **Règle Scientifique** : Toujours sourcer et faire apparaître toutes les données, hypothèses et formules de calcul sur le site web à l'endroit dédié (page Méthodologie ou Tooltips).
-- **Qualité & i18n** : Lire `documentation/development/QUALITY_GUIDE.md` avant de modifier des chaînes utilisateur, messages, formulaires ou interfaces. Ce guide couvre les conventions d'internationalisation, orthographe, accessibilité et empty states.
+- **Qualité & i18n** : Lire `development/QUALITY_GUIDE.md` avant de modifier des chaînes utilisateur, messages, formulaires ou interfaces. Ce guide couvre les conventions d'internationalisation, orthographe, accessibilité et empty states.
 - **Homepage restriction** : Ne jamais modifier la homepage (`apps/web/src/app/page.tsx` et ses composants associés dans `apps/web/src/components/accueil/`) sauf demande explicite de l'utilisateur.
 
 ## Design System & UI
 
 Before any UI changes, read the canonical design documentation:
-- **Visual Charter**: `documentation/design-system/charte-ui-pro-moderne-futuriste.md`
-- **Visual Storytelling**: `documentation/design-system/VISUAL_STORYTELLING.md` (Priorité aux SVG/D3 sur le texte)
-- **Display Modes**: `documentation/design-system/display-modes-chartes.md` (exhaustif, minimaliste, sobre)
-- **Typography**: `documentation/design-system/TYPOGRAPHY_SYSTEM.md`
+- **Visual Charter**: `design-system/charte-ui-pro-moderne-futuriste.md`
+- **Visual Storytelling**: `design-system/VISUAL_STORYTELLING.md` (Priorité aux SVG/D3 sur le texte)
+- **Display Modes**: `design-system/display-modes-chartes.md` (exhaustif, minimaliste, sobre)
+- **Typography**: `design-system/TYPOGRAPHY_SYSTEM.md`
 
 ### Canonical Components (always use these)
 - **Cards**: `CmmCard` from `@/components/ui/cmm-card`

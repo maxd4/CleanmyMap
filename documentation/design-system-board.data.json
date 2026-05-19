@@ -1,0 +1,558 @@
+{
+  "generatedAt": "2026-05-19T15:31:46.425Z",
+  "stats": {
+    "tokens": 8,
+    "blocks": 5,
+    "effects": 6,
+    "ui": 22,
+    "visibleBlockIds": [
+      "home",
+      "act",
+      "visualize",
+      "network",
+      "learn"
+    ],
+    "hiddenBlockIds": [
+      "impact",
+      "connect",
+      "pilot"
+    ]
+  },
+  "sources": {
+    "list": [
+      "globals.css",
+      "block-accents.ts",
+      "navigation.ts",
+      "sections-registry/config.ts",
+      "components/ui",
+      "components/navigation"
+    ],
+    "uiFiles": [
+      "backpressure-feedback.tsx",
+      "clerk-required-gate.tsx",
+      "cmm-block-accent.tsx",
+      "cmm-button.tsx",
+      "cmm-card.tsx",
+      "cmm-pill.tsx",
+      "cmm-section.tsx",
+      "cmm-skeleton.tsx",
+      "conditional-analytics.tsx",
+      "cookie-consent-banner.tsx",
+      "decision-page-header.tsx",
+      "display-mode-onboarding-gate.tsx",
+      "error-boundary.tsx",
+      "error-message.tsx",
+      "identity-badge.tsx",
+      "identity-profile-banner.tsx",
+      "inline-field-error.tsx",
+      "navigation-grid.tsx",
+      "network-toast.tsx",
+      "page-reading-template.tsx",
+      "page-transition.tsx",
+      "permission-error-state.tsx",
+      "punchy-slogan.tsx",
+      "qrcode-dialog.tsx",
+      "rubrique-card.tsx",
+      "rubrique-excel-export-button.tsx",
+      "rubrique-pdf-export-button.tsx",
+      "server-error-card.tsx",
+      "site-preferences-controls.tsx",
+      "site-preferences-provider.tsx",
+      "site-tooltips.tsx",
+      "vibrant-background.tsx",
+      "weather-warning-bar.tsx"
+    ],
+    "navigationFiles": [
+      "app-breadcrumb.tsx",
+      "app-navigation-block-dropdown.tsx",
+      "app-navigation-ribbon.tsx",
+      "app-navigation-tree-menu.tsx",
+      "app-navigation.tsx",
+      "app-sidebar.tsx",
+      "block-switcher.tsx",
+      "global-search.tsx",
+      "notification-bell.tsx",
+      "role-primary-actions.tsx"
+    ],
+    "coreHighlightFiles": [
+      "app-navigation-block-dropdown",
+      "app-navigation-ribbon",
+      "app-navigation-tree-menu",
+      "cmm-block-accent",
+      "cmm-button",
+      "cmm-card",
+      "cmm-pill",
+      "cmm-section",
+      "conditional-analytics",
+      "cookie-consent-banner",
+      "display-mode-onboarding-gate",
+      "error-boundary",
+      "error-message",
+      "global-search",
+      "identity-badge",
+      "identity-profile-banner",
+      "network-toast",
+      "notification-bell",
+      "page-transition",
+      "permission-error-state",
+      "site-preferences-controls",
+      "vibrant-background"
+    ],
+    "profile": "benevole"
+  },
+  "palette": [
+    {
+      "name": "Background",
+      "token": "--background",
+      "value": "#fafaf9",
+      "use": "Canvas général",
+      "tone": "linear-gradient(180deg, #fafaf9, #f5f5f4)"
+    },
+    {
+      "name": "Foreground",
+      "token": "--foreground",
+      "value": "#0f172a",
+      "use": "Texte principal",
+      "tone": "linear-gradient(180deg, #f8fafc, #0f172a)"
+    },
+    {
+      "name": "Accent primaire",
+      "token": "--accent-primary",
+      "value": "#10b981",
+      "use": "Actions / succès",
+      "tone": "linear-gradient(180deg, #bcebdc, #10b981)"
+    },
+    {
+      "name": "Accent vibrant",
+      "token": "--accent-vibrant",
+      "value": "#38bdf8",
+      "use": "Liens / focus",
+      "tone": "linear-gradient(180deg, #b3e6fc, #38bdf8)"
+    },
+    {
+      "name": "Surface élevée",
+      "token": "--bg-elevated",
+      "value": "#ffffff",
+      "use": "Cartes / panneaux",
+      "tone": "linear-gradient(180deg, #ffffff, #f5f5f4)"
+    },
+    {
+      "name": "Surface douce",
+      "token": "--bg-muted",
+      "value": "#f5f5f4",
+      "use": "Blocs secondaires",
+      "tone": "linear-gradient(180deg, #f5f5f4, #f7f7f6)"
+    },
+    {
+      "name": "Bordure par défaut",
+      "token": "--border-default",
+      "value": "rgba(15, 23, 42, 0.08)",
+      "use": "Contours subtils",
+      "tone": "linear-gradient(180deg, rgba(15,23,42,.10), rgba(15,23,42,.04))"
+    },
+    {
+      "name": "Focus ring",
+      "token": "--focus-ring",
+      "value": "rgba(16, 185, 129, 0.3)",
+      "use": "Focus clavier",
+      "tone": "linear-gradient(180deg, rgba(16,185,129,.34), rgba(56,189,248,.20))"
+    }
+  ],
+  "blocks": [
+    {
+      "id": "home",
+      "name": "Accueil & Pilotage",
+      "code": "home",
+      "icon": "🏠",
+      "rgb": "245 158 11",
+      "gradient": "linear-gradient(180deg, #fef3c7, #fde68a 58%, #fcd34d)",
+      "gradientDeep": "from-[#fef3c7] via-[#fde68a] to-[#fcd34d]",
+      "surface": "bg-white/95",
+      "surfaceMuted": "bg-amber-50",
+      "borderStrong": "border-amber-300",
+      "summary": "Tableau de bord, Sommaire, Profil, Feedback",
+      "items": [
+        {
+          "label": "Tableau de bord",
+          "route": "/dashboard",
+          "sourceCategory": "Accueil & Pilotage",
+          "exposedBlock": "Accueil & Pilotage",
+          "meta": "Accueil & Pilotage"
+        },
+        {
+          "label": "Sommaire",
+          "route": "/explorer",
+          "sourceCategory": "Guide & Outils",
+          "exposedBlock": "Accueil & Pilotage",
+          "meta": "Guide & Outils / Accueil & Pilotage"
+        },
+        {
+          "label": "Profil",
+          "route": "/profil",
+          "sourceCategory": "Accueil & Pilotage",
+          "exposedBlock": "Accueil & Pilotage",
+          "meta": "Accueil & Pilotage"
+        },
+        {
+          "label": "Feedback",
+          "route": "/sections/feedback",
+          "sourceCategory": "Accueil & Pilotage",
+          "exposedBlock": "Accueil & Pilotage",
+          "meta": "Accueil & Pilotage"
+        }
+      ]
+    },
+    {
+      "id": "act",
+      "name": "Agir",
+      "code": "act",
+      "icon": "⚡",
+      "rgb": "16 185 129",
+      "gradient": "linear-gradient(180deg, #eef9f0, #e4f5e8 58%, #d9f0de)",
+      "gradientDeep": "from-[#eef9f0] via-[#e4f5e8] to-[#d9f0de]",
+      "surface": "bg-[rgba(243,251,246,0.94)] backdrop-blur-xl",
+      "surfaceMuted": "bg-[rgba(236,248,240,0.84)] backdrop-blur-md",
+      "borderStrong": "border-emerald-300/80",
+      "summary": "Déclarer une action, Itinéraire prioritaire, Météo terrain, Mode d'emploi",
+      "items": [
+        {
+          "label": "Déclarer une action",
+          "route": "/actions/new",
+          "sourceCategory": "Actions Terrain",
+          "exposedBlock": "Agir",
+          "meta": "Actions Terrain / Agir"
+        },
+        {
+          "label": "Itinéraire prioritaire",
+          "route": "/sections/route",
+          "sourceCategory": "Actions Terrain",
+          "exposedBlock": "Agir",
+          "meta": "Actions Terrain / Agir"
+        },
+        {
+          "label": "Météo terrain",
+          "route": "/sections/weather",
+          "sourceCategory": "Actions Terrain",
+          "exposedBlock": "Agir",
+          "meta": "Actions Terrain / Agir"
+        },
+        {
+          "label": "Mode d'emploi",
+          "route": "/sections/guide",
+          "sourceCategory": "Actions Terrain",
+          "exposedBlock": "Agir",
+          "meta": "Actions Terrain / Agir"
+        },
+        {
+          "label": "Signalement de déchets",
+          "route": "/sections/trash-spotter",
+          "sourceCategory": "Communauté",
+          "exposedBlock": "Agir",
+          "meta": "Communauté / Agir"
+        }
+      ]
+    },
+    {
+      "id": "visualize",
+      "name": "Cartographie & Impact",
+      "code": "visualize",
+      "icon": "🗺️",
+      "rgb": "14 165 233",
+      "gradient": "linear-gradient(180deg, #00080f, #001422 58%, #001e32)",
+      "gradientDeep": "from-[#00080f] via-[#001422] to-[#001e32]",
+      "surface": "bg-[rgba(0,18,32,0.78)] backdrop-blur-xl",
+      "surfaceMuted": "bg-[rgba(0,12,22,0.55)] backdrop-blur-md",
+      "borderStrong": "border-sky-400/38",
+      "summary": "Carte des actions, Carte d'entraînement, Rapports d'impact, Progression et badges",
+      "items": [
+        {
+          "label": "Carte des actions",
+          "route": "/actions/map",
+          "sourceCategory": "Actions Terrain",
+          "exposedBlock": "Cartographie & Impact",
+          "meta": "Actions Terrain / Cartographie & Impact"
+        },
+        {
+          "label": "Carte d'entraînement",
+          "route": "/sections/sandbox",
+          "sourceCategory": "Actions Terrain",
+          "exposedBlock": "Cartographie & Impact",
+          "meta": "Actions Terrain / Cartographie & Impact"
+        },
+        {
+          "label": "Rapports d'impact",
+          "route": "/reports",
+          "sourceCategory": "Accueil & Pilotage",
+          "exposedBlock": "Cartographie & Impact",
+          "meta": "Accueil & Pilotage / Cartographie & Impact"
+        },
+        {
+          "label": "Progression et badges",
+          "route": "/sections/gamification",
+          "sourceCategory": "Communauté",
+          "exposedBlock": "Cartographie & Impact",
+          "meta": "Communauté / Cartographie & Impact"
+        }
+      ]
+    },
+    {
+      "id": "network",
+      "name": "Réseau & Discussions",
+      "code": "network",
+      "icon": "🤝",
+      "rgb": "99 102 241",
+      "gradient": "linear-gradient(180deg, #04020f, #08041e 58%, #0e082e)",
+      "gradientDeep": "from-[#04020f] via-[#08041e] to-[#0e082e]",
+      "surface": "bg-[rgba(8,4,24,0.78)] backdrop-blur-xl",
+      "surfaceMuted": "bg-[rgba(5,2,16,0.55)] backdrop-blur-md",
+      "borderStrong": "border-indigo-400/38",
+      "summary": "Cartographie des partenaires, Vie de la communauté, Canaux de Discussion, Observatoire Public",
+      "items": [
+        {
+          "label": "Cartographie des partenaires",
+          "route": "/partners/network",
+          "sourceCategory": "Communauté",
+          "exposedBlock": "Réseau & Discussions",
+          "meta": "Communauté / Réseau & Discussions"
+        },
+        {
+          "label": "Vie de la communauté",
+          "route": "/sections/community",
+          "sourceCategory": "Communauté",
+          "exposedBlock": "Réseau & Discussions",
+          "meta": "Communauté / Réseau & Discussions"
+        },
+        {
+          "label": "Canaux de Discussion",
+          "route": "/sections/messagerie",
+          "sourceCategory": "Communauté",
+          "exposedBlock": "Réseau & Discussions",
+          "meta": "Communauté / Réseau & Discussions"
+        },
+        {
+          "label": "Observatoire Public",
+          "route": "/sections/open-data",
+          "sourceCategory": "Communauté",
+          "exposedBlock": "Réseau & Discussions",
+          "meta": "Communauté / Réseau & Discussions"
+        }
+      ]
+    },
+    {
+      "id": "learn",
+      "name": "Apprendre",
+      "code": "learn",
+      "icon": "📚",
+      "rgb": "234 179 8",
+      "gradient": "linear-gradient(180deg, #0c0b00, #181500 58%, #241f00)",
+      "gradientDeep": "from-[#0c0b00] via-[#181500] to-[#241f00]",
+      "surface": "bg-[rgba(20,18,0,0.78)] backdrop-blur-xl",
+      "surfaceMuted": "bg-[rgba(14,12,0,0.55)] backdrop-blur-md",
+      "borderStrong": "border-yellow-400/38",
+      "summary": "Hub éducatif, Comprendre l'enjeu, S'entraîner, Bonnes pratiques",
+      "items": [
+        {
+          "label": "Hub éducatif",
+          "route": "/learn/hub",
+          "sourceCategory": "Guide & Outils",
+          "exposedBlock": "Apprendre",
+          "meta": "Guide & Outils / Apprendre"
+        },
+        {
+          "label": "Comprendre l'enjeu",
+          "route": "/learn/comprendre",
+          "sourceCategory": "Analyse & Contexte",
+          "exposedBlock": "Apprendre",
+          "meta": "Analyse & Contexte / Apprendre"
+        },
+        {
+          "label": "S'entraîner",
+          "route": "/learn/sentrainer",
+          "sourceCategory": "Guide & Outils",
+          "exposedBlock": "Apprendre",
+          "meta": "Guide & Outils / Apprendre"
+        },
+        {
+          "label": "Bonnes pratiques",
+          "route": "/learn/bonnes-pratiques",
+          "sourceCategory": "Guide & Outils",
+          "exposedBlock": "Apprendre",
+          "meta": "Guide & Outils / Apprendre"
+        },
+        {
+          "label": "Ressources et kits",
+          "route": "/learn/ressources",
+          "sourceCategory": "Guide & Outils",
+          "exposedBlock": "Apprendre",
+          "meta": "Guide & Outils / Apprendre"
+        }
+      ]
+    }
+  ],
+  "tokenGroups": [
+    {
+      "name": "Palette de base",
+      "items": [
+        [
+          "--background",
+          "#fafaf9"
+        ],
+        [
+          "--foreground",
+          "#0f172a"
+        ],
+        [
+          "--accent-primary",
+          "#10b981"
+        ],
+        [
+          "--accent-vibrant",
+          "#38bdf8"
+        ]
+      ]
+    },
+    {
+      "name": "Surfaces",
+      "items": [
+        [
+          "--bg-canvas",
+          "#fafaf9"
+        ],
+        [
+          "--bg-elevated",
+          "#ffffff"
+        ],
+        [
+          "--bg-muted",
+          "#f5f5f4"
+        ],
+        [
+          "--glass-bg",
+          "rgba(255, 255, 255, 0.7)"
+        ]
+      ]
+    },
+    {
+      "name": "Bords et focus",
+      "items": [
+        [
+          "--border-default",
+          "rgba(15, 23, 42, 0.08)"
+        ],
+        [
+          "--border-strong",
+          "rgba(15, 23, 42, 0.16)"
+        ],
+        [
+          "--focus-ring",
+          "rgba(16, 185, 129, 0.3)"
+        ],
+        [
+          "--glass-border",
+          "rgba(255, 255, 255, 0.4)"
+        ]
+      ]
+    },
+    {
+      "name": "Ombres et profondeur",
+      "items": [
+        [
+          "--shadow-premium",
+          "0 10px 15px -3px rgba(0, 0, 0, 0.02), 0 4px 6px -2px rgba(0, 0, 0, 0.01)"
+        ],
+        [
+          "--shadow-vibrant",
+          "0 20px 25px -5px rgba(16, 185, 129, 0.1), 0 10px 10px -5px rgba(16, 185, 129, 0.04)"
+        ],
+        [
+          "--shadow-soft",
+          "0 10px 24px -18px rgba(15, 23, 42, 0.28)"
+        ],
+        [
+          "--shadow-elevated",
+          "0 22px 52px -42px rgba(15, 23, 42, 0.42)"
+        ]
+      ]
+    },
+    {
+      "name": "Rayons",
+      "items": [
+        [
+          "--radius-sm",
+          "0.5rem"
+        ],
+        [
+          "--radius-md",
+          "1rem"
+        ],
+        [
+          "--radius-lg",
+          "1.5rem"
+        ],
+        [
+          "--radius-full",
+          "9999px"
+        ]
+      ]
+    },
+    {
+      "name": "Typographie",
+      "items": [
+        [
+          "--font-display",
+          "system-ui"
+        ],
+        [
+          "--font-base",
+          "system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif"
+        ],
+        [
+          "--text-h1",
+          "3.157rem"
+        ],
+        [
+          "--text-body",
+          "1rem"
+        ]
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "title": "Blur",
+      "code": "blur(16px)",
+      "text": "Flou léger pour détacher un calque d'information.",
+      "style": "background:\n        linear-gradient(135deg, rgba(255,255,255,.78), rgba(15,23,42,.08)),\n        repeating-linear-gradient(45deg, rgba(15,23,42,.12) 0 12px, rgba(255,255,255,.40) 12px 24px);\n        backdrop-filter: blur(16px);"
+    },
+    {
+      "title": "Backdrop blur",
+      "code": "backdrop-blur-xl",
+      "text": "Le fond reste lisible, la surface gagne en profondeur.",
+      "style": "background:\n        radial-gradient(circle at 20% 20%, rgba(56,189,248,.26), transparent 32%),\n        radial-gradient(circle at 78% 72%, rgba(16,185,129,.22), transparent 30%),\n        linear-gradient(135deg, rgba(8, 15, 26, .88), rgba(15, 23, 42, .78));\n        backdrop-filter: blur(20px);"
+    },
+    {
+      "title": "Glow",
+      "code": "focal + ambient",
+      "text": "Deux couches: un cœur proche et un halo large.",
+      "style": "background:\n        radial-gradient(circle at 30% 26%, rgba(16,185,129,.98), rgba(16,185,129,.28) 36%, transparent 58%),\n        radial-gradient(circle at 72% 68%, rgba(56,189,248,.88), rgba(56,189,248,.24) 30%, transparent 58%),\n        linear-gradient(135deg, rgba(4, 11, 24, .92), rgba(15, 23, 42, .88));\n        box-shadow: 0 20px 25px -5px rgba(16, 185, 129, 0.1), 0 10px 10px -5px rgba(16, 185, 129, 0.04);"
+    },
+    {
+      "title": "Gradients",
+      "code": "180deg / 3 stops",
+      "text": "Dégradés directionnels de l'accent vers une teinte plus profonde.",
+      "style": "background: linear-gradient(135deg, #10b981, #38bdf8);"
+    },
+    {
+      "title": "Ombres",
+      "code": "soft + elevated",
+      "text": "Système doux, jamais massif ni trop contrasté.",
+      "style": "background:\n        linear-gradient(180deg, rgba(255,255,255,.96), rgba(244,245,247,.92));\n        box-shadow: 0 10px 24px -18px rgba(15, 23, 42, 0.28), 0 0 0 1px rgba(15,23,42,.06);"
+    },
+    {
+      "title": "Glassmorphism",
+      "code": "surface premium",
+      "text": "Contours subtils, transparence contrôlée et blur contenu.",
+      "style": "background:\n        linear-gradient(135deg, rgba(255,255,255,.82), rgba(255,255,255,.42)),\n        radial-gradient(circle at 24% 18%, rgba(255,255,255,.72), transparent 24%);\n        border: 1px solid rgba(255, 255, 255, 0.4);\n        backdrop-filter: blur(16px);"
+    }
+  ]
+}

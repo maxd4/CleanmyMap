@@ -135,7 +135,7 @@ export function buildHomePillars(
     {
       spaceId: "home",
       iconName: 'layout-dashboard',
-      title: 'Accueil et Pilotage',
+      title: 'Accueil & Pilotage',
       preview: getSpacePreview('home'),
       iconBg: 'bg-orange-500/75',
       iconColor: 'text-white',
@@ -159,7 +159,7 @@ export function buildHomePillars(
     {
       spaceId: "visualize",
       iconName: 'map',
-      title: 'Cartographie et Impact',
+      title: 'Cartographie & Impact',
       preview: getSpacePreview('visualize'),
       iconBg: 'bg-sky-500/70',
       iconColor: 'text-white',
@@ -208,7 +208,7 @@ export function buildHomePillars(
 export const HOME_BENEFITS: HomeBenefit[] = [
   {
     iconName: 'map-pin',
-    title: 'Centralisation Terrain',
+    title: 'Centralisation terrain',
     desc: 'Lieux, dates, volumes et participants regroupés. Fini les tableurs éparpillés.',
     color: 'text-[#20b97e]',
     bg: 'bg-[#20b97e]/14',
@@ -216,7 +216,7 @@ export const HOME_BENEFITS: HomeBenefit[] = [
   },
   {
     iconName: 'map',
-    title: 'Carte Partagée',
+    title: 'Carte partagée',
     desc: 'Repérez les zones nettoyées et les points prioritaires en un coup d\'œil.',
     color: 'text-[#2c5f77]',
     bg: 'bg-[#2c5f77]/14',
@@ -224,7 +224,7 @@ export const HOME_BENEFITS: HomeBenefit[] = [
   },
   {
     iconName: 'bar-chart-3',
-    title: 'Impact Réel',
+    title: 'Impact réel',
     desc: 'Indicateurs automatisés : kg collectés, mégots, CO2 évité et eau préservée.',
     color: 'text-[#18B68F]',
     bg: 'bg-[#18B68F]/14',
@@ -232,7 +232,7 @@ export const HOME_BENEFITS: HomeBenefit[] = [
   },
   {
     iconName: 'users',
-    title: 'Réseau Local',
+    title: 'Réseau local',
     desc: 'Coordonnez vos actions avec les associations et les partenaires de quartier.',
     color: 'text-[#5B5FCF]',
     bg: 'bg-[#5B5FCF]/14',
@@ -248,7 +248,7 @@ export const HOME_BENEFITS: HomeBenefit[] = [
   },
   {
     iconName: 'shield',
-    title: 'Données Certifiées',
+    title: 'Données certifiées',
     desc: "Méthodologie transparente et chiffres sourcés pour crédibiliser votre engagement.",
     color: 'text-[#1f6a52]',
     bg: 'bg-[#1f6a52]/14',
