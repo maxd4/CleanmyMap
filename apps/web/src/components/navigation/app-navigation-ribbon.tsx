@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Compass, Settings2, ChevronDown, MessageSquare } from "lucide-react";
+import { List, Settings2, ChevronDown, MessageSquare } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
@@ -19,10 +19,10 @@ import {
 import type { AppProfile } from "@/lib/profiles";
 import { trackNavigationClick } from "@/lib/analytics/navigation-client";
 import { cn } from "@/lib/utils";
-import { getBlockClasses, type BlockId } from "@/lib/ui/block-accents";
 import { GlobalSearch } from "./global-search";
 import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
+import { AppNavigationBlockDropdown } from "./app-navigation-block-dropdown";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 
 type AppNavigationRibbonProps = {
@@ -66,19 +66,6 @@ export function AppNavigationRibbon({
           : space.items,
     }));
   }, [currentProfile, displayMode, locale]);
-
-  const quickSpaceLinks = useMemo(
-    () =>
-      spaces.map((space) => {
-        const blockId = space.id as BlockId;
-        return {
-          ...space,
-          href: space.items[0]?.href ?? "/",
-          accent: getBlockClasses(blockId),
-        };
-      }),
-    [spaces],
-  );
 
   const activeSpaceId = getActiveSpaceForPath(currentProfile, pathname, displayMode);
   const preferencesPlacement = useDropdownPlacement({
@@ -246,65 +233,35 @@ export function AppNavigationRibbon({
           </Link>
 
           <div className="hidden min-w-0 flex-1 items-center gap-2 lg:flex">
-            <AppNavigationTreeMenu
-              key={`desktop-tree-${pathname}`}
-              activeSpaceId={activeSpaceId}
-              idBase="desktop-navigation-tree"
-              locale={locale}
-              onTrackNavigation={onTrackNavigation}
-              pathname={pathname}
-              ribbonChrome={ribbonChrome}
-              spaces={spaces}
-            />
+            <Link
+              href="/explorer"
+              onClick={() => onTrackNavigation("/explorer", locale === "fr" ? "Sommaire" : "Summary", null)}
+              className="group inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-cyan-100/18 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 px-4 text-white shadow-[0_18px_36px_-20px_rgba(20,184,166,0.5)] transition-transform hover:scale-[1.01] hover:border-cyan-100/30 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+              aria-label={locale === "fr" ? "Sommaire" : "Summary"}
+            >
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/16 bg-white/14">
+                <List className="h-4 w-4" aria-hidden="true" />
+              </span>
+              <span className="cmm-text-caption font-black uppercase tracking-[0.18em]">
+                {locale === "fr" ? "Sommaire" : "Summary"}
+              </span>
+            </Link>
 
             <nav
-              aria-label={locale === "fr" ? "Raccourcis vers les blocs" : "Shortcuts to blocks"}
-              className="hidden min-w-0 items-center gap-1.5 xl:flex"
+              aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}
+              className="flex min-w-0 flex-1 flex-nowrap items-center justify-center gap-1"
             >
-              {quickSpaceLinks.map((space) => {
-                const isActiveSpace = space.id === activeSpaceId;
-                return (
-                  <Link
-                    key={space.id}
-                    href={space.href}
-                    aria-current={isActiveSpace ? "page" : undefined}
-                    onClick={() =>
-                      onTrackNavigation(space.href, space.label[locale], space.id)
-                    }
-                    className={cn(
-                      "group inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-3.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
-                      isActiveSpace
-                        ? cn(
-                            "bg-white/14 text-white shadow-[0_18px_36px_-22px_rgba(2,6,23,0.48)]",
-                            space.accent.borderStrong,
-                          )
-                        : "border-white/10 bg-white/[0.07] text-white/82 hover:border-white/18 hover:bg-white/[0.11] hover:text-white",
-                    )}
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-transform duration-200 group-hover:scale-105",
-                        isActiveSpace
-                          ? cn("border-white/16 bg-white/14", space.accent.shadow)
-                          : "border-white/10 bg-white/10",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "text-[13px] leading-none transition-transform duration-200 group-hover:scale-110",
-                          isActiveSpace ? "text-white" : "text-white/90",
-                        )}
-                      >
-                        {space.icon}
-                      </span>
-                    </span>
-                    <span className="cmm-text-caption font-bold uppercase tracking-[0.14em]">
-                      {space.label[locale]}
-                    </span>
-                  </Link>
-                );
-              })}
+              {spaces.map((space) => (
+                <AppNavigationBlockDropdown
+                  key={space.id}
+                  activeSpaceId={activeSpaceId}
+                  locale={locale}
+                  onTrackNavigation={onTrackNavigation}
+                  pathname={pathname}
+                  ribbonChrome={ribbonChrome}
+                  space={space}
+                />
+              ))}
             </nav>
           </div>
 

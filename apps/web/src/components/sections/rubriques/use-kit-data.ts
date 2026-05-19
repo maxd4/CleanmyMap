@@ -43,6 +43,13 @@ export function useKitData(activeTab: "weather" | "kit", fr: boolean) {
     (Object.values(kitChecks).filter(Boolean).length / Object.values(kitChecks).length) * 100,
   );
 
+  const toggleItem = (item: string) => {
+    setKitChecks((current) => ({
+      ...current,
+      [item]: !current[item],
+    }));
+  };
+
   useEffect(() => {
     if (activeTab !== "kit") return;
     let active = true;
@@ -73,6 +80,7 @@ export function useKitData(activeTab: "weather" | "kit", fr: boolean) {
     setPackType,
     kitChecks,
     setKitChecks,
+    toggleItem,
     kitProgress,
     packItems,
     kitReady,

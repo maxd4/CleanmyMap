@@ -76,8 +76,8 @@ function CommunityStaffingCard(props: CommunityStaffingCardProps) {
               <div className="flex items-center gap-3">
                 <span className={cn(
                   "px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest",
-                  row.riskLevel === "critique" ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
-                  row.riskLevel === "modere" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
+                  row.riskLevel === "rouge" ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
+                  row.riskLevel === "orange" ? "bg-amber-500/10 text-amber-400 border border-amber-500/20" :
                   "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                 )}>
                   RISQUE {row.riskLevel.toUpperCase()}

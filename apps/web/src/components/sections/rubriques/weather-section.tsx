@@ -71,7 +71,7 @@ export function WeatherSection() {
               </h3>
             </div>
             <div className="flex items-center gap-4 text-slate-500 text-[10px] font-black uppercase tracking-widest">
-              <span className="flex items-center gap-1.5"><MapPin size={12} className="text-slate-400" /> {weather.selectedZone?.name || (fr ? "Zone Auto" : "Auto Zone")}</span>
+              <span className="flex items-center gap-1.5"><MapPin size={12} className="text-slate-400" /> {weather.selectedZone?.label || (fr ? "Zone Auto" : "Auto Zone")}</span>
               <div className="w-1 h-1 rounded-full bg-white/10" />
               <span className="flex items-center gap-1.5"><Sparkles size={12} className="text-slate-400" /> {fr ? "Sync. Live" : "Live Sync"}</span>
             </div>

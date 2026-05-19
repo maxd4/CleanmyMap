@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { AlertTriangle, Building2, Cookie, FileText, Scale, Shield, Users, ArrowRight, Sparkles, ExternalLink } from "lucide-react";
-import type { ElementType } from "react";
+import type { LucideIcon } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard, RubriqueTheme } from "@/components/ui/rubrique-card";
 import { cn } from "@/lib/utils";
 
 type LegalCard = {
   id: string;
-  icon: ElementType;
+  icon: LucideIcon;
   title: string;
   summary: string;
   href?: string;

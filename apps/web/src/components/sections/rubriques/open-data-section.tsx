@@ -2,6 +2,7 @@
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { Database, FileJson, Globe, Code, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -23,7 +24,7 @@ export function OpenDataSection() {
       <div className="space-y-12 pt-8">
         {/* Intro Highlight */}
         <RubriqueCard 
-          themeColor="cyan"
+          themeColor="sky"
           withTopBar={false}
           className="p-8 flex flex-col md:flex-row items-center justify-between gap-8 group"
         >

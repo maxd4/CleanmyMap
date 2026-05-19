@@ -1,6 +1,5 @@
 "use client";
 
-import { useTranslation } from "@/lib/i18n/use-translation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   TrendingDown, 
@@ -28,6 +27,7 @@ import { fetchActions } from "@/lib/actions/http";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { memo } from "react";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
 
 interface NationalStat {
@@ -131,7 +131,7 @@ function computePlatformStats(actions: any[]) {
 }
 
 export function NationalStatsSection() {
-  const { t, locale } = useTranslation();
+  const { locale } = useSitePreferences();
   const fr = locale === "fr";
 
   const { data, isLoading, error } = useSWR(["national-platform-stats"], () =>

@@ -28,7 +28,9 @@ import {
   Activity,
   Layers,
   Search,
-  Filter
+  Filter,
+  TrendingDown,
+  Info
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";

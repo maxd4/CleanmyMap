@@ -132,7 +132,9 @@ export function CompostMapCanvas({ points }: CompostMapCanvasProps) {
             >
               <Popup className="cmm-map-popup">
                 <div className="p-1 min-w-[180px] font-sans">
-                  <h4 className="text-sm font-black text-slate-900 tracking-tight leading-tight mb-2">{point.name}</h4>
+                  <h4 className="text-sm font-black text-slate-900 tracking-tight leading-tight mb-2">
+                    {isFrench ? point.name.fr : point.name.en}
+                  </h4>
                   <div className="flex items-center gap-2 mb-3">
                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[9px] font-black uppercase tracking-widest">
                         {point.region.replace('_', ' ')}

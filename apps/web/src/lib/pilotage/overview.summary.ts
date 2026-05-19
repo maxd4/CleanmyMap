@@ -78,7 +78,7 @@ export function buildSummary(
         interpretation: comparison.metrics.impactVolumeKg.interpretation,
       },
       {
-        id: "iur",
+        id: "mobilization",
         label: "IUR (Sobriété)",
         value: `${comparison.current.iurIndex.toFixed(2)}`,
         previousValue: `${comparison.previous.iurIndex.toFixed(2)}`,

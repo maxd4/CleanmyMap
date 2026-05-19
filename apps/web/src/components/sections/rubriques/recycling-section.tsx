@@ -169,7 +169,7 @@ export function RecyclingSection() {
               </RubriqueCard>
 
               <RubriqueCard themeColor="emerald" withTopBar={true} className="p-8">
-                <RecyclingQuestionAssistant fr={fr} />
+                <RecyclingQuestionAssistant />
               </RubriqueCard>
             </div>
           </motion.div>

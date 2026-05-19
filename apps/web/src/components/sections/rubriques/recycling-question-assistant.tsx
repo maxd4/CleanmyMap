@@ -1,4 +1,12 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Info, MapPin, Search } from "lucide-react";
+import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { buildAnswer } from "./recycling-question-assistant/assistant-utils";
+import { QUICK_PROMPTS, type Tone } from "./recycling-question-assistant/assistant-constants";
 
 function toneClasses(tone: Tone): { shell: string; badge: string; title: string; accent: string } {
   switch (tone) {

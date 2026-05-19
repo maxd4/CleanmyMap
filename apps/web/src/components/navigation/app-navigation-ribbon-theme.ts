@@ -21,6 +21,9 @@ const SURFACE_WARM_LIGHT: RgbaColor = { r: 255, g: 251, b: 240, a: 1 };
 const SURFACE_WARM_TINT: RgbaColor = { r: 255, g: 243, b: 217, a: 1 };
 const SURFACE_WARM_EDGE: RgbaColor = { r: 251, g: 191, b: 36, a: 1 };
 const SURFACE_SHADOW: RgbaColor = { r: 15, g: 23, b: 42, a: 1 };
+const SURFACE_DEEP: RgbaColor = { r: 8, g: 12, b: 24, a: 1 };
+const SURFACE_MID: RgbaColor = { r: 15, g: 23, b: 42, a: 1 };
+const SURFACE_EDGE: RgbaColor = { r: 30, g: 41, b: 59, a: 1 };
 let colorParserNode: HTMLSpanElement | null = null;
 
 function clamp(value: number, min: number, max: number): number {
@@ -302,18 +305,17 @@ function sampleRibbonBackdropColor(ribbonElement: HTMLElement): RgbaColor {
 
 export function buildRibbonChrome(baseColor: RgbaColor): RibbonChrome {
   const luminance = relativeLuminance(baseColor);
-  const tintStrength = luminance > 0.65 ? 0.82 : luminance > 0.35 ? 0.88 : 0.93;
-  const pageTint = mixColors(SURFACE_WARM_LIGHT, baseColor, tintStrength);
-  const bg1 = { ...mixColors(pageTint, SURFACE_WARM_TINT, 0.86), a: 0.92 };
-  const bg2 = { ...mixColors(pageTint, SURFACE_WARM_EDGE, 0.76), a: 0.9 };
-  const bg3 = { ...mixColors(pageTint, baseColor, 0.68), a: 0.88 };
-  const borderAlpha = luminance > 0.55 ? 0.24 : 0.2;
-  const boxShadowAlpha = luminance > 0.55 ? 0.16 : 0.22;
+  const darkSurface = mixColors(SURFACE_DEEP, baseColor, luminance > 0.6 ? 0.9 : 0.94);
+  const midSurface = mixColors(SURFACE_MID, baseColor, luminance > 0.6 ? 0.84 : 0.9);
+  const edgeSurface = mixColors(SURFACE_EDGE, baseColor, luminance > 0.6 ? 0.78 : 0.84);
+  const accentLift = mixColors(SURFACE_WARM_EDGE, darkSurface, 0.12);
+  const borderAlpha = luminance > 0.55 ? 0.18 : 0.14;
+  const boxShadowAlpha = luminance > 0.55 ? 0.28 : 0.34;
   return {
-    backgroundImage: `linear-gradient(135deg, ${rgbaToCss(bg1, bg1.a)} 0%, ${rgbaToCss(bg2, bg2.a)} 50%, ${rgbaToCss(bg3, bg3.a)} 100%)`,
-    backgroundColor: rgbaToCss({ ...mixColors(pageTint, SURFACE_WARM_LIGHT, 0.9), a: 0.94 }),
-    borderColor: `rgba(251, 146, 60, ${borderAlpha})`,
-    boxShadow: `0 1px 0 0 rgba(255, 255, 255, 0.18), 0 14px 34px -24px rgba(${SURFACE_SHADOW.r}, ${SURFACE_SHADOW.g}, ${SURFACE_SHADOW.b}, ${boxShadowAlpha})`,
+    backgroundImage: `linear-gradient(135deg, ${rgbaToCss(darkSurface, 0.96)} 0%, ${rgbaToCss(midSurface, 0.94)} 54%, ${rgbaToCss(edgeSurface, 0.92)} 100%)`,
+    backgroundColor: rgbaToCss({ ...mixColors(SURFACE_SHADOW, darkSurface, 0.82), a: 0.96 }),
+    borderColor: `rgba(255, 255, 255, ${borderAlpha})`,
+    boxShadow: `0 1px 0 0 rgba(255, 255, 255, 0.06), 0 24px 56px -34px rgba(${SURFACE_SHADOW.r}, ${SURFACE_SHADOW.g}, ${SURFACE_SHADOW.b}, ${boxShadowAlpha}), 0 0 0 1px rgba(${accentLift.r}, ${accentLift.g}, ${accentLift.b}, 0.08) inset`,
   };
 }
 

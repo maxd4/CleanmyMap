@@ -41,11 +41,11 @@ function CommunityRemindersCard(props: CommunityRemindersCardProps) {
                 <div className="flex items-center gap-3">
                   <div className={cn(
                     "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border",
-                    reminder.priority === 'high' ? "bg-rose-500/10 border-rose-500/20 text-rose-400" :
-                    reminder.priority === 'medium' ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
+                    reminder.priority === "haute" ? "bg-rose-500/10 border-rose-500/20 text-rose-400" :
+                    reminder.priority === "moyenne" ? "bg-amber-500/10 border-amber-500/20 text-amber-400" :
                     "bg-blue-500/10 border-blue-500/20 text-blue-400"
                   )}>
-                    {reminder.priority === 'high' && <AlertTriangle size={10} className="inline mr-1" />}
+                    {reminder.priority === "haute" && <AlertTriangle size={10} className="inline mr-1" />}
                     Priorité {reminder.priority}
                   </div>
                   <div className="flex items-center gap-1.5 text-slate-400">

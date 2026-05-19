@@ -148,7 +148,7 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
           >
             {OPERATIONAL_ZONES.map((zone) => (
               <option key={zone.id} value={zone.id} className="bg-slate-900">
-                {zone.name}
+                {zone.label}
               </option>
             ))}
           </select>
@@ -162,8 +162,8 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
 });
 
 export const WeatherRiskAlert = memo(function WeatherRiskAlert({ currentRisk, fr }: { currentRisk: WeatherRiskAssessment; fr: boolean }) {
-  const isDanger = currentRisk.riskLevel === "critical" || currentRisk.riskLevel === "extreme";
-  const isWarning = currentRisk.riskLevel === "warning";
+  const isDanger = currentRisk.level === "rouge";
+  const isWarning = currentRisk.level === "orange";
 
   return (
     <RubriqueCard
@@ -188,7 +188,7 @@ export const WeatherRiskAlert = memo(function WeatherRiskAlert({ currentRisk, fr
             Niveau de Vigilance
           </p>
           <h3 className="text-2xl font-black text-white tracking-tighter leading-none">
-            {currentRisk.summary[fr ? 'fr' : 'en']}
+            {currentRisk.reasons[0] ?? (fr ? "Conditions stables" : "Stable conditions")}
           </h3>
         </div>
       </div>
@@ -294,7 +294,13 @@ export const WeatherForecast = memo(function WeatherForecast({
   );
 });
 
-export const WeatherActionWindows = memo(function WeatherActionWindows({ windows, fr }: { windows: InterventionWindow[]; fr: boolean }) {
+export const WeatherActionWindows = memo(function WeatherActionWindows({
+  windows,
+  fr,
+}: {
+  windows: { recommended: InterventionWindow[]; avoid: InterventionWindow[] };
+  fr: boolean;
+}) {
   return (
     <div className="space-y-8">
       <div className="flex items-center gap-4">
@@ -304,41 +310,80 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({ windows
         <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Fenêtres d'Action Optimales" : "Optimal Action Windows"}</h3>
       </div>
 
-      <div className="space-y-4">
-        {windows.map((w, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            className="p-6 rounded-[2rem] border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-all flex items-center justify-between shadow-xl"
-          >
-            <div className="flex items-center gap-6">
-              <div className={cn(
-                "w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl",
-                w.quality === 'ideal' ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-              )}>
-                <Sparkles size={24} className={w.quality === 'ideal' ? 'animate-pulse' : ''} />
-              </div>
-              <div className="space-y-1">
-                <p className="text-lg font-black text-white tracking-tight">
-                  {w.start.toLocaleDateString(fr ? 'fr-FR' : 'en-US', { weekday: 'long', day: 'numeric' })}
-                </p>
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                    {w.start.getHours()}h - {w.end.getHours()}h
-                  </span>
-                  <div className="w-1 h-1 rounded-full bg-white/10" />
-                  <span className={cn("text-[10px] font-black uppercase tracking-widest", w.quality === 'ideal' ? 'text-emerald-500' : 'text-amber-500')}>
-                    Score: {w.score}/100
-                  </span>
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">
+            {fr ? "Recommandées" : "Recommended"}
+          </p>
+          {windows.recommended.map((w, i) => (
+            <motion.div
+              key={`recommended-${i}`}
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              className="p-6 rounded-[2rem] border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-all flex items-center justify-between shadow-xl"
+            >
+              <div className="flex items-center gap-6">
+                <div className={cn(
+                  "w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl",
+                  w.level === "vert" ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" : "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                )}>
+                  <Sparkles size={24} className={w.level === "vert" ? "animate-pulse" : ""} />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-lg font-black text-white tracking-tight">
+                    {new Date(w.from).toLocaleDateString(fr ? "fr-FR" : "en-US", { weekday: "long", day: "numeric" })}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                      {new Date(w.from).getHours()}h - {new Date(w.to).getHours()}h
+                    </span>
+                    <div className="w-1 h-1 rounded-full bg-white/10" />
+                    <span className={cn(
+                      "text-[10px] font-black uppercase tracking-widest",
+                      w.level === "vert" ? "text-emerald-500" : "text-amber-500"
+                    )}>
+                      {w.reason}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            <button className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all">
-              {fr ? "Planifier" : "Schedule"}
-            </button>
-          </motion.div>
-        ))}
+              <button className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all">
+                {fr ? "Planifier" : "Schedule"}
+              </button>
+            </motion.div>
+          ))}
+        </div>
+
+        <div className="space-y-4">
+          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-rose-400">
+            {fr ? "À éviter" : "Avoid"}
+          </p>
+          {windows.avoid.map((w, i) => (
+            <motion.div
+              key={`avoid-${i}`}
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              className="p-6 rounded-[2rem] border border-white/5 bg-slate-900/20 hover:bg-white/5 transition-all flex items-center justify-between shadow-xl opacity-80"
+            >
+              <div className="flex items-center gap-6">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                  <AlertCircle size={24} />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-lg font-black text-white tracking-tight">
+                    {new Date(w.from).toLocaleDateString(fr ? "fr-FR" : "en-US", { weekday: "long", day: "numeric" })}
+                  </p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+                    {new Date(w.from).getHours()}h - {new Date(w.to).getHours()}h
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-rose-400">
+                {w.reason}
+              </span>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </div>
   );
