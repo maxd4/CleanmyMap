@@ -124,21 +124,23 @@ export type ActionListItem = {
       importedAt: string | null;
       validatedAt: string | null;
     };
-    metadata: {
-      actorName: string | null;
-      associationName?: string | null;
-      notes: string | null;
-      notesPlain: string | null;
-      wasteKg: number | null;
-      cigaretteButts: number | null;
-      volunteersCount: number;
-      durationMinutes: number;
-      manualDrawing: ActionDrawing | null;
-      placeType?: string | null;
-      departureLocationLabel?: string | null;
-      arrivalLocationLabel?: string | null;
-      routeStyle?: "direct" | "souple" | null;
-      routeAdjustmentMessage?: string | null;
+      metadata: {
+        actorName: string | null;
+        associationName?: string | null;
+        notes: string | null;
+        notesPlain: string | null;
+        wasteKg: number | null;
+        cigaretteButts: number | null;
+        volunteersCount: number;
+        durationMinutes: number;
+        manualDrawing: ActionDrawing | null;
+        wasteBreakdown?: ActionWasteBreakdown | null;
+        placeType?: string | null;
+        submissionMode?: ActionSubmissionMode | null;
+        departureLocationLabel?: string | null;
+        arrivalLocationLabel?: string | null;
+        routeStyle?: "direct" | "souple" | null;
+        routeAdjustmentMessage?: string | null;
       photos?: ActionPhotoAsset[] | null;
       visionEstimate?: ActionVisionEstimate | null;
     };

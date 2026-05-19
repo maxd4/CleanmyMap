@@ -11,7 +11,7 @@ import {
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { Info, MapPin, MessageSquare, ShieldCheck, Clock, Star, Target, Zap, Building2, ExternalLink } from "lucide-react";
+import { Info, MapPin, MessageSquare, ShieldCheck, Clock, Star, Target, Zap, Building2, ExternalLink, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -154,7 +154,8 @@ export function AnnuaireActorCard({
       {/* Action System */}
       <div className="mt-8 flex items-center gap-4 pt-6 border-t border-white/5">
         <CmmButton
-          variant="secondary"
+          tone="secondary"
+          variant="default"
           className="flex-1 h-12 rounded-xl bg-white/5 border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all shadow-2xl"
           onClick={() => onFocusMap(entry.id)}
         >
@@ -164,7 +165,8 @@ export function AnnuaireActorCard({
         
         {entry.primaryChannel ? (
           <CmmButton
-            variant="primary"
+            tone="primary"
+            variant="default"
             className="flex-1 h-12 rounded-xl bg-violet-600 border-none text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-violet-500 transition-all shadow-[0_10px_30px_rgba(139,92,246,0.2)] group/btn"
             asChild
           >

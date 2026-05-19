@@ -39,7 +39,7 @@ describe("app-navigation-ribbon-theme", () => {
     ).toEqual({ r: 64, g: 64, b: 64, a: 1 });
   });
 
-  it("keeps the ribbon darker but more tinted on bright surfaces", () => {
+  it("keeps the ribbon light on bright surfaces and still tinted on dark ones", () => {
     const lightChrome = buildRibbonChrome({
       r: 246,
       g: 248,
@@ -54,8 +54,14 @@ describe("app-navigation-ribbon-theme", () => {
     });
 
     expect(lightChrome.backgroundImage).not.toBe(darkChrome.backgroundImage);
-    expect(parseCssColor(lightChrome.borderColor)?.a).toBeGreaterThan(
-      parseCssColor(darkChrome.borderColor)?.a ?? 0,
+    expect(
+      relativeLuminance(
+        parseCssColor(lightChrome.backgroundColor) ?? { r: 0, g: 0, b: 0, a: 1 },
+      ),
+    ).toBeGreaterThan(
+      relativeLuminance(
+        parseCssColor(darkChrome.backgroundColor) ?? { r: 0, g: 0, b: 0, a: 1 },
+      ),
     );
     expect(relativeLuminance({ r: 246, g: 248, b: 252 })).toBeGreaterThan(
       relativeLuminance({ r: 8, g: 15, b: 32 }),

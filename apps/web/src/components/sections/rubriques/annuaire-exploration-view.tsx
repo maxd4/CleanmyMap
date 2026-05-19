@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { Search, Filter, Map as MapIcon, Share2, Sparkles, Target, ArrowRight } from "lucide-react";
+import { Search, Filter, Map as MapIcon, Share2, Sparkles, Target, ArrowRight, Building2 } from "lucide-react";
 import { AnnuaireNetworkGraph } from "./annuaire-network-graph";
 import { AnnuairePartnerDrawer } from "./annuaire-partner-drawer";
 import { AnnuaireFiltersCard } from "./annuaire-filters-card";
@@ -22,13 +22,24 @@ const AnnuaireMapCanvas = dynamic(
   },
 );
 
-export function AnnuaireExplorationView() {
+type AnnuaireExplorationViewProps = {
+  searchTerm?: string;
+  setSearchTerm?: (value: string) => void;
+  fr?: boolean;
+};
+
+export function AnnuaireExplorationView({
+  searchTerm: externalSearchTerm,
+  setSearchTerm: externalSetSearchTerm,
+  fr: externalFr,
+}: AnnuaireExplorationViewProps) {
   const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"map" | "network">("map");
 
   const {
-    searchTerm, setSearchTerm,
+    searchTerm: internalSearchTerm,
+    setSearchTerm: internalSetSearchTerm,
     filterKind, setFilterKind,
     filterContribution, setFilterContribution,
     zoneFilter, setZoneFilter,
@@ -40,7 +51,9 @@ export function AnnuaireExplorationView() {
     locale,
   } = useAnnuaireLogic();
 
-  const fr = locale === "fr";
+  const fr = externalFr ?? (locale === "fr");
+  const searchTerm = externalSearchTerm ?? internalSearchTerm;
+  const setSearchTerm = externalSetSearchTerm ?? internalSetSearchTerm;
   const selectedActor = sortedAndFilteredEntries.find(e => e.id === selectedActorId) || null;
 
   const handleActorClick = (id: string) => {
@@ -75,7 +88,8 @@ export function AnnuaireExplorationView() {
             
             {/* Filter Toggle Button */}
             <CmmButton 
-              variant={showFilters ? "primary" : "secondary"}
+              tone={showFilters ? "primary" : "secondary"}
+              variant="default"
               className={cn(
                 "h-16 px-8 rounded-2xl font-black text-[11px] tracking-[0.2em] uppercase whitespace-nowrap transition-all duration-500 shadow-2xl",
                 showFilters ? "bg-violet-600 border-violet-500" : "bg-white/5 border-white/10 hover:bg-white/10"

@@ -1,4 +1,4 @@
-import { PLACE_TYPE_OPTIONS } from"@/lib/actions/place-type-options";
+import { PLACE_TYPE_FORM_OPTIONS, normalizePlaceTypeForUi } from"@/lib/actions/place-type-options";
 import type { FormState } from"./action-declaration-form.model";
 import { ActionDeclarationWasteAssist } from"./action-declaration-form.smart-assist";
 
@@ -37,17 +37,17 @@ export function ActionDeclarationWasteSection({
 
  <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
  Type de lieu <span className="text-emerald-500">*</span>
- <select
- className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm appearance-none"
- value={form.placeType}
- onChange={(event) => onPlaceTypeChange(event.target.value)}
- >
- {PLACE_TYPE_OPTIONS.map((option) => (
- <option key={option} value={option}>
- {option}
+<select
+className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm appearance-none"
+value={normalizePlaceTypeForUi(form.placeType)}
+onChange={(event) => onPlaceTypeChange(event.target.value)}
+>
+ {PLACE_TYPE_FORM_OPTIONS.map((option) => (
+ <option key={option.value} value={option.value}>
+ {option.label}
  </option>
  ))}
- </select>
+</select>
  <p className="cmm-text-caption cmm-text-muted font-normal mt-1">
  Sert au classement et aux rapports.
  </p>

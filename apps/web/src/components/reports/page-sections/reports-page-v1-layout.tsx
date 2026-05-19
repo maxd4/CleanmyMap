@@ -1,4 +1,3 @@
-import { CognitiveCueStrip } from "@/components/learn/cognitive-cue-strip";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { DecisionPageHeader } from "@/components/ui/decision-page-header";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
@@ -15,7 +14,6 @@ export function ReportsPageV1Layout({
   roleLabel,
   profile,
   primaryAction,
-  reportsCue,
   summaryKpis,
   headerActions,
   overview,
@@ -26,20 +24,6 @@ export function ReportsPageV1Layout({
   return (
     <div data-rubrique-report-root className="space-y-4">
       {publicAccessBanner}
-
-      <CognitiveCueStrip
-        locale={locale}
-        rubricId="reports"
-        question={reportsCue.question}
-        clue={reportsCue.clue}
-        chips={[
-          locale === "fr" ? "À revoir" : "To review",
-          locale === "fr" ? "Prochaine révision" : "Next review",
-          locale === "fr" ? "Maîtrisées" : "Mastered",
-          locale === "fr" ? "Reprendre demain" : "Resume tomorrow",
-        ]}
-        action={{ href: "/methodologie", label: reportsCue.actionLabel }}
-      />
 
       <ThirtySecondsSummary
         kpis={summaryKpis}

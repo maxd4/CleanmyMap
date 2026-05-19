@@ -94,7 +94,8 @@ export function AnnuaireFeaturedSection({ entries, onFocusMap, fr }: AnnuaireFea
 
               <div className="p-10 pt-0 mt-auto">
                 <CmmButton 
-                  variant="primary" 
+                  tone="primary"
+                  variant="default"
                   className="group/btn h-14 w-full rounded-2xl border-none bg-violet-600 text-white text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all duration-500 hover:bg-violet-500 hover:scale-[1.02]"
                   onClick={() => onFocusMap(entry.id)}
                 >

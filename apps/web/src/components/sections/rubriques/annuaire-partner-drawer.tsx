@@ -167,7 +167,8 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                 {fr ? "Fermer" : "Close"}
               </button>
               <CmmButton 
-                variant="primary"
+                tone="primary"
+                variant="default"
                 className="group/cta h-16 flex-[2] rounded-2xl bg-violet-600 text-[11px] font-black uppercase tracking-[0.2em] text-white shadow-[0_10px_30px_rgba(139,92,246,0.3)] transition-all hover:bg-violet-500 hover:scale-[1.02]"
               >
                 <span>{fr ? "Engager le contact" : "Get in touch"}</span>

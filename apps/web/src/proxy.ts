@@ -2,6 +2,7 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
 import { getClerkRuntimeConfig } from "@/lib/clerk-session-config";
+import { isDevAuthBypassEnabled } from "@/lib/auth/dev-auth";
 import { PROTECTED_ROUTE_PATTERNS } from "@/lib/auth/protected-routes";
 import {
   getPrivateSectionRoutes,
@@ -112,6 +113,7 @@ const clerkRuntime = getClerkRuntimeConfig();
 const clerkProxy = clerkMiddleware(
   async (auth, req) => {
     const { pathname } = req.nextUrl;
+    const bypassClerk = isDevAuthBypassEnabled(req.headers.get("host"));
 
     // Rate Limiting pour les routes API en POST uniquement
     if (req.method === "POST" && pathname.startsWith("/api/")) {
@@ -145,7 +147,7 @@ const clerkProxy = clerkMiddleware(
       }
     }
 
-    if (isProtectedRoute(req) && !isPublicException(pathname)) {
+    if (!bypassClerk && isProtectedRoute(req) && !isPublicException(pathname)) {
       await auth.protect();
     }
 
@@ -166,7 +168,11 @@ export default async function proxy(req: NextRequest, evt: NextFetchEvent) {
     const isDevBrowserMissing = clerkReason?.includes("dev-browser-missing") ?? false;
 
     if (isDevBrowserMissing) {
-      if (isProtectedRoute(req) && !isPublicException(req.nextUrl.pathname)) {
+      if (
+        !isDevAuthBypassEnabled(req.headers.get("host")) &&
+        isProtectedRoute(req) &&
+        !isPublicException(req.nextUrl.pathname)
+      ) {
         const signInUrl = new URL("/sign-in", req.url);
         signInUrl.searchParams.set("redirect_url", req.url);
         return NextResponse.redirect(signInUrl);
@@ -176,7 +182,11 @@ export default async function proxy(req: NextRequest, evt: NextFetchEvent) {
     return response;
   } catch (error) {
     console.error("Proxy fallback: Clerk middleware failure", error);
-    if (isProtectedRoute(req) && !isPublicException(req.nextUrl.pathname)) {
+    if (
+      !isDevAuthBypassEnabled(req.headers.get("host")) &&
+      isProtectedRoute(req) &&
+      !isPublicException(req.nextUrl.pathname)
+    ) {
       const signInUrl = new URL("/sign-in", req.url);
       signInUrl.searchParams.set("redirect_url", req.url);
       return NextResponse.redirect(signInUrl);

@@ -8,6 +8,11 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
     dashboard: 1,
     explorer: 2,
     profile: 3,
+    pilotage: 4,
+    admin: 5,
+    sponsor: 6,
+    elus: 7,
+    godmode: 8,
   },
   act: {
     new: 1,
@@ -19,11 +24,10 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
   visualize: {
     map: 1,
     sandbox: 2,
+    reports: 3,
+    gamification: 4,
   },
-  impact: {
-    reports: 1,
-    gamification: 2,
-  },
+  impact: {},
   network: {
     network: 1,
     annuaire: 2,

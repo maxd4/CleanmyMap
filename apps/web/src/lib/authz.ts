@@ -1,4 +1,5 @@
 import { auth, clerkClient, type User } from "@clerk/nextjs/server";
+import { headers } from "next/headers";
 import { env } from "./env";
 import { resolveProfile, type AppProfile, type AppRoleLabel } from "./profiles";
 import {
@@ -8,6 +9,13 @@ import {
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
+import {
+  getDevAuthBypassDisplayName,
+  getDevAuthBypassRole,
+  getDevAuthBypassUserId,
+  getDevAuthBypassUsername,
+  isDevAuthBypassEnabled,
+} from "@/lib/auth/dev-auth";
 
 type ClerkMetadata = Record<string, unknown> | null | undefined;
 
@@ -305,6 +313,11 @@ export function isMaxRole(metadata: {
 }
 
 export async function requireAdminAccess(): Promise<AdminAccessResult> {
+  const devBypass = await getDevAuthBypassSession();
+  if (devBypass) {
+    return { ok: true, userId: devBypass.userId };
+  }
+
   const { userId } = await auth();
   if (!userId) {
     return { ok: false, status: 401, error: "Unauthorized" };
@@ -341,6 +354,11 @@ export async function requireAdminAccess(): Promise<AdminAccessResult> {
 }
 
 export async function requireCreatorAccess(): Promise<CreatorAccessResult> {
+  const devBypass = await getDevAuthBypassSession();
+  if (devBypass) {
+    return { ok: true, userId: devBypass.userId };
+  }
+
   const { userId } = await auth();
   if (!userId) {
     return { ok: false, status: 401, error: "Unauthorized" };
@@ -355,6 +373,11 @@ export async function requireCreatorAccess(): Promise<CreatorAccessResult> {
 }
 
 export async function requireAuthenticatedAccess(): Promise<AuthenticatedAccessResult> {
+  const devBypass = await getDevAuthBypassSession();
+  if (devBypass) {
+    return { ok: true, userId: devBypass.userId };
+  }
+
   const { userId } = await auth();
   if (!userId) {
     return { ok: false, status: 401, error: "Unauthorized" };
@@ -363,6 +386,15 @@ export async function requireAuthenticatedAccess(): Promise<AuthenticatedAccessR
 }
 
 export async function getCurrentUserRoleLabel(): Promise<AppRoleLabel> {
+  const devBypass = await getDevAuthBypassSession();
+  if (devBypass) {
+    return resolveProfile({
+      metadataRole: devBypass.role,
+      isAdmin: devBypass.role === "admin",
+      isMax: devBypass.role === "max",
+    });
+  }
+
   const { userId } = await auth();
   if (!userId) {
     return "anonymous" as const;
@@ -415,6 +447,29 @@ export async function getCurrentUserEffectiveAccess(): Promise<EffectiveAccess> 
 }
 
 export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
+  const devBypass = await getDevAuthBypassSession();
+  if (devBypass) {
+    const role = resolveProfile({
+      metadataRole: devBypass.role,
+      isAdmin: devBypass.role === "admin",
+      isMax: devBypass.role === "max",
+    });
+    return {
+      userId: devBypass.userId,
+      displayName: devBypass.displayName,
+      firstName: null,
+      username: devBypass.username,
+      email: null,
+      currentLevel: 1,
+      actorNameOptions: [devBypass.displayName, devBypass.username, devBypass.userId],
+      role,
+      badges: mapBadgeIdsToBadges([
+        getRoleBadgeId(role),
+        getProfileBadgeId(role),
+      ]),
+    };
+  }
+
   const { userId } = await auth();
   if (!userId) {
     return null;
@@ -530,6 +585,27 @@ export const __authz_testables = {
   buildActorNameOptions,
   resolveActorNameFromClerk,
 };
+
+async function getDevAuthBypassSession() {
+  let host: string | null = null;
+  try {
+    const requestHeaders = await headers();
+    host = requestHeaders.get("host");
+  } catch {
+    host = null;
+  }
+
+  if (!isDevAuthBypassEnabled(host)) {
+    return null;
+  }
+
+  return {
+    userId: getDevAuthBypassUserId(),
+    role: getDevAuthBypassRole(),
+    displayName: getDevAuthBypassDisplayName(),
+    username: getDevAuthBypassUsername(),
+  };
+}
 
 export function pickTraceableActorName(
   identity: UserIdentity | null,

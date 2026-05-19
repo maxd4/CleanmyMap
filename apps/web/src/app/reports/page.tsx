@@ -39,8 +39,6 @@ import {
 } from"@/lib/profiles";
 import { getServerLocale } from"@/lib/server-preferences";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
-import { CognitiveCueStrip } from"@/components/learn/cognitive-cue-strip";
-
 import { ReportsPageV2Layout } from "@/components/reports/page-sections/reports-page-v2-layout";
 import { ReportsPageV1Layout } from "@/components/reports/page-sections/reports-page-v1-layout";
 
@@ -107,20 +105,6 @@ export default async function ReportsPage() {
   const overview = data?.overview ?? null;
   const contracts = data?.contracts ?? [];
   const monthlyData = aggregateMonthlyAnalytics(contracts);
-  const reportsCue =
-    locale === "fr"
-      ? {
-          question: "Quel indicateur mérite une relecture avant l'export ?",
-          clue:
-            "Le rapport sert à réactiver la preuve utile et à garder visible la prochaine révision.",
-          actionLabel: "Lire la méthode",
-        }
-      : {
-          question: "Which indicator deserves a review before exporting?",
-          clue:
-            "The report is here to reactivate the useful proof and keep the next review visible.",
-          actionLabel: "Read the method",
-        };
   const publicAccessBanner = !userId ? (
     <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 cmm-text-small text-emerald-900 shadow-sm">
       Lecture publique: parcourez les rapports et exportez un livrable sans
@@ -247,7 +231,6 @@ export default async function ReportsPage() {
         profile={profile}
         primaryAction={primaryAction}
         secondaryAction={secondaryAction}
-        reportsCue={reportsCue}
         summaryKpis={summaryKpis}
         navigationItems={navigationItems}
         overview={overview}
@@ -265,7 +248,6 @@ export default async function ReportsPage() {
       roleLabel={roleLabel}
       profile={profile}
       primaryAction={primaryAction}
-      reportsCue={reportsCue}
       summaryKpis={summaryKpis}
       headerActions={headerActions}
       overview={overview}

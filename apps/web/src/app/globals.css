@@ -29,11 +29,11 @@
   --action-secondary-hover: rgba(15, 23, 42, 0.04);
 
   /* ============================================================
-     TYPOGRAPHY TOKENS - 1 SEULE FONT FAMILY (Inter)
+     TYPOGRAPHY TOKENS - stack systeme stable pour le build
      ============================================================ */
 
   /* 1. Font Family Unique */
-  --font-base: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-base: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   /* 2. Type Scale (Modular Scale - Perfect Fourth 1.333) - Base 16px */
   --text-caption: 0.75rem;   /* 12px */
@@ -167,8 +167,8 @@ html[data-theme="dark"] {
   --color-primary: var(--accent-primary);
 
   /* Font families */
-  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
-  --font-display: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-bg-dark: rgba(15, 23, 42, 0.6);

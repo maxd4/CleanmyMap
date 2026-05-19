@@ -21,7 +21,9 @@ import { MissionZeroSection } from "@/components/sections/rubriques/mission-zero
 import { FAQSection } from "@/components/sections/rubriques/faq-section";
 import { LegalSection } from "@/components/sections/rubriques/legal-section";
 import { ChatShell } from "@/components/chat/chat-shell";
+import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { MapPin, Calendar, Lightbulb, Target, Sparkles, Globe, ShieldCheck } from "lucide-react";
+import type { UseCommunitySectionModel } from "./community/use-community-section";
 
 export type HubCategory = "agir" | "missions" | "solutions";
 
@@ -96,7 +98,43 @@ export const CommunityHubNav = memo(function CommunityHubNav({
   );
 });
 
-export const CommunityAgirView = memo(function CommunityAgirView({ fr }: { fr: boolean }) {
+export const CommunityAgirView = memo(function CommunityAgirView({
+  fr,
+  conversionSummary,
+  actionsLoading,
+  highlightsLoadError,
+  reloadHighlights,
+  highlights,
+  staffingPlan,
+  postEventLoop,
+  createForm,
+  updateCreateForm,
+  onCreateEvent,
+  isCreatingEvent,
+  eventsValidating,
+  reloadEvents,
+  reminders,
+  copyReminderMessage,
+}: {
+  fr: boolean;
+} & Pick<
+  UseCommunitySectionModel,
+  | "conversionSummary"
+  | "actionsLoading"
+  | "highlightsLoadError"
+  | "reloadHighlights"
+  | "highlights"
+  | "staffingPlan"
+  | "postEventLoop"
+  | "createForm"
+  | "updateCreateForm"
+  | "onCreateEvent"
+  | "isCreatingEvent"
+  | "eventsValidating"
+  | "reloadEvents"
+  | "reminders"
+  | "copyReminderMessage"
+>) {
   return (
     <div className="grid gap-12 lg:grid-cols-12 items-start">
       <div className="lg:col-span-8 space-y-12">
@@ -107,7 +145,7 @@ export const CommunityAgirView = memo(function CommunityAgirView({ fr }: { fr: b
             </div>
             <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Actions de Terrain" : "Field Actions"}</h3>
           </div>
-          <ActionsHistoryList fr={fr} />
+          <ActionsHistoryList />
         </section>
 
         <section className="space-y-6">
@@ -117,20 +155,83 @@ export const CommunityAgirView = memo(function CommunityAgirView({ fr }: { fr: b
             </div>
             <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Impact Écosystémique" : "Ecosystem Impact"}</h3>
           </div>
-          <CommunityConversionKpiGrid fr={fr} />
+          <CommunityConversionKpiGrid summary={conversionSummary} />
         </section>
       </div>
 
       <aside className="lg:col-span-4 space-y-8">
-        <CommunityHighlightsCard fr={fr} />
-        <CleanupGuideCard fr={fr} />
-        <ExternalHubSection fr={fr} />
+        <CommunityHighlightsCard
+          loading={actionsLoading}
+          error={highlightsLoadError}
+          highlights={highlights}
+          onRetry={reloadHighlights}
+        />
+        <CleanupGuideCard />
+        <ExternalHubSection />
       </aside>
     </div>
   );
 });
 
-export const CommunityMissionsView = memo(function CommunityMissionsView({ fr }: { fr: boolean }) {
+export const CommunityMissionsView = memo(function CommunityMissionsView({
+  fr,
+  activeTab,
+  setActiveTab,
+  eventsLoading,
+  eventsLoadError,
+  reloadEvents,
+  upcomingEvents,
+  myEvents,
+  pastEvents,
+  conversionByEventId,
+  remindersByEventId,
+  staffingByEventId,
+  rsvpLoadingEventId,
+  onRsvp,
+  getOpsDraft,
+  updateOpsDraft,
+  onSaveEventOps,
+  isUpdatingEventOpsId,
+  staffingPlan,
+  postEventLoop,
+  createForm,
+  updateCreateForm,
+  onCreateEvent,
+  isCreatingEvent,
+  eventsValidating,
+  reminders,
+  copyReminderMessage,
+}: {
+  fr: boolean;
+} & Pick<
+  UseCommunitySectionModel,
+  | "activeTab"
+  | "setActiveTab"
+  | "eventsLoading"
+  | "eventsLoadError"
+  | "reloadEvents"
+  | "upcomingEvents"
+  | "myEvents"
+  | "pastEvents"
+  | "conversionByEventId"
+  | "remindersByEventId"
+  | "staffingByEventId"
+  | "rsvpLoadingEventId"
+  | "onRsvp"
+  | "getOpsDraft"
+  | "updateOpsDraft"
+  | "onSaveEventOps"
+  | "isUpdatingEventOpsId"
+  | "staffingPlan"
+  | "postEventLoop"
+  | "createForm"
+  | "updateCreateForm"
+  | "onCreateEvent"
+  | "isCreatingEvent"
+  | "eventsValidating"
+  | "reminders"
+  | "copyReminderMessage"
+>) {
   return (
     <div className="grid gap-12 lg:grid-cols-12 items-start">
       <div className="lg:col-span-8 space-y-12">
@@ -141,20 +242,48 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({ fr }:
             </div>
             <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Exploration des Missions" : "Missions Exploration"}</h3>
           </div>
-          <CommunityEventsTabsCard fr={fr} />
+          <CommunityEventsTabsCard
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            eventsLoading={eventsLoading}
+            eventsLoadError={eventsLoadError}
+            onRetry={reloadEvents}
+            upcomingEvents={upcomingEvents}
+            myEvents={myEvents}
+            pastEvents={pastEvents}
+            conversionByEventId={conversionByEventId}
+            remindersByEventId={remindersByEventId}
+            staffingByEventId={staffingByEventId}
+            rsvpLoadingEventId={rsvpLoadingEventId}
+            onRsvp={onRsvp}
+            getOpsDraft={getOpsDraft}
+            updateOpsDraft={updateOpsDraft}
+            onSaveEventOps={onSaveEventOps}
+            isUpdatingEventOpsId={isUpdatingEventOpsId}
+          />
         </section>
 
         <div className="grid gap-8 md:grid-cols-2">
-          <CommunityStaffingCard fr={fr} />
-          <CommunityPostEventLoopCard fr={fr} />
+          <CommunityStaffingCard staffingPlan={staffingPlan} />
+          <CommunityPostEventLoopCard postEventLoop={postEventLoop} />
         </div>
       </div>
 
       <aside className="lg:col-span-4 space-y-8">
-        <CommunityCreateEventCard fr={fr} />
-        <CommunityRemindersCard fr={fr} />
-        <CommunityFunnelExportCard fr={fr} />
-        <OrganizerKitCard fr={fr} />
+        <CommunityCreateEventCard
+          createForm={createForm}
+          updateCreateForm={updateCreateForm}
+          onCreateEvent={onCreateEvent}
+          isCreatingEvent={isCreatingEvent}
+          eventsValidating={eventsValidating}
+          onReloadEvents={reloadEvents}
+        />
+        <CommunityRemindersCard
+          reminders={reminders}
+          onCopyReminderMessage={copyReminderMessage}
+        />
+        <CommunityFunnelExportCard />
+        <OrganizerKitCard />
       </aside>
     </div>
   );
@@ -171,8 +300,8 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
             </div>
             <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Bibliothèque de Solutions" : "Solutions Library"}</h3>
           </div>
-          <CampaignsSection fr={fr} />
-          <MissionZeroSection fr={fr} />
+          <CampaignsSection />
+          <MissionZeroSection />
         </section>
 
         <section className="space-y-8">
@@ -182,8 +311,8 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
             </div>
             <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Ressources & Support" : "Resources & Support"}</h3>
           </div>
-          <FAQSection fr={fr} />
-          <LegalSection fr={fr} />
+          <FAQSection />
+          <LegalSection />
         </section>
       </div>
 

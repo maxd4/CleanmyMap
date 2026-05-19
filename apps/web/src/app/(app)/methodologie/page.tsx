@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { Info, BookOpen, Scaling, Beaker, Sparkles, Zap, Brain, ShieldCheck, MapPin, Download } from "lucide-react";
-import { useTranslation } from "@/lib/i18n/use-translation";
+import { getTranslation } from "@/lib/i18n/server-translation";
 import { NationalStatsSection } from "@/components/sections/rubriques/national-stats-section";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
+import { getServerLocale } from "@/lib/server-preferences";
 
 export const metadata: Metadata = {
   title: "Méthodologie - Comment nous calculons l'impact | CleanMyMap",
@@ -26,160 +28,294 @@ export const metadata: Metadata = {
   },
 };
 
-export default function MethodologiePage() {
+const METHODLOGY_SECTIONS = [
+  { id: "overview", label: "Vue d'ensemble" },
+  { id: "sources", label: "Sources & gouvernance" },
+  { id: "calculation", label: "Chaîne de calcul" },
+  { id: "indicators", label: "Méthodes par indicateur" },
+  { id: "audit", label: "Audit & export" },
+] as const;
+
+export default async function MethodologiePage() {
   const { factors, sources, version } = IMPACT_PROXY_CONFIG;
-  const { t } = useTranslation("methodologie");
+  const locale = await getServerLocale();
+  const { t } = getTranslation("methodologie", locale);
   const classes = getBlockClasses("visualize");
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-16 pb-20">
-      {/* Premium Header */}
-      <header className="space-y-6 text-center pt-10">
-        <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-sky-400/20 bg-sky-400/5 mb-4">
+    <div className="mx-auto w-full max-w-7xl space-y-12 px-4 pb-20 pt-10 sm:px-6 lg:px-8">
+      <header className="space-y-6 text-center">
+        <div className="inline-flex items-center gap-3 rounded-full border border-sky-400/20 bg-sky-400/5 px-6 py-2">
           <Beaker size={14} className="text-sky-400 animate-pulse" />
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-400/60">{t("header_suptitle")}</span>
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-400/60">
+            {t("header_suptitle")}
+          </span>
         </div>
-        <h1 className="text-6xl md:text-7xl font-black tracking-tighter text-white">
+        <h1 className="text-5xl font-black tracking-tighter text-white md:text-7xl">
           {t("header_title")}
         </h1>
-        <p className="text-xl text-sky-100/40 max-w-3xl mx-auto font-medium leading-relaxed">
+        <p className="mx-auto max-w-3xl text-lg font-medium leading-relaxed text-sky-100/40 md:text-xl">
           {t("header_desc")}
         </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+          {METHODLOGY_SECTIONS.map((section) => (
+            <Link
+              key={section.id}
+              href={`#${section.id}`}
+              className="rounded-full border border-sky-400/18 bg-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-sky-100/70 transition hover:border-sky-300/35 hover:bg-sky-400/10 hover:text-white"
+            >
+              {section.label}
+            </Link>
+          ))}
+        </div>
       </header>
 
-      <NationalStatsSection />
-
-      {/* Logic & Transparency Banner */}
-      <div className={cn(
-        "rounded-[3rem] p-10 md:p-16 relative overflow-hidden border transition-all duration-700",
-        classes.surface,
-        classes.shadow
-      )}>
-        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-          <ShieldCheck size={400} className="text-sky-400" />
-        </div>
-        
-        <div className="relative z-10 grid md:grid-cols-2 gap-16 items-center">
-          <div className="space-y-8">
-            <h2 className="text-4xl font-black tracking-tight flex items-center gap-4 text-white">
-              <Brain className="text-sky-400" />
-              Transparence <br/>Algorithmique
-            </h2>
-            <p className="text-sky-100/40 text-lg leading-relaxed font-medium max-w-md">
-              Chaque donnée terrain est convertie via des coefficients scientifiques rigoureux issus de l&apos;ADEME et du GIEC.
-            </p>
-            <div className="flex gap-4">
-              <div className="px-5 py-2.5 bg-white/5 rounded-xl border border-white/5 text-[10px] font-black uppercase tracking-widest text-sky-400/60">Version {version}</div>
-              <div className="px-5 py-2.5 bg-sky-500 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-sky-500/20">Audit Scientifique OK</div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: 'Données Sources', val: 'ADEME / GIEC', icon: <BookOpen size={16} /> },
-              { label: 'Audit', val: 'Semestriel', icon: <Zap size={16} /> },
-              { label: 'Marge Erreur', val: '< 2%', icon: <Scaling size={16} /> },
-              { label: 'Algorithme', val: 'Linéaire Proxy', icon: <Sparkles size={16} /> },
-            ].map((item, i) => (
-              <div key={i} className="bg-white/5 backdrop-blur-sm p-6 rounded-[2rem] border border-white/5 flex flex-col gap-3 shadow-sm group hover:border-sky-400/30 transition-all">
-                <div className="text-sky-400 transition-transform group-hover:scale-110">{item.icon}</div>
-                <div className="space-y-1">
-                  <div className="text-[9px] font-black uppercase text-white/30 tracking-widest">{item.label}</div>
-                  <div className="text-sm font-bold text-sky-100">{item.val}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Visual Process Flow */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 px-4">
-        {[
-          { icon: <MapPin className="text-sky-400" />, title: "Collecte Terrain", desc: "Données GPS et volumes saisis via l'App" },
-          { icon: <Zap className="text-amber-400" />, title: "Calcul Instantané", desc: "Application des coefficients scientifiques" },
-          { icon: <ShieldCheck className="text-emerald-400" />, title: "Impact Certifié", desc: "Visualisation immédiate de l'impact réel" },
-        ].map((step, i) => (
-          <div key={i} className="group flex flex-col items-center text-center space-y-6 p-10 rounded-[2.5rem] bg-white/5 border border-white/5 hover:border-white/10 transition-all duration-500">
-            <div className="w-20 h-20 rounded-[2rem] bg-white/5 shadow-inner flex items-center justify-center transition-transform group-hover:scale-110 duration-700">
-              {step.icon}
-            </div>
-            <div className="space-y-2">
-              <h3 className="font-black text-white uppercase tracking-[0.2em] text-xs">{step.title}</h3>
-              <p className="text-sm text-sky-100/30 font-medium leading-relaxed">{step.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <section className="grid gap-10 xl:grid-cols-2">
-        {/* EAU SAVED */}
-        <MethodologyCard 
-          title={t("cards.water.title")}
-          formula={t("cards.water.formula", { val: factors.waterLitersPerCigaretteButt })}
-          description={t("cards.water.desc", { val: factors.waterLitersPerCigaretteButt })}
-          source={t("cards.water.source", { src: sources.water })}
-          color="sky"
-          icon={<BookOpen size={24} />}
+      <section id="overview" className="space-y-6">
+        <SectionHeading
+          eyebrow="Vue d'ensemble"
+          title="Lire le périmètre avant d'entrer dans le détail"
+          description="La page commence par les repères globaux qui cadrent la lecture, puis déroule la logique complète de calcul."
         />
-
-        {/* CO2 AVOIDED */}
-        <MethodologyCard 
-          title={t("cards.co2.title")}
-          formula={t("cards.co2.formula", { val: factors.co2KgPerWasteKg })}
-          description={t("cards.co2.desc")}
-          source={t("cards.co2.source", { src: sources.co2 })}
-          color="emerald"
-          icon={<Scaling size={24} />}
-        />
-
-        {/* SURFACE CLEANED */}
-        <MethodologyCard 
-          title={t("cards.surface.title")}
-          formula={t("cards.surface.formula", { valkg: factors.surfaceM2PerWasteKg, valmin: factors.surfaceM2PerVolunteerMinute })}
-          description={t("cards.surface.desc")}
-          source={t("cards.surface.source", { src: sources.surface })}
-          color="slate"
-          icon={<Info size={24} />}
-        />
-
-        {/* MAP POLLUTION SCORE */}
-        <MethodologyCard 
-          title={t("cards.map.title")}
-          formula={t("cards.map.formula")}
-          description={t("cards.map.desc")}
-          source={t("cards.map.source")}
-          color="rose"
-          icon={<Scaling size={24} />}
-        />
+        <NationalStatsSection />
       </section>
 
-      {/* Audit Report Section */}
-      <div className="bg-sky-500/10 rounded-[3rem] p-12 border border-sky-400/20 relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-          <ShieldCheck size={200} className="text-sky-400" />
+      <section id="sources" className="space-y-6">
+        <SectionHeading
+          eyebrow="Sources & gouvernance"
+          title="Transparence algorithmique"
+          description="Chaque donnée terrain est convertie via des coefficients scientifiques rigoureux issus de l'ADEME et du GIEC."
+        />
+
+        <div className={cn(
+          "rounded-[3rem] border p-10 md:p-16 relative overflow-hidden transition-all duration-700",
+          classes.surface,
+          classes.shadow,
+        )}>
+          <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+            <ShieldCheck size={400} className="text-sky-400" />
+          </div>
+
+          <div className="relative z-10 grid gap-16 md:grid-cols-2 md:items-center">
+            <div className="space-y-8">
+              <h3 className="flex items-center gap-4 text-3xl font-black tracking-tight text-white md:text-4xl">
+                <Brain className="text-sky-400" />
+                Transparence
+                <br />
+                Algorithmique
+              </h3>
+              <p className="max-w-md text-lg font-medium leading-relaxed text-sky-100/40">
+                Chaque donnée terrain est convertie via des coefficients scientifiques rigoureux issus de l&apos;ADEME et du GIEC.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <div className="rounded-xl border border-white/5 bg-white/5 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-sky-400/60">
+                  Version {version}
+                </div>
+                <div className="rounded-xl bg-sky-500 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-sky-500/20">
+                  Audit Scientifique OK
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "Données Sources", val: "ADEME / GIEC", icon: <BookOpen size={16} /> },
+                { label: "Audit", val: "Semestriel", icon: <Zap size={16} /> },
+                { label: "Marge Erreur", val: "< 2%", icon: <Scaling size={16} /> },
+                { label: "Algorithme", val: "Linéaire Proxy", icon: <Sparkles size={16} /> },
+              ].map((item, i) => (
+                <div
+                  key={i}
+                  className="group flex flex-col gap-3 rounded-[2rem] border border-white/5 bg-white/5 p-6 shadow-sm transition-all hover:border-sky-400/30"
+                >
+                  <div className="text-sky-400 transition-transform group-hover:scale-110">
+                    {item.icon}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-white/30">
+                      {item.label}
+                    </div>
+                    <div className="text-sm font-bold text-sky-100">{item.val}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-10">
-          <div className="space-y-4 text-center md:text-left">
-            <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-4 justify-center md:justify-start">
-              <ShieldCheck className="text-sky-400" />
-              {t("audit.title")}
-            </h2>
-            <p className="text-sky-100/60 max-w-xl font-medium leading-relaxed">
-              {t("audit.desc")}
+      </section>
+
+      <section id="calculation" className="space-y-6">
+        <SectionHeading
+          eyebrow="Chaîne de calcul"
+          title="De la collecte à l'impact certifié"
+          description="La logique de traitement reste la même: on saisit, on calcule, puis on certifie la lecture finale."
+        />
+
+        <div className="grid grid-cols-1 gap-8 px-4 md:grid-cols-3">
+          {[
+            { icon: <MapPin className="text-sky-400" />, title: "Collecte Terrain", desc: "Données GPS et volumes saisis via l'App" },
+            { icon: <Zap className="text-amber-400" />, title: "Calcul Instantané", desc: "Application des coefficients scientifiques" },
+            { icon: <ShieldCheck className="text-emerald-400" />, title: "Impact Certifié", desc: "Visualisation immédiate de l'impact réel" },
+          ].map((step, i) => (
+            <div
+              key={i}
+              className="group flex flex-col items-center space-y-6 rounded-[2.5rem] border border-white/5 bg-white/5 p-10 text-center transition-all duration-500 hover:border-white/10"
+            >
+              <div className="flex h-20 w-20 items-center justify-center rounded-[2rem] bg-white/5 shadow-inner transition-transform duration-700 group-hover:scale-110">
+                {step.icon}
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">
+                  {step.title}
+                </h3>
+                <p className="text-sm font-medium leading-relaxed text-sky-100/30">
+                  {step.desc}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section id="method-calculation" className="space-y-6">
+        <SectionHeading
+          eyebrow="Méthode de calcul"
+          title="Deux règles simples pour convertir la collecte"
+          description="La page détaille les conversions utilisées dans le formulaire pour transformer les signaux terrain en estimations lisibles."
+        />
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-[2.5rem] border border-white/5 bg-white/5 p-6 shadow-sm transition-all hover:border-sky-400/25">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-400/10 text-sky-400">
+                <Info size={18} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-sky-400/60">Mégots → masse</p>
+                <p className="text-sm font-semibold text-white">Conversion opérationnelle</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-sky-100/40">
+              0,2 g par mégot sec, avec une correction x1,2 si le mégot est humide et x1,5 s&apos;il est mouillé.
             </p>
           </div>
-          <a 
-            href="/docs/impact_IA_CleanMyMap.pdf" 
-            target="_blank"
-            className="px-10 py-5 bg-sky-500 hover:bg-sky-400 text-white rounded-[2rem] font-black uppercase tracking-widest text-[10px] flex items-center gap-3 transition-all shadow-xl shadow-sky-500/20 group-hover:scale-105"
-          >
-            <Download size={16} />
-            {t("audit.cta")}
-          </a>
-        </div>
-      </div>
 
+          <div className="rounded-[2.5rem] border border-white/5 bg-white/5 p-6 shadow-sm transition-all hover:border-emerald-400/25">
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-400/10 text-emerald-400">
+                <Sparkles size={18} />
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-400/60">Vision IA</p>
+                <p className="text-sm font-semibold text-white">Estimation assistée</p>
+              </div>
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-sky-100/40">
+              Analyse des sacs, du remplissage et de la densité. Référence de densité moyenne : 150 kg/m³ pour le tout-venant urbain.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="indicators" className="space-y-6">
+        <SectionHeading
+          eyebrow="Méthodes par indicateur"
+          title="Une logique par KPI"
+          description="Chaque carte explique la formule, la lecture et la source derrière l'indicateur."
+        />
+
+        <div className="grid gap-10 xl:grid-cols-2">
+          <MethodologyCard
+            title={t("cards.water.title")}
+            formula={t("cards.water.formula", { val: factors.waterLitersPerCigaretteButt })}
+            description={t("cards.water.desc", { val: factors.waterLitersPerCigaretteButt })}
+            source={t("cards.water.source", { src: sources.water })}
+            color="sky"
+            icon={<BookOpen size={24} />}
+          />
+          <MethodologyCard
+            title={t("cards.co2.title")}
+            formula={t("cards.co2.formula", { val: factors.co2KgPerWasteKg })}
+            description={t("cards.co2.desc")}
+            source={t("cards.co2.source", { src: sources.co2 })}
+            color="emerald"
+            icon={<Scaling size={24} />}
+          />
+          <MethodologyCard
+            title={t("cards.surface.title")}
+            formula={t("cards.surface.formula", { valkg: factors.surfaceM2PerWasteKg, valmin: factors.surfaceM2PerVolunteerMinute })}
+            description={t("cards.surface.desc")}
+            source={t("cards.surface.source", { src: sources.surface })}
+            color="slate"
+            icon={<Info size={24} />}
+          />
+          <MethodologyCard
+            title={t("cards.map.title")}
+            formula={t("cards.map.formula")}
+            description={t("cards.map.desc")}
+            source={t("cards.map.source")}
+            color="rose"
+            icon={<Scaling size={24} />}
+          />
+        </div>
+      </section>
+
+      <section id="audit" className="space-y-6">
+        <SectionHeading
+          eyebrow="Audit & export"
+          title={t("audit.title")}
+          description="Le bloc final rassemble la preuve, la lecture humaine et l'accès au document de référence."
+        />
+
+        <div className="group relative overflow-hidden rounded-[3rem] border border-sky-400/20 bg-sky-500/10 p-12">
+          <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
+            <ShieldCheck size={200} className="text-sky-400" />
+          </div>
+          <div className="relative z-10 flex flex-col gap-10 md:flex-row md:items-center md:justify-between">
+            <div className="space-y-4 text-center md:text-left">
+              <h3 className="flex items-center justify-center gap-4 text-3xl font-black tracking-tight text-white md:justify-start">
+                <ShieldCheck className="text-sky-400" />
+                {t("audit.title")}
+              </h3>
+              <p className="max-w-xl font-medium leading-relaxed text-sky-100/60">
+                {t("audit.desc")}
+              </p>
+            </div>
+            <a
+              href="/docs/impact_IA_CleanMyMap.pdf"
+              target="_blank"
+              className="inline-flex items-center gap-3 rounded-[2rem] bg-sky-500 px-10 py-5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-sky-500/20 transition-all hover:scale-105 hover:bg-sky-400"
+            >
+              <Download size={16} />
+              {t("audit.cta")}
+            </a>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SectionHeading({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="space-y-3">
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-400/60">
+        {eyebrow}
+      </p>
+      <h2 className="text-3xl font-black tracking-tight text-white md:text-4xl">
+        {title}
+      </h2>
+      <p className="max-w-3xl text-sm leading-relaxed text-sky-100/40 md:text-base">
+        {description}
+      </p>
     </div>
   );
 }

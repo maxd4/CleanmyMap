@@ -1,9 +1,9 @@
-import { auth } from"@clerk/nextjs/server";
 import { redirect } from"next/navigation";
 import { AccountSetupForm } from"@/components/account/account-setup-form";
 import { getCurrentUserLocationPreference } from"@/lib/auth/user-location";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
 import { toProfile } from"@/lib/profiles";
+import { getSafeAuthSession } from"@/lib/auth/safe-session";
 
 type LocalisationOnboardingPageProps = {
  searchParams: Promise<{ next?: string }>;
@@ -25,7 +25,7 @@ function sanitizeNextPath(nextParam: string | undefined): string {
 export default async function LocalisationOnboardingPage({
  searchParams,
 }: LocalisationOnboardingPageProps) {
- const { userId } = await auth();
+ const { userId } = await getSafeAuthSession();
  if (!userId) {
   redirect("/sign-in");
  }

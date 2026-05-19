@@ -1,4 +1,4 @@
-import { auth } from"@clerk/nextjs/server";
+import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { ActionsHistoryList } from"@/components/actions/actions-history-list";
 import { DecisionPageHeader } from"@/components/ui/decision-page-header";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
@@ -7,7 +7,7 @@ import { isFeatureEnabled } from"@/lib/feature-flags";
 
 export default async function ActionsHistoryPage() {
  const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
- const { userId } = await auth();
+ const { userId } = await getSafeAuthSession();
 
  if (!userId) {
  return (

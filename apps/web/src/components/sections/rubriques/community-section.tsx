@@ -128,7 +128,35 @@ export function CommunitySection() {
           >
             {hubCategory === "missions" && (
               <motion.div variants={itemVariants}>
-                <CommunityMissionsView fr={fr} />
+                <CommunityMissionsView
+                  fr={fr}
+                  activeTab={model.activeTab}
+                  setActiveTab={model.setActiveTab}
+                  eventsLoading={model.eventsLoading}
+                  eventsLoadError={model.eventsLoadError}
+                  reloadEvents={model.reloadEvents}
+                  upcomingEvents={model.upcomingEvents}
+                  myEvents={model.myEvents}
+                  pastEvents={model.pastEvents}
+                  conversionByEventId={model.conversionByEventId}
+                  remindersByEventId={model.remindersByEventId}
+                  staffingByEventId={model.staffingByEventId}
+                  rsvpLoadingEventId={model.rsvpLoadingEventId}
+                  onRsvp={model.onRsvp}
+                  getOpsDraft={model.getOpsDraft}
+                  updateOpsDraft={model.updateOpsDraft}
+                  onSaveEventOps={model.onSaveEventOps}
+                  isUpdatingEventOpsId={model.isUpdatingEventOpsId}
+                  staffingPlan={model.staffingPlan}
+                  postEventLoop={model.postEventLoop}
+                  createForm={model.createForm}
+                  updateCreateForm={model.updateCreateForm}
+                  onCreateEvent={model.onCreateEvent}
+                  isCreatingEvent={model.isCreatingEvent}
+                  eventsValidating={model.eventsValidating}
+                  reminders={model.reminders}
+                  copyReminderMessage={model.copyReminderMessage}
+                />
               </motion.div>
             )}
             {hubCategory === "solutions" && (
@@ -138,7 +166,24 @@ export function CommunitySection() {
             )}
             {hubCategory === "agir" && (
               <motion.div variants={itemVariants}>
-                <CommunityAgirView fr={fr} />
+                <CommunityAgirView
+                  fr={fr}
+                  conversionSummary={model.conversionSummary}
+                  actionsLoading={model.actionsLoading}
+                  highlightsLoadError={model.highlightsLoadError}
+                  reloadHighlights={model.reloadHighlights}
+                  highlights={model.highlights}
+                  staffingPlan={model.staffingPlan}
+                  postEventLoop={model.postEventLoop}
+                  createForm={model.createForm}
+                  updateCreateForm={model.updateCreateForm}
+                  onCreateEvent={model.onCreateEvent}
+                  isCreatingEvent={model.isCreatingEvent}
+                  eventsValidating={model.eventsValidating}
+                  reloadEvents={model.reloadEvents}
+                  reminders={model.reminders}
+                  copyReminderMessage={model.copyReminderMessage}
+                />
               </motion.div>
             )}
           </motion.div>

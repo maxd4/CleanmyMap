@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { auth } from "@clerk/nextjs/server";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 
 export const metadata: Metadata = {
   title: "Déclarer une action - CleanMyMap",
@@ -25,7 +25,6 @@ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 import { getServerLocale } from "@/lib/server-preferences";
-import { CognitiveCueStrip } from "@/components/learn/cognitive-cue-strip";
 
 type NewActionPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -34,22 +33,8 @@ type NewActionPageProps = {
 export default async function NewActionPage({
   searchParams,
 }: NewActionPageProps) {
-  const { userId } = await auth();
+  const { userId } = await getSafeAuthSession();
   const locale = await getServerLocale();
-  const actionCue =
-    locale === "fr"
-      ? {
-          question: "Quel rappel doit revenir juste avant le formulaire ?",
-          clue:
-            "Un rappel bref suffit pour activer le bon geste avant de déclarer l’action.",
-          actionLabel: "Voir l'historique",
-        }
-      : {
-          question: "Which reminder should return just before the form?",
-          clue:
-            "A short cue is enough to activate the right gesture before submitting the action.",
-          actionLabel: "View history",
-        };
   if (!userId) {
     return (
       <ClerkRequiredGate
@@ -63,18 +48,6 @@ export default async function NewActionPage({
         }
         lockedPreview={
           <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
-            <CognitiveCueStrip
-              locale={locale}
-              rubricId="actions"
-              question={actionCue.question}
-              clue={actionCue.clue}
-              chips={[
-                locale === "fr" ? "Feedback immédiat" : "Immediate feedback",
-                locale === "fr" ? "Rappel à revoir" : "Review reminder",
-                locale === "fr" ? "Mini-défi" : "Mini challenge",
-              ]}
-              action={{ href: "/actions/history", label: actionCue.actionLabel }}
-            />
             <div className="grid gap-3 md:grid-cols-3">
               <article className="rounded-2xl border border-slate-200 bg-white p-4">
                 <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
@@ -149,18 +122,6 @@ export default async function NewActionPage({
   if (pageTemplateV2Enabled) {
     return (
       <div className="space-y-8">
-        <CognitiveCueStrip
-          locale={locale}
-          rubricId="actions"
-          question={actionCue.question}
-          clue={actionCue.clue}
-          chips={[
-            locale === "fr" ? "Feedback immédiat" : "Immediate feedback",
-            locale === "fr" ? "Rappel à revoir" : "Review reminder",
-            locale === "fr" ? "Mini-défi" : "Mini challenge",
-          ]}
-          action={{ href: "/actions/history", label: actionCue.actionLabel }}
-        />
         <ActionDeclarationForm
           actorNameOptions={actorNameOptions}
           defaultActorName={defaultActorName}
@@ -175,19 +136,6 @@ export default async function NewActionPage({
 
   return (
     <div data-rubrique-report-root className="space-y-4">
-      <CognitiveCueStrip
-        locale={locale}
-        rubricId="actions"
-        question={actionCue.question}
-        clue={actionCue.clue}
-        chips={[
-          locale === "fr" ? "Feedback immédiat" : "Immediate feedback",
-          locale === "fr" ? "Rappel à revoir" : "Review reminder",
-          locale === "fr" ? "Mini-défi" : "Mini challenge",
-        ]}
-        action={{ href: "/actions/history", label: actionCue.actionLabel }}
-      />
-
       <ActionDeclarationForm
         actorNameOptions={actorNameOptions}
         defaultActorName={defaultActorName}

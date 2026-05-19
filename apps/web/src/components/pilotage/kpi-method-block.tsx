@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Cpu, Database, RefreshCw, AlertCircle, Info, Terminal, Box } from "lucide-react";
+import { ArrowRight, FileText, Cpu, Database, RefreshCw, AlertCircle, Info, Terminal, Box } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 

@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { ArrowUpRight, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { HomeMetric } from "@/lib/accueil/config";
 
@@ -51,20 +50,12 @@ export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
         <div className="space-y-1">
           <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
             <span className="h-4 w-4 rounded-full bg-cyan-500 shadow-[0_0_18px_rgba(34,211,238,0.55)]" />
-            Impact terrain 2026
+            Aperçu de l&apos;impact
           </p>
           <p className="max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
             Données terrain certifiées. Formules exposées en méthodologie.
           </p>
         </div>
-
-        <Link
-          href="/methodologie"
-          className="inline-flex h-10 items-center gap-2 rounded-xl bg-cyan-100 px-4 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 shadow-[0_12px_24px_-18px_rgba(8,145,178,0.5)] transition-colors hover:bg-cyan-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60"
-        >
-          Méthodologie
-          <ArrowUpRight size={12} />
-        </Link>
       </div>
 
       <div className="relative z-10 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

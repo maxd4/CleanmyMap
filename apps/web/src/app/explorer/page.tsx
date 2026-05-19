@@ -17,11 +17,11 @@ export const metadata: Metadata = {
 };
 
 const BLOCK_PREVIEW_PRIORITY: Record<NavigationBlockId, Partial<Record<NavigationItem["id"], number>>> = {
-  home:      { dashboard: 1, explorer: 2, profile: 3 },
+  home:      { dashboard: 1, explorer: 2, profile: 3, pilotage: 4, admin: 5, sponsor: 6, elus: 7, godmode: 8 },
   act:       { new: 1, route: 2, "trash-spotter": 3 },
-  visualize: { map: 1, sandbox: 2, weather: 3 },
-  impact:    { reports: 1, gamification: 2 },
-  network:   { network: 1, annuaire: 2, community: 3, "open-data": 5 },
+  visualize: { map: 1, sandbox: 2, reports: 3, gamification: 4, weather: 5 },
+  impact:    {},
+  network:   { network: 1, annuaire: 2, community: 3, messagerie: 4, "open-data": 5 },
   connect:   { messagerie: 1, dm: 2 },
   learn:     { hub: 1, guide: 2, climate: 3, recycling: 4 },
   pilot:     { admin: 1, sponsor: 2, elus: 3, godmode: 4 },
@@ -35,7 +35,7 @@ function getOrderedPreviewItems(blockId: NavigationBlockId, items: NavigationIte
   });
 }
 
-// Charte couleur officielle — même esprit que les sept piliers
+// Charte couleur officielle — même esprit que les blocs de navigation visibles
 const BLOCK_THEME: Record<NavigationBlockId, {
   gradient: string;   // bg-gradient-to-br
   ring: string;       // ring-1
@@ -50,17 +50,17 @@ const BLOCK_THEME: Record<NavigationBlockId, {
   divider: string;    // séparateur
 }> = {
   home: {
-    gradient:  "from-amber-200/92 via-orange-50/82 to-white/78",
-    ring:      "ring-amber-200/65",
-    iconBg:    "bg-amber-500/78",
-    iconColor: "text-amber-800",
-    badge:     "border-amber-300/55 bg-amber-100/75 text-amber-950",
-    border:    "border-amber-300/45",
-    glow:      "group-hover:shadow-amber-950/18",
-    cta:       "border-amber-300/55 bg-amber-500/14 text-amber-950 hover:bg-amber-500/22",
-    dot:       "bg-amber-500",
-    itemHover: "hover:border-amber-300/45 hover:bg-amber-100/70 hover:text-amber-950",
-    divider:   "bg-amber-300/30",
+    gradient:  "from-orange-200/94 via-amber-100/88 to-white/78",
+    ring:      "ring-orange-200/65",
+    iconBg:    "bg-orange-500/82",
+    iconColor: "text-orange-950",
+    badge:     "border-orange-300/55 bg-orange-100/75 text-orange-950",
+    border:    "border-orange-300/45",
+    glow:      "group-hover:shadow-orange-950/18",
+    cta:       "border-orange-300/55 bg-orange-500/14 text-orange-950 hover:bg-orange-500/22",
+    dot:       "bg-orange-500",
+    itemHover: "hover:border-orange-300/45 hover:bg-orange-100/72 hover:text-orange-950",
+    divider:   "bg-orange-300/30",
   },
   act: {
     gradient:  "from-emerald-100/88 via-orange-50/70 to-white/78",
@@ -141,17 +141,17 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     divider:   "bg-yellow-300/30",
   },
   pilot: {
-    gradient:  "from-orange-200/90 via-amber-50/78 to-white/78",
-    ring:      "ring-orange-300/60",
-    iconBg:    "bg-orange-600/78",
-    iconColor: "text-amber-800",
-    badge:     "border-orange-300/55 bg-orange-50/85 text-orange-950",
-    border:    "border-orange-300/45",
-    glow:      "group-hover:shadow-orange-950/18",
-    cta:       "border-orange-300/55 bg-orange-600/14 text-orange-950 hover:bg-orange-600/22",
-    dot:       "bg-amber-700",
-    itemHover: "hover:border-orange-300/45 hover:bg-orange-50/85 hover:text-orange-950",
-    divider:   "bg-amber-400/30",
+    gradient:  "from-amber-200/90 via-yellow-100/80 to-white/78",
+    ring:      "ring-amber-300/60",
+    iconBg:    "bg-amber-500/78",
+    iconColor: "text-amber-950",
+    badge:     "border-amber-300/55 bg-amber-100/85 text-amber-950",
+    border:    "border-amber-300/45",
+    glow:      "group-hover:shadow-amber-950/18",
+    cta:       "border-amber-300/55 bg-amber-500/14 text-amber-950 hover:bg-amber-500/22",
+    dot:       "bg-amber-500",
+    itemHover: "hover:border-amber-300/45 hover:bg-amber-100/85 hover:text-amber-950",
+    divider:   "bg-amber-300/30",
   },
 };
 
@@ -207,8 +207,8 @@ export default async function ExplorerPage() {
           </div>
         </div>
 
-        {/* ── Grille de cartes hub — inspirée des sept piliers ── */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {/* ── Grille de cartes hub — inspirée des blocs de navigation visibles ── */}
+        <div className="flex flex-wrap justify-center gap-5 xl:flex-nowrap">
           {visibleSpaces.map((space) => {
             const orderedItems = getOrderedPreviewItems(space.id, space.items);
             const firstHref = orderedItems[0]?.href ?? "/dashboard";
@@ -217,7 +217,7 @@ export default async function ExplorerPage() {
             return (
               <article
                 key={space.id}
-                className={`group relative flex min-h-[286px] flex-col overflow-hidden rounded-[1rem] border ${t.border} bg-gradient-to-br ${t.gradient} p-5 ring-1 ${t.ring} shadow-[0_18px_42px_-28px_rgba(15,23,42,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-opacity-100 hover:shadow-[0_28px_58px_-30px_rgba(15,23,42,0.7)] ${t.glow} active:translate-y-0 sm:p-6`}
+                className={`group relative flex min-h-[286px] w-full flex-col overflow-hidden rounded-[1rem] border ${t.border} bg-gradient-to-br ${t.gradient} p-5 ring-1 ${t.ring} shadow-[0_18px_42px_-28px_rgba(15,23,42,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-opacity-100 hover:shadow-[0_28px_58px_-30px_rgba(15,23,42,0.7)] ${t.glow} active:translate-y-0 sm:w-[calc(50%-0.625rem)] lg:w-[calc(33.333%-0.833rem)] xl:w-[calc(20%-1rem)] sm:p-6`}
               >
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/42 to-transparent" />
                 <div className={`pointer-events-none absolute -right-14 -top-14 h-32 w-32 rounded-full ${t.dot} opacity-[0.12]`} />

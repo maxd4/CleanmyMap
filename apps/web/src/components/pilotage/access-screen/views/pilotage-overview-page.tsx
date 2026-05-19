@@ -38,7 +38,7 @@ export function PilotageOverviewPage({
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-orange-100">
                 <Sparkles size={14} aria-hidden="true" />
-                {locale === "fr" ? "Bloc Piloter" : "Pilot block"}
+                {locale === "fr" ? "Accueil et Pilotage" : "Home & Operations"}
               </span>
               <span className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
                 {getProfileLabel(profile, locale)}
@@ -149,7 +149,7 @@ export function PilotageOverviewPage({
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-emerald-800">
                 <Sparkles size={14} aria-hidden="true" />
-                {locale === "fr" ? "Bloc piloté" : "Pilot block"}
+                {locale === "fr" ? "Accueil et Pilotage" : "Home & Operations"}
               </span>
               <span className="inline-flex items-center rounded-full border border-stone-200 bg-stone-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-stone-700">
                 {getProfileLabel(profile, locale)}
@@ -160,8 +160,8 @@ export function PilotageOverviewPage({
             </h2>
             <p className="max-w-2xl text-sm leading-relaxed cmm-text-secondary md:text-base">
               {locale === "fr"
-                ? "Ouvrez le formulaire de déclaration depuis le bloc de pilotage pour centraliser les actions administrateur au même endroit."
-                : "Open the declaration form from the pilot block to centralize administrative actions in one place."}
+                ? "Ouvrez le formulaire de déclaration depuis l'espace Accueil et Pilotage pour centraliser les actions administrateur au même endroit."
+                : "Open the declaration form from the Home & Operations area to centralize administrative actions in one place."}
             </p>
           </div>
 
@@ -504,8 +504,8 @@ export function PilotageOverviewPage({
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-relaxed cmm-text-secondary">
               {locale === "fr"
-                ? "Le bloc Piloter sert à la supervision transverse. Les preuves détaillées, les rapports longs et les exports institutionnels restent dans leurs rubriques dédiées pour éviter de mélanger décision, observation et exécution."
-                : "The Pilot block is for transverse supervision. Detailed evidence, long reports and institutional exports stay in their dedicated sections so that decision, observation and execution remain separate."}
+                ? "L'espace Accueil et Pilotage sert à la supervision transverse. Les preuves détaillées, les rapports longs et les exports institutionnels restent dans leurs rubriques dédiées pour éviter de mélanger décision, observation et exécution."
+                : "The Home & Operations area is for transverse supervision. Detailed evidence, long reports and institutional exports stay in their dedicated sections so that decision, observation and execution remain separate."}
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
               <Link

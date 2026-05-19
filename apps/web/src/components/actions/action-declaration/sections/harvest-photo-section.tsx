@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Camera, Sparkles, Trash2, ShieldCheck, Info } from "lucide-react";
+import { Camera, Sparkles, Trash2 } from "lucide-react";
 import type { ActionPhotoAsset, ActionVisionEstimate } from "@/lib/actions/types";
 import { formatKg } from "../utils/harvest-utils";
 import { cn } from "@/lib/utils";
@@ -151,42 +151,6 @@ export function HarvestPhotoSection({
         )}
       </section>
 
-      {/* ── Pourquoi mesurer ─────────────────────────────────────────────── */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="h-8 w-8 shrink-0 rounded-xl bg-sky-100 flex items-center justify-center">
-            <Info size={15} className="text-sky-600" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Pourquoi mesurer votre impact ?</p>
-            <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-              Vos données permettent d&apos;évaluer l&apos;impact réel de la propreté urbaine et d&apos;aider les services de voirie à optimiser leurs tournées.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Méthodologie ─────────────────────────────────────────────────── */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-        <div className="flex items-center gap-2">
-          <ShieldCheck size={15} className="text-emerald-600" />
-          <p className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Méthode de calcul</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-1">
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">Mégots → masse</p>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              0,2 g par mégot sec · ×1,2 si humide · ×1,5 si mouillé.
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 space-y-1">
-            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">Vision IA</p>
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Analyse sacs, remplissage et densité. Densité moyenne : 150 kg/m³ (tout-venant urbain).
-            </p>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

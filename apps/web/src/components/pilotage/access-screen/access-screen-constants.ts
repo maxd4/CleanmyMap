@@ -32,7 +32,7 @@ export const PAGE_COPY: Record<
   }
 > = {
   fr: {
-    title: "Contrôle opérationnel",
+    title: "Accueil et Pilotage",
     description:
       "Observation, décision, exécution. Une vue transverse pour coordonner, arbitrer et suivre les effets sans mélanger les permissions ni le niveau de criticité.",
     summaryEyebrow: "Résumé décisionnel",
@@ -45,14 +45,14 @@ export const PAGE_COPY: Record<
     executionLabel: "Exécution",
     lockedTitle: "Connexion requise",
     lockedDescription:
-      "Ouvrez une session autorisée pour accéder au cockpit de pilotage. Cette vue sert aux profils de coordination, d'administration et d'arbitrage final.",
-    restrictedTitle: "Accès pilotage réservé",
+      "Ouvrez une session autorisée pour accéder à l'espace Accueil et Pilotage. Cette vue sert aux profils de coordination, d'administration et d'arbitrage final.",
+    restrictedTitle: "Accès réservé",
     restrictedDescription:
-      "Votre compte est connecté, mais il ne dispose pas des droits de supervision transverse nécessaires pour ce bloc.",
+      "Votre compte est connecté, mais il ne dispose pas des droits de supervision transverse nécessaires pour cet espace.",
     connectLabel: "Se connecter",
   },
   en: {
-    title: "Operational control",
+    title: "Home & Operations",
     description:
       "Observation, decision, execution. A transverse view to coordinate, arbitrate and track outcomes without mixing permissions or criticality levels.",
     summaryEyebrow: "Decision summary",
@@ -65,10 +65,10 @@ export const PAGE_COPY: Record<
     executionLabel: "Execution",
     lockedTitle: "Login required",
     lockedDescription:
-      "Open an authorized session to access the pilot cockpit. This view is reserved for coordination, administration and final arbitration profiles.",
-    restrictedTitle: "Pilot access restricted",
+      "Open an authorized session to access the Home & Operations area. This view is reserved for coordination, administration and final arbitration profiles.",
+    restrictedTitle: "Access restricted",
     restrictedDescription:
-      "Your account is connected, but it does not yet have the transverse supervision rights needed for this block.",
+      "Your account is connected, but it does not yet have the transverse supervision rights needed for this area.",
     connectLabel: "Sign in",
   },
 };

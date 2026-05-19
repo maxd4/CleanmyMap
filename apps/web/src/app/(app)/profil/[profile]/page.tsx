@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
@@ -6,6 +5,7 @@ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PromotionRequestForm } from "@/components/sections/rubriques/promotion-request-form";
 import { AccountSettingsSection } from "@/components/account/account-settings-section";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
   getProfileEntryPath,
   getProfileLabel,
@@ -29,7 +29,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
 
   if (!isAppProfile(normalized)) notFound();
 
-  const { userId } = await auth();
+  const { userId } = await getSafeAuthSession();
   if (!userId) {
     return (
       <ClerkRequiredGate
@@ -68,7 +68,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       id="profile"
       title={profileLabel}
       subtitle={`${profileSubtitle}. Gérez votre compte et accédez à vos outils privilégiés.`}
-      icon={User}
       gradient="from-amber-600/20 via-orange-500/10 to-transparent"
     >
       <div className="space-y-12 pt-8">
@@ -78,7 +77,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           themeColor="amber" 
           withTopBar={true} 
           topBarContent="Accès Prioritaires"
-          watermarkIcon={Zap}
           className="p-12"
         >
           <div className="relative z-10">
@@ -91,7 +89,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           themeColor="slate" 
           withTopBar={true} 
           topBarContent="Évolution du Compte"
-          watermarkIcon={Shield}
           className="p-12"
         >
           <PromotionRequestForm currentRole={activeProfile} />
@@ -128,7 +125,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           themeColor="slate" 
           withTopBar={true} 
           topBarContent="Configuration"
-          watermarkIcon={Settings}
           className="p-12"
         >
           <AccountSettingsSection />

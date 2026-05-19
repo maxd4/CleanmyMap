@@ -1,8 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, MapPin, User, Settings } from "lucide-react";
 import type { Metadata } from "next";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 
 export const metadata: Metadata = {
   title: "Bienvenue sur CleanMyMap - Configuration initiale",
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function OnboardingPage() {
-  const { userId } = await auth();
+  const { userId } = await getSafeAuthSession();
   
   if (!userId) {
     redirect("/sign-in");

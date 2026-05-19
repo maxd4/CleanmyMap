@@ -1,15 +1,16 @@
 /**
  * Système d'accents par bloc - CleanMyMap
  *
- * Charte officielle des blocs:
- * - Accueil   (home)      : amber   (Orange)
- * - Agir      (act)       : emerald (Vert)
- * - Visualiser(visualize) : sky     (Bleu ciel)
- * - Impact    (impact)    : red     (Rouge)
- * - Réseau    (network)   : indigo  (Indigo/Violet)
- * - Discussion(connect)   : pink    (Rose)
- * - Apprendre (learn)     : yellow  (Jaune)
- * - Piloter   (pilot)     : amber   (Brun/bronze → amber-800 shade)
+ * Charte officielle des blocs visibles:
+ * - Accueil et Pilotage (home)      : amber/orange
+ * - Agir               (act)        : emerald
+ * - Cartographie et Impact (visualize): sky
+ * - Réseau & Discussions (network)   : indigo
+ * - Apprendre           (learn)      : yellow
+ *
+ * Les blocs "impact", "connect" et "pilot" restent présents comme accents
+ * techniques/compatibilité, mais ils ne sont plus exposés comme blocs visibles
+ * de navigation principale.
  */
 
 export type BlockAccent =
@@ -33,7 +34,7 @@ export type BlockId =
   | "pilot";
 
 /**
- * Mapping bloc -> accent (source de vérité)
+ * Mapping bloc -> accent (source de vérité des tokens visuels)
  */
 export const BLOCK_ACCENT_MAP: Record<BlockId, BlockAccent> = {
   home: "amber",      // Accueil  → Orange
@@ -136,23 +137,23 @@ export const ACCENT_TOKENS: Record<
     gradientDeep: "from-[#00080f] via-[#001422] to-[#001e32]",
   },
   emerald: {
-    // Agir — Vert Émeraude vitalité
-    // 60% #000f08 | 30% rgba(0,50,30,0.60) | 10% emerald-400/teal-400
-    light: "#d1fae5",
-    DEFAULT: "#10b981",
-    dark: "#064e3b",
-    surface: "bg-[rgba(0,18,10,0.78)] backdrop-blur-xl",
-    surfaceMuted: "bg-[rgba(0,12,6,0.55)] backdrop-blur-md",
-    border: "border-emerald-400/18",
-    borderStrong: "border-emerald-400/38",
-    text: "text-emerald-50",
-    textMuted: "text-emerald-300/70",
-    shadow: "shadow-[0_32px_72px_-16px_rgba(16,185,129,0.22),0_8px_24px_-8px_rgba(0,0,0,0.55)]",
-    glow: "shadow-[0_0_48px_-12px_rgba(16,185,129,0.38),0_0_96px_-32px_rgba(52,211,153,0.18)]",
-    ring: "ring-emerald-400/35",
+    // Agir — Vert sauge / mint respirant
+    // 60% #eef8f0 | 30% rgba(236,248,240,0.72) | 10% emerald-500/teal-500
+    light: "#dcfce7",
+    DEFAULT: "#22c55e",
+    dark: "#14532d",
+    surface: "bg-[rgba(243,251,246,0.94)] backdrop-blur-xl",
+    surfaceMuted: "bg-[rgba(236,248,240,0.84)] backdrop-blur-md",
+    border: "border-emerald-200/70",
+    borderStrong: "border-emerald-300/80",
+    text: "text-emerald-950",
+    textMuted: "text-emerald-900/70",
+    shadow: "shadow-[0_20px_40px_-24px_rgba(34,197,94,0.18),0_8px_18px_-12px_rgba(15,23,42,0.08)]",
+    glow: "shadow-[0_0_42px_-14px_rgba(34,197,94,0.16),0_0_80px_-28px_rgba(16,185,129,0.08)]",
+    ring: "ring-emerald-300/30",
     dot: "bg-emerald-400",
     gradient: "from-emerald-300 via-emerald-400 to-teal-500",
-    gradientDeep: "from-[#000f08] via-[#001a0e] to-[#002818]",
+    gradientDeep: "from-[#eef9f0] via-[#e4f5e8] to-[#d9f0de]",
   },
   red: {
     // Impact — Rose-Rouge intense

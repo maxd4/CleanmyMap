@@ -122,21 +122,22 @@ export function ClimateIndicatorGrid({ indicators, fr }: { indicators: ClimateIn
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
       {indicators.map((ind, i) => (
         <ClimateKpiCard
-          key={ind.label.en}
-          label={fr ? ind.label.fr : ind.label.en}
+          key={ind.label}
+          label={ind.label}
           value={ind.value}
           unit={ind.unit}
           confidence={ind.confidence}
           icon={(() => {
             switch(ind.id) {
-              case 'co2': return <Leaf size={24} />;
-              case 'biodiv': return <Activity size={24} />;
-              case 'h2o': return <Droplets size={24} />;
-              case 'trace': return <Scaling size={24} />;
+              case "co2_proxy": return <Leaf size={24} />;
+              case "plastic_leakage_proxy": return <Droplets size={24} />;
+              case "geocoverage": return <Scaling size={24} />;
+              case "hours": return <Activity size={24} />;
+              case "butts": return <Zap size={24} />;
+              case "volume": return <Wind size={24} />;
               default: return <Wind size={24} />;
             }
           })()}
-          delta={ind.delta}
         />
       ))}
     </div>
@@ -207,11 +208,11 @@ export function ClimateDecisionList({ decisions, fr }: { decisions: ClimateDecis
               </div>
               <div className="space-y-2">
                 <p className="text-sm font-bold text-white leading-relaxed group-hover:text-blue-400 transition-colors">
-                  {fr ? decision.label.fr : decision.label.en}
+                  {decision.decision}
                 </p>
                 <div className="flex items-center gap-3">
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                    {decision.type === 'action' ? (fr ? "Impact Direct" : "Direct Impact") : (fr ? "Stratégique" : "Strategic")}
+                    {fr ? "Décision" : "Decision"}
                   </span>
                   <div className="w-1 h-1 rounded-full bg-white/10" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
@@ -266,8 +267,9 @@ export function ClimateMethodology({ methods, limits, version, fr }: { methods: 
                     <div key={i} className="flex gap-4 group">
                       <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500/50 group-hover:bg-blue-500 transition-colors" />
                       <div className="space-y-1">
-                        <p className="text-sm font-bold text-slate-300">{m.name}</p>
-                        <p className="text-xs text-slate-500 leading-relaxed">{m.description}</p>
+                        <p className="text-sm font-bold text-slate-300">{m.metric}</p>
+                        <p className="text-xs text-slate-500 leading-relaxed">{m.formula}</p>
+                        <p className="text-[10px] text-slate-600 leading-relaxed">{m.source}</p>
                       </div>
                     </div>
                   ))}

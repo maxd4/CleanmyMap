@@ -44,14 +44,19 @@ export function ClimateSection() {
   const context = useMemo(() => {
     const records = (data?.items ?? []).map((item: any) => ({
       observedAt: item.action_date,
-      kg: Number(item.waste_kg || 0),
-      isTraceable: (item.contract?.geometry.kind ?? item.geometry_kind ?? "point") !== "point",
+      wasteKg: Number(item.waste_kg || 0),
+      cigaretteButts: Number(item.cigarette_butts || 0),
+      durationMinutes: Number(item.duration_minutes || item.durationMinutes || 0),
+      volunteersCount: Number(item.volunteers_count || item.volunteersCount || 0),
+      latitude: item.latitude ?? item.contract?.geometry?.latitude ?? null,
+      longitude: item.longitude ?? item.contract?.geometry?.longitude ?? null,
+      plasticKg: item.plastic_kg ?? item.plasticKg ?? null,
     }));
-    return computeClimateContext(records, periodDays);
+    return computeClimateContext({ records, periodDays });
   }, [data?.items, periodDays]);
 
   const priorityIndicator = useMemo(() => {
-    return context.indicators.find(ind => ind.status === "alert") || context.indicators[0];
+    return context.indicators.find((ind) => ind.id === "geocoverage") || context.indicators[0];
   }, [context.indicators]);
 
   return (
@@ -142,8 +147,7 @@ export function ClimateSection() {
             >
               <motion.div variants={itemVariants}>
                 <ClimateIndicatorGrid 
-                  indicators={context.indicators} 
-                  comparison={context.comparison}
+                  indicators={context.indicators}
                   fr={fr} 
                 />
               </motion.div>
@@ -201,13 +205,13 @@ export function ClimateSection() {
 
                 <div className="space-y-12">
                   <motion.div variants={itemVariants}>
-                    <ClimateDecisionList decisions={context.decisions} fr={fr} />
+                    <ClimateDecisionList decisions={context.weeklyDecisions} fr={fr} />
                   </motion.div>
                   <motion.div variants={itemVariants}>
                     <ClimateMethodology 
-                      methods={context.methodology.methods} 
-                      limits={context.methodology.interpretationLimits} 
-                      version={context.methodology.version}
+                      methods={context.methods}
+                      limits={context.interpretationLimits}
+                      version={context.modelVersion}
                       fr={fr} 
                     />
                   </motion.div>

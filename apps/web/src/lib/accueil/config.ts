@@ -60,10 +60,8 @@ type HomeSpaceId =
   | "home"
   | "act"
   | "visualize"
-  | "impact"
   | "network"
-  | "learn"
-  | "pilot";
+  | "learn";
 
 type HomePillarDraft = HomePillar & {
   spaceId: HomeSpaceId;
@@ -134,16 +132,16 @@ export function buildHomePillars(
   isSpaceVisible: (spaceId: HomeSpaceId) => boolean = () => true,
 ): HomePillar[] {
   const pillars: HomePillarDraft[] = [
-  {
+    {
       spaceId: "home",
       iconName: 'layout-dashboard',
-      title: 'Accueil',
+      title: 'Accueil et Pilotage',
       preview: getSpacePreview('home'),
-      iconBg: 'bg-amber-500/70',
+      iconBg: 'bg-orange-500/75',
       iconColor: 'text-white',
-      accent: 'from-amber-500/30 to-amber-400/10',
-      ring: 'ring-amber-400/30',
-      dot: 'bg-amber-500',
+      accent: 'from-orange-500/30 to-yellow-400/10',
+      ring: 'ring-orange-400/30',
+      dot: 'bg-orange-500',
       href: '/dashboard',
     },
     {
@@ -161,7 +159,7 @@ export function buildHomePillars(
     {
       spaceId: "visualize",
       iconName: 'map',
-      title: 'Visualiser',
+      title: 'Cartographie et Impact',
       preview: getSpacePreview('visualize'),
       iconBg: 'bg-sky-500/70',
       iconColor: 'text-white',
@@ -169,6 +167,18 @@ export function buildHomePillars(
       ring: 'ring-sky-400/30',
       dot: 'bg-sky-500',
       href: '/actions/map',
+    },
+    {
+      spaceId: "network",
+      iconName: 'network',
+      title: 'Réseau & Discussions',
+      preview: getSpacePreview('network'),
+      iconBg: 'bg-indigo-500/70',
+      iconColor: 'text-white',
+      accent: 'from-indigo-500/30 to-indigo-400/10',
+      ring: 'ring-indigo-400/30',
+      dot: 'bg-indigo-500',
+      href: '/partners/network',
     },
     {
       spaceId: "learn",
@@ -181,42 +191,6 @@ export function buildHomePillars(
       ring: 'ring-yellow-400/30',
       dot: 'bg-yellow-500',
       href: '/learn/hub',
-    },
-    {
-      spaceId: "impact",
-      iconName: 'target',
-      title: 'Impacter',
-      preview: getSpacePreview('impact'),
-      iconBg: 'bg-rose-500/70',
-      iconColor: 'text-white',
-      accent: 'from-rose-500/30 to-rose-400/10',
-      ring: 'ring-rose-400/30',
-      dot: 'bg-rose-500',
-      href: '/reports',
-    },
-    {
-      spaceId: "network",
-      iconName: 'network',
-      title: 'Discuter',
-      preview: getSpacePreview('network'),
-      iconBg: 'bg-indigo-500/70',
-      iconColor: 'text-white',
-      accent: 'from-indigo-500/30 to-indigo-400/10',
-      ring: 'ring-indigo-400/30',
-      dot: 'bg-indigo-500',
-      href: '/partners/network',
-    },
-    {
-      spaceId: "pilot",
-      iconName: 'users',
-      title: 'Piloter',
-      preview: getSpacePreview('pilot'),
-      iconBg: 'bg-amber-700/70',
-      iconColor: 'text-white',
-      accent: 'from-amber-700/30 to-amber-600/10',
-      ring: 'ring-amber-600/30',
-      dot: 'bg-amber-700',
-      href: '/pilotage',
     },
   ];
 
