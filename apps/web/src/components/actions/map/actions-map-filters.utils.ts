@@ -64,7 +64,7 @@ export function buildDefaultActionsMapFilters(
 ): ActionsMapFilters {
   return {
     days: clampInteger(initialDays, 1, 3650, 90),
-    statusFilter: "all",
+    statusFilter: "approved",
     impactFilter: "all",
     qualityMin: 0,
     visibleCategories: { ...DEFAULT_VISIBLE_CATEGORIES },
@@ -87,7 +87,7 @@ export function normalizeActionsMapFilters(
       return normalizedDays === 90 ? defaults.days : normalizedDays;
     })(),
     statusFilter: VALID_STATUSES.has(source.statusFilter ?? "all")
-      ? (source.statusFilter as ActionsMapStatusFilter)
+      ? ((source.statusFilter === "all" ? "approved" : source.statusFilter) as ActionsMapStatusFilter)
       : defaults.statusFilter,
     impactFilter: VALID_IMPACTS.has(source.impactFilter ?? "all")
       ? (source.impactFilter as ActionImpactLevel | "all")

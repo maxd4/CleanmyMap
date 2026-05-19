@@ -10,7 +10,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
 import {
   DEFAULT_DISPLAY_MODE,
   STORAGE_KEYS,
@@ -77,7 +76,6 @@ export function SitePreferencesProvider({
   initialDisplayMode,
   initialDisplayModeExplicit = false,
 }: SitePreferencesProviderProps) {
-  const router = useRouter();
   const shouldRefreshAfterLocaleChange = useRef(false);
 
   const [locale, setLocaleState] = useState<Locale>(() => {
@@ -129,10 +127,10 @@ export function SitePreferencesProvider({
         document.documentElement.lang = value;
       },
       refresh: () => {
-        router.refresh();
+        window.location.reload();
       },
     });
-  }, [locale, router]);
+  }, [locale]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

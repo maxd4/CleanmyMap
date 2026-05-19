@@ -119,7 +119,7 @@ export function WeatherSection() {
                   <RubriqueCard variants={itemVariants} themeColor="slate" withTopBar={false} className="p-8 text-center space-y-4">
                     <Thermometer className="mx-auto text-slate-500 relative z-10" size={32} />
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest relative z-10">
-                      {fr ? "Données Météo-France & OpenWeather" : "Data from Meteo-France & OpenWeather"}
+                      {fr ? "Données Météo-France & OpenWeather" : "Data from Météo-France & OpenWeather"}
                     </p>
                   </RubriqueCard>
                 </div>
