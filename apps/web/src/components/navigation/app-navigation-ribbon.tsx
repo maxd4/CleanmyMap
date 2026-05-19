@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { List, Settings2, ChevronDown, MessageSquare } from "lucide-react";
+import { List, Settings2, MessageSquare } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
@@ -24,12 +24,25 @@ import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
 import { AppNavigationBlockDropdown } from "./app-navigation-block-dropdown";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
+import type { DisplayMode } from "@/lib/ui/preferences";
 
 type AppNavigationRibbonProps = {
   currentProfile: AppProfile;
   profileLabel: string;
   identity: UserIdentity | null;
 };
+
+function getDisplayModeLabel(locale: string, displayMode: DisplayMode): string {
+  if (displayMode === "sobre") {
+    return locale === "fr" ? "Sobre" : "Calm";
+  }
+
+  if (displayMode === "minimaliste") {
+    return locale === "fr" ? "Minimaliste" : "Minimal";
+  }
+
+  return locale === "fr" ? "Exhaustif" : "Exhaustive";
+}
 
 export function AppNavigationRibbon({
   currentProfile,
@@ -55,6 +68,7 @@ export function AppNavigationRibbon({
     ribbonRef,
     `${pathname}:${displayMode}:${locale}:${currentProfile}`,
   );
+  const displayModeLabel = getDisplayModeLabel(locale, displayMode);
 
   const spaces = useMemo(() => {
     const rawSpaces = getNavigationSpacesForProfile(currentProfile, displayMode, locale);
@@ -209,14 +223,14 @@ export function AppNavigationRibbon({
         ref={ribbonRef}
         aria-label={locale === "fr" ? "Barre de navigation principale" : "Main navigation bar"}
         className={cn(
-          "w-full border-b bg-transparent transition-all duration-300",
+          "w-full border-b border-white/8 bg-transparent backdrop-blur-2xl transition-all duration-300 supports-[backdrop-filter]:backdrop-blur-2xl",
           isScrolled
-            ? "shadow-[0_8px_24px_-8px_rgba(2,6,23,0.6)]"
-            : "shadow-[0_4px_12px_-4px_rgba(2,6,23,0.4)]",
+            ? "shadow-[0_14px_40px_-18px_rgba(2,6,23,0.72)]"
+            : "shadow-[0_8px_24px_-12px_rgba(2,6,23,0.56)]",
         )}
         style={ribbonChrome}
       >
-        <div className="flex w-full min-w-0 items-center gap-2 px-4 py-2.5 sm:px-6 lg:gap-3 xl:px-8">
+        <div className="flex w-full min-w-0 items-center gap-2.5 px-4 py-3 sm:px-6 lg:gap-3 xl:px-8 xl:py-3.5">
           <p className="sr-only">
             {locale === "fr" ? "Profil actif" : "Active profile"}: {profileLabel}
           </p>
@@ -224,19 +238,22 @@ export function AppNavigationRibbon({
           <Link
             href="/"
             onClick={() => onTrackNavigation("/", "CleanMyMap", null)}
-            className="group inline-flex min-h-11 shrink-0 items-center justify-center rounded-[1.05rem] border border-sky-200/20 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3 text-white shadow-[0_18px_36px_-20px_rgba(37,99,235,0.85)] transition-transform hover:scale-[1.02] hover:border-sky-100/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+            className="group inline-flex min-h-12 shrink-0 items-center gap-2 rounded-[1.15rem] border border-sky-100/18 bg-gradient-to-br from-sky-500 via-blue-500 to-cyan-500 px-3.5 pr-4 text-white shadow-[0_18px_36px_-22px_rgba(37,99,235,0.92)] transition-transform hover:scale-[1.01] hover:border-sky-50/28 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
             aria-label="CleanMyMap"
           >
-            <span className="cmm-text-caption font-black uppercase tracking-[0.24em]">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.9rem] border border-white/12 bg-white/12 text-[10px] font-black tracking-[0.24em]">
               CMM
+            </span>
+            <span className="hidden xl:inline cmm-text-caption font-black uppercase tracking-[0.18em]">
+              CleanMyMap
             </span>
           </Link>
 
-          <div className="hidden min-w-0 flex-1 items-center gap-2 lg:flex">
+          <div className="hidden min-w-0 flex-1 items-center gap-2 xl:flex">
             <Link
               href="/explorer"
               onClick={() => onTrackNavigation("/explorer", locale === "fr" ? "Sommaire" : "Summary", null)}
-              className="group inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full border border-cyan-100/18 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 px-4 text-white shadow-[0_18px_36px_-20px_rgba(20,184,166,0.5)] transition-transform hover:scale-[1.01] hover:border-cyan-100/30 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+              className="group inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-cyan-100/16 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 px-4 text-white shadow-[0_18px_36px_-22px_rgba(20,184,166,0.58)] transition-transform hover:scale-[1.01] hover:border-cyan-100/28 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
               aria-label={locale === "fr" ? "Sommaire" : "Summary"}
             >
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/16 bg-white/14">
@@ -247,22 +264,30 @@ export function AppNavigationRibbon({
               </span>
             </Link>
 
-            <nav
-              aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}
-              className="flex min-w-0 flex-1 flex-nowrap items-center justify-center gap-1"
-            >
-              {spaces.map((space) => (
-                <AppNavigationBlockDropdown
-                  key={space.id}
-                  activeSpaceId={activeSpaceId}
-                  locale={locale}
-                  onTrackNavigation={onTrackNavigation}
-                  pathname={pathname}
-                  ribbonChrome={ribbonChrome}
-                  space={space}
-                />
-              ))}
-            </nav>
+            <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
+              <nav
+                aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}
+                className="flex shrink-0 flex-nowrap items-center gap-1 rounded-full border border-white/10 bg-white/[0.06] p-1.5 shadow-[0_22px_48px_-34px_rgba(2,6,23,0.88)]"
+              >
+                {spaces.map((space) => (
+                  <AppNavigationBlockDropdown
+                    key={space.id}
+                    activeSpaceId={activeSpaceId}
+                    locale={locale}
+                    onTrackNavigation={onTrackNavigation}
+                    pathname={pathname}
+                    ribbonChrome={ribbonChrome}
+                    space={space}
+                  />
+                ))}
+              </nav>
+
+              <div className="flex min-w-0 flex-1 justify-center">
+                <div className="w-full max-w-[24rem] xl:max-w-[26rem]">
+                  <GlobalSearch currentProfile={currentProfile} />
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5">
@@ -278,8 +303,6 @@ export function AppNavigationRibbon({
                 spaces={spaces}
               />
             </div>
-
-            <GlobalSearch currentProfile={currentProfile} />
 
             <details
               open={preferencesOpen}
@@ -297,19 +320,13 @@ export function AppNavigationRibbon({
                 aria-label={locale === "fr" ? "Menu des préférences d'affichage et langue" : "Display and language preferences menu"}
                 aria-expanded={preferencesOpen}
                 aria-controls="preferences-menu-panel"
-                className="cmm-dropdown-trigger inline-flex min-h-11 list-none items-center justify-center gap-2 rounded-full border border-cyan-100/18 bg-white/14 px-3 text-white/90 transition-colors hover:border-cyan-200/42 hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 xl:px-4 [&::-webkit-details-marker]:hidden"
+                title={locale === "fr" ? "Réglages" : "Settings"}
+                className="cmm-dropdown-trigger inline-flex h-11 w-11 list-none items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/88 transition-colors hover:border-cyan-200/32 hover:bg-white/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 [&::-webkit-details-marker]:hidden"
               >
                 <Settings2 className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-                <span className="hidden xl:inline cmm-text-caption font-bold uppercase tracking-[0.14em]">
+                <span className="sr-only">
                   {locale === "fr" ? "Réglages" : "Settings"}
                 </span>
-                <ChevronDown
-                  className={cn(
-                    "hidden h-4 w-4 shrink-0 transition-transform duration-150 xl:inline",
-                    preferencesOpen && "rotate-180",
-                  )}
-                  aria-hidden="true"
-                />
               </summary>
 
               <AnimatePresence initial={false}>
@@ -334,7 +351,7 @@ export function AppNavigationRibbon({
                       exit={{ opacity: 0, y: preferencesPlacement.openUp ? 8 : -8, scale: 0.98 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
                       className={cn(
-                        "cmm-dropdown-panel absolute z-50 w-80 rounded-[1.25rem] border p-4 shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
+                        "cmm-dropdown-panel absolute z-50 w-80 rounded-[1.35rem] border p-4 shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
                         preferencesPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
                         preferencesPlacement.alignRight ? "right-0" : "left-0",
                       )}
@@ -378,19 +395,13 @@ export function AppNavigationRibbon({
                 aria-label={locale === "fr" ? "Menu Feedback" : "Feedback menu"}
                 aria-expanded={feedbackOpen}
                 aria-controls="feedback-menu-panel"
-                className="cmm-dropdown-trigger inline-flex min-h-11 list-none items-center justify-center gap-2 rounded-full border border-cyan-100/18 bg-white/14 px-3 text-white/90 transition-colors hover:border-cyan-200/42 hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 xl:px-4 [&::-webkit-details-marker]:hidden"
+                title={locale === "fr" ? "Feedback" : "Feedback"}
+                className="cmm-dropdown-trigger inline-flex h-11 w-11 list-none items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/88 transition-colors hover:border-rose-200/30 hover:bg-rose-300/14 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/40 [&::-webkit-details-marker]:hidden"
               >
                 <MessageSquare className="h-4.5 w-4.5 shrink-0" aria-hidden="true" />
-                <span className="hidden xl:inline cmm-text-caption font-bold uppercase tracking-[0.14em]">
-                  Feedback
+                <span className="sr-only">
+                  {locale === "fr" ? "Feedback" : "Feedback"}
                 </span>
-                <ChevronDown
-                  className={cn(
-                    "hidden h-4 w-4 shrink-0 transition-transform duration-150 xl:inline",
-                    feedbackOpen && "rotate-180",
-                  )}
-                  aria-hidden="true"
-                />
               </summary>
 
               <AnimatePresence initial={false}>
@@ -415,7 +426,7 @@ export function AppNavigationRibbon({
                       exit={{ opacity: 0, y: feedbackPlacement.openUp ? 8 : -8, scale: 0.98 }}
                       transition={{ duration: 0.15, ease: "easeOut" }}
                       className={cn(
-                        "cmm-dropdown-panel absolute z-50 w-72 rounded-[1.15rem] border p-2 shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
+                        "cmm-dropdown-panel absolute z-50 w-72 rounded-[1.25rem] border p-2 shadow-[0_28px_56px_-28px_rgba(2,6,23,0.82)]",
                         feedbackPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
                         feedbackPlacement.alignRight ? "right-0" : "left-0",
                       )}
@@ -469,10 +480,20 @@ export function AppNavigationRibbon({
             <Show when="signed-in">
               <div className="flex items-center gap-2 lg:gap-3">
                 <div className="hidden lg:block">
-                  {identity ? <AccountIdentityChip identity={identity} /> : null}
+                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] p-1.5 shadow-[0_18px_36px_-30px_rgba(2,6,23,0.92)]">
+                    <span className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/12 bg-white/10 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-white/78">
+                      {locale === "fr" ? "Aperçu local" : "Local preview"}
+                    </span>
+                    <span className="inline-flex min-h-10 items-center justify-center rounded-full border border-cyan-100/12 bg-cyan-400/12 px-3 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-50">
+                      {displayModeLabel}
+                    </span>
+                    <div className="rounded-full border border-white/10 bg-white/8 px-1.5 py-1">
+                      {identity ? <AccountIdentityChip identity={identity} /> : null}
+                    </div>
+                  </div>
                 </div>
                 <NotificationBell />
-                <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/14 bg-white/10">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)]">
                   <UserButton
                     appearance={{
                       elements: {

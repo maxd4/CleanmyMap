@@ -11,13 +11,13 @@ import { getProfileLabel, toProfile } from "@/lib/profiles";
 import { getServerDisplayModePreference, getServerLocale } from "@/lib/server-preferences";
 
 export const metadata: Metadata = {
-  title: "Explorer CleanMyMap - Plan du site et navigation",
+  title: "Sommaire CleanMyMap - Plan du site et navigation",
   description: "Explorez toutes les sections de CleanMyMap : carte interactive, actions de nettoyage, signalements de pollution, communauté de bénévoles écologistes.",
   robots: { index: true, follow: true },
 };
 
 const BLOCK_PREVIEW_PRIORITY: Record<NavigationBlockId, Partial<Record<NavigationItem["id"], number>>> = {
-  home:      { dashboard: 1, explorer: 2, profile: 3, pilotage: 4, admin: 5, sponsor: 6, elus: 7, godmode: 8 },
+  home:      { dashboard: 1, explorer: 2, profile: 3, feedback: 4, pilotage: 5, admin: 6, sponsor: 7, elus: 8, godmode: 9 },
   act:       { new: 1, route: 2, "trash-spotter": 3 },
   visualize: { map: 1, sandbox: 2, reports: 3, gamification: 4, weather: 5 },
   impact:    {},
@@ -155,6 +155,10 @@ const BLOCK_THEME: Record<NavigationBlockId, {
   },
 };
 
+function formatBlockLabel(label: string): string {
+  return label.replaceAll(" et ", " & ");
+}
+
 export default async function ExplorerPage() {
   const [locale, displayModePreference, role] = await Promise.all([
     getServerLocale(),
@@ -168,7 +172,6 @@ export default async function ExplorerPage() {
     ...space,
     items: space.items.filter((item) => item.routeId !== "explorer"),
   }));
-  const totalItems = visibleSpaces.reduce((sum, s) => sum + s.items.length, 0);
 
   return (
     <div
@@ -187,28 +190,17 @@ export default async function ExplorerPage() {
         {/* ── Header ── */}
         <div className="mb-12 space-y-4">
           <h1 className="text-[clamp(3rem,6vw,5.5rem)] font-black leading-[0.92] tracking-[-0.05em] text-white">
-            {locale === "fr" ? "Explorer" : "Explore"}
+            {locale === "fr" ? "Sommaire" : "Summary"}
           </h1>
           <p className="max-w-xl text-base font-medium text-white/75 leading-relaxed">
             {locale === "fr"
               ? "Accédez à toutes les rubriques disponibles pour votre profil."
               : "Access all sections available for your profile."}
           </p>
-          <div className="flex flex-wrap items-center gap-2.5 pt-1">
-            <span className="rounded-full border border-white/24 bg-white/14 px-3 py-1 text-[11px] font-bold text-white shadow-sm">
-              {visibleSpaces.length} {locale === "fr" ? "blocs" : "blocks"}
-            </span>
-            <span className="rounded-full border border-white/24 bg-white/14 px-3 py-1 text-[11px] font-bold text-white shadow-sm">
-              {totalItems} {locale === "fr" ? "rubriques" : "pages"}
-            </span>
-            <span className="rounded-full border border-white/24 bg-white/14 px-3 py-1 text-[11px] font-bold text-white shadow-sm">
-              {profileLabel}
-            </span>
-          </div>
         </div>
 
         {/* ── Grille de cartes hub — inspirée des blocs de navigation visibles ── */}
-        <div className="flex flex-wrap justify-center gap-5 xl:flex-nowrap">
+        <div className="flex flex-wrap justify-center gap-4 xl:flex-nowrap">
           {visibleSpaces.map((space) => {
             const orderedItems = getOrderedPreviewItems(space.id, space.items);
             const firstHref = orderedItems[0]?.href ?? "/dashboard";
@@ -217,7 +209,7 @@ export default async function ExplorerPage() {
             return (
               <article
                 key={space.id}
-                className={`group relative flex min-h-[286px] w-full flex-col overflow-hidden rounded-[1rem] border ${t.border} bg-gradient-to-br ${t.gradient} p-5 ring-1 ${t.ring} shadow-[0_18px_42px_-28px_rgba(15,23,42,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-opacity-100 hover:shadow-[0_28px_58px_-30px_rgba(15,23,42,0.7)] ${t.glow} active:translate-y-0 sm:w-[calc(50%-0.625rem)] lg:w-[calc(33.333%-0.833rem)] xl:w-[calc(20%-1rem)] sm:p-6`}
+                className={`group relative flex min-h-[286px] w-full flex-col overflow-hidden rounded-[1rem] border ${t.border} bg-gradient-to-br ${t.gradient} p-5 ring-1 ${t.ring} shadow-[0_18px_42px_-28px_rgba(15,23,42,0.65)] transition-all duration-300 hover:-translate-y-1 hover:border-opacity-100 hover:shadow-[0_28px_58px_-30px_rgba(15,23,42,0.7)] ${t.glow} active:translate-y-0 sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.67rem)] xl:w-[calc(20%-0.8rem)] xl:min-w-[15rem] sm:p-6`}
               >
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/42 to-transparent" />
                 <div className={`pointer-events-none absolute -right-14 -top-14 h-32 w-32 rounded-full ${t.dot} opacity-[0.12]`} />
@@ -231,11 +223,8 @@ export default async function ExplorerPage() {
 
                 <div className="relative mb-2 flex items-start justify-between gap-3">
                   <h2 className="min-w-0 text-[18px] font-black leading-tight text-slate-950">
-                    {space.label[locale]}
+                    {formatBlockLabel(space.label[locale])}
                   </h2>
-                  <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] ${t.badge}`}>
-                    {orderedItems.length}
-                  </span>
                 </div>
 
                 {/* Séparateur coloré */}

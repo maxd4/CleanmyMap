@@ -6,7 +6,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { IdentityBadge } from "@/components/ui/identity-badge";
 import { BadgePictogram, getAccountBadgeIconName } from "@/components/gamification/badge-icon";
 import { BadgeSurface } from "@/components/gamification/badge-surface";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import {
@@ -16,6 +16,7 @@ import {
   getSwitchableProfiles,
   type AppProfile,
 } from "@/lib/profiles";
+import { getRoleSwitchTargetPath } from "@/lib/account/role-switch-navigation";
 import { cn } from "@/lib/utils";
 
 type AccountIdentityChipProps = {
@@ -25,6 +26,7 @@ type AccountIdentityChipProps = {
 export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
   const { locale } = useSitePreferences();
   const router = useRouter();
+  const pathname = usePathname();
   const roleBadge = identity.badges.find((badge) =>
     badge.id.startsWith("role_"),
   );
@@ -130,7 +132,10 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
 
       const profilePath =
         payload?.profilePath ?? getProfileEntryPath(targetProfile);
-      router.push(profilePath);
+      const targetPath = getRoleSwitchTargetPath(pathname, profilePath);
+      if (targetPath) {
+        router.replace(targetPath);
+      }
       router.refresh();
     } catch (error) {
       const message =

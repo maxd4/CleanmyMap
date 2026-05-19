@@ -1,0 +1,25 @@
+project:
+  type: default
+
+lang: fr
+
+execute:
+  echo: false
+  warning: false
+  message: false
+
+format:
+  pdf:
+    documentclass: article
+    classoption: [oneside]
+    top-level-division: section
+    pdf-engine: lualatex
+
+    papersize: a4
+    fontsize: 10pt
+
+    colorlinks: true
+    link-citations: true
+    linkcolor: blue
+    urlcolor: blue
+    citecolor: blue

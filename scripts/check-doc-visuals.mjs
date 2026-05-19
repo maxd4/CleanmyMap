@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 
 const ROOT = process.cwd();
@@ -8,21 +8,18 @@ const FIXED_PRIORITY_DOCS = [
   "documentation/index-par-objectif.md",
   "documentation/architecture/system-overview.md",
   "documentation/architecture/modules-cles-et-dependances.md",
-  "documentation/data/pipeline-import.md",
-  "documentation/securite/authz-authn-regles.md",
-  "documentation/exploitation/incidents-frequents-et-reprise.md",
+  "documentation/security/authz-authn-regles.md",
+  "documentation/operations/incidents-frequents-et-reprise.md",
+  "documentation/product/vision-et-objectifs.md",
+  "documentation/product/roadmap-priorisee.md",
+  "documentation/product/parcours-utilisateurs.md",
+  "documentation/product/matrice-rubriques.md",
+  "documentation/product/coherence-mobile-first.md",
+  "documentation/product/SCIENTIFIC_PROTOCOL.md",
+  "documentation/product/visual-first-priorites.md",
 ];
 
 const MERMAID_BLOCK_RE = /```mermaid[\s\S]*?```/m;
-
-async function listAuditRubriqueDocs() {
-  const dir = path.join(ROOT, "documentation", "audit_rubrique");
-  const entries = await readdir(dir, { withFileTypes: true });
-  return entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".txt"))
-    .map((entry) => path.posix.join("documentation", "audit_rubrique", entry.name))
-    .sort();
-}
 
 async function hasMermaidSchema(relativePath) {
   const absolutePath = path.join(ROOT, relativePath);
@@ -31,8 +28,7 @@ async function hasMermaidSchema(relativePath) {
 }
 
 async function validatePrioritizedDocs() {
-  const auditDocs = await listAuditRubriqueDocs();
-  const prioritizedDocs = [...FIXED_PRIORITY_DOCS, ...auditDocs];
+  const prioritizedDocs = [...FIXED_PRIORITY_DOCS];
   const missingSchemas = [];
   const missingFiles = [];
 

@@ -3,6 +3,8 @@
 **Généré le** : 28/04/2026  
 **Commande** : `npm run lint:audit`
 
+> Note de fraîcheur: ce rapport est historique. Pour l'état le plus récent du contrôle qualité, consulter [documentation/maintenance/quality-audit-snapshot.md](../maintenance/quality-audit-snapshot.md) et [documentation/sessions/history/latest-session.md](../sessions/history/latest-session.md).
+
 ## 📊 Résumé Global
 
 - **Erreurs** : 0
@@ -218,4 +220,4 @@
 - **Moyen terme** (1 mois) : < 150 warnings (-81)
 - **Long terme** (3 mois) : < 50 warnings (-181)
 
-*Ce rapport sera mis à jour automatiquement avec `npm run lint:audit`*
+*Ce rapport reste un backlog de référence. Les warnings et priorités doivent être recoupés avec le snapshot qualité courant avant un nouvel audit.*

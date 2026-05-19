@@ -2,9 +2,9 @@
  * Système d'accents par bloc - CleanMyMap
  *
  * Charte officielle des blocs visibles:
- * - Accueil et Pilotage (home)      : amber/orange
+ * - Accueil & Pilotage (home)       : amber/orange
  * - Agir               (act)        : emerald
- * - Cartographie et Impact (visualize): sky
+ * - Cartographie & Impact (visualize): sky
  * - Réseau & Discussions (network)   : indigo
  * - Apprendre           (learn)      : yellow
  *

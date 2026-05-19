@@ -1,0 +1,36 @@
+format:
+  pdf:
+    documentclass: article
+    classoption: [oneside]
+    top-level-division: section
+    pdf-engine: lualatex
+
+    papersize: a4
+    fontsize: 10pt
+    linestretch: 1.02
+
+    toc: true
+    toc-title: "Sommaire"
+    toc-depth: 4
+    number-sections: true
+    number-depth: 4
+
+    geometry:
+      - top=12mm
+      - bottom=13mm
+      - left=14mm
+      - right=14mm
+      - headheight=14pt
+      - headsep=4mm
+      - footskip=6mm
+      - includeheadfoot
+      - heightrounded
+
+    colorlinks: true
+    link-citations: true
+    linkcolor: blue
+    urlcolor: blue
+    citecolor: blue
+
+    include-in-header: .quarto/cleanmymap-pdf.tex
+    keep-tex: false

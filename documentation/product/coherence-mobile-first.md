@@ -1,19 +1,31 @@
 # Coherence mobile first
 
-## Schema responsive mobile -> tablette -> desktop
+La priorite est de garder les actions essentielles lisibles et rapides sur petit ecran.
+
+## Hiérarchie par support
+
 ```mermaid
 flowchart LR
-  M[Mobile<br/>Priorites: declarer, agir, contacter] --> T[Tablette<br/>Priorites: lecture carte + filtres]
-  T --> D[Desktop<br/>Priorites: pilotage, comparaison, reporting]
-  M --> R1[Regle: CTA critiques pleine largeur]
-  T --> R2[Regle: 2 colonnes max sur zones denses]
-  D --> R3[Regle: vues analytiques detaillees]
-```
-Fallback statique:
-```md
-![Mobile first responsive fallback](../archive/fallback-ux-mobile-first-responsive.png)
+  M["Mobile"] --> T["Tablette"]
+  T --> D["Desktop"]
+  M --> R1["Declarer / agir / contacter"]
+  T --> R2["Carte + filtres + comparaison"]
+  D --> R3["Pilotage + analyse + reporting"]
 ```
 
-- Prioriser les flux critiques sur mobile (declarer, agir, contacter, rejoindre).
-- CTA pleine largeur quand pertinent.
-- Tables/graphes avec fallback lisible sur petits ecrans.
+## Règles principales
+
+- sur mobile, les CTA critiques doivent rester en pleine largeur ;
+- les surfaces denses doivent se replier en une seule colonne si elles degradent la comprehension ;
+- au-dela de deux colonnes, il faut une vraie raison produit ;
+- les tableaux doivent rester lisibles sans zoom ;
+- une carte ne doit jamais empecher l'acces au geste principal ;
+- les titres doivent rester courts et tenir sur une seule ligne si possible.
+
+## Ce qu'on attend d'une page bien coherente
+
+1. on comprend en moins de 10 secondes ce qu'on peut faire ;
+2. on sait ou cliquer ;
+3. on ne perd pas le contexte en revenant en arriere ;
+4. la version desktop enrichit sans contredire la version mobile.
+

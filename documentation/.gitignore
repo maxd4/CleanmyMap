@@ -1,0 +1,11 @@
+# Quarto build caches and temporary artifacts
+/.quarto/.quarto/
+/.quarto/project-cache/
+/.quarto/quarto-session-temp*/
+/.quarto/xref/
+/.quarto/*quarto_files/
+
+# Rendered exports in documentation are generated from Markdown/Quarto sources
+**/*.pdf
+
+**/*.quarto_ipynb

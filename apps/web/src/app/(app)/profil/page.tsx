@@ -6,7 +6,7 @@ import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { getProfileEntryPath, toProfile } from"@/lib/profiles";
 
 export const metadata: Metadata = {
-  title: "Mon Profil - CleanMyMap",
+  title: "Mon profil - CleanMyMap",
   description:
     "Accédez à votre profil CleanMyMap, consultez votre impact environnemental, vos statistiques de bénévolat et votre progression dans la communauté écologie.",
   keywords: [

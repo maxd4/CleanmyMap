@@ -1,112 +1,33 @@
-# Product - Guide IA
+# Product - hub de reference
 
-Documentation produit pour agents IA. Contexte métier et vision.
+Ce dossier rassemble les documents qui cadrent le produit CleanMyMap.
+La logique est simple : vision -> parcours -> structure -> priorites -> methodologie.
 
----
+## Lecture conseillee
 
-## 📋 Fichiers Essentiels pour IA
+1. [vision-et-objectifs.md](./vision-et-objectifs.md) - pourquoi le produit existe et quelle valeur il doit produire
+2. [parcours-utilisateurs.md](./parcours-utilisateurs.md) - qui fait quoi et avec quel resultat attendu
+3. [matrice-rubriques.md](./matrice-rubriques.md) - correspondance entre blocs produit et surfaces techniques
+4. [coherence-mobile-first.md](./coherence-mobile-first.md) - regles de lisibilite responsive
+5. [roadmap-priorisee.md](./roadmap-priorisee.md) - ordre d'execution et dependances
+6. [SCIENTIFIC_PROTOCOL.md](./SCIENTIFIC_PROTOCOL.md) - methode de calcul des indicateurs
+7. [visual-first-priorites.md](./visual-first-priorites.md) - quelles pages doivent recevoir un schema visuel en premier
+8. [visual-first-audit-global.md](./visual-first-audit-global.md) - etat general de couverture visuelle
+9. [../index-par-objectif.md](../index-par-objectif.md) - table d'orientation globale
 
-### Vision & Stratégie
-- **vision-et-objectifs.md** ⭐ - Vision et objectifs du produit
-- **roadmap-priorisee.md** - Roadmap priorisée
-- **chantiers-q2-q3.md** - Chantiers en cours
+## Fichiers a ne pas dupliquer ici
 
-### Parcours Utilisateurs
-- **parcours-utilisateurs.md** - Parcours utilisateurs
-- **coherence-mobile-first.md** - Cohérence mobile-first
-- **matrice-rubriques.md** - Matrice des rubriques
+Certains sujets sont documentes ailleurs dans le depot et ne doivent pas etre recopies ici :
 
-### Audit & Décisions
-- **audit/** - Audits des fonctionnalités (24 fichiers)
-- **decisions-en-attente.md** - Décisions en attente
-- **index-par-objectif.md** - Index par objectif
+- `documentation/liberte-UX-UI/rubriques_utilite_impact_.md` pour l'axe utilite / impact des rubriques ;
+- `documentation/operations/session-standard-runbook.md` pour les regles de validation de lots ;
+- `documentation/operations/pre-release-security-check.md` pour la prepublication ;
+- `documentation/kaizen-implementation-plan/` pour les plans d'action et l'audit d'execution.
 
-### Méthodologie
-- **SCIENTIFIC_PROTOCOL.md** - Protocole scientifique
-- **rubriques_utilite_impact_.txt** - Utilité et impact des rubriques
+## Règles de maintenance
 
-### Visual First
-- **visual-first-audit-global.md** - Audit visual-first
-- **visual-first-priorites.md** - Priorités visual-first
-- **../design-system/cleanmymap-ui-ux-pro-max.md** - Règles UX/UI pour écrans opérationnels
+- garder les documents courts et actionnables ;
+- preferrer un seul document de reference par sujet ;
+- supprimer les references cassées au lieu de les laisser vieillir ;
+- quand un fichier devient redondant, le retirer du hub au lieu de le dupliquer.
 
-### Partenariats
-- **partnerships/** - Propositions de partenariats
-
----
-
-## 🤖 Instructions IA
-
-### Avant de Développer une Fonctionnalité
-1. Lire **vision-et-objectifs.md** pour comprendre le contexte
-2. Consulter **roadmap-priorisee.md** pour la priorité
-3. Vérifier **audit/[fonctionnalité].txt** si existe
-
-### Lors de Décisions Produit
-1. Consulter **decisions-en-attente.md**
-2. Respecter **SCIENTIFIC_PROTOCOL.md** pour les données
-3. Suivre **visual-first-priorites.md** pour l'UI
-4. Pour les surfaces admin, analytics, formulaires et validation, appliquer aussi **../design-system/cleanmymap-ui-ux-pro-max.md**
-
-### Pour Comprendre les Utilisateurs
-1. Lire **parcours-utilisateurs.md**
-2. Consulter **matrice-rubriques.md**
-3. Vérifier **coherence-mobile-first.md**
-
----
-
-## 📊 Hiérarchie de Lecture
-
-```
-1. vision-et-objectifs.md       ← Vision globale
-   ↓
-2. roadmap-priorisee.md         ← Priorités
-   ↓
-3. parcours-utilisateurs.md     ← Utilisateurs
-   ↓
-4. audit/[feature].txt          ← Détails feature
-   ↓
-5. SCIENTIFIC_PROTOCOL.md       ← Méthodologie
-```
-
----
-
-## 🎯 Principes Produit
-
-### Visual First
-- Priorité aux visuels sur le texte
-- Voir **visual-first-priorites.md**
-
-### Mobile First
-- Cohérence mobile obligatoire
-- Voir **coherence-mobile-first.md**
-
-### Scientifique
-- Données sourcées et transparentes
-- Voir **SCIENTIFIC_PROTOCOL.md**
-
-### Utilisateur au Centre
-- Parcours utilisateurs optimisés
-- Voir **parcours-utilisateurs.md**
-
----
-
-## 📁 Audits Disponibles
-
-Le dossier **audit/** contient 24 audits de fonctionnalités :
-- admin.txt
-- carte_actions.txt
-- dashboard.txt
-- declarer_action.txt
-- historique.txt
-- mon_profil_impact.txt
-- progression_badges.txt
-- etc.
-
-**Usage IA** : Consulter l'audit avant de modifier la fonctionnalité.
-
----
-
-**Optimisé pour** : Agents IA  
-**Usage** : Contexte métier et vision produit  
-**Dernière mise à jour** : 2025-01-XX

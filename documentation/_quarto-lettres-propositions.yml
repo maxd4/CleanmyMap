@@ -1,0 +1,33 @@
+format:
+  pdf:
+    documentclass: article
+    classoption: [oneside]
+    top-level-division: section
+    pdf-engine: lualatex
+
+    papersize: a4
+    fontsize: 10pt
+    linestretch: 1.08
+
+    toc: false
+    number-sections: false
+
+    geometry:
+      - top=16mm
+      - bottom=16mm
+      - left=16mm
+      - right=16mm
+      - headheight=12pt
+      - headsep=4mm
+      - footskip=8mm
+      - includeheadfoot
+      - heightrounded
+
+    colorlinks: true
+    link-citations: true
+    linkcolor: blue
+    urlcolor: blue
+    citecolor: blue
+
+    include-in-header: .quarto/styles/cleanmymap-letter.tex
+    keep-tex: false

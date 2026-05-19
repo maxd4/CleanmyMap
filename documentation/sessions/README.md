@@ -8,6 +8,7 @@ Contexte et historique des sessions de développement pour agents IA.
 
 ### history/
 - **latest-session.md** ⭐ - Dernière session (TOUJOURS lire au démarrage)
+- **quality-audit-snapshot.md** - Résumé court du prochain audit qualité et du backlog prioritaire
 
 ### context/
 - **fiche_projet.txt** - Fiche projet complète

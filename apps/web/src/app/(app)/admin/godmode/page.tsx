@@ -14,15 +14,18 @@ import {
 } from "lucide-react";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
+import { getCurrentUserIdentity } from "@/lib/authz";
 
 export default async function GodModeAdminPage() {
   const user = await currentUser();
+  const identity = await getCurrentUserIdentity().catch(() => null);
   const classes = getBlockClasses("pilot");
   const publicMetadata = (user?.publicMetadata ?? {}) as Record<string, string | undefined>;
   const role = publicMetadata["role"] || publicMetadata["profile"];
   const displayName =
+    identity?.displayName?.trim() ||
     user?.fullName?.trim() ||
-    [user?.firstName, user?.lastName].filter(Boolean).join("") ||
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
     user?.username ||
     "Super Admin";
   const primaryEmail = user?.emailAddresses?.[0]?.emailAddress ?? "non disponible";

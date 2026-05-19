@@ -351,4 +351,4 @@ export function SectionShell(props: SectionShellProps) {
 - **Accents par bloc:** `components/ui/cmm-block-accent.tsx`, `lib/ui/block-accents.ts`
 - **Nouveaux composants:** `components/ui/cmm-section.tsx`
 - **Classes utilitaires:** `app/globals.css` (section BLOCK ACCENTS)
-- **Audit complet:** `documentation/design/COMPREHENSIVE_AUDIT_REPORT.md`
+- **Audit visuel global:** `documentation/product/visual-first-audit-global.md`

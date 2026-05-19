@@ -5,6 +5,7 @@ import type { Parcours, Role, SessionRole } from "@/lib/domain-language";
 // Alias legacy conservés pour compatibilité; vocabulaire canonique: Role/Parcours/SessionRole.
 export type AppProfile = Parcours;
 export type AppRoleLabel = SessionRole;
+export type DisplayNameMode = "full_name" | "pseudo";
 
 type Localized = Record<Locale, string>;
 
@@ -26,6 +27,32 @@ export type ProfileCtaConfig = {
   secondaryCTA?: ProfileAction;
   additionalActions?: ProfileAction[];
 };
+
+export function normalizeDisplayNameMode(
+  mode: string | null | undefined,
+): DisplayNameMode {
+  return mode === "pseudo" ? "pseudo" : "full_name";
+}
+
+export function resolveAccountDisplayName(params: {
+  firstName?: string | null;
+  lastName?: string | null;
+  username?: string | null;
+  userId: string;
+  mode?: DisplayNameMode | null;
+}): string {
+  const firstName = params.firstName?.trim() ?? "";
+  const lastName = params.lastName?.trim() ?? "";
+  const fullName = `${firstName} ${lastName}`.trim();
+  const pseudo = params.username?.trim() ?? "";
+  const mode = normalizeDisplayNameMode(params.mode);
+
+  if (mode === "pseudo") {
+    return pseudo || fullName || params.userId;
+  }
+
+  return fullName || pseudo || params.userId;
+}
 
 export const PROFILE_ORDER: AppProfile[] = [
   "benevole",

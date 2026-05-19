@@ -10,9 +10,9 @@ describe("buildHomePillars", () => {
 
     expect(pillars).toHaveLength(5);
     expect(pillars.map((pillar) => pillar.title)).toEqual([
-      "Accueil et Pilotage",
+      "Accueil & Pilotage",
       "Agir",
-      "Cartographie et Impact",
+      "Cartographie & Impact",
       "Réseau & Discussions",
       "Apprendre",
     ]);

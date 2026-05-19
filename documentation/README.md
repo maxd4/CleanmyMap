@@ -44,6 +44,9 @@ documentation/
 │   ├── VISUAL_STORYTELLING.md
 │   └── [14 autres fichiers]
 │
+├── design-system-board.dynamic.html ⚙️ Planche visuelle exhaustive exportable (référence dynamique)
+├── design-system-board.html     🧭 Snapshot figé de contrôle / archive visuelle
+│
 ├── security/                    🔐 CRITIQUE pour sécurité
 │   ├── README.md
 │   ├── SECURITY_GUIDE.md
@@ -87,6 +90,7 @@ documentation/
 │
 ├── maintenance/                 🔧 Maintenance
 │   ├── improvements_journal.md
+│   ├── quality-audit-snapshot.md
 │   └── vercel_deployments.txt
 │
 └── assets/                      🖼️ Images

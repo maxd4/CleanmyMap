@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
+import { DisplayNameModeSetting } from "@/components/account/display-name-mode-setting";
 
 export const metadata: Metadata = {
   title: "Réglages - CleanMyMap",
@@ -30,6 +31,7 @@ export default async function ReglagesPage() {
   ]);
 
   const isFrench = locale === "fr";
+  const displayNameMode = identity?.displayNameMode ?? "full_name";
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-white px-4 py-8">
@@ -101,6 +103,13 @@ export default async function ReglagesPage() {
                     {identity?.displayName || (isFrench ? "Non défini" : "Not set")}
                   </p>
                 </div>
+
+                <DisplayNameModeSetting
+                  currentMode={displayNameMode}
+                  displayName={identity?.displayName || (isFrench ? "Non défini" : "Not set")}
+                  userId={identity?.userId || "unknown"}
+                  locale={locale as "fr" | "en"}
+                />
                 
                 <Link
                   href="/profil"

@@ -15,6 +15,8 @@ type UseChatSubmitParams = {
   submitLockRef: React.MutableRefObject<boolean>;
   userId?: string;
   user: ReturnType<typeof useUser>["user"];
+  senderDisplayName: string;
+  senderHandle: string;
   message: string;
   file: File | null;
   isSending: boolean;
@@ -37,6 +39,8 @@ export function useChatSubmit({
   submitLockRef,
   userId,
   user,
+  senderDisplayName,
+  senderHandle,
   message,
   file,
   isSending,
@@ -153,8 +157,8 @@ export function useChatSubmit({
         attachment_url: attachmentUrl,
         created_at: new Date().toISOString(),
         sender: {
-          display_name: user?.fullName || user?.username || "Moi",
-          handle: user?.username || "moi",
+          display_name: senderDisplayName,
+          handle: senderHandle,
           avatar_url: user?.imageUrl || "",
         },
       };
@@ -226,6 +230,8 @@ export function useChatSubmit({
     submitLockRef,
     supabase,
     territoryFocus,
+    senderDisplayName,
+    senderHandle,
     user,
     userId,
   ]);

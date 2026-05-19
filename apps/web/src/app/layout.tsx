@@ -118,7 +118,7 @@ initialDisplayModeExplicit={displayModePreference.isExplicit}
   className="hidden items-center gap-2 rounded-full border border-[color:var(--border-default)] bg-[color:var(--bg-muted)] px-3 py-1.5 cmm-text-small cmm-text-secondary font-semibold transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 sm:inline-flex"
   >
   <MapIcon size={14} />
-  Explorer
+  Sommaire
   </Link>
  <div className="h-4 w-px bg-[color:var(--border-default)]" />
  <Show when="signed-out">

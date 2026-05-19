@@ -1,58 +1,67 @@
-# Protocole Scientifique & Calculs d'Impact
+# Protocole scientifique
 
-Ce document détaille les sources, hypothèses et formules utilisées par CleanMyMap pour convertir les actions de dépollution en indicateurs d'impact environnemental.
+Ce document definit la methode de calcul des indicateurs utilises par CleanMyMap.
+Les indicateurs sont des proxys de lecture et de pilotage, pas une mesure scientifique absolue.
 
-## 1. Préservation de la Ressource en Eau
+## Schema de travail
 
-### Hypothèse
-Un seul mégot de cigarette contient des substances toxiques (nicotine, cadmium, arsenic) capables de polluer entre **500 et 1000 litres d'eau**. CleanMyMap adopte une position prudente et standardisée.
+```mermaid
+flowchart LR
+  A["Donnees terrain"] --> B["Hypothese"]
+  B --> C["Coefficient"]
+  C --> D["Indicateur"]
+  D --> E["Revue humaine"]
+```
 
-### Formule
-`Eau_Preservée (L) = Nombre_Mégots × 500`
+## Principes
 
-### Source
-- **ADEME** : Guide de la gestion des mégots.
-- **Surfrider Foundation Europe** : Rapports sur les macro-déchets.
+- chaque coefficient doit avoir une source ou une justification explicite ;
+- les formules doivent rester simples, reproductibles et auditable ;
+- une hypothese doit etre marquee comme hypothese ;
+- un changement de coefficient doit etre trace dans la documentation technique partagee ;
+- les indicateurs doivent aider a comparer des actions, pas a pretendre mesurer tout l'impact environnemental du monde.
 
----
+## Indicateurs retenus
 
-## 2. Émissions de CO2 Évitées
+### Eau preservee
 
-### Hypothèse
-La collecte des déchets permet d'éviter les émissions liées à la dégradation anaérobie en milieu naturel (méthane) et favorise le recyclage, qui est moins énergivore que la production de matière vierge.
+Hypothese prudente : un megot peut polluer entre 500 et 1000 litres d'eau.
 
-### Formule
-`CO2_Évité (kg) = Poids_Déchets (kg) × Coefficient_Matière`
+Formule de travail :
 
-*Coefficients moyens utilisés (Source Base Carbone ADEME) :*
-- Plastique : 2.5 kg CO2/kg
-- Aluminium : 9.0 kg CO2/kg
-- Mix déchets sauvages : **1.2 kg CO2/kg** (valeur par défaut)
+`Eau_preservee (L) = Nombre_megots x 500`
 
----
+### CO2 evite
 
-## 3. Surface Nettoyée & Restauration
+L'effet est estime a partir du poids des dechets collectes et d'un coefficient de matiere.
 
-### Hypothèse
-L'impact spatial dépend de la densité de pollution et de l'effort de prospection des bénévoles.
+Formule de travail :
 
-### Formule
-`Surface (m²) = (Poids (kg) × 15) + (Temps (min) × 2)`
+`CO2_evite (kg) = Poids_dechets (kg) x Coefficient_matiere`
 
-Cette formule hybride valorise à la fois la récolte de masse et le temps passé à scruter une zone.
+### Surface nettoyee
 
----
+La surface est une proxy utile quand le poids seul ne raconte pas toute l'action.
 
-## 4. Score de Pollution (Heatmap)
+Formule de travail :
 
-Le score de pollution affiché sur la carte est calculé via une pondération de la récurrence et de la dangerosité :
+`Surface (m2) = (Poids (kg) x 15) + (Temps (min) x 2)`
 
-`Pollution_Score = (Densité_Mégots × 3) + (Densité_Plastiques × 2) + (Densité_Encombrants × 5)`
+### Score de pollution
 
----
+Le score sert a comparer des zones entre elles et a prioriser des actions.
 
-## 5. Gouvernance des Données
-Les coefficients sont révisés tous les 6 mois par l'équipe scientifique de CleanMyMap pour s'aligner sur les dernières mises à jour de la **Base Empreinte de l'ADEME**.
+Formule de travail :
 
-> [!IMPORTANT]
-> Toute modification des coefficients dans `impact-proxy-config.ts` doit être répercutée ici et sur la page `/methodologie`.
+`Score = (Densite_megots x 3) + (Densite_plastiques x 2) + (Densite_encombrants x 5)`
+
+## Gouvernance
+
+- revoir les coefficients a intervalle fixe ;
+- documenter la source de chaque changement ;
+- garder une trace des hypothèses dans un seul endroit ;
+- refuser toute presentation qui ferait croire a une precision artificielle.
+
+## Lecture correcte
+
+Le protocole n'a pas pour but de sur-vendre l'impact. Il sert a rendre l'impact comparable, discutable et ameliorable.

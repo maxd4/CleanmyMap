@@ -60,6 +60,16 @@ Notes:
   `node scripts/vercel-sync-env.mjs --file=.env.local --environments=preview --preview-branch=<branch-name>`
 - Sentry stays paused unless `NEXT_PUBLIC_SENTRY_ENABLED=1` is set.
 
+## Quality audit snapshot
+
+Etat vérifié au 2026-05-19 pour le prochain passage qualité:
+
+- `npm run typecheck -w apps/web` passe.
+- `npm run test:security -w apps/web` passe.
+- `npm run lint -w apps/web` passe avec warnings tolérés en développement.
+- Les anciens runs/deployments GitHub obsolètes ont été purgés.
+- Le backlog court à reprendre ensuite est documenté dans [documentation/maintenance/quality-audit-snapshot.md](../../documentation/maintenance/quality-audit-snapshot.md).
+
 ## Manual commands
 
 ```bash

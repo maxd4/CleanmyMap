@@ -13,6 +13,21 @@ Documentation optimisée pour les agents IA qui développent ce projet.
 
 ## 📚 Guides Disponibles
 
+### 🖼️ Standards visuels de documentation
+
+1. **[standards-visuels.md](./standards-visuels.md)**
+   - Standards Mermaid et fallback image
+   - Formats obligatoires de documentation visuelle
+   - Règles communes pour les schémas
+   - Exemples copiables
+
+### 🎨 Planche Design System
+
+1. **[design-system-board.dynamic.html](../design-system-board.dynamic.html)**
+   - Référence dynamique à utiliser en priorité
+2. **[design-system-board.html](../design-system-board.html)**
+   - Snapshot figé de comparaison / archive visuelle
+
 ### 🔧 Modularisation
 
 1. **[AI_MODULARIZATION_GUIDE.md](./AI_MODULARIZATION_GUIDE.md)** ⭐

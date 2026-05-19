@@ -132,7 +132,7 @@ export default async function OnboardingPage() {
                   <ArrowRight className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-900">Explorer</p>
+                  <p className="font-semibold text-slate-900">Sommaire</p>
                   <p className="text-sm text-slate-600">Découvrir les sections</p>
                 </div>
               </Link>

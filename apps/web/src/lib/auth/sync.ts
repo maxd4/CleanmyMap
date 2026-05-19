@@ -2,7 +2,12 @@ import type { User } from "@clerk/nextjs/server";
 import { env } from "@/lib/env";
 import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { isAdminRole, isMaxRole } from "@/lib/authz";
-import { resolveProfile } from "@/lib/profiles";
+import {
+  normalizeDisplayNameMode,
+  resolveAccountDisplayName,
+  resolveProfile,
+  type DisplayNameMode,
+} from "@/lib/profiles";
 import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 
 const MAX_HANDLE_LENGTH = 30;
@@ -10,6 +15,7 @@ const MAX_HANDLE_LENGTH = 30;
 type ProfileRow = {
   id: string;
   handle: string | null;
+  display_name_mode: string | null;
 };
 
 export type SyncClerkUserOptions = {
@@ -169,8 +175,6 @@ export async function syncClerkUserToSupabase(
 
   const firstName = user.firstName?.trim() ?? "";
   const lastName = user.lastName?.trim() ?? "";
-  const displayName =
-    `${firstName} ${lastName}`.trim() || user.username?.trim() || "Membre";
 
   const rawArrondissement = (user.publicMetadata as any)?.parisArrondissement;
   const parsedArrondissement =
@@ -182,7 +186,7 @@ export async function syncClerkUserToSupabase(
 
   const { data: existingProfile, error: existingProfileError } = await supabase
     .from("profiles")
-    .select("id, handle")
+    .select("id, handle, display_name_mode")
     .eq("id", user.id)
     .maybeSingle<ProfileRow>();
 
@@ -197,12 +201,23 @@ export async function syncClerkUserToSupabase(
     user,
     existingProfile?.handle ?? null,
   );
+  const displayNameMode: DisplayNameMode = normalizeDisplayNameMode(
+    existingProfile?.display_name_mode,
+  );
+  const displayName = resolveAccountDisplayName({
+    firstName,
+    lastName,
+    username: user.username?.trim() || null,
+    userId: user.id,
+    mode: displayNameMode,
+  });
 
   const { data, error } = await supabase
     .from("profiles")
     .upsert({
       id: user.id,
       display_name: displayName,
+      display_name_mode: displayNameMode,
       handle,
       role_label: persistedProfile,
       avatar_url: user.imageUrl,

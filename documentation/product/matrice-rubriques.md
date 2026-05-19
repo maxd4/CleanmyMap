@@ -1,38 +1,41 @@
 # Matrice rubriques
 
-## Vue architecture blocs -> rubriques
+## Vue d'ensemble
+
 ```mermaid
 flowchart LR
-  ACC[Accueil] --> DASH[dashboard]
-  AGIR[Agir] --> ITI[route]
-  AGIR --> SPOT[trash-spotter]
-  VISU[Visualiser] --> MAP[cartographie]
-  VISU --> TAB[graphiques/tableaux]
-  IMP[Impact] --> REP[reports]
-  IMP --> CLA[gamification]
-  RES[Reseau] --> DISC[community]
-  RES --> PART[partenaires/funding/open-data]
-  APP[Apprendre] --> CLIM[climate]
-  APP --> GUIDE[guide + seconde vie + kit]
-  PIL[Piloter] --> ADM[admin]
-  PIL --> ELU[elus/coordinateur]
-  REG[sections-registry.ts] --> NAV[navigation.ts]
-  NAV --> UI[Rubriques visibles]
-```
-Fallback statique:
-```md
-![Matrice rubriques fallback](../archive/fallback-matrice-rubriques-architecture.png)
+  ACC["Accueil"] --> DASH["Dashboard"]
+  AGIR["Agir"] --> ITI["Itineraire"]
+  AGIR --> SPOT["Signalement"]
+  VISU["Visualiser"] --> MAP["Carte"]
+  VISU --> TAB["Tableaux"]
+  IMP["Impact"] --> REP["Rapports"]
+  RES["Réseau"] --> DISC["Discussion"]
+  RES --> PART["Partenaires"]
+  APP["Apprendre"] --> GUIDE["Guide"]
+  APP --> QUIZ["Quiz"]
+  PIL["Piloter"] --> ADM["Admin"]
+  PIL --> ELU["Coordinateurs"]
 ```
 
-## Blocs cibles
-- Accueil: formulaire benevole + parametres de compte
-- Agir: itineraire IA, trash spotter
-- Visualiser: cartographie + graphiques/tableaux dynamiques
-- Impact: rapports d'impact, classement
-- Reseau: discussion, partenaires engages, donnees ouvertes, financement/sponsoring
-- Apprendre: developpement durable, guide pratique, seconde vie, kit terrain
-- Piloter: admin, elus, coordinateur
+## Correspondance bloc -> usage
+
+| Bloc | Rôle principal | Sortie attendue |
+| --- | --- | --- |
+| Accueil | Entrée rapide | voir, agir, reprendre |
+| Agir | Passage a l'action | declaration, itineraire, signalement |
+| Visualiser | Lecture territoriale | carte, filtres, comparaison |
+| Impact | Preuve et synthese | rapport, bilan, export |
+| Réseau | Mise en relation | discussion, partenaires, relais locaux |
+| Apprendre | Onboarding utile | guide, ressources, mini-contenu |
+| Piloter | Gouvernance | moderation, controle, arbitrage |
 
 ## Source technique
+
 - `apps/web/src/lib/sections-registry.ts`
 - `apps/web/src/lib/navigation.ts`
+
+## Regle de maintenance
+
+Quand un bloc change, mettre a jour cette matrice en meme temps que le registre de sections. La matrice n'est pas un commentaire : c'est un contrat de navigation.
+

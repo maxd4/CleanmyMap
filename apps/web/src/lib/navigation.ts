@@ -53,14 +53,14 @@ export type NavigationSpace = {
 const SPACE_DEFINITIONS: Record<NavigationBlockId, NavigationSpaceMeta> = {
   home: {
     id: "home",
-    label: { fr: "Accueil et Pilotage", en: "Home & Operations" },
+    label: { fr: "Accueil & Pilotage", en: "Home & Operations" },
     icon: "🏠",
     color: "text-orange-600",
   },
   act: { id: "act", label: { fr: "Agir", en: "Act" }, icon: "⚡", color: "text-emerald-600" },
   visualize: {
     id: "visualize",
-    label: { fr: "Cartographie et Impact", en: "Mapping & Impact" },
+    label: { fr: "Cartographie & Impact", en: "Mapping & Impact" },
     icon: "🗺️",
     color: "text-sky-600",
   },
@@ -121,6 +121,7 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "map",
   "history",
   "dashboard",
+  "feedback",
   "guide",
   "sandbox",
   "community",
@@ -146,6 +147,7 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "map",
   "history",
   "dashboard",
+  "feedback",
   "sandbox",
   "community",
   "messagerie",
@@ -161,7 +163,7 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
 // Source de vérité navigation: profil -> espaces -> pages.
 const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   benevole: {
-    home: ["dashboard", "explorer", "profile"],
+    home: ["dashboard", "explorer", "profile", "feedback"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "reports", "gamification"],
     impact: [],
@@ -177,7 +179,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   coordinateur: {
-    home: ["dashboard", "explorer", "profile", "pilotage", "elus"],
+    home: ["dashboard", "explorer", "profile", "feedback", "pilotage", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "reports", "gamification"],
     impact: [],
@@ -193,7 +195,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   scientifique: {
-    home: ["dashboard", "explorer", "profile", "elus"],
+    home: ["dashboard", "explorer", "profile", "feedback", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "reports", "gamification"],
     impact: [],
@@ -209,7 +211,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   elu: {
-    home: ["dashboard", "explorer", "profile", "sponsor", "elus"],
+    home: ["dashboard", "explorer", "profile", "feedback", "sponsor", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "reports", "gamification"],
     impact: [],
@@ -225,7 +227,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   admin: {
-    home: ["dashboard", "explorer", "profile", "admin"],
+    home: ["dashboard", "explorer", "profile", "feedback", "admin"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "reports", "gamification"],
     impact: [],
@@ -241,7 +243,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   max: {
-    home: ["dashboard", "explorer", "profile", "pilotage", "admin", "sponsor", "elus", "godmode"],
+    home: ["dashboard", "explorer", "profile", "feedback", "pilotage", "admin", "sponsor", "elus", "godmode"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "reports", "gamification"],
     impact: [],

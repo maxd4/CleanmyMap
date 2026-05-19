@@ -1,0 +1,108 @@
+% CleanMyMap - style Quarto PDF pour lettres et propositions.
+% Version legere: pas de page de garde lourde, pas de bandeau visuel massif.
+
+\usepackage{fontspec}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{xcolor}
+\usepackage{xurl}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{titling}
+\usepackage{microtype}
+\usepackage{indentfirst}
+\usepackage{setspace}
+\usepackage{needspace}
+
+\IfFontExistsTF{Inter}{
+  \setmainfont{Inter}
+  \setsansfont{Inter}
+}{
+  \setmainfont{Arial}
+  \setsansfont{Arial}
+}
+\renewcommand*\familydefault{\sfdefault}
+
+\definecolor{cmmnavy}{HTML}{1A365D}
+\definecolor{cmmblue}{HTML}{2563A8}
+\definecolor{cmmgray}{HTML}{5A6772}
+\definecolor{cmmrule}{HTML}{B8C8D0}
+\definecolor{cmmnotelight}{HTML}{F2F7F8}
+
+\AtBeginDocument{
+  \hypersetup{
+    colorlinks=true,
+    linkcolor=cmmblue,
+    urlcolor=cmmblue,
+    citecolor=cmmblue,
+    bookmarksopen=true,
+    bookmarksnumbered=true,
+    pdfborder={0 0 0}
+  }
+}
+\urlstyle{same}
+
+\setstretch{1.08}
+\setlength{\parindent}{1.05em}
+\setlength{\parskip}{4pt plus 1pt minus 1pt}
+\raggedbottom
+\emergencystretch=3em
+\sloppy
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\footnotesize\textcolor{cmmgray}{\thepage}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\footnotesize\textcolor{cmmgray}{\thepage}}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+}
+
+\newcommand{\sectionbreak}{\clearpage}
+
+\titleformat{\section}
+  {\Needspace{6\baselineskip}\color{cmmnavy}\normalfont\Large\bfseries}
+  {\thesection}{0.7em}{}
+
+\titleformat{\subsection}
+  {\Needspace{4\baselineskip}\color{cmmblue}\normalfont\normalsize\bfseries}
+  {\thesubsection}{0.6em}{}
+
+\titleformat{\subsubsection}
+  {\color{cmmnavy}\normalfont\normalsize\bfseries}
+  {\thesubsubsection}{0.5em}{}
+
+\titlespacing*{\section}{0pt}{0.9em}{0.55em}
+\titlespacing*{\subsection}{0pt}{0.7em}{0.35em}
+\titlespacing*{\subsubsection}{0pt}{0.5em}{0.25em}
+
+\let\oldtextbf\textbf
+\renewcommand{\textbf}[1]{\oldtextbf{\textcolor{cmmnavy}{#1}}}
+\let\oldemph\emph
+\renewcommand{\emph}[1]{\oldemph{\textcolor{cmmgray}{#1}}}
+
+\setlength{\tabcolsep}{4.5pt}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\LTleft}{0pt}
+\setlength{\LTright}{0pt}
+\setlength{\LTcapwidth}{\textwidth}
+\captionsetup{font=small, labelfont=bf}
+\AtBeginEnvironment{longtable}{\small}
+\AtBeginEnvironment{tabular}{\small}
+\AtBeginEnvironment{table}{\small}
+\AtBeginEnvironment{quote}{\small\color{cmmgray}}
+
+\pretitle{\begin{center}\vspace*{0.4cm}\Large\bfseries\color{cmmnavy}}
+\posttitle{\par\end{center}\vspace{0.25cm}}
+\preauthor{\begin{center}\small\color{cmmblue}\bfseries}
+\postauthor{\par\end{center}\vspace{0.1cm}}
+\predate{\begin{center}\small\color{cmmgray}}
+\postdate{\par\end{center}\vspace{0.35cm}}

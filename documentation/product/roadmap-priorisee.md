@@ -1,72 +1,48 @@
 # Roadmap priorisee
 
-## Mini gantt Q2/Q3 + dependances
+La feuille de route doit rester courte, lisible et dependante des vrais usages terrain.
+
+## Logique d'ensemble
+
 ```mermaid
-gantt
-  title Roadmap Q2-Q3 (priorisee)
-  dateFormat  YYYY-MM-DD
-  axisFormat  %m/%y
-
-  section Q2
-  Boucle fermee post-action           :p1, 2026-04-20, 45d
-  Data quality + anti-abus            :p2, 2026-04-25, 55d
-
-  section Q3
-  API / Open data institutionnelle    :p3, after p2, 45d
-  Dossier impact exportable           :p4, after p3, 35d
-  Monitoring avance + industrialisation: p5, after p2, 60d
-```
-Fallback statique:
-```md
-![Roadmap gantt fallback](../archive/fallback-roadmap-gantt.png)
+flowchart LR
+  P1["1. Stabiliser la boucle d'action"] --> P2["2. Fiabiliser la donnée"]
+  P2 --> P3["3. Ouvrir les exports et bilans"]
+  P3 --> P4["4. Industrialiser le suivi"]
 ```
 
-## Priorite 1
-- Boucle fermee post-action (resume, recommandation, progression personnelle)
-- Stabilisation data quality + anti-abus
+## Priorite 1 - stabiliser la valeur coeur
 
-## Priorite 2
-- API/open data institutionnelle
-- Dossier impact exportable elus/chercheurs
+- boucle fermee post-action ;
+- progression lisible apres declaration ;
+- verification des donnees avant publication ;
+- reduction des doublons et des actions peu exploitables.
 
-## Priorite 3
-- Industrialisation runbooks + monitoring avance
+## Priorite 2 - fiabiliser la donnee
 
-## Socle deja acquis
+- controles de qualite sur les champs critiques ;
+- anti-abus et moderation quand necessaire ;
+- clarte des statuts d'action ;
+- cohérence entre carte, historique et rapports.
 
-- Parcours applicatifs coeur actifs : `/dashboard`, `/reports`, `/actions/new`, `/actions/map`, `/actions/history`, `/admin`
-- Registre de rubriques et sections operationnel
-- APIs metier principales en production : actions, spots, community, reports, moderation, health/services
-- Base de securisation initiale : middleware, variables d'environnement centralisees, RLS de base
-- Audit d'impact IA consolide et automatisation initiale des metriques de documentation
-- Premiers livrables PDF et exports disponibles
+## Priorite 3 - rendre les resultats partageables
 
-## Hors perimetre
+- export PDF simple pour les partenaires et les elus ;
+- vues institutionnelles plus lisibles ;
+- rapport par association, ville, periode ou campagne ;
+- version partageable des donnees importantes.
 
-- Gouvernance RH interne non numerique
-- Negociation politique ou institutionnelle hors outil
-- Comptabilite et obligations administratives non applicatives
-- Logistique terrain physique : materiel, transport, stockage
-- Process juridiques complets hors code
+## Priorite 4 - maintenir la trajectoire
 
-## Chantiers ouverts
+- monitoring ;
+- runbooks ;
+- traceabilite documentaire ;
+- audit regulier des choix de produit.
 
-### Priorite immediate
+## Ce qui est hors perimetre immediat
 
-- Tests de non-regression cibles sur les parcours coeur et les exports
-- Validation humaine et clarte des contenus environnementaux
-- Fiabilite des indicateurs et protocole de revue mensuelle
+- interfaces lourdes sans usage terrain confirme ;
+- duplication de dashboards ;
+- fonctions IA non justifiees par un gain concret ;
+- mecanismes de gamification qui ne servent pas l'action.
 
-### Priorite moyen terme
-
-- Clarification structurelle des pages coeur pour supprimer les doublons analytiques
-- Campagnes multi-actions et suivi associe
-- Standardisation des usages IA utiles et politique de partage de donnees
-
-### Priorite consolidation et perennisation
-
-- Refactor `section-renderer` sans regression fonctionnelle
-- Tracabilite documentaire unique a maintenir a jour
-- Mitigation du vendor lock-in a prolonger par inventaire technique
-- Routine d'audit trimestrielle (Responsable Sobriete)
-- Verification finale complete et synthese des risques restants

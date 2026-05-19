@@ -6,12 +6,12 @@ Tout d'abord, merci de considérer d'apporter votre contribution à CleanMyMap !
 Avant de démarrer :
 - Consultez le [README.md](./README.md) pour les instructions de démarrage rapide.
 - Vérifiez d'avoir installé Node.js 20+ et npm 9+.
-- Pour bien comprendre notre architecture et nos conventions, veuillez impérativement lire le [Documentation Hub](./documentation/README.md).
+- Pour bien comprendre notre architecture et nos conventions, veuillez impérativement lire le [Documentation Hub](../README.md).
 
 ## 2. Configuration de l'Environnement
 1. **Cloner le dépôt** : `git clone git@github.com:maxd4/CleanmyMap.git`
 2. **Installer les dépendances** : `npm install` (Nous utilisons strictement les `workspaces` npm, ne pas utiliser `yarn` ou `pnpm`).
-3. **Configurer les variables d'environnement (`.env`)** : La marche à suivre est détaillée dans [`gestion-secrets-et-env.md`](./documentation/technical/gestion-secrets-et-env.md).
+3. **Configurer les variables d'environnement (`.env`)** : La marche à suivre est détaillée dans [`gestion-secrets-et-env.md`](../technical/gestion-secrets-et-env.md).
 
 ## 3. Workflow de Développement
 - Le code actif de l'application se trouve exclusivement dans le dossier `apps/web/`.
@@ -30,5 +30,5 @@ Avant de démarrer :
 4. **Vérifications CI** : Assurez-vous que toutes les actions GitHub et les vérifications de non-régression (`npm run test:regression-gates`) passent au vert.
 
 ## 5. Règles Documentaires et d'Architecture
-- Nous appliquons strictement un paradigme **Visual-First**. Si une explication textuelle architecturale ou métier met plus de 5 lignes, vous devez créer un diagramme au format texte (Mermaid) à la place. Lisez le `[README.md](./documentation/README.md)` de la documentation pour plus détails.
+- Nous appliquons strictement un paradigme **Visual-First**. Si une explication textuelle architecturale ou métier met plus de 5 lignes, vous devez créer un diagramme au format texte (Mermaid) à la place. Lisez le `[README.md](../README.md)` de la documentation pour plus détails.
 - Vous devez toujours inclure le contexte projet (`project_context.md`) et la mémoire de session historique (`latest-session.md`) si vous altérez des éléments structurels majeurs à l'aide d'IA (voir `AGENTS.md`).

@@ -98,4 +98,40 @@ describe("authz helpers", () => {
     expect(selected).toBe("max.clean");
     expect(fallback).toBe("Max");
   });
+
+  it("normalizes the account display name mode", () => {
+    expect(__authz_testables.normalizeDisplayNameMode("pseudo")).toBe("pseudo");
+    expect(__authz_testables.normalizeDisplayNameMode("full_name")).toBe("full_name");
+    expect(__authz_testables.normalizeDisplayNameMode("unknown")).toBe("full_name");
+  });
+
+  it("resolves display names from the selected mode", () => {
+    expect(
+      __authz_testables.resolveAccountDisplayName({
+        firstName: "Ada",
+        lastName: "Admin",
+        username: "ada_admin",
+        userId: "user_1",
+        mode: "full_name",
+      }),
+    ).toBe("Ada Admin");
+    expect(
+      __authz_testables.resolveAccountDisplayName({
+        firstName: "Ada",
+        lastName: "Admin",
+        username: "ada_admin",
+        userId: "user_1",
+        mode: "pseudo",
+      }),
+    ).toBe("ada_admin");
+    expect(
+      __authz_testables.resolveAccountDisplayName({
+        firstName: "",
+        lastName: "",
+        username: "",
+        userId: "user_1",
+        mode: "pseudo",
+      }),
+    ).toBe("user_1");
+  });
 });

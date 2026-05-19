@@ -1,51 +1,49 @@
 # Parcours utilisateurs
 
-## Vue flowchart (parcours terrain)
+## Lecture rapide
+
 ```mermaid
 flowchart TD
-  A[Utilisateur arrive] --> B{Type de profil}
-  B -- Benevole --> C[Complete profil + localisation]
-  C --> D[Reco locale + itineraire IA]
-  D --> E[Declaration action]
-  E --> F[Classement + impact personnel]
-  B -- Association/Entreprise --> G[Publie besoins/contributions]
-  G --> H[Coordonne actions collectives]
-  B -- Elu/Coordinateur --> I[Lit besoins/resultats]
-  I --> J[Arbitre et pilote]
-  B -- Admin --> K[Modere + qualifie donnees]
-```
-Fallback statique:
-```md
-![Parcours utilisateurs fallback](../archive/fallback-parcours-utilisateurs-flowchart.png)
+  A["Utilisateur arrive"] --> B{"Profil"}
+  B -->|Benevole| C["Declarer une action"]
+  C --> D["Verifier la zone couverte"]
+  D --> E["Lire son impact"]
+  B -->|Association / entreprise| F["Publier ou suivre une campagne"]
+  F --> G["Partager le bilan"]
+  B -->|Elu / coordinateur| H["Consulter les resultats"]
+  H --> I["Arbitrer / soutenir"]
+  B -->|Admin| J["Moderation et qualite"]
 ```
 
 ## Benevole
-- Rejoint la plateforme -> complete son profil -> reco locale -> agit -> suit son impact.
-- Contribue au signalement, a l'execution terrain et a la continuite des actions.
 
-## Association / commercant / entreprise
-- Se reference -> publie ses besoins/contributions -> coordonne actions collectives.
-- Anime la mobilisation, coordonne localement et suit les besoins du terrain.
+1. complete son profil ;
+2. declare une action ou rejoint une action existante ;
+3. consulte la zone couverte et le bilan obtenu.
 
-## Elu / coordinateur
-- Consulte besoins/resultats -> arbitre -> pilote les actions locales.
-- Utilise les resultats pour prioriser, arbitrer et soutenir les actions utiles.
+Attente produit : le chemin doit etre rapide, lisible et possible depuis mobile.
+
+## Association ou entreprise
+
+1. reference une action ou une campagne ;
+2. suit les contributions ;
+3. telecharge ou partage un rapport exploitable.
+
+Attente produit : donner de la visibilite et du suivi sans imposer une charge administrative lourde.
+
+## Elu ou coordinateur
+
+1. consulte les resultats par zone ;
+2. lit les points saillants ;
+3. utilise les bilans pour prioriser ou soutenir une action.
+
+Attente produit : aider a decider vite, pas fournir un rapport inutilement dense.
 
 ## Admin
-- Modere, qualifie les donnees et maintient la gouvernance.
-- Assume la supervision, la qualite des donnees et la coherence des livrables.
 
-## Publics concernes
+1. verifie la qualite ;
+2. modere si besoin ;
+3. maintient la coherence entre les rubriques.
 
-- Benevoles et citoyens contributeurs
-- Coordinateurs associatifs
-- Decideurs locaux et collectivites
-- Acteurs de supervision et moderation
-- Publics secondaires : partenaires, scolaires, structures de sensibilisation
+Attente produit : proteger la qualite des donnees et la lisibilite globale.
 
-## Acteurs impliques et responsabilites
-
-- **Citoyens** : signalement, participation, execution terrain
-- **Associations** : animation, coordination, suivi local
-- **Collectivites** : arbitrage, priorisation, soutien institutionnel
-- **Equipe projet / admin** : qualite des donnees, moderation, consolidation des livrables
