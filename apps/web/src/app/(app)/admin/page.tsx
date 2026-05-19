@@ -1,4 +1,3 @@
-import { auth } from"@clerk/nextjs/server";
 import { 
   ShieldCheck, 
   FileSearch, 
@@ -33,6 +32,7 @@ import { cn } from "@/lib/utils";
 import { NavigationGrid, type NavigationGridItem } from"@/components/ui/navigation-grid";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 
 export const metadata: Metadata = {
   title: 'Administration - CleanMyMap',
@@ -49,7 +49,7 @@ async function loadAdminOverview() {
 }
 
 export default async function AdminPage() {
-  const { userId } = await auth();
+  const { userId } = await getSafeAuthSession();
   const locale = await getServerLocale();
 
   if (!userId) {
@@ -220,7 +220,6 @@ export default async function AdminPage() {
       id="admin"
       title="Pilotage Système"
       subtitle="Console d'administration centrale pour la supervision des flux, la modération et la gestion des privilèges."
-      icon={ShieldCheck}
       gradient="from-amber-600/20 via-slate-500/10 to-transparent"
     >
       <div className="space-y-20 pt-8">
@@ -264,7 +263,6 @@ export default async function AdminPage() {
               themeColor="amber" 
               withTopBar={true} 
               topBarContent="Inbox Créateur"
-              watermarkIcon={Activity}
               className="p-12"
             >
               <div className="mb-10">
@@ -280,7 +278,6 @@ export default async function AdminPage() {
               themeColor="slate" 
               withTopBar={true} 
               topBarContent="Gestion de Flotte"
-              watermarkIcon={Users}
               className="p-12"
             >
               <div className="mb-10">
@@ -324,7 +321,7 @@ export default async function AdminPage() {
         </div>
 
         <div id="moderation" className="relative">
-          <RubriqueCard themeColor="emerald" withTopBar={true} topBarContent="Modération Terrain" watermarkIcon={History} className="p-12">
+          <RubriqueCard themeColor="emerald" withTopBar={true} topBarContent="Modération Terrain" className="p-12">
             <ActionsReportPanel />
           </RubriqueCard>
         </div>

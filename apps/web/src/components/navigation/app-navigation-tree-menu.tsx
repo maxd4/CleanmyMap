@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Menu, PanelLeft } from "lucide-react";
+import { ChevronDown, Compass, Menu } from "lucide-react";
 import Link from "next/link";
 import type { NavigationSpace, NavigationItem } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
@@ -12,7 +12,6 @@ import type { RibbonChrome } from "./app-navigation-ribbon-theme";
 
 type AppNavigationTreeMenuProps = {
   activeSpaceId: NavigationSpace["id"] | null;
-  activeSpaceLabel: string | null;
   idBase: string;
   locale: Locale;
   onTrackNavigation: (href: string, label: string, spaceId: string | null) => void;
@@ -27,7 +26,6 @@ function isActivePath(pathname: string, href: string): boolean {
 
 export function AppNavigationTreeMenu({
   activeSpaceId,
-  activeSpaceLabel,
   idBase,
   locale,
   onTrackNavigation,
@@ -50,9 +48,10 @@ export function AppNavigationTreeMenu({
   const panelStyle = useMemo(
     () => ({
       backgroundImage: ribbonChrome.backgroundImage,
+      backgroundColor: ribbonChrome.backgroundColor,
       borderColor: ribbonChrome.borderColor,
     }),
-    [ribbonChrome.backgroundImage, ribbonChrome.borderColor],
+    [ribbonChrome.backgroundColor, ribbonChrome.backgroundImage, ribbonChrome.borderColor],
   );
 
   useEffect(() => {
@@ -139,25 +138,22 @@ export function AppNavigationTreeMenu({
         aria-haspopup="dialog"
         onClick={toggleMenu}
         className={cn(
-          "inline-flex min-h-11 min-w-[10rem] items-center justify-center gap-2 rounded-full border px-4 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
-          activeSpaceLabel
-            ? "border-blue-200/45 bg-gradient-to-r from-[#2F6EF7] via-[#356BF2] to-[#4D80FF] text-white shadow-[0_18px_36px_-20px_rgba(47,92,240,0.55)] hover:border-blue-100/60 hover:from-[#3468FF] hover:via-[#4475FF] hover:to-[#5E8CFF]"
-            : "border-cyan-100/18 bg-white/14 text-white/92 hover:border-cyan-200/42 hover:bg-white/20 hover:text-white",
-          isOpen && activeSpaceLabel && "border-blue-200/55",
-          isOpen && !activeSpaceLabel && "border-cyan-300/45 bg-white/16",
+          "inline-flex min-h-11 min-w-[9.5rem] items-center justify-center gap-2 rounded-full border px-4 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+          "border-cyan-200/24 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 text-white shadow-[0_18px_36px_-20px_rgba(20,184,166,0.5)] hover:border-cyan-100/40 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400",
+          isOpen && "scale-[1.01]",
         )}
       >
         <span
           className={cn(
             "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border",
-            activeSpaceLabel ? "border-white/20 bg-white/14" : "border-white/14 bg-white/10",
+            "border-white/16 bg-white/14",
           )}
           aria-hidden="true"
         >
-          <PanelLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <Compass className="h-4 w-4 shrink-0" aria-hidden="true" />
         </span>
         <span className="cmm-text-caption font-bold uppercase tracking-[0.16em]">
-          {activeSpaceLabel ?? (locale === "fr" ? "Naviguer" : "Navigate")}
+          {locale === "fr" ? "Naviguer" : "Navigate"}
         </span>
         <ChevronDown
           className={cn("h-4 w-4 shrink-0 transition-transform", isOpen && "rotate-180")}

@@ -1,13 +1,13 @@
-import { auth } from "@clerk/nextjs/server";
 import { LayoutDashboard, LogIn, MapPin, UserRound } from "lucide-react";
 import Link from "next/link";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
 import { getProfileLabel, toProfile } from "@/lib/profiles";
 import { HomepageStatsWidget } from "@/components/sections/rubriques/homepage-stats-widget";
 
 export default async function AccueilPage() {
-  const { userId } = await auth();
+  const { userId } = await getSafeAuthSession();
   const locale = await getServerLocale();
   const displayMode = await getServerDisplayMode();
   const isFrench = locale === "fr";

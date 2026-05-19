@@ -1,10 +1,10 @@
-import { auth } from"@clerk/nextjs/server";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
 import { SystemStatusPanel } from"@/components/dashboard/system-status-panel";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
+import { getSafeAuthSession } from"@/lib/auth/safe-session";
 
 export default async function AdminServicesPage() {
- const { userId } = await auth();
+ const { userId } = await getSafeAuthSession();
 
  if (!userId) {
  return (

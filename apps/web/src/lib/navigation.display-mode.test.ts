@@ -61,6 +61,15 @@ describe("navigation display modes", () => {
     expect(labels.summary).toContain("mode essentiel");
   });
 
+  it("uses the visible section count in the navigation title", () => {
+    const labels = getNavigationLabels("fr", "benevole", {
+      isAdmin: false,
+      displayMode: "exhaustif",
+    });
+
+    expect(labels.navTitle).toBe("Navigation en 5 sections");
+  });
+
   it("keeps the product order", () => {
     const scientifiqueSpaceIds = getNavigationSpacesForProfile(
       "scientifique",
@@ -75,19 +84,14 @@ describe("navigation display modes", () => {
       "home",
       "act",
       "visualize",
-      "impact",
       "network",
-      "connect",
       "learn",
-      "pilot",
     ]);
     expect(adminSpaceIds).toEqual([
       "home",
       "act",
       "visualize",
-      "impact",
       "network",
-      "connect",
       "learn",
     ]);
   });
@@ -106,6 +110,52 @@ describe("navigation display modes", () => {
     ]);
   });
 
+  it("moves discussion channels into the network space", () => {
+    const networkSpace = getNavigationSpacesForProfile(
+      "coordinateur",
+      "exhaustif",
+    ).find((space) => space.id === "network");
+
+    expect(networkSpace?.items.map((item) => item.routeId)).toEqual([
+      "network",
+      "community",
+      "messagerie",
+      "open-data",
+    ]);
+  });
+
+  it("moves impact pages into the visualize space", () => {
+    const visualizeSpace = getNavigationSpacesForProfile(
+      "coordinateur",
+      "exhaustif",
+    ).find((space) => space.id === "visualize");
+
+    expect(visualizeSpace?.items.map((item) => item.routeId)).toEqual([
+      "map",
+      "sandbox",
+      "reports",
+      "gamification",
+    ]);
+  });
+
+  it("moves pilot pages into the home block", () => {
+    const homeSpace = getNavigationSpacesForProfile(
+      "max",
+      "exhaustif",
+    ).find((space) => space.id === "home");
+
+    expect(homeSpace?.items.map((item) => item.routeId)).toEqual([
+      "dashboard",
+      "explorer",
+      "profile",
+      "pilotage",
+      "admin",
+      "sponsor",
+      "elus",
+      "godmode",
+    ]);
+  });
+
   it("hides the empty pilot space for benevole", () => {
     const benevoleSpaceIds = getNavigationSpacesForProfile(
       "benevole",
@@ -116,12 +166,12 @@ describe("navigation display modes", () => {
       "home",
       "act",
       "visualize",
-      "impact",
       "network",
-      "connect",
       "learn",
     ]);
     expect(benevoleSpaceIds).not.toContain("pilot");
+    expect(benevoleSpaceIds).not.toContain("connect");
+    expect(benevoleSpaceIds).not.toContain("impact");
   });
 
   it("provides fallback pilot items for empty pilot blocks", () => {

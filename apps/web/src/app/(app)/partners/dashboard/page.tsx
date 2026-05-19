@@ -1,9 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
 import { hasRecentActivity } from "@/components/sections/rubriques/annuaire-helpers";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PublishedAnnuaireReviewPanel } from "@/components/partners/published-annuaire-review-panel";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { countPartnerOnboardingRequests } from "@/lib/partners/onboarding-requests-store";
 import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
 import { getBlockClasses } from "@/lib/ui/block-accents";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { Network, ShieldCheck, ClipboardCheck, Users, MapPin, AlertCircle } from "lucide-react";
 
 export default async function PartnersDashboardPage() {
-  const { userId } = await auth();
+  const { userId } = await getSafeAuthSession();
   const classes = getBlockClasses("network");
   const publishedEntries = await listPublishedPartnerAnnuaireEntries().catch(() => []);
   const currentRole = userId ? await getCurrentUserRoleLabel().catch(() => null) : null;

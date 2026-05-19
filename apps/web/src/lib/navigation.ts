@@ -51,14 +51,34 @@ export type NavigationSpace = {
 };
 
 const SPACE_DEFINITIONS: Record<NavigationBlockId, NavigationSpaceMeta> = {
-  home: { id: "home", label: { fr: "Accueil", en: "Home" }, icon: "🏠", color: "text-amber-600" },
+  home: {
+    id: "home",
+    label: { fr: "Accueil et Pilotage", en: "Home & Operations" },
+    icon: "🏠",
+    color: "text-orange-600",
+  },
   act: { id: "act", label: { fr: "Agir", en: "Act" }, icon: "⚡", color: "text-emerald-600" },
-  visualize: { id: "visualize", label: { fr: "Visualiser", en: "Visualize" }, icon: "🗺️", color: "text-sky-600" },
-  impact: { id: "impact", label: { fr: "Impact", en: "Impact" }, icon: "📊", color: "text-red-600" },
-  network: { id: "network", label: { fr: "Réseau", en: "Network" }, icon: "🤝", color: "text-indigo-600" },
+  visualize: {
+    id: "visualize",
+    label: { fr: "Cartographie et Impact", en: "Mapping & Impact" },
+    icon: "🗺️",
+    color: "text-sky-600",
+  },
+  impact: { id: "impact", label: { fr: "Impacter", en: "Impact" }, icon: "📊", color: "text-red-600" },
+  network: {
+    id: "network",
+    label: { fr: "Réseau & Discussions", en: "Network & Discussions" },
+    icon: "🤝",
+    color: "text-indigo-600",
+  },
   connect: { id: "connect", label: { fr: "Échanges", en: "Connect" }, icon: "💬", color: "text-pink-600" },
   learn: { id: "learn", label: { fr: "Apprendre", en: "Learn" }, icon: "📚", color: "text-yellow-600" },
-  pilot: { id: "pilot", label: { fr: "Piloter", en: "Govern" }, icon: "🎯", color: "text-amber-800" },
+  pilot: {
+    id: "pilot",
+    label: { fr: "Pilotage", en: "Governance" },
+    icon: "🎯",
+    color: "text-amber-800",
+  },
 };
 const FIXED_SPACE_ORDER: NavigationBlockId[] = [
   "home",
@@ -143,10 +163,10 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   benevole: {
     home: ["dashboard", "explorer", "profile"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox"],
-    impact: ["reports", "gamification"],
-    network: ["network", "community", "open-data"],
-    connect: ["messagerie", "dm"],
+    visualize: ["map", "sandbox", "reports", "gamification"],
+    impact: [],
+    network: ["network", "community", "messagerie", "open-data"],
+    connect: [],
     learn: [
       "hub",
       "learn-comprendre",
@@ -157,12 +177,12 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   coordinateur: {
-    home: ["dashboard", "explorer", "profile"],
+    home: ["dashboard", "explorer", "profile", "pilotage", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox"],
-    impact: ["reports", "gamification"],
-    network: ["network", "community", "open-data"],
-    connect: ["messagerie", "dm"],
+    visualize: ["map", "sandbox", "reports", "gamification"],
+    impact: [],
+    network: ["network", "community", "messagerie", "open-data"],
+    connect: [],
     learn: [
       "hub",
       "learn-comprendre",
@@ -170,15 +190,15 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
       "learn-bonnes-pratiques",
       "learn-ressources",
     ],
-    pilot: ["pilotage", "elus"],
+    pilot: [],
   },
   scientifique: {
-    home: ["dashboard", "explorer", "profile"],
+    home: ["dashboard", "explorer", "profile", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox"],
-    impact: ["reports", "gamification"],
-    network: ["network", "community", "open-data"],
-    connect: ["messagerie", "dm"],
+    visualize: ["map", "sandbox", "reports", "gamification"],
+    impact: [],
+    network: ["network", "community", "messagerie", "open-data"],
+    connect: [],
     learn: [
       "hub",
       "learn-comprendre",
@@ -186,15 +206,15 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
       "learn-bonnes-pratiques",
       "learn-ressources",
     ],
-    pilot: ["elus"],
+    pilot: [],
   },
   elu: {
-    home: ["dashboard", "explorer", "profile"],
+    home: ["dashboard", "explorer", "profile", "sponsor", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox"],
-    impact: ["reports", "gamification"],
-    network: ["network", "community", "open-data"],
-    connect: ["messagerie", "dm"],
+    visualize: ["map", "sandbox", "reports", "gamification"],
+    impact: [],
+    network: ["network", "community", "messagerie", "open-data"],
+    connect: [],
     learn: [
       "hub",
       "learn-comprendre",
@@ -202,15 +222,15 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
       "learn-bonnes-pratiques",
       "learn-ressources",
     ],
-    pilot: ["sponsor", "elus"],
+    pilot: [],
   },
   admin: {
-    home: ["dashboard", "explorer", "profile"],
+    home: ["dashboard", "explorer", "profile", "admin"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox"],
-    impact: ["reports", "gamification"],
-    network: ["network", "community", "open-data"],
-    connect: ["messagerie", "dm"],
+    visualize: ["map", "sandbox", "reports", "gamification"],
+    impact: [],
+    network: ["network", "community", "messagerie", "open-data"],
+    connect: [],
     learn: [
       "hub",
       "learn-comprendre",
@@ -221,12 +241,12 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   max: {
-    home: ["dashboard", "explorer", "profile"],
+    home: ["dashboard", "explorer", "profile", "pilotage", "admin", "sponsor", "elus", "godmode"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox"],
-    impact: ["reports", "gamification"],
-    network: ["network", "community", "open-data"],
-    connect: ["messagerie", "dm"],
+    visualize: ["map", "sandbox", "reports", "gamification"],
+    impact: [],
+    network: ["network", "community", "messagerie", "open-data"],
+    connect: [],
     learn: [
       "hub",
       "learn-comprendre",
@@ -234,7 +254,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
       "learn-bonnes-pratiques",
       "learn-ressources",
     ],
-    pilot: ["pilotage", "godmode", "admin", "sponsor", "elus"],
+    pilot: [],
   },
 };
 
@@ -451,7 +471,9 @@ export function getNavigationLabels(
   const displayModeLabel = getDisplayModeLabel(displayMode, locale);
   return {
     navTitle:
-      locale === "fr" ? "Navigation en 7 sections" : "7-section navigation",
+      locale === "fr"
+        ? `Navigation en ${spaceCount} sections`
+        : `${spaceCount}-section navigation`,
     summary:
       locale === "fr"
         ? `${rubriqueCount} pages opérationnelles pour ${profileLabel} (${spaceCount} sections, ${displayModeLabel})`

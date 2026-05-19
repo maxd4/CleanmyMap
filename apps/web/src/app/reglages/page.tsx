@@ -1,9 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Settings, User, Bell, Eye, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 import { getCurrentUserIdentity } from "@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
 
 export const metadata: Metadata = {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ReglagesPage() {
-  const { userId } = await auth();
+  const { userId } = await getSafeAuthSession();
   
   if (!userId) {
     redirect("/sign-in");

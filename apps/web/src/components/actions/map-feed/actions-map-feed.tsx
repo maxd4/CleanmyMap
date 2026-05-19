@@ -16,6 +16,7 @@ export function ActionsMapFeed({
   presentation = "default",
   showIntro = true,
   fullViewport = false,
+  showStoriesCarousel = true,
   visibleCategories = DEFAULT_VISIBLE_CATEGORIES,
   selectedActionId = null,
   onOpenAction,
@@ -78,6 +79,7 @@ export function ActionsMapFeed({
     onReload: () => void feedData.reload(),
     showIntro,
     fullViewport,
+    showStoriesCarousel,
   };
 
   return (

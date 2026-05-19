@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { auth } from"@clerk/nextjs/server";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
 import { redirect } from"next/navigation";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
+import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { getProfileEntryPath, toProfile } from"@/lib/profiles";
 
 export const metadata: Metadata = {
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ProfilRootPage() {
- const { userId } = await auth();
+ const { userId } = await getSafeAuthSession();
  if (!userId) {
  return (
  <ClerkRequiredGate

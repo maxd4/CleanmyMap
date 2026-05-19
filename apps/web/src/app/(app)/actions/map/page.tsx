@@ -1,15 +1,14 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import useSWR from "swr";
-import { BarChart3, Compass, MapPinned, Table2, ArrowRight } from "lucide-react";
+import { BarChart3, Compass, Table2, ArrowRight } from "lucide-react";
 import { buildHomeMetrics } from "@/lib/accueil/config";
 import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
 import { ActionsMapTable } from "@/components/actions/actions-map-table";
 import { ActionsVisualizationPanel } from "@/components/actions/actions-visualization-panel";
-import { ActionsMapSelectedCard } from "@/components/actions/map/actions-map-selected-card";
+import { ActionStoriesCarousel } from "@/components/map/ActionStoriesCarousel";
 import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
 import { isVisibleWithCategoryFilter } from "@/components/actions/map-marker-categories";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
@@ -39,10 +38,6 @@ export default function ActionsMapPage() {
   } = useActionsMapFilters(INITIAL_DAYS);
   const { days, statusFilter, impactFilter, qualityMin, visibleCategories } = filters;
 
-  const { user } = useUser();
-  const isAuthenticated = Boolean(user?.id);
-  const isPublicVisitor = !isAuthenticated;
-
   const [railTab, setRailTab] = useState<"insights" | "journal">("insights");
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
   
@@ -60,16 +55,6 @@ export default function ActionsMapPage() {
     setSelectedActionId(null);
     setStatusFilter(statusValue);
   }, [setStatusFilter]);
-
-  const handleImpactChange = useCallback((impactValue: typeof impactFilter) => {
-    setSelectedActionId(null);
-    setImpactFilter(impactValue);
-  }, [setImpactFilter]);
-
-  const handleQualityMinChange = useCallback((qualityValue: number) => {
-    setSelectedActionId(null);
-    setQualityMin(qualityValue);
-  }, [setQualityMin]);
 
   const handleCategoryToggle = useCallback((category: MarkerCategory) => {
     setSelectedActionId(null);
@@ -94,10 +79,6 @@ export default function ActionsMapPage() {
   const filteredMapItems = useMemo(
     () => mapItems.filter((item) => isVisibleWithCategoryFilter(item, visibleCategories)),
     [mapItems, visibleCategories],
-  );
-  const selectedAction = useMemo(
-    () => filteredMapItems.find((item) => item.id === selectedActionId) ?? null,
-    [filteredMapItems, selectedActionId],
   );
   const visibleCount = filteredMapItems.length;
   const loadedCount = mapItems.length;
@@ -149,6 +130,9 @@ export default function ActionsMapPage() {
                 <Link href="/observatoire" className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white">
                   Observatoire <ArrowRight size={14} />
                 </Link>
+                <Link href="/actions/history" className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-cyan-700 transition-colors hover:text-slate-950 hover:bg-white">
+                  Historique détaillé <ArrowRight size={14} />
+                </Link>
                 <Link href="/methodologie" className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-cyan-700 transition-colors hover:text-slate-950 hover:bg-white">
                   Méthodologie <ArrowRight size={14} />
                 </Link>
@@ -162,6 +146,7 @@ export default function ActionsMapPage() {
             presentation="immersive"
             showIntro={false}
             fullViewport
+            showStoriesCarousel={false}
             days={days}
             statusFilter={statusFilter}
             impactFilter={impactFilter}
@@ -172,69 +157,40 @@ export default function ActionsMapPage() {
           />
         </section>
 
-        <div className="mx-auto max-w-[1680px] px-6 space-y-12">
-          {isPublicVisitor && (
-            <section className={cn(surfaceCard, "p-12 border-cyan-200/80")}>
-              <div className="flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between relative z-10">
-                <div className="space-y-2">
-                  <p className="text-2xl font-semibold tracking-[-0.02em] text-slate-950">Accès visiteur public</p>
-                  <p className="text-lg text-slate-700 font-medium tracking-tight">La carte est consultable librement. Connectez-vous pour exporter ou déclarer.</p>
-                </div>
-                <Link
-                  href="/sign-in"
-                  className="inline-flex shrink-0 items-center justify-center rounded-[2rem] bg-cyan-300 px-10 py-5 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950 transition-all hover:bg-cyan-200 hover:-translate-y-1 shadow-2xl shadow-cyan-300/30 active:scale-95"
-                >
-                  IDENTIFICATION
-                </Link>
-              </div>
-            </section>
-          )}
+        <div className="mx-auto max-w-[1680px] px-6 space-y-10">
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1.62fr)_minmax(340px,0.88fr)]">
+            <div className="space-y-6">
+              <MapKpiRibbon metrics={impactMetrics} />
 
-          <MapKpiRibbon metrics={impactMetrics} />
-
-          {/* Main Cockpit Interface */}
-          <div className="grid gap-12 xl:grid-cols-[1.1fr_0.9fr]">
-            <div className="space-y-12">
               <MapControlTower
                 filters={filters}
                 initialDays={INITIAL_DAYS}
                 visibleCount={visibleCount}
                 loadedCount={loadedCount}
-              filteredMapItems={filteredMapItems}
-              onDaysChange={handleDaysChange}
-              onStatusChange={handleStatusChange}
-              onImpactChange={handleImpactChange}
-              onQualityMinChange={handleQualityMinChange}
-              onCategoryToggle={handleCategoryToggle}
-              onReset={handleResetFilters}
-            />
-            </div>
+                filteredMapItems={filteredMapItems}
+                onDaysChange={handleDaysChange}
+                onStatusChange={handleStatusChange}
+                onCategoryToggle={handleCategoryToggle}
+                onReset={handleResetFilters}
+              />
 
-            <aside className="space-y-12 self-start xl:sticky xl:top-8">
-              <div className={cn(surfaceCard, "p-10 space-y-10")}>
-                {selectedAction ? (
-                  <div className="animate-in fade-in slide-in-from-top-4 duration-700">
-                    <ActionsMapSelectedCard item={selectedAction} onClear={() => setSelectedActionId(null)} />
+              <section className={cn(surfaceCard, "p-8 space-y-8")}>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
+                      <span className="h-4 w-4 rounded-full bg-cyan-500 shadow-[0_0_18px_rgba(34,211,238,0.55)]" />
+                      Analyses
+                    </p>
+                    <p className="text-sm font-medium leading-relaxed text-slate-600">
+                      Lecture détaillée des flux terrain et des répartitions par période.
+                    </p>
                   </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-center space-y-6">
-                    <div className="w-24 h-24 rounded-[2rem] bg-cyan-100 border border-cyan-200 text-cyan-900/30 flex items-center justify-center">
-                      <MapPinned size={48} strokeWidth={1.5} />
-                    </div>
-                    <div className="space-y-2">
-                      <p className="cmm-text-caption font-semibold tracking-[0.14em] text-slate-700">Cible non assignée</p>
-                      <p className="text-sm text-slate-600 font-medium max-w-[200px] mx-auto">Sélectionnez un point d&apos;impact sur la carte pour engager l&apos;analyse.</p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-8">
-                  <div className="relative flex w-full rounded-[2rem] border border-cyan-200/80 bg-cyan-50/90 p-1.5">
+                  <div className="relative flex rounded-[2rem] border border-cyan-200/80 bg-cyan-50/90 p-1.5">
                     <button
                       type="button"
                       onClick={() => setRailTab("insights")}
                       className={cn(
-                        "relative z-10 flex w-1/2 items-center justify-center gap-3 py-4 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
+                        "relative z-10 flex items-center justify-center gap-3 px-5 py-3 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
                         railTab === "insights" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
                       )}
                     >
@@ -245,7 +201,7 @@ export default function ActionsMapPage() {
                       type="button"
                       onClick={() => setRailTab("journal")}
                       className={cn(
-                        "relative z-10 flex w-1/2 items-center justify-center gap-3 py-4 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
+                        "relative z-10 flex items-center justify-center gap-3 px-5 py-3 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
                         railTab === "journal" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
                       )}
                     >
@@ -259,32 +215,57 @@ export default function ActionsMapPage() {
                       }}
                     />
                   </div>
-
-                  <div className="min-h-[450px]">
-                    {railTab === "insights" ? (
-                      <div className="animate-in fade-in zoom-in-95 duration-700">
-                        <ActionsVisualizationPanel
-                          days={days}
-                          status="approved"
-                          impact={impactFilter}
-                          qualityMin={qualityMin}
-                          visibleCategories={visibleCategories}
-                          compact
-                        />
-                      </div>
-                    ) : (
-                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        <ActionsMapTable
-                          items={filteredMapItems}
-                          compact
-                          selectedActionId={selectedActionId}
-                          onSelectAction={handleSelectAction}
-                        />
-                      </div>
-                    )}
-                  </div>
                 </div>
-              </div>
+
+                <div className="min-h-[450px]">
+                  {railTab === "insights" ? (
+                    <div className="animate-in fade-in zoom-in-95 duration-700">
+                      <ActionsVisualizationPanel
+                        days={days}
+                        status="approved"
+                        impact={impactFilter}
+                        qualityMin={qualityMin}
+                        visibleCategories={visibleCategories}
+                        compact
+                      />
+                    </div>
+                  ) : (
+                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                      <ActionsMapTable
+                        items={filteredMapItems}
+                        compact
+                        selectedActionId={selectedActionId}
+                        onSelectAction={handleSelectAction}
+                      />
+                    </div>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            <aside className="space-y-6 self-start xl:sticky xl:top-8">
+              <section className={cn(surfaceCard, "p-6 sm:p-8")}>
+                <ActionStoriesCarousel items={filteredMapItems} onOpenAction={handleSelectAction} />
+              </section>
+
+              <section className={cn(surfaceCard, "p-6 sm:p-8 space-y-4")}>
+                <div className="space-y-2">
+                  <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
+                    <span className="h-4 w-4 rounded-full bg-cyan-500 shadow-[0_0_18px_rgba(34,211,238,0.55)]" />
+                    Méthodologie
+                  </p>
+                  <p className="text-sm font-medium leading-relaxed text-slate-600">
+                    Les formules, sources et marges d’erreur restent disponibles pour vérifier la lecture.
+                  </p>
+                </div>
+                <Link
+                  href="/methodologie"
+                  className="inline-flex w-full items-center justify-center gap-3 rounded-[2rem] border border-cyan-200/80 bg-white/80 px-6 py-4 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white"
+                >
+                  Voir la méthodologie
+                  <ArrowRight size={14} />
+                </Link>
+              </section>
 
               <MapSupervision />
             </aside>

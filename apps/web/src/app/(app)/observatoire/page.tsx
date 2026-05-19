@@ -87,7 +87,6 @@ export default async function ObservatoirePage() {
       id="observatoire"
       title="Impact Global"
       subtitle="Transparence totale sur l'état de la dépollution citoyenne. Suivez les indicateurs clés et l'évolution de la propreté de nos territoires."
-      icon={Globe}
       gradient="from-amber-500/20 via-slate-500/10 to-transparent"
     >
       <div className="space-y-24 pt-8">
@@ -138,7 +137,6 @@ export default async function ObservatoirePage() {
               key={i} 
               themeColor={i === 0 ? "amber" : "slate"}
               withTopBar={false}
-              watermarkIcon={stat.icon}
               className="p-12 flex flex-col justify-between aspect-square group"
             >
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20 group-hover:text-white/40 transition-colors">{stat.label}</p>

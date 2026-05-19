@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Settings2, ChevronDown, MessageSquare } from "lucide-react";
+import { Compass, Settings2, ChevronDown, MessageSquare } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
@@ -19,6 +19,7 @@ import {
 import type { AppProfile } from "@/lib/profiles";
 import { trackNavigationClick } from "@/lib/analytics/navigation-client";
 import { cn } from "@/lib/utils";
+import { getBlockClasses, type BlockId } from "@/lib/ui/block-accents";
 import { GlobalSearch } from "./global-search";
 import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
@@ -66,9 +67,20 @@ export function AppNavigationRibbon({
     }));
   }, [currentProfile, displayMode, locale]);
 
-  const activeSpaceId = getActiveSpaceForPath(currentProfile, pathname, displayMode);
-  const activeSpace = spaces.find((space) => space.id === activeSpaceId) ?? null;
+  const quickSpaceLinks = useMemo(
+    () =>
+      spaces.map((space) => {
+        const blockId = space.id as BlockId;
+        return {
+          ...space,
+          href: space.items[0]?.href ?? "/",
+          accent: getBlockClasses(blockId),
+        };
+      }),
+    [spaces],
+  );
 
+  const activeSpaceId = getActiveSpaceForPath(currentProfile, pathname, displayMode);
   const preferencesPlacement = useDropdownPlacement({
     isOpen: preferencesOpen,
     triggerRef: preferencesTriggerRef,
@@ -210,7 +222,7 @@ export function AppNavigationRibbon({
         ref={ribbonRef}
         aria-label={locale === "fr" ? "Barre de navigation principale" : "Main navigation bar"}
         className={cn(
-          "w-full border-b bg-[color:var(--bg-elevated)] transition-all duration-300",
+          "w-full border-b bg-transparent transition-all duration-300",
           isScrolled
             ? "shadow-[0_8px_24px_-8px_rgba(2,6,23,0.6)]"
             : "shadow-[0_4px_12px_-4px_rgba(2,6,23,0.4)]",
@@ -237,7 +249,6 @@ export function AppNavigationRibbon({
             <AppNavigationTreeMenu
               key={`desktop-tree-${pathname}`}
               activeSpaceId={activeSpaceId}
-              activeSpaceLabel={activeSpace?.label[locale] ?? null}
               idBase="desktop-navigation-tree"
               locale={locale}
               onTrackNavigation={onTrackNavigation}
@@ -245,6 +256,56 @@ export function AppNavigationRibbon({
               ribbonChrome={ribbonChrome}
               spaces={spaces}
             />
+
+            <nav
+              aria-label={locale === "fr" ? "Raccourcis vers les blocs" : "Shortcuts to blocks"}
+              className="hidden min-w-0 items-center gap-1.5 xl:flex"
+            >
+              {quickSpaceLinks.map((space) => {
+                const isActiveSpace = space.id === activeSpaceId;
+                return (
+                  <Link
+                    key={space.id}
+                    href={space.href}
+                    aria-current={isActiveSpace ? "page" : undefined}
+                    onClick={() =>
+                      onTrackNavigation(space.href, space.label[locale], space.id)
+                    }
+                    className={cn(
+                      "group inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-3.5 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
+                      isActiveSpace
+                        ? cn(
+                            "bg-white/14 text-white shadow-[0_18px_36px_-22px_rgba(2,6,23,0.48)]",
+                            space.accent.borderStrong,
+                          )
+                        : "border-white/10 bg-white/[0.07] text-white/82 hover:border-white/18 hover:bg-white/[0.11] hover:text-white",
+                    )}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={cn(
+                        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-transform duration-200 group-hover:scale-105",
+                        isActiveSpace
+                          ? cn("border-white/16 bg-white/14", space.accent.shadow)
+                          : "border-white/10 bg-white/10",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "text-[13px] leading-none transition-transform duration-200 group-hover:scale-110",
+                          isActiveSpace ? "text-white" : "text-white/90",
+                        )}
+                      >
+                        {space.icon}
+                      </span>
+                    </span>
+                    <span className="cmm-text-caption font-bold uppercase tracking-[0.14em]">
+                      {space.label[locale]}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
 
           <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2 lg:gap-2.5">
@@ -252,7 +313,6 @@ export function AppNavigationRibbon({
               <AppNavigationTreeMenu
                 key={`mobile-tree-${pathname}`}
                 activeSpaceId={activeSpaceId}
-                activeSpaceLabel={activeSpace?.label[locale] ?? null}
                 idBase="mobile-navigation-tree"
                 locale={locale}
                 onTrackNavigation={onTrackNavigation}

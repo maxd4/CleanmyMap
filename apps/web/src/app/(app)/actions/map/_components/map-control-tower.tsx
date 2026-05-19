@@ -16,8 +16,6 @@ type MapControlTowerProps = {
   filteredMapItems: ActionMapItem[];
   onDaysChange: (days: number) => void;
   onStatusChange: (status: ActionsMapFilters["statusFilter"]) => void;
-  onImpactChange: (impact: ActionsMapFilters["impactFilter"]) => void;
-  onQualityMinChange: (quality: number) => void;
   onCategoryToggle: (category: MarkerCategory) => void;
   onReset: () => void;
 };
@@ -30,8 +28,6 @@ export function MapControlTower({
   filteredMapItems,
   onDaysChange,
   onStatusChange,
-  onImpactChange,
-  onQualityMinChange,
   onCategoryToggle,
   onReset,
 }: MapControlTowerProps) {
@@ -49,7 +45,7 @@ export function MapControlTower({
         <div className="flex items-center gap-4">
           <Target size={18} className="text-cyan-700" />
           <h3 className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-700">
-            Paramètres Cockpit
+            Paramètres d&apos;analyse
           </h3>
         </div>
         <div className="flex items-center gap-6 cmm-text-caption font-semibold tracking-[0.12em] text-slate-600">
@@ -65,8 +61,6 @@ export function MapControlTower({
         initialDays={initialDays}
         onDaysChange={onDaysChange}
         onStatusChange={onStatusChange}
-        onImpactChange={onImpactChange}
-        onQualityMinChange={onQualityMinChange}
         onCategoryToggle={onCategoryToggle}
         onReset={onReset}
       />

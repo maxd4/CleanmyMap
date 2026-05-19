@@ -1,4 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
+import { headers } from "next/headers";
+import {
+  getDevAuthBypassUserId,
+  isDevAuthBypassEnabled,
+} from "./dev-auth";
 
 export type SafeAuthSession = {
   userId: string | null;
@@ -6,6 +11,14 @@ export type SafeAuthSession = {
 };
 
 export async function getSafeAuthSession(): Promise<SafeAuthSession> {
+  const host = await getRequestHost();
+  if (isDevAuthBypassEnabled(host)) {
+    return {
+      userId: getDevAuthBypassUserId(),
+      clerkReachable: true,
+    };
+  }
+
   try {
     const session = await auth();
     return {
@@ -28,5 +41,14 @@ export async function getSafeAuthSession(): Promise<SafeAuthSession> {
       userId: null,
       clerkReachable: false,
     };
+  }
+}
+
+async function getRequestHost(): Promise<string | null> {
+  try {
+    const requestHeaders = await headers();
+    return requestHeaders.get("host");
+  } catch {
+    return null;
   }
 }

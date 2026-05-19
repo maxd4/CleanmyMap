@@ -234,7 +234,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
  Auteur
  <input
- value={workflow.actionEditDraft.actorName}
+ value={workflow.actionEditDraft!.actorName}
  onChange={(event) => updateActionDraft(workflow,"actorName",event.target.value)}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  />
@@ -242,7 +242,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
  Association
  <input
- value={workflow.actionEditDraft.associationName}
+ value={workflow.actionEditDraft!.associationName}
  onChange={(event) => updateActionDraft(workflow,"associationName",event.target.value)}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  />
@@ -251,7 +251,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  Date
  <input
  type="date"
- value={workflow.actionEditDraft.actionDate}
+ value={workflow.actionEditDraft!.actionDate}
  onChange={(event) => updateActionDraft(workflow,"actionDate",event.target.value)}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  />
@@ -261,7 +261,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950 md:col-span-3">
  Lieu affiché
  <input
- value={workflow.actionEditDraft.locationLabel}
+ value={workflow.actionEditDraft!.locationLabel}
  onChange={(event) => updateActionDraft(workflow,"locationLabel",event.target.value)}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  />
@@ -269,7 +269,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
  Départ
  <input
- value={workflow.actionEditDraft.departureLocationLabel}
+ value={workflow.actionEditDraft!.departureLocationLabel}
  onChange={(event) => updateActionDraft(workflow,"departureLocationLabel",event.target.value)}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  />
@@ -277,7 +277,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
  Arrivée
  <input
- value={workflow.actionEditDraft.arrivalLocationLabel}
+ value={workflow.actionEditDraft!.arrivalLocationLabel}
  onChange={(event) => updateActionDraft(workflow,"arrivalLocationLabel",event.target.value)}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  />
@@ -292,7 +292,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  <label className="mt-3 flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
  Précisions de localisation
  <input
- value={workflow.actionEditDraft.routeAdjustmentMessage}
+ value={workflow.actionEditDraft!.routeAdjustmentMessage}
  onChange={(event) => updateActionDraft(workflow,"routeAdjustmentMessage",event.target.value)}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  />
@@ -315,7 +315,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  {label}
  <input
  inputMode="decimal"
- value={workflow.actionEditDraft[key as keyof ActionModerationEditDraft] as string}
+ value={workflow.actionEditDraft![key as keyof ActionModerationEditDraft] as string}
  onChange={(event) =>
  updateActionDraft(
  workflow,
@@ -330,7 +330,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
  État mégots
  <select
- value={workflow.actionEditDraft.wasteMegotsCondition}
+ value={workflow.actionEditDraft!.wasteMegotsCondition}
  onChange={(event) => updateActionDraft(workflow,"wasteMegotsCondition",event.target.value as ActionModerationEditDraft["wasteMegotsCondition"])}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  >
@@ -342,7 +342,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
  Qualité tri
  <select
- value={workflow.actionEditDraft.triQuality}
+ value={workflow.actionEditDraft!.triQuality}
  onChange={(event) => updateActionDraft(workflow,"triQuality",event.target.value as ActionModerationEditDraft["triQuality"])}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  >
@@ -356,7 +356,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
  Type de lieu
  <input
- value={workflow.actionEditDraft.placeType}
+ value={workflow.actionEditDraft!.placeType}
  onChange={(event) => updateActionDraft(workflow,"placeType",event.target.value)}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  />
@@ -364,7 +364,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  <label className="flex flex-col gap-2 cmm-text-caption font-semibold text-emerald-950">
  Mode
  <select
- value={workflow.actionEditDraft.submissionMode}
+ value={workflow.actionEditDraft!.submissionMode}
  onChange={(event) => updateActionDraft(workflow,"submissionMode",event.target.value as ActionModerationEditDraft["submissionMode"])}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  >
@@ -377,7 +377,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  Notes
  <textarea
  rows={3}
- value={workflow.actionEditDraft.notes}
+ value={workflow.actionEditDraft!.notes}
  onChange={(event) => updateActionDraft(workflow,"notes",event.target.value)}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-normal outline-none transition focus:border-emerald-600"
  />
@@ -386,7 +386,7 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  Localisation JSON
  <textarea
  rows={4}
- value={workflow.actionEditDraft.manualDrawingJson}
+ value={workflow.actionEditDraft!.manualDrawingJson}
  onChange={(event) => updateActionDraft(workflow,"manualDrawingJson",event.target.value)}
  className="rounded-lg border border-emerald-200 bg-white px-3 py-2 font-mono font-normal outline-none transition focus:border-emerald-600"
  />

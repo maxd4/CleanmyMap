@@ -54,10 +54,10 @@ function GpsButton({
         className={cn(
           "flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/30",
           isSuccess
-            ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+            ? "border-emerald-300 bg-[#ECF8EF] text-emerald-800 hover:bg-[#E0F4E6]"
             : isError
-              ? "border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100"
-              : "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 active:scale-[0.98]",
+              ? "border-rose-200 bg-[#FFF7F8] text-rose-700 hover:bg-[#FFEFF2]"
+              : "border-sky-200 bg-[#EFFAF3] text-sky-800 hover:bg-[#EAF7EF] active:scale-[0.98]",
           isLocating && "cursor-not-allowed opacity-70"
         )}
       >
@@ -82,7 +82,7 @@ function GpsButton({
       {message && (
         <p className={cn(
           "text-xs px-1",
-          isError ? "text-rose-500" : "text-slate-400"
+          isError ? "text-rose-600" : "text-emerald-900/45"
         )}>
           {isError && "⚠ "}{message}
         </p>
@@ -117,23 +117,23 @@ function AddressInput({
 }) {
   return (
     <label className="block space-y-1.5">
-      <span className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+      <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-900/55">
         {label}
         {optional && (
-          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-400">
+          <span className="rounded-full bg-[#ECF8EF] px-1.5 py-0.5 text-[10px] text-emerald-900/45">
             optionnel
           </span>
         )}
       </span>
       <div className="relative">
-        <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+        <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-900/30">
           <Icon size={15} />
         </div>
         <input
           id={id}
           type="text"
           placeholder={placeholder}
-          className="w-full h-11 pl-9 pr-4 rounded-xl border border-slate-200 bg-white text-sm font-medium text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15"
+          className="w-full h-11 pl-9 pr-4 rounded-xl border border-emerald-200/70 bg-[#F3FBF6] text-sm font-medium text-emerald-950 placeholder:text-emerald-700/35 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15"
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
@@ -148,7 +148,7 @@ function SectionTitle({ color, children }: { color: string; children: React.Reac
   return (
     <div className="flex items-center gap-2 mb-3">
       <span className={cn("h-1 w-5 rounded-full", color)} />
-      <h3 className="text-xs font-bold text-slate-500 uppercase tracking-[0.18em]">{children}</h3>
+      <h3 className="text-xs font-bold text-emerald-900/60 uppercase tracking-[0.18em]">{children}</h3>
     </div>
   );
 }
@@ -183,22 +183,22 @@ export function ActionStepLocation({
       : "neutral";
 
   const statusStyles = {
-    success: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    warning: "border-amber-200 bg-amber-50 text-amber-700",
-    error: "border-rose-200 bg-rose-50 text-rose-700",
-    neutral: "border-slate-200 bg-slate-50 text-slate-500",
+    success: "border-emerald-200/70 bg-[#ECF8EF] text-emerald-700",
+    warning: "border-amber-200 bg-[#FFF8E8] text-amber-700",
+    error: "border-rose-200 bg-[#FFF7F8] text-rose-700",
+    neutral: "border-emerald-200/70 bg-[#F3FBF6] text-emerald-800/70",
   } as const;
 
   return (
     <div className="space-y-5 animate-in fade-in slide-in-from-bottom-2 duration-500">
 
       {/* ── Ligne 1 : Adresses + GPS + localisation ─────────────────────── */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-4">
+      <div className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] space-y-4">
         <SectionTitle color="bg-sky-500">
           {isCleanPlaceMode ? "Géolocalisation du lieu" : "Localisation de collecte"}
         </SectionTitle>
 
-        <p className="text-xs text-slate-400 -mt-2">
+        <p className="text-xs text-emerald-900/45 -mt-2">
           {isCleanPlaceMode
             ? "Indiquez l'adresse du lieu propre ou utilisez votre position GPS."
             : "Indiquez l'adresse du lieu ou utilisez votre position GPS."}
@@ -228,12 +228,12 @@ export function ActionStepLocation({
           <GpsButton status={gpsStatus} message={gpsMessage} onAutofill={onAutofillGps} />
 
           {!isCleanPlaceMode && (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200/70 bg-[#ECF8EF] px-4 py-3">
               <div>
                 <p className="text-xs font-medium text-emerald-700">Souple par défaut</p>
                 <p className="mt-0.5 text-sm font-semibold text-emerald-900">Réglage appliqué</p>
               </div>
-              <span className="rounded-full bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700">
+              <span className="rounded-full bg-white/80 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-emerald-700">
                 Actif
               </span>
             </div>
@@ -242,12 +242,12 @@ export function ActionStepLocation({
       </div>
 
       {/* ── Ligne 2a : Carte (desktop/tablette uniquement) ───────────────── */}
-      <div className="hidden md:block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+      <div className="hidden md:block rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] space-y-3">
         <div className="flex items-center justify-between gap-3">
           <SectionTitle color="bg-slate-700">
             {isCleanPlaceMode ? "Point géographique" : "Aperçu de localisation"}
           </SectionTitle>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[10px] text-emerald-900/45">
             {isCleanPlaceMode
               ? "Situez le lieu sur la carte"
               : "Situez le lieu sur la carte ou renseignez une adresse"}
@@ -255,7 +255,7 @@ export function ActionStepLocation({
         </div>
 
         {/* Carte */}
-        <div className="relative h-[420px] rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+        <div className="relative h-[420px] rounded-xl overflow-hidden border border-emerald-200/70 bg-[#EFFAF3]">
           <ActionDrawingMap
             drawing={displayedDrawing}
             onDrawingChange={setManualDrawing}
@@ -265,11 +265,11 @@ export function ActionStepLocation({
 
           {/* Overlay si aucun repère */}
           {!hasDrawing && (
-            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-white/60 backdrop-blur-[2px]">
-              <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 text-center shadow-sm">
-                <Pencil size={20} className="mx-auto mb-2 text-slate-400" />
-                <p className="text-sm font-semibold text-slate-700">Aucun repère</p>
-                <p className="mt-1 text-xs text-slate-400">
+            <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#F3FBF6]/72 backdrop-blur-[2px]">
+              <div className="rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-5 py-4 text-center shadow-sm">
+                <Pencil size={20} className="mx-auto mb-2 text-emerald-700/45" />
+                <p className="text-sm font-semibold text-emerald-950">Aucun repère</p>
+                <p className="mt-1 text-xs text-emerald-900/45">
                   Saisissez une adresse ou utilisez le GPS pour placer le lieu
                 </p>
               </div>
@@ -278,7 +278,7 @@ export function ActionStepLocation({
         </div>
 
         {/* Résumé localisation */}
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200/60 bg-[#ECF8EF] px-4 py-3">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={cn(
               "inline-flex items-center rounded-full border px-2.5 py-1 text-[10px] font-semibold",
@@ -287,7 +287,7 @@ export function ActionStepLocation({
               {isManual ? "Repère manuel" : hasDrawing ? "Aperçu automatique" : "Aucun repère"}
             </span>
             {hasDrawing && (
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-emerald-900/55">
                 {formatGeometryPointCount(activeSummary.pointCount)}
               </span>
             )}
@@ -298,7 +298,7 @@ export function ActionStepLocation({
               type="button"
               onClick={onResetManualDrawing}
               aria-label="Effacer le repère manuel"
-              className="flex items-center gap-1.5 rounded-lg border border-rose-100 bg-white px-3 py-1.5 text-xs font-medium text-rose-500 transition-colors hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"
+              className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-[#FFF7F8] px-3 py-1.5 text-xs font-medium text-rose-700 transition-colors hover:bg-[#FFEFF2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/30"
             >
               <X size={13} />
               Effacer
@@ -306,7 +306,7 @@ export function ActionStepLocation({
           )}
 
           {!hasDrawing && (
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-emerald-900/45">
               Saisissez un lieu, utilisez le GPS ou placez un repère sur la carte
             </span>
           )}
@@ -314,33 +314,33 @@ export function ActionStepLocation({
       </div>
 
       {/* ── Ligne 2b : Zone texte mobile (remplace la carte) ────────────── */}
-      <div className="md:hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
+      <div className="md:hidden rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] space-y-3">
         <div className="flex items-center gap-2">
-          <MapPinOff size={15} className="text-slate-400" />
-          <SectionTitle color="bg-slate-400">Précisions de localisation</SectionTitle>
+          <MapPinOff size={15} className="text-emerald-700/45" />
+          <SectionTitle color="bg-emerald-500">Précisions de localisation</SectionTitle>
         </div>
-        <p className="text-xs text-slate-400 -mt-2">
+        <p className="text-xs text-emerald-900/45 -mt-2">
           Décrivez les rues ou zones concernées. Un admin pourra compléter la localisation depuis ces informations.
         </p>
         <textarea
           rows={5}
           placeholder="Ex : Départ rue de Rivoli, passage par les quais, retour par le boulevard Saint-Germain…"
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 resize-none"
+          className="w-full rounded-xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm text-emerald-950 placeholder:text-emerald-700/35 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 resize-none"
           value={form.routeAdjustmentMessage}
           onChange={(e) => updateField("routeAdjustmentMessage", e.target.value)}
         />
       </div>
 
       {/* ── Précisions localisation (desktop aussi) ─────────────────────── */}
-      <div className="hidden md:block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm space-y-3">
-        <SectionTitle color="bg-slate-400">Précisions de localisation</SectionTitle>
-        <p className="text-xs text-slate-400 -mt-2">
+      <div className="hidden md:block rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.18)] space-y-3">
+        <SectionTitle color="bg-emerald-500">Précisions de localisation</SectionTitle>
+        <p className="text-xs text-emerald-900/45 -mt-2">
           Optionnel — décrivez les rues ou zones si la localisation est imprécise.
         </p>
         <textarea
           rows={3}
           placeholder="Ex : Départ rue de Rivoli, passage par les quais, retour par le boulevard Saint-Germain…"
-          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-300 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 resize-none"
+          className="w-full rounded-xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 text-sm text-emerald-950 placeholder:text-emerald-700/35 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 resize-none"
           value={form.routeAdjustmentMessage}
           onChange={(e) => updateField("routeAdjustmentMessage", e.target.value)}
         />

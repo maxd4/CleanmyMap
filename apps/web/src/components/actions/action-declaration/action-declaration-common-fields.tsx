@@ -1,7 +1,7 @@
 import {
  ASSOCIATION_SELECTION_OPTIONS,
 } from"@/lib/actions/association-options";
-import { PLACE_TYPE_OPTIONS } from"@/lib/actions/place-type-options";
+import { PLACE_TYPE_FORM_OPTIONS, normalizePlaceTypeForUi } from"@/lib/actions/place-type-options";
 import { associationOptionLabels } from"./payload";
 import type { FormState, UpdateFormField } from"./types";
 
@@ -99,16 +99,16 @@ export function ActionDeclarationCommonFields({
  />
  </label>
 
- <label className="md:col-span-2 flex flex-col gap-2 cmm-text-small cmm-text-secondary">
+<label className="md:col-span-2 flex flex-col gap-2 cmm-text-small cmm-text-secondary">
  Type de lieu *
  <select
- className="rounded-lg border border-slate-300 px-3 py-2 cmm-text-primary outline-none transition focus:border-emerald-500"
- value={form.placeType}
- onChange={(event) => updateField("placeType", event.target.value)}
+  className="rounded-lg border border-slate-300 px-3 py-2 cmm-text-primary outline-none transition focus:border-emerald-500"
+  value={normalizePlaceTypeForUi(form.placeType)}
+  onChange={(event) => updateField("placeType", event.target.value)}
  >
- {PLACE_TYPE_OPTIONS.map((option) => (
- <option key={option} value={option}>
- {option}
+ {PLACE_TYPE_FORM_OPTIONS.map((option) => (
+ <option key={option.value} value={option.value}>
+ {option.label}
  </option>
  ))}
  </select>

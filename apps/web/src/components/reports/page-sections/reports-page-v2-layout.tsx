@@ -1,5 +1,4 @@
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
-import { CognitiveCueStrip } from "@/components/learn/cognitive-cue-strip";
 import { AnimatedImpactMetrics } from "@/components/reports/AnimatedImpactMetrics";
 import { RadialProgressGauge } from "@/components/reports/RadialProgressGauge";
 import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigation-grid";
@@ -20,7 +19,6 @@ export function ReportsPageV2Layout({
   profile,
   primaryAction,
   secondaryAction,
-  reportsCue,
   summaryKpis,
   navigationItems,
   overview,
@@ -39,20 +37,6 @@ export function ReportsPageV2Layout({
         objective="Comparer les fenêtres utiles, lire la méthode KPI et exporter les livrables."
         summary={
           <div className="space-y-10">
-            <CognitiveCueStrip
-              locale={locale}
-              rubricId="reports"
-              question={reportsCue.question}
-              clue={reportsCue.clue}
-              chips={[
-                locale === "fr" ? "À revoir" : "To review",
-                locale === "fr" ? "Prochaine révision" : "Next review",
-                locale === "fr" ? "Maîtrisées" : "Mastered",
-                locale === "fr" ? "Reprendre demain" : "Resume tomorrow",
-              ]}
-              action={{ href: "/methodologie", label: reportsCue.actionLabel }}
-            />
-
             <AnimatedImpactMetrics kpis={summaryKpis} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -35,16 +35,16 @@ export function ActionDeclarationFormConfirmation({
 
   return (
     <div className="cmm-backdrop fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="cmm-modal-panel cmm-modal-scroll max-h-[90vh] w-full max-w-3xl rounded-[2.5rem] border border-slate-200/60 bg-white/95 backdrop-blur-xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.25)] dark:bg-slate-900/95 dark:border-slate-700/60">
+      <div className="cmm-modal-panel cmm-modal-scroll max-h-[90vh] w-full max-w-3xl rounded-[2.5rem] border border-emerald-200/70 bg-[#F3FBF6]/98 backdrop-blur-xl shadow-[0_24px_50px_-22px_rgba(34,197,94,0.18)]">
         {/* En-tête avec dégradé */}
-        <div className="cmm-modal-header-sticky overflow-hidden rounded-t-[2.5rem] bg-gradient-to-r from-emerald-50 via-cyan-50 to-sky-50 px-8 py-6 dark:from-emerald-950/60 dark:via-cyan-950/60 dark:to-sky-950/60">
+        <div className="cmm-modal-header-sticky overflow-hidden rounded-t-[2.5rem] bg-gradient-to-r from-emerald-50 via-[#EFFAF3] to-[#EAF7EF] px-8 py-6">
           <div className="flex items-center gap-3 mb-2">
-            <span className="inline-block h-3 w-3 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 shadow-sm" />
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+            <span className="inline-block h-3 w-3 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-400 shadow-sm" />
+            <h2 className="text-2xl font-bold tracking-tight text-emerald-950">
               {isCleanPlaceMode ? "Confirmation de votre lieu propre" : "Confirmation de votre action"}
             </h2>
           </div>
-          <p className="text-sm text-slate-600 pl-6">
+          <p className="text-sm text-emerald-900/65 pl-6">
             {isCleanPlaceMode
               ? "Cette fenêtre apparaît avant l'envoi. Modifier revient au formulaire, confirmer transmet le signalement."
               : "Cette fenêtre apparaît avant l'envoi. Modifier revient au formulaire, confirmer transmet la déclaration."}
@@ -53,42 +53,42 @@ export function ActionDeclarationFormConfirmation({
 
         <div className="space-y-5 p-8">
           {/* Utilisateur */}
-          <div className="rounded-[1.5rem] border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-emerald-50/40 p-5 shadow-sm">
+          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#ECF8EF] p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold mb-1">
+                  <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold mb-1">
                   Déclaré par
                 </p>
-                <p className="text-base font-bold text-emerald-900">
+                <p className="text-base font-bold text-emerald-950">
                   {userMetadata.displayName || userMetadata.username || 'Utilisateur'}
                 </p>
               </div>
-              <span className="rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-bold text-emerald-800 shadow-sm">
+              <span className="rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold text-emerald-900 shadow-sm">
                 Automatique
               </span>
             </div>
           </div>
 
           {/* Structure */}
-          <div className="rounded-[1.5rem] border border-slate-200/60 bg-white p-5 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-500 font-bold mb-2">
+          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
               Structure / Cadre d&apos;engagement
             </p>
-            <p className="text-base font-bold text-slate-900">
+            <p className="text-base font-bold text-emerald-950">
               {form.associationName}
             </p>
             {form.enterpriseName && (
-              <p className="text-sm text-slate-600 mt-1">{form.enterpriseName}</p>
+              <p className="text-sm text-emerald-900/65 mt-1">{form.enterpriseName}</p>
             )}
           </div>
 
           {/* Date et lieu */}
           <div className="grid gap-5 md:grid-cols-2">
-            <div className="rounded-[1.5rem] border border-slate-200/60 bg-white p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500 font-bold mb-2">
+            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
                 Date
               </p>
-              <p className="text-base font-bold text-slate-900">
+              <p className="text-base font-bold text-emerald-950">
                 {new Date(payload.actionDate).toLocaleDateString('fr-FR', {
                   day: 'numeric',
                   month: 'long',
@@ -97,26 +97,26 @@ export function ActionDeclarationFormConfirmation({
               </p>
             </div>
 
-            <div className="rounded-[1.5rem] border border-slate-200/60 bg-white p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500 font-bold mb-2">
+            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
                 Type de lieu
               </p>
-              <p className="text-base font-bold text-slate-900">
+              <p className="text-base font-bold text-emerald-950">
                 {form.placeType}
               </p>
             </div>
           </div>
 
           {/* Localisation */}
-          <div className="rounded-[1.5rem] border border-sky-200/60 bg-gradient-to-br from-sky-50/80 to-sky-50/40 p-5 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.14em] text-sky-600 font-bold mb-2">
+          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-gradient-to-br from-emerald-50 via-[#EFFAF3] to-[#EAF7EF] p-5 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold mb-2">
               Localisation
             </p>
-            <p className="text-base font-bold text-sky-900">
+            <p className="text-base font-bold text-emerald-950">
               {payload.locationLabel}
             </p>
             {form.departureLocationLabel && (
-              <p className="text-sm text-sky-700 mt-2">
+              <p className="text-sm text-emerald-900/70 mt-2">
                 Départ : {form.departureLocationLabel}
                 {form.arrivalLocationLabel && ` → Arrivée : ${form.arrivalLocationLabel}`}
               </p>
@@ -124,42 +124,42 @@ export function ActionDeclarationFormConfirmation({
           </div>
 
           {/* Tracé retenu */}
-          <div className="rounded-[1.5rem] border border-slate-200/60 bg-white p-5 shadow-sm">
-            <p className="text-xs uppercase tracking-[0.14em] text-slate-500 font-bold mb-2">
+          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
+            <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
               Tracé retenu
             </p>
             {payload.manualDrawing ? (
               <div className="space-y-2">
-                <p className="text-base font-bold text-slate-900">
+                <p className="text-base font-bold text-emerald-950">
                   {payload.manualDrawing.kind === "polygon" ? "Polygone" : "Tracé"}
                 </p>
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-emerald-900/65">
                   {formatGeometryPointCount(drawingSummary.pointCount)} · {drawingSummary.message}
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-emerald-900/65">
                 Aucun tracé manuel validé. La carte utilisera le point disponible ou l&apos;aperçu géographique.
               </p>
             )}
           </div>
 
           {/* Déchets collectés */}
-          <div className="rounded-[1.5rem] border border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-emerald-50/40 p-6 shadow-sm">
+          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#ECF8EF] p-6 shadow-sm">
             <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold mb-3">
               {isCleanPlaceMode ? "Lieu propre" : "Déchets collectés"}
             </p>
-            <p className="text-4xl font-bold text-emerald-900 tracking-tight">
+            <p className="text-4xl font-bold text-emerald-950 tracking-tight">
               {isCleanPlaceMode ? "Signalé" : `${payload.wasteKg} kg`}
             </p>
             {isCleanPlaceMode ? (
-              <p className="text-sm text-emerald-800 mt-2 font-semibold">
+              <p className="text-sm text-emerald-900/70 mt-2 font-semibold">
                 {payload.locationLabel}
               </p>
             ) : (
               payload.cigaretteButtsCount &&
               payload.cigaretteButtsCount > 0 && (
-                <p className="text-sm text-emerald-800 mt-2 font-semibold">
+                <p className="text-sm text-emerald-900/70 mt-2 font-semibold">
                   dont {payload.cigaretteButtsCount} mégots
                 </p>
               )
@@ -168,20 +168,20 @@ export function ActionDeclarationFormConfirmation({
 
           {/* Bénévoles et durée */}
           <div className="grid gap-5 md:grid-cols-2">
-            <div className="rounded-[1.5rem] border border-slate-200/60 bg-white p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500 font-bold mb-2">
+            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
                 Bénévoles
               </p>
-              <p className="text-2xl font-bold text-slate-900 tracking-tight">
+              <p className="text-2xl font-bold text-emerald-950 tracking-tight">
                 {payload.volunteersCount}
               </p>
             </div>
 
-            <div className="rounded-[1.5rem] border border-slate-200/60 bg-white p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500 font-bold mb-2">
+            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
                 Durée
               </p>
-              <p className="text-2xl font-bold text-slate-900 tracking-tight">
+              <p className="text-2xl font-bold text-emerald-950 tracking-tight">
                 {payload.durationMinutes} min
               </p>
             </div>
@@ -189,40 +189,40 @@ export function ActionDeclarationFormConfirmation({
 
           {/* Commentaire */}
           {form.notes && (
-            <div className="rounded-[1.5rem] border border-slate-200/60 bg-white p-5 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.14em] text-slate-500 font-bold mb-2">
+            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-[#F3FBF6] p-5 shadow-sm">
+              <p className="text-xs uppercase tracking-[0.14em] text-emerald-900/55 font-bold mb-2">
                 Remarques
               </p>
-              <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">
+              <p className="text-sm text-emerald-900/75 whitespace-pre-wrap leading-relaxed">
                 {form.notes}
               </p>
             </div>
           )}
 
           {!isCleanPlaceMode && (
-            <div className="rounded-[1.5rem] border border-purple-200/60 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50 p-6 shadow-sm">
+            <div className="rounded-[1.5rem] border border-emerald-200/70 bg-gradient-to-br from-[#EFFAF3] via-[#F7FCF8] to-[#EAF7EF] p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-4">
-                <span className="inline-block h-2 w-2 rounded-full bg-gradient-to-br from-purple-500 to-pink-500" />
-                <p className="text-xs uppercase tracking-[0.14em] text-purple-700 font-bold">
+                <span className="inline-block h-2 w-2 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500" />
+                <p className="text-xs uppercase tracking-[0.14em] text-emerald-700 font-bold">
                   Impact estimé
                 </p>
               </div>
               <div className="grid gap-4 md:grid-cols-3">
                 <div>
-                  <p className="text-xs text-purple-600 font-semibold mb-1">Déchets évités</p>
-                  <p className="text-xl font-bold text-purple-900 tracking-tight">
+                  <p className="text-xs text-emerald-700 font-semibold mb-1">Déchets évités</p>
+                  <p className="text-xl font-bold text-emerald-950 tracking-tight">
                     {payload.wasteKg} kg
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-purple-600 font-semibold mb-1">CO₂ évité</p>
-                  <p className="text-xl font-bold text-purple-900 tracking-tight">
+                  <p className="text-xs text-emerald-700 font-semibold mb-1">CO₂ évité</p>
+                  <p className="text-xl font-bold text-emerald-950 tracking-tight">
                     ~{impactCO2} kg
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-purple-600 font-semibold mb-1">Plastique</p>
-                  <p className="text-xl font-bold text-purple-900 tracking-tight">
+                  <p className="text-xs text-emerald-700 font-semibold mb-1">Plastique</p>
+                  <p className="text-xl font-bold text-emerald-950 tracking-tight">
                     ~{impactPlastic} kg
                   </p>
                 </div>
@@ -231,8 +231,8 @@ export function ActionDeclarationFormConfirmation({
           )}
 
           {/* Message de validation */}
-          <div className="rounded-[1.5rem] border border-blue-200/60 bg-gradient-to-br from-blue-50/80 to-blue-50/40 p-5 shadow-sm">
-            <p className="text-sm text-blue-900 leading-relaxed">
+          <div className="rounded-[1.5rem] border border-emerald-200/70 bg-gradient-to-br from-[#EFFAF3] to-[#EAF7EF] p-5 shadow-sm">
+            <p className="text-sm text-emerald-900/80 leading-relaxed">
               {isCleanPlaceMode
                 ? "Votre lieu propre sera visible sur la carte une fois le formulaire validé par les administrateurs. Merci pour votre signalement."
                 : "Votre action sera visible sur la carte une fois le formulaire validé et complété par les administrateurs. Merci pour votre contribution !"}
@@ -241,12 +241,12 @@ export function ActionDeclarationFormConfirmation({
         </div>
 
         {/* Actions */}
-        <div className="cmm-modal-footer-sticky flex gap-4 bg-white/95 px-8 py-6 rounded-b-[2.5rem] dark:bg-slate-900/95">
+        <div className="cmm-modal-footer-sticky flex gap-4 bg-[#F3FBF6]/98 px-8 py-6 rounded-b-[2.5rem]">
           <button
             type="button"
             onClick={onModify}
             disabled={isSubmitting}
-            className="flex-1 rounded-2xl border-2 border-slate-300 bg-white px-6 py-4 text-base font-bold text-slate-700 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-400 hover:shadow-lg active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-2xl border-2 border-emerald-200 bg-[#F3FBF6] px-6 py-4 text-base font-bold text-emerald-900 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-[#ECF8EF] hover:shadow-lg active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Modifier avant envoi
           </button>
@@ -254,7 +254,7 @@ export function ActionDeclarationFormConfirmation({
             type="button"
             onClick={onConfirm}
             disabled={isSubmitting}
-            className="flex-1 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 px-6 py-4 text-base font-bold text-white shadow-[0_8px_32px_-6px_rgba(6,182,212,0.5)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-8px_rgba(6,182,212,0.6)] hover:from-emerald-400 hover:to-cyan-400 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 rounded-2xl bg-emerald-600 px-6 py-4 text-base font-bold text-white shadow-[0_8px_28px_-10px_rgba(34,197,94,0.45)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-500 hover:shadow-[0_18px_38px_-10px_rgba(34,197,94,0.42)] active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? "Envoi en cours..." : "Confirmer et envoyer"}
           </button>

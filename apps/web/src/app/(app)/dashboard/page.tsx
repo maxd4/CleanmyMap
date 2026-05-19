@@ -1,10 +1,10 @@
-import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { Suspense } from "react";
 import { DashboardOverviewSection } from "@/components/dashboard/dashboard-overview-section";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getProfileLabel, getProfilePrimaryAction, toProfile } from "@/lib/profiles";
 import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
@@ -50,7 +50,7 @@ function DashboardOverviewSkeleton() {
 }
 
 export default async function DashboardPage() {
-  const { userId } = await auth();
+  const { userId } = await getSafeAuthSession();
   const locale = await getServerLocale();
 
   if (!userId) {

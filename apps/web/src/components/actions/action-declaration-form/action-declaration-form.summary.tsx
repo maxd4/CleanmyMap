@@ -16,14 +16,14 @@ export function SummaryRow({
   tone = "slate",
 }: SummaryRowProps) {
   return (
-    <div className="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2">
-      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
+    <div className="rounded-2xl border border-emerald-200/70 bg-[#ECF8EF] px-3 py-2">
+      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-900/58">
         {label}
       </p>
       <p
         className={cn(
           "mt-0.5 text-sm font-semibold leading-snug",
-          strong ? "text-slate-950" : tone === "emerald" ? "text-emerald-700" : "text-slate-700",
+          strong ? "text-emerald-950" : tone === "emerald" ? "text-emerald-800" : "text-emerald-900/82",
         )}
       >
         {value}
@@ -93,18 +93,18 @@ export function FormProgressSummary({
     return (
       <aside
         aria-label="Récapitulatif de la déclaration"
-        className="sticky top-2 z-20 mb-4 rounded-2xl border border-slate-200/70 bg-white/95 px-4 py-3 shadow-sm backdrop-blur-md lg:hidden"
+        className="sticky top-2 z-20 mb-4 rounded-2xl border border-emerald-200/70 bg-[#F3FBF6] px-4 py-3 shadow-[0_18px_36px_-26px_rgba(34,197,94,0.2)] backdrop-blur-3xl lg:hidden"
       >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          <span className="font-black text-emerald-700">{stepLabel}</span>
-          {showProgress ? <span className="text-slate-300">•</span> : null}
-          <span className="font-semibold text-slate-700">{dateLabel}</span>
-          <span className="text-slate-300">•</span>
-          <span className="font-semibold text-slate-700">{wasteLabel}</span>
+          <span className="font-black text-emerald-950">{stepLabel}</span>
+          {showProgress ? <span className="text-emerald-500/30">•</span> : null}
+          <span className="font-semibold text-emerald-900/82">{dateLabel}</span>
+          <span className="text-emerald-500/30">•</span>
+          <span className="font-semibold text-emerald-900/82">{wasteLabel}</span>
           {draftSavedAt ? (
             <>
-              <span className="text-slate-300">•</span>
-              <span className="font-semibold text-emerald-700">Brouillon sauvegardé</span>
+              <span className="text-emerald-500/30">•</span>
+              <span className="font-semibold text-emerald-800">Brouillon sauvegardé</span>
             </>
           ) : null}
         </div>
@@ -115,9 +115,9 @@ export function FormProgressSummary({
   return (
     <aside
       aria-label="Récapitulatif de la déclaration"
-      className="sticky top-24 hidden rounded-3xl border border-slate-200/70 bg-white/90 p-4 shadow-lg shadow-slate-200/50 backdrop-blur-md lg:block"
+      className="sticky top-24 hidden rounded-3xl border border-emerald-200/70 bg-[#F3FBF6] p-4 shadow-[0_18px_36px_-26px_rgba(34,197,94,0.2)] backdrop-blur-3xl lg:block"
     >
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-900/58">
         {showProgress ? "Récapitulatif" : "Synthèse"}
       </p>
       <div className="mt-4 space-y-3">

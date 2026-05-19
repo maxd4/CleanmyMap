@@ -106,19 +106,19 @@ export function HomePillars({ pillars }: HomePillarsProps) {
           </motion.p>
         </div>
 
-        {/* Cartes centrées : 4 + 1 sur desktop, 2 colonnes sur tablette, 1 sur mobile */}
+        {/* Cartes centrées : 5 en ligne large, 3 + 2 centré si l'espace manque */}
         <motion.div
           variants={container}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-50px" }}
-          className="flex flex-wrap justify-center gap-5 px-4"
+          className="flex flex-wrap justify-center gap-5 px-4 xl:flex-nowrap"
         >
           {pillars.map((bloc) => (
             <Link
               key={bloc.title}
               href={bloc.href}
-              className={`group relative flex min-h-[216px] w-full flex-col overflow-hidden rounded-[0.9rem] bg-gradient-to-br ${bloc.accent} ring-1 ${bloc.ring} p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/5 hover:shadow-2xl hover:shadow-black/40 active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:w-[calc(50%-0.625rem)] lg:w-[calc(25%-0.9375rem)]`}
+              className={`group relative flex min-h-[216px] w-full flex-col overflow-hidden rounded-[0.9rem] bg-gradient-to-br ${bloc.accent} ring-1 ${bloc.ring} p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/5 hover:shadow-2xl hover:shadow-black/40 active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:w-[calc(50%-0.625rem)] lg:w-[calc(33.333%-0.833rem)] xl:w-[calc(20%-1rem)]`}
             >
               <motion.div variants={item} className="flex h-full min-h-[168px] flex-col">
                 {/* coin accent dot */}

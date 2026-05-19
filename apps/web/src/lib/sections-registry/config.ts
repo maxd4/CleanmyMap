@@ -1,7 +1,7 @@
 import type { RubriqueCategory, RubriqueDefinition } from "./types";
 
 export const RUBRIQUE_CATEGORIES = [
-  { id: "pilotage", label: { fr: "Pilotage", en: "Operations" } },
+  { id: "pilotage", label: { fr: "Accueil et Pilotage", en: "Home & Operations" } },
   { id: "terrain", label: { fr: "Actions terrain", en: "Field actions" } },
   {
     id: "analysis",
@@ -88,7 +88,7 @@ export const RUBRIQUE_REGISTRY = [
     priority: 14,
     kind: "app-route",
     route: "/pilotage",
-    label: { fr: "Piloter", en: "Govern" },
+    label: { fr: "Accueil et Pilotage", en: "Home & Operations" },
     description: {
       fr: "Arbitrages transverses et cockpit opérationnel",
       en: "Strategic cockpit and operational arbitration",

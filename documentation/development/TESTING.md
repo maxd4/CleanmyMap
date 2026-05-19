@@ -63,3 +63,16 @@ Run this sequence for every incremental patch:
 Pass criteria:
 - no failing checks in steps 1-2
 - no critical functional gap in step 3
+
+## Local Clerk Verification
+
+For web verification on a localhost app without signing in every time:
+
+1. Prefer the automatic dev bypass on `localhost` during `next dev`.
+2. If you need to force it on another local host, set:
+   - `CMM_DEV_AUTH_BYPASS=1`
+   - `CMM_DEV_AUTH_BYPASS_ROLE=coordinateur` or `admin` depending on the screen you need to inspect
+3. For Playwright automation, prefer a saved `storageState` from one real Clerk login when you want to test the protected route itself.
+4. If the goal is UX review rather than auth behavior, use the public preview route:
+   - `/preview/actions/new`
+5. For isolated tests, mock the session/auth server layer instead of depending on live Clerk redirects.

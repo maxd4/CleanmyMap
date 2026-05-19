@@ -1,9 +1,9 @@
-import { auth } from"@clerk/nextjs/server";
 import { PartnerOnboardingForm } from"@/components/partners/partner-onboarding-form";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
+import { getSafeAuthSession } from"@/lib/auth/safe-session";
 
 export default async function PartnerOnboardingPage() {
- const { userId } = await auth();
+ const { userId } = await getSafeAuthSession();
 
  if (!userId) {
  return (

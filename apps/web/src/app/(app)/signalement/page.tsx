@@ -1,13 +1,13 @@
-import { auth } from "@clerk/nextjs/server";
 import { QuickSignalementForm } from "@/components/actions/quick-signalement-form";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { cn } from "@/lib/utils";
 import { MapPin, ShieldCheck, Zap } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 
 export default async function SignalementPage() {
-  const { userId } = await auth();
+  const { userId } = await getSafeAuthSession();
 
   if (!userId) {
     return (
@@ -39,7 +39,6 @@ export default async function SignalementPage() {
       id="signalement"
       title="Signaler Pollution"
       subtitle="Votre signalement déclenche l'analyse et la priorisation immédiate pour les équipes de dépollution citoyenne."
-      icon={MapPin}
       gradient="from-emerald-500/20 via-slate-500/10 to-transparent"
     >
       <div className="space-y-12 pt-8">

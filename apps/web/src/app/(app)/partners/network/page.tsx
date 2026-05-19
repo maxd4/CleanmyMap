@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Handshake, ArrowRight, Network, Users, ShieldCheck, MapPin, LayoutDashboard, UserPlus, Search } from "lucide-react";
 import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigation-grid";
 import { getServerLocale } from "@/lib/server-preferences";
-import { CognitiveCueStrip } from "@/components/learn/cognitive-cue-strip";
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
 import { getEntryTrustState } from "@/components/sections/rubriques/annuaire-helpers";
 
@@ -84,21 +83,6 @@ export default async function PartnersNetworkPage() {
       href: "/sponsor-portal",
     },
   ];
-
-  const networkCue =
-    fr
-      ? {
-          question: "Quel acteur manque pour débloquer une action locale ?",
-          clue:
-            "Le réseau devient plus utile quand on distingue clairement rôle, zone et format de contribution.",
-          actionLabel: "Consulter l'annuaire",
-        }
-      : {
-          question: "Which actor would unlock the next local action?",
-          clue:
-            "The network becomes more useful when role, area and contribution format are clear.",
-          actionLabel: "Open the directory",
-        };
 
   return (
     <div className="min-h-screen overflow-hidden bg-[linear-gradient(180deg,rgba(18,12,44,0.98),rgba(20,14,48,0.98))] text-white">
@@ -265,21 +249,6 @@ export default async function PartnersNetworkPage() {
 
         <section className="mt-8">
           <NavigationGrid items={networkActions} columns={{ default: 1, md: 2, xl: 4 }} />
-        </section>
-
-        <section className="mt-8">
-          <CognitiveCueStrip
-            locale={locale}
-            rubricId="network"
-            question={networkCue.question}
-            clue={networkCue.clue}
-            chips={[
-              fr ? "Lisibilité" : "Readability",
-              fr ? "Proximité" : "Proximity",
-              fr ? "Mise en relation" : "Matchmaking",
-            ]}
-            action={{ href: "/sections/annuaire", label: networkCue.actionLabel }}
-          />
         </section>
 
         <section className="mt-8 rounded-[3rem] border border-violet-300/16 bg-[rgba(28,20,58,0.9)] p-6 shadow-[0_24px_56px_-32px_rgba(139,92,246,0.24)] sm:p-10 lg:p-12">

@@ -22,6 +22,7 @@ export type ActionsMapFeedProps = {
   presentation?: "default" | "immersive";
   showIntro?: boolean;
   fullViewport?: boolean;
+  showStoriesCarousel?: boolean;
   visibleCategories?: Record<MarkerCategory, boolean>;
   selectedActionId?: string | null;
   onOpenAction?: (actionId: string) => void;

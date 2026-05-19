@@ -1,6 +1,6 @@
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { toProfile } from "@/lib/profiles";
 import { getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -22,7 +22,7 @@ async function loadOverview() {
 }
 
 export default async function PilotageAccessPage() {
-  const { userId } = await auth();
+  const { userId } = await getSafeAuthSession();
   const locale = (await getServerLocale()) as PilotageLocale;
   const role = userId
     ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)

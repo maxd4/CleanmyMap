@@ -11,13 +11,16 @@ export type RgbaColor = {
 
 export type RibbonChrome = {
   backgroundImage: string;
+  backgroundColor: string;
   borderColor: string;
   boxShadow: string;
 };
 
 const DEFAULT_CANVAS: RgbaColor = { r: 15, g: 23, b: 42, a: 1 };
-const DARK_ANCHOR: RgbaColor = { r: 15, g: 23, b: 42, a: 1 };
-const DARK_ANCHOR_2: RgbaColor = { r: 30, g: 41, b: 59, a: 1 };
+const SURFACE_WARM_LIGHT: RgbaColor = { r: 255, g: 251, b: 240, a: 1 };
+const SURFACE_WARM_TINT: RgbaColor = { r: 255, g: 243, b: 217, a: 1 };
+const SURFACE_WARM_EDGE: RgbaColor = { r: 251, g: 191, b: 36, a: 1 };
+const SURFACE_SHADOW: RgbaColor = { r: 15, g: 23, b: 42, a: 1 };
 let colorParserNode: HTMLSpanElement | null = null;
 
 function clamp(value: number, min: number, max: number): number {
@@ -299,16 +302,18 @@ function sampleRibbonBackdropColor(ribbonElement: HTMLElement): RgbaColor {
 
 export function buildRibbonChrome(baseColor: RgbaColor): RibbonChrome {
   const luminance = relativeLuminance(baseColor);
-  const baseWeight = luminance > 0.55 ? 0.2 : 0.34;
-  const pageTint = mixColors(baseColor, DARK_ANCHOR_2, baseWeight);
-  const bg1 = { ...mixColors(pageTint, DARK_ANCHOR, 0.58), a: 0.94 };
-  const bg2 = { ...mixColors(pageTint, { r: 37, g: 58, b: 91 }, 0.64), a: 0.94 };
-  const bg3 = { ...mixColors(pageTint, { r: 51, g: 65, b: 85 }, 0.56), a: 0.9 };
-  const borderAlpha = luminance > 0.55 ? 0.22 : 0.16;
+  const tintStrength = luminance > 0.65 ? 0.82 : luminance > 0.35 ? 0.88 : 0.93;
+  const pageTint = mixColors(SURFACE_WARM_LIGHT, baseColor, tintStrength);
+  const bg1 = { ...mixColors(pageTint, SURFACE_WARM_TINT, 0.86), a: 0.92 };
+  const bg2 = { ...mixColors(pageTint, SURFACE_WARM_EDGE, 0.76), a: 0.9 };
+  const bg3 = { ...mixColors(pageTint, baseColor, 0.68), a: 0.88 };
+  const borderAlpha = luminance > 0.55 ? 0.24 : 0.2;
+  const boxShadowAlpha = luminance > 0.55 ? 0.16 : 0.22;
   return {
     backgroundImage: `linear-gradient(135deg, ${rgbaToCss(bg1, bg1.a)} 0%, ${rgbaToCss(bg2, bg2.a)} 50%, ${rgbaToCss(bg3, bg3.a)} 100%)`,
-    borderColor: `rgba(125, 211, 252, ${borderAlpha})`,
-    boxShadow: `0 1px 0 0 rgba(255, 255, 255, 0.06), 0 14px 34px -24px rgba(2, 6, 23, 0.7)`,
+    backgroundColor: rgbaToCss({ ...mixColors(pageTint, SURFACE_WARM_LIGHT, 0.9), a: 0.94 }),
+    borderColor: `rgba(251, 146, 60, ${borderAlpha})`,
+    boxShadow: `0 1px 0 0 rgba(255, 255, 255, 0.18), 0 14px 34px -24px rgba(${SURFACE_SHADOW.r}, ${SURFACE_SHADOW.g}, ${SURFACE_SHADOW.b}, ${boxShadowAlpha})`,
   };
 }
 
@@ -335,6 +340,7 @@ export function useAdaptiveRibbonChrome(
       const nextChrome = buildRibbonChrome(sampleRibbonBackdropColor(ribbonElement));
       setChrome((current) =>
         current.backgroundImage === nextChrome.backgroundImage &&
+        current.backgroundColor === nextChrome.backgroundColor &&
         current.borderColor === nextChrome.borderColor &&
         current.boxShadow === nextChrome.boxShadow
           ? current

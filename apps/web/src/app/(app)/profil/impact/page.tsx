@@ -10,7 +10,6 @@ import { ImpactCard } from "@/components/profil/impact-card";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { useUser } from "@clerk/nextjs";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { CognitiveCueStrip } from "@/components/learn/cognitive-cue-strip";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 
@@ -83,14 +82,6 @@ export default function ImpactProfilePage() {
   );
 
   const prog = meData?.progression;
-  const impactQuestion =
-    locale === "fr"
-      ? "Quelle évolution mérite d’être retenue aujourd’hui ?"
-      : "Which change deserves to be remembered today?";
-  const impactClue =
-    locale === "fr"
-      ? "La carte d'impact consolide ce qui a déjà bougé et signale ce qui reste à revoir."
-      : "The impact card consolidates what has already changed and signals what still needs review.";
 
   if (!user) {
     return (
@@ -99,21 +90,8 @@ export default function ImpactProfilePage() {
         mode="blur"
         title="Carte d'impact personnelle"
         description="Connectez-vous pour consulter, télécharger et partager votre carte d'impact."
-        lockedPreview={
+      lockedPreview={
           <div className="grid gap-8 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <CognitiveCueStrip
-                locale={locale}
-                rubricId="impact"
-                question={impactQuestion}
-                clue={impactClue}
-                chips={[
-                  locale === "fr" ? "Progression de maîtrise" : "Mastery progression",
-                  locale === "fr" ? "Maîtrisées" : "Mastered",
-                  locale === "fr" ? "À revoir" : "To review",
-                ]}
-              />
-            </div>
             <div className={cn("rounded-[2rem] border p-6", classes.surface)}>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-400/60">
                 Aperçu verrouillé
@@ -181,22 +159,6 @@ export default function ImpactProfilePage() {
 
         {/* Actions & Info */}
         <div className="space-y-10">
-          <CognitiveCueStrip
-            locale={locale}
-            rubricId="impact"
-            question={impactQuestion}
-            clue={impactClue}
-            chips={[
-              locale === "fr" ? "Progression de maîtrise" : "Mastery progression",
-              locale === "fr" ? "Maîtrisées" : "Mastered",
-              locale === "fr" ? "À revoir" : "To review",
-            ]}
-            action={{
-              href: "/reports",
-              label: locale === "fr" ? "Ouvrir les rapports" : "Open reports",
-            }}
-          />
-
           <div className="space-y-4">
             <h2 className="text-5xl font-black tracking-tighter text-white leading-[0.9]">
               Votre impact <br/><span className="text-red-500">en temps réel.</span>

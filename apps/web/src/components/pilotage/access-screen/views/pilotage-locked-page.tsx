@@ -24,7 +24,7 @@ export function PilotageLockedPage({
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-orange-100">
                 <Sparkles size={14} aria-hidden="true" />
-                {locale === "fr" ? "Bloc Piloter" : "Pilot block"}
+                {locale === "fr" ? "Accueil et Pilotage" : "Home & Operations"}
               </span>
               <span className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
                 {locale === "fr" ? "Contrôle opérationnel" : "Operational control"}

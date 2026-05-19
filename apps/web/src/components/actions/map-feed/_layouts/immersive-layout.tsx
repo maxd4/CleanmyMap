@@ -15,6 +15,7 @@ type ImmersiveLayoutProps = {
   onReload: () => void;
   showIntro?: boolean;
   fullViewport?: boolean;
+  showStoriesCarousel?: boolean;
 };
 
 export function ImmersiveLayout({
@@ -30,6 +31,7 @@ export function ImmersiveLayout({
   onReload,
   showIntro = true,
   fullViewport = false,
+  showStoriesCarousel = true,
 }: ImmersiveLayoutProps) {
   return (
     <>
@@ -87,9 +89,11 @@ export function ImmersiveLayout({
           </div>
         </div>
 
-        <div className="rounded-[2.75rem] border border-cyan-200/80 bg-cyan-50 p-6 text-slate-950 shadow-[0_24px_56px_-32px_rgba(8,145,178,0.22)] backdrop-blur-3xl">
-          <ActionStoriesCarousel items={items} onOpenAction={onOpenAction} />
-        </div>
+        {showStoriesCarousel ? (
+          <div className="rounded-[2.75rem] border border-cyan-200/80 bg-cyan-50 p-6 text-slate-950 shadow-[0_24px_56px_-32px_rgba(8,145,178,0.22)] backdrop-blur-3xl">
+            <ActionStoriesCarousel items={items} onOpenAction={onOpenAction} />
+          </div>
+        ) : null}
       </div>
     </>
   );

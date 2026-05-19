@@ -1,5 +1,5 @@
 import { ASSOCIATION_SELECTION_OPTIONS, ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
-import { PLACE_TYPE_OPTIONS } from "@/lib/actions/place-type-options";
+import { PLACE_TYPE_FORM_OPTIONS, normalizePlaceTypeForUi } from "@/lib/actions/place-type-options";
 import type { FormState } from "./action-declaration-form.model";
 import { convertCigaretteButtsToKg } from "./action-declaration-form.model";
 import type { ActionMegotsCondition } from "@/lib/actions/types";
@@ -119,12 +119,12 @@ export function ActionDeclarationMainFields({
           <select
             required
             className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
-            value={form.placeType}
+            value={normalizePlaceTypeForUi(form.placeType)}
             onChange={(event) => onPlaceTypeChange(event.target.value)}
           >
-            {PLACE_TYPE_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
+            {PLACE_TYPE_FORM_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
