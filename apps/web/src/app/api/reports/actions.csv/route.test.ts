@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -41,6 +41,8 @@ vi.mock("@/lib/reports/csv", async () => {
 
 describe("GET /api/reports/actions.csv", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-13T12:00:00Z"));
     vi.resetModules();
     vi.clearAllMocks();
     requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
@@ -105,5 +107,9 @@ describe("GET /api/reports/actions.csv", () => {
       new Request("http://localhost/api/reports/actions.csv?limit=1"),
     );
     expect(response.status).toBe(403);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 });

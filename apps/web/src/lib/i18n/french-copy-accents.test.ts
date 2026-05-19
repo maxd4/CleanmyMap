@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const COPY_FILES = [
-  "src/lib/sections-registry.ts",
+  "src/lib/sections-registry/config.ts",
   "src/lib/profiles.ts",
   "src/lib/navigation.ts",
   "src/components/sections/section-renderer.tsx",
@@ -22,14 +22,14 @@ const COPY_FILES = [
   "src/components/sections/rubriques/discussion-bug-report-form.tsx",
   "src/components/sections/rubriques/annuaire/seed-index.ts",
   "src/components/sections/rubriques/community/kpis.ts",
-  "src/components/sections/rubriques/gamification-section.tsx",
+  "src/components/sections/rubriques/gamification/index.tsx",
   "src/components/sections/rubriques/shared.tsx",
   "src/app/(app)/actions/history/page.tsx",
   "src/app/(app)/partners/dashboard/page.tsx",
   "src/components/reports/web-document/constants.ts",
   "src/components/reports/web-document/ui.tsx",
   "src/components/reports/web-document/sections.tsx",
-  "src/components/reports/web-document/analytics.ts",
+  "src/components/reports/web-document/analytics/index.ts",
 ] as const;
 
 const BANNED_UNACCENTED_FORMS = [
