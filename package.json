@@ -18,6 +18,8 @@
     "check:lockfile-policy": "node scripts/check-lockfile-policy.mjs",
     "quality:top-heavy": "node scripts/check-top-heavy-files.mjs --enforce",
     "analyze:heavy-files": "node scripts/analyze-heavy-files.mjs",
+    "design-system:board": "node scripts/generate-design-system-board.mjs",
+    "design-system:board:watch": "node scripts/generate-design-system-board.mjs --watch",
     "pre-release:check": "node scripts/pre-release-check.mjs --exit-on-error",
     "metrics:cicd": "node scripts/cicd-metrics-report.mjs",
     "metrics:jsonl": "node scripts/summarize-jsonl.mjs",
@@ -69,7 +71,9 @@
       "postcss": "8.5.10"
     },
     "postcss": "8.5.10",
-    "protobufjs": "7.5.5",
+    "protobufjs": "7.5.6",
+    "brace-expansion": "5.0.6",
+    "ws": "8.20.1",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
     "uuid": "^11.0.0"
   },
