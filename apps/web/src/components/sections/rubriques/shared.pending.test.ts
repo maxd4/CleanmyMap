@@ -21,7 +21,7 @@ describe("PendingSection", () => {
  ),
  );
 
- expect(html).toContain("But de la rubrique");
+ expect(html).toContain("Rubrique test");
  expect(html).toContain("Expliquer la finalite de la rubrique.");
  expect(html).toContain("Contenu en cours");
  });
