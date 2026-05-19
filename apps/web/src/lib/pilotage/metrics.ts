@@ -210,7 +210,7 @@ function computeWindowMetrics(
     moderationDelayDays: round1(median(pendingAges)),
     pendingCount: pending.length,
     iurIndex: round1(impactVolumeKg / ((DIGITAL_IMPACT_CONSTANTS.ANNUAL_COST_KG_CO2E / DIGITAL_IMPACT_CONSTANTS.DAYS_PER_YEAR) * periodDays)),
-    anomaliesCount: approved.filter(a => (Number(a.metadata.wasteKg) > 500 && !a.metadata.traceNote) || !a.dates.observedAt).length,
+    anomaliesCount: approved.filter((a) => (Number(a.metadata.wasteKg) > 500 && !a.metadata.notesPlain) || !a.dates.observedAt).length,
     reliability: buildReliability({
       approvedActions,
       completeness,

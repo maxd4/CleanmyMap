@@ -124,7 +124,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
                       </div>
                     <ChatShell
                       key={dmShellKey}
-                      initialChannelType="direct"
+                      initialChannelType="dm"
                       initialRecipient={initialRecipient}
                     />
                   </motion.div>

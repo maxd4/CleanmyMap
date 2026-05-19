@@ -1,11 +1,11 @@
 import { env, isConfigured } from "@/lib/env";
 
-function isTruthyFlag(value: string | undefined): boolean {
+function isTruthyFlag(value: string | boolean | undefined): boolean {
   if (!value) {
     return false;
   }
 
-  const normalized = value.trim().toLowerCase();
+  const normalized = typeof value === "string" ? value.trim().toLowerCase() : String(value);
   return normalized === "1" || normalized === "true" || normalized === "yes";
 }
 

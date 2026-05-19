@@ -62,7 +62,10 @@ function writeHistoryToStorage(entries: ExportHistoryEntry[]): void {
 
 function downloadPdf(filename: string, lines: string[]): void {
   const bytes = buildSimplePdf(lines);
-  const blob = new Blob([bytes], { type: "application/pdf" });
+  const blob = new Blob(
+    [(bytes.buffer as ArrayBuffer).slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)],
+    { type: "application/pdf" },
+  );
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;

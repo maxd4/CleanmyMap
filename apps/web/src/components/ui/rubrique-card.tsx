@@ -134,6 +134,8 @@ export function RubriqueCardIcon({
     indigo: "text-indigo-300 bg-indigo-400/20 border-indigo-400/30",
     violet: "text-violet-300 bg-violet-400/20 border-violet-400/30",
     purple: "text-purple-300 bg-purple-400/20 border-purple-400/30",
+    blue: "text-blue-300 bg-blue-400/20 border-blue-400/30",
+    slate: "text-slate-300 bg-slate-400/20 border-slate-400/30",
   };
 
   return (

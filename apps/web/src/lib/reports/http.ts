@@ -14,15 +14,17 @@ export function buildDeliverableHeaders(params: {
     date: params.date,
   });
 
+  const headers: Record<string, string> = {
+    "Content-Type": params.contentType,
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Cache-Control": params.cacheControl ?? "no-store",
+    "X-Deliverable-Name": filename,
+    "X-Deliverable-Format": params.extension,
+    ...(params.extra ?? {}),
+  };
+
   return {
     filename,
-    headers: {
-      "Content-Type": params.contentType,
-      "Content-Disposition": `attachment; filename="${filename}"`,
-      "Cache-Control": params.cacheControl ?? "no-store",
-      "X-Deliverable-Name": filename,
-      "X-Deliverable-Format": params.extension,
-      ...(params.extra ?? {}),
-    } satisfies Record<string, string>,
+    headers,
   };
 }

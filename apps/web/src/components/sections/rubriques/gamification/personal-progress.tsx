@@ -2,6 +2,7 @@ import React from "react";
 import { BadgeShowcase } from "@/components/gamification/badge-showcase";
 import { AnimatedCounter } from "@/components/gamification/animated-counter";
 import { GamificationImpactMethodologyCard } from "@/components/sections/rubriques/gamification-impact-methodology-card";
+import { ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import type { MeResponse } from "./gamification-types";
 
 type ProgressionType = MeResponse["progression"];

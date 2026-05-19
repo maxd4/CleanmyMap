@@ -333,7 +333,7 @@ export const EventArticleMine = memo(function EventArticleMine({
       <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
         <h3 className="text-xl font-black text-white uppercase tracking-tight">{event.title}</h3>
         <span className="px-3 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-black uppercase tracking-widest text-indigo-400">
-           {toRsvpLabel(event.myRsvpStatus ?? "none")}
+           {toRsvpLabel(event.myRsvpStatus ?? "no")}
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-6 text-[10px] font-black uppercase tracking-widest text-slate-500">

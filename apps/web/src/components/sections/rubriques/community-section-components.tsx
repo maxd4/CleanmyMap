@@ -329,7 +329,7 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
             <p className="text-slate-400 text-sm leading-relaxed">
               {fr ? "Recevez les dernières solutions et missions directement dans votre boîte mail." : "Receive the latest solutions and missions directly in your mailbox."}
             </p>
-            <NewsletterSignup fr={fr} />
+            <NewsletterSignup />
           </div>
         </RubriqueCard>
 
@@ -344,7 +344,7 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
             <p className="text-slate-400 text-sm leading-relaxed">
               {fr ? "Posez vos questions sur la vie de la communauté et les solutions durables." : "Ask your questions about community life and sustainable solutions."}
             </p>
-            <ChatShell fr={fr} />
+            <ChatShell />
           </div>
         </div>
       </aside>
