@@ -89,24 +89,24 @@ export function HomePillars({ pillars }: HomePillarsProps) {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-             className="text-[clamp(2.5rem,5vw,4rem)] font-black leading-[1.02] tracking-[-0.03em] text-slate-900"
+            className="text-[clamp(2.5rem,5vw,4rem)] font-black leading-[1.02] tracking-[-0.03em] text-slate-900"
             style={{ textWrap: "pretty" }}
           >
-            Les sept piliers de CleanMyMap
+            Les 5 cartes de CleanMyMap
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-             className="mx-auto max-w-2xl text-[15px] font-medium leading-relaxed text-slate-600 sm:text-base"
+            className="mx-auto max-w-2xl text-[15px] font-medium leading-relaxed text-slate-600 sm:text-base"
           >
-            Agir, visualiser, apprendre et piloter vos initiatives
-            environnementales.
+            Accueil et pilotage, agir, cartographie et impact, réseau et
+            discussions, apprendre pour piloter vos initiatives.
           </motion.p>
         </div>
 
-        {/* Cartes centrées : 4 + 3 sur desktop, 2 colonnes sur tablette, 1 sur mobile */}
+        {/* Cartes centrées : 4 + 1 sur desktop, 2 colonnes sur tablette, 1 sur mobile */}
         <motion.div
           variants={container}
           initial="hidden"

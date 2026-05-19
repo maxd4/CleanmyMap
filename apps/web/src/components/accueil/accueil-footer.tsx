@@ -66,8 +66,8 @@ export function HomeFooter({ variant }: HomeFooterProps) {
 
   if (isCompact) {
     return (
-      <footer className="relative w-full overflow-hidden border-t border-cyan-200/10 bg-[linear-gradient(180deg,rgba(4,9,19,0)_0%,rgba(5,18,32,0.92)_42%,#04111f_100%)]">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_42%_120%_at_12%_0%,rgba(34,211,238,0.10),transparent_66%),radial-gradient(ellipse_38%_110%_at_92%_10%,rgba(16,185,129,0.10),transparent_68%)]" />
+      <footer className="relative w-full overflow-hidden border-t border-amber-200/10 bg-[linear-gradient(180deg,rgba(20,11,4,0)_0%,rgba(31,19,9,0.94)_42%,#120b05_100%)]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_42%_120%_at_12%_0%,rgba(245,158,11,0.14),transparent_66%),radial-gradient(ellipse_38%_110%_at_92%_10%,rgba(251,191,36,0.10),transparent_68%)]" />
 
         <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-4 text-center sm:px-8 md:flex-row md:gap-5 md:py-5 md:text-left">
           <div className="flex flex-col items-center gap-1 md:items-start">
@@ -108,8 +108,8 @@ export function HomeFooter({ variant }: HomeFooterProps) {
   }
 
   return (
-    <footer className="relative w-full overflow-hidden border-t border-cyan-200/10 bg-[linear-gradient(180deg,rgba(4,9,19,0)_0%,rgba(5,18,32,0.94)_28%,#04111f_100%)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_90%_at_10%_0%,rgba(34,211,238,0.13),transparent_62%),radial-gradient(ellipse_46%_76%_at_92%_12%,rgba(16,185,129,0.12),transparent_64%)]" />
+    <footer className="relative w-full overflow-hidden border-t border-amber-200/10 bg-[linear-gradient(180deg,rgba(20,11,4,0)_0%,rgba(31,19,9,0.96)_28%,#120b05_100%)]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_90%_at_10%_0%,rgba(245,158,11,0.18),transparent_62%),radial-gradient(ellipse_46%_76%_at_92%_12%,rgba(251,191,36,0.12),transparent_64%)]" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-7 lg:py-8">
         <div className="grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-6">
