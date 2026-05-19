@@ -17,8 +17,6 @@ export type RibbonChrome = {
 };
 
 const DEFAULT_CANVAS: RgbaColor = { r: 15, g: 23, b: 42, a: 1 };
-const SURFACE_WARM_LIGHT: RgbaColor = { r: 255, g: 251, b: 240, a: 1 };
-const SURFACE_WARM_TINT: RgbaColor = { r: 255, g: 243, b: 217, a: 1 };
 const SURFACE_WARM_EDGE: RgbaColor = { r: 251, g: 191, b: 36, a: 1 };
 const SURFACE_SHADOW: RgbaColor = { r: 15, g: 23, b: 42, a: 1 };
 const SURFACE_DEEP: RgbaColor = { r: 8, g: 12, b: 24, a: 1 };

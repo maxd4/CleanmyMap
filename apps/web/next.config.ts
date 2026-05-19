@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   compress: true,
   generateEtags: true,
   poweredByHeader: false,
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
