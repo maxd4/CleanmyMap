@@ -3,6 +3,18 @@ import { auth } from"@clerk/nextjs/server";
 import { getSupabaseClerkRlsClient } from"@/lib/supabase/clerk-rls";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
 
+function isJwtDecodeError(error: unknown): boolean {
+ if (!error || typeof error !== "object") {
+ return false;
+ }
+ const maybeError = error as { code?: unknown; message?: unknown };
+ return (
+ maybeError.code === "PGRST301" ||
+ (typeof maybeError.message === "string" &&
+  maybeError.message.includes("No suitable key was found to decode the JWT"))
+ );
+}
+
 /**
  * GET - Fetch recent notifications for the current user
  */
@@ -31,6 +43,9 @@ export async function GET() {
  .limit(20);
 
  if (error) {
+ if (isJwtDecodeError(error)) {
+ return NextResponse.json({ notifications: [] });
+ }
  console.error("[Notifications API] Fetch error:", error);
  return NextResponse.json({ error:"Failed to fetch notifications" }, { status: 500 });
  }
@@ -76,6 +91,15 @@ export async function PATCH(request: Request) {
  .eq("user_id", userId);
 
  if (error) {
+ if (isJwtDecodeError(error)) {
+ return NextResponse.json(
+ {
+ error:"Connexion sécurisée indisponible",
+ hint:"La session Supabase/Clerk locale n'est pas prête. Rechargez après avoir configuré les secrets.",
+ },
+ { status: 503 },
+ );
+ }
  console.error("[Notifications API] Update error:", error);
  return NextResponse.json({ error:"Failed to update notification" }, { status: 500 });
  }

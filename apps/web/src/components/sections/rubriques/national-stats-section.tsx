@@ -26,7 +26,6 @@ import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { SectionShell } from "@/components/sections/rubriques/shared";
-import { memo } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
 

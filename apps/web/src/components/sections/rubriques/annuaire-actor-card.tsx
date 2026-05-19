@@ -11,7 +11,7 @@ import {
 import { CmmCard } from "@/components/ui/cmm-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { Info, MapPin, MessageSquare, ShieldCheck, Clock, Star, Target, Zap, Building2, ExternalLink, Sparkles } from "lucide-react";
+import { Info, MapPin, MessageSquare, ShieldCheck, Clock, Star, Zap, Building2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 

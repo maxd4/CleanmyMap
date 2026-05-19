@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { Search, Filter, Map as MapIcon, Share2, Sparkles, Target, ArrowRight, Building2 } from "lucide-react";
+import { Search, Filter, Map as MapIcon, Share2, Building2 } from "lucide-react";
 import { AnnuaireNetworkGraph } from "./annuaire-network-graph";
 import { AnnuairePartnerDrawer } from "./annuaire-partner-drawer";
 import { AnnuaireFiltersCard } from "./annuaire-filters-card";
