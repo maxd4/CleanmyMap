@@ -23,11 +23,19 @@ function parseArgs(argv) {
 }
 
 function run(command, args, cwd) {
+  if (process.platform === "win32") {
+    const commandLine = [command, ...args].join(" ");
+    return spawnSync("cmd.exe", ["/d", "/s", "/c", commandLine], {
+      cwd,
+      encoding: "utf8",
+      stdio: "pipe",
+    });
+  }
+
   return spawnSync(command, args, {
     cwd,
     encoding: "utf8",
     stdio: "pipe",
-    shell: true,
   });
 }
 
