@@ -33,3 +33,10 @@ Si une isolation Git est necessaire, demander d'abord l'accord explicite de l'ut
 - la procedure de fusion et suppression.
 
 Sans cet accord, utiliser uniquement la branche courante et les fichiers du dossier `CleanmyMap-main`.
+
+## Hygiene de la racine
+
+- Ne pas generer de nouveaux fichiers a la racine du repo sauf demande explicite de l'utilisateur.
+- Les fichiers temporaires, captures, logs, exports et artefacts de debug doivent aller dans `artifacts/`, `documentation/`, `backups/` ou un sous-dossier dedie.
+- Si un fichier doit absolument vivre a la racine, il faut que ce soit un fichier d'architecture du projet ou un livrable racine clairement justifie.
+- Tout fichier racine ajoute sans demande explicite doit etre considere comme une regression de gouvernance et etre nettoye avant validation.

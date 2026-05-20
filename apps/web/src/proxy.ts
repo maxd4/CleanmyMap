@@ -10,6 +10,7 @@ import {
   ROBOTS_NOINDEX_VALUE,
 } from "@/lib/seo/indexability";
 import { createPublicRateLimitResponse } from "@/lib/security/validation";
+import { getTrustedClientIp } from "@/lib/rate-limit/utils";
 
 const isProtectedRoute = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS]);
 const PUBLIC_ROUTE_EXCEPTIONS = ["/actions/map", "/api/actions/map"] as const;
@@ -117,7 +118,7 @@ const clerkProxy = clerkMiddleware(
 
     // Rate Limiting pour les routes API en POST uniquement
     if (req.method === "POST" && pathname.startsWith("/api/")) {
-      const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "127.0.0.1";
+      const ip = getTrustedClientIp(req);
       const now = Date.now();
       const rule = getPostRateLimitRule(pathname);
       const rateLimitKey = `${ip}:${rule?.label ?? "generic"}`;

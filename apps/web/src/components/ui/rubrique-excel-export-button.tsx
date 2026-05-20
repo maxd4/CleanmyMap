@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { FileSpreadsheet } from "lucide-react";
 import { buildDeliverableBaseName, normalizeDeliverableRubrique } from "@/lib/reports/deliverable-name";
 import { buildExportUiCopy } from "@/lib/reports/export-ui";
+import { escapeCsvCell } from "@/lib/reports/csv";
 
 type RubriqueExcelExportButtonProps = {
   rubriqueTitle: string;
@@ -11,12 +12,6 @@ type RubriqueExcelExportButtonProps = {
   columns?: { key: string; label: string }[];
   targetTableSelector?: string; // Fallback: parse a DOM table
 };
-
-function escapeCsvCell(value: unknown): string {
-  const raw = value == null ? "" : String(value);
-  const escaped = raw.replace(/"/g, "\"\"");
-  return /[",\n;]/.test(escaped) ? `"${escaped}"` : escaped;
-}
 
 function toCsvRows(
  data: Record<string, unknown>[],
@@ -27,14 +22,14 @@ function toCsvRows(
   }
 
   if (columns && columns.length > 0) {
-    const header = columns.map((col) => escapeCsvCell(col.label)).join(";");
-    const rows = data.map((item) => columns.map((col) => escapeCsvCell(item[col.key])).join(";"));
+    const header = columns.map((col) => escapeCsvCell(col.label, ";")).join(";");
+    const rows = data.map((item) => columns.map((col) => escapeCsvCell(item[col.key], ";")).join(";"));
     return [header, ...rows].join("\n");
   }
 
   const keys = Object.keys(data[0] ?? {});
-  const header = keys.map((key) => escapeCsvCell(key)).join(";");
-  const rows = data.map((item) => keys.map((key) => escapeCsvCell(item[key])).join(";"));
+  const header = keys.map((key) => escapeCsvCell(key, ";")).join(";");
+  const rows = data.map((item) => keys.map((key) => escapeCsvCell(item[key], ";")).join(";"));
   return [header, ...rows].join("\n");
 }
 
@@ -43,7 +38,7 @@ function tableToCsv(table: Element): string {
   return rows
     .map((row) => {
       const cells = Array.from(row.querySelectorAll("th, td"));
-      return cells.map((cell) => escapeCsvCell(cell.textContent ?? "")).join(";");
+      return cells.map((cell) => escapeCsvCell(cell.textContent ?? "", ";")).join(";");
     })
     .join("\n");
 }

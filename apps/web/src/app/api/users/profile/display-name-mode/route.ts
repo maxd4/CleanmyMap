@@ -1,4 +1,4 @@
-import { auth, clerkClient } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
@@ -8,7 +8,13 @@ import {
   normalizeDisplayNameMode,
   resolveAccountDisplayName,
 } from "@/lib/profiles";
+import { getSupabaseAdminClient } from "@/lib/supabase/server";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
+import {
+  DISPLAY_NAME_MODE_COOKIE,
+  setDisplayNameModeOverride,
+} from "@/lib/account/display-name-mode-store";
+import { getDevAuthBypassUserId } from "@/lib/auth/dev-auth";
 
 const updateDisplayNameModeSchema = z.object({
   displayNameMode: z.enum(["full_name", "pseudo"]),
@@ -30,7 +36,8 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
-  const { userId } = await auth();
+  const identity = await getCurrentUserIdentity();
+  const userId = identity?.userId;
   if (!userId) return unauthorizedJsonResponse();
 
   let payload: unknown;
@@ -43,46 +50,78 @@ export async function PATCH(request: Request) {
   const parsed = updateDisplayNameModeSchema.safeParse(payload);
   if (!parsed.success) return validationErrorResponse(parsed.error.flatten().fieldErrors);
 
-  const supabase = await getSupabaseClerkRlsClient();
-  if (!supabase) {
-    return NextResponse.json(
-      {
-        error: "Connexion sécurisée indisponible",
-        hint:
-          "Activez l'intégration native Clerk/Supabase et vérifiez que la session Clerk est disponible.",
-      },
-      { status: 503 },
-    );
-  }
+  const supabase =
+    (await getSupabaseClerkRlsClient()) ?? getSupabaseAdminClient();
 
   try {
-    const client = await clerkClient();
-    const user = await client.users.getUser(userId);
     const displayNameMode = normalizeDisplayNameMode(parsed.data.displayNameMode);
     const displayName = resolveAccountDisplayName({
-      firstName: user.firstName?.trim() || null,
-      lastName: user.lastName?.trim() || null,
-      username: user.username?.trim() || null,
+      firstName: identity.firstName?.trim() || null,
+      lastName: null,
+      username: identity.username?.trim() || null,
       userId,
       mode: displayNameMode,
     });
 
-    const { error } = await supabase
-      .from("profiles")
-      .upsert({
-        id: userId,
-        display_name_mode: displayNameMode,
-        display_name: displayName,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "id" });
+    setDisplayNameModeOverride(userId, displayNameMode);
 
-    if (error) return handleApiError(error, "PATCH /api/users/profile/display-name-mode");
+    try {
+      if (userId !== getDevAuthBypassUserId()) {
+        const client = await clerkClient();
+        const updateUser = client.users.updateUser;
+        if (typeof updateUser === "function") {
+          await updateUser.call(client.users, userId, {
+            unsafeMetadata: {
+              display_name_mode: displayNameMode,
+            },
+          });
+        }
+      }
+    } catch (error) {
+      console.warn(
+        "[DisplayNameMode] Clerk metadata sync skipped, local override stored",
+        error,
+      );
+    }
 
-    return NextResponse.json({
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(
+          {
+            id: userId,
+            display_name_mode: displayNameMode,
+            display_name: displayName,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "id" },
+        );
+
+      if (error) {
+        console.warn(
+          "[DisplayNameMode] Supabase sync skipped, local override stored",
+          error,
+        );
+      }
+    } catch (error) {
+      console.warn(
+        "[DisplayNameMode] Supabase sync skipped, local override stored",
+        error,
+      );
+    }
+
+    const response = NextResponse.json({
       status: "updated",
       displayNameMode,
       displayName,
     });
+    response.cookies.set(DISPLAY_NAME_MODE_COOKIE, displayNameMode, {
+      path: "/",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 365,
+    });
+
+    return response;
   } catch (error) {
     return handleApiError(error, "PATCH /api/users/profile/display-name-mode (general)");
   }

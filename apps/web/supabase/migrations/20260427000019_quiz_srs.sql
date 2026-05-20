@@ -35,12 +35,16 @@ for all using (
 
 -- Trigger pour updated_at
 create or replace function public.handle_updated_at()
-returns trigger as $$
+returns trigger
+language plpgsql
+security invoker
+set search_path = pg_catalog
+as $$
 begin
   new.updated_at = now();
   return new;
 end;
-$$ language plpgsql;
+$$;
 
 create trigger tr_quiz_srs_updated_at
   before update on public.quiz_srs

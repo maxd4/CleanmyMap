@@ -43,8 +43,9 @@ CREATE POLICY "Users can update own notifications" ON public.app_notifications
     FOR UPDATE USING (user_id = auth.jwt() ->> 'sub');
 
 -- Only service role can create notifications (via API)
+DROP POLICY IF EXISTS "Service role can insert notifications" ON public.app_notifications;
 CREATE POLICY "Service role can insert notifications" ON public.app_notifications
-    FOR INSERT WITH CHECK (TRUE);
+    FOR INSERT WITH CHECK (auth.role() = 'service_role');
 
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_notifications_user_unread ON public.app_notifications(user_id) WHERE read_at IS NULL;

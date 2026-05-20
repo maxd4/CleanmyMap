@@ -1,4 +1,3 @@
-import { DisplayModeOnboardingGate } from"@/components/ui/display-mode-onboarding-gate";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
 import { getCurrentUserAccountSetupRequirement } from"@/lib/auth/account-setup";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
@@ -38,10 +37,8 @@ export default async function AppLayout({
  data-user-profile={currentProfile}
  >
  <WeatherWarningBar />
- {userId ? <DisplayModeOnboardingGate /> : null}
-
  <div
- className="flex min-w-0 w-full flex-1 flex-col"
+className="flex min-w-0 w-full flex-1 flex-col"
  >
  <main className="flex-1">{children}</main>
  </div>

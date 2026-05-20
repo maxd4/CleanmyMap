@@ -18,6 +18,7 @@ import {
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { User, Shield, Settings, Zap } from "lucide-react";
+import ImpactProfilePage from "@/components/profil/impact-profile-page";
 
 type ProfilPageProps = {
   params: Promise<{ profile: string }>;
@@ -26,6 +27,10 @@ type ProfilPageProps = {
 export default async function ProfilPage({ params }: ProfilPageProps) {
   const { profile } = await params;
   const normalized = profile.trim().toLowerCase();
+
+  if (normalized === "impact") {
+    return <ImpactProfilePage />;
+  }
 
   if (!isAppProfile(normalized)) notFound();
 

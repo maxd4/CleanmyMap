@@ -14,6 +14,7 @@ import {
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { isSafeChatAttachmentUrl } from "@/lib/chat/chat-attachments";
 
 import type { ChatMessage } from "../chat-types";
 
@@ -25,6 +26,9 @@ type ChatMessageItemProps = {
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "avif", "svg"]);
 
 function isVisualAttachment(message: ChatMessage): boolean {
+  if (!isSafeChatAttachmentUrl(message.attachment_url)) {
+    return false;
+  }
   if (message.attachment_type?.startsWith("image/")) {
     return true;
   }
@@ -44,7 +48,10 @@ export function ChatMessageItem({ message, userId }: ChatMessageItemProps) {
   const isMe = message.sender_id === userId;
   const isActionRelated = /collecte|nettoyage|ramassage|déchets|pollution|bravo/i.test(message.content);
   const isQuestionRelated = /\?|comment|pourquoi|où/i.test(message.content);
-  const hasAttachment = Boolean(message.attachment_url);
+  const safeAttachmentUrl = isSafeChatAttachmentUrl(message.attachment_url)
+    ? message.attachment_url
+    : null;
+  const hasAttachment = Boolean(safeAttachmentUrl);
   const hasVisualAttachment = hasAttachment && isVisualAttachment(message);
   
   const attachmentLabel = message.attachment_type
@@ -114,7 +121,7 @@ export function ChatMessageItem({ message, userId }: ChatMessageItemProps) {
             {message.content}
           </p>
 
-          {message.attachment_url && (
+          {safeAttachmentUrl && (
             <div className="mt-4">
               {hasVisualAttachment ? (
                 <motion.div
@@ -122,7 +129,7 @@ export function ChatMessageItem({ message, userId }: ChatMessageItemProps) {
                   className="group/img relative overflow-hidden rounded-2xl shadow-2xl border border-white/10"
                 >
                   <Image
-                    src={message.attachment_url}
+                    src={safeAttachmentUrl}
                     alt="Pièce jointe"
                     width={400}
                     height={240}
@@ -137,7 +144,7 @@ export function ChatMessageItem({ message, userId }: ChatMessageItemProps) {
                 </motion.div>
               ) : (
                 <a
-                  href={message.attachment_url}
+                  href={safeAttachmentUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:bg-white/10 hover:border-violet-500/30"

@@ -3,8 +3,7 @@
 import { useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import type { DisplayMode, Locale } from "@/lib/ui/preferences";
-import { DISPLAY_MODES } from "@/lib/ui/preferences";
+import type { Locale } from "@/lib/ui/preferences";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { parseParisArrondissement } from "@/lib/geo/paris-arrondissements";
 import { GreaterParisSelect } from "@/lib/geo/greater-paris-select";
@@ -52,7 +51,7 @@ export function AccountSetupForm({
 }: AccountSetupFormProps) {
   const router = useRouter();
   const { user, isLoaded } = useUser();
-  const { locale, setLocale, displayMode, setDisplayMode } = useSitePreferences();
+  const { locale, setLocale, setDisplayMode } = useSitePreferences();
 
   const profileOptions = useMemo(
     () => getSwitchableProfiles(initialProfile),
@@ -72,8 +71,7 @@ export function AccountSetupForm({
       : "",
   );
   const [selectedLocale, setSelectedLocale] = useState<Locale>(locale);
-  const [selectedDisplayMode, setSelectedDisplayMode] =
-    useState<DisplayMode>(displayMode);
+  const [acceptExhaustiveMode, setAcceptExhaustiveMode] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<AppError | null>(null);
 
@@ -88,7 +86,10 @@ export function AccountSetupForm({
   const zoneError = !zoneIsValid
     ? "Sélectionnez une zone (arrondissement ou commune)."
     : null;
-  const canSubmit = !profileError && !zoneError && !isSaving;
+  const displayModeError = acceptExhaustiveMode
+    ? null
+    : "Confirmez le mode exhaustif pour continuer.";
+  const canSubmit = !profileError && !zoneError && !displayModeError && !isSaving;
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -120,6 +121,15 @@ export function AccountSetupForm({
       );
       return;
     }
+    if (!acceptExhaustiveMode) {
+      setError(
+        toAppError("Confirmez le mode exhaustif pour continuer.", {
+          kind: "validation",
+          message: "Confirmez le mode exhaustif pour continuer.",
+        }),
+      );
+      return;
+    }
 
     try {
       setIsSaving(true);
@@ -128,7 +138,7 @@ export function AccountSetupForm({
       }
 
       setLocale(selectedLocale);
-      setDisplayMode(selectedDisplayMode);
+      setDisplayMode("exhaustif");
 
       const existingPref = extractGreaterParisLocationPreferenceFromMetadata(
         user.unsafeMetadata as Record<string, unknown> | undefined,
@@ -265,34 +275,29 @@ export function AccountSetupForm({
           </select>
         </label>
 
-        <label className="block space-y-2">
-          <span className="cmm-text-small font-medium cmm-text-primary">
+        <fieldset className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
+          <legend className="cmm-text-small font-medium cmm-text-primary">
             Mode d&apos;affichage
-          </span>
-          <select
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
-            value={selectedDisplayMode}
-            onChange={(event) =>
-              setSelectedDisplayMode(event.target.value as DisplayMode)
-            }
-          >
-            {DISPLAY_MODES.map((mode) => (
-              <option key={mode} value={mode}>
-                {mode === "exhaustif"
-                  ? selectedLocale === "fr"
-                    ? "Exhaustif"
-                    : "Exhaustive"
-                  : mode === "minimaliste"
-                    ? selectedLocale === "fr"
-                      ? "Minimaliste"
-                      : "Minimalist"
-                    : selectedLocale === "fr"
-                      ? "Sobre"
-                      : "Calm"}
-              </option>
-            ))}
-          </select>
-        </label>
+          </legend>
+          <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+            <input
+              type="checkbox"
+              checked={acceptExhaustiveMode}
+              onChange={(event) => setAcceptExhaustiveMode(event.target.checked)}
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            <span className="block">
+              <span className="block cmm-text-small font-medium cmm-text-primary">
+                {selectedLocale === "fr" ? "Mode Exhaustif" : "Exhaustive mode"}
+              </span>
+              <span className="mt-1 block cmm-text-small cmm-text-secondary">
+                {selectedLocale === "fr"
+                  ? "Les modes Sobre et Minimaliste sont en préparation."
+                  : "Calm and Minimalist modes are still in preparation."}
+              </span>
+            </span>
+          </label>
+        </fieldset>
 
         <fieldset className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <legend className="cmm-text-small font-medium cmm-text-primary">

@@ -18,6 +18,7 @@ import {
   toInteger,
   toNumber,
 } from "./lib/sheet-ingestion-core.mjs";
+import { assertGoogleSheetUrl, buildGoogleSheetCsvCandidates } from "./lib/google-sheet-source.mjs";
 import { normalizeLabel } from "../src/lib/actions/geometry-core.ts";
 import { resolveBestGeometry } from "../src/lib/actions/geometry-resolution.ts";
 
@@ -32,36 +33,6 @@ const OUT_CLEAN_PLACES_FORM_CSV_PATH = join(APP_DIR, "data", "raw", "google-shee
 const ASSOCIATION_OPTIONS_PATH = join(APP_DIR, "src", "lib", "actions", "association-options.ts");
 const USER_AGENT = "cleanmymap-web-admin-import/1.0 (contact: admin@cleanmymap.local)";
 
-function buildSheetUrlCandidates(sheetUrl) {
-  const candidates = [];
-  const pushUnique = (value) => {
-    if (value && !candidates.includes(value)) {
-      candidates.push(value);
-    }
-  };
-
-  pushUnique(sheetUrl);
-
-  try {
-    const parsed = new URL(sheetUrl);
-    const gid = parsed.searchParams.get("gid") ?? "0";
-    const match = parsed.pathname.match(/\/spreadsheets\/d\/([^/]+)/);
-    const sheetId = match?.[1];
-    if (sheetId) {
-      pushUnique(
-        `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`,
-      );
-      pushUnique(
-        `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`,
-      );
-    }
-  } catch {
-    // Ignore invalid URL parsing here; fetch errors will be surfaced later.
-  }
-
-  return candidates;
-}
-
 function isLikelyHtmlPayload(contentType, bodyText) {
   const type = String(contentType || "").toLowerCase();
   const sample = bodyText.trimStart().slice(0, 200).toLowerCase();
@@ -75,7 +46,9 @@ function isLikelyHtmlPayload(contentType, bodyText) {
 async function fetchUsableSheetCsv(sheetUrl) {
   const attempts = [];
 
-  for (const candidateUrl of buildSheetUrlCandidates(sheetUrl)) {
+  const candidates = buildGoogleSheetCsvCandidates(assertGoogleSheetUrl(sheetUrl));
+
+  for (const candidateUrl of candidates) {
     try {
       const response = await fetch(candidateUrl, {
         headers: { "User-Agent": USER_AGENT },

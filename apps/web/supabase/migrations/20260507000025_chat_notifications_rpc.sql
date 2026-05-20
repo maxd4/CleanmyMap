@@ -1,5 +1,5 @@
 -- 20260507000025_chat_notifications_rpc.sql
--- Secure chat notification fan-out without service-role access in the app code.
+-- Secure chat notification fan-out through server-side service-role execution.
 
 create or replace function public.can_profile_view_territory_message(
   p_user_id text,
@@ -8,8 +8,8 @@ create or replace function public.can_profile_view_territory_message(
 returns boolean
 language plpgsql
 stable
-security definer
-set search_path = public
+security invoker
+set search_path = pg_catalog
 as $$
 declare
   v_user_arrondissement integer;
@@ -51,13 +51,16 @@ begin
 end;
 $$;
 
+revoke all on function public.can_profile_view_territory_message(text, integer) from public;
+grant execute on function public.can_profile_view_territory_message(text, integer) to service_role;
+
 create or replace function public.create_chat_notifications_for_message(
   p_message_id uuid
 )
 returns integer
 language plpgsql
-security definer
-set search_path = public
+security invoker
+set search_path = pg_catalog
 as $$
 declare
   v_message record;
@@ -300,4 +303,5 @@ begin
 end;
 $$;
 
-grant execute on function public.create_chat_notifications_for_message(uuid) to authenticated;
+revoke all on function public.create_chat_notifications_for_message(uuid) from public;
+grant execute on function public.create_chat_notifications_for_message(uuid) to service_role;

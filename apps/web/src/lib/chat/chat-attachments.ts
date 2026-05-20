@@ -64,6 +64,8 @@ const SUPPORTED_EXTENSIONS = new Map([
   ["7z", "application/x-7z-compressed"],
 ]);
 
+const SAFE_ATTACHMENT_PROTOCOLS = new Set(["http:", "https:"]);
+
 export const CHAT_ATTACHMENT_ACCEPT = [
   "image/*",
   ...SUPPORTED_MIME_TYPES,
@@ -79,6 +81,14 @@ function getFileExtension(fileName: string): string {
   return parts.length > 1 ? parts.pop() ?? "" : "";
 }
 
+function parseUrl(value: string): URL | null {
+  try {
+    return new URL(value);
+  } catch {
+    return null;
+  }
+}
+
 export function isSupportedChatAttachmentMimeType(mimeType: string): boolean {
   const normalized = normalizeMimeType(mimeType);
   if (!normalized) {
@@ -90,6 +100,15 @@ export function isSupportedChatAttachmentMimeType(mimeType: string): boolean {
   }
 
   return SUPPORTED_MIME_TYPES.has(normalized);
+}
+
+export function isSafeChatAttachmentUrl(value: string | null | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+
+  const parsed = parseUrl(value.trim());
+  return parsed ? SAFE_ATTACHMENT_PROTOCOLS.has(parsed.protocol) : false;
 }
 
 export function isSupportedChatAttachmentFile(file: File): boolean {

@@ -19,10 +19,10 @@ La logique est simple : vision -> parcours -> structure -> priorites -> methodol
 
 Certains sujets sont documentes ailleurs dans le depot et ne doivent pas etre recopies ici :
 
-- `documentation/liberte-UX-UI/rubriques_utilite_impact_.md` pour l'axe utilite / impact des rubriques ;
-- `documentation/operations/session-standard-runbook.md` pour les regles de validation de lots ;
-- `documentation/operations/pre-release-security-check.md` pour la prepublication ;
-- `documentation/kaizen-implementation-plan/` pour les plans d'action et l'audit d'execution.
+- un document interne de cadrage sur l'utilité et l'impact des rubriques ;
+- le runbook interne de validation des lots ;
+- le contrôle de prépublication des opérations ;
+- les plans d'action et audits d'exécution internes.
 
 ## Règles de maintenance
 
@@ -30,4 +30,3 @@ Certains sujets sont documentes ailleurs dans le depot et ne doivent pas etre re
 - preferrer un seul document de reference par sujet ;
 - supprimer les references cassées au lieu de les laisser vieillir ;
 - quand un fichier devient redondant, le retirer du hub au lieu de le dupliquer.
-

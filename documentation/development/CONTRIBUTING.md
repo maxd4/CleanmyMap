@@ -31,4 +31,4 @@ Avant de démarrer :
 
 ## 5. Règles Documentaires et d'Architecture
 - Nous appliquons strictement un paradigme **Visual-First**. Si une explication textuelle architecturale ou métier met plus de 5 lignes, vous devez créer un diagramme au format texte (Mermaid) à la place. Lisez le `[README.md](../README.md)` de la documentation pour plus détails.
-- Vous devez toujours inclure le contexte projet (`project_context.md`) et la mémoire de session historique (`latest-session.md`) si vous altérez des éléments structurels majeurs à l'aide d'IA (voir `AGENTS.md`).
+- Lors d'une modification structurelle majeure assistée par IA, incluez le contexte interne courant et la mémoire de session historique si elle est disponible dans l'environnement de travail.

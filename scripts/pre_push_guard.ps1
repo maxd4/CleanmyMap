@@ -34,6 +34,8 @@ try {
     Write-Host "Pre-push guardrail"
     Write-Host "Repository: $RepoRoot"
 
+    Invoke-GuardStep "root file hygiene" { npm run check:root-files }
+    Invoke-GuardStep "documentation governance" { npm run check:doc-governance }
     Invoke-GuardStep "lint" { npm run lint }
     Invoke-GuardStep "typecheck" { npm run typecheck }
     Invoke-GuardStep "build" { npm run build }

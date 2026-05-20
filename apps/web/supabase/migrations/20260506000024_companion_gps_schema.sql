@@ -92,4 +92,7 @@ begin
 
   return total_m::integer;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security invoker set search_path = pg_catalog;
+
+revoke all on function public.compute_mission_distance(uuid) from public;
+grant execute on function public.compute_mission_distance(uuid) to service_role;

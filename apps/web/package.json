@@ -24,6 +24,9 @@
     "data:archive:supabase": "node scripts/export-supabase-archive.mjs",
     "data:cleanup:supabase": "node scripts/cleanup-supabase-retention.mjs",
     "backend:doctor": "node scripts/backend-doctor.mjs",
+    "backend:supabase:advisors": "node scripts/supabase-security-advisors.mjs",
+    "backend:supabase:advisors:local": "node scripts/supabase-security-advisors.mjs --local",
+    "backend:supabase:advisors:linked": "node scripts/supabase-security-advisors.mjs --linked",
     "backend:vercel:env:sync": "node scripts/vercel-sync-env.mjs --file=.env.local --environments=development,production",
     "backend:supabase:push": "npx supabase db push --workdir . --yes",
     "backend:bootstrap": "node scripts/backend-bootstrap.mjs"

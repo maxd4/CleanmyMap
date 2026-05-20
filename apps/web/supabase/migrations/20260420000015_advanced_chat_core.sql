@@ -35,7 +35,11 @@ CREATE POLICY "Allow individual DMs" ON public.app_messages
 -- 3b. Neighborhood Policy: Users see messages from their arrondissement and neighbors
 -- This requires a join with profiles of the current user.
 CREATE OR REPLACE FUNCTION public.can_view_neighborhood_message(p_msg_arrondissement INTEGER)
-RETURNS BOOLEAN AS $$
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = pg_catalog
+AS $$
 DECLARE
     v_user_arrondissement INTEGER;
     v_is_neighbor BOOLEAN;
@@ -79,7 +83,10 @@ BEGIN
         END
     );
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
+
+REVOKE ALL ON FUNCTION public.can_view_neighborhood_message(integer) FROM public;
+GRANT EXECUTE ON FUNCTION public.can_view_neighborhood_message(integer) TO authenticated, service_role;
 
 CREATE POLICY "Allow neighborhood visibility" ON public.app_messages
     FOR SELECT USING (
@@ -112,7 +119,11 @@ CREATE POLICY "Allow authenticated insert" ON public.app_messages
 
 -- 4. Automatic Pruning Procedure
 CREATE OR REPLACE FUNCTION public.prune_old_messages()
-RETURNS VOID AS $$
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = pg_catalog
+AS $$
 BEGIN
     -- Remove attachments older than 1 month
     -- (The actual files in Storage must be removed via a worker, here we nullify the pointers)
@@ -125,7 +136,10 @@ BEGIN
     DELETE FROM public.app_messages
     WHERE created_at < now() - INTERVAL '6 months';
 END;
-$$ LANGUAGE plpgsql;
+$$;
+
+REVOKE ALL ON FUNCTION public.prune_old_messages() FROM public;
+GRANT EXECUTE ON FUNCTION public.prune_old_messages() TO service_role;
 
 -- 5. Storage policies (assuming 'chat-attachments' bucket exists)
 -- This logic will be applied in the Supabase UI or via CLI but here is the RLS intent:

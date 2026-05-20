@@ -11,18 +11,16 @@ describe("server preferences", () => {
     vi.clearAllMocks();
   });
 
-  it("reads display mode from cookies when present", async () => {
+  it("normalizes display mode cookies to exhaustive", async () => {
     cookiesMock.mockResolvedValue({
       get: vi.fn().mockImplementation((key: string) =>
-        key === "cleanmymap.display_mode"
-          ? { value: "sobre" }
-          : undefined,
+        key === "cleanmymap.display_mode" ? { value: "sobre" } : undefined,
       ),
     });
 
     const { getServerDisplayModePreference } = await import("./server-preferences");
     await expect(getServerDisplayModePreference()).resolves.toEqual({
-      displayMode: "sobre",
+      displayMode: "exhaustif",
       isExplicit: true,
     });
   });

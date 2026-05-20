@@ -3,7 +3,7 @@
 **Généré le** : 28/04/2026  
 **Commande** : `npm run lint:audit`
 
-> Note de fraîcheur: ce rapport est historique. Pour l'état le plus récent du contrôle qualité, consulter [documentation/maintenance/quality-audit-snapshot.md](../maintenance/quality-audit-snapshot.md) et [documentation/sessions/history/latest-session.md](../sessions/history/latest-session.md).
+> Note de fraîcheur: ce rapport est historique. Pour l'état le plus récent du contrôle qualité, consulter [documentation/maintenance/quality-audit-snapshot.md](../maintenance/quality-audit-snapshot.md) et le tableau d'audit courant.
 
 ## 📊 Résumé Global
 

@@ -57,9 +57,7 @@ TaskManager.defineTask(GPS_TASK_NAME, async ({ data, error }) => {
       console.warn('[GPS Task] Insert échoué, buffer:', insertError.message);
       await bufferPoint(point);
     } else {
-      console.log(
-        `[GPS Task] Point enregistré: ${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}`
-      );
+      console.log('[GPS Task] Point enregistré');
     }
   }
 

@@ -99,8 +99,6 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse({
   ...process.env,
   NEXT_PUBLIC_APP_URL: process.env["NEXT_PUBLIC_APP_URL"] || "http://localhost:3000",
-  NEXT_PUBLIC_SUPABASE_URL: process.env["NEXT_PUBLIC_SUPABASE_URL"] || "https://mgvmuambbxmmkrjjlryo.supabase.co",
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"] || "sb_publishable_2ZvYS31hhXeWkIGVaaPyMA_qzdutOI4",
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: process.env["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"] || "pk_test_cHJvcGVyLWNvd2JpcmQtNTQuY2xlcmsuYWNjb3VudHMuZGV2JA",
   NEXT_PUBLIC_POSTHOG_KEY: process.env["NEXT_PUBLIC_POSTHOG_KEY"],
   NEXT_PUBLIC_POSTHOG_TOKEN: process.env["NEXT_PUBLIC_POSTHOG_TOKEN"],

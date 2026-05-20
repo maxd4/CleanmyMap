@@ -1,6 +1,8 @@
 import { AppState } from 'react-native';
+import { Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';
 
 /**
@@ -21,6 +23,23 @@ import { createClient } from '@supabase/supabase-js';
  */
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
+const SUPABASE_SESSION_STORAGE_KEY = 'cmm_supabase_session';
+
+function toSecureStoreKey(key: string): string {
+  return `${SUPABASE_SESSION_STORAGE_KEY}.${key.replace(/[^A-Za-z0-9._-]/g, '_')}`;
+}
+
+const secureAuthStorage = {
+  async getItem(key: string): Promise<string | null> {
+    return SecureStore.getItemAsync(toSecureStoreKey(key));
+  },
+  async setItem(key: string, value: string): Promise<void> {
+    await SecureStore.setItemAsync(toSecureStoreKey(key), value);
+  },
+  async removeItem(key: string): Promise<void> {
+    await SecureStore.deleteItemAsync(toSecureStoreKey(key));
+  },
+};
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error(
@@ -31,7 +50,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: Platform.OS === 'web' ? AsyncStorage : secureAuthStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false, // Désactivé — pas de browser redirect en RN

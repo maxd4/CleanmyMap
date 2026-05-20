@@ -54,8 +54,8 @@ returns table (
   remaining_today integer
 )
 language plpgsql
-security definer
-set search_path = public
+security invoker
+set search_path = pg_catalog
 as $$
 declare
   v_now timestamptz := now();

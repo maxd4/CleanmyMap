@@ -4,7 +4,7 @@ import { supabase } from './supabase';
 
 const MISSION_ASSETS_BUCKET = 'mission-assets';
 const MISSION_ASSETS_BUCKET_HINT =
-  "Le bucket public Supabase 'mission-assets' est manquant. Crée-le et rends-le public pour activer les uploads photo.";
+  "Le bucket Supabase 'mission-assets' est manquant. Crée-le pour activer les uploads photo.";
 
 function getErrorMessage(error: unknown): string {
   if (!error || typeof error !== 'object') {
@@ -44,7 +44,7 @@ function isMissingBucketError(error: unknown): boolean {
 export async function uploadMissionPhoto(
   missionId: string,
   localUri: string
-): Promise<{ publicUrl?: string; error?: string }> {
+): Promise<{ path?: string; error?: string }> {
   try {
     const fileName = `${missionId}/${Date.now()}.jpg`;
 
@@ -66,11 +66,7 @@ export async function uploadMissionPhoto(
       return { error: "Impossible d'envoyer la photo. Vérifie la connexion et réessaie." };
     }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from(MISSION_ASSETS_BUCKET)
-      .getPublicUrl(data.path);
-
-    return { publicUrl };
+    return { path: data.path };
   } catch (e: unknown) {
     if (isMissingBucketError(e)) {
       return { error: MISSION_ASSETS_BUCKET_HINT };

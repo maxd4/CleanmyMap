@@ -9,6 +9,7 @@ import {
   type DisplayNameMode,
 } from "@/lib/profiles";
 import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
+import { getDisplayNameModeOverride } from "@/lib/account/display-name-mode-store";
 
 const MAX_HANDLE_LENGTH = 30;
 
@@ -17,6 +18,20 @@ type ProfileRow = {
   handle: string | null;
   display_name_mode: string | null;
 };
+
+function extractDisplayNameModeFromMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+): DisplayNameMode | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const rawValue =
+    metadata["display_name_mode"] ??
+    metadata["displayNameMode"];
+
+  return typeof rawValue === "string" ? normalizeDisplayNameMode(rawValue) : null;
+}
 
 export type SyncClerkUserOptions = {
   allowServiceRoleFallback?: boolean;
@@ -201,9 +216,12 @@ export async function syncClerkUserToSupabase(
     user,
     existingProfile?.handle ?? null,
   );
-  const displayNameMode: DisplayNameMode = normalizeDisplayNameMode(
-    existingProfile?.display_name_mode,
-  );
+  const displayNameMode: DisplayNameMode =
+    getDisplayNameModeOverride(user.id) ??
+    extractDisplayNameModeFromMetadata(user.unsafeMetadata as Record<string, unknown> | null | undefined) ??
+    extractDisplayNameModeFromMetadata(user.publicMetadata as Record<string, unknown> | null | undefined) ??
+    extractDisplayNameModeFromMetadata(user.privateMetadata as Record<string, unknown> | null | undefined) ??
+    normalizeDisplayNameMode(existingProfile?.display_name_mode);
   const displayName = resolveAccountDisplayName({
     firstName,
     lastName,

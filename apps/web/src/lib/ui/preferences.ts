@@ -12,6 +12,7 @@ export type ThemeMode = (typeof THEMES)[number];
  */
 export const DISPLAY_MODES = ["exhaustif", "minimaliste", "sobre"] as const;
 export type DisplayMode = (typeof DISPLAY_MODES)[number];
+export const ENABLED_DISPLAY_MODES = ["exhaustif"] as const;
 
 export const STORAGE_KEYS = {
   locale: "cleanmymap.locale",
@@ -25,7 +26,5 @@ export const DEFAULT_THEME: ThemeMode = "mixed";
 export const DEFAULT_DISPLAY_MODE: DisplayMode = "exhaustif";
 
 export function parseDisplayMode(raw: string | null | undefined): DisplayMode {
-  return DISPLAY_MODES.includes(raw as DisplayMode)
-    ? (raw as DisplayMode)
-    : DEFAULT_DISPLAY_MODE;
+  return raw === "exhaustif" ? "exhaustif" : DEFAULT_DISPLAY_MODE;
 }

@@ -7,7 +7,7 @@ import {
   DEFAULT_DISPLAY_MODE,
   DEFAULT_LOCALE,
   DEFAULT_THEME,
-  DISPLAY_MODES,
+  ENABLED_DISPLAY_MODES,
   LOCALES,
   STORAGE_KEYS,
   THEMES,
@@ -52,7 +52,7 @@ export const siteThemeStorage = createLocalStorageStringStore<ThemeMode>(
 
 export const siteDisplayModeStorage = createLocalStorageStringStore<DisplayMode>(
   STORAGE_KEYS.displayMode,
-  DISPLAY_MODES,
+  ENABLED_DISPLAY_MODES,
 );
 
 export const dashboardPeriodStorage = createLocalStorageStore<30 | 90 | 365>(

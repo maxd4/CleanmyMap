@@ -8,6 +8,8 @@ Ce document formalise le lot `securite publication` demande dans `documentation/
 - checks pre-release ;
 - verification des variables potentiellement exposees au client.
 
+Pour le cadre de revue et les regles de correction appliquees sur ce repo, voir aussi [documentation/security/CODEX_SECURITY_PLAYBOOK.md](../security/CODEX_SECURITY_PLAYBOOK.md).
+
 ## Commandes de controle
 
 - Check pre-release bloquant :
@@ -34,12 +36,19 @@ Ces variables sont autorisees cote navigateur et doivent rester prefixees `NEXT_
 - `NEXT_PUBLIC_SENTRY_DSN`
 - `NEXT_PUBLIC_SENTRY_ENABLED`
 
+Règle d'exploitation:
+
+- aucune valeur de production ne doit être recopiée en dur dans `apps/web/src/lib/env.ts` ;
+- si une variable manque, le build ou le boot doit l'exposer clairement plutôt que de se rabattre sur une prod distante ;
+- les clés publiques Supabase doivent suivre le projet lié au dépôt, pas un projet voisin ou ancien.
+
 ### Variables strictement serveur
 
 Ces variables ne doivent jamais etre envoyees au client :
 
 - `CLERK_SECRET_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `OPENAI_API_KEY` (only for local Supabase Studio AI; keep server-side and out of `NEXT_PUBLIC_*`)
 - `RESEND_API_KEY`
 - `STRIPE_SECRET_KEY`
 - `STRIPE_WEBHOOK_SECRET`
@@ -48,6 +57,12 @@ Ces variables ne doivent jamais etre envoyees au client :
 - `QSTASH_TOKEN`
 - `UPTIMEROBOT_API_KEY`
 - `CLOUDFLARE_API_TOKEN`
+
+Règle d'exploitation:
+
+- les clés `service_role` et similaires doivent rester côté serveur ;
+- toute exposition dans `NEXT_PUBLIC_*` doit être considérée comme publique par défaut ;
+- les synchronisations Vercel ne doivent pousser les secrets qu'avec une action explicite et revue.
 
 ## Controles implementes
 
@@ -78,6 +93,13 @@ Regle de lecture :
 - toute variable `NEXT_PUBLIC_*` est presumee exposable ;
 - toute variable non prefixee `NEXT_PUBLIC_*` doit rester en contexte serveur ;
 - toute nouvelle cle de secret doit etre ajoutee a cet inventaire et couverte par les checks pre-release si le risque d'exposition cote client est realiste.
+
+### 4. Verifications Supabase/Vercel
+
+- `npm run backend:doctor` doit passer avant toute publication.
+- `npm run backend:vercel:env:sync` doit rester public par défaut et ne pousser les secrets qu'avec `--include-secrets`.
+- `npm run backend:supabase:push` doit être accompagné d'une revue des policies, fonctions SQL et advisors Supabase.
+- Les helpers SQL exposés doivent être relus avec la règle: pas de `SECURITY DEFINER` public sans justification et sans `REVOKE/GRANT` explicites.
 
 ## Limites
 

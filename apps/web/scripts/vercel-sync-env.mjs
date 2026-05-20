@@ -2,6 +2,7 @@
 import { readFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
+import { filterSyncableEnvEntries, isSensitiveEnvKey } from "./lib/vercel-env-policy.mjs";
 
 /**
  * CleanMyMap - Vercel Env Sync Tool
@@ -14,10 +15,15 @@ function parseArgs(argv) {
     environments: ["development"],
     previewBranch: "",
     dryRun: false,
+    includeSecrets: false,
   };
   for (const arg of argv) {
     if (arg === "--dry-run") {
       out.dryRun = true;
+      continue;
+    }
+    if (arg === "--include-secrets") {
+      out.includeSecrets = true;
       continue;
     }
     if (arg.startsWith("--file=")) {
@@ -126,16 +132,26 @@ if (allowed.size === 0) {
   process.exit(1);
 }
 
-const toSync = [];
-for (const [key, value] of source.entries()) {
-  if (!allowed.has(key)) continue;
-  if (!value || value.trim().length === 0) continue;
-  if (key === "RESEND_TEST_TOKEN") continue;
-  toSync.push([key, value]);
-}
+const allowedEntries = [...source.entries()].filter(([key]) => allowed.has(key));
+const toSync = filterSyncableEnvEntries(allowedEntries, {
+  includeSecrets: args.includeSecrets,
+});
+const skippedSensitive = allowedEntries.filter(([key, value]) => {
+  if (args.includeSecrets) {
+    return false;
+  }
+  if (!value || value.trim().length === 0) {
+    return false;
+  }
+  return isSensitiveEnvKey(key);
+}).length;
 
 if (toSync.length === 0) {
-  console.log("[backend] No non-empty env var to sync.");
+  console.log(
+    args.includeSecrets
+      ? "[backend] No non-empty env var to sync."
+      : "[backend] No public env var to sync. Use --include-secrets only when you explicitly need to sync sensitive keys.",
+  );
   process.exit(0);
 }
 
@@ -221,7 +237,9 @@ for (const target of args.environments) {
   }
 }
 
-console.log(`[backend] Vercel env sync done. synced=${synced} skipped=${skipped} failures=${failures.length}`);
+console.log(
+  `[backend] Vercel env sync done. synced=${synced} skipped=${skipped} skippedSensitive=${skippedSensitive} failures=${failures.length}`,
+);
 if (failures.length > 0) {
   console.log("--- Failures (first 20) ---");
   for (const failure of failures.slice(0, 20)) {
