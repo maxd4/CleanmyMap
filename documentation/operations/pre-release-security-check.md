@@ -97,6 +97,7 @@ Regle de lecture :
 ### 4. Verifications Supabase/Vercel
 
 - `npm run backend:doctor` doit passer avant toute publication.
+- `npm run backend:supabase:advisors` est la commande autonome de référence pour les advisories sécurité: elle tente le local si Docker est disponible puis bascule sur le projet lié.
 - `npm run backend:vercel:env:sync` doit rester public par défaut et ne pousser les secrets qu'avec `--include-secrets`.
 - `npm run backend:supabase:push` doit être accompagné d'une revue des policies, fonctions SQL et advisors Supabase.
 - Les helpers SQL exposés doivent être relus avec la règle: pas de `SECURITY DEFINER` public sans justification et sans `REVOKE/GRANT` explicites.
