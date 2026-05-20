@@ -14,9 +14,13 @@ import {
   extractZoneContextFromMetadata,
   type ZoneContext,
 } from "@/lib/chat/channels";
-import { isSupportedChatAttachmentMimeType } from "@/lib/chat/chat-attachments";
+import {
+  isSafeChatAttachmentUrl,
+  isSupportedChatAttachmentMimeType,
+} from "@/lib/chat/chat-attachments";
 import { createChatNotificationsForMessage } from "@/lib/chat/chat-notifications";
 import { mergeRowGroupsById, sortByCreatedAtAsc } from "@/lib/chat/postgrest";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getSupabaseClerkRlsClient } from "@/lib/supabase/clerk-rls";
 import {
   reserveDiscussionMessageSlot,
@@ -38,7 +42,14 @@ const sendMessageSchema = z.object({
   recipientId: z.string().optional(),
   arrondissementId: z.number().int().min(1).max(20).optional(),
   zoneName: z.string().optional(),
-  attachmentUrl: z.string().url().optional(),
+  attachmentUrl: z
+    .string()
+    .trim()
+    .url()
+    .refine(isSafeChatAttachmentUrl, {
+      message: "L'URL de la pièce jointe doit utiliser http(s).",
+    })
+    .optional(),
   attachmentType: z.string().optional(),
 });
 
@@ -217,7 +228,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const quota = await reserveDiscussionMessageSlot(supabase, {
+    const serviceSupabase = getSupabaseServerClient();
+
+    const quota = await reserveDiscussionMessageSlot(serviceSupabase, {
       userId,
       channel: parsed.data.channelType === "bug_report" ? "bug_report" : "discussion_event",
     });
@@ -340,7 +353,7 @@ export async function POST(request: Request) {
     if (error) return handleApiError(error, "POST /api/chat (insert)");
 
     try {
-      await createChatNotificationsForMessage(supabase, message.id);
+      await createChatNotificationsForMessage(serviceSupabase, message.id);
     } catch (notificationError) {
       console.warn("[POST /api/chat] Notification fan-out failed:", notificationError);
     }

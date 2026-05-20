@@ -17,6 +17,10 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { syncClerkUserToSupabase } from "@/lib/auth/sync";
 import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 import {
+  getDisplayNameModeCookieOverride,
+  getDisplayNameModeOverride,
+} from "@/lib/account/display-name-mode-store";
+import {
   getDevAuthBypassDisplayName,
   getDevAuthBypassRole,
   getDevAuthBypassUserId,
@@ -209,6 +213,18 @@ async function loadStoredProfile(userId: string): Promise<StoredProfileRow | nul
   } catch {
     return null;
   }
+}
+
+function extractDisplayNameModeFromMetadata(metadata: ClerkMetadata): DisplayNameMode | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const rawValue =
+    metadata["display_name_mode"] ??
+    metadata["displayNameMode"];
+
+  return typeof rawValue === "string" ? normalizeDisplayNameMode(rawValue) : null;
 }
 
 export function getRoleBadgeId(profile: AppProfile): string {
@@ -483,6 +499,9 @@ export async function getCurrentUserEffectiveAccess(): Promise<EffectiveAccess> 
 export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
   const devBypass = await getDevAuthBypassSession();
   if (devBypass) {
+    const displayNameMode =
+      (await getDisplayNameModeCookieOverride()) ??
+      getDisplayNameModeOverride(devBypass.userId) ?? "full_name";
     const role = resolveProfile({
       metadataRole: devBypass.role,
       isAdmin: devBypass.role === "admin",
@@ -490,7 +509,11 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
     });
     return {
       userId: devBypass.userId,
-      displayName: devBypass.displayName,
+      displayName:
+        displayNameMode === "pseudo"
+          ? devBypass.username
+          : devBypass.displayName,
+      displayNameMode,
       handle: devBypass.username,
       firstName: null,
       username: devBypass.username,
@@ -560,9 +583,12 @@ export async function getCurrentUserIdentity(): Promise<UserIdentity | null> {
       user.primaryPhoneNumber?.phoneNumber?.trim() ||
       userId;
     const email = user.primaryEmailAddress?.emailAddress?.trim() || null;
-    const displayNameMode = normalizeDisplayNameMode(
-      storedProfile?.display_name_mode,
-    );
+    const displayNameMode =
+      getDisplayNameModeOverride(userId) ??
+      extractDisplayNameModeFromMetadata(user.unsafeMetadata) ??
+      extractDisplayNameModeFromMetadata(user.publicMetadata) ??
+      extractDisplayNameModeFromMetadata(user.privateMetadata) ??
+      normalizeDisplayNameMode(storedProfile?.display_name_mode);
     const displayName = 
       resolveAccountDisplayName({
         firstName,

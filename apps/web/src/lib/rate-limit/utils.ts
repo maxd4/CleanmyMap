@@ -2,26 +2,46 @@ import { headers } from "next/headers";
 import type { RateLimitConfig } from "./types";
 import { DEFAULT_RATE_LIMITS } from "./types";
 
+function firstHeaderValue(value: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const candidate = value.split(",")[0]?.trim();
+  return candidate ? candidate : null;
+}
+
+export function getTrustedClientIpFromHeaders(headersList: Headers): string {
+  const vercelForwardedFor = firstHeaderValue(headersList.get("x-vercel-forwarded-for"));
+  if (vercelForwardedFor) {
+    return vercelForwardedFor;
+  }
+
+  const realIp = headersList.get("x-real-ip")?.trim();
+  if (realIp) {
+    return realIp;
+  }
+
+  return "unknown";
+}
+
+export function getTrustedClientIp(source: { headers: Headers; ip?: string | null }): string {
+  const requestIp = source.ip?.trim();
+  if (requestIp) {
+    return requestIp;
+  }
+
+  return getTrustedClientIpFromHeaders(source.headers);
+}
+
 export async function getClientIp(): Promise<string> {
   try {
     const headersList = await headers();
-    const forwardedFor = headersList.get("x-forwarded-for");
-    
-    if (forwardedFor) {
-      const firstForwardedIp = forwardedFor.split(",")[0]?.trim();
-      if (firstForwardedIp) {
-        return firstForwardedIp;
-      }
-    }
-    
-    const realIp = headersList.get("x-real-ip");
-    if (realIp) {
-      return realIp;
-    }
+    return getTrustedClientIpFromHeaders(headersList);
   } catch {
     // headers() peut échouer si appelé hors du contexte de requête
   }
-  
+
   return "unknown";
 }
 

@@ -1,17 +1,14 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import { MissionMap } from "@/components/missions/mission-map";
 import { MissionQR } from "@/components/missions/mission-qr";
 import { MapPin, Clock, Trophy, Share2, Zap, Droplets, ShieldCheck } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { resolveMissionActionImageUrl } from "@/lib/missions/mission-images";
 
-// Note: en production, utilisez le vrai client Supabase de l'app (ex: createServerComponentClient)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-);
+const MISSION_ASSETS_BUCKET = "mission-assets";
 
 const FALLBACK_STARTED_AT = new Date(Date.now() - 3600000).toISOString();
 
@@ -24,6 +21,7 @@ type MissionPageParams = {
 export default async function MissionPage({ params }: MissionPageParams) {
   const { id } = params;
   const classes = getBlockClasses("act");
+  const supabase = getSupabaseServerClient();
 
   const { data: mission } = await supabase
     .from("missions")
@@ -52,6 +50,27 @@ export default async function MissionPage({ params }: MissionPageParams) {
     .from("mission_actions")
     .select("*")
     .eq("mission_id", id);
+
+  const actionsWithResolvedImages = await Promise.all(
+    (actions || []).map(async (action) => {
+      const imageUrl = await resolveMissionActionImageUrl(action.image_url, async (path) => {
+        const { data, error } = await supabase.storage
+          .from(MISSION_ASSETS_BUCKET)
+          .createSignedUrl(path, 60 * 60 * 24);
+
+        if (error || !data?.signedUrl) {
+          return null;
+        }
+
+        return data.signedUrl;
+      });
+
+      return {
+        ...action,
+        image_url: imageUrl ?? undefined,
+      };
+    }),
+  );
 
   const mockPoints = [
     { latitude: 48.8738, longitude: 2.3667, recorded_at: new Date().toISOString() },
@@ -197,7 +216,7 @@ export default async function MissionPage({ params }: MissionPageParams) {
 
         <div className="space-y-6 lg:col-span-2">
           <div className="group relative overflow-hidden rounded-[3rem] border border-white/10 shadow-2xl">
-            <MissionMap points={gpsPoints} actions={actions || []} />
+            <MissionMap points={gpsPoints} actions={actionsWithResolvedImages} />
             <div className="absolute right-6 top-6 rounded-2xl border border-white/10 bg-black/40 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white opacity-0 backdrop-blur-xl transition-opacity group-hover:opacity-100">
               Tracé GPS Certifié
             </div>

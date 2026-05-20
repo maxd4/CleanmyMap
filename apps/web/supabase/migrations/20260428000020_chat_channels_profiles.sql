@@ -4,6 +4,8 @@
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+security invoker
+set search_path = pg_catalog
 as $$
 begin
   new.updated_at = now();
@@ -121,8 +123,8 @@ create or replace function public.current_profile_role_label()
 returns text
 language sql
 stable
-security definer
-set search_path = public
+security invoker
+set search_path = pg_catalog
 as $$
   select role_label
   from public.profiles
@@ -130,13 +132,16 @@ as $$
   limit 1
 $$;
 
+revoke all on function public.current_profile_role_label() from public;
+grant execute on function public.current_profile_role_label() to authenticated, service_role;
+
 drop function if exists public.current_profile_arrondissement();
 create or replace function public.current_profile_arrondissement()
 returns integer
 language sql
 stable
-security definer
-set search_path = public
+security invoker
+set search_path = pg_catalog
 as $$
   select paris_arrondissement
   from public.profiles
@@ -144,12 +149,15 @@ as $$
   limit 1
 $$;
 
+revoke all on function public.current_profile_arrondissement() from public;
+grant execute on function public.current_profile_arrondissement() to authenticated, service_role;
+
 create or replace function public.can_view_territory_message(p_msg_arrondissement integer)
 returns boolean
 language plpgsql
 stable
-security definer
-set search_path = public
+security invoker
+set search_path = pg_catalog
 as $$
 declare
   v_user_arrondissement integer;
@@ -187,6 +195,9 @@ begin
   );
 end;
 $$;
+
+revoke all on function public.can_view_territory_message(integer) from public;
+grant execute on function public.can_view_territory_message(integer) to authenticated, service_role;
 
 drop policy if exists "Allow community visibility" on public.app_messages;
 create policy "Allow community visibility"

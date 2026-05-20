@@ -49,7 +49,7 @@ flowchart TD
 
 1. [operations/checklist-push-deploy.md](./operations/checklist-push-deploy.md)
 2. [operations/incidents-frequents-et-reprise.md](./operations/incidents-frequents-et-reprise.md)
-3. [operations/session-standard-runbook.md](./operations/session-standard-runbook.md)
+3. Runbook de session interne
 4. [architecture/traceability-matrix.md](./architecture/traceability-matrix.md)
 
 ## 4. Zones sensibles
@@ -59,4 +59,3 @@ Quand une modification touche aux routes, aux permissions, aux exports ou aux do
 1. [security/api-vigilance.md](./security/api-vigilance.md)
 2. [security/authz-authn-regles.md](./security/authz-authn-regles.md)
 3. [operations/pre-release-security-check.md](./operations/pre-release-security-check.md)
-

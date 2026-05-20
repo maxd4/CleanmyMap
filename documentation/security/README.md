@@ -10,6 +10,7 @@ Lire cette page en premier avant toute modification sur les surfaces publiques, 
 4. [Validation d'URL](./url-validation-security.md)
 5. [Regex et ReDoS](./regex-security.md)
 6. [Rate limiting](../backend/RATE_LIMITING.md)
+7. [Codex Security Playbook](./CODEX_SECURITY_PLAYBOOK.md)
 
 ## Checklist courte
 
@@ -42,6 +43,9 @@ Lire cette page en premier avant toute modification sur les surfaces publiques, 
 - `src/lib/seo/indexability.ts`
 - `src/lib/auth/protected-routes.ts`
 - `src/lib/community/discussion-rate-limit.ts`
+- `src/lib/supabase/server.ts`
+- `src/lib/supabase/clerk-rls.ts`
+- `src/lib/rate-limit/server.ts`
 
 ## Quand bloquer un merge
 

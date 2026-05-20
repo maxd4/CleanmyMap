@@ -1,108 +1,130 @@
-# CleanMyMap Monorepo
+# CleanMyMap
 
-Plateforme citoyenne pour déclarer, visualiser et exporter des actions de dépollution.
+<p align="center">
+  <img src="documentation/nouveau-logo.png" alt="CleanMyMap" width="180" />
+</p>
 
-## Périmètre (Scope)
-- Code actif (runtime) : Application Next.js dans `apps/web`.
-- Le code historique en Python est archivé dans `legacy/` et ne fait plus partie du runtime actif.
+<p align="center">
+  <strong>Plateforme citoyenne pour déclarer, visualiser et exporter des actions de dépollution.</strong>
+</p>
 
-## Règle UI de lisibilité
-- Sur les héros et titres de page, éviter les retours à la ligne décoratifs.
-- Priorité d'ajustement: réduire la taille, réduire le tracking, réduire la largeur utile, puis réorganiser le bloc sur mobile.
-- Un titre ou sous-titre doit tenir sur une seule ligne sur desktop standard si cela reste lisible.
+<p align="center">
+  <a href="https://cleanmymap.vercel.app">Demo</a> ·
+  <a href="https://github.com/maxd4/CleanMyMap/issues">Issues</a> ·
+  <a href="https://github.com/maxd4/CleanMyMap/blob/main/documentation/README.md">Documentation</a>
+</p>
 
-## Prérequis
-- Node.js 20+
-- npm 9+
+<p align="center">
+  <img src="https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs" alt="Next.js" />
+  <img src="https://img.shields.io/badge/TypeScript-5-blue?logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Supabase-Backend-3FCF8E?logo=supabase" alt="Supabase" />
+  <img src="https://img.shields.io/badge/Clerk-Auth-6C47FF?logo=clerk" alt="Clerk" />
+  <img src="https://img.shields.io/badge/Vercel-Deploy-000000?logo=vercel" alt="Vercel" />
+  <img src="https://img.shields.io/badge/License-ISC-lightgrey" alt="License" />
+</p>
+
+## Aperçu rapide
+
+<table align="center">
+  <tr>
+    <td align="center" width="33%">
+      <strong>Live demo</strong><br />
+      <a href="https://cleanmymap.vercel.app">cleanmymap.vercel.app</a><br />
+      Version publique
+    </td>
+    <td align="center" width="33%">
+      <strong>Documentation</strong><br />
+      <a href="./documentation/README.md">Index du projet</a><br />
+      Architecture, design system, sécurité
+    </td>
+    <td align="center" width="33%">
+      <strong>Stack</strong><br />
+      Next.js · TypeScript · Supabase<br />
+      Clerk · Vercel
+    </td>
+  </tr>
+</table>
+
+## En bref
+
+CleanMyMap est une monorepo civic-tech centrée sur le terrain, la cartographie et le pilotage.
+
+- Déclarer des actions de dépollution et suivre leurs impacts.
+- Explorer les rubriques du produit par blocs fonctionnels.
+- Gérer les accès, les rôles et les parcours selon le profil utilisateur.
+- Synchroniser les données avec Supabase, Clerk et Vercel.
+- Maintenir une documentation riche pour l'équipe, les agents IA et l'exploitation.
+
+## Ce qui est actif
+
+- L'application de production est dans [`apps/web`](./apps/web).
+- Le code Python historique est archivé dans [`legacy`](./legacy) et n'est plus dans le runtime actif.
+- La documentation structurée vit dans [`documentation`](./documentation).
+
+## Aperçu produit
+
+<p align="center">
+  <img src="documentation/actions-map-current.png" alt="Aperçu de la carte d'actions CleanMyMap" />
+</p>
 
 ## Démarrage rapide
+
 ```bash
 npm install
 npm run dev
 ```
 
-## Commandes principales
-- `npm run dev` : Démarrer l'application web (workspace `apps/web`)
-- `npm run build` : Build de production
-- `npm run lint` : Vérifications ESLint
-- `npm run test` : Tests vitest
-- `npm run test:regression-gates` : Tests de non-régression critiques
-- `npm run checks` : Script global de validation du projet
-- `npm run analyze:heavy-files` : Analyser les fichiers volumineux (modularisation)
-- `npm run screenshots` : Captures d'écran full-page avec Playwright
+Puis ouvrir `http://localhost:3000`.
 
-## Structure du projet
-- `apps/web/` : Application Next.js (frontend + routes API)
-- `documentation/` : Architecture, design system, règles de développement, opérations et sécurité
-- `scripts/` : Scripts de maintenance à la racine
-- `legacy/` : Historique du code Python archivé
-
-## Backend et Ops
-Pour l'initialisation du backend, la synchronisation des variables d'environnement et les opérations Supabase, voir :
-- `apps/web/README.md`
-
-## Workflow Agent / Mémoire de Session
-- Règles globales persistantes : `AGENTS.md`
-- Contexte du projet : `project_context.md`
-- Mémoire de session en cours : `documentation/sessions/history/latest-session.md`
-- Gouvernance mémoire IA : `documentation/operations/agent-memory-governance.md`
-
-Commandes IA :
-- `npm run session:bootstrap`
-- `npm run session:close -- --done "..." --next "..." --risk "..."`
-- `npm run session:budget`
-
-## Contribuer
-Consultez le fichier [CONTRIBUTING.md](./documentation/development/CONTRIBUTING.md) pour lire les guides complets d'installation, de contribution et de tests.
-
-## 🔧 Modularisation
-Le projet suit un plan de modularisation pour améliorer la maintenabilité.
-
-**📊 Progression : 20% (3/15 fichiers)**
-
-**Documentation pour Agents IA** :
-- 🤖 [Guide Complet IA](./documentation/ai-guides/AI_MODULARIZATION_GUIDE.md) - Instructions complètes et réutilisables
-- 🎯 [Principes Pragmatiques](./documentation/ai-guides/MODULARIZATION_PRAGMATIC_PRINCIPLES.md) - Quand et comment modulariser intelligemment
-- 📝 [Aide-Mémoire IA](./documentation/ai-guides/AI_MODULARIZATION_CHEATSHEET.md) - Référence ultra-rapide
-- 📈 [Suivi Progression](./documentation/ai-guides/MODULARIZATION_PROGRESS.md) - Tableau de bord
-
-**Philosophie** : Modulariser intelligemment, pas systématiquement. Privilégier la lisibilité et la cohésion fonctionnelle sur les métriques arbitraires.
-
-**Commandes** :
-```bash
-npm run analyze:heavy-files    # Analyser les fichiers volumineux
-npm run modularize:report <f>  # Générer un rapport
-```
-
-## 🔐 Sécurité
-Consultez [SECURITY_GUIDE.md](./documentation/security/SECURITY_GUIDE.md) pour les bonnes pratiques de sécurité et éviter les erreurs courantes (validation d'URL, injection HTML).
-
-## 📸 Captures d'écran
-Génération automatique de captures full-page avec Playwright, organisées par section :
+## Commandes utiles
 
 ```bash
-# Terminal 1 : Démarrer le serveur local
-npm run dev
-
-# Terminal 2 : Lancer les captures
-npm run screenshots
+npm run dev                 # Démarrer l'application web
+npm run build               # Build de production
+npm run lint                # ESLint
+npm run typecheck           # Vérification TypeScript
+npm run test                # Tests unitaires
+npm run checks              # Vérification globale du projet
+npm run screenshots         # Captures d'écran de documentation
 ```
 
-**Avec URL déployée :**
-```bash
-# Linux/macOS
-BASE_URL=https://mon-site.vercel.app npm run screenshots
+## Architecture du dépôt
 
-# Windows PowerShell
-$env:BASE_URL="https://mon-site.vercel.app"; npm run screenshots
-```
+| Chemin | Rôle |
+| --- | --- |
+| [`apps/web`](./apps/web) | Application Next.js, routes API, composants UI |
+| [`documentation`](./documentation) | Architecture, design system, sécurité, opérations, sessions |
+| [`scripts`](./scripts) | Automatisations de maintenance et garde-fous |
+| [`companion-app`](./companion-app) | Application compagnon mobile |
+| [`legacy`](./legacy) | Archives historiques hors runtime |
 
-**Organisation des captures :**
-- Pages complètes : `documentation/liberte-UX-UI/10-PAGES-STANDALONE/`
-- Blocs homepage : `documentation/liberte-UX-UI/02-BLOC-HOME/[section]/`
-- Sections spécialisées : `documentation/liberte-UX-UI/[0X-BLOC-NAME]/`
-- **Versions contexte** : `screenshots/` (compatibles VS Code/Codex, ≤ 3000px)
+## Documentation clé
 
-**Formats générés :** 
-- Originaux : desktop + mobile (.desktop.png, .mobile.png)
-- Contexte : versions compressées (.webp, optimisées pour VS Code)
+- [`documentation/README.md`](./documentation/README.md)
+- [`documentation/architecture/README.md`](./documentation/architecture/README.md)
+- [`documentation/design-system/README.md`](./documentation/design-system/README.md)
+- [`documentation/security/README.md`](./documentation/security/README.md)
+- [`documentation/operations/README.md`](./documentation/operations/README.md)
+- [`apps/web/README.md`](./apps/web/README.md)
+
+## Qualité et sécurité
+
+- Garde-fous locaux dans [`PRE_PUSH_GUARD.md`](./PRE_PUSH_GUARD.md)
+- Règles persistantes dans [`AGENTS.md`](./AGENTS.md)
+- Audit secrets: `npm run security:secrets`
+- Validation complète: `npm run checks`
+
+## Flow de contribution
+
+1. Lire [`AGENTS.md`](./AGENTS.md) et le contexte projet.
+2. Travailler dans la branche courante, sans worktree parallèle.
+3. Lancer les vérifications utiles.
+4. Mettre à jour la documentation quand une structure ou un comportement change.
+
+## Notes d'exploitation
+
+Pour l'initialisation backend et les variables d'environnement, voir [`apps/web/README.md`](./apps/web/README.md).
+
+## Licence
+
+ISC

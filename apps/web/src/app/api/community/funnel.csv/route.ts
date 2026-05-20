@@ -5,6 +5,7 @@ import {
  formatCleanupWasteTypesLabel,
  parseCommunityEventDescription,
 } from"@/lib/community/event-ops";
+import { escapeCsvCell } from"@/lib/reports/csv";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import type { CommunityEventRow, EventRsvpRow } from"@/types/database";
 import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
@@ -28,14 +29,6 @@ function parsePositiveInteger(
  return fallback;
  }
  return Math.min(max, Math.max(min, Math.trunc(parsed)));
-}
-
-function escapeCsvCell(value: string | number | null): string {
- const raw = value === null ?"" : String(value);
- if (!/[",\r\n]/.test(raw)) {
- return raw;
- }
- return `"${raw.replace(/"/g, '""')}"`;
 }
 
 export async function GET(request: Request) {

@@ -133,12 +133,22 @@ export function buildDateFloor(daysWindow: number): string {
   return now.toISOString().slice(0, 10);
 }
 
-function escapeCsvCell(value: string | number | null): string {
+function shouldPrefixCsvCell(raw: string): boolean {
+  const trimmed = raw.trimStart();
+  return trimmed.length > 0 && /^[=+\-@]/.test(trimmed);
+}
+
+export function escapeCsvCell(value: unknown, delimiter = ","): string {
   const raw = value === null ? "" : String(value);
-  if (!/[",\r\n]/.test(raw)) {
-    return raw;
+  const normalized = shouldPrefixCsvCell(raw) ? `'${raw}` : raw;
+  const needsQuoting =
+    delimiter === ";"
+      ? /[;"\r\n]/.test(normalized)
+      : /[",\r\n]/.test(normalized);
+  if (!needsQuoting) {
+    return normalized;
   }
-  return `"${raw.replace(/"/g, '""')}"`;
+  return `"${normalized.replace(/"/g, '""')}"`;
 }
 
 export function buildActionsCsv(rows: ActionCsvRowWithDrawing[]): string {

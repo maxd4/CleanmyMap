@@ -17,6 +17,7 @@ import {
   parseIsoDateFlexible,
   toNumber,
 } from "./lib/sheet-ingestion-core.mjs";
+import { assertGoogleSheetUrl, buildGoogleSheetCsvCandidates } from "./lib/google-sheet-source.mjs";
 
 const DEFAULT_SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1kKkhylwqo10OA-p6CDuNwYihzW0ElwTeFwCwZ6O-rJw/export?format=csv&gid=0";
@@ -24,36 +25,6 @@ const APP_DIR = dirname(dirname(fileURLToPath(import.meta.url)));
 const OUT_PATH = join(APP_DIR, "data", "local-db", "real_records.json");
 const RAW_PATH = join(APP_DIR, "data", "raw", "google-sheet-map-clean-up.csv");
 const USER_AGENT = "cleanmymap-web-data-sync/1.0 (contact: admin@cleanmymap.local)";
-
-function buildSheetUrlCandidates(sheetUrl) {
-  const candidates = [];
-  const pushUnique = (value) => {
-    if (value && !candidates.includes(value)) {
-      candidates.push(value);
-    }
-  };
-
-  pushUnique(sheetUrl);
-
-  try {
-    const parsed = new URL(sheetUrl);
-    const gid = parsed.searchParams.get("gid") ?? "0";
-    const match = parsed.pathname.match(/\/spreadsheets\/d\/([^/]+)/);
-    const sheetId = match?.[1];
-    if (sheetId) {
-      pushUnique(
-        `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`,
-      );
-      pushUnique(
-        `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`,
-      );
-    }
-  } catch {
-    // Ignore invalid URL parsing here; fetch errors will be surfaced later.
-  }
-
-  return candidates;
-}
 
 function isLikelyHtmlPayload(contentType, bodyText) {
   const type = String(contentType || "").toLowerCase();
@@ -68,7 +39,9 @@ function isLikelyHtmlPayload(contentType, bodyText) {
 async function fetchUsableSheetCsv(sheetUrl) {
   const attempts = [];
 
-  for (const candidateUrl of buildSheetUrlCandidates(sheetUrl)) {
+  const candidates = buildGoogleSheetCsvCandidates(assertGoogleSheetUrl(sheetUrl));
+
+  for (const candidateUrl of candidates) {
     try {
       const response = await fetch(candidateUrl, {
         headers: { "User-Agent": USER_AGENT },

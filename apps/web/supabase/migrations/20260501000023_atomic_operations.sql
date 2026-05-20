@@ -22,6 +22,8 @@ CREATE OR REPLACE FUNCTION public.create_action_with_training(
 )
 RETURNS UUID
 LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
 AS $$
 DECLARE
   v_action_id UUID;
@@ -83,6 +85,9 @@ EXCEPTION
 END;
 $$;
 
+revoke all on function public.create_action_with_training(text, text, date, text, double precision, double precision, numeric, integer, integer, integer, text, text, text, double precision, text) from public;
+grant execute on function public.create_action_with_training(text, text, date, text, double precision, double precision, numeric, integer, integer, integer, text, text, text, double precision, text) to service_role;
+
 -- 2. Fonction atomique pour modération d'action + notification + progression
 CREATE OR REPLACE FUNCTION public.moderate_action_atomically(
   p_action_id UUID,
@@ -91,6 +96,8 @@ CREATE OR REPLACE FUNCTION public.moderate_action_atomically(
 )
 RETURNS JSONB
 LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
 AS $$
 DECLARE
   v_user_id TEXT;
@@ -159,6 +166,9 @@ EXCEPTION
 END;
 $$;
 
+revoke all on function public.moderate_action_atomically(uuid, text, text) from public;
+grant execute on function public.moderate_action_atomically(uuid, text, text) to service_role;
+
 -- 3. Fonction atomique pour création de spot + progression
 CREATE OR REPLACE FUNCTION public.create_spot_with_progression(
   p_user_id TEXT,
@@ -170,6 +180,8 @@ CREATE OR REPLACE FUNCTION public.create_spot_with_progression(
 )
 RETURNS UUID
 LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = public
 AS $$
 DECLARE
   v_spot_id UUID;
@@ -203,6 +215,9 @@ EXCEPTION
     RAISE;
 END;
 $$;
+
+revoke all on function public.create_spot_with_progression(text, text, text, double precision, double precision, text) from public;
+grant execute on function public.create_spot_with_progression(text, text, text, double precision, double precision, text) to service_role;
 
 -- Vérifier que les fonctions sont créées
 DO $$

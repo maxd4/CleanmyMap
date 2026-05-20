@@ -3,6 +3,7 @@ import {
   buildActionsCsv,
   buildActionsCsvFilename,
   buildDateFloor,
+  escapeCsvCell,
   parsePositiveInteger,
   parseReportScopeKindParam,
   parseReportScopeValueParam,
@@ -86,6 +87,19 @@ describe("report csv helpers", () => {
     expect(csv).toContain("geometry_confidence");
     expect(csv).toContain("manual_drawing_geojson");
     expect(csv).toContain('"{""type"":""Polygon""}"');
+  });
+
+  it("neutralizes formula-like csv cells", () => {
+    expect(escapeCsvCell("=SUM(1,1)")).toBe("\"'=SUM(1,1)\"");
+    expect(escapeCsvCell("+1+1")).toBe("'+1+1");
+    expect(escapeCsvCell("-1+1")).toBe("'-1+1");
+    expect(escapeCsvCell("@foo")).toBe("'@foo");
+    expect(escapeCsvCell("  =HYPERLINK(1)")).toBe("'  =HYPERLINK(1)");
+  });
+
+  it("quotes cells using semicolon delimiters", () => {
+    expect(escapeCsvCell("Rue; Paris", ";")).toBe("\"Rue; Paris\"");
+    expect(escapeCsvCell("=SUM(1;1)", ";")).toBe("\"'=SUM(1;1)\"");
   });
 
   it("builds deterministic filename", () => {

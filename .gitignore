@@ -49,3 +49,9 @@ runtime/
 CleanmyMap-sync/
 
 .vercel
+.playwright-mcp/
+/*.log
+/*.png
+/*.webp
+/*.tmp
+/*.bak

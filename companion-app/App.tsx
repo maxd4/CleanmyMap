@@ -176,10 +176,10 @@ export default function App() {
       setActionLoading('photo')
       const photoUri = result.assets[0].uri
 
-      const { publicUrl, error } = await uploadMissionPhoto(mission.id, photoUri)
+      const { path, error } = await uploadMissionPhoto(mission.id, photoUri)
 
-      if (error) {
-        Alert.alert('Erreur Upload', error)
+      if (error || !path) {
+        Alert.alert('Erreur Upload', error ?? "Impossible d'envoyer la photo.")
         setActionLoading(null)
         return
       }
@@ -189,7 +189,7 @@ export default function App() {
         'photo',
         undefined,
         'Photo du terrain',
-        publicUrl,
+        path,
       )
       setActionLoading(null)
 

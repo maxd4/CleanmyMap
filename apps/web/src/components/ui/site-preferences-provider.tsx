@@ -175,7 +175,7 @@ export function SitePreferencesProvider({
   }, []);
 
   const setDisplayMode = useCallback((value: DisplayMode) => {
-    setDisplayModeState(value);
+    setDisplayModeState(value === "exhaustif" ? "exhaustif" : DEFAULT_DISPLAY_MODE);
     setIsDisplayModeExplicitlySet(true);
   }, []);
 
