@@ -39,6 +39,8 @@ export async function sendCreatorInboxEmail(params: {
   lines: Array<{ label: string; value: string }>;
   footer?: string;
   extraRecipients?: string[];
+  actorUserId?: string | null;
+  meta?: Record<string, unknown>;
 }): Promise<boolean> {
   const resend = getResendClient();
   const from = resolveEmailFrom();
@@ -65,6 +67,8 @@ export async function sendCreatorInboxEmail(params: {
     replyTo: resolveCreatorReplyTo(),
     subject: params.subject,
     html,
+    actorUserId: params.actorUserId ?? null,
+    meta: params.meta ?? {},
   });
   return true;
 }

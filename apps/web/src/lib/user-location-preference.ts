@@ -81,3 +81,25 @@ export function createGreaterParisMetadata(
     zoneLocationType: locationType,
   };
 }
+
+export function createGreaterParisMetadataFromZoneName(
+  zoneName: string,
+  locationType: UserLocationType,
+): Record<string, unknown> | null {
+  const normalizedZoneName = zoneName.trim();
+  if (!normalizedZoneName) {
+    return null;
+  }
+
+  const zone = findZoneByName(normalizedZoneName);
+  if (!zone) {
+    return null;
+  }
+
+  return createGreaterParisMetadata(
+    zone.name,
+    zone.department,
+    zone.areaType,
+    locationType,
+  );
+}

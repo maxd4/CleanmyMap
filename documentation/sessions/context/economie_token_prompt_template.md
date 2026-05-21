@@ -4,7 +4,7 @@
 - Projet: CleanMyMap
 - Stack: Next.js + TypeScript + Supabase + Clerk
 - Regles globales: AGENTS.md
-- Memoire session: documentation/du/session/latest-session.md
+- Memoire session: documentation/sessions/history/latest-session.md
 
 ## Tache
 [Describe only the task to execute now]

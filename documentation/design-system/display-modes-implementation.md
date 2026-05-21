@@ -193,4 +193,4 @@ Nouveau système:
 ## Documentation liée
 - `documentation/design-system/display-modes-chartes.md` - Chartes détaillées
 - `documentation/design-system/theme-visibility-rules.md` - Règles de visibilité par mode
-- `documentation/design-system/THEME_SOMBRE_DOUCE.md` - Héritage visuel et transition historique
+- L’héritage visuel historique a été absorbé dans la charte et les règles de visibilité actuelles.

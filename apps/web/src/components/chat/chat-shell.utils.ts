@@ -47,14 +47,24 @@ export type ChatMetaItem = {
   value: string;
 };
 
-export function readMetadataString(
-  metadata: Record<string, unknown> | null | undefined,
-  key: string,
-): string | null {
-  if (!metadata) {
+export function toMetadataRecord(
+  value: unknown,
+): Record<string, unknown> | null {
+  if (!value || typeof value !== "object") {
     return null;
   }
-  const value = metadata[key];
+  return value as Record<string, unknown>;
+}
+
+export function readMetadataString(
+  metadata: unknown,
+  key: string,
+): string | null {
+  const record = toMetadataRecord(metadata);
+  if (!record) {
+    return null;
+  }
+  const value = record[key];
   return typeof value === "string" ? value.trim() : null;
 }
 
@@ -74,16 +84,14 @@ export function parseArrondissement(value: unknown): number | null {
 }
 
 export function getClerkRoleLabel(user: ReturnType<typeof useUser>["user"]): string {
-  const publicRole = readMetadataString(
-    user?.publicMetadata as Record<string, unknown> | null | undefined,
-    "role",
-  );
+  const publicRole = readMetadataString(user?.publicMetadata, "role");
   return (publicRole ?? "benevole").toLowerCase();
 }
 
 export function getClerkArrondissement(user: ReturnType<typeof useUser>["user"]): number | null {
+  const publicMetadata = toMetadataRecord(user?.publicMetadata);
   const publicArrondissement = parseArrondissement(
-    (user?.publicMetadata as Record<string, unknown> | null | undefined)?.parisArrondissement,
+    publicMetadata?.parisArrondissement,
   );
   return publicArrondissement;
 }

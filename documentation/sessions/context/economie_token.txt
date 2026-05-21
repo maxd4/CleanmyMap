@@ -39,7 +39,7 @@ Prompt à exécuter: Crée un template avec champs: Contexte minimal, Tâche, Co
 
 Bloc 5 — Mettre en place la mémoire de session continue
 But: Garder un état inter-session court et exploitable (latest-session).
-Zone de code probable: documentation/du/session/latest-session.md + script scripts/update_session_memory.mjs (à créer).
+Zone de code probable: documentation/sessions/history/latest-session.md + script scripts/update_session_memory.mjs (à créer).
 Risque principal: Inflation de taille et bruit inutile.
 Prompt à exécuter: Crée latest-session.md structuré (done/in-progress/next/risks) et un script qui tronque à N lignes et met à jour uniquement ces sections.
 
@@ -153,7 +153,6 @@ Execution
 - PARTIE 1: executee, voir `documentation/du/economie/economie_token_partie1_execution.md`.
 - PARTIE 2: executee, voir `documentation/du/economie/economie_token_partie2_execution.md`.
 - PARTIE 3: executee, voir `documentation/du/economie/economie_token_partie3_execution.md`.
-
 
 
 

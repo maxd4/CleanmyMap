@@ -2,7 +2,7 @@
 
 ## Objet
 
-Ce document formalise le lot `securite publication` demande dans `documentation/plans/ateliers_DU.md` :
+Ce document formalise le lot `securite publication` demande par le backlog actif :
 
 - inventaire des variables sensibles ;
 - checks pre-release ;

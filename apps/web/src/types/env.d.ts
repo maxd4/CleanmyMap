@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 declare namespace NodeJS {
   interface ProcessEnv {
     CLEANMYMAP_SHEET_URL?: string;
@@ -36,6 +38,9 @@ declare namespace NodeJS {
     RESEND_FROM_EMAIL?: string;
     RESEND_REPLY_TO?: string;
     RESEND_TEST_TOKEN?: string;
+    CRON_SECRET?: string;
+    SUPABASE_STORAGE_QUOTA_BYTES?: string;
+    SUPABASE_STORAGE_QUOTA_GB?: string;
     SENTRY_BUILD_PLUGIN?: string;
     SENTRY_DSN?: string;
     SENTRY_ORG?: string;

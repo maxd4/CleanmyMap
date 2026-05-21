@@ -9,10 +9,12 @@ import {
 import type { GeometryPresentation } from "@/lib/actions/geometry-presentation";
 import { isRenderableDrawing } from "@/lib/actions/derived-geometry";
 
+type CoordinatePair = [number, number];
+
 export type ActionMapGeometryViewModel = {
   kind: ActionGeometryKind | "point" | null;
   renderMode: "point" | "drawing" | "empty";
-  positions: [number, number][];
+  positions: CoordinatePair[];
   anchor: LatLngTuple | null;
   pointCount: number;
   confidence: number | null;
@@ -60,8 +62,8 @@ function isFiniteCoordinate(value: number | null | undefined): value is number {
 }
 
 function normalizeCoordinatePair(
-  point: [number, number] | null | undefined,
-): [number, number] | null {
+  point: CoordinatePair | null | undefined,
+): CoordinatePair | null {
   if (!point) {
     return null;
   }
@@ -75,8 +77,8 @@ function normalizeCoordinatePair(
 }
 
 function areSameCoordinate(
-  left: [number, number],
-  right: [number, number],
+  left: CoordinatePair,
+  right: CoordinatePair,
 ): boolean {
   return left[0] === right[0] && left[1] === right[1];
 }
@@ -85,7 +87,7 @@ function toRadians(value: number): number {
   return (value * Math.PI) / 180;
 }
 
-function computePolylineLengthMeters(coordinates: [number, number][]): number | null {
+function computePolylineLengthMeters(coordinates: CoordinatePair[]): number | null {
   if (coordinates.length < 2) {
     return null;
   }
@@ -108,8 +110,17 @@ function computePolylineLengthMeters(coordinates: [number, number][]): number | 
   return total;
 }
 
+function projectCoordinate(
+  coordinate: CoordinatePair,
+  metersPerDegreeLng: number,
+  metersPerDegreeLat: number,
+): CoordinatePair {
+  const [latitude, longitude] = coordinate;
+  return [longitude * metersPerDegreeLng, latitude * metersPerDegreeLat];
+}
+
 function computePolygonAreaSquareMeters(
-  coordinates: [number, number][],
+  coordinates: CoordinatePair[],
 ): number | null {
   if (coordinates.length < 3) {
     return null;
@@ -122,10 +133,9 @@ function computePolygonAreaSquareMeters(
   const metersPerDegreeLng =
     111_320 * Math.max(0.1, Math.cos(toRadians(meanLatitude)));
 
-  const projected = coordinates.map(([latitude, longitude]) => [
-    longitude * metersPerDegreeLng,
-    latitude * metersPerDegreeLat,
-  ]);
+  const projected = coordinates.map((coordinate) =>
+    projectCoordinate(coordinate, metersPerDegreeLng, metersPerDegreeLat),
+  );
 
   let area = 0;
   for (let index = 0; index < projected.length; index += 1) {
@@ -153,7 +163,7 @@ function formatAreaLabel(squareMeters: number): string {
 
 function resolveGeometryMetric(
   kind: ActionGeometryKind | "point" | null,
-  coordinates: [number, number][],
+  coordinates: CoordinatePair[],
 ): ActionMapGeometryMetric {
   if (kind === "polyline") {
     const lengthMeters = computePolylineLengthMeters(coordinates);
@@ -225,12 +235,12 @@ export function resolveGeometryRenderStyle(
 
 export function normalizeDrawingCoordinates(
   drawing: Pick<ActionDrawing, "coordinates"> | null | undefined,
-): [number, number][] {
+): CoordinatePair[] {
   if (!drawing) {
     return [];
   }
 
-  return drawing.coordinates.reduce<[number, number][]>((acc, point) => {
+  return drawing.coordinates.reduce<CoordinatePair[]>((acc, point) => {
     const normalizedPoint = normalizeCoordinatePair(point);
     if (!normalizedPoint) {
       return acc;
@@ -353,7 +363,7 @@ export function buildDrawingLeafletPositions(
 }
 
 function resolveAnchorFromCoordinates(
-  coordinates: [number, number][],
+  coordinates: CoordinatePair[],
 ): LatLngTuple | null {
   if (coordinates.length === 0) {
     return null;
@@ -441,10 +451,10 @@ export function resolveActionMapGeometryViewModel(
     };
   }
 
-  return {
-    kind: null,
-    renderMode: "empty",
-    positions: [],
+    return {
+      kind: null,
+      renderMode: "empty",
+      positions: [],
     anchor: null,
     pointCount: 0,
     confidence,

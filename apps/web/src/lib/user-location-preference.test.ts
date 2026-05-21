@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { extractUserLocationPreferenceFromMetadata } from "./user-location-preference";
+import {
+  createGreaterParisMetadataFromZoneName,
+  extractUserLocationPreferenceFromMetadata,
+} from "./user-location-preference";
 
 describe("user-location-preference", () => {
   it("extracts a complete preference from metadata", () => {
@@ -36,6 +39,21 @@ describe("user-location-preference", () => {
         parisArrondissement: 9,
         parisLocationType: "office",
       }),
+    ).toBeNull();
+  });
+
+  it("builds Greater Paris metadata from a known zone name", () => {
+    expect(
+      createGreaterParisMetadataFromZoneName("Boulogne-Billancourt", "work"),
+    ).toMatchObject({
+      zoneName: "Boulogne-Billancourt",
+      zoneLocationType: "work",
+    });
+  });
+
+  it("returns null for an unknown zone name", () => {
+    expect(
+      createGreaterParisMetadataFromZoneName("Nowhere City", "residence"),
     ).toBeNull();
   });
 });

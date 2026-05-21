@@ -1,0 +1,25 @@
+# Plans
+
+Zone de travail documentaire pour les plans actifs, audits d'exécution et dossiers de validation.
+
+Ces fichiers servent de source de suivi opérationnel pour l'IA et pour les lots encore ouverts.
+Ils ne doivent pas être indexés comme documentation publique de référence.
+
+---
+
+## Lecture rapide
+
+1. `ateliers_DU.md` - backlog opérationnel actif
+2. `ateliers_DU_execution_rapide.md` - trace d'exécution du lot déjà absorbé
+3. `dossier_validation_institutionnelle.md` - dossier de validation et de cohérence
+4. `impact_IA.md` - gouvernance IA, sobriété et arbitrages
+5. `journal_impact_DU.md` - narratif DU et trace d'apprentissage
+
+---
+
+## Règle d'usage
+
+- Ces fichiers peuvent être consommés par l'IA pendant la session.
+- Ils ne doivent pas être dupliqués dans les index publics du hub.
+- Si un lot est absorbé, le plan doit être réécrit ou retiré plutôt que dupliqué ailleurs.
+

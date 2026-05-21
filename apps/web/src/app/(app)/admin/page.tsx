@@ -4,9 +4,7 @@ import {
   Settings,
   AlertTriangle,
   Zap,
-  Users,
-  Activity,
-  History
+  HardDrive,
 } from"lucide-react";
 import type { Metadata } from "next";
 import { BusinessAlertsPanel } from"@/components/dashboard/business-alerts-panel";
@@ -212,6 +210,17 @@ export default async function AdminPage() {
       ring: "ring-slate-500/20",
       dot: "bg-slate-400",
       href: "/admin/services",
+    },
+    {
+      icon: HardDrive,
+      title: "Stockage",
+      desc: "Quota Supabase, usage et croissance mensuelle.",
+      iconBg: "bg-emerald-500/10",
+      iconColor: "text-emerald-400",
+      accent: "from-emerald-600/10 to-emerald-900/20",
+      ring: "ring-emerald-500/20",
+      dot: "bg-emerald-400",
+      href: "/admin/services#storage",
     },
   ];
 

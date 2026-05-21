@@ -3,7 +3,7 @@
 Documentation opérationnelle pour agents IA.
 
 Cette section reste utile pour le déploiement, le monitoring, la maintenance et les imports de données.
-Les fichiers de mémoire de session et les runbooks internes sont exclus de l’index public et décrits dans la politique de publication.
+Les documents de session et de mémoire interne sont gérés ailleurs et ne doivent pas être dupliqués ici.
 
 ---
 
@@ -27,6 +27,7 @@ Les fichiers de mémoire de session et les runbooks internes sont exclus de l’
 - `pre-release-security-check.md`
 - `../security/CODEX_SECURITY_PLAYBOOK.md`
 - `OPENAI_API_KEY` reste un secret local/serveur et ne doit jamais être traité comme un env public
+- les runbooks internes de mémoire et de session restent hors index public
 
 ### Changelog
 - `CHANGELOG.md`
@@ -66,4 +67,3 @@ Les fichiers de mémoire de session et les runbooks internes sont exclus de l’
 3. Suivre le runbook adéquat
 4. Vérifier le monitoring
 5. Documenter dans le changelog
-

@@ -11,6 +11,7 @@ Lire cette page en premier avant toute modification sur les surfaces publiques, 
 5. [Regex et ReDoS](./regex-security.md)
 6. [Rate limiting](../backend/RATE_LIMITING.md)
 7. [Codex Security Playbook](./CODEX_SECURITY_PLAYBOOK.md)
+8. [Supabase Linked Advisories Report](./supabase-linked-advisories-2026-05-20.md)
 
 ## Checklist courte
 
@@ -46,6 +47,11 @@ Lire cette page en premier avant toute modification sur les surfaces publiques, 
 - `src/lib/supabase/server.ts`
 - `src/lib/supabase/clerk-rls.ts`
 - `src/lib/rate-limit/server.ts`
+
+## Rapports
+
+- [Supabase Linked Advisories Report](./supabase-linked-advisories-2026-05-20.md)
+- Use this report to verify that the linked Supabase project is aligned with the hardened repository state after a push.
 
 ## Quand bloquer un merge
 

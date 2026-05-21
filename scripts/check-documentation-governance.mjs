@@ -9,6 +9,7 @@ const docsRoot = path.join(repoRoot, "documentation");
 const scanExtensions = new Set([".md", ".txt", ".yml", ".yaml", ".html", ".htm"]);
 const skippedPathParts = [
   `${path.sep}documentation${path.sep}sessions${path.sep}`,
+  `${path.sep}documentation${path.sep}plans${path.sep}`,
   `${path.sep}documentation${path.sep}rapport_IA${path.sep}`,
   `${path.sep}documentation${path.sep}publication-governance.md`,
   `${path.sep}documentation${path.sep}AGENTS.md`,
@@ -27,6 +28,8 @@ const forbiddenReferences = [
   "rapport_IA\\",
   "maintenance/vercel_deployments.txt",
   "maintenance\\vercel_deployments.txt",
+  "plans/",
+  "plans\\",
   "operations/agent-memory-governance.md",
   "operations\\agent-memory-governance.md",
   "operations/session-standard-runbook.md",

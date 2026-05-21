@@ -7,7 +7,8 @@ function firstHeaderValue(value: string | null): string | null {
     return null;
   }
 
-  const candidate = value.split(",")[0]?.trim();
+  const [candidateRaw] = value.split(",");
+  const candidate = candidateRaw?.trim();
   return candidate ? candidate : null;
 }
 
@@ -51,22 +52,22 @@ export function getRateLimitKey(identifier: string, route: string): string {
 
 export function getRateLimitConfig(route: string): RateLimitConfig {
   if (route.startsWith("/api/auth") || route.startsWith("/api/sign") || route.startsWith("/api/login")) {
-    return DEFAULT_RATE_LIMITS.auth;
+    return DEFAULT_RATE_LIMITS["auth"];
   }
   
   if (route.startsWith("/api/ai") || route.includes("vision") || route.includes("recommendation")) {
-    return DEFAULT_RATE_LIMITS.ai;
+    return DEFAULT_RATE_LIMITS["ai"];
   }
   
   if (route.includes("create") || route.includes("update") || route.includes("delete") || route === "POST") {
-    return DEFAULT_RATE_LIMITS.write;
+    return DEFAULT_RATE_LIMITS["write"];
   }
   
   if (route.startsWith("/api/")) {
-    return DEFAULT_RATE_LIMITS.api;
+    return DEFAULT_RATE_LIMITS["api"];
   }
   
-  return DEFAULT_RATE_LIMITS.default;
+  return DEFAULT_RATE_LIMITS["default"];
 }
 
 export async function getAuthenticatedUserIdAsync(): Promise<string | null> {

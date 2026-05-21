@@ -94,6 +94,7 @@ export async function POST(request: Request) {
       },
     }).catch(() => undefined);
     await sendCreatorInboxEmail({
+      actorUserId: identity.userId,
       subject: `[CleanMyMap] Promotion refusée - ${requestRecord.submittedByDisplayName}`,
       title: "Demande de promotion refusée",
       intro: "La demande de promotion a été refusée depuis l'inbox créateur.",
@@ -152,6 +153,7 @@ export async function POST(request: Request) {
   }).catch(() => undefined);
 
   await sendCreatorInboxEmail({
+    actorUserId: identity.userId,
     subject: `[CleanMyMap] Promotion acceptée - ${requestRecord.submittedByDisplayName}`,
     title: "Demande de promotion acceptée",
     intro: "La demande de promotion a été acceptée et le rôle a été synchronisé.",

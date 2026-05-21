@@ -18,6 +18,8 @@ describe("app-navigation-ribbon-theme", () => {
       b: 255,
       a: 0.5,
     });
+    expect(parseCssColor("rgb(15, 23)")).toBeNull();
+    expect(parseCssColor("#12345")).toBeNull();
   });
 
   it("composites translucent colors over a backdrop", () => {

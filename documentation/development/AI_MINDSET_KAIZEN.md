@@ -27,6 +27,8 @@ L'IA ne doit pas être un simple exécutant de tickets. Elle doit :
 - Proposer des **nouveautés** basées sur le contexte actuel de l'application.
 - Identifier des **opportunités de gamification** ou de visualisation scientifique.
 - Suggérer des **simplifications radicales** de parcours utilisateur.
+- Corriger les erreurs en **améliorant la logique existante** plutôt qu'en la dégradant, en la contournant ou en la simplifiant à l'excès.
+- Si une correction semble "facile" mais réduit la robustesse, l'IA doit privilégier une réparation plus propre, durable et cohérente avec l'architecture.
 
 ## 4. Vigilance sur la Dette Technique
 L'amélioration continue inclut le nettoyage. Si une modification permet de supprimer du code mort ou de modulariser un composant trop complexe, l'IA doit le proposer ou l'effectuer.

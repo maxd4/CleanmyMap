@@ -30,6 +30,15 @@ type NewActionPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
+function resolveSingleSearchParam(
+  value: string | string[] | undefined,
+): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
+
 export default async function NewActionPage({
   searchParams,
 }: NewActionPageProps) {
@@ -96,12 +105,8 @@ export default async function NewActionPage({
   const identity = await getCurrentUserIdentity();
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
   const params = searchParams ? await searchParams : undefined;
-  const fromEventIdRaw = params?.["fromEventId"];
-  const fromEventId = Array.isArray(fromEventIdRaw)
-    ? fromEventIdRaw[0]
-    : fromEventIdRaw;
-  const modeRaw = params?.["mode"];
-  const mode = Array.isArray(modeRaw) ? modeRaw[0] : modeRaw;
+  const fromEventId = resolveSingleSearchParam(params?.["fromEventId"]);
+  const mode = resolveSingleSearchParam(params?.["mode"]);
   const initialMode = mode === "complete" ? "complete" : "quick";
   const initialRecordType = mode === "propre" ? "clean_place" : "action";
   const fallbackActorName = userId ?? "unknown-user";
@@ -126,7 +131,7 @@ export default async function NewActionPage({
           actorNameOptions={actorNameOptions}
           defaultActorName={defaultActorName}
           userMetadata={userMetadata}
-          linkedEventId={fromEventId ?? undefined}
+          linkedEventId={fromEventId}
           initialMode={initialMode}
           initialRecordType={initialRecordType}
         />
@@ -140,7 +145,7 @@ export default async function NewActionPage({
         actorNameOptions={actorNameOptions}
         defaultActorName={defaultActorName}
         userMetadata={userMetadata}
-        linkedEventId={fromEventId ?? undefined}
+        linkedEventId={fromEventId}
         initialMode={initialMode}
         initialRecordType={initialRecordType}
       />

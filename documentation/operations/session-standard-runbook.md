@@ -60,7 +60,7 @@ npm run session:close -- --done "<resume>" --next "<prochaine etape>" --risk "<r
 ```
 
 Critere de succes:
-- `documentation/du/session/latest-session.md` mis a jour proprement.
+- `documentation/sessions/history/latest-session.md` mis a jour proprement.
 
 ## Regles de validation de lot
 

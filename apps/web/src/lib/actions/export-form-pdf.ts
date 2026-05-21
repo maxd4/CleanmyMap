@@ -28,9 +28,9 @@ function section(title: string, rows: string): string {
     </div>`;
 }
 
-export function exportFormAsPdf(form: FormState, actorName: string): void {
+export function exportFormAsPdf(form: FormState, actorName: string): boolean {
   const win = window.open("", "_blank", "noopener,noreferrer");
-  if (!win) return;
+  if (!win) return false;
 
   const date = new Intl.DateTimeFormat("fr-FR", {
     dateStyle: "long",
@@ -103,4 +103,5 @@ export function exportFormAsPdf(form: FormState, actorName: string): void {
   win.document.open();
   win.document.write(html);
   win.document.close();
+  return true;
 }

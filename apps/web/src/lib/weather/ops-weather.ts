@@ -170,8 +170,11 @@ export function buildInterventionWindows(hourly: HourlyPoint[]): {
   const avoid: InterventionWindow[] = [];
 
   for (let i = 0; i <= next72h.length - 2; i += 2) {
-    const start = next72h[i]!;
-    const end = next72h[i + 1]!;
+    const start = next72h[i];
+    const end = next72h[i + 1];
+    if (!start || !end) {
+      continue;
+    }
     const startRisk = evaluateWeatherRisk({
       temperature: start.temperature,
       rain: start.rain,

@@ -17,9 +17,9 @@ Ce document fixe la frontière entre ce qui peut être publié sur un GitHub pub
 Ces fichiers ou sous-arbres ne doivent pas être exposés comme documentation publique :
 
 - [`AGENTS.md`](../AGENTS.md)
-- [`documentation/AGENTS.md`](./AGENTS.md)
 - [`documentation/project_context.md`](./project_context.md)
 - [`documentation/sessions/`](./sessions/)
+- [`documentation/plans/`](./plans/)
 - [`documentation/operations/agent-memory-governance.md`](./operations/agent-memory-governance.md)
 - [`documentation/operations/session-standard-runbook.md`](./operations/session-standard-runbook.md)
 - [`documentation/maintenance/vercel_deployments.txt`](./maintenance/vercel_deployments.txt)

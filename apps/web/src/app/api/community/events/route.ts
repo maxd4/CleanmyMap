@@ -273,6 +273,7 @@ export async function POST(request: Request) {
  try {
  await sendCreatorInboxEmail({
  subject: `[CleanMyMap] Nouvel événement - ${parsed.data.title}`,
+ actorUserId: userId,
  title: "Nouvel événement communautaire",
  intro: "Un événement vient d'être créé dans la file créateur.",
  lines: [

@@ -238,8 +238,13 @@ export async function updateCommunityBugReportStatus(params: {
     return null;
   }
 
+  const current = store.records[index];
+  if (!current) {
+    return null;
+  }
+
   const updated: BugReportRecord = {
-    ...store.records[index],
+    ...current,
     status: params.status,
     creatorState:
       params.status === "open"
@@ -287,8 +292,13 @@ export async function updateCommunityBugReportCreatorState(params: {
     return null;
   }
 
+  const current = store.records[index];
+  if (!current) {
+    return null;
+  }
+
   const updated: BugReportRecord = {
-    ...store.records[index],
+    ...current,
     creatorState: params.creatorState,
   };
 

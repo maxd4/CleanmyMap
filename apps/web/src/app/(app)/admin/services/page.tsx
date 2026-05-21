@@ -1,4 +1,5 @@
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
+import { StorageUsagePanel } from"@/components/dashboard/storage-usage-panel";
 import { SystemStatusPanel } from"@/components/dashboard/system-status-panel";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
@@ -58,7 +59,8 @@ export default async function AdminServicesPage() {
  </h1>
  <p className="mt-3 max-w-2xl cmm-text-small leading-6 cmm-text-secondary">
  Visualisez l&apos;état des intégrations critiques, optionnelles et externes de
- CleanMyMap. Les données sont mises à jour en temps réel via l&apos;API
+ CleanMyMap, ainsi que la dérive du stockage Supabase et son historique mensuel.
+ Les données sont mises à jour en temps réel via l&apos;API
  <code className="rounded bg-slate-100 px-1 py-0.5 cmm-text-caption font-medium cmm-text-secondary">
   /api/services
  </code>.
@@ -66,6 +68,10 @@ export default async function AdminServicesPage() {
  </div>
  </div>
  </section>
+
+ <div id="storage">
+ <StorageUsagePanel />
+ </div>
 
  <SystemStatusPanel />
  </div>

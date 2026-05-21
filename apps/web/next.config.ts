@@ -3,6 +3,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const appRoot = path.resolve(__dirname, "../..");
+const env = process.env;
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -28,8 +29,6 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
-    const isProduction = process.env.NODE_ENV === "production";
-
     return [
       {
         source: "/:path*",
@@ -50,14 +49,14 @@ const nextConfig: NextConfig = {
   },
 };
 
-const sentryEnabled = process.env["NEXT_PUBLIC_SENTRY_ENABLED"] === "1";
-const sentryBuildPluginEnabled = process.env["SENTRY_BUILD_PLUGIN"] === "1" && sentryEnabled;
+const sentryEnabled = env["NEXT_PUBLIC_SENTRY_ENABLED"] === "1";
+const sentryBuildPluginEnabled = env["SENTRY_BUILD_PLUGIN"] === "1" && sentryEnabled;
 
 export default sentryBuildPluginEnabled
   ? withSentryConfig(nextConfig, {
-      org: process.env["SENTRY_ORG"],
-      project: process.env["SENTRY_PROJECT"],
-      silent: !process.env["CI"],
+      org: env["SENTRY_ORG"],
+      project: env["SENTRY_PROJECT"],
+      silent: !env["CI"],
       telemetry: false,
     })
   : nextConfig;

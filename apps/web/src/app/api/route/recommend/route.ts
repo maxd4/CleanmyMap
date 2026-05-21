@@ -41,6 +41,27 @@ type StopCandidate = {
  reason: string;
 };
 
+function selectNextStopCandidate(
+ current: StopCandidate,
+ candidates: StopCandidate[],
+ impactWeight: number,
+ distanceWeight: number,
+): StopCandidate | undefined {
+ let bestCandidate: StopCandidate | undefined;
+ let bestValue = Number.NEGATIVE_INFINITY;
+
+ for (const candidate of candidates) {
+ const dist = distanceKm(current, candidate);
+ const composite = candidate.score * impactWeight - dist * 8 * distanceWeight;
+ if (composite > bestValue) {
+ bestValue = composite;
+ bestCandidate = candidate;
+ }
+ }
+
+ return bestCandidate;
+}
+
 function distanceKm(
  a: { latitude: number; longitude: number },
  b: { latitude: number; longitude: number },
@@ -156,40 +177,28 @@ export async function POST(request: Request) {
     });
   }
 
-  const impactWeight = constraints.impactVsDistance / 100;
-  const distanceWeight = 1 - impactWeight;
-  const route: StopCandidate[] = [routeStart];
-  const unvisited = selected.slice(1);
+ const impactWeight = constraints.impactVsDistance / 100;
+ const distanceWeight = 1 - impactWeight;
+ const route: StopCandidate[] = [routeStart];
+ const unvisited = selected.slice(1);
 
-  while (route.length < constraints.maxStops && unvisited.length > 0) {
-    const current = route[route.length - 1];
-    if (!current) {
-      break;
-    }
-
-    let bestIndex = 0;
-    let bestValue = Number.NEGATIVE_INFINITY;
-    for (let i = 0; i < unvisited.length; i += 1) {
-      const candidate = unvisited[i];
-      if (!candidate) {
-        continue;
-      }
-
-      const dist = distanceKm(current, candidate);
-      const composite = candidate.score * impactWeight - dist * 8 * distanceWeight;
-      if (composite > bestValue) {
-        bestValue = composite;
-        bestIndex = i;
-      }
-    }
-
-    const next = unvisited.splice(bestIndex, 1)[0];
-    if (!next) {
-      break;
-    }
-
-    route.push(next);
+ while (route.length < constraints.maxStops && unvisited.length > 0) {
+  const current = route[route.length - 1];
+  if (!current) {
+   break;
   }
+
+  const next = selectNextStopCandidate(current, unvisited, impactWeight, distanceWeight);
+  if (!next) {
+   break;
+  }
+
+  route.push(next);
+  const nextIndex = unvisited.indexOf(next);
+  if (nextIndex >= 0) {
+   unvisited.splice(nextIndex, 1);
+  }
+ }
 
  const stops = route.map((item, index) => {
  const prev = index > 0 ? route[index - 1] : null;

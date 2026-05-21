@@ -2,7 +2,7 @@
 
 ## Objet
 
-Consolider la tracabilite documentaire demandee dans `documentation/plans/ateliers_DU.md` :
+Consolider la tracabilite documentaire demandee par le backlog actif :
 
 `rubrique -> route -> composant -> API -> source de donnee`
 

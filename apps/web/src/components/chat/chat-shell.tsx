@@ -40,6 +40,7 @@ import {
   getClerkRoleLabel,
   getEmptyStateCopy,
   type ChatMetaItem,
+  toMetadataRecord,
 } from "./chat-shell.utils";
 
 type ChatShellProps = {
@@ -111,9 +112,13 @@ export function ChatShell({
 
   const currentRoleLabel = useMemo(() => getClerkRoleLabel(user), [user]);
   const clerkArrondissement = useMemo(() => getClerkArrondissement(user), [user]);
+  const publicMetadata = useMemo(
+    () => toMetadataRecord(user?.publicMetadata),
+    [user?.publicMetadata],
+  );
   const clerkZoneContext = useMemo(
-    () => extractZoneContextFromMetadata(user?.publicMetadata as Record<string, unknown> | null | undefined),
-    [user?.publicMetadata]
+    () => extractZoneContextFromMetadata(publicMetadata),
+    [publicMetadata]
   );
 
   const effectiveZone = useMemo(

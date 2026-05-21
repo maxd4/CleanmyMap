@@ -250,8 +250,13 @@ export async function updatePromotionRequestStatus(params: {
     return null;
   }
 
+  const current = store.records[index];
+  if (!current) {
+    return null;
+  }
+
   const updated: PromotionRequestRecord = {
-    ...store.records[index],
+    ...current,
     status: params.status,
     reviewedAt: new Date().toISOString(),
     reviewedByUserId: params.reviewedByUserId,
@@ -281,8 +286,13 @@ export async function updatePromotionRequestCreatorState(params: {
     return null;
   }
 
+  const current = store.records[index];
+  if (!current) {
+    return null;
+  }
+
   const updated: PromotionRequestRecord = {
-    ...store.records[index],
+    ...current,
     creatorState: params.creatorState,
   };
 
