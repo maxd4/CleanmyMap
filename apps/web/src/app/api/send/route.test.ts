@@ -5,7 +5,7 @@ const resendSendMock = vi.hoisted(() => vi.fn());
 const getResendClientMock = vi.hoisted(() => vi.fn());
 const envMock = vi.hoisted(() => ({
  RESEND_API_KEY:"re_test_key",
- EMAIL_FROM:"CleanMyMap <contact@mail.cleanmymap.fr>" as string | undefined,
+ EMAIL_FROM:"CleanMyMap <noreply@cleanmymap.fr>" as string | undefined,
  CONTACT_EMAIL:"contact@cleanmymap.fr" as string | undefined,
  RESEND_TEST_TOKEN:"local-token" as string | undefined,
 }));
@@ -27,9 +27,9 @@ describe("POST /api/send", () => {
  requireAdminAccessMock.mockResolvedValue({ ok: true });
  resendSendMock.mockResolvedValue({ data: { id:"email_123" }, error: null });
  getResendClientMock.mockReturnValue({
-  emails: { send: resendSendMock },
+ emails: { send: resendSendMock },
  });
- envMock.EMAIL_FROM ="CleanMyMap <contact@mail.cleanmymap.fr>";
+ envMock.EMAIL_FROM ="CleanMyMap <noreply@cleanmymap.fr>";
  envMock.CONTACT_EMAIL ="contact@cleanmymap.fr";
  envMock.RESEND_TEST_TOKEN ="local-token";
 });
@@ -66,7 +66,7 @@ describe("POST /api/send", () => {
  expect(body.id).toBe("email_123");
  expect(body.to).toBe("contact@cleanmymap.fr");
  expect(resendSendMock).toHaveBeenCalledWith({
- from:"CleanMyMap <contact@mail.cleanmymap.fr>",
+ from:"CleanMyMap <noreply@cleanmymap.fr>",
  to:"contact@cleanmymap.fr",
  subject:"Hello World",
  html:"<p>Test OK</p>",

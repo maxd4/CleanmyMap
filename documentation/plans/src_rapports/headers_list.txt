@@ -1,0 +1,157 @@
+﻿
+documentation\plans\impact_IA.md:1:# Bilan d'impact IA — CleanMyMap
+documentation\plans\impact_IA.md:3:## Sommaire
+documentation\plans\impact_IA.md:25:## Parcours de lecture rapide
+documentation\plans\impact_IA.md:34:## Organisation du rapport
+documentation\plans\impact_IA.md:41:# Résumé exécutif
+documentation\plans\impact_IA.md:43:## Synthèse exécutive — Pourquoi l'IA est un choix responsable pour CleanMyMap
+documentation\plans\impact_IA.md:58:# Partie I — Cadre, périmètre et méthode
+documentation\plans\impact_IA.md:65:## Audit de conformité et de rigueur
+documentation\plans\impact_IA.md:75:## Comparaisons sectorielles
+documentation\plans\impact_IA.md:92:## Résumé méthodologique du bilan
+documentation\plans\impact_IA.md:126:## Hypothèses utilisées
+documentation\plans\impact_IA.md:135:### Répartition par outil (estimée, non mesurée)
+documentation\plans\impact_IA.md:143:### Productivité apparente
+documentation\plans\impact_IA.md:152:### Protocole de validation tierce et responsabilité humaine
+documentation\plans\impact_IA.md:176:### Comparaison des modes d'usage IA : abonnement, API et local
+documentation\plans\impact_IA.md:237:# Partie II — Empreinte environnementale de l’IA et du site
+documentation\plans\impact_IA.md:241:## Estimation environnementale et matérielle
+documentation\plans\impact_IA.md:245:### Usage de l’IA dans le développement et incertitudes de calcul
+documentation\plans\impact_IA.md:282:### Scénarios de consommation électrique et pollution carbone
+documentation\plans\impact_IA.md:297:## Comparaison parlante
+documentation\plans\impact_IA.md:348:### Consommation en eau
+documentation\plans\impact_IA.md:366:### Estimation matérielle
+documentation\plans\impact_IA.md:378:### Analyse du cycle de vie (ACV)
+documentation\plans\impact_IA.md:447:# Partie III — Analyse sociale, humanitaire et politique de l’IA
+documentation\plans\impact_IA.md:449:## Analyse sociale et humanitaire
+documentation\plans\impact_IA.md:456:### Dépendance aux plateformes privées, centralisation et souveraineté
+documentation\plans\impact_IA.md:474:### Travail invisible et coût humain
+documentation\plans\impact_IA.md:487:### Perte de maîtrise technique et dilution des responsabilités
+documentation\plans\impact_IA.md:499:### Confidentialité, sécurité et usage de l'IA
+documentation\plans\impact_IA.md:521:### Alignement imparfait, sycophancy et fragilité des garde-fous
+documentation\plans\impact_IA.md:550:### Santé mentale, vulnérabilité et limites d’autorité
+documentation\plans\impact_IA.md:570:### Imaginaires sociotechniques, langues et non-neutralité culturelle
+documentation\plans\impact_IA.md:597:### IA de frontière, simulations stratégiques et risques militaires ou 
+catastrophiques
+documentation\plans\impact_IA.md:642:### Gouvernance humaine et principe de proportion
+documentation\plans\impact_IA.md:658:### Critères d'arrêt ou de limitation de l'IA
+documentation\plans\impact_IA.md:673:### Traduction en mesures de gouvernance pour CleanMyMap
+documentation\plans\impact_IA.md:722:# Partie IV — Utilité réelle de CleanMyMap
+documentation\plans\impact_IA.md:726:## Densité d'utilité réelle du projet web
+documentation\plans\impact_IA.md:741:### Finalité réelle du projet
+documentation\plans\impact_IA.md:762:### Hiérarchie de sobriété fonctionnelle
+documentation\plans\impact_IA.md:798:### Scénario minimal viable sobre (SMVS)
+documentation\plans\impact_IA.md:812:### Bruit numérique et charge attentionnelle
+documentation\plans\impact_IA.md:826:### Analyse de l'utilité créée
+documentation\plans\impact_IA.md:883:### Coût numérique estimé par usage
+documentation\plans\impact_IA.md:895:### Analyse attentionnelle et cognitive
+documentation\plans\impact_IA.md:915:### Analyse critique de la densité d'utilité
+documentation\plans\impact_IA.md:938:### Recommandations de simplification
+documentation\plans\impact_IA.md:982:### Scénario minimal viable sobre
+documentation\plans\impact_IA.md:1006:### Indice d'utilité réelle (IUR)
+documentation\plans\impact_IA.md:1019:### Analyse contrefactuelle et usages réels
+documentation\plans\impact_IA.md:1042:### Usage parisien et bilan probable en production
+documentation\plans\impact_IA.md:1060:### Conclusion honnête et nuancée
+documentation\plans\impact_IA.md:1089:## Audit de sobriété numérique du projet web
+documentation\plans\impact_IA.md:1113:# Partie V — Bilan systémique
+documentation\plans\impact_IA.md:1117:## Analyse systémique du cycle de vie de CleanMyMap
+documentation\plans\impact_IA.md:1125:### Périmètre et finalité du projet
+documentation\plans\impact_IA.md:1157:### Flux numériques induits par l’existence du site
+documentation\plans\impact_IA.md:1184:### Coûts numériques directs et coûts évitables
+documentation\plans\impact_IA.md:1207:### Bénéfices environnementaux potentiels
+documentation\plans\impact_IA.md:1221:### Place spécifique de l’IA dans CleanMyMap
+documentation\plans\impact_IA.md:1235:### Conclusion systémique
+documentation\plans\impact_IA.md:1248:## Bilan de compensation : CleanMyMap peut-il justifier sa dette numérique et IA 
+?
+documentation\plans\impact_IA.md:1258:### Ce que le site peut potentiellement compenser
+documentation\plans\impact_IA.md:1298:### Ce que le site ne pourra jamais compenser totalement
+documentation\plans\impact_IA.md:1325:### Ratio probable d’impact
+documentation\plans\impact_IA.md:1350:### Justification de l'IA par l'utilité systémique (Note pour le jury)
+documentation\plans\impact_IA.md:1371:## Impacts non compensés, effets rebond et dette future
+documentation\plans\impact_IA.md:1376:### Impacts environnementaux directs
+documentation\plans\impact_IA.md:1385:### Impacts environnementaux indirects
+documentation\plans\impact_IA.md:1394:### Impacts sociaux
+documentation\plans\impact_IA.md:1404:### Impacts systémiques
+documentation\plans\impact_IA.md:1413:### Effets rebond
+documentation\plans\impact_IA.md:1422:### Dépendances technologiques
+documentation\plans\impact_IA.md:1431:### Surconsommation numérique
+documentation\plans\impact_IA.md:1440:### Dette numérique, technique et écologique future
+documentation\plans\impact_IA.md:1463:## Arbitrage final : coût numérique vs bénéfice terrain
+documentation\plans\impact_IA.md:1520:## Analyse contrefactuelle et systémique
+documentation\plans\impact_IA.md:1536:## Dépendance technologique, centralisation et géopolitique du numérique
+documentation\plans\impact_IA.md:1554:## Renvoi — avancées scientifiques et sociales permises par l'IA
+documentation\plans\impact_IA.md:1565:## Renvoi — points utiles au jury
+documentation\plans\impact_IA.md:1574:## Renvoi — réflexion d’évaluation
+documentation\plans\impact_IA.md:1585:## Renvoi — questions fréquentes du jury
+documentation\plans\impact_IA.md:1594:## Renvoi — IA et Objectifs de développement durable
+documentation\plans\impact_IA.md:1603:## Renvoi — analyse critique du rôle de l'IA
+documentation\plans\impact_IA.md:1614:# Partie VI — Plan de réduction des impacts
+documentation\plans\impact_IA.md:1618:## Actions complémentaires hors site pour réduire les impacts non compensés
+documentation\plans\impact_IA.md:1623:### Impacts impossibles à résoudre uniquement via le site
+documentation\plans\impact_IA.md:1643:### Actions complémentaires proposées
+documentation\plans\impact_IA.md:1654:### Analyse détaillée de chaque action
+documentation\plans\impact_IA.md:1675:### Analyse critique
+documentation\plans\impact_IA.md:1697:### Priorisation
+documentation\plans\impact_IA.md:1728:### Références de la section 1
+documentation\plans\impact_IA.md:1736:## Sobriété numérique du site
+documentation\plans\impact_IA.md:1743:### Optimisations prioritaires
+documentation\plans\impact_IA.md:1761:### Réduction du poids des images, compression et stockage
+documentation\plans\impact_IA.md:1774:### Limitation des analytics et des services tiers
+documentation\plans\impact_IA.md:1784:### Architecture alternative plus sobre
+documentation\plans\impact_IA.md:1793:### Estimation des gains possibles
+documentation\plans\impact_IA.md:1805:### Indicateurs de suivi après mise en production
+documentation\plans\impact_IA.md:1821:### Références de la section 2
+documentation\plans\impact_IA.md:1832:## Traduction en actions concrètes sur le site web
+documentation\plans\impact_IA.md:1836:### Principes directeurs à retenir
+documentation\plans\impact_IA.md:1849:### Tableau de pilotage synthétique
+documentation\plans\impact_IA.md:1862:### Renvoi vers les directives détaillées
+documentation\plans\impact_IA.md:1870:### Bonnes pratiques à maintenir dans la durée
+documentation\plans\impact_IA.md:1887:# Partie VII — Conclusion institutionnelle
+documentation\plans\impact_IA.md:1891:## Réponse Courte Au Jury
+documentation\plans\impact_IA.md:1899:### Justification finale de l’usage de l’IA
+documentation\plans\impact_IA.md:1911:### Conditions de validité du bilan
+documentation\plans\impact_IA.md:1923:### Position finale
+documentation\plans\impact_IA.md:1934:### Rôle de l’IUR
+documentation\plans\impact_IA.md:1939:### Bilan net conditionnel, pas automatique
+documentation\plans\impact_IA.md:1951:### Réponses très courtes aux objections du jury
+documentation\plans\impact_IA.md:1971:# Annexes
+documentation\plans\impact_IA.md:1975:## Annexe A — Statistiques du dépôt
+documentation\plans\impact_IA.md:2013:## Annexe B — Détail des calculs
+documentation\plans\impact_IA.md:2017:### B.1 Hypothèse horaire de développement assisté par IA
+documentation\plans\impact_IA.md:2027:### B.2 Répartition par outil
+documentation\plans\impact_IA.md:2038:### B.3 Productivité apparente
+documentation\plans\impact_IA.md:2047:### B.4 Indice d’utilité réelle (IUR)
+documentation\plans\impact_IA.md:2056:### B.5 Logique des scénarios de coût
+documentation\plans\impact_IA.md:2067:## Annexe C — Audit technique de sobriété (Diagnostic détaillé)
+documentation\plans\impact_IA.md:2071:### C.1 Cartographie des postes de coût numérique
+documentation\plans\impact_IA.md:2080:### C.2 Audit des routes API et Services
+documentation\plans\impact_IA.md:2090:### C.3 Analyse du Frontend et du Bundle
+documentation\plans\impact_IA.md:2099:### C.4 Stratégie de gestion des médias (Photos)
+documentation\plans\impact_IA.md:2110:## Annexe D — Dépendances technologiques et Risques associés
+documentation\plans\impact_IA.md:2114:### D.1 Pile technologique coeur (SaaS & Infrastructure)
+documentation\plans\impact_IA.md:2127:### D.2 Analyse des Risques et Plan de Sortie
+documentation\plans\impact_IA.md:2136:### D.3 Inventaire des scripts d'exploitation
+documentation\plans\impact_IA.md:2144:### D.4 Contre-mesures déjà retenues
+documentation\plans\impact_IA.md:2155:## Annexe E — Avancées scientifiques et sociales permises par l’IA
+documentation\plans\impact_IA.md:2157:### E.1 Cadre général
+documentation\plans\impact_IA.md:2162:### E.2 Exemples marquants
+documentation\plans\impact_IA.md:2176:### E.3 Points de vigilance
+documentation\plans\impact_IA.md:2183:### E.4 Points clés pour le jury
+documentation\plans\impact_IA.md:2189:### E.5 Réflexions complémentaires
+documentation\plans\impact_IA.md:2195:### Références de l'annexe E
+documentation\plans\impact_IA.md:2208:## Annexe F — IA et Objectifs de développement durable
+documentation\plans\impact_IA.md:2233:### F.1 ODD les plus directement liés à CleanMyMap
+documentation\plans\impact_IA.md:2244:### F.2 Risques IA reconnus dans le cadre des ODD
+documentation\plans\impact_IA.md:2255:### Références de l'annexe F
+documentation\plans\impact_IA.md:2264:## Annexe G — Questions fréquentes du jury
+documentation\plans\impact_IA.md:2266:### G.1 Réponses aux objections possibles
+documentation\plans\impact_IA.md:2295:### G.2 Questions de contexte scientifique et institutionnel
+documentation\plans\impact_IA.md:2313:### G.3 Apports concrets
+documentation\plans\impact_IA.md:2322:### G.4 Limites, risques et effets pervers
+documentation\plans\impact_IA.md:2335:### G.5 Conditions d’un usage responsable
+documentation\plans\impact_IA.md:2345:### G.6 Grille de décision pour une fonctionnalité IA
+documentation\plans\impact_IA.md:2358:### G.7 Matrice synthétique risque / réponse / preuve
+documentation\plans\impact_IA.md:2388:## Annexe H — Glossaire
+documentation\plans\impact_IA.md:2405:## Annexe I — Table des sources
+
+

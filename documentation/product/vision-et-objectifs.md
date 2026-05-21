@@ -1,52 +1,60 @@
 # Vision et objectifs
 
-CleanMyMap aide les acteurs locaux a transformer des actions de depollution en donnees exploitables, visibles et reutilisables.
+CleanMyMap structure l'action locale de depollution en connectant citoyens, associations, entreprises et acteurs publics.
 
-## Problematique
-
-Le probleme central n'est pas seulement l'existence de dechets, mais la difficulte a :
-
-- les localiser proprement ;
-- coordonner les actions ;
-- eviter les doublons ;
-- produire une preuve lisible pour les associations, les entreprises et les collectivites.
-
-## Promesse produit
-
-Le produit doit soutenir une boucle complete :
-
-1. declarer une action ;
-2. visualiser ce qui a ete couvert ;
-3. mesurer l'impact ;
-4. partager un bilan ;
-5. repartir sur une action suivante.
-
-## Architecture des blocs
-
+## Architecture bloc produit (7 blocs)
 ```mermaid
 flowchart LR
-  HOME["Accueil"] --> AGIR["Agir"]
-  HOME --> VISU["Visualiser"]
-  AGIR --> IMPACT["Impact"]
+  HOME[Accueil<br/>formulaire + compte] --> AGIR[Agir<br/>itineraire IA + trash spotter]
+  HOME --> VISU[Visualiser<br/>cartographie + tableaux dynamiques]
+  AGIR --> IMPACT[Impact<br/>rapports + classement]
   VISU --> IMPACT
-  IMPACT --> RESEAU["Réseau"]
-  RESEAU --> APPRENDRE["Apprendre"]
-  IMPACT --> PILOTER["Piloter"]
+  IMPACT --> RESEAU[Reseau<br/>discussion + partenaires]
+  RESEAU --> APPRENDRE[Apprendre<br/>DD + guide + seconde vie + kit terrain]
+  IMPACT --> PILOTER[Piloter<br/>admin + elus + coordinateur]
   RESEAU --> PILOTER
 ```
+Fallback statique:
+```md
+![Product blocks architecture fallback](../archive/fallback-produit-blocs-architecture.png)
+```
 
-## Objectifs mesurables
+## Objectifs produit
+- Acceleration des actions concretes locales
+- Mesure d'impact lisible et exploitable
+- Coordination reseau multi-acteurs
+- Apprentissage et professionnalisation des pratiques terrain
 
-- reduire la friction de declaration ;
-- rendre la carte utile pour decider et non seulement pour montrer ;
-- produire des rapports simples a transmettre ;
-- soutenir la coordination entre benevoles, associations, commerces et collectivites ;
-- garder une experience lisible sur mobile avant d'ajouter des surfaces plus riches sur desktop.
+## Probleme central
 
-## Non-objectifs
+Le probleme principal est la dissociation entre la realite visible des dechets dans l'espace public et la capacite des acteurs locaux a agir vite, de maniere coordonnee et mesurable.
 
-- faire un reseau social generaliste ;
-- ajouter des couches de complexite sans usage terrain ;
-- multiplier les tableaux de bord si la meme information peut etre lue ailleurs ;
-- confondre utilite terrain et volume de fonctionnalites.
+Trois freins dominants structurent ce besoin :
 
+- dispersion de l'information ;
+- faible continuite de mobilisation ;
+- difficulte de priorisation locale.
+
+## Impact vise
+
+L'objectif n'est pas seulement de signaler des dechets, mais de soutenir une boucle complete :
+
+- action de terrain ;
+- coordination collective ;
+- pilotage par la donnee ;
+- production de livrables exploitables.
+
+## Benefices attendus
+
+### Impact actuel
+
+- base applicative fonctionnelle pour la collecte et le suivi ;
+- parcours role-aware en progression ;
+- premiers livrables exploitables pour le pilotage.
+
+### Impact potentiel
+
+- meilleure continuite des actions locales ;
+- meilleure priorisation territoriale ;
+- meilleure exploitabilite institutionnelle des donnees ;
+- coordination collective plus lisible entre citoyens, associations et acteurs publics.

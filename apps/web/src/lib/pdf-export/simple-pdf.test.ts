@@ -63,34 +63,6 @@ describe("simple PDF export", () => {
     expect(pdf.byteLength).toBeGreaterThan(200);
   });
 
-  it("honors explicit page breaks", () => {
-    const pdf = buildSimplePdf(["Premiere page", "\f", "Deuxieme page"]);
-    const pdfText = new TextDecoder().decode(pdf);
-    const pageMatches = pdfText.match(/\/Type \/Page /g) ?? [];
-
-    expect(pageMatches.length).toBe(2);
-  });
-
-  it("renders donut chart blocks as vector content", () => {
-    const pdf = buildSimplePdf([
-      "Rapport test",
-      "",
-      "## Camembert mensuel",
-      "Bloc vectoriel de la répartition métier du stockage sur le mois courant.",
-      "@@CMBR_START|stockage|Répartition métier du stockage",
-      "@@CMBR_META|2026-04-01|1000|800|2",
-      "@@CMBR_ITEM|0|socle_estimateur_impact|Socle d’estimateur d’impact|700|70.0|500|200|40.0|2",
-      "@@CMBR_ITEM|1|emails|Emails|300|30.0|300|0|0.0|1",
-      "@@CMBR_END",
-    ]);
-    const pdfText = new TextDecoder().decode(pdf);
-
-    expect(pdfText).toContain("%PDF-1.4");
-    expect(pdfText).toContain("Camembert mensuel");
-    expect(pdfText).not.toContain("@@CMBR_START");
-    expect(pdfText).not.toContain("@@CMBR_ITEM");
-  });
-
   it("builds an official printable report html", () => {
     const html = buildOfficialReportHtml(payload);
 

@@ -17,11 +17,6 @@ Core required:
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - `CLERK_SECRET_KEY`
 
-Optional for local Supabase Studio AI features:
-
-- `OPENAI_API_KEY` is read by `apps/web/supabase/config.toml` for local Supabase Studio only.
-- Keep this key in local server-side env files such as `.env.local`; do not expose it through `NEXT_PUBLIC_*` or sync it to Vercel.
-
 Recommended for production:
 
 - `CLERK_ADMIN_USER_IDS`
@@ -36,19 +31,11 @@ Recommended for production:
 - `SENTRY_DSN`
 - `SENTRY_ORG`
 - `SENTRY_PROJECT`
-- `SUPABASE_STORAGE_QUOTA_GB` or `SUPABASE_STORAGE_QUOTA_BYTES` to override the storage quota used by the Supabase monitoring panel (`1 GB` default)
-- `CRON_SECRET` to secure Vercel Cron invocations for `/api/cron/storage-usage`
 - `NEXT_PUBLIC_POSTHOG_KEY`
 - `NEXT_PUBLIC_POSTHOG_HOST`
 - `NEXT_PUBLIC_POSTHOG_REGION` (`eu` by default, `us` if your PostHog project is in US)
 - `NEXT_PUBLIC_SENTRY_DSN`
 - `NEXT_PUBLIC_SENTRY_ENABLED` (`1` to reactivate Sentry, disabled by default in this repo)
-
-Important:
-
-- `apps/web/src/lib/env.ts` must not silently fall back to a production Supabase project.
-- A missing core env var should fail fast instead of pointing the app at another deployment.
-- If you change Supabase project linkage, update `.env.local`, `.env.vercel.local`, and `.vercel/project.json` together.
 
 ## One-command backend bootstrap
 
@@ -72,18 +59,6 @@ Notes:
   For branch-scoped preview envs, run:
   `node scripts/vercel-sync-env.mjs --file=.env.local --environments=preview --preview-branch=<branch-name>`
 - Sentry stays paused unless `NEXT_PUBLIC_SENTRY_ENABLED=1` is set.
-- Keep `node scripts/vercel-sync-env.mjs` public by default. Use `--include-secrets` only with an explicit reason and review.
-- `OPENAI_API_KEY` is not part of the Vercel sync set for this repo; keep it local to Supabase Studio or the server environment that actually needs it.
-
-## Quality audit snapshot
-
-Etat vérifié au 2026-05-19 pour le prochain passage qualité:
-
-- `npm run typecheck -w apps/web` passe.
-- `npm run test:security -w apps/web` passe.
-- `npm run lint -w apps/web` passe avec warnings tolérés en développement.
-- Les anciens runs/deployments GitHub obsolètes ont été purgés.
-- Le backlog court à reprendre ensuite est documenté dans [documentation/maintenance/quality-audit-snapshot.md](../../documentation/maintenance/quality-audit-snapshot.md).
 
 ## Manual commands
 
@@ -91,16 +66,8 @@ Etat vérifié au 2026-05-19 pour le prochain passage qualité:
 # Push Supabase migrations
 npm run backend:supabase:push
 
-# Run Supabase security advisors automatically:
-# - local if Docker/Supabase stack is available
-# - linked project fallback otherwise
-npm run backend:supabase:advisors
-
 # Sync env vars to Vercel
 npm run backend:vercel:env:sync
-
-# Inspect client bundle sizes after a build
-npm run analyze:bundle
 
 # Doctor check (link + required env presence)
 npm run backend:doctor
@@ -124,26 +91,15 @@ npm run data:cleanup:supabase
   - returns `503` when required backend config or Supabase connectivity is missing
 - `GET /api/services`
   - service-by-service status (`ready`, `missing`, `defer`, `external`)
-- `GET /api/admin/storage-usage`
-  - admin-only Supabase storage quota monitor
-  - captures a monthly snapshot in `supabase_storage_usage_snapshots`
-  - reports current usage, remaining capacity, bucket breakdowns, file types, and month-over-month growth
-
-## Supabase advisors without Docker Desktop
-
-- `npm run backend:supabase:advisors` tries the local stack first.
-- If Docker Desktop is unavailable or the local stack cannot start, it automatically falls back to the linked Supabase project.
-- Use `npm run backend:supabase:advisors:local` only when you explicitly want to force the local stack.
-- Use `npm run backend:supabase:advisors:linked` if you only want the linked project report.
 
 ## Resend quick test (`/api/send`)
 
 - Required:
   - `RESEND_API_KEY`
-  - `EMAIL_FROM` (must use your verified domain, e.g. `CleanMyMap <contact@mail.cleanmymap.fr>`)
+  - `EMAIL_FROM` (must use your verified domain, e.g. `CleanMyMap <noreply@cleanmymap.fr>`)
   - `CONTACT_EMAIL` (reply-to and inbox target, e.g. `contact@cleanmymap.fr`)
   - `NEXT_PUBLIC_CONTACT_EMAIL` (public contact value for client-rendered links and labels)
-- Optional:
+  - Optional:
   - `RESEND_FROM_EMAIL` and `RESEND_REPLY_TO` for backward compatibility with older deployments
   - `CREATOR_INBOX_EMAIL` (creator inbox for operational requests; falls back to `CONTACT_EMAIL`)
   - `RESEND_TEST_TOKEN` to authorize test calls without admin session.
