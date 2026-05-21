@@ -1,0 +1,41 @@
+project:
+  type: default
+  output-dir: _output
+
+execute:
+  echo: false
+  warning: false
+  message: false
+
+format:
+  pdf:
+    documentclass: article
+    classoption: [oneside]
+    top-level-division: section
+    pdf-engine: xelatex
+
+    papersize: a4
+    fontsize: 10pt
+
+    geometry:
+      - top=12mm
+      - bottom=13mm
+      - left=14mm
+      - right=14mm
+      - headheight=14pt
+      - headsep=6mm
+      - footskip=8mm
+
+    number-sections: true
+    toc: true
+    toc-depth: 3
+    toc-title: "Sommaire"
+
+    colorlinks: true
+    link-citations: true
+    linkcolor: blue
+    urlcolor: blue
+    citecolor: blue
+
+    include-in-header: cleanmymap-pdf.tex
+    keep-tex: false

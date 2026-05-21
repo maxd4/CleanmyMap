@@ -1,0 +1,193 @@
+% CleanMyMap - configuration Quarto PDF officielle.
+% Ce fichier règle uniquement la mise en page. Il ne modifie pas le contenu du rapport.
+
+\usepackage{fontspec}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{makecell}
+\usepackage{pdflscape}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{xurl}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{titling}
+\usepackage{microtype}
+\usepackage{indentfirst}
+\usepackage{fvextra}
+\usepackage{etoolbox}
+\usepackage{needspace}
+\usepackage{caption}
+\usepackage{enumitem}
+\usepackage{setspace}
+\usepackage{tikz}
+\usepackage{eso-pic}
+\usepackage[most]{tcolorbox}
+
+% Polices institutionnelles
+\IfFontExistsTF{Inter}{
+  \setmainfont{Inter}
+  \setsansfont{Inter}
+}{
+  \setmainfont{Arial}
+  \setsansfont{Arial}
+}
+\renewcommand*\familydefault{\sfdefault}
+
+% Couleurs institutionnelles
+\definecolor{cmmnavy}{HTML}{1A365D}
+\definecolor{cmmblue}{HTML}{2563A8}
+\definecolor{cmmteal}{HTML}{1F6F78}
+\definecolor{cmmgreen}{HTML}{2F7D5E}
+\definecolor{cmmwarm}{HTML}{8A5A24}
+\definecolor{cmmgray}{HTML}{5A6772}
+\definecolor{cmmrule}{HTML}{B8C8D0}
+\definecolor{cmmlight}{HTML}{EAF2F4}
+\definecolor{cmmgreenlight}{HTML}{EDF7F0}
+\definecolor{cmmnotelight}{HTML}{F2F7F8}
+\definecolor{cmmwarmlight}{HTML}{FFF7E8}
+\definecolor{cmmtablehead}{HTML}{E1EEF2}
+\definecolor{quarto-callout-note-color}{HTML}{2563A8}
+\definecolor{quarto-callout-tip-color}{HTML}{2F7D5E}
+\definecolor{quarto-callout-important-color}{HTML}{8A5A24}
+\definecolor{quarto-callout-warning-color}{HTML}{8A5A24}
+\definecolor{quarto-callout-caution-color}{HTML}{8A5A24}
+
+% Liens cliquables et lisibles
+\AtBeginDocument{
+  \hypersetup{
+    colorlinks=true,
+    linkcolor=cmmblue,
+    urlcolor=cmmblue,
+    citecolor=cmmblue,
+    bookmarksopen=true,
+    bookmarksnumbered=true,
+    pdfborder={0 0 0}
+  }
+}
+\urlstyle{same}
+
+% Lisibilité générale
+\setstretch{1.1}
+\setlength{\parindent}{1.15em}
+\setlength{\parskip}{4.8pt plus 1pt minus 1pt}
+\raggedbottom
+\emergencystretch=4em
+\sloppy
+
+% Listes compactes mais respirantes
+\setlist[itemize]{topsep=4pt,itemsep=2.5pt,parsep=0pt,leftmargin=1.35em}
+\setlist[enumerate]{topsep=4pt,itemsep=2.5pt,parsep=0pt,leftmargin=1.6em}
+
+% Pied de page minimal : numéro de page uniquement
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\footnotesize\textcolor{cmmgray}{\thepage}}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\footnotesize\textcolor{cmmgray}{\thepage}}
+  \renewcommand{\headrulewidth}{0pt}
+  \renewcommand{\footrulewidth}{0pt}
+}
+
+% Grandes parties : nouvelle page sans créer de page de chapitre.
+\newcommand{\sectionbreak}{\clearpage}
+
+% Titres hiérarchisés et protégés contre les titres orphelins.
+\titleformat{\section}
+  {\Needspace{8\baselineskip}\color{cmmnavy}\normalfont\fontsize{20pt}{24pt}\selectfont\bfseries}
+  {\thesection}{0.8em}{}
+  [\vspace{0.18em}\color{cmmrule}\titlerule]
+
+\titleformat{\subsection}
+  {\Needspace{5\baselineskip}\color{cmmteal}\normalfont\fontsize{14pt}{17pt}\selectfont\bfseries}
+  {\thesubsection}{0.7em}{}
+
+\titleformat{\subsubsection}
+  {\Needspace{4\baselineskip}\color{cmmnavy}\normalfont\fontsize{11.5pt}{14pt}\selectfont\bfseries}
+  {\thesubsubsection}{0.6em}{}
+
+\titleformat{\paragraph}[runin]
+  {\color{cmmblue}\normalfont\normalsize\bfseries}
+  {}{0em}{}[. ]
+
+\titlespacing*{\section}{0pt}{0.9em}{0.8em}
+\titlespacing*{\subsection}{0pt}{0.85em}{0.4em}
+\titlespacing*{\subsubsection}{0pt}{0.6em}{0.28em}
+
+% Emphases sobres : le soulignement reste réservé aux liens.
+\let\oldtextbf\textbf
+\renewcommand{\textbf}[1]{\oldtextbf{\textcolor{cmmnavy}{#1}}}
+\let\oldemph\emph
+\renewcommand{\emph}[1]{\oldemph{\textcolor{cmmgray}{#1}}}
+
+% Tableaux lisibles sur A4 étroit
+\setlength{\tabcolsep}{4.5pt}
+\renewcommand{\arraystretch}{1.2}
+\setlength{\LTleft}{0pt}
+\setlength{\LTright}{0pt}
+\setlength{\LTcapwidth}{\textwidth}
+\captionsetup{font=small, labelfont=bf}
+\arrayrulecolor{cmmrule}
+\AtBeginEnvironment{longtable}{\small\arrayrulecolor{cmmrule}}
+\AtBeginEnvironment{tabular}{\small\arrayrulecolor{cmmrule}}
+\AtBeginEnvironment{table}{\small}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% Code, liens longs et citations
+\fvset{breaklines=true,breakanywhere=true,fontsize=\small}
+\AtBeginEnvironment{quote}{\small\color{cmmgray}}
+
+% Encadrés Quarto : rendu sobre et académique.
+\tcbset{
+  enhanced,
+  boxrule=0pt,
+  leftrule=2.2pt,
+  arc=1.2mm,
+  outer arc=1.2mm,
+  boxsep=2.5pt,
+  left=6pt,
+  right=6pt,
+  top=5pt,
+  bottom=5pt,
+  before skip=8pt,
+  after skip=8pt,
+  fonttitle=\bfseries\color{cmmnavy},
+  coltitle=cmmnavy,
+  colback=cmmnotelight,
+  colframe=cmmblue,
+  coltext=black
+}
+
+\AtBeginEnvironment{tcolorbox}{\small}
+\AtBeginEnvironment{table}{\Needspace{6\baselineskip}}
+
+% Page de garde personnalisée
+\pretitle{
+  \AddToShipoutPictureBG*{
+    \AtPageCenter{
+      \makebox[0pt]{
+        \begin{tikzpicture}[remember picture,overlay]
+          \node[opacity=0.08] at (current page.center) {
+            \includegraphics[width=0.72\paperwidth]{c:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/public/brand/nouveau-logo.png}
+          };
+        \end{tikzpicture}
+      }
+    }
+  }
+  \begin{center}
+  \vspace*{2.5cm}
+  \fontsize{30pt}{35pt}\selectfont\bfseries\color{cmmnavy}
+}
+\posttitle{\par\end{center}\vspace{0.45cm}}
+\preauthor{\begin{center}\large\color{cmmblue}\bfseries}
+\postauthor{\par\end{center}\vspace{0.2cm}}
+\predate{\begin{center}\large\color{cmmnavy}}
+\postdate{\par\end{center}\vfill}
