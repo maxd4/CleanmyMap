@@ -4,7 +4,7 @@ const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const resendSendMock = vi.hoisted(() => vi.fn());
 const getResendClientMock = vi.hoisted(() => vi.fn());
 const envMock = vi.hoisted(() => ({
-  EMAIL_FROM: "CleanMyMap <noreply@cleanmymap.fr>" as string | undefined,
+  EMAIL_FROM: "CleanMyMap <contact@mail.cleanmymap.fr>" as string | undefined,
   CONTACT_EMAIL: "contact@cleanmymap.fr" as string | undefined,
 }));
 
@@ -29,7 +29,7 @@ describe("POST /api/email/test", () => {
     getResendClientMock.mockReturnValue({
       emails: { send: resendSendMock },
     });
-    envMock.EMAIL_FROM = "CleanMyMap <noreply@cleanmymap.fr>";
+    envMock.EMAIL_FROM = "CleanMyMap <contact@mail.cleanmymap.fr>";
     envMock.CONTACT_EMAIL = "contact@cleanmymap.fr";
   });
 
@@ -59,7 +59,7 @@ describe("POST /api/email/test", () => {
     expect(body.status).toBe("queued");
     expect(body.id).toBe("email_123");
     expect(resendSendMock).toHaveBeenCalledWith({
-      from: "CleanMyMap <noreply@cleanmymap.fr>",
+      from: "CleanMyMap <contact@mail.cleanmymap.fr>",
       to: "contact@cleanmymap.fr",
       subject: "Hello World",
       html: "<p>Test OK</p>",

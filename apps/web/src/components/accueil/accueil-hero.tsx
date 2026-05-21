@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Info, MapPin, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
 import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
@@ -42,12 +41,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
 
       <div className="relative z-10 mx-auto w-full max-w-[1540px] px-4 pb-9 pt-2 sm:px-8 lg:pb-12">
         <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="relative min-h-[470px] overflow-hidden rounded-[2rem] border border-[#4B7B8C]/22 shadow-[0_34px_76px_-34px_rgba(6,17,30,0.76)] sm:min-h-[515px]"
-          >
+          <div className="relative min-h-[470px] overflow-hidden rounded-[2rem] border border-[#4B7B8C]/22 shadow-[0_34px_76px_-34px_rgba(6,17,30,0.76)] sm:min-h-[515px]">
             {/* Layer fond isolé — backdrop-blur UNIQUEMENT ici */}
             <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[#18374E]/94 backdrop-blur-xl" />
             <div className="relative z-10 space-y-8 p-7 sm:p-9 lg:p-11">
@@ -56,7 +50,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
               </div>
 
               <div className="space-y-5">
-                <h1 className="max-w-3xl text-[clamp(3.5rem,7vw,5.35rem)] font-black leading-[0.94] tracking-[-0.05em] text-white">
+                <h1 className="max-w-[14ch] text-[clamp(3rem,6.2vw,5rem)] font-black leading-[0.94] tracking-[-0.05em] text-white">
                   Clean My Map
                 </h1>
                 <div className="flex items-center gap-3">
@@ -93,14 +87,9 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                 </Link>
               </div>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 18 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.05 }}
-            className="relative min-h-[500px] overflow-hidden rounded-[2rem] border border-[#4B7B8C]/18 shadow-[0_34px_76px_-34px_rgba(6,17,30,0.76)]"
-          >
+          <div className="relative min-h-[500px] overflow-hidden rounded-[2rem] border border-[#4B7B8C]/18 shadow-[0_34px_76px_-34px_rgba(6,17,30,0.76)]">
             {/* Layer fond isolé */}
             <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[#18374E]/94 backdrop-blur-xl" />
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#0F6FFF] via-[#20C6D5] to-[#17C486]" />
@@ -145,7 +134,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                 })}
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>

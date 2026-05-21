@@ -99,6 +99,9 @@ npm run backend:supabase:advisors
 # Sync env vars to Vercel
 npm run backend:vercel:env:sync
 
+# Inspect client bundle sizes after a build
+npm run analyze:bundle
+
 # Doctor check (link + required env presence)
 npm run backend:doctor
 
@@ -137,10 +140,10 @@ npm run data:cleanup:supabase
 
 - Required:
   - `RESEND_API_KEY`
-  - `EMAIL_FROM` (must use your verified domain, e.g. `CleanMyMap <noreply@cleanmymap.fr>`)
+  - `EMAIL_FROM` (must use your verified domain, e.g. `CleanMyMap <contact@mail.cleanmymap.fr>`)
   - `CONTACT_EMAIL` (reply-to and inbox target, e.g. `contact@cleanmymap.fr`)
   - `NEXT_PUBLIC_CONTACT_EMAIL` (public contact value for client-rendered links and labels)
-  - Optional:
+- Optional:
   - `RESEND_FROM_EMAIL` and `RESEND_REPLY_TO` for backward compatibility with older deployments
   - `CREATOR_INBOX_EMAIL` (creator inbox for operational requests; falls back to `CONTACT_EMAIL`)
   - `RESEND_TEST_TOKEN` to authorize test calls without admin session.

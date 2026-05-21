@@ -16,10 +16,10 @@ import { ClerkLocalizationProvider } from"@/components/auth/clerk-localization-p
 import { VibrantBackground } from"@/components/ui/vibrant-background";
 import { SitePreferencesProvider } from"@/components/ui/site-preferences-provider";
 import { SiteTooltips } from"@/components/ui/site-tooltips";
-import { PageTransition } from"@/components/ui/page-transition";
 import { NetworkToastHost } from"@/components/ui/network-toast";
 import { NotificationBell } from"@/components/navigation/notification-bell";
 import { OrganizationJsonLd, WebSiteJsonLd, FAQJsonLd } from"@/components/seo/structured-data/";
+import { ProjectPageviewTracker } from"@/components/analytics/project-pageview-tracker";
 import { HomeFooter } from "@/components/accueil";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
@@ -92,6 +92,7 @@ initialDisplayModeExplicit={displayModePreference.isExplicit}
  allowedRedirectOrigins={clerkRuntime.allowedRedirectOrigins}
  >
 <PostHogProvider>
+  <ProjectPageviewTracker />
   <NetworkToastHost />
   <VibrantBackground />
   <SiteTooltips />
@@ -158,11 +159,9 @@ initialDisplayModeExplicit={displayModePreference.isExplicit}
  </div>
  </header>
  ) : null}
- <main className="flex flex-col flex-1">
- <PageTransition>
+<main className="flex flex-col flex-1">
  {children}
- </PageTransition>
- </main>
+</main>
 <ConditionalAnalytics />
   <CookieConsentBanner />
   <HomeFooter />
