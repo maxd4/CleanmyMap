@@ -38,6 +38,22 @@ const IGNORED_FILENAMES = new Set([
   "pnpm-lock.yaml",
   "routes-manifest-deterministic.json",
 ]);
+const PUBLIC_EMAIL_DOMAINS = new Set([
+  "basbelleville.fr",
+  "cartonplein.org",
+  "cleanmymap.fr",
+  "cleanmymap.local",
+  "example.com",
+  "example.org",
+  "example.net",
+  "github.com",
+  "gmail.com",
+  "lacloche.org",
+  "latextilerie.fr",
+  "mail.cleanmymap.fr",
+  "pikpik.org",
+]);
+const PUBLIC_SUPABASE_URLS = new Set(["https://mgvmuambbxmmkrjjlryo.supabase.co"]);
 
 const SECRET_PATTERNS = [
   {
@@ -113,6 +129,7 @@ const SECRET_PATTERNS = [
     category: "Supabase URL",
     severity: "medium",
     regex: /\bhttps:\/\/[a-z0-9]{20}\.supabase\.co\b/gi,
+    validator: isSuspiciousSupabaseUrl,
   },
   {
     category: "Supabase anon/service-role key",
@@ -124,6 +141,7 @@ const SECRET_PATTERNS = [
     category: "Email address",
     severity: "medium",
     regex: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
+    validator: isSuspiciousEmail,
   },
   {
     category: "Sensitive URL",
@@ -224,6 +242,24 @@ function loadAllowlist(relativePath) {
     throw new Error(`Allowlist must contain an "allow" array: ${relativePath}`);
   }
   return parsed.allow;
+}
+
+function isPublicEmailAddress(value) {
+  const normalized = value.trim().toLowerCase();
+  const atIndex = normalized.lastIndexOf("@");
+  if (atIndex === -1) {
+    return false;
+  }
+  const domain = normalized.slice(atIndex + 1).replace(/[)>.,;:'"`\]]+$/g, "");
+  return PUBLIC_EMAIL_DOMAINS.has(domain);
+}
+
+function isSuspiciousEmail(value) {
+  return !isPublicEmailAddress(value);
+}
+
+function isSuspiciousSupabaseUrl(value) {
+  return !PUBLIC_SUPABASE_URLS.has(value.toLowerCase());
 }
 
 function isAllowed(finding, allowlist) {
