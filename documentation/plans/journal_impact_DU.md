@@ -11,6 +11,50 @@ La seule zone de directives encore exploitables ici est l'**annexe A**.
 
 Ce cadre poursuit deux objectifs. D'abord, montrer un impact reel des ateliers sur le projet web avec une lecture critique, structuree et credible. Ensuite, disposer d'un support de pilotage capable de justifier les choix techniques, environnementaux et institutionnels devant un jury ou un partenaire externe.
 
+## Schéma des liens
+
+Le journal détaillé renvoie aux autres pièces de travail ci-dessous pour garder une lecture cohérente entre les ateliers DU, le rapport d'impact IA, la méthode du graphique et les estimateurs techniques du projet.
+
+```mermaid
+flowchart TD
+  JD["documentation/plans/journal_DU.md"]
+  AJ["documentation/plans/atelier_DU.md"]
+  RI["documentation/plans/rapport_impact/impact_IA.md"]
+  GI["documentation/plans/rapport_impact/graphique_impact_CO2e.md"]
+  JI["documentation/plans/journal_impact_DU.md"]
+  EI["Estimateur d'impact environnemental"]
+  QG["Estimateur des quotas gratuits<br/>des services web utilisés"]
+
+  JD --> AJ
+  JD --> RI
+  JD --> JI
+  RI --> GI
+  RI --> EI
+  RI --> QG
+  AJ --> EI
+  EI --> GI
+  EI --> QG
+  QG --> RI
+
+  style JD fill:#0f172a,stroke:#38bdf8,color:#e2e8f0
+  style AJ fill:#111827,stroke:#34d399,color:#e5e7eb
+  style RI fill:#111827,stroke:#f59e0b,color:#e5e7eb
+  style GI fill:#111827,stroke:#f97316,color:#e5e7eb
+  style JI fill:#111827,stroke:#a78bfa,color:#e5e7eb
+  style EI fill:#0b1220,stroke:#fb7185,color:#fee2e2
+  style QG fill:#0b1220,stroke:#22c55e,color:#dcfce7
+```
+
+Lecture rapide:
+
+- `journal_DU.md` sert d'index court;
+- `atelier_DU.md` fixe le cadre des ateliers;
+- `impact_IA.md` concentre l'analyse principale;
+- `graphique_impact_CO2e.md` documente la méthode du graphe;
+- `journal_impact_DU.md` conserve l'historique détaillé et les ajouts de code;
+- l'estimateur d'impact agrège les signaux du projet;
+- l'estimateur des quotas gratuits aide à cadrer les limites et hypothèses des services web.
+
 ### Concepts cles appliques
 
 - **Diagnostic territorial et ecologique** : objectiver a la fois la pollution locale et le cout numerique du service, puis relier declaration, carte, historique, reporting et IUR.
@@ -63,6 +107,9 @@ Ce cadre poursuit deux objectifs. D'abord, montrer un impact reel des ateliers s
 | 13/05/26 | **Reporting qualité CI/CD orienté pilotage** | Création de `scripts/cicd-metrics-report.mjs` et de `documentation/maintenance/ci-cd-metrics-report.md` pour suivre les runs GitHub Actions, le cache et les déploiements Vercel dans une logique de mesure continue. |
 | 13/05/26 | **Audit exécutable des messages Ateliers DU** | Formalisation de `documentation/plans/ateliers_DU_execution_rapide.md` pour distinguer les lots déjà absorbés, les écarts encore ouverts et l'ordre d'attaque réaliste. |
 | 20/05/26 | **Socle d'estimateur d'impact environnemental** | Mise en place de l'architecture du calcul transparent pour le site et l'utilisateur, avec postes visibles, hypothèses versionnées et panneau UI prêt à brancher dans le rapport d'impact IA. |
+| 21/05/26 | **Séparation Codex / ChatGPT LLM** | Distinction explicite entre les sessions Codex et les conversations ChatGPT 5.5 en mode étendu, avec ancrage de 2h hebdomadaires LLM, pour éviter de fusionner deux usages IA de nature différente. |
+| 26/05/26 | **Journal hebdomadaire Codex** | Ajout d'un historique spécifique à l'usage Codex / ChatGPT Plus pour enregistrer les semaines manuellement, reconstruire les périodes passées et convertir ces signaux projet-spécifiques en équivalent CO2e sans moyenne externe. |
+| 21/05/26 | **Deuxième ordre d'impact** | Ajout d'une décomposition lisible du CO2e en CO2 brut, électricité, autres GES, produits chimiques et eau, afin de détailler la structure du graphe et ses priorités de réduction. |
 
 ---
 

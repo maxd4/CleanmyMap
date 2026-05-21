@@ -1,6 +1,6 @@
 import type { ActionSubmissionMode } from "@/lib/actions/types";
 
-type FunnelStep = "view_new" | "start_form" | "submit_success";
+type FunnelStep = "view_new" | "page_view" | "start_form" | "submit_success";
 
 const SESSION_KEY = "cleanmymap.funnel.session_id";
 

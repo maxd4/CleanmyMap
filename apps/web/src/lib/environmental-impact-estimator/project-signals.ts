@@ -1,11 +1,17 @@
 import { subDays } from "date-fns";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  buildCodexMonthlyUsageEstimate,
+  listCodexUsageWeeklySnapshots,
+} from "./codex-usage-store";
 import type {
+  EnvironmentalImpactCodexUsageMonthlyEstimate,
   EnvironmentalImpactEstimateInput,
   EnvironmentalImpactInfrastructureInput,
   EnvironmentalImpactProjectSignal,
   EnvironmentalImpactProjectSignals,
   EnvironmentalImpactScopeInput,
+  EnvironmentalImpactCodexUsageWeeklySnapshotRecord,
 } from "./types";
 
 type BaseTimelineRow = {
@@ -18,6 +24,7 @@ type FunnelRow = {
   session_id: string;
   step: string;
   mode: string;
+  meta?: Record<string, unknown> | null;
 };
 
 type ProgressionRow = {
@@ -64,6 +71,33 @@ type ServiceEmailRow = {
   status: string;
 };
 
+type CommunityEventRow = {
+  id: string;
+  created_at: string;
+  organizer_clerk_id: string;
+  title: string;
+  event_date: string;
+  location_label: string;
+  description: string | null;
+};
+
+type EventRsvpRow = {
+  event_id: string;
+  participant_clerk_id: string;
+  status: "yes" | "maybe" | "no";
+  updated_at: string | null;
+};
+
+type AppNotificationRow = {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  content: string;
+  read_at: string | null;
+  created_at: string;
+};
+
 type ProfileRow = {
   id: string;
   created_at: string;
@@ -78,6 +112,9 @@ type ProjectSignalRows = {
   reports: ReportRow[];
   trainingExamples: TrainingRow[];
   serviceEmails: ServiceEmailRow[];
+  communityEvents: CommunityEventRow[];
+  eventRsvps: EventRsvpRow[];
+  appNotifications: AppNotificationRow[];
 };
 
 function round6(value: number): number {
@@ -121,6 +158,73 @@ function countDistinct(values: Array<string | null | undefined>): number {
   ).size;
 }
 
+function getFunnelMetaString(row: FunnelRow, keys: string[]): string | null {
+  if (!row.meta) {
+    return null;
+  }
+
+  for (const key of keys) {
+    const value = row.meta[key];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+
+  return null;
+}
+
+function getFunnelPagePath(row: FunnelRow): string | null {
+  return getFunnelMetaString(row, ["pagePath", "pathname", "routePath"]);
+}
+
+function countProjectPageViews(rows: FunnelRow[]): number {
+  const detailedPageViews = rows.filter((row) => row.step === "page_view").length;
+  if (detailedPageViews > 0) {
+    return detailedPageViews;
+  }
+
+  return rows.filter((row) => row.step === "view_new").length;
+}
+
+function countProjectPageViewRoutes(rows: FunnelRow[]): number {
+  return countDistinct(
+    rows
+      .filter((row) => row.step === "page_view" || row.step === "view_new" || row.step === "start_form")
+      .map((row) => getFunnelPagePath(row)),
+  );
+}
+
+function countProjectUnreadNotifications(rows: AppNotificationRow[]): number {
+  return rows.filter((row) => row.read_at === null).length;
+}
+
+function buildTopPageViewRoutes(rows: FunnelRow[]): Array<{ path: string; count: number }> {
+  const counts = new Map<string, number>();
+
+  for (const row of rows) {
+    if (row.step !== "page_view" && row.step !== "view_new") {
+      continue;
+    }
+
+    const path = getFunnelPagePath(row);
+    if (!path) {
+      continue;
+    }
+
+    counts.set(path, (counts.get(path) ?? 0) + 1);
+  }
+
+  return Array.from(counts.entries())
+    .map(([path, count]) => ({ path, count }))
+    .sort((left, right) => {
+      if (right.count !== left.count) {
+        return right.count - left.count;
+      }
+      return left.path.localeCompare(right.path, "fr");
+    })
+    .slice(0, 5);
+}
+
 function countTrainingPhotos(raw: unknown): number {
   if (!Array.isArray(raw)) {
     return 0;
@@ -151,7 +255,10 @@ function totalRowsForApiRequests(rows: ProjectSignalRows): number {
     rows.progressionEvents.length +
     rows.reports.length +
     rows.trainingExamples.length +
-    rows.serviceEmails.length
+    rows.serviceEmails.length +
+    rows.communityEvents.length +
+    rows.eventRsvps.length +
+    rows.appNotifications.length
   );
 }
 
@@ -182,6 +289,15 @@ function buildScopeInputFromRows(
   const emailRows = rows.serviceEmails.filter((row) =>
     isWithinWindow(row.created_at, fromMs, untilMs),
   );
+  const communityEventRows = rows.communityEvents.filter((row) =>
+    isWithinWindow(row.created_at, fromMs, untilMs),
+  );
+  const eventRsvpRows = rows.eventRsvps.filter((row) =>
+    isWithinWindow(row.updated_at, fromMs, untilMs),
+  );
+  const notificationRows = rows.appNotifications.filter((row) =>
+    isWithinWindow(row.created_at, fromMs, untilMs),
+  );
 
   const attributedTrainingRows = trainingRows.filter((row) => {
     if (!userId) {
@@ -193,7 +309,7 @@ function buildScopeInputFromRows(
 
   const attributedEmailRows = emailRows.filter((row) => row.actor_user_id === userId);
 
-  const pageViews = funnelRows.filter((row) => row.step === "view_new").length;
+  const pageViews = countProjectPageViews(funnelRows);
   const storedImages = trainingRows.reduce(
     (acc, row) => acc + countTrainingPhotos(row.photos),
     0,
@@ -213,6 +329,9 @@ function buildScopeInputFromRows(
     ...reportRows.map((row) => row.owner_clerk_id),
     ...emailRows.map((row) => row.actor_user_id),
     ...attributedTrainingRows.map((row) => actionById.get(row.action_id) ?? null),
+    ...communityEventRows.map((row) => row.organizer_clerk_id),
+    ...eventRsvpRows.map((row) => row.participant_clerk_id),
+    ...notificationRows.map((row) => row.user_id),
   ]);
   const apiRequests =
     funnelRows.length +
@@ -221,19 +340,24 @@ function buildScopeInputFromRows(
     spotRows.length +
     reportRows.length +
     trainingRows.length +
-    emailRows.length;
+    emailRows.length +
+    communityEventRows.length +
+    eventRsvpRows.length +
+    notificationRows.length;
   const photoBytes = trainingRows.reduce(
     (acc, row) => acc + sumTrainingPhotoBytes(row.photos),
     0,
   );
   const storageGbMonths = round6(
-    Math.max(
-      0.1,
-      (storedImages * 0.0025) +
-        (photoBytes / 1_000_000_000) * 0.75 +
-        (pdfExports * 0.0005) +
-        (actionRows.length * 0.00001) +
-        (spotRows.length * 0.00001),
+      Math.max(
+        0.1,
+        (storedImages * 0.0025) +
+          (photoBytes / 1_000_000_000) * 0.75 +
+          (pdfExports * 0.0005) +
+          (actionRows.length * 0.00001) +
+        (spotRows.length * 0.00001) +
+        (communityEventRows.length * 0.000008) +
+        (notificationRows.length * 0.000004),
     ),
   );
 
@@ -280,19 +404,39 @@ function buildProjectSignalsHighlights(
   },
 ): EnvironmentalImpactProjectSignal[] {
   const actionById = new Map(rows.actions.map((row) => [row.id, row.created_by_clerk_id]));
+  const detailedPageViews = rows.funnelEvents.filter((row) => row.step === "page_view");
+  const legacyPageViews = rows.funnelEvents.filter((row) => row.step === "view_new");
 
   const allTrainingPhotos = rows.trainingExamples.reduce(
     (acc, row) => acc + countTrainingPhotos(row.photos),
     0,
   );
   const recentEmailCount = rows.serviceEmails.filter((row) => row.status === "sent").length;
+  const communityEventCount = rows.communityEvents.length;
+  const rsvpCount = rows.eventRsvps.length;
+  const notificationCount = rows.appNotifications.length;
+  const unreadNotificationCount = countProjectUnreadNotifications(rows.appNotifications);
+  const routeCount = countProjectPageViewRoutes(rows.funnelEvents);
 
   return [
     {
       label: "Pages vues CleanMyMap",
-      value: rows.funnelEvents.filter((row) => row.step === "view_new").length,
-      detail: "Signal direct depuis le tunnel de navigation et les vues réelles enregistrées.",
+      value: detailedPageViews.length > 0 ? detailedPageViews.length : legacyPageViews.length,
+      detail:
+        "Signal route-level prioritaire via page_view, avec fallback sur les vues de tunnel view_new.",
       basis: "all_time",
+    },
+    {
+      label: "Pages vues tunnel",
+      value: legacyPageViews.length,
+      detail: "Vues de démarrage de formulaire conservées pour l'audit historique.",
+      basis: "all_time",
+    },
+    {
+      label: "Routes distinctes",
+      value: routeCount,
+      detail: "Nombre de chemins uniques capturés dans les métadonnées de page_view.",
+      basis: "derived",
     },
     {
       label: "Actions terrain",
@@ -319,6 +463,30 @@ function buildProjectSignalsHighlights(
       basis: "recent",
     },
     {
+      label: "Événements communauté",
+      value: communityEventCount,
+      detail: "Tables community_events utilisées comme signal social propre au projet.",
+      basis: "all_time",
+    },
+    {
+      label: "RSVP communauté",
+      value: rsvpCount,
+      detail: "Réponses enregistrées dans event_rsvps avec mise à jour horodatée.",
+      basis: "all_time",
+    },
+    {
+      label: "Notifications app",
+      value: notificationCount,
+      detail: "Messages persistés dans app_notifications pour les flux communautaires et système.",
+      basis: "all_time",
+    },
+    {
+      label: "Notifications non lues",
+      value: unreadNotificationCount,
+      detail: "Sous-ensemble des notifications encore actives dans la boîte de réception.",
+      basis: "recent",
+    },
+    {
       label: "Appels IA",
       value: rows.trainingExamples.filter((row) => countTrainingPhotos(row.photos) > 0).length,
       detail: "Proxy CleanMyMap basé sur les analyses vision/training réellement branchées.",
@@ -341,15 +509,64 @@ function buildProjectSignalsHighlights(
   ];
 }
 
+function buildProjectSignalBreakdown(rows: ProjectSignalRows) {
+  const detailedPageViews = rows.funnelEvents.filter((row) => row.step === "page_view").length;
+  const legacyPageViews = rows.funnelEvents.filter((row) => row.step === "view_new").length;
+  const communityEventCount = rows.communityEvents.length;
+  const rsvpCount = rows.eventRsvps.length;
+  const notificationCount = rows.appNotifications.length;
+  const unreadNotificationCount = countProjectUnreadNotifications(rows.appNotifications);
+  const sentEmailsCount = rows.serviceEmails.filter((row) => row.status === "sent").length;
+  const pdfExportsCount = rows.reports.filter((row) => row.file_kind === "pdf").length;
+
+  return {
+    traffic: {
+      pageViewEvents: detailedPageViews,
+      legacyPageViewEvents: legacyPageViews,
+      distinctRoutes: countProjectPageViewRoutes(rows.funnelEvents),
+      topRoutes: buildTopPageViewRoutes(rows.funnelEvents),
+    },
+    community: {
+      events: communityEventCount,
+      rsvps: rsvpCount,
+      notifications: notificationCount,
+      unreadNotifications: unreadNotificationCount,
+    },
+    communication: {
+      emailsSent: sentEmailsCount,
+      pdfExports: pdfExportsCount,
+    },
+  };
+}
+
 function buildInfrastructureUsageInput(params: {
   recentRows: ProjectSignalRows;
   previousRows: ProjectSignalRows;
 }): EnvironmentalImpactInfrastructureInput["usage"] {
+  const recentCommunitySignals =
+    params.recentRows.communityEvents.length +
+    params.recentRows.eventRsvps.length +
+    params.recentRows.appNotifications.length;
+  const previousCommunitySignals =
+    params.previousRows.communityEvents.length +
+    params.previousRows.eventRsvps.length +
+    params.previousRows.appNotifications.length;
   const current = buildScopeInputFromRows(params.recentRows, {
     userId: null,
     fromMs: Number.NEGATIVE_INFINITY,
     untilMs: Number.POSITIVE_INFINITY,
-  }) as EnvironmentalImpactScopeInput & { monthlyPageViews: number; monthlyActiveUsers: number; monthlySessions: number; monthlyEmailsSent: number; monthlyPdfExports: number; monthlyMapViews: number; monthlyAiCalls: number; monthlyStorageGbMonths: number; monthlyApiRequests: number; monthlyAuthEvents: number; };
+  }) as EnvironmentalImpactScopeInput & {
+    monthlyPageViews: number;
+    monthlyActiveUsers: number;
+    monthlySessions: number;
+    monthlyEmailsSent: number;
+    monthlyPdfExports: number;
+    monthlyMapViews: number;
+    monthlyAiCalls: number;
+    monthlyStorageGbMonths: number;
+    monthlyApiRequests: number;
+    monthlyAuthEvents: number;
+  };
   const previous = buildScopeInputFromRows(params.previousRows, {
     userId: null,
     fromMs: Number.NEGATIVE_INFINITY,
@@ -377,12 +594,86 @@ function buildInfrastructureUsageInput(params: {
     monthlyPdfExports: Math.max(0, current.monthlyPdfExports),
     monthlyMapViews: Math.max(0, current.monthlyMapViews),
     monthlyAiCalls: Math.max(0, current.monthlyAiCalls),
+    monthlyCodexSessions: 0,
+    monthlyCodexConversationTurns: 0,
+    monthlyCodexToolActions: 0,
+    monthlyCodexShellCommands: 0,
+    monthlyCodexFilesTouched: 0,
+    monthlyCodexTestsRun: 0,
+    monthlyCodexChangedLines: 0,
+    monthlyCodexActiveMinutes: 0,
     monthlyStorageGbMonths: Math.max(0.1, current.monthlyStorageGbMonths),
     monthlyApiRequests: Math.max(1, current.monthlyApiRequests),
-    monthlyAuthEvents: Math.max(1, current.monthlyAuthEvents),
+    monthlyAuthEvents: Math.max(1, current.monthlyAuthEvents + recentCommunitySignals * 0.05),
+    monthlyRealtimeEvents: Math.max(1, current.monthlyActiveUsers * 8 + recentCommunitySignals * 1.5),
+    monthlyEgressGb: round6(
+      Math.max(
+        0.1,
+        current.monthlyPageViews * 0.00008 +
+          current.monthlyMapViews * 0.0012 +
+          current.monthlyStorageGbMonths * 0.12 +
+          recentCommunitySignals * 0.00002,
+      ),
+    ),
+    monthlyBandwidthGb: round6(
+      Math.max(
+        0.1,
+        current.monthlyPageViews * 0.00011 +
+          current.monthlyMapViews * 0.001 +
+          current.monthlyPdfExports * 0.002 +
+          recentCommunitySignals * 0.00001,
+      ),
+    ),
+    monthlyErrorEvents:
+      current.monthlyApiRequests > 0
+        ? Math.max(0, Math.round((current.monthlyApiRequests + recentCommunitySignals) * 0.0025))
+        : null,
     growthRateMonthly,
-    seasonalityAmplitude,
+    seasonalityAmplitude: clamp(
+      seasonalityAmplitude +
+        Math.min(0.08, Math.abs(recentCommunitySignals - previousCommunitySignals) / Math.max(1, recentCommunitySignals + previousCommunitySignals + 1)),
+      0.04,
+      0.3,
+    ),
     horizonMonths: 12,
+  };
+}
+
+function calculateCodexMonthlyUsageInput(
+  snapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[],
+): {
+  codexUsage: EnvironmentalImpactCodexUsageMonthlyEstimate;
+  usage: EnvironmentalImpactInfrastructureInput["usage"];
+} {
+  const codexUsage = buildCodexMonthlyUsageEstimate(snapshots);
+  if (codexUsage.weekCount === 0) {
+    return {
+      codexUsage,
+      usage: {
+        monthlyCodexSessions: null,
+        monthlyCodexConversationTurns: null,
+        monthlyCodexToolActions: null,
+        monthlyCodexShellCommands: null,
+        monthlyCodexFilesTouched: null,
+        monthlyCodexTestsRun: null,
+        monthlyCodexChangedLines: null,
+        monthlyCodexActiveMinutes: null,
+      },
+    };
+  }
+
+  return {
+    codexUsage,
+    usage: {
+      monthlyCodexSessions: codexUsage.monthlyEquivalent.sessionCount,
+      monthlyCodexConversationTurns: codexUsage.monthlyEquivalent.conversationCount,
+      monthlyCodexToolActions: codexUsage.monthlyEquivalent.toolCallCount,
+      monthlyCodexShellCommands: codexUsage.monthlyEquivalent.shellCommandCount,
+      monthlyCodexFilesTouched: codexUsage.monthlyEquivalent.fileTouchCount,
+      monthlyCodexTestsRun: codexUsage.monthlyEquivalent.testRunCount,
+      monthlyCodexChangedLines: codexUsage.monthlyEquivalent.changedLineCount,
+      monthlyCodexActiveMinutes: codexUsage.monthlyEquivalent.activeMinutes,
+    },
   };
 }
 
@@ -396,6 +687,9 @@ function buildProjectSignalRows(
     reports: ReportRow[];
     trainingExamples: TrainingRow[];
     serviceEmails: ServiceEmailRow[];
+    communityEvents: CommunityEventRow[];
+    eventRsvps: EventRsvpRow[];
+    appNotifications: AppNotificationRow[];
   },
   windowFromMs?: number,
   windowUntilMs?: number,
@@ -405,6 +699,12 @@ function buildProjectSignalRows(
       windowFromMs === undefined || windowUntilMs === undefined
         ? true
         : isWithinWindow(row.created_at, windowFromMs, windowUntilMs),
+    );
+  const filterByTimestamp = <T>(rows: T[], toTimestamp: (row: T) => string | null | undefined) =>
+    rows.filter((row) =>
+      windowFromMs === undefined || windowUntilMs === undefined
+        ? true
+        : isWithinWindow(toTimestamp(row), windowFromMs, windowUntilMs),
     );
 
   return {
@@ -420,6 +720,9 @@ function buildProjectSignalRows(
     reports: filterByWindow(params.reports),
     trainingExamples: filterByWindow(params.trainingExamples),
     serviceEmails: filterByWindow(params.serviceEmails),
+    communityEvents: filterByWindow(params.communityEvents),
+    eventRsvps: filterByTimestamp(params.eventRsvps, (row) => row.updated_at),
+    appNotifications: filterByWindow(params.appNotifications),
   };
 }
 
@@ -432,6 +735,9 @@ function findEarliestDate(rows: ProjectSignalRows): string | null {
     ...rows.reports.map((row) => toMs(row.created_at)),
     ...rows.trainingExamples.map((row) => toMs(row.created_at)),
     ...rows.serviceEmails.map((row) => toMs(row.created_at)),
+    ...rows.communityEvents.map((row) => toMs(row.created_at)),
+    ...rows.eventRsvps.map((row) => toMs(row.updated_at)),
+    ...rows.appNotifications.map((row) => toMs(row.created_at)),
     ...rows.profiles.map((row) => toMs(row.created_at)),
   ].filter((value): value is number => typeof value === "number" && Number.isFinite(value));
 
@@ -455,6 +761,9 @@ function findAccountCreatedAt(rows: ProjectSignalRows, userId: string): string |
     ...rows.progressionEvents.filter((row) => row.user_id === userId).map((row) => row.created_at),
     ...rows.reports.filter((row) => row.owner_clerk_id === userId).map((row) => row.created_at),
     ...rows.serviceEmails.filter((row) => row.actor_user_id === userId).map((row) => row.created_at),
+    ...rows.communityEvents.filter((row) => row.organizer_clerk_id === userId).map((row) => row.created_at),
+    ...rows.eventRsvps.filter((row) => row.participant_clerk_id === userId).map((row) => row.updated_at ?? ""),
+    ...rows.appNotifications.filter((row) => row.user_id === userId).map((row) => row.created_at),
   ].filter((value) => Boolean(value));
 
   if (userTimestamps.length === 0) {
@@ -497,6 +806,15 @@ function calculateAllTimeScopeInput(
   const scopedTraining = userId
     ? rows.trainingExamples.filter((row) => actionById.get(row.action_id) === userId)
     : [];
+  const scopedCommunityEvents = userId
+    ? rows.communityEvents.filter((row) => row.organizer_clerk_id === userId)
+    : [];
+  const scopedEventRsvps = userId
+    ? rows.eventRsvps.filter((row) => row.participant_clerk_id === userId)
+    : [];
+  const scopedNotifications = userId
+    ? rows.appNotifications.filter((row) => row.user_id === userId)
+    : [];
   const selectedActions = userId ? scopedActions : rows.actions;
   const selectedSpots = userId ? scopedSpots : rows.spots;
   const selectedFunnel = userId ? scopedFunnel : rows.funnelEvents;
@@ -504,6 +822,9 @@ function calculateAllTimeScopeInput(
   const selectedReports = userId ? scopedReports : rows.reports;
   const selectedEmails = userId ? scopedEmails : rows.serviceEmails;
   const selectedTraining = userId ? scopedTraining : rows.trainingExamples;
+  const selectedCommunityEvents = userId ? scopedCommunityEvents : rows.communityEvents;
+  const selectedEventRsvps = userId ? scopedEventRsvps : rows.eventRsvps;
+  const selectedNotifications = userId ? scopedNotifications : rows.appNotifications;
   const hasAnySignal =
     selectedActions.length +
       selectedSpots.length +
@@ -511,7 +832,10 @@ function calculateAllTimeScopeInput(
       selectedProgression.length +
       selectedReports.length +
       selectedEmails.length +
-      selectedTraining.length >
+      selectedTraining.length +
+      selectedCommunityEvents.length +
+      selectedEventRsvps.length +
+      selectedNotifications.length >
     0;
 
   if (!hasAnySignal) {
@@ -529,8 +853,8 @@ function calculateAllTimeScopeInput(
   }
 
   const pageViews = userId
-    ? scopedFunnel.filter((row) => row.step === "view_new").length
-    : rows.funnelEvents.filter((row) => row.step === "view_new").length;
+    ? countProjectPageViews(selectedFunnel)
+    : countProjectPageViews(rows.funnelEvents);
   const storedImages = selectedTraining.reduce(
     (acc, row) => acc + countTrainingPhotos(row.photos),
     0,
@@ -542,7 +866,10 @@ function calculateAllTimeScopeInput(
       scopedProgression.length +
       scopedReports.length +
       scopedTraining.length +
-      scopedEmails.length
+      scopedEmails.length +
+      selectedCommunityEvents.length +
+      selectedEventRsvps.length +
+      selectedNotifications.length
     : totalRowsForApiRequests(rows);
   const pdfExports = userId
     ? scopedReports.filter((row) => row.file_kind === "pdf").length
@@ -568,7 +895,9 @@ function calculateAllTimeScopeInput(
           0.75 +
         (pdfExports * 0.0005) +
         (selectedActions.length * 0.00001) +
-        (selectedSpots.length * 0.00001),
+        (selectedSpots.length * 0.00001) +
+        (selectedCommunityEvents.length * 0.000008) +
+        (selectedNotifications.length * 0.000004),
     ),
   );
 
@@ -629,7 +958,10 @@ function calculateMonthlyUsageInput(rows: ProjectSignalRows): EnvironmentalImpac
       currentRows.progressionEvents.length +
       currentRows.reports.length +
       currentRows.trainingExamples.length +
-      currentRows.serviceEmails.length >
+      currentRows.serviceEmails.length +
+      currentRows.communityEvents.length +
+      currentRows.eventRsvps.length +
+      currentRows.appNotifications.length >
     0;
 
   if (!hasAnyCurrentSignal) {
@@ -707,10 +1039,12 @@ export function buildEnvironmentalImpactProjectSignals(
     generatedAt: string;
     userId: string | null;
   },
+  codexSnapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[] = [],
 ): EnvironmentalImpactProjectSignals {
   const generatedAtDate = parseDateOrNull(params.generatedAt) ?? new Date(params.generatedAt);
   const launchedAt = findEarliestDate(rows);
   const accountCreatedAt = params.userId ? findAccountCreatedAt(rows, params.userId) : null;
+  const codexUsage = calculateCodexMonthlyUsageInput(codexSnapshots);
   const siteInput = calculateAllTimeScopeInput(rows, {
     userId: null,
     accountCreatedAt: null,
@@ -729,24 +1063,43 @@ export function buildEnvironmentalImpactProjectSignals(
     recentWindowDays: 30,
     siteInput,
     userInput,
+    codexUsage: codexUsage.codexUsage,
+    signalBreakdown: buildProjectSignalBreakdown(rows),
     infrastructureInput: {
       launchedAt,
       referencePeriodMonths: launchedAt
         ? Math.max(1, Math.min(240, Math.ceil((generatedAtDate.getTime() - new Date(launchedAt).getTime()) / (30 * 24 * 60 * 60 * 1000))))
         : 12,
-      usage: calculateMonthlyUsageInput(rows),
+      usage: {
+        ...calculateMonthlyUsageInput(rows),
+        ...codexUsage.usage,
+      },
     },
-    highlights: buildProjectSignalsHighlights(rows, {
-      generatedAt: generatedAtDate.toISOString(),
-      accountCreatedAt,
-      userId: params.userId,
-    }),
+    highlights: [
+      ...buildProjectSignalsHighlights(rows, {
+        generatedAt: generatedAtDate.toISOString(),
+        accountCreatedAt,
+        userId: params.userId,
+      }),
+      ...(codexUsage.codexUsage.weekCount > 0
+        ? [
+            {
+              label: "Codex CleanMyMap",
+              value: codexUsage.codexUsage.estimatedKgCo2eProxy,
+              detail: `Journal hebdomadaire sur ${codexUsage.codexUsage.weekCount} semaine${codexUsage.codexUsage.weekCount > 1 ? "s" : ""}.`,
+              basis: "recent" as const,
+            },
+          ]
+        : []),
+    ],
     notes: [
       "Les signaux proviennent des tables opérationnelles CleanMyMap, pas de moyennes externes.",
-      "Les vues de page utilisent le tunnel funnel_events comme source de trafic interne la plus fiable aujourd'hui.",
+      "Les vues de page utilisent désormais page_view comme signal route-level principal, avec fallback sur view_new pour l'historique.",
       "Les emails Resend sont journalisés via le service email central pour garder un historique localisé.",
+      "Les événements communautaires, RSVP et notifications app sont intégrés pour refléter l'usage produit réel et non un proxy générique.",
       "Les images stockées sont déduites des training_examples et de leurs pièces jointes, afin de rester projet-spécifique.",
       "Les métriques mensuelles sont projetées à partir des 30 derniers jours observés sur le projet.",
+      ...codexUsage.codexUsage.notes,
     ],
   };
 }
@@ -765,16 +1118,23 @@ export async function loadEnvironmentalImpactProjectSignals(
     reports,
     trainingExamples,
     serviceEmails,
+    communityEvents,
+    eventRsvps,
+    appNotifications,
   ] = await Promise.all([
     supabase.from("profiles").select("id, created_at").limit(12000),
     supabase.from("actions").select("id, created_at, created_by_clerk_id, latitude, longitude, status").limit(12000),
     supabase.from("spots").select("created_at, created_by_clerk_id, latitude, longitude, status").limit(12000),
-    supabase.from("funnel_events").select("at, user_id, session_id, step, mode").limit(12000),
+    supabase.from("funnel_events").select("at, user_id, session_id, step, mode, meta").limit(12000),
     supabase.from("progression_events").select("created_at, user_id, event_type, status_phase").limit(12000),
     supabase.from("reports").select("created_at, owner_clerk_id, file_kind").limit(12000),
     supabase.from("training_examples").select("action_id, created_at, photos, status").limit(12000),
     supabase.from("service_email_events").select("created_at, actor_user_id, recipient_count, status").limit(12000),
+    supabase.from("community_events").select("id, created_at, organizer_clerk_id, title, event_date, location_label, description").limit(12000),
+    supabase.from("event_rsvps").select("event_id, participant_clerk_id, status, updated_at").limit(12000),
+    supabase.from("app_notifications").select("id, user_id, type, title, content, read_at, created_at").limit(12000),
   ]);
+  const codexSnapshots = await listCodexUsageWeeklySnapshots(12);
 
   const error = [
     profiles.error,
@@ -785,6 +1145,9 @@ export async function loadEnvironmentalImpactProjectSignals(
     reports.error,
     trainingExamples.error,
     serviceEmails.error,
+    communityEvents.error,
+    eventRsvps.error,
+    appNotifications.error,
   ].find(Boolean);
 
   if (error) {
@@ -801,7 +1164,11 @@ export async function loadEnvironmentalImpactProjectSignals(
       reports: (reports.data ?? []) as ReportRow[],
       trainingExamples: (trainingExamples.data ?? []) as TrainingRow[],
       serviceEmails: (serviceEmails.data ?? []) as ServiceEmailRow[],
+      communityEvents: (communityEvents.data ?? []) as CommunityEventRow[],
+      eventRsvps: (eventRsvps.data ?? []) as EventRsvpRow[],
+      appNotifications: (appNotifications.data ?? []) as AppNotificationRow[],
     },
     { generatedAt, userId: params.userId },
+    codexSnapshots,
   );
 }

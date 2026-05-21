@@ -63,6 +63,8 @@ export async function upsertEnvironmentalImpactSnapshot(
           total_kg_co2e_proxy: snapshot.totalKgCo2eProxy,
           monthly_kg_co2e_proxy: snapshot.monthlyKgCo2eProxy,
           annual_kg_co2e_proxy: snapshot.annualKgCo2eProxy,
+          site_kg_co2e_proxy: snapshot.siteKgCo2eProxy,
+          user_kg_co2e_proxy: snapshot.userKgCo2eProxy,
           confidence_percent: snapshot.confidencePercent,
           uncertainty_percent: snapshot.uncertaintyPercent,
           model: snapshot.model,
@@ -108,29 +110,35 @@ export async function listEnvironmentalImpactSnapshots(
       const result = await supabase
         .from("environmental_impact_snapshots")
         .select(
-          "id, snapshot_key, snapshot_date, generated_at, version, total_kg_co2e_proxy, monthly_kg_co2e_proxy, annual_kg_co2e_proxy, confidence_percent, uncertainty_percent, launched_at, account_created_at, model, signals",
+          "id, snapshot_key, snapshot_date, generated_at, version, total_kg_co2e_proxy, monthly_kg_co2e_proxy, annual_kg_co2e_proxy, site_kg_co2e_proxy, user_kg_co2e_proxy, confidence_percent, uncertainty_percent, launched_at, account_created_at, model, signals",
         )
         .eq("snapshot_key", SNAPSHOT_KEY)
         .order("snapshot_date", { ascending: false })
         .limit(limit);
 
       if (!result.error) {
-        return (result.data ?? []).map((row) => ({
-          id: String(row.id),
-          snapshotKey: row.snapshot_key,
-          snapshotDate: row.snapshot_date,
-          generatedAt: row.generated_at,
-          version: row.version,
-          totalKgCo2eProxy: row.total_kg_co2e_proxy,
-          monthlyKgCo2eProxy: row.monthly_kg_co2e_proxy,
-          annualKgCo2eProxy: row.annual_kg_co2e_proxy,
-          confidencePercent: Number(row.confidence_percent ?? 0),
-          uncertaintyPercent: Number(row.uncertainty_percent ?? 0),
-          launchedAt: row.launched_at ?? null,
-          accountCreatedAt: row.account_created_at ?? null,
-          model: row.model as EnvironmentalImpactSnapshotRecord["model"],
-          signals: row.signals as EnvironmentalImpactSnapshotRecord["signals"],
-        }));
+        return (result.data ?? []).map((row) => {
+          const model = row.model as Partial<EnvironmentalImpactSnapshotRecord["model"]> | null;
+
+          return {
+            id: String(row.id),
+            snapshotKey: row.snapshot_key,
+            snapshotDate: row.snapshot_date,
+            generatedAt: row.generated_at,
+            version: row.version,
+            totalKgCo2eProxy: row.total_kg_co2e_proxy,
+            monthlyKgCo2eProxy: row.monthly_kg_co2e_proxy,
+            annualKgCo2eProxy: row.annual_kg_co2e_proxy,
+            siteKgCo2eProxy: row.site_kg_co2e_proxy ?? model?.site?.totalKgCo2eProxy ?? null,
+            userKgCo2eProxy: row.user_kg_co2e_proxy ?? model?.user?.totalKgCo2eProxy ?? null,
+            confidencePercent: Number(row.confidence_percent ?? 0),
+            uncertaintyPercent: Number(row.uncertainty_percent ?? 0),
+            launchedAt: row.launched_at ?? null,
+            accountCreatedAt: row.account_created_at ?? null,
+            model: row.model as EnvironmentalImpactSnapshotRecord["model"],
+            signals: row.signals as EnvironmentalImpactSnapshotRecord["signals"],
+          };
+        });
       }
       if (!allowLocalFileStoreFallback()) {
         return [];

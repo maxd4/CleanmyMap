@@ -42,6 +42,23 @@ describe("PhotoUploadService", () => {
 
     const result = await photoUploadService.uploadPhoto(file, "action-test-1");
 
+    expect(uploadMock).toHaveBeenCalledTimes(1);
+    expect(uploadMock).toHaveBeenCalledWith(
+      expect.stringMatching(/^action-test-1\/.+\.jpg$/),
+      file,
+      expect.objectContaining({
+        cacheControl: "3600",
+        upsert: false,
+        metadata: expect.objectContaining({
+          businessDomain: "pieces_jointes_photo",
+          business_domain: "pieces_jointes_photo",
+          sourceTable: "actions",
+          businessContext: "action_photo",
+          actionId: "action-test-1",
+        }),
+      }),
+    );
+
     expect(result).toMatchObject({
       url: "",
       path: "",

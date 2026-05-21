@@ -11,6 +11,15 @@
 * Ajouter de la culture générale utile aux néophytes lorsque cela aide à comprendre le sujet.
 * Éviter les formulations trop vagues ou trop générales.
 
+### Ton institutionnel
+
+* Maintenir un ton impersonnel, public et institutionnel dans tout le rapport.
+* Éviter les formulations à la première personne, sauf dans une citation directe ou un témoignage explicitement assumé.
+* Remplacer `ton`, `ta`, `tes`, `vous`, `votre`, `vos`, `nous`, `notre`, `nos`, `je` et leurs formes dérivées par des tournures factuelles, par `CleanMyMap`, par `le rapport`, par `l’analyse` ou par `le présent audit` selon le référent.
+* Préférer `CleanMyMap` lorsque le référent est le projet, `le rapport` lorsque le référent est le document, et `le développeur` ou `l’équipe projet` lorsque l’humain doit rester identifié.
+* Si le référent exact n’est pas certain, signaler l’ambiguïté par `<!-- CODEX À PRÉCISER -->`.
+* Conserver un style clair, académique et défendable en soutenance, sans ton conversationnel ni adresse directe au lecteur.
+
 ### Format Markdown et Quarto
 
 * Le fichier source du rapport est en **Markdown**.
@@ -74,13 +83,14 @@ Ce point doit être lu comme un ordre de grandeur, non comme une mesure instrume
 
 ### Sources (Moteur Quarto / Citeproc)
 
-* Le rapport utilise le moteur de bibliographie automatique de Quarto.
+* Le rapport utilise le moteur de bibliographie automatique de Quarto avec `bibliography: references.bib`, `reference-section-title: Bibliographie`, `link-citations: true` et `nocite: | @*`.
 * Toute source doit être appelée **directement dans le texte** avec la syntaxe de citation Quarto : `[@clef_de_la_source]`.
 * **Interdiction stricte** de créer des listes manuelles de sources (du type `- [1] Auteur...`) à la fin des paragraphes ou des sous-parties. Quarto s'occupe de lister les références globales à la fin du document.
-* Si une nouvelle source doit être introduite, l'ajouter au fichier `references.bib` avec une nouvelle clé BibTeX.
-* Ne jamais générer une URL sans certitude qu'elle est valide. En cas de doute (risque d'hallucination de l'IA), donner uniquement le titre exact et l'auteur.
+* Les mentions du type `Source : ...` sont à éviter dans le corps du texte. Si une précision bibliographique est nécessaire, utiliser une citation `[@clef]`.
+* Les liens Markdown vers des sites externes doivent rester exceptionnels et réservés aux cas où l’URL doit être montrée explicitement, pas pour remplacer une citation bibliographique.
+* Si une nouvelle source doit être introduite, l'ajouter au fichier `references.bib` avec une clé BibTeX stable, courte et documentée.
+* Ne jamais générer une URL sans certitude qu'elle est valide. En cas de doute, donner uniquement le titre exact et l'auteur.
 * Privilégier les liens pérennes (DOI, HAL, arXiv, Wayback Machine) lorsque cela est possible.
-
 * Ne pas inventer de sources.
 * Si une source n’est pas connue ou vérifiable, préférer une formulation prudente.
 * Privilégier les sources primaires ou institutionnelles.
@@ -185,6 +195,9 @@ Ce point doit être lu comme un ordre de grandeur, non comme une mesure instrume
   * **CBRN**.
 * Ne pas supposer que le lecteur maîtrise ces notions.
 * Les explications doivent rester courtes et utiles au rapport.
+* Dans le corps du rapport, privilégier systématiquement le français lorsqu’un équivalent existe déjà, par exemple `workflow` → `flux de travail`, `dashboard` → `tableau de bord`, `frontend` → `interface client`, `backend` → `serveur`, `build` → `compilation`, `preview` → `aperçu`, `prompt` → `instruction`, `analytics` → `mesure d’audience`, `feature` → `fonctionnalité`, `open source` → `source ouverte`, `legacy` → `héritage`, `sampling` → `échantillonnage` et `lock-in` → `enfermement propriétaire`.
+* Lorsqu’un terme technique anglais n’a pas d’équivalent français naturel ou qu’il s’agit d’un nom propre, d’un outil, d’une API, d’un sigle ou d’une référence bibliographique, conserver le terme mais l’expliquer brièvement à sa première apparition.
+* Les titres de sources, les noms de produits, les bibliographies et les identifiants techniques peuvent rester dans leur forme d’origine lorsqu’une francisation nuirait à la précision.
 
 ### Usage des tableaux et visuels
 
@@ -231,4 +244,4 @@ Ce point doit être lu comme un ordre de grandeur, non comme une mesure instrume
 
 ### Règle synthétique
 
-Pour les réécritures du rapport CleanMyMap, chaque section doit être directement exploitable dans un PDF Quarto : structure Markdown propre, ton académique, appels de notes dynamiques (syntaxe `[@clef]`), tableaux lisibles, formulations prudentes, recommandations concrètes et lien explicite avec les conséquences opérationnelles pour CleanMyMap.
+Pour les réécritures du rapport CleanMyMap, chaque section doit être directement exploitable dans un PDF Quarto : structure Markdown propre, ton académique, appels de citations dynamiques (syntaxe `[@clef]`), bibliographie exhaustive générée automatiquement, tableaux lisibles, formulations prudentes, recommandations concrètes et lien explicite avec les conséquences opérationnelles pour CleanMyMap.

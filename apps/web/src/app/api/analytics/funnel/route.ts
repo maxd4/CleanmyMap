@@ -14,7 +14,7 @@ export const runtime ="nodejs";
 
 const payloadSchema = z.object({
  sessionId: z.string().min(6).max(120).optional(),
- step: z.enum(["view_new","start_form","submit_success"]),
+ step: z.enum(["view_new","page_view","start_form","submit_success"]),
  mode: z.enum(["quick","complete"]),
  meta: z.record(z.string(), z.unknown()).optional(),
 });

@@ -11,15 +11,10 @@ import {
 } from "lucide-react";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
-import {
-  ENVIRONMENTAL_IMPACT_POST_DEFINITIONS,
-} from "@/lib/environmental-impact-estimator";
-import type { EnvironmentalImpactEstimateModel } from "@/lib/environmental-impact-estimator";
-import type { EnvironmentalImpactDataGapNote } from "@/lib/environmental-impact-estimator";
-import type {
-  EnvironmentalImpactProjectSignals,
-  EnvironmentalImpactSnapshotRecord,
-} from "@/lib/environmental-impact-estimator";
+import { ENVIRONMENTAL_IMPACT_POST_DEFINITIONS } from "@/lib/environmental-impact-estimator/constants";
+import type { EnvironmentalImpactEstimateModel, EnvironmentalImpactDataGapNote } from "@/lib/environmental-impact-estimator/types";
+import type { EnvironmentalImpactProjectSignals, EnvironmentalImpactSnapshotRecord } from "@/lib/environmental-impact-estimator/types";
+import { EnvironmentalImpactProjectSignalsPanel } from "./environmental-impact-project-signals-panel";
 import { EnvironmentalImpactCurveChart } from "./environmental-impact-curve-chart";
 
 type EnvironmentalImpactEstimatorPanelProps = {
@@ -112,6 +107,194 @@ function getDataGapTone(severity: EnvironmentalImpactDataGapNote["severity"]) {
     : "border-sky-400/20 bg-sky-400/10 text-sky-100";
 }
 
+const DOCUMENTATION_DOWNLOADS = [
+  {
+    title: "Fonctionnement du graphique",
+    description:
+      "Télécharge la méthode détaillée du tracé, les règles de calcul et la lecture des points hebdomadaires.",
+    href: "/api/documentation/graphique-impact-co2e",
+    filename: "graphique_impact_CO2e.md",
+  },
+  {
+    title: "Atelier DU",
+    description:
+      "Télécharge le résumé des ateliers DU qui ont nourri les arbitrages de sobriété et de lisibilité.",
+    href: "/api/documentation/atelier_DU",
+    filename: "atelier_DU.md",
+  },
+  {
+    title: "Journal DU",
+    description:
+      "Télécharge le journal court des décisions et des évolutions liées à l'impact.",
+    href: "/api/documentation/journal_DU",
+    filename: "journal_DU.md",
+  },
+] as const;
+
+type ReductionAction = {
+  title: string;
+  detail: string;
+  serviceLabel: string;
+  sharePercent: number;
+};
+
+function formatSharePercent(value: number | null | undefined) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "—";
+  }
+
+  return `${new Intl.NumberFormat("fr-FR", {
+    maximumFractionDigits: 1,
+  }).format(value)} %`;
+}
+
+function formatSecondOrderQuantity(value: number | null, unitLabel: string) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "—";
+  }
+
+  const maximumFractionDigits =
+    unitLabel === "kWh" ? 1 : unitLabel === "L" ? 0 : unitLabel === "kg CO2 brut" ? 3 : 2;
+
+  return `${new Intl.NumberFormat("fr-FR", {
+    maximumFractionDigits,
+  }).format(value)} ${unitLabel}`;
+}
+
+function formatLifecycleQuantity(value: number | null, unitLabel: string) {
+  if (typeof value !== "number" || Number.isNaN(value)) {
+    return "—";
+  }
+
+  const maximumFractionDigits =
+    unitLabel === "kWh" || unitLabel === "kg CO2e" ? 1 : unitLabel === "L" ? 0 : 2;
+
+  return `${new Intl.NumberFormat("fr-FR", {
+    maximumFractionDigits,
+  }).format(value)} ${unitLabel}`;
+}
+
+function buildReductionAction(service: {
+  key: string;
+  label: string;
+  sharePercent: number;
+}): ReductionAction {
+  switch (service.key) {
+    case "vercel":
+      return {
+        title: "Réduire la charge Vercel",
+        detail:
+          "Favoriser les pages statiques, réduire les fonctions serverless, alléger les bundles et mettre davantage en cache pour diminuer le trafic servi.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+    case "supabase":
+      return {
+        title: "Rationaliser Supabase",
+        detail:
+          "Regrouper les écritures, limiter les requêtes répétées, réduire le realtime non utile et nettoyer le stockage pour faire baisser les transferts.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+    case "codex":
+      return {
+        title: "Canaliser l'usage Codex",
+        detail:
+          "Concentrer les sessions IA sur des lots précis, réduire les relances, réutiliser les prompts et limiter les tests inutiles pour baisser l'impact du développement assisté.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+    case "resend":
+      return {
+        title: "Mutualiser les envois Resend",
+        detail:
+          "Regrouper les lots d'email, éviter les doublons et ne garder que les notifications utiles pour réduire les envois sortants.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+    case "posthog":
+      return {
+        title: "Alléger la télémétrie",
+        detail:
+          "Filtrer les événements peu utiles, éviter la sur-instrumentation et privilégier des mesures synthétiques pour diminuer le volume de suivi.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+    case "clerk":
+      return {
+        title: "Réduire les cycles Clerk",
+        detail:
+          "Limiter les refreshs de session, les redirections d'auth et les vérifications redondantes pour réduire les appels d'authentification.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+    case "upstash":
+      return {
+        title: "Batcher les opérations Upstash",
+        detail:
+          "Regrouper les accès cache et queue, éviter les allers-retours superflus et supprimer les opérations temporaires non nécessaires.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+    case "pinecone":
+      return {
+        title: "Limiter les requêtes Pinecone",
+        detail:
+          "Réduire les appels de recherche vectorielle, mieux invalider les index et ne lancer les requêtes que sur les parcours réellement utiles.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+    case "sentry":
+      return {
+        title: "Filtrer le bruit Sentry",
+        detail:
+          "Réduire les erreurs bruitées et les logs redondants pour garder uniquement les signaux de qualité réellement utiles au diagnostic.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+    case "stripe":
+      return {
+        title: "Éviter les opérations Stripe inutiles",
+        detail:
+          "Conserver un flux de paiement compact, éviter les appels de test non nécessaires et réduire les opérations répétées.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+    case "lwsDomain":
+      return {
+        title: "Stabiliser le domaine LWS",
+        detail:
+          "Conserver un domaine unique, limiter les sous-domaines superflus et réduire les requêtes DNS inutiles pour garder le coût fixe bas.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+    default:
+      return {
+        title: `Réduire la charge ${service.label}`,
+        detail:
+          "Prioriser les usages visibles, supprimer les requêtes ou calculs non essentiels et concentrer l'optimisation sur ce service.",
+        serviceLabel: service.label,
+        sharePercent: service.sharePercent,
+      };
+  }
+}
+
+function buildTopReductionActions(
+  services: Array<{ key: string; label: string; monthlyKgCo2eProxy: number | null; sharePercent: number }>,
+): ReductionAction[] {
+  return services
+    .filter((service) => (service.monthlyKgCo2eProxy ?? 0) > 0)
+    .sort((a, b) => (b.monthlyKgCo2eProxy ?? 0) - (a.monthlyKgCo2eProxy ?? 0))
+    .map((service) =>
+      buildReductionAction({
+        key: service.key,
+        label: service.label,
+        sharePercent: service.sharePercent,
+      }),
+    )
+    .slice(0, 3);
+}
+
 export function EnvironmentalImpactEstimatorPanel({
   model,
   signals,
@@ -135,6 +318,7 @@ export function EnvironmentalImpactEstimatorPanel({
         ]
       : []),
   ];
+  const topReductionActions = buildTopReductionActions(model.infrastructure.services);
 
   return (
     <section
@@ -228,6 +412,70 @@ export function EnvironmentalImpactEstimatorPanel({
               ))}
             </div>
 
+            <EnvironmentalImpactProjectSignalsPanel
+              signals={signals.signalBreakdown}
+            />
+
+            {signals.codexUsage ? (
+              <div className="rounded-[1.35rem] border border-white/10 bg-black/10 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                      Journal Codex
+                    </p>
+                    <h4 className="mt-1 text-lg font-black text-white">
+                      Historique hebdomadaire spécifique au projet
+                    </h4>
+                  </div>
+                  <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-red-100/50">
+                    {signals.codexUsage.weekCount} semaine
+                    {signals.codexUsage.weekCount > 1 ? "s" : ""}
+                  </div>
+                </div>
+                <div className="mt-4 grid gap-3 md:grid-cols-4">
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                      Sessions / mois
+                    </p>
+                    <p className="mt-1 text-sm font-black text-white">
+                      {new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(
+                        signals.codexUsage.monthlyEquivalent.sessionCount,
+                      )}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                      Minutes actives
+                    </p>
+                    <p className="mt-1 text-sm font-black text-white">
+                      {new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(
+                        signals.codexUsage.monthlyEquivalent.activeMinutes,
+                      )}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                      kg CO2e proxy
+                    </p>
+                    <p className="mt-1 text-sm font-black text-white">
+                      {formatProxyMass(signals.codexUsage.estimatedKgCo2eProxy)}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                      Confiance
+                    </p>
+                    <p className="mt-1 text-sm font-black text-white">
+                      {new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(
+                        signals.codexUsage.confidencePercent,
+                      )}
+                      %
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             <div className="grid gap-3 md:grid-cols-3">
               <div className="rounded-[1.35rem] border border-white/10 bg-black/10 p-4">
                 <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
@@ -257,69 +505,142 @@ export function EnvironmentalImpactEstimatorPanel({
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          {[model.site, model.user].map((scope) => (
-            <article
-              key={scope.key}
-              className="rounded-[1.5rem] border border-white/10 bg-black/10 p-5"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/40">
-                    {scope.periodLabel}
-                  </p>
-                  <h3 className="mt-2 text-lg font-black tracking-tight text-white">
-                    {scope.label}
-                  </h3>
-                </div>
-                <span
-                  className={cn(
-                    "rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em]",
-                    getScopeTone(scope.status),
-                  )}
-                >
-                  {scope.status === "ready"
-                    ? "branché"
-                    : scope.status === "partial"
-                      ? "partiel"
-                      : "non branché"}
-                </span>
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/40">
-                    Impact estimé
-                  </p>
-                  <p className="mt-2 text-2xl font-black tracking-tight text-white">
-                    {formatProxyMass(scope.totalKgCo2eProxy)}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/40">
-                    Couverture
-                  </p>
-                  <p className="mt-2 text-2xl font-black tracking-tight text-white">
-                    {new Intl.NumberFormat("fr-FR", {
-                      maximumFractionDigits: 0,
-                    }).format(scope.coveragePercent)}
-                    %
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 text-xs leading-relaxed text-red-100/45">
-                {scope.availablePostCount} postes renseignés,{" "}
-                {scope.missingPostCount} postes encore non branchés.
-                {scope.accountCreatedAt ? (
-                  <span className="block text-red-100/30">
-                    Compte créé le {scope.accountCreatedAt}.
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(280px,0.8fr)]">
+          <div className="grid gap-4 md:grid-cols-2">
+            {[model.site, model.user].map((scope) => (
+              <article
+                key={scope.key}
+                className={cn(
+                  "rounded-[1.5rem] border p-5",
+                  scope.key === "site"
+                    ? "border-amber-400/20 bg-amber-400/5"
+                    : "border-sky-400/20 bg-sky-400/5",
+                )}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p
+                      className={cn(
+                        "text-[10px] font-black uppercase tracking-[0.22em]",
+                        scope.key === "site" ? "text-amber-100/55" : "text-sky-100/55",
+                      )}
+                    >
+                      {scope.periodLabel}
+                    </p>
+                    <h3 className="mt-2 text-lg font-black tracking-tight text-white">
+                      {scope.label}
+                    </h3>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em]",
+                      getScopeTone(scope.status),
+                    )}
+                  >
+                    {scope.status === "ready"
+                      ? "branché"
+                      : scope.status === "partial"
+                        ? "partiel"
+                        : "non branché"}
                   </span>
-                ) : null}
-              </div>
-            </article>
-          ))}
+                </div>
+
+                <div
+                  className={cn(
+                    "mt-4 h-1.5 rounded-full",
+                    scope.key === "site"
+                      ? "bg-gradient-to-r from-amber-300/80 via-amber-400/60 to-transparent"
+                      : "bg-gradient-to-r from-sky-300/80 via-sky-400/60 to-transparent",
+                  )}
+                />
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/40">
+                      Impact estimé
+                    </p>
+                    <p className="mt-2 text-2xl font-black tracking-tight text-white">
+                      {formatProxyMass(scope.totalKgCo2eProxy)}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/40">
+                      Couverture
+                    </p>
+                    <p className="mt-2 text-2xl font-black tracking-tight text-white">
+                      {new Intl.NumberFormat("fr-FR", {
+                        maximumFractionDigits: 0,
+                      }).format(scope.coveragePercent)}
+                      %
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 text-xs leading-relaxed text-red-100/45">
+                  {scope.availablePostCount} postes renseignés,{" "}
+                  {scope.missingPostCount} postes encore non branchés.
+                  {scope.accountCreatedAt ? (
+                    <span className="block text-red-100/30">
+                      Compte créé le {scope.accountCreatedAt}.
+                    </span>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+            <div className="rounded-[1.35rem] border border-white/10 bg-black/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                Confiance méthodologique
+              </p>
+              <p className="mt-2 text-2xl font-black tracking-tight text-white">
+                {new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(
+                  model.infrastructure.confidencePercent,
+                )}
+                %
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-red-100/45">
+                Incertitude proxy ±
+                {new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(
+                  model.infrastructure.uncertaintyPercent,
+                )}
+                %.
+              </p>
+            </div>
+            <div className="rounded-[1.35rem] border border-white/10 bg-black/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                Période
+              </p>
+              <p className="mt-2 text-2xl font-black tracking-tight text-white">
+                {model.infrastructure.referencePeriodMonths} mois
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-red-100/45">
+                Graphique découpé en une semaine par point, depuis la mise en ligne.
+              </p>
+            </div>
+            <div className="rounded-[1.35rem] border border-white/10 bg-black/10 p-4 sm:col-span-2 xl:col-span-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                État
+              </p>
+              <p className="mt-2 text-sm font-black text-white">
+                {isUnbound ? "Structure prête, pas encore branchée" : "Lecture dynamique active"}
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-red-100/45">
+                {model.validation.valid
+                  ? "Le socle est cohérent et prêt à afficher les signaux projet."
+                  : "Des entrées restent à corriger avant la lecture finale."}
+              </p>
+            </div>
+          </div>
         </div>
+
+        <EnvironmentalImpactCurveChart
+          site={model.site}
+          user={model.user}
+          infrastructure={model.infrastructure}
+          signals={signals ?? null}
+        />
 
         {dataGapNotes.length > 0 ? (
           <div className="space-y-4">
@@ -368,7 +689,247 @@ export function EnvironmentalImpactEstimatorPanel({
           </div>
         ) : null}
 
-        <EnvironmentalImpactCurveChart infrastructure={model.infrastructure} />
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <section className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/35">
+                  Documents à télécharger
+                </p>
+                <h4 className="mt-1 text-lg font-black tracking-tight text-white">
+                  Méthode, ateliers et journal
+                </h4>
+              </div>
+              <p className="text-xs leading-relaxed text-red-100/40">
+                Les fichiers sont servis en téléchargement direct.
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {DOCUMENTATION_DOWNLOADS.map((doc) => (
+                <a
+                  key={doc.href}
+                  href={doc.href}
+                  download={doc.filename}
+                  className="rounded-2xl border border-white/10 bg-black/10 p-4 transition hover:border-white/20 hover:bg-white/10"
+                >
+                  <p className="text-sm font-black text-white">{doc.title}</p>
+                  <p className="mt-2 text-xs leading-relaxed text-red-100/45">
+                    {doc.description}
+                  </p>
+                  <p className="mt-3 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                    Télécharger {doc.filename}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/35">
+                Prochaines actions à plus fort impact
+              </p>
+              <h4 className="mt-1 text-lg font-black tracking-tight text-white">
+                3 leviers pour faire baisser le total affiché
+              </h4>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {topReductionActions.length > 0 ? (
+                topReductionActions.map((action, index) => (
+                  <article
+                    key={`${action.serviceLabel}-${index}`}
+                    className="rounded-2xl border border-white/10 bg-black/10 p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                          Priorité {index + 1}
+                        </p>
+                        <h5 className="mt-1 text-sm font-black text-white">{action.title}</h5>
+                      </div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/45">
+                        {formatSharePercent(action.sharePercent)}
+                      </p>
+                    </div>
+                    <p className="mt-2 text-xs leading-relaxed text-red-100/45">
+                      {action.detail}
+                    </p>
+                    <p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                      Service concerné: {action.serviceLabel}
+                    </p>
+                  </article>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-white/10 bg-black/10 p-4 text-xs leading-relaxed text-red-100/45">
+                  Aucune action prioritaire n&apos;est encore calculable tant que les
+                  services restent au niveau de référence.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <section className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/35">
+                Deuxième ordre
+              </p>
+              <h4 className="mt-1 text-lg font-black tracking-tight text-white">
+                Décomposition environnementale détaillée
+              </h4>
+            </div>
+            <p className="text-xs leading-relaxed text-red-100/40">
+              Le total est réparti entre CO2 brut, électricité, autres GES,
+              produits chimiques et eau.
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {model.infrastructure.secondOrder.factorEstimates.map((factor) => (
+              <article
+                key={factor.key}
+                className="rounded-2xl border border-white/10 bg-black/10 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-white">{factor.label}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                      {formatSharePercent(factor.sharePercent)}
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/45">
+                    {factor.source}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-red-100/45">
+                  {formatSecondOrderQuantity(factor.quantity, factor.unitLabel)}
+                </p>
+                <p className="mt-2 text-sm font-black text-white">
+                  {formatProxyMass(factor.estimatedKgCo2eProxy)}
+                </p>
+                <p className="mt-2 text-[10px] leading-relaxed text-red-100/40">
+                  {factor.rationale}
+                </p>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-white/10 bg-black/10 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                  Total deuxième ordre
+                </p>
+                <p className="mt-1 text-lg font-black text-white">
+                  {formatProxyMass(model.infrastructure.secondOrder.totalKgCo2eProxy)}
+                </p>
+              </div>
+              <p className="text-xs leading-relaxed text-red-100/40">
+                Ce total doit rester cohérent avec le premier ordre et servir
+                seulement à décomposer le signal.
+              </p>
+            </div>
+            <p className="mt-3 text-xs leading-relaxed text-red-100/45">
+              {model.infrastructure.secondOrder.notes.join(" ")}
+            </p>
+          </div>
+        </section>
+
+        <section className="rounded-[1.25rem] border border-white/10 bg-white/5 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-red-100/35">
+                Empreinte matérielle et cycle de vie
+              </p>
+              <h4 className="mt-1 text-lg font-black tracking-tight text-white">
+                Énergie, carbone, eau, matière et fin de vie
+              </h4>
+            </div>
+            <p className="text-xs leading-relaxed text-red-100/40">
+              Cette couche décrit l&apos;empreinte lifecycle du projet sans la
+              confondre avec le CO2e opérationnel.
+            </p>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-white/10 bg-black/10 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                  Total lifecycle
+                </p>
+                <p className="mt-1 text-lg font-black text-white">
+                  {formatProxyMass(model.lifecycle.totalKgCo2eProxy)}
+                </p>
+              </div>
+              <p className="max-w-xl text-xs leading-relaxed text-red-100/40">
+                {model.lifecycle.notes.join(" ")}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+            {model.lifecycle.axisEstimates.map((axis) => (
+              <article
+                key={axis.key}
+                className="rounded-2xl border border-white/10 bg-black/10 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-white">{axis.label}</p>
+                    <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+                      {formatSharePercent(axis.sharePercent)}
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/45">
+                    {axis.source}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-red-100/45">
+                  {formatLifecycleQuantity(axis.quantity, axis.unitLabel)}
+                </p>
+                <p className="mt-2 text-sm font-black text-white">
+                  {formatProxyMass(axis.estimatedKgCo2eProxy)}
+                </p>
+                <p className="mt-2 text-[10px] leading-relaxed text-red-100/40">
+                  {axis.rationale}
+                </p>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {model.lifecycle.componentEstimates.map((component) => (
+              <article
+                key={component.key}
+                className="rounded-2xl border border-white/10 bg-black/10 p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-black text-white">{component.label}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-red-100/45">
+                      {component.description}
+                    </p>
+                  </div>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/45">
+                    {formatSharePercent(component.sharePercent)}
+                  </span>
+                </div>
+                <p className="mt-3 text-xs leading-relaxed text-red-100/45">
+                  {formatLifecycleQuantity(component.quantity, component.unitLabel)}
+                </p>
+                <p className="mt-2 text-sm font-black text-white">
+                  {formatProxyMass(component.estimatedKgCo2eProxy)}
+                </p>
+                <p className="mt-2 text-[10px] leading-relaxed text-red-100/40">
+                  {component.rationale}
+                </p>
+              </article>
+            ))}
+          </div>
+        </section>
 
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -377,8 +938,13 @@ export function EnvironmentalImpactEstimatorPanel({
                 Services d&apos;infrastructure
               </p>
               <h3 className="mt-1 text-xl font-black tracking-tight text-white">
-                Vercel, Supabase, Resend et les autres postes web visibles
+                Vercel, Supabase, ChatGPT / LLM, Codex et les autres postes web visibles
               </h3>
+              <p className="mt-1 max-w-3xl text-xs leading-relaxed text-red-100/45">
+                Les conversations ChatGPT / LLM et les sessions Codex sont suivies comme deux
+                postes distincts, chacun avec ses propres hypothèses et son propre poids dans le
+                calcul.
+              </p>
             </div>
             <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-red-100/50">
               {model.infrastructure.mode === "measured"

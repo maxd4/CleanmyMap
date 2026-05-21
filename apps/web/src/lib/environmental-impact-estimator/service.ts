@@ -8,7 +8,14 @@ import {
   ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_METRIC_DEFINITIONS,
   ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_NOTES,
   ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_SERVICE_DEFINITIONS,
+  ENVIRONMENTAL_IMPACT_CHATGPT_EXTENDED_MODE_HOURS_PER_WEEK,
+  ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS,
+  ENVIRONMENTAL_IMPACT_LIFECYCLE_HYPOTHESES,
+  ENVIRONMENTAL_IMPACT_LIFECYCLE_COMPONENT_DEFINITIONS,
+  ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS,
   ENVIRONMENTAL_IMPACT_POST_DEFINITIONS,
+  ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS,
+  ENVIRONMENTAL_IMPACT_SECOND_ORDER_HYPOTHESES,
 } from "./constants";
 import { normalizeEnvironmentalImpactEstimateInput } from "./validation";
 import type {
@@ -24,9 +31,16 @@ import type {
   EnvironmentalImpactInfrastructureMetricsInput,
   EnvironmentalImpactInfrastructureServiceDefinition,
   EnvironmentalImpactInfrastructureServiceEstimate,
+  EnvironmentalImpactLifecycleAxisEstimate,
+  EnvironmentalImpactLifecycleAxisKey,
+  EnvironmentalImpactLifecycleComponentEstimate,
+  EnvironmentalImpactLifecycleComponentKey,
+  EnvironmentalImpactLifecycleEstimate,
   EnvironmentalImpactPostDefinition,
   EnvironmentalImpactPostEstimate,
+  EnvironmentalImpactSecondOrderEstimate,
   EnvironmentalImpactScopeEstimate,
+  EnvironmentalImpactScopeCurvePoint,
   EnvironmentalImpactScopeInput,
   EnvironmentalImpactScopeKey,
   EnvironmentalImpactUsageProfileEstimate,
@@ -35,6 +49,13 @@ import type {
 
 const METRIC_DEFINITION_BY_KEY = new Map(
   ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_METRIC_DEFINITIONS.map((definition) => [
+    definition.key,
+    definition,
+  ]),
+);
+
+const SECOND_ORDER_FACTOR_DEFINITION_BY_KEY = new Map(
+  ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS.map((definition) => [
     definition.key,
     definition,
   ]),
@@ -135,6 +156,21 @@ function buildUsageProfileEstimate(
     usageInput?.monthlyAiCalls,
     Math.max(0, Math.round(resolveNumber(siteInput?.aiCalls, monthlyPageViews * 0.0012))),
   );
+  const monthlyChatgptConversationHours = resolveNumber(
+    usageInput?.monthlyChatgptConversationHours,
+    ENVIRONMENTAL_IMPACT_CHATGPT_EXTENDED_MODE_HOURS_PER_WEEK * WEEKS_PER_MONTH,
+  );
+  const monthlyCodexSessions = resolveNumber(usageInput?.monthlyCodexSessions, 0);
+  const monthlyCodexConversationTurns = resolveNumber(
+    usageInput?.monthlyCodexConversationTurns,
+    0,
+  );
+  const monthlyCodexToolActions = resolveNumber(usageInput?.monthlyCodexToolActions, 0);
+  const monthlyCodexShellCommands = resolveNumber(usageInput?.monthlyCodexShellCommands, 0);
+  const monthlyCodexFilesTouched = resolveNumber(usageInput?.monthlyCodexFilesTouched, 0);
+  const monthlyCodexTestsRun = resolveNumber(usageInput?.monthlyCodexTestsRun, 0);
+  const monthlyCodexChangedLines = resolveNumber(usageInput?.monthlyCodexChangedLines, 0);
+  const monthlyCodexActiveMinutes = resolveNumber(usageInput?.monthlyCodexActiveMinutes, 0);
   const monthlyStorageGbMonths = resolveNumber(
     usageInput?.monthlyStorageGbMonths,
     Math.max(
@@ -227,6 +263,15 @@ function buildUsageProfileEstimate(
     monthlyPdfExports,
     monthlyMapViews,
     monthlyAiCalls,
+    monthlyChatgptConversationHours,
+    monthlyCodexSessions,
+    monthlyCodexConversationTurns,
+    monthlyCodexToolActions,
+    monthlyCodexShellCommands,
+    monthlyCodexFilesTouched,
+    monthlyCodexTestsRun,
+    monthlyCodexChangedLines,
+    monthlyCodexActiveMinutes,
     monthlyStorageGbMonths,
     monthlyApiRequests,
     monthlyAuthEvents,
@@ -265,6 +310,19 @@ function projectUsageProfileAtWeek(
     monthlyPdfExports: round6(usage.monthlyPdfExports * weeklyScale * multiplier),
     monthlyMapViews: round6(usage.monthlyMapViews * weeklyScale * multiplier),
     monthlyAiCalls: round6(usage.monthlyAiCalls * weeklyScale * multiplier),
+    monthlyChatgptConversationHours: round6(
+      usage.monthlyChatgptConversationHours * weeklyScale * multiplier,
+    ),
+    monthlyCodexSessions: round6(usage.monthlyCodexSessions * weeklyScale * multiplier),
+    monthlyCodexConversationTurns: round6(
+      usage.monthlyCodexConversationTurns * weeklyScale * multiplier,
+    ),
+    monthlyCodexToolActions: round6(usage.monthlyCodexToolActions * weeklyScale * multiplier),
+    monthlyCodexShellCommands: round6(usage.monthlyCodexShellCommands * weeklyScale * multiplier),
+    monthlyCodexFilesTouched: round6(usage.monthlyCodexFilesTouched * weeklyScale * multiplier),
+    monthlyCodexTestsRun: round6(usage.monthlyCodexTestsRun * weeklyScale * multiplier),
+    monthlyCodexChangedLines: round6(usage.monthlyCodexChangedLines * weeklyScale * multiplier),
+    monthlyCodexActiveMinutes: round6(usage.monthlyCodexActiveMinutes * weeklyScale * multiplier),
     monthlyStorageGbMonths: round6(usage.monthlyStorageGbMonths * weeklyScale * multiplier),
     monthlyApiRequests: round6(usage.monthlyApiRequests * weeklyScale * multiplier),
     monthlyAuthEvents: round6(usage.monthlyAuthEvents * weeklyScale * multiplier),
@@ -376,7 +434,98 @@ function buildScopeEstimate(
     coveragePercent:
       posts.length > 0 ? round6((availablePostCount / posts.length) * 100) : 0,
     posts,
+    curve: [],
   };
+}
+
+function buildScopeCurveDriverBreakdown(
+  breakdown: Partial<Record<EnvironmentalImpactPostDefinition["key"], number>>,
+  scopeKey: EnvironmentalImpactScopeKey,
+): Record<"pageView" | "community" | "notifications" | "actions" | "pdf" | "ia" | "codex", number> {
+  const pageView = breakdown.pageViews ?? 0;
+  const community = (breakdown.storedImages ?? 0) * 0.6;
+  const notifications = (breakdown.apiRequests ?? 0) * 0.25;
+  const actions = (breakdown.maps ?? 0) * 0.7;
+  const pdf = breakdown.pdfExports ?? 0;
+  const ia = (breakdown.aiCalls ?? 0) * 0.9;
+  const codex = scopeKey === "user" ? (breakdown.storageGbMonths ?? 0) * 0.15 : 0;
+
+  return {
+    pageView: round6(pageView),
+    community: round6(community),
+    notifications: round6(notifications),
+    actions: round6(actions),
+    pdf: round6(pdf),
+    ia: round6(ia),
+    codex: round6(codex),
+  };
+}
+
+function buildScopeCurveEstimate(params: {
+  scope: EnvironmentalImpactScopeEstimate;
+  usageProfile: EnvironmentalImpactUsageProfileEstimate;
+  referencePeriodMonths: number;
+  anchorDate: string;
+}): EnvironmentalImpactScopeCurvePoint[] {
+  const { scope, usageProfile, referencePeriodMonths, anchorDate } = params;
+  const launchedAt = parseDateOrNull(anchorDate) ?? new Date(anchorDate);
+  const weeks = Math.max(1, Math.round(referencePeriodMonths * WEEKS_PER_MONTH));
+  const rawWeights: number[] = [];
+
+  for (let index = 0; index <= weeks; index += 1) {
+    if (index === 0) {
+      rawWeights.push(0);
+      continue;
+    }
+
+    const projectedUsage = projectUsageProfileAtWeek(usageProfile, index);
+    const baseWeeklyPageViews = Math.max(1, usageProfile.monthlyPageViews / WEEKS_PER_MONTH);
+    rawWeights.push(
+      clampUsageMultiplier(projectedUsage.monthlyPageViews / Math.max(1, baseWeeklyPageViews)),
+    );
+  }
+
+  const weightTotal = rawWeights.reduce((acc, value) => acc + value, 0);
+  const fallbackWeight = weeks > 0 ? 1 / weeks : 1;
+  const pointConfidenceBase = clamp(round6(58 + (scope.coveragePercent / 100) * 26), 46, 94);
+  let cumulativeKgCo2eProxy = 0;
+
+  return rawWeights.map((rawWeight, index) => {
+    const normalizedWeight =
+      index === 0
+        ? 0
+        : weightTotal > 0
+          ? rawWeight / weightTotal
+          : fallbackWeight;
+    const weeklyKgCo2eProxy = round6((scope.totalKgCo2eProxy ?? 0) * normalizedWeight);
+    cumulativeKgCo2eProxy = round6(cumulativeKgCo2eProxy + weeklyKgCo2eProxy);
+    const pointDate = addWeeks(launchedAt, index);
+    const breakdown = Object.fromEntries(
+      scope.posts.map((post) => [
+        post.key,
+        round6((post.estimatedKgCo2eProxy ?? 0) * normalizedWeight),
+      ]),
+    ) as Partial<Record<EnvironmentalImpactPostDefinition["key"], number>>;
+    const pointConfidence = clamp(round6(pointConfidenceBase - index * 0.18), 42, 96);
+    const pointUncertainty = round6(100 - pointConfidence);
+
+    return {
+      index,
+      weekLabel: formatWeekLabel(pointDate, index === 0),
+      date: pointDate.toISOString(),
+      weeklyKgCo2eProxy,
+      cumulativeKgCo2eProxy,
+      lowerKgCo2eProxy: round6(
+        Math.max(0, cumulativeKgCo2eProxy * (1 - pointUncertainty / 100)),
+      ),
+      upperKgCo2eProxy: round6(
+        cumulativeKgCo2eProxy * (1 + pointUncertainty / 100),
+      ),
+      confidencePercent: pointConfidence,
+      breakdown,
+      driverBreakdown: buildScopeCurveDriverBreakdown(breakdown, scope.key),
+    };
+  });
 }
 
 function buildScopeMissingDataNotes(
@@ -414,6 +563,31 @@ function buildInfrastructureMissingDataNotes(
   return infrastructure.services
     .filter((service) => service.metricEstimates.some((metric) => metric.source !== "input"))
     .map((service) => {
+      if (
+        service.key === "chatgpt" &&
+        service.metricEstimates.every((metric) => metric.source === "derived")
+      ) {
+        return {
+          key: "infrastructure.chatgpt",
+          title: "ChatGPT 5.5 / LLM - ancrage de conversation non remplacé",
+          detail:
+            "Aucun journal LLM plus fin n'est branché. L'estimateur conserve l'ancrage CleanMyMap de 2h de conversation par semaine en mode ChatGPT 5.5 étendu, distinct du journal Codex, afin d'éviter une moyenne externe générique.",
+          scope: "infrastructure" as const,
+          severity: "info" as const,
+        };
+      }
+
+      if (service.key === "codex" && service.metricEstimates.every((metric) => metric.source === "reference")) {
+        return {
+          key: "infrastructure.codex",
+          title: "Codex / ChatGPT Plus - journal hebdomadaire non branché",
+          detail:
+            "Aucune semaine Codex n'a encore été enregistrée. L'estimateur garde ce poste à zéro tant qu'un journal hebdomadaire CleanMyMap n'est pas saisi, afin d'éviter une moyenne externe générique.",
+          scope: "infrastructure" as const,
+          severity: "info" as const,
+        };
+      }
+
       const missingMetricLabels = service.metricEstimates
         .filter((metric) => metric.source !== "input")
         .map((metric) => metric.label);
@@ -466,6 +640,24 @@ function deriveMetricQuantityFromUsage(
       return usage.monthlyEmailsSent;
     case "resendBatchRequests":
       return Math.max(0, round6(usage.monthlyEmailsSent / 20));
+    case "chatgptConversationHours":
+      return usage.monthlyChatgptConversationHours;
+    case "codexSessions":
+      return usage.monthlyCodexSessions;
+    case "codexConversationTurns":
+      return usage.monthlyCodexConversationTurns;
+    case "codexToolActions":
+      return usage.monthlyCodexToolActions;
+    case "codexShellCommands":
+      return usage.monthlyCodexShellCommands;
+    case "codexFilesTouched":
+      return usage.monthlyCodexFilesTouched;
+    case "codexTestsRun":
+      return usage.monthlyCodexTestsRun;
+    case "codexChangedLines":
+      return usage.monthlyCodexChangedLines;
+    case "codexActiveMinutes":
+      return usage.monthlyCodexActiveMinutes;
     case "clerkAuthEvents":
       return usage.monthlyAuthEvents;
     case "clerkSessionRefreshes":
@@ -565,13 +757,15 @@ function buildInfrastructureServiceEstimate(
     sourceNote: definition.sourceNote,
     basis: definition.basis,
     status:
-      inputMetricCount > 0 && derivedMetricCount === 0 && referenceMetricCount === 0
-        ? "ready"
-        : inputMetricCount === 0 && derivedMetricCount > 0 && referenceMetricCount === 0
-          ? "derived"
-          : inputMetricCount === 0 && derivedMetricCount === 0 && referenceMetricCount > 0
-            ? "reference"
-            : "partial",
+      definition.key === "codex" && inputMetricCount === 0 && derivedMetricCount === 0 && referenceMetricCount > 0
+        ? "partial"
+        : inputMetricCount > 0 && derivedMetricCount === 0 && referenceMetricCount === 0
+          ? "ready"
+          : inputMetricCount === 0 && derivedMetricCount > 0 && referenceMetricCount === 0
+            ? "derived"
+            : inputMetricCount === 0 && derivedMetricCount === 0 && referenceMetricCount > 0
+              ? "reference"
+              : "partial",
     monthlyKgCo2eProxy,
     annualKgCo2eProxy,
     sharePercent: 0,
@@ -580,6 +774,418 @@ function buildInfrastructureServiceEstimate(
     metricCount,
     referenceMetricCount,
     metricEstimates,
+  };
+}
+
+function buildSecondOrderScoreSignals(
+  usageProfile: EnvironmentalImpactUsageProfileEstimate,
+  services: EnvironmentalImpactInfrastructureServiceEstimate[],
+): Record<"grossCo2" | "electricity" | "otherGhgs" | "chemicals" | "water", number> {
+  const serviceByKey = new Map(services.map((service) => [service.key, service]));
+  const vercel = serviceByKey.get("vercel")?.monthlyKgCo2eProxy ?? 0;
+  const supabase = serviceByKey.get("supabase")?.monthlyKgCo2eProxy ?? 0;
+  const resend = serviceByKey.get("resend")?.monthlyKgCo2eProxy ?? 0;
+  const chatgpt = serviceByKey.get("chatgpt")?.monthlyKgCo2eProxy ?? 0;
+  const codex = serviceByKey.get("codex")?.monthlyKgCo2eProxy ?? 0;
+  const clerk = serviceByKey.get("clerk")?.monthlyKgCo2eProxy ?? 0;
+  const posthog = serviceByKey.get("posthog")?.monthlyKgCo2eProxy ?? 0;
+  const sentry = serviceByKey.get("sentry")?.monthlyKgCo2eProxy ?? 0;
+  const upstash = serviceByKey.get("upstash")?.monthlyKgCo2eProxy ?? 0;
+  const pinecone = serviceByKey.get("pinecone")?.monthlyKgCo2eProxy ?? 0;
+  const stripe = serviceByKey.get("stripe")?.monthlyKgCo2eProxy ?? 0;
+  const lws = serviceByKey.get("lwsDomain")?.monthlyKgCo2eProxy ?? 0;
+
+  return {
+    grossCo2: round6(
+      usageProfile.monthlyPageViews * 0.28 +
+        usageProfile.monthlyApiRequests * 0.22 +
+        usageProfile.monthlyEmailsSent * 0.14 +
+        usageProfile.monthlyDeployments * 0.18 +
+        vercel * 0.12 +
+        lws * 0.06,
+    ),
+    electricity: round6(
+      usageProfile.monthlyBandwidthGb * 0.26 +
+        usageProfile.monthlyStorageGbMonths * 0.22 +
+        usageProfile.monthlySessions * 0.12 +
+        usageProfile.monthlyRealtimeEvents * 0.2 +
+        chatgpt * 0.08 +
+        vercel * 0.1 +
+        supabase * 0.1,
+    ),
+    otherGhgs: round6(
+      usageProfile.monthlyAiCalls * 0.38 +
+        chatgpt * 0.12 +
+        usageProfile.monthlyCodexActiveMinutes * 0.24 +
+        usageProfile.monthlyCodexTestsRun * 0.14 +
+        usageProfile.monthlyErrorEvents * 0.08 +
+        codex * 0.1 +
+        sentry * 0.06,
+    ),
+    chemicals: round6(
+      usageProfile.monthlyStorageGbMonths * 0.28 +
+        usageProfile.monthlyPdfExports * 0.26 +
+        usageProfile.monthlyCodexFilesTouched * 0.16 +
+        usageProfile.monthlyDeployments * 0.2 +
+        resend * 0.05 +
+        stripe * 0.05,
+    ),
+    water: round6(
+      usageProfile.monthlyAiCalls * 0.32 +
+        chatgpt * 0.14 +
+        usageProfile.monthlyCodexSessions * 0.24 +
+        usageProfile.monthlyBandwidthGb * 0.16 +
+        usageProfile.monthlyStorageGbMonths * 0.12 +
+        posthog * 0.06 +
+        upstash * 0.04 +
+        pinecone * 0.06,
+    ),
+  };
+}
+
+function buildInfrastructureSecondOrderEstimate(
+  infrastructureMode: EnvironmentalImpactInfrastructureEstimate["mode"],
+  usageProfile: EnvironmentalImpactUsageProfileEstimate,
+  services: EnvironmentalImpactInfrastructureServiceEstimate[],
+  monthlyKgCo2eProxy: number,
+): EnvironmentalImpactSecondOrderEstimate {
+  const scoreSignals = buildSecondOrderScoreSignals(usageProfile, services);
+  const scoreTotal = round6(
+    Object.values(scoreSignals).reduce((acc, value) => acc + value, 0),
+  );
+  const definitionEntries = ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS.map(
+    (definition) => {
+      const score = scoreSignals[definition.key];
+      return {
+        definition,
+        score,
+      };
+    },
+  );
+  const source: EnvironmentalImpactSecondOrderEstimate["source"] =
+    infrastructureMode === "reference" ? "reference" : "mixed";
+
+  if (monthlyKgCo2eProxy <= 0) {
+    return {
+      totalKgCo2eProxy: 0,
+      factorEstimates: definitionEntries.map(({ definition }) => ({
+        ...definition,
+        quantity: 0,
+        estimatedKgCo2eProxy: 0,
+        sharePercent: 0,
+        source,
+      })),
+      notes: [
+        "Le deuxième ordre reste à zéro tant que le premier ordre n'affiche aucune charge environnementale.",
+      ],
+      hypotheses: [...ENVIRONMENTAL_IMPACT_SECOND_ORDER_HYPOTHESES],
+      source,
+    };
+  }
+
+  const normalizer = scoreTotal > 0 ? scoreTotal : round6(
+    ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS.reduce(
+      (acc, definition) => acc + definition.referenceWeight,
+      0,
+    ),
+  );
+
+  const factorEstimates = definitionEntries.map(({ definition, score }) => {
+    const normalizedWeight =
+      scoreTotal > 0
+        ? score / normalizer
+        : definition.referenceWeight /
+          Math.max(
+            1,
+            ENVIRONMENTAL_IMPACT_SECOND_ORDER_FACTOR_DEFINITIONS.reduce(
+              (acc, item) => acc + item.referenceWeight,
+              0,
+            ),
+          );
+    const estimatedKgCo2eProxy = round6(monthlyKgCo2eProxy * normalizedWeight);
+    const quantity = round6(estimatedKgCo2eProxy / definition.proxyKgCo2ePerUnit);
+
+    return {
+      ...definition,
+      quantity,
+      estimatedKgCo2eProxy,
+      sharePercent: round6(normalizedWeight * 100),
+      source,
+    };
+  });
+
+  const totalKgCo2eProxy = round6(
+    factorEstimates.reduce((acc, item) => acc + (item.estimatedKgCo2eProxy ?? 0), 0),
+  );
+
+  return {
+    totalKgCo2eProxy,
+    factorEstimates,
+    notes: [
+      "Le deuxième ordre est une décomposition du total premier ordre, pas une couche additionnelle de double comptage.",
+      "Les quantités affichées sont des proxys de lecture calculés à partir des signaux CleanMyMap.",
+    ],
+    hypotheses: [...ENVIRONMENTAL_IMPACT_SECOND_ORDER_HYPOTHESES],
+    source,
+  };
+}
+
+type EnvironmentalImpactLifecycleScoreSignals = Record<
+  EnvironmentalImpactLifecycleAxisKey | EnvironmentalImpactLifecycleComponentKey,
+  number
+>;
+
+function buildLifecycleScoreSignals(
+  usageProfile: EnvironmentalImpactUsageProfileEstimate,
+  services: EnvironmentalImpactInfrastructureServiceEstimate[],
+): EnvironmentalImpactLifecycleScoreSignals {
+  const serviceByKey = new Map(services.map((service) => [service.key, service]));
+  const vercel = serviceByKey.get("vercel")?.monthlyKgCo2eProxy ?? 0;
+  const supabase = serviceByKey.get("supabase")?.monthlyKgCo2eProxy ?? 0;
+  const resend = serviceByKey.get("resend")?.monthlyKgCo2eProxy ?? 0;
+  const chatgpt = serviceByKey.get("chatgpt")?.monthlyKgCo2eProxy ?? 0;
+  const codex = serviceByKey.get("codex")?.monthlyKgCo2eProxy ?? 0;
+  const clerk = serviceByKey.get("clerk")?.monthlyKgCo2eProxy ?? 0;
+  const posthog = serviceByKey.get("posthog")?.monthlyKgCo2eProxy ?? 0;
+  const sentry = serviceByKey.get("sentry")?.monthlyKgCo2eProxy ?? 0;
+  const upstash = serviceByKey.get("upstash")?.monthlyKgCo2eProxy ?? 0;
+  const pinecone = serviceByKey.get("pinecone")?.monthlyKgCo2eProxy ?? 0;
+  const stripe = serviceByKey.get("stripe")?.monthlyKgCo2eProxy ?? 0;
+  const lws = serviceByKey.get("lwsDomain")?.monthlyKgCo2eProxy ?? 0;
+
+  return {
+    energy: round6(
+      usageProfile.monthlyPageViews * 0.22 +
+        usageProfile.monthlyBandwidthGb * 0.28 +
+        usageProfile.monthlyEgressGb * 0.24 +
+        usageProfile.monthlyStorageGbMonths * 0.16 +
+        chatgpt * 0.08 +
+        vercel * 0.1,
+    ),
+    carbon: round6(
+      usageProfile.monthlyAiCalls * 0.28 +
+        chatgpt * 0.12 +
+        usageProfile.monthlyCodexActiveMinutes * 0.22 +
+        usageProfile.monthlyDeployments * 0.16 +
+        usageProfile.monthlyErrorEvents * 0.08 +
+        codex * 0.16 +
+        lws * 0.1,
+    ),
+    water: round6(
+      usageProfile.monthlyAiCalls * 0.3 +
+        chatgpt * 0.14 +
+        usageProfile.monthlyStorageGbMonths * 0.18 +
+        usageProfile.monthlyBandwidthGb * 0.14 +
+        usageProfile.monthlyEgressGb * 0.12 +
+        supabase * 0.12 +
+        posthog * 0.04 +
+        upstash * 0.02 +
+        pinecone * 0.08,
+    ),
+    materials: round6(
+      usageProfile.monthlyStorageGbMonths * 0.26 +
+        usageProfile.monthlyPdfExports * 0.18 +
+        usageProfile.monthlyActiveUsers * 0.16 +
+        usageProfile.monthlyDeployments * 0.14 +
+        resend * 0.08 +
+        stripe * 0.06 +
+        clerk * 0.06 +
+        sentry * 0.04,
+    ),
+    ewaste: round6(
+      usageProfile.monthlyDeployments * 0.26 +
+        usageProfile.monthlyCodexFilesTouched * 0.18 +
+        usageProfile.monthlyErrorEvents * 0.14 +
+        usageProfile.monthlySessions * 0.1 +
+        usageProfile.monthlyEmailsSent * 0.08 +
+        usageProfile.monthlyActiveUsers * 0.04 +
+        resend * 0.1 +
+        sentry * 0.06 +
+        stripe * 0.04,
+    ),
+    servers: round6(
+      usageProfile.monthlyPageViews * 0.18 +
+        usageProfile.monthlyApiRequests * 0.2 +
+        usageProfile.monthlyRealtimeEvents * 0.12 +
+        vercel * 0.26 +
+        supabase * 0.24,
+    ),
+    gpus: round6(
+      usageProfile.monthlyAiCalls * 0.48 +
+        chatgpt * 0.18 +
+        usageProfile.monthlyCodexActiveMinutes * 0.24 +
+        usageProfile.monthlyCodexTestsRun * 0.1 +
+        usageProfile.monthlyCodexConversationTurns * 0.08 +
+        codex * 0.1,
+    ),
+    userDevices: round6(
+      usageProfile.monthlyActiveUsers * 0.22 +
+        usageProfile.monthlySessions * 0.18 +
+        usageProfile.monthlyPageViews * 0.18 +
+        usageProfile.monthlyMapViews * 0.12 +
+        posthog * 0.05 +
+        clerk * 0.05 +
+        resend * 0.04 +
+        stripe * 0.02,
+    ),
+    networks: round6(
+      usageProfile.monthlyBandwidthGb * 0.32 +
+        usageProfile.monthlyEgressGb * 0.26 +
+        usageProfile.monthlyRealtimeEvents * 0.14 +
+        usageProfile.monthlyPageViews * 0.1 +
+        usageProfile.monthlyApiRequests * 0.08 +
+        lws * 0.1,
+    ),
+    storage: round6(
+      usageProfile.monthlyStorageGbMonths * 0.42 +
+        usageProfile.monthlyPdfExports * 0.18 +
+        usageProfile.monthlyEmailsSent * 0.08 +
+        supabase * 0.2 +
+        resend * 0.12,
+    ),
+    maintenance: round6(
+      usageProfile.monthlyDeployments * 0.34 +
+        usageProfile.monthlyErrorEvents * 0.16 +
+        usageProfile.monthlyAuthEvents * 0.14 +
+        usageProfile.monthlyRealtimeEvents * 0.1 +
+        sentry * 0.12 +
+        clerk * 0.08 +
+        upstash * 0.06,
+    ),
+    renewal: round6(
+      usageProfile.monthlyDeployments * 0.24 +
+        usageProfile.monthlyActiveUsers * 0.14 +
+        usageProfile.monthlyStorageGbMonths * 0.16 +
+        usageProfile.monthlyPageViews * 0.08 +
+        vercel * 0.18 +
+        supabase * 0.12 +
+        lws * 0.08,
+    ),
+    endOfLife: round6(
+      usageProfile.monthlyDeployments * 0.2 +
+        usageProfile.monthlyCodexFilesTouched * 0.16 +
+        usageProfile.monthlyErrorEvents * 0.14 +
+        usageProfile.monthlyEmailsSent * 0.08 +
+        stripe * 0.08 +
+        resend * 0.1 +
+        sentry * 0.12 +
+        lws * 0.12,
+    ),
+  };
+}
+
+function buildLifecycleEstimate(
+  usageProfile: EnvironmentalImpactUsageProfileEstimate,
+  services: EnvironmentalImpactInfrastructureServiceEstimate[],
+  totalKgCo2eProxy: number | null,
+): EnvironmentalImpactLifecycleEstimate {
+  const scoreSignals = buildLifecycleScoreSignals(usageProfile, services);
+  const axisScoreTotal = round6(
+    ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS.reduce(
+      (acc, definition) => acc + scoreSignals[definition.key],
+      0,
+    ),
+  );
+  const componentScoreTotal = round6(
+    ENVIRONMENTAL_IMPACT_LIFECYCLE_COMPONENT_DEFINITIONS.reduce(
+      (acc, definition) => acc + scoreSignals[definition.key],
+      0,
+    ),
+  );
+  const source: EnvironmentalImpactLifecycleEstimate["source"] =
+    totalKgCo2eProxy === null || totalKgCo2eProxy <= 0 ? "reference" : "mixed";
+
+  if (!hasNumericInput(totalKgCo2eProxy) || totalKgCo2eProxy <= 0) {
+    return {
+      totalKgCo2eProxy: totalKgCo2eProxy ?? 0,
+      axisEstimates: ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS.map((definition) => ({
+        ...definition,
+        quantity: 0,
+        estimatedKgCo2eProxy: 0,
+        sharePercent: 0,
+        source,
+      })),
+      componentEstimates: ENVIRONMENTAL_IMPACT_LIFECYCLE_COMPONENT_DEFINITIONS.map(
+        (definition) => ({
+          ...definition,
+          quantity: 0,
+          estimatedKgCo2eProxy: 0,
+          sharePercent: 0,
+          source,
+        }),
+      ),
+      notes: [
+        "La lecture lifecycle reste nulle tant que le total d'infrastructure n'affiche aucune charge environnementale.",
+      ],
+      hypotheses: [...ENVIRONMENTAL_IMPACT_LIFECYCLE_HYPOTHESES],
+      source,
+    };
+  }
+
+  const axisTotalWeight = ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS.reduce(
+    (acc, definition) => acc + definition.referenceWeight,
+    0,
+  );
+  const componentTotalWeight = ENVIRONMENTAL_IMPACT_LIFECYCLE_COMPONENT_DEFINITIONS.reduce(
+    (acc, definition) => acc + definition.referenceWeight,
+    0,
+  );
+  const axisNormalizer = axisScoreTotal > 0 ? axisScoreTotal : axisTotalWeight;
+  const componentNormalizer =
+    componentScoreTotal > 0 ? componentScoreTotal : componentTotalWeight;
+
+  const axisEstimates = ENVIRONMENTAL_IMPACT_LIFECYCLE_AXIS_DEFINITIONS.map((definition) => {
+    const score = scoreSignals[definition.key];
+    const normalizedWeight =
+      axisScoreTotal > 0
+        ? score / axisNormalizer
+        : definition.referenceWeight / Math.max(1, axisTotalWeight);
+    const estimatedKgCo2eProxy = round6((totalKgCo2eProxy ?? 0) * normalizedWeight);
+    const quantity = round6(estimatedKgCo2eProxy / definition.proxyKgCo2ePerUnit);
+
+    return {
+      ...definition,
+      quantity,
+      estimatedKgCo2eProxy,
+      sharePercent: round6(normalizedWeight * 100),
+      source: "mixed" as const,
+    };
+  });
+
+  const componentEstimates = ENVIRONMENTAL_IMPACT_LIFECYCLE_COMPONENT_DEFINITIONS.map(
+    (definition) => {
+    const score = scoreSignals[definition.key];
+    const normalizedWeight =
+        componentScoreTotal > 0
+          ? score / componentNormalizer
+          : definition.referenceWeight / Math.max(1, componentTotalWeight);
+      const estimatedKgCo2eProxy = round6((totalKgCo2eProxy ?? 0) * normalizedWeight);
+      const quantity = round6(estimatedKgCo2eProxy / definition.proxyKgCo2ePerUnit);
+
+      return {
+        ...definition,
+        quantity,
+        estimatedKgCo2eProxy,
+        sharePercent: round6(normalizedWeight * 100),
+        source: "mixed" as const,
+      };
+    },
+  );
+
+  const totalFromAxes = round6(
+    axisEstimates.reduce((acc, axis) => acc + (axis.estimatedKgCo2eProxy ?? 0), 0),
+  );
+
+  return {
+    totalKgCo2eProxy: totalKgCo2eProxy ?? totalFromAxes,
+    axisEstimates,
+    componentEstimates,
+    notes: [
+      "La lecture lifecycle réunit énergie, carbone, eau, matière et e-waste pour montrer l'empreinte matérielle complète du projet.",
+      "Cette couche reste une décomposition auditable du total d'infrastructure et ne doit pas être additionnée à un autre total identique.",
+    ],
+    hypotheses: [...ENVIRONMENTAL_IMPACT_LIFECYCLE_HYPOTHESES],
+    source,
   };
 }
 
@@ -640,6 +1246,7 @@ function buildInfrastructureCurve(
       index,
       monthLabel: formatWeekLabel(pointDate, index === 0),
       date: pointDate.toISOString(),
+      weeklyKgCo2eProxy: round6(weeklyContribution),
       monthlyKgCo2eProxy: round6(weeklyContribution),
       cumulativeKgCo2eProxy,
       lowerKgCo2eProxy,
@@ -742,7 +1349,12 @@ function buildInfrastructureEstimate(
   const graphCoveragePercent = round6(
     ((inputMetricCount + derivedMetricCount) / Math.max(1, metricCount)) * 100,
   );
-
+  const secondOrder = buildInfrastructureSecondOrderEstimate(
+    mode,
+    usageProfile,
+    servicesWithShare,
+    monthlyKgCo2eProxy,
+  );
   return {
     mode,
     generatedAt: generatedAt.toISOString(),
@@ -772,10 +1384,13 @@ function buildInfrastructureEstimate(
       ...ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_NOTES,
       `Période de référence: ${referencePeriodMonths} mois.`,
       `Découpage du graphe: ${referencePeriodWeeks} semaines pour un point cliquable par semaine.`,
+      "Le deuxième ordre décompose le total en CO2 brut, électricité, autres GES, produits chimiques et eau.",
+      "La couche lifecycle complète le CO2e opérationnel avec une lecture de cycle de vie matérielle, eau et e-waste.",
       mode === "measured"
         ? "Les métriques évoluent à partir des signaux d'usage du site et des éventuels inputs explicites."
         : "Aucun signal d'usage n'est branché; les charges de référence sont utilisées.",
     ],
+    secondOrder,
   };
 }
 
@@ -788,12 +1403,19 @@ export function buildEnvironmentalImpactEstimatorMethodology(
     hypotheses: [
       ...ENVIRONMENTAL_IMPACT_ESTIMATOR_HYPOTHESES,
       ...ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_HYPOTHESES,
+      ...ENVIRONMENTAL_IMPACT_LIFECYCLE_HYPOTHESES,
     ],
     limitations: [...ENVIRONMENTAL_IMPACT_ESTIMATOR_LIMITATIONS],
+    projectAnchors: [...ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS],
     notes: [
       "Le moteur expose chaque poste de consommation et son facteur plutôt que de masquer l'approximation dans un score unique.",
       "Les totaux ne sont calculés que sur les postes branchés, afin de ne jamais confondre absence de données et valeur nulle.",
+      "Le graphique présente deux courbes cumulées distinctes: le total du site et le total attribué à l'utilisateur, chacune recalculée semaine par semaine.",
       "La courbe temporelle est un cumul mensuel proxy pour les services d'infrastructure et le domaine.",
+      "Les conversations ChatGPT / LLM sont distinguées des sessions Codex et peuvent être ancrées à 2h hebdomadaires en mode ChatGPT 5.5 étendu tant qu'aucun journal plus fin n'est branché.",
+      "Le poste Codex / ChatGPT Plus repose sur un journal hebdomadaire spécifique au projet; sans semaine enregistrée, il reste explicitement à zéro et signalé comme non branché.",
+      "Le deuxième ordre détaille la composition interne de l'impact en familles environnementales lisibles.",
+      "Les ordres de grandeur fournis par le projet servent d'ancrage spécifique à CleanMyMap pour l'assistance IA, le développement de la première moitié du site et l'usage annuel bénévole.",
     ],
   };
 }
@@ -803,13 +1425,43 @@ export function computeEnvironmentalImpactEstimate(
 ): EnvironmentalImpactEstimateModel {
   const normalized = normalizeEnvironmentalImpactEstimateInput(input);
   const generatedAt = normalized.input.generatedAt ?? new Date().toISOString();
-  const site = buildScopeEstimate("site", normalized.input.site);
-  const user = buildScopeEstimate("user", normalized.input.user);
   const infrastructure = buildInfrastructureEstimate(
     normalized.input.infrastructure,
     generatedAt,
     normalized.input.site,
     normalized.input.user,
+  );
+  const siteEstimate = buildScopeEstimate("site", normalized.input.site);
+  const userEstimate = buildScopeEstimate("user", normalized.input.user);
+  const site = {
+    ...siteEstimate,
+    curve: buildScopeCurveEstimate({
+      scope: siteEstimate,
+      usageProfile: infrastructure.usage,
+      referencePeriodMonths: infrastructure.referencePeriodMonths,
+      anchorDate:
+        normalized.input.site?.measuredAt ??
+        infrastructure.launchedAt ??
+        generatedAt,
+    }),
+  };
+  const user = {
+    ...userEstimate,
+    curve: buildScopeCurveEstimate({
+      scope: userEstimate,
+      usageProfile: infrastructure.usage,
+      referencePeriodMonths: infrastructure.referencePeriodMonths,
+      anchorDate:
+        normalized.input.user?.accountCreatedAt ??
+        normalized.input.user?.measuredAt ??
+        infrastructure.launchedAt ??
+        generatedAt,
+    }),
+  };
+  const lifecycle = buildLifecycleEstimate(
+    infrastructure.usage,
+    infrastructure.services,
+    infrastructure.totalKgCo2eProxy,
   );
 
   return {
@@ -825,5 +1477,6 @@ export function computeEnvironmentalImpactEstimate(
     site,
     user,
     infrastructure,
+    lifecycle,
   };
 }

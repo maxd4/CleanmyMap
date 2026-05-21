@@ -81,6 +81,16 @@ describe("environmental impact estimator", () => {
     expect(model.site.coveragePercent).toBe(100);
     expect(model.user.coveragePercent).toBe(100);
     expect(model.site.totalKgCo2eProxy).toBeGreaterThan(model.user.totalKgCo2eProxy ?? 0);
+    expect(model.site.curve.length).toBeGreaterThan(1);
+    expect(model.user.curve.length).toBeGreaterThan(1);
+    expect(model.site.curve.at(-1)?.cumulativeKgCo2eProxy).toBeCloseTo(
+      model.site.totalKgCo2eProxy ?? 0,
+      5,
+    );
+    expect(model.user.curve.at(-1)?.cumulativeKgCo2eProxy).toBeCloseTo(
+      model.user.totalKgCo2eProxy ?? 0,
+      5,
+    );
     expect(model.methodology.version).toContain("environmental-impact-estimator");
   });
 
@@ -136,6 +146,9 @@ describe("environmental impact estimator", () => {
     expect(model.infrastructure.curve[6].monthlyKgCo2eProxy).toBeGreaterThan(
       model.infrastructure.curve[1].monthlyKgCo2eProxy,
     );
+    expect(model.infrastructure.curve[6].weeklyKgCo2eProxy).toBe(
+      model.infrastructure.curve[6].monthlyKgCo2eProxy,
+    );
     expect(model.infrastructure.curve.at(-1)?.cumulativeKgCo2eProxy).toBe(
       model.infrastructure.totalKgCo2eProxy,
     );
@@ -143,6 +156,11 @@ describe("environmental impact estimator", () => {
     expect(model.infrastructure.graph.mode).toBe("cumulative");
     expect(model.infrastructure.graph.considerations.length).toBeGreaterThan(0);
     expect(model.infrastructure.graph.confidencePercent).toBeGreaterThan(60);
+    expect(model.infrastructure.secondOrder.factorEstimates).toHaveLength(5);
+    expect(model.infrastructure.secondOrder.totalKgCo2eProxy).toBeCloseTo(
+      model.infrastructure.monthlyKgCo2eProxy ?? 0,
+      5,
+    );
     expect(
       model.infrastructure.notes.some((note) => note.includes("point cliquable par semaine")),
     ).toBe(true);
@@ -159,6 +177,97 @@ describe("environmental impact estimator", () => {
     expect(domain?.monthlyKgCo2eProxy).toBeGreaterThan(0);
     expect(domain?.metricEstimates.find((metric) => metric.key === "lwsDomainYears")?.quantityPerMonth).toBeCloseTo(1 / 12);
     expect(model.infrastructure.hypotheses.length).toBeGreaterThan(0);
+    expect(model.methodology.projectAnchors).toHaveLength(3);
+    expect(model.methodology.projectAnchors[0].kgCo2eProxy).toBe(20);
+    expect(model.methodology.projectAnchors[0].kWhEquivalent).toBe(100);
+    expect(model.methodology.projectAnchors[1].comparisonNote).toContain("ordre de grandeur");
+    expect(
+      model.methodology.projectAnchors.some((anchor) => anchor.label.includes("ChatGPT 5.5")),
+    ).toBe(true);
+    expect(model.lifecycle.totalKgCo2eProxy).toBe(model.infrastructure.totalKgCo2eProxy);
+    expect(model.lifecycle.axisEstimates).toHaveLength(5);
+    expect(model.lifecycle.componentEstimates).toHaveLength(8);
+    expect(model.lifecycle.axisEstimates[0].label).toBe("Énergie");
+    expect(model.lifecycle.componentEstimates.some((item) => item.label === "Serveurs")).toBe(
+      true,
+    );
+
+    const chatgpt = model.infrastructure.services.find(
+      (service) => service.key === "chatgpt",
+    );
+
+    expect(chatgpt?.status).toBe("derived");
+    expect(chatgpt?.monthlyKgCo2eProxy).toBeGreaterThan(0);
+    expect(chatgpt?.sourceNote).toContain("2h de conversation par semaine");
+  });
+
+  it("includes Codex weekly journal metrics as a separate infrastructure service", () => {
+    const model = computeEnvironmentalImpactEstimate({
+      generatedAt: "2026-05-20T00:00:00.000Z",
+      site: {
+        pageViews: 140_000,
+        apiRequests: 48_000,
+        pdfExports: 220,
+        maps: 520,
+        storageGbMonths: 44,
+        aiCalls: 120,
+      },
+      infrastructure: {
+        launchedAt: "2025-05-20T00:00:00.000Z",
+        referencePeriodMonths: 12,
+        usage: {
+          monthlyPageViews: 140_000,
+          monthlyActiveUsers: 18_000,
+          monthlySessions: 27_000,
+          monthlyEmailsSent: 4_000,
+          monthlyDeployments: 24,
+          monthlyPdfExports: 180,
+          monthlyMapViews: 520,
+          monthlyAiCalls: 120,
+          monthlyChatgptConversationHours: 8.6666666667,
+          monthlyCodexSessions: 8,
+          monthlyCodexConversationTurns: 42,
+          monthlyCodexToolActions: 18,
+          monthlyCodexShellCommands: 24,
+          monthlyCodexFilesTouched: 28,
+          monthlyCodexTestsRun: 9,
+          monthlyCodexChangedLines: 1_240,
+          monthlyCodexActiveMinutes: 540,
+          monthlyStorageGbMonths: 44,
+          monthlyApiRequests: 48_000,
+          monthlyAuthEvents: 20_000,
+          monthlyRealtimeEvents: 88_000,
+          monthlyEgressGb: 68,
+          monthlyBandwidthGb: 172,
+          monthlyErrorEvents: 140,
+          growthRateMonthly: 0.08,
+          seasonalityAmplitude: 0.1,
+          horizonMonths: 12,
+        },
+        metrics: {
+          vercelPageViews: 140_000,
+          vercelFunctionInvocations: 18_000,
+          supabaseDbRequests: 480_000,
+          resendEmailsSent: 4_000,
+          lwsDomainYears: 1,
+        },
+      },
+    });
+
+    const codex = model.infrastructure.services.find(
+      (service) => service.key === "codex",
+    );
+    const chatgpt = model.infrastructure.services.find(
+      (service) => service.key === "chatgpt",
+    );
+
+    expect(codex?.status).toBe("derived");
+    expect(codex?.monthlyKgCo2eProxy).toBeGreaterThan(0);
+    expect(codex?.metricEstimates.every((metric) => metric.source === "derived")).toBe(true);
+    expect(codex?.sourceNote).toContain("Journal hebdomadaire");
+    expect(chatgpt?.status).toBe("derived");
+    expect(chatgpt?.monthlyKgCo2eProxy).toBeGreaterThan(0);
+    expect(chatgpt?.sourceNote).toContain("2h de conversation par semaine");
   });
 
   it("surfaces invalid negative inputs through validation", () => {

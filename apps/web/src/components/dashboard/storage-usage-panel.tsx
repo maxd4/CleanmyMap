@@ -11,8 +11,14 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { HardDrive, RefreshCcw, TriangleAlert } from "lucide-react";
+import {
+  CalendarClock,
+  HardDrive,
+  RefreshCcw,
+  TriangleAlert,
+} from "lucide-react";
 import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
+import { StorageBusinessContributionPanel } from "@/components/dashboard/storage-business-contribution-panel";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import {
   formatStorageBytes,
@@ -21,11 +27,14 @@ import {
   type StorageUsageMonthComparison,
   type StorageUsageSnapshot,
 } from "@/lib/supabase/storage-usage";
+import type { StorageBusinessContributionReport } from "@/lib/supabase/storage-business-contribution";
+import type { StorageUsageCronStatus } from "@/lib/supabase/storage-usage-cron";
 import { cn } from "@/lib/utils";
 
 type StorageUsageResponse = {
   status: "ok" | "degraded";
   current: StorageUsageSnapshot;
+  businessContributions: StorageBusinessContributionReport;
   history: Array<
     StorageUsageHistoryPoint & {
       bucketBreakdown: StorageUsageBreakdownItem[];
@@ -34,6 +43,7 @@ type StorageUsageResponse = {
     }
   >;
   comparison: StorageUsageMonthComparison;
+  cron: StorageUsageCronStatus;
   warnings: string[];
   timestamp: string;
   error?: string;
@@ -147,6 +157,7 @@ export function StorageUsagePanel() {
 
   const current = usage.data?.current ?? null;
   const comparison = usage.data?.comparison ?? null;
+  const cron = usage.data?.cron ?? null;
   const warnings = usage.data?.warnings ?? [];
   const comparisonData: StorageUsageMonthComparison = comparison ?? {
     previousSnapshotMonth: null,
@@ -173,7 +184,7 @@ export function StorageUsagePanel() {
   return (
     <AdminPanelShell
       title="Stockage Supabase"
-      subtitle="Vue quota, consommation, historique mensuel et répartition par bucket / type de fichier."
+      subtitle="Vue quota, consommation, historique mensuel et contribution métier du stockage."
       headerAction={
         <button
           type="button"
@@ -257,7 +268,92 @@ export function StorageUsagePanel() {
             </article>
           </div>
 
-      {warnings.length > 0 && (
+          {usage.data?.businessContributions ? (
+            <StorageBusinessContributionPanel
+              report={usage.data.businessContributions}
+            />
+          ) : null}
+
+          {cron ? (
+            <article
+              className={cn(
+                "rounded-3xl border p-4",
+                cron.configured
+                  ? "border-emerald-500/20 bg-emerald-500/5"
+                  : "border-amber-500/20 bg-amber-500/10",
+              )}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  <CalendarClock
+                    size={16}
+                    className={cron.configured ? "text-emerald-300" : "text-amber-300"}
+                  />
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
+                      Capture automatique mensuelle
+                    </p>
+                    <p className="mt-1 text-sm text-white/55">
+                      Le snapshot est exécuté par Vercel le{" "}
+                      {cron.scheduleLabel}.
+                    </p>
+                  </div>
+                </div>
+                <span
+                  className={cn(
+                    "rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em]",
+                    cron.configured
+                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-100"
+                      : "border-amber-500/20 bg-amber-500/10 text-amber-100",
+                  )}
+                >
+                  {cron.statusLabel}
+                </span>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                <div className="rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/25">
+                    Prochaine capture
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-white">
+                    {cron.nextRunLabel}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/25">
+                    Planification
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-white">
+                    {cron.schedule}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/25">
+                    Fuseau
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-white">
+                    {cron.timezone}
+                  </p>
+                </div>
+              </div>
+
+              {!cron.configured ? (
+                <p className="mt-3 text-sm text-amber-100/80">
+                  <code className="rounded bg-white/10 px-1 py-0.5 text-[0.85em] font-semibold text-amber-50">
+                    CRON_SECRET
+                  </code>{" "}
+                  est absent ou trop court. La route planifiée
+                  restera inactive tant que la variable d&apos;environnement ne
+                  sera pas définie.
+                </p>
+              ) : null}
+            </article>
+          ) : null}
+
+          {warnings.length > 0 && (
             <div className="rounded-3xl border border-amber-500/20 bg-amber-500/10 p-4">
               <div className="flex items-start gap-3">
                 <TriangleAlert className="mt-0.5 shrink-0 text-amber-300" size={16} />

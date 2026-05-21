@@ -12,7 +12,7 @@ import {
 } from "@/lib/persistence/runtime-store";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-export type FunnelStep = "view_new" | "start_form" | "submit_success";
+export type FunnelStep = "view_new" | "page_view" | "start_form" | "submit_success";
 export type FunnelMode = "quick" | "complete";
 
 export type FunnelEvent = {

@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Zap,
   HardDrive,
+  Database,
 } from"lucide-react";
 import type { Metadata } from "next";
 import { BusinessAlertsPanel } from"@/components/dashboard/business-alerts-panel";
@@ -212,6 +213,17 @@ export default async function AdminPage() {
       href: "/admin/services",
     },
     {
+      icon: Zap,
+      title: "Journal Codex",
+      desc: "Saisie hebdomadaire de l'usage IA et historique projet.",
+      iconBg: "bg-indigo-500/10",
+      iconColor: "text-indigo-400",
+      accent: "from-indigo-600/10 to-indigo-900/20",
+      ring: "ring-indigo-500/20",
+      dot: "bg-indigo-400",
+      href: "/admin/services#codex-usage",
+    },
+    {
       icon: HardDrive,
       title: "Stockage",
       desc: "Quota Supabase, usage et croissance mensuelle.",
@@ -221,6 +233,39 @@ export default async function AdminPage() {
       ring: "ring-emerald-500/20",
       dot: "bg-emerald-400",
       href: "/admin/services#storage",
+    },
+    {
+      icon: Database,
+      title: "Plans gratuits",
+      desc: "Vercel, Resend, Clerk et autres proxys mensuels.",
+      iconBg: "bg-sky-500/10",
+      iconColor: "text-sky-400",
+      accent: "from-sky-600/10 to-sky-900/20",
+      ring: "ring-sky-500/20",
+      dot: "bg-sky-400",
+      href: "/admin/services#free-plans",
+    },
+    {
+      icon: FileSearch,
+      title: "Rapport mensuel",
+      desc: "PDF central de gouvernance et archive publique.",
+      iconBg: "bg-violet-500/10",
+      iconColor: "text-violet-400",
+      accent: "from-violet-600/10 to-violet-900/20",
+      ring: "ring-violet-500/20",
+      dot: "bg-violet-400",
+      href: "/admin/services#governance-report",
+    },
+    {
+      icon: Database,
+      title: "Impact CO2e",
+      desc: "Capture manuelle et historique environnemental.",
+      iconBg: "bg-rose-500/10",
+      iconColor: "text-rose-400",
+      accent: "from-rose-600/10 to-rose-900/20",
+      ring: "ring-rose-500/20",
+      dot: "bg-rose-400",
+      href: "/admin/services#environmental-impact",
     },
   ];
 
@@ -263,7 +308,7 @@ export default async function AdminPage() {
 
         {/* Navigation Grid Premium */}
         <RubriqueCard themeColor="slate" withTopBar={true} topBarContent="Accès Rapides" className="p-12">
-          <NavigationGrid items={navigationItems} columns={{ default: 1, sm: 2, md: 4, xl: 4 }} />
+          <NavigationGrid items={navigationItems} columns={{ default: 1, sm: 2, md: 4, xl: 5 }} />
         </RubriqueCard>
 
         {profile === "max" && (

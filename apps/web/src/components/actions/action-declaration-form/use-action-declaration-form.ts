@@ -224,7 +224,14 @@ export function useActionDeclarationForm({
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     if (!hasTrackedStartRef.current) {
       hasTrackedStartRef.current = true;
-      trackFunnel("start_form", declarationMode);
+      trackFunnel("start_form", declarationMode, {
+        source: "action_declaration_form",
+        declarationMode,
+        recordType: form.recordType,
+        routePath: typeof window !== "undefined" ? window.location.pathname : null,
+        formVariant: "legacy",
+        linkedEventId: linkedEventId ?? null,
+      });
     }
     const nextForm = { ...form, [key]: value };
     if (key === "routeStyle") {

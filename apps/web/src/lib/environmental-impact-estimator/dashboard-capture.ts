@@ -18,29 +18,7 @@ export type EnvironmentalImpactCaptureResult = EnvironmentalImpactDashboardRespo
   version: string;
 };
 
-export function buildEnvironmentalImpactSnapshot(params: {
-  model: EnvironmentalImpactDashboardResponse["model"];
-  signals: EnvironmentalImpactProjectSignals;
-}): EnvironmentalImpactSnapshotRecord {
-  return {
-    id: `snapshot-${params.model.generatedAt}`,
-    snapshotKey: "cleanmymap-project",
-    snapshotDate: getEnvironmentalImpactSnapshotDate(params.model.generatedAt),
-    generatedAt: params.model.generatedAt,
-    version: params.model.version,
-    totalKgCo2eProxy: params.model.infrastructure.totalKgCo2eProxy,
-    monthlyKgCo2eProxy: params.model.infrastructure.monthlyKgCo2eProxy,
-    annualKgCo2eProxy: params.model.infrastructure.annualKgCo2eProxy,
-    confidencePercent: params.model.infrastructure.confidencePercent,
-    uncertaintyPercent: params.model.infrastructure.uncertaintyPercent,
-    launchedAt: params.signals.launchedAt,
-    accountCreatedAt: params.signals.accountCreatedAt,
-    model: params.model,
-    signals: params.signals,
-  };
-}
-
-export async function captureEnvironmentalImpactDashboard(params: {
+async function buildEnvironmentalImpactDashboard(params: {
   userId: string | null;
   generatedAt?: string;
   historyLimit?: number;
@@ -61,8 +39,6 @@ export async function captureEnvironmentalImpactDashboard(params: {
     infrastructure: signals.infrastructureInput,
   });
 
-  const snapshot = buildEnvironmentalImpactSnapshot({ model, signals });
-  await upsertEnvironmentalImpactSnapshot(snapshot);
   const snapshots = await listEnvironmentalImpactSnapshots(historyLimit);
 
   return {
@@ -72,4 +48,55 @@ export async function captureEnvironmentalImpactDashboard(params: {
     snapshots,
     version: ENVIRONMENTAL_IMPACT_ESTIMATOR_VERSION,
   };
+}
+
+export function buildEnvironmentalImpactSnapshot(params: {
+  model: EnvironmentalImpactDashboardResponse["model"];
+  signals: EnvironmentalImpactProjectSignals;
+}): EnvironmentalImpactSnapshotRecord {
+  return {
+    id: `snapshot-${params.model.generatedAt}`,
+    snapshotKey: "cleanmymap-project",
+    snapshotDate: getEnvironmentalImpactSnapshotDate(params.model.generatedAt),
+    generatedAt: params.model.generatedAt,
+    version: params.model.version,
+    totalKgCo2eProxy: params.model.infrastructure.totalKgCo2eProxy,
+    monthlyKgCo2eProxy: params.model.infrastructure.monthlyKgCo2eProxy,
+    annualKgCo2eProxy: params.model.infrastructure.annualKgCo2eProxy,
+    siteKgCo2eProxy: params.model.site.totalKgCo2eProxy,
+    userKgCo2eProxy: params.model.user.totalKgCo2eProxy,
+    confidencePercent: params.model.infrastructure.confidencePercent,
+    uncertaintyPercent: params.model.infrastructure.uncertaintyPercent,
+    launchedAt: params.signals.launchedAt,
+    accountCreatedAt: params.signals.accountCreatedAt,
+    model: params.model,
+    signals: params.signals,
+  };
+}
+
+export async function captureEnvironmentalImpactDashboard(params: {
+  userId: string | null;
+  generatedAt?: string;
+  historyLimit?: number;
+}): Promise<EnvironmentalImpactCaptureResult> {
+  const dashboard = await buildEnvironmentalImpactDashboard(params);
+  const snapshot = buildEnvironmentalImpactSnapshot({
+    model: dashboard.model,
+    signals: dashboard.signals,
+  });
+
+  await upsertEnvironmentalImpactSnapshot(snapshot);
+
+  return {
+    ...dashboard,
+    snapshots: await listEnvironmentalImpactSnapshots(params.historyLimit ?? 8),
+  };
+}
+
+export async function loadEnvironmentalImpactDashboard(params: {
+  userId: string | null;
+  generatedAt?: string;
+  historyLimit?: number;
+}): Promise<EnvironmentalImpactCaptureResult> {
+  return buildEnvironmentalImpactDashboard(params);
 }

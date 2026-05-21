@@ -19,8 +19,18 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
     );
     expect(markup).toContain("Pages vues");
     expect(markup).toContain("Courbe temporelle");
+    expect(markup).toContain("Documents à télécharger");
+    expect(markup).toContain("Fonctionnement du graphique");
+    expect(markup).toContain("Prochaines actions à plus fort impact");
+    expect(markup).toContain("Réduire la charge Vercel");
+    expect(markup).toContain("Deuxième ordre");
+    expect(markup).toContain("CO2 brut");
+    expect(markup).toContain("Empreinte matérielle et cycle de vie");
+    expect(markup).toContain("Énergie");
+    expect(markup).toContain("Serveurs");
     expect(markup).toContain("Vercel");
     expect(markup).toContain("Supabase");
+    expect(markup).toContain("ChatGPT / LLM");
     expect(markup).toContain("Resend");
     expect(markup).toContain("Nom de domaine LWS");
     expect(markup).toContain("Notes de données manquantes");
@@ -47,6 +57,38 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
           recentWindowDays: 30,
           siteInput: {},
           userInput: {},
+          codexUsage: {
+            generatedAt: "2026-05-20T12:00:00.000Z",
+            windowWeeks: 4,
+            source: "empty",
+            weekCount: 0,
+            sessionCount: 0,
+            conversationCount: 0,
+            turnCount: 0,
+            toolCallCount: 0,
+            shellCommandCount: 0,
+            fileTouchCount: 0,
+            testRunCount: 0,
+            changedLineCount: 0,
+            activeMinutes: 0,
+            monthlyEquivalent: {
+              sessionCount: 0,
+              conversationCount: 0,
+              turnCount: 0,
+              toolCallCount: 0,
+              shellCommandCount: 0,
+              fileTouchCount: 0,
+              testRunCount: 0,
+              changedLineCount: 0,
+              activeMinutes: 0,
+              estimatedKgCo2eProxy: 0,
+            },
+            estimatedKgCo2eProxy: 0,
+            confidencePercent: 0,
+            uncertaintyPercent: 100,
+            notes: [],
+            weeklySnapshots: [],
+          },
           infrastructureInput: {
             launchedAt: "2025-05-20T12:00:00.000Z",
             referencePeriodMonths: 12,
@@ -85,6 +127,29 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
               basis: "recent",
             },
           ],
+          signalBreakdown: {
+            traffic: {
+              pageViewEvents: 2,
+              legacyPageViewEvents: 2,
+              distinctRoutes: 2,
+              topRoutes: [
+                {
+                  path: "/community",
+                  count: 2,
+                },
+              ],
+            },
+            community: {
+              events: 1,
+              rsvps: 3,
+              notifications: 2,
+              unreadNotifications: 1,
+            },
+            communication: {
+              emailsSent: 2,
+              pdfExports: 1,
+            },
+          },
           notes: ["Données projet CleanMyMap."],
         },
         snapshots: [
@@ -97,6 +162,8 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
             totalKgCo2eProxy: 12.34,
             monthlyKgCo2eProxy: 1.23,
             annualKgCo2eProxy: 14.76,
+            siteKgCo2eProxy: 5.67,
+            userKgCo2eProxy: 6.67,
             confidencePercent: 82,
             uncertaintyPercent: 18,
             launchedAt: "2025-05-20T12:00:00.000Z",
@@ -111,6 +178,38 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
               recentWindowDays: 30,
               siteInput: {},
               userInput: {},
+              codexUsage: {
+                generatedAt: "2026-05-20T12:00:00.000Z",
+                windowWeeks: 4,
+                source: "empty",
+                weekCount: 0,
+                sessionCount: 0,
+                conversationCount: 0,
+                turnCount: 0,
+                toolCallCount: 0,
+                shellCommandCount: 0,
+                fileTouchCount: 0,
+                testRunCount: 0,
+                changedLineCount: 0,
+                activeMinutes: 0,
+                monthlyEquivalent: {
+                  sessionCount: 0,
+                  conversationCount: 0,
+                  turnCount: 0,
+                  toolCallCount: 0,
+                  shellCommandCount: 0,
+                  fileTouchCount: 0,
+                  testRunCount: 0,
+                  changedLineCount: 0,
+                  activeMinutes: 0,
+                  estimatedKgCo2eProxy: 0,
+                },
+                estimatedKgCo2eProxy: 0,
+                confidencePercent: 0,
+                uncertaintyPercent: 100,
+                notes: [],
+                weeklySnapshots: [],
+              },
               infrastructureInput: {
                 launchedAt: "2025-05-20T12:00:00.000Z",
                 referencePeriodMonths: 12,
@@ -145,6 +244,10 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
 
     expect(markup).toContain("Signaux projet CleanMyMap");
     expect(markup).toContain("Données réellement branchées dans le calcul");
+    expect(markup).toContain("Signaux projet détaillés");
+    expect(markup).toContain("Trafic");
+    expect(markup).toContain("Communauté");
+    expect(markup).toContain("Communications");
     expect(markup).toContain("Notes de données manquantes");
     expect(markup).toContain("Historique Supabase");
     expect(markup).toContain("Pages vues CleanMyMap");
