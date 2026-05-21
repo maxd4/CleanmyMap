@@ -7,6 +7,8 @@ export type EmailPayload = {
   html: string;
   from?: string;
   replyTo?: string;
+  actorUserId?: string | null;
+  meta?: Record<string, unknown>;
 };
 
 /**
