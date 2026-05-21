@@ -26,3 +26,5 @@ You are an AI assistant helping a developer build CleanMyMap. Follow these stric
 6. **Homepage restriction**: Ne jamais modifier la homepage (`apps/web/src/app/page.tsx` et ses composants associés dans `apps/web/src/components/accueil/`) sauf demande explicite de l'utilisateur.
 
 When generating or editing code, ALWAYS preserve the semantic meaning and avoid deleting necessary type definitions.
+
+7. **Markdown et Quarto**: Ne jamais mettre de numéros de section ou de titre en dur (ex: `1.`, `## 2.`) dans les fichiers Markdown destinés à l'export. Ces numéros sont générés automatiquement par Quarto lors de l'export. Utilisez uniquement la hiérarchie standard (`#`, `##`, `###`).

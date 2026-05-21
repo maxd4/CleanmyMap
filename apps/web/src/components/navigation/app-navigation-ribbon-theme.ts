@@ -92,7 +92,7 @@ export function parseCssColor(input: string | null | undefined): RgbaColor | nul
 
   const hex = value.match(/^#([0-9a-f]{3,8})$/i);
   if (hex) {
-    const raw = hex[1] ?? "";
+    const raw = hex[1];
     if (!raw) {
       return null;
     }
@@ -126,11 +126,19 @@ export function parseCssColor(input: string | null | undefined): RgbaColor | nul
     /^rgba?\(\s*([0-9.]+)\s*,\s*([0-9.]+)\s*,\s*([0-9.]+)(?:\s*[,/]\s*([0-9.]+))?\s*\)$/,
   );
   if (rgb) {
+    const red = rgb[1];
+    const green = rgb[2];
+    const blue = rgb[3];
+    const alpha = rgb[4];
+    if (!red || !green || !blue) {
+      return null;
+    }
+
     return {
-      r: Number(rgb[1]),
-      g: Number(rgb[2]),
-      b: Number(rgb[3]),
-      a: rgb[4] === undefined ? 1 : Number(rgb[4]),
+      r: Number(red),
+      g: Number(green),
+      b: Number(blue),
+      a: alpha === undefined ? 1 : Number(alpha),
     };
   }
 

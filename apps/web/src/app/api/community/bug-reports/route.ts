@@ -115,6 +115,7 @@ export async function POST(request: Request) {
  ? "Collaboration"
  : "Idée";
  await sendCreatorInboxEmail({
+  actorUserId: userId,
  subject: `[CleanMyMap] Nouveau feedback - ${notificationLabel}`,
  title: "Nouveau feedback reçu",
  intro: "Un questionnaire feedback vient d'arriver dans la file créateur.",

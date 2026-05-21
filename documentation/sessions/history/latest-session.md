@@ -29,7 +29,7 @@
 ### 1. Transformation Visuelle "Film" & Thème Sombre Douce
 - **Stabilisation Thème Unique** : Abandon du mode clair au profit d'une esthétique "Sombre Douce" (Slate-950, Emerald, Cyan).
 - **Nettoyage Global** : Suppression des résidus `bg-white` et teintes claires sur la Accueil et la page Explorer.
-- **Documentation** : Création de `documentation/design-system/THEME_SOMBRE_DOUCE.md` comme source de vérité. Mise à jour de `AGENTS.md` et de la charte UI.
+- **Documentation** : Mise à jour de la charte UI et des règles de gouvernance documentaire pour refléter la source de vérité actuelle.
 - **Transitions** : Intégration de Framer Motion pour des transitions fluides type "Film".
 
 ### 2. Redesign Premium Navigation Ribbon
@@ -41,8 +41,8 @@
 - **Simplification** : Seuls `modularization_plan.md`, `LANCER_SITE_LOCAL.bat` et les configs standard (git, package.json) subsistent à la racine.
 
 ### 4. Gouvernance Design System & Documentation
-- **Canon clarifié** : `documentation/design-system/design-system.md` a été remplacé par `design-system-legacy.md` pour marquer explicitement le statut historique.
-- **Déplacements** : `standards-visuels.md` a été déplacé vers `documentation/ai-guides/standards-visuels.md` et `feedback-ruban-plan.md` vers `documentation/plans/feedback-ruban-plan.md`.
+- **Canon clarifié** : les anciennes notes de transition du design system ont été retirées pour éviter toute ambiguïté entre canon et archives.
+- **Déplacements** : `standards-visuels.md` a été déplacé vers `documentation/ai-guides/standards-visuels.md` et les anciens plans ponctuels ont été sortis du noyau documentaire.
 - **Index réécrit** : `documentation/design-system/README.md` distingue désormais code live, docs canoniques, legacy et hors périmètre.
 - **Liens corrigés** : mises à jour de `AI_DEVELOPER_GUIDE.md`, `display-modes-implementation.md`, `USAGE_GUIDE.md`, `AGENTS.md` et `ai-guides/README.md`.
 - **Découverte** : ajout du guide `documentation/ai-guides/standards-visuels.md` dans l’index des guides IA.

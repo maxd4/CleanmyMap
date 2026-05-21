@@ -34,8 +34,11 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
     const l: { id: string; x1: number; y1: number; x2: number; y2: number }[] = [];
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
-        const n1 = nodes[i]!;
-        const n2 = nodes[j]!;
+        const n1 = nodes[i];
+        const n2 = nodes[j];
+        if (!n1 || !n2) {
+          continue;
+        }
         
         // Share a tag?
         const sharedTags = n1.tags?.filter((t: string) => n2.tags?.includes(t)) || [];
@@ -47,9 +50,9 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
             y1: n1.y,
             x2: n2.x,
             y2: n2.y
-          });
-        }
+        });
       }
+    }
     }
     // Limit links to keep it clean
     return l.slice(0, 60);
@@ -114,6 +117,12 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
           <AnimatePresence>
         {nodes.map((node) => {
           const primaryType = node.types?.[0] ?? "autre";
+          const nodeName = typeof node.name === "string" && node.name.trim().length > 0
+            ? node.name
+            : "Association";
+          const nodeLocation = typeof node.location === "string" && node.location.trim().length > 0
+            ? node.location
+            : "";
 
           return (
                 <motion.g
@@ -161,15 +170,15 @@ export function AnnuaireNetworkGraph({ entries, onSelectPartner }: AnnuaireNetwo
                     className="pointer-events-none overflow-visible"
                   >
                     <div className="flex flex-col">
-                    <span className="whitespace-nowrap text-[1.8px] font-black uppercase tracking-widest text-white/90 drop-shadow-md">
-                        {node.name}
+                  <span className="whitespace-nowrap text-[1.8px] font-black uppercase tracking-widest text-white/90 drop-shadow-md">
+                        {nodeName}
                       </span>
                       <span className={cn("text-[1.2px] font-bold opacity-0 group-hover:opacity-70 transition-opacity uppercase tracking-tighter", 
                         primaryType === "environnemental" ? "text-violet-300" :
                         primaryType === "social" ? "text-indigo-300" :
                         primaryType === "humanitaire" ? "text-fuchsia-300" : "text-violet-300"
                       )}>
-                        {node.location}
+                        {nodeLocation}
                       </span>
                     </div>
                   </foreignObject>

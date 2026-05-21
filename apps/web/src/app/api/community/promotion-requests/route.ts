@@ -102,6 +102,7 @@ export async function POST(request: Request) {
 
   try {
     await sendCreatorInboxEmail({
+      actorUserId: userId,
       subject: `[CleanMyMap] Demande de promotion - ${created.submittedByDisplayName}`,
       title: "Nouvelle demande de promotion",
       intro: "Une demande de changement de rôle vient d'arriver dans la file créateur.",

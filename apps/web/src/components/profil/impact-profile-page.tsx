@@ -7,6 +7,7 @@ import confetti from "canvas-confetti";
 import { Download, Share2, ArrowLeft, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { ImpactCard } from "@/components/profil/impact-card";
+import { EnvironmentalImpactEstimatorPanel } from "@/components/environmental-impact-estimator/environmental-impact-estimator-panel";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { getBlockClasses } from "@/lib/ui/block-accents";
@@ -15,6 +16,10 @@ import {
   fetchCurrentAccountIdentity,
   type CurrentAccountIdentity,
 } from "@/lib/account/current-account-identity";
+import {
+  computeEnvironmentalImpactEstimate,
+  type EnvironmentalImpactDashboardResponse,
+} from "@/lib/environmental-impact-estimator";
 
 type ImpactPageProgression = {
   currentLevel: number;
@@ -47,6 +52,15 @@ export default function ImpactProfilePage() {
   const [currentAccountIdentity, setCurrentAccountIdentity] =
     useState<CurrentAccountIdentity | null>(null);
   const classes = getBlockClasses("impact");
+  const impactKey = currentAccountIdentity?.userId
+    ? ["environmental-impact-dashboard", currentAccountIdentity.userId]
+    : null;
+  const { data: impactData } = useSWR<EnvironmentalImpactDashboardResponse>(
+    impactKey,
+    () => fetchJson<EnvironmentalImpactDashboardResponse>("/api/environmental-impact"),
+  );
+  const environmentalImpactModel =
+    impactData?.model ?? computeEnvironmentalImpactEstimate();
 
   const { data: meData, isLoading } = useSWR<GamificationMeResponse>(
     "gamification-me",
@@ -250,6 +264,12 @@ export default function ImpactProfilePage() {
               Consulter le protocole scientifique <span className="text-lg">→</span>
             </Link>
           </div>
+
+          <EnvironmentalImpactEstimatorPanel
+            model={environmentalImpactModel}
+            signals={impactData?.signals ?? null}
+            snapshots={impactData?.snapshots ?? []}
+          />
         </div>
       </div>
     </div>

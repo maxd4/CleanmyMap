@@ -92,4 +92,15 @@ describe("Supabase function permissions", () => {
     expect(cleanupMigration).toContain("drop function if exists public.prune_old_messages();");
     expect(cleanupMigration).toContain("drop function if exists public.can_view_neighborhood_message(integer);");
   });
+
+  it("applies the corrective migration for the linked project drift", () => {
+    const hardeningMigration = readMigration("../../../supabase/migrations/20260520200207_apply_remaining_supabase_advisory_hardening.sql");
+
+    expect(hardeningMigration).toContain("create or replace function public.set_updated_at()");
+    expect(hardeningMigration).toContain("create or replace function public.handle_updated_at()");
+    expect(hardeningMigration).toContain("alter function public.reserve_community_message_slot(text, text) security invoker;");
+    expect(hardeningMigration).toContain("set search_path = pg_catalog");
+    expect(hardeningMigration).toContain("revoke all on function public.compute_mission_distance(uuid) from public;");
+    expect(hardeningMigration).toContain("grant execute on function public.create_chat_notifications_for_message(uuid) to service_role;");
+  });
 });

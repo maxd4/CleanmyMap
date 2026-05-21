@@ -184,6 +184,7 @@ export async function POST(request: Request) {
  try {
   await tryNotifyAdmins(parsed.data);
   await sendCreatorInboxEmail({
+   actorUserId: userId,
    subject: `[CleanMyMap] Nouvelle demande partenaire - ${parsed.data.organizationName}`,
    title: "Nouvelle demande partenaire",
    intro: "Une demande d'onboarding partenaire vient d'arriver dans la file créateur.",

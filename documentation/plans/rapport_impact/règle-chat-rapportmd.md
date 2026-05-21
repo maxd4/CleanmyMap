@@ -16,6 +16,7 @@
 * Le fichier source du rapport est en **Markdown**.
 * Les réponses doivent donc être directement compatibles Markdown.
 * Le Markdown est ensuite converti en PDF avec **Quarto**.
+* **Règle stricte** : Ne jamais mettre de numéros de section ou de titre en dur (ex: `1.`, `## 2.`). Ces numéros sont générés automatiquement par Quarto lors de l'export. Utilisez uniquement la hiérarchie standard (`#`, `##`, `###`).
 * Il est possible d’utiliser, lorsque cela améliore la lisibilité :
 
   * tableaux Markdown ;
@@ -55,21 +56,30 @@ Ce point doit être lu comme un ordre de grandeur, non comme une mesure instrume
   * callouts ;
   * paragraphes plus courts.
 
-### Sources
+### Restructuration progressive du rapport
 
-* Ne pas mettre de numéros de source dans les paragraphes.
-* Ne pas écrire `[1]`, `[2]`, etc. dans le corps du texte.
-* Les sources doivent apparaître uniquement en fin de section.
-* Ne pas écrire de titre du type `Références de la section`.
-* Les sources doivent être listées directement sous forme de puces.
-* Le numéro de source doit être cliquable directement.
+* Lorsqu’il s’agit de restructurer le rapport, ne pas réécrire tout le contenu d’un bloc.
+* Préférer les opérations locales sur la structure existante :
 
-Format attendu :
+  * déplacer une sous-partie ;
+  * renommer un titre ;
+  * fusionner deux sous-parties redondantes ;
+  * scinder une sous-partie trop longue ;
+  * réordonner des blocs déjà présents.
+* Conserver les idées importantes déjà présentes dans le texte.
+* Ne pas ajouter de contenu substantiel nouveau sans demande explicite.
+* Ajouter seulement de courtes transitions si elles sont nécessaires à la lisibilité.
+* Viser un plan plus lisible, plus académique et plus proche d’un rapport d’audit.
+* Éviter toute restructuration qui modifierait le fond du rapport sans justification claire.
 
-```md
-- [[1]](URL) Auteur ou organisme, *Titre du document*, année.
-- [[2]](URL) Auteur ou organisme, *Titre du document*, année.
-```
+### Sources (Moteur Quarto / Citeproc)
+
+* Le rapport utilise le moteur de bibliographie automatique de Quarto.
+* Toute source doit être appelée **directement dans le texte** avec la syntaxe de citation Quarto : `[@clef_de_la_source]`.
+* **Interdiction stricte** de créer des listes manuelles de sources (du type `- [1] Auteur...`) à la fin des paragraphes ou des sous-parties. Quarto s'occupe de lister les références globales à la fin du document.
+* Si une nouvelle source doit être introduite, l'ajouter au fichier `references.bib` avec une nouvelle clé BibTeX.
+* Ne jamais générer une URL sans certitude qu'elle est valide. En cas de doute (risque d'hallucination de l'IA), donner uniquement le titre exact et l'auteur.
+* Privilégier les liens pérennes (DOI, HAL, arXiv, Wayback Machine) lorsque cela est possible.
 
 * Ne pas inventer de sources.
 * Si une source n’est pas connue ou vérifiable, préférer une formulation prudente.
@@ -211,7 +221,7 @@ Format attendu :
 * Viser des sections directement exploitables dans un PDF Quarto.
 * Maintenir une structure Markdown propre.
 * Utiliser un ton académique.
-* Ajouter les sources finales en puces cliquables lorsque nécessaire.
+* Intégrer les appels de sources Quarto (`[@clef]`) dans le texte. Ne jamais lister les sources manuellement.
 * Garder les tableaux lisibles.
 * Employer des formulations prudentes.
 * Ajouter des recommandations concrètes.
@@ -221,4 +231,4 @@ Format attendu :
 
 ### Règle synthétique
 
-Pour les réécritures du rapport CleanMyMap, chaque section doit être directement exploitable dans un PDF Quarto : structure Markdown propre, ton académique, sources finales en puces cliquables, tableaux lisibles, formulations prudentes, recommandations concrètes et lien explicite avec les conséquences opérationnelles pour CleanMyMap.
+Pour les réécritures du rapport CleanMyMap, chaque section doit être directement exploitable dans un PDF Quarto : structure Markdown propre, ton académique, appels de notes dynamiques (syntaxe `[@clef]`), tableaux lisibles, formulations prudentes, recommandations concrètes et lien explicite avec les conséquences opérationnelles pour CleanMyMap.

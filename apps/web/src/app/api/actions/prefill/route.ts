@@ -25,8 +25,27 @@ function median(values: number[], fallback: number): number {
  ? Math.round((left + right) / 2)
  : fallback;
  }
- const value = sorted[mid];
- return value !== undefined ? Math.round(value) : fallback;
+  const value = sorted[mid];
+  return value !== undefined ? Math.round(value) : fallback;
+}
+
+function pickMostFrequentLabel(counts: Map<string, number>): string | null {
+ let topLabel: string | null = null;
+ let topCount = -1;
+
+ for (const [label, count] of counts.entries()) {
+  if (
+   count > topCount ||
+   (count === topCount &&
+    topLabel !== null &&
+    label.localeCompare(topLabel, "fr") < 0)
+  ) {
+   topLabel = label;
+   topCount = count;
+  }
+ }
+
+ return topLabel;
 }
 
 export async function GET() {
@@ -77,13 +96,12 @@ export async function GET() {
  }
  }
 
-  const preferredLocation =
-  [...locationCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  const preferredLocation = pickMostFrequentLabel(locationCounts);
   const preferredAssociation =
-  [...associationCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ??
+  pickMostFrequentLabel(associationCounts) ??
   ASSOCIATION_SELECTION_OPTIONS[0];
   const firstAction = recent[0];
-  const locationLabel = preferredLocation ?? firstAction?.location_label ?? "";
+  const locationLabel = preferredLocation ?? firstAction?.location_label?.trim() ?? null;
 
   return NextResponse.json({
   status:"ok",

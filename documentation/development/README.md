@@ -19,6 +19,7 @@ Guides de développement pour agents IA.
 - **TESTING.md** - Guide de tests
 - **regression-gates.md** - Tests de non-régression
 - **bugs-structurants.md** - Bugs structurants à éviter
+- **typescript-strict-priority-report.md** - Synthèse priorisée du log TypeScript strict
 
 ### Contribution & Documentation
 - **CONTRIBUTING.md** - Guide de contribution
@@ -27,6 +28,7 @@ Guides de développement pour agents IA.
 ### Dette Technique
 - **dette-technique.md** - Dette technique actuelle
 - **refactors-prioritaires.md** - Refactorings prioritaires
+- **ts-strict-flag-errors.txt** - Dump brut historique des erreurs TypeScript strict
 
 ---
 
@@ -90,6 +92,7 @@ Guides de développement pour agents IA.
 ### Amélioration Continue
 - Ne jamais considérer le code comme parfait
 - Toujours chercher à améliorer
+- Corriger en améliorant la logique existante, pas en la dégradant ou en simplifiant à l'excès
 - Être force de proposition
 
 ### Qualité

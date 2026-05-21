@@ -1,0 +1,390 @@
+2.2 Estimation directe de l’impact du projet
+- 2.2.1 Consommation électrique estimée.
+- 2.2.2 Empreinte carbone estimée.
+- 2.2.3 Empreinte hydrique estimée.
+- 2.2.4 Projection vers la version finale du site.
+- 2.2.5 Lecture critique des résultats : ajouter une courte sous-partie expliquant que ces chiffres sont des ordres de grandeur, non des mesures instrumentées.
+
+2.3 Mise en perspective : IA et data centers
+- 2.3.1 Consommation actuelle des data centers.
+- 2.3.2 Part estimée de l’IA dans cette consommation.
+- 2.3.3 Scénarios de croissance à l’horizon 2030.
+- 2.3.4 Tensions électriques locales et arbitrages d’infrastructure.
+- 2.3.5 Comparaison avec d’autres secteurs : conserver seulement si la comparaison est sourcée et utile ; sinon condenser fortement.
+- 2.3.6 Tableau récapitulatif des ordres de grandeur.
+
+2.4 Empreinte matérielle de l’IA
+- 2.4.1 GPU, serveurs, semi-conducteurs et stockage.
+- 2.4.2 Métaux critiques et chaînes d’approvisionnement : regrouper cuivre, gallium, lithium, terres rares et autres matériaux.
+- 2.4.3 Obsolescence accélérée du matériel IA.
+- 2.4.4 Déchets électroniques et fin de vie.
+
+2.5 Analyse de cycle de vie et scopes carbone
+- 2.5.1 Différence entre scopes 1, 2, 3 et ACV.
+- 2.5.2 Fabrication, transport, maintenance et fin de vie.
+- 2.5.3 Redondance cloud, sauvegardes, réplication et stockage.
+- 2.5.4 Limites d’une ACV simplifiée appliquée à CleanMyMap.
+
+2.6 Impacts environnementaux indirects ou sous-estimés
+- 2.6.1 CI/CD, builds, previews et déploiements.
+- 2.6.2 Données dormantes, logs, caches et backups.
+- 2.6.3 Terminaux utilisateurs.
+- 2.6.4 Usage mobile : GPS, photos, réseau 4G/5G.
+- 2.6.5 Surproduction fonctionnelle facilitée par l’IA.
+
+2.7 Synthèse environnementale
+- 2.7.1 Impact faible en ordre de grandeur, mais non nul.
+- 2.7.2 Risque principal : trajectoire de croissance, accumulation des usages et dette environnementale.
+- 2.7.3 Conditions de soutenabilité : ajouter une courte conclusion opérationnelle reliant sobriété technique, limitation des fonctionnalités inutiles, choix de modèles efficaces, suivi d’usage et arbitrage par utilité réelle.
+
+
+jusqu'ici, quels paragraphes n'ont pas été migrées dans la nouvelles structure ? 
+
+
+
+
+Pour la partie III, corrigeons d'abord la section sur les apports positifs de l’IA. Sa numérotation en 3.15.0.x révèle un problème Markdown. 
+
+Deplace cette partie dans une annexe dédiée pour faire la liste des intérêts concrets de l'IA. Ne laisse qu'un résumé des avancées de recherche majeures de l'IA, le détail sera en annexe.
+
+la fin de la Partie III brouille la conclusion générale du rapport. Les sections “Analyse critique du rôle de l’IA et pilotage” et “Arbitrage final” ressemblent davantage à une synthèse globale qu’à une sous-partie sociale/humaine. Elles risquent donc de faire doublon avec la conclusion finale ou les recommandations générales du rapport.
+
+
+on va couper l’actuelle Partie III en au moins 3 parties distinctes : Partie III — Impacts sociaux, humains et informationnels de l’IA
+Partie IV — Pouvoir, souveraineté et risques systémiques
+Partie V — Risques techniques, cybersécurité et gouvernance de CleanMyMap 
+
+
+
+
+Partie III — Impacts sociaux, humains et informationnels de l’IA
+Cette partie doit traiter les effets de l’IA sur les personnes, la connaissance et l’espace informationnel.
+
+3.1 Travail humain invisible derrière l’IA
+Annotation, modération et évaluation humaine
+Externalisation et conditions de travail
+Risques psychologiques liés à la modération
+
+
+
+3.2 Biais, discrimination et délégation du jugement
+Biais de données et reproduction des inégalités
+Autorité implicite des réponses générées
+Risque de délégation excessive du jugement humain
+
+
+
+3.3 Santé mentale, vulnérabilité et anthropomorphisation
+Substitution possible à une aide humaine
+Conversations longues et attachement émotionnel
+Anthropomorphisation et dépendance émotionnelle
+Principe de non-délégation des situations sensibles
+
+
+
+3.4 Désinformation, deepfakes et pollution du web
+Production massive de contenus
+Deepfakes, contenus non consentis et atteintes à la dignité
+Harcèlement, réputation et diffusion virale
+Saturation informationnelle et baisse de confiance publique
+
+
+
+3.5 IA et intégrité scientifique
+Usage croissant des LLM dans les publications
+Uniformisation du style scientifique
+Transparence insuffisante sur l’usage de l’IA
+Responsabilité d’auteur et confiance dans la connaissance
+
+
+
+3.6 Bilan social et humanitaire
+Impacts moins mesurables que le carbone
+Risques humains difficiles à quantifier
+Nécessité d’une gouvernance stricte
+
+
+
+Partie IV — Pouvoir, infrastructures et souveraineté numérique
+Cette partie analyse l’IA comme un système industriel et géopolitique : elle ne dépend pas seulement de modèles logiciels, mais aussi d’infrastructures matérielles, de plateformes privées, de chaînes d’approvisionnement et de rapports de pouvoir internationaux.
+4.1 Infrastructures critiques de l’IA
+4.1.1 Dépendance aux modèles propriétaires
+4.1.2 Dépendance aux clouds, API et services externes
+4.1.3 Dépendance aux GPU, data centers et infrastructures réseau
+4.1.4 Risque de verrouillage technique et économique
+
+
+4.2 Concentration économique et pouvoir des plateformes
+4.2.1 Centralisation du cloud, des modèles et des puces
+4.2.2 Concentration de la valeur autour de quelques acteurs
+4.2.3 Effets de domination sur les développeurs, entreprises et institutions
+4.2.4 Fragilité d’un écosystème dépendant de plateformes privées
+
+
+4.3 Souveraineté numérique et géopolitique de l’IA
+4.3.1 Dépendance européenne aux infrastructures étrangères
+4.3.2 Semi-conducteurs, restrictions d’exportation et compétition industrielle
+4.3.3 Tensions entre innovation, souveraineté et sécurité nationale
+4.3.4 Modèles ouverts, modèles propriétaires et autonomie stratégique
+
+
+4.4 Risques systémiques des modèles de frontière
+4.4.1 Définition des modèles de frontière
+4.4.2 Accélération des usages militaires et stratégiques
+4.4.3 Risques cyber, biologiques, chimiques et informationnels
+4.4.4 Décalage entre vitesse de déploiement et capacité de contrôle
+
+4.5 Synthèse : dépendance, pouvoir et vulnérabilité systémique
+4.5.1 L’IA comme infrastructure de dépendance
+4.5.2 Risque de perte d’autonomie technique et politique
+4.5.3 Nécessité d’une gouvernance publique et collective
+
+
+
+Partie V — Risques techniques, sécurité et contrôle des systèmes d’IA
+Cette partie descend d’un niveau : après les dépendances systémiques, elle analyse les risques concrets liés à l’usage technique des modèles, à la génération de code, à la cybersécurité, aux données et aux limites des garde-fous.
+5.1 Confidentialité, données et responsabilité juridique
+5.1.1 Données sensibles dans les prompts et les fichiers transmis
+5.1.2 RGPD, consentement et minimisation des données
+5.1.3 Responsabilité en cas d’erreur générée ou validée par IA
+5.1.4 Traçabilité des décisions assistées par IA
+
+
+5.2 Développement assisté par IA, dette technique et illusion de maîtrise
+5.2.1 Définition du vibe coding
+5.2.2 Production massive de code par des profils non spécialistes
+5.2.3 Code non compris, absence de tests et validation superficielle
+5.2.4 Dette technique accélérée par l’automatisation
+
+
+5.3 Cybersécurité du code et des systèmes assistés par IA
+5.3.1 Failles d’authentification et de gestion des permissions
+5.3.2 Clés exposées, secrets mal protégés et erreurs de configuration
+5.3.3 Dépendances vulnérables ou mal comprises
+5.3.4 IA comme accélérateur d’attaque et d’audit de sécurité
+
+
+5.4 Alignement, garde-fous et comportements non fiables
+5.4.1 Sycophancy et modèles trop complaisants
+5.4.2 Fragilité des garde-fous en contexte long
+5.4.3 Contournement des limites par reformulation ou accumulation contextuelle
+5.4.4 Besoin de supervision humaine et de validation externe
+
+
+5.5 Gouvernance humaine des usages de l’IA
+5.5.1 IA comme assistant, jamais comme autorité finale
+5.5.2 Critères d’arrêt, de limitation ou de refus d’usage
+5.5.3 Relecture humaine, documentation et traçabilité
+5.5.4 Séparation entre expérimentation, production et décision sensible
+
+
+5.6 Grille de décision pour un usage responsable de l’IA
+5.6.1 Conditions minimales d’un usage acceptable
+5.6.2 Grille risque / utilité / coût / preuve
+5.6.3 Matrice risque / réponse / contrôle
+5.6.4 Limites restantes et principe de prudence
+
+
+
+
+
+
+
+Partie VI — Utilité réelle de CleanMyMap
+6.1 Finalité environnementale et sociale du projet
+6.1.1 Problème traité : déchets abandonnés, mégots et dépôts sauvages
+6.1.2 Publics concernés : citoyens, associations et collectivités
+6.1.3 Transformation recherchée : signaler → organiser → nettoyer → prouver
+6.1.4 Contribution potentielle aux Objectifs de développement durable
+6.2 Services rendus par le site
+6.2.1 Cartographier les zones polluées
+6.2.2 Organiser des cleanwalks et coordonner les bénévoles
+6.2.3 Éviter les doublons, les pertes d’information et les déplacements inutiles
+6.2.4 Produire des rapports exploitables pour les associations et collectivités
+6.2.5 Créer un historique vérifiable des actions réalisées
+6.3 Utilité par usage réel
+6.3.1 Utilité par session utilisateur
+6.3.2 Utilité par bénévole mobilisé
+6.3.3 Utilité par association ou collectivité
+6.3.4 Utilité par signalement, photo ou donnée stockée
+6.3.5 Utilité par action de terrain effectivement réalisée
+Partie VII — Sobriété fonctionnelle et Indice d’utilité réelle
+7.1 Scénario minimal viable sobre
+7.1.1 Fonctionnalités indispensables
+7.1.2 Fonctionnalités utiles sous condition
+7.1.3 Fonctionnalités à limiter, différer ou désactiver
+7.1.4 Critères de sobriété pour l’évolution du site
+7.2 Indice d’utilité réelle
+7.2.1 Définition et rôle de l’IUR
+7.2.2 Mise en relation entre impact terrain et coût numérique global
+7.2.3 Limites méthodologiques de l’indicateur
+7.2.4 Usage de l’IUR comme outil d’aide à la décision
+Partie VIII — Dette numérique, effets rebond et durabilité dans le temps
+8.1 Dette numérique du projet
+8.1.1 Dette liée au développement assisté par IA
+8.1.2 Dette liée à l’hébergement, au stockage, aux API et aux services tiers
+8.1.3 Dette liée à la maintenance future
+8.1.4 Impacts non neutralisables du fonctionnement numérique
+8.2 Limites de la compensation par l’utilité terrain
+8.2.1 Ce que l’action de terrain peut justifier partiellement
+8.2.2 Ce que le site ne peut pas neutraliser totalement
+8.2.3 Électricité, eau, ACV et impacts matériels persistants
+8.2.4 Travail invisible, dépendances cloud et limites sociales de l’IA
+8.3 Effets rebond et risques de bilan négatif
+8.3.1 Déplacements supplémentaires liés aux actions terrain
+8.3.2 Stockage excessif de photos, fichiers et historiques
+8.3.3 Fonctionnalités peu utilisées ou disproportionnées
+8.3.4 Analytics, notifications et bruit numérique
+8.3.5 Dette technique future et complexification progressive
+8.4 Dépendances technologiques et stratégies de sortie
+8.4.1 Dépendances critiques du projet
+8.4.2 Risques de verrouillage technique ou économique
+8.4.3 Stratégies de réduction de dépendance
+8.4.4 Renvoi vers les annexes techniques détaillées
+8.5 Scénarios d’évolution et durabilité
+8.5.1 Scénario de maintien sobre
+8.5.2 Scénario d’abandon partiel ou de réduction fonctionnelle
+8.5.3 Scénario de réécriture future
+8.5.4 Simplifications possibles
+8.5.5 Matrice d’arbitrage : dette technique vs dette écologique
+Partie IX — Plan de réduction des impacts
+9.1 Actions complémentaires hors site
+9.1.1 Impacts impossibles à résoudre uniquement via le site
+9.1.2 Actions complémentaires proposées
+9.1.3 Journal public d’usage IA et sobriété numérique
+9.1.4 Audit trimestriel de sobriété numérique
+9.1.5 Contribution open source ciblée
+9.1.6 Documentation éducative libre
+9.1.7 Ateliers locaux avec associations
+9.1.8 Mentorat numérique responsable
+9.1.9 Programme “appareils prolongés”
+9.1.10 Partenariat recyclage et réemploi matériel
+9.1.11 Règle volontaire de réduction IA
+9.1.12 Soutien à des communs numériques sobres
+9.1.13 Actions locales de dépollution mesurées
+9.1.14 Plaidoyer local et rapports aux collectivités
+9.1.15 Charte de données et IA responsable
+9.1.16 Mutualisation d’hébergement ou de ressources
+9.2 Priorisation des actions complémentaires
+9.2.1 Analyse critique des actions proposées
+9.2.2 Stratégie réaliste, équilibrée ou ambitieuse
+9.2.3 Indicateurs pour mesurer l’effet réel
+9.2.4 Références des actions complémentaires
+Partie X — Sobriété numérique du site
+10.1 Optimisations prioritaires
+10.1.1 Optimisations déjà exécutées
+10.1.2 Optimisations restantes
+10.1.3 Estimation des gains possibles
+10.1.4 Indicateurs de suivi après mise en production
+10.2 Limitation des services numériques coûteux
+10.2.1 Limitation des analytics et des services tiers
+10.2.2 Limitation des notifications et du bruit numérique
+10.2.3 Réduction des données dormantes, logs et caches
+10.2.4 Grille de décision avant toute fonctionnalité coûteuse ou assistée par IA
+10.3 Architecture alternative plus sobre
+10.3.1 Hypothèse d’architecture allégée
+10.3.2 Réduction des dépendances lourdes
+10.3.3 Arbitrage entre performance, coût et maintenabilité
+10.3.4 Limites d’une architecture trop minimale
+10.4 Traduction en actions concrètes sur le site
+10.4.1 Principes directeurs à retenir
+10.4.2 Tableau de pilotage synthétique
+10.4.3 Bonnes pratiques à maintenir dans la durée
+Partie XI — Audit technique de sobriété
+11.1 Cartographie des coûts numériques
+11.1.1 Analyse frontend
+11.1.2 Hydratation excessive
+11.1.3 Framer Motion utilisé comme outil d’animation généraliste
+11.1.4 Cartographie lourde
+11.1.5 CSS et dépendances cartographiques globales
+11.1.6 Composants probablement énergivores
+11.2 Analyse du poids, du réseau et du stockage
+11.2.1 Estimation du poids moyen des pages
+11.2.2 Images
+11.2.3 Vidéos
+11.2.4 Fonts
+11.2.5 Requêtes réseau redondantes
+11.2.6 Stockage et fichiers persistants
+11.3 Analyse backend et API
+11.3.1 Endpoints probablement les plus coûteux
+11.3.2 Usage fréquent de no-store
+11.3.3 Agrégations répétées
+11.3.4 Requêtes et traitements à optimiser
+11.4 Analyse CI/CD et dépendances
+11.4.1 Coût des builds, previews et déploiements
+11.4.2 Analyse des dépendances
+11.4.3 Dépendances lourdes ou redondantes
+11.4.4 Pistes de simplification technique
+11.5 Priorisation de l’audit technique
+11.5.1 Optimisations réalisées
+11.5.2 Faible effort / fort impact
+11.5.3 Fort effort / fort impact
+11.5.4 Micro-optimisations
+11.5.5 Gains négligeables ou secondaires
+11.6 Bilan critique de l’audit technique
+11.6.1 Résultats principaux
+11.6.2 Limites de l’audit
+11.6.3 Actions techniques à suivre
+
+
+Partie XII — Apports de l’IA et enseignements du DU
+
+Cette partie évite de réduire l’IA à ses seuls coûts ou risques. Elle présente ce que l’IA peut apporter lorsqu’elle est utilisée de manière encadrée, puis relie ces apports aux enseignements du DU et aux choix de conception de CleanMyMap.
+
+12.1 Apports positifs de l’IA
+12.1.1 Apports scientifiques et techniques généraux de l’IA
+12.1.2 Apports méthodologiques pour la recherche, le développement et la documentation
+12.1.3 Apports concrets de l’IA au développement de CleanMyMap
+12.1.4 Limites d’une lecture uniquement positive de l’innovation
+12.2 Enseignements issus du DU
+12.2.1 Apports méthodologiques des ateliers du DU
+12.2.2 Traduction des apprentissages en critères de conception
+12.2.3 Lien entre engagement citoyen, sobriété numérique et gouvernance IA
+12.2.4 Limites restantes et points à approfondir
+Partie XIII — Conclusion institutionnelle
+
+Cette partie ferme le rapport. Elle ne doit pas ajouter de nouveaux développements techniques : elle synthétise les résultats, rappelle les conditions de validité du bilan et formule la position finale.
+
+13.1 Justification finale de l’usage de l’IA
+13.1.1 Ce que l’IA a permis dans le développement du projet
+13.1.2 Ce que l’IA a coûté ou rendu plus risqué
+13.1.3 Pourquoi l’usage de l’IA peut être justifié sous conditions
+13.2 Conditions de validité du bilan
+13.2.1 Validité limitée par les hypothèses de calcul
+13.2.2 Validité conditionnée à l’usage réel du site
+13.2.3 Validité dépendante du suivi après mise en production
+13.3 Rôle de l’IUR dans la conclusion
+13.3.1 IUR comme indicateur d’arbitrage, non comme preuve absolue
+13.3.2 Nécessité d’un suivi dans le temps
+13.3.3 Seuils de vigilance et critères de révision
+13.4 Position finale
+13.4.1 Bilan net conditionnel, pas automatique
+13.4.2 Usage responsable, mesuré et réversible de l’IA
+13.4.3 Conditions de poursuite, de limitation ou d’arrêt de certains usages IA
+Annexes — Détails techniques et méthodologiques
+
+Annexe A — Dépendances technologiques et scénarios de rupture
+A.1 Lecture géopolitique des dépendances
+A.2 Scénarios de rupture
+A.3 Cartographie détaillée des dépendances
+Annexe B — Méthodologie de calcul et incertitudes
+B.1 Facteurs d’émission de référence
+B.2 Hypothèses de consommation
+B.3 Marges d’incertitude
+B.4 Limites des estimations
+Annexe C — Foire aux questions
+C.1 Réponses courtes
+C.2 Questions critiques sur l’usage de l’IA
+C.3 Questions critiques sur la sobriété du projet
+C.4 Questions critiques sur l’utilité réelle de CleanMyMap
+Annexe D — Documents de suivi et preuves internes
+D.1 Journal des améliorations issues du rapport d’impact IA
+D.2 Historique des optimisations réalisées
+D.3 Éléments de preuve technique à compléter
+D.4 Liste des points à vérifier avant publication
+Bibliographie et sources
+Bibliographie
+Sources institutionnelles et techniques
+Documentation des outils, modèles et services utilisés
+
+

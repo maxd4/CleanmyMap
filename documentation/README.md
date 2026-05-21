@@ -9,7 +9,7 @@ Ce répertoire sépare volontairement :
 
 ---
 
-## Démarrage rapide
+## Lecture rapide
 
 1. [Design System](./design-system/README.md)
 2. [Sécurité](./security/README.md)
@@ -19,7 +19,9 @@ Ce répertoire sépare volontairement :
 
 ---
 
-## Références publiques
+## Public
+
+Documentation de référence à consulter en premier pour comprendre le produit et le code.
 
 - [architecture/](./architecture/)
 - [backend/](./backend/)
@@ -36,7 +38,22 @@ Ce répertoire sépare volontairement :
 
 ---
 
-## Artefacts générés ou archivés
+## Interne
+
+Contenus de travail, mémoire projet et runbooks internes. Ils restent dans le dépôt mais ne doivent pas être indexés comme documentation publique.
+
+- contexte projet et mémoire de session;
+- rapports de travail et audits internes;
+- plans d'action et dossiers de validation;
+- archives de rapport IA;
+- runbooks sensibles;
+- notes de pilotage IA.
+
+---
+
+## Généré / archives
+
+Artefacts conservés pour référence, comparaison ou export.
 
 - [design-system-board.dynamic.html](./design-system-board.dynamic.html)
 - [design-system-board.html](./design-system-board.html)
@@ -50,11 +67,11 @@ Ce répertoire sépare volontairement :
 ## Gouvernance
 
 - [publication-governance.md](./publication-governance.md) décrit la frontière entre public, interne et généré.
-- Les fichiers de mémoire interne, de session et de backup restent exclus du hub public.
+- Les contenus internes restent disponibles dans le dépôt, mais sans lien depuis l’index public.
 
 ---
 
 ## Usage
 
 Ce README sert d’index de navigation publique.
-Pour les contenus d’exécution, les mémoires de session et les artefacts internes, se référer à la politique de publication.
+Pour les contenus internes, utiliser la recherche du dépôt ou les index dédiés hors de ce hub public.

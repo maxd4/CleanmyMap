@@ -310,14 +310,27 @@ export function EnvironmentalQuiz() {
   const [lastCheckResult, setLastCheckResult] = useState<boolean | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function init() {
-      const questionIds = QUIZ_QUESTIONS.map((q) => q.id);
-      const data = await loadQuizSRSData(user?.id || null, questionIds, getToken);
-      setSrsData(data);
-      setLoading(false);
+      try {
+        const questionIds = QUIZ_QUESTIONS.map((q) => q.id);
+        const data = await loadQuizSRSData(user?.id || null, questionIds, getToken);
+        if (cancelled) {
+          return;
+        }
+        setSrsData(data);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     }
 
     init();
+    return () => {
+      cancelled = true;
+    };
   }, [getToken, user?.id]);
 
   const filteredQuestions = useMemo(() => {

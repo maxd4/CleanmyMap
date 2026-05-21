@@ -260,8 +260,13 @@ export async function updatePartnerOnboardingRequestStatus(params: {
     return null;
   }
 
+  const current = store.records[index];
+  if (!current) {
+    return null;
+  }
+
   const updated: PartnerOnboardingRequestRecord = {
-    ...store.records[index],
+    ...current,
     status: params.status,
     creatorState:
       params.status === "accepted"
@@ -294,8 +299,13 @@ export async function updatePartnerOnboardingRequestCreatorState(params: {
     return null;
   }
 
+  const current = store.records[index];
+  if (!current) {
+    return null;
+  }
+
   const updated: PartnerOnboardingRequestRecord = {
-    ...store.records[index],
+    ...current,
     creatorState: params.creatorState,
   };
 

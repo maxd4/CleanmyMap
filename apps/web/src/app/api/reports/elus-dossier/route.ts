@@ -53,6 +53,29 @@ function buildDateFloor(daysWindow: number): string {
  return now.toISOString().slice(0, 10);
 }
 
+function toFiniteNumber(value: unknown): number {
+ const number = typeof value === "number" ? value : Number(value);
+ return Number.isFinite(number) ? number : 0;
+}
+
+function sumApprovedMetric<T>(
+ contracts: Array<T>,
+ selector: (contract: T) => unknown,
+): number {
+ return contracts.reduce((acc, contract) => acc + toFiniteNumber(selector(contract)), 0);
+}
+
+function countGeolocatedContracts<T extends {
+ location: { latitude: number | null; longitude: number | null };
+}>(contracts: Array<T>): number {
+ return contracts.reduce((count, contract) => {
+  if (contract.location.latitude === null || contract.location.longitude === null) {
+   return count;
+  }
+  return count + 1;
+ }, 0);
+}
+
 function buildDecisionPriorities(rows: TerritorialBenchmarkRow[]): Array<{
  area: string;
  urgency:"haute" |"moyenne" |"fond";
@@ -258,20 +281,13 @@ export async function GET(request: Request) {
  });
 
  const approved = scope.filter((contract) => contract.status ==="approved");
- const totalKg = approved.reduce(
- (acc, contract) => acc + Number(contract.metadata.wasteKg || 0),
- 0,
- );
+ const totalKg = sumApprovedMetric(approved, (contract) => contract.metadata.wasteKg);
  const totalActions = approved.length;
- const totalVolunteers = approved.reduce(
- (acc, contract) => acc + Number(contract.metadata.volunteersCount || 0),
- 0,
+ const totalVolunteers = sumApprovedMetric(
+  approved,
+  (contract) => contract.metadata.volunteersCount,
  );
- const geolocated = approved.filter(
- (contract) =>
- contract.location.latitude !== null &&
- contract.location.longitude !== null,
- ).length;
+ const geolocated = countGeolocatedContracts(approved);
 
  const comparison = computePeriodComparison(
  scope.map((contract) => ({

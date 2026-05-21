@@ -308,6 +308,6 @@ export function PlanetaryBoundariesInteractive() {
   );
 }
 
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(" ");
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter((value): value is string => Boolean(value)).join(" ");
 }

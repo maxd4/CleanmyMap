@@ -2,7 +2,7 @@
 
 ## Objet
 
-Ce document couvre le **Message 12** de `documentation/plans/ateliers_DU.md` :
+Ce document couvre le lot de mitigation du lock-in Vercel / Supabase :
 
 - mitigation du lock-in Vercel / Supabase ;
 - scripts d'export deja disponibles ;

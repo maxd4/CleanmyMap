@@ -1,11 +1,11 @@
 "use client";
 
-import { type ElementType, type FormEvent } from "react";
+import { type ElementType, type FormEvent, useState } from "react";
 import { ClipboardCheck, Download, History, Save, Sparkles, User } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { exportFormAsPdf } from "@/lib/actions/export-form-pdf";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { ActionDeclarationFormConfirmation } from "../action-declaration-form-confirmation";
+import { ActionDeclarationExportPicker } from "./action-declaration-export-picker";
 import { ActionDeclarationFormFeedback } from "../action-declaration-form.feedback";
 import { createInitialFormState } from "../action-declaration/payload";
 import { ActionStepHarvest } from "../action-declaration/ActionStepHarvest";
@@ -92,6 +92,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     handleIgnoreDraft,
     handleConfirmSubmit,
   } = useActionDeclarationForm(props);
+  const [isExportPickerOpen, setIsExportPickerOpen] = useState(false);
 
   const actClasses = getBlockClasses("act");
   const formattedDraftSavedAt = formatDraftDate(draftSavedAt);
@@ -114,6 +115,13 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
           isSubmitting={submissionState === "pending"}
         />
       ) : null}
+
+      <ActionDeclarationExportPicker
+        isOpen={isExportPickerOpen}
+        onClose={() => setIsExportPickerOpen(false)}
+        form={form}
+        actorName={resolvedDefaultActorName}
+      />
 
       <div
         className={cn(
@@ -290,7 +298,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                     <div className="flex justify-end pt-2">
                       <button
                         type="button"
-                        onClick={() => exportFormAsPdf(form, resolvedDefaultActorName)}
+                        onClick={() => setIsExportPickerOpen(true)}
                         className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-600 px-3 py-2 text-[11px] font-semibold text-white shadow-sm transition-all hover:border-emerald-500/30 hover:bg-emerald-500 hover:text-white"
                       >
                         <Download size={13} />

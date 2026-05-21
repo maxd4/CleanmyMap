@@ -9,6 +9,7 @@ import { parseParisArrondissement } from "@/lib/geo/paris-arrondissements";
 import { GreaterParisSelect } from "@/lib/geo/greater-paris-select";
 import {
   createGreaterParisMetadata,
+  createGreaterParisMetadataFromZoneName,
   extractGreaterParisLocationPreferenceFromMetadata,
 } from "@/lib/user-location-preference";
 import { getProfileLabel, getSwitchableProfiles, type AppProfile } from "@/lib/profiles";
@@ -149,34 +150,32 @@ export function AccountSetupForm({
         profileSetupCompleted: true,
       };
 
-      if (selectedZone && existingPref) {
-        const zonePrefs = createGreaterParisMetadata(
-          selectedZone,
-          existingPref.department,
-          existingPref.areaType,
-          locationType,
-        );
-        Object.assign(metadata, zonePrefs);
-      } else if (selectedZone) {
-        const parsedArr = parseParisArrondissement(arrondissement);
-        if (parsedArr) {
-          metadata["parisArrondissement"] = parsedArr;
-          metadata["parisLocationType"] = locationType;
-        }
+      const parsedArr = parseParisArrondissement(arrondissement);
+      const zoneMetadata =
+        selectedZone && existingPref
+          ? createGreaterParisMetadata(
+              selectedZone,
+              existingPref.department,
+              existingPref.areaType,
+              locationType,
+            )
+          : selectedZone
+          ? createGreaterParisMetadataFromZoneName(selectedZone, locationType)
+          : null;
+
+      if (zoneMetadata) {
+        Object.assign(metadata, zoneMetadata);
+      } else if (parsedArr) {
+        metadata["parisArrondissement"] = parsedArr;
+        metadata["parisLocationType"] = locationType;
       } else {
-        const parsedArr = parseParisArrondissement(arrondissement);
-        if (parsedArr) {
-          metadata["parisArrondissement"] = parsedArr;
-          metadata["parisLocationType"] = locationType;
-        } else {
-          setError(
-            toAppError("Sélectionnez une zone (arrondissement ou commune).", {
-              kind: "validation",
-              message: "Sélectionnez une zone (arrondissement ou commune).",
-            }),
-          );
-          return;
-        }
+        setError(
+          toAppError("Sélectionnez une zone (arrondissement ou commune).", {
+            kind: "validation",
+            message: "Sélectionnez une zone (arrondissement ou commune).",
+          }),
+        );
+        return;
       }
 
       await user.update({ unsafeMetadata: metadata });
@@ -333,10 +332,13 @@ export function AccountSetupForm({
           <GreaterParisSelect
             value={selectedZone || (arrondissement ? `${arrondissement}e arrondissement` : "")}
             onChange={(value) => {
-              setSelectedZone(value);
-              const arrNum = parseInt(value.replace(/er|e|ème|eme/g, "").replace("arrondissement", "").trim(), 10);
+              const nextZone = value.trim();
+              setSelectedZone(nextZone);
+              const arrNum = parseInt(nextZone.replace(/er|e|ème|eme/g, "").replace("arrondissement", "").trim(), 10);
               if (!isNaN(arrNum) && arrNum >= 1 && arrNum <= 20) {
                 setArrondissement(arrNum);
+              } else {
+                setArrondissement(0);
               }
             }}
             placeholder="Sélectionnez une zone..."

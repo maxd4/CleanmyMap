@@ -1,0 +1,153 @@
+import * as React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it } from "vitest";
+import { EnvironmentalImpactEstimatorPanel } from "./environmental-impact-estimator-panel";
+import { computeEnvironmentalImpactEstimate } from "@/lib/environmental-impact-estimator";
+
+describe("EnvironmentalImpactEstimatorPanel", () => {
+  it("renders the transparent estimator structure", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(EnvironmentalImpactEstimatorPanel, {
+        model: computeEnvironmentalImpactEstimate(),
+      }),
+    );
+
+    expect(markup).toContain("Estimateur d&#x27;impact environnemental");
+    expect(markup).toContain("Impact total du site au jour J");
+    expect(markup).toContain(
+      "Impact par utilisateur depuis la création du compte",
+    );
+    expect(markup).toContain("Pages vues");
+    expect(markup).toContain("Courbe temporelle");
+    expect(markup).toContain("Vercel");
+    expect(markup).toContain("Supabase");
+    expect(markup).toContain("Resend");
+    expect(markup).toContain("Nom de domaine LWS");
+    expect(markup).toContain("Notes de données manquantes");
+    expect(markup).toContain("Vercel - données directes non branchées");
+    expect(markup).toContain("Point hebdomadaire sélectionné");
+    expect(markup).toContain("Granularité");
+    expect(markup).toContain("Incertitude proxy");
+    expect(markup).toContain("Pages vues / mois");
+    expect(markup).toContain("Croissance mensuelle");
+    expect(markup).toContain("Aucune source n&#x27;est encore branchée");
+    expect(markup).toContain("Structure prête pour le rapport d&#x27;impact IA");
+  });
+
+  it("renders project signals and snapshot history when provided", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(EnvironmentalImpactEstimatorPanel, {
+        model: computeEnvironmentalImpactEstimate(),
+        signals: {
+          generatedAt: "2026-05-20T12:00:00.000Z",
+          launchedAt: "2025-05-20T12:00:00.000Z",
+          accountCreatedAt: "2026-04-20T12:00:00.000Z",
+          userId: "user_1",
+          periodDays: 30,
+          recentWindowDays: 30,
+          siteInput: {},
+          userInput: {},
+          infrastructureInput: {
+            launchedAt: "2025-05-20T12:00:00.000Z",
+            referencePeriodMonths: 12,
+            usage: {
+              monthlyPageViews: 1,
+              monthlyActiveUsers: 1,
+              monthlySessions: 1,
+              monthlyEmailsSent: 1,
+              monthlyDeployments: 1,
+              monthlyPdfExports: 1,
+              monthlyMapViews: 1,
+              monthlyAiCalls: 1,
+              monthlyStorageGbMonths: 1,
+              monthlyApiRequests: 1,
+              monthlyAuthEvents: 1,
+              monthlyRealtimeEvents: 1,
+              monthlyEgressGb: 1,
+              monthlyBandwidthGb: 1,
+              monthlyErrorEvents: 1,
+              growthRateMonthly: 0.05,
+              seasonalityAmplitude: 0.08,
+              horizonMonths: 12,
+            },
+          },
+          highlights: [
+            {
+              label: "Pages vues CleanMyMap",
+              value: 12,
+              detail: "Signal direct",
+              basis: "all_time",
+            },
+            {
+              label: "Emails Resend",
+              value: 4,
+              detail: "Historique des envois",
+              basis: "recent",
+            },
+          ],
+          notes: ["Données projet CleanMyMap."],
+        },
+        snapshots: [
+          {
+            id: "snapshot-1",
+            snapshotKey: "cleanmymap-project",
+            snapshotDate: "2026-05-20",
+            generatedAt: "2026-05-20T12:00:00.000Z",
+            version: "environmental-impact-estimator-2026.05-v1",
+            totalKgCo2eProxy: 12.34,
+            monthlyKgCo2eProxy: 1.23,
+            annualKgCo2eProxy: 14.76,
+            confidencePercent: 82,
+            uncertaintyPercent: 18,
+            launchedAt: "2025-05-20T12:00:00.000Z",
+            accountCreatedAt: "2026-04-20T12:00:00.000Z",
+            model: computeEnvironmentalImpactEstimate(),
+            signals: {
+              generatedAt: "2026-05-20T12:00:00.000Z",
+              launchedAt: "2025-05-20T12:00:00.000Z",
+              accountCreatedAt: "2026-04-20T12:00:00.000Z",
+              userId: "user_1",
+              periodDays: 30,
+              recentWindowDays: 30,
+              siteInput: {},
+              userInput: {},
+              infrastructureInput: {
+                launchedAt: "2025-05-20T12:00:00.000Z",
+                referencePeriodMonths: 12,
+                usage: {
+                  monthlyPageViews: 1,
+                  monthlyActiveUsers: 1,
+                  monthlySessions: 1,
+                  monthlyEmailsSent: 1,
+                  monthlyDeployments: 1,
+                  monthlyPdfExports: 1,
+                  monthlyMapViews: 1,
+                  monthlyAiCalls: 1,
+                  monthlyStorageGbMonths: 1,
+                  monthlyApiRequests: 1,
+                  monthlyAuthEvents: 1,
+                  monthlyRealtimeEvents: 1,
+                  monthlyEgressGb: 1,
+                  monthlyBandwidthGb: 1,
+                  monthlyErrorEvents: 1,
+                  growthRateMonthly: 0.05,
+                  seasonalityAmplitude: 0.08,
+                  horizonMonths: 12,
+                },
+              },
+              highlights: [],
+              notes: ["Données projet CleanMyMap."],
+            },
+          },
+        ],
+      }),
+    );
+
+    expect(markup).toContain("Signaux projet CleanMyMap");
+    expect(markup).toContain("Données réellement branchées dans le calcul");
+    expect(markup).toContain("Notes de données manquantes");
+    expect(markup).toContain("Historique Supabase");
+    expect(markup).toContain("Pages vues CleanMyMap");
+    expect(markup).toContain("Snapshots enregistrés du calculateur");
+  });
+});

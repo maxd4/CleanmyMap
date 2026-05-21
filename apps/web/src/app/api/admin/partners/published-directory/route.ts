@@ -153,6 +153,7 @@ export async function POST(request: Request) {
   }).catch(() => undefined);
 
   await sendCreatorInboxEmail({
+    actorUserId: access.userId,
     subject: `[CleanMyMap] Revue partenaire - ${updated.name}`,
     title: "Statut partenaire mis à jour",
     intro: "La revue partenaire a été traitée depuis le back-office.",

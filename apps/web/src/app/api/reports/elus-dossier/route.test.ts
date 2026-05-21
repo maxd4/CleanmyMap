@@ -130,4 +130,33 @@ describe("GET /api/reports/elus-dossier", () => {
     );
     expect(pdfResponse.headers.get("X-Deliverable-Format")).toBe("pdf");
   });
+
+  it("sanitizes malformed numeric fields in JSON output", async () => {
+    fetchUnifiedActionContractsMock.mockResolvedValueOnce({
+      items: [
+        {
+          ...contract,
+          metadata: { wasteKg: "12.5kg", volunteersCount: "4" },
+          location: { label: "Paris", latitude: null, longitude: null },
+        },
+      ],
+      isTruncated: false,
+    });
+
+    const { GET } = await import("./route");
+    const response = await GET(
+      new Request("http://localhost/api/reports/elus-dossier"),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toContain("application/json");
+
+    const body = (await response.json()) as {
+      summary: { totalKg: number; totalVolunteers: number; geocoverageRate: number };
+    };
+
+    expect(body.summary.totalKg).toBe(0);
+    expect(body.summary.totalVolunteers).toBe(4);
+    expect(body.summary.geocoverageRate).toBe(0);
+  });
 });

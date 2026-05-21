@@ -89,17 +89,17 @@ Pour la home, l’explorer et les blocs :
 
 ---
 
-## Documents historiques ou de compatibilité
+## Documents historiques
 
-- `design-system-legacy.md` : ancien agrégat, conservé uniquement pour référence.
-- `THEME_SOMBRE_DOUCE.md` : héritage visuel, utile pour comprendre la transition, pas une règle unique.
+- Les anciennes notes de transition du design system ont été retirées au profit du canon actuel.
+- L’historique détaillé reste accessible dans le journal de session si un besoin de traçabilité apparaît.
 
 ---
 
 ## Hors du dossier design-system
 
 - `../ai-guides/standards-visuels.md` : standards de visuels de documentation.
-- `../plans/feedback-ruban-plan.md` : plan de travail ponctuel, pas une source de vérité UI.
+- Les plans de travail ponctuels sont traités comme des artefacts temporaires, pas comme une source de vérité UI.
 
 ---
 

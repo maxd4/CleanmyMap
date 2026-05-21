@@ -1,4 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/storage-usage",
+      "schedule": "0 3 1 * *"
+    },
+    {
+      "path": "/api/cron/environmental-impact",
+      "schedule": "0 3 * * *"
+    }
+  ],
   "ignoreCommand": "node -e \"process.exit((process.env.VERCEL_GIT_COMMIT_REF || '').startsWith('dependabot/') ? 0 : 1)\""
 }

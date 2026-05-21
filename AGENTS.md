@@ -40,3 +40,7 @@ Sans cet accord, utiliser uniquement la branche courante et les fichiers du doss
 - Les fichiers temporaires, captures, logs, exports et artefacts de debug doivent aller dans `artifacts/`, `documentation/`, `backups/` ou un sous-dossier dedie.
 - Si un fichier doit absolument vivre a la racine, il faut que ce soit un fichier d'architecture du projet ou un livrable racine clairement justifie.
 - Tout fichier racine ajoute sans demande explicite doit etre considere comme une regression de gouvernance et etre nettoye avant validation.
+
+## Règle Markdown et Quarto
+
+- Ne jamais mettre de numéros de section ou de titre en dur (ex: `1.`, `## 2.`) dans les fichiers Markdown destinés à l'export. Ces numéros sont générés automatiquement par Quarto lors de l'export. Utilisez uniquement la hiérarchie standard (`#`, `##`, `###`).

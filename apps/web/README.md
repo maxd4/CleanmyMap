@@ -36,6 +36,8 @@ Recommended for production:
 - `SENTRY_DSN`
 - `SENTRY_ORG`
 - `SENTRY_PROJECT`
+- `SUPABASE_STORAGE_QUOTA_GB` or `SUPABASE_STORAGE_QUOTA_BYTES` to override the storage quota used by the Supabase monitoring panel (`1 GB` default)
+- `CRON_SECRET` to secure Vercel Cron invocations for `/api/cron/storage-usage`
 - `NEXT_PUBLIC_POSTHOG_KEY`
 - `NEXT_PUBLIC_POSTHOG_HOST`
 - `NEXT_PUBLIC_POSTHOG_REGION` (`eu` by default, `us` if your PostHog project is in US)
@@ -119,6 +121,10 @@ npm run data:cleanup:supabase
   - returns `503` when required backend config or Supabase connectivity is missing
 - `GET /api/services`
   - service-by-service status (`ready`, `missing`, `defer`, `external`)
+- `GET /api/admin/storage-usage`
+  - admin-only Supabase storage quota monitor
+  - captures a monthly snapshot in `supabase_storage_usage_snapshots`
+  - reports current usage, remaining capacity, bucket breakdowns, file types, and month-over-month growth
 
 ## Supabase advisors without Docker Desktop
 

@@ -62,6 +62,7 @@ Ce cadre poursuit deux objectifs. D'abord, montrer un impact reel des ateliers s
 | 13/05/26 | **Audit des Écarts (Roadmap vs Réalité)** | Identification technique des manquements (Campagnes, Qualité de donnée) pour prioriser les futurs sprints. |
 | 13/05/26 | **Reporting qualité CI/CD orienté pilotage** | Création de `scripts/cicd-metrics-report.mjs` et de `documentation/maintenance/ci-cd-metrics-report.md` pour suivre les runs GitHub Actions, le cache et les déploiements Vercel dans une logique de mesure continue. |
 | 13/05/26 | **Audit exécutable des messages Ateliers DU** | Formalisation de `documentation/plans/ateliers_DU_execution_rapide.md` pour distinguer les lots déjà absorbés, les écarts encore ouverts et l'ordre d'attaque réaliste. |
+| 20/05/26 | **Socle d'estimateur d'impact environnemental** | Mise en place de l'architecture du calcul transparent pour le site et l'utilisateur, avec postes visibles, hypothèses versionnées et panneau UI prêt à brancher dans le rapport d'impact IA. |
 
 ---
 

@@ -164,7 +164,7 @@ export function ElusSection() {
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as "overview" | "zones" | "methods")}
                   className={cn(
                     "flex items-center gap-3 px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500",
                     activeTab === tab.id 
