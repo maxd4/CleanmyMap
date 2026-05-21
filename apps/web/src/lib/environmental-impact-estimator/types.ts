@@ -62,6 +62,8 @@ export type EnvironmentalImpactInfrastructureServiceKey =
   | "vercel"
   | "supabase"
   | "resend"
+  | "chatgpt"
+  | "codex"
   | "clerk"
   | "posthog"
   | "sentry"
@@ -71,6 +73,20 @@ export type EnvironmentalImpactInfrastructureServiceKey =
   | "lwsDomain";
 
 export type EnvironmentalImpactGraphGranularity = "day" | "week" | "month";
+
+export type EnvironmentalImpactCurveDriverKey =
+  | "pageView"
+  | "community"
+  | "notifications"
+  | "actions"
+  | "pdf"
+  | "ia"
+  | "codex";
+
+export type EnvironmentalImpactCurveDriverBreakdown = Record<
+  EnvironmentalImpactCurveDriverKey,
+  number
+>;
 
 export type EnvironmentalImpactInfrastructureMetricKey =
   | "vercelPageViews"
@@ -84,6 +100,15 @@ export type EnvironmentalImpactInfrastructureMetricKey =
   | "supabaseEgressGb"
   | "resendEmailsSent"
   | "resendBatchRequests"
+  | "chatgptConversationHours"
+  | "codexSessions"
+  | "codexConversationTurns"
+  | "codexToolActions"
+  | "codexShellCommands"
+  | "codexFilesTouched"
+  | "codexTestsRun"
+  | "codexChangedLines"
+  | "codexActiveMinutes"
   | "clerkAuthEvents"
   | "clerkSessionRefreshes"
   | "posthogEvents"
@@ -107,6 +132,15 @@ export type EnvironmentalImpactUsageProfileInput = {
   monthlyPdfExports?: number | null;
   monthlyMapViews?: number | null;
   monthlyAiCalls?: number | null;
+  monthlyChatgptConversationHours?: number | null;
+  monthlyCodexSessions?: number | null;
+  monthlyCodexConversationTurns?: number | null;
+  monthlyCodexToolActions?: number | null;
+  monthlyCodexShellCommands?: number | null;
+  monthlyCodexFilesTouched?: number | null;
+  monthlyCodexTestsRun?: number | null;
+  monthlyCodexChangedLines?: number | null;
+  monthlyCodexActiveMinutes?: number | null;
   monthlyStorageGbMonths?: number | null;
   monthlyApiRequests?: number | null;
   monthlyAuthEvents?: number | null;
@@ -167,6 +201,109 @@ export type EnvironmentalImpactInfrastructureServiceEstimate = {
   metricEstimates: EnvironmentalImpactInfrastructureMetricEstimate[];
 };
 
+export type EnvironmentalImpactSecondOrderFactorKey =
+  | "grossCo2"
+  | "electricity"
+  | "otherGhgs"
+  | "chemicals"
+  | "water";
+
+export type EnvironmentalImpactSecondOrderFactorDefinition = {
+  key: EnvironmentalImpactSecondOrderFactorKey;
+  label: string;
+  unitLabel: string;
+  proxyKgCo2ePerUnit: number;
+  referenceWeight: number;
+  rationale: string;
+};
+
+export type EnvironmentalImpactSecondOrderFactorEstimate =
+  EnvironmentalImpactSecondOrderFactorDefinition & {
+    quantity: number | null;
+    estimatedKgCo2eProxy: number | null;
+    sharePercent: number;
+    source: "input" | "derived" | "reference" | "mixed";
+  };
+
+export type EnvironmentalImpactSecondOrderEstimate = {
+  totalKgCo2eProxy: number | null;
+  factorEstimates: EnvironmentalImpactSecondOrderFactorEstimate[];
+  notes: string[];
+  hypotheses: string[];
+  source: "inferred" | "mixed" | "reference";
+};
+
+export type EnvironmentalImpactLifecycleAxisKey =
+  | "energy"
+  | "carbon"
+  | "water"
+  | "materials"
+  | "ewaste";
+
+export type EnvironmentalImpactLifecycleComponentKey =
+  | "servers"
+  | "gpus"
+  | "userDevices"
+  | "networks"
+  | "storage"
+  | "maintenance"
+  | "renewal"
+  | "endOfLife";
+
+export type EnvironmentalImpactLifecycleAxisDefinition = {
+  key: EnvironmentalImpactLifecycleAxisKey;
+  label: string;
+  unitLabel: string;
+  proxyKgCo2ePerUnit: number;
+  referenceWeight: number;
+  rationale: string;
+};
+
+export type EnvironmentalImpactLifecycleComponentDefinition = {
+  key: EnvironmentalImpactLifecycleComponentKey;
+  label: string;
+  description: string;
+  unitLabel: string;
+  proxyKgCo2ePerUnit: number;
+  referenceWeight: number;
+  rationale: string;
+};
+
+export type EnvironmentalImpactLifecycleAxisEstimate =
+  EnvironmentalImpactLifecycleAxisDefinition & {
+    quantity: number | null;
+    estimatedKgCo2eProxy: number | null;
+    sharePercent: number;
+    source: "input" | "derived" | "reference" | "mixed";
+  };
+
+export type EnvironmentalImpactLifecycleComponentEstimate =
+  EnvironmentalImpactLifecycleComponentDefinition & {
+    quantity: number | null;
+    estimatedKgCo2eProxy: number | null;
+    sharePercent: number;
+    source: "input" | "derived" | "reference" | "mixed";
+  };
+
+export type EnvironmentalImpactLifecycleEstimate = {
+  totalKgCo2eProxy: number | null;
+  axisEstimates: EnvironmentalImpactLifecycleAxisEstimate[];
+  componentEstimates: EnvironmentalImpactLifecycleComponentEstimate[];
+  notes: string[];
+  hypotheses: string[];
+  source: "inferred" | "mixed" | "reference";
+};
+
+export type EnvironmentalImpactProjectAnchor = {
+  key: string;
+  label: string;
+  description: string;
+  kWhEquivalent: number | null;
+  kgCo2eProxy: number | null;
+  waterLitersEquivalent: number | null;
+  comparisonNote: string;
+};
+
 export type EnvironmentalImpactUsageProfileEstimate = {
   monthlyPageViews: number;
   monthlyActiveUsers: number;
@@ -176,6 +313,15 @@ export type EnvironmentalImpactUsageProfileEstimate = {
   monthlyPdfExports: number;
   monthlyMapViews: number;
   monthlyAiCalls: number;
+  monthlyChatgptConversationHours: number;
+  monthlyCodexSessions: number;
+  monthlyCodexConversationTurns: number;
+  monthlyCodexToolActions: number;
+  monthlyCodexShellCommands: number;
+  monthlyCodexFilesTouched: number;
+  monthlyCodexTestsRun: number;
+  monthlyCodexChangedLines: number;
+  monthlyCodexActiveMinutes: number;
   monthlyStorageGbMonths: number;
   monthlyApiRequests: number;
   monthlyAuthEvents: number;
@@ -194,12 +340,26 @@ export type EnvironmentalImpactInfrastructureCurvePoint = {
   index: number;
   monthLabel: string;
   date: string;
+  weeklyKgCo2eProxy: number;
   monthlyKgCo2eProxy: number;
   cumulativeKgCo2eProxy: number;
   lowerKgCo2eProxy: number;
   upperKgCo2eProxy: number;
   confidencePercent: number;
   breakdown: Partial<Record<EnvironmentalImpactInfrastructureServiceKey, number>>;
+};
+
+export type EnvironmentalImpactScopeCurvePoint = {
+  index: number;
+  weekLabel: string;
+  date: string;
+  weeklyKgCo2eProxy: number;
+  cumulativeKgCo2eProxy: number;
+  lowerKgCo2eProxy: number;
+  upperKgCo2eProxy: number;
+  confidencePercent: number;
+  breakdown: Partial<Record<EnvironmentalImpactPostKey, number>>;
+  driverBreakdown: EnvironmentalImpactCurveDriverBreakdown;
 };
 
 export type EnvironmentalImpactGraphEstimate = {
@@ -228,8 +388,88 @@ export type EnvironmentalImpactInfrastructureEstimate = {
   services: EnvironmentalImpactInfrastructureServiceEstimate[];
   curve: EnvironmentalImpactInfrastructureCurvePoint[];
   graph: EnvironmentalImpactGraphEstimate;
+  secondOrder: EnvironmentalImpactSecondOrderEstimate;
   hypotheses: string[];
   notes: string[];
+};
+
+export type EnvironmentalImpactCodexUsageSource =
+  | "manual"
+  | "imported"
+  | "reconstructed";
+
+export type EnvironmentalImpactCodexUsageWeeklyInput = {
+  weekStart?: string | null;
+  weekEnd?: string | null;
+  sessionCount?: number | null;
+  conversationCount?: number | null;
+  turnCount?: number | null;
+  toolCallCount?: number | null;
+  shellCommandCount?: number | null;
+  fileTouchCount?: number | null;
+  testRunCount?: number | null;
+  changedLineCount?: number | null;
+  activeMinutes?: number | null;
+  source?: EnvironmentalImpactCodexUsageSource | null;
+  notes?: string[] | null;
+  meta?: Record<string, unknown> | null;
+};
+
+export type EnvironmentalImpactCodexUsageWeeklySnapshotRecord = {
+  id: string;
+  snapshotKey: string;
+  weekStart: string;
+  weekEnd: string;
+  generatedAt: string;
+  version: string;
+  source: EnvironmentalImpactCodexUsageSource;
+  sessionCount: number;
+  conversationCount: number;
+  turnCount: number;
+  toolCallCount: number;
+  shellCommandCount: number;
+  fileTouchCount: number;
+  testRunCount: number;
+  changedLineCount: number;
+  activeMinutes: number;
+  estimatedKgCo2eProxy: number;
+  confidencePercent: number;
+  uncertaintyPercent: number;
+  notes: string[];
+  meta: Record<string, unknown>;
+};
+
+export type EnvironmentalImpactCodexUsageMonthlyEstimate = {
+  generatedAt: string;
+  windowWeeks: number;
+  source: "empty" | "manual" | "imported" | "reconstructed" | "mixed";
+  weekCount: number;
+  sessionCount: number;
+  conversationCount: number;
+  turnCount: number;
+  toolCallCount: number;
+  shellCommandCount: number;
+  fileTouchCount: number;
+  testRunCount: number;
+  changedLineCount: number;
+  activeMinutes: number;
+  monthlyEquivalent: {
+    sessionCount: number;
+    conversationCount: number;
+    turnCount: number;
+    toolCallCount: number;
+    shellCommandCount: number;
+    fileTouchCount: number;
+    testRunCount: number;
+    changedLineCount: number;
+    activeMinutes: number;
+    estimatedKgCo2eProxy: number;
+  };
+  estimatedKgCo2eProxy: number;
+  confidencePercent: number;
+  uncertaintyPercent: number;
+  notes: string[];
+  weeklySnapshots: EnvironmentalImpactCodexUsageWeeklySnapshotRecord[];
 };
 
 export type EnvironmentalImpactScopeEstimate = {
@@ -244,6 +484,7 @@ export type EnvironmentalImpactScopeEstimate = {
   missingPostCount: number;
   coveragePercent: number;
   posts: EnvironmentalImpactPostEstimate[];
+  curve: EnvironmentalImpactScopeCurvePoint[];
 };
 
 export type EnvironmentalImpactEstimatorMethodology = {
@@ -251,6 +492,7 @@ export type EnvironmentalImpactEstimatorMethodology = {
   generatedAt: string;
   hypotheses: string[];
   limitations: string[];
+  projectAnchors: EnvironmentalImpactProjectAnchor[];
   notes: string[];
 };
 
@@ -263,6 +505,7 @@ export type EnvironmentalImpactEstimateModel = {
   site: EnvironmentalImpactScopeEstimate;
   user: EnvironmentalImpactScopeEstimate;
   infrastructure: EnvironmentalImpactInfrastructureEstimate;
+  lifecycle: EnvironmentalImpactLifecycleEstimate;
 };
 
 export type EnvironmentalImpactDataGapNote = {
@@ -280,6 +523,34 @@ export type EnvironmentalImpactProjectSignal = {
   basis: "all_time" | "recent" | "derived";
 };
 
+export type EnvironmentalImpactProjectTrafficSignalBreakdown = {
+  pageViewEvents: number;
+  legacyPageViewEvents: number;
+  distinctRoutes: number;
+  topRoutes: Array<{
+    path: string;
+    count: number;
+  }>;
+};
+
+export type EnvironmentalImpactProjectCommunitySignalBreakdown = {
+  events: number;
+  rsvps: number;
+  notifications: number;
+  unreadNotifications: number;
+};
+
+export type EnvironmentalImpactProjectCommunicationSignalBreakdown = {
+  emailsSent: number;
+  pdfExports: number;
+};
+
+export type EnvironmentalImpactProjectSignalBreakdown = {
+  traffic: EnvironmentalImpactProjectTrafficSignalBreakdown;
+  community: EnvironmentalImpactProjectCommunitySignalBreakdown;
+  communication: EnvironmentalImpactProjectCommunicationSignalBreakdown;
+};
+
 export type EnvironmentalImpactProjectSignals = {
   generatedAt: string;
   launchedAt: string | null;
@@ -290,6 +561,8 @@ export type EnvironmentalImpactProjectSignals = {
   siteInput: EnvironmentalImpactScopeInput;
   userInput: EnvironmentalImpactScopeInput;
   infrastructureInput: EnvironmentalImpactInfrastructureInput;
+  codexUsage: EnvironmentalImpactCodexUsageMonthlyEstimate | null;
+  signalBreakdown?: EnvironmentalImpactProjectSignalBreakdown;
   highlights: EnvironmentalImpactProjectSignal[];
   notes: string[];
 };
@@ -303,6 +576,8 @@ export type EnvironmentalImpactSnapshotRecord = {
   totalKgCo2eProxy: number | null;
   monthlyKgCo2eProxy: number | null;
   annualKgCo2eProxy: number | null;
+  siteKgCo2eProxy: number | null;
+  userKgCo2eProxy: number | null;
   confidencePercent: number;
   uncertaintyPercent: number;
   launchedAt: string | null;

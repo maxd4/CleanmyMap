@@ -21,6 +21,12 @@ Guide de travail pour corriger des warnings ESLint sans introduire de régressio
 | `react-hooks/set-state-in-effect` | État calculable sans effet | Calculer pendant le rendu ou initialiser l'état | Déplacer un calcul pur dans `useEffect` |
 | `react-hooks/exhaustive-deps` | Dépendance oubliée | Ajouter la dépendance ou restructurer la logique | Retirer la dépendance pour faire taire le warning |
 | `@typescript-eslint/no-explicit-any` | Type inconnu ou contournement rapide | `unknown`, interface, union, garde de type | Convertir le `any` en cast aveugle |
+| `@typescript-eslint/no-unnecessary-type-assertion` | Cast superflu | Supprimer le cast ou prouver la forme plus tôt | Garder un `as` décoratif |
+| `@typescript-eslint/no-unsafe-member-access` | Accès dynamique non normalisé | Normaliser l'objet en amont ou typer la source | Laisser des accès partout dans la logique métier |
+| `@typescript-eslint/no-unsafe-assignment` | Donnée brute propagée | Valider puis convertir dans un type nommé | Diffuser un payload inconnu dans le composant |
+| `@typescript-eslint/no-unsafe-return` | Valeur non normalisée renvoyée | Retourner un type précis ou `null` | Faire remonter le flou vers l'appelant |
+| `@typescript-eslint/no-unsafe-call` | Appel sur valeur inconnue | Vérifier le contrat avant appel | Forcer l'appel par cast |
+| `@typescript-eslint/no-unsafe-argument` | Argument brut passé plus loin | Normaliser l'argument au bord du système | Reporter l'absence de type au callee |
 | `@typescript-eslint/no-unused-vars` | Code mort | Supprimer l'import ou la variable | Laisser le code commenté |
 | `react/no-unescaped-entities` | Texte JSX brut | `&apos;`, `&quot;` ou template string | Ignorer l'erreur |
 | `@next/next/no-img-element` | Image non optimisée | `next/image` | Garder `<img>` sans justification |
@@ -39,6 +45,9 @@ Guide de travail pour corriger des warnings ESLint sans introduire de régressio
 ### Phase B - Corriger La Logique
 
 - Remplacer les `any` par des types précis.
+- Remplacer les casts décoratifs par des helpers de validation ou des parseurs métiers.
+- Réserver `Record<string, unknown>` aux frontières externes et normaliser immédiatement ensuite.
+- Normaliser les accès dynamiques dans des helpers dédiés avant de propager les données.
 - Remonter les calculs purs hors des effets.
 - Ajouter les dépendances manquantes ou extraire la logique vers un utilitaire.
 

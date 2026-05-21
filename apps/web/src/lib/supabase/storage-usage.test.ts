@@ -18,9 +18,9 @@ const quotaInfo: StorageQuotaInfo = {
 
 const sampleObjects: StorageUsageObjectRow[] = [
   {
-    bucket_id: "action-photos",
-    name: "action-1/photo-1.jpg",
-    metadata: { size: 2_000, mimetype: "image/jpeg" },
+    bucket_id: "prints",
+    name: "reports/rapport-mensuel.pdf",
+    metadata: { size: 500, mimetype: "application/pdf" },
   },
   {
     bucket_id: "chat-attachments",
@@ -28,9 +28,14 @@ const sampleObjects: StorageUsageObjectRow[] = [
     metadata: { size: 3_000, mimetype: "application/pdf" },
   },
   {
+    bucket_id: "action-photos",
+    name: "action-1/photo-1.jpg",
+    metadata: { size: 2_000, mimetype: "image/jpeg" },
+  },
+  {
     bucket_id: "mission-assets",
     name: "mission-99/video.mp4",
-    metadata: { size: 5_000, mimetype: "video/mp4" },
+    metadata: { size: 4_500, mimetype: "video/mp4" },
   },
 ];
 
@@ -48,11 +53,15 @@ describe("storage usage monitoring", () => {
     expect(snapshot.totalBytes).toBe(10_000);
     expect(snapshot.remainingBytes).toBe(0);
     expect(snapshot.usagePercent).toBe(100);
-    expect(snapshot.objectCount).toBe(3);
+    expect(snapshot.objectCount).toBe(4);
     expect(snapshot.bucketBreakdown[0]?.label).toBe("mission-assets");
-    expect(snapshot.businessBreakdown[0]?.label).toContain("Missions");
+    expect(snapshot.businessBreakdown[0]?.label).toBe("Actions terrain");
+    expect(snapshot.businessBreakdown[1]?.label).toBe("Pièces jointes document");
+    expect(snapshot.businessBreakdown[2]?.label).toBe("Pièces jointes photo");
+    expect(snapshot.businessBreakdown[3]?.label).toBe("Socle d’estimateur d’impact");
     expect(snapshot.extensionBreakdown[0]?.label).toBe("Vidéo");
     expect(snapshot.largestFiles[0]?.name).toBe("mission-99/video.mp4");
+    expect(snapshot.largestFiles[0]?.businessLabel).toBe("Actions terrain");
     expect(snapshot.warnings).toContain("Le quota Supabase Storage est dépassé.");
   });
 
@@ -68,19 +77,21 @@ describe("storage usage monitoring", () => {
       remainingLabel: "2.93 KB",
       usagePercent: 70,
       bucketBreakdown: [
-        { key: "action-photos", label: "action-photos", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
+        { key: "mission-assets", label: "mission-assets", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
         { key: "chat-attachments", label: "chat-attachments", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
-        { key: "mission-assets", label: "mission-assets", bytes: 3_000, count: 1, sharePercent: 42.86, averageBytes: 3_000 },
+        { key: "action-photos", label: "action-photos", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
+        { key: "prints", label: "prints", bytes: 1_000, count: 1, sharePercent: 14.29, averageBytes: 1_000 },
       ],
       extensionBreakdown: [
+        { key: "mp4", label: "Vidéo", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
+        { key: "pdf", label: "Document", bytes: 3_000, count: 1, sharePercent: 42.86, averageBytes: 3_000 },
         { key: "jpg", label: "Image", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
-        { key: "pdf", label: "Document", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
-        { key: "mp4", label: "Vidéo", bytes: 3_000, count: 1, sharePercent: 42.86, averageBytes: 3_000 },
       ],
       businessBreakdown: [
-        { key: "action-photos", label: "Terrain · photos d'actions", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
-        { key: "chat-attachments", label: "Messagerie · pièces jointes", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
-        { key: "mission-assets", label: "Missions · médias", bytes: 3_000, count: 1, sharePercent: 42.86, averageBytes: 3_000 },
+        { key: "actions_terrain", label: "Actions terrain", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
+        { key: "pieces_jointes_document", label: "Pièces jointes document", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
+        { key: "pieces_jointes_photo", label: "Pièces jointes photo", bytes: 2_000, count: 1, sharePercent: 28.57, averageBytes: 2_000 },
+        { key: "socle_estimateur_impact", label: "Socle d’estimateur d’impact", bytes: 1_000, count: 1, sharePercent: 14.29, averageBytes: 1_000 },
       ],
       largestFiles: current.largestFiles,
       source: current.source,

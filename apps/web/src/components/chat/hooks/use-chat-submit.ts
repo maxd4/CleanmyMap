@@ -10,6 +10,7 @@ import {
 } from "@/lib/chat/chat-attachments";
 import type { ChatMessage, ChatUser } from "../chat-types";
 import type { ChatChannelType } from "@/lib/chat/channels";
+import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
 
 type UseChatSubmitParams = {
   submitLockRef: React.MutableRefObject<boolean>;
@@ -106,13 +107,31 @@ export function useChatSubmit({
                 quality: 0.8,
               })
             : file;
+          const inferredAttachmentType = inferChatAttachmentType(preparedFile);
           const fileExt = inferChatAttachmentExtension(preparedFile) ?? "bin";
           const fileName = `${userId}-${Math.random().toString(36).slice(2)}.${fileExt}`;
           const filePath = `${activeChannelType}/${fileName}`;
+          const attachmentMimeType =
+            inferredAttachmentType ?? preparedFile.type ?? file.type ?? null;
+          const businessDomain = inferredAttachmentType?.startsWith("image/")
+            ? "pieces_jointes_photo"
+            : inferredAttachmentType
+              ? "pieces_jointes_document"
+              : "messages";
 
           const { error: uploadError } = await supabase.storage
             .from("chat-attachments")
-            .upload(filePath, preparedFile);
+            .upload(filePath, preparedFile, {
+              metadata: buildStorageBusinessMetadata({
+                businessDomain,
+                sourceTable: "messages",
+                businessContext: "chat_attachment",
+                extra: {
+                  channelType: activeChannelType,
+                  attachmentType: attachmentMimeType,
+                },
+              }),
+            });
 
           if (uploadError) {
             throw uploadError;
@@ -123,7 +142,6 @@ export function useChatSubmit({
           } = supabase.storage.from("chat-attachments").getPublicUrl(filePath);
 
           attachmentUrl = publicUrl;
-          const inferredAttachmentType = inferChatAttachmentType(preparedFile);
           attachmentType = inferredAttachmentType ?? (preparedFile.type || file.type || undefined);
         } catch (uploadError) {
           const appError = isAppError(uploadError)

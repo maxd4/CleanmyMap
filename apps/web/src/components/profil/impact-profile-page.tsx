@@ -18,8 +18,9 @@ import {
 } from "@/lib/account/current-account-identity";
 import {
   computeEnvironmentalImpactEstimate,
-  type EnvironmentalImpactDashboardResponse,
-} from "@/lib/environmental-impact-estimator";
+} from "@/lib/environmental-impact-estimator/service";
+import { ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS } from "@/lib/environmental-impact-estimator/constants";
+import type { EnvironmentalImpactDashboardResponse } from "@/lib/environmental-impact-estimator/types";
 
 type ImpactPageProgression = {
   currentLevel: number;
@@ -196,12 +197,12 @@ export default function ImpactProfilePage() {
 
       <div className="grid grid-cols-1 items-start gap-12 xl:grid-cols-[minmax(340px,420px)_minmax(0,1fr)]">
         <div className="sticky top-24 flex justify-center">
-            <ImpactCard
-              userName={
-                currentAccountIdentity?.displayName ||
-                currentAccountIdentity?.username ||
-                "Contributeur anonyme"
-              }
+          <ImpactCard
+            userName={
+              currentAccountIdentity?.displayName ||
+              currentAccountIdentity?.username ||
+              "Contributeur anonyme"
+            }
             level={prog?.currentLevel || 1}
             rank={prog?.dynamicRanking?.rank ?? null}
             totalKg={prog?.impact?.wasteKg || 0}
@@ -212,14 +213,27 @@ export default function ImpactProfilePage() {
         </div>
 
         <div className="space-y-10">
-          <div className="space-y-4">
-            <h2 className="text-5xl font-black tracking-tighter text-white leading-[0.9]">
-              Votre impact <br />
-              <span className="text-red-500">en temps réel.</span>
-            </h2>
-            <p className="max-w-xl text-lg leading-relaxed text-red-100/40">
-              Générez une carte haute fidélité qui résume vos actions validées sur le terrain, votre niveau d&apos;expertise et vos distinctions.
-            </p>
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-600">
+              <span className="rounded-full border border-red-500/15 bg-red-500/8 px-3 py-1 text-red-700">
+                Carte d&apos;impact personnelle
+              </span>
+              <span className="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-slate-500">
+                Exportable et partageable
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="max-w-3xl text-4xl font-black tracking-tighter text-slate-950 sm:text-5xl xl:text-[3.5rem] xl:leading-[0.95]">
+                Votre impact en temps réel
+                <span className="block text-red-600">sans perdre la lisibilité.</span>
+              </h2>
+              <p className="max-w-2xl text-lg leading-relaxed text-slate-700">
+                Générez une carte haute fidélité qui résume vos actions validées sur le
+                terrain, votre niveau d&apos;expertise et vos distinctions, avec une lecture
+                plus directe sur desktop et mobile.
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-col gap-4 sm:flex-row">
@@ -264,6 +278,89 @@ export default function ImpactProfilePage() {
               Consulter le protocole scientifique <span className="text-lg">→</span>
             </Link>
           </div>
+
+          <section className={cn("space-y-4 rounded-[2rem] border p-8", classes.surface)}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-400/40">
+                  Ancrages CleanMyMap
+                </p>
+                <h3 className="mt-1 text-lg font-black tracking-tight text-slate-950">
+                  Ordres de grandeur projet à utiliser comme base de lecture
+                </h3>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-600">
+                Ces valeurs servent à ancrer le calcul du rapport et les comparaisons
+                entre développement, assistance IA et usage annuel bénévole.
+              </p>
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-2">
+              {ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS.map((anchor) => (
+                <article
+                  key={anchor.key}
+                  className="rounded-[1.5rem] border border-slate-200 bg-white/85 p-5 shadow-sm"
+                >
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-500">
+                        {anchor.label}
+                      </p>
+                      <p className="mt-2 text-sm leading-relaxed text-slate-700">
+                        {anchor.description}
+                      </p>
+                    </div>
+                    <span className="rounded-full border border-red-500/15 bg-red-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-700">
+                      Ancre projet
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                        Énergie
+                      </p>
+                      <p className="mt-2 text-xl font-black text-slate-950">
+                        {anchor.kWhEquivalent === null
+                          ? "—"
+                          : `${new Intl.NumberFormat("fr-FR", {
+                              maximumFractionDigits: 0,
+                            }).format(anchor.kWhEquivalent)} kWh`}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                        CO2e
+                      </p>
+                      <p className="mt-2 text-xl font-black text-slate-950">
+                        {anchor.kgCo2eProxy === null
+                          ? "—"
+                          : `${new Intl.NumberFormat("fr-FR", {
+                              maximumFractionDigits: 1,
+                            }).format(anchor.kgCo2eProxy)} kg`}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                        Eau
+                      </p>
+                      <p className="mt-2 text-xl font-black text-slate-950">
+                        {anchor.waterLitersEquivalent === null
+                          ? "—"
+                          : `${new Intl.NumberFormat("fr-FR", {
+                              maximumFractionDigits: 0,
+                            }).format(anchor.waterLitersEquivalent)} L`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="mt-4 text-xs leading-relaxed text-slate-600">
+                    {anchor.comparisonNote}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
 
           <EnvironmentalImpactEstimatorPanel
             model={environmentalImpactModel}

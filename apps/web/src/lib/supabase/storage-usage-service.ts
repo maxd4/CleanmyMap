@@ -1,5 +1,10 @@
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { resolveSupabaseStorageQuotaInfo } from "@/lib/supabase/storage-quota";
+import { isCronSecretConfigured } from "@/lib/http/cron-auth";
+import {
+  buildStorageUsageCronStatus,
+  type StorageUsageCronStatus,
+} from "@/lib/supabase/storage-usage-cron";
 import {
   buildStorageUsageComparison,
   buildStorageUsageHistory,
@@ -14,9 +19,14 @@ import {
   type StorageUsageObjectRow,
   type StorageUsageSnapshotRecord,
 } from "@/lib/supabase/storage-usage";
+import {
+  buildStorageBusinessContributions,
+  type StorageBusinessContributionReport,
+} from "@/lib/supabase/storage-business-contribution";
 
 export type StorageUsageReport = {
   current: StorageUsageSnapshot;
+  businessContributions: StorageBusinessContributionReport;
   history: Array<
     StorageUsageHistoryPoint & {
       bucketBreakdown: unknown[];
@@ -29,6 +39,7 @@ export type StorageUsageReport = {
   timestamp: string;
   snapshotMonth: string;
   snapshotPersisted: boolean;
+  cron: StorageUsageCronStatus;
 };
 
 function getCurrentSnapshotMonth(now = new Date()): string {
@@ -41,11 +52,14 @@ function toStorageObjectsQuery(supabase: ReturnType<typeof getSupabaseServerClie
   return supabase.schema("storage").from("objects");
 }
 
-export async function captureStorageUsageReport(): Promise<StorageUsageReport> {
+async function buildStorageUsageReport(params: {
+  persistSnapshot: boolean;
+}): Promise<StorageUsageReport> {
   const supabase = getSupabaseServerClient();
   const quotaInfo = resolveSupabaseStorageQuotaInfo();
   const generatedAt = new Date().toISOString();
   const snapshotMonth = getCurrentSnapshotMonth(new Date(generatedAt));
+  const cron = buildStorageUsageCronStatus(isCronSecretConfigured(), new Date(generatedAt));
 
   const storageObjects = (await fetchAllStorageObjects(
     toStorageObjectsQuery(supabase),
@@ -68,11 +82,13 @@ export async function captureStorageUsageReport(): Promise<StorageUsageReport> {
     ...serializeStorageUsageBreakdowns(currentSnapshot),
   };
 
-  const { error: snapshotError } = await supabase
-    .from("supabase_storage_usage_snapshots")
-    .upsert(snapshotPayload, {
-      onConflict: "snapshot_month",
-    });
+  const snapshotError = params.persistSnapshot
+    ? (
+        await supabase.from("supabase_storage_usage_snapshots").upsert(snapshotPayload, {
+          onConflict: "snapshot_month",
+        })
+      ).error
+    : null;
 
   const historyLimit = getStorageHistoryLimit();
   const { data: historyData, error: historyError } = await supabase
@@ -99,6 +115,13 @@ export async function captureStorageUsageReport(): Promise<StorageUsageReport> {
     ? toStorageUsageSnapshot(previousRecord, quotaInfo.source)
     : null;
 
+  const businessContributions = buildStorageBusinessContributions({
+    objects: storageObjects,
+    currentSnapshot: currentSnapshot,
+    previousSnapshot,
+    historyRecords,
+  });
+
   const comparison = buildStorageUsageComparison(
     currentSnapshot,
     previousSnapshot,
@@ -106,6 +129,7 @@ export async function captureStorageUsageReport(): Promise<StorageUsageReport> {
 
   return {
     current: currentSnapshot,
+    businessContributions,
     history: history.map((point) => {
       const record = historyRecordsByMonth.get(point.snapshotMonth);
       return {
@@ -130,6 +154,15 @@ export async function captureStorageUsageReport(): Promise<StorageUsageReport> {
     ],
     timestamp: generatedAt,
     snapshotMonth,
-    snapshotPersisted: !snapshotError,
+    snapshotPersisted: params.persistSnapshot ? !snapshotError : false,
+    cron,
   };
+}
+
+export async function captureStorageUsageReport(): Promise<StorageUsageReport> {
+  return buildStorageUsageReport({ persistSnapshot: true });
+}
+
+export async function loadStorageUsageReport(): Promise<StorageUsageReport> {
+  return buildStorageUsageReport({ persistSnapshot: false });
 }

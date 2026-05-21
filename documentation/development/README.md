@@ -20,6 +20,9 @@ Guides de développement pour agents IA.
 - **regression-gates.md** - Tests de non-régression
 - **bugs-structurants.md** - Bugs structurants à éviter
 - **typescript-strict-priority-report.md** - Synthèse priorisée du log TypeScript strict
+- **typescript-precision-policy.md** - Politique de précision TypeScript
+- **typescript-anti-errors-checklist.md** - Checklist courte de correction TypeScript
+- **typescript-anti-errors-playbook.md** - Playbook de correction TypeScript pour agents IA
 
 ### Contribution & Documentation
 - **CONTRIBUTING.md** - Guide de contribution
@@ -43,6 +46,9 @@ Guides de développement pour agents IA.
 1. Respecter **api-standard.md** pour les APIs
 2. Suivre **conventions-modularisation.md** si modularisation
 3. Appliquer **TESTING.md** pour les tests
+4. Suivre **typescript-precision-policy.md** pour tout typage, cast ou accès dynamique
+5. Utiliser **typescript-anti-errors-checklist.md** pour le runbook court
+6. Utiliser **typescript-anti-errors-playbook.md** pour classer et corriger les erreurs TypeScript
 
 ### Avant de Commit
 1. Vérifier **regression-gates.md** (tests critiques)

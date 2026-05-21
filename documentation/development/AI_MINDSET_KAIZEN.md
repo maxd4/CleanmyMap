@@ -22,6 +22,12 @@ Chaque fois qu'une IA intervient sur un fichier, elle doit effectuer un micro-au
 - L'interaction est-elle "Zéro Clavier" ?
 - Le feedback visuel est-il instantané et élégant ?
 
+### La Précision TypeScript
+- `any` est-il vraiment inévitable, ou un type explicite peut-il le remplacer ?
+- Le cast est-il prouvé par une validation, ou sert-il juste à masquer une forme mal définie ?
+- `Record<string, unknown>` est-il réservé à une vraie frontière externe, ou cache-t-il un type métier absent ?
+- Les accès dynamiques sont-ils normalisés à l'entrée du système, ou propagés jusqu'à la logique métier ?
+
 ## 3. Force de Proposition
 L'IA ne doit pas être un simple exécutant de tickets. Elle doit :
 - Proposer des **nouveautés** basées sur le contexte actuel de l'application.
@@ -29,6 +35,7 @@ L'IA ne doit pas être un simple exécutant de tickets. Elle doit :
 - Suggérer des **simplifications radicales** de parcours utilisateur.
 - Corriger les erreurs en **améliorant la logique existante** plutôt qu'en la dégradant, en la contournant ou en la simplifiant à l'excès.
 - Si une correction semble "facile" mais réduit la robustesse, l'IA doit privilégier une réparation plus propre, durable et cohérente avec l'architecture.
+- Préférer une modélisation typée à un accès dynamique ou à un cast aveugle.
 
 ## 4. Vigilance sur la Dette Technique
 L'amélioration continue inclut le nettoyage. Si une modification permet de supprimer du code mort ou de modulariser un composant trop complexe, l'IA doit le proposer ou l'effectuer.

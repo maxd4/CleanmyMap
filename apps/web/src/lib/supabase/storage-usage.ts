@@ -1,3 +1,11 @@
+import {
+  type StorageBusinessDomainId,
+} from "./storage-business-taxonomy";
+import {
+  classifyStorageBusinessObject,
+  type StorageBusinessClassificationSignalType,
+} from "./storage-business-classification";
+
 const BYTES_PER_KB = 1024;
 const BYTES_PER_MB = BYTES_PER_KB * 1024;
 const BYTES_PER_GB = BYTES_PER_MB * 1024;
@@ -53,12 +61,6 @@ const MIME_EXTENSION_MAP = new Map<string, string>([
   ["audio/mpeg", "mp3"],
 ]);
 
-const BUSINESS_LABELS: Record<string, string> = {
-  "action-photos": "Terrain · photos d'actions",
-  "chat-attachments": "Messagerie · pièces jointes",
-  "mission-assets": "Missions · médias",
-};
-
 export type StorageUsageObjectRow = {
   bucket_id: string;
   name: string;
@@ -79,7 +81,13 @@ export type StorageUsageBreakdownItem = {
 export type StorageUsageLargestFile = {
   bucketId: string;
   bucketLabel: string;
+  businessDomainId?: StorageBusinessDomainId;
   businessLabel: string;
+  businessSignal?: StorageBusinessClassificationSignalType;
+  businessEvidence?: string;
+  businessDomain?: string | null;
+  sourceTable?: string | null;
+  businessContext?: string | null;
   fileTypeLabel: string;
   name: string;
   extension: string;
@@ -227,7 +235,7 @@ function extractExtension(name: string): string {
   return fileName.slice(index + 1).toLowerCase();
 }
 
-function inferMimeTypeLabel(extension: string, mimeType: string | null): string {
+export function inferStorageFileTypeLabel(extension: string, mimeType: string | null): string {
   if (mimeType) {
     const normalized = mimeType.trim().toLowerCase();
     if (IMAGE_MIME_PREFIXES.some((prefix) => normalized.startsWith(prefix))) {
@@ -281,10 +289,6 @@ function inferMimeTypeLabel(extension: string, mimeType: string | null): string 
   }
 
   return extension.toUpperCase();
-}
-
-function inferBusinessLabel(bucketId: string): string {
-  return BUSINESS_LABELS[bucketId] ?? `Autre bucket · ${bucketId}`;
 }
 
 function groupStorageObjects<T extends StorageUsageObjectRow>(
@@ -342,11 +346,23 @@ function buildLargestFiles(
     .map((object) => {
       const size = extractSizeBytes(object.metadata?.["size"]);
       const extension = extractExtension(object.name);
+      const classification = classifyStorageBusinessObject({
+        bucketId: object.bucket_id,
+        name: object.name,
+        mimeType: toStringOrNull(object.metadata?.["mimetype"]),
+        metadata: object.metadata ?? null,
+      });
       return {
         bucketId: object.bucket_id,
         bucketLabel: object.bucket_id,
-        businessLabel: inferBusinessLabel(object.bucket_id),
-        fileTypeLabel: inferMimeTypeLabel(extension, toStringOrNull(object.metadata?.["mimetype"])),
+        businessDomainId: classification.id,
+        businessLabel: classification.label,
+        businessSignal: classification.signal,
+        businessEvidence: classification.evidence,
+        businessDomain: classification.businessDomain,
+        sourceTable: classification.sourceTable,
+        businessContext: classification.businessContext,
+        fileTypeLabel: inferStorageFileTypeLabel(extension, toStringOrNull(object.metadata?.["mimetype"])),
         name: object.name,
         extension: extension || "sans-extension",
         bytes: size,
@@ -381,14 +397,23 @@ export function buildStorageUsageSnapshot(
     label: object.bucket_id,
   }));
 
-  const businessBreakdown = groupStorageObjects(objects, (object) => ({
-    key: object.bucket_id,
-    label: inferBusinessLabel(object.bucket_id),
-  }));
+  const businessBreakdown = groupStorageObjects(objects, (object) => {
+    const classification = classifyStorageBusinessObject({
+      bucketId: object.bucket_id,
+      name: object.name,
+      mimeType: toStringOrNull(object.metadata?.["mimetype"]),
+      metadata: object.metadata ?? null,
+    });
+
+    return {
+      key: classification.id,
+      label: classification.label,
+    };
+  });
 
   const extensionBreakdown = groupStorageObjects(objects, (object) => {
     const extension = extractExtension(object.name);
-    const fileTypeLabel = inferMimeTypeLabel(
+    const fileTypeLabel = inferStorageFileTypeLabel(
       extension,
       toStringOrNull(object.metadata?.["mimetype"]),
     );

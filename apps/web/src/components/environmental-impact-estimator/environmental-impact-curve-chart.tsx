@@ -2,24 +2,31 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { EnvironmentalImpactInfrastructureEstimate } from "@/lib/environmental-impact-estimator";
+import type {
+  EnvironmentalImpactInfrastructureEstimate,
+  EnvironmentalImpactProjectSignals,
+  EnvironmentalImpactScopeEstimate,
+  EnvironmentalImpactScopeKey,
+} from "@/lib/environmental-impact-estimator/types";
 
 type EnvironmentalImpactCurveChartProps = {
+  site: EnvironmentalImpactScopeEstimate;
+  user: EnvironmentalImpactScopeEstimate;
   infrastructure: EnvironmentalImpactInfrastructureEstimate;
+  signals?: EnvironmentalImpactProjectSignals | null;
   className?: string;
 };
 
-const SERVICE_COLORS: Record<string, string> = {
-  vercel: "#fb7185",
-  supabase: "#f97316",
-  resend: "#f59e0b",
-  clerk: "#22c55e",
-  posthog: "#38bdf8",
-  sentry: "#a78bfa",
-  upstash: "#e879f9",
-  pinecone: "#14b8a6",
-  stripe: "#f43f5e",
-  lwsDomain: "#fb923c",
+const CURVE_COLORS: Record<EnvironmentalImpactScopeKey, string> = {
+  site: "#f59e0b",
+  user: "#60a5fa",
+};
+
+type DriverRow = {
+  key: "page_view" | "community" | "notifications" | "actions" | "PDF" | "IA" | "Codex";
+  label: string;
+  kg: number;
+  sharePercent: number;
 };
 
 function formatKg(value: number | null | undefined) {
@@ -30,16 +37,6 @@ function formatKg(value: number | null | undefined) {
   return `${new Intl.NumberFormat("fr-FR", {
     maximumFractionDigits: 2,
   }).format(value)} kg CO2e proxy`;
-}
-
-function buildLinePath(points: Array<{ x: number; y: number }>) {
-  if (points.length === 0) {
-    return "";
-  }
-
-  return points
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
-    .join(" ");
 }
 
 function formatPercent(value: number | null | undefined) {
@@ -62,99 +59,210 @@ function formatSharePercent(value: number | null | undefined) {
   }).format(value)} %`;
 }
 
+function buildLinePath(points: Array<{ x: number; y: number }>) {
+  if (points.length === 0) {
+    return "";
+  }
+
+  return points
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+    .join(" ");
+}
+
+function buildChartPoints(
+  points: EnvironmentalImpactScopeEstimate["curve"],
+  width: number,
+  height: number,
+  padding: { top: number; right: number; bottom: number; left: number },
+  maxValue: number,
+) {
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  return points.map((point, index) => ({
+    x: padding.left + (points.length <= 1 ? 0 : (index / (points.length - 1)) * chartWidth),
+    y: padding.top + chartHeight - (point.cumulativeKgCo2eProxy / maxValue) * chartHeight,
+    lowerY: padding.top + chartHeight - (point.lowerKgCo2eProxy / maxValue) * chartHeight,
+    upperY: padding.top + chartHeight - (point.upperKgCo2eProxy / maxValue) * chartHeight,
+  }));
+}
+
+function buildDriverBreakdown(
+  params: {
+    pointTotal: number;
+    scope: EnvironmentalImpactScopeEstimate;
+    signals?: EnvironmentalImpactProjectSignals | null;
+  },
+): DriverRow[] {
+  const { pointTotal, scope, signals } = params;
+  const traffic = signals?.signalBreakdown?.traffic;
+  const community = signals?.signalBreakdown?.community;
+  const communication = signals?.signalBreakdown?.communication;
+  const scopeInput = scope.key === "site" ? signals?.siteInput : signals?.userInput;
+  const codexKg = scope.key === "user" ? signals?.codexUsage?.estimatedKgCo2eProxy ?? 0 : 0;
+  const rawRows: Array<DriverRow & { weight: number }> = [
+    {
+      key: "page_view",
+      label: "page_view",
+      kg: 0,
+      sharePercent: 0,
+      weight:
+        ((traffic?.pageViewEvents ?? 0) + (traffic?.legacyPageViewEvents ?? 0)) * 0.000015 +
+        (scopeInput?.pageViews ?? 0) * 0.00001,
+    },
+    {
+      key: "community",
+      label: "community",
+      kg: 0,
+      sharePercent: 0,
+      weight:
+        ((community?.events ?? 0) + (community?.rsvps ?? 0)) * 0.00002 +
+        (scopeInput?.storageGbMonths ?? 0) * 0.000006,
+    },
+    {
+      key: "notifications",
+      label: "notifications",
+      kg: 0,
+      sharePercent: 0,
+      weight:
+        ((community?.notifications ?? 0) + (community?.unreadNotifications ?? 0)) * 0.000012 +
+        (scopeInput?.apiRequests ?? 0) * 0.000003,
+    },
+    {
+      key: "actions",
+      label: "actions",
+      kg: 0,
+      sharePercent: 0,
+      weight: (scopeInput?.maps ?? 0) * 0.00002,
+    },
+    {
+      key: "PDF",
+      label: "PDF",
+      kg: 0,
+      sharePercent: 0,
+      weight: ((communication?.pdfExports ?? 0) + (scopeInput?.pdfExports ?? 0)) * 0.00003,
+    },
+    {
+      key: "IA",
+      label: "IA",
+      kg: 0,
+      sharePercent: 0,
+      weight: (scopeInput?.aiCalls ?? 0) * 0.00005,
+    },
+    {
+      key: "Codex",
+      label: "Codex",
+      kg: 0,
+      sharePercent: 0,
+      weight: codexKg > 0 ? codexKg : 0,
+    },
+  ];
+
+  const totalWeight = rawRows.reduce((acc, row) => acc + row.weight, 0);
+
+  if (pointTotal <= 0 || totalWeight <= 0) {
+    return rawRows.map((row) => ({
+      key: row.key,
+      label: row.label,
+      kg: 0,
+      sharePercent: 0,
+    }));
+  }
+
+  return rawRows.map((row) => {
+    const sharePercent = (row.weight / totalWeight) * 100;
+    return {
+      key: row.key,
+      label: row.label,
+      kg: pointTotal * (row.weight / totalWeight),
+      sharePercent,
+    };
+  });
+}
+
 export function EnvironmentalImpactCurveChart({
+  site,
+  user,
   infrastructure,
+  signals,
   className,
 }: EnvironmentalImpactCurveChartProps) {
-  const points = infrastructure.curve;
+  const [selectedScopeKey, setSelectedScopeKey] = useState<EnvironmentalImpactScopeKey>("site");
   const [selectedPointIndex, setSelectedPointIndex] = useState<number>(
-    points.at(-1)?.index ?? 0,
+    Math.max(site.curve.at(-1)?.index ?? 0, user.curve.at(-1)?.index ?? 0),
   );
+
   useEffect(() => {
-    setSelectedPointIndex(points.at(-1)?.index ?? 0);
-  }, [points]);
+    setSelectedPointIndex(Math.max(site.curve.at(-1)?.index ?? 0, user.curve.at(-1)?.index ?? 0));
+    setSelectedScopeKey("site");
+  }, [site.curve, user.curve]);
+
   const width = 1000;
-  const height = 360;
+  const height = 380;
   const padding = { top: 28, right: 28, bottom: 64, left: 72 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   const maxValue = Math.max(
     1,
-    ...points.map((point) => point.cumulativeKgCo2eProxy),
+    ...site.curve.map((point) => point.cumulativeKgCo2eProxy),
+    ...user.curve.map((point) => point.cumulativeKgCo2eProxy),
   );
-
-  const linePoints = points.map((point, index) => ({
-    x:
-      padding.left +
-      (points.length <= 1 ? 0 : (index / (points.length - 1)) * chartWidth),
-    y:
-      padding.top +
-      chartHeight -
-      (point.cumulativeKgCo2eProxy / maxValue) * chartHeight,
-  }));
-
-  const lowerPoints = points.map((point, index) => ({
-    x:
-      padding.left +
-      (points.length <= 1 ? 0 : (index / (points.length - 1)) * chartWidth),
-    y:
-      padding.top +
-      chartHeight -
-      (point.lowerKgCo2eProxy / maxValue) * chartHeight,
-  }));
-
-  const upperPoints = points.map((point, index) => ({
-    x:
-      padding.left +
-      (points.length <= 1 ? 0 : (index / (points.length - 1)) * chartWidth),
-    y:
-      padding.top +
-      chartHeight -
-      (point.upperKgCo2eProxy / maxValue) * chartHeight,
-  }));
-
-  const areaPath = `${buildLinePath([
+  const sitePoints = buildChartPoints(site.curve, width, height, padding, maxValue);
+  const userPoints = buildChartPoints(user.curve, width, height, padding, maxValue);
+  const maxPointCount = Math.max(sitePoints.length, userPoints.length);
+  const selectedSitePoint =
+    site.curve.find((point) => point.index === selectedPointIndex) ?? site.curve.at(-1) ?? null;
+  const selectedUserPoint =
+    user.curve.find((point) => point.index === selectedPointIndex) ?? user.curve.at(-1) ?? null;
+  const selectedScope: EnvironmentalImpactScopeEstimate =
+    selectedScopeKey === "user" ? user : site;
+  const selectedScopePoint =
+    selectedScope.key === "user" ? selectedUserPoint : selectedSitePoint;
+  const selectedScopeBreakdown = buildDriverBreakdown({
+    pointTotal: selectedScopePoint?.weeklyKgCo2eProxy ?? 0,
+    scope: selectedScope,
+    signals,
+  });
+  const selectedLinePoint =
+    selectedScopeKey === "user"
+      ? userPoints.find((point, index) => index === selectedPointIndex) ?? null
+      : sitePoints.find((point, index) => index === selectedPointIndex) ?? null;
+  const midIndex = Math.floor((maxPointCount - 1) / 2);
+  const axisLabels =
+    maxPointCount > 2
+      ? [
+          site.curve[0] ?? user.curve[0],
+          site.curve[midIndex] ?? user.curve[midIndex],
+          site.curve.at(-1) ?? user.curve.at(-1),
+        ].filter(Boolean)
+      : site.curve.length > 0
+        ? site.curve
+        : user.curve;
+  const siteLinePath = buildLinePath(sitePoints);
+  const userLinePath = buildLinePath(userPoints);
+  const siteAreaPath = `${buildLinePath([
     { x: padding.left, y: padding.top + chartHeight },
-    ...linePoints,
+    ...sitePoints,
     { x: padding.left + chartWidth, y: padding.top + chartHeight },
   ])} Z`;
-  const linePath = buildLinePath(linePoints);
-  const uncertaintyBandPath = `${buildLinePath([
-    ...upperPoints,
-    ...[...lowerPoints].reverse(),
+  const userAreaPath = `${buildLinePath([
+    { x: padding.left, y: padding.top + chartHeight },
+    ...userPoints,
+    { x: padding.left + chartWidth, y: padding.top + chartHeight },
   ])} Z`;
-  const selectedPoint =
-    points.find((point) => point.index === selectedPointIndex) ?? points.at(-1) ?? null;
-  const selectedPointTotal = Math.max(
-    0,
-    selectedPoint
-      ? Object.values(selectedPoint.breakdown).reduce((acc, value) => acc + (value ?? 0), 0)
-      : 0,
-  );
-  const selectedLinePoint =
-    selectedPoint && selectedPoint.index < linePoints.length
-      ? linePoints[selectedPoint.index]
-      : null;
-  const selectedServiceBreakdown = infrastructure.services
-    .map((service) => {
-      const value = selectedPoint?.breakdown[service.key] ?? 0;
-      const sharePercent = selectedPointTotal > 0 ? (value / selectedPointTotal) * 100 : 0;
-
-      return {
-        ...service,
-        value,
-        sharePercent,
-      };
-    })
-    .sort((a, b) => b.sharePercent - a.sharePercent || b.value - a.value);
-  const topServices = [...infrastructure.services]
-    .sort((a, b) => (b.monthlyKgCo2eProxy ?? 0) - (a.monthlyKgCo2eProxy ?? 0))
-    .slice(0, 4);
-  const midIndex = Math.floor((points.length - 1) / 2);
-  const axisLabels =
-    points.length > 2
-      ? [points[0], points[midIndex], points.at(-1)!]
-      : points;
+  const siteUncertaintyPath = `${buildLinePath([
+    ...sitePoints.map((point) => ({ x: point.x, y: point.upperY })),
+    ...[...sitePoints]
+      .reverse()
+      .map((point) => ({ x: point.x, y: point.lowerY })),
+  ])} Z`;
+  const userUncertaintyPath = `${buildLinePath([
+    ...userPoints.map((point) => ({ x: point.x, y: point.upperY })),
+    ...[...userPoints]
+      .reverse()
+      .map((point) => ({ x: point.x, y: point.lowerY })),
+  ])} Z`;
+  const selectedXAxisPoint = site.curve.find((point) => point.index === selectedPointIndex) ?? user.curve.find((point) => point.index === selectedPointIndex) ?? null;
 
   return (
     <figure
@@ -169,40 +277,75 @@ export function EnvironmentalImpactCurveChart({
             Courbe temporelle
           </p>
           <h3 className="mt-1 text-xl font-black tracking-tight text-white">
-            {infrastructure.graph.title}
+            Pollution du site et pollution attribuée à l&apos;utilisateur
           </h3>
           <p className="mt-2 max-w-3xl text-sm leading-relaxed text-red-100/45">
-            Le tracé expose une projection hebdomadaire depuis la mise en ligne.
-            Clique sur un point pour voir la répartition de la pollution par
-            poste. Sans télémétrie complète, la ligne utilise des charges de
-            référence pour Vercel, Supabase, Resend, Clerk, PostHog, Sentry,
-            Upstash, Pinecone, Stripe et le domaine LWS.
+            Le tracé expose deux courbes hebdomadaires cumulées depuis la mise en ligne:
+            le total du site et le total attribué à l&apos;utilisateur. Clique sur un point
+            pour comparer les deux séries et ouvrir le détail des familles de signaux.
           </p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-100/35">
-            Impact cumulé
-          </p>
-          <p className="mt-1 text-lg font-black text-white">
-            {formatKg(infrastructure.totalKgCo2eProxy)}
-          </p>
-          <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
-            Confiance {formatPercent(infrastructure.graph.confidencePercent)}
-          </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-100/35">
+              Site total
+            </p>
+            <p className="mt-1 text-lg font-black text-white">
+              {formatKg(site.totalKgCo2eProxy)}
+            </p>
+            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+              Confiance {formatPercent(infrastructure.graph.confidencePercent)}
+            </p>
+          </div>
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-100/35">
+              Utilisateur
+            </p>
+            <p className="mt-1 text-lg font-black text-white">
+              {formatKg(user.totalKgCo2eProxy)}
+            </p>
+            <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
+              Confiance {formatPercent(infrastructure.graph.confidencePercent)}
+            </p>
+          </div>
         </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-red-100/45">
+        <span className="flex items-center gap-2">
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: CURVE_COLORS.site }}
+          />
+          Site total
+        </span>
+        <span className="flex items-center gap-2">
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ backgroundColor: CURVE_COLORS.user }}
+          />
+          Utilisateur
+        </span>
+        <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
+          1 point hebdo
+        </span>
       </div>
 
       <div className="mt-5 overflow-hidden rounded-[1.25rem] border border-white/10 bg-[#19090a]">
         <svg
           viewBox={`0 0 ${width} ${height}`}
-          className="h-[240px] w-full md:h-[300px]"
+          className="h-[260px] w-full md:h-[320px]"
           role="img"
-          aria-label="Courbe temporelle de l'impact environnemental proxy"
+          aria-label="Courbes temporelles de l'impact environnemental proxy"
         >
           <defs>
-            <linearGradient id="environmental-impact-fill" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#fb7185" stopOpacity="0.35" />
-              <stop offset="100%" stopColor="#fb7185" stopOpacity="0.02" />
+            <linearGradient id="environmental-impact-site-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.32" />
+              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.03" />
+            </linearGradient>
+            <linearGradient id="environmental-impact-user-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.03" />
             </linearGradient>
           </defs>
 
@@ -230,16 +373,36 @@ export function EnvironmentalImpactCurveChart({
             );
           })}
 
-          <path d={uncertaintyBandPath} fill="rgba(251, 113, 133, 0.08)" />
-          <path d={areaPath} fill="url(#environmental-impact-fill)" />
-          <path
-            d={linePath}
-            fill="none"
-            stroke="#fb7185"
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+          {sitePoints.length > 0 ? (
+            <>
+              <path d={siteUncertaintyPath} fill="rgba(245, 158, 11, 0.07)" />
+              <path d={siteAreaPath} fill="url(#environmental-impact-site-fill)" />
+              <path
+                d={siteLinePath}
+                fill="none"
+                stroke="#f59e0b"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </>
+          ) : null}
+
+          {userPoints.length > 0 ? (
+            <>
+              <path d={userUncertaintyPath} fill="rgba(96, 165, 250, 0.06)" />
+              <path d={userAreaPath} fill="url(#environmental-impact-user-fill)" />
+              <path
+                d={userLinePath}
+                fill="none"
+                stroke="#60a5fa"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeDasharray="10 6"
+              />
+            </>
+          ) : null}
 
           {selectedLinePoint ? (
             <line
@@ -247,53 +410,99 @@ export function EnvironmentalImpactCurveChart({
               x2={selectedLinePoint.x}
               y1={padding.top}
               y2={padding.top + chartHeight}
-              stroke="rgba(251, 113, 133, 0.45)"
-              strokeDasharray="8 8"
+              stroke="rgba(255,255,255,0.24)"
+              strokeDasharray="6 8"
             />
           ) : null}
 
-          {linePoints.map((point, index) => (
+          {sitePoints.map((point, index) => (
             <circle
-              key={`${points[index]?.date ?? index}`}
+              key={`site-${site.curve[index]?.date ?? index}`}
               cx={point.x}
               cy={point.y}
               r={
-                points[index]?.index === selectedPointIndex
+                site.curve[index]?.index === selectedPointIndex
                   ? 8
-                  : index === 0 || index === linePoints.length - 1
+                  : index === 0 || index === sitePoints.length - 1
                     ? 6
                     : 4
               }
-              fill={points[index]?.index === selectedPointIndex ? "#fb7185" : "#fff"}
-              stroke={points[index]?.index === selectedPointIndex ? "#fff" : "#fb7185"}
-              strokeWidth={points[index]?.index === selectedPointIndex ? "4.5" : "4"}
+              fill={site.curve[index]?.index === selectedPointIndex ? CURVE_COLORS.site : "#fff"}
+              stroke={site.curve[index]?.index === selectedPointIndex ? "#fff" : CURVE_COLORS.site}
+              strokeWidth={site.curve[index]?.index === selectedPointIndex ? "4.5" : "4"}
               style={{ cursor: "pointer" }}
               role="button"
               tabIndex={0}
               aria-label={
-                points[index]
-                  ? `Sélectionner ${points[index].monthLabel} - ${formatKg(
-                      points[index].monthlyKgCo2eProxy,
+                site.curve[index]
+                  ? `Sélectionner le site: ${site.curve[index].weekLabel} - ${formatKg(
+                      site.curve[index].weeklyKgCo2eProxy,
                     )}`
-                  : "Sélectionner le point de courbe"
+                  : "Sélectionner le point de courbe site"
               }
               onClick={() => {
-                if (points[index]) {
-                  setSelectedPointIndex(points[index].index);
+                if (site.curve[index]) {
+                  setSelectedScopeKey("site");
+                  setSelectedPointIndex(site.curve[index].index);
                 }
               }}
               onKeyDown={(event) => {
-                if ((event.key === "Enter" || event.key === " ") && points[index]) {
+                if ((event.key === "Enter" || event.key === " ") && site.curve[index]) {
                   event.preventDefault();
-                  setSelectedPointIndex(points[index].index);
+                  setSelectedPointIndex(site.curve[index].index);
+                }
+              }}
+            />
+          ))}
+
+          {userPoints.map((point, index) => (
+            <circle
+              key={`user-${user.curve[index]?.date ?? index}`}
+              cx={point.x}
+              cy={point.y}
+              r={
+                user.curve[index]?.index === selectedPointIndex
+                  ? 8
+                  : index === 0 || index === userPoints.length - 1
+                    ? 6
+                    : 4
+              }
+              fill={user.curve[index]?.index === selectedPointIndex ? CURVE_COLORS.user : "#fff"}
+              stroke={user.curve[index]?.index === selectedPointIndex ? "#fff" : CURVE_COLORS.user}
+              strokeWidth={user.curve[index]?.index === selectedPointIndex ? "4.5" : "4"}
+              style={{ cursor: "pointer" }}
+              role="button"
+              tabIndex={0}
+              aria-label={
+                user.curve[index]
+                  ? `Sélectionner l'utilisateur: ${user.curve[index].weekLabel} - ${formatKg(
+                      user.curve[index].weeklyKgCo2eProxy,
+                    )}`
+                  : "Sélectionner le point de courbe utilisateur"
+              }
+              onClick={() => {
+                if (user.curve[index]) {
+                  setSelectedScopeKey("user");
+                  setSelectedPointIndex(user.curve[index].index);
+                }
+              }}
+              onKeyDown={(event) => {
+                if ((event.key === "Enter" || event.key === " ") && user.curve[index]) {
+                  event.preventDefault();
+                  setSelectedPointIndex(user.curve[index].index);
                 }
               }}
             />
           ))}
 
           {axisLabels.map((point, index) => {
-            const pointIndex = points.findIndex((candidate) => candidate.index === point.index);
-            const matchingLinePoint = linePoints[pointIndex];
+            if (!point) {
+              return null;
+            }
+
+            const pointIndex = point.index;
+            const matchingLinePoint = sitePoints[pointIndex] ?? userPoints[pointIndex];
+
             if (!matchingLinePoint) {
               return null;
             }
@@ -313,7 +522,7 @@ export function EnvironmentalImpactCurveChart({
                   textAnchor={index === 0 ? "start" : index === axisLabels.length - 1 ? "end" : "middle"}
                   className="fill-red-100/35 text-[11px] font-bold"
                 >
-                  {point.monthLabel}
+                  {point.weekLabel}
                 </text>
               </g>
             );
@@ -332,7 +541,7 @@ export function EnvironmentalImpactCurveChart({
             textAnchor="end"
             className="fill-red-100/30 text-[11px] font-black uppercase tracking-[0.18em]"
           >
-            {infrastructure.graph.yAxisLabel}
+            kg CO2e proxy cumulés
           </text>
         </svg>
       </div>
@@ -344,75 +553,79 @@ export function EnvironmentalImpactCurveChart({
               Point hebdomadaire sélectionné
             </p>
             <h4 className="mt-1 text-lg font-black tracking-tight text-white">
-              {selectedPoint?.monthLabel ?? "Aucun point"}
+              {selectedScopePoint?.weekLabel ?? selectedXAxisPoint?.weekLabel ?? "Aucun point"}
             </h4>
             <p className="mt-1 text-xs leading-relaxed text-red-100/45">
-              Cliquez sur une semaine pour afficher la part de pollution de
-              chaque poste.
+              Cliquez sur une semaine pour comparer la courbe du site et celle de l'utilisateur.
+              Le bloc suivant détaille la portée actuellement sélectionnée.
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
-                Semaine
+                Site
               </p>
               <p className="mt-1 text-sm font-black text-white">
-                {selectedPoint?.index ?? 0}
+                {formatKg(selectedSitePoint?.weeklyKgCo2eProxy ?? null)}
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
-                Pollution hebdo
+                Utilisateur
               </p>
               <p className="mt-1 text-sm font-black text-white">
-                {formatKg(selectedPoint?.monthlyKgCo2eProxy ?? null)}
+                {formatKg(selectedUserPoint?.weeklyKgCo2eProxy ?? null)}
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-100/35">
-                Cumul
+                Portée détaillée
               </p>
-              <p className="mt-1 text-sm font-black text-white">
-                {formatKg(selectedPoint?.cumulativeKgCo2eProxy ?? null)}
+              <p className="mt-1 text-sm font-black text-white capitalize">
+                {selectedScope.key}
               </p>
             </div>
           </div>
         </div>
 
-        {selectedServiceBreakdown.length > 0 ? (
+        {selectedScopeBreakdown.length > 0 ? (
           <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {selectedServiceBreakdown.map((service) => (
+            {selectedScopeBreakdown.map((driver) => (
               <div
-                key={`${service.key}-${selectedPoint?.index ?? "none"}`}
+                key={`${driver.key}-${selectedPointIndex}`}
                 className="rounded-2xl border border-white/10 bg-black/10 p-3"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-2">
-                    <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{
-                        backgroundColor: SERVICE_COLORS[service.key] ?? "#fb7185",
-                      }}
-                    />
-                    <p className="truncate text-sm font-black text-white">
-                      {service.label}
-                    </p>
+                    <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-white" />
+                    <p className="truncate text-sm font-black text-white">{driver.label}</p>
                   </div>
-                  <p className="text-sm font-black text-white">
-                    {formatSharePercent(service.sharePercent)}
-                  </p>
+                  <p className="text-sm font-black text-white">{formatSharePercent(driver.sharePercent)}</p>
                 </div>
                 <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
                   <div
                     className="h-full rounded-full"
                     style={{
-                      width: `${Math.min(100, Math.max(0, service.sharePercent))}%`,
-                      backgroundColor: SERVICE_COLORS[service.key] ?? "#fb7185",
+                      width: `${Math.min(100, Math.max(0, driver.sharePercent))}%`,
+                      backgroundColor:
+                        driver.key === "page_view"
+                          ? "#f59e0b"
+                          : driver.key === "community"
+                            ? "#ef4444"
+                            : driver.key === "notifications"
+                              ? "#38bdf8"
+                              : driver.key === "actions"
+                                ? "#22c55e"
+                                : driver.key === "PDF"
+                                  ? "#a855f7"
+                                  : driver.key === "IA"
+                                    ? "#f97316"
+                                    : "#60a5fa",
                     }}
                   />
                 </div>
                 <p className="mt-2 text-[10px] leading-relaxed text-red-100/45">
-                  {formatKg(service.value)} sur la semaine sélectionnée.
+                  {formatKg(driver.kg)} sur la semaine sélectionnée.
                 </p>
               </div>
             ))}
@@ -461,29 +674,6 @@ export function EnvironmentalImpactCurveChart({
             </div>
           ))}
         </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {topServices.map((service) => (
-          <div
-            key={service.key}
-            className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{
-                  backgroundColor: SERVICE_COLORS[service.key] ?? "#fb7185",
-                }}
-              />
-              <p className="text-sm font-black text-white">{service.label}</p>
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-red-100/45">
-              {formatKg(service.monthlyKgCo2eProxy)} / mois,{" "}
-              {formatKg(service.annualKgCo2eProxy)} / an
-            </p>
-          </div>
-        ))}
       </div>
     </figure>
   );

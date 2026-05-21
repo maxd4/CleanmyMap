@@ -1,5 +1,6 @@
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { compressImageFile } from '@/lib/media/image-compression'
+import { buildStorageBusinessMetadata } from '@/lib/supabase/storage-business-classification'
 
 export interface PhotoUploadResult {
   url: string
@@ -33,10 +34,22 @@ export class PhotoUploadService {
 
       const { data, error } = await this.supabase.storage
         .from(this.bucket)
-        .upload(fileName, preparedFile, {
-          cacheControl: '3600',
-          upsert: false,
-        })
+          .upload(
+            fileName,
+            preparedFile,
+            {
+              cacheControl: '3600',
+              upsert: false,
+              metadata: buildStorageBusinessMetadata({
+                businessDomain: 'pieces_jointes_photo',
+                sourceTable: 'actions',
+                businessContext: 'action_photo',
+                extra: {
+                  actionId,
+                },
+            }),
+          },
+        )
 
       if (error) {
         console.error('Upload error:', error)

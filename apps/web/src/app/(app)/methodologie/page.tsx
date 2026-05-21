@@ -7,6 +7,9 @@ import { NationalStatsSection } from "@/components/sections/rubriques/national-s
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { getServerLocale } from "@/lib/server-preferences";
+import { listGovernanceMonthlyReports } from "@/lib/governance/governance-monthly-report-store";
+import { StorageBusinessContributionDonut } from "@/components/dashboard/storage-business-contribution-donut";
+import { MethodologyCard } from "@/components/methodologie/methodology-card";
 
 export const metadata: Metadata = {
   title: "Méthodologie - Comment nous calculons l'impact | CleanMyMap",
@@ -33,14 +36,104 @@ const METHODLOGY_SECTIONS = [
   { id: "sources", label: "Sources & gouvernance" },
   { id: "calculation", label: "Chaîne de calcul" },
   { id: "indicators", label: "Méthodes par indicateur" },
+  { id: "governance-report", label: "Rapport mensuel" },
+  { id: "prioritization", label: "Priorisation" },
   { id: "audit", label: "Audit & export" },
 ] as const;
+
+const PRIORITIZATION_STEPS = [
+  {
+    step: "Étape 1",
+    title: "Score de risque global par service",
+    description:
+      "Placer le score détaillé au centre du pilotage et déclencher les seuils d'alerte avant saturation.",
+  },
+  {
+    step: "Étape 2",
+    title: "Camembert mensuel par catégorie métier",
+    description:
+      "Montrer la répartition du stockage par métier pour identifier rapidement la dominante du mois.",
+  },
+  {
+    step: "Étape 3",
+    title: "Export PDF mensuel avec résumé de pilotage",
+    description:
+      "Centraliser la lecture mensuelle dans un PDF interne et publiable pour la gouvernance.",
+  },
+  {
+    step: "Étape 4",
+    title: "Alertes automatiques si seuil dépassé",
+    description:
+      "Déclencher une alerte dès qu'une catégorie ou un service franchit un seuil critique.",
+  },
+] as const;
+
+function formatMonthLabel(reportMonth: string): string {
+  const parsed = new Date(`${reportMonth}T00:00:00.000Z`);
+  if (Number.isNaN(parsed.getTime())) {
+    return reportMonth;
+  }
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(parsed);
+}
+
+function getPublicGovernanceIndicator(usagePercent: number, alertCount: number): string {
+  if (usagePercent >= 90 || alertCount >= 3) {
+    return "Critique";
+  }
+
+  if (usagePercent >= 70 || alertCount > 0) {
+    return "Vigilance";
+  }
+
+  return "Stable";
+}
 
 export default async function MethodologiePage() {
   const { factors, sources, version } = IMPACT_PROXY_CONFIG;
   const locale = await getServerLocale();
   const { t } = getTranslation("methodologie", locale);
   const classes = getBlockClasses("visualize");
+  const governanceReports = await listGovernanceMonthlyReports(6).catch(() => []);
+  const latestGovernanceReport = governanceReports[0] ?? null;
+  const publicGovernanceSummary = latestGovernanceReport
+    ? [
+        {
+          label: "Mois archivé",
+          value: formatMonthLabel(latestGovernanceReport.reportMonth),
+          hint: "Dernier snapshot mensuel",
+        },
+        {
+          label: "Stockage total",
+          value: latestGovernanceReport.payload.storage.totalLabel,
+          hint: `Sur ${latestGovernanceReport.payload.storage.quotaLabel}`,
+        },
+        {
+          label: "Quota restant",
+          value: latestGovernanceReport.payload.storage.remainingLabel,
+          hint: `${latestGovernanceReport.payload.storage.usagePercent.toFixed(1)}% utilisé`,
+        },
+        {
+          label: "Indicateur global",
+          value: getPublicGovernanceIndicator(
+            latestGovernanceReport.payload.storage.usagePercent,
+            latestGovernanceReport.payload.storage.businessContributions.alerts.length,
+          ),
+          hint: "Lecture synthétique du mois",
+        },
+        {
+          label: "Catégorie dominante",
+          value: latestGovernanceReport.payload.storage.topContributionLabel ?? "n/a",
+          hint: latestGovernanceReport.payload.storage.businessContributions.alerts.length > 0
+            ? `${latestGovernanceReport.payload.storage.businessContributions.alerts.length} alerte${latestGovernanceReport.payload.storage.businessContributions.alerts.length > 1 ? "s" : ""} suivie${latestGovernanceReport.payload.storage.businessContributions.alerts.length > 1 ? "s" : ""}`
+            : "Aucune alerte active",
+        },
+      ]
+    : [];
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-12 px-4 pb-20 pt-10 sm:px-6 lg:px-8">
@@ -260,6 +353,186 @@ export default async function MethodologiePage() {
         </div>
       </section>
 
+      <section id="governance-report" className="space-y-6">
+        <SectionHeading
+          eyebrow="Rapport mensuel"
+          title="La gouvernance expose une synthèse publique mensuelle"
+          description="La vue publique reste volontairement compacte: elle montre les repères de pilotage, le lien vers le PDF et l'archive mensuelle, tandis que les détails techniques restent dans l'administration."
+        />
+
+        <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+          <div className="rounded-[3rem] border border-sky-400/20 bg-sky-500/8 p-8 md:p-10">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-400/60">
+                  Dernier rapport disponible
+                </p>
+                <h3 className="mt-2 text-3xl font-black tracking-tight text-white">
+                  {latestGovernanceReport ? formatMonthLabel(latestGovernanceReport.reportMonth) : "Aucun rapport encore archivé"}
+                </h3>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-sky-100/45">
+                  {latestGovernanceReport
+                    ? "Le PDF reprend les mêmes signaux que les panneaux d'administration: impact mensuel, dérive des plans gratuits, stockage Supabase et notes de gouvernance."
+                    : "Le premier PDF sera généré automatiquement lors du prochain passage du cron mensuel de stockage."}
+                </p>
+              </div>
+
+              {latestGovernanceReport ? (
+                <a
+                  href={`/api/reports/governance-monthly?month=${latestGovernanceReport.reportMonth}`}
+                  target="_blank"
+                  className="inline-flex items-center gap-3 rounded-[2rem] bg-sky-500 px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-sky-500/20 transition-all hover:scale-[1.02] hover:bg-sky-400"
+                >
+                  <Download size={16} />
+                  Télécharger le PDF
+                </a>
+              ) : null}
+            </div>
+
+            {latestGovernanceReport ? (
+              <div className="mt-8 space-y-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                  {publicGovernanceSummary.map((item) => (
+                    <div key={item.label} className="rounded-[2rem] border border-white/5 bg-white/5 p-4">
+                      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-400/55">
+                        {item.label}
+                      </p>
+                      <p className="mt-2 text-2xl font-black text-white">
+                        {item.value}
+                      </p>
+                      <p className="mt-1 text-sm text-sky-100/45">
+                        {item.hint}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded-[2rem] border border-sky-400/20 bg-sky-500/10 p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-300/70">
+                    Message de gouvernance
+                  </p>
+                  <p className="mt-2 max-w-3xl text-sm leading-relaxed text-sky-100/55">
+                    La vue publique montre la tendance du mois, la répartition métier et le document de
+                    référence. Les seuils d&apos;alerte, l&apos;historique détaillé et les décisions de
+                    pilotage restent traités côté administration.
+                  </p>
+                </div>
+
+                <StorageBusinessContributionDonut
+                  report={latestGovernanceReport.payload.storage.businessContributions}
+                  compact
+                />
+
+                <div className="rounded-[2rem] border border-white/5 bg-slate-950/30 p-5">
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-400/55">
+                    Lecture publique
+                  </p>
+                  <ul className="mt-3 space-y-2 text-sm leading-relaxed text-sky-100/55">
+                    {latestGovernanceReport.payload.summary.slice(0, 3).map((note) => (
+                      <li key={note}>• {note}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-sky-100/30">
+                    Les détails métier complets restent réservés à l&apos;administration.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
+            {latestGovernanceReport ? (
+              <p className="mt-6 text-[10px] font-black uppercase tracking-[0.22em] text-sky-100/30">
+                Généré le {new Intl.DateTimeFormat("fr-FR", {
+                  dateStyle: "medium",
+                  timeStyle: "short",
+                  timeZone: "UTC",
+                }).format(new Date(latestGovernanceReport.generatedAt))}
+              </p>
+            ) : null}
+          </div>
+
+          <div className="rounded-[3rem] border border-white/5 bg-white/5 p-8 md:p-10">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
+              Archive mensuelle
+            </p>
+            <div className="mt-4 space-y-3">
+              {governanceReports.length > 0 ? (
+                governanceReports.slice(0, 4).map((report) => (
+                  <a
+                    key={report.reportMonth}
+                    href={`/api/reports/governance-monthly?month=${report.reportMonth}`}
+                    target="_blank"
+                    className="flex items-center justify-between gap-4 rounded-[2rem] border border-white/5 bg-slate-950/40 px-4 py-4 transition hover:border-sky-400/25 hover:bg-slate-950/55"
+                  >
+                    <div>
+                      <p className="text-sm font-black text-white">
+                        {formatMonthLabel(report.reportMonth)}
+                      </p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/25">
+                        {new Intl.DateTimeFormat("fr-FR", {
+                          dateStyle: "medium",
+                          timeStyle: "short",
+                          timeZone: "UTC",
+                        }).format(new Date(report.generatedAt))}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs font-black uppercase tracking-[0.18em] text-sky-300/80">
+                        PDF
+                      </p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.16em] text-white/25">
+                        Rapport archivé
+                      </p>
+                    </div>
+                  </a>
+                ))
+              ) : (
+                <div className="rounded-[2rem] border border-dashed border-white/10 bg-slate-950/30 p-4 text-sm leading-relaxed text-white/35">
+                  Aucun rapport mensuel n&apos;est encore archivé.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="prioritization" className="space-y-6">
+        <SectionHeading
+          eyebrow="Priorisation d'implémentation"
+          title="L'ordre de mise en place du pilotage"
+          description="La feuille de route reste courte et lisible: d'abord le risque, ensuite la répartition mensuelle, puis le rapport PDF et enfin les alertes automatiques."
+        />
+
+        <div className="rounded-[3rem] border border-sky-400/20 bg-slate-950/35 p-6 md:p-8">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {PRIORITIZATION_STEPS.map((item, index) => (
+            <article
+              key={item.step}
+              className="rounded-[2.25rem] border border-white/10 bg-white/5 p-5 shadow-sm backdrop-blur-sm"
+            >
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-sky-400/60">
+                {item.step}
+              </p>
+              <p className="mt-2 text-lg font-black tracking-tight text-white">
+                {item.title}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-sky-100/45">
+                {item.description}
+              </p>
+              <p className="mt-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
+                {index === 0
+                  ? "Priorité haute"
+                  : index === 1
+                    ? "Visible publiquement"
+                    : index === 2
+                      ? "Pilotage central"
+                  : "Déclenchement conditionnel"}
+              </p>
+            </article>
+          ))}
+          </div>
+        </div>
+      </section>
+
       <section id="audit" className="space-y-6">
         <SectionHeading
           eyebrow="Audit & export"
@@ -316,40 +589,6 @@ function SectionHeading({
       <p className="max-w-3xl text-sm leading-relaxed text-sky-100/40 md:text-base">
         {description}
       </p>
-    </div>
-  );
-}
-
-function MethodologyCard({ title, formula, description, source, color, icon }: any) {
-  const colorClasses: any = {
-    sky: "text-sky-400 border-sky-400/20 bg-sky-400/5",
-    emerald: "text-emerald-400 border-emerald-400/20 bg-emerald-400/5",
-    slate: "text-slate-400 border-slate-400/20 bg-slate-400/5",
-    rose: "text-rose-400 border-rose-400/20 bg-rose-400/5"
-  };
-
-  return (
-    <div className="group rounded-[3rem] border border-white/5 bg-white/5 p-10 space-y-8 transition-all duration-700 hover:border-white/10 hover:bg-white/[0.07] relative overflow-hidden">
-      <div className={cn("flex items-center gap-5 relative z-10", colorClasses[color].split(' ')[0])}>
-        <div className={cn("w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner transition-transform group-hover:scale-110 duration-700", colorClasses[color].split(' ')[2])}>
-          {icon}
-        </div>
-        <h2 className="text-3xl font-black tracking-tight text-white">{title}</h2>
-      </div>
-
-      <div className={cn("p-8 rounded-[2rem] font-mono text-sm border-l-4 shadow-inner relative z-10", colorClasses[color].split(' ')[1], "bg-black/20")}>
-        <div className="text-[9px] font-black uppercase text-white/20 mb-3 tracking-[0.2em]">Équation Scientifique</div>
-        <div className="text-sky-100/80 leading-relaxed">{formula}</div>
-      </div>
-
-      <p className="text-sky-100/40 font-medium leading-relaxed relative z-10">
-        {description}
-      </p>
-
-      <div className="pt-6 flex items-center gap-3 relative z-10">
-        <div className={cn("w-2 h-2 rounded-full", colorClasses[color].split(' ')[1].replace('border-', 'bg-').split('/')[0])} />
-        <span className="text-[10px] font-black uppercase tracking-widest text-white/20">Source : {source}</span>
-      </div>
     </div>
   );
 }

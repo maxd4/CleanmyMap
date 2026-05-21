@@ -39,6 +39,7 @@ Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionR
 5. **Dynamic Imports pour Leaflet** : Obligatoire pour éviter les crashs SSR.
 6. **Icons Lucide-React** : Standard unique pour les icônes.
 7. **Styling Mixte** : Tailwind pour le layout, Vanilla CSS/Variables pour l'esthétique Premium (voir Design System).
+8. **Précision TypeScript** : `any` est un dernier recours interdit par défaut, les casts doivent être prouvés, `Record<string, unknown>` ne sert qu'aux frontières brutes, et tout accès dynamique doit être normalisé avant d'atteindre la logique métier.
 
 ## 5. Scripts et Automatisation
 Les scripts Python legacy sont dans `/legacy/`. Ne casse pas ces routines car elles sont critiques pour l'historique des données.
