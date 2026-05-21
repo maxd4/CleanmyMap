@@ -26,6 +26,24 @@
   "apps/web/src/components/actions/actions-history-list.tsx",
   "apps/web/src/components/sections/rubriques/weather-components.tsx",
   "apps/web/src/app/learn/hub/page.tsx",
-  "apps/web/src/lib/navigation.ts"
+  "apps/web/src/lib/navigation.ts",
+  "apps/web/src/lib/environmental-impact-estimator/service.ts",
+  "apps/web/src/components/environmental-impact-estimator/environmental-impact-estimator-panel.tsx",
+  "apps/web/src/lib/environmental-impact-estimator/project-signals.ts",
+  "apps/web/src/components/actions/action-declaration-form/action-declaration-export-picker.tsx",
+  "apps/web/src/components/admin/free-plan-services-panel.tsx",
+  "apps/web/src/lib/governance/governance-monthly-report.test.ts",
+  "apps/web/src/lib/governance/governance-monthly-report.ts",
+  "apps/web/src/lib/supabase/storage-business-contribution.ts",
+  "apps/web/src/components/environmental-impact-estimator/environmental-impact-curve-chart.tsx",
+  "apps/web/src/lib/environmental-impact-estimator/constants.ts",
+  "apps/web/src/lib/supabase/storage-usage.ts",
+  "apps/web/src/components/dashboard/storage-usage-panel.tsx",
+  "apps/web/src/lib/pdf-export/simple-pdf.ts",
+  "apps/web/src/lib/environmental-impact-estimator/types.ts",
+  "apps/web/src/components/dashboard/storage-business-contribution-donut.tsx",
+  "apps/web/src/lib/actions/export-form-media.ts",
+  "apps/web/src/components/navigation/app-navigation-ribbon.tsx",
+  "apps/web/src/lib/profiles.ts"
   ]
 }
