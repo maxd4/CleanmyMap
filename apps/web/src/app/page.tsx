@@ -1,49 +1,87 @@
-import { getNavigationSpacesForProfile } from '@/lib/navigation';
+import { getNavigationSpacesForProfile } from "@/lib/navigation";
 import {
   HomeHero,
   HomePillars,
   HomeBenefits,
   HomeCommunityActivity,
-  HomeFooter,
   OriginCredibility,
-} from '@/components/accueil';
+} from "@/components/accueil";
 import {
   buildHomeCommunityActivity,
   computeLandingCounters,
   loadLandingOverview,
-} from '@/lib/accueil/data';
-import { sortItemsForPreview, BLOCK_PREVIEW_PRIORITY } from '@/lib/accueil/navigation';
+} from "@/lib/accueil/data";
+import { sortItemsForPreview, BLOCK_PREVIEW_PRIORITY } from "@/lib/accueil/navigation";
 import {
   buildHomeMetrics,
   buildHomePillars,
   HOME_BENEFITS,
   type HomeCounters,
-} from '@/lib/accueil/config';
-import type { Metadata } from 'next';
+} from "@/lib/accueil/config";
+import type { Metadata } from "next";
+import { metadata as appMetadata } from "@/lib/metadata";
 
 export const metadata: Metadata = {
-  title: 'CleanMyMap - Carte Dépollution Paris & Actions Citoyennes Écologie',
-  description: 'CMM Paris : la carte citoyenne de propreté et depollution. Signalez les pollutions, organisez des cleanwalks, declarez vos actions de nettoyage. Developpement durable, benevolat, impact terrain, valorisation des dechets.',
+  ...appMetadata,
+  title: "CleanMyMap - Carte Dépollution Paris & Actions Citoyennes Écologie",
+  description:
+    "CMM Paris : la carte citoyenne de propreté et depollution. Signalez les pollutions, organisez des cleanwalks, declarez vos actions de nettoyage. Developpement durable, benevolat, impact terrain, valorisation des dechets.",
   keywords: [
-    'cleanmymap', 'cmm', 'depollution', 'proprete', 'paris', 'cleanwalk', 'carte',
-    'signalement', 'dechets', 'benevole', 'nettoyage', 'environnement',
-    'ecologie', 'developpement durable', 'action citoyenne', 'impact terrain',
-    'coordination', 'mutualisation', 'partenariat', 'entraide', 'solidarite',
-    'valorisation dechets', 'recyclage', 'economie circulaire', 'zero dechet',
-    'collecte populaire', 'opERATION propretE', 'engagement citoyen'
+    ...(appMetadata.keywords ?? []),
+    "cleanmymap",
+    "cmm",
+    "depollution",
+    "proprete",
+    "paris",
+    "cleanwalk",
+    "carte",
+    "signalement",
+    "dechets",
+    "benevole",
+    "nettoyage",
+    "environnement",
+    "ecologie",
+    "developpement durable",
+    "action citoyenne",
+    "impact terrain",
+    "coordination",
+    "mutualisation",
+    "partenariat",
+    "entraide",
+    "solidarite",
+    "valorisation dechets",
+    "recyclage",
+    "economie circulaire",
+    "zero dechet",
+    "collecte populaire",
+    "operation proprete",
+    "engagement citoyen",
   ],
   openGraph: {
-    title: 'CleanMyMap - Carte Dépollution Paris & Actions Citoyennes Écologie',
-    description: 'La carte citoyenne de propreté Paris. Signalez, nettoyez, agissez pour l\'environnement. Benevolat, ecologie, impact terrain.',
-    url: 'https://cleanmymap.fr',
-    siteName: 'CleanMyMap',
-    locale: 'fr_FR',
-    type: 'website',
+    ...appMetadata.openGraph,
+    title: "CleanMyMap - Carte Dépollution Paris & Actions Citoyennes Écologie",
+    description:
+      "La carte citoyenne de propreté Paris. Signalez, nettoyez, agissez pour l'environnement. Benevolat, ecologie, impact terrain.",
+    url: "/",
+    siteName: "CleanMyMap",
+    locale: "fr_FR",
+    type: "website",
+    images: [
+      {
+        url: "/brand/logo-cleanmymap.webp",
+        width: 1200,
+        height: 630,
+        alt: "CleanMyMap - Carte propreté Paris et cleanwalks",
+      },
+    ],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'CleanMyMap - Écologie Action Paris',
-    description: 'La carte citoyenne de depollution - Benevolat, ecologie, impact terrain',
+    ...appMetadata.twitter,
+    card: "summary_large_image",
+    title: "CleanMyMap - Écologie Action Paris",
+    description:
+      "La carte citoyenne de depollution - Benevolat, ecologie, impact terrain",
+    images: ["/brand/logo-cleanmymap.webp"],
   },
   robots: {
     index: true,
@@ -51,9 +89,9 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
 };
@@ -63,7 +101,7 @@ export default async function HomePage() {
   const floor = new Date();
   floor.setUTCDate(floor.getUTCDate() - 365);
   const floorDate = floor.toISOString().slice(0, 10);
-  
+
   const counters: HomeCounters = overview
     ? computeLandingCounters(overview.contracts, floorDate)
     : {
@@ -82,9 +120,9 @@ export default async function HomePage() {
     floorDate,
   );
 
-  const accueilSpaces = getNavigationSpacesForProfile('benevole', 'exhaustif', 'fr');
+  const accueilSpaces = getNavigationSpacesForProfile("benevole", "exhaustif", "fr");
   const accueilSpaceMap = new Map(accueilSpaces.map((space) => [space.id, space]));
-  
+
   const getSpacePreview = (spaceId: keyof typeof BLOCK_PREVIEW_PRIORITY) => {
     const ordered = sortItemsForPreview(
       spaceId,

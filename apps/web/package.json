@@ -23,6 +23,7 @@
     "data:validated:sync": "node scripts/sync-validated-local-store.mjs",
     "data:archive:supabase": "node scripts/export-supabase-archive.mjs",
     "data:cleanup:supabase": "node scripts/cleanup-supabase-retention.mjs",
+    "analyze:bundle": "node scripts/analyze-bundle.mjs",
     "backend:doctor": "node scripts/backend-doctor.mjs",
     "backend:supabase:advisors": "node scripts/supabase-security-advisors.mjs",
     "backend:supabase:advisors:local": "node scripts/supabase-security-advisors.mjs --local",

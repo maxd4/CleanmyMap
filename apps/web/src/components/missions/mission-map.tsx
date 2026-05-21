@@ -136,7 +136,13 @@ export function MissionMap({ points, actions = [] }: MissionMapProps) {
                   {action.content && <p className="text-xs text-slate-600">{action.content}</p>}
                   {action.image_url && (
                     <div className="mt-2 overflow-hidden rounded-xl border border-slate-100">
-                      <img src={action.image_url} className="h-32 w-full object-cover" alt="Action captured" />
+                      <img
+                        src={action.image_url}
+                        className="h-32 w-full object-cover"
+                        alt="Action captured"
+                        loading="lazy"
+                        decoding="async"
+                      />
                     </div>
                   )}
                   <p className="mt-2 text-[9px] text-slate-400">

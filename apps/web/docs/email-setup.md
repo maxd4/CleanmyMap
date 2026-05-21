@@ -3,7 +3,7 @@
 Configuration cible :
 
 - envoi transactionnel via Resend
-- domaine d’envoi : `cleanmymap.fr`
+- domaine d’envoi : `mail.cleanmymap.fr`
 - inbox de contact : `contact@cleanmymap.fr`
 - réception gratuite via redirection LWS vers Gmail
 
@@ -13,7 +13,7 @@ Configuration cible :
 
 ```bash
 RESEND_API_KEY=...
-EMAIL_FROM="CleanMyMap <noreply@cleanmymap.fr>"
+EMAIL_FROM="CleanMyMap <contact@mail.cleanmymap.fr>"
 CONTACT_EMAIL=contact@cleanmymap.fr
 NEXT_PUBLIC_CONTACT_EMAIL=contact@cleanmymap.fr
 ```
@@ -30,7 +30,7 @@ Les composants client qui affichent ou ouvrent un `mailto:` lisent aussi `NEXT_P
 
 ## 2. DNS à créer dans LWS
 
-Dans Resend, ajoute le domaine `cleanmymap.fr`, puis récupère les enregistrements DNS affichés dans le dashboard.
+Dans Resend, ajoute le domaine `mail.cleanmymap.fr`, puis récupère les enregistrements DNS affichés dans le dashboard.
 
 Resend documente que la vérification de domaine repose sur :
 
@@ -40,8 +40,8 @@ Resend documente que la vérification de domaine repose sur :
 
 Pour ce projet, garde la configuration simple :
 
-- si tu envoies depuis le domaine racine, publie les TXT sur `cleanmymap.fr`
-- si tu préfères une séparation plus nette, vérifie plutôt un sous-domaine comme `mail.cleanmymap.fr`
+- vérifie le sous-domaine `mail.cleanmymap.fr` dans Resend
+- publie les enregistrements DNS exactement comme Resend les fournit pour ce sous-domaine
 
 Dans le DNS LWS, ajoute exactement les valeurs fournies par Resend. Les noms attendus sont généralement :
 
@@ -89,7 +89,7 @@ curl -X POST http://localhost:3000/api/send \
 Attendu :
 
 - l’API répond avec un `id` Resend
-- l’expéditeur est `CleanMyMap <noreply@cleanmymap.fr>`
+- l’expéditeur est `CleanMyMap <contact@mail.cleanmymap.fr>`
 - la réponse / le reply-to pointe vers `contact@cleanmymap.fr`
 
 ## 6. Sources officielles
