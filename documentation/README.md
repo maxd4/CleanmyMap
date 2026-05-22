@@ -7,9 +7,9 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 ## 🎯 Démarrage Rapide IA
 
 ### Première Session
-1. **OBLIGATOIRE** : Lire **AGENTS.md** (règles globales)
-2. **OBLIGATOIRE** : Lire **sessions/history/latest-session.md** (contexte actuel)
-3. Consulter **project_context.md** (vue d'ensemble)
+1. **OBLIGATOIRE** : Lire les règles globales du projet
+2. **OBLIGATOIRE** : Lire le contexte de session actuel
+3. Consulter la vue d'ensemble du projet
 
 ### Avant Toute Modification
 1. **UI** → Lire **design-system/README.md** (CRITIQUE)
@@ -24,19 +24,12 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 
 ```
 documentation/
-├── AGENTS.md                    ⭐ LIRE EN PREMIER
-├── project_context.md           ⭐ Vue d'ensemble
 ├── README.md                    ← Ce fichier
+├── guide-de-demarrage.md        ⭐ Règles et contexte de session
 │
 ├── ai-guides/                   🤖 Guides spécifiques IA
 │   ├── AI_MODULARIZATION_GUIDE.md
 │   └── AI_MODULARIZATION_CHEATSHEET.md
-│
-├── sessions/                    📝 Contexte & historique
-│   ├── history/latest-session.md  ⭐ LIRE AU DÉMARRAGE
-│   ├── context/
-│   ├── assets/
-│   └── templates/
 │
 ├── design-system/               🎨 CRITIQUE pour UI
 │   ├── README.md
@@ -79,11 +72,8 @@ documentation/
 │   ├── GAMIFICATION_ENGINE.md
 │   └── quiz-srs.md
 │
-├── liberte-UX-UI/              🎨 Audits UX/UI
+├── liberte-UX-UI/               🎨 Audits UX/UI
 │   └── [10 dossiers de blocs]
-│
-├── plans/                       📅 Plans futurs
-│   └── visual_transformation_plan.md
 │
 ├── maintenance/                 🔧 Maintenance
 │   ├── improvements_journal.md
@@ -100,9 +90,9 @@ documentation/
 
 ### 1. Démarrage Session
 ```
-□ Lire AGENTS.md
-□ Lire sessions/history/latest-session.md
-□ Consulter project_context.md si besoin
+□ Lire les règles globales du projet
+□ Lire le contexte de session actuel
+□ Consulter la vue d'ensemble du projet si besoin
 ```
 
 ### 2. Avant de Coder
@@ -128,7 +118,7 @@ documentation/
 
 ### 5. Fin de Session
 ```
-□ Mettre à jour sessions/history/latest-session.md
+□ Mettre à jour le contexte de session
 □ Documenter les décisions importantes
 ```
 
@@ -151,8 +141,8 @@ documentation/
 ## 🎯 Règles Globales IA
 
 ### Toujours
-- ✅ Lire AGENTS.md au démarrage
-- ✅ Lire latest-session.md pour continuité
+- ✅ Lire les règles globales au démarrage
+- ✅ Lire le contexte de session pour continuité
 - ✅ Consulter design-system/ avant UI
 - ✅ Appliquer `cleanmymap-ui-ux-pro-max.md` sur les surfaces métier denses
 - ✅ Consulter security/ avant code sensible
@@ -227,7 +217,7 @@ npm run test:regression-gates
 ### Documentation
 - Code auto-documenté
 - Documentation technique à jour
-- Sessions documentées
+- Contexte de session documenté
 
 ---
 
