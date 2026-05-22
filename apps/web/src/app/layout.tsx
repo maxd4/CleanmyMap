@@ -1,14 +1,5 @@
-import {
- Show,
- UserButton,
-} from"@clerk/nextjs";
 import { ConditionalAnalytics } from"@/components/ui/conditional-analytics";
-import Image from"next/image";
-import Link from"next/link";
-import { LogIn, UserPlus, Map as MapIcon } from "lucide-react";
 import type { Metadata } from"next";
-import { headers } from"next/headers";
-import { AccountIdentityChip } from"@/components/account/account-identity-chip";
 import { AppNavigationRibbon } from"@/components/navigation/app-navigation-ribbon";
 import { PostHogProvider } from"@/components/posthog-provider";
 import { CookieConsentBanner } from"@/components/ui/cookie-consent-banner";
@@ -17,7 +8,6 @@ import { VibrantBackground } from"@/components/ui/vibrant-background";
 import { SitePreferencesProvider } from"@/components/ui/site-preferences-provider";
 import { SiteTooltips } from"@/components/ui/site-tooltips";
 import { NetworkToastHost } from"@/components/ui/network-toast";
-import { NotificationBell } from"@/components/navigation/notification-bell";
 import { OrganizationJsonLd, WebSiteJsonLd, FAQJsonLd } from"@/components/seo/structured-data/";
 import { ProjectPageviewTracker } from"@/components/analytics/project-pageview-tracker";
 import { HomeFooter } from "@/components/accueil";
@@ -27,8 +17,10 @@ import { getClerkRuntimeConfig } from"@/lib/clerk-session-config";
 import { getProfileLabel, toProfile } from"@/lib/profiles";
 import { getServerDisplayModePreference, getServerLocale } from"@/lib/server-preferences";
 import { metadata as appMetadata } from"@/lib/metadata";
+import { headers } from "next/headers";
 import type { CSSProperties } from "react";
 import"./globals.css";
+import { resolveBackdropToneKey } from "@/lib/ui/backdrop-tone";
 
 export const metadata: Metadata = appMetadata;
 
@@ -53,12 +45,11 @@ export default async function RootLayout({
   : locale ==="fr"
   ?"Visiteur"
   :"Visitor";
-  const requestHeaders = await headers();
-  const isAppShell = requestHeaders.get("x-cleanmymap-app-shell") ==="1";
-  const hideGlobalHeader =
-  requestHeaders.get("x-cleanmymap-hide-global-header") ==="1";
   const appRibbonTopOffset = "0rem";
-  const appHeaderTopOffset = hideGlobalHeader ? "0rem" : "4.75rem";
+  const requestHeaders = await headers();
+  const initialBackdropToneKey = resolveBackdropToneKey(
+    requestHeaders.get("x-cleanmymap-backdrop-tone"),
+  );
 
 return (
     <html className="h-full antialiased" suppressHydrationWarning data-theme="mixed">
@@ -68,13 +59,8 @@ return (
     <FAQJsonLd />
   </head>
   <body
-    className="min-h-full bg-background text-foreground font-sans"
-   style={
-     {
-      "--app-ribbon-top-offset": appRibbonTopOffset,
-      "--app-header-top-offset": appHeaderTopOffset,
-     } as CSSProperties
-   }
+    className="relative isolate min-h-full overflow-x-hidden bg-background text-foreground font-sans"
+   style={{ "--app-ribbon-top-offset": appRibbonTopOffset } as CSSProperties}
   >
 <SitePreferencesProvider
 initialDisplayMode={displayModePreference.displayMode}
@@ -94,72 +80,14 @@ initialDisplayModeExplicit={displayModePreference.isExplicit}
 <PostHogProvider>
   <ProjectPageviewTracker />
   <NetworkToastHost />
-  <VibrantBackground />
+  <VibrantBackground initialToneKey={initialBackdropToneKey} />
   <SiteTooltips />
   <AppNavigationRibbon
   currentProfile={currentProfile}
   profileLabel={profileLabel}
   identity={identity}
   />
-  {!isAppShell && !hideGlobalHeader ? (
-  <header className="sticky top-[var(--app-header-top-offset,0rem)] z-30 border-b border-white/[0.06] bg-[#0f172a]/95 shadow-sm backdrop-blur-xl transition-all duration-300">
-   <div className="mx-auto flex w-full max-w-[1600px] items-center justify-between gap-4 overflow-x-auto px-4 py-3 scrollbar-none sm:px-8"> <Link href="/" className="flex shrink-0 items-center gap-2 transition-opacity hover:opacity-95">
- <Image
- src="/brand/logo-cleanmymap-officiel.svg"
- alt="Logo CleanMyMap"
- width={160}
- height={48}
- className="h-6 w-auto sm:h-7"
- priority
- />
- </Link>
- <div className="flex min-w-max items-center gap-3 sm:gap-4">
-  <Link
-  href="/explorer"
-  className="hidden items-center gap-2 rounded-full border border-[color:var(--border-default)] bg-[color:var(--bg-muted)] px-3 py-1.5 cmm-text-small cmm-text-secondary font-semibold transition hover:border-cyan-300/50 hover:bg-cyan-300/10 hover:text-cyan-200 sm:inline-flex"
-  >
-  <MapIcon size={14} />
-  Sommaire
-  </Link>
- <div className="h-4 w-px bg-[color:var(--border-default)]" />
- <Show when="signed-out">
-  <div className="flex items-center gap-2">
-  <Link
-  href="/sign-in"
-  className="flex items-center gap-2 cmm-text-small cmm-text-secondary font-semibold transition-colors hover:text-cyan-200"
-  >
-   <LogIn size={16} />
-   Connexion
-  </Link>
-  <Link
-  href="/sign-up"
-  className="flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-1.5 cmm-text-small font-semibold text-white shadow-md shadow-emerald-600/10 transition-all hover:bg-emerald-700"
-  >
-   <UserPlus size={16} />
-   Rejoindre
-  </Link>
-  </div>
- </Show>
- <Show when="signed-in">
- <div className="flex items-center gap-3">
- {identity ? (
- <AccountIdentityChip identity={identity} />
- ) : null}
- <NotificationBell />
- <UserButton
- appearance={{
- elements: {
- userButtonAvatarBox:"h-8 w-8 ring-2 ring-emerald-500/20",
- },
- }}
- />
- </div>
- </Show>
- </div>
- </div>
- </header>
- ) : null}
-<main className="flex flex-col flex-1">
+<main className="flex flex-col flex-1 pt-2 sm:pt-0">
  {children}
 </main>
 <ConditionalAnalytics />

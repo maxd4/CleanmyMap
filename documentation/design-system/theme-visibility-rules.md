@@ -9,6 +9,7 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
 - Icônes informatives: ratio >= 3:1.
 - Bordures de composants interactifs: ratio >= 3:1 contre le fond adjacent.
 - États `hover`, `active`, `focus`, `disabled`: conservent un contraste conforme.
+- Les surfaces qui portent du texte doivent rester plus foncées que le background global quand le site repose majoritairement sur du texte blanc, afin de renforcer la lisibilité et de faire ressortir les contenus inversés.
 
 ## 2) Tokens de couleurs obligatoires
 - Interdire les couleurs codées en dur dans les composants critiques (CTA, navigation, badges, tableaux KPI).

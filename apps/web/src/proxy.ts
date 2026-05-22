@@ -11,6 +11,7 @@ import {
 } from "@/lib/seo/indexability";
 import { createPublicRateLimitResponse } from "@/lib/security/validation";
 import { getTrustedClientIp } from "@/lib/rate-limit/utils";
+import { resolveBackdropToneKey } from "@/lib/ui/backdrop-tone";
 
 const isProtectedRoute = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS]);
 const PUBLIC_ROUTE_EXCEPTIONS = ["/actions/map", "/api/actions/map"] as const;
@@ -66,6 +67,12 @@ function nextWithAppHeaders(req: NextRequest): NextResponse {
     "x-cleanmymap-hide-global-header",
     pathname === "/" ? "1" : "0",
   );
+  const backdropToneKey = resolveBackdropToneKey(pathname);
+  if (backdropToneKey) {
+    requestHeaders.set("x-cleanmymap-backdrop-tone", backdropToneKey);
+  } else {
+    requestHeaders.delete("x-cleanmymap-backdrop-tone");
+  }
   if (shouldNoIndex(pathname)) {
     requestHeaders.set("x-cleanmymap-noindex", "1");
   }
