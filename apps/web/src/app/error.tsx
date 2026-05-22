@@ -4,7 +4,6 @@ import { useEffect, useMemo } from"react";
 import { useAuth } from"@clerk/nextjs";
 import { usePathname } from"next/navigation";
 import * as Sentry from"@sentry/nextjs";
-import { VibrantBackground } from"@/components/ui/vibrant-background";
 import { ServerErrorCard } from"@/components/ui/server-error-card";
 import { buildSupportHref } from"@/lib/errors/app-errors";
 import { isSentryEnabled } from "@/lib/observability/sentry";
@@ -39,9 +38,8 @@ export default function Error({
  console.error("[Runtime Error]", error);
  }, [error, isSentryConfigured]);
 
- return (
- <div className="relative min-h-screen overflow-hidden p-6 font-outfit">
- <VibrantBackground />
+  return (
+  <div className="relative min-h-screen overflow-hidden p-6 font-outfit">
  <div className="relative z-10 flex min-h-screen items-center justify-center">
   <ServerErrorCard
     className="w-full max-w-[42rem]"

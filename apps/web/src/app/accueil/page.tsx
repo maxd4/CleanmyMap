@@ -45,15 +45,7 @@ export default async function AccueilPage() {
   return (
     <main
       className="relative min-h-screen overflow-hidden font-sans"
-      style={{ background: "#b45309" }}
     >
-      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 140% 90% at 50% -10%, #fde68a 0%, #fb923c 35%, #ea580c 65%, #b45309 100%)" }} />
-      <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(ellipse 80% 55% at 50% 0%, rgba(253,230,138,0.55) 0%, transparent 70%)" }} />
-      <div className="pointer-events-none absolute -top-32 -left-32 h-[520px] w-[520px] rounded-full blur-[100px]" style={{ background: "rgba(251,191,36,0.45)" }} />
-      <div className="pointer-events-none absolute top-1/3 -right-24 h-[400px] w-[400px] rounded-full blur-[90px]" style={{ background: "rgba(249,115,22,0.30)" }} />
-      <div className="pointer-events-none absolute bottom-0 left-0 h-[500px] w-[500px] -translate-x-1/4 translate-y-1/4 rounded-full blur-[110px]" style={{ background: "rgba(253,224,71,0.28)" }} />
-
-
       <div className="relative z-10 mx-auto w-full max-w-[1400px] px-5 pb-16 pt-8 sm:px-8">
 
         {/* Hero */}

@@ -1,14 +1,11 @@
 "use client";
 
 import Link from"next/link";
-import { VibrantBackground } from"@/components/ui/vibrant-background";
 import { Globe, Home, ArrowLeft } from"lucide-react";
 
 export default function NotFound() {
  return (
  <div className="relative min-h-screen flex flex-col items-center justify-center p-6 text-center overflow-hidden">
- <VibrantBackground />
- 
  <div className="relative z-10 space-y-8 max-w-2xl px-4 py-16 premium-card bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-white/20 shadow-2xl rounded-[3rem]">
  {/* Animated Icon Container */}
  <div className="flex justify-center">
