@@ -19,8 +19,8 @@ function hasFlag(flag) {
   return args.includes(flag);
 }
 
-const maxLines = Number(readArg("--max-lines", "500"));
-const maxKb = Number(readArg("--max-kb", "40"));
+const maxLines = Number(readArg("--max-lines", "1000"));
+const maxKb = Number(readArg("--max-kb", "50"));
 const topCount = Number(readArg("--top", "20"));
 const enforce = hasFlag("--enforce");
 const baselinePath = resolve(
