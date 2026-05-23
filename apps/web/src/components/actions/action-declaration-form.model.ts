@@ -75,13 +75,14 @@ export type SubmissionState ="idle" |"pending" |"success" |"error";
 export type DeclarationMode ="quick" |"complete";
 
 export type PostActionRetentionLoop = {
- summary: string;
- badge: string;
- share: {
- text: string;
- url: string;
- };
- nextActionSuggestion: string;
+  summary: string;
+  badge: string;
+  thanksMessage: string;
+  share: {
+    text: string;
+    url: string;
+  };
+  nextActionSuggestion: string;
 };
 
 export function toOptionalNumber(input: string): number | undefined {

@@ -39,7 +39,7 @@ export async function GET(request: Request) {
       {
         status: "error",
         error: "Impossible de charger la fiche des services en plan gratuit.",
-        details: message,
+        details: "Unavailable",
       },
       { status: 503 },
     );

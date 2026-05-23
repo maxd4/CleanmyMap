@@ -31,6 +31,13 @@ export function buildGreaterParisLeafletBounds(): [[number, number], [number, nu
 }
 
 export function buildGreaterParisNominatimSearchUrl(query: string): string | null {
+  return buildGreaterParisNominatimSearchUrlWithLimit(query, 1);
+}
+
+export function buildGreaterParisNominatimSearchUrlWithLimit(
+  query: string,
+  limit: number,
+): string | null {
   const normalizedQuery = query.trim();
   if (!normalizedQuery) {
     return null;
@@ -39,7 +46,7 @@ export function buildGreaterParisNominatimSearchUrl(query: string): string | nul
   const params = new URLSearchParams({
     format: "jsonv2",
     q: normalizedQuery,
-    limit: "1",
+    limit: String(Math.max(1, Math.min(10, Math.trunc(limit) || 1))),
     addressdetails: "1",
     countrycodes: "fr",
     bounded: "1",
@@ -47,6 +54,235 @@ export function buildGreaterParisNominatimSearchUrl(query: string): string | nul
   });
 
   return `https://nominatim.openstreetmap.org/search?${params.toString()}`;
+}
+
+export type GreaterParisAddressSuggestion = {
+  label: string;
+  subtitle: string;
+  latitude: number;
+  longitude: number;
+  importance: number;
+};
+
+const LOCAL_GREATER_PARIS_ADDRESS_SUGGESTIONS: Array<
+  GreaterParisAddressSuggestion & { keywords: string[] }
+> = [
+  {
+    label: "12 Rue de Rivoli, 75004 Paris",
+    subtitle: "Paris 4e · Louvre",
+    latitude: 48.8557,
+    longitude: 2.3562,
+    importance: 0.98,
+    keywords: ["rue de rivoli", "rivoli"],
+  },
+  {
+    label: "5 Rue de Rivoli, 75001 Paris",
+    subtitle: "Paris 1er · Hôtel de Ville",
+    latitude: 48.8601,
+    longitude: 2.3419,
+    importance: 0.94,
+    keywords: ["rue de rivoli", "rivoli"],
+  },
+  {
+    label: "Place de la République, 75003 Paris",
+    subtitle: "Paris 3e / 10e / 11e",
+    latitude: 48.8675,
+    longitude: 2.3633,
+    importance: 0.99,
+    keywords: ["place de la république", "place de la republique", "république", "republique"],
+  },
+  {
+    label: "1 Place de la République, 75003 Paris",
+    subtitle: "Paris 3e · angle nord",
+    latitude: 48.8672,
+    longitude: 2.3646,
+    importance: 0.92,
+    keywords: ["place de la république", "place de la republique", "république", "republique"],
+  },
+  {
+    label: "29 Boulevard Voltaire, 75011 Paris",
+    subtitle: "Paris 11e · Oberkampf",
+    latitude: 48.8619,
+    longitude: 2.3778,
+    importance: 0.87,
+    keywords: ["voltaire", "boulevard voltaire"],
+  },
+  {
+    label: "10 Avenue de la République, 75011 Paris",
+    subtitle: "Paris 11e · République",
+    latitude: 48.8653,
+    longitude: 2.3768,
+    importance: 0.89,
+    keywords: ["avenue de la république", "avenue de la republique", "république", "republique"],
+  },
+  {
+    label: "21 Rue du Temple, 75004 Paris",
+    subtitle: "Paris 4e · Marais",
+    latitude: 48.8609,
+    longitude: 2.3561,
+    importance: 0.84,
+    keywords: ["rue du temple", "temple"],
+  },
+  {
+    label: "3 Rue de Turbigo, 75001 Paris",
+    subtitle: "Paris 1er · Sentier",
+    latitude: 48.8648,
+    longitude: 2.3461,
+    importance: 0.83,
+    keywords: ["turbigo", "rue de turbigo"],
+  },
+  {
+    label: "1 Boulevard de Sébastopol, 75001 Paris",
+    subtitle: "Paris 1er / 2e",
+    latitude: 48.8629,
+    longitude: 2.3496,
+    importance: 0.82,
+    keywords: ["sébastopol", "sebastopol", "boulevard de sebastopol", "boulevard de sébastopol"],
+  },
+  {
+    label: "25 Quai de la Tournelle, 75005 Paris",
+    subtitle: "Paris 5e · Seine",
+    latitude: 48.8507,
+    longitude: 2.3513,
+    importance: 0.81,
+    keywords: ["quai de la tournelle", "tournelle"],
+  },
+];
+
+function normalizeSearchText(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+export function searchLocalGreaterParisAddressSuggestions(
+  query: string,
+  limit = 6,
+): GreaterParisAddressSuggestion[] {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) {
+    return [];
+  }
+
+  const scored = LOCAL_GREATER_PARIS_ADDRESS_SUGGESTIONS.map((item) => {
+    const normalizedLabel = normalizeSearchText(item.label);
+    const normalizedSubtitle = normalizeSearchText(item.subtitle);
+    const matchesKeyword = item.keywords.some((keyword) =>
+      normalizedQuery.includes(normalizeSearchText(keyword)) ||
+      normalizeSearchText(keyword).includes(normalizedQuery),
+    );
+    const startsWith = normalizedLabel.startsWith(normalizedQuery) ? 4 : 0;
+    const contains = normalizedLabel.includes(normalizedQuery) ? 2 : 0;
+    const subtitleMatch = normalizedSubtitle.includes(normalizedQuery) ? 1 : 0;
+    const keywordScore = matchesKeyword ? 3 : 0;
+    const score = startsWith + contains + subtitleMatch + keywordScore;
+    return { ...item, score };
+  })
+    .filter((item) => item.score > 0)
+    .sort((left, right) =>
+      right.score === left.score
+        ? right.importance - left.importance
+        : right.score - left.score,
+    )
+  .slice(0, Math.max(1, Math.min(8, Math.trunc(limit) || 1)));
+
+  return scored.map((entry) => {
+    const { score, keywords, ...item } = entry;
+    void score;
+    void keywords;
+    return item;
+  });
+}
+
+export type NominatimAddress = {
+  house_number?: string;
+  road?: string;
+  pedestrian?: string;
+  footway?: string;
+  cycleway?: string;
+  path?: string;
+  place?: string;
+  suburb?: string;
+  village?: string;
+  town?: string;
+  city?: string;
+  municipality?: string;
+  postcode?: string;
+  state?: string;
+  country?: string;
+};
+
+export type NominatimSearchResult = {
+  lat?: string;
+  lon?: string;
+  display_name?: string;
+  importance?: number;
+  address?: NominatimAddress;
+};
+
+function cleanLabelPart(value: string | undefined): string {
+  return value?.trim().replace(/\s+/g, " ") ?? "";
+}
+
+export function formatGreaterParisAddressLabel(
+  result: NominatimSearchResult,
+): string {
+  const address = result.address;
+  if (!address) {
+    return cleanLabelPart(result.display_name) || "Adresse sans libellé";
+  }
+
+  const streetName =
+    cleanLabelPart(address.road) ||
+    cleanLabelPart(address.pedestrian) ||
+    cleanLabelPart(address.footway) ||
+    cleanLabelPart(address.cycleway) ||
+    cleanLabelPart(address.path) ||
+    cleanLabelPart(address.place);
+  const number = cleanLabelPart(address.house_number);
+  const city =
+    cleanLabelPart(address.city) ||
+    cleanLabelPart(address.town) ||
+    cleanLabelPart(address.municipality) ||
+    cleanLabelPart(address.village) ||
+    cleanLabelPart(address.suburb);
+  const postcode = cleanLabelPart(address.postcode);
+
+  const firstLine = [number, streetName].filter(Boolean).join(" ").trim();
+  const cityLine = [postcode, city].filter(Boolean).join(" ").trim();
+
+  if (firstLine && cityLine) {
+    return `${firstLine}, ${cityLine}`;
+  }
+  if (firstLine) {
+    return firstLine;
+  }
+  if (cityLine) {
+    return cityLine;
+  }
+
+  return cleanLabelPart(result.display_name) || "Adresse sans libellé";
+}
+
+export function formatGreaterParisAddressSubtitle(
+  result: NominatimSearchResult,
+): string {
+  const address = result.address;
+  if (!address) {
+    return "Adresse exacte";
+  }
+
+  const city =
+    cleanLabelPart(address.city) ||
+    cleanLabelPart(address.town) ||
+    cleanLabelPart(address.municipality) ||
+    cleanLabelPart(address.village) ||
+    cleanLabelPart(address.suburb);
+  const state = cleanLabelPart(address.state);
+  const parts = [city, state].filter(Boolean);
+  return parts.length > 0 ? parts.join(" · ") : "Adresse exacte";
 }
 
 export function parseNominatimCoordinates(

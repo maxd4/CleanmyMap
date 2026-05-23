@@ -1,164 +1,67 @@
-# Système de Boutons Accueil - CleanMyMap
+# Système de boutons CleanMyMap
 
 ## Vue d'ensemble
 
-Système de boutons premium hiérarchisé pour l'accueil, inspiré du design moderne avec dégradés riches, relief subtil et transitions fluides.
+`CmmButton` est le composant bouton partagé du site.
+Il fait partie des exceptions assumées aux règles visuelles de base: contrairement au texte courant et aux petites étiquettes de cartes, un bouton doit signaler l'action et porter sa propre hiérarchie de couleur.
 
-## Hiérarchie des boutons
+## Contrat visuel
 
-### 1. Boutons Primaires (Primary)
-**Usage** : Actions principales et CTA les plus importants
-**Style** : Dégradé cyan → teal → emerald
-**Caractéristiques** :
-- Hauteur : 56px (h-14)
-- Padding : 32px horizontal (px-8)
-- Border radius : 20px (rounded-[1.25rem])
-- Dégradé : `from-[#06b6d4] via-[#14b8a6] to-[#10b981]`
-- Ombre : Double shadow avec cyan et emerald
-- Hover : Lift -4px + shadow amplifiée + dégradé plus clair
-- Texte : Blanc, font-bold, 16px
+Les boutons exposent trois tons stables:
 
-**Règle** : Maximum 1-2 boutons primaires par zone
+- `primary`: action principale, fond vert émeraude, texte blanc
+- `secondary`: action alternative, fond blanc, texte slate
+- `tertiary`: action discrète, fond transparent, texte slate
 
-**Exemples d'usage** :
-- "Voir la carte"
-- "Déclarer une action"
+`tertiary` est le nom canonique. `muted` reste un alias de compatibilité interne uniquement.
 
-### 2. Boutons Secondaires (Secondary)
-**Usage** : Actions alternatives importantes
-**Style** : Dégradé indigo → violet → purple
-**Caractéristiques** :
-- Hauteur : 56px (h-14)
-- Padding : 32px horizontal (px-8)
-- Border radius : 20px (rounded-[1.25rem])
-- Dégradé : `from-[#6366f1] via-[#8b5cf6] to-[#a855f7]`
-- Ombre : Double shadow avec indigo et purple
-- Hover : Lift -4px + shadow amplifiée + dégradé plus clair
-- Texte : Blanc, font-bold, 16px
+## Règles d'usage
 
-**Règle** : Maximum 1 bouton secondaire par zone (si primaire présent)
+- Utiliser `primary` pour l'action la plus importante d'une zone.
+- Utiliser `secondary` pour l'alternative principale.
+- Utiliser `tertiary` pour les actions moins prioritaires, les liens de soutien et les CTA discrets.
+- Ne pas réappliquer les règles générales de texte sur les labels de bouton: la couleur du texte est pilotée par le ton du bouton.
+- Éviter les styles inline de bouton quand `CmmButton` peut couvrir le besoin.
+- Conserver l'exception bouton même sur les cartes et bulles sombres: le contraste doit rester lisible avant tout.
 
-**Exemples d'usage** :
-- "Explorer le site"
-- "Annuaire partenaires"
+## Variantes techniques
 
-### 3. Boutons Tertiaires (Tertiary)
-**Usage** : Actions utilitaires et liens discrets
-**Style** : Texte simple sur fond transparent
-**Caractéristiques** :
-- Hauteur : 48px (h-12)
-- Padding : 24px horizontal (px-6)
-- Pas de background
-- Pas de border
-- Hover : Couleur cyan + gap augmenté
-- Texte : Blanc/90, font-semibold, 14px
+Le composant gère aussi:
 
-**Règle** : Utiliser pour toutes les actions secondaires
+- `default`: forme standard
+- `pill`: forme arrondie complète
+- `ghost`: forme allégée sans bordure visible
 
-**Exemples d'usage** :
-- "Se connecter"
-- "Voir l'impact"
-- Liens de navigation
+## Dimensions
 
-## Composant HomeButton
+- `sm`: compact
+- `md`: taille par défaut
+- `lg`: bouton d'appel à l'action plus visible
+
+## Référence d'implémentation
+
+Source de vérité:
+
+- [apps/web/src/components/ui/cmm-button.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/ui/cmm-button.tsx)
+
+## Exemples
 
 ```tsx
-import { HomeButton } from '@/components/accueil';
+<CmmButton href="/actions/new" tone="primary">
+  Déclarer une action
+</CmmButton>
 
-// Primaire
-<HomeButton href="/actions/map" variant="primary">
-  Voir la carte
-</HomeButton>
+<CmmButton href="/explorer" tone="secondary">
+  Explorer
+</CmmButton>
 
-// Secondaire
-<HomeButton href="/explorer" variant="secondary">
-  Explorer le site
-</HomeButton>
-
-// Tertiaire
-<HomeButton href="/sign-in" variant="tertiary">
+<CmmButton href="/sign-in" tone="tertiary">
   Se connecter
-</HomeButton>
-
-// Avec icône personnalisée
-<HomeButton href="/actions/map" variant="primary" icon={Map}>
-  Voir la carte
-</HomeButton>
+</CmmButton>
 ```
 
-## Règles de composition
+## Rappels
 
-### Dans une même zone :
-- ✅ 1 primaire + 1 secondaire + N tertiaires
-- ✅ 2 primaires + N tertiaires (si actions équivalentes)
-- ✅ 1 secondaire + N tertiaires
-- ❌ 2 primaires + 1 secondaire (trop chargé)
-- ❌ 3+ boutons primaires/secondaires
-
-### Espacement :
-- Gap entre boutons : 12-16px (gap-3 sm:gap-4)
-- Alignement : flex-start pour desktop, center pour mobile
-
-### États :
-- **Hover** : Lift + shadow + couleur plus claire
-- **Active** : Retour position + shadow réduite
-- **Focus** : Ring visible (accessibilité)
-- **Disabled** : Opacity 50% + cursor not-allowed
-
-## Palette de couleurs
-
-### Primaire (Cyan → Emerald)
-- Base : `#06b6d4` → `#14b8a6` → `#10b981`
-- Hover : `#22d3ee` → `#2dd4bf` → `#34d399`
-- Shadow : `rgba(6,182,212,0.4)` + `rgba(16,185,129,0.3)`
-
-### Secondaire (Indigo → Purple)
-- Base : `#6366f1` → `#8b5cf6` → `#a855f7`
-- Hover : `#818cf8` → `#a78bfa` → `#c084fc`
-- Shadow : `rgba(99,102,241,0.35)` + `rgba(168,85,247,0.3)`
-
-### Tertiaire
-- Base : `white/90`
-- Hover : `#22d3ee` (cyan-300)
-
-## Sections de l'accueil
-
-### HomeHero
-- 2 primaires : "Voir la carte" + "Déclarer une action"
-- 1 secondaire : "Explorer le site"
-- 2 tertiaires : "Se connecter" + "Voir l'impact"
-
-### OriginCredibility
-- 1 primaire : "Voir la carte"
-- 1 secondaire : "Annuaire partenaires"
-
-### Autres sections
-- Utiliser tertiaire par défaut
-- Primaire uniquement si CTA critique
-
-## Accessibilité
-
-- Focus ring visible (ring-2)
-- Contraste texte/fond > 4.5:1
-- Touch target ≥ 44px
-- Keyboard navigation complète
-- Screen reader friendly
-
-## Performance
-
-- Transitions CSS natives (pas de JS)
-- GPU acceleration (transform, opacity)
-- Pas de layout shift
-- Hover states optimisés
-
-## Maintenance
-
-Fichier source : `apps/web/src/components/accueil/accueil-button.tsx`
-
-Pour modifier les styles :
-1. Éditer `VARIANT_STYLES` dans accueil-button.tsx
-2. Tester sur toutes les sections
-3. Vérifier accessibilité et responsive
-4. Mettre à jour cette documentation
-
-
+- Les boutons sont une exception de lisibilité, pas un changement de règle global.
+- Le style de base du site reste sobre et lisible; le bouton est le seul élément qui peut porter une couleur plus expressive pour signaler l'action.
+- Si un nouveau cas visuel ne rentre pas dans ces trois tons, il faut documenter l'exception avant de l'introduire.

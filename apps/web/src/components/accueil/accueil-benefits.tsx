@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useRef } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
@@ -16,6 +16,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { HomeIconName } from "@/lib/accueil/config";
+import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
 
 interface Benefit {
   iconName: HomeIconName;
@@ -44,82 +45,66 @@ const ICONS: Record<HomeIconName, LucideIcon> = {
   shield: Shield,
 };
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" as const } },
-};
-
 export function HomeBenefits({ benefits }: HomeBenefitsProps) {
-  return (
-    <section className="relative w-full overflow-hidden bg-[linear-gradient(180deg,#071425_0%,#071123_60%,#071223_100%)] px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_0%,rgba(39,195,217,0.09),transparent),radial-gradient(ellipse_50%_40%_at_10%_100%,rgba(24,182,143,0.08),transparent)]" />
+  const sectionRef = useRef<HTMLElement | null>(null);
 
-      <div className="relative z-10 mx-auto max-w-7xl px-2 sm:px-4">
-        <div className="mb-10 space-y-3 text-center sm:mb-12">
-          <p className="cmm-text-caption font-bold uppercase tracking-[0.34em] text-cyan-300/70">
+  useGsapReveal(sectionRef, {
+    start: "top 78%",
+    stagger: 0.08,
+    duration: 0.65,
+    y: 22,
+  });
+
+  return (
+    <section
+      ref={sectionRef}
+      className="relative w-full overflow-hidden bg-transparent px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28"
+    >
+      <div className="relative z-10 mx-auto max-w-[1540px] px-2 sm:px-4">
+        <div className="mx-auto mb-10 max-w-4xl space-y-3 text-center sm:mb-12">
+          <p className="cmm-text-caption font-bold uppercase tracking-[0.34em] text-emerald-700/70">
             Bénéfices
           </p>
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-3xl font-bold tracking-tight text-white sm:text-4xl lg:text-5xl"
+          <h2
+            data-gsap-reveal
+            className="text-3xl font-bold tracking-tight text-emerald-950 sm:text-4xl lg:text-5xl"
             style={{ textWrap: "pretty" }}
           >
             Pourquoi utiliser CleanMyMap ?
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="mx-auto max-w-2xl text-base font-light leading-relaxed text-white/66 sm:text-lg"
+          </h2>
+          <p
+            data-gsap-reveal
+            className="mx-auto max-w-3xl text-base font-light leading-relaxed text-emerald-900/66 sm:text-lg"
           >
             Un seul outil pour structurer, mesurer et valoriser vos actions
             terrain.
-          </motion.p>
+          </p>
         </div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:gap-5">
           {benefits.map((benefit) => (
-            <motion.article
+            <article
               key={benefit.title}
-              variants={item}
-              className="group relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-[rgba(14,28,49,0.88)] p-5 shadow-[0_20px_40px_-24px_rgba(2,6,23,0.8)] transition-all duration-300 hover:-translate-y-1 hover:border-white/16 hover:shadow-2xl"
+              data-gsap-reveal
+              className="group relative overflow-hidden rounded-[1.5rem] border border-emerald-100/18 bg-[linear-gradient(180deg,rgba(6,42,25,0.98)_0%,rgba(4,27,16,0.98)_100%)] p-5 shadow-[0_24px_50px_-28px_rgba(5,34,20,0.82)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100/30 hover:shadow-[0_30px_60px_-30px_rgba(5,34,20,0.88)]"
             >
               <div
-                className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border ${benefit.border} bg-white/8 shadow-lg ${benefit.color}`}
+                className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border ${benefit.border} ${benefit.bg} shadow-lg ${benefit.color}`}
               >
                 {(() => {
                   const Icon = ICONS[benefit.iconName];
                   return <Icon size={24} />;
                 })()}
               </div>
-              <h3 className="mb-3 text-lg font-bold leading-tight text-white">
+              <h3 className={`mb-3 text-lg font-bold leading-tight ${benefit.color}`}>
                 {benefit.title}
               </h3>
-              <p className="text-[13px] leading-relaxed text-white/64">
+              <p className="cmm-text-card-copy text-[13px] leading-relaxed">
                 {benefit.desc}
               </p>
-            </motion.article>
+            </article>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

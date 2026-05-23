@@ -37,7 +37,7 @@ files.forEach(file => {
   content = content.replace(/\btext-gray-600\b/g, 'cmm-text-secondary');
   content = content.replace(/\btext-gray-500\b/g, 'cmm-text-muted');
   
-  // Dark mode text
+  // Texte de contraste hérité
   content = content.replace(/\bdark:text-slate-100\b/g, '');
   content = content.replace(/\bdark:text-slate-200\b/g, '');
   content = content.replace(/\bdark:text-slate-300\b/g, '');

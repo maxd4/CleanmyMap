@@ -71,13 +71,13 @@ export function ActionsMapCanvas({
       >
         <MapControls center={center} variant="immersive" />
         <LayersControl position="topright">
-          <LayersControl.BaseLayer checked name="Mode Clair">
+          <LayersControl.BaseLayer checked name="Plan clair">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
               url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
             />
           </LayersControl.BaseLayer>
-          <LayersControl.BaseLayer name="Mode Sombre">
+          <LayersControl.BaseLayer name="Plan contrasté">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"

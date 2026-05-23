@@ -9,6 +9,7 @@ Documentation produit pour agents IA. Contexte métier et vision.
 ### Vision & Stratégie
 - **vision-et-objectifs.md** ⭐ - Vision et objectifs du produit
 - **roadmap-priorisee.md** - Roadmap priorisée
+- **dimension-communautaire.md** - Strategie communautaire et engagement recurrent
 - **chantiers-q2-q3.md** - Chantiers en cours
 
 ### Parcours Utilisateurs

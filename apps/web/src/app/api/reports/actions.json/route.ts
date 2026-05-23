@@ -105,8 +105,7 @@ export async function GET(request: Request) {
  status: 200,
  headers,
  });
- } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- return new Response(`Export error: ${message}`, { status: 500 });
+ } catch {
+ return new Response("Export unavailable", { status: 500 });
  }
 }

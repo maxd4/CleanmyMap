@@ -11,6 +11,7 @@ import {
 } from"@/lib/community/event-ops";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { adminAccessErrorJsonResponse } from"@/lib/http/auth-responses";
+import { handleApiError } from"@/lib/http/api-errors";
 
 export const runtime ="nodejs";
 
@@ -126,9 +127,9 @@ export async function POST(request: Request) {
  .maybeSingle();
 
  if (eventResult.error) {
- return NextResponse.json(
- { error: eventResult.error.message },
- { status: 500 },
+ return handleApiError(
+  eventResult.error,
+  "POST /api/community/events/ops (event lookup)",
  );
  }
  if (!eventResult.data) {
@@ -163,7 +164,7 @@ export async function POST(request: Request) {
  .single();
 
  if (updated.error) {
- return NextResponse.json({ error: updated.error.message }, { status: 500 });
+ return handleApiError(updated.error, "POST /api/community/events/ops (update)");
  }
 
  const rsvpsResult = await supabase
@@ -172,10 +173,7 @@ export async function POST(request: Request) {
  .eq("event_id", parsed.data.eventId);
 
  if (rsvpsResult.error) {
- return NextResponse.json(
- { error: rsvpsResult.error.message },
- { status: 500 },
- );
+ return handleApiError(rsvpsResult.error, "POST /api/community/events/ops (rsvps)");
  }
 
  const item = toEventResponseItem(

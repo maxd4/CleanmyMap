@@ -74,7 +74,7 @@ npm install
 npm run dev
 ```
 
-Puis ouvrir `http://localhost:3000`.
+Puis ouvrir `http://localhost:3000` si le port est libre, sinon le script bascule automatiquement vers le premier port disponible suivant.
 
 ## Commandes utiles
 

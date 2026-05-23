@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Handshake, ArrowRight, Network, Users, ShieldCheck, MapPin, LayoutDashboard, UserPlus, Search } from "lucide-react";
+import { Handshake, ArrowRight, Network, Users, LayoutDashboard, UserPlus, Search } from "lucide-react";
 import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigation-grid";
 import { getServerLocale } from "@/lib/server-preferences";
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
@@ -300,16 +300,16 @@ export default async function PartnersNetworkPage() {
           </div>
         </section>
 
-        <footer className="mt-8 rounded-[3rem] border border-violet-300/16 bg-[rgba(20,14,48,0.96)] p-6 shadow-[0_24px_56px_-32px_rgba(139,92,246,0.20)] sm:p-10">
+        <footer className="cmm-ribbon-surface mt-8 rounded-[3rem] p-6 sm:p-10">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-violet-100/46">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-200/55">
                 {fr ? "Accès rapide" : "Quick access"}
               </p>
-              <h3 className="text-2xl font-black text-white">
+              <h3 className="text-2xl font-black text-slate-100">
                 {fr ? "Vous êtes une association, une entreprise ou une collectivité ?" : "Are you an association, business or public body?"}
               </h3>
-              <p className="max-w-2xl text-sm leading-relaxed text-violet-100/66">
+              <p className="max-w-2xl text-sm leading-relaxed text-slate-100/70">
                 {fr
                   ? "Rejoignez le réseau pour rendre votre rôle visible, vos canaux clairs et vos coordonnées faciles à utiliser."
                   : "Join the network to make your role visible, your channels clear and your contact points easy to use."}
@@ -318,14 +318,14 @@ export default async function PartnersNetworkPage() {
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/partners/onboarding"
-                className="inline-flex items-center gap-2 rounded-2xl bg-violet-400 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-violet-950 transition hover:bg-violet-300"
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-950 transition hover:bg-white"
               >
                 {fr ? "Rejoindre" : "Join"}
                 <ArrowRight size={14} />
               </Link>
               <Link
                 href="/partners/dashboard"
-                className="inline-flex items-center gap-2 rounded-2xl border border-violet-300/18 bg-[rgba(35,25,72,0.9)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-violet-50 transition hover:border-violet-300/30 hover:bg-[rgba(40,30,82,0.96)]"
+                className="inline-flex items-center gap-2 rounded-2xl border border-slate-700/70 bg-slate-950/40 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-slate-100 transition hover:border-slate-500 hover:bg-slate-900/65"
               >
                 {fr ? "Gérer les fiches" : "Manage profiles"}
               </Link>

@@ -7,7 +7,7 @@
     "apps/web"
   ],
   "scripts": {
-    "dev": "npm run dev -w apps/web",
+    "dev": "node scripts/dev-with-fallback-port.mjs",
     "build": "npm run build -w apps/web",
     "lint": "npm run lint -w apps/web",
     "lint:audit": "node scripts/lint-audit-direct.js",

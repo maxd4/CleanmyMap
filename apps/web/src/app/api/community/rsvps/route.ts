@@ -4,6 +4,7 @@ import { z } from"zod";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { trackCommunityRsvpYes } from"@/lib/gamification/progression";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
+import { handleApiError } from"@/lib/http/api-errors";
 
 export const runtime ="nodejs";
 
@@ -57,13 +58,10 @@ export async function POST(request: Request) {
  .single();
 
  if (upsertedResult.error) {
- if (upsertedResult.error.code ==="23503") {
- return NextResponse.json({ error:"Event not found" }, { status: 404 });
- }
- return NextResponse.json(
- { error: upsertedResult.error.message },
- { status: 500 },
- );
+  if (upsertedResult.error.code ==="23503") {
+   return NextResponse.json({ error:"Event not found" }, { status: 404 });
+  }
+  return handleApiError(upsertedResult.error, "POST /api/community/rsvps (upsert)");
  }
 
  if (!upsertedResult.data) {
@@ -102,7 +100,6 @@ export async function POST(request: Request) {
  },
  });
  } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- return NextResponse.json({ error: message }, { status: 500 });
+ return handleApiError(error, "POST /api/community/rsvps");
  }
 }

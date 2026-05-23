@@ -33,7 +33,7 @@ export async function GET(request: Request) {
  if (!userId) return unauthorizedJsonResponse();
 
  const { searchParams } = new URL(request.url);
- const query = searchParams.get("q") || "";
+ const query = (searchParams.get("q") || "").trim().slice(0, 120);
 
  const supabase = await getSupabaseClerkRlsClient();
   if (!supabase) {

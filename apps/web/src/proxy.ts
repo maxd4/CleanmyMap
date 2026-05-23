@@ -12,6 +12,7 @@ import {
 import { createPublicRateLimitResponse } from "@/lib/security/validation";
 import { getTrustedClientIp } from "@/lib/rate-limit/utils";
 import { resolveBackdropToneKey } from "@/lib/ui/backdrop-tone";
+import { resolveFooterVariant } from "@/lib/ui/footer-variant";
 
 const isProtectedRoute = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS]);
 const PUBLIC_ROUTE_EXCEPTIONS = ["/actions/map", "/api/actions/map"] as const;
@@ -73,6 +74,7 @@ function nextWithAppHeaders(req: NextRequest): NextResponse {
   } else {
     requestHeaders.delete("x-cleanmymap-backdrop-tone");
   }
+  requestHeaders.set("x-cleanmymap-footer-variant", resolveFooterVariant(pathname));
   if (shouldNoIndex(pathname)) {
     requestHeaders.set("x-cleanmymap-noindex", "1");
   }

@@ -39,7 +39,7 @@ export async function POST(request: Request) {
       {
         status: "error",
         error: "Impossible de déclencher la capture manuelle de l'impact environnemental.",
-        details: message,
+        details: "Unavailable",
       },
       { status: 503 },
     );

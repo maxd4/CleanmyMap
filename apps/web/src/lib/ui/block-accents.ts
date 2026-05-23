@@ -5,10 +5,10 @@
  * - Accueil & Pilotage (home)       : amber/orange
  * - Agir               (act)        : emerald
  * - Cartographie & Impact (visualize): sky
- * - Réseau & Discussions (network)   : indigo
+ * - Réseau & Discussions (network + discussion)   : indigo / pink
  * - Apprendre           (learn)      : yellow
  *
- * Les blocs "impact", "connect" et "pilot" restent présents comme accents
+ * Les blocs "impact", "connect" (discussion) et "pilot" restent présents comme accents
  * techniques/compatibilité, mais ils ne sont plus exposés comme blocs visibles
  * de navigation principale.
  */
@@ -41,7 +41,7 @@ export const BLOCK_ACCENT_MAP: Record<BlockId, BlockAccent> = {
   act: "emerald",     // Agir     → Vert
   visualize: "sky",   // Visualiser → Bleu ciel
   impact: "red",      // Impact   → Rouge
-  network: "indigo",  // Réseau   → Indigo / Violet
+  network: "indigo",  // Réseau → Indigo
   connect: "pink",    // Discussion → Rose
   learn: "yellow",    // Apprendre → Jaune
   pilot: "amber",     // Piloter  → Brun (amber-800 shade)

@@ -9,6 +9,7 @@ import {
 import { buildActionInsights } from"@/lib/actions/insights";
 import { filterActionContractsByScope, type ReportScope } from"@/lib/reports/scope";
 import { resolveReportQuery } from"@/lib/reports/csv";
+import { handleApiError } from"@/lib/http/api-errors";
 
 export const runtime ="nodejs";
 export const revalidate = 60; // Cache 1 minute for public map
@@ -134,7 +135,6 @@ export async function GET(request: Request) {
  }
  : undefined);
  } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- return NextResponse.json({ error: message }, { status: 500 });
+ return handleApiError(error, "GET /api/actions/map");
  }
 }

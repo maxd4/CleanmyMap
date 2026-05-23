@@ -4,6 +4,13 @@
 
 Le script `documentation/liberte-UX-UI/capture-pages.mjs` génère automatiquement des captures d'écran organisées par section :
 
+### Règle impérative
+
+- Toute capture au format PNG doit être enregistrée dans le dossier `png/` de la section concernée sous `documentation/liberte-UX-UI/`.
+- Exemple: `documentation/liberte-UX-UI/01-ACCUEIL/png/`, `documentation/liberte-UX-UI/03-BLOC-AGIR/png/`.
+- Ne pas déposer de PNG canonique ailleurs dans `documentation/liberte-UX-UI/` ou à la racine du repo.
+- Les fichiers de contexte, alias temporaires ou exports intermédiaires doivent rester séparés des captures PNG officielles.
+
 ### Structure des dossiers
 
 ```

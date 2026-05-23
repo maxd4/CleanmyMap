@@ -70,7 +70,7 @@ export async function GET(request: Request) {
       {
         status: "error",
         error: "Impossible d'exécuter la capture mensuelle du stockage.",
-        details: message,
+        details: "Unavailable",
       },
       { status: 503 },
     );

@@ -38,8 +38,8 @@ Ce document répertorie les améliorations structurelles, visuelles et technique
 ## 🏗️ Architecture Produit
 
 ### Navigation & Espaces
-- **Bloc "Échanges" (Connect)** : Espace dédié à la communication (id: `connect`, icône: `MessageSquare`).
-    - Thème : Violet / Rose / Fuchsia.
+- **Bloc "Discussion" (`connect`)** : Espace dédié à la communication (id: `connect`, icône: `MessageSquare`).
+    - Thème : Indigo / Pink pour rester aligné avec le bloc Réseau & Discussions.
 - **Séparation Discussions / DMs** :
     - `messagerie` (Discussions) : Canaux publics/thématiques/territoriaux.
     - `dm` (Messages privés) : Échanges directs 1-to-1.

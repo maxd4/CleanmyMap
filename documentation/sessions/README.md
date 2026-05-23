@@ -20,6 +20,7 @@ Contexte et historique des sessions de développement pour agents IA.
 - **charte_modes.txt** - Charte des modes d'affichage
 - **audit_vercel_clerk_supabase.txt** - Audit infrastructure
 - **ateliers_DU.txt** - Ateliers Design Urbain
+- **oral_DU_engagement.md** - Mémo de soutenance et trame de pitch pour le jury DU Engagement
 - **Rapport_Annuel_Depollution_Citoyenne_Paris.pdf** - Rapport annuel
 
 ### assets/

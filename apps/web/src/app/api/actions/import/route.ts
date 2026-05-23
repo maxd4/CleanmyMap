@@ -310,7 +310,7 @@ export async function POST(request: Request) {
  .insert(toInsert)
  .select("id");
  if (error) {
- throw new Error(error.message);
+ throw new Error("Database insert failed");
  }
 
  await appendAdminOperationAudit({
@@ -332,20 +332,24 @@ export async function POST(request: Request) {
  });
  } catch (error) {
  const message = error instanceof Error ? error.message :"Unknown error";
+ console.error("[Admin Import] Import failed", {
+  operationId,
+  message,
+ });
 
  await appendAdminOperationAudit({
- operationId,
- at: new Date().toISOString(),
- actorUserId: access.userId,
- operationType:"import_confirm",
- outcome:"error",
- details: { code:"server_error", message },
+  operationId,
+  at: new Date().toISOString(),
+  actorUserId: access.userId,
+  operationType:"import_confirm",
+  outcome:"error",
+  details: { code:"server_error" },
  });
 
  return adminErrorResponse({
- status: 500,
- code:"server_error",
- message,
+  status: 500,
+  code:"server_error",
+  message:"L'import a échoué.",
 hint:"Verifier la connexion Supabase et relancer l'import.",
   operationId,
   });

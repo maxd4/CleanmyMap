@@ -206,6 +206,7 @@ export async function createAction(
   retentionLoop?: {
     summary: string;
     badge: string;
+    thanksMessage: string;
     share: { text: string; url: string };
     nextActionSuggestion: string;
   } | null;
@@ -251,6 +252,7 @@ export async function createAction(
           retentionLoop?: {
             summary: string;
             badge: string;
+            thanksMessage: string;
             share: { text: string; url: string };
             nextActionSuggestion: string;
           } | null;
@@ -289,6 +291,7 @@ export async function createAction(
     retentionLoop?: {
       summary: string;
       badge: string;
+      thanksMessage: string;
       share: { text: string; url: string };
       nextActionSuggestion: string;
     } | null;

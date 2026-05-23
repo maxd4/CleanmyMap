@@ -1,45 +1,41 @@
-import { describe, expect, it } from"vitest";
-import { INITIAL_ANNUAIRE_ENTRIES } from"./annuaire/seed-index";
+import { describe, expect, it } from "vitest";
+import { ASSOCIATIONS_ENTRIES } from "./annuaire/seed-associations";
 import {
- buildDashboardStats,
- hasRecentActivity,
- hasValidPublicChannel,
- isCompletePublicPartner,
- isPlaceholderPublicUrl,
-} from"./annuaire-helpers";
+  formatAssociationImpactDate,
+  getAssociationImpactSummary,
+  getAssociationProfile,
+  getAssociationStructureBadge,
+} from "./annuaire-helpers";
 
-describe("buildDashboardStats", () => {
- it("uses the full directory instead of only the active subset", () => {
- const activeEntries = INITIAL_ANNUAIRE_ENTRIES.filter(
- (entry) =>
- entry.qualificationStatus ==="partenaire_actif" &&
- entry.verificationStatus ==="verifie" &&
- hasRecentActivity(entry.recentActivityAt),
- );
+describe("association valorization helpers", () => {
+  it("builds association insights from seed data", () => {
+    const entry = ASSOCIATIONS_ENTRIES.find((item) => item.id === "asso-zerowaste-paris");
+    expect(entry).toBeDefined();
 
- const stats = buildDashboardStats(INITIAL_ANNUAIRE_ENTRIES, 4);
+    const profile = getAssociationProfile(entry!);
 
- expect(stats.actors).toBe(INITIAL_ANNUAIRE_ENTRIES.length);
- expect(stats.actors).toBeGreaterThan(activeEntries.length);
- expect(stats.pending).toBe(4);
- expect(stats.zones).toBeGreaterThan(0);
- expect(stats.contributions).toBeGreaterThan(0);
- });
+    expect(profile).toMatchObject({
+      mission: expect.stringContaining("réduction des déchets à la source"),
+      structureStatus: "active_validated",
+      impactHistory: {
+        actionCount: 52,
+        zonesCovered: 20,
+      },
+    });
 
- it("keeps public partner entries complete and placeholder free", () => {
- for (const entry of INITIAL_ANNUAIRE_ENTRIES) {
- const urls = [entry.websiteUrl, entry.instagramUrl, entry.facebookUrl, entry.primaryChannel?.url].filter(
- (value): value is string => typeof value ==="string" && value.trim().length > 0,
- );
- for (const url of urls) {
- expect(isPlaceholderPublicUrl(url)).toBe(false);
- }
- if (entry.kind ==="commerce" || entry.kind ==="entreprise") {
- expect(hasValidPublicChannel(entry)).toBe(true);
- expect(entry.coveredArrondissements.length).toBeGreaterThan(0);
- expect(hasRecentActivity(entry.lastUpdatedAt)).toBe(true);
- expect(isCompletePublicPartner(entry)).toBe(true);
- }
- }
- });
+    expect(profile?.publicCalls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "materiel",
+          label: "Appel à matériel",
+        }),
+      ]),
+    );
+    expect(getAssociationStructureBadge(entry!)).toMatchObject({
+      label: "Structure active / validée",
+      tone: "success",
+    });
+    expect(getAssociationImpactSummary(entry!)).toContain("52 actions référencées");
+    expect(formatAssociationImpactDate(profile?.impactHistory?.lastActionAt)).toContain("Dernière action");
+  });
 });

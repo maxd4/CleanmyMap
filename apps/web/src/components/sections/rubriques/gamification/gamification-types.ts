@@ -1,3 +1,8 @@
+import type {
+  ContributorRecognitionSnapshot,
+  ContributorRecognitionSummary,
+} from "@/lib/gamification/progression-types";
+
 export type PersonalHistoryItem = {
   id: string;
   actionDate: string;
@@ -79,6 +84,7 @@ export type MeResponse = {
       label: string;
       unit: string;
     } | null;
+    recognition: ContributorRecognitionSnapshot;
   };
 };
 
@@ -113,4 +119,5 @@ export type LeaderboardResponse = {
   scope: "individual" | "collective";
   generatedAt: string;
   items: Array<IndividualItem | CollectiveItem>;
+  recognition: ContributorRecognitionSummary;
 };

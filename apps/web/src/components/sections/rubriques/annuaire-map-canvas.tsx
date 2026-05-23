@@ -12,7 +12,7 @@ import "leaflet/dist/leaflet.css";
 
 import L from "leaflet";
 import { cn } from "@/lib/utils";
-import { getEntryTrustState } from "./annuaire-helpers";
+import { getAssociationProfile, getAssociationStructureBadge, getEntryTrustState } from "./annuaire-helpers";
 import { CmmButton } from "@/components/ui/cmm-button";
 
 // Types needed for integration
@@ -26,6 +26,41 @@ type ContributionType =
   | "communication";
 type VerificationStatus = "verifie" | "en_cours" | "a_revalider";
 type QualificationStatus = "partenaire_actif" | "contact_non_qualifie";
+export type AssociationPublicCallType =
+  | "benevoles"
+  | "dons"
+  | "communication"
+  | "materiel";
+
+export type AssociationPublicCall = {
+  type: AssociationPublicCallType;
+  label: string;
+  detail?: string;
+};
+
+export type AssociationResource = {
+  label: string;
+  description?: string;
+  url?: string;
+};
+
+export type AssociationImpactHistory = {
+  actionCount?: number;
+  zonesCovered?: number;
+  recurrence: string;
+  lastActionAt?: string;
+  note?: string;
+};
+
+export type AssociationProfile = {
+  mission: string;
+  recurringNeeds: string[];
+  pastActions: string[];
+  usefulResources: AssociationResource[];
+  publicCalls: AssociationPublicCall[];
+  impactHistory?: AssociationImpactHistory;
+  structureStatus?: "active" | "validated" | "active_validated" | "pending";
+};
 
 export type AnnuaireEntry = {
   id: string;
@@ -54,6 +89,7 @@ export type AnnuaireEntry = {
   isFeatured?: boolean;
   featuredReason?: string;
   tags?: string[];
+  associationProfile?: AssociationProfile;
   lastUpdatedAt: string;
   recentActivityAt: string;
   internalAdminContact?: {
@@ -147,6 +183,8 @@ export function AnnuaireMapCanvas({
 
         {items.map((entry) => {
           const trustState = getEntryTrustState(entry);
+          const associationProfile = getAssociationProfile(entry);
+          const structureBadge = getAssociationStructureBadge(entry);
           const isHighlighted = highlightedItemId === entry.id;
           
           return (
@@ -172,6 +210,18 @@ export function AnnuaireMapCanvas({
                         </span>
                       ))}
                     </div>
+                    {associationProfile ? (
+                      <div className="space-y-1 rounded-xl border border-violet-300/12 bg-white/5 p-2.5">
+                        {structureBadge && (
+                          <p className="text-[10px] font-black uppercase tracking-widest text-violet-200">
+                            {structureBadge.label}
+                          </p>
+                        )}
+                        <p className="line-clamp-2 text-[11px] leading-relaxed text-violet-100/72">
+                          {associationProfile.mission}
+                        </p>
+                      </div>
+                    ) : null}
                     <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-violet-100/66">
                       {entry.description}
                     </p>

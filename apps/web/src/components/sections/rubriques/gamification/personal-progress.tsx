@@ -1,5 +1,7 @@
 import React from "react";
 import { BadgeShowcase } from "@/components/gamification/badge-showcase";
+import { IdentityBadge } from "@/components/ui/identity-badge";
+import { getGamificationBadgeIconName } from "@/components/gamification/badge-icon";
 import { AnimatedCounter } from "@/components/gamification/animated-counter";
 import { GamificationImpactMethodologyCard } from "@/components/sections/rubriques/gamification-impact-methodology-card";
 import { ShieldCheck, Sparkles, Trophy } from "lucide-react";
@@ -11,7 +13,7 @@ interface PersonalProgressProps {
   progression: ProgressionType | undefined;
   progressToNext: number;
   loading: boolean;
-  error: any;
+  error: unknown;
   locale: string;
 }
 
@@ -45,7 +47,7 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
           </div>
         )}
         
-        {error && !loading && (
+        {Boolean(error) && !loading && (
           <div className="py-12 flex flex-col items-center gap-4 text-rose-400 opacity-60">
             <ShieldCheck size={40} />
             <p className="text-[10px] font-black uppercase tracking-[0.3em]">Moteur de progression hors-ligne</p>
@@ -182,6 +184,82 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-6">Distinctions Honorifiques</p>
               <BadgeShowcase badges={progression.badges} />
             </article>
+
+            {progression.recognition.currentContributor && (
+              <article className="rounded-[2rem] border border-emerald-500/10 bg-emerald-500/[0.03] p-6">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">
+                    Reconnaissance utile
+                  </p>
+                  <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[9px] font-black uppercase tracking-[0.25em] text-emerald-400">
+                    Contributions vérifiées
+                  </span>
+                </div>
+
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-4">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                      Profil utile
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-white leading-relaxed">
+                      {progression.recognition.currentContributor.highlight}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/5 bg-slate-950/40 p-4">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                      Statut
+                    </p>
+                    <p className="mt-2 text-sm font-semibold text-white leading-relaxed">
+                      {progression.recognition.currentContributor.mentorEligible
+                        ? "Mentor local activable"
+                        : progression.recognition.currentContributor.regularityLabel}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {progression.recognition.currentContributor.badges.map((badge) => (
+                    <IdentityBadge
+                      key={badge}
+                      icon={getGamificationBadgeIconName(badge)}
+                      label={badge}
+                      tone="gamification"
+                    />
+                  ))}
+                </div>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                      Zone
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-white">
+                      {progression.recognition.currentContributor.topZone}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                      Actions vérifiées
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-white">
+                      {progression.recognition.currentContributor.verifiedContributions}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                      Régularité
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-white">
+                      {progression.recognition.currentContributor.regularityLabel}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-xs font-medium leading-relaxed text-emerald-100/80">
+                  {progression.recognition.currentContributor.thanksMessage}
+                </p>
+              </article>
+            )}
 
             <details className="group rounded-[2rem] border border-white/5 bg-slate-950/40 transition-all overflow-hidden">
               <summary className="cursor-pointer p-6 list-none flex items-center justify-between group-hover:bg-white/[0.02] transition-colors">

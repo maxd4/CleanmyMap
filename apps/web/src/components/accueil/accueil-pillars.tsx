@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useRef } from "react";
 import {
   ArrowRight,
   BarChart3,
@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { HomeIconName } from "@/lib/accueil/config";
+import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
 
 interface Pillar {
   iconName: HomeIconName;
@@ -26,10 +27,15 @@ interface Pillar {
     mobile: string[];
     desktop: string[];
   };
+  backgroundImage: string;
   iconBg: string;
   iconColor: string;
-  accent: string;
   ring: string;
+  border: string;
+  text: string;
+  mutedText: string;
+  cta: string;
+  itemHover: string;
   dot: string;
   href: string;
 }
@@ -52,83 +58,61 @@ const ICONS: Record<HomeIconName, LucideIcon> = {
   shield: Shield,
 };
 
-const container = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-};
-
-const item = {
-  hidden: { opacity: 0, scale: 0.95 },
-  show: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: "easeOut" as const } },
-};
-
 export function HomePillars({ pillars }: HomePillarsProps) {
+  const sectionRef = useRef<HTMLElement | null>(null);
+
+  useGsapReveal(sectionRef, {
+    start: "top 78%",
+    stagger: 0.08,
+    duration: 0.7,
+    y: 24,
+  });
+
   return (
-    <section className="relative w-full overflow-hidden px-3 py-16 sm:px-5 sm:py-20 lg:px-8 lg:py-24">
-      {/* fond travaillé cohérent avec le site - Design Mixte */}
-      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-sky-50/30 to-emerald-50/20" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_80%_20%,rgba(34,211,238,0.1),transparent),radial-gradient(ellipse_50%_60%_at_10%_80%,rgba(16,185,129,0.1),transparent)]" />
-
-      <div
-        className="absolute inset-0 opacity-[0.025]"
-        style={{
-          backgroundImage:
-            'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.75\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'200\' height=\'200\' filter=\'url(%23n)\'/%3E%3C/svg%3E")',
-        }}
-      />
-
+    <section
+      ref={sectionRef}
+      className="relative w-full overflow-hidden px-3 py-16 sm:px-5 sm:py-20 lg:px-8 lg:py-24"
+    >
       <div className="relative z-10 mx-auto max-w-[1180px]">
         {/* en-tête */}
         <div className="mb-14 space-y-3 px-4 text-center">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-[clamp(2.5rem,5vw,4rem)] font-black leading-[1.02] tracking-[-0.03em] text-slate-900"
+          <h2
+            className="text-[clamp(2.5rem,5vw,4rem)] font-black leading-[1.02] tracking-[-0.03em] text-white drop-shadow-[0_8px_18px_rgba(6,44,25,0.24)]"
             style={{ textWrap: "pretty" }}
           >
             Les 5 cartes de CleanMyMap
-          </motion.h2>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="mx-auto max-w-2xl text-[15px] font-medium leading-relaxed text-slate-600 sm:text-base"
+          </h2>
+          <p
+            className="mx-auto max-w-2xl text-[15px] font-medium leading-relaxed text-emerald-50/78 sm:text-base"
           >
             Accueil et pilotage, agir, cartographie et impact, réseau et
             discussions, apprendre pour piloter vos initiatives.
-          </motion.p>
+          </p>
         </div>
 
         {/* Cartes centrées : 5 en ligne large, 3 + 2 centré si l'espace manque */}
-        <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-50px" }}
+        <div
           className="flex flex-wrap justify-center gap-5 px-4 xl:flex-nowrap"
         >
           {pillars.map((bloc) => (
             <Link
               key={bloc.title}
               href={bloc.href}
-              className={`group relative flex min-h-[216px] w-full flex-col overflow-hidden rounded-[0.9rem] bg-gradient-to-br ${bloc.accent} ring-1 ${bloc.ring} p-6 transition-all duration-300 hover:-translate-y-1 hover:bg-white/5 hover:shadow-2xl hover:shadow-black/40 active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900 sm:w-[calc(50%-0.625rem)] lg:w-[calc(33.333%-0.833rem)] xl:w-[calc(20%-1rem)]`}
+              style={{ backgroundImage: bloc.backgroundImage }}
+              className={`group relative flex min-h-[216px] w-full flex-col overflow-hidden rounded-[0.95rem] border ${bloc.border} p-6 ring-1 ${bloc.ring} shadow-[0_22px_48px_-28px_rgba(15,23,42,0.58)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_28px_60px_-30px_rgba(15,23,42,0.62)] active:translate-y-0 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-[#eff9ef] sm:w-[calc(50%-0.625rem)] lg:w-[calc(33.333%-0.833rem)] xl:w-[calc(20%-1rem)]`}
             >
-              <motion.div variants={item} className="flex h-full min-h-[168px] flex-col">
+              <div className="flex h-full min-h-[168px] flex-col">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/14 to-transparent" />
+                <div className={`pointer-events-none absolute -right-14 -top-14 h-32 w-32 rounded-full ${bloc.dot} opacity-[0.16]`} />
+
                 {/* coin accent dot */}
                 <span
-                  className={`absolute right-5 top-5 h-2 w-2 rounded-full ${bloc.dot} opacity-60 group-hover:opacity-100 transition-opacity`}
+                  className={`absolute right-5 top-5 h-2 w-2 rounded-full ${bloc.dot} opacity-75 transition-opacity group-hover:opacity-100`}
                 />
 
                 {/* icône */}
                 <div
-                  className={`mb-6 flex h-12 w-12 items-center justify-center rounded-[0.9rem] ${bloc.iconBg} ${bloc.iconColor} shadow-lg transition-transform duration-300 group-hover:scale-110`}
+                  className={`mb-6 flex h-12 w-12 items-center justify-center rounded-[0.9rem] ${bloc.iconBg} ${bloc.iconColor} shadow-[0_16px_24px_-14px_rgba(6,44,25,0.32)] transition-transform duration-300 group-hover:scale-110`}
                 >
                   {(() => {
                     const Icon = ICONS[bloc.iconName];
@@ -137,15 +121,12 @@ export function HomePillars({ pillars }: HomePillarsProps) {
                 </div>
 
                 {/* titre */}
-                <h3 className="mb-3 text-[17px] font-black leading-tight text-slate-900">
+                <h3 className={`mb-3 text-[17px] font-black leading-tight ${bloc.text}`}>
                   {bloc.title}
                 </h3>
 
                 {/* description — 2 lignes max */}
-                <p
-                  className="line-clamp-2 flex-1 text-[13px] leading-[1.65] text-slate-600 transition-colors group-hover:text-slate-800"
-                  style={{ textWrap: "pretty" }}
-                >
+                <p className={`line-clamp-2 flex-1 text-[13px] leading-[1.65] ${bloc.mutedText} transition-colors group-hover:text-white`} style={{ textWrap: "pretty" }}>
                   {bloc.preview.desktop.length === 0 ? (
                     "Rubriques en cours de configuration."
                   ) : (
@@ -162,18 +143,15 @@ export function HomePillars({ pillars }: HomePillarsProps) {
 
                 {/* lien */}
                 <div
-                  className={`mt-7 flex items-center gap-2 whitespace-nowrap text-[11px] font-black uppercase tracking-[0.14em] ${bloc.iconColor} opacity-80 transition-opacity group-hover:opacity-100`}
+                  className={`mt-7 flex items-center gap-2 whitespace-nowrap text-[11px] font-black uppercase tracking-[0.14em] ${bloc.iconColor} opacity-90 transition-opacity group-hover:opacity-100`}
                 >
                   Accéder{" "}
-                  <ArrowRight
-                    size={13}
-                    className="transition-transform duration-300 group-hover:translate-x-1"
-                  />
+                  <ArrowRight size={13} className="transition-transform duration-300 group-hover:translate-x-1" />
                 </div>
-              </motion.div>
+              </div>
             </Link>
           ))}
-        </motion.div>
+        </div>
       </div>
     </section>
   );

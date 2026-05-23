@@ -180,13 +180,13 @@ export default function MethodologiePage() {
         </div>
       </div>
 
-      <footer className="pt-20 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-10">
+      <footer className="cmm-ribbon-surface pt-20 flex flex-col sm:flex-row items-center justify-between gap-10">
         <div className="space-y-3 text-center sm:text-left">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-sky-400/60">CleanMyMap Engine v{version}</p>
-          <p className="text-xs font-bold text-white/30 leading-relaxed max-w-md">Tous les calculs sont open-source et vérifiables par les autorités locales et partenaires scientifiques.</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-200/60">CleanMyMap Engine v{version}</p>
+          <p className="text-xs font-bold text-slate-100/70 leading-relaxed max-w-md">Tous les calculs sont open-source et vérifiables par les autorités locales et partenaires scientifiques.</p>
         </div>
         <div 
-          className="px-8 py-4 bg-white/5 backdrop-blur-sm border border-white/5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-sky-100/40 text-center shadow-sm" 
+          className="px-8 py-4 bg-slate-950/35 backdrop-blur-sm border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-100/60 text-center shadow-sm" 
           dangerouslySetInnerHTML={{ __html: t("footer.partner") }}
         />
       </footer>

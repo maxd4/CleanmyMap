@@ -82,7 +82,7 @@ export async function GET(
       {
         status: "error",
         error: "Impossible de charger le document.",
-        details: message,
+        details: "Unavailable",
       },
       { status: 503 },
     );

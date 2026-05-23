@@ -35,7 +35,7 @@ Il n'est pas traité comme un hero plein écran indépendant : il partage la ban
 - `Rapport d'impact`
 
 ### Composant de bouton réellement utilisé
-Le hero utilise `HomeButton` et non `CmmButton`.
+Le hero utilise `CmmButton`, avec `primary`, `secondary` et `tertiary` comme tons publics.
 
 ---
 
@@ -81,10 +81,10 @@ Le hero actuel est plus **fonctionnel** que narratif.
 - capsule cyan sombre avec texte uppercase espacé
 
 ### CTA
-- `HomeButton primary` :
-  - gradient cyan -> teal -> emerald
-- `HomeButton secondary` :
-  - gradient indigo -> violet -> purple
+- `CmmButton primary` :
+  - fond emerald, texte blanc, bordure subtile
+- `CmmButton secondary` :
+  - fond blanc, texte slate, bordure claire
 
 Le hero mélange donc deux familles de CTA colorés :
 - primaire turquoise / vert
@@ -167,7 +167,7 @@ Pour le hero, cette capture doit être lue comme référence de structure :
 
 ### Dépendances directes du hero
 - `SitePreferencesControls`
-- `HomeButton`
+- `CmmButton`
 - `framer-motion`
 
 ### Comportement constaté

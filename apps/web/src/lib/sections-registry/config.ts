@@ -27,7 +27,7 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "explorer",
     categoryId: "resources",
-    spaceId: "prepare",
+    spaceId: "decide",
     priority: 18,
     kind: "app-route",
     route: "/explorer",
@@ -138,7 +138,7 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "sandbox",
     categoryId: "terrain",
-    spaceId: "execute",
+    spaceId: "prepare",
     priority: 22,
     kind: "section",
     route: "/sections/sandbox",
@@ -258,7 +258,7 @@ export const RUBRIQUE_REGISTRY = [
   {
     id: "feedback",
     categoryId: "pilotage",
-    spaceId: "prepare",
+    spaceId: "decide",
     priority: 41,
     kind: "section",
     route: "/sections/feedback",

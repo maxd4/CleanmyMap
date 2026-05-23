@@ -2,6 +2,7 @@ import { NextResponse } from"next/server";
 import { fetchUnifiedActionContracts } from"@/lib/actions/unified-source";
 import { requireAuthenticatedAccess } from"@/lib/authz";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
+import { handleApiError } from"@/lib/http/api-errors";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 
 export const runtime ="nodejs";
@@ -88,7 +89,6 @@ export async function GET() {
  generatedAt: new Date().toISOString(),
  });
  } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- return NextResponse.json({ error: message }, { status: 500 });
+ return handleApiError(error, "GET /api/recycling/breakdown");
  }
 }

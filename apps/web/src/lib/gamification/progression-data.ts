@@ -61,6 +61,25 @@ export async function loadActionRowsForUser(
   return (result.data ?? []) as ActionRow[];
 }
 
+export async function loadApprovedActionRows(
+  supabase: SupabaseClient,
+  limit = 10000,
+): Promise<ActionRow[]> {
+  const result = await supabase
+    .from("actions")
+    .select(
+      "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
+    )
+    .eq("status", "approved")
+    .order("action_date", { ascending: false })
+    .limit(limit);
+
+  if (result.error) {
+    throw new Error(result.error.message);
+  }
+  return (result.data ?? []) as ActionRow[];
+}
+
 export async function loadUserProgressionStats(
   supabase: SupabaseClient,
   userId: string,

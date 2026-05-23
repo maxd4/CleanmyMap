@@ -2,6 +2,10 @@ import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
 import {
   CONTRIBUTION_LABELS,
   ENTITY_LABELS,
+  formatAssociationImpactDate,
+  getAssociationImpactSummary,
+  getAssociationProfile,
+  getAssociationStructureBadge,
   getEntryTrustState,
   getPartnerWhyThisStructureMatters,
   formatCoverage,
@@ -31,6 +35,8 @@ export function AnnuaireActorCard({
   const trustState = getEntryTrustState(entry);
   const isTrusted = trustState === "trusted";
   const isIncomplete = trustState === "incomplete";
+  const associationProfile = getAssociationProfile(entry);
+  const structureBadge = getAssociationStructureBadge(entry);
 
   const isFeatured = entry.isFeatured;
 
@@ -46,6 +52,21 @@ export function AnnuaireActorCard({
     >
       {/* Dynamic Status Badges */}
       <div className="absolute top-6 right-6 flex flex-wrap justify-end gap-2 z-10">
+        {structureBadge && (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-[9px] font-black tracking-widest shadow-2xl",
+              structureBadge.tone === "success"
+                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                : structureBadge.tone === "info"
+                ? "bg-sky-500/10 border-sky-500/20 text-sky-400"
+                : "bg-amber-500/10 border-amber-500/20 text-amber-300",
+            )}
+          >
+            <ShieldCheck size={10} />
+            {structureBadge.label}
+          </span>
+        )}
         {isFeatured && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-500/20 border border-violet-500/30 px-3 py-1 text-[9px] font-black tracking-widest text-violet-300 shadow-2xl">
             <Star size={10} className="fill-current text-amber-400 animate-pulse" />
@@ -94,6 +115,60 @@ export function AnnuaireActorCard({
         <p className="text-sm font-medium leading-relaxed text-slate-400 line-clamp-2 opacity-80">
           {entry.description}
         </p>
+
+        {associationProfile && (
+          <div className="space-y-4 rounded-[1.75rem] border border-white/8 bg-white/[0.03] p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                  Mission associative
+                </p>
+                <p className="text-sm font-semibold leading-relaxed text-white/90">
+                  {associationProfile.mission}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-violet-500/15 bg-violet-500/10 px-3 py-2 text-[9px] font-black uppercase tracking-widest text-violet-300">
+                {associationProfile.structureStatus === "active_validated"
+                  ? "Active / validée"
+                  : associationProfile.structureStatus === "validated"
+                  ? "Validée"
+                  : associationProfile.structureStatus === "active"
+                  ? "Active"
+                  : "À confirmer"}
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {associationProfile.recurringNeeds.slice(0, 4).map((need) => (
+                <span
+                  key={need}
+                  className="rounded-full border border-white/8 bg-slate-950/40 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-slate-300"
+                >
+                  {need}
+                </span>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-white/5 bg-slate-950/35 p-3">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">
+                  Impact local
+                </p>
+                <p className="mt-1 text-[11px] font-bold text-white">
+                  {getAssociationImpactSummary(entry)}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-white/5 bg-slate-950/35 p-3">
+                <p className="text-[8px] font-black uppercase tracking-widest text-slate-500">
+                  Dernière action
+                </p>
+                <p className="mt-1 text-[11px] font-bold text-white">
+                  {formatAssociationImpactDate(associationProfile.impactHistory?.lastActionAt)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Key Operational Metrics */}
         <div className="grid grid-cols-1 gap-4 pt-4 border-t border-white/5">

@@ -47,7 +47,7 @@ export async function GET(request: Request) {
       {
         status: "error",
         error: "Impossible d'exécuter la capture automatique de l'impact environnemental.",
-        details: message,
+        details: "Unavailable",
       },
       { status: 503 },
     );

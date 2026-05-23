@@ -74,10 +74,15 @@ async function updateActionStatus(
  .maybeSingle();
 
  if (!primary.error && primary.data) {
- return { source:"actions", found: true };
+  return { source:"actions", found: true };
  }
  if (primary.error && !isMissingActionsTableError(primary.error.message)) {
- throw new Error(primary.error.message);
+  console.error("[Admin Moderation] Action update failed", {
+   id,
+   status,
+   message: primary.error.message,
+  });
+  throw new Error("Database update failed");
  }
 
  const legacy = await supabase
@@ -87,7 +92,12 @@ async function updateActionStatus(
  .select("id")
  .maybeSingle();
  if (legacy.error) {
- throw new Error(legacy.error.message);
+  console.error("[Admin Moderation] Legacy action update failed", {
+   id,
+   status,
+   message: legacy.error.message,
+  });
+  throw new Error("Database update failed");
  }
  return { source:"submissions", found: Boolean(legacy.data) };
 }
@@ -105,7 +115,12 @@ async function updateSpotStatus(
  .select("id")
  .maybeSingle();
  if (updated.error) {
- throw new Error(updated.error.message);
+  console.error("[Admin Moderation] Spot update failed", {
+   id,
+   status,
+   message: updated.error.message,
+  });
+  throw new Error("Database update failed");
  }
  return Boolean(updated.data);
 }
@@ -337,22 +352,26 @@ let copied = false;
  });
  } catch (error) {
  const message = error instanceof Error ? error.message :"Unknown error";
+ console.error("[Admin Moderation] Operation failed", {
+  operationId,
+  message,
+ });
 
  await appendAdminOperationAudit({
- operationId,
- at: new Date().toISOString(),
- actorUserId: access.userId,
- operationType:"moderation",
- outcome:"error",
- details: { code:"server_error", message },
+  operationId,
+  at: new Date().toISOString(),
+  actorUserId: access.userId,
+  operationType:"moderation",
+  outcome:"error",
+  details: { code:"server_error" },
  });
 
  return adminErrorResponse({
- status: 500,
- code:"server_error",
- message,
- hint:"Verifier la connectivite base de donnees et relancer l'operation.",
- operationId,
+  status: 500,
+  code:"server_error",
+  message:"La modération a échoué.",
+  hint:"Verifier la connectivite base de donnees et relancer l'operation.",
+  operationId,
  });
  }
 }

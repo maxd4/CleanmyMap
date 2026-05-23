@@ -9,6 +9,7 @@ import { getCurrentUserIdentity } from"@/lib/authz";
 import { fetchRecentActionsByUser } from"@/lib/actions/store";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
+import { handleApiError } from"@/lib/http/api-errors";
 
 export const runtime ="nodejs";
 
@@ -116,7 +117,6 @@ export async function GET() {
  basedOn: { recentDeclarations: recent.length },
  });
  } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- return NextResponse.json({ error: message }, { status: 500 });
+ return handleApiError(error, "GET /api/actions/prefill");
  }
 }

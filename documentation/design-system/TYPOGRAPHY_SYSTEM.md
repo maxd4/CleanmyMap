@@ -132,6 +132,22 @@ Système typographique complet avec échelle cohérente, paire de polices optimi
 <a className="text-link">Lien cliquable</a>
 ```
 
+### Typographie sur cartes et bulles sombres
+
+Sur les surfaces sombres, les petits textes ne doivent pas passer en gris faible contraste.
+Utiliser les utilitaires canoniques suivants:
+
+```tsx
+<p className="cmm-text-card-label">Meta ou petit libellé</p>
+<p className="cmm-text-card-copy">Description courte</p>
+<h3 className="cmm-text-card-title">Titre / sous-titre</h3>
+<span className="cmm-text-card-value">128</span>
+```
+
+- `cmm-text-card-label` et `cmm-text-card-copy` restent blancs pour la lisibilité.
+- `cmm-text-card-title` et `cmm-text-card-value` portent l'accent visuel.
+- Les chiffres doivent conserver une lecture stable avec `font-variant-numeric: tabular-nums` quand possible.
+
 ---
 
 ## Accessibilité (WCAG 2.1 AA)

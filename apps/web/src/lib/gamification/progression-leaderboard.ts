@@ -5,6 +5,7 @@ import {
   xpRequired,
 } from "./progression-formulas";
 import { backfillAllProgression, backfillUserProgression } from "./progression-backfill";
+import { buildContributorRecognitionIndex } from "./contributor-recognition";
 import {
   buildPersonalImpactMethodology,
   computePersonalImpactMetrics,
@@ -13,8 +14,8 @@ import { loadUserAnnualImpactStats, getUserAnnualImpact, getCurrentMonthlyMilest
 import {
   actionQualityScoreFromRow,
   fetchActionById,
+  loadApprovedActionRows,
   loadActionRowsForUser,
-  loadUserImpactStats,
   loadUserLabelSummary,
   loadUserProgressionStats,
   parseAssociationNameFromActionNotes,
@@ -30,6 +31,8 @@ import type {
   PersonalTimelineItem,
   PostActionRetentionLoop,
   MonthlyMilestone,
+  ContributorRecognitionSummary,
+  ContributorRecognitionSnapshot,
 } from "./progression-types";
 import { toFloat, toInt } from "./progression-utils";
 
@@ -56,6 +59,7 @@ type UserProgressionResponse = {
     mapPoints: PersonalTimelineItem[];
   };
   monthlyMilestone: MonthlyMilestone;
+  recognition: ContributorRecognitionSnapshot;
 };
 
 function buildTimelineItems(rows: ActionRow[]): PersonalTimelineItem[] {
@@ -210,6 +214,7 @@ export async function getUserProgression(
   const requirement = assessLevelRequirements(nextLevel, stats);
   const timeline = buildTimelineItems(rows).slice(0, 30);
   const rankItem = individualItems.find((item) => item.userId === userId) ?? null;
+  const recognitionIndex = buildContributorRecognitionIndex(rows, userId);
 
   return {
     userId: profile.user_id,
@@ -253,6 +258,9 @@ export async function getUserProgression(
       ),
     },
     monthlyMilestone: getCurrentMonthlyMilestone(annualImpact.wasteKg),
+    recognition: {
+      currentContributor: recognitionIndex.currentContributor,
+    },
   };
 }
 
@@ -269,6 +277,11 @@ export async function buildPostActionRetentionLoop(
   const qualityScore = actionQualityScoreFromRow(action);
   const qualityLabel = qualityScore >= 80 ? "A" : qualityScore >= 60 ? "B" : "C";
   const latestBadge = progression.badges[0] ?? "Contributeur actif";
+  const associationName = parseAssociationNameFromActionNotes(action.notes);
+  const thanksMessage =
+    associationName !== "Sans association"
+      ? `${associationName} remercie ${action.actor_name?.trim() || "Contributeur"} pour cette contribution vérifiée à ${action.location_label}.`
+      : `${action.actor_name?.trim() || "Contributeur"} renforce l'action locale à ${action.location_label}.`;
 
   const summary = [
     `${Math.round(toFloat(action.waste_kg, 0) * 10) / 10} kg collectes`,
@@ -291,6 +304,7 @@ export async function buildPostActionRetentionLoop(
   return {
     summary,
     badge: latestBadge,
+    thanksMessage,
     share: {
       text: shareText,
       url: "/sections/gamification",
@@ -306,14 +320,21 @@ export async function getGamificationLeaderboard(
   scope: "individual" | "collective";
   generatedAt: string;
   items: IndividualLeaderboardItem[] | CollectiveLeaderboardItem[];
+  recognition: ContributorRecognitionSummary;
 }> {
   await backfillAllProgression(supabase);
+  const approvedActionRows = await loadApprovedActionRows(supabase);
+  const recognitionIndex = buildContributorRecognitionIndex(approvedActionRows);
 
   if (scope === "individual") {
     return {
       scope,
       generatedAt: new Date().toISOString(),
       items: await buildIndividualLeaderboard(supabase),
+      recognition: {
+        topContributors: recognitionIndex.topContributors,
+        currentContributor: null,
+      },
     };
   }
 
@@ -388,5 +409,9 @@ export async function getGamificationLeaderboard(
     scope,
     generatedAt: new Date().toISOString(),
     items,
+    recognition: {
+      topContributors: recognitionIndex.topContributors,
+      currentContributor: null,
+    },
   };
 }

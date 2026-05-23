@@ -86,6 +86,19 @@ documentation/
 
 ---
 
+## Règle de captures UX/UI
+
+Les captures d'écran canonique du projet doivent être déposées dans le dossier `png/` de la section correspondante sous `documentation/liberte-UX-UI/`:
+
+- `documentation/liberte-UX-UI/01-ACCUEIL/png/`
+- `documentation/liberte-UX-UI/03-BLOC-AGIR/png/`
+- `documentation/liberte-UX-UI/04-BLOC-VISUALISER/png/`
+- etc.
+
+Les captures temporaires, versions contexte ou exports de travail ne remplacent jamais ces fichiers PNG officiels.
+
+---
+
 ## 🤖 Workflow IA Standard
 
 ### 1. Démarrage Session

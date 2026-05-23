@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useSyncExternalStore } from "react";
 import { createAction } from "@/lib/actions/http";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import { ENTREPRISE_ASSOCIATION_OPTION } from "@/lib/actions/association-options";
@@ -18,6 +18,7 @@ import {
   clearDraft,
   loadDraftSnapshot,
   saveDraft,
+  subscribeToDraftChanges,
   type ActionDeclarationDraftSnapshot,
 } from "../action-declaration/draft-storage";
 import { summarizeActionDrawingValidation } from "../map/actions-map-geometry.utils";
@@ -67,12 +68,21 @@ export function useActionDeclarationForm({
       : draft;
 
   const [form, setForm] = useState<FormState>(() => createCleanForm());
-  const [pendingDraft, setPendingDraft] = useState<ActionDeclarationDraftSnapshot | null>(() => {
-    const snapshot = loadDraftSnapshot(createCleanForm());
-    return snapshot
-      ? { ...snapshot, form: coerceRecordType(snapshot.form) }
-      : null;
-  });
+  const pendingDraft = useSyncExternalStore(
+    subscribeToDraftChanges,
+    () => {
+      const snapshot = loadDraftSnapshot(createCleanForm());
+      if (!snapshot) {
+        return null;
+      }
+
+      return {
+        ...snapshot,
+        form: coerceRecordType(snapshot.form),
+      } as ActionDeclarationDraftSnapshot;
+    },
+    () => null,
+  );
   const [manualDrawingEnabled] = useState<boolean>(true);
   const [manualDrawing, setManualDrawing] = useState<ActionDrawing | null>(null);
   const [photoAssets, setPhotoAssets] = useState<ActionPhotoAsset[]>([]);
@@ -87,7 +97,6 @@ export function useActionDeclarationForm({
   const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
-  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const hasTrackedStartRef = useRef<boolean>(false);
 
   const isCleanPlaceMode = form.recordType === "clean_place";
@@ -95,15 +104,12 @@ export function useActionDeclarationForm({
   function handleResumeDraft() {
     if (!pendingDraft) return;
     setForm(coerceRecordType(pendingDraft.form));
-    setDraftSavedAt(pendingDraft.savedAt);
-    setPendingDraft(null);
+    clearDraft();
     setHasAttemptedSubmit(false);
   }
 
   function handleIgnoreDraft() {
     clearDraft();
-    setPendingDraft(null);
-    setDraftSavedAt(null);
     setForm(createCleanForm());
     setHasAttemptedSubmit(false);
   }
@@ -238,7 +244,7 @@ export function useActionDeclarationForm({
       nextForm.routeStyle = "souple";
     }
     if (!pendingDraft && submissionState !== "success") {
-      setDraftSavedAt(saveDraft(nextForm));
+      saveDraft(nextForm);
     }
     if (key === "recordType") {
       setHasAttemptedSubmit(false);
@@ -310,8 +316,6 @@ export function useActionDeclarationForm({
       setSubmissionState("success");
       setShowConfirmation(false);
       clearDraft();
-      setDraftSavedAt(null);
-      setPendingDraft(null);
     } catch (error: unknown) {
       setSubmissionState("error");
       setErrorMessage(
@@ -341,7 +345,6 @@ export function useActionDeclarationForm({
     hasAttemptedSubmit,
     showConfirmation,
     setShowConfirmation,
-    draftSavedAt,
     pendingDraftSavedAt: pendingDraft?.savedAt ?? null,
     showDraftBanner: Boolean(pendingDraft),
     isCleanPlaceMode,

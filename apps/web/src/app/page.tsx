@@ -137,12 +137,14 @@ export default async function HomePage() {
   const pillars = buildHomePillars(getSpacePreview);
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#061223] font-sans">
-      <HomeHero metrics={metrics} />
-      <HomePillars pillars={pillars} />
-      <HomeBenefits benefits={HOME_BENEFITS} />
-      <HomeCommunityActivity activity={communityActivity} />
-      <OriginCredibility />
-    </div>
+    <main className="relative min-h-screen overflow-hidden font-sans">
+      <div className="relative z-10">
+        <HomeHero metrics={metrics} />
+        <HomePillars pillars={pillars} />
+        <HomeBenefits benefits={HOME_BENEFITS} />
+        <HomeCommunityActivity activity={communityActivity} />
+        <OriginCredibility />
+      </div>
+    </main>
   );
 }

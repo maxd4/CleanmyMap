@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { useRef } from "react";
 import { ArrowRight, Activity, Clock, ShieldCheck, AlertCircle } from "lucide-react";
 import type { DashboardTodayState } from "@/lib/dashboard/today";
 import { cn } from "@/lib/utils";
+import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
 
 type DashboardTodayPanelProps = {
   state: DashboardTodayState;
@@ -24,17 +25,21 @@ function getTileIcon(label: string) {
   return <Clock size={16} />;
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 14 },
-  show: (i: number) => ({ opacity: 1, y: 0, transition: { duration: 0.4, delay: 0.1 + i * 0.08, ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number] } }),
-};
-
 export function DashboardTodayPanel({ state }: DashboardTodayPanelProps) {
+  const rootRef = useRef<HTMLElement | null>(null);
+  useGsapReveal(rootRef, {
+    selector: "[data-gsap-reveal]",
+    start: "top 84%",
+    stagger: 0.07,
+    duration: 0.55,
+    y: 16,
+  });
+
   return (
-    <section className="mt-8 space-y-5">
+    <section ref={rootRef} className="mt-8 space-y-5">
 
       {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-3 px-1">
+      <div data-gsap-reveal className="flex flex-wrap items-end justify-between gap-3 px-1">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-white/70">
             {state.kind === "error" ? "Diagnostic" : "Plan de journée"}
@@ -60,15 +65,12 @@ export function DashboardTodayPanel({ state }: DashboardTodayPanelProps) {
       {/* Tiles ready */}
       {state.kind === "ready" ? (
         <div className="grid gap-4 md:grid-cols-3">
-          {[state.latestActivity, state.validation, state.nextAction].map((tile, i) => {
+          {[state.latestActivity, state.validation, state.nextAction].map((tile) => {
             const accent = tileAccent(tile.label);
             return (
-              <motion.article
+              <article
                 key={tile.label}
-                custom={i}
-                initial="hidden"
-                animate="show"
-                variants={fadeUp}
+                data-gsap-reveal
                 className="group relative overflow-hidden rounded-3xl border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.4)]"
               >
                 {/* Fond sombre isolé */}
@@ -113,15 +115,12 @@ export function DashboardTodayPanel({ state }: DashboardTodayPanelProps) {
                     )}
                   </div>
                 </div>
-              </motion.article>
+              </article>
             );
           })}
         </div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+        <div data-gsap-reveal
           className="relative overflow-hidden rounded-3xl border border-white/10"
         >
           <div className="pointer-events-none absolute inset-0 rounded-3xl bg-black/30" />
@@ -154,7 +153,7 @@ export function DashboardTodayPanel({ state }: DashboardTodayPanelProps) {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
     </section>
   );

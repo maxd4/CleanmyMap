@@ -42,7 +42,10 @@ export function useAnnuaireLogic() {
     }
   );
 
-  const publishedEntries = publishedEntriesQuery.data?.items ?? [];
+  const publishedEntries = useMemo(
+    () => publishedEntriesQuery.data?.items ?? [],
+    [publishedEntriesQuery.data?.items],
+  );
 
   const locationPreference = useMemo(() => 
     extractUserLocationPreferenceFromMetadata(user?.unsafeMetadata as Record<string, unknown> | undefined),
@@ -88,7 +91,14 @@ export function useAnnuaireLogic() {
         e.name.toLowerCase().includes(low) || 
         e.legalIdentity.toLowerCase().includes(low) ||
         e.description.toLowerCase().includes(low) ||
-        e.tags?.some(t => t.toLowerCase().includes(low))
+        e.tags?.some(t => t.toLowerCase().includes(low)) ||
+        e.associationProfile?.mission.toLowerCase().includes(low) ||
+        e.associationProfile?.recurringNeeds.some((need) => need.toLowerCase().includes(low)) ||
+        e.associationProfile?.pastActions.some((action) => action.toLowerCase().includes(low)) ||
+        e.associationProfile?.usefulResources.some((resource) =>
+          resource.label.toLowerCase().includes(low) ||
+          (resource.description?.toLowerCase().includes(low) ?? false),
+        )
       );
     }
 

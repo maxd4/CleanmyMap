@@ -1,7 +1,7 @@
 "use client";
 
 import { type ElementType, type FormEvent, useState } from "react";
-import { ClipboardCheck, Download, History, Save, Sparkles, User } from "lucide-react";
+import { ClipboardCheck, Download, History, Sparkles, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { ActionDeclarationFormConfirmation } from "../action-declaration-form-confirmation";
@@ -78,7 +78,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     hasAttemptedSubmit,
     showConfirmation,
     setShowConfirmation,
-    draftSavedAt,
     pendingDraftSavedAt,
     showDraftBanner,
     payload,
@@ -95,7 +94,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
   const [isExportPickerOpen, setIsExportPickerOpen] = useState(false);
 
   const actClasses = getBlockClasses("act");
-  const formattedDraftSavedAt = formatDraftDate(draftSavedAt);
   const formattedPendingDraftSavedAt = formatDraftDate(pendingDraftSavedAt);
 
   async function onSubmit(event?: FormEvent) {
@@ -206,12 +204,6 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                       <Sparkles size={11} className="text-emerald-600" />
                       {formatWasteSummary(form.wasteKg, form.wasteMegotsKg)}
                     </span>
-                    {formattedDraftSavedAt && !showDraftBanner ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/70 bg-emerald-100 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-900">
-                        <Save size={11} />
-                        Brouillon · {formattedDraftSavedAt}
-                      </span>
-                    ) : null}
                   </div>
                 </div>
 
