@@ -29,7 +29,7 @@ export interface CmmSectionProps {
  *
  * Charte officielle:
  * - home=amber, act=emerald, visualize=sky
- * - impact=red, network=indigo, connect=pink
+ * - impact=red, network=indigo, connect=discussion/pink
  * - learn=yellow, pilot=amber (shade foncé)
  *
  * Usage:

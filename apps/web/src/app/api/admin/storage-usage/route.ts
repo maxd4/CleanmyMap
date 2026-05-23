@@ -28,7 +28,7 @@ export async function GET() {
       {
         status: "degraded",
         error: "Impossible de charger le suivi du stockage Supabase.",
-        details: message,
+        details: "Unavailable",
       },
       { status: 503 },
     );

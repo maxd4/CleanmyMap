@@ -132,6 +132,7 @@ curl -X POST http://localhost:3000/api/send \
   - `NEXT_PUBLIC_POSTHOG_TOKEN` is still accepted but deprecated.
 - Local verification:
   - Run `npm run dev`, open the app, then trigger a tracked action (e.g. navigation click).
+  - If `localhost:3000` is already taken, the dev launcher automatically uses the next free port so you can keep another local session open at the same time.
   - In PostHog Live Events, confirm events such as `cmm_navigation_click`.
 - Vercel verification:
   - Set the same variables in Vercel for Preview and Production.

@@ -22,6 +22,7 @@ import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
 import { resolveContactEmail, resolveEmailFrom } from "@/lib/email-config";
 import { getResendClient } from"@/lib/services/resend";
 import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
+import { parsePositiveInteger } from"@/lib/reports/csv";
 import {
   createPublicRateLimitResponse,
   hasHoneypotSignal,
@@ -121,8 +122,7 @@ export async function GET(request: Request) {
  }
 
  const url = new URL(request.url);
- const rawLimit = Number(url.searchParams.get("limit") ??"50");
- const limit = Number.isFinite(rawLimit) ? rawLimit : 50;
+ const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 200, 50);
  const items = await listPartnerOnboardingRequests(limit);
  const totalCount = await countPartnerOnboardingRequests();
  return NextResponse.json({

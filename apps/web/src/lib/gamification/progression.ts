@@ -1,4 +1,7 @@
 export type {
+  ContributorRecognitionCard,
+  ContributorRecognitionSummary,
+  ContributorRecognitionType,
   CollectiveLeaderboardItem,
   IndividualLeaderboardItem,
   LevelRequirementAssessment,

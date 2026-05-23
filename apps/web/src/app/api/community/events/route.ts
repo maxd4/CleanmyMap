@@ -188,8 +188,7 @@ export async function GET(request: Request) {
  });
  return NextResponse.json({ status:"ok", count: items.length, items });
  } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- return NextResponse.json({ error: message }, { status: 500 });
+ return handleApiError(error, "GET /api/community/events");
  }
 }
 
@@ -328,7 +327,6 @@ export async function POST(request: Request) {
 
  return NextResponse.json({ status:"created", item: createdResult.data }, { status: 201 });
  } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- return NextResponse.json({ error: message }, { status: 500 });
+ return handleApiError(error, "POST /api/community/events");
  }
 }

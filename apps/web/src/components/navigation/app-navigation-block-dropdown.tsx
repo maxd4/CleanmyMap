@@ -140,14 +140,14 @@ export function AppNavigationBlockDropdown({
         onClick={handleButtonClick}
         onKeyDown={handleKeyDown}
         className={cn(
-          "group inline-flex h-[3.25rem] w-[3.25rem] shrink-0 items-center justify-center rounded-[1.1rem] border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
+          "group inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[0.8rem] border border-transparent bg-transparent text-[20px] leading-none transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent",
           isActiveSpace
-            ? "border-white/18 bg-white/16 text-white shadow-[0_20px_40px_-26px_rgba(2,6,23,0.56)]"
-            : "border-white/10 bg-white/[0.075] text-white/86 hover:border-white/18 hover:bg-white/[0.12] hover:text-white",
+            ? "bg-white/[0.08] text-white"
+            : "text-white/86 hover:bg-white/[0.07] hover:text-white",
         )}
         title={space.label[locale]}
       >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.95rem] border border-white/12 bg-white/10 text-[18px] leading-none shadow-[0_10px_20px_-14px_rgba(2,6,23,0.7)] transition-transform duration-150 group-hover:scale-105">
+        <span className="select-none" aria-hidden="true">
           {space.icon}
         </span>
         <span className="sr-only">{space.label[locale]}</span>
@@ -155,7 +155,7 @@ export function AppNavigationBlockDropdown({
       <span
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute left-1/2 bottom-full z-40 mb-2 -translate-x-1/2 translate-y-1 scale-95 whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] opacity-0 shadow-[0_18px_36px_-24px_rgba(2,6,23,0.65)] transition-all duration-150",
+          "pointer-events-none absolute left-1/2 bottom-full z-40 mb-2 -translate-x-1/2 translate-y-1 scale-95 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] opacity-0 shadow-[0_18px_36px_-24px_rgba(2,6,23,0.65)] transition-all duration-150",
           "group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100",
         )}
         style={panelStyle}

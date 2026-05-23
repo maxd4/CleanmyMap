@@ -12,7 +12,12 @@ import {
   type ParisArrondissement,
 } from "./onboarding-types";
 import { getParisArrondissementCenter } from "@/lib/geo/paris-arrondissements";
-import type { AnnuaireEntry } from "@/components/sections/rubriques/annuaire-map-canvas";
+import type {
+  AnnuaireEntry,
+  AssociationProfile,
+  AssociationPublicCall,
+  AssociationResource,
+} from "@/components/sections/rubriques/annuaire-map-canvas";
 import { assertPersistenceAvailable } from "@/lib/persistence/runtime-store";
 
 const STORE_FILE = join(
@@ -214,6 +219,114 @@ function organizationTypeToKind(
   return "groupe_parole";
 }
 
+function buildAssociationPublicCalls(
+  contributionTypes: PartnerOnboardingRequestInput["contributionTypes"],
+  relayActions: string,
+): AssociationPublicCall[] {
+  const calls: AssociationPublicCall[] = contributionTypes.map((type) => {
+    if (type === "materiel") {
+      return {
+        type: "materiel",
+        label: "Appel à matériel",
+        detail: "Prêt, don ou mise à disposition d'équipements utiles au terrain.",
+      };
+    }
+    if (type === "financement") {
+      return {
+        type: "dons",
+        label: "Appel aux dons",
+        detail: "Soutien financier pour consolider les actions locales.",
+      };
+    }
+    if (type === "communication") {
+      return {
+        type: "communication",
+        label: "Relais de communication",
+        detail: "Diffusion des appels et des événements locaux.",
+      };
+    }
+    return {
+      type: "benevoles",
+      label: "Appel à bénévoles",
+      detail: "Renfort humain pour coordonner et déployer les actions.",
+    };
+  });
+
+  if (relayActions.trim()) {
+    calls.push({
+      type: "communication",
+      label: "Relais de communication",
+      detail: relayActions.trim(),
+    });
+  }
+
+  return calls;
+}
+
+function buildAssociationRecurringNeeds(
+  contributionTypes: PartnerOnboardingRequestInput["contributionTypes"],
+): string[] {
+  const needs = contributionTypes.map((type) => {
+    if (type === "materiel") return "Matériel";
+    if (type === "financement") return "Dons";
+    if (type === "communication") return "Relais de communication";
+    if (type === "logistique") return "Bénévoles logistiques";
+    return "Bénévoles d'accueil";
+  });
+
+  return [...new Set(needs)];
+}
+
+function buildAssociationResources(params: {
+  contactChannel: string;
+  contactDetails: string;
+  websiteUrl?: string | null;
+  primaryChannelUrl?: string | null;
+  primaryChannelLabel?: string;
+  instagramUrl?: string | null;
+  facebookUrl?: string | null;
+}): AssociationResource[] {
+  const resources: AssociationResource[] = [];
+
+  if (params.websiteUrl) {
+    resources.push({
+      label: "Site officiel",
+      description: "Agenda public et informations utiles.",
+      url: params.websiteUrl,
+    });
+  }
+  if (params.primaryChannelUrl && params.primaryChannelUrl !== params.websiteUrl) {
+    resources.push({
+      label: params.primaryChannelLabel?.trim() || "Canal de contact",
+      description: `Contact via ${params.contactChannel.trim() || "canal direct"}.`,
+      url: params.primaryChannelUrl,
+    });
+  }
+  if (params.instagramUrl) {
+    resources.push({
+      label: "Instagram",
+      description: "Actualités, campagnes et relais visuels.",
+      url: params.instagramUrl,
+    });
+  }
+  if (params.facebookUrl) {
+    resources.push({
+      label: "Facebook",
+      description: "Annonces, événements et mobilisations.",
+      url: params.facebookUrl,
+    });
+  }
+  if (params.contactDetails.trim() && !params.contactDetails.includes("@")) {
+    resources.push({
+      label: "Contact direct",
+      description: "Point de contact déclaré pour les échanges opérationnels.",
+      url: undefined,
+    });
+  }
+
+  return resources;
+}
+
 export function buildPublishedPartnerAnnuaireEntry(params: {
   request: PartnerOnboardingRequestInput;
   requestId: string;
@@ -233,6 +346,41 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
   const publicChannelUrl = contactUrl ? normalizePublicChannelUrl(contactUrl) : null;
   const websiteUrl = normalizePublicChannelUrl(params.request.contactDetails.trim());
   const nowIso = new Date().toISOString();
+  const associationProfile: AssociationProfile | undefined =
+    params.request.organizationType === "association"
+      ? {
+          mission: [
+            params.request.motivation.trim(),
+            params.request.relayActions.trim()
+              ? `Relais déclaré: ${params.request.relayActions.trim()}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · "),
+          recurringNeeds: buildAssociationRecurringNeeds(params.request.contributionTypes),
+          pastActions: [],
+          usefulResources: buildAssociationResources({
+            contactChannel: params.request.contactChannel,
+            contactDetails: params.request.contactDetails,
+            websiteUrl,
+            primaryChannelUrl: publicChannelUrl,
+            primaryChannelLabel: params.request.contactChannel,
+            instagramUrl: null,
+            facebookUrl: null,
+          }),
+          publicCalls: buildAssociationPublicCalls(
+            params.request.contributionTypes,
+            params.request.relayActions,
+          ),
+          impactHistory: {
+            zonesCovered: arrondissements.length,
+            recurrence: formatAvailabilitySummary(availability),
+            lastActionAt: nowIso,
+            note: "Historique d'impact à compléter après validation.",
+          },
+          structureStatus: "pending",
+        }
+      : undefined;
 
   return {
     id: `onboarded-${randomUUID()}`,
@@ -286,6 +434,7 @@ export function buildPublishedPartnerAnnuaireEntry(params: {
     qualificationStatus: "contact_non_qualifie",
     lastUpdatedAt: nowIso,
     recentActivityAt: nowIso,
+    associationProfile,
     internalAdminContact: {
       referentName: params.request.contactName,
       email: params.request.contactDetails.includes("@")

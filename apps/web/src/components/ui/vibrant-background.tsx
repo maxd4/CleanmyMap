@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { BACKDROP_TONES, resolveBackdropToneKey, type BackdropToneKey } from "@/lib/ui/backdrop-tone";
 
@@ -9,7 +10,11 @@ type VibrantBackgroundProps = {
 
 export function VibrantBackground({ initialToneKey }: VibrantBackgroundProps) {
   const pathname = usePathname();
-  const toneKey = resolveBackdropToneKey(pathname) ?? initialToneKey;
+  const [toneKey, setToneKey] = useState<BackdropToneKey | null>(initialToneKey);
+
+  useEffect(() => {
+    setToneKey(resolveBackdropToneKey(pathname) ?? initialToneKey);
+  }, [initialToneKey, pathname]);
 
   if (!toneKey) {
     return null;

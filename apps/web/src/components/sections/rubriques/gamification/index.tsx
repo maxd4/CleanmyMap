@@ -7,6 +7,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { LeaderboardTable } from "./leaderboard-table";
+import { ContributorRecognitionPanel } from "./contributor-recognition-panel";
 import { PersonalProgress } from "./personal-progress";
 import type { LeaderboardResponse, MeResponse } from "./gamification-types";
 import { motion } from "framer-motion";
@@ -91,6 +92,7 @@ export function GamificationSection() {
   }, [progression?.history.mapPoints]);
 
   const rows = leaderboardData?.items ?? [];
+  const recognition = leaderboardData?.recognition;
 
   return (
     <SectionShell
@@ -167,6 +169,12 @@ export function GamificationSection() {
               />
             </motion.div>
           </div>
+
+          <ContributorRecognitionPanel
+            recognition={recognition}
+            locale={locale}
+            loading={leaderboardLoading}
+          />
 
           {/* Personal Map */}
           {progression && personalMapItems.length > 0 && (

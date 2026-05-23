@@ -4,6 +4,7 @@ import { parseEntityTypesParam } from"@/lib/actions/unified-source";
 import { loadPilotageOverview } from"@/lib/pilotage/overview";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
+import { handleApiError } from"@/lib/http/api-errors";
 
 export const runtime ="nodejs";
 
@@ -59,7 +60,6 @@ export async function GET(request: Request) {
  ...overview,
  });
  } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- return NextResponse.json({ error: message }, { status: 500 });
+ return handleApiError(error, "GET /api/pilotage/overview");
  }
 }

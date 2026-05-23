@@ -50,16 +50,53 @@ export function getDraftSavedAt(): string | null {
   return window.localStorage.getItem(ACTION_DECLARATION_DRAFT_DATE_KEY);
 }
 
+const ACTION_DECLARATION_DRAFT_CHANGE_EVENT = "cmm-action-declaration-draft-change";
+
+function emitDraftChange(): void {
+  if (
+    typeof window === "undefined" ||
+    typeof window.dispatchEvent !== "function"
+  ) {
+    return;
+  }
+  window.dispatchEvent(new Event(ACTION_DECLARATION_DRAFT_CHANGE_EVENT));
+}
+
+export function subscribeToDraftChanges(callback: () => void): () => void {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (
+      event.key === ACTION_DECLARATION_DRAFT_KEY ||
+      event.key === ACTION_DECLARATION_DRAFT_DATE_KEY
+    ) {
+      callback();
+    }
+  };
+
+  window.addEventListener("storage", handleStorage);
+  window.addEventListener(ACTION_DECLARATION_DRAFT_CHANGE_EVENT, callback);
+
+  return () => {
+    window.removeEventListener("storage", handleStorage);
+    window.removeEventListener(ACTION_DECLARATION_DRAFT_CHANGE_EVENT, callback);
+  };
+}
+
 export function clearDraft(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(ACTION_DECLARATION_DRAFT_KEY);
   window.localStorage.removeItem(ACTION_DECLARATION_DRAFT_DATE_KEY);
+  emitDraftChange();
 }
 
 export function saveDraft(form: FormState, savedAt = new Date().toISOString()): string | null {
   if (typeof window === "undefined") return null;
   window.localStorage.setItem(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify(form));
   window.localStorage.setItem(ACTION_DECLARATION_DRAFT_DATE_KEY, savedAt);
+  emitDraftChange();
   return savedAt;
 }
 

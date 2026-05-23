@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useId, useRef, useState } from "react";
 import { MapPin, Navigation, Crosshair, CheckCircle2, AlertCircle, Loader2, MapPinOff, Pencil, X } from "lucide-react";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils";
@@ -10,6 +11,20 @@ import {
   formatGeometryPointCount,
   summarizeActionDrawingValidation,
 } from "../map/actions-map-geometry.utils";
+
+type AddressSuggestion = {
+  label: string;
+  subtitle: string;
+  latitude: number;
+  longitude: number;
+  importance: number | null;
+};
+
+type AddressSuggestionsResponse = {
+  status: "ok";
+  query: string;
+  items: AddressSuggestion[];
+};
 
 const ActionDrawingMap = dynamic(
   () => import("@/components/actions/action-drawing-map").then((mod) => mod.ActionDrawingMap),
@@ -96,9 +111,7 @@ function GpsButton({
   );
 }
 
-// ─── Address input ────────────────────────────────────────────────────────────
-
-function AddressInput({
+function AddressAutocompleteInput({
   id,
   icon: Icon,
   label,
@@ -106,6 +119,7 @@ function AddressInput({
   value,
   onChange,
   optional,
+  helperText,
 }: {
   id: string;
   icon: React.ElementType;
@@ -114,7 +128,111 @@ function AddressInput({
   value: string;
   onChange: (v: string) => void;
   optional?: boolean;
+  helperText: string;
 }) {
+  const listboxId = useId();
+  const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const blurTimerRef = useRef<number | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
+  const trimmedValue = value.trim();
+  const hasVisibleSuggestions = isOpen && trimmedValue.length >= 3;
+
+  useEffect(() => {
+    if (!hasVisibleSuggestions) {
+      setSuggestions([]);
+      setIsLoading(false);
+      setHighlightedIndex(0);
+      return;
+    }
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    const timer = window.setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(
+          `/api/geo/address-suggestions?q=${encodeURIComponent(trimmedValue)}&limit=6`,
+          {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            signal: controller.signal,
+          },
+        );
+        if (!response.ok) {
+          setSuggestions([]);
+          return;
+        }
+        const data = (await response.json()) as AddressSuggestionsResponse;
+        if (controller.signal.aborted) {
+          return;
+        }
+        setSuggestions(data.items ?? []);
+        setHighlightedIndex(0);
+      } catch {
+        if (!controller.signal.aborted) {
+          setSuggestions([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    }, 220);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [hasVisibleSuggestions, trimmedValue]);
+
+  useEffect(() => () => {
+    if (blurTimerRef.current !== null) {
+      window.clearTimeout(blurTimerRef.current);
+    }
+    abortRef.current?.abort();
+  }, []);
+
+  const selectSuggestion = (suggestion: AddressSuggestion) => {
+    onChange(suggestion.label);
+    setIsOpen(false);
+    setSuggestions([]);
+    setHighlightedIndex(0);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!hasVisibleSuggestions || suggestions.length === 0) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+      }
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setHighlightedIndex((current) => (current + 1) % suggestions.length);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setHighlightedIndex((current) =>
+        current === 0 ? suggestions.length - 1 : current - 1,
+      );
+    } else if (event.key === "Enter") {
+      const suggestion = suggestions[highlightedIndex];
+      if (suggestion) {
+        event.preventDefault();
+        selectSuggestion(suggestion);
+      }
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setIsOpen(false);
+    }
+  };
+
   return (
     <label className="block space-y-1.5">
       <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-900/55">
@@ -132,11 +250,91 @@ function AddressInput({
         <input
           id={id}
           type="text"
+          autoComplete="off"
           placeholder={placeholder}
-          className="w-full h-11 pl-9 pr-4 rounded-xl border border-emerald-200/70 bg-[#F3FBF6] text-sm font-medium text-emerald-950 placeholder:text-emerald-700/35 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15"
+          className="w-full h-11 pl-9 pr-10 rounded-xl border border-emerald-200/70 bg-[#F3FBF6] text-sm font-medium text-emerald-950 placeholder:text-emerald-700/35 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={hasVisibleSuggestions}
+          aria-controls={listboxId}
+          onChange={(event) => {
+            onChange(event.target.value);
+            setIsOpen(true);
+            setHighlightedIndex(0);
+          }}
+          onFocus={() => setIsOpen(true)}
+          onBlur={() => {
+            if (blurTimerRef.current !== null) {
+              window.clearTimeout(blurTimerRef.current);
+            }
+            blurTimerRef.current = window.setTimeout(() => {
+              setIsOpen(false);
+            }, 120);
+          }}
+          onKeyDown={handleKeyDown}
         />
+        {isLoading && (
+          <div className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-700/45">
+            <Loader2 size={14} className="animate-spin" />
+          </div>
+        )}
+
+        {hasVisibleSuggestions && (
+          <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-[1.35rem] border border-emerald-200/80 bg-white shadow-[0_22px_44px_-24px_rgba(16,24,40,0.35)]">
+            <div className="border-b border-emerald-100 bg-[#F7FCF9] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-900/45">
+              {helperText}
+            </div>
+            <div
+              id={listboxId}
+              role="listbox"
+              className="max-h-72 overflow-auto p-1.5"
+            >
+              {suggestions.length > 0 ? (
+                suggestions.map((suggestion, index) => {
+                  const isHighlighted = index === highlightedIndex;
+                  return (
+                    <button
+                      key={`${suggestion.label}-${index}`}
+                      type="button"
+                      role="option"
+                      aria-selected={isHighlighted}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        selectSuggestion(suggestion);
+                      }}
+                      onMouseEnter={() => setHighlightedIndex(index)}
+                      className={cn(
+                        "flex w-full items-start gap-3 rounded-[1rem] px-3 py-2.5 text-left transition-colors",
+                        isHighlighted
+                          ? "bg-emerald-50 text-emerald-950"
+                          : "hover:bg-emerald-50/70",
+                      )}
+                    >
+                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700">
+                        <MapPin size={14} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-semibold text-emerald-950">
+                          {suggestion.label}
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-emerald-700/55">
+                          {suggestion.subtitle}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="px-4 py-3 text-sm text-emerald-900/55">
+                  {trimmedValue.length < 3
+                    ? "Tapez au moins 3 caractères pour obtenir des adresses exactes."
+                    : "Aucune adresse exacte trouvée pour cette saisie."}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </label>
   );
@@ -205,15 +403,16 @@ export function ActionStepLocation({
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <AddressInput
+          <AddressAutocompleteInput
             id="departure"
             icon={MapPin}
             label={isCleanPlaceMode ? "Adresse du lieu" : "Départ"}
             placeholder={isCleanPlaceMode ? "Ex : Square des Batignolles" : "Ex : Rue de Rivoli, Paris"}
             value={form.departureLocationLabel}
-            onChange={(v) => updateField("departureLocationLabel", v)}
-          />
-          <AddressInput
+          onChange={(v) => updateField("departureLocationLabel", v)}
+          helperText={isCleanPlaceMode ? "Adresse exacte du lieu" : "Adresse exacte du départ"}
+        />
+          <AddressAutocompleteInput
             id="arrival"
             icon={Navigation}
             label={isCleanPlaceMode ? "Complément" : "Arrivée"}
@@ -221,6 +420,7 @@ export function ActionStepLocation({
             value={form.arrivalLocationLabel}
             onChange={(v) => updateField("arrivalLocationLabel", v)}
             optional
+            helperText={isCleanPlaceMode ? "Complément géographique exact" : "Adresse exacte de l’arrivée"}
           />
         </div>
 

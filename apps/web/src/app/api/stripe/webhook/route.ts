@@ -28,13 +28,15 @@ export async function POST(request: Request) {
 
  try {
  const event = stripe.webhooks.constructEvent(
- body,
- signature,
- webhookSecret,
+  body,
+  signature,
+  webhookSecret,
  );
  return NextResponse.json({ received: true, type: event.type });
  } catch (error) {
- const message = error instanceof Error ? error.message :"Invalid webhook";
- return NextResponse.json({ error: message }, { status: 400 });
+ console.error("[Stripe Webhook] Invalid signature or payload", {
+  message: error instanceof Error ? error.message : String(error),
+ });
+ return NextResponse.json({ error: "Invalid webhook signature" }, { status: 400 });
  }
 }

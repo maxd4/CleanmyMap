@@ -1,6 +1,237 @@
 import type { AnnuaireEntry } from "../annuaire-map-canvas";
 
-export const ASSOCIATIONS_ENTRIES: AnnuaireEntry[] = [
+const ASSOCIATION_PROFILES: Record<string, AnnuaireEntry["associationProfile"]> = {
+  "asso-1": {
+    mission: "Accompagner les Francilien·ne·s dans la transition écologique avec des ateliers terrain et des relais de quartier.",
+    recurringNeeds: ["Matériel", "Relais de communication", "Bénévoles logistiques"],
+    pastActions: [
+      "Ateliers de sensibilisation et de transition écologique",
+      "Mobilisations de quartier autour de la réduction des déchets",
+      "Relais terrain avec partenaires locaux",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 18,
+      zonesCovered: 2,
+      recurrence: "Ateliers réguliers",
+      lastActionAt: "2026-04-10",
+      note: "Ateliers et relais de terrain documentés sur les 15e et 16e arrondissements.",
+    },
+    structureStatus: "validated",
+  },
+  "asso-2": {
+    mission: "Réseau solidaire de proximité pour soutenir les personnes sans domicile et animer les commerces partenaires.",
+    recurringNeeds: ["Bénévoles d'accueil", "Bénévoles logistiques", "Relais de communication"],
+    pastActions: [
+      "Animation du réseau de commerçant·e·s solidaires",
+      "Relais d'aide et d'orientation de terrain",
+      "Coordination de proximité dans Paris centre et l'Est parisien",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 42,
+      zonesCovered: 6,
+      recurrence: "Actions quotidiennes",
+      lastActionAt: "2026-04-11",
+      note: "Réseau actif avec de nombreux points de contact de quartier.",
+    },
+    structureStatus: "active_validated",
+  },
+  "asso-3": {
+    mission: "Inclusion sociale et réemploi via des déménagements à vélo et une logistique locale utile.",
+    recurringNeeds: ["Bénévoles logistiques", "Matériel", "Bénévoles d'accueil"],
+    pastActions: [
+      "Déménagements à vélo et logistique circulaire",
+      "Accompagnement d'équipes bénévoles sur le terrain",
+      "Actions de réemploi et d'accueil local",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 24,
+      zonesCovered: 4,
+      recurrence: "Actions hebdomadaires",
+      lastActionAt: "2026-04-09",
+      note: "Activité régulière sur le 11e, le 18e, le 19e et le 20e.",
+    },
+    structureStatus: "validated",
+  },
+  "asso-4": {
+    mission: "Lieu d'engagement climat ouvert au public, centré sur les ateliers, les débats et la programmation citoyenne.",
+    recurringNeeds: ["Bénévoles d'accueil", "Bénévoles logistiques", "Relais de communication"],
+    pastActions: [
+      "Programmation régulière d'ateliers et de débats",
+      "Accueil du public et animation de réseau citoyen",
+      "Diffusion de ressources climat et quartier",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 60,
+      zonesCovered: 6,
+      recurrence: "Programmation régulière",
+      lastActionAt: "2026-04-16",
+      note: "Hub reconnu pour la mobilisation citoyenne et le climat.",
+    },
+    structureStatus: "active_validated",
+  },
+  "asso-featured-1": {
+    mission: "Action terrain exemplaire sur la propreté urbaine, le recyclage et la mobilisation citoyenne dans le 19e.",
+    recurringNeeds: ["Matériel", "Bénévoles logistiques", "Relais de communication"],
+    pastActions: [
+      "Collectes de déchets de quartier",
+      "Opérations de propreté urbaine et de recyclage",
+      "Mobilisations citoyennes récurrentes dans le 19e",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 31,
+      zonesCovered: 1,
+      recurrence: "Sorties hebdomadaires",
+      lastActionAt: "2026-04-20",
+      note: "Focus très local sur le 19e arrondissement.",
+    },
+    structureStatus: "active_validated",
+  },
+  "asso-featured-2": {
+    mission: "Soutien aux plus démunis via des distributions alimentaires et un accompagnement social sans conditions.",
+    recurringNeeds: ["Bénévoles d'accueil", "Bénévoles logistiques", "Dons"],
+    pastActions: [
+      "Distributions alimentaires de proximité",
+      "Accompagnement social sans conditions",
+      "Animation d'un réseau d'entraide local",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 54,
+      zonesCovered: 1,
+      recurrence: "Actions quotidiennes",
+      lastActionAt: "2026-04-22",
+      note: "Historique concentré sur le 15e et les besoins de proximité.",
+    },
+    structureStatus: "active_validated",
+  },
+  "asso-featured-6": {
+    mission: "Protection des océans, du littoral et de la biodiversité marine avec un appui aux relais locaux.",
+    recurringNeeds: ["Dons", "Relais de communication", "Matériel"],
+    pastActions: [
+      "Soutien à des projets de protection du littoral",
+      "Relais de campagnes de sensibilisation",
+      "Mobilisation de projets locaux sur la biodiversité marine",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 38,
+      zonesCovered: 1,
+      recurrence: "Campagnes régulières",
+      lastActionAt: "2026-04-10",
+      note: "Action surtout nationale avec appuis locaux ponctuels.",
+    },
+    structureStatus: "validated",
+  },
+  "asso-zd-greenminded": {
+    mission: "Sensibilisation zéro-déchet, zéro-mégot et pollution plastique avec ateliers et interventions scolaires.",
+    recurringNeeds: ["Relais de communication", "Bénévoles d'accueil", "Matériel"],
+    pastActions: [
+      "Ateliers zéro-déchet et sensibilisation grand public",
+      "Interventions scolaires et pédagogiques",
+      "Mobilisations zéro-mégot et lutte plastique",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 29,
+      zonesCovered: 12,
+      recurrence: "Interventions régulières",
+      lastActionAt: "2026-05-01",
+      note: "Réseau très mobilisé sur plusieurs arrondissements parisiens.",
+    },
+    structureStatus: "active_validated",
+  },
+  "asso-gestes-propres": {
+    mission: "Association nationale dédiée à la sensibilisation, aux relais de terrain et à l'appui des collectifs locaux partout en France.",
+    recurringNeeds: ["Relais de communication", "Bénévoles logistiques", "Matériel"],
+    pastActions: [
+      "Mobilisation d'antennes locales",
+      "Campagnes nationales de sensibilisation",
+      "Appui aux collectifs terrain",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 120,
+      zonesCovered: 20,
+      recurrence: "Réseau national continu",
+      lastActionAt: "2026-05-01",
+      note: "Structure nationale utile pour la diffusion et l'essaimage local.",
+    },
+    structureStatus: "validated",
+  },
+  "du-1": {
+    mission: "Formation des acteurs engagés et structuration du lien entre mobilisation citoyenne et territoires.",
+    recurringNeeds: ["Relais de communication", "Bénévoles d'accueil"],
+    pastActions: [
+      "Formation d'étudiant·e·s et d'acteurs engagés",
+      "Structuration de projets d'engagement local",
+      "Transmission de méthodes et de cadres de travail",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 12,
+      zonesCovered: 1,
+      recurrence: "Sessions universitaires",
+      lastActionAt: "2026-04-24",
+      note: "Impact surtout pédagogique et structurant.",
+    },
+    structureStatus: "validated",
+  },
+  "asso-surfrider-paris": {
+    mission: "Protection de l'océan et du littoral, avec des collectes urbaines et des initiatives océanes locales.",
+    recurringNeeds: ["Matériel", "Bénévoles logistiques", "Relais de communication"],
+    pastActions: [
+      "Collectes de déchets sur les berges de Seine",
+      "Initiatives Océanes urbaines",
+      "Mobilisations locales de protection du littoral",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 46,
+      zonesCovered: 16,
+      recurrence: "Collectes régulières",
+      lastActionAt: "2026-05-01",
+      note: "Fort maillage parisien pour des actions environnementales récurrentes.",
+    },
+    structureStatus: "active_validated",
+  },
+  "asso-zerowaste-paris": {
+    mission: "Groupe local militant pour la réduction des déchets à la source, la sensibilisation et le plaidoyer zero waste.",
+    recurringNeeds: ["Relais de communication", "Bénévoles d'accueil", "Matériel"],
+    pastActions: [
+      "Ateliers zéro déchet et sensibilisation",
+      "Plaidoyer local pour la réduction à la source",
+      "Actions terrain pour le zéro déchet dans la capitale",
+    ],
+    usefulResources: [],
+    publicCalls: [],
+    impactHistory: {
+      actionCount: 52,
+      zonesCovered: 20,
+      recurrence: "Ateliers mensuels",
+      lastActionAt: "2026-05-01",
+      note: "Couverture parisienne très large et cadence régulière.",
+    },
+    structureStatus: "active_validated",
+  },
+};
+
+const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntry[] = [
   {
     id: "asso-1",
     name: "Pik Pik Environnement",
@@ -314,3 +545,10 @@ export const ASSOCIATIONS_ENTRIES: AnnuaireEntry[] = [
     recentActivityAt: "2026-05-01",
   },
 ];
+
+export const ASSOCIATIONS_ENTRIES: AnnuaireEntry[] = ASSOCIATIONS_BASE_ENTRIES.map(
+  (entry) => ({
+    ...entry,
+    associationProfile: ASSOCIATION_PROFILES[entry.id] ?? entry.associationProfile,
+  }),
+);

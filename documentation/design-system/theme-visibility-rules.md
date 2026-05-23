@@ -1,4 +1,4 @@
-# Règles Strictes de Visibilité - Mode Clair / Mode Sombre
+# Règles Strictes de Visibilité - Fond Clair / Fond Contrasté
 
 ## Objectif
 Garantir une interface lisible en permanence, sans texte invisible, sans bouton ambigu, et avec des contrastes vérifiables dans tous les états UI.
@@ -11,6 +11,14 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
 - États `hover`, `active`, `focus`, `disabled`: conservent un contraste conforme.
 - Les surfaces qui portent du texte doivent rester plus foncées que le background global quand le site repose majoritairement sur du texte blanc, afin de renforcer la lisibilité et de faire ressortir les contenus inversés.
 
+## 1 bis) Limite de blanc sur les backgrounds
+- Sur un background de page teinté, la couche la plus lumineuse ne doit jamais dépasser un mix blanc de `34%` sur une base colorée.
+- Au-delà d’environ `40%` de blanc perçu, la teinte se lave et le fond lit comme un blanc cassé au lieu d’une vraie couleur.
+- Si une page doit paraître plus claire, il faut baisser la saturation ou changer la teinte de base, pas augmenter la part de blanc.
+- Valeur critique à retenir: `rgba(255,255,255,0.34)` max pour la couche lumineuse principale d’un fond coloré.
+- Règle pratique: une page = une teinte dominante, un même système de glows et de contrastes, puis seulement la couleur change selon la route.
+- Exception validée: le Sommaire (`/explorer`) conserve sa palette actuelle tant qu'il reste la référence UX la plus aboutie.
+
 ## 2) Tokens de couleurs obligatoires
 - Interdire les couleurs codées en dur dans les composants critiques (CTA, navigation, badges, tableaux KPI).
 - Utiliser des variables sémantiques:
@@ -20,6 +28,11 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
   - `--action-primary-bg`, `--action-primary-text`, `--action-primary-hover`
   - `--focus-ring`
 - Chaque token doit avoir une valeur claire et une valeur sombre.
+- Sur les cartes et bulles à fond sombre, utiliser les utilitaires canoniques:
+  - `cmm-text-card-label` pour les petits textes et meta, blancs par défaut
+  - `cmm-text-card-copy` pour les descriptions courtes, blancs avec une opacité lisible
+  - `cmm-text-card-title` pour les titres et sous-titres, en couleur d'accent
+  - `cmm-text-card-value` pour les chiffres, en couleur d'accent avec chiffres tabulaires
 
 ## 3) Boutons et liens (règle anti-invisibilité)
 - Un CTA doit toujours respecter:
@@ -37,6 +50,9 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
   - le même niveau de contraste titre/valeur.
 - Les grilles KPI desktop doivent éviter les lignes orphelines (ex: 5 + 1). Préférer des grilles stables (2x3, 3xN, 4xN selon le nombre d’items).
 - Les unités (kg, L, €) restent visuellement séparées de la valeur sans réduire la lisibilité.
+- Dans les cartes sombres et bulles, les petits textes restent blancs par défaut.
+- Les titres, sous-titres et chiffres doivent être accentués, jamais neutralisés en gris faible contraste.
+- Les cartes denses évitent les doublons visuels: un seul niveau de titre, un seul niveau de sous-texte, pas de surcharge typographique.
 
 ## 5) Navigation, badges, ruban
 - Le ruban ne doit jamais superposer du texte sur un fond non contrasté.
@@ -55,9 +71,15 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
   - principal CTA,
   - cartes KPI,
   - page méthodologie.
-- Vérifier en `mode clair` et `mode sombre`:
+- Vérifier explicitement:
+  - la homepage,
+  - la page sommaire,
+  - les cartes et bulles à fond sombre,
+  - les petits textes en blanc,
+  - les chiffres et titres/subtitres en couleur.
+- Vérifier en version claire et en version contrastée:
   - repos, hover, focus clavier, disabled.
-- Bloquer la release si un composant interactif devient illisible dans un des deux modes.
+- Bloquer la release si un composant interactif devient illisible dans une des deux variantes.
 
 ## 8) Interdictions
 - Pas de texte avec opacité < 70% pour des actions importantes.

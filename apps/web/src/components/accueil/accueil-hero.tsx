@@ -11,128 +11,144 @@ interface HomeHeroProps {
 
 const metricAccentStyles = {
   blue: {
-    bar: "bg-[#0F6FFF]",
-    value: "text-[#E9F4FF]",
-    card: "hover:border-[#0F6FFF]/36",
+    bar: "bg-[#34d399]",
+    label: "text-[#d9f99d]",
+    value: "text-[#ecfdf5]",
+    card: "hover:border-[#34d399]/36",
   },
   emerald: {
-    bar: "bg-[#16C79A]",
-    value: "text-[#D9FFF1]",
-    card: "hover:border-[#16C79A]/36",
+    bar: "bg-[#84cc16]",
+    label: "text-[#bbf7d0]",
+    value: "text-[#f7fee7]",
+    card: "hover:border-[#84cc16]/36",
   },
   amber: {
-    bar: "bg-[#F2A313]",
-    value: "text-[#FFF0B8]",
-    card: "hover:border-[#F2A313]/36",
+    bar: "bg-[#22c55e]",
+    label: "text-[#fde68a]",
+    value: "text-[#f0fdf4]",
+    card: "hover:border-[#22c55e]/36",
   },
 } as const;
 
 export function HomeHero({ metrics }: HomeHeroProps) {
   return (
     <section className="relative overflow-hidden bg-transparent pt-4 sm:pt-6">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_45%_at_50%_0%,rgba(34,195,214,0.12),transparent),radial-gradient(ellipse_45%_45%_at_0%_100%,rgba(25,157,139,0.10),transparent)]" />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'180\' height=\'180\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.72\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'180\' height=\'180\' filter=\'url(%23n)\'/%3E%3C/svg%3E")',
-        }}
-      />
-
-      <div className="relative z-10 mx-auto w-full max-w-[1540px] px-4 pb-9 pt-2 sm:px-8 lg:pb-12">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
-          <div className="relative min-h-[470px] overflow-hidden rounded-[2rem] border border-[#4B7B8C]/22 shadow-[0_34px_76px_-34px_rgba(6,17,30,0.76)] sm:min-h-[515px]">
-            {/* Layer fond isolé — backdrop-blur UNIQUEMENT ici */}
-            <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[#18374E]/94 backdrop-blur-xl" />
-            <div className="relative z-10 space-y-8 p-7 sm:p-9 lg:p-11">
-              <div className="flex items-center justify-end gap-3">
+      <div className="pointer-events-none absolute inset-x-0 top-[-6rem] h-[24rem] bg-[radial-gradient(ellipse_55%_45%_at_50%_0%,rgba(34,197,94,0.22),transparent_68%)]" />
+      <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 pb-9 pt-2 sm:px-8 lg:pb-12">
+        <div className="grid gap-6 lg:grid-cols-2 xl:gap-8">
+          <div className="group relative min-h-[560px] overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_36px_90px_-44px_rgba(2,6,23,0.78)]">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,18,11,0.98)_0%,rgba(4,29,18,0.98)_48%,rgba(3,20,12,0.98)_100%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_15%_10%,rgba(52,211,153,0.16),transparent_55%),radial-gradient(ellipse_50%_40%_at_85%_0%,rgba(132,204,22,0.16),transparent_58%),radial-gradient(ellipse_40%_34%_at_88%_92%,rgba(16,185,129,0.12),transparent_62%)]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+            <div className="relative z-10 flex h-full flex-col justify-between p-7 sm:p-9 lg:p-11">
+              <div className="flex items-center justify-between gap-3">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/7 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-50/80 backdrop-blur-xl">
+                  <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
+                  Accueil
+                </div>
                 <SitePreferencesControls variant="locale" />
               </div>
 
-              <div className="space-y-5">
-                <h1 className="max-w-[14ch] text-[clamp(3rem,6.2vw,5rem)] font-black leading-[0.94] tracking-[-0.05em] text-white">
-                  Clean My Map
-                </h1>
-                <div className="flex items-center gap-3">
-                  <span className="h-px w-12 bg-[#26C8D8]/42" />
-                  <p className="inline-flex flex-wrap gap-x-3 gap-y-1 rounded-full border border-[#26C8D8]/34 bg-[#103F4D]/78 px-4 py-1 text-[10px] font-bold uppercase tracking-[0.34em] text-[#75F4F6] sm:text-[11px]">
-                    <span>Dépolluer</span>
-                    <span className="opacity-35">·</span>
-                    <span>Cartographier</span>
-                    <span className="opacity-35">·</span>
-                    <span>Impacter</span>
+              <div className="space-y-7">
+                <div className="space-y-5">
+                  <h1 className="max-w-[13ch] text-[clamp(2.95rem,4.15vw,4.4rem)] font-black leading-[0.9] tracking-[-0.07em] text-white drop-shadow-[0_14px_34px_rgba(2,6,23,0.42)] lg:whitespace-nowrap">
+                    Clean My Map
+                  </h1>
+                  <p className="max-w-2xl text-[1.08rem] leading-[1.7] text-emerald-50/76 sm:text-[1.12rem]">
+                    Cultivons l&apos;entraide pour dépolluer, cartographier et
+                    transformer chaque action terrain en preuve utile.
                   </p>
                 </div>
-              </div>
 
-              <p className="max-w-2xl text-[1.1rem] font-medium leading-[1.6] text-white/90">
-                Cultivons l&apos;entraide.
-                <span className="block mt-2 text-[#26C8D8] font-semibold">📍 Carte interactive • 📱 Compagnon GPS • 📊 Hub Opérationnel</span>
-              </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-emerald-50/84">
+                    Dépolluer
+                  </span>
+                  <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-emerald-50/84">
+                    Cartographier
+                  </span>
+                  <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-emerald-50/84">
+                    Impacter
+                  </span>
+                </div>
 
-              <div className="flex flex-wrap gap-4 mt-8">
-                <Link
-                  href="/actions/map"
-                  className="inline-flex h-[56px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-[#20C6D5] to-[#17C486] px-8 text-[15px] font-bold text-white shadow-[0_18px_30px_-18px_rgba(23,196,134,0.58)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/50"
-                >
-                  <MapPin size={20} />
-                  Ouvrir la Carte
-                </Link>
-                <Link
-                  href="/explorer"
-                  className="inline-flex h-[56px] items-center justify-center gap-3 rounded-2xl border border-white/20 bg-white/10 px-8 text-[15px] font-bold text-white transition-all hover:bg-white/20 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-                >
-                  <LayoutDashboard size={20} />
-                  Accéder au Hub
-                </Link>
+                <div className="max-w-2xl space-y-3">
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-50/70">
+                    Carte interactive · Compagnon GPS · Hub opérationnel
+                  </p>
+                  <p className="text-base leading-relaxed text-emerald-50/68 sm:text-[1.03rem]">
+                    Une interface pensée pour montrer l&apos;impact réel, orienter
+                    les actions et donner un accès rapide aux espaces clés.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-4 pt-2">
+                  <Link
+                    href="/actions/map"
+                    className="inline-flex h-[56px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-emerald-300 via-lime-300 to-amber-200 px-8 text-[15px] font-black text-emerald-950 shadow-[0_18px_34px_-18px_rgba(132,204,22,0.58)] transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/50"
+                  >
+                    <MapPin size={20} />
+                    Ouvrir la carte
+                  </Link>
+                  <Link
+                    href="/explorer"
+                    className="inline-flex h-[56px] items-center justify-center gap-3 rounded-2xl border border-white/12 bg-slate-950/35 px-8 text-[15px] font-black !text-white shadow-[0_16px_34px_-26px_rgba(2,6,23,0.8)] transition-all hover:bg-slate-900/48 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                  >
+                    <LayoutDashboard size={20} />
+                    Accéder au hub
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="relative min-h-[500px] overflow-hidden rounded-[2rem] border border-[#4B7B8C]/18 shadow-[0_34px_76px_-34px_rgba(6,17,30,0.76)]">
-            {/* Layer fond isolé */}
-            <div className="pointer-events-none absolute inset-0 rounded-[2rem] bg-[#18374E]/94 backdrop-blur-xl" />
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-[#0F6FFF] via-[#20C6D5] to-[#17C486]" />
-            <div className="relative z-10 space-y-8 p-8 sm:p-10">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <p className="flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.34em] text-white sm:text-[12px]">
-                    <span className="h-4 w-4 rounded-full bg-[#009BFF] shadow-[0_0_18px_rgba(0,155,255,0.55)]" />
+          <div className="relative min-h-[560px] overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_36px_90px_-44px_rgba(2,6,23,0.72)]">
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(3,20,13,0.98)_0%,rgba(5,33,20,0.98)_100%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_72%_50%_at_15%_0%,rgba(52,211,153,0.16),transparent_55%),radial-gradient(ellipse_46%_36%_at_84%_10%,rgba(132,204,22,0.14),transparent_58%),radial-gradient(ellipse_44%_40%_at_82%_92%,rgba(16,185,129,0.12),transparent_62%)]" />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-emerald-300 via-lime-300 to-emerald-200" />
+            <div className="relative z-10 flex h-full flex-col p-7 sm:p-9 lg:p-10">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="space-y-2">
+                  <p className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.32em] text-white/88 sm:text-[12px]">
+                    <span className="h-3.5 w-3.5 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
                     Impact terrain 2026
                   </p>
-                  <p className="pl-7 text-sm leading-relaxed text-white/58 sm:text-[13px]">
+                  <p className="max-w-md text-sm leading-relaxed text-emerald-50/66 sm:text-[13px]">
                     Données terrain certifiées. Formules exposées en
                     méthodologie.
                   </p>
                 </div>
                 <Link
                   href="/methodology"
-                  className="inline-flex h-9 items-center gap-2 rounded-xl bg-[#0F2137] px-4 text-[10px] font-bold uppercase tracking-[0.18em] text-white/82 shadow-[0_12px_24px_-18px_rgba(6,17,30,0.78)] transition-colors hover:bg-[#132B45] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200/40"
+                  className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/6 px-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/82 shadow-[0_12px_24px_-18px_rgba(2,6,23,0.78)] transition-colors hover:border-white/18 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
                 >
                   <Info size={12} />
                   Méthodologie
                 </Link>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
+              <div className="mt-8 grid flex-1 grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
                 {metrics.map((metric) => {
                   const s = metricAccentStyles[metric.accent];
                   return (
                     <div
                       key={metric.key}
-                      className={`group relative min-h-[148px] overflow-hidden rounded-[1.35rem] border border-[#31516B]/18 bg-[#102036] p-6 shadow-[0_14px_32px_-20px_rgba(6,17,30,0.9)] transition-transform hover:-translate-y-0.5 ${s.card}`}
+                      className={`group relative min-h-[154px] overflow-hidden rounded-[1.45rem] border border-white/10 bg-[linear-gradient(180deg,rgba(6,38,23,0.95)_0%,rgba(4,25,15,0.98)_100%)] p-5 shadow-[0_16px_40px_-24px_rgba(2,6,23,0.78)] transition-transform hover:-translate-y-0.5 ${s.card}`}
                     >
-                      <div className={`absolute inset-y-4 left-0 w-1 rounded-r-full ${s.bar}`} />
-                      <p className="mb-4 min-h-[2.5rem] text-[15px] font-medium uppercase leading-snug tracking-[0.22em] text-white/58">
-                        {metric.label}
-                      </p>
-                      <div className={`text-[clamp(2.1rem,4vw,3rem)] font-black leading-none tracking-tight ${s.value}`}>
+                      <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${s.bar}`} />
+                      <div className="flex items-start justify-between gap-3">
+                        <p className={`min-h-[2.8rem] max-w-[10ch] text-[13px] font-black uppercase leading-snug tracking-[0.24em] ${s.label}`}>
+                          {metric.label}
+                        </p>
+                      </div>
+                      <div className={`mt-6 text-[clamp(2.2rem,4vw,3.2rem)] font-black leading-none tracking-tight ${s.value}`}>
                         {metric.value}
                       </div>
                     </div>
                   );
                 })}
               </div>
+
             </div>
           </div>
         </div>

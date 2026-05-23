@@ -76,7 +76,7 @@ export async function GET(request: Request) {
       {
         status: "error",
         error: "Impossible de lire l'historique Codex hebdomadaire.",
-        details: message,
+        details: "Unavailable",
       },
       { status: 503 },
     );
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
       {
         status: "error",
         error: "Impossible d'enregistrer la semaine Codex.",
-        details: message,
+        details: "Unavailable",
       },
       { status: 503 },
     );

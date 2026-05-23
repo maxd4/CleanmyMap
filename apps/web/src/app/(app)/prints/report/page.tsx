@@ -159,7 +159,7 @@ export default async function PrintReportPage() {
  </section>
 
  {/* FOOTER */}
- <footer className="mt-auto pt-12 border-t border-slate-100 flex justify-between items-end">
+ <footer className="cmm-ribbon-surface mt-auto pt-12 flex justify-between items-end print:bg-white print:shadow-none print:border-t print:border-slate-200">
  <div className="space-y-2">
  <div className="flex items-center gap-2">
  <Image
@@ -169,15 +169,15 @@ export default async function PrintReportPage() {
  height={50}
  className="h-5 w-auto opacity-70"
  />
- <p className="cmm-text-caption cmm-text-muted font-bold uppercase tracking-[0.2em]">CleanMyMap - Intelligence Environnementale</p>
+ <p className="cmm-text-caption text-slate-100/70 font-bold uppercase tracking-[0.2em] print:text-slate-500">CleanMyMap - Intelligence Environnementale</p>
  </div>
- <div className="flex gap-4 text-[9px] text-slate-300 font-mono">
+ <div className="flex gap-4 text-[9px] text-slate-300 font-mono print:text-slate-400">
  <span>RFC-6749 COMPLIANT</span>
  <span>GDPR CERTIFIED</span>
  <span>OPEN DATA READY</span>
  </div>
  </div>
- <div className="w-24 h-24 bg-slate-100 rounded-xl flex items-center justify-center text-slate-300">
+ <div className="w-24 h-24 bg-slate-100 rounded-xl flex items-center justify-center text-slate-300 print:bg-slate-50 print:text-slate-300">
  <span className="cmm-text-caption font-bold text-center">QR code <br/> à générer</span>
  </div>
  </footer>

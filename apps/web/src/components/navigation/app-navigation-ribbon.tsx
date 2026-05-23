@@ -230,7 +230,7 @@ export function AppNavigationRibbon({
         )}
         style={ribbonChrome}
       >
-        <div className="flex w-full min-w-0 items-center gap-2.5 px-4 py-3 sm:px-6 lg:gap-3 xl:px-8 xl:py-3.5">
+        <div className="flex w-full min-w-0 items-center gap-2 px-3 py-2.5 sm:px-5 lg:gap-2 xl:px-7 xl:py-3">
           <p className="sr-only">
             {locale === "fr" ? "Profil actif" : "Active profile"}: {profileLabel}
           </p>
@@ -249,7 +249,7 @@ export function AppNavigationRibbon({
             </span>
           </Link>
 
-          <div className="hidden min-w-0 flex-1 items-center gap-2 xl:flex">
+          <div className="hidden min-w-0 flex-1 items-center gap-1.5 xl:flex">
             <Link
               href="/explorer"
               onClick={() => onTrackNavigation("/explorer", locale === "fr" ? "Sommaire" : "Summary", null)}
@@ -264,10 +264,10 @@ export function AppNavigationRibbon({
               </span>
             </Link>
 
-            <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
+            <div className="flex min-w-0 flex-1 items-center justify-center gap-2">
               <nav
                 aria-label={locale === "fr" ? "Navigation par blocs" : "Block navigation"}
-                className="flex shrink-0 flex-nowrap items-center gap-1 rounded-full border border-white/10 bg-white/[0.06] p-1.5 shadow-[0_22px_48px_-34px_rgba(2,6,23,0.88)]"
+                className="flex shrink-0 flex-nowrap items-center gap-0.5 rounded-full border border-white/8 bg-white/[0.05] p-1 shadow-[0_18px_36px_-28px_rgba(2,6,23,0.8)]"
               >
                 {spaces.map((space) => (
                   <AppNavigationBlockDropdown

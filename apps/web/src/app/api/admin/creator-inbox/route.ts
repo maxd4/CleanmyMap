@@ -42,7 +42,7 @@ export async function GET() {
   } catch (error) {
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unable to load creator inbox.",
+        error: "Unable to load creator inbox.",
       },
       { status: 500 },
     );
@@ -273,12 +273,12 @@ export async function PATCH(request: Request) {
         entityType: `creator_inbox_${parsed.data.source}`,
         action: parsed.data.action,
         source: sourceLabel,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: "Unavailable",
       },
     });
     return NextResponse.json(
       {
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: "Unknown error",
       },
       { status: 500 },
     );

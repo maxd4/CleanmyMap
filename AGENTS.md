@@ -26,6 +26,37 @@ Sur les héros et titres de page, éviter les retours à la ligne décoratifs. P
 
 Un titre ou sous-titre doit tenir sur une seule ligne sur desktop standard si c’est possible sans nuire à la lisibilité.
 
+## Règle UI de lisibilité
+
+Sur les héros et titres de page, éviter les retours à la ligne décoratifs. Priorité:
+1. réduire la taille,
+2. réduire le tracking,
+3. réduire la largeur utile,
+4. réorganiser le bloc sur mobile.
+
+Un titre ou sous-titre doit tenir sur une seule ligne sur desktop standard si c'est possible sans nuire à la lisibilité.
+
+## Règle système de couleurs (5 blocs, multi-teintes)
+
+**Structure homepage** : 5 blocs avec logique multi-teintes selon le type de page.
+
+**Blocs et teintes** :
+1. Accueil & Pilotage → `amber`/`orange` (accueil) + `amber`/`brun` (pilotage)
+2. Agir → `emerald`
+3. Cartographie & Impact → `sky` (carto) + `red`/`rose` (impact)
+4. Réseau & Discussions → `indigo`
+5. Apprendre → `yellow`
+
+**Mapping rubrique → teinte** :
+- Pages accueil (`/dashboard`, `/profil`, `/explorer`, `/feedback`) → `amber`/`orange`
+- Pages pilotage (`/pilotage`, `/admin`, `/elus`, `/godmode`) → `amber`/`brun`
+- Pages carto (`/actions/map`, `/sandbox`) → `sky`
+- Pages impact (`/reports`, `/gamification`) → `red`/`rose`
+
+**Règle stricte** : Une page = une teinte dominante. Ne pas mélanger orange ET brun, ou sky ET red/rose sur la même page.
+
+**Référence complète** : `documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md`
+
 Si une isolation Git est necessaire, demander d'abord l'accord explicite de l'utilisateur et expliquer :
 - le nom du dossier qui serait cree ;
 - la raison precise ;

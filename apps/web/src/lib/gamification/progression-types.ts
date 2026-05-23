@@ -112,6 +112,39 @@ export type UserLabelSummary = {
   associationName: string;
 };
 
+export type ContributorRecognitionType =
+  | "terrain"
+  | "diffusion"
+  | "coordination"
+  | "mentorat";
+
+export type ContributorRecognitionCard = {
+  userId: string;
+  actorName: string;
+  associationName: string;
+  verifiedContributions: number;
+  qualityAverage: number;
+  topZone: string;
+  contributionType: ContributorRecognitionType;
+  regularityLabel: string;
+  activeMonths: number;
+  mentorEligible: boolean;
+  lastContributionDate: string;
+  highlight: string;
+  thanksMessage: string;
+  badges: string[];
+  score: number;
+};
+
+export type ContributorRecognitionSummary = {
+  topContributors: ContributorRecognitionCard[];
+  currentContributor: ContributorRecognitionCard | null;
+};
+
+export type ContributorRecognitionSnapshot = {
+  currentContributor: ContributorRecognitionCard | null;
+};
+
 export type IndividualLeaderboardItem = {
   rank: number;
   userId: string;
@@ -127,6 +160,7 @@ export type IndividualLeaderboardItem = {
   wasteKg: number;
   totalButts: number;
   badges: string[];
+  recognition?: ContributorRecognitionCard | null;
 };
 
 export type MonthlyMilestone = {
@@ -207,6 +241,7 @@ export type PersonalTimelineItem = {
 export type PostActionRetentionLoop = {
   summary: string;
   badge: string;
+  thanksMessage: string;
   share: {
     text: string;
     url: string;

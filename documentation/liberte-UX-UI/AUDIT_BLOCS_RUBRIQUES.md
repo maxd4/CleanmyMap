@@ -4,22 +4,24 @@
 
 ## Statut de production (mis à jour manuellement)
 
-| # | Bloc | Dossier | AUDIT produit | Rubriques produites | KAIZEN produit |
-|---|------|---------|:---:|:---:|:---:|
-| 01 | Accueil (page vitrine) | `01-ACCUEIL` | ✅ `AUDIT-ACCUEIL.md` | ✅ `RUBRIQUE-ACCUEIL.md` | ❌ |
-| 02 | Bloc Accueil | `02-BLOC-ACCUEIL` | ❌ | — | — |
-| 03 | Bloc Agir | `03-BLOC-AGIR` | ❌ | 6 rubriques `.md` (pas de RUBRIQUE-*) | — |
-| 04 | Bloc Visualiser | `04-BLOC-VISUALISER` | ❌ | 4 rubriques `.md` | — |
-| 05 | Bloc Impact | `05-BLOC-IMPACT` | ❌ | 3 rubriques `.md` | — |
-| 06 | Bloc Réseau | `06-BLOC-RESEAU` | ❌ | 4 rubriques `.md` | — |
-| 07 | Bloc Échanges | `07-BLOC-ECHANGES` | ❌ | 1 rubrique `.md` | — |
-| 08 | Bloc Apprendre | `08-BLOC-APPRENDRE` | ❌ | 2 rubriques `.md` | — |
-| 09 | Bloc Piloter | `09-BLOC-PILOTER` | ❌ | 1 rubrique `.md` | — |
-| 10 | Pages Standalone | `10-PAGES-STANDALONE` | ❌ | 3+ rubriques `.md` | — |
+**⚠️ NOUVELLE STRUCTURE (5 blocs homepage)** : Les blocs ont été restructurés avec logique multi-teintes.
+
+| # | Bloc Homepage | Dossier | AUDIT produit | Rubriques produites | KAIZEN produit |
+|---|---------------|---------|:---:|:---:|:---:|
+| 01 | Accueil & Pilotage | `1-BLOC-ACCUEIL&PILOTAGE` | ❌ | — | — |
+| 02 | Agir | `2-BLOC-AGIR` | ❌ | 6 rubriques `.md` (pas de RUBRIQUE-*) | — |
+| 03 | Cartographie & Impact | `3-BLOC-VISUALISER&IMPACTER` | ❌ | 4 rubriques `.md` | — |
+| 04 | Réseau & Discussions | `4-BLOC-RESEAU&DISCUSSION` | ❌ | 4 rubriques `.md` | — |
+| 05 | Apprendre | `5-BLOC-APPRENDRE` | ❌ | 2 rubriques `.md` | — |
+
+**Blocs système (non homepage)** :
+- Impact (standalone) : fusionné dans "Cartographie & Impact"
+- Discussion : bloc `connect` / rose-pink
+- Piloter : fusionné dans "Accueil & Pilotage"
 
 > **Note :** Les fichiers `.md` dans les sous-dossiers sans préfixe `RUBRIQUE-` sont des specs de rubriques informelles (pré-audit). Ils ne remplacent pas les `RUBRIQUE-[NOM].md` normés.
 
-**Prochain à traiter :** `03-BLOC-AGIR` (6 rubriques déjà spécifiées, priorité haute — bloc d'action principal).
+**Prochain à traiter :** `2-BLOC-AGIR` (6 rubriques déjà spécifiées, priorité haute — bloc d'action principal).
 
 ---
 
@@ -54,23 +56,36 @@ Pour chaque bloc, on produit trois fichiers de travail à utiliser dans cet ordr
 ## Direction artistique globale (à intégrer dans chaque AUDIT-[BLOC].md)
 
 Règles non négociables à reprendre dans le PROMPT 2 de chaque audit :
-- Fond `slate-950` exclusivement. Aucun fond blanc sur les surfaces.
-- Surfaces : `bg-slate-900/40–80` + `backdrop-blur-xl` + `border-white/5`. Glassmorphism jamais sur les conteneurs de texte.
+- Fond de page : teinte claire/lumineuse de la couleur du bloc. Référence : page sommaire `/` et `accueil-pillars.tsx`.
+- Cartes et bulles : fond sombre teinté dans la même couleur + `backdrop-blur-xl` + bordure `border-[accent]-200/18`.
+- Titres / chiffres / sous-titres : colorés dans l'accent du bloc (`text-[accent]-100`). Jamais de couleurs arbitraires.
+- Petits textes : `text-white` ou `text-white/80` par défaut.
 - Polices : Outfit (titres) + Inter (corps). Classes `cmm-text-h1` à `cmm-text-caption`. Poids 400–700 uniquement. Jamais `font-extrabold`.
-- Tokens couleur : `cmm-text-primary`, `cmm-text-secondary`, `cmm-text-muted`. Jamais de couleurs arbitraires.
 - Composants : `CmmButton` et `CmmCard` uniquement. Max 1 CTA primaire + 1 secondaire par section.
 - Animations : Framer Motion `spring` (stiffness 400, damping 10). Max 3 simultanées par section. `prefers-reduced-motion` toujours géré.
 - Mode sobre : fallback statique obligatoire via `useSitePreferences()`.
 - Toute donnée chiffrable → SVG animé, D3, jauge ou sparkline. Jamais de chiffre brut seul.
 
-Accents par bloc (identité visuelle) :
-- Agir : `emerald`
-- Visualiser : `sky`
-- Impact : `red`
-- Réseau : `violet`
-- Apprendre : `yellow`
-- Piloter : `brun`
-- Accueil : `emerald-500` + `cyan-400` (double accent, vitrine)
+**⚠️ NOUVELLE STRUCTURE (5 blocs, multi-teintes)** :
+
+Certains blocs ont plusieurs teintes directrices selon le type de page :
+
+**Bloc "Accueil & Pilotage"** :
+- Pages accueil (`/dashboard`, `/profil`, `/explorer`, `/feedback`) → `amber` / `orange`
+- Pages pilotage (`/pilotage`, `/admin`, `/elus`, `/godmode`) → `amber` / `brun`
+
+**Bloc "Cartographie & Impact"** :
+- Pages carto (`/actions/map`, `/sandbox`) → `sky`
+- Pages impact (`/reports`, `/gamification`) → `red` / `rose`
+
+**Autres blocs (teinte unique)** :
+- Agir → `emerald`
+- Réseau & Discussions → `indigo`
+- Apprendre → `yellow`
+
+**Règle stricte** : Une page = une teinte dominante. Ne pas mélanger orange ET brun, ou sky ET red/rose sur la même page.
+
+**Référence complète** : `documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md` et `documentation/codex-sonnet-rubrique/MAPPING_RUBRIQUE_TEINTE.md`
 
 ---
 
@@ -344,6 +359,8 @@ Chaque opportunité = problème concret + solution explicite + prompt à exécut
 | Fichier | Ce qu'il apporte | Quand le lire |
 |---------|-----------------|---------------|
 | `documentation/design-system/charte-ui-pro-moderne-futuriste.md` | Patterns A/B/C, règles de surface, glassmorphism, accents par bloc | Avant tout PROMPT 2 |
+| `documentation/design-system/BLOC_COLOR_SYSTEM_PREMIUM.md` | Système de couleurs par bloc (5 blocs, multi-teintes) | Avant tout PROMPT 2 |
+| `documentation/codex-sonnet-rubrique/MAPPING_RUBRIQUE_TEINTE.md` | Mapping rubrique → teinte (référence rapide) | Avant tout PROMPT d'implémentation |
 | `documentation/design-system/VISUAL_STORYTELLING.md` | Types de visualisation (sparkline, jauge, D3, SVG), règle "jamais de chiffre brut" | Avant tout PROMPT d'implémentation avec données chiffrées |
 | `documentation/design-system/TYPOGRAPHY_SYSTEM.md` | Liste exacte des classes `cmm-text-*`, poids autorisés, cas d'usage par niveau | Avant tout composant textuel |
 | `documentation/design-system/display-modes-chartes.md` | Comportement mode sobre (`useSitePreferences()`), fallbacks statiques | Avant tout composant animé |

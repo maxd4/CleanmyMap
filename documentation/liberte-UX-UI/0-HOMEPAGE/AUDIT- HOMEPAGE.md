@@ -90,11 +90,11 @@ L'accueil actuel sert moins à "faire rêver" qu'à :
 ## Système de composants réellement utilisé
 
 ### Boutons
-L'accueil **n'utilise pas `CmmButton`** dans son état actuel.  
-Elle utilise `HomeButton` (`apps/web/src/components/accueil/accueil-button.tsx`) avec 3 variantes :
-- `primary` : gradient cyan -> teal -> emerald
-- `secondary` : gradient indigo -> violet -> purple
-- `tertiary` : lien texte compact
+L'accueil utilise `CmmButton` comme bouton partagé.
+Les boutons sont une exception visuelle aux règles de base et gardent 3 tons publics :
+- `primary` : fond emerald, texte blanc
+- `secondary` : fond blanc, texte slate
+- `tertiary` : bouton discret, fond transparent
 
 ### Surfaces
 Plusieurs sections utilisent le système maison :

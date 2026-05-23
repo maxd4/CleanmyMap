@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node ../../scripts/dev-with-fallback-port.mjs",
     "build": "node scripts/ensure-deterministic-routes-manifest.mjs --prepare && next build --webpack && node scripts/ensure-deterministic-routes-manifest.mjs --finalize",
     "start": "next start",
     "lint": "eslint src",
@@ -48,6 +48,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
+    "gsap": "^3.15.0",
     "html-to-image": "^1.11.13",
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",

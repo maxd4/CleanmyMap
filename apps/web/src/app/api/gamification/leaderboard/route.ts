@@ -3,6 +3,7 @@ import { NextResponse } from"next/server";
 import { z } from"zod";
 import { getGamificationLeaderboard } from"@/lib/gamification/progression";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
+import { handleApiError } from"@/lib/http/api-errors";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 
 export const runtime ="nodejs";
@@ -32,7 +33,6 @@ export async function GET(request: Request) {
  ...leaderboard,
  });
  } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- return NextResponse.json({ error: message }, { status: 500 });
+ return handleApiError(error, "GET /api/gamification/leaderboard");
  }
 }

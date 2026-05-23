@@ -17,23 +17,6 @@ const defaultFlags: FeatureFlags = {
 class FeatureFlagService {
   private flags: FeatureFlags = defaultFlags
 
-  constructor() {
-    this.loadFlags()
-  }
-
-  private loadFlags() {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('featureFlags')
-      if (stored) {
-        try {
-          this.flags = { ...defaultFlags, ...JSON.parse(stored) }
-        } catch (e) {
-          console.warn('Failed to parse feature flags from localStorage')
-        }
-      }
-    }
-  }
-
   isEnabled(flag: keyof FeatureFlags): boolean {
     return this.flags[flag]
   }

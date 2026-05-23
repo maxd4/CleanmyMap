@@ -8,6 +8,7 @@ Système de design pour agents IA. **TOUJOURS consulter avant toute modification
 
 ### Charte Visuelle (PRIORITÉ ABSOLUE)
 - **charte-ui-pro-moderne-futuriste.md** - Charte UI complète
+- **BLOC_COLOR_SYSTEM_PREMIUM.md** - Système de couleurs par bloc (5 blocs, multi-teintes)
 - **VISUAL_STORYTELLING.md** - Priorité aux visuels sur le texte
 - **principes-visuels.md** - Principes de base
 - **design-system.md** - Contient la palette officielle par bloc (Accents)
@@ -28,7 +29,6 @@ Système de design pour agents IA. **TOUJOURS consulter avant toute modification
 ### Animations & Interactions
 - **ANIMATION_LIBRARY.md** - Bibliothèque d'animations
 - **cursor-system.md** - Système de curseurs
-- **THEME_SOMBRE_DOUCE.md** - Thème sombre
 
 ### Patterns
 - **patterns-cartes-filtres-etats.md** - Patterns cartes/filtres/états
@@ -54,7 +54,8 @@ Objectif :
 
 1. **Lire la charte avant toute UI**
    ```
-   Fichier: charte-ui-pro-moderne-futuriste.md
+   Fichiers: charte-ui-pro-moderne-futuriste.md
+            BLOC_COLOR_SYSTEM_PREMIUM.md (couleurs par bloc)
    ```
 
 2. **Utiliser les composants canoniques**
@@ -67,10 +68,14 @@ Objectif :
    import { Card } from 'shadcn';
    ```
 
-3. **Utiliser les classes typographiques**
+3. **Utiliser les classes typographiques ET les teintes appropriées**
    ```tsx
-   // ✅ BON
-   <h1 className="cmm-text-h1 cmm-text-primary">
+   // ✅ BON - Vérifier la teinte selon le type de page
+   // Page accueil → amber/orange
+   <h1 className="cmm-text-h1 text-orange-100">
+   
+   // Page pilotage → amber/brun
+   <h1 className="cmm-text-h1 text-orange-100"> {/* fond brun */}
    
    // ❌ MAUVAIS
    <h1 className="text-[24px] font-extrabold">
@@ -88,7 +93,20 @@ Objectif :
    Eviter les compositions marketing ou les cartes décoratives inutiles.
    ```
 
-6. **Stabiliser les interactions**
+6. **Respecter la logique multi-teintes par bloc**
+   ```text
+   Bloc "Accueil & Pilotage" :
+   - Pages accueil (/dashboard, /profil) → amber/orange
+   - Pages pilotage (/pilotage, /admin) → amber/brun
+   
+   Bloc "Cartographie & Impact" :
+   - Pages carto (/actions/map, /sandbox) → sky
+   - Pages impact (/reports, /gamification) → red
+   
+   Voir BLOC_COLOR_SYSTEM_PREMIUM.md pour le mapping complet.
+   ```
+
+7. **Stabiliser les interactions**
    ```text
    Réserver l'espace des contenus asynchrones.
    Afficher un état de chargement explicite.
@@ -129,10 +147,48 @@ Objectif :
    Pas de hero décoratif sur les surfaces admin, validation, analytics, formulaires complexes.
    ```
 
-5. **Ne pas laisser un formulaire sans feedback accessible**
+5. **Ne pas mélanger les teintes d'un même bloc**
+   ```text
+   Une page = une teinte dominante.
+   Ne pas utiliser orange ET brun sur la même page.
+   Ne pas utiliser sky ET red sur la même page.
+   ```
+
+6. **Ne pas laisser un formulaire sans feedback accessible**
    ```text
    Les erreurs doivent être lisibles, proches du champ, et annoncées pour les lecteurs d'écran.
    ```
+
+---
+
+## 🎨 Système de Couleurs (5 Blocs)
+
+### Structure Homepage
+
+```
+01. Accueil & Pilotage → amber/orange (accueil) + amber/brun (pilotage)
+02. Agir → emerald
+03. Cartographie & Impact → sky (carto) + red (impact)
+04. Réseau & Discussions → indigo (réseau) + pink (discussion)
+05. Apprendre → yellow
+```
+
+### Mapping Rubrique → Teinte
+
+**Bloc "Accueil & Pilotage"**
+- `/dashboard`, `/explorer`, `/profil`, `/feedback` → `amber`/`orange`
+- `/pilotage`, `/admin`, `/sponsor-portal`, `/elus`, `/godmode` → `amber`/`brun`
+
+**Bloc "Cartographie & Impact"**
+- `/actions/map`, `/sandbox` → `sky`
+- `/reports`, `/gamification` → `red`/`rose`
+
+**Autres blocs (teinte unique)**
+- Agir → `emerald`
+- Réseau & Discussions → `indigo` / `pink`
+- Apprendre → `yellow`
+
+**Référence complète** : `BLOC_COLOR_SYSTEM_PREMIUM.md`
 
 ---
 
@@ -141,15 +197,17 @@ Objectif :
 ```
 1. Lire charte-ui-pro-moderne-futuriste.md
    ↓
-2. Consulter VISUAL_STORYTELLING.md (priorité visuels)
+2. Consulter BLOC_COLOR_SYSTEM_PREMIUM.md (couleurs par bloc)
    ↓
-3. Utiliser composants de design-system.md
+3. Consulter VISUAL_STORYTELLING.md (priorité visuels)
    ↓
-4. Appliquer typographie de TYPOGRAPHY_SYSTEM.md
+4. Utiliser composants de design-system.md
    ↓
-5. Respecter display-modes-chartes.md
+5. Appliquer typographie de TYPOGRAPHY_SYSTEM.md
    ↓
-6. Valider avec USAGE_GUIDE.md
+6. Respecter display-modes-chartes.md
+   ↓
+7. Valider avec USAGE_GUIDE.md
 ```
 
 ---
@@ -180,6 +238,8 @@ cmm-surface, cmm-surface-muted, cmm-panel, cmm-card
 
 ```
 □ Charte consultée
+□ BLOC_COLOR_SYSTEM_PREMIUM.md consulté
+□ Teinte appropriée selon type de page (mapping rubrique → teinte)
 □ Composants canoniques utilisés
 □ Classes cmm-* utilisées (pas text-[Xpx])
 □ Pas de font-extrabold
@@ -189,6 +249,7 @@ cmm-surface, cmm-surface-muted, cmm-panel, cmm-card
 □ Etats async visibles et stables
 □ Navigation clavier vérifiée
 □ Pas de scroll horizontal mobile
+□ Pas de mélange de teintes sur une même page
 ``` 
 
 ---

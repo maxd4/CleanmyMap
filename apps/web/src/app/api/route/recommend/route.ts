@@ -13,6 +13,7 @@ import {
 } from"@/lib/route/recommendation-assistant";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
+import { handleApiError } from"@/lib/http/api-errors";
 
 export const runtime ="nodejs";
 
@@ -277,7 +278,6 @@ export async function POST(request: Request) {
  proactiveAssistant,
  });
  } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- return NextResponse.json({ error: message }, { status: 500 });
+ return handleApiError(error, "POST /api/route/recommend");
  }
 }

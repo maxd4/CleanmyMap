@@ -57,7 +57,7 @@ export async function DashboardOverviewSection({
     });
 
     return (
-      <section className="space-y-4 rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
+      <section data-gsap-reveal className="space-y-4 rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
         <div>
           <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-rose-700">
             Synthèse indisponible
@@ -87,7 +87,7 @@ export async function DashboardOverviewSection({
   });
 
   return (
-    <div className="space-y-4">
+    <div data-gsap-reveal className="space-y-4">
       <ThirtySecondsSummary
         kpis={overview.summary.kpis}
         alert={overview.summary.alert}

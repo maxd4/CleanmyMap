@@ -125,4 +125,61 @@ describe("buildPublishedPartnerAnnuaireEntry", () => {
     expect(entry.coveredArrondissements).toEqual([]);
     expect(entry.lat).toBeCloseTo(46.603354, 6);
   });
+
+  it("adds an association profile for association requests", () => {
+    const entry = buildPublishedPartnerAnnuaireEntry({
+      requestId: "req-999",
+      request: {
+        organizationName: "Collectif Quartier Solidaire",
+        organizationType: "association",
+        partnerScope: "local",
+        legalIdentity: "Collectif Quartier Solidaire",
+        coverage: {
+          arrondissements: [11, 12],
+          quartiers: ["Nation"],
+        },
+        contributionTypes: ["materiel", "communication", "logistique"],
+        relayActions: "Relais de communication et coordination locale.",
+        availability: {
+          slots: [
+            {
+              day: "thu",
+              start: "09:00",
+              end: "17:00",
+            },
+          ],
+        },
+        contactName: "Alex Martin",
+        contactChannel: "Site web",
+        contactDetails: "https://quartiersolidaire.fr",
+        motivation: "Ancrer un point de coordination utile au quartier.",
+      },
+    });
+
+    expect(entry.associationProfile).toMatchObject({
+      structureStatus: "pending",
+      recurringNeeds: [
+        "Matériel",
+        "Relais de communication",
+        "Bénévoles logistiques",
+      ],
+      impactHistory: {
+        zonesCovered: 2,
+        recurrence: "Jeudi 09:00-17:00",
+      },
+    });
+    expect(entry.associationProfile?.publicCalls).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "materiel",
+          label: "Appel à matériel",
+        }),
+        expect.objectContaining({
+          type: "communication",
+          label: "Relais de communication",
+        }),
+      ]),
+    );
+    expect(entry.associationProfile?.usefulResources.length).toBeGreaterThan(0);
+  });
 });

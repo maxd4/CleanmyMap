@@ -123,4 +123,52 @@ describe("POST /api/admin/moderation", () => {
     expect(updateMock.mock.calls[0]?.[0].notes).toContain("Corrigé par admin");
     expect(updateMock.mock.calls[0]?.[0].notes).toContain("[cmm-meta]");
   });
+
+  it("returns a sanitized error when the underlying database update fails", async () => {
+    const updateMock = vi.fn(() => ({
+      eq: vi.fn(() => ({
+        select: vi.fn(() => ({
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: null,
+            error: {
+              message: 'syntax error at or near "spots"',
+            },
+          }),
+        })),
+      })),
+    }));
+    const fromMock = vi.fn((table: string) => {
+      if (table !== "spots") {
+        throw new Error(`Unexpected table ${table}`);
+      }
+      return {
+        update: updateMock,
+      };
+    });
+    getSupabaseAdminClientMock.mockReturnValue({ from: fromMock });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/admin/moderation", {
+        method: "POST",
+        body: JSON.stringify({
+          entityType: "clean_place",
+          id: "spot-1",
+          status: "validated",
+          confirmPhrase: "CONFIRMER MODERATION",
+        }),
+      }),
+    );
+
+    const body = (await response.json()) as {
+      message?: string;
+      error?: string;
+      code?: string;
+    };
+
+    expect(response.status).toBe(500);
+    expect(body.code).toBe("server_error");
+    expect(body.message).toBe("La modération a échoué.");
+    expect(body.error).toBe("La modération a échoué.");
+  });
 });

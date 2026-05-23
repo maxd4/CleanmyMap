@@ -31,23 +31,22 @@ export async function GET() {
  missingConfigKeys.includes("NEXT_PUBLIC_SUPABASE_URL") ||
  missingConfigKeys.includes("SUPABASE_SERVICE_ROLE_KEY")
  ) {
- supabaseError ="Supabase server config missing";
+ supabaseError ="Unavailable";
  } else {
- try {
- const supabase = getSupabaseServerClient(false);
- const result = await supabase
- .from("actions")
- .select("id", { count:"exact", head: true })
- .limit(1);
- if (result.error) {
- supabaseError = result.error.message;
- } else {
- supabaseConnectivity = true;
- }
- } catch (error) {
- supabaseError =
- error instanceof Error ? error.message :"Unknown Supabase error";
- }
+  try {
+   const supabase = getSupabaseServerClient(false);
+   const result = await supabase
+   .from("actions")
+   .select("id", { count:"exact", head: true })
+   .limit(1);
+   if (result.error) {
+    supabaseError = "Unavailable";
+   } else {
+    supabaseConnectivity = true;
+   }
+  } catch (error) {
+   supabaseError = "Unavailable";
+  }
  }
 
  const ok = missingConfigKeys.length === 0 && supabaseConnectivity;

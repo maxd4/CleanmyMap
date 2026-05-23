@@ -1,7 +1,7 @@
 # Chartes Graphiques par Mode d'Affichage
 
 ## Date: 2026-04-25
-## Version: 1.0
+## Version: 1.1
 
 ---
 
@@ -18,25 +18,26 @@
 ## 1. Mode EXHAUSTIF
 
 ### Identité visuelle
-> "Premium pro / moderne / futuriste" - Charte complète
+> "Fond lumineux + cartes sombres" — Charte complète, référence : page sommaire `/`
 
 ### Éléments actifs
-- ✅ Mesh gradients animés (VibrantBackground)
-- ✅ Effets glassmorphism (backdrop-blur)
-- ✅ Ombres premium en 3 niveaux (soft/elevated/hero)
+- ✅ Fond de page lumineux teinté dans la couleur du bloc
+- ✅ Cartes et bulles sombres teintées avec backdrop-blur
+- ✅ Titres / chiffres colorés dans l'accent du bloc
 - ✅ Animations subtiles (pulse, transitions douces)
 - ✅ Accents par bloc avec couleurs sémantiques
 - ✅ Cartes avec profondeur et hover effects
-- ✅ Typographie gradient (punchy-title)
-- ✅ Grain texture subtile
+- ✅ Barre de couleur top sur les cartes principales
+- ✅ Glows internes sur les cartes
 
 ### Palette
 ```
-Fond:         Slate-950 (Profondeur "Film")
-Surfaces:     Glassmorphism (bg-slate-900/60 + backdrop-blur-xl)
-Accents:      Émeraude (action), Cyan (technologie) + Accents par bloc
-Texte:        Slate-50 (primaire) / Slate-300 (secondaire)
-Ombres:       Deep Black (shadow-black/90)
+Fond page :    Teinte claire/lumineuse de la couleur du bloc (radial-gradient)
+Cartes :       Fond sombre teinté dans la couleur du bloc + backdrop-blur-xl
+Titres :       text-[accent]-100 (coloré dans l'accent)
+Petits textes: text-white / text-white/80
+Bordures :     border-[accent]-200/18, hover /38
+Ombres :       Portées dans la teinte du bloc
 ```
 
 ### Tokens CSS actifs
@@ -50,15 +51,14 @@ Ombres:       Deep Black (shadow-black/90)
 
 ### Comportement
 - Animations: activées (pulse 12-18s, transitions 200-300ms)
-- Blur: activé (10-16px)
-- Gradients texte: activés
-- Effets hover: scale + shadow + translateY
+- Blur: activé sur les cartes (10-16px)
+- Effets hover: `-translate-y-0.5` + shadow + bordure renforcée
 
 ### Classes à utiliser
 ```css
-.premium-card        /* Glassmorphism complet */
+.premium-card        /* Carte sombre teintée + blur */
 .cmm-surface         /* Surface avec blur */
-.cmm-panel           /* Border-radius 1.5rem */
+.cmm-panel           /* Border-radius 2rem */
 .cmm-focus-ring      /* Ring focus visible */
 ```
 
@@ -76,17 +76,17 @@ Ombres:       Deep Black (shadow-black/90)
 - ✅ Typography hiérarchisée (grande taille)
 - ✅ Espacement augmenté (respiration)
 - ✅ Animations réduites (fade seulement)
-- ❌ Mesh gradients supprimés
+- ❌ Gradients de fond supprimés
 - ❌ Glassmorphism réduit
 - ❌ Effets hover complexes
 
 ### Palette
 ```
-Fond:         Couleur unie (bg-canvas sans gradient)
-Surfaces:     Blanc/couleur unie légère (pas de blur)
-Accents:      Émeraude uniquement sur actions primaires
-Texte:        Slate-900 (clair) / Slate-50 (sombre)
-Ombres:       Soft uniquement (pas de elevated/hero)
+Fond:         Couleur unie dans la teinte du bloc (sans gradient)
+Cartes:       Fond sombre teinté, sans blur
+Titres:       text-[accent]-100
+Petits textes: text-white
+Ombres:       Soft uniquement
 ```
 
 ### Tokens CSS actifs
@@ -102,7 +102,6 @@ Ombres:       Soft uniquement (pas de elevated/hero)
 ### Comportement
 - Animations: fades 150ms uniquement
 - Blur: désactivé
-- Gradients texte: désactivés
 - Effets hover: changement de couleur uniquement (pas de transform)
 - Densité: éléments plus espacés
 
@@ -117,13 +116,11 @@ Ombres:       Soft uniquement (pas de elevated/hero)
 ```
 AVANT (exhaustif)                    APRÈS (minimaliste)
 ────────────────────────────────────────────────────────
-Mesh gradient + grain               Fond uni --bg-canvas
-Accents vibrants par bloc            Accents sobres par bloc
-Cards avec glassmorphism            Cards flat légères
+Radial-gradient fond lumineux       Fond uni teinté
+Cartes avec blur + glow             Cartes flat légères
 Shadow-elevated                     Shadow-soft ou none
-Typo gradient                       Typo couleur unie
+Barre top colorée                   Bordure top fine
 Boutons 3D hover                    Boutons flat hover
-Badge + dot + ring                  Badge simple
 ```
 
 ---
@@ -147,19 +144,19 @@ Badge + dot + ring                  Badge simple
 
 ### Palette
 ```
-Fond:         #ffffff (clair) / #0b1220 (sombre) - couleur unie
-Surfaces:     Gris très léger (clair) / Gris foncé (sombre)
-Accents:      Seulement pour états actifs/focus
-Texte:        Noir pur (clair) / Blanc cassé (sombre)
+Fond:         Couleur unie neutre
+Cartes:       Gris foncé uni, sans blur
+Titres:       Blanc cassé ou noir selon le fond
+Petits textes: Blanc cassé ou noir
 Ombres:       AUCUNE
 ```
 
 ### Tokens CSS actifs
 ```css
 /* Tokens minimaux */
---bg-canvas: #ffffff ou #0b1220
+--bg-canvas
 --border-default: rgba avec faible opacité
---text-primary: #000000 ou #f1f5f9
+--text-primary
 --focus-ring: visible uniquement
 /* Tous les autres tokens désactivés ou réduits */
 ```
@@ -169,10 +166,10 @@ Ombres:       AUCUNE
 - Blur: STRICTEMENT INTERDIT
 - Gradients: INTERDITS
 - Effets hover: changement de bordure uniquement
-- Radius: 0.75rem max (pas de 1.5rem)
-- Pas de mesh, pas de grain, pas de glow
+- Radius: 0.75rem max
+- Pas de glow, pas de barre top colorée
 
-### Classes canoniques (déjà créées dans P0)
+### Classes canoniques
 ```css
 .cmm-sober {
   border-radius: 0.75rem;
@@ -235,9 +232,7 @@ AUTORISÉ (sobre):
 
 /* Minimaliste */
 [data-display-mode="minimaliste"] {
-  /* Désactiver mesh */
   --vibrant-bg: none;
-  /* Réduire ombres */
   --shadow-elevated: var(--shadow-soft);
 }
 
@@ -257,12 +252,11 @@ const displayMode = document.documentElement.dataset.displayMode || "exhaustif";
 ## 5. Checklist par mode
 
 ### Mode Exhaustif
-- [ ] Mesh gradient présent
-- [ ] Glassmorphism sur cards principales
-- [ ] Ombres en 3 niveaux
-- [ ] Animations subtiles
-- [ ] Accents par bloc
-- [ ] Punchy titles avec gradient
+- [ ] Fond de page lumineux teinté dans la couleur du bloc
+- [ ] Cartes sombres teintées avec backdrop-blur
+- [ ] Titres colorés dans l'accent
+- [ ] Animations subtiles actives
+- [ ] Barre top colorée sur cartes principales
 
 ### Mode Minimaliste
 - [ ] Fond uni sans gradient

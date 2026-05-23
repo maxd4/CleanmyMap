@@ -102,7 +102,7 @@ export default function ActionsMapPage() {
   const surfaceCard = "rounded-[3rem] border border-cyan-200/70 bg-cyan-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden shadow-[0_24px_56px_-32px_rgba(8,145,178,0.24)]";
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(103,232,249,0.35),transparent_28%),radial-gradient(circle_at_top_right,rgba(186,230,253,0.55),transparent_24%),linear-gradient(180deg,#ecfeff_0%,#f0f9ff_45%,#f8fafc_100%)] text-slate-950 pb-24">
+    <main className="min-h-screen text-slate-950 pb-24">
       <div className="mx-auto max-w-[1680px] px-6 py-8 space-y-10">
         {/* Premium Header - Lecture Spatiale */}
         <header className="relative space-y-8 pt-10 lg:pt-12">

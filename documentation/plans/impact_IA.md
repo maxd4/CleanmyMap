@@ -1317,7 +1317,6 @@ Cette section se concentre sur les impacts qui **ne sont pas compensés** par l'
 - **Solutions intégrables au site :**
   - **Compression à la volée :** Intégrer un redimensionnement strict et une compression agressive (WebP/AVIF) des photos côté client avant l'upload sur Supabase Storage.
   - **Politique de rétention (TTL) :** Implémenter une tâche planifiée ou une Edge Function qui supprime les photos de "preuves" de déchets une fois la cleanwalk passée ou après 30 jours (la preuve n'a plus de valeur à long terme).
-  - **Mode sombre natif :** Forcer ou encourager le mode sombre par défaut (réduit la consommation des écrans OLED sur mobile).
   - **Limitation du polling :** Remplacer le rafraîchissement automatique des cartes ou des données par des requêtes à la demande ou du *Server-Sent Events* optimisé.
 
 ### 8.2 Impacts environnementaux indirects

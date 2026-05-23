@@ -62,8 +62,8 @@ export async function GET(request: Request) {
  const eventsResult = await query;
 
  if (eventsResult.error) {
- return new Response(`Export error: ${eventsResult.error.message}`, {
- status: 500,
+ return new Response("Export unavailable", {
+  status: 500,
  });
  }
 
@@ -78,8 +78,8 @@ export async function GET(request: Request) {
  : { data: [] as EventRsvpRow[], error: null };
 
  if (rsvpsResult.error) {
- return new Response(`Export error: ${rsvpsResult.error.message}`, {
- status: 500,
+ return new Response("Export unavailable", {
+  status: 500,
  });
  }
 
@@ -211,8 +211,7 @@ export async function GET(request: Request) {
  status: 200,
  headers,
  });
- } catch (error) {
- const message = error instanceof Error ? error.message :"Unknown error";
- return new Response(`Export error: ${message}`, { status: 500 });
+ } catch {
+ return new Response("Export unavailable", { status: 500 });
  }
 }

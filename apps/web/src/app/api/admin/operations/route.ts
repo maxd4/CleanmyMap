@@ -37,12 +37,16 @@ export async function GET(request: Request) {
  return NextResponse.json({ status:"ok", count: items.length, items });
  } catch (error) {
  const message = error instanceof Error ? error.message :"Unknown error";
- return adminErrorResponse({
- status: 500,
- code:"server_error",
- message,
- hint:"Reessaye dans quelques secondes ou verifie le stockage local d'audit.",
- operationId,
+ console.error("[Admin Operations] Listing failed", {
+  operationId,
+  message,
  });
+  return adminErrorResponse({
+    status: 500,
+    code:"server_error",
+    message:"La lecture des opérations a échoué.",
+    hint:"Reessaye dans quelques secondes ou verifie le stockage local d'audit.",
+    operationId,
+  });
  }
 }

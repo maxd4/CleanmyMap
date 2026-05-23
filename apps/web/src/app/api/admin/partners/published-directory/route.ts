@@ -194,22 +194,26 @@ export async function POST(request: Request) {
  });
  } catch (error) {
  const message = error instanceof Error ? error.message :"Unknown error";
+ console.error("[Admin Partners] Review failed", {
+  operationId,
+  message,
+ });
 
  await appendAdminOperationAudit({
- operationId,
- at: new Date().toISOString(),
- actorUserId: access.userId,
- operationType:"moderation",
- outcome:"error",
- details: { code:"server_error", message, entityType:"partner_publication" },
+  operationId,
+  at: new Date().toISOString(),
+  actorUserId: access.userId,
+  operationType:"moderation",
+  outcome:"error",
+  details: { code:"server_error", entityType:"partner_publication" },
  });
 
  return adminErrorResponse({
- status: 500,
- code:"server_error",
- message,
- hint:"Verifier le stockage local puis relancer l'operation.",
- operationId,
+  status: 500,
+  code:"server_error",
+  message:"La revue partenaire a échoué.",
+  hint:"Verifier le stockage local puis relancer l'operation.",
+  operationId,
  });
  }
 }

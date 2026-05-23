@@ -100,6 +100,7 @@ export function ActionDeclarationFormFeedback({
                   {retentionLoop.badge}
                 </span>
               </div>
+              <p className="text-xs text-emerald-900/80">{retentionLoop.thanksMessage}</p>
               <p className="text-xs text-emerald-900/70">💡 {retentionLoop.nextActionSuggestion}</p>
             </div>
           )}

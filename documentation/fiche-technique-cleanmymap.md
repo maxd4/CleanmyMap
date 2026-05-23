@@ -76,7 +76,7 @@ npm run checks
 - `HomeCommunityActivity`
   - `OriginCredibility`
   - `HomeFooter`
-  - `HomeButton`
+  - `CmmButton`
   - `SitePreferencesControls`
 - Sections principales :
   - Hero + bloc d'impact en deux colonnes
@@ -95,7 +95,6 @@ npm run checks
   - surfaces accueil dans [apps/web/src/components/accueil/accueil-surface.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/accueil/accueil-surface.ts)
   - accents par bloc dans [apps/web/src/lib/ui/block-accents.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/ui/block-accents.ts)
 - Où sont définis les boutons :
-  - bouton accueil dans [apps/web/src/components/accueil/accueil-button.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/accueil/accueil-button.tsx)
   - bouton générique dans [apps/web/src/components/ui/cmm-button.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/ui/cmm-button.tsx)
   - certains CTA du header et des pages sont codés inline.
 - Où sont définies les cartes :
@@ -123,8 +122,8 @@ npm run checks
   - modes d’affichage : `[data-display-mode="minimaliste"]`, `[data-display-mode="sobre"]`
   - profils : `[data-user-profile="scientifique"]`, `[data-user-profile="elu"]`, `[data-user-profile="admin"]`, `[data-user-profile="coordinateur"]`
 - Style des boutons :
-  - `CmmButton` applique les tokens sémantiques et les variantes `default`, `pill`, `ghost`
-  - `HomeButton` utilise des dégradés très marqués pour `primary` et `secondary`, avec `tertiary` plus discret
+  - `CmmButton` applique les tons `primary`, `secondary`, `tertiary` et les variantes `default`, `pill`, `ghost`
+  - ces boutons sont une exception visuelle volontaire aux règles de texte/surface générales
 - Style des cartes :
   - `CmmCard` gère `slate`, `emerald`, `sky`, `amber`, `violet`, `rose`, `indigo`
 - l'accueil utilise des cartes à fond gradient sombre avec bords fins et ombres profondes

@@ -44,7 +44,7 @@ nocite: |
 
 # Résumé exécutif {.unnumbered}
 
-Ce rapport évalue l’usage de l’IA dans le développement de CleanMyMap afin de déterminer si le gain de productivité obtenu justifie son coût environnemental, ses risques sociaux et sa dépendance technique. L’enjeu n’est pas de juger l’IA en général, mais d’examiner un cas d’usage concret, dans un projet numérique à finalité environnementale, avec des contraintes de sobriété, de sécurité et de gouvernance. Cette question est d’autant plus importante que des cadres de référence comme le NIST AI Risk Management Framework recommandent une gestion explicite des risques des systèmes génératifs, tandis que l’OWASP classe parmi les vulnérabilités majeures l’overreliance, l’excessive agency, la divulgation d’informations sensibles et les faiblesses de chaîne d’approvisionnement [@nist_ai_600_1; @owasp_llm_top_10_2025]. Dans le même temps, Google Threat Intelligence documente des usages offensifs de l’IA par des acteurs malveillants, notamment pour le phishing, la reconnaissance et l’automatisation d’actions de nuisance [@google_gtig_adversarial_misuse_generative_ai].
+Ce rapport évalue l’usage de l’IA dans le développement de CleanMyMap afin de déterminer si le gain de productivité obtenu justifie son coût environnemental, ses risques sociaux et sa dépendance technique. L’enjeu n’est pas de juger l’IA en général, mais d’examiner un cas d’usage concret, dans un projet numérique à finalité environnementale, avec des contraintes de sobriété, de sécurité et de gouvernance. Le projet s’inscrit par ailleurs dans le cadre du Diplôme Universitaire « Engagement » de Sorbonne Université, ce qui invite à l’évaluer aussi comme une démarche d’intérêt général et de réflexivité étudiante. Cette question est d’autant plus importante que des cadres de référence comme le NIST AI Risk Management Framework recommandent une gestion explicite des risques des systèmes génératifs, tandis que l’OWASP classe parmi les vulnérabilités majeures l’overreliance, l’excessive agency, la divulgation d’informations sensibles et les faiblesses de chaîne d’approvisionnement [@nist_ai_600_1; @owasp_llm_top_10_2025]. Dans le même temps, Google Threat Intelligence documente des usages offensifs de l’IA par des acteurs malveillants, notamment pour le phishing, la reconnaissance et l’automatisation d’actions de nuisance [@google_gtig_adversarial_misuse_generative_ai].
 
 Le document a été préparé et sourcé avec assistance IA, puis relu et amélioré humainement. Cette transparence ne remplace pas la vérification : elle rend le rapport auditable, et toute coquille, erreur ou omission doit pouvoir être signalée à [contact@cleanmymap.fr](mailto:contact@cleanmymap.fr).
 
@@ -74,12 +74,30 @@ L’IA doit être évaluée comme un arbitrage, pas comme une solution par défa
 
 ## Guide de lecture
 
-- **Présentation du projet CleanMyMap** : lire
-- **Lecture de l'impact du projet CleanMyMap** : lire
-- **Améliorer et limiter les impacts négatifs du projet** : lire
-- **Lecture environnementale** : lire
-- **Lecture sociale et gouvernance** : lire
-- **Lecture technique** : lire
+Ce rapport peut se lire de trois manières selon le temps disponible et l’objectif poursuivi.
+
+### Parcours rapide
+
+- Commencer par le **Résumé exécutif** pour saisir l’enjeu général, les résultats principaux et les limites du rapport.
+- Lire ensuite la **Partie I** pour comprendre le cadre du projet, la méthode et les hypothèses de travail.
+- Consulter la **FAQ** pour aller directement aux objections les plus fréquentes sur l’IA, l’utilité réelle et le DU Engagement.
+
+### Parcours de fond
+
+- Poursuivre avec la **Partie II** pour comprendre l’empreinte environnementale et matérielle de l’IA.
+- Lire la **Partie III** et les parties suivantes pour suivre les impacts sociaux, informationnels, techniques et de gouvernance.
+- Aller jusqu’aux **parties XII et XIII** pour comprendre ce que l’IA a apporté au projet, ce qu’elle lui a coûté et pourquoi son usage peut rester justifié sous conditions.
+
+### Parcours de préparation à l’oral
+
+- Relire le **Résumé exécutif** pour avoir les trois messages clés à retenir.
+- Travailler la section **Questions d’oral pour le jury DU Engagement** pour préparer les réponses aux questions non techniques.
+- Revoir les sections de FAQ sur **l’usage de l’IA**, **l’utilité réelle** et **la gestion du projet** pour répondre de manière simple, précise et cohérente.
+
+### Lecture complémentaire
+
+- Les **annexes** servent à approfondir les dépendances, les scénarios de rupture, les calculs détaillés et les points techniques qui ne sont pas nécessaires à une première lecture.
+- Les parties les plus détaillées du rapport peuvent être lues sélectivement selon la question posée par le jury ou par un lecteur technique.
 
 {{< pagebreak >}}
 
@@ -92,6 +110,8 @@ Cette partie fixe le cadre de preuve du bilan : ce qui est directement mesuré d
 ### Genèse du projet et contexte universitaire
 
 CleanMyMap a été initié dans le cadre du Diplôme Universitaire « Engagement » de Sorbonne Université. Les ateliers suivis ont accompagné un passage d’un prototype centré sur la cartographie vers un outil plus large d’action citoyenne, de coordination et de transmission. Le développement a commencé dans un fichier Python sur Google Colab avec un objectif initial limité : récupérer des bilans d’action depuis un fichier Excel partagé, puis afficher ces bilans et les tracés associés sur une carte Leaflet.
+
+Le cadre du DU a structuré la démarche autant que le sujet. Cette formation évalue un engagement étudiant à travers des ateliers d’accompagnement, un dossier réflexif et un oral de validation. Dans le cas de CleanMyMap, les fichiers de type `journal_DU` et `atelier_DU` constituent des traces de travail qui documentent la progression du projet, ses arbitrages successifs et la formalisation progressive de ses objectifs.
 
 À cette phase, le modèle de langage chinois DeepSeek a servi à générer les premières lignes de code, mais la faible fenêtre de contexte du modèle a entraîné des boucles d’erreurs. La découverte progressive de Codex, GitHub et du vibe coding a ensuite transformé la méthode de travail. Le projet est passé d’une expérimentation locale à un projet web source ouverte déployé gratuitement sur Streamlit, puis stabilisé par l’achat d’un nom de domaine sur LWS.
 
@@ -313,15 +333,133 @@ Ce risque existe si l’outil ne change rien au terrain. CleanMyMap n’est déf
 
 ### Preuve des bénéfices terrain
 
-Par des indicateurs concrets : nombre de signalements validés, cleanwalks organisées, participants, déchets retirés, zones nettoyées, rapports transmis et actions qui n’auraient probablement pas eu lieu sans la plateforme. L’IUR et la comparaison avec des alternatives plus simples complètent cette évaluation.
+La preuve n’est pas une impression, mais une chaîne observable : un signalement déclenche une action, l’action laisse une trace, et cette trace peut être transmise ou réutilisée. Concrètement, cela se lit dans le nombre de signalements validés, de cleanwalks organisées, de participants mobilisés, de déchets retirés, de zones nettoyées et de rapports effectivement transmis. Sans cette chaîne, CleanMyMap n’a pas de justification suffisante.
 
 ### Pourquoi ne pas utiliser seulement des outils existants comme Google Maps ou un tableur ?
 
 Ces outils peuvent dépanner, mais ils laissent souvent les données dispersées entre cartes bricolées, fichiers, messages et photos. CleanMyMap vise à centraliser signalement, historique, preuve et coordination dans un même flux plus exploitable.
 
+### Ce n’est qu’un site
+
+Non. Le site n’a de sens que s’il produit un effet concret sur le terrain. S’il aide à organiser une action, à la documenter et à la rendre réutilisable, il devient un vrai outil d’engagement.
+
+### Pourquoi ne pas faire une association ?
+
+Parce que le besoin n’était pas de créer une structure supplémentaire. Le besoin était de concevoir un outil que plusieurs associations puissent utiliser, sans dépendre d’une seule organisation.
+
 ### Que se passe-t-il si les services cloud deviennent trop chers ou indisponibles ?
 
 C’est un risque identifié. Il est partiellement réduit par une architecture exportable, des formats simples, des fonctions désactivables et la possibilité de revenir à des usages plus sobres sans rendre le projet dépendant d’une seule brique critique évitable.
+
+### Qu’est-ce que le projet ne met pas encore assez en avant par rapport au DU Engagement ?
+
+Le rapport met bien en avant la genèse du projet, la sobriété et la gouvernance, mais il insiste encore trop peu sur l’engagement comme action bénévole au service d’une communauté identifiable. Il gagnerait à montrer plus explicitement ce que le projet a apporté à des bénévoles, à des associations, à des collectivités ou à un territoire, et pas seulement à son architecture numérique.
+
+Il devrait aussi davantage faire apparaître le retour réflexif demandé par le DU : ce que la démarche a appris, les difficultés rencontrées, les compétences acquises, les arbitrages personnels et collectifs, ainsi que les perspectives d’engagement futur. Enfin, le lien entre les ateliers DU et les décisions concrètes du projet peut encore être renforcé pour rendre visible la manière dont ces ateliers ont influencé la conception, la communication, la coordination et la preuve d’utilité terrain.
+
+## Questions d’oral pour le jury DU Engagement
+
+Les réponses ci-dessous sont formulées pour une prise de parole brève, simple et claire devant un jury non spécialiste du numérique ou de l’IA.
+
+### Pourquoi CleanMyMap est-il un vrai projet d’engagement et pas seulement un projet numérique ?
+
+Parce qu’il répond à un besoin concret de terrain : mieux signaler, mieux coordonner et mieux documenter des actions bénévoles utiles. L’objectif n’est pas de faire une démonstration technique, mais de faciliter une action citoyenne qui existe déjà et de lui donner plus de lisibilité.
+
+### En quoi votre engagement sort-il du cadre associatif classique, et à quelle échelle le projet agit-il aujourd’hui ?
+
+Je ne porte pas une association unique. Je construis un outil autonome qui peut servir plusieurs associations, leurs bénévoles et leurs besoins de coordination. Aujourd’hui, le projet est d’abord pensé à l’échelle de l’Île-de-France ; pour devenir pleinement utile, il doit pouvoir monter à une échelle métropolitaine, puis éventuellement à d’autres territoires, y compris à l’international si le contexte le permet.
+
+### Comment le projet reste-t-il soutenable financièrement ?
+
+Pour l’instant, l’abonnement Codex est auto-financé et la plupart des services web utilisés restent sur des plans gratuits ou inclus. Cela suffit pour une version encore limitée du projet. En revanche, si CleanMyMap dépasse l’échelle de Paris, il faudra prévoir au moins des abonnements basiques, autour de 20 euros par mois et par service concerné, pour garder quelque chose de stable et maintenable.
+
+### Envisagez-vous une version mobile Android et iOS après le site web ?
+
+Oui, mais seulement une fois le site web stabilisé et utile au quotidien. Une application mobile serait plus pratique pour les bénévoles, surtout pour le formulaire, la discussion et les notifications. Une companion-app de suivi GPS pourrait aussi être utile pour certains usages de terrain, mais elle ajouterait des contraintes techniques, de vie privée et surtout de coût. Il faut aussi compter le coût des comptes développeur: Apple facture l’Apple Developer Program à **99 USD par an**, tandis que Google Play Console demande une **inscription unique de 25 USD** pour publier sur Android. [Apple Developer Program](https://developer.apple.com/help/account/membership/program-enrollment) ; [Google Play Console Help](https://support.google.com/googleplay/android-developer/answer/6112435?hl=en-EN). Le projet aurait donc un budget plus élevé que la simple version web, avec des abonnements, de la maintenance et possiblement des frais supplémentaires pour les services mobiles et de géolocalisation.
+
+### Comment comptez-vous faire connaître l’outil et le faire utiliser par des partenaires ?
+
+Je compte m’appuyer d’abord sur des partenaires de terrain qui ont déjà un intérêt concret pour l’outil: associations, collectifs locaux, relais universitaires ou acteurs de proximité. L’idée n’est pas de faire une diffusion abstraite, mais de montrer l’outil sur des cas réels, de lancer un usage pilote, puis de laisser les résultats parler. Si le service est simple, utile et fiable, les partenaires peuvent ensuite le relayer à leur réseau, et c’est ce qui donne une adoption plus durable.
+
+### À qui le projet sert-il concrètement, et qu’est-ce qu’il change sur le terrain ?
+
+Il sert d’abord aux bénévoles, aux associations et, selon les cas, aux collectivités ou aux acteurs locaux qui veulent mieux organiser leurs actions. Concrètement, il réduit la dispersion des informations, évite de perdre des signalements et rend les actions plus faciles à suivre dans le temps.
+
+### Qu’avez-vous apporté personnellement au projet ?
+
+J’ai apporté le cadrage, la construction progressive de l’outil et le travail de mise en cohérence entre l’idée, la méthode et le résultat. J’ai aussi dû arbitrer entre simplicité, utilité et faisabilité, ce qui fait partie de l’apprentissage attendu dans un projet d’engagement.
+
+### Qu’avez-vous appris grâce au DU Engagement ?
+
+J’ai appris à ne pas regarder seulement le résultat final, mais aussi la manière de construire un projet utile pour les autres. Le DU m’a aidé à relier un projet concret, une réflexion sur l’engagement, et une exigence de présentation claire devant un public non technique.
+
+### Que montrent les ateliers et les journaux DU dans votre démarche ?
+
+Ils montrent que le projet n’a pas été improvisé. Ils gardent la trace des idées, des corrections, des hésitations et des décisions prises au fil du temps, ce qui rend la démarche plus lisible et plus honnête.
+
+### Pourquoi avoir utilisé l’IA alors que le projet défend aussi la sobriété ?
+
+Parce que l’IA n’a pas été utilisée comme une fin en soi, mais comme un outil d’aide. Je l’ai gardée sur des tâches où elle apportait un vrai gain de temps ou de clarté, tout en évitant de lui déléguer les décisions importantes.
+
+### Comment avez-vous évité que le projet devienne trop complexe ou inutilement lourd ?
+
+En gardant une règle simple : chaque fonctionnalité devait avoir une utilité réelle pour le terrain. Si une idée ajoutait surtout du bruit, de la dépendance ou de la complexité sans effet concret, elle était écartée ou mise de côté.
+
+### Qu’est-ce qui prouve que le projet a une utilité réelle ?
+
+L’utilité se voit dans la capacité à centraliser des signalements, à mieux suivre les actions, et à rendre les résultats plus faciles à transmettre. Le projet ne se justifie pas par son aspect technique, mais par sa capacité à rendre l’action bénévole plus lisible et plus utile.
+
+### Quel est votre rôle exact ?
+
+Je porte la conception de l’outil, son cadrage, sa cohérence et sa mise en forme. Mon engagement passe par la construction d’un support utile à d’autres, pas par l’appartenance à une association unique.
+
+### Qu’est-ce qui différencie votre site des autres outils déjà existants ?
+
+La différence, ce n’est pas une fonction isolée, mais l’assemblage des fonctions autour d’un vrai besoin de terrain. CleanMyMap relie signalement, coordination, suivi et trace d’action dans un cadre pensé pour plusieurs associations, avec un usage simple et sobre. Beaucoup d’outils existants font une partie du travail, mais pas avec cette logique d’engagement partagé et de réutilisation collective.
+
+### Quelles sont les limites actuelles de CleanMyMap ?
+
+Le projet dépend encore de son usage réel sur le terrain, donc il n’a de valeur que s’il est effectivement utilisé. Il reste aussi des limites classiques du numérique : dépendance à certains services, besoin de maintenance et risque de complexité si on ajoute trop de fonctionnalités.
+
+### Si vous aviez plus de temps, quelle serait la prochaine amélioration prioritaire ?
+
+Je renforcerais d’abord ce qui aide vraiment les utilisateurs à passer à l’action: preuve d’impact, suivi simple des actions et continuité entre signalement, coordination et bilan. Je privilégierais une amélioration qui augmente l’utilité réelle plutôt qu’une nouvelle couche d’interface ou de fonctions.
+
+### Utilisation de l’IA
+
+Ces réponses servent à expliquer le rôle de l’IA sans surjouer sa place dans le projet.
+
+#### Pourquoi avoir utilisé l’IA alors que le projet défend aussi la sobriété ?
+
+Parce que la sobriété ne veut pas dire renoncer à tout outil, mais choisir des outils proportionnés. L’IA a été utilisée seulement quand elle permettait de gagner du temps, de clarifier une idée ou d’améliorer la qualité sans alourdir inutilement le projet.
+
+#### Comment éviter que l’IA prenne trop de place dans le projet ?
+
+En gardant une règle simple : l’IA propose, mais l’humain décide. Je m’en sers comme d’un appui pour travailler plus vite ou plus proprement, pas pour remplacer la réflexion, la validation ou la responsabilité du projet.
+
+#### Qu’est-ce que l’IA a réellement apporté à CleanMyMap ?
+
+Elle a surtout aidé à structurer, corriger, documenter et accélérer certaines tâches répétitives. Le gain visible n’est pas “plus d’IA”, mais un projet plus propre, plus rapide à faire évoluer et moins fragile dans la durée.
+
+### Gestion du projet
+
+Ces réponses servent à expliquer comment le projet a été piloté dans la durée.
+
+#### Comment avez-vous géré un projet aussi long et parfois complexe ?
+
+En avançant par étapes courtes, avec des priorités claires et des retours réguliers sur ce qui servait vraiment le projet. J’ai essayé d’éviter la dispersion en revenant toujours à la même question : est-ce que cela aide concrètement l’utilisateur ou le terrain ?
+
+#### Comment avez-vous pris les décisions importantes ?
+
+Je les ai prises à partir de trois critères simples : utilité, faisabilité et sobriété. Quand une idée était trop lourde, trop floue ou peu utile, je la repoussais ou je l’écartais.
+
+#### Comment les ateliers DU ont-ils influencé la gestion du projet ?
+
+Ils m’ont donné un cadre pour prendre du recul et mieux formuler les objectifs. Ils ont aussi aidé à transformer des intuitions en arbitrages plus clairs, notamment sur la manière de présenter le projet, de le relier à l’engagement et de justifier ses choix.
+
+#### Comment réagissez-vous quand un jury ou un interlocuteur sceptique dit que ce n’est “qu’un site” ?
+
+Je réponds que le site n’a de sens que s’il produit un effet concret sur le terrain. S’il ne fait que présenter une idée, il est dispensable ; s’il aide à organiser une action, à la documenter et à la rendre réutilisable, alors il devient un vrai outil d’engagement.
 
 # Partie II — Empreinte environnementale et matérielle {#partie-ii-empreinte-environnementale-et-materielle}
 
@@ -785,6 +923,8 @@ L’IA ne transforme pas seulement les chaînes de production matérielles ; ell
 
 Le risque principal n’est pas le remplacement total des métiers, mais leur décomposition en tâches plus fragmentées : l’humain relit, corrige, intègre ou valide des propositions déjà produites par l’IA. À force de déléguer la rédaction, le code ou l’analyse, les utilisateurs peuvent perdre une partie de leurs réflexes de base : structurer un argument, diagnostiquer une erreur, relire un texte, estimer la fiabilité d’un calcul ou comprendre une architecture. La productivité apparente augmente, mais la maîtrise réelle peut diminuer si l’outil remplace trop vite l’apprentissage.
 
+Cette évolution rejoint ce que l’on observe dans les métiers créatifs : l’IA peut produire quelque chose de visuellement correct ou fonctionnel, mais cela ne suffit pas à remplacer l’intention, le choix, l’angle et la responsabilité de la personne qui crée. Dans l’image, le texte ou la mise en forme, ce qui compte n’est pas seulement le résultat final, mais aussi le sens du geste, le contexte de production et l’accord de ceux dont le travail a pu servir de base. Le risque n’est donc pas uniquement économique ; il est aussi symbolique, quand le travail humain devient moins visible, moins reconnu ou trop facilement imitable.
+
 Pour CleanMyMap, cette question est stratégique. Le projet a besoin de personnes capables de comprendre ce qu’il fait, pas seulement de le faire fonctionner par délégation. L’IA peut accélérer l’itération, mais elle ne doit pas déqualifier l’équipe au point de rendre le projet opaque à ceux qui le portent. La bonne règle est donc de garder l’humain au centre des décisions et de n’utiliser l’IA que comme un soutien réversible, explicable et contrôlé.
 
 ### Externalisation et conditions de travail
@@ -928,6 +1068,8 @@ Ces biais ne sont pas seulement théoriques. Les travaux de Buolamwini et Gebru 
 Pour CleanMyMap, les biais les plus pertinents concernent la description des déchets, des lieux et des territoires. Un modèle pourrait interpréter différemment une photo, un signalement ou une description selon le contexte implicite : quartier populaire ou touristique, zone urbaine dense ou rurale, langage formel ou familier, français standard ou expressions locales. Il pourrait aussi associer abusivement certains territoires à la saleté, à l’incivilité ou au manque de civisme, alors que la présence de déchets dépend souvent de facteurs structurels : densité de passage, organisation de la collecte, manque d’équipements publics, événements locaux, activité commerciale, tourisme ou politiques municipales.
 
 Le risque serait donc de transformer un outil environnemental en outil de stigmatisation. Une carte des déchets peut être utile pour agir, mais elle peut aussi produire une image injuste d’un quartier si les données sont incomplètes, mal modérées ou interprétées sans contexte. De même, une IA de classification pourrait simplifier abusivement une situation : confondre un dépôt sauvage avec un point de collecte saturé, interpréter une photo hors contexte, ou attribuer implicitement une responsabilité sociale à des habitants plutôt qu’à un défaut d’infrastructure.
+
+Cette prudence vaut aussi pour les contenus créatifs ou visuels utilisés autour du projet. Un résultat généré peut être séduisant sans pour autant porter la même intention qu’une création humaine ; il peut même reproduire des styles reconnaissables sans consentement explicite, ce qui fragilise à la fois l’éthique et la confiance. Si CleanMyMap utilise des images, des illustrations ou des supports éditoriaux produits avec assistance IA, la provenance doit rester claire et la validation humaine explicite.
 
 Pour cette raison, CleanMyMap ne doit pas utiliser l’IA pour produire des jugements automatiques sur les territoires, les habitants ou les comportements. Les modèles peuvent aider à reformuler un signalement, repérer une incohérence ou assister une modération, mais ils ne doivent pas décider seuls de la gravité d’une situation, de la responsabilité d’un acteur ou de la valeur d’un quartier. Les données doivent rester contextualisées, vérifiables et relues humainement.
 
@@ -3560,6 +3702,8 @@ Elle cesse aussi si l’équipe n’est plus capable de relire, mesurer, désact
 
 Appliqués à CleanMyMap, ces apports sont pertinents lorsque l’IA sert des objectifs concrets : meilleure lisibilité des parcours, meilleure qualité des livrables, meilleure capacité de pilotage et réduction du temps perdu sur des tâches répétitives.
 
+Cette utilité reste néanmoins conditionnée à une discipline de fond : l’IA doit libérer du temps pour ce qui demande encore du discernement humain, comme la validation, l’éthique, la relation aux partenaires, l’écriture d’un message juste ou la correction d’un raisonnement. Si elle sert seulement à produire plus vite la même chose, elle augmente le bruit ; si elle permet de recentrer l’équipe sur les arbitrages utiles, elle devient un outil de progrès.
+
 ### Limites d’une lecture uniquement positive de l’innovation
 
 Le bénéfice n’est pas automatique. Une lecture uniquement positive de l’innovation oublie les coûts de dépendance, de surproduction et d’effet rebond. Les apports de l’IA restent donc conditionnels : ils ne sont défendables que lorsqu’ils sont documentés, mesurés et réellement utiles au projet.
@@ -3576,7 +3720,7 @@ Cette lecture rejoint le pilotage par indicateurs : un outil assisté par IA doi
 
 ### Lien entre engagement citoyen, sobriété numérique et gouvernance IA
 
-CleanMyMap a été initié dans le cadre du Diplôme Universitaire « Engagement » de Sorbonne Université. Les ateliers suivis ont accompagné un passage d’un prototype centré sur la cartographie vers un outil plus large d’action citoyenne, de coordination et de transmission. Cette trajectoire montre une construction progressive, liée à l’apprentissage du développement assisté par IA autant qu’au sujet du projet lui-même. Les ateliers du DU ont aussi nourri la suite du travail d’évaluation et la réflexion sur les arbitrages de sobriété, d’utilité et de gouvernance.
+CleanMyMap a été initié dans le cadre du Diplôme Universitaire « Engagement » de Sorbonne Université. Les ateliers suivis ont accompagné le passage d’un prototype centré sur la cartographie vers un outil plus large d’action citoyenne, de coordination et de transmission. Cette trajectoire illustre une construction progressive, à l’intersection de l’apprentissage du développement assisté par IA et d’un projet à visée d’intérêt général. Les ateliers du DU ont également contribué à structurer les choix de sobriété, d’utilité et de gouvernance, tout en renforçant la capacité du projet à être présenté et évalué dans un cadre institutionnel.
 
 ### Limites restantes et points à approfondir
 

@@ -34,6 +34,7 @@ function InstagramMark({
 
 type HomeFooterProps = {
   variant?: "full" | "compact";
+  initialVariant?: "full" | "compact";
 };
 
 const FULL_FOOTER_PATHS = [
@@ -58,20 +59,20 @@ function shouldUseFullFooter(pathname: string): boolean {
   );
 }
 
-export function HomeFooter({ variant }: HomeFooterProps) {
+export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
   const pathname = usePathname() ?? "/";
-  const resolvedVariant = variant ?? (shouldUseFullFooter(pathname) ? "full" : "compact");
+  const resolvedVariant = variant ?? initialVariant ?? (shouldUseFullFooter(pathname) ? "full" : "compact");
+
   const isCompact = resolvedVariant === "compact";
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
 
   if (isCompact) {
     return (
-      <footer className="relative w-full overflow-hidden border-t border-amber-200/10 bg-[linear-gradient(180deg,rgba(20,11,4,0)_0%,rgba(31,19,9,0.94)_42%,#120b05_100%)]">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_42%_120%_at_12%_0%,rgba(245,158,11,0.14),transparent_66%),radial-gradient(ellipse_38%_110%_at_92%_10%,rgba(251,191,36,0.10),transparent_68%)]" />
+      <footer className="cmm-ribbon-surface relative w-full overflow-hidden">
 
         <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-4 text-center sm:px-8 md:flex-row md:gap-5 md:py-5 md:text-left">
           <div className="flex flex-col items-center gap-1 md:items-start">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-200">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-100">
               Cultivons l&apos;entraide
             </p>
             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-300">
@@ -81,24 +82,24 @@ export function HomeFooter({ variant }: HomeFooterProps) {
 
           <nav
             aria-label="Liens légaux"
-            className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 md:justify-end"
+            className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-300 md:justify-end"
           >
-            <Link href="/mentions-legales" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50">
+            <Link href="/mentions-legales" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
               Mentions légales
             </Link>
             <Link
               href="/conditions-generales-utilisation"
-              className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
+              className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               CGU
             </Link>
             <Link
               href="/politique-confidentialite"
-              className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
+              className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
               Confidentialité
             </Link>
-            <Link href="/politique-cookies" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50">
+            <Link href="/politique-cookies" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
               Cookies
             </Link>
           </nav>
@@ -108,23 +109,22 @@ export function HomeFooter({ variant }: HomeFooterProps) {
   }
 
   return (
-    <footer className="relative w-full overflow-hidden border-t border-amber-200/10 bg-[linear-gradient(180deg,rgba(20,11,4,0)_0%,rgba(31,19,9,0.96)_28%,#120b05_100%)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_55%_90%_at_10%_0%,rgba(245,158,11,0.18),transparent_62%),radial-gradient(ellipse_46%_76%_at_92%_12%,rgba(251,191,36,0.12),transparent_64%)]" />
+    <footer className="cmm-ribbon-surface relative w-full overflow-hidden">
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-7 lg:py-8">
         <div className="grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-6">
           {/* Gauche : Contact discret */}
           <div className="flex min-w-0 flex-col items-center gap-2 text-center sm:flex-row sm:text-left lg:items-center">
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="h-px w-4 bg-emerald-300/60" />
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-emerald-200">
-                Contact
-              </p>
-            </div>
-            <Link
-              href="/contact"
-              className="group inline-flex min-h-10 max-w-full items-center justify-center rounded-xl border border-white/10 bg-white/[0.055] px-3.5 py-2.5 text-center transition-all hover:border-emerald-300/45 hover:bg-white/[0.095] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/50 sm:justify-start"
-            >
+          <div className="flex shrink-0 items-center gap-2">
+            <span className="h-px w-4 bg-slate-400/50" />
+            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-slate-200/68">
+              Contact
+            </p>
+          </div>
+          <Link
+            href="/contact"
+            className="group inline-flex min-h-10 max-w-full items-center justify-center rounded-xl border border-slate-700/80 bg-slate-950/55 px-3.5 py-2.5 text-center transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50 sm:justify-start"
+          >
               <span className="text-sm font-semibold leading-snug text-slate-100 transition-colors group-hover:text-white">
                 Une question ? Un partenariat ? Échangeons !
               </span>
@@ -135,10 +135,10 @@ export function HomeFooter({ variant }: HomeFooterProps) {
           <div className="flex min-w-0 flex-wrap justify-center gap-2.5 lg:justify-center">
             <a
               href={`mailto:${contactEmail}`}
-              className="group flex min-h-10 max-w-full items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.055] px-3.5 py-2 transition-all hover:border-emerald-300/45 hover:bg-white/[0.095] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/50"
+              className="group flex min-h-10 max-w-full items-center gap-2.5 rounded-xl border border-slate-700/80 bg-slate-950/55 px-3.5 py-2 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-300/14 transition-colors group-hover:bg-emerald-300/22">
-                <Mail size={16} className="text-emerald-200" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80">
+                <Mail size={16} className="text-slate-100" />
               </div>
               <span className="min-w-0 truncate text-xs font-bold text-slate-100 transition-colors group-hover:text-white sm:text-sm">
                 {contactEmail}
@@ -148,10 +148,10 @@ export function HomeFooter({ variant }: HomeFooterProps) {
               href="https://instagram.com/cleanmymap.fr"
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex min-h-10 max-w-full items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.055] px-3.5 py-2 transition-all hover:border-pink-300/45 hover:bg-white/[0.095] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-300/50"
+              className="group flex min-h-10 max-w-full items-center gap-2.5 rounded-xl border border-slate-700/80 bg-slate-950/55 px-3.5 py-2 transition-all hover:border-slate-500 hover:bg-slate-900/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-pink-300/14 transition-colors group-hover:bg-pink-300/22">
-                <InstagramMark size={16} className="text-pink-200" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 transition-colors group-hover:bg-slate-800/80">
+                <InstagramMark size={16} className="text-slate-100" />
               </div>
               <span className="min-w-0 truncate text-xs font-bold text-slate-100 transition-colors group-hover:text-white sm:text-sm">
                 @cleanmymap.fr
@@ -162,17 +162,17 @@ export function HomeFooter({ variant }: HomeFooterProps) {
           {/* Droite : Slogan, Mantra & Copyright unifiés sur une ligne desktop */}
           <div className="flex min-w-0 flex-col items-center text-center lg:col-span-1 lg:items-end lg:text-right">
             <div className="flex min-w-0 flex-col items-center gap-2 lg:items-end">
-              <p className="text-[13px] font-bold uppercase leading-snug text-white sm:text-sm">
-                Dépolluer <span className="text-cyan-400/50">·</span>{" "}
-                Cartographier <span className="text-emerald-400/50">·</span>{" "}
+              <p className="text-[13px] font-bold uppercase leading-snug text-slate-100 sm:text-sm">
+                Dépolluer <span className="text-slate-400">·</span>{" "}
+                Cartographier <span className="text-slate-400">·</span>{" "}
                 Impacter
               </p>
               <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 lg:justify-end">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-200">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-200/70">
                   Cultivons l&apos;entraide
                 </p>
-                <span className="h-1 w-1 rounded-full bg-slate-500/70" />
-                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-300">
+                <span className="h-1 w-1 rounded-full bg-slate-500/60" />
+                <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-300/60">
                   © 2026 CleanMyMap
                 </p>
               </div>
@@ -180,23 +180,23 @@ export function HomeFooter({ variant }: HomeFooterProps) {
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-white/8 pt-4 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-400 lg:justify-end">
-          <Link href="/mentions-legales" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50">
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 border-t border-slate-700/60 pt-4 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-300/70 lg:justify-end">
+          <Link href="/mentions-legales" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
             Mentions légales
           </Link>
           <Link
             href="/conditions-generales-utilisation"
-            className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
+            className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
           >
             CGU
           </Link>
           <Link
             href="/politique-confidentialite"
-            className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
+            className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
           >
             Confidentialité
           </Link>
-          <Link href="/politique-cookies" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50">
+          <Link href="/politique-cookies" className="transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50">
             Cookies
           </Link>
         </div>

@@ -4,7 +4,15 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, MapPin, Globe, Target, Quote, Heart, Zap, ArrowRight, Building2, Sparkles, MessageSquare } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
-import { ENTITY_LABELS, CONTRIBUTION_LABELS } from "./annuaire-helpers";
+import {
+  ENTITY_LABELS,
+  CONTRIBUTION_LABELS,
+  formatAssociationImpactDate,
+  formatCoverage,
+  getAssociationImpactSummary,
+  getAssociationProfile,
+  getAssociationStructureBadge,
+} from "./annuaire-helpers";
 import { cn } from "@/lib/utils";
 
 interface AnnuairePartnerDrawerProps {
@@ -16,6 +24,8 @@ interface AnnuairePartnerDrawerProps {
 
 export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePartnerDrawerProps) {
   if (!entry) return null;
+  const associationProfile = getAssociationProfile(entry);
+  const structureBadge = getAssociationStructureBadge(entry);
 
   return (
     <AnimatePresence>
@@ -65,6 +75,19 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                     {ENTITY_LABELS[entry.kind] || entry.kind}
                   </div>
                   <h2 className="text-4xl font-black leading-tight tracking-tighter text-white">{entry.name}</h2>
+                  {structureBadge && (
+                    <div className={cn(
+                      "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[9px] font-black uppercase tracking-[0.3em]",
+                      structureBadge.tone === "success"
+                        ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                        : structureBadge.tone === "info"
+                        ? "border-sky-500/20 bg-sky-500/10 text-sky-300"
+                        : "border-amber-500/20 bg-amber-500/10 text-amber-300",
+                    )}>
+                      <Sparkles size={12} />
+                      {structureBadge.label}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -92,6 +115,132 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
                   </div>
                 )}
               </section>
+
+              {associationProfile && (
+                <>
+                  <section className="space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-500">
+                        <Heart size={18} />
+                      </div>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Mission associative" : "Association mission"}</h3>
+                    </div>
+                    <div className="space-y-4 rounded-[2.5rem] border border-white/10 bg-slate-950/40 p-8">
+                      <p className="text-lg font-bold leading-relaxed text-slate-200">
+                        {associationProfile.mission}
+                      </p>
+                      <div className="grid gap-4 md:grid-cols-3">
+                        <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                          <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
+                            Besoins récurrents
+                          </p>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {associationProfile.recurringNeeds.map((need) => (
+                              <span key={need} className="rounded-full border border-violet-500/15 bg-violet-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-violet-200">
+                                {need}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                          <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
+                            Zones couvertes
+                          </p>
+                          <p className="mt-3 text-base font-black text-white">
+                            {associationProfile.impactHistory?.zonesCovered ?? entry.coveredArrondissements.length} zones
+                          </p>
+                          <p className="mt-2 text-sm text-slate-400">
+                            {formatCoverage(entry.coveredArrondissements, entry.location)}
+                          </p>
+                        </div>
+                        <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                          <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
+                            Impact local
+                          </p>
+                          <p className="mt-3 text-base font-black text-white">
+                            {getAssociationImpactSummary(entry)}
+                          </p>
+                          <p className="mt-2 text-sm text-slate-400">
+                            {formatAssociationImpactDate(associationProfile.impactHistory?.lastActionAt)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-500">
+                        <Zap size={18} />
+                      </div>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Appels & ressources" : "Calls & resources"}</h3>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
+                          Appels à contribution
+                        </p>
+                        <div className="mt-4 space-y-3">
+                          {associationProfile.publicCalls.map((call) => (
+                            <div key={`${call.type}-${call.label}`} className="rounded-2xl border border-white/5 bg-slate-950/40 p-4">
+                              <p className="text-sm font-black text-white">{call.label}</p>
+                              {call.detail && (
+                                <p className="mt-1 text-xs leading-relaxed text-slate-400">{call.detail}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="rounded-[2rem] border border-white/10 bg-white/5 p-6">
+                        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
+                          Ressources utiles
+                        </p>
+                        <div className="mt-4 space-y-3">
+                          {associationProfile.usefulResources.length > 0 ? (
+                            associationProfile.usefulResources.map((resource) => (
+                              <a
+                                key={resource.label}
+                                href={resource.url || "#"}
+                                target={resource.url ? "_blank" : undefined}
+                                rel={resource.url ? "noopener noreferrer" : undefined}
+                                className={cn(
+                                  "block rounded-2xl border border-white/5 bg-slate-950/40 p-4 transition-colors",
+                                  resource.url ? "hover:border-violet-500/30 hover:bg-slate-950/60" : "opacity-80",
+                                )}
+                              >
+                                <p className="text-sm font-black text-white">{resource.label}</p>
+                                {resource.description && (
+                                  <p className="mt-1 text-xs leading-relaxed text-slate-400">{resource.description}</p>
+                                )}
+                              </a>
+                            ))
+                          ) : (
+                            <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/30 p-4 text-xs text-slate-400">
+                              Ressources publiques à compléter
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section className="space-y-6">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-slate-500">
+                        <ArrowRight size={18} />
+                      </div>
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">{fr ? "Actions passées" : "Past actions"}</h3>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {associationProfile.pastActions.map((action) => (
+                        <div key={action} className="rounded-[1.75rem] border border-white/10 bg-slate-950/35 p-5 text-sm font-semibold leading-relaxed text-slate-200">
+                          {action}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </>
+              )}
 
               {/* Engagement Grid */}
               <section className="space-y-6">

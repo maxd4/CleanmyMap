@@ -82,7 +82,7 @@ export async function POST(request: Request) {
         error: result.error.message,
       });
       return NextResponse.json(
-        { error: "Resend send failed", details: result.error.message },
+        { error: "Resend send failed", details: "Unavailable" },
         { status: 502 },
       );
     }
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
       error: message,
     });
     return NextResponse.json(
-      { error: "Resend send failed", details: message },
+      { error: "Resend send failed", details: "Unavailable" },
       { status: 502 },
     );
   }

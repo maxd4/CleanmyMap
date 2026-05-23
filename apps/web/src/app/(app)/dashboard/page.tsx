@@ -43,9 +43,9 @@ function DashboardOverviewSkeleton() {
   return (
     <div className="space-y-5 animate-pulse">
       <div className="grid gap-4 md:grid-cols-3">
-        {[0, 1, 2].map(i => <div key={i} className="h-44 rounded-3xl bg-white/60 border border-white/70" />)}
+        {[0, 1, 2].map(i => <div key={i} className="h-44 rounded-3xl bg-[rgba(44,28,15,0.55)] border border-orange-200/18" />)}
       </div>
-      <div className="h-36 rounded-3xl bg-white/60 border border-white/70" />
+      <div className="h-36 rounded-3xl bg-[rgba(44,28,15,0.55)] border border-orange-200/18" />
     </div>
   );
 }
@@ -62,11 +62,11 @@ export default async function DashboardPage() {
         title={locale === "fr" ? "Tableau de bord" : "Dashboard"}
         description={locale === "fr" ? "Connectez-vous pour accéder à votre tableau de bord." : "Sign in to access your dashboard."}
         lockedPreview={
-          <div className="grid gap-3 md:grid-cols-3 p-6 rounded-3xl bg-white/65 border border-white/70 shadow-[0_18px_42px_-26px_rgba(15,23,42,0.22)]">
+          <div className="grid gap-3 md:grid-cols-3 p-6 rounded-3xl bg-[rgba(44,28,15,0.72)] border border-orange-200/18 shadow-[0_18px_42px_-26px_rgba(124,45,18,0.30)]">
             {["Aujourd'hui", "Priorité", "Accès"].map((label) => (
-              <div key={label} className="rounded-2xl bg-white/70 p-5 border border-white/70">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-700">{label}</p>
-                <div className="mt-3 h-3 w-3/4 rounded bg-slate-200/90" />
+              <div key={label} className="rounded-2xl bg-[rgba(69,45,28,0.84)] p-5 border border-orange-200/18">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-orange-100">{label}</p>
+                <div className="mt-3 h-3 w-3/4 rounded bg-orange-200/20" />
               </div>
             ))}
           </div>
@@ -102,18 +102,18 @@ export default async function DashboardPage() {
         {/* ── Header ── */}
         <div data-gsap-reveal className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-600">
+            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-orange-900">
               {locale === "fr" ? "Cockpit opérationnel" : "Operational cockpit"}
             </p>
-            <h1 className="mt-1.5 text-[clamp(3rem,6vw,5.5rem)] font-black leading-[0.92] tracking-[-0.05em] text-slate-950">
+            <h1 className="mt-1.5 text-[clamp(3rem,6vw,5.5rem)] font-black leading-[0.92] tracking-[-0.05em] text-amber-950">
               {t("title_v1")}
             </h1>
           </div>
           <div className="flex items-center gap-2.5 pb-1">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(34,197,94,0.55)]" />
-            <span className="text-sm font-semibold text-slate-800">{roleLabel}</span>
-            <span className="rounded-lg border border-slate-200 bg-white/70 px-3 py-1 text-[11px] font-mono font-bold text-slate-800 shadow-sm">
-              <Shield size={10} className="inline mr-1.5 text-emerald-400" />
+            <span className="h-2 w-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.55)]" />
+            <span className="text-sm font-semibold text-amber-900">{roleLabel}</span>
+            <span className="rounded-lg border border-orange-200/60 bg-[rgba(44,28,15,0.72)] px-3 py-1 text-[11px] font-mono font-bold text-orange-100 shadow-sm">
+              <Shield size={10} className="inline mr-1.5 text-amber-400" />
               {userId.slice(-8).toUpperCase()}
             </span>
           </div>
@@ -132,21 +132,21 @@ export default async function DashboardPage() {
         </div>
 
         {/* ── Séparateur ── */}
-        <div className="mt-14 h-px bg-slate-200/80" />
+        <div className="mt-14 h-px bg-orange-200/30" />
 
         {/* ── Action prioritaire ── */}
         <div data-gsap-reveal className="mt-10 relative overflow-hidden rounded-3xl">
-          {/* Layer fond isolé — règle anti-flou */}
-          <div className="pointer-events-none absolute inset-0 rounded-3xl bg-white/72 border border-white/80 shadow-[0_22px_54px_-34px_rgba(15,23,42,0.18)]" />
+          {/* Layer fond isolé */}
+          <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[rgba(44,28,15,0.72)] border border-orange-200/18 shadow-[0_22px_54px_-34px_rgba(124,45,18,0.30)]" />
           <div className="relative z-10 flex flex-col gap-5 px-7 py-7 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1.5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-slate-600">
+              <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-orange-100">
                 {locale === "fr" ? "Action prioritaire" : "Priority action"}
               </p>
-              <h2 className="text-2xl font-black tracking-tight text-slate-950">
+              <h2 className="text-2xl font-black tracking-tight text-white">
                 {locale === "fr" ? "Déclarer une action" : "Declare an action"}
               </h2>
-              <p className="text-base font-medium text-slate-700 max-w-md leading-relaxed">
+              <p className="text-base font-medium text-white max-w-md leading-relaxed">
                 {locale === "fr"
                   ? "Enregistrez une intervention terrain depuis le formulaire dédié."
                   : "Log a field intervention from the dedicated form."}
@@ -164,11 +164,11 @@ export default async function DashboardPage() {
         </div>
 
         {/* ── Séparateur ── */}
-        <div className="mt-14 h-px bg-slate-200/80" />
+        <div className="mt-14 h-px bg-orange-200/30" />
 
         {/* ── Accès rapides ── */}
         <div data-gsap-reveal className="mt-10">
-          <p className="mb-6 text-[11px] font-bold uppercase tracking-[0.3em] text-slate-600">
+          <p className="mb-6 text-[11px] font-bold uppercase tracking-[0.3em] text-orange-900">
             {locale === "fr" ? "Accès rapides" : "Quick access"}
           </p>
           <RolePrimaryActions profile={profile} title="" tone="dark" />
