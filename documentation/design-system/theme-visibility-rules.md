@@ -10,6 +10,7 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
 - Bordures de composants interactifs: ratio >= 3:1 contre le fond adjacent.
 - États `hover`, `active`, `focus`, `disabled`: conservent un contraste conforme.
 - Les surfaces qui portent du texte doivent rester plus foncées que le background global quand le site repose majoritairement sur du texte blanc, afin de renforcer la lisibilité et de faire ressortir les contenus inversés.
+- Ne jamais afficher de placeholder visible comme texte métier (`n/a`, `Réservé`, `En préparation`, `À générer`) si une vraie valeur n'existe pas: supprimer l'élément, ou le remplacer par un contenu neutre réellement informatif.
 
 ## 1 bis) Limite de blanc sur les backgrounds
 - Sur un background de page teinté, la couche la plus lumineuse ne doit jamais dépasser un mix blanc de `34%` sur une base colorée.
@@ -17,7 +18,11 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
 - Si une page doit paraître plus claire, il faut baisser la saturation ou changer la teinte de base, pas augmenter la part de blanc.
 - Valeur critique à retenir: `rgba(255,255,255,0.34)` max pour la couche lumineuse principale d’un fond coloré.
 - Règle pratique: une page = une teinte dominante, un même système de glows et de contrastes, puis seulement la couleur change selon la route.
+- Exception de cadrage: la homepage (`/` et `/accueil`) n’est pas une exception de bloc; c’est une famille autonome avec sa propre palette.
 - Exception validée: le Sommaire (`/explorer`) conserve sa palette actuelle tant qu'il reste la référence UX la plus aboutie.
+- Exception validée: la Méthodologie (`/methodologie`) adopte la palette verte de la homepage comme lecture scientifique dédiée.
+- Familles autonomes documentées à part: Auth & Onboarding, Institutionnel & Légal, Système & Utilitaires, Admin & Super-admin, Print & Export.
+- Les exceptions UI assumées sont listées dans [`UI_EXCEPTION_PAGES.md`](./UI_EXCEPTION_PAGES.md) et doivent être ajoutées là avant tout changement de palette.
 
 ## 2) Tokens de couleurs obligatoires
 - Interdire les couleurs codées en dur dans les composants critiques (CTA, navigation, badges, tableaux KPI).
@@ -40,6 +45,8 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
   - texte avec contraste élevé,
   - bordure explicite si le fond est proche du fond parent,
   - focus ring visible clavier.
+- Le bouton primaire et le bouton secondaire utilisent un dégradé diagonal de deux couleurs, pas un aplat neutre.
+- Le bouton primaire prend deux couleurs complémentaires à la page, le secondaire deux couleurs de la page, et le tertiaire un dégradé discret mais vivant.
 - Les liens texte seuls doivent être soulignés au `hover` et au `focus`.
 - Interdit: texte clair sur fond clair ou texte sombre sur fond sombre même temporairement au `hover`.
 

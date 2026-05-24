@@ -1,8 +1,8 @@
 # CleanMyMap Architecture Snapshot
 
 ## Purpose
-This file is the compact context entrypoint for AI/code assistants.
-Read this first, then load only task-relevant files.
+This file is a compact context entrypoint for AI/code assistants.
+Read [master-architecture.md](./master-architecture.md) first, then load only task-relevant files.
 
 ## Active Surfaces
 - Next.js app: `apps/web/src/*` + `apps/web/src/app/api/*`
@@ -48,3 +48,7 @@ Read this first, then load only task-relevant files.
   - application-domain redirects (`/sign-in`, `/sign-up`, `/dashboard`).
 - Incident handling quick guide:
   - `documentation/repo-docs/ops/INCIDENT_RUNBOOK_SHORT.md`
+
+## Canonical architecture source
+- `master-architecture.md` is the source of truth for the global site architecture.
+- Use this file only as a lightweight entrypoint when you need a constrained context budget.

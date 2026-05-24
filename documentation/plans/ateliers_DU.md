@@ -2,10 +2,10 @@ ATELIERS_DU - BACKLOG OPERATIONNEL CLEANMYMAP
 
 NOTE D'USAGE
 
-Ce document sert de backlog actif des messages et lots encore actionnables.
+Ce document sert de backlog actif unique des messages et lots encore actionnables.
 Le cadre d'analyse DU, les apprentissages et les justifications IA ont ete migres vers :
 
-- `documentation/plans/impact_IA.md` pour la gouvernance IA, la sobriete et les arbitrages ;
+- `documentation/plans/rapport_impact/impact_IA.md` pour la gouvernance IA, la sobriete et les arbitrages ;
 - `documentation/plans/journal_impact_DU.md` pour le narratif DU et la trace d'apprentissage ;
 - `documentation/product/*` pour la vision produit, les publics et la feuille de route ;
 - `documentation/operations/session-standard-runbook.md` pour les regles de validation de lots.
@@ -16,7 +16,7 @@ Le cadre d'analyse DU, les apprentissages et les justifications IA ont ete migre
 - Registre de rubriques/sections operationnel.
 - APIs metier principales en production (actions, spots, community, reports, moderation, health/services).
 - Base de securisation initiale (middleware, env centralisee, RLS de base).
-- Audit d'Impact IA normalise (`documentation/plans/impact_IA.md`) et valide.
+- Audit d'Impact IA normalise (`documentation/plans/rapport_impact/impact_IA.md`) et valide.
 - Automatisation des metriques de documentation (`update-audit-stats.mjs`).
 - Premiers livrables PDF/exports disponibles.
 
@@ -104,3 +104,9 @@ Message J
 
 Message K
 "Regenere le dossier de validation institutionnelle uniquement si un lot modifie l'audit d'impact IA, la gouvernance, la maintenance ou la strategie de sortie. Livre les liens mis a jour et les pieces ajoutees."
+
+## Regle de lecture
+
+- Tout nouveau travail actionnable va ici.
+- Rien de nouveau ne doit etre ajoute dans `ateliers_DU_execution_rapide.md`.
+- Si un lot est absorbe, il doit sortir du backlog actif et rester seulement dans la trace d'execution ou dans le journal de synthese approprie.

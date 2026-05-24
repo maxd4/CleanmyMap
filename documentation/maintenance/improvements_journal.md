@@ -43,7 +43,7 @@ Ce document répertorie les améliorations structurelles, visuelles et technique
 - **Séparation Discussions / DMs** :
     - `messagerie` (Discussions) : Canaux publics/thématiques/territoriaux.
     - `dm` (Messages privés) : Échanges directs 1-to-1.
-- **Registry** : Toute nouvelle rubrique doit être déclarée dans `src/lib/sections-registry.ts` ET mappée dans `src/lib/navigation.ts`.
+- **Registry** : Toute nouvelle rubrique doit être déclarée dans `src/lib/sections-registry/config.ts` ET mappée dans `src/lib/navigation.ts`.
 
 ## 🚀 Checklist de Validation
 - [ ] Le build passe (`npm run build` ou `npx tsc --noEmit`).

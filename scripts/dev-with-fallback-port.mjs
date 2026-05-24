@@ -9,6 +9,7 @@ const repoRoot = resolve(scriptDir, "..");
 const webDir = resolve(repoRoot, "apps/web");
 const require = createRequire(import.meta.url);
 const nextBin = require.resolve("next/dist/bin/next", { paths: [webDir] });
+const preferredHost = process.env.DEV_HOST ?? "localhost";
 
 function parsePortArgs(argv) {
   const passthrough = [];
@@ -45,7 +46,7 @@ function isPortFree(port) {
     const server = net.createServer();
     server.unref();
     server.once("error", () => resolveResult(false));
-    server.listen({ port, host: "127.0.0.1" }, () => {
+    server.listen({ port, host: preferredHost }, () => {
       server.close(() => resolveResult(true));
     });
   });
@@ -68,15 +69,16 @@ if (chosenPort >= preferredPort + 20) {
   process.exit(1);
 }
 
-console.log(`[dev] Next.js démarre sur http://localhost:${chosenPort}`);
+console.log(`[dev] Next.js démarre sur http://${preferredHost}:${chosenPort}`);
 
 const child = spawn(
   process.execPath,
-  [nextBin, "dev", "-p", String(chosenPort), ...passthrough],
+  [nextBin, "dev", "-H", preferredHost, "-p", String(chosenPort), ...passthrough],
   {
     cwd: webDir,
     env: {
       ...process.env,
+      HOSTNAME: preferredHost,
       PORT: String(chosenPort),
     },
     stdio: "inherit",

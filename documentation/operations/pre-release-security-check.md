@@ -34,7 +34,6 @@ Ces variables sont autorisees cote navigateur et doivent rester prefixees `NEXT_
 - `NEXT_PUBLIC_POSTHOG_HOST`
 - `NEXT_PUBLIC_POSTHOG_REGION`
 - `NEXT_PUBLIC_SENTRY_DSN`
-- `NEXT_PUBLIC_SENTRY_ENABLED`
 
 Règle d'exploitation:
 
@@ -57,6 +56,7 @@ Ces variables ne doivent jamais etre envoyees au client :
 - `QSTASH_TOKEN`
 - `UPTIMEROBOT_API_KEY`
 - `CLOUDFLARE_API_TOKEN`
+- `SENTRY_AUTH_TOKEN` (only if source-map upload is enabled through the build plugin)
 
 Règle d'exploitation:
 

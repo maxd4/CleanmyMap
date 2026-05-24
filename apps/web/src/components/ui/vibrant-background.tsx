@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { BACKDROP_TONES, resolveBackdropToneKey, type BackdropToneKey } from "@/lib/ui/backdrop-tone";
+import {
+  BACKDROP_TONES,
+  resolveBackdropToneKey,
+  type BackdropToneKey,
+} from "@/lib/ui/backdrop-tone";
+import { getButtonThemeCssVariables } from "@/lib/ui/button-theme";
 
 type VibrantBackgroundProps = {
   initialToneKey: BackdropToneKey | null;
@@ -10,11 +15,19 @@ type VibrantBackgroundProps = {
 
 export function VibrantBackground({ initialToneKey }: VibrantBackgroundProps) {
   const pathname = usePathname();
-  const [toneKey, setToneKey] = useState<BackdropToneKey | null>(initialToneKey);
+  const toneKey = resolveBackdropToneKey(pathname) ?? initialToneKey;
 
   useEffect(() => {
-    setToneKey(resolveBackdropToneKey(pathname) ?? initialToneKey);
-  }, [initialToneKey, pathname]);
+    const buttonThemeVariables = getButtonThemeCssVariables(toneKey);
+    if (!buttonThemeVariables) {
+      return;
+    }
+
+    const bodyStyle = document.body.style;
+    for (const [name, value] of Object.entries(buttonThemeVariables)) {
+      bodyStyle.setProperty(name, value);
+    }
+  }, [toneKey]);
 
   if (!toneKey) {
     return null;

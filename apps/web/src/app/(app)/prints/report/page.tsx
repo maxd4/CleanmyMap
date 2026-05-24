@@ -42,8 +42,8 @@ export default async function PrintReportPage() {
  ?"Cette fonctionnalité nécessite une connexion Clerk."
  :"Connexion Clerk temporairement indisponible. La vue reste lisible."
  }
- lockedPreview={
- <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+        lockedPreview={
+ <section className="space-y-4 rounded-3xl border border-stone-200 bg-stone-50/90 p-5 shadow-sm">
  <div className="grid gap-3 md:grid-cols-4">
  {[
 "Masse récoltée",
@@ -53,18 +53,18 @@ export default async function PrintReportPage() {
  ].map((label) => (
  <article
  key={label}
- className="rounded-2xl border border-slate-200 bg-white p-4"
+ className="rounded-2xl border border-stone-200 bg-white/90 p-4"
  >
  <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">{label}</p>
- <p className="mt-2 text-lg font-semibold cmm-text-primary">n/a</p>
+ <p className="mt-2 text-lg font-semibold cmm-text-primary">—</p>
  </article>
  ))}
  </div>
- <div className="rounded-2xl border border-slate-200 bg-white p-4 cmm-text-small cmm-text-secondary">
+ <div className="rounded-2xl border border-stone-200 bg-white/90 p-4 cmm-text-small cmm-text-secondary">
  Le rapport complet, les exports et la méthodologie détaillée
  se déverrouillent après connexion.
  </div>
- </section>
+</section>
  }
  >
  <div />
@@ -83,7 +83,8 @@ export default async function PrintReportPage() {
  const reportDate = new Date("2026-04-25").toLocaleDateString("fr-FR");
 
  return (
- <div className="bg-white min-h-screen p-0 sm:p-12 print:p-0">
+ <div className="min-h-screen bg-[linear-gradient(180deg,#f7f2e7_0%,#fffdf8_42%,#f3ede1_100%)] p-0 sm:p-12 print:p-0">
+ <div className="min-h-screen bg-white/95 p-0 sm:p-0">
  {/* HEADER PROFESSIONNEL */}
  <header
  className="flex justify-between items-start border-b-2 pb-8 mb-12"
@@ -159,7 +160,7 @@ export default async function PrintReportPage() {
  </section>
 
  {/* FOOTER */}
- <footer className="cmm-ribbon-surface mt-auto pt-12 flex justify-between items-end print:bg-white print:shadow-none print:border-t print:border-slate-200">
+ <footer className="cmm-ribbon-surface mt-auto flex items-end justify-between pt-12 print:bg-white print:shadow-none print:border-t print:border-slate-200">
  <div className="space-y-2">
  <div className="flex items-center gap-2">
  <Image
@@ -178,9 +179,9 @@ export default async function PrintReportPage() {
  </div>
  </div>
  <div className="w-24 h-24 bg-slate-100 rounded-xl flex items-center justify-center text-slate-300 print:bg-slate-50 print:text-slate-300">
- <span className="cmm-text-caption font-bold text-center">QR code <br/> à générer</span>
+ <span className="cmm-text-caption font-bold text-center">Sceau <br/> CleanMyMap</span>
  </div>
- </footer>
+</footer>
 
  <style dangerouslySetInnerHTML={{ __html: `
  @media print {
@@ -189,6 +190,7 @@ export default async function PrintReportPage() {
  header { border-bottom-width: 4px; }
  }
  `}} />
+ </div>
  </div>
  );
 }

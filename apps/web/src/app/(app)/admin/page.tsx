@@ -59,7 +59,7 @@ export default async function AdminPage() {
         title="Pilotage administratif"
         description="Accès réservé aux comptes Clerk autorisés."
         lockedPreview={
-          <div className="grid gap-6 md:grid-cols-3 rounded-[3rem] border border-white/5 p-8 bg-slate-900/40 backdrop-blur-2xl">
+          <div className="grid gap-6 md:grid-cols-3 rounded-[3rem] border border-stone-400/18 p-8 bg-[rgba(44,28,15,0.40)] backdrop-blur-2xl">
             {[
               { label: "Supervision", desc: "Alertes et priorités de l'administration." },
               { label: "Modération", desc: "Actions réservées au back-office connecté." },
@@ -172,99 +172,99 @@ export default async function AdminPage() {
       icon: ShieldCheck,
       title: "Gouvernance",
       desc: "Décisions et statuts clés.",
-      iconBg: "bg-blue-500/10",
-      iconColor: "text-blue-400",
-      accent: "from-blue-600/10 to-blue-900/20",
-      ring: "ring-blue-500/20",
-      dot: "bg-blue-400",
+      iconBg: "bg-amber-500/10",
+      iconColor: "text-amber-400",
+      accent: "from-amber-600/10 to-stone-900/20",
+      ring: "ring-amber-500/20",
+      dot: "bg-amber-400",
       href: "#governance",
     },
     {
       icon: AlertTriangle,
       title: "Alertes",
       desc: "Écarts à traiter rapidement.",
-      iconBg: "bg-amber-500/10",
-      iconColor: "text-amber-400",
-      accent: "from-amber-600/10 to-amber-900/20",
-      ring: "ring-amber-500/20",
-      dot: "bg-amber-400",
+      iconBg: "bg-orange-500/10",
+      iconColor: "text-orange-400",
+      accent: "from-orange-600/10 to-stone-900/20",
+      ring: "ring-orange-500/20",
+      dot: "bg-orange-400",
       href: "#alerts",
     },
     {
       icon: FileSearch,
       title: "Modération",
       desc: "Validation des actions et preuves.",
-      iconBg: "bg-emerald-500/10",
-      iconColor: "text-emerald-400",
-      accent: "from-emerald-600/10 to-emerald-900/20",
-      ring: "ring-emerald-500/20",
-      dot: "bg-emerald-400",
+      iconBg: "bg-amber-500/10",
+      iconColor: "text-amber-300",
+      accent: "from-amber-700/10 to-stone-900/20",
+      ring: "ring-amber-500/20",
+      dot: "bg-amber-300",
       href: "#moderation",
     },
     {
       icon: Settings,
       title: "Services",
       desc: "État des API et de l'infrastructure.",
-      iconBg: "bg-slate-500/10",
-      iconColor: "text-slate-400",
-      accent: "from-slate-600/10 to-slate-900/20",
-      ring: "ring-slate-500/20",
-      dot: "bg-slate-400",
+      iconBg: "bg-stone-500/10",
+      iconColor: "text-stone-400",
+      accent: "from-stone-600/10 to-stone-950/20",
+      ring: "ring-stone-500/20",
+      dot: "bg-stone-400",
       href: "/admin/services",
     },
     {
       icon: Zap,
       title: "Journal Codex",
       desc: "Saisie hebdomadaire de l'usage IA et historique projet.",
-      iconBg: "bg-indigo-500/10",
-      iconColor: "text-indigo-400",
-      accent: "from-indigo-600/10 to-indigo-900/20",
-      ring: "ring-indigo-500/20",
-      dot: "bg-indigo-400",
+      iconBg: "bg-amber-500/10",
+      iconColor: "text-amber-400",
+      accent: "from-amber-600/10 to-stone-900/20",
+      ring: "ring-amber-500/20",
+      dot: "bg-amber-400",
       href: "/admin/services#codex-usage",
     },
     {
       icon: HardDrive,
       title: "Stockage",
       desc: "Quota Supabase, usage et croissance mensuelle.",
-      iconBg: "bg-emerald-500/10",
-      iconColor: "text-emerald-400",
-      accent: "from-emerald-600/10 to-emerald-900/20",
-      ring: "ring-emerald-500/20",
-      dot: "bg-emerald-400",
+      iconBg: "bg-orange-500/10",
+      iconColor: "text-orange-400",
+      accent: "from-orange-600/10 to-stone-900/20",
+      ring: "ring-orange-500/20",
+      dot: "bg-orange-400",
       href: "/admin/services#storage",
     },
     {
       icon: Database,
       title: "Plans gratuits",
       desc: "Vercel, Resend, Clerk et autres proxys mensuels.",
-      iconBg: "bg-sky-500/10",
-      iconColor: "text-sky-400",
-      accent: "from-sky-600/10 to-sky-900/20",
-      ring: "ring-sky-500/20",
-      dot: "bg-sky-400",
+      iconBg: "bg-stone-500/10",
+      iconColor: "text-stone-300",
+      accent: "from-stone-600/10 to-stone-900/20",
+      ring: "ring-stone-500/20",
+      dot: "bg-stone-300",
       href: "/admin/services#free-plans",
     },
     {
       icon: FileSearch,
       title: "Rapport mensuel",
       desc: "PDF central de gouvernance et archive publique.",
-      iconBg: "bg-violet-500/10",
-      iconColor: "text-violet-400",
-      accent: "from-violet-600/10 to-violet-900/20",
-      ring: "ring-violet-500/20",
-      dot: "bg-violet-400",
+      iconBg: "bg-amber-500/10",
+      iconColor: "text-amber-400",
+      accent: "from-amber-600/10 to-stone-900/20",
+      ring: "ring-amber-500/20",
+      dot: "bg-amber-400",
       href: "/admin/services#governance-report",
     },
     {
       icon: Database,
       title: "Impact CO2e",
       desc: "Capture manuelle et historique environnemental.",
-      iconBg: "bg-rose-500/10",
-      iconColor: "text-rose-400",
-      accent: "from-rose-600/10 to-rose-900/20",
-      ring: "ring-rose-500/20",
-      dot: "bg-rose-400",
+      iconBg: "bg-orange-500/10",
+      iconColor: "text-orange-300",
+      accent: "from-orange-600/10 to-stone-900/20",
+      ring: "ring-orange-500/20",
+      dot: "bg-orange-300",
       href: "/admin/services#environmental-impact",
     },
   ];
@@ -274,14 +274,14 @@ export default async function AdminPage() {
       id="admin"
       title="Pilotage Système"
       subtitle="Console d'administration centrale pour la supervision des flux, la modération et la gestion des privilèges."
-      gradient="from-amber-600/20 via-slate-500/10 to-transparent"
+      gradient="from-amber-700/20 via-stone-500/10 to-transparent"
     >
       <div className="space-y-20 pt-8">
         
         {/* Résumé Décisionnel (ThirtySecondsSummary) */}
         {overview && (
           <ThirtySecondsSummary
-            kpis={overview.summary.kpis as any}
+            kpis={overview.summary.kpis}
             alert={overview.summary.alert}
             recommendedAction={{
               href: overview.summary.recommendedAction.href ?? primaryAction.href,
@@ -307,7 +307,7 @@ export default async function AdminPage() {
         </div>
 
         {/* Navigation Grid Premium */}
-        <RubriqueCard themeColor="slate" withTopBar={true} topBarContent="Accès Rapides" className="p-12">
+        <RubriqueCard themeColor="amber" withTopBar={true} topBarContent="Accès Rapides" className="p-12">
           <NavigationGrid items={navigationItems} columns={{ default: 1, sm: 2, md: 4, xl: 5 }} />
         </RubriqueCard>
 
@@ -328,12 +328,12 @@ export default async function AdminPage() {
               <CreatorInboxPanel initialItems={creatorInboxItems} />
             </RubriqueCard>
 
-            <RubriqueCard 
-              themeColor="slate" 
-              withTopBar={true} 
-              topBarContent="Gestion de Flotte"
-              className="p-12"
-            >
+          <RubriqueCard 
+            themeColor="amber" 
+            withTopBar={true} 
+            topBarContent="Gestion de Flotte"
+            className="p-12"
+          >
               <div className="mb-10">
                 <h2 className="text-4xl font-black tracking-tight text-white mt-2">Comptes & Rôles</h2>
               </div>
@@ -343,11 +343,11 @@ export default async function AdminPage() {
         )}
 
         <div id="governance" className="space-y-12">
-          <RubriqueCard themeColor="slate" withTopBar={true} topBarContent="Governance Monitor" className="p-12">
+          <RubriqueCard themeColor="amber" withTopBar={true} topBarContent="Governance Monitor" className="p-12">
             <div className="grid gap-8 md:grid-cols-3">
               {[
-                { title: "Onboarding Partenaires", stats: onboardingStatus, color: "text-blue-400" },
-                { title: "Publication Annuaire", stats: publicationStatus, color: "text-emerald-400" },
+                { title: "Onboarding Partenaires", stats: onboardingStatus, color: "text-amber-400" },
+                { title: "Publication Annuaire", stats: publicationStatus, color: "text-orange-400" },
                 { title: "Audit Opérations", stats: moderationAudit, color: "text-amber-400" }
               ].map((panel, idx) => (
                 <article key={idx} className="rounded-[2.5rem] border border-white/5 bg-white/5 p-8 group hover:bg-white/[0.08] transition-all duration-500">
@@ -375,13 +375,13 @@ export default async function AdminPage() {
         </div>
 
         <div id="moderation" className="relative">
-          <RubriqueCard themeColor="emerald" withTopBar={true} topBarContent="Modération Terrain" className="p-12">
+          <RubriqueCard themeColor="amber" withTopBar={true} topBarContent="Modération Terrain" className="p-12">
             <ActionsReportPanel />
           </RubriqueCard>
         </div>
 
         <div className="rounded-[3rem] border border-white/5 bg-white/5 p-4">
-          <RolePrimaryActions profile={profile} />
+          <RolePrimaryActions profile={profile} tone="dark" />
         </div>
 
       </div>

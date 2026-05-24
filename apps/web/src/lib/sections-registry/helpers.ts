@@ -10,7 +10,7 @@ import type {
 } from "./types";
 import { RUBRIQUE_REGISTRY } from "./config";
 
-function hasValidRoute(rubrique: Rubrique): boolean {
+function hasValidRoute(rubrique: RubriqueDefinition): boolean {
   if (!rubrique.route.startsWith("/")) {
     return false;
   }
@@ -20,7 +20,7 @@ function hasValidRoute(rubrique: Rubrique): boolean {
   return true;
 }
 
-export function isRubriqueVisible(rubrique: Rubrique): boolean {
+export function isRubriqueVisible(rubrique: RubriqueDefinition): boolean {
   return rubrique.availability === "available" && hasValidRoute(rubrique);
 }
 
@@ -66,8 +66,9 @@ export function normalizeSectionId(sectionId: string): string {
 export function getSectionRubriqueById(
   sectionId: string,
 ): SectionRubriqueDefinition | undefined {
+  const normalizedSectionId = normalizeSectionId(sectionId);
   const rubrique = RUBRIQUE_REGISTRY.find(
-    (item) => item.kind === "section" && item.id === sectionId,
+    (item) => item.kind === "section" && item.id === normalizedSectionId,
   );
   return rubrique as SectionRubriqueDefinition | undefined;
 }

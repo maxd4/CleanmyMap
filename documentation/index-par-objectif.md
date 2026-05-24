@@ -6,18 +6,19 @@ Ce document sert de table d'orientation pour aller du besoin a la bonne document
 
 ```mermaid
 flowchart TD
-  A["Nouveau besoin"] --> B["Lire system-overview"]
+  A["Nouveau besoin"] --> B["Lire master-architecture"]
   B --> C["Verifier front-back boundaries"]
   C --> D["Identifier modules-cles-et-dependances"]
   D --> E["Appliquer les regles de regression"]
   E --> F["Coder dans le bon sous-dossier"]
 ```
 
-1. [architecture/system-overview.md](./architecture/system-overview.md)
-2. [architecture/frontend-backend-boundaries.md](./architecture/frontend-backend-boundaries.md)
-3. [architecture/modules-cles-et-dependances.md](./architecture/modules-cles-et-dependances.md)
-4. [development/regression-gates.md](./development/regression-gates.md)
-5. [development/QUALITY_GUIDE.md](./development/QUALITY_GUIDE.md)
+1. [architecture/master-architecture.md](./architecture/master-architecture.md)
+2. [architecture/system-overview.md](./architecture/system-overview.md)
+3. [architecture/frontend-backend-boundaries.md](./architecture/frontend-backend-boundaries.md)
+4. [architecture/modules-cles-et-dependances.md](./architecture/modules-cles-et-dependances.md)
+5. [development/regression-gates.md](./development/regression-gates.md)
+6. [development/QUALITY_GUIDE.md](./development/QUALITY_GUIDE.md)
 
 ## 2. Verifier le produit
 

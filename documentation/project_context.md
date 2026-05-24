@@ -20,7 +20,7 @@
 - Navigation/parcours relies on:
   - `apps/web/src/lib/navigation.ts`
   - `apps/web/src/lib/profiles.ts`
-  - `apps/web/src/lib/sections-registry.ts`
+  - `apps/web/src/lib/sections-registry/config.ts`
 - Documentation & Visuals:
   - Master System Architecture: `documentation/architecture/master-architecture.md`
   - Visual Assets for DU: `documentation/sessions/assets/`

@@ -1,5 +1,7 @@
 name: "CodeQL Analysis"
 
+permissions: {}
+
 on:
   push:
   pull_request:

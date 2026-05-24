@@ -53,7 +53,7 @@ export const RUBRIQUE_REGISTRY = [
   },
   {
     id: "reports",
-    categoryId: "pilotage",
+    categoryId: "analysis",
     spaceId: "decide",
     priority: 30,
     kind: "app-route",
@@ -257,7 +257,7 @@ export const RUBRIQUE_REGISTRY = [
   },
   {
     id: "feedback",
-    categoryId: "pilotage",
+    categoryId: "community",
     spaceId: "decide",
     priority: 41,
     kind: "section",
@@ -356,7 +356,7 @@ export const RUBRIQUE_REGISTRY = [
   },
   {
     id: "open-data",
-    categoryId: "community",
+    categoryId: "analysis",
     spaceId: "decide",
     priority: 47,
     kind: "section",

@@ -24,7 +24,7 @@ Règle : **une PR par monolithe**, **API publique inchangée**, **tests avant su
 | 🟠 HAUTE | 20 365 o | `components/sections/rubriques/feedback-section.tsx` | ⏳ À faire |
 | 🟠 HAUTE | 19 045 o | `components/sections/rubriques/gamification-section.tsx` | ⏳ À faire |
 | 🟡 MOYENNE | 18 709 o | `components/reports/web-document/analytics.ts` | ⏳ À faire |
-| 🟡 MOYENNE | 17 052 o | `lib/sections-registry.ts` | ⏳ À faire |
+| 🟡 MOYENNE | 17 052 o | `lib/sections-registry/config.ts` | ⏳ À faire |
 | 🟡 MOYENNE | 13 032 o | `components/sections/rubriques/community/use-community-section.ts` | ⏳ À faire |
 
 > Les 3 fichiers du plan d'avril 2026 ont été partiellement traités : `use-admin-workflow.ts` et `community-section.tsx` ont été découpés (sous-dossiers `admin-workflow/` et `community/`). `reports-web-document.tsx` a été scindé en `web-document/sections.tsx` (14 KB, encore lourd).

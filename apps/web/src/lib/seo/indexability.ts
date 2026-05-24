@@ -28,6 +28,7 @@ export const PRIVATE_APP_ROUTE_PREFIXES = [
   "/admin",
   "/actions/history",
   "/actions/new",
+  "/declaration",
   "/form-comparison",
   "/onboarding",
   "/parcours",

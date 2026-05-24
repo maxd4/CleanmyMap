@@ -44,7 +44,7 @@ export function HomeCommunityActivity({
         <div className="flex-1 space-y-6">
           <div
             data-gsap-reveal
-            className="inline-flex items-center gap-2 rounded-full border border-emerald-100/18 bg-[rgba(6,40,23,0.9)] px-4 py-2 text-emerald-50 shadow-[0_10px_24px_-16px_rgba(6,44,25,0.48)]"
+            className="inline-flex items-center gap-2 rounded-full border border-emerald-100/18 bg-[rgba(8,46,27,0.88)] px-4 py-2 text-emerald-50 shadow-[0_10px_24px_-16px_rgba(6,44,25,0.42)]"
           >
             <Sparkles size={16} />
             <span className="cmm-text-caption font-bold uppercase tracking-[0.3em]">
@@ -74,28 +74,28 @@ export function HomeCommunityActivity({
             data-gsap-reveal
             className="flex flex-wrap gap-3"
           >
-            <div className="flex items-center gap-3 rounded-2xl border border-emerald-100/18 bg-[rgba(6,40,23,0.9)] px-4 py-3 shadow-[0_14px_30px_-24px_rgba(5,34,20,0.34)]">
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald-100/18 bg-[rgba(8,46,27,0.88)] px-4 py-3 shadow-[0_14px_30px_-24px_rgba(5,34,20,0.34)]">
               <div className="rounded-xl bg-emerald-400/14 p-2">
                 <Users size={18} className="text-emerald-200" />
               </div>
               <div>
-                <p className="text-sm font-bold text-emerald-50">
+                <p className="text-sm font-bold text-white">
                   {formatCount(activity.visibleActions)}
                 </p>
-                <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-100/62">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-white/72">
                   Actions visibles
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-2xl border border-emerald-100/18 bg-[rgba(6,40,23,0.9)] px-4 py-3 shadow-[0_14px_30px_-24px_rgba(5,34,20,0.34)]">
+            <div className="flex items-center gap-3 rounded-2xl border border-emerald-100/18 bg-[rgba(8,46,27,0.88)] px-4 py-3 shadow-[0_14px_30px_-24px_rgba(5,34,20,0.34)]">
               <div className="rounded-xl bg-lime-400/14 p-2">
                 <MessageSquare size={18} className="text-lime-200" />
               </div>
               <div>
-                <p className="text-sm font-bold text-emerald-50">
+                <p className="text-sm font-bold text-white">
                   {formatCount(activity.distinctLocations)}
                 </p>
-                <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-100/62">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-white/72">
                   Lieux distincts
                 </p>
               </div>
@@ -139,16 +139,16 @@ export function HomeCommunityActivity({
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="truncate text-sm font-bold text-emerald-100">
+                    <p className="truncate text-sm font-bold text-white">
                       {item.actor}
                     </p>
-                    <p className="flex-shrink-0 text-[11px] uppercase tracking-[0.18em] cmm-text-card-copy">
+                    <p className="flex-shrink-0 text-[11px] uppercase tracking-[0.18em] text-white/72">
                       {item.timeLabel}
                     </p>
                   </div>
-                  <p className="truncate text-sm cmm-text-card-copy">
+                  <p className="truncate text-sm text-white/88">
                     {item.action}{" "}
-                    <span className="font-semibold text-emerald-200">
+                    <span className="font-semibold text-white">
                       @{item.location}
                     </span>
                   </p>
@@ -158,7 +158,7 @@ export function HomeCommunityActivity({
 
             <div
               data-gsap-reveal
-              className="absolute -bottom-6 -left-6 flex items-center gap-3 rounded-2xl border border-emerald-200/24 bg-[linear-gradient(180deg,rgba(7,39,22,0.96)_0%,rgba(6,31,18,0.98)_100%)] px-4 py-3 shadow-[0_18px_36px_-24px_rgba(5,34,20,0.82)]"
+              className="absolute -bottom-6 -left-6 flex items-center gap-3 rounded-2xl border border-emerald-200/24 bg-[linear-gradient(180deg,rgba(8,46,27,0.96)_0%,rgba(6,31,18,0.98)_100%)] px-4 py-3 shadow-[0_18px_36px_-24px_rgba(5,34,20,0.82)]"
             >
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-400/10 text-emerald-300">
                 <Share2 size={18} />

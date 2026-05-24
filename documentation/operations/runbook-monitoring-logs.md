@@ -42,9 +42,14 @@ Fallback statique:
 - Si incident critique: appliquer le runbook `incidents-frequents-et-reprise.md`.
 
 ## Services web non utilises pour l'instant
-- Stripe (paiements en ligne / dons): a ajouter plus tard, quand le tunnel de don est priorise.
+- Stripe (paiements en ligne / dons): la route webhook existe déjà, mais elle reste inerte tant que `STRIPE_SECRET_KEY` et `STRIPE_WEBHOOK_SECRET` ne sont pas configurés.
 - Pinecone (vecteurs image): a activer quand on lance la recherche IA pour retrouver facilement des cleanwalks dans la base.
 - Upstash (Redis serverless, rate limiting, QStash, Workflow): ne pas ajouter tant qu'il n'y a pas un besoin explicite.
 - Ajouter Upstash uniquement le jour ou l'on dit:
   - "je dois limiter les abus sur mes API"
   - "j'ai besoin de cache/queues maintenant"
+
+## Services a passer en revue
+- Clerk: verifier `GET /api/uptime` quand les sessions sont instables; `clerk_keys: warning` signifie souvent une prod encore branchee sur des clés test.
+- Resend: verifier les routes `/api/send` et `/api/email/test` pour distinguer une vraie panne (`502/503`) d'une simple absence de configuration.
+- Stripe: verifier `POST /api/stripe/webhook` et les logs `[Stripe Webhook]` pour distinguer un webhook absent d'une signature invalide.

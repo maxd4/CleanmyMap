@@ -1,24 +1,23 @@
-# Rapport IA
+# Rapport Impact
 
-Archive documentaire des rapports, notes longues et sources de travail liées à l'IA.
+Ce sous-dossier regroupe le rapport d'impact vivant et ses pièces techniques associées.
 
-Les plans actifs et dossiers de suivi opérationnel ont été déplacés vers `../plans/`.
-Le contenu restant ici doit être lu comme archive, pas comme source de vérité active.
+La source de vérité active est [`impact_IA.md`](./impact_IA.md).
 
 ---
 
 ## Contenu
 
-- rapports narratifs et analyses longues;
-- sources secondaires ou versions intermédiaires;
-- notes de contexte historiques;
-- traces de travail non prioritaires.
+- le rapport principal `impact_IA.md`;
+- la méthode du graphique `graphique_impact_CO2e.md`;
+- les sources bibliographiques `references.bib` et `references_annexes.bib`;
+- les règles de rédaction `regle-chat-rapport.md`;
+- les plans de transformation et notes de travail liées au rapport.
 
 ---
 
 ## Règle d'usage
 
-- Ne pas dupliquer les plans actifs dans ce dossier.
-- Si un document devient le backlog de référence, il doit vivre dans `../plans/`.
-- Les versions copiées ou obsolètes doivent être traitées comme archive, puis supprimées quand elles ne servent plus.
-
+- Ne pas recréer une autre copie vivante du rapport ailleurs dans `documentation/plans/`.
+- Si un nouveau contenu concerne le bilan d'impact IA, il doit être ajouté dans `impact_IA.md` ou dans un fichier explicitement référencé depuis ce dossier.
+- Les documents obsolètes ou remplacés peuvent être archivés ailleurs, mais ce sous-dossier reste le point d'entrée actif du rapport d'impact.

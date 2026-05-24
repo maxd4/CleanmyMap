@@ -34,7 +34,7 @@ Deuxième passe:
 Périmètre scanné:
 
 - `apps/web/src/app` pour les pages applicatives.
-- `apps/web/src/lib/sections-registry.ts` pour les rubriques internes.
+- `apps/web/src/lib/sections-registry/config.ts` pour les rubriques internes.
 - `apps/web/src/lib/navigation.ts` pour la navigation visible.
 - `apps/web/src/components/sections/section-renderer.tsx` pour le rendu des sections.
 - `apps/web/src/app/api` uniquement comme contexte backend, sans notation page par page.

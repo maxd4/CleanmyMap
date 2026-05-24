@@ -9,6 +9,7 @@ Système de design pour agents IA. **TOUJOURS consulter avant toute modification
 ### Charte Visuelle (PRIORITÉ ABSOLUE)
 - **charte-ui-pro-moderne-futuriste.md** - Charte UI complète
 - **BLOC_COLOR_SYSTEM_PREMIUM.md** - Système de couleurs par bloc (5 blocs, multi-teintes)
+- **UI_EXCEPTION_PAGES.md** - Exceptions UI, familles autonomes et matrice exhaustive des routes
 - **VISUAL_STORYTELLING.md** - Priorité aux visuels sur le texte
 - **principes-visuels.md** - Principes de base
 - **design-system.md** - Contient la palette officielle par bloc (Accents)
@@ -87,7 +88,7 @@ Objectif :
    // exhaustif | minimaliste | sobre
    ```
 
-5. **Traiter les écrans pilotage/admin comme des surfaces opérationnelles**
+5. **Traiter les écrans de pilotage et les familles autonomes comme des surfaces opérationnelles**
    ```text
    Utiliser grilles, tableaux, KPI, filtres, états vides et confirmations claires.
    Eviter les compositions marketing ou les cartes décoratives inutiles.
@@ -97,7 +98,14 @@ Objectif :
    ```text
    Bloc "Accueil & Pilotage" :
    - Pages accueil (/dashboard, /profil) → amber/orange
-   - Pages pilotage (/pilotage, /admin) → amber/brun
+   - Pages pilotage (/pilotage, /sponsor-portal, /elus) → amber/brun
+   - Sommaire (/explorer) → exception validée, palette dédiée conservée
+   - Méthodologie (/methodologie) → exception verte, palette homepage conservée
+   - Admin & Super-admin (/admin, /admin/forms, /admin/services, /admin/godmode) → famille autonome
+   - Auth & Onboarding (/sign-in, /sign-up, /onboarding, /onboarding/localisation) → famille autonome
+   - Institutionnel & Légal (/contact, /conditions-*, /mentions-legales, /politique-*, /en) → famille autonome
+   - Système & Utilitaires (/reglages, /form-comparison, /declaration-simple, /preview/actions/new, /error/429) → famille autonome
+   - Print & Export (/prints/report) → famille autonome
    
    Bloc "Cartographie & Impact" :
    - Pages carto (/actions/map, /sandbox) → sky
@@ -176,8 +184,17 @@ Objectif :
 ### Mapping Rubrique → Teinte
 
 **Bloc "Accueil & Pilotage"**
-- `/dashboard`, `/explorer`, `/profil`, `/feedback` → `amber`/`orange`
-- `/pilotage`, `/admin`, `/sponsor-portal`, `/elus`, `/godmode` → `amber`/`brun`
+- `/dashboard`, `/profil` → `amber`/`orange`
+- `/pilotage`, `/sponsor-portal`, `/elus` → `amber`/`brun`
+- `/explorer` → exception validée, palette Sommaire conservée
+- `/methodologie` → exception validée, palette verte homepage conservée
+
+**Familles autonomes**
+- Auth & Onboarding → `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`
+- Institutionnel & Légal → `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`
+- Système & Utilitaires → `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`
+- Admin & Super-admin → `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`
+- Print & Export → `/prints/report`
 
 **Bloc "Cartographie & Impact"**
 - `/actions/map`, `/sandbox` → `sky`

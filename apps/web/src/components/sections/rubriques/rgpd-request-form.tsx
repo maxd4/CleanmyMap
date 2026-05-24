@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Mail, Send, CheckCircle, AlertCircle, Shield, Info, ArrowUpRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 type RequestType = "access" | "rectification" | "erasure" | "portability" | "other";
 type RequestStatus = "idle" | "sending" | "success" | "error";
@@ -62,29 +62,29 @@ export function RgpdRequestForm() {
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="p-8 rounded-[2.5rem] bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-3xl shadow-2xl relative overflow-hidden"
+        className="relative overflow-hidden rounded-[2.5rem] border border-slate-200/70 bg-white/88 p-8 shadow-[0_20px_60px_-45px_rgba(15,23,42,0.35)] backdrop-blur-2xl"
       >
-        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-           <CheckCircle size={80} className="text-emerald-400" />
+        <div className="pointer-events-none absolute right-0 top-0 p-8 opacity-10">
+           <CheckCircle size={80} className="text-sky-400" />
         </div>
         
         <div className="flex items-center gap-4 mb-6 relative z-10">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-100 text-sky-700">
              <CheckCircle size={24} />
           </div>
-          <p className="text-xl font-black text-white tracking-tight">
+          <p className="text-xl font-black text-slate-950 tracking-tight">
             Demande transmise
           </p>
         </div>
         
-        <p className="text-sm font-bold text-slate-400 leading-relaxed mb-6 relative z-10">
-          Votre client de messagerie s'est ouvert avec un email pré-rempli. 
-          <span className="text-white"> Envoyez-le </span> pour enregistrer votre demande officiellement.
+        <p className="relative z-10 mb-6 text-sm font-bold leading-relaxed text-slate-600">
+          Votre client de messagerie s&apos;est ouvert avec un email pré-rempli. 
+          <span className="text-slate-950"> Envoyez-le </span> pour enregistrer votre demande officiellement.
         </p>
         
         <button
           onClick={() => setStatus("idle")}
-          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:text-emerald-300 transition-colors"
+          className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-sky-700 transition-colors hover:text-sky-900"
         >
           Envoyer une autre demande <ArrowUpRight size={14} />
         </button>
@@ -97,25 +97,25 @@ export function RgpdRequestForm() {
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       onSubmit={handleSubmit} 
-      className="space-y-6 p-10 rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative group"
+      className="group relative space-y-6 rounded-[3rem] border border-slate-200/70 bg-white/88 p-10 shadow-[0_24px_80px_-55px_rgba(15,23,42,0.38)] backdrop-blur-2xl"
     >
-      <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-         <Shield size={120} className="text-white" />
+      <div className="pointer-events-none absolute right-0 top-0 p-10 opacity-10 transition-transform duration-1000 group-hover:scale-110">
+         <Shield size={120} className="text-sky-400" />
       </div>
 
       <div className="space-y-4 relative z-10">
          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-slate-500/10 border border-slate-500/20 text-slate-400">
+            <div className="rounded-xl border border-slate-200 bg-slate-100 p-2.5 text-sky-700">
                <Shield size={18} />
             </div>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
               Protection des Données
             </p>
          </div>
-         <h2 className="text-2xl font-black text-white tracking-tight">
+         <h2 className="text-2xl font-black tracking-tight text-slate-950">
            Exercice de vos droits (RGPD)
          </h2>
-         <p className="text-xs font-bold text-slate-500 leading-relaxed max-w-md">
+         <p className="max-w-md text-xs font-bold leading-relaxed text-slate-600">
            Utilisez ce formulaire pour toute demande concernant vos données personnelles. Un email pré-rempli sera généré.
          </p>
       </div>
@@ -123,16 +123,16 @@ export function RgpdRequestForm() {
       <div className="space-y-6 relative z-10">
         <div className="space-y-2">
           <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
-            <Info size={12} className="text-slate-400" />
+            <Info size={12} className="text-sky-500" />
             Type de demande *
           </label>
           <select
             value={requestType}
             onChange={(e) => setRequestType(e.target.value as RequestType)}
-            className="w-full px-5 py-3.5 rounded-2xl border border-white/10 bg-slate-950/40 text-sm font-bold text-white focus:border-white/20 focus:outline-none transition-all appearance-none"
+            className="w-full appearance-none rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-900 transition-all focus:border-sky-300 focus:outline-none"
           >
             {Object.entries(requestTypeLabels).map(([key, label]) => (
-              <option key={key} value={key} className="bg-slate-900">
+              <option key={key} value={key} className="bg-white">
                 {label.fr}
               </option>
             ))}
@@ -141,7 +141,7 @@ export function RgpdRequestForm() {
 
         <div className="space-y-2">
           <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
-            <Mail size={12} className="text-slate-400" />
+            <Mail size={12} className="text-sky-500" />
             Votre email de contact *
           </label>
           <input
@@ -149,14 +149,14 @@ export function RgpdRequestForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="votre@email.com"
-            className="w-full px-5 py-3.5 rounded-2xl border border-white/10 bg-slate-950/40 text-sm font-bold text-white placeholder:text-slate-700 focus:border-white/20 focus:outline-none transition-all"
+            className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-bold text-slate-900 placeholder:text-slate-400 transition-all focus:border-sky-300 focus:outline-none"
             required
           />
         </div>
 
         <div className="space-y-2">
           <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
-            <Send size={12} className="text-slate-400" />
+            <Send size={12} className="text-sky-500" />
             Détails de votre demande *
           </label>
           <textarea
@@ -164,7 +164,7 @@ export function RgpdRequestForm() {
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Précisez votre demande ici..."
             rows={4}
-            className="w-full px-6 py-5 rounded-[2rem] border border-white/10 bg-slate-950/40 text-sm font-bold text-white placeholder:text-slate-700 focus:border-white/20 focus:outline-none transition-all resize-none"
+            className="w-full resize-none rounded-[2rem] border border-slate-200 bg-white px-6 py-5 text-sm font-bold text-slate-900 placeholder:text-slate-400 transition-all focus:border-sky-300 focus:outline-none"
             required
           />
         </div>
@@ -175,7 +175,7 @@ export function RgpdRequestForm() {
           <motion.div 
             initial={{ opacity: 0, y: -10 }} 
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400"
+            className="flex items-center gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-rose-700"
           >
             <AlertCircle size={16} />
             <p className="text-xs font-bold">{errorMessage}</p>
@@ -184,32 +184,27 @@ export function RgpdRequestForm() {
       </AnimatePresence>
 
       <div className="space-y-6 pt-4 relative z-10">
-        <button
+        <CmmButton
           type="submit"
           disabled={status === "sending"}
-          className={cn(
-            "w-full flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden group/btn",
-            status === "sending" 
-              ? "bg-white/5 text-slate-500 cursor-not-allowed" 
-              : "bg-white text-slate-950 hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-white/10"
-          )}
+          className="w-full justify-center px-8 py-4"
         >
           {status === "sending" ? (
             <>
-              <div className="w-4 h-4 border-2 border-slate-500 border-t-slate-300 rounded-full animate-spin" />
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-sky-500 border-t-transparent" />
               <span>Traitement...</span>
             </>
           ) : (
             <>
-              <Send size={16} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-              <span>Générer l'email de demande</span>
+              <Send size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              <span>Générer l&apos;email de demande</span>
             </>
           )}
-        </button>
+        </CmmButton>
 
-        <div className="flex items-center justify-center gap-4 text-[9px] font-black uppercase tracking-widest text-slate-600">
+        <div className="flex items-center justify-center gap-4 text-[9px] font-black uppercase tracking-widest text-slate-500">
            <div className="flex items-center gap-1.5"><Shield size={12} /> {fr ? "Conformité RGPD" : "GDPR Compliant"}</div>
-           <div className="w-1 h-1 rounded-full bg-white/10" />
+           <div className="h-1 w-1 rounded-full bg-slate-300" />
            <span>{fr ? "Délai : 1 mois" : "Response : 1 month"}</span>
         </div>
       </div>

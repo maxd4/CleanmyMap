@@ -8,6 +8,8 @@ venv/
 env/
 .env
 .env.*
+!.env.example
+!**/.env.example
 .python-version
 .coverage
 coverage.xml
@@ -55,3 +57,9 @@ CleanmyMap-sync/
 /*.webp
 /*.tmp
 /*.bak
+
+# Machine-local MCP configs
+.mcp.json
+.cursor/mcp.json
+.vscode/mcp.json
+.agents/mcp_config.json
