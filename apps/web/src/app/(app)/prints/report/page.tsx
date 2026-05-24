@@ -83,7 +83,7 @@ export default async function PrintReportPage() {
  const reportDate = new Date("2026-04-25").toLocaleDateString("fr-FR");
 
  return (
- <div className="min-h-screen bg-[linear-gradient(180deg,#f7f2e7_0%,#fffdf8_42%,#f3ede1_100%)] p-0 sm:p-12 print:p-0">
+ <div className="min-h-screen p-0 sm:p-12 print:p-0">
  <div className="min-h-screen bg-white/95 p-0 sm:p-0">
  {/* HEADER PROFESSIONNEL */}
  <header

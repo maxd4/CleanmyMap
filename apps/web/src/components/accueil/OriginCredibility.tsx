@@ -48,16 +48,17 @@ export function OriginCredibility() {
       className="relative overflow-hidden bg-transparent py-12 sm:py-16 lg:py-20"
     >
       <div className="relative mx-auto max-w-[1540px] px-4 sm:px-8">
-        <div className="max-w-5xl space-y-4">
+        <div className="max-w-5xl mx-auto space-y-4 text-center">
           <h2
             data-gsap-reveal
-            className="text-3xl font-extrabold tracking-tight text-emerald-950 sm:text-4xl lg:text-5xl"
+            className="text-4xl font-black tracking-tight text-emerald-950 sm:text-5xl lg:text-6xl"
+            style={{ textWrap: "pretty" }}
           >
             Origine, terrain et crédibilité
           </h2>
           <p
             data-gsap-reveal
-            className="max-w-4xl text-[17px] leading-[1.55] text-emerald-900/66 sm:text-lg"
+            className="mx-auto max-w-3xl text-base font-light leading-relaxed text-emerald-900/66 sm:text-lg"
           >
             CleanMyMap est un projet étudiant construit autour d&apos;actions
             terrain réelles, porté par une ambition partenariale progressive et

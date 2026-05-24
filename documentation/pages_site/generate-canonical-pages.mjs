@@ -398,19 +398,6 @@ const entries = [
     summary: "Badges, niveaux et progression personnelle.",
     legacyDocs: ["../3-BLOC-VISUALISER&IMPACTER/progression_badges.md"],
   },
-  {
-    route: "/sections/[sectionId]",
-    slug: "sections-sectionid",
-    title: "Section dynamique",
-    family: "08-systeme-utilitaires",
-    kind: "dynamic",
-    status: "canonique-exemple",
-    exception: false,
-    summary: "Route générique de rendu des rubriques de section.",
-    exampleRoute: "/sections/route",
-    legacyDocs: [],
-  },
-
   // Bloc 4 / Réseau & Discussions
   {
     route: "/community",
@@ -478,18 +465,6 @@ const entries = [
     summary: "Séquence guidée d'entrée dans le réseau partenaire.",
     legacyDocs: ["../4-BLOC-RESEAU&DISCUSSION/rassemblements.md"],
   },
-  {
-    route: "/soutenir-projet",
-    slug: "soutenir-projet",
-    title: "Soutenir le projet",
-    family: "04-reseau-discussions",
-    kind: "page",
-    status: "canonique",
-    exception: false,
-    summary: "Page de soutien / contribution au projet.",
-    legacyDocs: ["../4-BLOC-RESEAU&DISCUSSION/soutenir_projet.md"],
-  },
-
   // Bloc 5 / Apprendre
   {
     route: "/learn/hub",
@@ -807,9 +782,15 @@ function routeName(route) {
     .trim();
 }
 
-function renderRouteDoc(entry, family) {
+function renderRouteDoc(entry, family, routeReadmePath) {
   const legacyLinks = entry.legacyDocs?.length
-    ? entry.legacyDocs.map((doc) => `- [${path.basename(doc)}](${doc})`).join("\n")
+    ? entry.legacyDocs
+        .map((doc) => {
+          const legacyAbs = path.resolve(rootDir, doc);
+          const rel = relativePosix(routeReadmePath, legacyAbs);
+          return `- [${path.basename(doc)}](${rel})`;
+        })
+        .join("\n")
     : "- Aucun fichier legacy dédié.";
 
   const exampleLine = entry.exampleRoute
@@ -956,7 +937,7 @@ async function main() {
       await fs.mkdir(path.join(routeDir, "webp"), { recursive: true });
 
       const routeReadmePath = path.join(routeDir, "README.md");
-      await writeFile(routeReadmePath, renderRouteDoc(entry, family));
+      await writeFile(routeReadmePath, renderRouteDoc(entry, family, routeReadmePath));
     }
   }
 

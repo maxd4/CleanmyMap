@@ -814,6 +814,10 @@ export function resolveBackdropToneKey(pathname: string | null | undefined): Bac
     return "sky";
   }
 
+  if (isRoute("/sections/route")) {
+    return "emerald";
+  }
+
   if (isRoute("/reports") || isRoute("/sections/gamification")) {
     return "red";
   }

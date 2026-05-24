@@ -40,29 +40,28 @@ export function HomeCommunityActivity({
       ref={sectionRef}
       className="relative overflow-hidden bg-transparent py-12 sm:py-16 lg:py-20"
     >
-      <div className="relative mx-auto flex max-w-[1540px] flex-col gap-12 px-4 sm:px-8 lg:flex-row lg:items-center lg:gap-20">
+      <div className="relative mx-auto max-w-[1540px] flex flex-col gap-12 px-4 sm:px-8 lg:flex-row lg:items-center lg:gap-20">
         <div className="flex-1 space-y-6">
+          <div className="mx-auto max-w-3xl space-y-3 text-center lg:text-left">
+            <h2
+              data-gsap-reveal
+              className="text-4xl font-black leading-tight tracking-tight text-emerald-950 sm:text-5xl lg:text-6xl"
+              style={{ textWrap: "pretty" }}
+            >
+              Une communauté <br />
+              <span className="bg-gradient-to-r from-emerald-700 to-lime-500 bg-clip-text text-transparent">
+                vivante et engagée
+              </span>
+            </h2>
 
-
-          <h2
-            data-gsap-reveal
-            className="max-w-2xl text-4xl font-bold leading-[1.05] tracking-tight text-emerald-950 sm:text-5xl"
-          >
-            Une communauté <br />
-            <span className="bg-gradient-to-r from-emerald-700 to-lime-500 bg-clip-text text-transparent">
-              vivante et engagée
-            </span>
-          </h2>
-
-          <p
-            data-gsap-reveal
-            className="max-w-2xl text-lg leading-relaxed text-emerald-900/66"
-          >
-            Les dernières actions remontent ici depuis les données du terrain.
-            Rien d&apos;inventé, seulement des actions vérifiées et récentes.
-          </p>
-
-
+            <p
+              data-gsap-reveal
+              className="mx-auto max-w-2xl text-base font-light leading-relaxed text-emerald-900/66 sm:text-lg lg:mx-0"
+            >
+              Les dernières actions remontent ici depuis les données du terrain.
+              Rien d&apos;inventé, seulement des actions vérifiées et récentes.
+            </p>
+          </div>
         </div>
 
         <div className="relative w-full flex-1 lg:max-w-2xl xl:max-w-3xl">

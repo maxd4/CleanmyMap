@@ -4,6 +4,8 @@
 
 ## Statut de production (mis à jour manuellement)
 
+> **Nouveau registre canonique** : les pages UI doivent désormais être lues d'abord dans `documentation/pages_site/routes/`. Les dossiers de bloc historiques restent utiles comme archive et contexte, mais la source de vérité route-first est le nouveau registre.
+
 **⚠️ NOUVELLE STRUCTURE (5 blocs homepage)** : Les blocs ont été restructurés avec logique multi-teintes.
 
 | # | Bloc Homepage | Dossier | AUDIT produit | Rubriques produites | KAIZEN produit |
