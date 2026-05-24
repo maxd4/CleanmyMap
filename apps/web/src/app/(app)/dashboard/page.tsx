@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { Suspense } from "react";
 import { DashboardOverviewSection } from "@/components/dashboard/dashboard-overview-section";
 import { DashboardEntrance } from "@/components/dashboard/dashboard-entrance";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getProfileLabel, getProfilePrimaryAction, toProfile } from "@/lib/profiles";
@@ -152,14 +152,17 @@ export default async function DashboardPage() {
                   : "Log a field intervention from the dedicated form."}
               </p>
             </div>
-            <Link
+            <CmmButton
               href="/actions/new"
-              className="group inline-flex h-14 shrink-0 items-center gap-3 rounded-2xl bg-amber-300 px-7 text-[14px] font-black text-amber-950 shadow-[0_8px_32px_-8px_rgba(0,0,0,0.35)] transition-all hover:-translate-y-0.5 hover:bg-amber-200 hover:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.4)]"
+              tone="primary"
+              variant="pill"
+              size="lg"
+              className="group h-14 px-7 text-[14px] font-black shadow-[0_8px_32px_-8px_rgba(0,0,0,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.4)]"
             >
               <Plus size={18} />
               {locale === "fr" ? "Ouvrir le formulaire" : "Open the form"}
               <ArrowRight size={15} className="ml-1 transition-transform group-hover:translate-x-1" />
-            </Link>
+            </CmmButton>
           </div>
         </div>
 

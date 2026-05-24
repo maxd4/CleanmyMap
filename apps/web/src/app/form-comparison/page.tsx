@@ -15,18 +15,18 @@ export const metadata: Metadata = {
 
 export default function FormComparisonPage() {
  return (
- <div className="min-h-screen bg-gray-50 py-8">
- <div className="container mx-auto px-4 max-w-4xl">
+ <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_rgba(186,230,253,0.45)_0%,_rgba(255,255,255,0.96)_52%,_rgba(248,250,252,1)_100%)] py-8">
+ <div className="container mx-auto max-w-4xl px-4">
  <div className="text-center mb-8">
- <h1 className="text-3xl font-bold mb-4">Comparer les formulaires</h1>
+ <h1 className="mb-4 text-3xl font-bold text-slate-950">Comparer les formulaires</h1>
  <p className="cmm-text-secondary">
       Comparez la version actuelle et la version simplifiée du formulaire de déclaration.
  </p>
  </div>
 
  <div className="grid md:grid-cols-2 gap-8">
- {/* Complex Form */}
- <CmmCard className="p-6">
+  {/* Complex Form */}
+ <CmmCard tone="sky" variant="elevated" className="p-6">
  <div className="space-y-4">
  <div className="text-center">
  <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full cmm-text-small inline-block mb-3">
@@ -55,8 +55,8 @@ export default function FormComparisonPage() {
  </div>
 
  <div className="pt-4">
- <Link href="/declaration">
-        <CmmButton className="w-full" variant="ghost">
+ <Link href="/actions/new">
+        <CmmButton className="w-full" tone="secondary">
  Tester le formulaire complexe
  </CmmButton>
  </Link>
@@ -65,7 +65,7 @@ export default function FormComparisonPage() {
  </CmmCard>
 
  {/* Simple Form */}
- <CmmCard className="p-6">
+ <CmmCard tone="sky" variant="elevated" className="p-6">
  <div className="space-y-4">
  <div className="text-center">
  <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full cmm-text-small inline-block mb-3">
@@ -95,7 +95,7 @@ export default function FormComparisonPage() {
 
  <div className="pt-4">
  <Link href="/declaration-simple">
- <CmmButton className="w-full">
+ <CmmButton className="w-full" tone="primary">
  Tester le formulaire simplifié
  </CmmButton>
  </Link>
@@ -105,8 +105,8 @@ export default function FormComparisonPage() {
  </div>
 
  <div className="mt-8 text-center">
- <CmmCard className="p-6">
- <h3 className="text-lg font-semibold mb-4">Gain mesuré</h3>
+ <CmmCard tone="sky" variant="elevated" className="p-6">
+ <h3 className="mb-4 text-lg font-semibold text-slate-900">Gain mesuré</h3>
  <div className="grid grid-cols-3 gap-4 text-center">
  <div>
  <div className="text-2xl font-bold text-green-600">-70%</div>

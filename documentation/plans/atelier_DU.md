@@ -1,6 +1,8 @@
 # Atelier DU
 
-Ce fichier synthétise les apports des ateliers DU utiles à CleanMyMap.
+Ce fichier est un guide court de lecture.
+
+Il synthétise uniquement les apports des ateliers DU utiles à CleanMyMap et les règles à garder en tête avant de toucher au backlog actif.
 
 ## Ce qui a été retenu pour le produit
 
@@ -21,3 +23,4 @@ Ce fichier synthétise les apports des ateliers DU utiles à CleanMyMap.
 ## Référence
 
 Le journal détaillé des évolutions liées au DU et à l'impact se trouve dans [journal_impact_DU.md](./journal_impact_DU.md).
+Le rapport d'impact principal se trouve dans [rapport_impact/impact_IA.md](./rapport_impact/impact_IA.md).

@@ -5,7 +5,7 @@ import useSWR from "swr";
 import { motion, AnimatePresence } from "framer-motion";
 import { fetchActions, fetchMapActions } from "@/lib/actions/http";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { RecyclingQuestionAssistant } from "./recycling-question-assistant";
+import { RecyclingQuestionAssistant } from "./recycling-question-assistant/index";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { 
   RecyclingKpiGrid, 

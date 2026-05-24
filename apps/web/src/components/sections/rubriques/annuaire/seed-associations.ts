@@ -355,6 +355,69 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntry[] = [
     recentActivityAt: "2026-04-16",
   },
   {
+    id: "asso-shakirail",
+    name: "Le Shakirail",
+    legalIdentity: "Collectif Curry Vavart / AGETA",
+    kind: "association",
+    types: ["social", "environnemental"],
+    description:
+      "Tiers-lieu artistique, solidaire et culturel du 18e arrondissement, avec ateliers partagés, jardins, résidences et actions de quartier.",
+    location: "Paris 18e",
+    lat: 48.8923,
+    lng: 2.3581,
+    websiteUrl: "https://shakirail.curry-vavart.com/",
+    coveredArrondissements: [18],
+    contributionTypes: ["accueil", "logistique", "communication"],
+    tags: ["Tiers-lieu", "Culture", "Jardins", "Quartier"],
+    availability: "Selon programmation, ateliers et événements réguliers",
+    primaryChannel: {
+      platform: "site web",
+      label: "Site officiel",
+      url: "https://shakirail.curry-vavart.com/",
+    },
+    verificationStatus: "verifie",
+    qualificationStatus: "partenaire_actif",
+    associationProfile: {
+      mission:
+        "Tiers-lieu culturel et solidaire géré collectivement, avec ateliers partagés, jardins, résidences et actions de quartier.",
+      recurringNeeds: ["Relais de communication", "Matériel", "Bénévoles d'accueil"],
+      pastActions: [
+        "Ateliers partagés et résidences artistiques",
+        "Jardins partagés, recyclerie et matériauthèque",
+        "Portes ouvertes et animations de quartier",
+      ],
+      usefulResources: [
+        {
+          label: "Site officiel",
+          description: "Programmation, ateliers et appels à projets du lieu.",
+          url: "https://shakirail.curry-vavart.com/",
+        },
+      ],
+      publicCalls: [
+        {
+          type: "communication",
+          label: "Relais de communication",
+          detail: "Diffusion des événements, appels à participation et portes ouvertes.",
+        },
+        {
+          type: "benevoles",
+          label: "Appel à bénévoles",
+          detail: "Appui aux événements, aux chantiers participatifs et à la vie du lieu.",
+        },
+      ],
+      impactHistory: {
+        actionCount: 24,
+        zonesCovered: 1,
+        recurrence: "Programmation régulière",
+        lastActionAt: "2026-05-20",
+        note: "Lieu culturel et solidaire implanté dans le 18e arrondissement.",
+      },
+      structureStatus: "active_validated",
+    },
+    lastUpdatedAt: "2026-05-23",
+    recentActivityAt: "2026-05-20",
+  },
+  {
     id: "asso-featured-1",
     name: "Brigade Verte Paris 19",
     legalIdentity: "Brigade Verte (Association Loi 1901)",

@@ -146,7 +146,7 @@ npm run checks
 - Mentionner les fichiers exacts à modifier, pas seulement le thème général.
 - Pour l'accueil, citer au minimum [apps/web/src/app/page.tsx](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/page.tsx) et les composants concernés dans [apps/web/src/components/accueil](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/accueil).
 - Si la demande touche au style, inclure [apps/web/src/app/globals.css](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/globals.css), [apps/web/src/components/accueil/accueil-surface.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/components/accueil/accueil-surface.ts) et [apps/web/src/lib/ui/block-accents.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/ui/block-accents.ts).
-- Si la demande touche au routing, inclure [apps/web/src/lib/navigation.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/navigation.ts), [apps/web/src/lib/sections-registry.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/sections-registry.ts) et [apps/web/src/proxy.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/proxy.ts).
+- Si la demande touche au routing, inclure [apps/web/src/lib/navigation.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/navigation.ts), [apps/web/src/lib/sections-registry/config.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/sections-registry/config.ts) et [apps/web/src/proxy.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/proxy.ts).
 - Ajouter des contraintes claires :
   - conserver App Router
   - ne pas renommer les slugs

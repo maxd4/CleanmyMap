@@ -20,6 +20,7 @@ import { metadata as appMetadata } from"@/lib/metadata";
 import { headers } from "next/headers";
 import"./globals.css";
 import { resolveBackdropToneKey } from "@/lib/ui/backdrop-tone";
+import { getButtonThemeCssVariables } from "@/lib/ui/button-theme";
 import type { FooterVariant } from "@/lib/ui/footer-variant";
 
 export const metadata: Metadata = appMetadata;
@@ -49,6 +50,7 @@ export default async function RootLayout({
   const initialBackdropToneKey = resolveBackdropToneKey(
     requestHeaders.get("x-cleanmymap-backdrop-tone"),
   );
+  const initialButtonThemeVariables = getButtonThemeCssVariables(initialBackdropToneKey);
   const initialFooterVariant = requestHeaders.get("x-cleanmymap-footer-variant") as FooterVariant | null;
 
 return (
@@ -60,6 +62,7 @@ return (
   </head>
   <body
     className="relative isolate min-h-full overflow-x-hidden bg-background text-foreground font-sans"
+    style={initialButtonThemeVariables as React.CSSProperties | undefined}
   >
 <SitePreferencesProvider
 initialDisplayMode={displayModePreference.displayMode}

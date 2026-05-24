@@ -15,7 +15,7 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 1. **UI** → Lire **design-system/README.md** (CRITIQUE)
    Puis lire **design-system/cleanmymap-ui-ux-pro-max.md** pour les écrans opérationnels, formulaires, pilotage, validation et analytics
 2. **Sécurité** → Lire **security/README.md** (CRITIQUE)
-3. **Architecture** → Consulter **architecture/README.md**
+3. **Architecture** → Consulter **architecture/README.md** puis **architecture/master-architecture.md**
 4. **Code** → Consulter **development/README.md**
 
 ---
@@ -51,6 +51,7 @@ documentation/
 │
 ├── architecture/                🏗️ Architecture système
 │   ├── README.md
+│   ├── master-architecture.md
 │   ├── ARCHITECTURE.md
 │   ├── adr/
 │   └── [7 autres fichiers]
@@ -199,7 +200,7 @@ npm run test:regression-gates
 ## 📞 Support
 
 ### Questions sur...
-- **Architecture** → architecture/README.md
+- **Architecture** → architecture/README.md puis architecture/master-architecture.md
 - **UI/Design** → design-system/README.md
 - **Sécurité** → security/README.md
 - **Code** → development/README.md

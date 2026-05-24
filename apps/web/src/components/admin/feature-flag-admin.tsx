@@ -86,7 +86,7 @@ export function FeatureFlagAdmin() {
  Test Simple Form
  </CmmButton>
  <CmmButton 
- onClick={() => window.open('/declaration', '_blank')}
+ onClick={() => window.open('/actions/new', '_blank')}
  variant="ghost"
  className="w-full"
  >

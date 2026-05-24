@@ -41,7 +41,7 @@ Fallback statique:
 ## Frontend (apps/web)
 - Pages App Router: `apps/web/src/app/*`
 - Components UI: `apps/web/src/components/*`
-- Navigation/rubriques: `apps/web/src/lib/navigation.ts`, `apps/web/src/lib/sections-registry.ts`
+- Navigation/rubriques: `apps/web/src/lib/navigation.ts`, `apps/web/src/lib/sections-registry/config.ts`
 
 ## Backend (API routes + services)
 - API routes: `apps/web/src/app/api/*`

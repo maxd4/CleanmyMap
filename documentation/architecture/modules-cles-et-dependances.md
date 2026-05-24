@@ -3,7 +3,7 @@
 ## Carte des modules metier
 ```mermaid
 flowchart TD
-  NAV[navigation.ts + sections-registry.ts] --> UI[Section renderer / pages]
+  NAV[navigation.ts + sections-registry/config.ts] --> UI[Section renderer / pages]
   ACT[lib/actions/*] --> APIA[/api/actions + /api/actions/map]
   GAM[lib/gamification/*] --> APIG[/api/gamification/*]
   COM[lib/community/*] --> APIC[/api/community/*]
@@ -39,7 +39,7 @@ Fallback statique:
 ```mermaid
 flowchart TD
   A[Nouvelle demande] --> B{Sujet UI/navigation ?}
-  B -- Oui --> C[navigation.ts + sections-registry.ts + components/sections]
+  B -- Oui --> C[navigation.ts + sections-registry/config.ts + components/sections]
   B -- Non --> D{Sujet API/data ?}
   D -- Oui --> E[app/api/* + lib/actions|community|gamification]
   D -- Non --> F{Sujet securite/acces ?}

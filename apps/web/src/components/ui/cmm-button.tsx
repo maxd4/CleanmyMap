@@ -25,11 +25,11 @@ export interface CmmButtonProps {
 
 const toneClasses: Record<ButtonTone, string> = {
  primary:
-"border-emerald-200/80 bg-emerald-600 text-white hover:bg-emerald-700 hover:border-emerald-300 focus-visible:ring-emerald-500/40",
+"border-[color:var(--cmm-button-primary-border)] bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-start)_0%,var(--cmm-button-primary-bg-end)_100%)] text-[var(--cmm-button-primary-text)] shadow-[0_14px_28px_-18px_rgba(15,23,42,0.20)] hover:border-[color:var(--cmm-button-primary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-hover-start)_0%,var(--cmm-button-primary-bg-hover-end)_100%)] focus-visible:ring-[color:var(--cmm-button-primary-ring)]",
  secondary:
-"border-slate-200/80 bg-white text-slate-700 hover:bg-slate-50/80 hover:border-slate-300 focus-visible:ring-slate-500/30",
+"border-[color:var(--cmm-button-secondary-border)] bg-[linear-gradient(135deg,var(--cmm-button-secondary-bg-start)_0%,var(--cmm-button-secondary-bg-end)_100%)] text-[var(--cmm-button-secondary-text)] shadow-[0_12px_24px_-20px_rgba(15,23,42,0.18)] hover:border-[color:var(--cmm-button-secondary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-secondary-bg-hover-start)_0%,var(--cmm-button-secondary-bg-hover-end)_100%)] focus-visible:ring-[color:var(--cmm-button-secondary-ring)]",
  tertiary:
-"border-transparent bg-transparent text-slate-600 hover:bg-slate-50/60 hover:text-slate-800 focus-visible:ring-slate-500/20",
+"border-[color:var(--cmm-button-tertiary-border)] bg-[linear-gradient(135deg,var(--cmm-button-tertiary-bg-start)_0%,var(--cmm-button-tertiary-bg-end)_100%)] text-[var(--cmm-button-tertiary-text)] shadow-[0_10px_22px_-20px_rgba(15,23,42,0.14)] hover:border-[color:var(--cmm-button-tertiary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-tertiary-bg-hover-start)_0%,var(--cmm-button-tertiary-bg-hover-end)_100%)] focus-visible:ring-[color:var(--cmm-button-tertiary-ring)]",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

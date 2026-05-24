@@ -717,6 +717,16 @@ Les data centers rejettent une quantité importante de chaleur. Si cette chaleur
 
 Cette récupération n’efface pas la consommation initiale, mais elle peut en réduire le bilan net lorsque l’infrastructure est intégrée à un territoire capable de réutiliser l’énergie thermique. À l’inverse, un data center isolé, difficile à raccorder à un réseau de chaleur ou mal intégré à son environnement reste plus proche d’une dépense énergétique pure.
 
+### Centres de données sous-marins : une piste de réduction énergétique encore expérimentale
+
+Une piste explorée par certains acteurs consiste à modifier directement les conditions de refroidissement des centres de données. Microsoft a par exemple testé **Project Natick**, un prototype de datacenter sous-marin alimenté par des énergies renouvelables offshore, précisément pour étudier la faisabilité de ce type d’infrastructure dans un cadre réel. [Microsoft Research - Natick](https://www.microsoft.com/en-us/research/project/natick/?lang=fr-ca) ; [Microsoft Source](https://news.microsoft.com/source/features/sustainability/project-natick-underwater-datacenter/).
+
+L’intérêt de ce type d’approche est simple : dans un centre de données, l’électricité ne sert pas seulement aux serveurs. Elle alimente aussi le refroidissement, la ventilation, les pompes, la conversion électrique, la sécurité et les systèmes de redondance. Le Département américain de l’Énergie rappelle d’ailleurs que le **PUE** compare l’énergie totale d’un site à l’énergie strictement informatique, ce qui montre bien que le “coût” d’un data center ne se limite pas aux machines de calcul. [DOE - PUE](https://energy.gov/eere/buildings/data-centers-and-servers).
+
+Les centres sous-marins peuvent donc améliorer l’efficacité du refroidissement et réduire certains besoins en eau douce ou en climatisation classique. Mais ils restent expérimentaux et ne suppriment ni la chaleur rejetée dans l’environnement marin, ni les impacts de fabrication du matériel, ni la dépendance aux semi-conducteurs, ni la complexité de maintenance. Autrement dit, ils peuvent améliorer un poste de coût, pas abolir le coût global.
+
+Pour CleanMyMap, l’enseignement est prudent : oui, l’industrie cherche à réduire l’empreinte de ses infrastructures, mais cette amélioration reste marginale si l’usage logiciel continue de croître sans discipline. Les gains les plus fiables restent donc la sobriété applicative, la limitation des fonctionnalités inutiles, la réduction du stockage et l’optimisation des parcours les plus coûteux.
+
 ### Compétition entre usages numériques utiles et inutiles
 
 L’IA consomme une partie des capacités électriques, matérielles et cloud qui pourraient être utilisées pour d’autres services numériques : santé, recherche, transition énergétique, services publics, éducation. L’impact environnemental n’est donc pas seulement absolu, mais aussi lié à la question : à quels usages sont allouées les ressources rares ?
@@ -2343,6 +2353,22 @@ Dans le code actuel, cette vigilance concerne surtout les zones de parcours opé
 
 Animations lourdes (confetti), chat redondant avec des outils existants, exports visuels haute définition systématiques.
 
+### Chatbot, agent IA, stockage et outils
+
+Un chatbot est surtout une interface de conversation. Il répond à partir d’un LLM et du contexte immédiatement disponible, avec éventuellement un historique court ou une mémoire limitée. Il peut être utile pour expliquer, reformuler ou guider, mais il reste d’abord réactif.
+
+Un agent IA ajoute une couche d’action. Le LLM devient le moteur de raisonnement, mais le système embarque aussi des outils, du stockage de travail, parfois une mémoire persistante et une boucle de décision. Cela permet de lire un état, choisir une action, appeler un service, enregistrer le résultat puis continuer si nécessaire. Pour un projet comme CleanMyMap, cette différence compte: un chatbot peut aider à comprendre ou à rédiger, tandis qu’un agent peut trier un signalement, récupérer un contexte terrain, appeler une API, mettre à jour une base ou préparer un rapport, à condition que ces actions restent bornées et validées humainement. Voir les [guides OpenAI sur les agents](https://platform.openai.com/docs/guides/agents/agent-builder) et les [Agents SDK](https://platform.openai.com/docs/guides/agents-sdk/).
+
+### Qu’est-ce qu’un MCP ?
+
+Le **Model Context Protocol (MCP)** est un protocole ouvert qui standardise la manière dont les applications fournissent du contexte à des LLM. L’idée est simple: au lieu de recoder une intégration spécifique pour chaque outil, on expose des serveurs MCP qui publient des outils, des ressources ou des capacités que l’agent peut découvrir et appeler. C’est une sorte de port standard pour connecter un modèle à des fichiers, une base de données, un calendrier, un système de tickets ou un dépôt de code. [Anthropic MCP](https://docs.anthropic.com/en/docs/mcp)
+
+### Pourquoi un agent IA peut-il être meilleur que n8n ?
+
+Pas dans tous les cas. **n8n** est très bon quand le flux est déterministe: déclencheur clair, étapes fixes, transformations connues et vérifications faciles. Un workflow n8n est d’ailleurs, par définition, une collection de nodes connectés pour automatiser un processus. Un agent IA devient préférable quand le problème est moins linéaire: la donnée est imparfaite, le contexte change, il faut choisir entre plusieurs outils, interpréter du texte libre ou décider d’une prochaine action sans scénario unique à l’avance.
+
+Dans ce cas, l’agent apporte de la flexibilité et de l’adaptation, alors que n8n apporte de la robustesse et de la prévisibilité. Pour CleanMyMap, le schéma le plus pertinent est souvent hybride: l’agent comprend, priorise et prépare, puis un workflow comme n8n exécute des tâches fixes, répétables et auditables. [n8n Workflows](https://docs.n8n.io/workflows/) ; [n8n Advanced AI](https://docs.n8n.io/advanced-ai/)
+
 ## Indice d’utilité réelle
 
 ### Définition et rôle de l’IUR
@@ -3058,6 +3084,7 @@ Elle traduit en décisions techniques les constats des parties précédentes : r
 7. Supprimer ou fusionner les routes API redondantes.
 8. Réduction du poids des images, compression et stockage
 
+- mode sombre natif par défaut ou fortement encouragé, afin de réduire la consommation des écrans OLED sur mobile ;
 - compression côté client avant upload ;
 - taille maximale et nombre maximal d'images par signalement ;
 - miniatures pour cartes et listes ;
@@ -3721,6 +3748,12 @@ Cette lecture rejoint le pilotage par indicateurs : un outil assisté par IA doi
 ### Lien entre engagement citoyen, sobriété numérique et gouvernance IA
 
 CleanMyMap a été initié dans le cadre du Diplôme Universitaire « Engagement » de Sorbonne Université. Les ateliers suivis ont accompagné le passage d’un prototype centré sur la cartographie vers un outil plus large d’action citoyenne, de coordination et de transmission. Cette trajectoire illustre une construction progressive, à l’intersection de l’apprentissage du développement assisté par IA et d’un projet à visée d’intérêt général. Les ateliers du DU ont également contribué à structurer les choix de sobriété, d’utilité et de gouvernance, tout en renforçant la capacité du projet à être présenté et évalué dans un cadre institutionnel.
+
+### Dimension personnelle du projet
+
+Au-delà de l’analyse technique, CleanMyMap a aussi une valeur personnelle nette. Le projet donne une direction concrète au travail quotidien : une idée pertinente qui améliore vraiment le site produit une satisfaction immédiate, parce qu’elle transforme le temps passé en avancée utile. Cette dynamique a renforcé ma motivation et mon sentiment de fierté sur les journées où une solution simple, propre et réellement utile a été trouvée.
+
+Sur la durée, ce projet m’a aussi fait énormément progresser en IA, en gestion de projet et en création numérique. J’y ai appris à cadrer un besoin, arbitrer entre plusieurs solutions, structurer un développement, documenter les choix et relier une intention à un résultat concret. Dans une perspective proche de celle de Sartre, le projet n’est pas seulement un objet produit : il participe aussi à la manière dont on se construit.
 
 ### Limites restantes et points à approfondir
 

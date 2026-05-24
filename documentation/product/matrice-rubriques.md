@@ -13,10 +13,9 @@ flowchart LR
   B1 --> ACC["/accueil"]
   B1 --> DASH["/dashboard"]
   B1 --> PROFIL["/profil"]
+  B1 --> FEEDBACK["/sections/feedback"]
   B1 --> PIL["/pilotage"]
   B1 --> SPONSOR["/sponsor-portal"]
-  B1 --> ADM["/admin"]
-  B1 --> GOD["/admin/godmode"]
 
   B2 --> NEW["/actions/new"]
   B2 --> ROUTE["/sections/route"]
@@ -35,6 +34,7 @@ flowchart LR
   B4 --> ANNUAIRE["/partners/dashboard"]
   B4 --> MSG["/sections/messagerie"]
   B4 --> COMMUNITY["/sections/community"]
+  B4 --> OPENDATA["/sections/open-data"]
 
   B5 --> HUB["/learn/hub"]
   B5 --> COMPRENDRE["/learn/comprendre"]
@@ -42,6 +42,14 @@ flowchart LR
   B5 --> PRATIQUES["/learn/bonnes-pratiques"]
   B5 --> RESSOURCES["/learn/ressources"]
 ```
+
+## Familles autonomes
+
+- Auth & Onboarding : `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`
+- Institutionnel & Légal : `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`
+- Système & Utilitaires : `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`
+- Admin & Super-admin : `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`
+- Print & Export : `/prints/report`
 
 ## Correspondance bloc -> usage
 
@@ -65,6 +73,15 @@ flowchart LR
 
 - `apps/web/src/lib/navigation.ts`
 - `documentation/liberte-UX-UI/rubriques_utilite_impact_.md`
+
+## Routes canoniques et alias
+
+- `/explorer` et `/reports` sont les routes canoniques des pages Sommaire et Rapports.
+- `/sections/feedback`, `/sections/community`, `/sections/messagerie` et `/sections/open-data` sont les routes canoniques des sections publiques correspondantes.
+- `/community`, `/messagerie` et `/open-data` redirigent vers leurs équivalents `/sections/*` et restent des alias legacy.
+- `/declaration` redirige vers `/actions/new` et reste un alias legacy.
+- `/sandbox` redirige vers `/sections/sandbox` et reste un alias legacy.
+- `/observatoire` est une route publique distincte de `/reports`.
 
 ## Règle de maintenance
 

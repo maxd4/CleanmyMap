@@ -6,8 +6,12 @@
 - `npx supabase` CLI
 - `npx vercel` CLI
 - Local env file: `.env.local`
+- Template d'env: `.env.example`
 
 ## Required backend env vars
+
+Les variables `NEXT_PUBLIC_*` sont publiques et peuvent être exposées au navigateur.
+Les variables sans préfixe `NEXT_PUBLIC_` doivent rester côté serveur.
 
 Core required:
 
@@ -35,7 +39,11 @@ Recommended for production:
 - `NEXT_PUBLIC_POSTHOG_HOST`
 - `NEXT_PUBLIC_POSTHOG_REGION` (`eu` by default, `us` if your PostHog project is in US)
 - `NEXT_PUBLIC_SENTRY_DSN`
-- `NEXT_PUBLIC_SENTRY_ENABLED` (`1` to reactivate Sentry, disabled by default in this repo)
+
+Deployment locality:
+
+- Vercel Functions are pinned to `cdg1` (Paris) in `apps/web/vercel.json`.
+- Keep Supabase, PostHog, and other backend tenants on EU endpoints when the feature is data-bound to France/EU.
 
 ## One-command backend bootstrap
 
@@ -58,7 +66,7 @@ Notes:
 - Default automation syncs `development` and `production`.  
   For branch-scoped preview envs, run:
   `node scripts/vercel-sync-env.mjs --file=.env.local --environments=preview --preview-branch=<branch-name>`
-- Sentry stays paused unless `NEXT_PUBLIC_SENTRY_ENABLED=1` is set.
+- Sentry is active when `NEXT_PUBLIC_SENTRY_DSN` is configured. Source-map upload is handled after the Next.js build when `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are available.
 
 ## Manual commands
 
@@ -121,6 +129,7 @@ curl -X POST http://localhost:3000/api/send \
 - **User Sync**: Clerk profiles are automatically mirrored in Supabase for performant joins.
 - **Monitoring**: Centralized error handling via `handleApiError` with Sentry and PostHog tracking.
 - **Data Integrity**: Explicit check after every Supabase operation to prevent silent failures.
+- Operational reference for every service: [documentation/operations/services-stack.md](../../documentation/operations/services-stack.md)
 
 ## PostHog quick setup (local + Vercel)
 
@@ -130,6 +139,10 @@ curl -X POST http://localhost:3000/api/send \
   - `NEXT_PUBLIC_POSTHOG_REGION` (`eu` or `us`, default `eu`)
 - Backward compatibility:
   - `NEXT_PUBLIC_POSTHOG_TOKEN` is still accepted but deprecated.
+- Sentry:
+  - `NEXT_PUBLIC_SENTRY_DSN` activates runtime capture on the client and server.
+  - `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` enable post-build source-map upload through `sentry-cli`.
+  - `SENTRY_RELEASE` can be pinned manually; otherwise the Vercel commit SHA is used when available.
 - Local verification:
   - Run `npm run dev`, open the app, then trigger a tracked action (e.g. navigation click).
   - If `localhost:3000` is already taken, the dev launcher automatically uses the next free port so you can keep another local session open at the same time.

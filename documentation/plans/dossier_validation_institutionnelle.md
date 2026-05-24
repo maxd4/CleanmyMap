@@ -15,7 +15,7 @@ Il regroupe les pieces de preuve institutionnelles necessaires pour justifier le
 
 ### 1. Audit d'impact IA
 
-- [impact_IA.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans/impact_IA.md)
+- [impact_IA.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans/rapport_impact/impact_IA.md)
 
 Contient :
 

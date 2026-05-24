@@ -3,7 +3,9 @@
 Ce journal ne conserve que les **ajouts de code** réalisés en lien direct avec :
 
 - les apprentissages issus des ateliers du DU ;
-- les besoins de gouvernance, de sobriété et de fiabilité formalisés dans `documentation/plans/impact_IA.md`.
+- les besoins de gouvernance, de sobriété et de fiabilité formalisés dans `documentation/plans/rapport_impact/impact_IA.md`.
+
+Toute modification ou ajout de code ayant un impact social ou environnemental non négligeable doit être enregistré ici avec, au minimum, la date, une explication courte du changement et son impact bénéfique ou négatif. Si l'impact est négatif, une solution concrète pour le réduire doit aussi être proposée.
 
 Il ne sert ni de backlog, ni de plan d'action général, ni de dossier institutionnel.
 Les priorités actives restent dans [documentation/plans/ateliers_DU.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans/ateliers_DU.md).
@@ -49,9 +51,9 @@ Lecture rapide:
 
 - `journal_DU.md` sert d'index court;
 - `atelier_DU.md` fixe le cadre des ateliers;
-- `impact_IA.md` concentre l'analyse principale;
-- `graphique_impact_CO2e.md` documente la méthode du graphe;
 - `journal_impact_DU.md` conserve l'historique détaillé et les ajouts de code;
+- `rapport_impact/impact_IA.md` concentre l'analyse principale;
+- `graphique_impact_CO2e.md` documente la méthode du graphe;
 - l'estimateur d'impact agrège les signaux du projet;
 - l'estimateur des quotas gratuits aide à cadrer les limites et hypothèses des services web.
 
@@ -110,6 +112,7 @@ Lecture rapide:
 | 21/05/26 | **Séparation Codex / ChatGPT LLM** | Distinction explicite entre les sessions Codex et les conversations ChatGPT 5.5 en mode étendu, avec ancrage de 2h hebdomadaires LLM, pour éviter de fusionner deux usages IA de nature différente. |
 | 26/05/26 | **Journal hebdomadaire Codex** | Ajout d'un historique spécifique à l'usage Codex / ChatGPT Plus pour enregistrer les semaines manuellement, reconstruire les périodes passées et convertir ces signaux projet-spécifiques en équivalent CO2e sans moyenne externe. |
 | 21/05/26 | **Deuxième ordre d'impact** | Ajout d'une décomposition lisible du CO2e en CO2 brut, électricité, autres GES, produits chimiques et eau, afin de détailler la structure du graphe et ses priorités de réduction. |
+| 24/05/26 | **Chaîne Sentry post-build sans blocage** | Remplacement du build plugin Sentry par un upload post-build des source maps via `sentry-cli` avec injection des debug IDs. Impact positif: le build n'est plus fragile sur les dépendances natives et les symboles restent récupérables en production. Limite: il faut un `SENTRY_AUTH_TOKEN` et des variables Sentry correctement renseignées, sinon l'upload est sauté. |
 
 ---
 
@@ -131,9 +134,28 @@ Lecture rapide:
 | Date | Amélioration apportée | Impact concret |
 | :--- | :--- | :--- |
 | 13/05/26 | **Stratégie de sortie technique** | Planification de la mitigation du *vendor lock-in* (Vercel/Supabase) pour assurer l'indépendance à long terme. |
+| 24/05/26 | **Localisation Vercel orientée Paris** | Alignement du runtime Vercel sur `cdg1` pour rapprocher les fonctions des utilisateurs parisiens et des données européennes. Le gain environnemental est réel mais partiel, car le build cloud Vercel reste exécuté en `iad1` Washington. |
 | 13/05/26 | **Standardisation Sémantique (SLB)** | Reformatage de 230 KB de documentation pour une lecture optimale par les humains et les futurs agents IA. |
 | 13/05/26 | **Matrice de traçabilité cœur produit** | Création de `documentation/architecture/traceability-matrix.md` pour relier rubrique, route, composant, API et source de donnée. |
 | 13/05/26 | **Dossier de validation institutionnelle** | Création d'un point d'entrée unique liant audit d'impact, gouvernance IA, sobriété, maintenance, traçabilité et stratégie de sortie technique. |
+
+### Vue d'ensemble des effets des dernières modifications
+
+- **Avantages généraux** :
+  - moins d'allers-retours transatlantiques pour le runtime dynamique ;
+  - meilleure cohérence entre utilisateurs parisiens, fonctions Vercel et données européennes ;
+  - build Sentry plus robuste grâce à l'upload post-build des source maps, sans dépendre du plugin pendant la compilation ;
+  - baisse du risque d'exposition des configs sensibles en rendant les MCP locaux ;
+  - meilleure lisibilité opérationnelle grâce à la documentation des services, des logs et des règles de déploiement ;
+  - posture plus robuste pour un dépôt public, avec des garde-fous GitHub/Vercel plus explicites.
+
+- **Inconvénients ou limites** :
+  - le build cloud Vercel reste en `iad1`, donc le gain environnemental n'est pas total ;
+  - la chaîne Sentry ajoute une étape post-build et dépend de `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` et `SENTRY_PROJECT` pour fonctionner complètement ;
+  - plus de configuration locale à maintenir sur chaque machine ;
+  - plus de documentation à tenir à jour pour éviter les écarts entre l'état réel et les notes de pilotage ;
+  - une partie du bénéfice dépend encore de services tiers dont la localisation doit rester surveillée ;
+  - le durcissement peut ajouter un peu de friction au quotidien, surtout sur les déploiements et les diagnostics.
 
 ---
 

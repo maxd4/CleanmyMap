@@ -28,55 +28,55 @@ const KPI_STYLES = {
     accent: "from-emerald-400 via-lime-300 to-emerald-200",
     border: "border-emerald-300/18",
     surface: "bg-[rgba(10,39,28,0.92)]",
-    label: "text-emerald-100/62",
-    value: "text-emerald-50",
+    label: "text-white/72",
+    value: "text-white",
     bar: "bg-emerald-300",
-    chip: "bg-emerald-400/12 text-emerald-100 ring-emerald-300/18",
+    chip: "bg-white/10 text-white ring-white/14",
   },
   mobilization: {
     accent: "from-emerald-400 via-teal-300 to-lime-200",
     border: "border-emerald-300/18",
     surface: "bg-[rgba(8,38,29,0.92)]",
-    label: "text-emerald-100/62",
-    value: "text-emerald-50",
+    label: "text-white/72",
+    value: "text-white",
     bar: "bg-teal-300",
-    chip: "bg-teal-400/12 text-teal-100 ring-teal-300/18",
+    chip: "bg-white/10 text-white ring-white/14",
   },
   quality: {
     accent: "from-lime-300 via-emerald-200 to-emerald-100",
     border: "border-lime-300/18",
     surface: "bg-[rgba(24,38,8,0.92)]",
-    label: "text-lime-100/62",
-    value: "text-lime-50",
+    label: "text-white/72",
+    value: "text-white",
     bar: "bg-lime-300",
-    chip: "bg-lime-400/12 text-lime-100 ring-lime-300/18",
+    chip: "bg-white/10 text-white ring-white/14",
   },
 } as const;
 
 const ALERT_STYLES = {
   critical: {
-    badge: "bg-rose-400/12 text-rose-100 ring-rose-300/18",
+    badge: "bg-white/10 text-white ring-white/14",
     border: "border-rose-300/18",
     surface: "bg-[rgba(58,14,28,0.9)]",
     glow: "shadow-[0_28px_64px_-32px_rgba(244,63,94,0.28)]",
     dot: "bg-rose-300",
   },
   high: {
-    badge: "bg-lime-400/12 text-lime-100 ring-lime-300/18",
+    badge: "bg-white/10 text-white ring-white/14",
     border: "border-lime-300/18",
     surface: "bg-[rgba(27,38,10,0.9)]",
     glow: "shadow-[0_28px_64px_-32px_rgba(132,204,22,0.28)]",
     dot: "bg-lime-300",
   },
   medium: {
-    badge: "bg-emerald-400/12 text-emerald-100 ring-emerald-300/18",
+    badge: "bg-white/10 text-white ring-white/14",
     border: "border-emerald-300/18",
     surface: "bg-[rgba(8,38,29,0.9)]",
     glow: "shadow-[0_28px_64px_-32px_rgba(16,185,129,0.24)]",
     dot: "bg-emerald-300",
   },
   low: {
-    badge: "bg-emerald-400/12 text-emerald-100 ring-emerald-300/18",
+    badge: "bg-white/10 text-white ring-white/14",
     border: "border-emerald-300/18",
     surface: "bg-[rgba(10,38,28,0.9)]",
     glow: "shadow-[0_28px_64px_-32px_rgba(16,185,129,0.24)]",
@@ -164,22 +164,22 @@ export function HomeImpactSummary({
           <div data-gsap-reveal className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div className="max-w-3xl space-y-4">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-300/18 bg-emerald-400/12 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-100">
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white">
                   <BadgeCheck size={12} />
                   Impact
                 </span>
-                <span className="inline-flex items-center rounded-full border border-emerald-300/14 bg-[rgba(8,34,20,0.9)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-100/72">
+                <span className="inline-flex items-center rounded-full border border-white/14 bg-[rgba(8,34,20,0.9)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/76">
                   Fenêtre {windowLabel}
                 </span>
                 {updatedLabel ? (
-                  <span className="inline-flex items-center rounded-full border border-emerald-300/14 bg-[rgba(8,34,20,0.9)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-100/72">
+                  <span className="inline-flex items-center rounded-full border border-white/14 bg-[rgba(8,34,20,0.9)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/76">
                     Mis à jour {updatedLabel}
                   </span>
                 ) : null}
               </div>
 
               <div className="space-y-3">
-                <p className="max-w-2xl text-sm leading-relaxed text-emerald-100/76 sm:text-base">
+                <p className="max-w-2xl text-sm leading-relaxed text-white/76 sm:text-base">
                   Chaque indicateur est relié à une évolution, un niveau de qualité et une zone à surveiller.
                   Visualisez immédiatement où se concentre l&apos;effort utile.
                 </p>
@@ -189,14 +189,14 @@ export function HomeImpactSummary({
               <Link
                 href="/methodology"
                 title="Comprendre le calcul des indicateurs"
-              className="inline-flex items-center gap-2 rounded-2xl border border-emerald-300/16 bg-[rgba(8,34,20,0.94)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-emerald-50 transition hover:border-emerald-300/30 hover:bg-[rgba(10,42,25,0.98)]"
+              className="inline-flex items-center gap-2 rounded-2xl border border-white/14 bg-[rgba(8,34,20,0.94)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:border-white/24 hover:bg-[rgba(10,42,25,0.98)]"
               >
                 <Info size={14} />
                 Méthodologie
               </Link>
               <Link
                 href="/reports"
-                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-400 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-emerald-950 transition hover:bg-emerald-300"
+                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-400 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-emerald-300"
               >
                 Voir les rapports
                 <ArrowRight size={14} />
@@ -205,8 +205,9 @@ export function HomeImpactSummary({
           </div>
 
           {!summary ? (
-            <div data-gsap-reveal
-              className="rounded-[1.75rem] border border-emerald-300/14 bg-[rgba(8,34,20,0.92)] p-6 text-sm leading-relaxed text-emerald-100/74"
+            <div
+              data-gsap-reveal
+              className="rounded-[1.75rem] border border-white/14 bg-[rgba(8,34,20,0.92)] p-6 text-sm leading-relaxed text-white/74"
             >
               Les données d&apos;impact sont en cours de chargement. Dès que le tableau de bord est
               disponible, la progression, la qualité et les zones prioritaires apparaissent ici.
@@ -230,7 +231,7 @@ export function HomeImpactSummary({
                           <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${style.label}`}>
                             {kpi.label}
                           </p>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-100/42">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/52">
                             {interpretLabel(kpi.interpretation)}
                           </p>
                         </div>
@@ -246,7 +247,7 @@ export function HomeImpactSummary({
                           {kpi.value}
                         </div>
                         <div className="space-y-1.5">
-                          <div className="flex items-center justify-between gap-3 text-xs font-semibold text-emerald-100/54">
+                          <div className="flex items-center justify-between gap-3 text-xs font-semibold text-white/58">
                             <span>Référence précédente</span>
                             <span>{kpi.previousValue}</span>
                           </div>
@@ -260,8 +261,8 @@ export function HomeImpactSummary({
                       </div>
 
                       <div className="mt-5 flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
-                        <span className="text-emerald-100/42">Variation</span>
-                        <span className={kpi.interpretation === "positive" ? "text-emerald-100" : kpi.interpretation === "negative" ? "text-rose-100" : "text-emerald-100"}>
+                        <span className="text-white/52">Variation</span>
+                        <span className="text-white">
                           {kpi.deltaAbsolute} / {kpi.deltaPercent}
                         </span>
                       </div>
@@ -273,18 +274,18 @@ export function HomeImpactSummary({
               <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
                 <section
                   data-gsap-reveal
-                  className="rounded-[1.9rem] border border-emerald-300/14 bg-[rgba(6,32,20,0.94)] p-5 shadow-[0_24px_56px_-32px_rgba(16,185,129,0.24)]"
+                  className="rounded-[1.9rem] border border-white/14 bg-[rgba(6,32,20,0.94)] p-5 shadow-[0_24px_56px_-32px_rgba(16,185,129,0.24)]"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-sm font-black uppercase tracking-[0.22em] text-emerald-50">
+                      <h3 className="text-sm font-black uppercase tracking-[0.22em] text-white">
                         Répartition territoriale
                       </h3>
-                      <p className="mt-1 text-sm text-emerald-100/62">
+                      <p className="mt-1 text-sm text-white/72">
                         Les zones ci-dessous concentrent la charge la plus visible sur la fenêtre courante.
                       </p>
                     </div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/14 bg-emerald-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-100">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white">
                       <MapPinned size={12} />
                       Lecture zone
                     </div>
@@ -298,18 +299,18 @@ export function HomeImpactSummary({
                           <div
                             key={zone.area}
                             data-gsap-reveal
-                            className="space-y-2 rounded-[1.4rem] border border-emerald-300/12 bg-[rgba(8,34,20,0.9)] p-4"
+                            className="space-y-2 rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4"
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-black text-emerald-50">
+                                <p className="truncate text-sm font-black text-white">
                                   {index + 1}. {zone.area}
                                 </p>
-                                <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-emerald-100/46">
+                                <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/52">
                                   {zone.currentActions} actions · {zone.currentKg.toFixed(1)} kg · score {zone.normalizedScore.toFixed(1)}
                                 </p>
                               </div>
-                              <span className="rounded-full border border-emerald-300/14 bg-emerald-400/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-emerald-100">
+                              <span className="rounded-full border border-white/14 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white">
                                 {zone.urgency}
                               </span>
                             </div>
@@ -319,14 +320,14 @@ export function HomeImpactSummary({
                                 style={{ width: `${width}%` }}
                               />
                             </div>
-                            <p className="text-sm leading-relaxed text-emerald-100/66">
+                            <p className="text-sm leading-relaxed text-white/72">
                               {zone.justification}
                             </p>
                           </div>
                         );
                       })
                     ) : (
-                      <div className="rounded-[1.4rem] border border-emerald-300/12 bg-[rgba(8,34,20,0.9)] p-4 text-sm text-emerald-100/66">
+                      <div className="rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4 text-sm text-white/72">
                         Aucune zone prioritaire ne ressort encore sur la fenêtre actuelle.
                       </div>
                       )}
@@ -339,10 +340,10 @@ export function HomeImpactSummary({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h3 className="text-sm font-black uppercase tracking-[0.22em] text-emerald-50">
+                      <h3 className="text-sm font-black uppercase tracking-[0.22em] text-white">
                         Alerte prioritaire
                       </h3>
-                      <p className="mt-1 text-sm text-emerald-100/62">
+                      <p className="mt-1 text-sm text-white/72">
                         Ce qui mérite une action ou une surveillance immédiate.
                       </p>
                     </div>
@@ -357,34 +358,34 @@ export function HomeImpactSummary({
 
                   {summary ? (
                     <div className="mt-5 space-y-5">
-                      <div className="rounded-[1.4rem] border border-emerald-300/12 bg-[rgba(8,34,20,0.9)] p-4">
-                        <div className="flex items-center gap-2 text-emerald-100/52">
+                      <div className="rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4">
+                        <div className="flex items-center gap-2 text-white/60">
                           <ShieldAlert size={16} />
-                          <span className="text-[10px] font-black uppercase tracking-[0.22em]">
+                          <span className="text-[10px] font-black uppercase tracking-[0.22em] text-white">
                             {summary.alert.title}
                           </span>
                         </div>
-                        <p className="mt-3 text-sm leading-relaxed text-emerald-100/78">
+                        <p className="mt-3 text-sm leading-relaxed text-white/78">
                           {summary.alert.detail}
                         </p>
                       </div>
 
-                      <div className="rounded-[1.4rem] border border-emerald-300/12 bg-[rgba(8,34,20,0.9)] p-4">
-                        <div className="flex items-center gap-2 text-emerald-100/52">
+                      <div className="rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4">
+                        <div className="flex items-center gap-2 text-white/60">
                           <Target size={16} />
-                          <span className="text-[10px] font-black uppercase tracking-[0.22em]">
+                          <span className="text-[10px] font-black uppercase tracking-[0.22em] text-white">
                             Recommandation
                           </span>
                         </div>
-                        <p className="mt-3 text-sm font-semibold leading-relaxed text-emerald-50">
+                        <p className="mt-3 text-sm font-semibold leading-relaxed text-white">
                           {summary.recommendedAction.label}
                         </p>
-                        <p className="mt-2 text-sm leading-relaxed text-emerald-100/70">
+                        <p className="mt-2 text-sm leading-relaxed text-white/76">
                           {summary.recommendedAction.reason}
                         </p>
                         <Link
                           href={summary.recommendedAction.href}
-                          className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-emerald-300/16 bg-emerald-400/12 px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-emerald-50 transition hover:border-emerald-300/28 hover:bg-emerald-400/18"
+                          className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-white/14 bg-white/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:border-white/24 hover:bg-white/14"
                         >
                           Ouvrir la cible
                           <ArrowRight size={14} />
@@ -392,17 +393,17 @@ export function HomeImpactSummary({
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-5 rounded-[1.4rem] border border-emerald-300/12 bg-[rgba(8,34,20,0.9)] p-4 text-sm leading-relaxed text-emerald-100/72">
+                    <div className="mt-5 rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4 text-sm leading-relaxed text-white/72">
                       Aucune alerte prioritaire détectée sur la fenêtre courante. Le bloc reste centré
                       sur la preuve, la progression et la lecture des zones.
                     </div>
                   )}
 
-                  <div className="mt-5 rounded-[1.4rem] border border-emerald-300/12 bg-[rgba(8,34,20,0.9)] p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-emerald-100/48">
+                  <div className="mt-5 rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/52">
                       Ce bloc sert à
                     </p>
-                    <div className="mt-3 grid gap-3 text-sm text-emerald-100/72">
+                    <div className="mt-3 grid gap-3 text-sm text-white/76">
                       <div className="flex items-center gap-2">
                         <TrendingUp size={14} className="text-emerald-300" />
                         Comparer la période en cours à la précédente

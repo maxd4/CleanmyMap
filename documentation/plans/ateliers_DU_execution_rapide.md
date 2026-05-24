@@ -8,16 +8,6 @@ Ce document conserve la trace du lot rapide deja execute autour de `documentatio
 > Ce document ne definit plus la priorite courante.
 > La priorite active se trouve dans [documentation/plans/ateliers_DU.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans/ateliers_DU.md).
 
-## Ecarts encore ouverts ou partiellement couverts
-
-| Chantier | Statut actuel | Ecart restant |
-| --- | --- | --- |
-| Tests de non-regression | Partiellement couvert | Les endpoints critiques d'export, `/api/services` et les boutons UI d'export sont couverts. La couverture de page sur `/dashboard` et `/reports` reste legere. |
-| Campagnes multi-actions | Cadrage seulement | Des signaux metier existent (`campaignGoals`, `campaign_name`), mais le modele, l'API et l'UI de suivi ne sont pas industrialises. |
-| Clarification des pages coeur | Partiellement couvert | Une partie des frontieres produit a ete resserree, mais les responsabilites entre `dashboard`, `reports`, `pilotage` et certains blocs analytiques restent a expliciter. |
-| Refactor `section-renderer` | Non lance | Le composant reste central et volumineux. Aucun sous-decoupage complet avec smoke tests n'est documente comme termine. |
-| Verification finale transverse | Non lance | La synthese finale des risques restants et des dettes assumees n'a pas encore ete executee comme lot autonome. |
-
 ## Messages rapides executes
 
 | Message | Statut | Sortie concrete |
@@ -41,17 +31,7 @@ Ce document conserve la trace du lot rapide deja execute autour de `documentatio
 - Strategie de sortie au niveau documentaire
 - Dossier de validation institutionnelle
 
-## Ce qui reste
-
-- Terminer la couverture UI de `/dashboard` et `/reports`
-- Mettre en place la validation humaine des contenus
-- Fiabiliser les indicateurs
-- Clarifier les responsabilites des pages coeur
-- Industrialiser les campagnes multi-actions
-- Refactorer `section-renderer`
-- Completer l'inventaire technique du lock-in
-- Realiser la verification finale transverse
-
 ## Regle de lecture
 
-Ce document ne porte plus de priorisation active. Pour l'ordre courant de traitement, se reporter a [documentation/plans/ateliers_DU.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans/ateliers_DU.md).
+Ce document ne porte plus de priorisation active, ni de backlog residuel.
+Pour l'ordre courant de traitement, se reporter a [documentation/plans/ateliers_DU.md](/C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/plans/ateliers_DU.md).

@@ -85,7 +85,7 @@ export function DisplayNameModeSetting({
   };
 
   return (
-    <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+    <div className="space-y-4 rounded-xl border border-sky-100 bg-sky-50/70 p-4">
       <div className="space-y-1">
         <p className="text-sm font-semibold text-slate-900">
           {locale === "fr" ? "Nom affiché du compte" : "Account display name"}
@@ -106,11 +106,11 @@ export function DisplayNameModeSetting({
               type="button"
               disabled={isPending}
               onClick={() => saveMode(option)}
-              className={cn(
+                className={cn(
                 "rounded-2xl border p-4 text-left transition-all",
                 active
-                  ? "border-amber-300 bg-amber-50 shadow-sm"
-                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-100",
+                  ? "border-sky-300 bg-sky-50 shadow-sm"
+                  : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
                 isPending && "opacity-70",
               )}
             >
@@ -121,7 +121,7 @@ export function DisplayNameModeSetting({
         })}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <div className="rounded-xl border border-slate-200 bg-white/85 p-4">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">
           {locale === "fr" ? "Aperçu actuel" : "Current preview"}
         </p>
@@ -133,7 +133,7 @@ export function DisplayNameModeSetting({
         </p>
       </div>
 
-      {message ? <p className="text-sm font-medium text-slate-700">{message}</p> : null}
+      {message ? <p className="text-sm font-medium text-sky-700">{message}</p> : null}
     </div>
   );
 }

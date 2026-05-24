@@ -20,9 +20,9 @@
 
 | # | Bloc Homepage | Teintes directrices | Carte homepage | Usage |
 |---|---------------|---------------------|----------------|-------|
-| 01 | Accueil & Pilotage | `amber`/`orange` + `amber`/`brun` | `amber`/`orange` | Pages accueil → orange, Pages pilotage → brun |
+| 01 | Accueil & Pilotage | `amber`/`orange` + `amber`/`brun` | `amber`/`orange` | Pages accueil → orange, Pages pilotage → brun, Sommaire `/explorer` = exception validée, Méthodologie `/methodologie` = exception verte |
 | 02 | Agir | `emerald` | `emerald` | Toutes pages terrain |
-| 03 | Cartographie & Impact | `sky` + `red` | `sky` | Pages carto → sky, Pages impact → red |
+| 03 | Cartographie & Impact | `sky` + `red` / `rose` | `sky` | Pages carto → sky, Pages impact → red / rose |
 | 04 | Réseau & Discussions | `indigo` + `pink` | `indigo` | Pages réseau → indigo, Pages discussion → pink |
 | 05 | Apprendre | `yellow` | `yellow` | Toutes pages éducatives |
 
@@ -30,6 +30,14 @@
 - Impact (standalone) : `red` — fusionné dans "Cartographie & Impact"
 - Discussion : `pink` — bloc discussion associé à `connect`
 - Piloter : `amber`/`brun` — fusionné dans "Accueil & Pilotage"
+
+**Familles autonomes hors 5 blocs :**
+- Homepage autonome : `/`, `/accueil`
+- Auth & Onboarding : `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`
+- Institutionnel & Légal : `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`
+- Système & Utilitaires : `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`
+- Admin & Super-admin : `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`
+- Print & Export : `/prints/report`
 
 ---
 
@@ -65,11 +73,13 @@ dot accent    : bg-orange-300
 ```
 
 **Pages concernées :**
+- `/dashboard` — Tableau de bord accueil
+- `/profil` — Profil accueil
 - `/pilotage` — Vue pilotage
-- `/admin` — Administration
 - `/sponsor-portal` — Portail sponsor
 - `/elus` — Élus
-- `/admin/godmode` — God Mode
+- `/explorer` — Sommaire, palette dédiée conservée
+- `/methodologie` — Exception verte, palette homepage conservée
 
 ---
 
@@ -119,7 +129,7 @@ dot accent    : bg-red-300
 
 **Pages concernées :**
 - `/reports` — Rapports d'impact
-- `/gamification` — Gamification (badges, progression)
+- `/sections/gamification` — Gamification (badges, progression, alias `/gamification`)
 
 ---
 
@@ -170,6 +180,8 @@ dot accent    : bg-pink-300
 **Pages concernées :**
 - `/sections/community`
 - `/sections/feedback`
+- `/sections/messagerie`
+- `/sections/open-data`
 - écrans de discussion et d'échange associés
 
 ---
@@ -200,19 +212,28 @@ bg-gradient-to-r from-[accent-500] via-[accent-400] to-[accent-300]  /* 3px */
 5. **CTA primaire** : gradient ou fond solide dans l'accent, ombre portée dans la teinte
 6. **CTA secondaire** : `bg-white/10 hover:bg-white/16`, texte blanc
 7. **Multi-teintes** : Certains blocs ont plusieurs teintes selon le type de page — vérifier le mapping rubrique → teinte
-8. **Référence** : toujours vérifier `accueil-pillars.tsx`, `navigation.ts` et `TEINTES_BLOCS_RUBRIQUES.md` avant d'implémenter
+8. **Référence** : toujours vérifier `accueil-pillars.tsx`, `navigation.ts`, `documentation/product/matrice-rubriques.md` et `documentation/architecture/traceability-matrix.md` avant d'implémenter
 
 ---
 
 ## Mapping Rubrique → Teinte
 
 ### Bloc "Accueil & Pilotage"
-- `/dashboard`, `/explorer`, `/profil`, `/feedback` → `amber`/`orange`
-- `/pilotage`, `/admin`, `/sponsor-portal`, `/elus`, `/admin/godmode` → `amber`/`brun`
+- `/dashboard`, `/profil` → `amber`/`orange`
+- `/pilotage`, `/sponsor-portal`, `/elus` → `amber`/`brun`
+- `/explorer` → exception validée, palette Sommaire conservée
+- `/methodologie` → exception validée, palette verte homepage conservée
+
+### Familles autonomes
+- Auth & Onboarding (`/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`) → `auth`
+- Institutionnel & Légal (`/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`) → `legal`
+- Système & Utilitaires (`/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`) → `system`
+- Admin & Super-admin (`/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`) → `admin`
+- Print & Export (`/prints/report`) → `print`
 
 ### Bloc "Cartographie & Impact"
-- `/actions/map`, `/sandbox` → `sky`
-- `/reports`, `/gamification` → `red`
+- `/actions/map`, `/sections/sandbox` → `sky`
+- `/reports`, `/sections/gamification` → `red` / `rose`
 
 ### Autres blocs (teinte unique)
 - Agir → `emerald`

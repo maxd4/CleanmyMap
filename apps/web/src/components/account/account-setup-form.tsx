@@ -205,7 +205,7 @@ export function AccountSetupForm({
 
   if (!isLoaded) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-indigo-200/60 bg-white/82 p-6 shadow-sm backdrop-blur-xl">
         <p className="cmm-text-small cmm-text-secondary">Chargement du compte...</p>
       </div>
     );
@@ -223,13 +223,13 @@ export function AccountSetupForm({
   return (
     <form
       onSubmit={(event) => void handleSubmit(event)}
-      className="space-y-5 rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-sm"
+      className="space-y-5 rounded-[1.75rem] border border-indigo-200/60 bg-white/90 p-6 shadow-[0_18px_50px_-40px_rgba(79,70,229,0.35)] backdrop-blur-xl"
     >
       <div className="space-y-2">
-        <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-emerald-700">
+        <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-indigo-700">
           Configuration initiale
         </p>
-        <h1 className="text-2xl font-semibold cmm-text-primary">
+        <h1 className="text-2xl font-semibold text-slate-950">
           Finalisez votre compte
         </h1>
         <p className="cmm-text-small cmm-text-secondary">
@@ -243,7 +243,7 @@ export function AccountSetupForm({
         <label className="block space-y-2">
           <span className="cmm-text-small font-medium cmm-text-primary">Rôle</span>
           <select
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+            className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-indigo-500 focus:outline-none"
             value={selectedProfile}
             onChange={(event) =>
               setSelectedProfile(event.target.value as AppProfile)
@@ -263,7 +263,7 @@ export function AccountSetupForm({
             Langue
           </span>
           <select
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-emerald-500 focus:outline-none"
+            className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-indigo-500 focus:outline-none"
             value={selectedLocale}
             onChange={(event) =>
               setSelectedLocale(event.target.value === "en" ? "en" : "fr")
@@ -274,16 +274,16 @@ export function AccountSetupForm({
           </select>
         </label>
 
-        <fieldset className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:col-span-2">
+        <fieldset className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 lg:col-span-2">
           <legend className="cmm-text-small font-medium cmm-text-primary">
             Mode d&apos;affichage
           </legend>
-          <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+          <label className="flex items-start gap-3 rounded-2xl border border-indigo-200/60 bg-white/85 p-4">
             <input
               type="checkbox"
               checked={acceptExhaustiveMode}
               onChange={(event) => setAcceptExhaustiveMode(event.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
             />
             <span className="block">
               <span className="block cmm-text-small font-medium cmm-text-primary">
@@ -298,7 +298,7 @@ export function AccountSetupForm({
           </label>
         </fieldset>
 
-        <fieldset className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <fieldset className="space-y-3 rounded-2xl border border-indigo-100 bg-white/70 p-4">
           <legend className="cmm-text-small font-medium cmm-text-primary">
             Lieu principal
           </legend>
@@ -376,7 +376,7 @@ export function AccountSetupForm({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="inline-flex items-center rounded-xl bg-emerald-600 px-5 py-3 cmm-text-small font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-emerald-300"
+          className="inline-flex items-center rounded-xl border border-[color:var(--cmm-button-primary-border)] bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-start)_0%,var(--cmm-button-primary-bg-end)_100%)] px-5 py-3 cmm-text-small font-semibold text-[color:var(--cmm-button-primary-text)] hover:border-[color:var(--cmm-button-primary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-hover-start)_0%,var(--cmm-button-primary-bg-hover-end)_100%)] disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {isSaving ? "Enregistrement..." : "Valider et continuer"}
         </button>

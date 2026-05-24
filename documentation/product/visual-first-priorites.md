@@ -20,10 +20,11 @@ flowchart LR
 4. [documentation/product/parcours-utilisateurs.md](./parcours-utilisateurs.md) - parcours et persona
 5. [documentation/product/roadmap-priorisee.md](./roadmap-priorisee.md) - ordre d'execution
 6. [documentation/product/SCIENTIFIC_PROTOCOL.md](./SCIENTIFIC_PROTOCOL.md) - methodologie des indicateurs
-7. [documentation/architecture/system-overview.md](../architecture/system-overview.md) - vue d'ensemble technique
-8. [documentation/architecture/modules-cles-et-dependances.md](../architecture/modules-cles-et-dependances.md) - dépendances et zones cles
-9. [documentation/security/authz-authn-regles.md](../security/authz-authn-regles.md) - regles d'acces
-10. [documentation/operations/incidents-frequents-et-reprise.md](../operations/incidents-frequents-et-reprise.md) - reprise et incidents
+7. [documentation/architecture/master-architecture.md](../architecture/master-architecture.md) - source de vérité architecture
+8. [documentation/architecture/system-overview.md](../architecture/system-overview.md) - vue d'ensemble technique
+9. [documentation/architecture/modules-cles-et-dependances.md](../architecture/modules-cles-et-dependances.md) - dépendances et zones cles
+10. [documentation/security/authz-authn-regles.md](../security/authz-authn-regles.md) - regles d'acces
+11. [documentation/operations/incidents-frequents-et-reprise.md](../operations/incidents-frequents-et-reprise.md) - reprise et incidents
 
 ## Criteres de choix
 

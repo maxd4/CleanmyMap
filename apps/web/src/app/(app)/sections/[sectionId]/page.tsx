@@ -1,162 +1,109 @@
 import type { Metadata } from "next";
-import { notFound } from"next/navigation";
-import { SectionRenderer } from"@/components/sections/section-renderer";
-import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
-import { getSafeAuthSession } from"@/lib/auth/safe-session";
+import { notFound } from "next/navigation";
+import { SectionRenderer } from "@/components/sections/rubriques/section-renderer";
+import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
- RUBRIQUE_REGISTRY,
- getSectionRouteParams,
- normalizeSectionId,
- type SectionId,
-} from"@/lib/sections-registry";
-import { getSectionClerkAccessMode } from"@/lib/clerk-access";
-import { getServerLocale } from"@/lib/server-preferences";
+  getSectionRubriqueById,
+  getSectionRouteParams,
+} from "@/lib/sections-registry";
+import { getSectionClerkAccessMode } from "@/lib/clerk-access";
+import { getServerLocale } from "@/lib/server-preferences";
 
 type SectionPageProps = {
- params: Promise<{ sectionId: string }>;
+  params: Promise<{ sectionId: string }>;
 };
 
 export function generateStaticParams() {
- return getSectionRouteParams();
+  return getSectionRouteParams();
 }
 
 export async function generateMetadata({
- params,
+  params,
 }: SectionPageProps): Promise<Metadata> {
- const { sectionId } = await params;
- const normalizedSectionId = normalizeSectionId(sectionId);
- const section = RUBRIQUE_REGISTRY.find(
- (item) => item.kind ==="section" && item.id === normalizedSectionId,
- );
+  const { sectionId } = await params;
+  const section = getSectionRubriqueById(sectionId);
 
- if (!section) {
- return {
- title: "Section introuvable - CleanMyMap",
- robots: {
- index: false,
- follow: false,
- },
- };
- }
+  if (!section) {
+    return {
+      title: "Section introuvable - CleanMyMap",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
 
- const locale = await getServerLocale();
- const accessMode = getSectionClerkAccessMode(normalizedSectionId);
- const localizedLabel = locale ==="fr" ? section.label.fr : section.label.en;
- const localizedDescription = locale ==="fr" ? section.description.fr : section.description.en;
- const isIndexable = accessMode ==="visible" && section.availability ==="available" && section.implementation ==="finalized";
+  const locale = await getServerLocale();
+  const accessMode = getSectionClerkAccessMode(section.id);
+  const localizedLabel = locale === "fr" ? section.label.fr : section.label.en;
+  const localizedDescription =
+    locale === "fr" ? section.description.fr : section.description.en;
+  const isIndexable =
+    accessMode === "visible" &&
+    section.availability === "available" &&
+    section.implementation === "finalized";
 
- return {
-  title: `${localizedLabel} | CleanMyMap`,
-  description: localizedDescription,
-  robots: {
-  index: isIndexable,
-  follow: isIndexable,
-  },
- };
+  return {
+    title: `${localizedLabel} | CleanMyMap`,
+    description: localizedDescription,
+    robots: {
+      index: isIndexable,
+      follow: isIndexable,
+    },
+  };
 }
 
 export default async function SectionPage({ params }: SectionPageProps) {
- const { sectionId } = await params;
- const normalizedSectionId = normalizeSectionId(sectionId);
- const section = RUBRIQUE_REGISTRY.find(
- (item) => item.kind ==="section" && item.id === normalizedSectionId,
- );
+  const { sectionId } = await params;
+  const section = getSectionRubriqueById(sectionId);
 
- if (!section) {
- notFound();
- }
+  if (!section) {
+    notFound();
+  }
 
- const sectionIdTyped = normalizedSectionId as SectionId;
+  const accessMode = getSectionClerkAccessMode(section.id);
+  const { userId, clerkReachable } = await getSafeAuthSession();
+  const locale = await getServerLocale();
 
- const accessMode = getSectionClerkAccessMode(normalizedSectionId);
- const { userId, clerkReachable } = await getSafeAuthSession();
- const locale = await getServerLocale();
-
- if (!userId && accessMode ==="blur") {
- return (
- <ClerkRequiredGate
- isAuthenticated={false}
- mode="blur"
- title={locale ==="fr" ? section.label.fr : section.label.en}
- description={
- locale ==="fr"
- ? clerkReachable
- ?"Cette fonctionnalité nécessite une connexion Clerk."
- :"Connexion Clerk temporairement indisponible. La vue reste lisible."
- : clerkReachable
- ?"This feature requires Clerk sign-in."
- :"Clerk sign-in is temporarily unavailable. This view stays readable."
- }
-        lockedPreview={
-          <section className="space-y-4 rounded-3xl border border-slate-800/40 bg-slate-950/20 p-4 backdrop-blur-md">
-            <div className="rounded-2xl border border-slate-800/40 bg-slate-900/40 p-4">
-              <p className="cmm-text-caption font-bold uppercase tracking-[0.14em] cmm-text-muted">
-                {locale === "fr" ? "Pourquoi je suis ici" : "Why am I here"}
-              </p>
-              <h1 className="mt-2 text-2xl font-black cmm-text-primary tracking-tight">
-                {locale === "fr" ? section.label.fr : section.label.en}
-              </h1>
-              <p className="mt-2 cmm-text-small cmm-text-secondary font-medium">
-                {locale === "fr" ? section.description.fr : section.description.en}
-              </p>
-            </div>
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="rounded-2xl border border-slate-800/40 bg-slate-900/40 p-4">
-                <p className="cmm-text-caption font-bold uppercase tracking-[0.14em] cmm-text-muted">
-                  {locale === "fr" ? "Résumer" : "Summarize"}
-                </p>
-                <p className="mt-2 cmm-text-small cmm-text-secondary font-medium">
-                  {locale === "fr"
-                    ? "Aperçu public conservé pour la découverte."
-                    : "Public preview kept for discovery."}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-800/40 bg-slate-900/40 p-4">
-                <p className="cmm-text-caption font-bold uppercase tracking-[0.14em] cmm-text-muted">
-                  {locale === "fr" ? "Agir" : "Act"}
-                </p>
-                <p className="mt-2 cmm-text-small cmm-text-secondary font-medium">
-                  {locale === "fr"
-                    ? "Les fonctions interactives se déverrouillent après connexion."
-                    : "Interactive features unlock after sign-in."}
-                </p>
-              </div>
-              <div className="rounded-2xl border border-slate-800/40 bg-slate-900/40 p-4">
-                <p className="cmm-text-caption font-bold uppercase tracking-[0.14em] cmm-text-muted">
-                  {locale === "fr" ? "Analyser" : "Analyze"}
-                </p>
-                <p className="mt-2 cmm-text-small cmm-text-secondary font-medium">
-                  {locale === "fr"
-                    ? "Le contenu complet se déverrouille après connexion."
-                    : "Full content unlocks after sign-in."}
-                </p>
-              </div>
-            </div>
-          </section>
+  if (!userId && accessMode === "blur") {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="blur"
+        title={locale === "fr" ? section.label.fr : section.label.en}
+        description={
+          locale === "fr"
+            ? clerkReachable
+              ? "Cette fonctionnalité nécessite une connexion Clerk."
+              : "Connexion Clerk temporairement indisponible. La vue reste lisible."
+            : clerkReachable
+              ? "This feature requires Clerk sign-in."
+              : "Clerk sign-in is temporarily unavailable. This view stays readable."
         }
+        lockedPreview={<SectionRenderer section={section} />}
+      >
+        <SectionRenderer section={section} />
+      </ClerkRequiredGate>
+    );
+  }
 
- >
- <SectionRenderer sectionId={sectionIdTyped} />
- </ClerkRequiredGate>
- );
- }
+  if (!userId && accessMode === "disabled") {
+    return (
+      <ClerkRequiredGate
+        isAuthenticated={false}
+        mode="disabled"
+        title={locale === "fr" ? section.label.fr : section.label.en}
+        description={
+          locale === "fr"
+            ? "Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
+            : "This view stays readable, but actions are reserved for signed-in accounts."
+        }
+      >
+        <SectionRenderer section={section} />
+      </ClerkRequiredGate>
+    );
+  }
 
- if (!userId && accessMode ==="disabled") {
- return (
- <ClerkRequiredGate
- isAuthenticated={false}
- mode="disabled"
- title={locale ==="fr" ? section.label.fr : section.label.en}
- description={
- locale ==="fr"
- ?"Cette vue reste lisible, mais les actions sont réservées aux comptes connectés."
- :"This view stays readable, but actions are reserved for signed-in accounts."
- }
- >
- <SectionRenderer sectionId={sectionIdTyped} />
- </ClerkRequiredGate>
- );
- }
-
- return <SectionRenderer sectionId={sectionIdTyped} />;
+  return <SectionRenderer section={section} />;
 }

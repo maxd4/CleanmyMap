@@ -1,9 +1,9 @@
 import path from "path";
-import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const appRoot = path.resolve(__dirname, "../..");
 const env = process.env;
+const isProduction = env["NODE_ENV"] === "production";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
   compress: true,
   generateEtags: true,
   poweredByHeader: false,
+  distDir: env["NEXT_DIST_DIR"] ?? ".next",
+  typescript: {
+    tsconfigPath: env["NEXT_TSCONFIG_PATH"] ?? "tsconfig.json",
+  },
   allowedDevOrigins: ["127.0.0.1", "localhost"],
   images: {
     dangerouslyAllowSVG: true,
@@ -20,6 +24,7 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 60 * 60 * 24 * 30,
   },
   experimental: {
+    lockDistDir: false,
     optimizePackageImports: [
       'lucide-react',
       '@clerk/nextjs',
@@ -28,8 +33,12 @@ const nextConfig: NextConfig = {
       '@supabase/supabase-js',
     ],
   },
+  productionBrowserSourceMaps:
+    Boolean(env["SENTRY_AUTH_TOKEN"]) &&
+    Boolean(env["SENTRY_ORG"]) &&
+    Boolean(env["SENTRY_PROJECT"]),
   async headers() {
-    return [
+    const headers = [
       {
         source: "/:path*",
         headers: [
@@ -42,12 +51,6 @@ const nextConfig: NextConfig = {
           { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           { key: "Cross-Origin-Resource-Policy", value: "same-site" },
-        ],
-      },
-      {
-        source: "/_next/static/:path*",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
       {
@@ -75,17 +78,18 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
+
+    if (isProduction) {
+      headers.splice(1, 0, {
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      });
+    }
+
+    return headers;
   },
 };
 
-const sentryEnabled = env["NEXT_PUBLIC_SENTRY_ENABLED"] === "1";
-const sentryBuildPluginEnabled = env["SENTRY_BUILD_PLUGIN"] === "1" && sentryEnabled;
-
-export default sentryBuildPluginEnabled
-  ? withSentryConfig(nextConfig, {
-      org: env["SENTRY_ORG"],
-      project: env["SENTRY_PROJECT"],
-      silent: !env["CI"],
-      telemetry: false,
-    })
-  : nextConfig;
+export default nextConfig;
