@@ -64,7 +64,7 @@ export function HomeBenefits({ benefits }: HomeBenefitsProps) {
         <div className="mx-auto mb-6 max-w-4xl space-y-3 text-center sm:mb-8">
           <h2
             data-gsap-reveal
-            className="text-3xl font-bold tracking-tight text-emerald-950 sm:text-4xl lg:text-5xl"
+            className="text-4xl font-black tracking-tight text-emerald-950 sm:text-5xl lg:text-6xl"
             style={{ textWrap: "pretty" }}
           >
             Pourquoi utiliser CleanMyMap ?

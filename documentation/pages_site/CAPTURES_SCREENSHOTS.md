@@ -2,30 +2,33 @@
 
 ## Organisation des captures
 
-Le script `documentation/liberte-UX-UI/capture-pages.mjs` génère automatiquement des captures d'écran organisées par section :
+Le script `documentation/pages_site/generate-canonical-pages.mjs` structure le registre canonique par route, et le script de capture alimente ensuite les dossiers `png/` et `webp/` de ces fiches route-first. Les captures legacy restent aussi miroir dans `documentation/liberte-UX-UI/`.
 
 ### Règle impérative
 
-- Toute capture au format PNG doit être enregistrée dans le dossier `png/` de la section concernée sous `documentation/liberte-UX-UI/`.
-- Exemple: `documentation/liberte-UX-UI/01-ACCUEIL/png/`, `documentation/liberte-UX-UI/03-BLOC-AGIR/png/`.
-- Ne pas déposer de PNG canonique ailleurs dans `documentation/liberte-UX-UI/` ou à la racine du repo.
+- Toute capture au format PNG doit être enregistrée dans le dossier `png/` du dossier route canonique sous `documentation/pages_site/routes/.../`.
+- Les captures doivent aussi rester miroirs dans `documentation/liberte-UX-UI/...` tant que le pipeline n'est pas entièrement migré.
+- Ne pas déposer de PNG canonique ailleurs dans `documentation/pages_site/` ou à la racine du repo.
 - Les fichiers de contexte, alias temporaires ou exports intermédiaires doivent rester séparés des captures PNG officielles.
 
 ### Structure des dossiers
 
 ```
-documentation/liberte-UX-UI/
-├── 01-ACCUEIL/
-│   ├── png/                    # Accueil complet + sections de l'accueil
-│   └── webp/                   # Versions contexte associees
-├── 02-BLOC-ACCUEIL/            # Documentation UX du bloc Accueil produit, sans captures de l'accueil
-├── ...
-└── 10-PAGES-STANDALONE/
-    ├── .../png/
-    └── .../webp/
+documentation/pages_site/routes/
+├── 00-homepage/
+│   └── root/
+│       ├── README.md
+│       ├── png/
+│       └── webp/
+├── 01-accueil-pilotage/
+│   └── dashboard/
+│       ├── README.md
+│       ├── png/
+│       └── webp/
+└── ...
 
-screenshots/
-└── page-accueil-full.png       # Alias pratique de l'accueil desktop complète
+documentation/liberte-UX-UI/
+└── [miroir legacy des captures, conservé le temps de la migration]
 ```
 
 ### Formats générés

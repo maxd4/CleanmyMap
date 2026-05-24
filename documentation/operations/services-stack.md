@@ -76,6 +76,7 @@ Rôle:
 Activation:
 
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_CLERK_PROXY_URL` si Clerk doit passer par le proxy local `/__clerk`
 - `CLERK_SECRET_KEY`
 - éventuels réglages de domaine et d'utilisateurs admin.
 

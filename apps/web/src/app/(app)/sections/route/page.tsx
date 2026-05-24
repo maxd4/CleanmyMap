@@ -12,9 +12,7 @@ export default function RoutePage() {
     <main
       data-section="agir"
       className={cn(
-        "relative overflow-hidden px-4 py-10 text-white sm:px-6 lg:px-8 min-h-screen transition-colors duration-700",
-        "bg-gradient-to-b",
-        classes.gradientDeep
+        "relative overflow-hidden px-4 py-10 text-white sm:px-6 lg:px-8 min-h-screen transition-colors duration-700"
       )}
     >
       <div className="pointer-events-none absolute inset-0">

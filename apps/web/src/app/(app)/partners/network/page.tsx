@@ -85,7 +85,7 @@ export default async function PartnersNetworkPage() {
   ];
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[linear-gradient(180deg,rgba(18,12,44,0.98),rgba(20,14,48,0.98))] text-white">
+    <div className="relative min-h-screen overflow-hidden text-white">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_45%_at_20%_0%,rgba(139,92,246,0.16),transparent),radial-gradient(ellipse_50%_35%_at_85%_12%,rgba(168,85,247,0.12),transparent),radial-gradient(ellipse_55%_35%_at_75%_86%,rgba(79,70,229,0.10),transparent)]" />
       <div className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
         <header className="relative overflow-hidden rounded-[3rem] border border-violet-300/18 bg-[rgba(30,20,64,0.96)] px-6 py-10 shadow-[0_32px_80px_-36px_rgba(139,92,246,0.30)] sm:px-10 lg:px-12 lg:py-14">

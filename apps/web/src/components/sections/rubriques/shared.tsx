@@ -2,9 +2,7 @@
 
 import type { ReactNode, ElementType } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { CmmCard, type CardTone } from "@/components/ui/cmm-card";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
-import { motion } from "framer-motion";
 import { LucideIcon, Sparkles, Target } from "lucide-react";
 
 export type L10n = { fr: string; en: string } | string;
@@ -49,7 +47,11 @@ export function SectionShell({
       className="relative min-h-screen"
     >
       {/* Dynamic Background Gradient */}
-      <div className={`absolute inset-0 bg-gradient-to-b ${gradient || "from-slate-900/20 via-transparent to-transparent"} pointer-events-none -z-10`} />
+      <div
+        className={`absolute inset-x-0 top-0 h-[24rem] bg-gradient-to-b ${
+          gradient || "from-slate-900/20 via-transparent to-transparent"
+        } pointer-events-none -z-10`}
+      />
       
       {!hideHeader && title && (
         <div className="mb-16 space-y-8">
