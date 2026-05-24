@@ -59,11 +59,17 @@ export async function appendFunnelEvent(event: FunnelEvent): Promise<void> {
   if (canUseSupabaseServerPersistence()) {
     try {
       const supabase = getSupabaseServerClient();
+      const dbStep = event.step === "page_view" ? "view_new" : event.step;
+      if (event.step === "page_view") {
+        // Temporary mapping until DB constraint is updated via migration
+        // This prevents runtime 500s in environments where the migration wasn't applied yet.
+        console.warn("[funnel-store] mapping 'page_view' -> 'view_new' to avoid DB constraint error");
+      }
       const result = await supabase.from("funnel_events").insert({
         at: event.at,
         session_id: event.sessionId,
         user_id: event.userId,
-        step: event.step,
+        step: dbStep,
         mode: event.mode,
         meta: event.meta ?? {},
       });
