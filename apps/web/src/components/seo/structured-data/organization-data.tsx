@@ -29,7 +29,7 @@ export function OrganizationJsonLd() {
     keywords: "depollution, ecologie, developpement durable, benevolat, action citoyenne, nettoyage urbain, coordination, partenariat, impact terrain, valorisation dechets",
   };
 
-  return <JsonLd data={data} />;
+  return <JsonLd id="json-ld-organization" data={data} />;
 }
 
 export function LocalBusinessJsonLd() {
@@ -52,5 +52,5 @@ export function LocalBusinessJsonLd() {
       "Plateforme citoyenne de nettoyage urbain et de depollution a Paris.",
   };
 
-  return <JsonLd data={data} />;
+  return <JsonLd id="json-ld-local-business" data={data} />;
 }

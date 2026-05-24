@@ -82,7 +82,7 @@ export function HomeCommunityActivity({
                 <p className="text-sm font-bold text-white">
                   {formatCount(activity.visibleActions)}
                 </p>
-                <p className="text-[11px] uppercase tracking-[0.18em] text-white/72">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-white">
                   Actions visibles
                 </p>
               </div>
@@ -95,7 +95,7 @@ export function HomeCommunityActivity({
                 <p className="text-sm font-bold text-white">
                   {formatCount(activity.distinctLocations)}
                 </p>
-                <p className="text-[11px] uppercase tracking-[0.18em] text-white/72">
+                <p className="text-[11px] uppercase tracking-[0.18em] text-white">
                   Lieux distincts
                 </p>
               </div>
@@ -142,11 +142,11 @@ export function HomeCommunityActivity({
                     <p className="truncate text-sm font-bold text-white">
                       {item.actor}
                     </p>
-                    <p className="flex-shrink-0 text-[11px] uppercase tracking-[0.18em] text-white/72">
+                    <p className="flex-shrink-0 text-[11px] uppercase tracking-[0.18em] text-white">
                       {item.timeLabel}
                     </p>
                   </div>
-                  <p className="truncate text-sm text-white/88">
+                  <p className="truncate text-sm text-white">
                     {item.action}{" "}
                     <span className="font-semibold text-white">
                       @{item.location}

@@ -19,7 +19,7 @@ create table if not exists public.funnel_events (
   at timestamptz not null default now(),
   session_id text not null,
   user_id text,
-  step text not null check (step in ('view_new', 'start_form', 'submit_success')),
+  step text not null check (step in ('view_new', 'page_view', 'start_form', 'submit_success')),
   mode text not null check (mode in ('quick', 'complete')),
   meta jsonb not null default '{}'::jsonb
 );

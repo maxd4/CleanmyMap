@@ -91,7 +91,7 @@ export function FAQJsonLd() {
     ],
   };
 
-  return <JsonLd data={data} />;
+  return <JsonLd id="json-ld-faq" data={data} />;
 }
 
 export function ReviewJsonLd() {
@@ -128,7 +128,7 @@ export function ReviewJsonLd() {
     reviewRatingSummary: "Très positif - Action citoyenne efficace pour l'écologie",
   };
 
-  return <JsonLd data={data} />;
+  return <JsonLd id="json-ld-review" data={data} />;
 }
 
 export function ArticleRessourceJsonLd() {
@@ -173,7 +173,7 @@ export function ArticleRessourceJsonLd() {
     keywords: "bonnes pratiques, depollution, benevolat, ecologie, guide",
   };
 
-  return <JsonLd data={data} />;
+  return <JsonLd id="json-ld-article" data={data} />;
 }
 
 export function VideoTutorialJsonLd() {
@@ -204,7 +204,7 @@ export function VideoTutorialJsonLd() {
     inLanguage: "fr-FR",
   };
 
-  return <JsonLd data={data} />;
+  return <JsonLd id="json-ld-video" data={data} />;
 }
 
 export function EventCleanwalkJsonLd() {
@@ -247,5 +247,5 @@ export function EventCleanwalkJsonLd() {
     keywords: "cleanwalk, nettoyage urbain, benevolat, depollution, ecologie, Paris",
   };
 
-  return <JsonLd data={data} />;
+  return <JsonLd id="json-ld-event" data={data} />;
 }

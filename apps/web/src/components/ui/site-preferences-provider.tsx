@@ -78,40 +78,39 @@ export function SitePreferencesProvider({
 }: SitePreferencesProviderProps) {
   const shouldRefreshAfterLocaleChange = useRef(false);
 
-  const [locale, setLocaleState] = useState<Locale>(() => {
-    if (typeof window === "undefined") {
-      return STORAGE_DEFAULTS.locale;
-    }
-    return siteLocaleStorage.read() ?? STORAGE_DEFAULTS.locale;
-  });
+  const [locale, setLocaleState] = useState<Locale>(
+    // Toujours partir du default serveur pour le rendu initial — évite l'hydration mismatch
+    STORAGE_DEFAULTS.locale,
+  );
 
-  const [theme, setThemeState] = useState<ThemeMode>(() => {
-    if (typeof window === "undefined") {
-      return STORAGE_DEFAULTS.theme;
-    }
-    return siteThemeStorage.read() ?? STORAGE_DEFAULTS.theme;
-  });
+  const [theme, setThemeState] = useState<ThemeMode>(
+    STORAGE_DEFAULTS.theme,
+  );
 
-  const [displayMode, setDisplayModeState] = useState<DisplayMode>(() => {
-    if (typeof window === "undefined") {
-      return initialDisplayMode ?? DEFAULT_DISPLAY_MODE;
-    }
-    if (initialDisplayModeExplicit) {
-      return initialDisplayMode ?? DEFAULT_DISPLAY_MODE;
-    }
-    return siteDisplayModeStorage.read() ?? DEFAULT_DISPLAY_MODE;
-  });
+  const [displayMode, setDisplayModeState] = useState<DisplayMode>(
+    initialDisplayMode ?? DEFAULT_DISPLAY_MODE,
+  );
 
   const [isDisplayModeExplicitlySet, setIsDisplayModeExplicitlySet] =
-    useState<boolean>(() => {
-      if (typeof window === "undefined") {
-        return initialDisplayModeExplicit ?? false;
+    useState<boolean>(initialDisplayModeExplicit ?? false);
+
+  // Après le premier rendu (client uniquement), on synchronise avec le localStorage
+  useEffect(() => {
+    const storedLocale = siteLocaleStorage.read();
+    if (storedLocale) setLocaleState(storedLocale);
+
+    const storedTheme = siteThemeStorage.read();
+    if (storedTheme) setThemeState(storedTheme);
+
+    if (!initialDisplayModeExplicit) {
+      const storedDisplayMode = siteDisplayModeStorage.read();
+      if (storedDisplayMode) {
+        setDisplayModeState(storedDisplayMode);
+        setIsDisplayModeExplicitlySet(true);
       }
-      if (initialDisplayModeExplicit) {
-        return true;
-      }
-      return siteDisplayModeStorage.read() !== null;
-    });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {

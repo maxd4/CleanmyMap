@@ -83,7 +83,7 @@ export function HomePillars({ pillars }: HomePillarsProps) {
             Les 5 cartes de CleanMyMap
           </h2>
           <p
-            className="mx-auto max-w-2xl text-[15px] font-medium leading-relaxed text-emerald-50/78 sm:text-base"
+            className="mx-auto max-w-2xl text-[15px] font-medium leading-relaxed text-white sm:text-base"
           >
             Accueil et pilotage, agir, cartographie et impact, réseau et
             discussions, apprendre pour piloter vos initiatives.

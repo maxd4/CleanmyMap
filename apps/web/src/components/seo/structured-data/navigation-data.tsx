@@ -17,7 +17,7 @@ export function WebSiteJsonLd() {
     },
   };
 
-  return <JsonLd data={data} />;
+  return <JsonLd id="json-ld-website" data={data} />;
 }
 
 export function WebPageJsonLd() {
@@ -26,7 +26,7 @@ export function WebPageJsonLd() {
     "@type": "WebPage",
     name: "CleanMyMap - Carte de Dépollution Urbaine Paris",
     description:
-      "Plateforme citoyenne de dépollution urbaine et d'action écologique à Paris. Signalez les pollutions, organisez des cleanwalks, déclarez vos actions pour累计 votre impact environnemental.",
+      "Plateforme citoyenne de dépollution urbaine et d'action écologique à Paris. Signalez les pollutions, organisez des cleanwalks, déclarez vos actions pour votre impact environnemental.",
     url: "https://cleanmymap.fr",
     primaryImageOfPage: {
       "@type": "ImageObject",
@@ -65,7 +65,7 @@ export function WebPageJsonLd() {
     },
   };
 
-  return <JsonLd data={data} />;
+  return <JsonLd id="json-ld-webpage" data={data} />;
 }
 
 export function SiteNavigationJsonLd() {
@@ -115,7 +115,7 @@ export function SiteNavigationJsonLd() {
     ],
   };
 
-  return <JsonLd data={data} />;
+  return <JsonLd id="json-ld-site-navigation" data={data} />;
 }
 
 export function BreadcrumbJsonLd() {
@@ -144,5 +144,5 @@ export function BreadcrumbJsonLd() {
     ],
   };
 
-  return <JsonLd data={data} />;
+  return <JsonLd id="json-ld-breadcrumb" data={data} />;
 }
