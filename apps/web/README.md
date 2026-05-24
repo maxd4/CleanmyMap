@@ -19,6 +19,7 @@ Core required:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `NEXT_PUBLIC_CLERK_PROXY_URL` when Clerk must be routed through the app proxy path `/__clerk`
 - `CLERK_SECRET_KEY`
 
 Recommended for production:

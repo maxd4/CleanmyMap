@@ -13,6 +13,7 @@ interface ClerkLocalizationProviderProps {
  signUpFallbackRedirectUrl?: string;
  afterSignOutUrl?: string;
  domain?: string;
+ proxyUrl?: string;
  isSatellite?: boolean;
  satelliteAutoSync?: boolean;
  allowedRedirectOrigins?: string[];
@@ -27,8 +28,10 @@ export function ClerkLocalizationProvider({
  return (
  <ClerkProvider
  {...props}
- localization={locale ==="fr" ? frFR : enUS}
- appearance={{
+ proxyUrl={props.proxyUrl}
+ domain={props.proxyUrl ? undefined : props.domain}
+  localization={locale ==="fr" ? frFR : enUS}
+  appearance={{
  baseTheme: undefined, // Will be handled by Tailwind/CSS
  variables: {
  colorPrimary:"#10b981", // Emerald 500

@@ -38,6 +38,7 @@ function parseOriginCsv(raw: string | undefined): string[] {
 export type ClerkRuntimeConfig = {
   appOrigin?: string;
   domain?: string;
+  proxyUrl?: string;
   isSatellite?: boolean;
   satelliteAutoSync?: boolean;
   authorizedParties?: string[];
@@ -51,10 +52,12 @@ export function getClerkRuntimeConfig(): ClerkRuntimeConfig {
 
   const isSatellite = env.CLERK_IS_SATELLITE === true;
   const domain = parseDomain(env.CLERK_DOMAIN);
+  const proxyUrl = parseDomain(env.NEXT_PUBLIC_CLERK_PROXY_URL);
 
   return {
     appOrigin,
     domain,
+    proxyUrl,
     isSatellite: isSatellite ? true : undefined,
     satelliteAutoSync: isSatellite
       ? (env.CLERK_SATELLITE_AUTO_SYNC ?? true)
