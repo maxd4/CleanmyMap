@@ -42,18 +42,20 @@ export function HomeHero({ metrics }: HomeHeroProps) {
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             <div className="relative z-10 flex h-full flex-col justify-between p-7 sm:p-9 lg:p-11">
               <div className="flex items-center justify-between gap-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/7 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-white backdrop-blur-xl">
-                  <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
-                  Accueil
-                </div>
-                <SitePreferencesControls variant="locale" />
+                {/* removed 'Accueil' bubble per design request */}
+                <div />
               </div>
 
               <div className="space-y-7">
                 <div className="space-y-5">
-                  <h1 className="max-w-[13ch] text-[clamp(2.95rem,4.15vw,4.4rem)] font-black leading-[0.9] tracking-[-0.07em] text-white drop-shadow-[0_14px_34px_rgba(2,6,23,0.42)] lg:whitespace-nowrap">
-                    Clean My Map
-                  </h1>
+                  <div className="flex items-center gap-3">
+                    <h1 className="text-[clamp(2.95rem,4.15vw,4.4rem)] font-black leading-[0.9] tracking-[-0.07em] text-white drop-shadow-[0_14px_34px_rgba(2,6,23,0.42)] lg:whitespace-nowrap">
+                      Clean My Map
+                    </h1>
+                    <div className="ml-2">
+                      <SitePreferencesControls variant="locale" />
+                    </div>
+                  </div>
                   <p className="max-w-2xl text-[1.08rem] leading-[1.7] text-white sm:text-[1.12rem]">
                     Cultivons l&apos;entraide pour dépolluer, cartographier et
                     transformer chaque action terrain en preuve utile.
@@ -72,15 +74,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                   </span>
                 </div>
 
-                <div className="max-w-2xl space-y-3">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white">
-                    Carte interactive · Compagnon GPS · Hub opérationnel
-                  </p>
-                  <p className="text-base leading-relaxed text-white sm:text-[1.03rem]">
-                    Une interface pensée pour montrer l&apos;impact réel, orienter
-                    les actions et donner un accès rapide aux espaces clés.
-                  </p>
-                </div>
+
 
                 <div className="flex flex-wrap gap-4 pt-2">
                   <Link
@@ -95,7 +89,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                     className="inline-flex h-[56px] items-center justify-center gap-3 rounded-2xl border border-white/12 bg-slate-950/35 px-8 text-[15px] font-black !text-white shadow-[0_16px_34px_-26px_rgba(2,6,23,0.8)] transition-all hover:bg-slate-900/48 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                   >
                     <LayoutDashboard size={20} />
-                    Accéder au hub
+                    Accéder au sommaire
                   </Link>
                 </div>
               </div>
@@ -113,10 +107,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                     <span className="h-3.5 w-3.5 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
                     Impact terrain 2026
                   </p>
-                  <p className="max-w-md text-sm leading-relaxed text-white sm:text-[13px]">
-                    Données terrain certifiées. Formules exposées en
-                    méthodologie.
-                  </p>
+
                 </div>
                 <Link
                   href="/methodology"
@@ -127,21 +118,21 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                 </Link>
               </div>
 
-              <div className="mt-8 grid flex-1 grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-5">
+              <div className="mt-6 grid flex-1 grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
                 {metrics.map((metric) => {
                   const s = metricAccentStyles[metric.accent];
                   return (
                     <div
                       key={metric.key}
-                      className={`group relative min-h-[154px] overflow-hidden rounded-[1.45rem] border border-white/10 bg-[linear-gradient(180deg,rgba(6,38,23,0.95)_0%,rgba(4,25,15,0.98)_100%)] p-5 shadow-[0_16px_40px_-24px_rgba(2,6,23,0.78)] transition-transform hover:-translate-y-0.5 ${s.card}`}
+                      className={`group relative min-h-[130px] overflow-hidden rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(6,38,23,0.95)_0%,rgba(4,25,15,0.98)_100%)] p-4 shadow-[0_12px_28px_-20px_rgba(2,6,23,0.78)] transition-transform hover:-translate-y-0.5 ${s.card}`}
                     >
                       <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${s.bar}`} />
                       <div className="flex items-start justify-between gap-3">
-                        <p className={`min-h-[2.8rem] max-w-[10ch] text-[13px] font-black uppercase leading-snug tracking-[0.24em] ${s.label}`}>
+                        <p className={`min-h-[2.2rem] max-w-[8ch] text-[12px] font-black uppercase leading-snug tracking-[0.24em] ${s.label}`}>
                           {metric.label}
                         </p>
                       </div>
-                      <div className={`mt-6 text-[clamp(2.2rem,4vw,3.2rem)] font-black leading-none tracking-tight ${s.value}`}>
+                      <div className={`mt-4 text-[clamp(1.6rem,3vw,2.4rem)] font-black leading-none tracking-tight ${s.value} whitespace-nowrap truncate`}>
                         {metric.value}
                       </div>
                     </div>
