@@ -63,12 +63,13 @@ const envSchema = z.object({
 
   CLERK_SECRET_KEY: z.string().optional(),
   CLERK_ADMIN_USER_IDS: z.string().optional(),
-  CLERK_MAX_USER_IDS: z.string().optional(),
-  CLERK_ALLOWED_PARTIES: z.string().optional(),
-  CLERK_DOMAIN: z.string().optional(),
-  CLERK_IS_SATELLITE: optionalBoolean,
-  CLERK_SATELLITE_AUTO_SYNC: optionalBoolean,
-  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+    CLERK_MAX_USER_IDS: z.string().optional(),
+    CLERK_ALLOWED_PARTIES: z.string().optional(),
+    CLERK_DOMAIN: z.string().optional(),
+    CLERK_IS_SATELLITE: optionalBoolean,
+    CLERK_SATELLITE_AUTO_SYNC: optionalBoolean,
+    NEXT_PUBLIC_CLERK_PROXY_URL: z.string().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   SENTRY_DSN: optionalUrl,
   SENTRY_ORG: z.string().optional(),
   SENTRY_PROJECT: z.string().optional(),
@@ -112,6 +113,7 @@ const parsed = envSchema.safeParse({
     (!isProduction
       ? "pk_test_cHJvcGVyLWNvd2JpcmQtNTQuY2xlcmsuYWNjb3VudHMuZGV2JA"
       : undefined),
+  NEXT_PUBLIC_CLERK_PROXY_URL: process.env["NEXT_PUBLIC_CLERK_PROXY_URL"],
   NEXT_PUBLIC_POSTHOG_KEY: process.env["NEXT_PUBLIC_POSTHOG_KEY"],
   NEXT_PUBLIC_POSTHOG_TOKEN: process.env["NEXT_PUBLIC_POSTHOG_TOKEN"],
   NEXT_PUBLIC_POSTHOG_HOST: process.env["NEXT_PUBLIC_POSTHOG_HOST"],

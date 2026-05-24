@@ -34,6 +34,7 @@ export default async function RootLayout({
 }>) {
  const identity = await getCurrentUserIdentity();
  const clerkRuntime = getClerkRuntimeConfig();
+  const useClerkProxy = Boolean(clerkRuntime.proxyUrl);
   const { userId, clerkReachable } = await getSafeAuthSession();
   const displayModePreference = await getServerDisplayModePreference();
   const locale = await getServerLocale();
@@ -77,15 +78,16 @@ return (
 initialDisplayMode={displayModePreference.displayMode}
 initialDisplayModeExplicit={displayModePreference.isExplicit}
 >
- <ClerkLocalizationProvider
+<ClerkLocalizationProvider
  signInUrl="/sign-in"
  signUpUrl="/sign-up"
  signInFallbackRedirectUrl="/profil"
  signUpFallbackRedirectUrl="/onboarding/localisation"
  afterSignOutUrl="/"
- domain={clerkRuntime.domain}
- isSatellite={clerkRuntime.isSatellite}
- satelliteAutoSync={clerkRuntime.satelliteAutoSync}
+ proxyUrl={clerkRuntime.proxyUrl}
+ domain={useClerkProxy ? undefined : clerkRuntime.domain}
+ isSatellite={useClerkProxy ? undefined : clerkRuntime.isSatellite}
+ satelliteAutoSync={useClerkProxy ? undefined : clerkRuntime.satelliteAutoSync}
  allowedRedirectOrigins={clerkRuntime.allowedRedirectOrigins}
  >
 <PostHogProvider>

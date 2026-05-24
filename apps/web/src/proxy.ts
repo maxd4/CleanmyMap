@@ -164,10 +164,12 @@ const clerkProxy = clerkMiddleware(
     return nextWithAppHeaders(req);
   },
   {
-    domain: clerkRuntime.domain,
-    isSatellite: clerkRuntime.isSatellite,
-    satelliteAutoSync: clerkRuntime.satelliteAutoSync,
+    domain: clerkRuntime.proxyUrl ? undefined : clerkRuntime.domain,
+    proxyUrl: clerkRuntime.proxyUrl,
+    isSatellite: clerkRuntime.proxyUrl ? undefined : clerkRuntime.isSatellite,
+    satelliteAutoSync: clerkRuntime.proxyUrl ? undefined : clerkRuntime.satelliteAutoSync,
     authorizedParties: clerkRuntime.authorizedParties,
+    frontendApiProxy: clerkRuntime.proxyUrl ? { enabled: true } : undefined,
   },
 );
 

@@ -1,7 +1,6 @@
 import { getNavigationSpacesForProfile } from "@/lib/navigation";
 import {
   HomeHero,
-  HomePillars,
   HomeBenefits,
   HomeCommunityActivity,
   OriginCredibility,
@@ -11,10 +10,8 @@ import {
   computeLandingCounters,
   loadLandingOverview,
 } from "@/lib/accueil/data";
-import { sortItemsForPreview, BLOCK_PREVIEW_PRIORITY } from "@/lib/accueil/navigation";
 import {
   buildHomeMetrics,
-  buildHomePillars,
   HOME_BENEFITS,
   type HomeCounters,
 } from "@/lib/accueil/config";
@@ -120,27 +117,12 @@ export default async function HomePage() {
     floorDate,
   );
 
-  const accueilSpaces = getNavigationSpacesForProfile("benevole", "exhaustif", "fr");
-  const accueilSpaceMap = new Map(accueilSpaces.map((space) => [space.id, space]));
 
-  const getSpacePreview = (spaceId: keyof typeof BLOCK_PREVIEW_PRIORITY) => {
-    const ordered = sortItemsForPreview(
-      spaceId,
-      accueilSpaceMap.get(spaceId)?.items ?? [],
-    );
-    return {
-      mobile: ordered.slice(0, 2).map((item) => item.label.fr),
-      desktop: ordered.slice(0, 3).map((item) => item.label.fr),
-    };
-  };
-
-  const pillars = buildHomePillars(getSpacePreview);
 
   return (
     <main className="relative min-h-screen overflow-hidden font-sans">
       <div className="relative z-10">
         <HomeHero metrics={metrics} />
-        <HomePillars pillars={pillars} />
         <HomeBenefits benefits={HOME_BENEFITS} />
         <HomeCommunityActivity activity={communityActivity} />
         <OriginCredibility />
