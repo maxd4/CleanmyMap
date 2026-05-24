@@ -42,15 +42,7 @@ export function HomeCommunityActivity({
     >
       <div className="relative mx-auto flex max-w-[1540px] flex-col gap-12 px-4 sm:px-8 lg:flex-row lg:items-center lg:gap-20">
         <div className="flex-1 space-y-6">
-          <div
-            data-gsap-reveal
-            className="inline-flex items-center gap-2 rounded-full border border-emerald-100/18 bg-[rgba(8,46,27,0.88)] px-4 py-2 text-emerald-50 shadow-[0_10px_24px_-16px_rgba(6,44,25,0.42)]"
-          >
-            <Sparkles size={16} />
-            <span className="cmm-text-caption font-bold uppercase tracking-[0.3em]">
-              Le pouls du réseau
-            </span>
-          </div>
+
 
           <h2
             data-gsap-reveal
@@ -70,37 +62,7 @@ export function HomeCommunityActivity({
             Rien d&apos;inventé, seulement des actions vérifiées et récentes.
           </p>
 
-          <div
-            data-gsap-reveal
-            className="flex flex-wrap gap-3"
-          >
-            <div className="flex items-center gap-3 rounded-2xl border border-emerald-100/18 bg-[rgba(8,46,27,0.88)] px-4 py-3 shadow-[0_14px_30px_-24px_rgba(5,34,20,0.34)]">
-              <div className="rounded-xl bg-emerald-400/14 p-2">
-                <Users size={18} className="text-emerald-200" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white">
-                  {formatCount(activity.visibleActions)}
-                </p>
-                <p className="text-[11px] uppercase tracking-[0.18em] text-white">
-                  Actions visibles
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-2xl border border-emerald-100/18 bg-[rgba(8,46,27,0.88)] px-4 py-3 shadow-[0_14px_30px_-24px_rgba(5,34,20,0.34)]">
-              <div className="rounded-xl bg-lime-400/14 p-2">
-                <MessageSquare size={18} className="text-lime-200" />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-white">
-                  {formatCount(activity.distinctLocations)}
-                </p>
-                <p className="text-[11px] uppercase tracking-[0.18em] text-white">
-                  Lieux distincts
-                </p>
-              </div>
-            </div>
-          </div>
+
         </div>
 
         <div className="relative w-full flex-1 lg:max-w-2xl xl:max-w-3xl">
@@ -156,22 +118,7 @@ export function HomeCommunityActivity({
               </div>
             ))}
 
-            <div
-              data-gsap-reveal
-              className="absolute -bottom-6 -left-6 flex items-center gap-3 rounded-2xl border border-emerald-200/24 bg-[linear-gradient(180deg,rgba(8,46,27,0.96)_0%,rgba(6,31,18,0.98)_100%)] px-4 py-3 shadow-[0_18px_36px_-24px_rgba(5,34,20,0.82)]"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-400/10 text-emerald-300">
-                <Share2 size={18} />
-              </div>
-              <div>
-                <p className="cmm-text-card-label text-xs font-bold">
-                  {formatCount(activity.visibleActions)} actions visibles
-                </p>
-                <p className="cmm-text-card-copy text-[10px] uppercase tracking-[0.18em]">
-                  Données terrain
-                </p>
-              </div>
-            </div>
+
           </div>
         </div>
       </div>
