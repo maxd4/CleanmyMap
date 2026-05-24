@@ -3,7 +3,7 @@
 
 interface JsonLdProps {
   data: Record<string, unknown>;
-  id: string;
+  id?: string;
 }
 
 export function JsonLd({ data, id }: JsonLdProps) {
