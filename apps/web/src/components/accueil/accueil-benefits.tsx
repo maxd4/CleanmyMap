@@ -58,13 +58,10 @@ export function HomeBenefits({ benefits }: HomeBenefitsProps) {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full overflow-hidden bg-transparent px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-28"
+      className="relative w-full overflow-hidden bg-transparent px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20"
     >
       <div className="relative z-10 mx-auto max-w-[1540px] px-2 sm:px-4">
-        <div className="mx-auto mb-10 max-w-4xl space-y-3 text-center sm:mb-12">
-          <p className="cmm-text-caption font-bold uppercase tracking-[0.34em] text-emerald-700/70">
-            Bénéfices
-          </p>
+        <div className="mx-auto mb-6 max-w-4xl space-y-3 text-center sm:mb-8">
           <h2
             data-gsap-reveal
             className="text-3xl font-bold tracking-tight text-emerald-950 sm:text-4xl lg:text-5xl"
