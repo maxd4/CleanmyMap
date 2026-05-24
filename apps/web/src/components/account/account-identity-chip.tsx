@@ -200,12 +200,16 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
               onMouseEnter={openRoleMenu}
               onMouseLeave={closeRoleMenuAfterHover}
               className={cn(
-                "cmm-dropdown-panel cmm-surface-elevated absolute z-40 w-72 rounded-[1.15rem] p-3 shadow-xl",
+                "absolute z-40 w-72 overflow-hidden rounded-[1.15rem] border border-emerald-300/22 p-3 shadow-xl",
                 roleMenuPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
                 roleMenuPlacement.alignRight ? "right-0" : "left-0",
               )}
+              style={{
+                backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
+                backgroundColor: "rgba(5,46,22,0.98)",
+              }}
             >
-              <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-white">
                 {locale === "fr" ? "Changer de rôle" : "Switch role"}
               </p>
               <ul className="mt-2 space-y-1">
@@ -226,15 +230,15 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                         className={cn(
                           "flex w-full items-start justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-all",
                           isActive
-                            ? "bg-emerald-50 text-emerald-900 shadow-sm ring-1 ring-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:ring-emerald-800"
-                            : "hover:bg-slate-50 cmm-text-secondary hover:text-emerald-800 disabled:opacity-40 dark:hover:bg-slate-800/50",
+                            ? "bg-emerald-400/20 text-white shadow-sm ring-1 ring-emerald-300/40"
+                            : "text-white hover:bg-white/10 hover:text-white disabled:opacity-40",
                         )}
                       >
                         <span className="min-w-0">
-                          <span className="block truncate cmm-text-small font-bold">
+                          <span className="block truncate text-[13px] font-bold text-white">
                             {getProfileLabel(profile, locale)}
                           </span>
-                          <span className="mt-0.5 block line-clamp-1 text-[10px] uppercase tracking-wide opacity-60">
+                          <span className="mt-0.5 block line-clamp-1 text-[10px] uppercase tracking-wide text-white/70">
                             {getProfileSubtitle(profile, locale)}
                           </span>
                         </span>
@@ -310,19 +314,23 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
             onMouseEnter={openBadgeMenu}
             onMouseLeave={closeBadgeMenuAfterHover}
             className={cn(
-              "cmm-dropdown-panel cmm-surface-elevated absolute z-40 w-64 rounded-[1.15rem] p-3 shadow-xl",
+              "absolute z-40 w-64 overflow-hidden rounded-[1.15rem] border border-emerald-300/22 p-3 shadow-xl",
               badgeMenuPlacement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
               badgeMenuPlacement.alignRight ? "right-0" : "left-0",
             )}
+            style={{
+              backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
+              backgroundColor: "rgba(5,46,22,0.98)",
+            }}
           >
-            <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-white">
               Badges d&apos;engagement
             </p>
             <ul className="mt-2 space-y-1">
               {gamificationBadges.map((badge) => (
                 <li
                   key={badge.id}
-                  className="flex items-center gap-2 cmm-text-small cmm-text-secondary"
+                  className="flex items-center gap-2 text-[13px] text-white"
                 >
                   <BadgeSurface
                     icon={getAccountBadgeIconName(badge.icon)}

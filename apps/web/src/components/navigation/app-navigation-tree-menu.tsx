@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, List, Menu } from "lucide-react";
 import Link from "next/link";
@@ -16,7 +16,7 @@ type AppNavigationTreeMenuProps = {
   locale: Locale;
   onTrackNavigation: (href: string, label: string, spaceId: string | null) => void;
   pathname: string;
-  ribbonChrome: RibbonChrome;
+  ribbonChrome?: RibbonChrome; // conservé pour compatibilité, non utilisé
   spaces: NavigationSpace[];
 };
 
@@ -30,7 +30,6 @@ export function AppNavigationTreeMenu({
   locale,
   onTrackNavigation,
   pathname,
-  ribbonChrome,
   spaces,
 }: AppNavigationTreeMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,14 +44,12 @@ export function AppNavigationTreeMenu({
     minPanelWidth: 420,
   });
 
-  const panelStyle = useMemo(
-    () => ({
-      backgroundImage: ribbonChrome.backgroundImage,
-      backgroundColor: ribbonChrome.backgroundColor,
-      borderColor: ribbonChrome.borderColor,
-    }),
-    [ribbonChrome.backgroundColor, ribbonChrome.backgroundImage, ribbonChrome.borderColor],
-  );
+  // Fond vert foncé fixe — lisible, cohérent avec l'identité écologique
+  const panelStyle = {
+    backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
+    backgroundColor: "rgba(5,46,22,0.98)",
+    borderColor: "rgba(52,211,153,0.22)",
+  } as const;
 
   useEffect(() => {
     if (!isOpen) {

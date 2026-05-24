@@ -28,7 +28,7 @@ const KPI_STYLES = {
     accent: "from-emerald-400 via-lime-300 to-emerald-200",
     border: "border-emerald-300/18",
     surface: "bg-[rgba(10,39,28,0.92)]",
-    label: "text-white/72",
+    label: "text-white",
     value: "text-white",
     bar: "bg-emerald-300",
     chip: "bg-white/10 text-white ring-white/14",
@@ -37,7 +37,7 @@ const KPI_STYLES = {
     accent: "from-emerald-400 via-teal-300 to-lime-200",
     border: "border-emerald-300/18",
     surface: "bg-[rgba(8,38,29,0.92)]",
-    label: "text-white/72",
+    label: "text-white",
     value: "text-white",
     bar: "bg-teal-300",
     chip: "bg-white/10 text-white ring-white/14",
@@ -46,7 +46,7 @@ const KPI_STYLES = {
     accent: "from-lime-300 via-emerald-200 to-emerald-100",
     border: "border-lime-300/18",
     surface: "bg-[rgba(24,38,8,0.92)]",
-    label: "text-white/72",
+    label: "text-white",
     value: "text-white",
     bar: "bg-lime-300",
     chip: "bg-white/10 text-white ring-white/14",
@@ -168,18 +168,18 @@ export function HomeImpactSummary({
                   <BadgeCheck size={12} />
                   Impact
                 </span>
-                <span className="inline-flex items-center rounded-full border border-white/14 bg-[rgba(8,34,20,0.9)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/76">
+                <span className="inline-flex items-center rounded-full border border-white/14 bg-[rgba(8,34,20,0.9)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white">
                   Fenêtre {windowLabel}
                 </span>
                 {updatedLabel ? (
-                  <span className="inline-flex items-center rounded-full border border-white/14 bg-[rgba(8,34,20,0.9)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white/76">
+                  <span className="inline-flex items-center rounded-full border border-white/14 bg-[rgba(8,34,20,0.9)] px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white">
                     Mis à jour {updatedLabel}
                   </span>
                 ) : null}
               </div>
 
               <div className="space-y-3">
-                <p className="max-w-2xl text-sm leading-relaxed text-white/76 sm:text-base">
+                <p className="max-w-2xl text-sm leading-relaxed text-white sm:text-base">
                   Chaque indicateur est relié à une évolution, un niveau de qualité et une zone à surveiller.
                   Visualisez immédiatement où se concentre l&apos;effort utile.
                 </p>
@@ -207,7 +207,7 @@ export function HomeImpactSummary({
           {!summary ? (
             <div
               data-gsap-reveal
-              className="rounded-[1.75rem] border border-white/14 bg-[rgba(8,34,20,0.92)] p-6 text-sm leading-relaxed text-white/74"
+              className="rounded-[1.75rem] border border-white/14 bg-[rgba(8,34,20,0.92)] p-6 text-sm leading-relaxed text-white"
             >
               Les données d&apos;impact sont en cours de chargement. Dès que le tableau de bord est
               disponible, la progression, la qualité et les zones prioritaires apparaissent ici.
@@ -231,7 +231,7 @@ export function HomeImpactSummary({
                           <p className={`text-[10px] font-black uppercase tracking-[0.24em] ${style.label}`}>
                             {kpi.label}
                           </p>
-                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/52">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
                             {interpretLabel(kpi.interpretation)}
                           </p>
                         </div>
@@ -247,7 +247,7 @@ export function HomeImpactSummary({
                           {kpi.value}
                         </div>
                         <div className="space-y-1.5">
-                          <div className="flex items-center justify-between gap-3 text-xs font-semibold text-white/58">
+                          <div className="flex items-center justify-between gap-3 text-xs font-semibold text-white">
                             <span>Référence précédente</span>
                             <span>{kpi.previousValue}</span>
                           </div>
@@ -261,7 +261,7 @@ export function HomeImpactSummary({
                       </div>
 
                       <div className="mt-5 flex items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
-                        <span className="text-white/52">Variation</span>
+                        <span className="text-white">Variation</span>
                         <span className="text-white">
                           {kpi.deltaAbsolute} / {kpi.deltaPercent}
                         </span>
@@ -281,7 +281,7 @@ export function HomeImpactSummary({
                       <h3 className="text-sm font-black uppercase tracking-[0.22em] text-white">
                         Répartition territoriale
                       </h3>
-                      <p className="mt-1 text-sm text-white/72">
+                      <p className="mt-1 text-sm text-white">
                         Les zones ci-dessous concentrent la charge la plus visible sur la fenêtre courante.
                       </p>
                     </div>
@@ -306,7 +306,7 @@ export function HomeImpactSummary({
                                 <p className="truncate text-sm font-black text-white">
                                   {index + 1}. {zone.area}
                                 </p>
-                                <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white/52">
+                                <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.18em] text-white">
                                   {zone.currentActions} actions · {zone.currentKg.toFixed(1)} kg · score {zone.normalizedScore.toFixed(1)}
                                 </p>
                               </div>
@@ -320,14 +320,14 @@ export function HomeImpactSummary({
                                 style={{ width: `${width}%` }}
                               />
                             </div>
-                            <p className="text-sm leading-relaxed text-white/72">
+                            <p className="text-sm leading-relaxed text-white">
                               {zone.justification}
                             </p>
                           </div>
                         );
                       })
                     ) : (
-                      <div className="rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4 text-sm text-white/72">
+                      <div className="rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4 text-sm text-white">
                         Aucune zone prioritaire ne ressort encore sur la fenêtre actuelle.
                       </div>
                       )}
@@ -343,7 +343,7 @@ export function HomeImpactSummary({
                       <h3 className="text-sm font-black uppercase tracking-[0.22em] text-white">
                         Alerte prioritaire
                       </h3>
-                      <p className="mt-1 text-sm text-white/72">
+                      <p className="mt-1 text-sm text-white">
                         Ce qui mérite une action ou une surveillance immédiate.
                       </p>
                     </div>
@@ -359,19 +359,19 @@ export function HomeImpactSummary({
                   {summary ? (
                     <div className="mt-5 space-y-5">
                       <div className="rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4">
-                        <div className="flex items-center gap-2 text-white/60">
+                        <div className="flex items-center gap-2 text-white">
                           <ShieldAlert size={16} />
                           <span className="text-[10px] font-black uppercase tracking-[0.22em] text-white">
                             {summary.alert.title}
                           </span>
                         </div>
-                        <p className="mt-3 text-sm leading-relaxed text-white/78">
+                        <p className="mt-3 text-sm leading-relaxed text-white">
                           {summary.alert.detail}
                         </p>
                       </div>
 
                       <div className="rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4">
-                        <div className="flex items-center gap-2 text-white/60">
+                        <div className="flex items-center gap-2 text-white">
                           <Target size={16} />
                           <span className="text-[10px] font-black uppercase tracking-[0.22em] text-white">
                             Recommandation
@@ -380,7 +380,7 @@ export function HomeImpactSummary({
                         <p className="mt-3 text-sm font-semibold leading-relaxed text-white">
                           {summary.recommendedAction.label}
                         </p>
-                        <p className="mt-2 text-sm leading-relaxed text-white/76">
+                        <p className="mt-2 text-sm leading-relaxed text-white">
                           {summary.recommendedAction.reason}
                         </p>
                         <Link
@@ -393,17 +393,17 @@ export function HomeImpactSummary({
                       </div>
                     </div>
                   ) : (
-                    <div className="mt-5 rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4 text-sm leading-relaxed text-white/72">
+                    <div className="mt-5 rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4 text-sm leading-relaxed text-white">
                       Aucune alerte prioritaire détectée sur la fenêtre courante. Le bloc reste centré
                       sur la preuve, la progression et la lecture des zones.
                     </div>
                   )}
 
                   <div className="mt-5 rounded-[1.4rem] border border-white/12 bg-[rgba(8,34,20,0.9)] p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/52">
+                    <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white">
                       Ce bloc sert à
                     </p>
-                    <div className="mt-3 grid gap-3 text-sm text-white/76">
+                    <div className="mt-3 grid gap-3 text-sm text-white">
                       <div className="flex items-center gap-2">
                         <TrendingUp size={14} className="text-emerald-300" />
                         Comparer la période en cours à la précédente

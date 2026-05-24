@@ -1,16 +1,15 @@
 // Base wrapper component for JSON-LD structured data
-"use client";
-
-import Script from "next/script";
+// Server component — pas de "use client", rendu direct dans <head>
 
 interface JsonLdProps {
   data: Record<string, unknown>;
+  id: string;
 }
 
-export function JsonLd({ data }: JsonLdProps) {
+export function JsonLd({ data, id }: JsonLdProps) {
   return (
-    <Script
-      id="json-ld"
+    <script
+      id={id}
       type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
     />

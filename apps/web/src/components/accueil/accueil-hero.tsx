@@ -42,7 +42,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             <div className="relative z-10 flex h-full flex-col justify-between p-7 sm:p-9 lg:p-11">
               <div className="flex items-center justify-between gap-3">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/7 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-emerald-50/80 backdrop-blur-xl">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/7 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-white backdrop-blur-xl">
                   <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
                   Accueil
                 </div>
@@ -54,29 +54,29 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                   <h1 className="max-w-[13ch] text-[clamp(2.95rem,4.15vw,4.4rem)] font-black leading-[0.9] tracking-[-0.07em] text-white drop-shadow-[0_14px_34px_rgba(2,6,23,0.42)] lg:whitespace-nowrap">
                     Clean My Map
                   </h1>
-                  <p className="max-w-2xl text-[1.08rem] leading-[1.7] text-emerald-50/76 sm:text-[1.12rem]">
+                  <p className="max-w-2xl text-[1.08rem] leading-[1.7] text-white sm:text-[1.12rem]">
                     Cultivons l&apos;entraide pour dépolluer, cartographier et
                     transformer chaque action terrain en preuve utile.
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-emerald-50/84">
+                  <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-white">
                     Dépolluer
                   </span>
-                  <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-emerald-50/84">
+                  <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-white">
                     Cartographier
                   </span>
-                  <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-emerald-50/84">
+                  <span className="inline-flex items-center rounded-full border border-emerald-300/16 bg-emerald-300/10 px-4 py-2 text-[10px] font-black uppercase tracking-[0.26em] text-white">
                     Impacter
                   </span>
                 </div>
 
                 <div className="max-w-2xl space-y-3">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-50/70">
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white">
                     Carte interactive · Compagnon GPS · Hub opérationnel
                   </p>
-                  <p className="text-base leading-relaxed text-emerald-50/68 sm:text-[1.03rem]">
+                  <p className="text-base leading-relaxed text-white sm:text-[1.03rem]">
                     Une interface pensée pour montrer l&apos;impact réel, orienter
                     les actions et donner un accès rapide aux espaces clés.
                   </p>
@@ -109,18 +109,18 @@ export function HomeHero({ metrics }: HomeHeroProps) {
             <div className="relative z-10 flex h-full flex-col p-7 sm:p-9 lg:p-10">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="space-y-2">
-                  <p className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.32em] text-white/88 sm:text-[12px]">
+                  <p className="flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.32em] text-white sm:text-[12px]">
                     <span className="h-3.5 w-3.5 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]" />
                     Impact terrain 2026
                   </p>
-                  <p className="max-w-md text-sm leading-relaxed text-emerald-50/66 sm:text-[13px]">
+                  <p className="max-w-md text-sm leading-relaxed text-white sm:text-[13px]">
                     Données terrain certifiées. Formules exposées en
                     méthodologie.
                   </p>
                 </div>
                 <Link
                   href="/methodology"
-                  className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/6 px-4 text-[10px] font-black uppercase tracking-[0.2em] text-white/82 shadow-[0_12px_24px_-18px_rgba(2,6,23,0.78)] transition-colors hover:border-white/18 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
+                  className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/6 px-4 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-[0_12px_24px_-18px_rgba(2,6,23,0.78)] transition-colors hover:border-white/18 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
                 >
                   <Info size={12} />
                   Méthodologie

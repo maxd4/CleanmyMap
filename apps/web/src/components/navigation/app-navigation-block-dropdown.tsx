@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 import type { NavigationItem, NavigationSpace } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
@@ -14,7 +14,7 @@ type AppNavigationBlockDropdownProps = {
   locale: Locale;
   onTrackNavigation: (href: string, label: string, spaceId: string | null) => void;
   pathname: string;
-  ribbonChrome: RibbonChrome;
+  ribbonChrome?: RibbonChrome; // conservé pour compatibilité, non utilisé
   space: NavigationSpace;
 };
 
@@ -27,7 +27,6 @@ export function AppNavigationBlockDropdown({
   locale,
   onTrackNavigation,
   pathname,
-  ribbonChrome,
   space,
 }: AppNavigationBlockDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,14 +40,12 @@ export function AppNavigationBlockDropdown({
     minPanelWidth: 340,
   });
 
-  const panelStyle = useMemo(
-    () => ({
-      backgroundImage: ribbonChrome.backgroundImage,
-      backgroundColor: ribbonChrome.backgroundColor,
-      borderColor: ribbonChrome.borderColor,
-    }),
-    [ribbonChrome.backgroundColor, ribbonChrome.backgroundImage, ribbonChrome.borderColor],
-  );
+  // Fond vert foncé fixe — lisible, cohérent avec l'identité écologique
+  const panelStyle = {
+    backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
+    backgroundColor: "rgba(5,46,22,0.98)",
+    borderColor: "rgba(52,211,153,0.22)",
+  } as const;
 
   const isActiveSpace = space.id === activeSpaceId;
   const activeItem = space.items.find((item) => isActivePath(pathname, item.href)) ?? null;
@@ -200,7 +197,7 @@ export function AppNavigationBlockDropdown({
             >
               <div className="flex items-center justify-between border-b border-white/10 px-4 py-3.5">
                 <div className="min-w-0">
-                  <p className="truncate text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">
+                  <p className="truncate text-[10px] font-bold uppercase tracking-[0.18em] text-white">
                     {locale === "fr" ? "Bloc" : "Block"}
                   </p>
                   <h3 className="truncate text-[0.95rem] font-black text-white">
@@ -242,7 +239,7 @@ export function AppNavigationBlockDropdown({
                     );
                   })
                 ) : (
-                  <li className="rounded-2xl border border-dashed border-white/16 px-3 py-3 text-[12px] text-white/72">
+                  <li className="rounded-2xl border border-dashed border-white/16 px-3 py-3 text-[12px] text-white">
                     {locale === "fr"
                       ? "Aucune rubrique accessible pour ce bloc."
                       : "No accessible pages for this block."}
@@ -251,9 +248,9 @@ export function AppNavigationBlockDropdown({
               </ul>
 
               {activeItem ? (
-                <div className="border-t border-white/10 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/60">
+                <div className="border-t border-white/10 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
                   {locale === "fr" ? "Rubrique active" : "Active page"}:{" "}
-                  <span className="text-white/85">{activeItem.label[locale]}</span>
+                  <span className="text-white">{activeItem.label[locale]}</span>
                 </div>
               ) : null}
             </motion.div>

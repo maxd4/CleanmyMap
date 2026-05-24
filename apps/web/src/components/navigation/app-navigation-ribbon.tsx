@@ -356,8 +356,9 @@ export function AppNavigationRibbon({
                         preferencesPlacement.alignRight ? "right-0" : "left-0",
                       )}
                       style={{
-                        backgroundImage: ribbonChrome.backgroundImage,
-                        borderColor: ribbonChrome.borderColor,
+                        backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
+                        backgroundColor: "rgba(5,46,22,0.98)",
+                        borderColor: "rgba(52,211,153,0.22)",
                       }}
                     >
                       <SitePreferencesControls />
@@ -431,8 +432,9 @@ export function AppNavigationRibbon({
                         feedbackPlacement.alignRight ? "right-0" : "left-0",
                       )}
                       style={{
-                        backgroundImage: ribbonChrome.backgroundImage,
-                        borderColor: ribbonChrome.borderColor,
+                        backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
+                        backgroundColor: "rgba(5,46,22,0.98)",
+                        borderColor: "rgba(52,211,153,0.22)",
                       }}
                     >
                       <div className="space-y-1">
