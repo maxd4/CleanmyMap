@@ -59,10 +59,19 @@ return (
     <OrganizationJsonLd />
     <WebSiteJsonLd />
     <FAQJsonLd />
+    {initialButtonThemeVariables ? (
+      <style
+        id="cmm-initial-theme"
+        dangerouslySetInnerHTML={{
+          __html: `:root{${Object.entries(initialButtonThemeVariables)
+            .map(([k, v]) => `${k}:${v};`)
+            .join("")}}`,
+        }}
+      />
+    ) : null}
   </head>
   <body
     className="relative isolate min-h-full overflow-x-hidden bg-background text-foreground font-sans"
-    style={initialButtonThemeVariables as React.CSSProperties | undefined}
   >
 <SitePreferencesProvider
 initialDisplayMode={displayModePreference.displayMode}
