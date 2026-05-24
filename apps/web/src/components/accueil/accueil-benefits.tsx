@@ -83,7 +83,7 @@ export function HomeBenefits({ benefits }: HomeBenefitsProps) {
             <article
               key={benefit.title}
               data-gsap-reveal
-              className="group relative overflow-hidden rounded-[1.5rem] border border-emerald-100/18 bg-[linear-gradient(180deg,rgba(6,42,25,0.98)_0%,rgba(4,27,16,0.98)_100%)] p-5 shadow-[0_24px_50px_-28px_rgba(5,34,20,0.82)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100/30 hover:shadow-[0_30px_60px_-30px_rgba(5,34,20,0.88)]"
+              className="group relative overflow-hidden rounded-[1.5rem] border border-emerald-100/18 bg-[linear-gradient(180deg,rgba(20,100,70,0.94)_0%,rgba(14,85,55,0.94)_100%)] p-5 shadow-[0_24px_50px_-28px_rgba(5,34,20,0.82)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100/30 hover:shadow-[0_30px_60px_-30px_rgba(5,34,20,0.88)]"
             >
               <div
                 className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border ${benefit.border} ${benefit.bg} shadow-lg ${benefit.color}`}

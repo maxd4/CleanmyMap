@@ -68,7 +68,7 @@ export function OriginCredibility() {
         <div className="mt-10 grid gap-4 lg:grid-cols-[minmax(0,1.28fr)_minmax(0,0.92fr)] lg:gap-7 xl:grid-cols-[minmax(0,1.34fr)_minmax(0,0.86fr)]">
           <article
             data-gsap-reveal
-            className="rounded-[1.8rem] border border-emerald-100/18 bg-[linear-gradient(180deg,rgba(6,42,25,0.98)_0%,rgba(4,27,16,0.98)_100%)] p-6 shadow-[0_24px_50px_-30px_rgba(5,34,20,0.86)] backdrop-blur-xl sm:p-8 lg:p-10"
+            className="rounded-[1.8rem] border border-emerald-100/18 bg-[linear-gradient(180deg,rgba(20,100,70,0.94)_0%,rgba(14,85,55,0.94)_100%)] p-6 shadow-[0_24px_50px_-30px_rgba(5,34,20,0.86)] backdrop-blur-xl sm:p-8 lg:p-10"
           >
             <div className="mb-6 flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/15 bg-emerald-300/10 text-emerald-200 shadow-[0_12px_30px_-16px_rgba(74,222,128,0.45)]">
@@ -93,7 +93,7 @@ export function OriginCredibility() {
                 actions de dépollution pour offrir une visibilité inédite sur
                 l&apos;impact environnemental local.
               </p>
-              <div className="rounded-[1.35rem] border border-emerald-300/14 bg-[rgba(8,34,20,0.9)] p-4 text-sm leading-relaxed cmm-text-card-copy">
+              <div className="rounded-[1.35rem] border border-emerald-300/14 bg-[rgba(10,44,28,0.9)] p-4 text-sm leading-relaxed cmm-text-card-copy">
                 <div className="flex items-start gap-3">
                   <Sparkles size={18} className="mt-0.5 flex-shrink-0 text-emerald-300" />
                   <span>
@@ -112,7 +112,7 @@ export function OriginCredibility() {
                 <div
                   key={card.title}
                   data-gsap-reveal
-                  className="rounded-[1.35rem] border border-emerald-100/16 bg-[linear-gradient(180deg,rgba(6,42,25,0.97)_0%,rgba(4,27,16,0.98)_100%)] p-5 shadow-[0_18px_40px_-28px_rgba(5,34,20,0.8)]"
+                  className="rounded-[1.35rem] border border-emerald-100/16 bg-[linear-gradient(180deg,rgba(20,100,70,0.94)_0%,rgba(14,85,55,0.94)_100%)] p-5 shadow-[0_18px_40px_-28px_rgba(5,34,20,0.8)]"
                 >
                   <div className={`mb-3 flex items-center gap-2 ${card.tone}`}>
                     <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/10">

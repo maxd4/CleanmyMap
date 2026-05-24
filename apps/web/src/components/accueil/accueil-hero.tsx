@@ -97,7 +97,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
           </div>
 
           <div className="relative min-h-[560px] overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_36px_90px_-44px_rgba(2,6,23,0.72)]">
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(3,20,13,0.98)_0%,rgba(5,33,20,0.98)_100%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(12,80,56,0.92)_0%,rgba(20,90,60,0.92)_100%)]" />
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_72%_50%_at_15%_0%,rgba(52,211,153,0.16),transparent_55%),radial-gradient(ellipse_46%_36%_at_84%_10%,rgba(132,204,22,0.14),transparent_58%),radial-gradient(ellipse_44%_40%_at_82%_92%,rgba(16,185,129,0.12),transparent_62%)]" />
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-emerald-300 via-lime-300 to-emerald-200" />
             <div className="relative z-10 flex h-full flex-col p-7 sm:p-9 lg:p-10">
@@ -124,7 +124,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                   return (
                     <div
                       key={metric.key}
-                      className={`group relative min-h-[130px] overflow-hidden rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(6,38,23,0.95)_0%,rgba(4,25,15,0.98)_100%)] p-4 shadow-[0_12px_28px_-20px_rgba(2,6,23,0.78)] transition-transform hover:-translate-y-0.5 ${s.card}`}
+                      className={`group relative min-h-[130px] overflow-hidden rounded-[1.2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(18,94,60,0.92)_0%,rgba(12,80,50,0.92)_100%)] p-4 shadow-[0_12px_28px_-20px_rgba(2,6,23,0.78)] transition-transform hover:-translate-y-0.5 ${s.card}`}
                     >
                       <div className={`absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r ${s.bar}`} />
                       <div className="flex items-start justify-between gap-3">

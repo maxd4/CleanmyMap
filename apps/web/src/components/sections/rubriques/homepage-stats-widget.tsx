@@ -42,7 +42,7 @@ export function HomepageStatsWidget() {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="group relative overflow-hidden rounded-[2rem] border border-emerald-100/16 bg-[linear-gradient(180deg,rgba(6,42,25,0.97)_0%,rgba(4,27,16,0.98)_100%)] p-5 shadow-2xl backdrop-blur-3xl"
+      className="group relative overflow-hidden rounded-[2rem] border border-emerald-100/16 bg-[linear-gradient(180deg,rgba(20,100,70,0.94)_0%,rgba(14,85,55,0.94)_100%)] p-5 shadow-2xl backdrop-blur-3xl"
     >
       <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
          <Sparkles size={60} className="text-emerald-100" />
