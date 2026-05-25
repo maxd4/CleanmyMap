@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Compass, Layers3, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
+import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { usePageFamily } from "@/lib/ui/page-families";
 
 type LearnRubricShellProps = {
   title: { fr: string; en: string };
@@ -40,6 +42,7 @@ export function LearnRubricShell({
   children,
 }: LearnRubricShellProps) {
   const { locale } = useSitePreferences();
+  const pageFamily = usePageFamily();
   const isFrench = locale === "fr";
   const isLightOrange = accent === "orange" || accent === "yellow";
 
@@ -81,60 +84,41 @@ export function LearnRubricShell({
               ) : null}
             </div>
 
-            <div className="max-w-3xl space-y-3">
-              <p
-                className={
-                  isLightOrange
-                    ? "text-[11px] font-black uppercase tracking-[0.22em] text-yellow-700"
-                    : "text-[11px] font-black uppercase tracking-[0.22em] text-white/78"
-                }
-              >
-                {isFrench ? "Page dédiée" : "Dedicated page"}
-              </p>
-              <h1
-                className={
-                  isLightOrange
-                    ? "text-4xl font-black tracking-tight text-slate-900 md:text-6xl"
-                    : "text-4xl font-black tracking-tight md:text-6xl"
-                }
-              >
-                {title[locale]}
-              </h1>
-              <h2
-                className={
-                  isLightOrange
-                    ? "text-xl font-semibold text-slate-800 md:text-2xl"
-                    : "text-xl font-semibold text-white/90 md:text-2xl"
-                }
-              >
-                {subtitle[locale]}
-              </h2>
-              <p
-                className={
-                  isLightOrange
-                    ? "max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg"
-                    : "max-w-3xl text-base leading-relaxed text-white/82 md:text-lg"
-                }
-              >
-                {description[locale]}
-              </p>
-              {highlights?.length ? (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {highlights.map((item) => (
-                    <span
-                      key={item[locale]}
-                      className={
-                        isLightOrange
-                          ? "inline-flex min-h-9 items-center rounded-full border border-yellow-200 bg-yellow-50 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-yellow-900"
-                          : "inline-flex min-h-9 items-center rounded-full border border-white/16 bg-white/10 px-3.5 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white/88 backdrop-blur-sm"
-                      }
-                    >
+            <PageHero
+              family={pageFamily}
+              eyebrow={isFrench ? "Page dédiée" : "Dedicated page"}
+              title={title[locale]}
+              subtitle={subtitle[locale]}
+              badges={
+                <>
+                  <PageHeroBadge family={pageFamily}>
+                    {isFrench ? "Hub pédagogique" : "Learning hub"}
+                  </PageHeroBadge>
+                  <PageHeroBadge family={pageFamily} muted>
+                    {isFrench ? "Index + reprise" : "Index + resume"}
+                  </PageHeroBadge>
+                  <PageHeroBadge family={pageFamily} muted>
+                    {isFrench ? "Lecture courte" : "Short read"}
+                  </PageHeroBadge>
+                  {highlights?.map((item) => (
+                    <PageHeroBadge key={item[locale]} family={pageFamily} muted>
                       {item[locale]}
-                    </span>
+                    </PageHeroBadge>
                   ))}
-                </div>
-              ) : null}
-            </div>
+                </>
+              }
+              className="max-w-3xl"
+            />
+
+            <p
+              className={
+                isLightOrange
+                  ? "max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg"
+                  : "max-w-3xl text-base leading-relaxed text-white/82 md:text-lg"
+              }
+            >
+              {description[locale]}
+            </p>
           </div>
 
           <aside

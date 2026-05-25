@@ -168,6 +168,7 @@ function applyImplicitRouteOverrides(
   }
   if (
     isRoute(pathname, "/reports") ||
+    isRoute(pathname, "/gamification") ||
     isRoute(pathname, "/sections/gamification")
   ) {
     return { ...IMPACT_REPORTS_FAMILY, exceptionId: "reports-impact" };

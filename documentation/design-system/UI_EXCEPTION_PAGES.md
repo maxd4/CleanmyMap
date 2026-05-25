@@ -18,7 +18,7 @@ Lecture de la colonne `Exception UI ?` :
 | Route | Raison | Palette conservée |
 |---|---|---|
 | `/explorer` | Sommaire du site déjà abouti, utilisé comme référence de navigation et de structure visuelle | Palette dédiée du Sommaire |
-| `/methodologie` | Exception rouge alignée sur les pages d'impact pour la lecture scientifique | Rouge d'impact |
+| `/methodologie` | Exception rouge alignée sur les pages d'impact, exposée comme rubrique cliquable du bloc Cartographie & Impact | Rouge d'impact |
 
 ## Exceptions rouges d'impact
 

@@ -5,12 +5,13 @@
 - **Route** : `/methodologie`
 - **Fichier(s) source(s)** :
 - `apps/web/src/app/(app)/methodologie/page.tsx`
-- **Type fonctionnel** : exception UI — impact
-- **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
+- **Type fonctionnel** : rubrique cliquable — impact
+- **Famille / bloc fonctionnel** : Cartographie & Impact (bloc)
 - **Statut** : public
 - **Contexte nécessaire** : Aucun
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
-- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Objectif utilisateur principal** : Exposer la méthode de lecture de l'impact et les repères de synthèse.
+- **Action principale attendue** : Consulter la méthodologie et les vues d'impact associées.
+- **Point d'entrée** : CTA cliquable depuis les surfaces du bloc Cartographie & Impact, notamment `/actions/map`.
 - **Palette attendue** : red
 - **Scope** : terminé
 - **Terminée** : oui
@@ -20,21 +21,23 @@
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :
 - Titre de page
-- cartes métriques
+- cartes de synthèse
 - CTA de navigation
 - indicateurs prioritaires
+- repères méthodologiques
 - **Textes à réduire ou supprimer** :
 - Rappels redondants
 - badges de contexte répétés
 - blocs d'aide trop verbeux
 - **Bulles / cartes / contextes trop nombreux** : Le bloc mélange des cartes de lecture et des CTA, la densité doit rester maîtrisée.
+- **Accès bloc** : la page doit rester explicitement accessible comme rubrique du bloc et non comme page isolée cachée dans un sous-menu.
 - **Composants UI concernés** :
 - Titre
-- cards métriques
+- cards de synthèse
 - CTA
 - nav secondaire
 - sidebar / ribbon
-- **Captures attendues** : desktop, mobile
+- **Captures attendues** : desktop
 - **Priorité de correction** : faible
 
 

@@ -54,6 +54,7 @@ function isPortFree(port) {
 }
 
 const { preferredPort, passthrough } = parsePortArgs(process.argv.slice(2));
+let forwardedSignal = null;
 
 if (strictPort && !(await isPortFree(preferredPort))) {
   console.error(
@@ -102,6 +103,7 @@ const child = spawn(
 );
 
 function forwardSignal(signal) {
+  forwardedSignal = signal;
   child.kill(signal);
 }
 
@@ -110,7 +112,8 @@ process.on("SIGTERM", () => forwardSignal("SIGTERM"));
 
 child.on("exit", (code, signal) => {
   if (signal) {
-    process.kill(process.pid, signal);
+    const signalExitCode = signal === "SIGINT" ? 130 : signal === "SIGTERM" ? 143 : 1;
+    process.exit(forwardedSignal ? signalExitCode : 1);
     return;
   }
 

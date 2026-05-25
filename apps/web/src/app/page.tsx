@@ -6,6 +6,7 @@ import {
 import {
   buildHomeCommunityActivity,
   computeLandingCounters,
+  formatLandingOverviewErrorMessage,
   loadLandingOverview,
 } from "@/lib/accueil/data";
 import {
@@ -14,6 +15,9 @@ import {
 } from "@/lib/accueil/config";
 import type { Metadata } from "next";
 import { metadata as appMetadata } from "@/lib/metadata";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   ...appMetadata,
@@ -91,7 +95,13 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const overview = await loadLandingOverview().catch(() => null);
+  let overview = null;
+  let overviewLoadError: string | null = null;
+  try {
+    overview = await loadLandingOverview();
+  } catch (error) {
+    overviewLoadError = formatLandingOverviewErrorMessage(error);
+  }
   const floor = new Date();
   floor.setUTCDate(floor.getUTCDate() - 365);
   const floorDate = floor.toISOString().slice(0, 10);
@@ -117,7 +127,10 @@ export default async function HomePage() {
     <main className="relative min-h-screen overflow-hidden font-sans">
       <div className="relative z-10">
         <HomeHero metrics={metrics} />
-        <HomeCommunityActivity activity={communityActivity} />
+        <HomeCommunityActivity
+          activity={communityActivity}
+          errorMessage={overviewLoadError}
+        />
         <OriginCredibility />
       </div>
     </main>

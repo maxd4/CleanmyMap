@@ -3547,6 +3547,20 @@ Le coût de la chaîne d’intégration et de déploiement reste modéré mais c
 
 Ce coût devient plus visible quand chaque petite modification déclenche des compilations complets, des aperçus de validation et des relances répétées par des agents ou scripts de développement. Le problème n’est pas seulement le calcul ponctuel, mais l’accumulation de cycles inutiles dans un projet qui itère vite.
 
+### Comparaison entre une session Codex et un cycle GitHub/Vercel
+
+Pour CleanMyMap, la comparaison utile n’est pas entre “Codex” et “GitHub” au sens abstrait, mais entre une **heure de session de code assistée par Codex** et un **cycle réel de modification** composé d’un push, de jobs GitHub Actions éventuels, d’un build Vercel et d’un déploiement. Vercel documente que les builds sont exécutés à chaque déploiement, notamment lorsqu’un commit est poussé vers un dépôt connecté, et que les régions d’exécution des fonctions peuvent être configurées séparément [@vercel_builds; @vercel_deployments_overview; @vercel_functions_region].
+
+Sur la base des hypothèses retenues dans ce rapport, une heure de session Codex correspond à environ **1 kWh** et **0,2 kgCO₂e**, tandis qu’un cycle GitHub/Vercel léger reste de l’ordre de **0,1 kWh** et **0,04 à 0,05 kgCO₂e** si le build est exécuté dans une région à forte intensité carbone comme `iad1`. Le tableau ci-dessous donne un ordre de grandeur prudent :
+
+| Scénario | Électricité | CO₂e | Lecture |
+|---|---:|---:|---|
+| 1 h de session Codex | ~1 kWh | ~0,2 kgCO₂e | coût de travail assisté continu |
+| 1 push GitHub + 1 build/déploiement Vercel | ~0,1 kWh | ~0,04 à 0,05 kgCO₂e | coût d’un cycle d’itération léger |
+| 1 push + plusieurs jobs CI + aperçus Vercel | >0,1 kWh | >0,05 kgCO₂e | coût cumulatif lorsque la chaîne se multiplie |
+
+La conclusion à retenir est simple : une heure de session Codex pèse environ dix fois plus qu’un petit cycle GitHub/Vercel en énergie, et souvent davantage en carbone dès que la chaîne de déploiement reste compacte. À l’inverse, si la CI se charge de tests multiples, d’aperçus répétés ou de relances inutiles, le coût du cycle grimpe rapidement. Pour CleanMyMap, le levier de réduction principal n’est donc pas de supprimer ces outils, mais de réduire le nombre de sessions longues et le nombre de cycles déclenchés sans gain réel.
+
 ### Analyse des dépendances
 
 Dépendances à surveiller :

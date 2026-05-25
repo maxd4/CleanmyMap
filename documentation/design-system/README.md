@@ -102,7 +102,9 @@ Objectif :
    - Pages accueil (/dashboard, /profil) → amber/orange
    - Pages pilotage (/pilotage, /sponsor-portal, /elus) → amber/brun
    - Sommaire (/explorer) → exception validée, palette dédiée conservée
-   - Méthodologie (/methodologie) → exception rouge d'impact
+   Bloc "Cartographie & Impact" :
+   - Cartographie (/actions/map, /sandbox) → sky
+   - Impact (/reports, /gamification, /methodologie) → red
    - Admin & Super-admin (/admin, /admin/forms, /admin/services, /admin/godmode) → famille autonome
    - Auth & Onboarding (/sign-in, /sign-up, /onboarding, /onboarding/localisation) → famille autonome, fond lavande clair vers vert menthe clair; carte Clerk violet nuit / indigo foncé; boutons inchangés
    - Institutionnel & Légal (/contact, /conditions-*, /mentions-legales, /politique-*, /en) → famille autonome, sobre et institutionnelle; `LegalSection` comme brique partagée possible
@@ -189,7 +191,10 @@ Objectif :
 - `/dashboard`, `/profil` → `amber`/`orange`
 - `/pilotage`, `/sponsor-portal`, `/elus` → `amber`/`brun`
 - `/explorer` → exception validée, palette Sommaire conservée
-- `/methodologie` → exception validée, palette rouge d'impact conservée
+
+**Bloc "Cartographie & Impact"**
+- `/actions/map`, `/sandbox` → `sky`
+- `/reports`, `/gamification`, `/methodologie` → `red`
 
 **Familles autonomes**
 - Auth & Onboarding → `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` (fond lavande clair vers vert menthe clair; carte Clerk violet nuit / indigo foncé; boutons inchangés)

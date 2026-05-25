@@ -58,6 +58,14 @@ export async function loadLandingOverview() {
   });
 }
 
+export function formatLandingOverviewErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return `Supabase est momentanément indisponible. ${error.message}`;
+  }
+
+  return "Supabase est momentanément indisponible. Réessaie dans un instant.";
+}
+
 function getAccueilVisibleContracts(
   contracts: ActionDataContract[],
   floorDate: string,

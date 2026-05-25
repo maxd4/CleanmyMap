@@ -13,7 +13,7 @@ import {
   HubCategory,
 } from "./community-section-components";
 import { SectionShell } from "@/components/sections/rubriques/shared";
-import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Info, Sparkles, MapPin, Target } from "lucide-react";
 
@@ -76,14 +76,12 @@ export function CommunitySection() {
       title={fr ? "Hub Communautaire" : "Community Hub"}
       subtitle={fr ? "Coordonnez vos actions, gérez les missions et découvrez des solutions durables." : "Coordinate your actions, manage missions and discover sustainable solutions."}
       icon={Users}
-      gradient="from-pink-500/20 via-fuchsia-500/10 to-transparent"
     >
       <div className="space-y-12 pb-20">
         {/* Modernized Control Bar */}
-        <RubriqueCard 
+        <FamilyRubriqueCard 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          themeColor="rose"
           watermarkIcon={Sparkles}
           watermarkSize={80}
           className="flex flex-col lg:flex-row lg:items-center justify-between gap-8"
@@ -114,7 +112,7 @@ export function CommunitySection() {
               fr={fr}
             />
           </div>
-        </RubriqueCard>
+        </FamilyRubriqueCard>
 
         {/* Views Container with Staggered Entrance */}
         <AnimatePresence mode="wait">

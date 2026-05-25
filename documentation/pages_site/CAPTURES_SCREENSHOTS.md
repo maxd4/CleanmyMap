@@ -13,6 +13,12 @@ Le script `documentation/pages_site/generate-canonical-pages.mjs` structure le r
 - Les fichiers de contexte, alias temporaires ou exports intermédiaires doivent rester séparés des captures WebP officielles.
 - Les fiches route décrivent aussi la capture attendue, même lorsque le dossier `photo/` est encore vide.
 
+### Consigne temporaire
+
+- Jusqu'à nouvel ordre, ne produire que les captures `desktop`.
+- Aucune nouvelle capture `mobile` ne doit être générée sans instruction explicite.
+- Les fiches peuvent continuer à documenter la capture mobile attendue, mais le flux opérationnel reste desktop-first tant que cette règle n'est pas levée.
+
 ### Structure des dossiers
 
 ```
@@ -35,7 +41,7 @@ documentation/liberte-UX-UI/
 
 **Captures officielles** :
 - `photo/[route]-desktop.webp` (1440x1200, WebP)
-- `photo/[route]-mobile.webp` (390x844, WebP)
+- les captures `mobile` sont suspendues jusqu'à nouvel ordre
 
 ## Utilisation
 

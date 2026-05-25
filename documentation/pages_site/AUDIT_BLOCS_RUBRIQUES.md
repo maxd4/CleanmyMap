@@ -76,7 +76,10 @@ Certains blocs ont plusieurs teintes directrices selon le type de page :
 - Pages accueil (`/dashboard`, `/profil`) → `amber` / `orange`
 - Pages pilotage (`/pilotage`, `/sponsor-portal`, `/elus`) → `amber` / `brun`
 - Sommaire (`/explorer`) → exception validée, palette dédiée conservée
-- Méthodologie (`/methodologie`) → exception rouge d'impact
+
+**Bloc "Cartographie & Impact"** :
+- Cartographie (`/actions/map`, `/sandbox`) → `sky`
+- Impact (`/reports`, `/gamification`, `/methodologie`) → `red`
 
 **Familles autonomes hors 5 blocs** :
 - Auth & Onboarding (`/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`) → `auth`

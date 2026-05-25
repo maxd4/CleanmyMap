@@ -106,7 +106,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
 
                 </div>
                 <Link
-                  href="/methodology"
+                  href="/methodologie"
                   className="inline-flex h-10 items-center gap-2 rounded-full border border-white/10 bg-white/6 px-4 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-[0_12px_24px_-18px_rgba(2,6,23,0.78)] transition-colors hover:border-white/18 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/35"
                 >
                   <Info size={12} />

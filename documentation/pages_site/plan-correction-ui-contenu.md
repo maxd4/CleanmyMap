@@ -22,7 +22,6 @@ Références de départ:
 
 - Corriger par petits lots, jamais par refonte globale.
 - Garder `/explorer` hors scope tant que la page Sommaire reste la référence aboutie.
-- Garder `/methodologie` hors scope fonctionnel tant que sa palette rouge d'impact reste la règle validée.
 - Pour les pages auth, conserver les boutons existants et ne corriger que les surfaces, les bulles et les textes.
 - Pour les pages auth, documenter un fallback local si Clerk n'est pas joignable afin d'éviter les chargements infinis sur localhost.
 - La configuration initiale doit tenir sur une seule page après authentification; les anciennes sous-routes d'onboarding doivent devenir des redirections si elles n'apportent pas d'UI propre.
@@ -39,6 +38,7 @@ Objectif:
 Routes concernées:
 
 - `/actions/map`
+- `/methodologie`
 - `/gamification`
 - `/observatoire`
 - `/sandbox`
@@ -67,6 +67,7 @@ Fichiers à modifier:
 Palette attendue:
 
 - `/actions/map` -> `sky`
+- `/methodologie` -> `red`
 - `/gamification` -> `red`
 - `/observatoire` -> `sky`
 - `/sandbox` -> `sky`
@@ -94,7 +95,6 @@ Composants à simplifier:
 Pages hors scope à éviter:
 
 - `/explorer`
-- `/methodologie` (rouge d'impact)
 - `/`
 - `/accueil`
 
@@ -110,11 +110,12 @@ Ordre recommandé d'exécution:
 2. `/observatoire`
 3. `/sandbox`
 4. `/gamification`
-5. `/community`
-6. `/messagerie`
-7. `/open-data`
-8. `/parcours`
-9. `/parcours/[profile]`
+5. `/methodologie`
+6. `/community`
+7. `/messagerie`
+8. `/open-data`
+9. `/parcours`
+10. `/parcours/[profile]`
 
 ## Lot 2 — Pages auth
 
@@ -579,7 +580,6 @@ Pages hors scope à éviter:
 
 - toutes les pages hors famille parente
 - `/explorer`
-- `/methodologie` (rouge d'impact)
 
 Risques de régression:
 
@@ -668,7 +668,6 @@ Composants à simplifier:
 Pages hors scope à éviter:
 
 - `/explorer`
-- `/methodologie` (rouge d'impact)
 - pages hors blocs déjà stabilisées
 
 Risques de régression:

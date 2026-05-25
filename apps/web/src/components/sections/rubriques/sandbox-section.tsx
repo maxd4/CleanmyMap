@@ -4,6 +4,7 @@ import useSWR from "swr";
 import { formatDateTimeShort } from "@/components/sections/rubriques/helpers";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { 
   Terminal, 
   Activity, 
@@ -16,10 +17,12 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export function SandboxSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
+  const pageFamily = resolvePageFamily("/sections/sandbox");
 
   const { data, error, isLoading, isValidating, mutate } = useSWR(
     "section-sandbox-health",
@@ -84,28 +87,30 @@ export function SandboxSection() {
     <SectionShell 
       id="sandbox"
       icon={Terminal}
-      gradient="from-sky-100 via-sky-50 to-transparent"
       hideHeader
     >
       <div className="space-y-10 pt-12 pb-20 text-slate-950">
-        <header className="space-y-4">
-          <div className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-sky-100 px-5 py-2">
-            <Terminal size={14} className="text-sky-700" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-950">
-              {fr ? "Carte d'entrainement" : "Training map"}
-            </span>
-          </div>
-          <div className="max-w-3xl space-y-3">
-            <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-950">
-              {fr ? "Tester la carte sans risque" : "Test the map safely"}
-            </h1>
-            <p className="text-lg md:text-xl font-medium leading-relaxed text-slate-700">
-              {fr
-                ? "Espace d'entrainement technique pour vérifier les filtres, les points API et l'état du système avec une lecture claire et contrastée."
-                : "Technical training space to verify filters, API points and system health with a clear, high-contrast reading."}
-            </p>
-          </div>
-        </header>
+        <PageHero
+          family={pageFamily}
+          eyebrow={fr ? "Carte d'entrainement" : "Training map"}
+          title={fr ? "Tester la carte sans risque" : "Test the map safely"}
+          subtitle={
+            fr
+              ? "Espace d'entrainement technique pour vérifier les filtres, les points API et l'état du système avec une lecture claire et contrastée."
+              : "Technical training space to verify filters, API points and system health with a clear, high-contrast reading."
+          }
+          badges={
+            <>
+              <PageHeroBadge family={pageFamily}>
+                {fr ? "Contrôle technique" : "Technical control"}
+              </PageHeroBadge>
+              <PageHeroBadge family={pageFamily} muted>
+                {fr ? "Prévisualisation" : "Preview"}
+              </PageHeroBadge>
+            </>
+          }
+          className="max-w-3xl"
+        />
 
         {/* Health Monitoring Dashboard */}
         <div className="p-10 rounded-[3rem] border border-sky-200/80 bg-sky-50/95 backdrop-blur-3xl shadow-[0_24px_56px_-32px_rgba(56,189,248,0.18)] space-y-10">

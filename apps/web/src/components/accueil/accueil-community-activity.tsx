@@ -7,6 +7,7 @@ import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
 
 type HomeCommunityActivityProps = {
   activity: HomeCommunityActivitySummary;
+  errorMessage?: string | null;
 };
 
 const TONE_STYLES: Record<
@@ -21,6 +22,7 @@ const TONE_STYLES: Record<
 
 export function HomeCommunityActivity({
   activity,
+  errorMessage,
 }: HomeCommunityActivityProps) {
   const sectionRef = useRef<HTMLElement | null>(null);
 
@@ -57,6 +59,21 @@ export function HomeCommunityActivity({
 
         <div className="relative mx-auto mt-10 w-full max-w-4xl">
           <div className="relative space-y-4">
+            {errorMessage ? (
+              <div
+                data-gsap-reveal
+                role="alert"
+                className="rounded-[1.5rem] border border-amber-200/24 bg-[linear-gradient(180deg,rgba(42,25,8,0.96)_0%,rgba(31,17,6,0.98)_100%)] p-5 shadow-[0_18px_36px_-24px_rgba(124,45,18,0.82)]"
+              >
+                <p className="cmm-text-card-label text-sm font-bold text-amber-100">
+                  Données terrain indisponibles.
+                </p>
+                <p className="cmm-text-card-copy mt-1 text-sm text-amber-50/90">
+                  {errorMessage}
+                </p>
+              </div>
+            ) : null}
+
             {activity.items.length === 0 ? (
               <div
                 data-gsap-reveal

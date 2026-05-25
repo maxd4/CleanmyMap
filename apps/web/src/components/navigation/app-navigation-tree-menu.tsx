@@ -9,6 +9,10 @@ import type { Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
+import {
+  getNavigationDropdownPanelStyle,
+  getNavigationDropdownTitleLabel,
+} from "./navigation-dropdown-theme";
 
 type AppNavigationTreeMenuProps = {
   activeSpaceId: NavigationSpace["id"] | null;
@@ -44,12 +48,7 @@ export function AppNavigationTreeMenu({
     minPanelWidth: 420,
   });
 
-  // Fond vert foncé fixe — lisible, cohérent avec l'identité écologique
-  const panelStyle = {
-    backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
-    backgroundColor: "rgba(5,46,22,0.98)",
-    borderColor: "rgba(52,211,153,0.22)",
-  } as const;
+  const panelStyle = getNavigationDropdownPanelStyle(activeSpaceId ?? spaces[0]?.id ?? null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -185,7 +184,7 @@ export function AppNavigationTreeMenu({
               exit={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98 }}
               transition={{ duration: 0.16, ease: "easeOut" }}
               className={cn(
-                "fixed inset-x-4 z-50 max-h-[calc(100vh-7rem)] overflow-hidden rounded-[1.75rem] border shadow-[0_28px_70px_-30px_rgba(2,6,23,0.75)] lg:absolute lg:inset-x-auto lg:max-h-[min(72vh,42rem)] lg:w-[min(34rem,calc(100vw-5rem))]",
+                "fixed inset-x-4 z-50 max-h-[calc(100vh-7rem)] overflow-hidden rounded-[1.75rem] border text-black shadow-[0_28px_70px_-30px_rgba(15,23,42,0.24)] lg:absolute lg:inset-x-auto lg:max-h-[min(72vh,42rem)] lg:w-[min(34rem,calc(100vw-5rem))]",
                 "top-[calc(var(--app-ribbon-top-offset,0.5rem)+4.75rem)] lg:top-full",
                 placement.openUp ? "lg:bottom-full lg:top-auto lg:mb-3" : "lg:mt-3",
                 placement.alignRight ? "lg:right-0" : "lg:left-0",
@@ -194,11 +193,11 @@ export function AppNavigationTreeMenu({
               onMouseLeave={closeMenuAfterHover}
               style={panelStyle}
             >
-              <div className="flex items-center justify-end border-b border-white/10 px-3 py-2.5 sm:px-4">
+              <div className="flex items-center justify-end border-b border-black/10 px-3 py-2.5 sm:px-4">
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/12 bg-white/10 text-white/74 transition hover:border-white/22 hover:bg-white/16 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-black/12 bg-white/60 text-black/70 transition hover:border-black/22 hover:bg-white/75 hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
                   aria-label={locale === "fr" ? "Fermer le menu de navigation" : "Close navigation menu"}
                 >
                   <Menu className="h-4 w-4" />
@@ -217,12 +216,12 @@ export function AppNavigationTreeMenu({
                       <section
                         key={space.id}
                         className={cn(
-                          "rounded-[1.2rem] border bg-white/8 p-1.5",
+                          "rounded-[1.2rem] border bg-white/45 p-1.5",
                           isOpenSpace
-                            ? "border-blue-300/30 bg-white/12"
+                            ? "border-black/18 bg-white/65"
                             : isCurrentSpace
-                              ? "border-emerald-300/24 bg-emerald-400/8"
-                              : "border-white/12",
+                              ? "border-black/16 bg-white/55"
+                              : "border-black/10",
                         )}
                       >
                         <button
@@ -235,25 +234,25 @@ export function AppNavigationTreeMenu({
                             setOpenSpaceId((current) => (current === space.id ? null : space.id))
                           }
                           className={cn(
-                            "cmm-dropdown-trigger flex min-h-11 w-full items-center justify-between gap-2 rounded-[0.95rem] px-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40 [&::-webkit-details-marker]:hidden",
+                            "cmm-dropdown-trigger flex min-h-11 w-full items-center justify-between gap-2 rounded-[0.95rem] px-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20 [&::-webkit-details-marker]:hidden",
                             isOpenSpace
-                              ? "bg-white/14 text-white"
-                              : "text-white/86 hover:bg-white/10 hover:text-white",
+                              ? "bg-white/75 text-black"
+                              : "text-black/80 hover:bg-white/60 hover:text-black",
                           )}
                         >
                           <span className="flex min-w-0 items-center gap-2.5">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-lg">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/70 text-lg text-black">
                               {space.icon}
                             </span>
                             <span className="min-w-0">
-                              <span className="block truncate cmm-text-small font-bold uppercase tracking-[0.12em]">
-                                {space.label[locale]}
+                              <span className="block truncate cmm-text-small font-bold tracking-[0.02em] text-black">
+                                {getNavigationDropdownTitleLabel(locale, space.label[locale])}
                               </span>
                             </span>
                           </span>
                           <ChevronDown
                             className={cn(
-                              "h-4 w-4 shrink-0 text-white/70 transition-transform duration-150",
+                              "h-4 w-4 shrink-0 text-black/60 transition-transform duration-150",
                               isOpenSpace && "rotate-180",
                             )}
                             aria-hidden="true"
@@ -286,13 +285,13 @@ export function AppNavigationTreeMenu({
                                           setIsOpen(false);
                                         }}
                                         className={cn(
-                                          "block rounded-xl border px-3 py-2.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
+                                          "block rounded-xl border px-3 py-2.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20",
                                           isActiveItem
-                                            ? "border-blue-300/35 bg-blue-400/14 text-white"
-                                            : "border-transparent bg-transparent text-white/82 hover:border-white/12 hover:bg-white/10 hover:text-white",
+                                            ? "border-black/18 bg-white/72 text-black"
+                                            : "border-black/8 bg-white/40 text-black/78 hover:border-black/12 hover:bg-white/60 hover:text-black",
                                         )}
                                       >
-                                        <span className="block cmm-text-small font-semibold">
+                                        <span className="block cmm-text-small font-semibold text-black">
                                           {item.label[locale]}
                                         </span>
                                       </Link>

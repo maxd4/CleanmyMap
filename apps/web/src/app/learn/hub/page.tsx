@@ -8,13 +8,12 @@ import {
   Brain,
   Clock3,
   Compass,
-  GraduationCap,
   Layers3,
-  Sparkles,
 } from "lucide-react";
 import { CognitivePrimer } from "@/components/learn/cognitive-primer";
 import { CognitiveSignalChip } from "@/components/learn/cognitive-signal-chip";
 import { LearnVisualCard } from "@/components/learn/learn-visual-card";
+import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import {
@@ -27,6 +26,7 @@ import {
   recordLearnPageVisit,
   type LearnPageId,
 } from "@/lib/learning/learn-progress";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 type PageCopy = Record<Exclude<LearnPageId, "hub">, { fr: string; en: string }>;
 
@@ -66,6 +66,7 @@ export default function LearnHubPage() {
   const { locale } = useSitePreferences();
   const { t } = useTranslation("learnHub");
   const [progressValue, setProgressValue] = useState(() => readLearnProgressState());
+  const pageFamily = resolvePageFamily("/learn/hub");
 
   useEffect(() => {
     setProgressValue(recordLearnPageVisit("hub"));
@@ -103,38 +104,28 @@ export default function LearnHubPage() {
 
         <div className="relative grid gap-8 lg:grid-cols-[1.25fr_0.75fr] lg:items-end">
           <div className="space-y-6">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-amber-900">
-                <Sparkles size={14} aria-hidden="true" />
-                {locale === "fr" ? "Hub pédagogique" : "Learning hub"}
-              </span>
-              <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-slate-700">
-                {locale === "fr" ? "Index + reprise" : "Index + resume"}
-              </span>
-              <span className="inline-flex items-center rounded-full border border-amber-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-slate-700">
-                {locale === "fr" ? "Lecture en moins d'1 minute" : "Less than 1 minute read"}
-              </span>
-            </div>
-
-            <div className="max-w-3xl space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-2xl border border-amber-200 bg-white p-3 shadow-sm">
-                  <GraduationCap size={30} />
-                </div>
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.22em] text-amber-700">
-                    {t("header_suptitle")}
-                  </p>
-                  <h1 className="text-4xl font-black tracking-tight text-slate-900 md:text-6xl">
-                    {t("header_title")}
-                  </h1>
-                </div>
-              </div>
-
-              <p className="max-w-2xl text-base leading-relaxed text-slate-600 md:text-lg">
-                {t("header_desc")}
-              </p>
-            </div>
+            <PageHero
+              family={pageFamily}
+              eyebrow={t("header_suptitle")}
+              title={t("header_title")}
+              subtitle={t("header_desc")}
+              badges={
+                <>
+                  <PageHeroBadge family={pageFamily}>
+                    {locale === "fr" ? "Hub pédagogique" : "Learning hub"}
+                  </PageHeroBadge>
+                  <PageHeroBadge family={pageFamily} muted>
+                    {locale === "fr" ? "Index + reprise" : "Index + resume"}
+                  </PageHeroBadge>
+                  <PageHeroBadge family={pageFamily} muted>
+                    {locale === "fr"
+                      ? "Lecture en moins d'1 minute"
+                      : "Less than 1 minute read"}
+                  </PageHeroBadge>
+                </>
+              }
+              className="max-w-3xl"
+            />
 
             <div className="flex flex-wrap gap-3">
               <Link

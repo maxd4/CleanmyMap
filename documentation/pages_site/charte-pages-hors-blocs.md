@@ -64,7 +64,6 @@ Le plan `PAGE_FAMILIES_PLAN.md` documente deja les limites du modele `page-famil
 ### Exceptions UI deja stabilisees
 
 - `/explorer` reste la page Sommaire de reference.
-- `/methodologie` est une exception rouge de type impact.
 - Les pages d'impact rouges (`/reports`, `/gamification`) sont documentees comme exceptions UI rouges du bloc Cartographie & Impact.
 - La homepage (`/` et `/accueil`) est une famille autonome, pas une exception de bloc.
 
@@ -84,12 +83,13 @@ Ces elements sont hors perimetre de la charte parce qu ils sont deja figes, term
 |---|---|---|
 | `/` et `/accueil` | Famille autonome | Identite visuelle propre de la homepage |
 | `/explorer` | Exception UI validee | Sommaire considere comme abouti |
-| `/methodologie` | Exception UI validee | Palette rouge d'impact |
 | `/reports` et `/gamification` | Exceptions UI rouges | Impact conserve comme exception visuelle rouge |
 | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | Famille autonome | Fond lavande clair vers vert menthe clair, Clerk violet nuit / indigo fonce |
 | `/declaration` | Alias / redirection | Pas de UI propre |
 | `/community`, `/messagerie`, `/open-data`, `/sandbox`, `/gamification` | Alias / redirections | Pas de UI propre |
 | Pages deja couvertes par les 5 blocs principaux | Hors scope | Suivent leur charte de bloc existante |
+
+La route `/methodologie` est maintenant documentee dans le bloc `Cartographie & Impact` et ne releve plus de cette charte hors blocs.
 
 ## Proposition de classification des pages hors blocs
 

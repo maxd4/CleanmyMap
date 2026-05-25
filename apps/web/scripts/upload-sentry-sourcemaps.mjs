@@ -132,6 +132,20 @@ function resolveSourceFile(source, mapPath) {
   return null;
 }
 
+function isSyntheticWebpackRuntimeSource(source) {
+  if (typeof source !== "string") {
+    return false;
+  }
+
+  return (
+    source.startsWith("webpack://_N_E/webpack/") ||
+    source.startsWith("webpack://webpack/runtime/") ||
+    source.includes("/webpack/before-startup") ||
+    source.includes("/webpack/startup") ||
+    source.includes("/webpack/after-startup")
+  );
+}
+
 function hydrateMissingSourceContent(mapPath) {
   let map;
   try {
@@ -158,7 +172,9 @@ function hydrateMissingSourceContent(mapPath) {
     const sourcePath = resolveSourceFile(map.sources[index], mapPath);
     if (!sourcePath) {
       if (map.sources[index]) {
-        sourcesContent[index] = "";
+        sourcesContent[index] = isSyntheticWebpackRuntimeSource(map.sources[index])
+          ? "/* synthetic Next.js webpack runtime source */"
+          : "";
       }
       continue;
     }
@@ -220,6 +236,10 @@ function stageMatchedArtifacts(sourceRoot, sourceMaps) {
 const authToken = process.env.SENTRY_AUTH_TOKEN?.trim();
 const org = process.env.SENTRY_ORG?.trim();
 const project = process.env.SENTRY_PROJECT?.trim();
+const preserveOriginalMaps =
+  process.env.VERCEL === "1" ||
+  process.env.VERCEL_ENV === "production" ||
+  process.env.VERCEL_ENV === "preview";
 const release =
   process.env.SENTRY_RELEASE?.trim() ||
   process.env.VERCEL_GIT_COMMIT_SHA?.trim() ||
@@ -304,7 +324,11 @@ try {
   clientArgs.push(clientStage.stagingRoot);
   runSentryCli(clientArgs);
 } finally {
-  deleteFiles(clientMaps);
+  if (preserveOriginalMaps) {
+    log("Preserving client source maps on the build filesystem to avoid Vercel artifact collector errors.");
+  } else {
+    deleteFiles(clientMaps);
+  }
   rmSync(clientStage.stagingRoot, { recursive: true, force: true });
 }
 
@@ -361,12 +385,20 @@ if (serverMaps.length > 0) {
       serverArgs.push(serverStage.stagingRoot);
       runSentryCli(serverArgs);
     } finally {
-      deleteFiles(serverMaps);
+      if (preserveOriginalMaps) {
+        log("Preserving server source maps on the build filesystem to avoid Vercel artifact collector errors.");
+      } else {
+        deleteFiles(serverMaps);
+      }
       rmSync(serverStage.stagingRoot, { recursive: true, force: true });
     }
   } else {
     warn("No server bundles with matching source maps found in .next/server. Server stack traces will rely on runtime source maps only.");
-    deleteFiles(serverMaps);
+    if (preserveOriginalMaps) {
+      log("Preserving server source maps on the build filesystem to avoid Vercel artifact collector errors.");
+    } else {
+      deleteFiles(serverMaps);
+    }
     rmSync(serverStage.stagingRoot, { recursive: true, force: true });
   }
 } else {

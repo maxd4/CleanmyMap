@@ -187,7 +187,7 @@ export function HomeImpactSummary({
             </div>
             <div className="flex flex-wrap gap-3">
               <Link
-                href="/methodology"
+                href="/methodologie"
                 title="Comprendre le calcul des indicateurs"
               className="inline-flex items-center gap-2 rounded-2xl border border-white/14 bg-[rgba(8,34,20,0.94)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:border-white/24 hover:bg-[rgba(10,42,25,0.98)]"
               >

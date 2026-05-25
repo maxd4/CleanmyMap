@@ -77,7 +77,7 @@ Le point important est le suivant :
 | `PageHero` | Fait |
 | `SectionShell` résout la famille via `pathname` | Fait |
 | Migration de `/dashboard`, `/pilotage`, `/profil/*`, `/sponsor-portal` | Fait |
-| Exceptions `/explorer` et `/methodologie` | Fait |
+| Exception `/explorer` | Fait |
 
 ### Cartes et ponts bloc 01
 
@@ -234,9 +234,9 @@ Piste :
 | Type | Couverture attendue | Exemples de routes | Remarque |
 |---|---|---|---|
 | 00 Homepage | autonome | `/`, `/accueil` | hors bloc |
-| 01 Accueil & Pilotage | famille bloc | `/dashboard`, `/pilotage`, `/profil`, `/profil/[profile]`, `/sponsor-portal`, `/explorer`, `/methodologie`, `/parcours` | contient les exceptions UI et les profils |
+| 01 Accueil & Pilotage | famille bloc | `/dashboard`, `/pilotage`, `/profil`, `/profil/[profile]`, `/sponsor-portal`, `/explorer`, `/parcours` | contient les exceptions UI et les profils |
 | 02 Agir | famille bloc | `/actions/new`, `/actions/history`, `/signalement`, `/missions/[id]`, `/sections/route`, `/declaration` | famille métier orientée action |
-| 03 Cartographie & Impact | famille bloc | `/actions/map`, `/gamification`, `/observatoire`, `/profil/impact`, `/reports`, `/sandbox` | deux sous-teintes logiques sky / red |
+| 03 Cartographie & Impact | famille bloc | `/actions/map`, `/methodologie`, `/gamification`, `/observatoire`, `/profil/impact`, `/reports`, `/sandbox` | deux sous-teintes logiques sky / red |
 | 04 Réseau & Discussions | famille bloc | `/community`, `/messagerie`, `/open-data`, `/partners/*` | palette indigo / pink selon les sous-espaces |
 | 05 Apprendre | famille bloc | `/learn/*` | palette yellow |
 | 06 Auth & Onboarding | autonome | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | charte auth dédiée |
@@ -266,7 +266,8 @@ Piste :
 
 | Date | Action |
 |---|---|
-| Session 1 | Phases 0–1 : registre `page-families`, `PageHero`, `SectionShell`, migration bloc 01, exceptions `/explorer` et `/methodologie`. |
+| Session 1 | Phases 0–1 : registre `page-families`, `PageHero`, `SectionShell`, migration bloc 01, exception `/explorer`. |
+| Session 4 | Reclassification de `/methodologie` vers le bloc 03 Cartographie & Impact et alignement documentaire associé. |
 | Session 2 | Phase 2 : `PageFamilyCardTokens`, `card-presets.ts`, `FamilyRubriqueCard`, migration `/profil/[profile]`. |
 | Session 3 | Correction `ADMIN_CARD` dans `card-presets.ts`. Pilote phase 3 : `/signalement` → `FamilyRubriqueCard`, gradient hero retiré. |
 

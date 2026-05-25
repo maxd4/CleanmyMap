@@ -292,7 +292,7 @@ export function NationalStatsSection() {
                  </p>
               </div>
            </div>
-           <Link href="/about/methodology" className="relative z-10 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white hover:text-slate-950 transition-all flex items-center gap-3">
+           <Link href="/methodologie" className="relative z-10 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white hover:text-slate-950 transition-all flex items-center gap-3">
               En savoir plus
               <ArrowRight size={16} />
            </Link>

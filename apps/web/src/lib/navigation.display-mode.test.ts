@@ -134,6 +134,7 @@ describe("navigation display modes", () => {
     expect(visualizeSpace?.items.map((item) => item.routeId)).toEqual([
       "map",
       "sandbox",
+      "methodologie",
       "reports",
       "gamification",
     ]);
@@ -185,6 +186,7 @@ describe("navigation display modes", () => {
     ]);
     expect(learnSpace?.items.map((item) => item.label.fr)).toContain("S'entraîner");
     expect(visualizeSpace?.items.map((item) => item.label.fr)).toContain("Rapports d'impact");
+    expect(visualizeSpace?.items.map((item) => item.label.fr)).toContain("Méthodologie");
   });
 
   it("hides the empty pilot space for benevole", () => {
@@ -216,13 +218,13 @@ describe("navigation display modes", () => {
     expect(fallback[1]?.label.fr).toBe("Rapports d'impact");
   });
 
-  it("places feedback in the pilotage category", () => {
+  it("places feedback in the community category", () => {
     const categories = getNavigationCategoriesForProfile("max", "exhaustif");
     const pilotageCategory = categories.find((category) => category.id === "pilotage");
     const communityCategory = categories.find((category) => category.id === "community");
 
-    expect(pilotageCategory?.items.map((item) => item.routeId)).toContain("feedback");
-    expect(communityCategory?.items.map((item) => item.routeId)).not.toContain("feedback");
+    expect(pilotageCategory?.items.map((item) => item.routeId)).not.toContain("feedback");
+    expect(communityCategory?.items.map((item) => item.routeId)).toContain("feedback");
   });
 
   it("limits profile switch entries to active profile for non-admin users", () => {

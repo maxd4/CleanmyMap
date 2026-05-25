@@ -20,9 +20,9 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
 - Règle pratique: une page = une teinte dominante, un même système de glows et de contrastes, puis seulement la couleur change selon la route.
 - Exception de cadrage: la homepage (`/` et `/accueil`) n’est pas une exception de bloc; c’est une famille autonome avec sa propre palette.
 - Exception validée: le Sommaire (`/explorer`) conserve sa palette actuelle tant qu'il reste la référence UX la plus aboutie.
-- Exception validée: la Méthodologie (`/methodologie`) adopte la palette rouge d'impact comme lecture scientifique dédiée.
-- Exception validée: les pages d'impact (`/reports`, `/gamification`) restent des exceptions rouges documentées.
-- Règle canonique: `/methodologie` fait partie des lectures d'impact et suit la palette rouge.
+- Bloc "Cartographie & Impact": la Méthodologie (`/methodologie`) adopte la palette rouge d'impact comme lecture scientifique dédiée.
+- Les pages d'impact (`/reports`, `/gamification`, `/methodologie`) restent des exceptions rouges documentées.
+- Règle canonique: `/methodologie` fait partie des lectures d'impact et suit la palette rouge du bloc Cartographie & Impact.
 - Famille autonome Auth & Onboarding: fond lavande clair vers vert menthe clair, carte Clerk violet nuit / indigo foncé, bulles décoratives indigo / violet / vert profond, texte carte blanc, texte secondaire lavande claire, accents verts réservés à la validation; les boutons restent régis par la charte bouton existante.
 - Familles autonomes documentées à part: Auth & Onboarding, Institutionnel & Légal, Système & Utilitaires, Admin & Super-admin, Print & Export.
 - Institutionnel & Légal: surfaces sobres, palette slate / gris clair / blanc, contraste typographique élevé, largeur de lecture limitée, pas de gradients visibles ni de glow; `LegalSection` peut servir de brique commune.

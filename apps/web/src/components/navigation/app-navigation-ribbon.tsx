@@ -24,25 +24,12 @@ import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
 import { AppNavigationBlockDropdown } from "./app-navigation-block-dropdown";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
-import type { DisplayMode } from "@/lib/ui/preferences";
 
 type AppNavigationRibbonProps = {
   currentProfile: AppProfile;
   profileLabel: string;
   identity: UserIdentity | null;
 };
-
-function getDisplayModeLabel(locale: string, displayMode: DisplayMode): string {
-  if (displayMode === "sobre") {
-    return locale === "fr" ? "Sobre" : "Calm";
-  }
-
-  if (displayMode === "minimaliste") {
-    return locale === "fr" ? "Minimaliste" : "Minimal";
-  }
-
-  return locale === "fr" ? "Exhaustif" : "Exhaustive";
-}
 
 export function AppNavigationRibbon({
   currentProfile,
@@ -70,7 +57,6 @@ export function AppNavigationRibbon({
     ribbonRef,
     `${pathname}:${displayMode}:${locale}:${currentProfile}`,
   );
-  const displayModeLabel = getDisplayModeLabel(locale, displayMode);
 
   const spaces = useMemo(() => {
     const rawSpaces = getNavigationSpacesForProfile(currentProfile, displayMode, locale);
@@ -492,18 +478,8 @@ export function AppNavigationRibbon({
 
             {isAuthenticated ? (
               <div className="flex items-center gap-2 lg:gap-3">
-                <div className="hidden md:block">
-                  <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] p-1.5 shadow-[0_18px_36px_-30px_rgba(2,6,23,0.92)]">
-                    <span className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/12 bg-white/10 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-white/78">
-                      {locale === "fr" ? "Aperçu local" : "Local preview"}
-                    </span>
-                    <span className="inline-flex min-h-10 items-center justify-center rounded-full border border-cyan-100/12 bg-cyan-400/12 px-3 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-50">
-                      {displayModeLabel}
-                    </span>
-                    <div className="rounded-full border border-white/10 bg-white/8 px-1.5 py-1">
-                      {identity ? <AccountIdentityChip identity={identity} /> : null}
-                    </div>
-                  </div>
+                <div className="rounded-full border border-white/10 bg-white/8 px-1.5 py-1">
+                  {identity ? <AccountIdentityChip identity={identity} /> : null}
                 </div>
                 <NotificationBell />
                 <div className="flex h-11 w-11 items-center justify-center rounded-full border border-white/14 bg-white/10 shadow-[0_16px_32px_-26px_rgba(2,6,23,0.9)]">
