@@ -129,6 +129,7 @@ Les captures temporaires, versions contexte ou exports de travail ne remplacent 
 ### 4. Avant de Commit
 ```
 □ Vérifier les checklists
+□ Toujours partir de l'état complet du repo avec `git add -A`
 □ Lancer les tests
 □ Documenter si nécessaire
 ```

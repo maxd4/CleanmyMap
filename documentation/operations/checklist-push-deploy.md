@@ -27,6 +27,13 @@ Fallback statique:
 - Eviter `vercel deploy --prod` direct depuis la CLI sur ce repo: le `rootDirectory=apps/web` peut dupliquer le chemin et casser le deploy local CLI.
 - Si un deploy doit etre force manuellement, verifier d'abord que les env Vercel pointent vers le bon projet Supabase avant tout push.
 
+## Regle de commit
+
+- Toujours prendre l'etat complet du repo avant un commit: `git add -A` depuis la racine du dépôt.
+- Ne pas faire de commit partiel par fichier ou sous-dossier sauf exception explicitement demandee par l'utilisateur.
+- Verifier `git status` sur l'ensemble du repo avant commit pour s'assurer qu'aucun changement utile ne reste hors staging.
+- Si le commit doit inclure une documentation, des assets ou des changements code, ils partent dans le meme commit global.
+
 ## Tri des fichiers
 
 - **A garder dans Git**: documentation metier, runbooks, schemas, migrations, scripts, pages_site canonique, assets de reference.
