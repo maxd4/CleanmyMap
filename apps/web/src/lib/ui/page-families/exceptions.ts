@@ -14,7 +14,7 @@ export const PAGE_FAMILY_ROUTE_EXCEPTIONS: PageFamilyRouteException[] = [
   },
   {
     id: "methodologie-impact",
-    note: "Exception rouge d'impact dans la famille accueil-pilotage",
+    note: "Rubrique rouge d'impact cliquable dans la famille cartographie-impact",
     match: (pathname) =>
       pathname === "/methodologie" || pathname.startsWith("/methodologie/"),
     familyId: "cartographie-impact",

@@ -2,12 +2,26 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
+import {
+  BarChart3,
+  ChevronRight,
+  ChevronUp,
+  Dumbbell,
+  Info,
+  MapPinned,
+  Medal,
+} from "lucide-react";
 import type { NavigationItem, NavigationSpace } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import { cn } from "@/lib/utils";
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
+import {
+  getNavigationDropdownPanelStyle,
+  getNavigationDropdownTitleLabel,
+} from "./navigation-dropdown-theme";
 
 type AppNavigationBlockDropdownProps = {
   activeSpaceId: NavigationSpace["id"] | null;
@@ -22,6 +36,23 @@ function isActivePath(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function getVisualizeItemIcon(routeId: string) {
+  switch (routeId) {
+    case "map":
+      return MapPinned;
+    case "sandbox":
+      return Dumbbell;
+    case "reports":
+      return BarChart3;
+    case "gamification":
+      return Medal;
+    case "methodologie":
+      return Info;
+    default:
+      return ChevronRight;
+  }
+}
+
 export function AppNavigationBlockDropdown({
   activeSpaceId,
   locale,
@@ -30,6 +61,7 @@ export function AppNavigationBlockDropdown({
   space,
 }: AppNavigationBlockDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -40,15 +72,20 @@ export function AppNavigationBlockDropdown({
     minPanelWidth: 340,
   });
 
-  // Fond vert foncé fixe — lisible, cohérent avec l'identité écologique
-  const panelStyle = {
-    backgroundImage: "linear-gradient(135deg, rgba(5,46,22,0.98) 0%, rgba(6,78,37,0.97) 54%, rgba(4,55,28,0.97) 100%)",
-    backgroundColor: "rgba(5,46,22,0.98)",
-    borderColor: "rgba(52,211,153,0.22)",
-  } as const;
-
+  const panelStyle = getNavigationDropdownPanelStyle(space.id);
   const isActiveSpace = space.id === activeSpaceId;
-  const activeItem = space.items.find((item) => isActivePath(pathname, item.href)) ?? null;
+  const isVisualizeSpace = space.id === "visualize";
+  const visualizePanelStyle = isVisualizeSpace
+    ? {
+        ...panelStyle,
+        backgroundColor: "#ffffff",
+        borderColor: "transparent",
+        borderStyle: "solid",
+        borderWidth: "1px",
+        borderImage:
+          "linear-gradient(90deg, rgba(34,211,238,0.95) 0%, rgba(255,255,255,0.55) 38%, rgba(239,68,68,0.95) 100%) 1",
+      }
+    : panelStyle;
 
   useEffect(() => {
     if (!isOpen) {
@@ -152,7 +189,7 @@ export function AppNavigationBlockDropdown({
       <span
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute left-1/2 bottom-full z-40 mb-2 -translate-x-1/2 translate-y-1 scale-95 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] opacity-0 shadow-[0_18px_36px_-24px_rgba(2,6,23,0.65)] transition-all duration-150",
+          "pointer-events-none absolute left-1/2 bottom-full z-40 mb-2 -translate-x-1/2 translate-y-1 scale-95 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] opacity-0 shadow-[0_18px_36px_-24px_rgba(2,6,23,0.18)] transition-all duration-150 text-black",
           "group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100",
         )}
         style={panelStyle}
@@ -181,78 +218,159 @@ export function AppNavigationBlockDropdown({
               role="region"
               aria-label={`${space.label[locale]} - ${locale === "fr" ? "rubriques" : "pages"}`}
               tabIndex={-1}
-              initial={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98 }}
+              initial={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98, x: "-50%" }}
+              animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
+              exit={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98, x: "-50%" }}
               transition={{ duration: 0.16, ease: "easeOut" }}
               className={cn(
-                "absolute z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.55rem] border shadow-[0_32px_74px_-34px_rgba(2,6,23,0.82)]",
+                  isVisualizeSpace
+                  ? "absolute left-1/2 z-50 mt-2 w-[min(20.75rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.5rem] border text-[#0f2567] shadow-[0_24px_52px_-26px_rgba(15,23,42,0.16)]"
+                  : "absolute left-1/2 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.55rem] border text-black shadow-[0_32px_74px_-34px_rgba(15,23,42,0.24)]",
                 placement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
-                placement.alignRight ? "right-0" : "left-0",
               )}
               onMouseEnter={openMenu}
               onMouseLeave={closeMenuSoon}
               onKeyDown={handleKeyDown}
-              style={panelStyle}
+              style={visualizePanelStyle}
             >
-              <div className="flex items-center justify-between border-b border-white/10 px-4 py-3.5">
-                <div className="min-w-0">
-                  <p className="truncate text-[10px] font-bold uppercase tracking-[0.18em] text-white">
-                    {locale === "fr" ? "Bloc" : "Block"}
-                  </p>
-                  <h3 className="truncate text-[0.95rem] font-black text-white">
-                    {space.label[locale]}
-                  </h3>
-                </div>
-                <span
-                  className={cn(
-                    "shrink-0 rounded-full border border-white/12 bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-white",
-                  )}
-                >
-                  {space.items.length}
-                </span>
-              </div>
+              {isVisualizeSpace ? (
+                <div className="px-3 pb-2.5 pt-2.5 sm:px-3.5 sm:pt-3">
+                  <header className="flex items-start justify-between gap-2.5">
+                    <div>
+                      <h3 className="whitespace-nowrap text-[0.9rem] font-black leading-tight tracking-[-0.03em] text-slate-950 sm:text-[0.98rem]">
+                        {getNavigationDropdownTitleLabel(locale, space.label[locale])}
+                      </h3>
+                    </div>
 
-              <ul className="max-h-[min(22rem,calc(100vh-10rem))] space-y-1 overflow-y-auto px-3 py-3">
-                {space.items.length > 0 ? (
-                  space.items.map((item) => {
-                    const isActiveItem = isActivePath(pathname, item.href);
-                    return (
-                      <li key={item.id}>
-                        <Link
-                          href={item.href}
-                          aria-current={isActiveItem ? "page" : undefined}
-                          title={item.description[locale]}
-                          onClick={() => handleTrackNavigation(item)}
-                          className={cn(
-                            "block rounded-2xl border px-3 py-2.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40",
-                            isActiveItem
-                              ? "border-white/18 bg-white/16 text-white"
-                              : "border-white/10 bg-white/[0.06] text-white/86 hover:border-white/18 hover:bg-white/[0.11] hover:text-white",
-                          )}
-                        >
-                          <span className="block text-[13px] font-semibold leading-snug">
-                            {item.label[locale]}
-                          </span>
-                        </Link>
+                    <button
+                      type="button"
+                      aria-label={locale === "fr" ? "Réduire le menu" : "Collapse menu"}
+                      className="rounded-full p-2 text-cyan-700 transition hover:bg-cyan-100/70"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <ChevronUp className="h-5 w-5 stroke-[3]" />
+                    </button>
+                  </header>
+
+                  <nav className="mt-2" aria-label={space.label[locale]}>
+                    <ul className="space-y-1">
+                      {space.items.length > 0 ? (
+                        space.items.map((item) => {
+                          const isActiveItem = isActivePath(pathname, item.href);
+                          const Icon = getVisualizeItemIcon(item.routeId);
+                          return (
+                            <li key={item.id}>
+                              <button
+                                type="button"
+                                title={item.description[locale]}
+                                aria-pressed={isActiveItem}
+                                onClick={() => {
+                                  handleTrackNavigation(item);
+                                  router.push(item.href);
+                                }}
+                                className="group block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
+                              >
+                                <div
+                                  className={cn(
+                                    "rounded-[0.9rem] p-[1.5px] transition-all duration-200",
+                                    isActiveItem
+                                      ? "bg-[linear-gradient(90deg,rgba(34,211,238,0.96)_0%,rgba(255,255,255,0.98)_46%,rgba(239,68,68,0.92)_100%)] shadow-[0_7px_16px_rgba(15,23,42,0.05)]"
+                                      : "bg-[linear-gradient(90deg,rgba(34,211,238,0.92)_0%,rgba(255,255,255,0.92)_46%,rgba(239,68,68,0.86)_100%)] shadow-[0_7px_16px_rgba(15,23,42,0.05)] group-hover:scale-[1.01] group-hover:shadow-[0_10px_24px_rgba(15,23,42,0.09)]",
+                                  )}
+                                >
+                                  <div
+                                    className={cn(
+                                      "flex min-h-[1.95rem] items-center gap-1 rounded-[calc(0.9rem-1.5px)] border px-[0.55rem] py-[0.35rem] text-left transition-all duration-200",
+                                      isActiveItem
+                                        ? "border-cyan-300/80 bg-white/94 text-slate-950"
+                                        : "border-cyan-200/70 bg-white/82 group-hover:border-red-500 group-hover:ring-2 group-hover:ring-red-300/25 group-hover:bg-white",
+                                    )}
+                                  >
+                                    <span
+                                      className={cn(
+                                        "flex h-[1.625rem] w-[1.625rem] shrink-0 items-center justify-center rounded-full border bg-gradient-to-br from-cyan-100 via-white to-rose-100 shadow-[0_0_0_2px_rgba(6,182,212,0.10)] transition-transform duration-200 group-hover:scale-[1.03] sm:h-7 sm:w-7",
+                                        isActiveItem
+                                          ? "border-cyan-300 text-cyan-700"
+                                          : "border-cyan-200 text-cyan-700",
+                                      )}
+                                    >
+                                      <Icon className="h-[0.68rem] w-[0.68rem] sm:h-3 sm:w-3" strokeWidth={2.25} aria-hidden="true" />
+                                    </span>
+
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block whitespace-nowrap text-[0.7rem] font-medium tracking-tight text-slate-950 transition-all duration-200 origin-left group-hover:scale-[1.05] group-hover:font-bold sm:text-[0.76rem]">
+                                        {item.label[locale]}
+                                      </span>
+                                    </span>
+
+                                    <ChevronRight
+                                      className={cn(
+                                        "h-[0.68rem] w-[0.68rem] shrink-0 transition-transform duration-200 group-hover:translate-x-1.25 group-hover:scale-110 sm:h-3 sm:w-3",
+                                        isActiveItem ? "text-red-500" : "text-cyan-700",
+                                      )}
+                                      strokeWidth={3}
+                                      aria-hidden="true"
+                                    />
+                                  </div>
+                                </div>
+                              </button>
+                            </li>
+                          );
+                        })
+                      ) : (
+                        <li className="rounded-2xl border border-dashed border-black/16 px-3 py-3 text-[12px] text-black/80">
+                          {locale === "fr"
+                            ? "Aucune rubrique accessible pour ce bloc."
+                            : "No accessible pages for this block."}
+                        </li>
+                      )}
+                    </ul>
+                  </nav>
+                </div>
+              ) : (
+                <>
+                  <div className="border-b border-black/10 px-4 py-3.5">
+                    <h3 className="truncate text-[0.95rem] font-black tracking-[0.02em] text-black">
+                      {getNavigationDropdownTitleLabel(locale, space.label[locale])}
+                    </h3>
+                  </div>
+
+                  <ul className="max-h-[min(22rem,calc(100vh-10rem))] space-y-1 overflow-y-auto px-3 py-3">
+                    {space.items.length > 0 ? (
+                      space.items.map((item) => {
+                        const isActiveItem = isActivePath(pathname, item.href);
+                        return (
+                          <li key={item.id}>
+                            <Link
+                              href={item.href}
+                              aria-current={isActiveItem ? "page" : undefined}
+                              title={item.description[locale]}
+                              onClick={() => handleTrackNavigation(item)}
+                              className={cn(
+                                "block rounded-2xl border px-3 py-2.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20",
+                                isActiveItem
+                                  ? "border-black/18 bg-white/70 text-black"
+                                  : "border-black/10 bg-white/45 text-black/80 hover:border-black/18 hover:bg-white/65 hover:text-black",
+                              )}
+                            >
+                              <span className="block text-[13px] font-semibold leading-snug text-black">
+                                {item.label[locale]}
+                              </span>
+                            </Link>
+                          </li>
+                        );
+                      })
+                    ) : (
+                      <li className="rounded-2xl border border-dashed border-black/16 px-3 py-3 text-[12px] text-black/80">
+                        {locale === "fr"
+                          ? "Aucune rubrique accessible pour ce bloc."
+                          : "No accessible pages for this block."}
                       </li>
-                    );
-                  })
-                ) : (
-                  <li className="rounded-2xl border border-dashed border-white/16 px-3 py-3 text-[12px] text-white">
-                    {locale === "fr"
-                      ? "Aucune rubrique accessible pour ce bloc."
-                      : "No accessible pages for this block."}
-                  </li>
-                )}
-              </ul>
+                    )}
+                  </ul>
+                </>
+              )}
 
-              {activeItem ? (
-                <div className="border-t border-white/10 px-4 py-2.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-white">
-                  {locale === "fr" ? "Rubrique active" : "Active page"}:{" "}
-                  <span className="text-white">{activeItem.label[locale]}</span>
-                </div>
-              ) : null}
             </motion.div>
           </>
         ) : null}

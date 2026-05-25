@@ -69,6 +69,14 @@ Notes:
   `node scripts/vercel-sync-env.mjs --file=.env.local --environments=preview --preview-branch=<branch-name>`
 - Sentry is active when `NEXT_PUBLIC_SENTRY_DSN` is configured. Source-map upload is handled after the Next.js build when `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` are available.
 
+Preferred deploy path for this repo:
+
+- run `npm run backend:bootstrap` or at minimum `npm run backend:vercel:env:sync` after env changes
+- commit the changes
+- push `main`
+- let Vercel redeploy from GitHub
+- avoid `vercel deploy --prod` direct CLI deploys on this repo unless you have explicitly verified the `rootDirectory` behavior first
+
 ## Manual commands
 
 ```bash
@@ -155,6 +163,7 @@ curl -X POST http://localhost:3000/api/send \
   - The upload step stages only JavaScript bundles that have a matching `.map` file, which avoids false `missing sourcemap!` warnings and skips third-party CSS maps.
   - Production builds enable `experimental.serverSourceMaps` so server traces can be symbolicated too.
   - The upload step also disables Sentry CLI source-map reference autodetection and rewriting, because Next's generated chunks are paired through debug IDs rather than `sourceMappingURL` comments.
+  - On Vercel, the build keeps the original `.map` files on disk so the platform artifact collector does not fail with `ENOENT` while packaging the deployment.
 - `SENTRY_RELEASE` can be pinned manually; otherwise the Vercel commit SHA is used when available.
 - Standard Clerk mode uses `CLERK_DOMAIN=auth.cleanmymap.fr` and no app proxy.
 - Proxy mode is optional and only applies when `NEXT_PUBLIC_CLERK_PROXY_URL=/__clerk` is explicitly set.

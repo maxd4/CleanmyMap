@@ -124,6 +124,7 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "feedback",
   "guide",
   "sandbox",
+  "methodologie",
   "community",
   "messagerie",
   "annuaire",
@@ -149,6 +150,7 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "dashboard",
   "feedback",
   "sandbox",
+  "methodologie",
   "community",
   "messagerie",
   "annuaire",
@@ -165,7 +167,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   benevole: {
     home: ["dashboard", "explorer", "profile", "feedback"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox", "reports", "gamification"],
+    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "messagerie", "open-data"],
     connect: [],
@@ -181,7 +183,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   coordinateur: {
     home: ["dashboard", "explorer", "profile", "feedback", "pilotage", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox", "reports", "gamification"],
+    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "messagerie", "open-data"],
     connect: [],
@@ -197,7 +199,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   scientifique: {
     home: ["dashboard", "explorer", "profile", "feedback", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox", "reports", "gamification"],
+    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "messagerie", "open-data"],
     connect: [],
@@ -213,7 +215,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   elu: {
     home: ["dashboard", "explorer", "profile", "feedback", "sponsor", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox", "reports", "gamification"],
+    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "messagerie", "open-data"],
     connect: [],
@@ -229,7 +231,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   admin: {
     home: ["dashboard", "explorer", "profile", "feedback", "admin"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox", "reports", "gamification"],
+    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "messagerie", "open-data"],
     connect: [],
@@ -245,7 +247,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   max: {
     home: ["dashboard", "explorer", "profile", "feedback", "pilotage", "admin", "sponsor", "elus", "godmode"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
-    visualize: ["map", "sandbox", "reports", "gamification"],
+    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "messagerie", "open-data"],
     connect: [],

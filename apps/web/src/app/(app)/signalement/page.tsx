@@ -1,13 +1,16 @@
 import { QuickSignalementForm } from "@/components/actions/quick-signalement-form";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { cn } from "@/lib/utils";
 import { MapPin, Zap } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export default async function SignalementPage() {
   const { userId } = await getSafeAuthSession();
+  const pageFamily = resolvePageFamily("/signalement");
 
   if (!userId) {
     return (
@@ -37,10 +40,27 @@ export default async function SignalementPage() {
   return (
     <SectionShell
       id="signalement"
-      title="Signaler Pollution"
-      subtitle="Votre signalement déclenche l'analyse et la priorisation immédiate pour les équipes de dépollution citoyenne."
+      hideHeader
     >
       <div className="space-y-12 pt-8">
+        <PageHero
+          family={pageFamily}
+          eyebrow="Agir sur le terrain"
+          title="Signaler Pollution"
+          subtitle="Votre signalement déclenche l'analyse et la priorisation immédiate pour les équipes de dépollution citoyenne."
+          badges={
+            <>
+              <PageHeroBadge family={pageFamily}>
+                Déclaration certifiée
+              </PageHeroBadge>
+              <PageHeroBadge family={pageFamily} muted>
+                Analyse immédiate
+              </PageHeroBadge>
+            </>
+          }
+          className="max-w-4xl"
+        />
+
         {/* Certification Status */}
         <div className="flex flex-wrap gap-3">
           <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-emerald-400/20 bg-emerald-400/5 backdrop-blur-md">

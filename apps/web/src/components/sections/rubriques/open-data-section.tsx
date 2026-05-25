@@ -2,7 +2,7 @@
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
-import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { Database, FileJson, Globe, Code, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 
 export function OpenDataSection() {
@@ -17,12 +17,10 @@ export function OpenDataSection() {
         ? "Accédez aux données opérationnelles et indicateurs d'impact pour la recherche et l'innovation locale."
         : "Access operational data and impact indicators for research and local innovation."}
       icon={Database}
-      gradient="from-pink-500/20 via-fuchsia-500/10 to-transparent"
     >
       <div className="space-y-12 pt-8">
         {/* Intro Highlight */}
-        <RubriqueCard 
-          themeColor="rose"
+        <FamilyRubriqueCard 
           withTopBar={false}
           className="p-8 flex flex-col md:flex-row items-center justify-between gap-8 group"
         >
@@ -40,15 +38,14 @@ export function OpenDataSection() {
                 ? "Données ouvertes pour accélérer la coopération locale : API, export JSON et cadre réutilisable pour chercheurs et collectivités."
                 : "Open data to accelerate local cooperation: API access, JSON export and a reusable framework for researchers and cities."}
            </p>
-        </RubriqueCard>
+        </FamilyRubriqueCard>
 
         {/* Feature Grid */}
         <div className="grid gap-6 md:grid-cols-3">
            {/* Section 1 */}
-           <RubriqueCard 
+           <FamilyRubriqueCard 
              initial={{ opacity: 0, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
-           themeColor="rose"
            watermarkIcon={FileJson}
            watermarkSize={160}
            className="p-8 space-y-6 group"
@@ -71,14 +68,13 @@ export function OpenDataSection() {
                     ))}
                  </ul>
               </div>
-           </RubriqueCard>
+           </FamilyRubriqueCard>
 
            {/* Section 2 */}
-           <RubriqueCard 
+           <FamilyRubriqueCard 
              initial={{ opacity: 0, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.1 }}
-             themeColor="rose"
              watermarkIcon={Code}
              watermarkSize={160}
              className="p-8 space-y-6 group"
@@ -101,14 +97,13 @@ export function OpenDataSection() {
                     ))}
                  </ul>
               </div>
-           </RubriqueCard>
+           </FamilyRubriqueCard>
 
            {/* Section 3 */}
-           <RubriqueCard 
+           <FamilyRubriqueCard 
              initial={{ opacity: 0, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.2 }}
-             themeColor="rose"
              watermarkIcon={ShieldCheck}
              watermarkSize={160}
              className="p-8 space-y-6 group"
@@ -131,7 +126,7 @@ export function OpenDataSection() {
                     ))}
                  </ul>
               </div>
-           </RubriqueCard>
+           </FamilyRubriqueCard>
         </div>
 
         {/* Technical Callout */}

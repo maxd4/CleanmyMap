@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import useSWR from "swr";
-import { BarChart3, Compass, Table2, ArrowRight } from "lucide-react";
+import { BarChart3, Table2, ArrowRight } from "lucide-react";
 import { buildHomeMetrics } from "@/lib/accueil/config";
 import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
 import { ActionsMapTable } from "@/components/actions/actions-map-table";
@@ -12,8 +12,10 @@ import { ActionStoriesCarousel } from "@/components/map/ActionStoriesCarousel";
 import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
 import { isVisibleWithCategoryFilter } from "@/components/actions/map-marker-categories";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
+import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { fetchMapActions } from "@/lib/actions/http";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 import { cn } from "@/lib/utils";
 import { useMapKpiStats } from "./_hooks/use-map-kpi-stats";
 import { MapKpiRibbon } from "./_components/map-kpi-ribbon";
@@ -26,6 +28,7 @@ const INITIAL_DAYS = Math.ceil(
 );
 
 export default function ActionsMapPage() {
+  const pageFamily = resolvePageFamily("/actions/map");
   const {
     filters,
     setDays,
@@ -104,34 +107,33 @@ export default function ActionsMapPage() {
         {/* Premium Header - Lecture Spatiale */}
         <header className="relative space-y-8 pt-10 lg:pt-12">
           <div className="absolute -top-24 -left-24 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
-          
-          <div className="flex flex-wrap gap-3">
-            <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-sky-200/90 bg-sky-100/90 backdrop-blur-md">
-              <Compass size={14} className="text-sky-700 animate-spin-slow" />
-              <span className="cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">Visualiser / cartographie</span>
-            </div>
-          </div>
 
-          <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,0.6fr)] xl:gap-8">
-            <div className="max-w-4xl space-y-5">
-              <h1 className="text-[clamp(2.4rem,5.2vw,5.7rem)] leading-[0.92] tracking-[-0.05em] text-slate-950 font-bold lg:whitespace-nowrap">
-                Cartographie des actions
-              </h1>
-              <p className="text-[clamp(0.95rem,1.6vw,1.25rem)] font-medium leading-[1.42] text-slate-700/90 lg:whitespace-nowrap">
-                Suivez les interventions et les données terrain en temps réel.
-              </p>
-              <div className="flex flex-wrap items-center gap-3 pt-1">
-                <Link href="/actions/new" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-sky-200 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition-colors hover:bg-sky-100">
-                  Déclarer <ArrowRight size={14} className="transition-transform hover:translate-x-1" />
-                </Link>
-                <Link href="/observatoire" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white">
-                  Observatoire <ArrowRight size={14} />
-                </Link>
-                <Link href="/methodologie" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-sky-700 transition-colors hover:text-slate-950 hover:bg-white">
-                  Méthodologie <ArrowRight size={14} />
-                </Link>
-              </div>
-            </div>
+          <PageHero
+            family={pageFamily}
+            eyebrow="Visualiser / cartographie"
+            title="Cartographie des actions"
+            subtitle="Suivez les interventions et les données terrain en temps réel."
+            badges={
+              <>
+                <PageHeroBadge family={pageFamily}>Lecture terrain</PageHeroBadge>
+                <PageHeroBadge family={pageFamily} muted>
+                  Données en temps réel
+                </PageHeroBadge>
+              </>
+            }
+            className="max-w-4xl"
+          />
+
+          <div className="flex flex-wrap items-center gap-3">
+            <Link href="/actions/new" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-sky-200 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition-colors hover:bg-sky-100">
+              Déclarer <ArrowRight size={14} className="transition-transform hover:translate-x-1" />
+            </Link>
+            <Link href="/observatoire" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white">
+              Observatoire <ArrowRight size={14} />
+            </Link>
+            <Link href="/methodologie" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-sky-700 transition-colors hover:text-slate-950 hover:bg-white">
+              Méthodologie <ArrowRight size={14} />
+            </Link>
           </div>
         </header>
 
@@ -256,7 +258,7 @@ export default function ActionsMapPage() {
                   href="/methodologie"
                   className="inline-flex w-full items-center justify-center gap-3 rounded-[2rem] border border-sky-200/80 bg-white/80 px-6 py-4 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white"
                 >
-                  Voir la méthodologie
+                  Rubrique Méthodologie
                   <ArrowRight size={14} />
                 </Link>
               </section>

@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
-import { DecisionPageHeader } from "@/components/ui/decision-page-header";
+import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { ReportsWindowComparisonsSection } from "@/components/reports/reports-window-comparisons-section";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
@@ -8,6 +9,7 @@ import { ReportsKpiSummary } from "@/components/reports/reports-kpi-summary";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { isAdminLikeProfile } from "@/lib/profiles";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export function ReportsPageV1Layout({
   locale,
@@ -21,9 +23,41 @@ export function ReportsPageV1Layout({
   toReportsExportRow,
   publicAccessBanner,
 }: any) {
+  const pageFamily = resolvePageFamily("/reports");
+
   return (
     <div data-rubrique-report-root className="space-y-4">
       {publicAccessBanner}
+
+      <PageHero
+        family={pageFamily}
+        eyebrow={`Profil ${roleLabel}`}
+        title="Rapports d'impact"
+        subtitle="Arbitrer sur 30j/90j/12m avec comparatifs N vs N-1 et priorités auto justifiées."
+        badges={
+          <>
+            <PageHeroBadge family={pageFamily}>
+              30j / 90j / 12m
+            </PageHeroBadge>
+            <PageHeroBadge family={pageFamily} muted>
+              Exports contrôlés
+            </PageHeroBadge>
+          </>
+        }
+        className="max-w-4xl pt-2"
+      />
+
+      <div className="flex flex-wrap gap-2">
+        {headerActions.map((action: { href: string; label: string }) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            className="inline-flex min-h-10 items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
+          >
+            {action.label}
+          </Link>
+        ))}
+      </div>
 
       <ThirtySecondsSummary
         kpis={summaryKpis}
@@ -34,13 +68,6 @@ export function ReportsPageV1Layout({
             overview?.summary.recommendedAction.label ?? primaryAction.label[locale],
         }}
         recommendedReason={overview?.summary.recommendedAction.reason}
-      />
-
-      <DecisionPageHeader
-        context={`Profil ${roleLabel}`}
-        title="Rapports d'impact"
-        objective="Arbitrer sur 30j/90j/12m avec comparatifs N vs N-1 et priorités auto justifiées."
-        actions={headerActions}
       />
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

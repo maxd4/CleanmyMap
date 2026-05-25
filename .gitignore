@@ -52,6 +52,8 @@ CleanmyMap-sync/
 
 .vercel
 .playwright-mcp/
+apps/web/.next-sourcemap-test/
+apps/web/data/local-db/*.json
 /*.log
 /*.png
 /*.webp

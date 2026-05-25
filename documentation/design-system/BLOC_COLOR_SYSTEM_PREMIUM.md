@@ -21,9 +21,9 @@
 
 | # | Bloc Homepage | Teintes directrices | Carte homepage | Usage |
 |---|---------------|---------------------|----------------|-------|
-| 01 | Accueil & Pilotage | `amber` / `orange` / `brun` (combinés) | `amber`/`orange` | Fond et titres de page en orange+brun ; cartes du sommaire `/explorer` inchangées ; `/methodologie` = exception rouge d'impact |
+| 01 | Accueil & Pilotage | `amber` / `orange` / `brun` (combinés) | `amber`/`orange` | Fond et titres de page en orange+brun ; cartes du sommaire `/explorer` inchangées |
 | 02 | Agir | `emerald` | `emerald` | Toutes pages terrain |
-| 03 | Cartographie & Impact | `sky` + `red` / `rose` | `sky` | Pages carto → sky, Pages impact → red / rose |
+| 03 | Cartographie & Impact | `sky` + `red` / `rose` | `sky` | Pages carto → sky, Pages impact → red / rose, `/methodologie` → rouge d'impact |
 | 04 | Réseau & Discussions | `pink` + `indigo` | `pink` | Pages réseau / discussion → pink, Pages partenaires → indigo |
 | 05 | Apprendre | `yellow` | `yellow` | Toutes pages éducatives |
 

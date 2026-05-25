@@ -67,6 +67,21 @@ export const RUBRIQUE_REGISTRY = [
     implementation: "finalized",
   },
   {
+    id: "methodologie",
+    categoryId: "analysis",
+    spaceId: "decide",
+    priority: 32,
+    kind: "app-route",
+    route: "/methodologie",
+    label: { fr: "Méthodologie", en: "Methodology" },
+    description: {
+      fr: "Comprenez les calculs et les règles d'impact",
+      en: "Understand the calculations and impact rules",
+    },
+    availability: "available",
+    implementation: "finalized",
+  },
+  {
     id: "admin",
     categoryId: "pilotage",
     spaceId: "supervise",
