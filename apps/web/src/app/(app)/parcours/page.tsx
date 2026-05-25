@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 export default async function ParcoursRootPage() {
   const { userId, clerkReachable } = await getSafeAuthSession();
-  const classes = getBlockClasses("act");
+  const classes = getBlockClasses("home");
 
   if (!userId) {
     return (
@@ -38,11 +38,11 @@ export default async function ParcoursRootPage() {
                   desc: "Le suivi d'impact reste attaché au compte Clerk." 
                 }
               ].map((item, i) => (
-                <article key={i} className="rounded-2xl border border-white/5 bg-emerald-400/5 p-5">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400/60">
+                <article key={i} className="rounded-2xl border border-amber-200/40 bg-amber-50/80 p-5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-600/70">
                     {item.label}
                   </p>
-                  <p className="mt-2 text-xs text-emerald-100/40 leading-relaxed">
+                  <p className="mt-2 text-xs text-slate-700/80 leading-relaxed">
                     {item.desc}
                   </p>
                 </article>

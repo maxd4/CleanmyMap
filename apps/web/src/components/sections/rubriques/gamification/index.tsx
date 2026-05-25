@@ -104,7 +104,7 @@ export function GamificationSection() {
         {/* Sidebar: Personal Progress */}
         <aside className="lg:col-span-4 space-y-6">
           <div className="flex items-center gap-3 mb-2 px-2">
-            <Zap className="text-emerald-400" size={18} />
+            <Zap className="text-red-400" size={18} />
             <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em]">
               {fr ? "Profil de Performance" : "Performance Profile"}
             </h3>
@@ -124,7 +124,7 @@ export function GamificationSection() {
           <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-2">
               <div className="flex items-center gap-3">
-                <Trophy className="text-amber-400" size={18} />
+                <Trophy className="text-red-400" size={18} />
                 <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em]">
                   {fr ? "Classement Global" : "Global Leaderboard"}
                 </h3>
@@ -180,13 +180,13 @@ export function GamificationSection() {
           {progression && personalMapItems.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center gap-3 px-2">
-                <MapIcon className="text-blue-400" size={18} />
+                <MapIcon className="text-red-400" size={18} />
                 <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em]">
                   {fr ? "Empreinte Personnelle" : "Personal Footprint"}
                 </h3>
               </div>
               <div className="rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl p-4 overflow-hidden shadow-2xl relative group">
-                <div className="absolute inset-0 bg-blue-500/5 pointer-events-none group-hover:opacity-0 transition-opacity duration-700" />
+              <div className="absolute inset-0 bg-red-500/5 pointer-events-none group-hover:opacity-0 transition-opacity duration-700" />
                 <div className="h-[350px] rounded-[2rem] overflow-hidden border border-white/5">
                   <ActionsMapCanvas items={personalMapItems.slice(0, 50)} />
                 </div>
@@ -195,8 +195,8 @@ export function GamificationSection() {
           )}
 
           {/* Information / Methodology */}
-          <div className="p-8 rounded-[3rem] border border-emerald-500/10 bg-emerald-500/5 backdrop-blur-3xl flex items-start gap-6">
-            <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <div className="p-8 rounded-[3rem] border border-red-500/10 bg-red-500/5 backdrop-blur-3xl flex items-start gap-6">
+            <div className="p-3 rounded-2xl bg-red-500/10 text-red-400 border border-red-500/20">
                <ShieldCheck size={24} />
             </div>
             <div className="space-y-2">

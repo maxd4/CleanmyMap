@@ -31,7 +31,7 @@ export default function LearnComprendrePage() {
       }}
       backHref="/learn/hub"
       backLabel={{ fr: "Retour au hub", en: "Back to hub" }}
-      accent="purple"
+      accent="yellow"
       highlights={[
         { fr: "Contexte scientifique", en: "Scientific context" },
         { fr: "Ordres de grandeur", en: "Orders of magnitude" },
@@ -56,7 +56,7 @@ export default function LearnComprendrePage() {
             href: "/learn/sentrainer",
             label: locale === "fr" ? "Passer au quiz" : "Go to quiz",
           }}
-          className="border-violet-200 bg-white/88"
+          className="border-yellow-200 bg-white/88"
         />
         <ImpactOrderOfMagnitudeSection />
         <GIECContent />

@@ -13,6 +13,7 @@ export type BackdropToneKey =
   | "auth"
   | "legal"
   | "system"
+  | "state429"
   | "admin"
   | "print";
 
@@ -61,24 +62,24 @@ export const BACKDROP_TONES: Record<BackdropToneKey, BackdropTone> = {
     haloThree: "rgba(132, 204, 22, 0.14)",
   },
   pilotage: {
-    canvas: "#f1d5b0",
+    canvas: "#edd4b0",
     wash:
-      "linear-gradient(180deg, rgba(255,244,225,0.34) 0%, rgba(248,214,164,0.28) 30%, rgba(194,116,38,0.18) 66%, rgba(120,53,15,0.12) 100%)",
+      "linear-gradient(180deg, rgba(255,244,225,0.34) 0%, rgba(255,222,173,0.28) 30%, rgba(251,146,60,0.22) 56%, rgba(194,116,38,0.20) 72%, rgba(120,53,15,0.14) 100%)",
     bloom:
-      "radial-gradient(ellipse 150% 110% at 50% -14%, rgba(255,247,232,0.86) 0%, rgba(255,228,183,0.74) 22%, rgba(251,191,36,0.44) 44%, rgba(180,83,9,0.18) 70%, rgba(255,242,226,0) 100%)",
-    haloOne: "rgba(180, 83, 9, 0.24)",
-    haloTwo: "rgba(194, 116, 38, 0.18)",
-    haloThree: "rgba(120, 53, 15, 0.14)",
+      "radial-gradient(ellipse 150% 110% at 50% -14%, rgba(255,247,232,0.86) 0%, rgba(255,228,183,0.74) 20%, rgba(251,146,60,0.40) 40%, rgba(180,83,9,0.24) 58%, rgba(92,45,12,0.12) 76%, rgba(255,242,226,0) 100%)",
+    haloOne: "rgba(249, 115, 22, 0.26)",
+    haloTwo: "rgba(180, 83, 9, 0.22)",
+    haloThree: "rgba(120, 53, 15, 0.16)",
   },
   amber: {
-    canvas: "#fff2df",
+    canvas: "#edd4b0",
     wash:
-      "linear-gradient(180deg, rgba(255,243,224,0.34) 0%, rgba(255,222,173,0.28) 34%, rgba(251,146,60,0.18) 68%, rgba(245,158,11,0.12) 100%)",
+      "linear-gradient(180deg, rgba(255,244,225,0.34) 0%, rgba(255,222,173,0.28) 30%, rgba(251,146,60,0.22) 56%, rgba(194,116,38,0.20) 72%, rgba(120,53,15,0.14) 100%)",
     bloom:
-      "radial-gradient(ellipse 150% 110% at 50% -14%, rgba(255,248,230,0.84) 0%, rgba(255,235,199,0.78) 22%, rgba(255,221,149,0.34) 44%, rgba(249,115,22,0.16) 70%, rgba(255,244,211,0) 100%)",
+      "radial-gradient(ellipse 150% 110% at 50% -14%, rgba(255,247,232,0.86) 0%, rgba(255,228,183,0.74) 20%, rgba(251,146,60,0.40) 40%, rgba(180,83,9,0.24) 58%, rgba(92,45,12,0.12) 76%, rgba(255,242,226,0) 100%)",
     haloOne: "rgba(249, 115, 22, 0.26)",
-    haloTwo: "rgba(251, 191, 36, 0.18)",
-    haloThree: "rgba(234, 88, 12, 0.14)",
+    haloTwo: "rgba(180, 83, 9, 0.22)",
+    haloThree: "rgba(120, 53, 15, 0.16)",
   },
   emerald: {
     canvas: "#e8f8ef",
@@ -189,6 +190,16 @@ export const BACKDROP_TONES: Record<BackdropToneKey, BackdropTone> = {
     haloOne: "rgba(14, 165, 233, 0.18)",
     haloTwo: "rgba(59, 130, 246, 0.14)",
     haloThree: "rgba(148, 163, 184, 0.12)",
+  },
+  state429: {
+    canvas: "#fff4dd",
+    wash:
+      "linear-gradient(180deg, rgba(255,244,221,0.34) 0%, rgba(255,232,194,0.28) 38%, rgba(252,165,165,0.14) 70%, rgba(245,158,11,0.10) 100%)",
+    bloom:
+      "radial-gradient(ellipse 150% 110% at 50% -14%, rgba(255,250,238,0.34) 0%, rgba(255,241,210,0.30) 22%, rgba(255,221,163,0.22) 44%, rgba(248,113,113,0.10) 70%, rgba(255,250,238,0) 100%)",
+    haloOne: "rgba(245, 158, 11, 0.18)",
+    haloTwo: "rgba(248, 113, 113, 0.12)",
+    haloThree: "rgba(148, 163, 184, 0.10)",
   },
   admin: {
     canvas: "#15111d",
@@ -661,6 +672,38 @@ const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
       ring: "rgba(14, 165, 233, 0.22)",
     },
   },
+  state429: {
+    primary: {
+      bgStart: "#fef3c7",
+      bgEnd: "#fdba74",
+      hoverStart: "#fde68a",
+      hoverEnd: "#f59e0b",
+      border: "rgba(180, 83, 9, 0.24)",
+      borderHover: "rgba(180, 83, 9, 0.36)",
+      text: "#1e1b4b",
+      ring: "rgba(180, 83, 9, 0.28)",
+    },
+    secondary: {
+      bgStart: "#f8fafc",
+      bgEnd: "#e2e8f0",
+      hoverStart: "#f1f5f9",
+      hoverEnd: "#cbd5e1",
+      border: "rgba(148, 163, 184, 0.20)",
+      borderHover: "rgba(148, 163, 184, 0.32)",
+      text: "#1e293b",
+      ring: "rgba(148, 163, 184, 0.24)",
+    },
+    tertiary: {
+      bgStart: "rgba(255, 247, 237, 0.56)",
+      bgEnd: "rgba(254, 243, 199, 0.34)",
+      hoverStart: "rgba(255, 237, 213, 0.72)",
+      hoverEnd: "rgba(253, 224, 71, 0.42)",
+      border: "rgba(180, 83, 9, 0.20)",
+      borderHover: "rgba(180, 83, 9, 0.30)",
+      text: "#92400e",
+      ring: "rgba(180, 83, 9, 0.22)",
+    },
+  },
   admin: {
     primary: {
       bgStart: "#f59e0b",
@@ -764,103 +807,11 @@ export function getButtonThemeCssVariables(
   };
 }
 
+import { resolvePageFamily } from "@/lib/ui/page-families/resolve-page-family";
+
 export function resolveBackdropToneKey(pathname: string | null | undefined): BackdropToneKey | null {
-  if (!pathname || pathname === "/") {
-    return "home";
+  if (!pathname) {
+    return null;
   }
-
-  const isRoute = (route: string) => pathname === route || pathname.startsWith(`${route}/`);
-  const base = pathname.split("/")[1] ?? "";
-
-  if (base === "accueil") {
-    return "home";
-  }
-
-  if (base === "sign-in" || base === "sign-up" || isRoute("/onboarding")) {
-    return "auth";
-  }
-
-  if (
-    base === "contact" ||
-    base === "conditions-generales-utilisation" ||
-    base === "conditions-utilisation" ||
-    base === "mentions-legales" ||
-    base === "politique-confidentialite" ||
-    base === "politique-cookies" ||
-    base === "en"
-  ) {
-    return "legal";
-  }
-
-  if (
-    base === "form-comparison" ||
-    base === "declaration-simple" ||
-    base === "reglages" ||
-    isRoute("/preview/actions/new") ||
-    isRoute("/error/429")
-  ) {
-    return "system";
-  }
-
-  if (base === "admin" || isRoute("/admin")) {
-    return "admin";
-  }
-
-  if (base === "prints" || isRoute("/prints/report")) {
-    return "print";
-  }
-
-  if (isRoute("/actions/map") || isRoute("/sections/sandbox")) {
-    return "sky";
-  }
-
-  if (isRoute("/sections/route")) {
-    return "emerald";
-  }
-
-  if (isRoute("/reports") || isRoute("/sections/gamification")) {
-    return "red";
-  }
-
-  if (isRoute("/sections/community") || isRoute("/sections/feedback")) {
-    return "pink";
-  }
-
-  if (base === "explorer" || base === "learn") {
-    return "yellow";
-  }
-
-  if (base === "dashboard" || base === "profil") {
-    return "amber";
-  }
-
-  if (base === "methodologie") {
-    return "home";
-  }
-
-  if (
-    base === "actions" ||
-    base === "declaration" ||
-    base === "signalement" ||
-    base === "missions" ||
-    base === "parcours"
-  ) {
-    return "emerald";
-  }
-
-  if (
-    base === "pilotage" ||
-    base === "observatoire" ||
-    base === "reports" ||
-    base === "sponsor-portal" ||
-    base === "elus"
-  ) {
-    return "pilotage";
-  }
-
-  if (base === "partners") {
-    return "indigo";
-  }
-
-  return "slate";
+  return resolvePageFamily(pathname).backdropToneKey;
 }

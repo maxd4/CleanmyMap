@@ -35,10 +35,10 @@ export function ImmersiveLayout({
 }: ImmersiveLayoutProps) {
   return (
     <>
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(103,232,249,0.36),transparent_28%),radial-gradient(circle_at_top_right,rgba(191,219,254,0.28),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.28),rgba(255,255,255,0))]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.26),transparent_28%),radial-gradient(circle_at_top_right,rgba(191,219,254,0.24),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]" />
       <div className="relative z-10 flex flex-col gap-6">
         {showIntro ? (
-          <div className="flex flex-wrap items-start justify-between gap-3 rounded-[2.25rem] border border-cyan-200/80 bg-cyan-50 px-6 py-5 text-slate-950 shadow-[0_24px_56px_-32px_rgba(8,145,178,0.22)] backdrop-blur-xl">
+          <div className="flex flex-wrap items-start justify-between gap-3 rounded-[2.25rem] border border-sky-200/80 bg-sky-50 px-6 py-5 text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-xl">
             <div className="max-w-2xl">
               {hasPartialSource ? (
                 <span className="inline-flex items-center rounded-full border border-amber-300/40 bg-amber-100 px-2.5 py-1 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950">
@@ -46,15 +46,21 @@ export function ImmersiveLayout({
                 </span>
               ) : null}
               <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-slate-950 sm:text-4xl">
-                Lecture spatiale
+                Carte terrain
               </h2>
             <p className="mt-2 max-w-3xl text-sm font-medium leading-relaxed text-slate-700">
-              Visualisation en temps réel des flux terrain, de leur densité et de leur qualité géographique.
+              Visualisation des flux terrain, de leur densité et de leur qualité.
             </p>
+            {freshnessLabel ? (
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-sky-200/80 bg-white/80 px-3 py-1.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700">
+                <span className="h-2 w-2 rounded-full bg-sky-500" />
+                {freshnessLabel}
+              </div>
+            ) : null}
           </div>
             <button
               onClick={onReload}
-              className="rounded-2xl border border-cyan-200/80 bg-cyan-100 px-6 py-3 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition hover:border-cyan-300 hover:bg-cyan-200 active:scale-95"
+              className="rounded-2xl border border-sky-200/80 bg-sky-100 px-6 py-3 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition hover:border-sky-300 hover:bg-sky-200 active:scale-95"
             >
               {isValidating ? "Actualisation..." : "Rafraîchir les données"}
             </button>
@@ -62,7 +68,7 @@ export function ImmersiveLayout({
         ) : null}
 
         <div className="grid gap-6">
-          <div className="relative min-h-[600px] overflow-hidden rounded-[2.75rem] border border-cyan-200/80 bg-cyan-50 shadow-[0_24px_56px_-32px_rgba(8,145,178,0.22)]">
+          <div className="relative min-h-[600px] overflow-hidden rounded-[2.75rem] border border-sky-200/80 bg-sky-50 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]">
             {MapCanvas ? (
               <MapCanvas items={items} selectedActionId={selectedActionId} fullViewport={fullViewport} />
             ) : mapCanvasError ? (
@@ -77,9 +83,9 @@ export function ImmersiveLayout({
                 </div>
               </div>
             ) : (
-              <div className="flex h-full items-center justify-center bg-cyan-50 px-6 text-center text-slate-950">
+              <div className="flex h-full items-center justify-center bg-sky-50 px-6 text-center text-slate-950">
                 <div className="max-w-md space-y-4">
-                  <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-cyan-200 border-t-cyan-500" />
+                  <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-sky-200 border-t-sky-500" />
                   <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-700">
                     Initialisation du cockpit
                   </p>
@@ -90,7 +96,7 @@ export function ImmersiveLayout({
         </div>
 
         {showStoriesCarousel ? (
-          <div className="rounded-[2.75rem] border border-cyan-200/80 bg-cyan-50 p-6 text-slate-950 shadow-[0_24px_56px_-32px_rgba(8,145,178,0.22)] backdrop-blur-3xl">
+          <div className="rounded-[2.75rem] border border-sky-200/80 bg-sky-50 p-6 text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-3xl">
             <ActionStoriesCarousel items={items} onOpenAction={onOpenAction} />
           </div>
         ) : null}

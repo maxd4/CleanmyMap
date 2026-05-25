@@ -22,16 +22,16 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
     <div className="space-y-6">
       <div className="rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl relative overflow-hidden">
         {/* Abstract background highlight */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/10 blur-[100px] pointer-events-none" />
+        <div className="absolute -top-24 -left-24 w-48 h-48 bg-red-500/10 blur-[100px] pointer-events-none" />
         
         <div className="flex items-center justify-between mb-8 relative z-10">
           <h3 className="text-[11px] font-black cmm-text-primary uppercase tracking-[0.3em]">
             {locale === "fr" ? "Statut Opérationnel" : "Operational Status"}
           </h3>
           {!loading && progression && (
-            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Actif</span>
+            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20">
+              <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Actif</span>
             </div>
           )}
         </div>
@@ -48,7 +48,7 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
         )}
         
         {Boolean(error) && !loading && (
-          <div className="py-12 flex flex-col items-center gap-4 text-rose-400 opacity-60">
+          <div className="py-12 flex flex-col items-center gap-4 text-red-400 opacity-60">
             <ShieldCheck size={40} />
             <p className="text-[10px] font-black uppercase tracking-[0.3em]">Moteur de progression hors-ligne</p>
           </div>
@@ -57,21 +57,21 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
         {!loading && progression && (
           <div className="space-y-6 relative z-10">
             <div className="grid gap-4 grid-cols-2">
-              <article className="rounded-[2rem] border border-white/5 bg-slate-950/40 p-6 group hover:border-emerald-500/20 transition-all">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2 group-hover:text-emerald-500 transition-colors">Niveau actuel</p>
+              <article className="rounded-[2rem] border border-white/5 bg-slate-950/40 p-6 group hover:border-red-500/20 transition-all">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2 group-hover:text-red-500 transition-colors">Niveau actuel</p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-black text-white tracking-tighter">
                     {progression.currentLevel}
                   </span>
                   {progression.potentialLevel > progression.currentLevel ? (
-                    <span className="text-[10px] font-bold text-amber-500/80 italic animate-pulse">
+                    <span className="text-[10px] font-bold text-red-500/80 italic animate-pulse">
                       Potentiel {progression.potentialLevel}
                     </span>
                   ) : null}
                 </div>
               </article>
-              <article className="rounded-[2rem] border border-white/5 bg-slate-950/40 p-6 group hover:border-blue-500/20 transition-all">
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2 group-hover:text-blue-500 transition-colors">Ranking Global</p>
+              <article className="rounded-[2rem] border border-white/5 bg-slate-950/40 p-6 group hover:border-red-500/20 transition-all">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2 group-hover:text-red-500 transition-colors">Ranking Global</p>
                 <div className="flex flex-col">
                   <span className="text-4xl font-black text-white tracking-tighter">
                     {progression.dynamicRanking.rank ? `#${progression.dynamicRanking.rank}` : "—"}
@@ -86,24 +86,24 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
             </div>
 
             <div className="grid gap-4 grid-cols-2">
-              <article className="rounded-[2rem] border border-emerald-500/10 bg-emerald-500/[0.02] p-6 relative overflow-hidden group">
+              <article className="rounded-[2rem] border border-red-500/10 bg-red-500/[0.02] p-6 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <Sparkles size={40} className="text-emerald-500" />
+                  <Sparkles size={40} className="text-red-500" />
                 </div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-500/60 mb-2">XP Validée (2026)</p>
-                <p className="text-3xl font-black text-emerald-400 tracking-tighter">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/60 mb-2">XP Validée (2026)</p>
+                <p className="text-3xl font-black text-red-400 tracking-tighter">
                   <AnimatedCounter value={progression.xpValidated} direction="up" />
                 </p>
               </article>
-              <article className="rounded-[2rem] border border-amber-500/10 bg-amber-500/[0.02] p-6 relative overflow-hidden group">
+              <article className="rounded-[2rem] border border-red-500/10 bg-red-500/[0.02] p-6 relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                  <ShieldCheck size={40} className="text-amber-500" />
+                  <ShieldCheck size={40} className="text-red-500" />
                 </div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-amber-500/60 mb-2">XP en attente</p>
-                <p className="text-3xl font-black text-amber-400 tracking-tighter">
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/60 mb-2">XP en attente</p>
+                <p className="text-3xl font-black text-red-400 tracking-tighter">
                   <AnimatedCounter value={progression.xpPending} direction="up" />
                 </p>
-                <p className="mt-1 text-[8px] font-black text-amber-500/40 uppercase tracking-widest">Vérification manuelle</p>
+                <p className="mt-1 text-[8px] font-black text-red-500/40 uppercase tracking-widest">Vérification manuelle</p>
               </article>
             </div>
 
@@ -119,7 +119,7 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
                 </div>
                 <div className="h-3 w-full overflow-hidden rounded-full bg-white/[0.03] border border-white/5 p-0.5">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-blue-600 to-cyan-400 transition-all duration-1000 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
+                  className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-1000 shadow-[0_0_15px_rgba(244,63,94,0.3)]"
                     style={{ width: `${progression.monthlyMilestone.progressPercent}%` }}
                   />
                 </div>
@@ -144,13 +144,13 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
                   Vers le niveau {progression.nextLevel.level}
                 </p>
-                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">
                   {progressToNext}%
                 </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-white/[0.03] border border-white/5">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all shadow-[0_0_10px_rgba(16,185,129,0.3)]"
+                  className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400 transition-all shadow-[0_0_10px_rgba(244,63,94,0.3)]"
                   style={{ width: `${progressToNext}%` }}
                 />
               </div>
@@ -160,9 +160,9 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
               </p>
               
               {progression.nextLevel.frozen && (
-                <div className="mt-4 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 flex items-center gap-3">
-                  <ShieldCheck size={14} className="text-amber-500 shrink-0" />
-                  <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest leading-relaxed">
+                <div className="mt-4 p-3 rounded-xl bg-red-500/5 border border-red-500/20 flex items-center gap-3">
+                  <ShieldCheck size={14} className="text-red-500 shrink-0" />
+                  <p className="text-[9px] font-black text-red-500 uppercase tracking-widest leading-relaxed">
                     Accès restreint : des prérequis bloquent le passage au grade supérieur.
                   </p>
                 </div>
@@ -172,7 +172,7 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
                 <div className="mt-4 space-y-2">
                   {progression.nextLevel.requirements.missing.map((missing) => (
                     <div key={missing} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/5">
-                      <div className="w-1 h-1 rounded-full bg-amber-500" />
+                      <div className="w-1 h-1 rounded-full bg-red-500" />
                       <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{missing}</span>
                     </div>
                   ))}
@@ -186,12 +186,12 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
             </article>
 
             {progression.recognition.currentContributor && (
-              <article className="rounded-[2rem] border border-emerald-500/10 bg-emerald-500/[0.03] p-6">
+            <article className="rounded-[2rem] border border-red-500/10 bg-red-500/[0.03] p-6">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em]">
+                  <p className="text-[10px] font-black text-red-500 uppercase tracking-[0.3em]">
                     Reconnaissance utile
                   </p>
-                  <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[9px] font-black uppercase tracking-[0.25em] text-emerald-400">
+                  <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-[9px] font-black uppercase tracking-[0.25em] text-red-400">
                     Contributions vérifiées
                   </span>
                 </div>
@@ -255,7 +255,7 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
                   </div>
                 </div>
 
-                <p className="mt-4 text-xs font-medium leading-relaxed text-emerald-100/80">
+                <p className="mt-4 text-xs font-medium leading-relaxed text-red-100/80">
                   {progression.recognition.currentContributor.thanksMessage}
                 </p>
               </article>

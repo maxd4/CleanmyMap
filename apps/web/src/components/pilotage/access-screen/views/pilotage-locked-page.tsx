@@ -1,6 +1,8 @@
 import { ArrowRight, BarChart3, Compass, LockKeyhole, ShieldAlert, ShieldCheck, Sparkles, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { PAGE_COPY } from "../access-screen-constants";
+import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
+import { getPageFamilyById } from "@/lib/ui/page-families";
 import type { PilotageLocale } from "../access-screen-constants";
 
 export function PilotageLockedPage({
@@ -11,34 +13,31 @@ export function PilotageLockedPage({
   isAuthenticated: boolean;
 }) {
   const copy = PAGE_COPY[locale];
+  const pageFamily = getPageFamilyById("accueil-pilotage");
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 md:px-8 md:py-10">
-      <div className="relative overflow-hidden rounded-[2.25rem] border border-stone-400/18 bg-[linear-gradient(180deg,rgba(44,28,15,0.96),rgba(52,34,18,0.99))] p-6 text-white shadow-[0_24px_56px_-32px_rgba(69,45,28,0.18)] md:p-8">
-        <div className="absolute inset-0 opacity-60">
-          <div className="absolute -right-12 top-0 h-44 w-44 rounded-full bg-orange-900/10 blur-3xl" />
-          <div className="absolute left-0 top-16 h-56 w-56 rounded-full bg-stone-800/8 blur-3xl" />
-        </div>
-
+      <div className="space-y-8 md:p-2">
         <div className="relative grid gap-8 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-orange-100">
-                <Sparkles size={14} aria-hidden="true" />
-                {locale === "fr" ? "Accueil & Pilotage" : "Home & Operations"}
-              </span>
-              <span className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
-                {locale === "fr" ? "Contrôle opérationnel" : "Operational control"}
-              </span>
-            </div>
-
-            <div className="max-w-3xl space-y-4">
-              <h1 className="text-4xl font-black tracking-tight text-white md:text-6xl">
-                {isAuthenticated ? copy.restrictedTitle : copy.lockedTitle}
-              </h1>
-              <p className="max-w-2xl text-base leading-relaxed text-white/78 md:text-lg">
-                {isAuthenticated ? copy.restrictedDescription : copy.lockedDescription}
-              </p>
-            </div>
+            <PageHero
+              family={pageFamily}
+              titleSize="compact"
+              title={isAuthenticated ? copy.restrictedTitle : copy.lockedTitle}
+              subtitle={
+                isAuthenticated ? copy.restrictedDescription : copy.lockedDescription
+              }
+              badges={
+                <>
+                  <PageHeroBadge family={pageFamily}>
+                    <Sparkles size={14} aria-hidden="true" />
+                    {locale === "fr" ? "Accueil & Pilotage" : "Home & Operations"}
+                  </PageHeroBadge>
+                  <PageHeroBadge family={pageFamily} muted>
+                    {locale === "fr" ? "Contrôle opérationnel" : "Operational control"}
+                  </PageHeroBadge>
+                </>
+              }
+            />
 
             <div className="grid gap-3 sm:grid-cols-3">
               {[

@@ -8,6 +8,7 @@ const isProduction = env["NODE_ENV"] === "production";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: appRoot,
+  serverExternalPackages: ["@prisma/instrumentation", "@fastify/otel"],
   compress: true,
   generateEtags: true,
   poweredByHeader: false,
@@ -25,6 +26,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     lockDistDir: false,
+    serverSourceMaps: isProduction,
     optimizePackageImports: [
       'lucide-react',
       '@clerk/nextjs',
@@ -78,15 +80,6 @@ const nextConfig: NextConfig = {
         ],
       },
     ];
-
-    if (isProduction) {
-      headers.splice(1, 0, {
-        source: "/_next/static/:path*",
-        headers: [
-          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
-        ],
-      });
-    }
 
     return headers;
   },

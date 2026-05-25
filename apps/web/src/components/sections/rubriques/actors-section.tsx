@@ -9,7 +9,6 @@ import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { Users, MapPin, TrendingUp, ShieldCheck, ArrowRight, Zap, Trophy, Target } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn } from "@/lib/utils";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 
 function extractArea(label: string): string {
@@ -58,7 +57,7 @@ export function ActorsSection() {
         ? "Cartographie des pressions territoriales et pilotage des partenaires opérationnels."
         : "Mapping of territorial pressures and management of operational partners."}
       icon={Users}
-      gradient="from-indigo-500/20 via-blue-500/10 to-transparent"
+      gradient="from-indigo-500/20 via-sky-500/10 to-transparent"
     >
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10 pt-8 items-start">
         {/* GAUCHE : Pression territoriale */}
@@ -127,7 +126,7 @@ export function ActorsSection() {
         <div className="space-y-6">
           <div className="flex items-center justify-between px-4">
              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400">
+                <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
                    <ShieldCheck size={20} />
                 </div>
                 <h3 className="text-xl font-black text-white tracking-tight">
@@ -159,7 +158,7 @@ export function ActorsSection() {
                     <div className="space-y-6">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-2">
-                          <h3 className="text-xl font-black text-white tracking-tight leading-tight group-hover:text-blue-400 transition-colors">
+                          <h3 className="text-xl font-black text-white tracking-tight leading-tight group-hover:text-indigo-400 transition-colors">
                              {card.actor}
                           </h3>
                           <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">
@@ -167,9 +166,9 @@ export function ActorsSection() {
                           </p>
                         </div>
                         {hotspotSet.has(card.zone) && (
-                          <div className="px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2">
-                             <Zap size={10} className="text-amber-400 fill-amber-400" />
-                             <span className="text-[8px] font-black uppercase tracking-widest text-amber-500">
+                          <div className="px-3 py-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center gap-2">
+                             <Zap size={10} className="text-indigo-400 fill-indigo-400" />
+                             <span className="text-[8px] font-black uppercase tracking-widest text-indigo-500">
                                 {fr ? "Prioritaire" : "Priority"}
                              </span>
                           </div>
@@ -190,16 +189,16 @@ export function ActorsSection() {
                          ))}
                       </div>
 
-                      <div className="p-4 rounded-2xl bg-blue-500/5 border border-blue-500/10 flex items-center justify-between group-hover:bg-blue-500/10 transition-all">
+                      <div className="p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 flex items-center justify-between group-hover:bg-indigo-500/10 transition-all">
                          <div className="space-y-1">
-                            <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest">
+                            <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">
                                {fr ? "Prochaine Action" : "Next Action"}
                             </p>
                             <p className="text-xs font-bold text-white leading-none">
                                {card.nextAction}
                             </p>
                          </div>
-                         <ArrowRight size={16} className="text-blue-400 group-hover:translate-x-1 transition-transform" />
+                         <ArrowRight size={16} className="text-indigo-400 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
                   </RubriqueCard>

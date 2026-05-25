@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { List, Settings2, MessageSquare } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, UserButton, useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { UserIdentity } from "@/lib/authz";
 import { NotificationBell } from "@/components/navigation/notification-bell";
 import { AccountIdentityChip } from "@/components/account/account-identity-chip";
@@ -50,7 +50,9 @@ export function AppNavigationRibbon({
   identity,
 }: AppNavigationRibbonProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const { locale, displayMode } = useSitePreferences();
+  const { isLoaded, isSignedIn } = useUser();
   const ribbonRef = useRef<HTMLElement | null>(null);
   const preferencesTriggerRef = useRef<HTMLElement | null>(null);
   const feedbackTriggerRef = useRef<HTMLElement | null>(null);
@@ -82,6 +84,7 @@ export function AppNavigationRibbon({
   }, [currentProfile, displayMode, locale]);
 
   const activeSpaceId = getActiveSpaceForPath(currentProfile, pathname, displayMode);
+  const isAuthenticated = Boolean(identity) || (isLoaded && isSignedIn);
   const preferencesPlacement = useDropdownPlacement({
     isOpen: preferencesOpen,
     triggerRef: preferencesTriggerRef,
@@ -176,6 +179,12 @@ export function AppNavigationRibbon({
       window.removeEventListener("scroll", syncScrollState);
     };
   }, []);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn && !identity) {
+      router.refresh();
+    }
+  }, [identity, isLoaded, isSignedIn, router]);
 
   useEffect(() => {
     const closeMenusOnOutsideClick = (event: PointerEvent) => {
@@ -458,30 +467,32 @@ export function AppNavigationRibbon({
               </AnimatePresence>
             </details>
 
-            <Show when="signed-out">
-              <div className="hidden items-center gap-2 md:flex">
+            {!isAuthenticated ? (
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <SignInButton mode="modal">
                   <button 
                     aria-label={locale === "fr" ? "Se connecter à CleanMyMap" : "Sign in to CleanMyMap"}
                     className="inline-flex min-h-11 items-center justify-center rounded-full px-3 cmm-text-caption font-bold text-white/82 transition hover:text-white"
+                    type="button"
                   >
-                    {locale === "fr" ? "Connexion" : "Sign in"}
+                    {locale === "fr" ? "Se connecter" : "Sign in"}
                   </button>
                 </SignInButton>
                 <SignUpButton mode="modal">
                   <button 
                     aria-label={locale === "fr" ? "Créer un compte CleanMyMap" : "Sign up for CleanMyMap"}
                     className="inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-[#27C3D9] to-[#18B68F] px-4 cmm-text-caption font-bold text-[#16313b] shadow-lg shadow-cyan-900/15 transition hover:from-[#2F80C3] hover:to-[#27C3D9] active:scale-95"
+                    type="button"
                   >
                     {locale === "fr" ? "S'inscrire" : "Sign up"}
                   </button>
                 </SignUpButton>
               </div>
-            </Show>
+            ) : null}
 
-            <Show when="signed-in">
+            {isAuthenticated ? (
               <div className="flex items-center gap-2 lg:gap-3">
-                <div className="hidden lg:block">
+                <div className="hidden md:block">
                   <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] p-1.5 shadow-[0_18px_36px_-30px_rgba(2,6,23,0.92)]">
                     <span className="inline-flex min-h-10 items-center justify-center rounded-full border border-white/12 bg-white/10 px-3 text-[10px] font-black uppercase tracking-[0.18em] text-white/78">
                       {locale === "fr" ? "Aperçu local" : "Local preview"}
@@ -505,7 +516,7 @@ export function AppNavigationRibbon({
                   />
                 </div>
               </div>
-            </Show>
+            ) : null}
           </div>
         </div>
       </nav>

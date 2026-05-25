@@ -24,7 +24,7 @@ export const ContributorRecognitionPanel = memo(function ContributorRecognitionP
   return (
     <section className="space-y-6">
       <div className="flex items-center gap-3 px-2">
-        <BadgeCheck className="text-emerald-400" size={18} />
+        <BadgeCheck className="text-red-400" size={18} />
         <h3 className="text-[10px] font-black text-white uppercase tracking-[0.3em]">
           {fr ? "Contributeurs utiles" : "Useful contributors"}
         </h3>
@@ -57,7 +57,7 @@ export const ContributorRecognitionPanel = memo(function ContributorRecognitionP
               key={card.userId}
               className={cn(
                 "rounded-[2.5rem] border bg-slate-950/40 backdrop-blur-3xl p-6 shadow-2xl",
-                index === 0 ? "border-emerald-500/20" : "border-white/5",
+                index === 0 ? "border-red-500/20" : "border-white/5",
               )}
             >
               <div className="flex items-start justify-between gap-4">
@@ -68,7 +68,7 @@ export const ContributorRecognitionPanel = memo(function ContributorRecognitionP
                   <h4 className="text-xl font-black text-white tracking-tight">
                     {card.actorName}
                   </h4>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-red-400">
                     {card.associationName}
                   </p>
                 </div>
@@ -100,7 +100,7 @@ export const ContributorRecognitionPanel = memo(function ContributorRecognitionP
               <div className="mt-5 grid grid-cols-2 gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
                 <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-3">
                   <div className="flex items-center gap-2 text-slate-400">
-                    <MapPin size={12} className="text-emerald-400" />
+                    <MapPin size={12} className="text-red-400" />
                     {fr ? "Zone" : "Zone"}
                   </div>
                   <p className="mt-2 text-xs font-bold text-white normal-case tracking-normal">
@@ -109,7 +109,7 @@ export const ContributorRecognitionPanel = memo(function ContributorRecognitionP
                 </div>
                 <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-3">
                   <div className="flex items-center gap-2 text-slate-400">
-                    <Users size={12} className="text-sky-400" />
+                    <Users size={12} className="text-red-400" />
                     {fr ? "Type d'aide" : "Help type"}
                   </div>
                   <p className="mt-2 text-xs font-bold text-white normal-case tracking-normal">
@@ -141,7 +141,7 @@ export const ContributorRecognitionPanel = memo(function ContributorRecognitionP
                 </div>
                 <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-3">
                   <div className="flex items-center gap-2 text-slate-400">
-                    <BadgeCheck size={12} className="text-emerald-400" />
+                    <BadgeCheck size={12} className="text-red-400" />
                     {fr ? "Vérifiées" : "Verified"}
                   </div>
                   <p className="mt-2 text-xs font-bold text-white normal-case tracking-normal">
@@ -150,7 +150,7 @@ export const ContributorRecognitionPanel = memo(function ContributorRecognitionP
                 </div>
               </div>
 
-              <p className="mt-5 text-xs font-medium leading-relaxed text-emerald-100/80">
+              <p className="mt-5 text-xs font-medium leading-relaxed text-red-100/80">
                 {card.thanksMessage}
               </p>
             </article>

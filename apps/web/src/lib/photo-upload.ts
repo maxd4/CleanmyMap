@@ -1,6 +1,7 @@
-import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import { compressImageFile } from '@/lib/media/image-compression'
-import { buildStorageBusinessMetadata } from '@/lib/supabase/storage-business-classification'
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { compressImageFile } from "@/lib/media/image-compression";
+import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface PhotoUploadResult {
   url: string
@@ -9,12 +10,39 @@ export interface PhotoUploadResult {
 }
 
 export class PhotoUploadService {
-  private supabase = getSupabaseBrowserClient()
-  private bucket = 'action-photos'
+  private supabase: SupabaseClient | null = null
+  private bucket = "action-photos"
   private bucketHint = "Le bucket public Supabase 'action-photos' est manquant. Crée-le et rends-le public pour activer les uploads photo."
+
+  private getSupabaseClient(): SupabaseClient | null {
+    if (this.supabase) {
+      return this.supabase;
+    }
+
+    try {
+      this.supabase = getSupabaseBrowserClient();
+      return this.supabase;
+    } catch (error) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("[PhotoUploadService] Supabase browser client unavailable in dev:", error);
+        return null;
+      }
+
+      throw error;
+    }
+  }
 
   async uploadPhoto(file: File, actionId: string): Promise<PhotoUploadResult> {
     try {
+      const supabase = this.getSupabaseClient();
+      if (!supabase) {
+        return {
+          url: "",
+          path: "",
+          error: "Uploads photo indisponibles tant que Supabase local n'est pas configuré.",
+        };
+      }
+
       if (!this.isValidImageFile(file)) {
         return { url: '', path: '', error: 'Format de fichier non supporté' }
       }
@@ -32,7 +60,7 @@ export class PhotoUploadService {
       const fileExt = preparedFile.name.split('.').pop() || 'jpg'
       const fileName = `${actionId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
 
-      const { data, error } = await this.supabase.storage
+      const { data, error } = await supabase.storage
         .from(this.bucket)
           .upload(
             fileName,
@@ -60,7 +88,7 @@ export class PhotoUploadService {
         return { url: '', path: '', error: "Impossible d'envoyer la photo. Veuillez vérifier votre connexion et réessayer." }
       }
 
-      const { data: { publicUrl } } = this.supabase.storage
+      const { data: { publicUrl } } = supabase.storage
         .from(this.bucket)
         .getPublicUrl(data.path)
 
@@ -123,7 +151,12 @@ export class PhotoUploadService {
 
   async deletePhoto(path: string): Promise<boolean> {
     try {
-      const { error } = await this.supabase.storage
+      const supabase = this.getSupabaseClient();
+      if (!supabase) {
+        return false;
+      }
+
+      const { error } = await supabase.storage
         .from(this.bucket)
         .remove([path])
 

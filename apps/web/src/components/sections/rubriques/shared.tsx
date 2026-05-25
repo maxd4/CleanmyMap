@@ -1,9 +1,11 @@
 "use client";
 
 import type { ReactNode, ElementType } from "react";
+import { usePathname } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { LucideIcon, Sparkles, Target } from "lucide-react";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export type L10n = { fr: string; en: string } | string;
 
@@ -38,7 +40,11 @@ export function SectionShell({
   hideHeader = false,
 }: SectionShellProps) {
   const { locale } = useSitePreferences();
+  const pathname = usePathname();
+  const pageFamily = resolvePageFamily(pathname);
+  const hero = pageFamily.hero;
   const fr = locale === "fr";
+  const useFamilyHero = pageFamily.id !== "fallback";
 
   return (
     <section
@@ -49,7 +55,10 @@ export function SectionShell({
       {/* Dynamic Background Gradient */}
       <div
         className={`absolute inset-x-0 top-0 h-[24rem] bg-gradient-to-b ${
-          gradient || "from-slate-900/20 via-transparent to-transparent"
+          gradient ||
+          (useFamilyHero
+            ? hero.sectionGradient
+            : "from-slate-900/20 via-transparent to-transparent")
         } pointer-events-none -z-10`}
       />
       
@@ -59,16 +68,37 @@ export function SectionShell({
             <div className="space-y-4">
               <div className="flex items-center gap-4">
                 {Icon && (
-                  <div className="p-3 rounded-2xl bg-white/5 border border-white/10 shadow-xl shadow-black/20">
-                    <Icon size={24} className="text-white/70" />
+                  <div
+                    className={
+                      useFamilyHero
+                        ? hero.iconWrap
+                        : "rounded-2xl border border-white/10 bg-white/5 p-3 shadow-xl shadow-black/20"
+                    }
+                  >
+                    <Icon
+                      size={24}
+                      className={useFamilyHero ? hero.icon : "text-white/70"}
+                    />
                   </div>
                 )}
-                <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-none">
+                <h1
+                  className={
+                    useFamilyHero
+                      ? hero.titleCompact
+                      : "text-4xl font-black leading-none tracking-tighter text-white md:text-5xl"
+                  }
+                >
                   {t(locale, title)}
                 </h1>
               </div>
               {subtitle && (
-                <p className="text-xl text-slate-400 font-medium max-w-2xl leading-relaxed">
+                <p
+                  className={
+                    useFamilyHero
+                      ? `text-xl font-medium ${hero.subtitle}`
+                      : "max-w-2xl text-xl font-medium leading-relaxed text-slate-400"
+                  }
+                >
                   {t(locale, subtitle)}
                 </p>
               )}

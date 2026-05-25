@@ -31,6 +31,37 @@ type FunnelStore = {
 
 const FILE_PATH = join(process.cwd(), "data", "local-db", "funnel_events.json");
 
+function isMissingFunnelEventsTable(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const record = error as {
+    code?: unknown;
+    message?: unknown;
+    details?: unknown;
+  };
+  const code = typeof record.code === "string" ? record.code : "";
+  const message = typeof record.message === "string" ? record.message : "";
+  const details = typeof record.details === "string" ? record.details : "";
+  const haystack = `${code} ${message} ${details}`.toLowerCase();
+
+  return (
+    haystack.includes("could not find the table 'public.funnel_events'") ||
+    haystack.includes("funnel_events") && haystack.includes("schema cache") ||
+    haystack.includes("42p01") ||
+    haystack.includes("pgrst205")
+  );
+}
+
+function shouldFallbackToLocalStoreForFunnelEvents(error: unknown): boolean {
+  if (process.env.NODE_ENV !== "production") {
+    return isMissingFunnelEventsTable(error) || allowLocalFileStoreFallback();
+  }
+
+  return allowLocalFileStoreFallback();
+}
+
 function emptyStore(): FunnelStore {
   return { updatedAt: new Date().toISOString(), records: [] };
 }
@@ -59,28 +90,22 @@ export async function appendFunnelEvent(event: FunnelEvent): Promise<void> {
   if (canUseSupabaseServerPersistence()) {
     try {
       const supabase = getSupabaseServerClient();
-      const dbStep = event.step === "page_view" ? "view_new" : event.step;
-      if (event.step === "page_view") {
-        // Temporary mapping until DB constraint is updated via migration
-        // This prevents runtime 500s in environments where the migration wasn't applied yet.
-        console.warn("[funnel-store] mapping 'page_view' -> 'view_new' to avoid DB constraint error");
-      }
       const result = await supabase.from("funnel_events").insert({
         at: event.at,
         session_id: event.sessionId,
         user_id: event.userId,
-        step: dbStep,
+        step: event.step,
         mode: event.mode,
         meta: event.meta ?? {},
       });
       if (!result.error) {
         return;
       }
-      if (!allowLocalFileStoreFallback()) {
+      if (!shouldFallbackToLocalStoreForFunnelEvents(result.error)) {
         throw new Error(result.error.message);
       }
     } catch (error) {
-      if (!allowLocalFileStoreFallback()) {
+      if (!shouldFallbackToLocalStoreForFunnelEvents(error)) {
         throw error;
       }
     }
@@ -127,11 +152,11 @@ export async function listFunnelEvents(
               | undefined,
           }));
       }
-      if (!allowLocalFileStoreFallback()) {
+      if (!shouldFallbackToLocalStoreForFunnelEvents(result.error)) {
         throw new Error(result.error.message);
       }
     } catch (error) {
-      if (!allowLocalFileStoreFallback()) {
+      if (!shouldFallbackToLocalStoreForFunnelEvents(error)) {
         throw error;
       }
     }

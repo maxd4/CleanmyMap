@@ -84,17 +84,17 @@ export function ReportsKpiSummary() {
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/40 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl">
-      <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-400/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-24 -right-24 w-48 h-48 bg-rose-400/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-red-400/20 rounded-full blur-3xl pointer-events-none" />
       
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h2 className="text-2xl font-black bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-black bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
             Synthèse d&apos;Impact Scientifique
           </h2>
           <p className="mt-2 text-sm font-semibold text-slate-500">
             Indicateurs consolidés en temps réel.{" "}
-            <a href="/methodologie" className="text-emerald-500 hover:text-emerald-600 transition-colors underline decoration-emerald-500/30 underline-offset-4">
+            <a href="/methodologie" className="text-rose-500 hover:text-rose-600 transition-colors underline decoration-rose-500/30 underline-offset-4">
               Voir le protocole →
             </a>
           </p>
@@ -103,7 +103,7 @@ export function ReportsKpiSummary() {
 
       {isLoading ? (
         <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500" />
         </div>
       ) : null}
       
@@ -121,9 +121,9 @@ export function ReportsKpiSummary() {
           className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
         >
           {/* Actions */}
-          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-emerald-100">
-            <div className="flex items-center gap-3 mb-3 text-emerald-500">
-              <div className="p-2 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 transition-colors">
+          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-rose-100">
+            <div className="flex items-center gap-3 mb-3 text-rose-500">
+              <div className="p-2 rounded-xl bg-rose-50 group-hover:bg-rose-100 transition-colors">
                 <CheckCircle2 size={20} strokeWidth={2.5} />
               </div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Actions Validées</span>
@@ -132,9 +132,9 @@ export function ReportsKpiSummary() {
           </motion.div>
 
           {/* Waste */}
-          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-teal-100">
-            <div className="flex items-center gap-3 mb-3 text-teal-500">
-              <div className="p-2 rounded-xl bg-teal-50 group-hover:bg-teal-100 transition-colors">
+          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-red-100">
+            <div className="flex items-center gap-3 mb-3 text-red-500">
+              <div className="p-2 rounded-xl bg-red-50 group-hover:bg-red-100 transition-colors">
                 <Trash2 size={20} strokeWidth={2.5} />
               </div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Matière Retirée</span>
@@ -143,29 +143,29 @@ export function ReportsKpiSummary() {
               <div className="text-3xl font-black text-slate-800">{metrics.totalKg.toFixed(1)}</div>
               <div className="text-sm font-bold text-slate-400">kg</div>
             </div>
-            <div className="mt-1 text-xs font-semibold text-teal-600 bg-teal-50 inline-block px-2 py-0.5 rounded-full">
+            <div className="mt-1 text-xs font-semibold text-red-600 bg-red-50 inline-block px-2 py-0.5 rounded-full">
               + {metrics.totalButts} mégots
             </div>
           </motion.div>
 
           {/* Mobilization */}
-          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-blue-100">
-            <div className="flex items-center gap-3 mb-3 text-blue-500">
-              <div className="p-2 rounded-xl bg-blue-50 group-hover:bg-blue-100 transition-colors">
+          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-rose-100">
+            <div className="flex items-center gap-3 mb-3 text-rose-500">
+              <div className="p-2 rounded-xl bg-rose-50 group-hover:bg-rose-100 transition-colors">
                 <Users size={20} strokeWidth={2.5} />
               </div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Force Citoyenne</span>
             </div>
             <div className="text-3xl font-black text-slate-800">{metrics.totalVolunteers}</div>
-            <div className="mt-1 text-xs font-semibold text-blue-600">
+            <div className="mt-1 text-xs font-semibold text-rose-600">
               Totalisant {(metrics.totalMinutes / 60).toFixed(1)} heures
             </div>
           </motion.div>
 
           {/* Geolocation */}
-          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-indigo-100">
-            <div className="flex items-center gap-3 mb-3 text-indigo-500">
-              <div className="p-2 rounded-xl bg-indigo-50 group-hover:bg-indigo-100 transition-colors">
+          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-rose-100">
+            <div className="flex items-center gap-3 mb-3 text-rose-500">
+              <div className="p-2 rounded-xl bg-rose-50 group-hover:bg-rose-100 transition-colors">
                 <MapPin size={20} strokeWidth={2.5} />
               </div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Points GPS</span>
@@ -174,9 +174,9 @@ export function ReportsKpiSummary() {
           </motion.div>
 
           {/* Traces */}
-          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-violet-100">
-            <div className="flex items-center gap-3 mb-3 text-violet-500">
-              <div className="p-2 rounded-xl bg-violet-50 group-hover:bg-violet-100 transition-colors">
+          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-red-100">
+            <div className="flex items-center gap-3 mb-3 text-red-500">
+              <div className="p-2 rounded-xl bg-red-50 group-hover:bg-red-100 transition-colors">
                 <Route size={20} strokeWidth={2.5} />
               </div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Surfaces/Tracés</span>
@@ -185,9 +185,9 @@ export function ReportsKpiSummary() {
           </motion.div>
 
           {/* Data Quality */}
-          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-emerald-100">
-            <div className="flex items-center gap-3 mb-3 text-emerald-500">
-              <div className="p-2 rounded-xl bg-emerald-50 group-hover:bg-emerald-100 transition-colors">
+          <motion.div variants={itemVariant} className="group relative rounded-2xl bg-white p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all hover:border-rose-100">
+            <div className="flex items-center gap-3 mb-3 text-rose-500">
+              <div className="p-2 rounded-xl bg-rose-50 group-hover:bg-rose-100 transition-colors">
                 <Activity size={20} strokeWidth={2.5} />
               </div>
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Fiabilité</span>
@@ -199,8 +199,8 @@ export function ReportsKpiSummary() {
                   initial={{ width: 0 }}
                   animate={{ width: `${metrics.dataQuality}%` }}
                   transition={{ duration: 1, ease: "easeOut", delay: 0.5 }}
-                  className="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full"
-                />
+                  className="h-full bg-gradient-to-r from-red-400 to-rose-500 rounded-full"
+                  />
               </div>
             </div>
           </motion.div>

@@ -360,7 +360,7 @@ export function ActionPopupContent({
         {updateHref ? (
           <a
             href={updateHref}
-            className="group relative flex items-center justify-center gap-2 w-full overflow-hidden rounded-2xl bg-cyan-200 px-4 py-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-slate-950/10"
+            className="group relative flex items-center justify-center gap-2 w-full overflow-hidden rounded-2xl bg-sky-200 px-4 py-4 text-center transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-slate-950/10"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-white/10 to-emerald-500/0 translate-x-[-100%] transition-transform duration-1000 group-hover:translate-x-[100%]" />
             <span className="cmm-text-small font-bold text-slate-950">

@@ -7,7 +7,7 @@ interface LeaderboardTableProps {
   rows: Array<IndividualItem | CollectiveItem>;
   scope: "individual" | "collective";
   loading: boolean;
-  error: any;
+  error: unknown;
 }
 
 export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTableProps) {
@@ -17,7 +17,7 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
   if (loading) {
     return (
       <div className="py-20 flex flex-col items-center gap-6">
-        <Zap className="text-emerald-500 animate-pulse" size={40} />
+        <Zap className="text-red-500 animate-pulse" size={40} />
         <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] animate-pulse">
           Synchronisation du moteur...
         </p>
@@ -27,7 +27,7 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
 
   if (error) {
     return (
-      <div className="py-20 flex flex-col items-center gap-6 text-rose-400">
+      <div className="py-20 flex flex-col items-center gap-6 text-red-400">
         <ShieldCheck size={40} className="opacity-50" />
         <p className="text-[10px] font-black uppercase tracking-[0.3em]">
           Moteur de classement indisponible
@@ -77,9 +77,9 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
                     <td className="px-8 py-5 text-center">
                       <span className={cn(
                         "inline-flex items-center justify-center w-10 h-10 rounded-xl text-xs font-black tracking-tight border",
-                        row.rank === 1 ? "bg-amber-500 text-slate-950 border-amber-400 shadow-[0_0_20px_rgba(245,158,11,0.3)]" :
+                        row.rank === 1 ? "bg-red-500 text-slate-950 border-red-400 shadow-[0_0_20px_rgba(244,63,94,0.3)]" :
                         row.rank === 2 ? "bg-slate-400/20 text-slate-200 border-slate-400/30" :
-                        row.rank === 3 ? "bg-orange-600/20 text-orange-400 border-orange-600/30" :
+                        row.rank === 3 ? "bg-red-600/20 text-red-400 border-red-600/30" :
                         "bg-white/5 text-slate-500 border-white/5"
                       )}>
                         {row.rank}
@@ -87,26 +87,26 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex flex-col gap-1">
-                        <span className="text-base font-black text-white tracking-tight group-hover:text-emerald-400 transition-colors">
+                        <span className="text-base font-black text-white tracking-tight group-hover:text-red-400 transition-colors">
                           {row.actorName}
                         </span>
                         {row.associationName && (
                           <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.15em] flex items-center gap-1.5">
-                            <Users size={10} className="text-emerald-500" />
+                            <Users size={10} className="text-red-500" />
                             {row.associationName}
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="px-8 py-5 text-center">
-                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:border-emerald-500/20 transition-colors">
-                        <Sparkles size={10} className="text-emerald-500" />
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:border-red-500/20 transition-colors">
+                        <Sparkles size={10} className="text-red-500" />
                         Lvl {row.currentLevel}
                       </div>
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="flex flex-col items-end">
-                        <span className="text-base font-black text-emerald-400 tracking-tighter">
+                        <span className="text-base font-black text-red-400 tracking-tighter">
                           {row.xpValidated.toLocaleString()}
                         </span>
                         <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">XP points</span>
@@ -114,7 +114,7 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[10px] font-bold text-slate-400 italic">
-                        <ShieldCheck size={10} className="text-emerald-500" />
+                        <ShieldCheck size={10} className="text-red-500" />
                         {row.qualityAverage}%
                       </div>
                     </td>
@@ -133,9 +133,9 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
                     <td className="px-8 py-5 text-center">
                       <span className={cn(
                         "inline-flex items-center justify-center w-10 h-10 rounded-xl text-xs font-black tracking-tight border",
-                        row.rank === 1 ? "bg-blue-500 text-white border-blue-400 shadow-[0_0_20px_rgba(59,130,246,0.3)]" :
+                        row.rank === 1 ? "bg-red-500 text-white border-red-400 shadow-[0_0_20px_rgba(244,63,94,0.3)]" :
                         row.rank === 2 ? "bg-slate-400/20 text-slate-200 border-slate-400/30" :
-                        row.rank === 3 ? "bg-orange-600/20 text-orange-400 border-orange-600/30" :
+                        row.rank === 3 ? "bg-red-600/20 text-red-400 border-red-600/30" :
                         "bg-white/5 text-slate-500 border-white/5"
                       )}>
                         {row.rank}
@@ -143,8 +143,8 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
                     </td>
                     <td className="px-8 py-5">
                       <div className="flex items-center gap-3">
-                         <div className="h-2 w-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]" />
-                         <span className="text-base font-black text-white tracking-tight group-hover:text-blue-400 transition-colors">
+                         <div className="h-2 w-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
+                         <span className="text-base font-black text-white tracking-tight group-hover:text-red-400 transition-colors">
                            {row.associationName}
                          </span>
                       </div>
@@ -161,7 +161,7 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
                     </td>
                     <td className="px-8 py-5 text-right">
                       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/5 text-[10px] font-bold text-slate-400 italic">
-                        <ShieldCheck size={10} className="text-blue-400" />
+                        <ShieldCheck size={10} className="text-red-400" />
                         {row.qualityAverage}%
                       </div>
                     </td>

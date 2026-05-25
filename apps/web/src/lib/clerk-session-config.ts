@@ -19,6 +19,27 @@ function parseDomain(raw: string | undefined): string | undefined {
   return candidate.length > 0 ? candidate : undefined;
 }
 
+function resolveProxyUrl(raw: string | undefined, appOrigin: string | undefined): string | undefined {
+  const candidate = parseDomain(raw);
+  if (!candidate) {
+    return undefined;
+  }
+
+  if (/^https?:\/\//i.test(candidate)) {
+    return candidate;
+  }
+
+  if (!appOrigin) {
+    return candidate;
+  }
+
+  try {
+    return new URL(candidate, appOrigin).toString().replace(/\/+$/, "");
+  } catch {
+    return candidate;
+  }
+}
+
 function parseOriginCsv(raw: string | undefined): string[] {
   if (!raw) {
     return [];
@@ -52,7 +73,7 @@ export function getClerkRuntimeConfig(): ClerkRuntimeConfig {
 
   const isSatellite = env.CLERK_IS_SATELLITE === true;
   const domain = parseDomain(env.CLERK_DOMAIN);
-  const proxyUrl = parseDomain(env.NEXT_PUBLIC_CLERK_PROXY_URL);
+  const proxyUrl = resolveProxyUrl(env.NEXT_PUBLIC_CLERK_PROXY_URL, appOrigin);
 
   return {
     appOrigin,

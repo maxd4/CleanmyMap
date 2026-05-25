@@ -1,8 +1,7 @@
 "use client";
 
-import { ArrowRight, FileText, Cpu, Database, RefreshCw, AlertCircle, Info, Terminal, Box } from "lucide-react";
+import { ArrowRight, FileText, Cpu, Database, RefreshCw, AlertCircle, Terminal, Box } from "lucide-react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 // Assuming MethodDefinition is consistent with the usage
 export interface MethodDefinition {
@@ -41,8 +40,8 @@ export function KpiMethodBlock({
         </div>
         
         <div className="flex items-center gap-3 bg-slate-950/40 border border-white/5 px-4 py-2 rounded-xl backdrop-blur-3xl">
-           <Terminal size={14} className="text-emerald-500" />
-           <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">Live Computation Engine Active</span>
+           <Terminal size={14} className="text-amber-500" />
+           <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest animate-pulse">Live Computation Engine Active</span>
         </div>
       </div>
 
@@ -62,7 +61,7 @@ export function KpiMethodBlock({
                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-8 border-b border-white/5">
                   <div className="space-y-3">
                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.5)]" />
+                        <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
                         <h3 className="text-3xl font-black text-white tracking-tighter leading-none">{method.kpi}</h3>
                      </div>
                      <p className="text-[10px] font-bold text-slate-500 leading-relaxed max-w-xl italic">
@@ -82,12 +81,12 @@ export function KpiMethodBlock({
                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                   <div className="space-y-8">
                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-sky-400 group/label">
+                        <div className="flex items-center gap-3 text-amber-400 group/label">
                            <Cpu size={16} className="group-hover/label:rotate-90 transition-transform" />
                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Algorithme de Calcul</span>
                         </div>
                         <div className="relative group/code">
-                           <div className="absolute inset-0 bg-sky-500/5 blur-xl opacity-0 group-hover/code:opacity-100 transition-opacity" />
+                           <div className="absolute inset-0 bg-amber-500/5 blur-xl opacity-0 group-hover/code:opacity-100 transition-opacity" />
                            <p className="text-sm font-bold text-slate-300 leading-relaxed bg-slate-950/60 p-6 rounded-2xl border border-white/10 font-mono relative z-10 shadow-2xl overflow-x-auto">
                               {method.formula}
                            </p>
@@ -95,11 +94,11 @@ export function KpiMethodBlock({
                      </div>
 
                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-emerald-400">
+                        <div className="flex items-center gap-3 text-amber-400">
                            <Database size={16} />
                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Infrastructure de Données</span>
                         </div>
-                        <div className="p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 transition-colors hover:bg-emerald-500/10">
+                        <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 transition-colors hover:bg-amber-500/10">
                            <p className="text-sm font-black text-white tracking-tight">{method.source}</p>
                         </div>
                      </div>
@@ -107,11 +106,11 @@ export function KpiMethodBlock({
 
                   <div className="space-y-8">
                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 text-violet-400">
+                        <div className="flex items-center gap-3 text-amber-400">
                            <RefreshCw size={16} className="animate-[spin_10s_linear_infinite]" />
                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Cycle de Synchronisation</span>
                         </div>
-                        <div className="p-6 rounded-2xl bg-violet-500/5 border border-violet-500/10 transition-colors hover:bg-violet-500/10">
+                        <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/10 transition-colors hover:bg-amber-500/10">
                            <p className="text-sm font-black text-white tracking-tight">{method.recalc}</p>
                         </div>
                      </div>
@@ -132,8 +131,8 @@ export function KpiMethodBlock({
                
                <div className="pt-8 border-t border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                     <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Audité par l'équipe scientifique</span>
+                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                     <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Audité par l&apos;équipe scientifique</span>
                   </div>
                   <button className="flex items-center gap-2 text-[9px] font-black text-slate-500 hover:text-white transition-colors uppercase tracking-[0.2em]">
                      Consulter le livre blanc

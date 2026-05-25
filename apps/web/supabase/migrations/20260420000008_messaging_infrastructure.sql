@@ -17,7 +17,13 @@ CREATE POLICY "Allow anonymous subscription" ON public.newsletter_subscriptions
 
 -- Only admins can view the list
 CREATE POLICY "Allow admin view subscriptions" ON public.newsletter_subscriptions
-    FOR SELECT USING (auth.uid() IN (SELECT user_id FROM public.profiles WHERE role IN ('admin', 'super-admin')));
+    FOR SELECT USING (
+      auth.uid()::text IN (
+        SELECT id
+        FROM public.profiles
+        WHERE role_label IN ('admin', 'super-admin')
+      )
+    );
 
 -- 20260420000009_app_notifications.sql
 CREATE TABLE IF NOT EXISTS public.app_notifications (

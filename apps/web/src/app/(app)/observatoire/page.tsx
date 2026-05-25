@@ -5,7 +5,7 @@ import { fetchUnifiedActionContracts } from "@/lib/actions/unified-source";
 import { aggregateMonthlyAnalytics } from "@/lib/pilotage/analytics-data-utils";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { Globe, ShieldCheck, ArrowRight, Activity, Zap, Eye, BarChart3, Users, CheckCircle } from "lucide-react";
+import { Globe, ArrowRight, Activity, Zap, Eye, BarChart3, Users, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
@@ -87,17 +87,17 @@ export default async function ObservatoirePage() {
       id="observatoire"
       title="Impact Global"
       subtitle="Transparence totale sur l'état de la dépollution citoyenne. Suivez les indicateurs clés et l'évolution de la propreté de nos territoires."
-      gradient="from-amber-500/20 via-slate-500/10 to-transparent"
+      gradient="from-sky-500/20 via-sky-500/10 to-transparent"
     >
       <div className="space-y-24 pt-8">
         {/* Badges Status */}
         <div className="flex flex-wrap gap-3">
-          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-amber-400/20 bg-amber-400/5 backdrop-blur-md">
-            <Globe size={14} className="text-amber-400 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-400">Observatoire Public</span>
+          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-sky-400/20 bg-sky-400/5 backdrop-blur-md">
+            <Globe size={14} className="text-sky-400 animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-400">Observatoire Public</span>
           </div>
           <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/5 rounded-full border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 backdrop-blur-md">
-            <Eye size={12} className="text-amber-400/60" />
+            <Eye size={12} className="text-sky-400/60" />
             Données Ouvertes
           </div>
           <RubriquePdfExportButton
@@ -117,7 +117,7 @@ export default async function ObservatoirePage() {
             { 
               label: "Volume Total Extrait", 
               value: overview ? `${overview.comparison.current.impactVolumeKg.toLocaleString()}kg` : "---", 
-              color: "text-amber-400",
+              color: "text-sky-400",
               icon: Activity
             },
             { 
@@ -135,7 +135,7 @@ export default async function ObservatoirePage() {
           ].map((stat, i) => (
             <RubriqueCard 
               key={i} 
-              themeColor={i === 0 ? "amber" : "slate"}
+              themeColor={i === 0 ? "sky" : "slate"}
               withTopBar={false}
               className="p-12 flex flex-col justify-between aspect-square group"
             >
@@ -148,7 +148,7 @@ export default async function ObservatoirePage() {
         {/* Interactive Visualization Zone */}
         <section className="space-y-12">
           <div className="flex items-center gap-4 px-2">
-            <div className="p-3 rounded-2xl bg-amber-400/10 text-amber-400">
+            <div className="p-3 rounded-2xl bg-sky-400/10 text-sky-400">
               <BarChart3 size={20} />
             </div>
             <h2 className="text-xs font-black uppercase tracking-[0.4em] text-white/40">Analyse Comparative</h2>
@@ -156,7 +156,7 @@ export default async function ObservatoirePage() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <RubriqueCard 
-              themeColor="amber"
+              themeColor="sky"
               withTopBar={true}
               topBarContent="Rapport d'activité mensuel"
               className="lg:col-span-2 p-1 sm:p-12 min-h-[600px]"
@@ -169,7 +169,7 @@ export default async function ObservatoirePage() {
             <div className="space-y-10">
               <RubriqueCard themeColor="slate" withTopBar={false} className="p-10 space-y-8">
                 <div className="space-y-2">
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-400">Méthodologie</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-400">Méthodologie</p>
                   <h3 className="text-xl font-black text-white uppercase tracking-tighter">Données Certifiées</h3>
                 </div>
                 <p className="text-sm text-white/30 font-medium leading-relaxed">
@@ -177,19 +177,19 @@ export default async function ObservatoirePage() {
                 </p>
                 <div className="pt-4 flex flex-col gap-3">
                   <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-white/40">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-sky-400" />
                     Source : Rapports Citoyens
                   </div>
                   <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-white/40">
-                    <div className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-sky-400/80" />
                     Calcul : Algorithmes CleanMyMap
                   </div>
                 </div>
               </RubriqueCard>
 
-              <RubriqueCard themeColor="amber" withTopBar={false} className="p-10 space-y-8 group cursor-pointer">
+              <RubriqueCard themeColor="sky" withTopBar={false} className="p-10 space-y-8 group cursor-pointer">
                 <div className="flex items-center justify-between">
-                  <Zap className="text-amber-400" size={24} />
+                  <Zap className="text-sky-400" size={24} />
                   <ArrowRight className="text-white/20 group-hover:translate-x-2 transition-transform" size={20} />
                 </div>
                 <div className="space-y-2">

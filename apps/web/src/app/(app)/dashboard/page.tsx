@@ -14,6 +14,8 @@ import { getTranslation } from "@/lib/i18n/server-translation";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { Shield, Plus, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
+import { PageHero } from "@/components/ui/page-hero";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export const metadata: Metadata = {
   title: "Mon Dashboard - CleanMyMap",
@@ -62,11 +64,11 @@ export default async function DashboardPage() {
         title={locale === "fr" ? "Tableau de bord" : "Dashboard"}
         description={locale === "fr" ? "Connectez-vous pour accéder à votre tableau de bord." : "Sign in to access your dashboard."}
         lockedPreview={
-          <div className="grid gap-3 md:grid-cols-3 p-6 rounded-3xl bg-[rgba(44,28,15,0.72)] border border-orange-200/18 shadow-[0_18px_42px_-26px_rgba(124,45,18,0.30)]">
+          <div className="grid gap-3 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] p-6 shadow-[0_18px_42px_-26px_rgba(124,45,18,0.30)] md:grid-cols-3">
             {["Aujourd'hui", "Priorité", "Accès"].map((label) => (
-              <div key={label} className="rounded-2xl bg-[rgba(69,45,28,0.84)] p-5 border border-orange-200/18">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-orange-100">{label}</p>
-                <div className="mt-3 h-3 w-3/4 rounded bg-orange-200/20" />
+              <div key={label} className="rounded-2xl border border-amber-200/18 bg-[rgba(69,26,3,0.58)] p-5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-100">{label}</p>
+                <div className="mt-3 h-3 w-3/4 rounded bg-amber-200/22" />
               </div>
             ))}
           </div>
@@ -86,6 +88,7 @@ export default async function DashboardPage() {
   const primaryAction = getProfilePrimaryAction(profile);
   const { t } = getTranslation("dashboard", locale);
   const overviewPromise = loadDashboardOverviewResult(locale);
+  const pageFamily = resolvePageFamily("/dashboard");
 
   return (
     <main
@@ -101,19 +104,17 @@ export default async function DashboardPage() {
 
         {/* ── Header ── */}
         <div data-gsap-reveal className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-orange-900">
-              {locale === "fr" ? "Cockpit opérationnel" : "Operational cockpit"}
-            </p>
-            <h1 className="mt-1.5 text-[clamp(3rem,6vw,5.5rem)] font-black leading-[0.92] tracking-[-0.05em] text-amber-950">
-              {t("title_v1")}
-            </h1>
-          </div>
+          <PageHero
+            family={pageFamily}
+            eyebrow={locale === "fr" ? "Cockpit opérationnel" : "Operational cockpit"}
+            title={t("title_v1")}
+            className="flex-1"
+          />
           <div className="flex items-center gap-2.5 pb-1">
-            <span className="h-2 w-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.55)]" />
+            <span className="h-2 w-2 rounded-full bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.55)]" />
             <span className="text-sm font-semibold text-amber-900">{roleLabel}</span>
-            <span className="rounded-lg border border-orange-200/60 bg-[rgba(44,28,15,0.72)] px-3 py-1 text-[11px] font-mono font-bold text-orange-100 shadow-sm">
-              <Shield size={10} className="inline mr-1.5 text-amber-400" />
+            <span className="rounded-lg border border-amber-200/18 bg-[rgba(69,26,3,0.72)] px-3 py-1 text-[11px] font-mono font-bold text-amber-50 shadow-sm">
+              <Shield size={10} className="mr-1.5 inline text-amber-300" />
               {userId.slice(-8).toUpperCase()}
             </span>
           </div>
@@ -132,15 +133,15 @@ export default async function DashboardPage() {
         </div>
 
         {/* ── Séparateur ── */}
-        <div className="mt-14 h-px bg-orange-200/30" />
+        <div className="mt-14 h-px bg-amber-200/24" />
 
         {/* ── Action prioritaire ── */}
         <div data-gsap-reveal className="mt-10 relative overflow-hidden rounded-3xl">
           {/* Layer fond isolé */}
-          <div className="pointer-events-none absolute inset-0 rounded-3xl bg-[rgba(44,28,15,0.72)] border border-orange-200/18 shadow-[0_22px_54px_-34px_rgba(124,45,18,0.30)]" />
+          <div className="pointer-events-none absolute inset-0 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] shadow-[0_22px_54px_-34px_rgba(124,45,18,0.30)]" />
           <div className="relative z-10 flex flex-col gap-5 px-7 py-7 sm:flex-row sm:items-center sm:justify-between">
             <div className="space-y-1.5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-orange-100">
+              <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100">
                 {locale === "fr" ? "Action prioritaire" : "Priority action"}
               </p>
               <h2 className="text-2xl font-black tracking-tight text-white">
@@ -167,14 +168,14 @@ export default async function DashboardPage() {
         </div>
 
         {/* ── Séparateur ── */}
-        <div className="mt-14 h-px bg-orange-200/30" />
+        <div className="mt-14 h-px bg-amber-200/24" />
 
         {/* ── Accès rapides ── */}
         <div data-gsap-reveal className="mt-10">
-          <p className="mb-6 text-[11px] font-bold uppercase tracking-[0.3em] text-orange-900">
+          <p className="mb-6 text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100/78">
             {locale === "fr" ? "Accès rapides" : "Quick access"}
           </p>
-          <RolePrimaryActions profile={profile} title="" tone="dark" />
+          <RolePrimaryActions profile={profile} title="" tone="warm" />
         </div>
 
       </DashboardEntrance>

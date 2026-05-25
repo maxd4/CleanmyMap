@@ -33,29 +33,29 @@ export default async function ProfilRootPage() {
  title="Mon profil"
  description="Connectez-vous pour accéder à votre profil et à vos raccourcis."
  lockedPreview={
- <section className="space-y-4 rounded-3xl border border-amber-400/18 p-5" style={{ background: "rgba(20,10,0,0.55)" }}>
+ <section className="space-y-4 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] p-5 shadow-[0_18px_42px_-26px_rgba(124,45,18,0.30)]">
  <div className="grid gap-3 md:grid-cols-3">
- <article className="rounded-2xl border border-amber-400/18 p-4" style={{ background: "rgba(30,16,0,0.75)" }}>
- <p className="text-[10px] font-black uppercase tracking-wide text-amber-300/70">
+ <article className="rounded-2xl border border-amber-200/18 bg-[rgba(69,26,3,0.58)] p-4">
+ <p className="text-[10px] font-black uppercase tracking-wide text-amber-100">
  Compte
  </p>
- <p className="mt-2 text-xs text-amber-50/55">
+ <p className="mt-2 text-xs text-amber-50/72">
  Identité et préférences du profil se déverrouillent après connexion.
  </p>
  </article>
- <article className="rounded-2xl border border-amber-400/18 p-4" style={{ background: "rgba(30,16,0,0.75)" }}>
- <p className="text-[10px] font-black uppercase tracking-wide text-amber-300/70">
+ <article className="rounded-2xl border border-amber-200/18 bg-[rgba(69,26,3,0.58)] p-4">
+ <p className="text-[10px] font-black uppercase tracking-wide text-amber-100">
  Impact
  </p>
- <p className="mt-2 text-xs text-amber-50/55">
+ <p className="mt-2 text-xs text-amber-50/72">
  Carte d&apos;impact et progression personnelle après connexion.
  </p>
  </article>
- <article className="rounded-2xl border border-amber-400/18 p-4" style={{ background: "rgba(30,16,0,0.75)" }}>
- <p className="text-[10px] font-black uppercase tracking-wide text-amber-300/70">
+ <article className="rounded-2xl border border-amber-200/18 bg-[rgba(69,26,3,0.58)] p-4">
+ <p className="text-[10px] font-black uppercase tracking-wide text-amber-100">
  Raccourcis
  </p>
- <p className="mt-2 text-xs text-amber-50/55">
+ <p className="mt-2 text-xs text-amber-50/72">
  Les actions rapides apparaissent après connexion.
  </p>
  </article>

@@ -12,7 +12,7 @@ type LearnRubricShellProps = {
   highlights?: { fr: string; en: string }[];
   backLabel: { fr: string; en: string };
   backHref: string;
-  accent: "blue" | "purple" | "emerald" | "orange";
+  accent: "blue" | "purple" | "emerald" | "orange" | "yellow";
   cta?: {
     href: string;
     label: { fr: string; en: string };
@@ -25,6 +25,7 @@ const ACCENT_CLASSES: Record<LearnRubricShellProps["accent"], string> = {
   purple: "from-violet-500 via-fuchsia-500 to-purple-500",
   emerald: "from-emerald-500 via-lime-500 to-teal-500",
   orange: "from-yellow-200 via-amber-100 to-yellow-100",
+  yellow: "from-yellow-200 via-amber-100 to-yellow-100",
 };
 
 export function LearnRubricShell({
@@ -40,7 +41,7 @@ export function LearnRubricShell({
 }: LearnRubricShellProps) {
   const { locale } = useSitePreferences();
   const isFrench = locale === "fr";
-  const isLightOrange = accent === "orange";
+  const isLightOrange = accent === "orange" || accent === "yellow";
 
   return (
     <div className="w-full space-y-8 p-4 md:p-8">

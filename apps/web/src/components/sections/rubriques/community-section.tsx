@@ -76,14 +76,14 @@ export function CommunitySection() {
       title={fr ? "Hub Communautaire" : "Community Hub"}
       subtitle={fr ? "Coordonnez vos actions, gérez les missions et découvrez des solutions durables." : "Coordinate your actions, manage missions and discover sustainable solutions."}
       icon={Users}
-      gradient="from-emerald-500/20 via-blue-500/10 to-transparent"
+      gradient="from-pink-500/20 via-fuchsia-500/10 to-transparent"
     >
       <div className="space-y-12 pb-20">
         {/* Modernized Control Bar */}
         <RubriqueCard 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          themeColor="emerald"
+          themeColor="rose"
           watermarkIcon={Sparkles}
           watermarkSize={80}
           className="flex flex-col lg:flex-row lg:items-center justify-between gap-8"
@@ -91,16 +91,16 @@ export function CommunitySection() {
 
           <div className="space-y-4 relative z-10">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <div className="p-2 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400">
                 <Target size={18} />
               </div>
               <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Pilotage Opérationnel</h3>
             </div>
             <div className="flex items-center gap-2 text-slate-500 text-[10px] font-black uppercase tracking-widest">
-              <MapPin size={12} className="text-emerald-500" />
+              <MapPin size={12} className="text-pink-500" />
               <span>Zone : <span className="text-white uppercase">{hubZone}</span></span>
               <div className="w-1 h-1 rounded-full bg-white/10 mx-2" />
-              <Info size={12} className="text-emerald-500" />
+              <Info size={12} className="text-pink-500" />
               <span>Inspiration : <span className="text-white">Cleanwalk.org</span></span>
             </div>
           </div>
@@ -171,18 +171,7 @@ export function CommunitySection() {
                   conversionSummary={model.conversionSummary}
                   actionsLoading={model.actionsLoading}
                   highlightsLoadError={model.highlightsLoadError}
-                  reloadHighlights={model.reloadHighlights}
                   highlights={model.highlights}
-                  staffingPlan={model.staffingPlan}
-                  postEventLoop={model.postEventLoop}
-                  createForm={model.createForm}
-                  updateCreateForm={model.updateCreateForm}
-                  onCreateEvent={model.onCreateEvent}
-                  isCreatingEvent={model.isCreatingEvent}
-                  eventsValidating={model.eventsValidating}
-                  reloadEvents={model.reloadEvents}
-                  reminders={model.reminders}
-                  copyReminderMessage={model.copyReminderMessage}
                 />
               </motion.div>
             )}

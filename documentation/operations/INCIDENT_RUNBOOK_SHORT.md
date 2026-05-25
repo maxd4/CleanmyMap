@@ -30,7 +30,7 @@ Checks:
    - `/sign-in`, `/sign-up`, `/dashboard`
 3. Google OAuth Live:
    - custom credentials enabled
-   - redirect URI includes `https://clerk.cleanmymap.fr/v1/oauth_callback`
+   - redirect URI includes `https://clerk.auth.cleanmymap.fr/v1/oauth_callback`
 
 Immediate remediation:
 1. Fix env/redirect/OAuth mismatch.

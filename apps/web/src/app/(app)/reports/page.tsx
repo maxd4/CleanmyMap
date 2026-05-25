@@ -1,5 +1,3 @@
-import { RolePrimaryActions } from"@/components/navigation/role-primary-actions";
-import { KpiMethodBlock } from"@/components/pilotage/kpi-method-block";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -7,34 +5,22 @@ export const metadata: Metadata = {
   description: 'Analysez les données de nettoyage participatif, téléchargez des rapports détaillés et visualisez l\'évolution de l\'impact environnemental.',
 };
 
-import { ThirtySecondsSummary } from"@/components/pilotage/thirty-seconds-summary";
-import { ActionsReportPanel } from"@/components/reports/actions-report-panel";
-import { ReportsKpiSummary } from"@/components/reports/reports-kpi-summary";
-import { ReportsWindowComparisonsSection } from"@/components/reports/reports-window-comparisons-section";
-import { ReportsWebDocument } from"@/components/reports/reports-web-document";
-import { DecisionPageHeader } from"@/components/ui/decision-page-header";
-import { PageReadingTemplate } from"@/components/ui/page-reading-template";
-import { AnimatedImpactMetrics } from "@/components/reports/AnimatedImpactMetrics";
-import { RadialProgressGauge } from "@/components/reports/RadialProgressGauge";
-import { EcologicalTimeline } from "@/components/reports/EcologicalTimeline";
 import { 
  BarChart3, 
  Layers, 
  Info, 
  DownloadCloud 
 } from"lucide-react";
-import { NavigationGrid, type NavigationGridItem } from"@/components/ui/navigation-grid";
+import { type NavigationGridItem } from"@/components/ui/navigation-grid";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { isFeatureEnabled } from"@/lib/feature-flags";
-import { RubriqueExcelExportButton } from"@/components/ui/rubrique-excel-export-button";
 import { getActionOperationalContext, type ActionDataContract } from"@/lib/actions/data-contract";
 import { loadPilotageOverview } from"@/lib/pilotage/overview";
 import {
  getProfilePrimaryAction,
  getProfileSecondaryAction,
  getProfileLabel,
- isAdminLikeProfile,
  toProfile,
 } from"@/lib/profiles";
 import { getServerLocale } from"@/lib/server-preferences";
@@ -106,7 +92,7 @@ export default async function ReportsPage() {
   const contracts = data?.contracts ?? [];
   const monthlyData = aggregateMonthlyAnalytics(contracts);
   const publicAccessBanner = !userId ? (
-    <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 cmm-text-small text-emerald-900 shadow-sm">
+    <section className="rounded-2xl border border-rose-200 bg-rose-50 p-4 cmm-text-small text-rose-900 shadow-sm">
       Lecture publique: parcourez les rapports et exportez un livrable sans
       compte. La connexion sert aux vues personnalisées et à la modération.
     </section>
@@ -181,44 +167,44 @@ export default async function ReportsPage() {
       icon: BarChart3,
       title: "Comparaisons",
       desc: "Comparer 30j / 90j / 12m.",
-      iconBg: "bg-blue-500/20",
-      iconColor: "text-blue-400",
-      accent: "from-blue-600/20 to-blue-900/40",
-      ring: "ring-blue-500/30",
-      dot: "bg-blue-400",
+      iconBg: "bg-rose-500/20",
+      iconColor: "text-rose-400",
+      accent: "from-rose-600/20 to-red-900/40",
+      ring: "ring-rose-500/30",
+      dot: "bg-rose-400",
       href: "#comparisons",
     },
     {
       icon: Info,
       title: "Méthode KPI",
       desc: "Lire la méthode et les sources.",
-      iconBg: "bg-emerald-500/20",
-      iconColor: "text-emerald-400",
-      accent: "from-emerald-600/20 to-emerald-900/40",
-      ring: "ring-emerald-500/30",
-      dot: "bg-emerald-400",
+      iconBg: "bg-red-500/20",
+      iconColor: "text-red-400",
+      accent: "from-red-600/20 to-rose-900/40",
+      ring: "ring-red-500/30",
+      dot: "bg-red-400",
       href: "#method",
     },
     {
       icon: Layers,
       title: "Vue mensuelle",
       desc: "Consulter les agrégats et les tendances.",
-      iconBg: "bg-purple-500/20",
-      iconColor: "text-purple-400",
-      accent: "from-purple-600/20 to-purple-900/40",
-      ring: "ring-purple-500/30",
-      dot: "bg-purple-400",
+      iconBg: "bg-orange-500/20",
+      iconColor: "text-orange-400",
+      accent: "from-orange-600/20 to-amber-900/40",
+      ring: "ring-orange-500/30",
+      dot: "bg-orange-400",
       href: "#cockpit",
     },
     {
       icon: DownloadCloud,
       title: "Exports",
       desc: "Exporter PDF, Excel et synthèse.",
-      iconBg: "bg-amber-500/20",
-      iconColor: "text-amber-400",
-      accent: "from-amber-600/20 to-amber-900/40",
-      ring: "ring-amber-500/30",
-      dot: "bg-amber-400",
+      iconBg: "bg-rose-500/20",
+      iconColor: "text-rose-400",
+      accent: "from-rose-600/20 to-red-900/40",
+      ring: "ring-rose-500/30",
+      dot: "bg-rose-400",
       href: "#exports",
     },
   ];

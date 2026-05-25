@@ -14,7 +14,6 @@ import { isVisibleWithCategoryFilter } from "@/components/actions/map-marker-cat
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import { fetchMapActions } from "@/lib/actions/http";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
-import type { ActionMapItem } from "@/lib/actions/types";
 import { cn } from "@/lib/utils";
 import { useMapKpiStats } from "./_hooks/use-map-kpi-stats";
 import { MapKpiRibbon } from "./_components/map-kpi-ribbon";
@@ -31,8 +30,6 @@ export default function ActionsMapPage() {
     filters,
     setDays,
     setStatusFilter,
-    setImpactFilter,
-    setQualityMin,
     toggleCategory,
     resetFilters,
   } = useActionsMapFilters(INITIAL_DAYS);
@@ -99,7 +96,7 @@ export default function ActionsMapPage() {
     [stats.butts, stats.volunteers, stats.wasteKg, visibleCount],
   );
 
-  const surfaceCard = "rounded-[3rem] border border-cyan-200/70 bg-cyan-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden shadow-[0_24px_56px_-32px_rgba(8,145,178,0.24)]";
+  const surfaceCard = "rounded-[3rem] border border-sky-200/70 bg-sky-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]";
 
   return (
     <main className="min-h-screen text-slate-950 pb-24">
@@ -109,8 +106,8 @@ export default function ActionsMapPage() {
           <div className="absolute -top-24 -left-24 w-[600px] h-[600px] bg-sky-500/10 rounded-full blur-[120px] pointer-events-none" />
           
           <div className="flex flex-wrap gap-3">
-            <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-cyan-200/90 bg-cyan-100/90 backdrop-blur-md">
-              <Compass size={14} className="text-cyan-700 animate-spin-slow" />
+            <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-sky-200/90 bg-sky-100/90 backdrop-blur-md">
+              <Compass size={14} className="text-sky-700 animate-spin-slow" />
               <span className="cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">Visualiser / cartographie</span>
             </div>
           </div>
@@ -121,19 +118,16 @@ export default function ActionsMapPage() {
                 Cartographie des actions
               </h1>
               <p className="text-[clamp(0.95rem,1.6vw,1.25rem)] font-medium leading-[1.42] text-slate-700/90 lg:whitespace-nowrap">
-                Visualisez les interventions, suivez leur répartition et pilotez les données terrain en temps réel.
+                Suivez les interventions et les données terrain en temps réel.
               </p>
               <div className="flex flex-wrap items-center gap-3 pt-1">
-                <Link href="/actions/new" className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-cyan-200 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition-colors hover:bg-cyan-100">
+                <Link href="/actions/new" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-sky-200 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition-colors hover:bg-sky-100">
                   Déclarer <ArrowRight size={14} className="transition-transform hover:translate-x-1" />
                 </Link>
-                <Link href="/observatoire" className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white">
+                <Link href="/observatoire" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white">
                   Observatoire <ArrowRight size={14} />
                 </Link>
-                <Link href="/actions/history" className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-cyan-700 transition-colors hover:text-slate-950 hover:bg-white">
-                  Historique détaillé <ArrowRight size={14} />
-                </Link>
-                <Link href="/methodologie" className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-cyan-700 transition-colors hover:text-slate-950 hover:bg-white">
+                <Link href="/methodologie" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-sky-700 transition-colors hover:text-slate-950 hover:bg-white">
                   Méthodologie <ArrowRight size={14} />
                 </Link>
               </div>
@@ -178,14 +172,14 @@ export default function ActionsMapPage() {
                 <div className="flex items-center justify-between gap-4">
                   <div className="space-y-1">
                     <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
-                      <span className="h-4 w-4 rounded-full bg-cyan-500 shadow-[0_0_18px_rgba(34,211,238,0.55)]" />
-                      Analyses
+                      <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
+                      Lecture terrain
                     </p>
                     <p className="text-sm font-medium leading-relaxed text-slate-600">
-                      Lecture détaillée des flux terrain et des répartitions par période.
+                      Flux terrain et répartition par période.
                     </p>
                   </div>
-                  <div className="relative flex rounded-[2rem] border border-cyan-200/80 bg-cyan-50/90 p-1.5">
+                  <div className="relative flex rounded-[2rem] border border-sky-200/80 bg-sky-50/90 p-1.5">
                     <button
                       type="button"
                       onClick={() => setRailTab("insights")}
@@ -209,7 +203,7 @@ export default function ActionsMapPage() {
                       Journal
                     </button>
                     <div
-                      className="absolute left-1.5 top-1.5 bottom-1.5 w-[calc(50%-4.5px)] rounded-[1.5rem] bg-cyan-200 border border-cyan-300 shadow-2xl transition-transform duration-700 ease-out"
+                      className="absolute left-1.5 top-1.5 bottom-1.5 w-[calc(50%-4.5px)] rounded-[1.5rem] bg-sky-200 border border-sky-300 shadow-2xl transition-transform duration-700 ease-out"
                       style={{
                         transform: railTab === "insights" ? "translateX(0)" : "translateX(calc(100% + 6px))",
                       }}
@@ -251,16 +245,16 @@ export default function ActionsMapPage() {
               <section className={cn(surfaceCard, "p-6 sm:p-8 space-y-4")}>
                 <div className="space-y-2">
                   <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
-                    <span className="h-4 w-4 rounded-full bg-cyan-500 shadow-[0_0_18px_rgba(34,211,238,0.55)]" />
+                    <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
                     Méthodologie
                   </p>
-                  <p className="text-sm font-medium leading-relaxed text-slate-600">
-                    Les formules, sources et marges d’erreur restent disponibles pour vérifier la lecture.
-                  </p>
+                <p className="text-sm font-medium leading-relaxed text-slate-600">
+                    Formules, sources et marges d&apos;erreur restent accessibles.
+                </p>
                 </div>
                 <Link
                   href="/methodologie"
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-[2rem] border border-cyan-200/80 bg-white/80 px-6 py-4 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white"
+                  className="inline-flex w-full items-center justify-center gap-3 rounded-[2rem] border border-sky-200/80 bg-white/80 px-6 py-4 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white"
                 >
                   Voir la méthodologie
                   <ArrowRight size={14} />

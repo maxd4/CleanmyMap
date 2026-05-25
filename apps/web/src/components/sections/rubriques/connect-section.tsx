@@ -39,7 +39,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
       title={fr ? "Espace Communautaire" : "Community Hub"}
       subtitle={fr ? "Échangez, collaborez et coordonnez vos actions sur le terrain." : "Exchange, collaborate, and coordinate your field actions."}
       icon={MessageSquare}
-      gradient="from-fuchsia-500/20 via-purple-500/10 to-transparent"
+      gradient="from-rose-500/20 via-pink-500/10 to-transparent"
     >
       <div className="space-y-16 pt-8">
         <ConnectHero fr={fr} />
@@ -97,9 +97,9 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
                   >
                     <DiscussionBadgesPanel />
                     <div className="rounded-[2.5rem] border border-white/10 bg-black/30 backdrop-blur-3xl overflow-hidden shadow-2xl relative transition-colors hover:bg-black/40">
-                      <div className="absolute inset-x-0 top-0 h-[3px] z-10 bg-fuchsia-500" />
+                      <div className="absolute inset-x-0 top-0 h-[3px] z-10 bg-rose-500" />
                       <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-                        <Sparkles size={80} className="text-fuchsia-400" />
+                        <Sparkles size={80} className="text-rose-400" />
                       </div>
                       <ChatShell
                         key={discussionShellKey}
@@ -118,9 +118,9 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
                     exit={{ opacity: 0, y: -20 }}
                     className="rounded-[2.5rem] border border-white/10 bg-black/30 backdrop-blur-3xl overflow-hidden shadow-2xl relative transition-colors hover:bg-black/40"
                   >
-                     <div className="absolute inset-x-0 top-0 h-[3px] z-10 bg-fuchsia-500" />
+                     <div className="absolute inset-x-0 top-0 h-[3px] z-10 bg-rose-500" />
                      <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
-                        <MessageSquare size={80} className="text-purple-400" />
+                        <MessageSquare size={80} className="text-pink-400" />
                       </div>
                     <ChatShell
                       key={dmShellKey}

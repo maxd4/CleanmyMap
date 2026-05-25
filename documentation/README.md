@@ -14,7 +14,7 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 ### Avant Toute Modification
 1. **UI** → Lire **design-system/README.md** (CRITIQUE)
    Puis lire **design-system/cleanmymap-ui-ux-pro-max.md** pour les écrans opérationnels, formulaires, pilotage, validation et analytics
-   Puis consulter **pages_site/README.md** pour le registre canonique des routes UI et des captures associées
+   Puis consulter **pages_site/INDEX.md** pour l’inventaire canonique des routes UI, avec `pages_site/README.md` comme porte d’entrée
 2. **Sécurité** → Lire **security/README.md** (CRITIQUE)
 3. **Architecture** → Consulter **architecture/README.md** puis **architecture/master-architecture.md**
 4. **Code** → Consulter **development/README.md**
@@ -90,7 +90,7 @@ documentation/
 
 ## Règle de captures UX/UI
 
-Les captures d'écran canoniques des pages doivent être déposées dans le dossier `png/` de la fiche route canonique sous `documentation/pages_site/routes/.../`. Le dossier `documentation/liberte-UX-UI/` reste un miroir legacy tant que la migration des scripts n'est pas terminée.
+Les captures d'écran canoniques des pages doivent être déposées dans le dossier `png/` de la fiche route canonique sous `documentation/pages_site/routes/.../`. L’inventaire des pages et le statut de capture sont centralisés dans `documentation/pages_site/INDEX.md`. Le dossier `documentation/liberte-UX-UI/` reste un miroir legacy tant que la migration des scripts n'est pas terminée.
 
 - `documentation/pages_site/routes/00-homepage/root/png/`
 - `documentation/pages_site/routes/02-agir/actions-new/png/`

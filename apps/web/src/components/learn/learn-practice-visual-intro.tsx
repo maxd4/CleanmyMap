@@ -41,28 +41,28 @@ const TONE_CLASSES: Record<
     chip: "border-amber-200 bg-amber-50 text-amber-800",
   },
   cyan: {
-    shell: "bg-[linear-gradient(180deg,rgba(236,254,255,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-cyan-200 bg-cyan-100 text-cyan-900",
-    accent: "text-cyan-700",
-    border: "border-cyan-200",
-    glow: "from-cyan-300/18 via-sky-200/12 to-transparent",
-    chip: "border-cyan-200 bg-cyan-50 text-cyan-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    accent: "text-yellow-700",
+    border: "border-yellow-200",
+    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
+    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
   },
   emerald: {
-    shell: "bg-[linear-gradient(180deg,rgba(236,253,245,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-emerald-200 bg-emerald-100 text-emerald-900",
-    accent: "text-emerald-700",
-    border: "border-emerald-200",
-    glow: "from-emerald-300/18 via-lime-200/12 to-transparent",
-    chip: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    accent: "text-yellow-700",
+    border: "border-yellow-200",
+    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
+    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
   },
   violet: {
-    shell: "bg-[linear-gradient(180deg,rgba(245,243,255,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-violet-200 bg-violet-100 text-violet-900",
-    accent: "text-violet-700",
-    border: "border-violet-200",
-    glow: "from-violet-300/18 via-fuchsia-200/12 to-transparent",
-    chip: "border-violet-200 bg-violet-50 text-violet-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    accent: "text-yellow-700",
+    border: "border-yellow-200",
+    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
+    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
   },
 };
 
@@ -99,10 +99,6 @@ const STEP_CARDS: StepCard[] = [
     tone: "emerald",
   },
 ];
-
-function getLocaleText(locale: LearnLocale, text: { fr: string; en: string }) {
-  return text[locale];
-}
 
 function StepTile({
   locale,
@@ -295,9 +291,9 @@ export function LearnPracticeVisualIntro({
             </div>
 
             <div className="mt-4 grid grid-cols-3 gap-2">
-              <span className="h-2 rounded-full bg-violet-200" />
-              <span className="h-2 rounded-full bg-cyan-200" />
-              <span className="h-2 rounded-full bg-emerald-200" />
+              <span className="h-2 rounded-full bg-yellow-200" />
+              <span className="h-2 rounded-full bg-yellow-300" />
+              <span className="h-2 rounded-full bg-yellow-100" />
             </div>
           </div>
         </div>

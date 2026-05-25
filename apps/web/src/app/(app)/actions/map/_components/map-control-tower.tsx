@@ -33,7 +33,7 @@ export function MapControlTower({
 }: MapControlTowerProps) {
   const classes = getBlockClasses("visualize");
   const surfaceCard = cn(
-    "rounded-[3rem] border border-cyan-200/80 bg-cyan-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden",
+    "rounded-[3rem] border border-sky-200/80 bg-sky-50/90 backdrop-blur-3xl transition-all duration-700 relative overflow-hidden",
     classes.shadow
   );
 
@@ -43,13 +43,13 @@ export function MapControlTower({
     <section className={cn(surfaceCard, "p-10 space-y-10")}>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Target size={18} className="text-cyan-700" />
+          <Target size={18} className="text-sky-700" />
           <h3 className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-700">
-            Paramètres d&apos;analyse
+            Filtres
           </h3>
         </div>
         <div className="flex items-center gap-6 cmm-text-caption font-semibold tracking-[0.12em] text-slate-600">
-          <span className="rounded-lg border border-cyan-200 bg-cyan-100 px-3 py-1.5">
+          <span className="rounded-lg border border-sky-200 bg-sky-100 px-3 py-1.5">
             {visibleCount} / {loadedCount} points
           </span>
           <ActionsMapExportButton items={filteredMapItems} />
@@ -65,9 +65,9 @@ export function MapControlTower({
         onReset={onReset}
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-6 pt-10 border-t border-cyan-200/80">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-6 pt-10 border-t border-sky-200/80">
         {[
-          { label: "Géo Qualité", val: geoQuality.total, color: "text-sky-400" },
+          { label: "Qualité géo", val: geoQuality.total, color: "text-sky-500" },
           { label: "Sans coord.", val: geoQuality.missingCoordinates, color: "text-rose-400" },
           { label: "Réels", val: geoQuality.realGeometry, color: "text-emerald-400" },
           { label: "Estimés", val: geoQuality.estimatedGeometry, color: "text-amber-400" },

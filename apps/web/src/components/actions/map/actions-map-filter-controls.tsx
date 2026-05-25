@@ -48,7 +48,7 @@ export function ActionsMapFilterControls({
         <select
           value={String(filters.days)}
           onChange={(event) => onDaysChange(Number(event.target.value))}
-          className="h-11 rounded-2xl border border-cyan-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(8,145,178,0.18)] outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-400/12"
+          className="h-11 rounded-2xl border border-sky-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/12"
         >
           <option value={String(initialDays)}>Année en cours</option>
           <option value="3650">Historique complet</option>
@@ -64,7 +64,7 @@ export function ActionsMapFilterControls({
           onChange={(event) =>
             onStatusChange(event.target.value as ActionsMapStatusFilter)
           }
-          className="h-11 rounded-2xl border border-cyan-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(8,145,178,0.18)] outline-none transition focus:border-cyan-400 focus:ring-4 focus:ring-cyan-400/12"
+          className="h-11 rounded-2xl border border-sky-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/12"
         >
           {STATUS_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -77,7 +77,7 @@ export function ActionsMapFilterControls({
       <button
         type="button"
         onClick={onReset}
-        className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-cyan-200/80 bg-cyan-100 px-4 text-xs font-black uppercase tracking-[0.16em] text-slate-950 shadow-[0_10px_28px_-18px_rgba(8,145,178,0.18)] transition hover:border-cyan-300 hover:bg-cyan-200 lg:mt-auto"
+        className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 text-xs font-black uppercase tracking-[0.16em] text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] transition hover:border-sky-300 hover:bg-sky-200 lg:mt-auto"
       >
         <RotateCcw size={14} />
         Reset
@@ -100,8 +100,8 @@ export function ActionsMapFilterControls({
                 className={[
                   "rounded-2xl border px-3 py-2 text-xs font-black uppercase tracking-[0.12em] transition",
                   selected
-                    ? "border-cyan-300 bg-cyan-200 text-slate-950 shadow-[0_10px_28px_-18px_rgba(8,145,178,0.24)]"
-                    : "border-cyan-200 bg-white text-slate-700 hover:border-cyan-300 hover:text-slate-950",
+                    ? "border-sky-300 bg-sky-200 text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.18)]"
+                    : "border-sky-200 bg-white text-slate-700 hover:border-sky-300 hover:text-slate-950",
                 ].join(" ")}
               >
                 {category.label}

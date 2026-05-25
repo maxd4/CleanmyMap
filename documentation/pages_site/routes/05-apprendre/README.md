@@ -4,15 +4,17 @@ Contenus pédagogiques et guides de compréhension.
 
 ## Routes canoniques
 
-| Route | Fiche | Statut | Exception UI | Résumé |
-|---|---|---:|:---:|---|
-| `/learn/bonnes-pratiques` | [Bonnes pratiques](./learn-bonnes-pratiques/README.md) | canonique | non | Guides courts pour agir plus efficacement. |
-| `/learn/comprendre` | [Comprendre l'enjeu](./learn-comprendre/README.md) | canonique | non | Pédagogie de l'enjeu environnemental. |
-| `/learn/hub` | [Hub éducatif](./learn-hub/README.md) | canonique | non | Point d'entrée principal des contenus d'apprentissage. |
-| `/learn/ressources` | [Ressources](./learn-ressources/README.md) | canonique | non | Ressources, liens et contenus de référence. |
-| `/learn/sentrainer` | [S'entraîner](./learn-sentrainer/README.md) | canonique | non | Entraînement et mise en pratique guidée. |
+| Route | Fiche | Type de page | Statut | Scope | Capture disponible | Priorité | Fichier source principal |
+|---|---|---|---|---|:---:|---|---|
+| `/learn/bonnes-pratiques` | [Bonnes pratiques](./learn-bonnes-pratiques/README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/bonnes-pratiques/page.tsx |
+| `/learn/comprendre` | [Comprendre l'enjeu](./learn-comprendre/README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/comprendre/page.tsx |
+| `/learn/hub` | [Hub éducatif](./learn-hub/README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/hub/page.tsx |
+| `/learn/ressources` | [Ressources](./learn-ressources/README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/ressources/page.tsx |
+| `/learn/sentrainer` | [S'entraîner](./learn-sentrainer/README.md) | page éducative | public | à corriger | non | moyenne | apps/web/src/app/learn/sentrainer/page.tsx |
 
-## Captures
 
-- Les captures officielles de cette famille vivent dans chaque dossier route sous `png/` et `webp/`.
-- Les archives legacy restent dans `documentation/liberte-UX-UI/` tant que le pipeline de capture n'a pas été migré partout.
+
+## Notes
+
+- Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
+- Les captures officielles, quand elles existent, vivent dans `photo/desktop/` et `photo/mobile/` à la racine de la famille et sont en WebP.

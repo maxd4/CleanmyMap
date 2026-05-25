@@ -93,17 +93,17 @@ function CommunityCreateEventCard(props: CommunityCreateEventCardProps) {
     );
   };
 
-  const inputClasses = "w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-emerald-500/50 focus:bg-white/[0.08] transition-all duration-300";
-  const labelClasses = "flex flex-col gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-focus-within:text-emerald-400 transition-colors";
+  const inputClasses = "w-full rounded-2xl bg-white/5 border border-white/10 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none focus:border-pink-500/50 focus:bg-white/[0.08] transition-all duration-300";
+  const labelClasses = "flex flex-col gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 group-focus-within:text-pink-400 transition-colors";
 
   return (
     <div className="rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl relative overflow-hidden group">
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+      <div className="absolute inset-0 bg-gradient-to-br from-pink-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
       
       <div className="relative z-10">
         <div className="flex flex-wrap items-center justify-between gap-6 mb-10">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-2xl shadow-emerald-500/20">
+            <div className="w-14 h-14 rounded-2xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shadow-2xl shadow-pink-500/20">
               <PlusCircle size={28} />
             </div>
             <div>
@@ -217,7 +217,7 @@ function CommunityCreateEventCard(props: CommunityCreateEventCardProps) {
                   <span className="flex items-center gap-2"><Info size={12} /> Niveau de soutien</span>
                   <select
                     value={createForm.cleanupSupportLevel}
-                    onChange={(e) => updateCreateForm("cleanupSupportLevel", e.target.value as any)}
+                    onChange={(e) => updateCreateForm("cleanupSupportLevel", e.target.value as CreateCommunityEventForm["cleanupSupportLevel"])}
                     className={cn(inputClasses, "appearance-none bg-slate-900")}
                   >
                     {CLEANUP_SUPPORT_LEVEL_OPTIONS.map((opt) => (
@@ -241,7 +241,7 @@ function CommunityCreateEventCard(props: CommunityCreateEventCardProps) {
                       className={cn(
                         "flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border",
                         active 
-                          ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-600/20" 
+                          ? "bg-pink-600 border-pink-500 text-white shadow-lg shadow-pink-600/20" 
                           : "bg-white/5 border-white/10 text-slate-500 hover:text-slate-300 hover:bg-white/10"
                       )}
                     >
@@ -263,7 +263,7 @@ function CommunityCreateEventCard(props: CommunityCreateEventCardProps) {
           <button
             onClick={() => void onCreateEvent()}
             disabled={isCreatingEvent || !canSubmit}
-            className="px-10 py-4 rounded-2xl bg-emerald-600 text-white text-xs font-black uppercase tracking-[0.2em] hover:bg-emerald-500 transition-all shadow-2xl shadow-emerald-600/40 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed group/btn overflow-hidden relative"
+            className="px-10 py-4 rounded-2xl bg-pink-600 text-white text-xs font-black uppercase tracking-[0.2em] hover:bg-pink-500 transition-all shadow-2xl shadow-pink-600/40 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed group/btn overflow-hidden relative"
           >
             <span className="relative z-10">{isCreatingEvent ? "Processus en cours..." : "Lancer l'événement"}</span>
             <motion.div 

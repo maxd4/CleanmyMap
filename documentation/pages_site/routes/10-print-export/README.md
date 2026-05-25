@@ -1,14 +1,16 @@
 # Print & Export
 
-Rapports imprimables et exports PDF.
+Rapports imprimables et exports PDF avec une ambiance documentaire autonome.
 
 ## Routes canoniques
 
-| Route | Fiche | Statut | Exception UI | Résumé |
-|---|---|---:|:---:|---|
-| `/prints/report` | [Rapport imprimable](./prints-report/README.md) | canonique | non | Rapport d'impact prêt à imprimer et exporter. |
+| Route | Fiche | Type de page | Statut | Scope | Capture disponible | Priorité | Fichier source principal |
+|---|---|---|---|---|:---:|---|---|
+| `/prints/report` | [Rapport imprimable](./prints-report/README.md) | rapport / export | standalone | à corriger | non | critique | apps/web/src/app/(app)/prints/report/page.tsx |
 
-## Captures
 
-- Les captures officielles de cette famille vivent dans chaque dossier route sous `png/` et `webp/`.
-- Les archives legacy restent dans `documentation/liberte-UX-UI/` tant que le pipeline de capture n'a pas été migré partout.
+
+## Notes
+
+- Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
+- Les captures officielles, quand elles existent, vivent dans `photo/desktop/` et `photo/mobile/` à la racine de la famille et sont en WebP.

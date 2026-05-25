@@ -36,6 +36,13 @@ règles a suivre : audit de la section avec plan, exécuter le plan, modulariser
 
 
 
+npx vercel integration add clerk -e production -e preview -m domain=cleanmymap.fr --plan free_2022_06 --format=json --no-env-pull
+npx vercel integration add stripe -e production -e preview --plan sandbox --format=json --no-env-pull
+faire vercel env pull .env.local --yes,
+redeployer et vérifier /api/uptime.
+
+
+
 
 
 

@@ -1,7 +1,5 @@
-import { getNavigationSpacesForProfile } from "@/lib/navigation";
 import {
   HomeHero,
-  HomeBenefits,
   HomeCommunityActivity,
   OriginCredibility,
 } from "@/components/accueil";
@@ -12,7 +10,6 @@ import {
 } from "@/lib/accueil/data";
 import {
   buildHomeMetrics,
-  HOME_BENEFITS,
   type HomeCounters,
 } from "@/lib/accueil/config";
 import type { Metadata } from "next";
@@ -116,14 +113,10 @@ export default async function HomePage() {
     overview?.contracts ?? [],
     floorDate,
   );
-
-
-
   return (
     <main className="relative min-h-screen overflow-hidden font-sans">
       <div className="relative z-10">
         <HomeHero metrics={metrics} />
-        <HomeBenefits benefits={HOME_BENEFITS} />
         <HomeCommunityActivity activity={communityActivity} />
         <OriginCredibility />
       </div>

@@ -11,7 +11,6 @@ import {
   Shield,
   Users,
   Sparkles,
-  ArrowRight,
   Send,
   Lock,
   Globe
@@ -21,11 +20,11 @@ import type { ConnectTab, CommunityAnnouncementTemplateKey, ChannelStat, Connect
 import { cn } from "@/lib/utils";
 
 export const CHANNEL_STATS: ChannelStat[] = [
-  { label: { fr: "Communauté", en: "Community" }, icon: Users, count: "Public", color: "text-emerald-400" },
-  { label: { fr: "Privé", en: "Private" }, icon: Mail, count: "1:1", color: "text-blue-400" },
-  { label: { fr: "Admin & élus", en: "Admin & elected" }, icon: Shield, count: "Réservé", color: "text-purple-400" },
+  { label: { fr: "Communauté", en: "Community" }, icon: Users, count: "Public", color: "text-rose-400" },
+  { label: { fr: "Privé", en: "Private" }, icon: Mail, count: "1:1", color: "text-pink-400" },
+  { label: { fr: "Admin & élus", en: "Admin & elected" }, icon: Shield, count: "Réservé", color: "text-rose-300" },
   { label: { fr: "Territoire", en: "Territory" }, icon: MapPin, count: "Local", color: "text-amber-400" },
-  { label: { fr: "Feedback", en: "Feedback" }, icon: MessageSquare, count: "Direct", color: "text-rose-400" },
+  { label: { fr: "Feedback", en: "Feedback" }, icon: MessageSquare, count: "Direct", color: "text-rose-300" },
 ];
 
 export const CONNECT_TABS: ConnectTabItem[] = [
@@ -52,14 +51,14 @@ export const CONNECT_TABS: ConnectTabItem[] = [
 export const ConnectHero = memo(function ConnectHero({ fr }: { fr: boolean }) {
   return (
     <div className="relative overflow-hidden rounded-[3rem] border border-white/10 bg-black/30 px-8 py-16 text-white shadow-2xl lg:py-24 backdrop-blur-3xl">
-      <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/10 via-purple-500/5 to-transparent opacity-50" />
+      <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 via-pink-500/5 to-transparent opacity-50" />
       <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-        <Globe size={300} className="text-fuchsia-400" />
+        <Globe size={300} className="text-rose-400" />
       </div>
       
       <div className="relative z-10 mx-auto max-w-5xl space-y-12 text-center">
         <div className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-6 py-2.5 backdrop-blur-md">
-          <Sparkles size={16} className="text-fuchsia-400 animate-pulse" />
+          <Sparkles size={16} className="text-rose-400 animate-pulse" />
           <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/80">
             {fr ? "Espace de Dialogue" : "Dialogue Space"}
           </span>
@@ -90,24 +89,24 @@ export const ConnectHero = memo(function ConnectHero({ fr }: { fr: boolean }) {
               title: fr ? "Publier en communauté" : "Post to community",
               text: fr ? "Pour une coordination visible." : "For visible coordination.",
               icon: Users,
-              accent: { icon: "text-emerald-300 bg-emerald-400/20 border-emerald-400/30", bar: "bg-emerald-400" }
+              accent: { icon: "text-rose-300 bg-rose-400/20 border-rose-400/30", bar: "bg-rose-400" }
             },
             {
               title: fr ? "Écrire en privé" : "Write privately",
               text: fr ? "Pour un échange confidentiel." : "For confidential exchange.",
               icon: Lock,
-              accent: { icon: "text-blue-300 bg-blue-400/20 border-blue-400/30", bar: "bg-blue-400" }
+              accent: { icon: "text-pink-300 bg-pink-400/20 border-pink-400/30", bar: "bg-pink-400" }
             },
             {
               title: fr ? "Ancrer un sujet local" : "Anchor a local topic",
               text: fr ? "Pour un secteur précis." : "For a specific sector.",
               icon: MapPin,
-              accent: { icon: "text-amber-300 bg-amber-400/20 border-amber-400/30", bar: "bg-amber-400" }
+              accent: { icon: "text-rose-300 bg-rose-400/20 border-rose-400/30", bar: "bg-rose-400" }
             },
           ].map((item) => (
             <div
               key={item.title}
-              className="group relative overflow-hidden rounded-3xl border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_12px_40px_-8px_rgba(217,70,239,0.2)] text-left"
+              className="group relative overflow-hidden rounded-3xl border border-white/10 transition-all duration-300 hover:-translate-y-1 hover:border-white/25 hover:shadow-[0_12px_40px_-8px_rgba(244,114,182,0.2)] text-left"
             >
               <div className="pointer-events-none absolute inset-0 rounded-3xl bg-black/30 transition-colors duration-300 group-hover:bg-black/35" />
               <div className={cn("absolute inset-x-0 top-0 h-[3px] z-10", item.accent.bar)} />
@@ -166,7 +165,7 @@ export const ConnectTabs = memo(function ConnectTabs({
   fr: boolean;
 }) {
   return (
-    <div className="p-2 bg-black/40 border border-white/5 rounded-[2.5rem] backdrop-blur-3xl shadow-2xl flex gap-2">
+        <div className="p-2 bg-black/40 border border-white/5 rounded-[2.5rem] backdrop-blur-3xl shadow-2xl flex gap-2">
       {CONNECT_TABS.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
@@ -175,22 +174,22 @@ export const ConnectTabs = memo(function ConnectTabs({
             onClick={() => setActiveTab(tab.id)}
             className={cn(
               "relative flex items-center gap-4 px-8 py-4 rounded-[1.75rem] transition-all duration-500 group overflow-hidden",
-              isActive ? "text-fuchsia-300" : "text-slate-500 hover:text-white"
+              isActive ? "text-rose-300" : "text-slate-500 hover:text-white"
             )}
           >
             {isActive && (
               <motion.div
                 layoutId="connect-tab-active"
-                className="absolute inset-0 bg-fuchsia-500/10 border border-fuchsia-500/20 shadow-[0_0_30px_rgba(217,70,239,0.15)] -z-10"
+                className="absolute inset-0 bg-rose-500/10 border border-rose-500/20 shadow-[0_0_30px_rgba(244,114,182,0.15)] -z-10"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
-            <tab.icon size={20} className={cn("transition-transform group-hover:scale-110", isActive ? "text-fuchsia-400" : "text-slate-500 group-hover:text-white")} />
+            <tab.icon size={20} className={cn("transition-transform group-hover:scale-110", isActive ? "text-rose-400" : "text-slate-500 group-hover:text-white")} />
             <div className="text-left relative z-10">
               <span className="text-[11px] font-black uppercase tracking-widest block">
                 {fr ? tab.label.fr : tab.label.en}
               </span>
-              <span className={cn("text-[9px] font-black uppercase tracking-[0.2em] block mt-0.5", isActive ? "text-fuchsia-300/70" : "text-slate-600 group-hover:text-slate-400")}>
+              <span className={cn("text-[9px] font-black uppercase tracking-[0.2em] block mt-0.5", isActive ? "text-rose-300/70" : "text-slate-600 group-hover:text-slate-400")}>
                 {fr ? tab.desc.fr : tab.desc.en}
               </span>
             </div>
@@ -219,19 +218,19 @@ export const ConnectGuide = memo(function ConnectGuide({
   return (
     <div className="mx-auto max-w-6xl">
       <RubriqueCard 
-        themeColor="fuchsia" 
+        themeColor="rose" 
         watermarkIcon={Info}
         watermarkSize={100}
       >
         <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
           <RubriqueCardIcon 
             icon={Info} 
-            themeColor="fuchsia" 
+            themeColor="rose" 
             className="animate-pulse"
           />
           <div className="space-y-4 flex-1">
             <div className="flex items-center gap-3">
-              <span className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl bg-fuchsia-500/20 text-fuchsia-300">
+              <span className="px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-2xl bg-rose-500/20 text-rose-300">
                 {activeTab === "dm" ? (fr ? "Confidentialité" : "Privacy") : (fr ? "Intelligence Collective" : "Collective Intelligence")}
               </span>
             </div>
@@ -269,7 +268,7 @@ export const ConnectAnnouncement = memo(function ConnectAnnouncement({
   return (
     <div className="mx-auto max-w-6xl">
       <div className="rounded-[2.5rem] border border-white/10 bg-black/30 p-8 backdrop-blur-3xl shadow-2xl relative overflow-hidden group transition-colors hover:bg-black/40">
-        <div className="absolute inset-x-0 top-0 h-[3px] z-10 bg-fuchsia-500" />
+        <div className="absolute inset-x-0 top-0 h-[3px] z-10 bg-rose-500" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 relative z-10">
           <div className="space-y-1">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
@@ -317,12 +316,12 @@ export const ConnectAnnouncement = memo(function ConnectAnnouncement({
                 className={cn(
                   "flex items-center gap-4 px-6 py-4 rounded-[1.5rem] border transition-all duration-300 text-left group",
                   isActive
-                    ? "bg-fuchsia-500/20 border-fuchsia-400/50 text-fuchsia-300 shadow-[0_4px_16px_-4px_rgba(217,70,239,0.3)] hover:-translate-y-0.5 hover:bg-fuchsia-500/30"
+                    ? "bg-rose-500/20 border-rose-400/50 text-rose-300 shadow-[0_4px_16px_-4px_rgba(244,63,94,0.3)] hover:-translate-y-0.5 hover:bg-rose-500/30"
                     : "bg-black/30 border-white/10 text-slate-500 hover:border-white/25 hover:text-white hover:-translate-y-0.5 hover:shadow-[0_12px_40px_-8px_rgba(0,0,0,0.4)]"
                 )}
               >
-                <div className={cn("flex items-center justify-center rounded-xl p-2", isActive ? "bg-fuchsia-400/20" : "bg-white/5 group-hover:bg-white/10")}>
-                  <option.icon size={16} className={cn("transition-transform group-hover:scale-110", isActive ? "text-fuchsia-300" : "text-slate-500 group-hover:text-white")} />
+                <div className={cn("flex items-center justify-center rounded-xl p-2", isActive ? "bg-rose-400/20" : "bg-white/5 group-hover:bg-white/10")}>
+                  <option.icon size={16} className={cn("transition-transform group-hover:scale-110", isActive ? "text-rose-300" : "text-slate-500 group-hover:text-white")} />
                 </div>
                 <span className="text-[11px] font-black uppercase tracking-widest">
                   {option.label}
@@ -338,16 +337,16 @@ export const ConnectAnnouncement = memo(function ConnectAnnouncement({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="mt-8 p-6 rounded-3xl bg-fuchsia-500/5 border border-fuchsia-500/20 relative group"
+              className="mt-8 p-6 rounded-3xl bg-rose-500/5 border border-rose-500/20 relative group"
             >
-              <div className="absolute top-4 right-6 text-fuchsia-500 opacity-20">
+              <div className="absolute top-4 right-6 text-rose-500 opacity-20">
                 <Sparkles size={24} />
               </div>
               <p className="text-sm font-bold text-slate-300 leading-relaxed italic">
-                "{communityInitialMessage}"
+                &ldquo;{communityInitialMessage}&rdquo;
               </p>
-              <p className="text-[9px] font-black uppercase tracking-widest text-fuchsia-500 mt-4">
-                Message suggéré prêt à l'envoi
+              <p className="text-[9px] font-black uppercase tracking-widest text-rose-500 mt-4">
+                Message suggéré prêt à l&apos;envoi
               </p>
             </motion.div>
           )}

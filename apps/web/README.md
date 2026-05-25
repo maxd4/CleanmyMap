@@ -19,7 +19,7 @@ Core required:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- `NEXT_PUBLIC_CLERK_PROXY_URL` when Clerk must be routed through the app proxy path `/__clerk`
+- `NEXT_PUBLIC_CLERK_PROXY_URL` only if you intentionally route Clerk through the app proxy path `/__clerk` (otherwise leave it empty and use the direct Clerk frontend API domain)
 - `CLERK_SECRET_KEY`
 
 Recommended for production:
@@ -101,6 +101,15 @@ npm run data:cleanup:supabase
 - `GET /api/services`
   - service-by-service status (`ready`, `missing`, `defer`, `external`)
 
+## Localhost sanity checks
+
+If the local site looks older than the repository or Turbopack cache errors appear:
+
+1. Run `npm run dev:clean` from the repo root to clear `apps/web/.next`.
+2. If you need an exact port and want to fail when `3000` is already used, run `npm run dev:strict`.
+3. Check the terminal banner before opening the browser. `npm run dev` can fall back to `3001+` when another dev server is still running.
+4. If the browser still serves stale content, hard refresh or clear the site data for `localhost`.
+
 ## Resend quick test (`/api/send`)
 
 - Required:
@@ -143,7 +152,12 @@ curl -X POST http://localhost:3000/api/send \
 - Sentry:
   - `NEXT_PUBLIC_SENTRY_DSN` activates runtime capture on the client and server.
   - `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT` enable post-build source-map upload through `sentry-cli`.
-  - `SENTRY_RELEASE` can be pinned manually; otherwise the Vercel commit SHA is used when available.
+  - The upload step stages only JavaScript bundles that have a matching `.map` file, which avoids false `missing sourcemap!` warnings and skips third-party CSS maps.
+  - Production builds enable `experimental.serverSourceMaps` so server traces can be symbolicated too.
+  - The upload step also disables Sentry CLI source-map reference autodetection and rewriting, because Next's generated chunks are paired through debug IDs rather than `sourceMappingURL` comments.
+- `SENTRY_RELEASE` can be pinned manually; otherwise the Vercel commit SHA is used when available.
+- Standard Clerk mode uses `CLERK_DOMAIN=auth.cleanmymap.fr` and no app proxy.
+- Proxy mode is optional and only applies when `NEXT_PUBLIC_CLERK_PROXY_URL=/__clerk` is explicitly set.
 - Local verification:
   - Run `npm run dev`, open the app, then trigger a tracked action (e.g. navigation click).
   - If `localhost:3000` is already taken, the dev launcher automatically uses the next free port so you can keep another local session open at the same time.

@@ -1,4 +1,33 @@
 {
-    "files.autoSave": "onFocusChange",
-    "editor.fontSize": 12
+  "files.autoSave": "onFocusChange",
+  "editor.fontSize": 12,
+  "typescript.tsserver.maxTsServerMemory": 2048,
+  "typescript.disableAutomaticTypeAcquisition": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.next": true,
+    "**/.vercel": true,
+    "**/build": true,
+    "**/coverage": true,
+    "**/dist": true,
+    "**/node_modules": true
+  },
+  "files.watcherExclude": {
+    "**/.git/**": true,
+    "**/.next/**": true,
+    "**/.vercel/**": true,
+    "**/build/**": true,
+    "**/coverage/**": true,
+    "**/dist/**": true,
+    "**/node_modules/**": true
+  },
+  "search.exclude": {
+    "**/.git": true,
+    "**/.next": true,
+    "**/.vercel": true,
+    "**/build": true,
+    "**/coverage": true,
+    "**/dist": true,
+    "**/node_modules": true
+  }
 }

@@ -37,7 +37,7 @@ export default function LearnBonnesPratiquesPage() {
       }}
       backHref="/learn/hub"
       backLabel={{ fr: "Retour au hub", en: "Back to hub" }}
-      accent="emerald"
+      accent="yellow"
       highlights={[
         { fr: "Gestes opérationnels", en: "Operational gestures" },
         { fr: "Guides pratiques", en: "Practical guides" },

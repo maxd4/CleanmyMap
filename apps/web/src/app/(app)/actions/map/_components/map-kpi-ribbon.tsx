@@ -1,4 +1,3 @@
-import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { HomeMetric } from "@/lib/accueil/config";
 
@@ -8,11 +7,11 @@ type MapKpiRibbonProps = {
 
 const metricAccentStyles = {
   blue: {
-    bar: "bg-cyan-500",
+    bar: "bg-sky-500",
     value: "text-slate-950",
   },
   emerald: {
-    bar: "bg-teal-500",
+    bar: "bg-emerald-500",
     value: "text-slate-950",
   },
   amber: {
@@ -40,20 +39,17 @@ export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
         ] satisfies HomeMetric[];
 
   return (
-    <section className="relative overflow-hidden rounded-[3rem] border border-cyan-200/80 bg-cyan-50/95 p-5 sm:p-6 shadow-[0_24px_56px_-32px_rgba(8,145,178,0.22)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(34,211,238,0.18),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(186,230,253,0.35),transparent_24%)]" />
-      <div className="pointer-events-none absolute right-4 top-4 text-cyan-200/50">
-        <Sparkles size={120} />
-      </div>
+    <section className="relative overflow-hidden rounded-[3rem] border border-sky-200/80 bg-sky-50/95 p-5 sm:p-6 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.22)]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(186,230,253,0.28),transparent_24%)]" />
 
       <div className="relative z-10 flex flex-wrap items-start justify-between gap-4 px-1 pb-5 sm:px-2">
         <div className="space-y-1">
           <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
-            <span className="h-4 w-4 rounded-full bg-cyan-500 shadow-[0_0_18px_rgba(34,211,238,0.55)]" />
-            Aperçu de l&apos;impact
+            <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
+            Impact terrain
           </p>
           <p className="max-w-2xl text-sm font-medium leading-relaxed text-slate-600">
-            Données terrain certifiées. Formules exposées en méthodologie.
+            Données certifiées, méthodologie disponible.
           </p>
         </div>
       </div>
@@ -66,7 +62,7 @@ export function MapKpiRibbon({ metrics }: MapKpiRibbonProps) {
             <div
               key={metric.key}
               className={cn(
-                "group relative min-h-[152px] overflow-hidden rounded-[1.6rem] border border-cyan-100 bg-white p-6 shadow-[0_14px_32px_-20px_rgba(6,17,30,0.18)] transition-transform duration-300 hover:-translate-y-0.5",
+                "group relative min-h-[152px] overflow-hidden rounded-[1.6rem] border border-sky-100 bg-white p-6 shadow-[0_14px_32px_-20px_rgba(6,17,30,0.18)] transition-transform duration-300 hover:-translate-y-0.5",
               )}
             >
               <div className={cn("absolute inset-y-4 left-0 w-1 rounded-r-full", accent.bar)} />

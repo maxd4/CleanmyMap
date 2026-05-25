@@ -59,11 +59,11 @@ export function CleanupGuideCard() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-[2rem] border border-emerald-200 bg-white p-6 shadow-lg shadow-emerald-100"
+      className="rounded-[2rem] border border-pink-200 bg-white p-6 shadow-lg shadow-pink-100"
     >
       <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-          <Leaf size={24} className="text-emerald-600" />
+        <div className="w-12 h-12 rounded-2xl bg-pink-500/10 flex items-center justify-center">
+          <Leaf size={24} className="text-pink-600" />
         </div>
         <div>
           <h3 className="text-xl font-black tracking-tight cmm-text-primary">
@@ -92,11 +92,11 @@ export function CleanupGuideCard() {
                 onClick={() => setExpandedStep(isExpanded ? null : step.id)}
                 className="w-full flex items-center gap-4 p-4 text-left hover:bg-slate-50 transition-colors"
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                  <Icon size={18} className="text-emerald-600" />
+                <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center shrink-0">
+                  <Icon size={18} className="text-pink-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-pink-600">
                     Étape {step.id}
                   </p>
                   <p className="font-bold cmm-text-primary truncate">{step.title}</p>
@@ -120,7 +120,7 @@ export function CleanupGuideCard() {
                       <div className="space-y-1">
                         {step.tips.map((tip, i) => (
                           <div key={i} className="flex items-center gap-2 text-xs">
-                            <CheckCircle size={12} className="text-emerald-500 shrink-0" />
+                            <CheckCircle size={12} className="text-pink-500 shrink-0" />
                             <span className="text-slate-600">{tip}</span>
                           </div>
                         ))}
@@ -134,9 +134,9 @@ export function CleanupGuideCard() {
         })}
       </div>
 
-      <div className="mt-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200">
-        <p className="text-sm font-medium text-emerald-800">
-          💡 <strong>Conseil</strong> : Documentez votre action sur CleanMyMap pour calculer l'impact et obtenir votre certificat !
+      <div className="mt-6 p-4 rounded-2xl bg-pink-50 border border-pink-200">
+        <p className="text-sm font-medium text-pink-800">
+          💡 <strong>Conseil</strong> : Documentez votre action sur CleanMyMap pour calculer l&apos;impact et obtenir votre certificat !
         </p>
       </div>
     </motion.div>

@@ -62,8 +62,8 @@ export function ActionsMapFeed({
   const isImmersive = presentation === "immersive";
 
   const shellClass = isImmersive
-    ? "relative overflow-hidden rounded-[2.25rem] border border-sky-300/16 bg-[linear-gradient(180deg,rgba(22,46,74,0.96),rgba(18,58,90,0.98))] p-4 shadow-[0_28px_80px_-36px_rgba(56,189,248,0.28)] sm:p-6"
-    : "rounded-2xl border border-sky-300/12 bg-[rgba(10,31,50,0.96)] p-6 shadow-[0_24px_56px_-32px_rgba(56,189,248,0.22)]";
+    ? "relative overflow-hidden rounded-[2.25rem] border border-sky-200/80 bg-[linear-gradient(180deg,rgba(233,244,252,0.96),rgba(248,253,255,0.98))] p-4 shadow-[0_28px_80px_-36px_rgba(14,165,233,0.18)] sm:p-6"
+    : "rounded-2xl border border-sky-200/80 bg-[rgba(239,248,253,0.96)] p-6 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]";
 
   const layoutProps = {
     items: feedData.items,
@@ -92,14 +92,14 @@ export function ActionsMapFeed({
 
       {feedData.isLoading ? (
         <div className="mt-5 space-y-2">
-          <div className="h-11 animate-pulse rounded-lg bg-sky-400/10" />
-          <div className="h-11 animate-pulse rounded-lg bg-sky-400/10" />
-          <div className="h-11 animate-pulse rounded-lg bg-sky-400/10" />
+          <div className="h-11 animate-pulse rounded-lg bg-sky-200/35" />
+          <div className="h-11 animate-pulse rounded-lg bg-sky-200/35" />
+          <div className="h-11 animate-pulse rounded-lg bg-sky-200/35" />
         </div>
       ) : null}
 
       {feedData.error ? (
-        <p className="mt-5 rounded-lg border border-rose-300/16 bg-[rgba(63,16,30,0.88)] px-3 py-2 text-sm text-rose-100">
+        <p className="mt-5 rounded-lg border border-rose-300/20 bg-[rgba(255,241,245,0.95)] px-3 py-2 text-sm text-rose-800">
           {feedData.error instanceof Error
             ? feedData.error.message
             : "Impossible de récupérer les données de la carte. Veuillez vérifier votre connexion."}

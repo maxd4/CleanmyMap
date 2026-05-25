@@ -10,11 +10,9 @@ import {
   Server, 
   Clock, 
   ExternalLink, 
-  Zap, 
   ShieldCheck, 
   Search,
-  RefreshCw,
-  Code
+  RefreshCw
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -86,13 +84,13 @@ export function SandboxSection() {
     <SectionShell 
       id="sandbox"
       icon={Terminal}
-      gradient="from-cyan-100 via-cyan-50 to-transparent"
+      gradient="from-sky-100 via-sky-50 to-transparent"
       hideHeader
     >
       <div className="space-y-10 pt-12 pb-20 text-slate-950">
         <header className="space-y-4">
-          <div className="inline-flex items-center gap-3 rounded-full border border-cyan-200/80 bg-cyan-100 px-5 py-2">
-            <Terminal size={14} className="text-cyan-700" />
+          <div className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-sky-100 px-5 py-2">
+            <Terminal size={14} className="text-sky-700" />
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-950">
               {fr ? "Carte d'entrainement" : "Training map"}
             </span>
@@ -110,10 +108,10 @@ export function SandboxSection() {
         </header>
 
         {/* Health Monitoring Dashboard */}
-        <div className="p-10 rounded-[3rem] border border-cyan-200/80 bg-cyan-50/95 backdrop-blur-3xl shadow-[0_24px_56px_-32px_rgba(8,145,178,0.18)] space-y-10">
+        <div className="p-10 rounded-[3rem] border border-sky-200/80 bg-sky-50/95 backdrop-blur-3xl shadow-[0_24px_56px_-32px_rgba(56,189,248,0.18)] space-y-10">
           <div className="flex flex-wrap items-center justify-between gap-6">
             <div className="flex items-center gap-6">
-              <div className="p-4 rounded-2xl bg-cyan-100 border border-cyan-200 text-cyan-700">
+              <div className="p-4 rounded-2xl bg-sky-100 border border-sky-200 text-sky-700">
                 <Activity size={24} />
               </div>
               <div className="space-y-1">
@@ -129,7 +127,7 @@ export function SandboxSection() {
             <button
               onClick={() => void mutate()}
               disabled={isValidating}
-              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-cyan-100 border border-cyan-200 text-[10px] font-black text-slate-950 uppercase tracking-widest hover:bg-cyan-200 transition-all disabled:opacity-50"
+              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-sky-100 border border-sky-200 text-[10px] font-black text-slate-950 uppercase tracking-widest hover:bg-sky-200 transition-all disabled:opacity-50"
             >
               <RefreshCw size={14} className={cn(isValidating && "animate-spin")} />
               {isValidating ? (fr ? "Actualisation..." : "Refreshing...") : (fr ? "Rafraîchir" : "Refresh")}
@@ -137,25 +135,25 @@ export function SandboxSection() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-8 rounded-[2rem] bg-white border border-cyan-200/80 space-y-4">
+            <div className="p-8 rounded-[2rem] bg-white border border-sky-200/80 space-y-4">
               <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">{fr ? "Statut" : "Status"}</p>
               <div className="flex items-center gap-3">
-                <div className={cn("w-2 h-2 rounded-full", (data?.ok || data?.status === 'ok') ? "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" : "bg-amber-500")} />
+                <div className={cn("w-2 h-2 rounded-full", (data?.ok || data?.status === 'ok') ? "bg-sky-500 shadow-[0_0_10px_rgba(56,189,248,0.5)]" : "bg-amber-500")} />
                 <p className="text-lg font-black text-slate-950 uppercase">
                   {isLoading ? "..." : error ? (fr ? "Indisponible" : "Unavailable") : (data?.status ?? (data?.ok ? "Online" : "Offline"))}
                 </p>
               </div>
             </div>
 
-            <div className="p-8 rounded-[2rem] bg-white border border-cyan-200/80 space-y-4">
+            <div className="p-8 rounded-[2rem] bg-white border border-sky-200/80 space-y-4">
               <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">{fr ? "Service" : "Service"}</p>
-              <div className="flex items-center gap-3 text-cyan-700">
+              <div className="flex items-center gap-3 text-sky-700">
                 <Server size={20} />
                 <p className="text-lg font-black text-slate-950">{data?.service ?? "cleanmymap"}</p>
               </div>
             </div>
 
-            <div className="p-8 rounded-[2rem] bg-white border border-cyan-200/80 space-y-4">
+            <div className="p-8 rounded-[2rem] bg-white border border-sky-200/80 space-y-4">
               <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em]">{fr ? "Horodatage" : "Timestamp"}</p>
               <div className="flex items-center gap-3 text-slate-700">
                 <Clock size={20} />
@@ -168,9 +166,9 @@ export function SandboxSection() {
         {/* Entry Points & Runbooks */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_1.5fr] gap-10">
           {/* Quick Entry Points */}
-          <div className="p-10 rounded-[3rem] border border-cyan-200/80 bg-cyan-50/95 backdrop-blur-3xl shadow-[0_24px_56px_-32px_rgba(8,145,178,0.18)] space-y-8">
+          <div className="p-10 rounded-[3rem] border border-sky-200/80 bg-sky-50/95 backdrop-blur-3xl shadow-[0_24px_56px_-32px_rgba(56,189,248,0.18)] space-y-8">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-2xl bg-cyan-100 border border-cyan-200 text-cyan-700">
+              <div className="p-3 rounded-2xl bg-sky-100 border border-sky-200 text-sky-700">
                 <Search size={20} />
               </div>
               <h3 className="text-xl font-black text-slate-950 tracking-tight">{fr ? "Points d'accès API" : "API Access Points"}</h3>
@@ -187,10 +185,10 @@ export function SandboxSection() {
                   href={link.path}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-between p-5 rounded-2xl bg-white border border-cyan-200/80 hover:bg-cyan-100 hover:border-cyan-300 transition-all group"
+                  className="flex items-center justify-between p-5 rounded-2xl bg-white border border-sky-200/80 hover:bg-sky-100 hover:border-sky-300 transition-all group"
                 >
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black text-cyan-700 uppercase tracking-widest">{link.label}</p>
+                    <p className="text-[10px] font-black text-sky-700 uppercase tracking-widest">{link.label}</p>
                     <code className="text-xs font-mono text-slate-700">GET {link.path}</code>
                   </div>
                   <ExternalLink size={16} className="text-slate-500 group-hover:text-slate-950 transition-colors" />
@@ -200,10 +198,10 @@ export function SandboxSection() {
           </div>
 
           {/* Versioned Runbooks */}
-          <div className="p-10 rounded-[3rem] border border-cyan-200/80 bg-cyan-50/95 backdrop-blur-3xl shadow-[0_24px_56px_-32px_rgba(8,145,178,0.18)] space-y-8">
+          <div className="p-10 rounded-[3rem] border border-sky-200/80 bg-sky-50/95 backdrop-blur-3xl shadow-[0_24px_56px_-32px_rgba(56,189,248,0.18)] space-y-8">
             <div className="flex flex-wrap items-center justify-between gap-6">
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-2xl bg-emerald-100 border border-emerald-200 text-emerald-700">
+                <div className="p-3 rounded-2xl bg-sky-100 border border-sky-200 text-sky-700">
                   <ShieldCheck size={20} />
                 </div>
                 <div className="space-y-1">
@@ -215,11 +213,11 @@ export function SandboxSection() {
               </div>
 
               <div className="flex gap-2">
-                {["ops", "admin", "dev"].map((profile) => (
+                {(["ops", "admin", "dev"] as const).map((profile) => (
                   <button
                     key={profile}
-                    onClick={() => void triggerRunbook(profile as any)}
-                    className="px-4 py-2 rounded-lg bg-white border border-cyan-200/80 text-[9px] font-black text-slate-950 uppercase tracking-widest hover:bg-cyan-200 hover:border-cyan-300 transition-all"
+                    onClick={() => void triggerRunbook(profile)}
+                    className="px-4 py-2 rounded-lg bg-white border border-sky-200/80 text-[9px] font-black text-slate-950 uppercase tracking-widest hover:bg-sky-200 hover:border-sky-300 transition-all"
                   >
                     Run {profile.toUpperCase()}
                   </button>
@@ -234,11 +232,11 @@ export function SandboxSection() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
-                  className="p-6 rounded-[1.5rem] bg-white border border-cyan-200/80 group hover:bg-cyan-100 transition-all"
+                  className="p-6 rounded-[1.5rem] bg-white border border-sky-200/80 group hover:bg-sky-100 transition-all"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <div className="w-2 h-2 rounded-full bg-sky-500" />
                       <p className="text-xs font-black text-slate-950 uppercase tracking-widest">{check.profile}</p>
                     </div>
                     <span className="text-[10px] font-mono text-slate-600">
@@ -253,13 +251,13 @@ export function SandboxSection() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Status</p>
-                      <p className="text-sm font-black text-emerald-700 uppercase tracking-widest">{check.status}</p>
+                      <p className="text-sm font-black text-sky-700 uppercase tracking-widest">{check.status}</p>
                     </div>
                   </div>
 
-                  <div className="pt-4 border-t border-cyan-200/80 flex flex-wrap gap-2">
+                  <div className="pt-4 border-t border-sky-200/80 flex flex-wrap gap-2">
                     {check.notes.map((note, idx) => (
-                      <span key={idx} className="px-2 py-1 rounded-md bg-cyan-100 text-[9px] font-bold text-slate-700 uppercase tracking-widest">
+                      <span key={idx} className="px-2 py-1 rounded-md bg-sky-100 text-[9px] font-bold text-slate-700 uppercase tracking-widest">
                         {note}
                       </span>
                     ))}

@@ -7,6 +7,8 @@ import type { AppProfile } from "@/lib/profiles";
 import { getProfileLabel, getProfileSubtitle, isAdminLikeProfile } from "@/lib/profiles";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import { NavigationGrid } from "@/components/ui/navigation-grid";
+import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
+import { getPageFamilyById } from "@/lib/ui/page-families";
 
 export function PilotageOverviewPage({
   locale,
@@ -24,39 +26,34 @@ export function PilotageOverviewPage({
   const topPriorities = overview?.priorities ?? [];
   const kpis = overview?.summary.kpis ?? [];
   const accessAllowed = isAdminLikeProfile(profile) || profile === "coordinateur" || profile === "max";
+  const pageFamily = getPageFamilyById("accueil-pilotage");
 
   return (
     <section className="w-full space-y-6 p-4 md:p-8">
-      <div className="relative overflow-hidden rounded-[2.25rem] border border-stone-400/18 bg-[linear-gradient(180deg,rgba(44,28,15,0.96),rgba(52,34,18,0.99))] p-6 text-white shadow-[0_24px_56px_-32px_rgba(69,45,28,0.18)] md:p-8">
-        <div className="absolute inset-0 opacity-70">
-          <div className="absolute -right-12 top-0 h-48 w-48 rounded-full bg-orange-900/10 blur-3xl" />
-          <div className="absolute left-0 top-10 h-56 w-56 rounded-full bg-stone-800/8 blur-3xl" />
-        </div>
+      <div className="space-y-8">
+        <PageHero
+          family={pageFamily}
+          titleSize="compact"
+          title={copy.title}
+          subtitle={copy.description}
+          badges={
+            <>
+              <PageHeroBadge family={pageFamily}>
+                <Sparkles size={14} aria-hidden="true" />
+                {locale === "fr" ? "Accueil & Pilotage" : "Home & Operations"}
+              </PageHeroBadge>
+              <PageHeroBadge family={pageFamily} muted>
+                {getProfileLabel(profile, locale)}
+              </PageHeroBadge>
+              <PageHeroBadge family={pageFamily} muted>
+                {getProfileSubtitle(profile, locale)}
+              </PageHeroBadge>
+            </>
+          }
+        />
 
         <div className="relative grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
           <div className="space-y-5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-orange-100">
-                <Sparkles size={14} aria-hidden="true" />
-                {locale === "fr" ? "Accueil & Pilotage" : "Home & Operations"}
-              </span>
-              <span className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
-                {getProfileLabel(profile, locale)}
-              </span>
-              <span className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
-                {getProfileSubtitle(profile, locale)}
-              </span>
-            </div>
-
-            <div className="max-w-3xl space-y-4">
-              <h1 className="text-4xl font-black tracking-tight text-white md:text-6xl">
-                {copy.title}
-              </h1>
-              <p className="max-w-2xl text-base leading-relaxed text-white/78 md:text-lg">
-                {copy.description}
-              </p>
-            </div>
-
             <div className="grid gap-3 sm:grid-cols-3">
               {kpis.slice(0, 3).map((kpi) => (
                 <article

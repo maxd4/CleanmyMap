@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "dev": "node scripts/dev-with-fallback-port.mjs",
+    "dev:clean": "node scripts/clean-dev-cache.mjs && npm run dev",
+    "dev:strict": "DEV_STRICT_PORT=1 node scripts/dev-with-fallback-port.mjs",
     "build": "npm run build -w apps/web",
     "lint": "npm run lint -w apps/web",
     "lint:audit": "node scripts/lint-audit-direct.js",
@@ -20,6 +22,8 @@
     "quality:top-heavy": "node scripts/check-top-heavy-files.mjs --enforce",
     "check:root-files": "node scripts/check-root-file-hygiene.mjs",
     "analyze:heavy-files": "node scripts/analyze-heavy-files.mjs",
+    "data:export:clerk": "node scripts/export-clerk-users.mjs",
+    "data:audit:clerk-supabase": "node scripts/audit-clerk-supabase.mjs",
     "report:normalize-language": "node scripts/normalize-report-language.mjs",
     "report:normalize-typography": "node scripts/normalize-scientific-typography.mjs",
     "report:stats": "node scripts/update-audit-stats.mjs",
@@ -65,6 +69,8 @@
   },
   "optionalDependencies": {
     "@rolldown/binding-linux-x64-gnu": "1.0.0-rc.17",
+    "@rollup/rollup-linux-x64-gnu": "4.60.1",
+    "@sentry/cli-linux-x64": "2.58.5",
     "@tailwindcss/oxide-linux-x64-gnu": "4.2.4"
   },
   "overrides": {
