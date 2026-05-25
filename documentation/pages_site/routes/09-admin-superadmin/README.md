@@ -4,14 +4,16 @@ Administration, services et supervision avancée.
 
 ## Routes canoniques
 
-| Route | Fiche | Statut | Exception UI | Résumé |
-|---|---|---:|:---:|---|
-| `/admin` | [Administration](./admin/README.md) | canonique | non | Vue d'administration et de modération. |
-| `/admin/forms` | [Administration des formulaires](./admin-forms/README.md) | canonique | non | Gestion des formulaires et des règles associées. |
-| `/admin/godmode` | [God mode](./admin-godmode/README.md) | canonique | non | Supervision avancée et maintenance privilégiée. |
-| `/admin/services` | [Administration des services](./admin-services/README.md) | canonique | non | Pilotage des services et paramètres techniques. |
+| Route | Fiche | Type de page | Statut | Scope | Capture disponible | Priorité | Fichier source principal |
+|---|---|---|---|---|:---:|---|---|
+| `/admin` | [Administration](./admin/README.md) | administration | technique | à corriger | non | moyenne | apps/web/src/app/(app)/admin/page.tsx |
+| `/admin/forms` | [Administration des formulaires](./admin-forms/README.md) | administration | technique | à corriger | non | moyenne | apps/web/src/app/(app)/admin/forms/page.tsx |
+| `/admin/godmode` | [God mode](./admin-godmode/README.md) | administration | technique | à corriger | non | moyenne | apps/web/src/app/(app)/admin/godmode/page.tsx |
+| `/admin/services` | [Administration des services](./admin-services/README.md) | administration | technique | à corriger | non | moyenne | apps/web/src/app/(app)/admin/services/page.tsx |
 
-## Captures
 
-- Les captures officielles de cette famille vivent dans chaque dossier route sous `png/` et `webp/`.
-- Les archives legacy restent dans `documentation/liberte-UX-UI/` tant que le pipeline de capture n'a pas été migré partout.
+
+## Notes
+
+- Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
+- Les captures officielles, quand elles existent, vivent dans `photo/desktop/` et `photo/mobile/` à la racine de la famille et sont en WebP.

@@ -3,7 +3,6 @@
 import type { AppError } from "@/lib/errors/app-errors";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { PermissionErrorState } from "@/components/ui/permission-error-state";
-import { ServerErrorCard } from "@/components/ui/server-error-card";
 import type { CommunityHighlightItem } from"@/components/sections/rubriques/community/types";
 import { Activity, Users, Map } from "lucide-react";
 import { motion } from "framer-motion";
@@ -12,11 +11,10 @@ type CommunityHighlightsCardProps = {
   loading: boolean;
   error: AppError | null;
   highlights: CommunityHighlightItem[];
-  onRetry?: () => Promise<unknown> | void;
 };
 
 function CommunityHighlightsCard(props: CommunityHighlightsCardProps) {
-  const { loading, error, highlights, onRetry } = props;
+  const { loading, error, highlights } = props;
 
   return (
     <div className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm overflow-hidden relative group">
@@ -25,7 +23,7 @@ function CommunityHighlightsCard(props: CommunityHighlightsCardProps) {
       </div>
 
       <div className="flex items-center gap-2 mb-4">
-        <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+        <span className="flex h-2 w-2 rounded-full bg-pink-500 animate-pulse" />
         <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">
           Activité Récente
         </h2>
@@ -61,12 +59,12 @@ function CommunityHighlightsCard(props: CommunityHighlightsCardProps) {
               <div className="flex flex-col">
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">{item.date}</span>
                 <span className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
-                  <Map size={12} className="text-emerald-600" />
+                  <Map size={12} className="text-pink-600" />
                   {item.actions} {item.actions > 1 ? "Actions" : "Action"}
                 </span>
               </div>
               <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl shadow-sm border border-slate-100">
-                <Users size={12} className="text-blue-600" />
+                <Users size={12} className="text-pink-600" />
                 <span className="text-xs font-black text-slate-900">{item.volunteers}</span>
               </div>
             </motion.div>

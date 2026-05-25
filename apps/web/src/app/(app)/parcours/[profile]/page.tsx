@@ -30,29 +30,29 @@ export default async function ParcoursProfilePage({
  :"Connexion Clerk temporairement indisponible. La vue reste lisible."
  }
  lockedPreview={
- <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+ <section className="space-y-4 rounded-3xl border border-amber-200/50 bg-amber-50/80 p-5 shadow-sm">
  <div className="grid gap-3 md:grid-cols-3">
- <article className="rounded-2xl border border-slate-200 bg-white p-4">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
- 1. Découvrir
+ <article className="rounded-2xl border border-amber-200/60 bg-white p-4">
+ <p className="cmm-text-caption uppercase tracking-wide text-amber-600">
+ Découvrir
  </p>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
+ <p className="mt-2 cmm-text-small text-slate-700">
  Comprendre le parcours avant d&apos;agir.
  </p>
  </article>
- <article className="rounded-2xl border border-slate-200 bg-white p-4">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
- 2. Choisir
+ <article className="rounded-2xl border border-amber-200/60 bg-white p-4">
+ <p className="cmm-text-caption uppercase tracking-wide text-amber-600">
+ Choisir
  </p>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
+ <p className="mt-2 cmm-text-small text-slate-700">
  Sélectionner le profil ou la mission adaptée.
  </p>
  </article>
- <article className="rounded-2xl border border-slate-200 bg-white p-4">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
- 3. Agir
+ <article className="rounded-2xl border border-amber-200/60 bg-white p-4">
+ <p className="cmm-text-caption uppercase tracking-wide text-amber-600">
+ Agir
  </p>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
+ <p className="mt-2 cmm-text-small text-slate-700">
  Déclencher les fonctions réservées au compte connecté.
  </p>
  </article>

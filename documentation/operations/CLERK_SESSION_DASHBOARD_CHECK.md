@@ -1,12 +1,16 @@
-# Clerk Dashboard Session Check (Manual)
+# Clerk Dashboard Session Check (Vercel-managed Clerk integration)
 
 Date: 2026-04-08
 
 ## Quick checklist
 
+> Note: the Clerk application is provisioned and linked through the native Vercel + Clerk integration. This checklist verifies the resulting production state; it does not describe a manual Clerk-on-Vercel setup.
+
 1. **Domains**
-   - Verify the production domain matches the app URL (`NEXT_PUBLIC_APP_URL` host).
-   - If using subdomains/satellite apps, verify primary + satellite domains are both configured.
+   - Verify the app URL host is `cleanmymap.fr`.
+   - Verify the Vercel-managed Clerk production domain is `auth.cleanmymap.fr`.
+   - Verify the Clerk frontend API domain is `clerk.auth.cleanmymap.fr`.
+   - Only use a proxy path (`/__clerk`) if the app intentionally routes Clerk through the site domain.
 
 2. **Session lifetime**
    - Check **Maximum session lifetime** and **Inactivity timeout** are aligned with expected user experience.
@@ -20,12 +24,13 @@ Date: 2026-04-08
 
 5. **Environment keys**
    - Confirm publishable/secret keys belong to the same Clerk instance (no mixed environments).
+   - Prefer the keys automatically synced by the native Vercel integration; do not recreate them manually in Vercel if the integration is already connected.
 
 6. **Google OAuth on Live instance**
    - In Clerk Live -> Google OAuth, ensure **Use custom credentials** is enabled.
    - Ensure Google OAuth `Client ID` / `Client Secret` are set (no empty values).
    - Ensure Google redirect URI includes:
-     - `https://clerk.cleanmymap.fr/v1/oauth_callback`
+     - `https://clerk.auth.cleanmymap.fr/v1/oauth_callback`
 
 7. **Admin role continuity after Live migration**
    - Verify admin user has either:

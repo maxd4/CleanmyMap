@@ -18,7 +18,14 @@ Lecture de la colonne `Exception UI ?` :
 | Route | Raison | Palette conservée |
 |---|---|---|
 | `/explorer` | Sommaire du site déjà abouti, utilisé comme référence de navigation et de structure visuelle | Palette dédiée du Sommaire |
-| `/methodologie` | Exception verte alignée sur la homepage pour la lecture scientifique | Palette verte de la homepage |
+| `/methodologie` | Exception rouge alignée sur les pages d'impact pour la lecture scientifique | Rouge d'impact |
+
+## Exceptions rouges d'impact
+
+| Route | Raison | Palette conservée |
+|---|---|---|
+| `/reports` | Page d'impact rouge conservée comme exception visuelle du bloc Cartographie & Impact | Rouge d'impact |
+| `/gamification` | Variante d'impact rouge, même logique visuelle que les pages d'impact | Rouge d'impact |
 
 ## Familles UI autonomes
 
@@ -27,11 +34,11 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | Famille | Routes principales | Tonalité de base | Note |
 |---|---|---|---|
 | Homepage autonome | `/`, `/accueil` | `home` | Identité de page indépendante |
-| Auth & Onboarding | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | `auth` | Parcours de connexion et configuration |
-| Institutionnel & Légal | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en` | `legal` | Pages juridiques et institutionnelles |
-| Système & Utilitaires | `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation |
+| Auth & Onboarding | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | `auth` | Fond lavande clair vers vert menthe clair; carte Clerk violet nuit / indigo foncé; accents verts uniquement pour validation; boutons inchangés |
+| Institutionnel & Légal | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en` | `legal` | Pages juridiques et institutionnelles, palette slate / gris clair / blanc, sans esthétique marketing blocks |
+| Système & Utilitaires | `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429` | `system` | Pages outillage / support / prévisualisation, avec mood layer autonome par usage; les états système suivent une charte commune `SystemStateLayout` |
 | Admin & Super-admin | `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode` | `admin` | Console et supervision restreinte |
-| Print & Export | `/prints/report` | `print` | Rapport imprimable et export visuel |
+| Print & Export | `/prints/report` | `print` | Rapport imprimable et export visuel, ambiance documentaire autonome |
 
 ## Matrice UI exhaustive
 
@@ -104,20 +111,20 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 
 | Route | Canonique / alias | Bloc / famille | Exception UI ? | Note |
 |---|---|---|---:|---|
-| `/sections/community` | Canonique (section) | Réseau & Discussions | non | Famille réseau/discussion |
-| `/sections/feedback` | Canonique (section) | Réseau & Discussions | non | Famille discussion |
+| `/sections/community` | Canonique (section) | Réseau & Discussions | non | Famille réseau/discussion, palette rose |
+| `/sections/feedback` | Canonique (section) | Réseau & Discussions | non | Famille discussion, palette rose |
 | `/community` | Alias vers `/sections/community` | Réseau & Discussions | n/a | Redirection sans UI propre |
 | `/messagerie` | Alias vers `/sections/messagerie` | Réseau & Discussions | n/a | Redirection sans UI propre |
-| `/sections/messagerie` | Canonique (section) | Réseau & Discussions | non | Famille discussion |
-| `/sections/dm` | Canonique (section) | Réseau & Discussions | non | Messages privés, même famille réseau |
-| `/sections/actors` | Canonique (section) | Réseau & Discussions | non | Réseau engagé |
-| `/sections/annuaire` | Canonique (section) | Réseau & Discussions | non | Annuaire partenaire |
-| `/sections/funding` | Canonique (section) | Réseau & Discussions | non | Soutien / parrainage |
-| `/partners/network` | Canonique | Réseau & Discussions | non | Cartographie des partenaires |
-| `/partners/dashboard` | Canonique | Réseau & Discussions | non | Annuaire / pilotage du réseau |
-| `/partners/onboarding` | Canonique | Réseau & Discussions | non | Parcours partenaire |
+| `/sections/messagerie` | Canonique (section) | Réseau & Discussions | non | Famille discussion, palette rose |
+| `/sections/dm` | Canonique (section) | Réseau & Discussions | non | Messages privés, même famille réseau rose |
+| `/sections/actors` | Canonique (section) | Réseau & Discussions | non | Réseau engagé, palette rose |
+| `/sections/annuaire` | Canonique (section) | Réseau & Discussions | non | Annuaire partenaire, palette rose |
+| `/sections/funding` | Canonique (section) | Réseau & Discussions | non | Soutien / parrainage, palette rose |
+| `/partners/network` | Canonique | Réseau & Discussions | non | Cartographie des partenaires, palette indigo |
+| `/partners/dashboard` | Canonique | Réseau & Discussions | non | Annuaire / pilotage du réseau, palette indigo |
+| `/partners/onboarding` | Canonique | Réseau & Discussions | non | Parcours partenaire, palette indigo |
 | `/open-data` | Alias vers `/sections/open-data` | Réseau & Discussions / utilitaire | n/a | Redirection sans UI propre |
-| `/sections/open-data` | Canonique (section) | Réseau & Discussions / analyse | non | Observatoire public, lecture analytique |
+| `/sections/open-data` | Canonique (section) | Réseau & Discussions / analyse | non | Observatoire public, lecture analytique, palette rose |
 
 ### Apprendre
 
@@ -140,15 +147,15 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | `/sections/weather` | Canonique (section) | Terrain | non | Météo terrain |
 | `/sections/guide` | Canonique (section) | Terrain | non | Mode d'emploi |
 | `/sections/trash-spotter` | Canonique (section) | Terrain | non | Signalement de déchets |
-| `/form-comparison` | Canonique | Système & Utilitaires | non | Comparaison interne, fond neutre |
-| `/declaration-simple` | Canonique | Système & Utilitaires | non | Déclaration rapide simplifiée |
+| `/form-comparison` | Canonique | Système & Utilitaires | non | Comparaison interne, mood layer analytique autonome |
+| `/declaration-simple` | Canonique | Système & Utilitaires | non | Déclaration rapide simplifiée, mood layer vert clair |
 | `/onboarding` | Canonique | Auth & Onboarding | non | Écran de démarrage |
 | `/onboarding/localisation` | Canonique | Auth & Onboarding | non | Étape de configuration |
-| `/reglages` | Canonique | Système & Utilitaires | non | Préférences et réglages |
+| `/reglages` | Canonique | Système & Utilitaires | non | Préférences et réglages, ambiance neutre autonome |
 | `/sign-in/[[...sign-in]]` | Canonique | Auth & Onboarding | non | Écran Clerk |
 | `/sign-up/[[...sign-up]]` | Canonique | Auth & Onboarding | non | Écran Clerk |
-| `/preview/actions/new` | Canonique | Système & Utilitaires | non | Prévisualisation publique |
-| `/error/429` | Canonique | Système & Utilitaires | non | Page de limitation temporaire |
+| `/preview/actions/new` | Canonique | Système & Utilitaires | non | Prévisualisation publique, mood layer terrain |
+| `/error/429` | Canonique | Système & Utilitaires | non | Page de limitation temporaire, palette d erreur dédiée: amber principal, red très léger, logique système commune |
 | `/contact` | Canonique | Institutionnel & Légal | non | Page institutionnelle |
 | `/conditions-generales-utilisation` | Canonique | Institutionnel & Légal | non | Page juridique |
 | `/conditions-utilisation` | Canonique | Institutionnel & Légal | non | Page juridique |

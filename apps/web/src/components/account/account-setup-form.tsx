@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
+import { ArrowLeft, LogIn, WifiOff } from "lucide-react";
 import type { Locale } from "@/lib/ui/preferences";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { parseParisArrondissement } from "@/lib/geo/paris-arrondissements";
@@ -16,12 +17,23 @@ import { getProfileLabel, getSwitchableProfiles, type AppProfile } from "@/lib/p
 import { InlineFieldError } from "@/components/ui/inline-field-error";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { PermissionErrorState } from "@/components/ui/permission-error-state";
+import {
+  SystemStateAction,
+  SystemStateDescription,
+  SystemStateIcon,
+  SystemStateLayout,
+  SystemStateMeta,
+  SystemStateTitle,
+} from "@/components/ui/system-state";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { defaultMessageForKind, isAppError, toAppError, type AppError } from "@/lib/errors/app-errors";
 
 type AccountSetupFormProps = {
   nextPath: string;
   initialProfile: AppProfile;
+  clerkReachable: boolean;
+  isLocalHost: boolean;
   initialArrondissement?: number | null;
   initialLocationType?: "residence" | "work" | null;
 };
@@ -47,6 +59,8 @@ async function updateProfileRole(profile: AppProfile) {
 export function AccountSetupForm({
   nextPath,
   initialProfile,
+  clerkReachable,
+  isLocalHost,
   initialArrondissement = null,
   initialLocationType = null,
 }: AccountSetupFormProps) {
@@ -204,9 +218,46 @@ export function AccountSetupForm({
   }
 
   if (!isLoaded) {
+    if (!clerkReachable) {
+      return (
+        <SystemStateLayout variant="offline" className="max-w-none">
+          <SystemStateIcon variant="offline">
+            <WifiOff className="h-7 w-7" />
+          </SystemStateIcon>
+          <SystemStateMeta variant="offline" label="Contexte local">
+            {clerkReachable
+              ? "Clerk n'a pas terminé son chargement sur localhost."
+              : "Clerk n'est pas joignable dans cette session locale."}
+          </SystemStateMeta>
+          <SystemStateTitle variant="offline">
+            Session Clerk indisponible
+          </SystemStateTitle>
+          <SystemStateDescription variant="offline">
+            La configuration initiale nécessite une session Clerk valide. Sur
+            ce poste local, utilisez le domaine autorisé ou activez le
+            contournement de développement pour poursuivre.
+          </SystemStateDescription>
+          <SystemStateAction>
+            <CmmButton href="/" tone="secondary">
+              <ArrowLeft className="h-4 w-4" />
+              Retour à l&apos;accueil
+            </CmmButton>
+            <CmmButton href="/sign-in" tone="primary">
+              <LogIn className="h-4 w-4" />
+              Se reconnecter
+            </CmmButton>
+          </SystemStateAction>
+        </SystemStateLayout>
+      );
+    }
+
     return (
-      <div className="rounded-2xl border border-indigo-200/60 bg-white/82 p-6 shadow-sm backdrop-blur-xl">
-        <p className="cmm-text-small cmm-text-secondary">Chargement du compte...</p>
+      <div className="rounded-[2rem] border border-white/10 bg-white/[0.06] p-6 shadow-[0_18px_50px_-40px_rgba(15,23,42,0.55)] backdrop-blur-xl">
+        <p className="cmm-text-small text-violet-100/80">
+          {isLocalHost
+            ? "Chargement du compte local..."
+            : "Chargement du compte..."}
+        </p>
       </div>
     );
   }
@@ -223,16 +274,16 @@ export function AccountSetupForm({
   return (
     <form
       onSubmit={(event) => void handleSubmit(event)}
-      className="space-y-5 rounded-[1.75rem] border border-indigo-200/60 bg-white/90 p-6 shadow-[0_18px_50px_-40px_rgba(79,70,229,0.35)] backdrop-blur-xl"
+      className="space-y-5 rounded-[2.25rem] border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.9)_48%,rgba(88,28,135,0.86)_100%)] p-6 shadow-[0_22px_70px_-42px_rgba(15,23,42,0.6)] backdrop-blur-2xl"
     >
       <div className="space-y-2">
-        <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-indigo-700">
+        <p className="cmm-text-caption font-black uppercase tracking-[0.14em] text-emerald-200/90">
           Configuration initiale
         </p>
-        <h1 className="text-2xl font-semibold text-slate-950">
+        <h1 className="text-2xl font-black text-white">
           Finalisez votre compte
         </h1>
-        <p className="cmm-text-small cmm-text-secondary">
+        <p className="cmm-text-small text-violet-100/78">
           Choisissez votre rôle, votre lieu principal, votre langue et votre mode
           d&apos;affichage. Ces réglages restent modifiables plus tard dans
           &quot;Réglages&quot; du ruban.
@@ -241,9 +292,9 @@ export function AccountSetupForm({
 
       <div className="grid gap-4 lg:grid-cols-2">
         <label className="block space-y-2">
-          <span className="cmm-text-small font-medium cmm-text-primary">Rôle</span>
+          <span className="cmm-text-small font-medium text-white/90">Rôle</span>
           <select
-            className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-xl border border-white/10 bg-white/[0.08] px-3 py-2 cmm-text-small text-white shadow-none outline-none placeholder:text-violet-100/40 focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-1 focus:ring-emerald-300/30"
             value={selectedProfile}
             onChange={(event) =>
               setSelectedProfile(event.target.value as AppProfile)
@@ -259,11 +310,11 @@ export function AccountSetupForm({
         </label>
 
         <label className="block space-y-2">
-          <span className="cmm-text-small font-medium cmm-text-primary">
+          <span className="cmm-text-small font-medium text-white/90">
             Langue
           </span>
           <select
-            className="w-full rounded-xl border border-indigo-200 bg-white px-3 py-2 cmm-text-small cmm-text-primary focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-xl border border-white/10 bg-white/[0.08] px-3 py-2 cmm-text-small text-white shadow-none outline-none placeholder:text-violet-100/40 focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-1 focus:ring-emerald-300/30"
             value={selectedLocale}
             onChange={(event) =>
               setSelectedLocale(event.target.value === "en" ? "en" : "fr")
@@ -274,22 +325,22 @@ export function AccountSetupForm({
           </select>
         </label>
 
-        <fieldset className="space-y-3 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 lg:col-span-2">
-          <legend className="cmm-text-small font-medium cmm-text-primary">
+        <fieldset className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 lg:col-span-2">
+          <legend className="cmm-text-small font-medium text-white/90">
             Mode d&apos;affichage
           </legend>
-          <label className="flex items-start gap-3 rounded-2xl border border-indigo-200/60 bg-white/85 p-4">
+          <label className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-4">
             <input
               type="checkbox"
               checked={acceptExhaustiveMode}
               onChange={(event) => setAcceptExhaustiveMode(event.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              className="mt-1 h-4 w-4 rounded border-white/20 accent-emerald-400 focus:ring-emerald-300"
             />
             <span className="block">
-              <span className="block cmm-text-small font-medium cmm-text-primary">
+              <span className="block cmm-text-small font-medium text-white">
                 {selectedLocale === "fr" ? "Mode Exhaustif" : "Exhaustive mode"}
               </span>
-              <span className="mt-1 block cmm-text-small cmm-text-secondary">
+              <span className="mt-1 block cmm-text-small text-violet-100/70">
                 {selectedLocale === "fr"
                   ? "Les modes Sobre et Minimaliste sont en préparation."
                   : "Calm and Minimalist modes are still in preparation."}
@@ -298,55 +349,57 @@ export function AccountSetupForm({
           </label>
         </fieldset>
 
-        <fieldset className="space-y-3 rounded-2xl border border-indigo-100 bg-white/70 p-4">
-          <legend className="cmm-text-small font-medium cmm-text-primary">
+        <fieldset className="space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <legend className="cmm-text-small font-medium text-white/90">
             Lieu principal
           </legend>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="flex items-center gap-2 cmm-text-small cmm-text-secondary">
+            <label className="flex items-center gap-2 cmm-text-small text-violet-100/76">
               <input
                 type="radio"
                 name="locationType"
                 value="residence"
                 checked={locationType === "residence"}
                 onChange={() => setLocationType("residence")}
+                className="accent-emerald-400"
               />
               Résidence
             </label>
-            <label className="flex items-center gap-2 cmm-text-small cmm-text-secondary">
+            <label className="flex items-center gap-2 cmm-text-small text-violet-100/76">
               <input
                 type="radio"
                 name="locationType"
                 value="work"
                 checked={locationType === "work"}
                 onChange={() => setLocationType("work")}
+                className="accent-emerald-400"
               />
               Travail
             </label>
           </div>
 
           <label className="block space-y-2">
-            <span className="cmm-text-small font-medium cmm-text-primary">
+            <span className="cmm-text-small font-medium text-white/90">
               Zone (arrondissement ou commune)
             </span>
-          <GreaterParisSelect
-            value={selectedZone || (arrondissement ? `${arrondissement}e arrondissement` : "")}
-            onChange={(value) => {
-              const nextZone = value.trim();
-              setSelectedZone(nextZone);
-              const arrNum = parseInt(nextZone.replace(/er|e|ème|eme/g, "").replace("arrondissement", "").trim(), 10);
-              if (!isNaN(arrNum) && arrNum >= 1 && arrNum <= 20) {
-                setArrondissement(arrNum);
-              } else {
-                setArrondissement(0);
-              }
-            }}
-            placeholder="Sélectionnez une zone..."
-          />
-          {zoneError ? <InlineFieldError message={zoneError} /> : null}
-        </label>
-      </fieldset>
-    </div>
+            <GreaterParisSelect
+              value={selectedZone || (arrondissement ? `${arrondissement}e arrondissement` : "")}
+              onChange={(value) => {
+                const nextZone = value.trim();
+                setSelectedZone(nextZone);
+                const arrNum = parseInt(nextZone.replace(/er|e|ème|eme/g, "").replace("arrondissement", "").trim(), 10);
+                if (!isNaN(arrNum) && arrNum >= 1 && arrNum <= 20) {
+                  setArrondissement(arrNum);
+                } else {
+                  setArrondissement(0);
+                }
+              }}
+              placeholder="Sélectionnez une zone..."
+            />
+            {zoneError ? <InlineFieldError message={zoneError} /> : null}
+          </label>
+        </fieldset>
+      </div>
 
       {error ? (
         error.kind === "permission" ? (
@@ -363,7 +416,7 @@ export function AccountSetupForm({
               <button
                 type="button"
                 onClick={() => window.location.reload()}
-                className="rounded-full bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-700"
+                className="rounded-full border border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96)_0%,rgba(79,70,229,0.92)_54%,rgba(109,40,217,0.9)_100%)] px-3 py-1.5 text-xs font-semibold text-white shadow-[0_14px_28px_-18px_rgba(15,23,42,0.6)] transition-all hover:border-emerald-300/30"
               >
                 Réessayer
               </button>
@@ -376,11 +429,11 @@ export function AccountSetupForm({
         <button
           type="submit"
           disabled={!canSubmit}
-          className="inline-flex items-center rounded-xl border border-[color:var(--cmm-button-primary-border)] bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-start)_0%,var(--cmm-button-primary-bg-end)_100%)] px-5 py-3 cmm-text-small font-semibold text-[color:var(--cmm-button-primary-text)] hover:border-[color:var(--cmm-button-primary-border-hover)] hover:bg-[linear-gradient(135deg,var(--cmm-button-primary-bg-hover-start)_0%,var(--cmm-button-primary-bg-hover-end)_100%)] disabled:cursor-not-allowed disabled:bg-slate-300"
+          className="inline-flex items-center rounded-xl border border-white/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.96)_0%,rgba(79,70,229,0.92)_54%,rgba(109,40,217,0.9)_100%)] px-5 py-3 cmm-text-small font-semibold text-white shadow-[0_18px_34px_-18px_rgba(15,23,42,0.55)] transition-all hover:border-emerald-300/30 hover:shadow-[0_22px_40px_-20px_rgba(79,70,229,0.45)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSaving ? "Enregistrement..." : "Valider et continuer"}
         </button>
-        <p className="cmm-text-caption cmm-text-muted">
+        <p className="cmm-text-caption text-violet-100/65">
           Les modifications restent accessibles plus tard dans le ruban.
         </p>
       </div>

@@ -11,7 +11,6 @@ import { CommunityHighlightsCard } from "@/components/sections/rubriques/communi
 import { CommunityPostEventLoopCard } from "@/components/sections/rubriques/community/post-event-loop-card";
 import { CommunityRemindersCard } from "@/components/sections/rubriques/community/reminders-card";
 import { CommunityStaffingCard } from "@/components/sections/rubriques/community/staffing-card";
-import { WeatherSection } from "@/components/sections/rubriques/weather-section";
 import { NewsletterSignup } from "@/components/newsletter/newsletter-signup";
 import { ExternalHubSection } from "@/components/sections/rubriques/community/external-hub-section";
 import { CleanupGuideCard } from "@/components/sections/rubriques/community/cleanup-guide-card";
@@ -22,7 +21,7 @@ import { FAQSection } from "@/components/sections/rubriques/faq-section";
 import { LegalSection } from "@/components/sections/rubriques/legal-section";
 import { ChatShell } from "@/components/chat/chat-shell";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
-import { MapPin, Calendar, Lightbulb, Target, Sparkles, Globe, ShieldCheck } from "lucide-react";
+import { MapPin, Calendar, Lightbulb, Target, Sparkles, Globe, ShieldCheck, type LucideIcon } from "lucide-react";
 import type { UseCommunitySectionModel } from "./community/use-community-section";
 
 export type HubCategory = "agir" | "missions" | "solutions";
@@ -40,10 +39,10 @@ export const CommunityHubNav = memo(function CommunityHubNav({
   setZone: (zone: string) => void;
   fr: boolean;
 }) {
-  const tabs: { id: HubCategory; label: string; icon: any; color: string; bg: string; shadow: string }[] = [
-    { id: "missions", label: fr ? "Missions" : "Missions", icon: Calendar, color: "text-blue-400", bg: "bg-blue-500", shadow: "shadow-blue-500/20" },
-    { id: "agir", label: fr ? "Agir" : "Act", icon: Target, color: "text-emerald-400", bg: "bg-emerald-500", shadow: "shadow-emerald-500/20" },
-    { id: "solutions", label: fr ? "Solutions" : "Solutions", icon: Lightbulb, color: "text-amber-400", bg: "bg-amber-500", shadow: "shadow-amber-500/20" },
+  const tabs: { id: HubCategory; label: string; icon: LucideIcon; color: string; bg: string; shadow: string }[] = [
+    { id: "missions", label: fr ? "Missions" : "Missions", icon: Calendar, color: "text-pink-400", bg: "bg-pink-500", shadow: "shadow-pink-500/20" },
+    { id: "agir", label: fr ? "Agir" : "Act", icon: Target, color: "text-pink-400", bg: "bg-pink-500", shadow: "shadow-pink-500/20" },
+    { id: "solutions", label: fr ? "Solutions" : "Solutions", icon: Lightbulb, color: "text-pink-400", bg: "bg-pink-500", shadow: "shadow-pink-500/20" },
   ];
 
   return (
@@ -78,8 +77,8 @@ export const CommunityHubNav = memo(function CommunityHubNav({
       
       <div className="flex items-center gap-4 px-4 h-full">
         <div className="h-8 w-px bg-white/10 hidden md:block" />
-        <div className="flex items-center gap-4 bg-white/5 rounded-2xl px-6 py-3 border border-white/5 group hover:border-emerald-500/30 transition-colors">
-          <MapPin size={14} className="text-emerald-500" />
+        <div className="flex items-center gap-4 bg-white/5 rounded-2xl px-6 py-3 border border-white/5 group hover:border-pink-500/30 transition-colors">
+          <MapPin size={14} className="text-pink-500" />
           <div className="flex flex-col">
             <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Périmètre</span>
             <select 
@@ -103,18 +102,7 @@ export const CommunityAgirView = memo(function CommunityAgirView({
   conversionSummary,
   actionsLoading,
   highlightsLoadError,
-  reloadHighlights,
   highlights,
-  staffingPlan,
-  postEventLoop,
-  createForm,
-  updateCreateForm,
-  onCreateEvent,
-  isCreatingEvent,
-  eventsValidating,
-  reloadEvents,
-  reminders,
-  copyReminderMessage,
 }: {
   fr: boolean;
 } & Pick<
@@ -122,26 +110,15 @@ export const CommunityAgirView = memo(function CommunityAgirView({
   | "conversionSummary"
   | "actionsLoading"
   | "highlightsLoadError"
-  | "reloadHighlights"
   | "highlights"
-  | "staffingPlan"
-  | "postEventLoop"
-  | "createForm"
-  | "updateCreateForm"
-  | "onCreateEvent"
-  | "isCreatingEvent"
-  | "eventsValidating"
-  | "reloadEvents"
-  | "reminders"
-  | "copyReminderMessage"
 >) {
   return (
     <div className="grid gap-12 lg:grid-cols-12 items-start">
       <div className="lg:col-span-8 space-y-12">
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-              <Target size={20} className="text-emerald-400" />
+            <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
+              <Target size={20} className="text-pink-400" />
             </div>
             <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Actions de Terrain" : "Field Actions"}</h3>
           </div>
@@ -150,8 +127,8 @@ export const CommunityAgirView = memo(function CommunityAgirView({
 
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-              <Globe size={20} className="text-blue-400" />
+            <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
+              <Globe size={20} className="text-pink-400" />
             </div>
             <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Impact Écosystémique" : "Ecosystem Impact"}</h3>
           </div>
@@ -164,7 +141,6 @@ export const CommunityAgirView = memo(function CommunityAgirView({
           loading={actionsLoading}
           error={highlightsLoadError}
           highlights={highlights}
-          onRetry={reloadHighlights}
         />
         <CleanupGuideCard />
         <ExternalHubSection />
@@ -237,8 +213,8 @@ export const CommunityMissionsView = memo(function CommunityMissionsView({
       <div className="lg:col-span-8 space-y-12">
         <section className="space-y-6">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-              <Calendar size={20} className="text-blue-400" />
+            <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
+              <Calendar size={20} className="text-pink-400" />
             </div>
             <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Exploration des Missions" : "Missions Exploration"}</h3>
           </div>
@@ -295,8 +271,8 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
       <div className="lg:col-span-8 space-y-12">
         <section className="space-y-8">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-              <Lightbulb size={20} className="text-amber-400" />
+            <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
+              <Lightbulb size={20} className="text-pink-400" />
             </div>
             <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Bibliothèque de Solutions" : "Solutions Library"}</h3>
           </div>
@@ -306,8 +282,8 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
 
         <section className="space-y-8">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/20">
-              <ShieldCheck size={20} className="text-blue-400" />
+            <div className="p-3 rounded-2xl bg-pink-500/10 border border-pink-500/20">
+              <ShieldCheck size={20} className="text-pink-400" />
             </div>
             <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Ressources & Support" : "Resources & Support"}</h3>
           </div>
@@ -318,7 +294,7 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
 
       <aside className="lg:col-span-4 space-y-8">
         <RubriqueCard 
-          themeColor="amber"
+          themeColor="rose"
           watermarkIcon={Sparkles}
           watermarkSize={120}
           withTopBar={false}
@@ -333,10 +309,10 @@ export const CommunitySolutionsView = memo(function CommunitySolutionsView({ fr 
           </div>
         </RubriqueCard>
 
-        <div className="p-8 rounded-[3rem] border border-emerald-500/10 bg-emerald-500/5 backdrop-blur-3xl shadow-2xl">
+        <div className="p-8 rounded-[3rem] border border-pink-500/10 bg-pink-500/5 backdrop-blur-3xl shadow-2xl">
           <div className="space-y-6">
             <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-emerald-500/20 text-emerald-400">
+              <div className="p-3 rounded-xl bg-pink-500/20 text-pink-400">
                 <Target size={20} />
               </div>
               <h4 className="text-lg font-black text-white tracking-tight">{fr ? "Assistant IA" : "AI Assistant"}</h4>

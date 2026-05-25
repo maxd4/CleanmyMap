@@ -6,6 +6,7 @@ import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { countPartnerOnboardingRequests } from "@/lib/partners/onboarding-requests-store";
 import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
+import { canUseSupabaseServerPersistence } from "@/lib/persistence/runtime-store";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { Network, ShieldCheck, ClipboardCheck, Users, MapPin, AlertCircle } from "lucide-react";
@@ -50,11 +51,15 @@ export default async function PartnersDashboardPage() {
   
   let onboardingRequestCount: number | null = null;
   let onboardingLoadError: string | null = null;
-  try {
-    onboardingRequestCount = await countPartnerOnboardingRequests();
-  } catch (error) {
-    console.error("Partner onboarding requests load failed", error);
+  if (!canUseSupabaseServerPersistence()) {
     onboardingLoadError = "Demandes onboarding indisponibles (configuration persistance).";
+  } else {
+    try {
+      onboardingRequestCount = await countPartnerOnboardingRequests();
+    } catch (error) {
+      console.error("Partner onboarding requests load failed", error);
+      onboardingLoadError = "Demandes onboarding indisponibles (configuration persistance).";
+    }
   }
   const coveredZones = new Set(allEntries.flatMap((entry) => entry.coveredArrondissements));
 

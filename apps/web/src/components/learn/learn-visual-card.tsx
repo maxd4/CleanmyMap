@@ -38,28 +38,28 @@ const TONE_CLASSES: Record<
     fill: "bg-yellow-700",
   },
   cyan: {
-    shell: "bg-[linear-gradient(180deg,rgba(236,254,255,0.98),rgba(255,255,255,0.94))]",
-    badge: "border-cyan-200 bg-cyan-100 text-cyan-900",
-    glow: "from-cyan-400/22 via-sky-300/16 to-transparent",
-    border: "hover:border-cyan-300",
-    accent: "text-cyan-700",
-    fill: "bg-cyan-700",
+    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.94))]",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    glow: "from-yellow-300/22 via-amber-200/16 to-transparent",
+    border: "hover:border-yellow-300",
+    accent: "text-yellow-700",
+    fill: "bg-yellow-700",
   },
   emerald: {
-    shell: "bg-[linear-gradient(180deg,rgba(236,253,245,0.98),rgba(255,255,255,0.94))]",
-    badge: "border-emerald-200 bg-emerald-100 text-emerald-900",
-    glow: "from-emerald-400/24 via-lime-300/16 to-transparent",
-    border: "hover:border-emerald-300",
-    accent: "text-emerald-700",
-    fill: "bg-emerald-700",
+    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.94))]",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    glow: "from-yellow-300/24 via-amber-200/16 to-transparent",
+    border: "hover:border-yellow-300",
+    accent: "text-yellow-700",
+    fill: "bg-yellow-700",
   },
   violet: {
-    shell: "bg-[linear-gradient(180deg,rgba(245,243,255,0.98),rgba(255,255,255,0.94))]",
-    badge: "border-violet-200 bg-violet-100 text-violet-900",
-    glow: "from-violet-400/24 via-fuchsia-300/16 to-transparent",
-    border: "hover:border-violet-300",
-    accent: "text-violet-700",
-    fill: "bg-violet-700",
+    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.94))]",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    glow: "from-yellow-300/24 via-amber-200/16 to-transparent",
+    border: "hover:border-yellow-300",
+    accent: "text-yellow-700",
+    fill: "bg-yellow-700",
   },
 };
 
@@ -112,15 +112,15 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
                 key={dot}
                 className={cn(
                   "h-2.5 rounded-full",
-                  dot <= 2 ? "bg-cyan-300" : dot === 3 ? "bg-yellow-300" : "bg-emerald-300",
+                  dot <= 2 ? "bg-yellow-300" : dot === 3 ? "bg-yellow-400" : "bg-yellow-200",
                 )}
               />
             ))}
           </div>
         </div>
-        <span className="h-12 w-12 rounded-2xl border border-cyan-200 bg-cyan-100/90 shadow-sm" />
-        <span className="h-20 w-12 rounded-2xl border border-violet-200 bg-violet-100/90 shadow-sm" />
-        <span className="h-16 w-12 rounded-2xl border border-emerald-200 bg-emerald-100/90 shadow-sm" />
+        <span className="h-12 w-12 rounded-2xl border border-yellow-200 bg-yellow-100/90 shadow-sm" />
+        <span className="h-20 w-12 rounded-2xl border border-yellow-200 bg-yellow-100/90 shadow-sm" />
+        <span className="h-16 w-12 rounded-2xl border border-yellow-200 bg-yellow-100/90 shadow-sm" />
       </div>
     );
   }
@@ -136,7 +136,7 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
               index === 1 || index === 4 || index === 7
                 ? "border-yellow-200 bg-yellow-100"
                 : index === 2 || index === 6
-                  ? "border-cyan-200 bg-cyan-100"
+                  ? "border-yellow-200 bg-yellow-100"
                   : "border-slate-200 bg-white",
             )}
           />
@@ -149,7 +149,7 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
     return (
       <div className="flex h-full items-end justify-center gap-2">
         <span className="h-12 w-16 rounded-2xl border border-slate-200 bg-white shadow-sm" />
-        <span className="h-18 w-16 rounded-2xl border border-emerald-200 bg-emerald-100/95 shadow-sm" />
+        <span className="h-18 w-16 rounded-2xl border border-yellow-200 bg-yellow-100/95 shadow-sm" />
         <span className="h-14 w-16 rounded-2xl border border-slate-200 bg-white shadow-sm" />
       </div>
     );

@@ -466,6 +466,38 @@ const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
       ring: "rgba(14, 165, 233, 0.22)",
     },
   },
+  state429: {
+    primary: {
+      bgStart: "#fef3c7",
+      bgEnd: "#fdba74",
+      hoverStart: "#fde68a",
+      hoverEnd: "#f59e0b",
+      border: "rgba(180, 83, 9, 0.24)",
+      borderHover: "rgba(180, 83, 9, 0.36)",
+      text: "#1e1b4b",
+      ring: "rgba(180, 83, 9, 0.28)",
+    },
+    secondary: {
+      bgStart: "#f8fafc",
+      bgEnd: "#e2e8f0",
+      hoverStart: "#f1f5f9",
+      hoverEnd: "#cbd5e1",
+      border: "rgba(148, 163, 184, 0.20)",
+      borderHover: "rgba(148, 163, 184, 0.32)",
+      text: "#1e293b",
+      ring: "rgba(148, 163, 184, 0.24)",
+    },
+    tertiary: {
+      bgStart: "rgba(255, 247, 237, 0.56)",
+      bgEnd: "rgba(254, 243, 199, 0.34)",
+      hoverStart: "rgba(255, 237, 213, 0.72)",
+      hoverEnd: "rgba(253, 224, 71, 0.42)",
+      border: "rgba(180, 83, 9, 0.20)",
+      borderHover: "rgba(180, 83, 9, 0.30)",
+      text: "#92400e",
+      ring: "rgba(180, 83, 9, 0.22)",
+    },
+  },
   admin: {
     primary: {
       bgStart: "#f59e0b",

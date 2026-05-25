@@ -40,28 +40,28 @@ const TONE_CLASSES: Record<
     chip: "border-amber-200 bg-amber-50 text-amber-800",
   },
   cyan: {
-    shell: "bg-[linear-gradient(180deg,rgba(236,254,255,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-cyan-200 bg-cyan-100 text-cyan-900",
-    accent: "text-cyan-700",
-    border: "border-cyan-200",
-    glow: "from-cyan-300/18 via-sky-200/12 to-transparent",
-    chip: "border-cyan-200 bg-cyan-50 text-cyan-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    accent: "text-yellow-700",
+    border: "border-yellow-200",
+    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
+    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
   },
   emerald: {
-    shell: "bg-[linear-gradient(180deg,rgba(236,253,245,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-emerald-200 bg-emerald-100 text-emerald-900",
-    accent: "text-emerald-700",
-    border: "border-emerald-200",
-    glow: "from-emerald-300/18 via-lime-200/12 to-transparent",
-    chip: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    accent: "text-yellow-700",
+    border: "border-yellow-200",
+    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
+    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
   },
   violet: {
-    shell: "bg-[linear-gradient(180deg,rgba(245,243,255,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-violet-200 bg-violet-100 text-violet-900",
-    accent: "text-violet-700",
-    border: "border-violet-200",
-    glow: "from-violet-300/18 via-fuchsia-200/12 to-transparent",
-    chip: "border-violet-200 bg-violet-50 text-violet-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    accent: "text-yellow-700",
+    border: "border-yellow-200",
+    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
+    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
   },
 };
 
@@ -152,9 +152,9 @@ function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
 
           <div className="mt-4 grid gap-3">
             <div className="relative overflow-hidden rounded-[1.2rem] border border-slate-200 bg-white p-3">
-              <div className="absolute inset-0 bg-gradient-to-r from-violet-50 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-yellow-50 via-transparent to-transparent" />
               <div className="relative flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-700">
                   <Map className="h-4 w-4" aria-hidden="true" />
                 </span>
                 <div className="flex-1">
@@ -163,9 +163,9 @@ function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <span className="h-12 rounded-2xl bg-violet-50" />
-                <span className="h-16 rounded-2xl bg-violet-100" />
-                <span className="h-10 rounded-2xl bg-violet-50" />
+                <span className="h-12 rounded-2xl bg-yellow-50" />
+                <span className="h-16 rounded-2xl bg-yellow-100" />
+                <span className="h-10 rounded-2xl bg-yellow-50" />
               </div>
             </div>
 
@@ -174,12 +174,12 @@ function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
                 title={card.visual.chips[0] ? getLocaleText(locale, card.visual.chips[0]) : (locale === "fr" ? "Repères" : "Cues")}
                 subtitle={locale === "fr" ? "Lire les écarts et les seuils" : "Read gaps and thresholds"}
                 icon={BarChart3}
-                accent="text-violet-700"
+                accent="text-yellow-700"
               >
                 <div className="space-y-2">
-                  <div className="h-2 w-full rounded-full bg-violet-100" />
-                  <div className="h-2 w-4/5 rounded-full bg-violet-200" />
-                  <div className="h-2 w-2/3 rounded-full bg-violet-300" />
+                  <div className="h-2 w-full rounded-full bg-yellow-100" />
+                  <div className="h-2 w-4/5 rounded-full bg-yellow-200" />
+                  <div className="h-2 w-2/3 rounded-full bg-yellow-300" />
                 </div>
               </RightCard>
 
@@ -187,14 +187,14 @@ function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
                 title={card.visual.chips[1] ? getLocaleText(locale, card.visual.chips[1]) : (locale === "fr" ? "Méthode" : "Method")}
                 subtitle={locale === "fr" ? "Suivre la logique avant l'action" : "Follow the logic before action"}
                 icon={Route}
-                accent="text-amber-700"
+                accent="text-yellow-700"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-yellow-50 text-yellow-700">
                     <Compass className="h-4 w-4" aria-hidden="true" />
                   </span>
-                  <div className="h-0.5 flex-1 rounded-full bg-amber-200" />
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+                  <div className="h-0.5 flex-1 rounded-full bg-yellow-200" />
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-700">
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </span>
                 </div>

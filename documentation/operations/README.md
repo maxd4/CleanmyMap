@@ -22,6 +22,8 @@ Les documents de session et de mémoire interne sont gérés ailleurs et ne doiv
 ### Monitoring & logs
 - `runbook-monitoring-logs.md`
 - `CLERK_SESSION_DASHBOARD_CHECK.md`
+- `clerk-supabase-audit.md`
+- `clerk-supabase-audit.md` sert aussi de point d'entrée vers `npm run data:audit:clerk-supabase`
 
 ### Sécurité publication et config
 - `pre-release-security-check.md`
@@ -38,6 +40,7 @@ Les documents de session et de mémoire interne sont gérés ailleurs et ne doiv
   - `schema-normalisation.md`
   - `mapping-colonnes.md`
   - `regles-nettoyage-et-cas-limites.md`
+- `clerk-supabase-audit.sql`
 
 ---
 

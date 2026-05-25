@@ -4,7 +4,7 @@
 
 ## Statut de production (mis à jour manuellement)
 
-> **Nouveau registre canonique** : les pages UI doivent désormais être lues d'abord dans `documentation/pages_site/routes/`. Les dossiers de bloc historiques restent utiles comme archive et contexte, mais la source de vérité route-first est le nouveau registre.
+> **Nouveau registre canonique** : les pages UI doivent désormais être lues d'abord dans `documentation/pages_site/INDEX.md` puis dans `documentation/pages_site/routes/`. Les dossiers de bloc historiques restent utiles comme archive et contexte, mais la source de vérité route-first est le nouveau registre.
 
 **⚠️ NOUVELLE STRUCTURE (5 blocs homepage)** : Les blocs ont été restructurés avec logique multi-teintes.
 
@@ -76,7 +76,7 @@ Certains blocs ont plusieurs teintes directrices selon le type de page :
 - Pages accueil (`/dashboard`, `/profil`) → `amber` / `orange`
 - Pages pilotage (`/pilotage`, `/sponsor-portal`, `/elus`) → `amber` / `brun`
 - Sommaire (`/explorer`) → exception validée, palette dédiée conservée
-- Méthodologie (`/methodologie`) → exception verte, palette homepage conservée
+- Méthodologie (`/methodologie`) → exception rouge d'impact
 
 **Familles autonomes hors 5 blocs** :
 - Auth & Onboarding (`/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`) → `auth`
@@ -91,7 +91,7 @@ Certains blocs ont plusieurs teintes directrices selon le type de page :
 
 **Autres blocs (teinte unique)** :
 - Agir → `emerald`
-- Réseau & Discussions → `indigo`
+- Réseau & Discussions → `pink` (réseau) + `indigo` (partenaires)
 - Apprendre → `yellow`
 
 **Règle stricte** : Une page = une teinte dominante. Ne pas mélanger orange ET brun, ou sky ET red/rose sur la même page.

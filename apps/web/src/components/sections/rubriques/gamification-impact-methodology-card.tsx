@@ -1,8 +1,7 @@
 "use client";
 
-import { Info, Calculator, FlaskConical, Target, AlertCircle, ShieldCheck, ArrowRight, Sparkles } from "lucide-react";
+import { Info, Calculator, FlaskConical, Target, AlertCircle, ShieldCheck, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 type ImpactMethodology = {
   proxyVersion: string;
@@ -44,13 +43,13 @@ export function GamificationImpactMethodologyCard({ methodology }: Props) {
       <div className="flex flex-wrap items-start justify-between gap-6 mb-10 relative z-10">
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-             <div className="p-2.5 rounded-xl bg-slate-500/10 border border-slate-500/20 text-slate-400">
+             <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
                 <Target size={18} />
              </div>
-             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Méthodologie Scientifique</p>
+             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-rose-400">Méthodologie Scientifique</p>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
-             <span className="flex items-center gap-1.5"><ShieldCheck size={12} className="text-emerald-500" /> Proxy {methodology.proxyVersion}</span>
+             <span className="flex items-center gap-1.5"><ShieldCheck size={12} className="text-rose-500" /> Proxy {methodology.proxyVersion}</span>
              <div className="w-1 h-1 rounded-full bg-white/10" />
              <span>Qualité {methodology.qualityRulesVersion}</span>
           </div>
@@ -58,9 +57,9 @@ export function GamificationImpactMethodologyCard({ methodology }: Props) {
         </div>
 
         <div className="px-6 py-4 rounded-2xl border border-white/5 bg-white/5 flex flex-col items-center">
-           <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1">Score Pollution Moyen</p>
+             <p className="text-[9px] font-black uppercase tracking-widest text-slate-600 mb-1">Score Pollution Moyen</p>
            <div className="flex items-center gap-2">
-              <Sparkles size={14} className="text-emerald-400 animate-pulse" />
+              <Sparkles size={14} className="text-rose-400 animate-pulse" />
               <p className="text-2xl font-black text-white tracking-tighter">{methodology.pollutionScoreAverage.toFixed(1)}<span className="text-sm text-slate-500">/100</span></p>
            </div>
         </div>
@@ -76,7 +75,7 @@ export function GamificationImpactMethodologyCard({ methodology }: Props) {
             {methodology.formulas.map((item) => (
               <div key={item.id} className="rounded-2xl border border-white/5 bg-slate-950/40 p-5 group/item transition-all hover:bg-slate-950/60">
                 <p className="text-[10px] font-black uppercase tracking-widest text-white mb-2">{item.label}</p>
-                <div className="bg-slate-950/60 p-3 rounded-lg border border-white/5 mb-3 font-mono text-[11px] text-emerald-400 break-all">
+                <div className="bg-slate-950/60 p-3 rounded-lg border border-white/5 mb-3 font-mono text-[11px] text-rose-400 break-all">
                    {item.formula}
                 </div>
                 <p className="text-[10px] font-bold text-slate-500 leading-relaxed italic">{item.interpretation}</p>
@@ -103,7 +102,7 @@ export function GamificationImpactMethodologyCard({ methodology }: Props) {
                <ul className="space-y-2">
                  {methodology.hypotheses.map((item) => (
                    <li key={item} className="flex items-start gap-3">
-                      <div className="mt-1 w-1.5 h-1.5 rounded-full bg-emerald-500/30 shrink-0" />
+                      <div className="mt-1 w-1.5 h-1.5 rounded-full bg-rose-500/30 shrink-0" />
                       <p className="text-[11px] font-bold text-slate-400 leading-tight">{item}</p>
                    </li>
                  ))}
@@ -132,14 +131,14 @@ export function GamificationImpactMethodologyCard({ methodology }: Props) {
           </div>
 
           {methodology.sources && (
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 space-y-3">
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-400">
+            <div className="rounded-2xl border border-rose-500/20 bg-rose-500/5 p-6 space-y-3">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-rose-400">
                  <Info size={14} />
                  Sources Scientifiques
               </div>
               <ul className="space-y-2">
                 {Object.entries(methodology.sources).map(([key, value]) => (
-                  <li key={key} className="text-[10px] font-bold text-emerald-400/70 italic flex items-start gap-2">
+                  <li key={key} className="text-[10px] font-bold text-rose-400/70 italic flex items-start gap-2">
                      <span className="shrink-0">•</span>
                      <span>{value}</span>
                   </li>

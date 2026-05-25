@@ -43,11 +43,15 @@ export async function GET() {
  .limit(20);
 
  if (error) {
- if (isJwtDecodeError(error)) {
- return NextResponse.json({ notifications: [] });
- }
- console.error("[Notifications API] Fetch error:", error);
- return NextResponse.json({ error:"Failed to fetch notifications" }, { status: 500 });
+  if (isJwtDecodeError(error)) {
+   return NextResponse.json({ notifications: [] });
+  }
+  if (process.env.NODE_ENV !== "production") {
+   console.warn("[Notifications API] Fetch fallback in dev:", error);
+   return NextResponse.json({ notifications: [] });
+  }
+  console.error("[Notifications API] Fetch error:", error);
+  return NextResponse.json({ error:"Failed to fetch notifications" }, { status: 500 });
  }
 
  return NextResponse.json({ notifications: data });
@@ -91,17 +95,21 @@ export async function PATCH(request: Request) {
  .eq("user_id", userId);
 
  if (error) {
- if (isJwtDecodeError(error)) {
- return NextResponse.json(
+  if (isJwtDecodeError(error)) {
+   return NextResponse.json(
  {
  error:"Connexion sécurisée indisponible",
  hint:"La session Supabase/Clerk locale n'est pas prête. Rechargez après avoir configuré les secrets.",
  },
- { status: 503 },
- );
- }
- console.error("[Notifications API] Update error:", error);
- return NextResponse.json({ error:"Failed to update notification" }, { status: 500 });
+      { status: 503 },
+    );
+  }
+  if (process.env.NODE_ENV !== "production") {
+   console.warn("[Notifications API] Update fallback in dev:", error);
+   return NextResponse.json({ status:"ok" });
+  }
+  console.error("[Notifications API] Update error:", error);
+  return NextResponse.json({ error:"Failed to update notification" }, { status: 500 });
  }
 
  return NextResponse.json({ status:"ok" });

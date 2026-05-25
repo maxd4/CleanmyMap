@@ -41,7 +41,7 @@ export type ThirtySecondsSummaryProps = {
 };
 
 function deltaStyles(v: SummaryKpi["interpretation"]) {
-  if (v === "positive") return { color: "text-emerald-400", bg: "bg-emerald-500/10", icon: TrendingUp };
+  if (v === "positive") return { color: "text-amber-400", bg: "bg-amber-500/10", icon: TrendingUp };
   if (v === "negative") return { color: "text-rose-400", bg: "bg-rose-500/10", icon: TrendingDown };
   return { color: "text-slate-500", bg: "bg-white/5", icon: Minus };
 }

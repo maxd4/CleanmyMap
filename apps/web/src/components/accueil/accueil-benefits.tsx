@@ -61,17 +61,17 @@ export function HomeBenefits({ benefits }: HomeBenefitsProps) {
       className="relative w-full overflow-hidden bg-transparent px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20"
     >
       <div className="relative z-10 mx-auto max-w-[1540px] px-2 sm:px-4">
-        <div className="mx-auto mb-6 max-w-4xl space-y-3 text-center sm:mb-8">
+        <div className="cmm-home-section-header mb-6 space-y-3 sm:mb-8">
           <h2
             data-gsap-reveal
-            className="text-4xl font-black tracking-tight text-emerald-950 sm:text-5xl lg:text-6xl"
+            className="cmm-home-section-title"
             style={{ textWrap: "pretty" }}
           >
             Pourquoi utiliser CleanMyMap ?
           </h2>
           <p
             data-gsap-reveal
-            className="mx-auto max-w-3xl text-base font-light leading-relaxed text-emerald-900/66 sm:text-lg"
+            className="cmm-home-section-subtitle"
           >
             Un seul outil pour structurer, mesurer et valoriser vos actions
             terrain.
@@ -83,10 +83,10 @@ export function HomeBenefits({ benefits }: HomeBenefitsProps) {
             <article
               key={benefit.title}
               data-gsap-reveal
-              className="group relative overflow-hidden rounded-[1.5rem] border border-emerald-100/18 bg-[linear-gradient(180deg,rgba(20,100,70,0.94)_0%,rgba(14,85,55,0.94)_100%)] p-5 shadow-[0_24px_50px_-28px_rgba(5,34,20,0.82)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-100/30 hover:shadow-[0_30px_60px_-30px_rgba(5,34,20,0.88)]"
+              className="group relative overflow-hidden rounded-[1.5rem] border border-emerald-200/80 cmm-surface-texture-white p-5 shadow-[0_18px_40px_-26px_rgba(15,23,42,0.18)] transition-all duration-300 hover:-translate-y-1 hover:border-emerald-300/90 hover:shadow-[0_24px_48px_-28px_rgba(15,23,42,0.22)]"
             >
               <div
-                className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border ${benefit.border} ${benefit.bg} shadow-lg ${benefit.color}`}
+                className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl border ${benefit.border} ${benefit.bg} shadow-sm ${benefit.color}`}
               >
                 {(() => {
                   const Icon = ICONS[benefit.iconName];
@@ -96,7 +96,7 @@ export function HomeBenefits({ benefits }: HomeBenefitsProps) {
               <h3 className={`mb-3 text-lg font-bold leading-tight ${benefit.color}`}>
                 {benefit.title}
               </h3>
-              <p className="cmm-text-card-copy text-[13px] leading-relaxed">
+              <p className="cmm-text-card-copy text-[13px] leading-relaxed text-emerald-900/78">
                 {benefit.desc}
               </p>
             </article>

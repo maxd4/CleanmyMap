@@ -87,6 +87,11 @@ alter table public.app_messages
 
 drop policy if exists "Allow authenticated insert messages" on public.app_messages;
 drop policy if exists "Allow authenticated select messages" on public.app_messages;
+drop policy if exists "Allow individual DMs" on public.app_messages;
+drop policy if exists "Allow neighborhood visibility" on public.app_messages;
+drop policy if exists "Allow Governance visibility" on public.app_messages;
+drop policy if exists "Allow Executive visibility" on public.app_messages;
+drop policy if exists "Allow authenticated insert" on public.app_messages;
 
 update public.app_messages
 set channel_type = case channel_type

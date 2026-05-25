@@ -24,10 +24,10 @@ Contexte et historique des sessions de développement pour agents IA.
 - **Rapport_Annuel_Depollution_Citoyenne_Paris.pdf** - Rapport annuel
 
 ### assets/
-- **data_pipeline.png** - Pipeline de données
-- **ecosystem_overview.png** - Vue d'ensemble écosystème
-- **monorepo_structure.png** - Structure monorepo
-- **security_architecture.png** - Architecture sécurité
+- **data_pipeline.webp** - Pipeline de données
+- **ecosystem_overview.webp** - Vue d'ensemble écosystème
+- **monorepo_structure.webp** - Structure monorepo
+- **security_architecture.webp** - Architecture sécurité
 - **LEGENDES.md** - Légendes des diagrammes
 - **SOURCE_SCHEMAS.md** - Schémas sources
 
@@ -48,7 +48,7 @@ Contexte et historique des sessions de développement pour agents IA.
 ### Pour Comprendre le Projet
 1. Lire **context/fiche_projet.txt** (complet)
 2. Consulter **context/background.txt**
-3. Voir **assets/ecosystem_overview.png**
+3. Voir **assets/ecosystem_overview.webp**
 
 ### Pour Créer des Diagrammes
 1. Utiliser **templates/diagram-flow.mmd** pour flux

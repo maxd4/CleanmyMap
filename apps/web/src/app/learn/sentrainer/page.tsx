@@ -29,7 +29,7 @@ export default function LearnSentrainerPage() {
       }}
       backHref="/learn/hub"
       backLabel={{ fr: "Retour au hub", en: "Back to hub" }}
-      accent="blue"
+      accent="yellow"
       highlights={[
         { fr: "Rappel actif", en: "Active recall" },
         { fr: "Rythme court", en: "Short rhythm" },

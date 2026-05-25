@@ -1,20 +1,22 @@
 # Institutionnel & Légal
 
-Contacts et pages institutionnelles / juridiques.
+Contacts et pages institutionnelles / juridiques, sobres et cohérentes entre elles.
 
 ## Routes canoniques
 
-| Route | Fiche | Statut | Exception UI | Résumé |
-|---|---|---:|:---:|---|
-| `/conditions-generales-utilisation` | [CGU](./conditions-generales-utilisation/README.md) | canonique | non | Conditions générales d'utilisation. |
-| `/conditions-utilisation` | [Conditions d'utilisation](./conditions-utilisation/README.md) | canonique | non | Version complémentaire des conditions d'utilisation. |
-| `/contact` | [Contact](./contact/README.md) | canonique | non | Page de contact, email public et formulaire RGPD. |
-| `/en` | [English entry](./en/README.md) | canonique | non | Entrée bilingue / internationale. |
-| `/mentions-legales` | [Mentions légales](./mentions-legales/README.md) | canonique | non | Informations légales du site. |
-| `/politique-confidentialite` | [Politique de confidentialité](./politique-confidentialite/README.md) | canonique | non | Traitement et protection des données. |
-| `/politique-cookies` | [Politique cookies](./politique-cookies/README.md) | canonique | non | Gestion des cookies et consentement. |
+| Route | Fiche | Type de page | Statut | Scope | Capture disponible | Priorité | Fichier source principal |
+|---|---|---|---|---|:---:|---|---|
+| `/conditions-generales-utilisation` | [CGU](./conditions-generales-utilisation/README.md) | légale | légal | à corriger | non | moyenne | apps/web/src/app/conditions-generales-utilisation/page.tsx |
+| `/conditions-utilisation` | [Conditions d'utilisation](./conditions-utilisation/README.md) | légale | légal | à corriger | non | moyenne | apps/web/src/app/conditions-utilisation/page.tsx |
+| `/contact` | [Contact](./contact/README.md) | légale | légal | à corriger | non | moyenne | apps/web/src/app/contact/page.tsx |
+| `/en` | [English entry](./en/README.md) | légale | légal | à corriger | non | moyenne | apps/web/src/app/en/page.tsx |
+| `/mentions-legales` | [Mentions légales](./mentions-legales/README.md) | légale | légal | à corriger | non | moyenne | apps/web/src/app/mentions-legales/page.tsx |
+| `/politique-confidentialite` | [Politique de confidentialité](./politique-confidentialite/README.md) | légale | légal | à corriger | non | moyenne | apps/web/src/app/politique-confidentialite/page.tsx |
+| `/politique-cookies` | [Politique cookies](./politique-cookies/README.md) | légale | légal | à corriger | non | moyenne | apps/web/src/app/politique-cookies/page.tsx |
 
-## Captures
 
-- Les captures officielles de cette famille vivent dans chaque dossier route sous `png/` et `webp/`.
-- Les archives legacy restent dans `documentation/liberte-UX-UI/` tant que le pipeline de capture n'a pas été migré partout.
+
+## Notes
+
+- Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
+- Les captures officielles, quand elles existent, vivent dans `photo/desktop/` et `photo/mobile/` à la racine de la famille et sont en WebP.

@@ -647,7 +647,7 @@ L’hypothèse centrale prudente pour le développement assisté par IA se situe
 
 ### Empreinte carbone estimée
 
-L'impact carbone dépend du mix électrique. Le choix par défaut de Vercel (US-East, ~400-500 gCO₂e/kWh) est 8 à 10 fois plus carboné que la France (Paris, ~50-60 gCO₂e/kWh). L'empreinte actuelle du développement est estimée entre **10 et 20 kgCO₂e**.
+L'impact carbone dépend du mix électrique. Vercel documente que `vercel.json` permet de configurer le comportement du projet, tandis que les fonctions peuvent être déployées dans une région donnée [@vercel_project_configuration; @vercel_functions_region]. Dans l’hypothèse de travail retenue dans ce rapport, la phase de build Vercel reste en `iad1`, mais le runtime des fonctions peut basculer en `cdg1`. À périmètre comparable, le passage d’un runtime électrique de type US-East, pris ici comme ordre de grandeur de travail du rapport à **400 à 500 gCO₂e/kWh**, à l’intensité moyenne de la production électrique française en 2024, soit **21,7 gCO₂eq/kWh**, réduit la composante carbone électrique d’environ **94,6 à 95,7 %** [@rte_annual_review_2024_keyfindings]. L'empreinte actuelle du développement est estimée entre **10 et 20 kgCO₂e**.
 
 ### Empreinte hydrique estimée
 
@@ -673,13 +673,13 @@ Ces chiffres doivent être lus comme des **ordres de grandeur**, non comme des m
 
 Avant l’essor massif de l’IA générative, les data centers représentaient déjà un poste énergétique significatif. Il est possible de retenir un ordre de grandeur d’environ **300 TWh/an** avant l’explosion des usages génératifs, même si cette valeur dépend du périmètre retenu : cloud, stockage, calcul scientifique, services web, streaming, réseaux internes et infrastructures associées.
 
-L’AIE estime qu’en **2024**, les data centers ont consommé environ **415 TWh**, soit environ **1,5 % de l’électricité mondiale**. Cette valeur montre que les data centers ne sont pas encore comparables aux grands secteurs historiques comme le transport ou l’élevage, mais qu’ils constituent déjà une infrastructure énergétique majeure. À titre d’ordre de grandeur, **415 TWh/an** correspondent presque à la consommation électrique annuelle de la France, qui s’établit autour de **449 TWh** en 2024 selon RTE.
+L’AIE estime qu’en **2024**, les data centers ont consommé environ **415 TWh**, soit environ **1,5 % de l’électricité mondiale** [@aie_iea_2024]. Cette valeur montre que les data centers ne sont pas encore comparables aux grands secteurs historiques comme le transport ou l’élevage, mais qu’ils constituent déjà une infrastructure énergétique majeure. À titre d’ordre de grandeur, **415 TWh/an** correspondent presque à la consommation électrique annuelle de la France, qui s’établit autour de **449 TWh** en 2024 selon RTE [@rte_annual_review_2024_keyfindings].
 
 La hausse récente ne vient pas uniquement de l’IA. Les usages numériques classiques continuent aussi de croître : cloud, stockage, vidéo, applications web, services logiciel en tant que service, calcul scientifique, cryptoactifs selon les périodes et infrastructures réseau. L’IA générative constitue toutefois un accélérateur très visible, car elle demande des serveurs spécialisés, des GPU, beaucoup de mémoire, du refroidissement et une alimentation électrique stable.
 
 ### Part estimée de l’IA dans cette consommation
 
-La part exacte de l’IA dans la consommation électrique mondiale des data centers reste difficile à isoler. Les grands opérateurs ne publient pas toujours une séparation claire entre calcul IA, cloud classique, stockage, bases de données, streaming, services internes et autres charges numériques. Il faut donc raisonner par **ordre de grandeur** plutôt que par chiffre exact.
+La part exacte de l’IA dans la consommation électrique mondiale des data centers reste difficile à isoler. Les grands opérateurs ne publient pas toujours une séparation claire entre calcul IA, cloud classique, stockage, bases de données, streaming, services internes et autres charges numériques. Il faut donc raisonner par **ordre de grandeur** plutôt que par chiffre exact [@aie_iea_2024_1].
 
 Une hypothèse prudente situe aujourd’hui l’IA autour de **10 à 15 %** de la consommation électrique mondiale des data centers. En retenant une consommation totale proche de **500 TWh/an** en 2025, cela correspondrait à environ **50 à 75 TWh/an** attribuables à l’IA.
 
@@ -723,7 +723,7 @@ Cette récupération n’efface pas la consommation initiale, mais elle peut en 
 
 Une piste explorée par certains acteurs consiste à modifier directement les conditions de refroidissement des centres de données. Microsoft a par exemple testé **Project Natick**, un prototype de datacenter sous-marin alimenté par des énergies renouvelables offshore, précisément pour étudier la faisabilité de ce type d’infrastructure dans un cadre réel. [Microsoft Research - Natick](https://www.microsoft.com/en-us/research/project/natick/?lang=fr-ca) ; [Microsoft Source](https://news.microsoft.com/source/features/sustainability/project-natick-underwater-datacenter/).
 
-L’intérêt de ce type d’approche est simple : dans un centre de données, l’électricité ne sert pas seulement aux serveurs. Elle alimente aussi le refroidissement, la ventilation, les pompes, la conversion électrique, la sécurité et les systèmes de redondance. Le Département américain de l’Énergie rappelle d’ailleurs que le **PUE** compare l’énergie totale d’un site à l’énergie strictement informatique, ce qui montre bien que le “coût” d’un data center ne se limite pas aux machines de calcul. [DOE - PUE](https://energy.gov/eere/buildings/data-centers-and-servers).
+L’intérêt de ce type d’approche est simple : dans un centre de données, l’électricité ne sert pas seulement aux serveurs. Elle alimente aussi le refroidissement, la ventilation, les pompes, la conversion électrique, la sécurité et les systèmes de redondance. Le Département américain de l’Énergie rappelle d’ailleurs que le **PUE** compare l’énergie totale d’un site à l’énergie strictement informatique, ce qui montre bien que le “coût” d’un data center ne se limite pas aux machines de calcul [@doe_data_centers_servers].
 
 Les centres sous-marins peuvent donc améliorer l’efficacité du refroidissement et réduire certains besoins en eau douce ou en climatisation classique. Mais ils restent expérimentaux et ne suppriment ni la chaleur rejetée dans l’environnement marin, ni les impacts de fabrication du matériel, ni la dépendance aux semi-conducteurs, ni la complexité de maintenance. Autrement dit, ils peuvent améliorer un poste de coût, pas abolir le coût global.
 
@@ -2662,6 +2662,22 @@ Plusieurs impacts restent hors de portée d'une simple amélioration technique d
 
 Ces impacts ne doivent pas être décrits comme "annulés" par les cleanwalks.
 Une cleanwalk retire des déchets et produit une valeur locale réelle, mais elle ne rembourse pas directement l'électricité consommée, l'eau utilisée, le matériel fabriqué ou le travail invisible mobilisé par les chaînes d'IA.
+
+### Réduction de l’empreinte Vercel par localisation d’exécution
+
+La configuration actuelle du projet distingue deux plans qu’il ne faut pas confondre. Le message de build `Running build in Washington, D.C., USA (East) – iad1` renvoie à la phase de compilation et de packaging de Vercel, alors que la région `cdg1` déclarée dans `apps/web/vercel.json` pilote l’exécution des fonctions lors des requêtes. Le build reste ponctuel et attaché aux déploiements, tandis que le runtime est récurrent et pèse davantage sur l’empreinte d’usage.
+
+Dans un plan de réduction de l’impact, le levier le plus pertinent n’est donc pas le seul choix du build, mais la localisation du runtime et des données. À périmètre comparable, le passage d’un runtime de type US-East, pris ici comme ordre de grandeur de travail à **400 à 500 gCO₂e/kWh**, à l’intensité moyenne de la production électrique française en 2024, soit **21,7 gCO₂eq/kWh**, réduit la composante carbone électrique d’environ **94,6 à 95,7 %** [@rte_annual_review_2024_keyfindings].
+
+L’impact total de Vercel ne baisse cependant pas dans la même proportion, car d’autres postes subsistent : aperçus de déploiement, CDN, journaux, stockage, transferts réseau et éventuels services périphériques. Sans télémétrie précise, il n’est pas possible d’assigner un pourcentage global exact au service Vercel dans le projet. Une lecture de sensibilité raisonnable est la suivante :
+
+| Part du runtime dans le coût opérationnel Vercel | Réduction totale estimée si le runtime passe à `cdg1` |
+|---|---|
+| 30 % | environ 28 à 29 % |
+| 50 % | environ 47 à 48 % |
+| 70 % | environ 66 à 67 % |
+
+Cette mesure ne supprime donc pas le coût du service, mais elle réduit fortement son poste le plus récurrent. Elle est cohérente avec la stratégie générale du projet : rapprocher l’exécution des usages réels, limiter les transferts inutiles et réduire l’empreinte des fonctions qui tournent le plus souvent.
 
 ### Actions complémentaires proposées
 

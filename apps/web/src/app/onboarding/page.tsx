@@ -1,131 +1,106 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { ArrowRight, MapPin, User, Settings } from "lucide-react";
 import type { Metadata } from "next";
+import { MapPin } from "lucide-react";
+import { AccountSetupForm } from "@/components/account/account-setup-form";
+import { getCurrentUserLocationPreference } from "@/lib/auth/user-location";
+import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { isLocalhostHost } from "@/lib/auth/dev-auth";
+import { toProfile } from "@/lib/profiles";
 
 export const metadata: Metadata = {
   title: "Bienvenue sur CleanMyMap - Configuration initiale",
-  description: "Configurez votre profil CleanMyMap pour commencer à agir pour l'environnement dans votre quartier.",
+  description:
+    "Complétez votre profil CleanMyMap en une seule étape: rôle, localisation et mode d'affichage.",
   keywords: ["onboarding", "configuration", "profil", "écologie", "CleanMyMap"],
   robots: {
-    index: false, // Page privée
+    index: false,
     follow: false,
   },
 };
 
-export default async function OnboardingPage() {
-  const { userId } = await getSafeAuthSession();
-  
+type OnboardingPageProps = {
+  searchParams: Promise<{ next?: string }>;
+};
+
+function sanitizeNextPath(nextParam: string | undefined): string {
+  if (!nextParam) {
+    return "/profil";
+  }
+  if (!nextParam.startsWith("/") || nextParam.startsWith("//")) {
+    return "/profil";
+  }
+  if (nextParam.startsWith("/onboarding")) {
+    return "/profil";
+  }
+  return nextParam;
+}
+
+export default async function OnboardingPage({
+  searchParams,
+}: OnboardingPageProps) {
+  const { userId, clerkReachable } = await getSafeAuthSession();
+
   if (!userId) {
     redirect("/sign-in");
   }
 
+  const requestHeaders = await headers();
+  const isLocalHost = isLocalhostHost(requestHeaders.get("host"));
+  const [existingPreference, role] = await Promise.all([
+    getCurrentUserLocationPreference(),
+    getCurrentUserRoleLabel(),
+  ]);
+  const profile = toProfile(role);
+  const resolvedSearchParams = await searchParams;
+  const nextPath = sanitizeNextPath(resolvedSearchParams.next);
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_rgba(199,210,254,0.45)_0%,_rgba(255,255,255,0.96)_52%,_rgba(248,250,252,1)_100%)] px-4 py-8">
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_rgba(219,234,254,0.72)_0%,_rgba(232,233,255,0.84)_36%,_rgba(206,250,225,0.9)_70%,_rgba(245,247,250,1)_100%)] px-4 py-8">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-20 top-20 h-72 w-72 rounded-full bg-indigo-400/10 blur-3xl" />
-        <div className="absolute -right-16 top-40 h-80 w-80 rounded-full bg-violet-400/8 blur-3xl" />
-        <div className="absolute bottom-16 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-amber-400/8 blur-3xl" />
+        <div className="absolute -left-16 top-10 h-72 w-72 rounded-full bg-indigo-400/14 blur-3xl" />
+        <div className="absolute right-0 top-24 h-80 w-80 rounded-full bg-violet-400/12 blur-3xl" />
+        <div className="absolute bottom-12 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-emerald-400/12 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-4xl">
-        <div className="space-y-8">
-          <header className="text-center space-y-4">
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-indigo-700">
-              Configuration initiale
-            </p>
-            <h1 className="text-[clamp(2.5rem,5vw,4rem)] font-black leading-[0.95] tracking-tight text-slate-950">
-              Bienvenue sur CleanMyMap
-            </h1>
-            <p className="mx-auto max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
-              Quelques étapes simples pour personnaliser votre expérience et commencer à agir pour l&apos;environnement dans votre quartier.
-            </p>
-          </header>
-
-          <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <Link
-              href="/onboarding/localisation"
-              className="group relative overflow-hidden rounded-[2rem] border border-indigo-200/60 bg-white/82 p-6 shadow-[0_18px_50px_-36px_rgba(79,70,229,0.4)] backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-indigo-300 hover:shadow-[0_24px_60px_-40px_rgba(79,70,229,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/50"
-            >
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-100 text-indigo-700">
+      <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-5xl items-center">
+        <section className="w-full space-y-6 rounded-[2.75rem] border border-white/10 bg-[linear-gradient(145deg,rgba(15,23,42,0.92)_0%,rgba(30,41,59,0.9)_44%,rgba(88,28,135,0.86)_100%)] p-4 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.6)] backdrop-blur-2xl sm:p-6">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.32em] text-emerald-200/90">
+                Configuration initiale
+              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-300/10 text-emerald-200">
                   <MapPin className="h-6 w-6" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-slate-900">Localisation</h3>
-                  <p className="text-sm text-slate-600">Définir votre zone d&apos;action</p>
-                </div>
-                <ArrowRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1" />
-              </div>
-              <p className="mt-4 text-sm leading-relaxed text-slate-600">
-                Choisissez votre arrondissement ou zone d&apos;intervention pour recevoir des recommandations personnalisées.
-              </p>
-            </Link>
-
-            <div className="relative overflow-hidden rounded-[2rem] border border-indigo-100/70 bg-white/55 p-6 opacity-70 backdrop-blur-sm">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-                  <User className="h-6 w-6" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-slate-800">Profil</h3>
-                  <p className="text-sm text-slate-500">Personnaliser l&apos;expérience</p>
-                </div>
-              </div>
-              <p className="mt-4 text-sm leading-relaxed text-slate-500">
-                Configurez vos préférences d&apos;affichage et votre niveau d&apos;engagement.
-              </p>
-            </div>
-
-            <div className="relative overflow-hidden rounded-[2rem] border border-indigo-100/70 bg-white/55 p-6 opacity-70 backdrop-blur-sm">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-                  <Settings className="h-6 w-6" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-slate-800">Préférences</h3>
-                  <p className="text-sm text-slate-500">Notifications et rappels</p>
-                </div>
-              </div>
-              <p className="mt-4 text-sm leading-relaxed text-slate-500">
-                Choisissez comment vous souhaitez être informé des opportunités d&apos;action.
-              </p>
-            </div>
-          </section>
-
-          <section className="rounded-[2rem] border border-indigo-200/60 bg-white/82 p-6 shadow-[0_18px_50px_-36px_rgba(79,70,229,0.28)] backdrop-blur-xl">
-            <h2 className="mb-4 text-xl font-bold text-slate-900">
-              Ou commencez directement
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-3 rounded-2xl border border-indigo-200/60 bg-indigo-50/80 p-4 transition-colors hover:border-indigo-300 hover:bg-indigo-100/80"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
-                  <ArrowRight className="h-5 w-5" />
-                </div>
                 <div>
-                  <p className="font-semibold text-slate-900">Tableau de bord</p>
-                  <p className="text-sm text-slate-600">Voir les priorités</p>
+                  <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+                    Complétez votre profil en une seule étape
+                  </h1>
+                  <p className="mt-2 max-w-2xl text-sm leading-relaxed text-violet-100/78 sm:text-base">
+                    Choisissez votre rôle, votre lieu principal et votre mode
+                    d&apos;affichage. La localisation, le compte et les réglages
+                    de départ vivent désormais sur cette page unique.
+                  </p>
                 </div>
-              </Link>
-              <Link
-                href="/explorer"
-                className="flex items-center gap-3 rounded-2xl border border-indigo-200/60 bg-amber-50/80 p-4 transition-colors hover:border-amber-300 hover:bg-amber-100/80"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
-                  <ArrowRight className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-900">Sommaire</p>
-                  <p className="text-sm text-slate-600">Découvrir les sections</p>
-                </div>
-              </Link>
+              </div>
             </div>
-          </section>
-        </div>
+            <div className="inline-flex rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-violet-100/78">
+              Auth & Onboarding
+            </div>
+          </div>
+
+          <AccountSetupForm
+            nextPath={nextPath}
+            initialProfile={profile}
+            clerkReachable={clerkReachable}
+            isLocalHost={isLocalHost}
+            initialArrondissement={existingPreference?.arrondissement ?? null}
+            initialLocationType={existingPreference?.locationType ?? null}
+          />
+        </section>
       </div>
     </main>
   );

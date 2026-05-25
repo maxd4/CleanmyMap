@@ -40,16 +40,16 @@ const SURFACE_TONES: Record<
  },
  profile: {
  shell:
-"border-cyan-500/20 bg-cyan-50/80 text-cyan-800 shadow-sm shadow-cyan-200/30 dark:bg-cyan-500/10 dark:text-cyan-100",
+"border-pink-500/20 bg-pink-50/80 text-pink-800 shadow-sm shadow-pink-200/30 dark:bg-pink-500/10 dark:text-pink-100",
  iconShell:
-"bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-100",
- text:"text-cyan-800 dark:text-cyan-100",
+"bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-100",
+ text:"text-pink-800 dark:text-pink-100",
  },
  gamification: {
  shell:
-"border-blue-500/20 bg-blue-50/80 text-blue-800 shadow-sm shadow-blue-200/30 dark:bg-blue-500/10 dark:text-blue-100",
- iconShell:"bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-100",
- text:"text-blue-800 dark:text-blue-100",
+"border-rose-500/20 bg-rose-50/80 text-rose-800 shadow-sm shadow-rose-200/30 dark:bg-rose-500/10 dark:text-rose-100",
+ iconShell:"bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-100",
+ text:"text-rose-800 dark:text-rose-100",
  },
  mode: {
  shell:

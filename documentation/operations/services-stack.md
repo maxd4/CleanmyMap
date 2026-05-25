@@ -76,9 +76,14 @@ Rôle:
 Activation:
 
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-- `NEXT_PUBLIC_CLERK_PROXY_URL` si Clerk doit passer par le proxy local `/__clerk`
+- `NEXT_PUBLIC_CLERK_PROXY_URL` seulement si Clerk doit passer par le proxy local `/__clerk` (sinon laisser vide)
 - `CLERK_SECRET_KEY`
 - éventuels réglages de domaine et d'utilisateurs admin.
+
+- `CLERK_DOMAIN=auth.cleanmymap.fr`
+- `NEXT_PUBLIC_CLERK_PROXY_URL` vide
+
+Si `NEXT_PUBLIC_CLERK_PROXY_URL=/__clerk` est utilisé volontairement, le proxy Frontend API est géré par `apps/web/src/proxy.ts` via `frontendApiProxy` et le code résout ensuite ce chemin par rapport à `NEXT_PUBLIC_APP_URL` pour fournir à Clerk une URL absolue.
 
 Code clé:
 
@@ -156,7 +161,8 @@ Logs:
 Statut observé au moment de cette passe:
 
 - le runtime Sentry reste actif dès que `NEXT_PUBLIC_SENTRY_DSN` est configuré;
-- l'upload des source maps est désormais géré après `next build` via `sentry-cli` avec injection des debug IDs, ce qui évite de faire dépendre la build du plugin Sentry et de ses dépendances natives;
+- les builds de production activent `experimental.serverSourceMaps` pour générer aussi les maps serveur;
+- l'upload des source maps est géré après `next build` via `sentry-cli` avec injection des debug IDs; l'étape ne pousse que les bundles JavaScript qui ont un `.map` correspondant, exclut les maps CSS tierces, et désactive la détection automatique des `sourceMappingURL` ainsi que le rewriting, ce qui évite les faux `missing sourcemap!` et les warnings de chunks non résolus;
 - si `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` ou `SENTRY_PROJECT` manquent, l'upload est sauté sans bloquer le runtime.
 
 ### Resend

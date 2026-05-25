@@ -12,7 +12,8 @@
 
 **⚠️ NOUVELLE STRUCTURE (5 blocs homepage) :**
 - Certains blocs ont **plusieurs teintes directrices** selon le type de page
-- Exemple : "Accueil & Pilotage" = amber/orange (accueil) + amber/brun (pilotage)
+- Exemple : "Cartographie & Impact" = sky (carto) + red/rose (impact)
+- **Bloc 01 Accueil & Pilotage** : palette **orange + brun combinés** sur chaque page (fond + titre/sous-titre). Ce n'est pas un choix « orange OU brun » par route.
 
 ---
 
@@ -20,10 +21,10 @@
 
 | # | Bloc Homepage | Teintes directrices | Carte homepage | Usage |
 |---|---------------|---------------------|----------------|-------|
-| 01 | Accueil & Pilotage | `amber`/`orange` + `amber`/`brun` | `amber`/`orange` | Pages accueil → orange, Pages pilotage → brun, Sommaire `/explorer` = exception validée, Méthodologie `/methodologie` = exception verte |
+| 01 | Accueil & Pilotage | `amber` / `orange` / `brun` (combinés) | `amber`/`orange` | Fond et titres de page en orange+brun ; cartes du sommaire `/explorer` inchangées ; `/methodologie` = exception rouge d'impact |
 | 02 | Agir | `emerald` | `emerald` | Toutes pages terrain |
 | 03 | Cartographie & Impact | `sky` + `red` / `rose` | `sky` | Pages carto → sky, Pages impact → red / rose |
-| 04 | Réseau & Discussions | `indigo` + `pink` | `indigo` | Pages réseau → indigo, Pages discussion → pink |
+| 04 | Réseau & Discussions | `pink` + `indigo` | `pink` | Pages réseau / discussion → pink, Pages partenaires → indigo |
 | 05 | Apprendre | `yellow` | `yellow` | Toutes pages éducatives |
 
 **Blocs système (non homepage) :**
@@ -34,52 +35,46 @@
 **Familles autonomes hors 5 blocs :**
 - Homepage autonome : `/`, `/accueil`
 - Auth & Onboarding : `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`
+  - fond lavande clair vers vert menthe clair
+  - carte Clerk violet nuit / indigo foncé
+  - accents verts uniquement pour validation
+  - boutons inchangés, régis par la charte bouton existante
 - Institutionnel & Légal : `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`
+  - palette slate / gris clair / blanc
+  - pas d esthétique marketing blocks
+  - `LegalSection` comme brique commune possible
 - Système & Utilitaires : `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`
+  - mood layer autonome par usage, jamais couleur de bloc
 - Admin & Super-admin : `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`
 - Print & Export : `/prints/report`
+  - ambiance documentaire autonome
+- États système:
+  - erreur critique -> `red`
+  - quota / limite / attention -> `amber`
+  - loading -> `slate`
+  - empty state -> `slate` doux
+  - access refused -> `slate` + léger `red` / `orange`
+  - architecture commune: `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`
 
 ---
 
-## 01 — Bloc Accueil & Pilotage · Multi-teintes
-
-### Pages type Accueil · `amber` / `orange`
+## 01 — Bloc Accueil & Pilotage · Orange + brun (combinés)
 
 ```
-fond page     : background #b45309 + radial-gradient amber/orange/jaune
-fond cartes   : #431407 (sombre teinté orange)
-bordure       : border-orange-200/18  hover: border-orange-200/38
-ombre         : shadow-[0_24px_60px_-20px_rgba(124,45,18,0.50)]
-barre top     : bg-gradient-to-r from-orange-500 via-amber-400 to-yellow-400
-glow interne  : bg-orange-500/15 blur-3xl
-texte titres  : text-orange-100
-texte corps   : text-white / text-white/80
-CTA primaire  : bg-gradient-to-r from-orange-500 to-amber-400
-CTA secondaire: bg-white/10 hover:bg-white/16
+fond page     : canvas #edd4b0 + dégradés orange (249,115,22) et brun (120,53,15 / 92,45,12)
+fond cartes   : inchangé hors scope (cartes sommaire / cartes métier conservent leurs surfaces)
+titres page   : text-stone-950 + eyebrow text-orange-950/85
+sous-titres   : text-stone-800/90
+accents       : halos orange + brun simultanés (pas de bascule exclusive par route)
 ```
 
----
+**Pages concernées (fond + titre/sous-titre unifiés) :**
+- `/dashboard`, `/profil`, `/profil/[profile]`, `/parcours`, `/parcours/[profile]`
+- `/pilotage`, `/sponsor-portal`, `/elus`
 
-### Pages type Pilotage · `amber` / `brun`
-
-```
-fond page     : brun-orangé dense (radial-gradient amber/stone)
-fond cartes   : #2c1c0f (sombre teinté brun)
-bordure       : border-stone-400/18  hover: border-stone-300/38
-ombre         : shadow-[0_24px_56px_-32px_rgba(69,45,28,0.18)]
-texte titres  : text-orange-100
-texte corps   : text-white / text-white/80
-dot accent    : bg-orange-300
-```
-
-**Pages concernées :**
-- `/dashboard` — Tableau de bord accueil
-- `/profil` — Profil accueil
-- `/pilotage` — Vue pilotage
-- `/sponsor-portal` — Portail sponsor
-- `/elus` — Élus
-- `/explorer` — Sommaire, palette dédiée conservée
-- `/methodologie` — Exception verte, palette homepage conservée
+**Exceptions :**
+- `/explorer` — Sommaire : fond `yellow` ; **cartes du sommaire non modifiées**
+- `/methodologie` — Rouge d'impact
 
 ---
 
@@ -133,16 +128,16 @@ dot accent    : bg-red-300
 
 ---
 
-## 04 — Bloc Réseau & Discussions · `indigo` / `pink`
+## 04 — Bloc Réseau & Discussions · `pink` / `indigo`
 
 ```
-fond page     : indigo clair lumineux (radial-gradient indigo/violet)
-fond cartes   : #04020f (sombre teinté indigo)
-bordure       : border-indigo-200/18  hover: border-indigo-200/38
-ombre         : shadow-[0_34px_76px_-34px_rgba(4,2,44,0.72)]
-texte titres  : text-indigo-100
+fond page     : rose clair lumineux (radial-gradient pink)
+fond cartes   : #490b38 (sombre teinté rose)
+bordure       : border-pink-200/18  hover: border-pink-200/38
+ombre         : shadow-[0_34px_76px_-34px_rgba(44,7,34,0.72)]
+texte titres  : text-pink-100
 texte corps   : text-white / text-white/80
-dot accent    : bg-indigo-300
+dot accent    : bg-pink-300
 ```
 
 ---
@@ -165,7 +160,7 @@ dot accent    : bg-yellow-300
 
 ## Blocs système (non homepage)
 
-### Pages type Discussion · `pink`
+### Pages type Réseau / Discussion · `pink`
 
 ```
 fond page     : rose clair lumineux (radial-gradient pink)
@@ -183,6 +178,23 @@ dot accent    : bg-pink-300
 - `/sections/messagerie`
 - `/sections/open-data`
 - écrans de discussion et d'échange associés
+
+### Pages type Partenaires · `indigo`
+
+```
+fond page     : indigo clair lumineux (radial-gradient indigo/violet)
+fond cartes   : #04020f (sombre teinté indigo)
+bordure       : border-indigo-200/18  hover: border-indigo-200/38
+ombre         : shadow-[0_34px_76px_-34px_rgba(4,2,44,0.72)]
+texte titres  : text-indigo-100
+texte corps   : text-white / text-white/80
+dot accent    : bg-indigo-300
+```
+
+**Pages concernées :**
+- `/partners/dashboard`
+- `/partners/network`
+- `/partners/onboarding`
 
 ---
 
@@ -222,14 +234,14 @@ bg-gradient-to-r from-[accent-500] via-[accent-400] to-[accent-300]  /* 3px */
 - `/dashboard`, `/profil` → `amber`/`orange`
 - `/pilotage`, `/sponsor-portal`, `/elus` → `amber`/`brun`
 - `/explorer` → exception validée, palette Sommaire conservée
-- `/methodologie` → exception validée, palette verte homepage conservée
+- `/methodologie` → exception validée, palette rouge d'impact conservée
 
 ### Familles autonomes
 - Auth & Onboarding (`/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`) → `auth`
 - Institutionnel & Légal (`/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`) → `legal`
-- Système & Utilitaires (`/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`) → `system`
+- Système & Utilitaires (`/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`) → `system` avec mood layer autonome par usage
 - Admin & Super-admin (`/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`) → `admin`
-- Print & Export (`/prints/report`) → `print`
+- Print & Export (`/prints/report`) → `print` documentaire autonome
 
 ### Bloc "Cartographie & Impact"
 - `/actions/map`, `/sections/sandbox` → `sky`
@@ -237,5 +249,5 @@ bg-gradient-to-r from-[accent-500] via-[accent-400] to-[accent-300]  /* 3px */
 
 ### Autres blocs (teinte unique)
 - Agir → `emerald`
-- Réseau & Discussions → `indigo` / `pink`
+- Réseau & Discussions → `pink` / `indigo` (réseau/discussion vs partenaires)
 - Apprendre → `yellow`

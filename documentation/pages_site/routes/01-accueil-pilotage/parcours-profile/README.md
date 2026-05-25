@@ -3,27 +3,57 @@
 ## Fiche canonique
 
 - **Route** : `/parcours/[profile]`
-- **Famille** : Accueil & Pilotage
-- **Statut** : canonique-exemple
-- **Exception UI** : non
-- **Type** : dynamic
+- **Fichier(s) source(s)** :
+- `apps/web/src/app/(app)/parcours/[profile]/page.tsx`
+- **Type fonctionnel** : dynamique — parcours
+- **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
+- **Statut** : dynamique
+- **Contexte nécessaire** : Paramètre de route requis (profil, id, section, mission...)
+- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
+- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Palette attendue** : amber / orange
+- **Scope** : à valider
+- **Terminée** : non
+- **Couleurs actuellement détectées** : amber — canvas #fff7ed, halo rgba(245, 158, 11, 0.22)
+- **Incohérences de couleurs** : Pas d'incohérence détectée après réalignement; validation visuelle à confirmer.
+- **Risque de conflit avec les couleurs existantes** : moyen : la frontière rouge doit rester nette pour éviter la confusion avec les blocs d'impact et d'alerte.
+- **Niveau de surcharge textuelle** : moyen
+- **Textes à conserver** :
+- Titre de page
+- cartes métriques
+- CTA de navigation
+- indicateurs prioritaires
+- **Textes à réduire ou supprimer** :
+- Rappels redondants
+- badges de contexte répétés
+- blocs d'aide trop verbeux
+- **Bulles / cartes / contextes trop nombreux** : Le bloc mélange des cartes de lecture et des CTA, la densité doit rester maîtrisée.
+- **Composants UI concernés** :
+- Titre
+- cards métriques
+- CTA
+- nav secondaire
+- sidebar / ribbon
+- **Captures attendues** : desktop, mobile, état paramétré
+- **Priorité de correction** : moyenne
 - **Exemple canonique** : `/parcours/benevole`
 
-## Rôle UI
+## États à documenter
 
-Parcours redirigé selon le profil actif.
+- **loading** : fond `slate`, skeletons sobres, loader discret, même largeur et mêmes espacements que les autres états.
+- **empty state** : fond `slate` doux, ton encourageant, CTA utile unique.
+- **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
+- **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
+- **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
+- **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
 
-## Captures officielles
 
-- `png/` : captures PNG canoniques de cette page
-- `webp/` : versions de contexte quand elles existent
-- La capture peut aussi rester miroir dans `documentation/liberte-UX-UI/` selon le pipeline de capture
 
 ## Références legacy
 
 - Aucun fichier legacy dédié.
 
-## Notes
+## Notes d'audit
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

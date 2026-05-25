@@ -169,7 +169,7 @@ const clerkProxy = clerkMiddleware(
     isSatellite: clerkRuntime.proxyUrl ? undefined : clerkRuntime.isSatellite,
     satelliteAutoSync: clerkRuntime.proxyUrl ? undefined : clerkRuntime.satelliteAutoSync,
     authorizedParties: clerkRuntime.authorizedParties,
-    frontendApiProxy: clerkRuntime.proxyUrl ? { enabled: true } : undefined,
+    frontendApiProxy: clerkRuntime.proxyUrl ? { enabled: true, path: "/__clerk" } : undefined,
   },
 );
 
@@ -211,5 +211,6 @@ export const config = {
   matcher: [
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     "/(api|trpc)(.*)",
+    "/__clerk/(.*)",
   ],
 };

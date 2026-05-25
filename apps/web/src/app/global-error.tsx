@@ -1,0 +1,60 @@
+"use client";
+
+import { useEffect, useMemo } from "react";
+import * as Sentry from "@sentry/nextjs";
+import { ServerErrorCard } from "@/components/ui/server-error-card";
+import { buildSupportHref } from "@/lib/errors/app-errors";
+import { isSentryEnabled } from "@/lib/observability/sentry";
+
+export default function GlobalError({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  const isSentryConfigured = isSentryEnabled();
+
+  const supportHref = useMemo(() => {
+    return buildSupportHref({
+      message: error.message,
+      code: error.name !== "Error" ? error.name : null,
+      referenceCode: error.digest ?? null,
+      pagePath: null,
+      userId: null,
+      sessionId: null,
+      source: "global_error_boundary",
+    });
+  }, [error.digest, error.message, error.name]);
+
+  useEffect(() => {
+    if (isSentryConfigured) {
+      Sentry.captureException(error);
+    }
+    console.error("[Global Error]", error);
+  }, [error, isSentryConfigured]);
+
+  return (
+    <html lang="fr">
+      <body>
+        <div className="relative min-h-screen overflow-hidden p-6 font-outfit">
+          <div className="relative z-10 flex min-h-screen items-center justify-center">
+            <ServerErrorCard
+              className="w-full max-w-[42rem]"
+              title="Une erreur technique bloque l'application."
+              message={
+                isSentryConfigured
+                  ? "Le problème a été signalé automatiquement. Vous pouvez réessayer maintenant ou revenir à l'accueil."
+                  : "Vous pouvez réessayer maintenant ou revenir à l'accueil."
+              }
+              referenceCode={error.digest}
+              onRetry={() => reset()}
+              supportHref={supportHref}
+              supportLabel="Contacter le support"
+            />
+          </div>
+        </div>
+      </body>
+    </html>
+  );
+}

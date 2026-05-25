@@ -26,6 +26,7 @@ Système de design pour agents IA. **TOUJOURS consulter avant toute modification
 ### Typographie
 - **TYPOGRAPHY_SYSTEM.md** - Système typographique complet
 - **standards-visuels.md** - Standards visuels
+- **HOMEPAGE_SECTION_HEADINGS.md** - Titres et sous-titres harmonisés de la homepage
 
 ### Animations & Interactions
 - **ANIMATION_LIBRARY.md** - Bibliothèque d'animations
@@ -34,6 +35,7 @@ Système de design pour agents IA. **TOUJOURS consulter avant toute modification
 ### Patterns
 - **patterns-cartes-filtres-etats.md** - Patterns cartes/filtres/états
 - **cleanmymap-ui-ux-pro-max.md** - Synthèse CleanMyMap des règles UI/UX Pro Max
+- **TEXTURE_SURFACES.md** - Textures discrètes réutilisables pour cartes et grands panneaux
 
 ---
 
@@ -100,12 +102,12 @@ Objectif :
    - Pages accueil (/dashboard, /profil) → amber/orange
    - Pages pilotage (/pilotage, /sponsor-portal, /elus) → amber/brun
    - Sommaire (/explorer) → exception validée, palette dédiée conservée
-   - Méthodologie (/methodologie) → exception verte, palette homepage conservée
+   - Méthodologie (/methodologie) → exception rouge d'impact
    - Admin & Super-admin (/admin, /admin/forms, /admin/services, /admin/godmode) → famille autonome
-   - Auth & Onboarding (/sign-in, /sign-up, /onboarding, /onboarding/localisation) → famille autonome
-   - Institutionnel & Légal (/contact, /conditions-*, /mentions-legales, /politique-*, /en) → famille autonome
-   - Système & Utilitaires (/reglages, /form-comparison, /declaration-simple, /preview/actions/new, /error/429) → famille autonome
-   - Print & Export (/prints/report) → famille autonome
+   - Auth & Onboarding (/sign-in, /sign-up, /onboarding, /onboarding/localisation) → famille autonome, fond lavande clair vers vert menthe clair; carte Clerk violet nuit / indigo foncé; boutons inchangés
+   - Institutionnel & Légal (/contact, /conditions-*, /mentions-legales, /politique-*, /en) → famille autonome, sobre et institutionnelle; `LegalSection` comme brique partagée possible
+   - Système & Utilitaires (/reglages, /form-comparison, /declaration-simple, /preview/actions/new, /error/429) → famille autonome avec mood layer par usage, jamais palette de bloc
+   - Print & Export (/prints/report) → famille autonome avec ambiance documentaire autonome
    
    Bloc "Cartographie & Impact" :
    - Pages carto (/actions/map, /sandbox) → sky
@@ -177,7 +179,7 @@ Objectif :
 01. Accueil & Pilotage → amber/orange (accueil) + amber/brun (pilotage)
 02. Agir → emerald
 03. Cartographie & Impact → sky (carto) + red (impact)
-04. Réseau & Discussions → indigo (réseau) + pink (discussion)
+04. Réseau & Discussions → pink (réseau / discussion) + indigo (partenaires)
 05. Apprendre → yellow
 ```
 
@@ -187,14 +189,14 @@ Objectif :
 - `/dashboard`, `/profil` → `amber`/`orange`
 - `/pilotage`, `/sponsor-portal`, `/elus` → `amber`/`brun`
 - `/explorer` → exception validée, palette Sommaire conservée
-- `/methodologie` → exception validée, palette verte homepage conservée
+- `/methodologie` → exception validée, palette rouge d'impact conservée
 
 **Familles autonomes**
-- Auth & Onboarding → `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`
-- Institutionnel & Légal → `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`
-- Système & Utilitaires → `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`
+- Auth & Onboarding → `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` (fond lavande clair vers vert menthe clair; carte Clerk violet nuit / indigo foncé; boutons inchangés)
+- Institutionnel & Légal → `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en` (sobre, stable, sans esthétique marketing blocks)
+- Système & Utilitaires → `/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429` (mood layer autonome par usage, jamais couleur de bloc)
 - Admin & Super-admin → `/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`
-- Print & Export → `/prints/report`
+- Print & Export → `/prints/report` (ambiance documentaire autonome)
 
 **Bloc "Cartographie & Impact"**
 - `/actions/map`, `/sandbox` → `sky`
@@ -202,7 +204,7 @@ Objectif :
 
 **Autres blocs (teinte unique)**
 - Agir → `emerald`
-- Réseau & Discussions → `indigo` / `pink`
+- Réseau & Discussions → `pink` / `indigo` (réseau / discussion vs partenaires)
 - Apprendre → `yellow`
 
 **Référence complète** : `BLOC_COLOR_SYSTEM_PREMIUM.md`

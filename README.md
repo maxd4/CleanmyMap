@@ -1,7 +1,7 @@
 # CleanMyMap
 
 <p align="center">
-  <img src="documentation/nouveau-logo.png" alt="CleanMyMap" width="180" />
+  <img src="apps/web/public/brand/logo-cleanmymap-officiel.svg" alt="CleanMyMap" width="180" />
 </p>
 
 <p align="center">

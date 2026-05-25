@@ -1,3 +1,14 @@
+import { AlertTriangle } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
+import {
+  SystemStateAction,
+  SystemStateDescription,
+  SystemStateIcon,
+  SystemStateLayout,
+  SystemStateMeta,
+  SystemStateTitle,
+} from "@/components/ui/system-state";
+import { SystemStateRetryButton } from "@/components/ui/system-state-retry-button";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { DashboardTodayPanel } from "@/components/dashboard/dashboard-today-panel";
 import { buildDashboardTodayState, type DashboardRecommendedAction } from "@/lib/dashboard/today";
@@ -57,18 +68,25 @@ export async function DashboardOverviewSection({
     });
 
     return (
-      <section data-gsap-reveal className="space-y-4 rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
-        <div>
-          <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-rose-700">
-            Synthèse indisponible
-          </p>
-          <h2 className="mt-1 text-xl font-semibold text-rose-900">
-            Le cockpit n&apos;a pas pu charger ses indicateurs
-          </h2>
-          <p className="mt-1 cmm-text-small text-rose-800">{result.message}</p>
-        </div>
+      <div data-gsap-reveal className="space-y-4">
+        <SystemStateLayout variant="error" className="max-w-none">
+          <SystemStateIcon variant="error">
+            <AlertTriangle className="h-7 w-7" />
+          </SystemStateIcon>
+          <SystemStateMeta variant="error" label="Synthèse indisponible">
+            Le cockpit n&apos;a pas pu charger ses indicateurs.
+          </SystemStateMeta>
+          <SystemStateTitle variant="error">Les données du tableau de bord sont indisponibles</SystemStateTitle>
+          <SystemStateDescription variant="error">{result.message}</SystemStateDescription>
+          <SystemStateAction>
+            <SystemStateRetryButton label="Réessayer le chargement" />
+            <CmmButton href="/actions/new" tone="secondary">
+              Aller au formulaire
+            </CmmButton>
+          </SystemStateAction>
+        </SystemStateLayout>
         <DashboardTodayPanel state={errorState} />
-      </section>
+      </div>
     );
   }
 

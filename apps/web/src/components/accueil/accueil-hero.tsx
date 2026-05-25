@@ -35,10 +35,8 @@ export function HomeHero({ metrics }: HomeHeroProps) {
     <section className="relative overflow-hidden bg-transparent pt-4 sm:pt-6">
       <div className="pointer-events-none absolute inset-x-0 top-[-6rem] h-[24rem] bg-[radial-gradient(ellipse_55%_45%_at_50%_0%,rgba(34,197,94,0.22),transparent_68%)]" />
       <div className="relative z-10 mx-auto w-full max-w-[1600px] px-4 pb-9 pt-2 sm:px-8 lg:pb-12">
-        <div className="grid gap-6 lg:grid-cols-2 xl:gap-8">
-          <div className="group relative min-h-[560px] overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_36px_90px_-44px_rgba(2,6,23,0.78)]">
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(2,18,11,0.98)_0%,rgba(4,29,18,0.98)_48%,rgba(3,20,12,0.98)_100%)]" />
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_50%_at_15%_10%,rgba(52,211,153,0.16),transparent_55%),radial-gradient(ellipse_50%_40%_at_85%_0%,rgba(132,204,22,0.16),transparent_58%),radial-gradient(ellipse_40%_34%_at_88%_92%,rgba(16,185,129,0.12),transparent_62%)]" />
+        <div className="flex flex-col gap-6 xl:gap-8">
+          <div className="group relative min-h-[560px] overflow-hidden rounded-[2.5rem] border border-white/10 cmm-surface-texture-emerald shadow-[0_36px_90px_-44px_rgba(2,6,23,0.78)]">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
             <div className="relative z-10 flex h-full flex-col justify-between p-7 sm:p-9 lg:p-11">
               <div className="flex items-center justify-between gap-3">
@@ -96,9 +94,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
             </div>
           </div>
 
-          <div className="relative min-h-[560px] overflow-hidden rounded-[2.5rem] border border-white/10 shadow-[0_36px_90px_-44px_rgba(2,6,23,0.72)]">
-            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(12,80,56,0.92)_0%,rgba(20,90,60,0.92)_100%)]" />
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_72%_50%_at_15%_0%,rgba(52,211,153,0.16),transparent_55%),radial-gradient(ellipse_46%_36%_at_84%_10%,rgba(132,204,22,0.14),transparent_58%),radial-gradient(ellipse_44%_40%_at_82%_92%,rgba(16,185,129,0.12),transparent_62%)]" />
+          <div className="relative min-h-[560px] overflow-hidden rounded-[2.5rem] border border-white/10 cmm-surface-texture-emerald shadow-[0_36px_90px_-44px_rgba(2,6,23,0.72)]">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-emerald-300 via-lime-300 to-emerald-200" />
             <div className="relative z-10 flex h-full flex-col p-7 sm:p-9 lg:p-10">
               <div className="flex flex-wrap items-start justify-between gap-4">

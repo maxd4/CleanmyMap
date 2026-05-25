@@ -41,13 +41,6 @@ export interface HomeCounters {
   euroSaved: number;
 }
 
-type HomeSpaceId =
-  | "home"
-  | "act"
-  | "visualize"
-  | "network"
-  | "learn";
-
 /**
  * Génère les métriques d'impact pour la page d'accueil
  */
@@ -113,48 +106,48 @@ export const HOME_BENEFITS: HomeBenefit[] = [
     iconName: 'map-pin',
     title: 'Centralisation terrain',
     desc: 'Lieux, dates, volumes et participants regroupés. Fini les tableurs éparpillés.',
-    color: 'text-[#dcfce7]',
-    bg: 'bg-[#4ade80]/14',
-    border: 'border-[#86efac]/24',
+    color: 'text-emerald-950',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200/80',
   },
   {
     iconName: 'map',
     title: 'Carte partagée',
     desc: 'Repérez les zones nettoyées et les points prioritaires en un coup d\'œil.',
-    color: 'text-[#d9f99d]',
-    bg: 'bg-[#84cc16]/14',
-    border: 'border-[#bef264]/24',
+    color: 'text-emerald-950',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200/80',
   },
   {
     iconName: 'bar-chart-3',
     title: 'Impact réel',
     desc: 'Indicateurs automatisés : kg collectés, mégots, CO2 évité et eau préservée.',
-    color: 'text-[#ccfbf1]',
-    bg: 'bg-[#2dd4bf]/14',
-    border: 'border-[#99f6e4]/24',
+    color: 'text-emerald-950',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200/80',
   },
   {
     iconName: 'users',
     title: 'Réseau local',
     desc: 'Coordonnez vos actions avec les associations et les partenaires de quartier.',
-    color: 'text-[#dcfce7]',
-    bg: 'bg-[#16a34a]/14',
-    border: 'border-[#86efac]/24',
+    color: 'text-emerald-950',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200/80',
   },
   {
     iconName: 'file-text',
     title: 'Rapports RSE',
     desc: "Générez des dossiers d'impact certifiés pour vos subventions et bilans annuels.",
-    color: 'text-[#f7fee7]',
-    bg: 'bg-[#65a30d]/14',
-    border: 'border-[#bef264]/24',
+    color: 'text-emerald-950',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200/80',
   },
   {
     iconName: 'shield',
     title: 'Données certifiées',
     desc: "Méthodologie transparente et chiffres sourcés pour crédibiliser votre engagement.",
-    color: 'text-[#dcfce7]',
-    bg: 'bg-[#15803d]/14',
-    border: 'border-[#86efac]/24',
+    color: 'text-emerald-950',
+    bg: 'bg-emerald-50',
+    border: 'border-emerald-200/80',
   },
 ];

@@ -1,9 +1,9 @@
 import { QuickSignalementForm } from "@/components/actions/quick-signalement-form";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { cn } from "@/lib/utils";
-import { MapPin, ShieldCheck, Zap } from "lucide-react";
+import { MapPin, Zap } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
-import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 
 export default async function SignalementPage() {
@@ -39,7 +39,6 @@ export default async function SignalementPage() {
       id="signalement"
       title="Signaler Pollution"
       subtitle="Votre signalement déclenche l'analyse et la priorisation immédiate pour les équipes de dépollution citoyenne."
-      gradient="from-emerald-500/20 via-slate-500/10 to-transparent"
     >
       <div className="space-y-12 pt-8">
         {/* Certification Status */}
@@ -50,8 +49,7 @@ export default async function SignalementPage() {
           </div>
         </div>
 
-        <RubriqueCard 
-          themeColor="emerald"
+        <FamilyRubriqueCard
           withTopBar={true}
           topBarContent={
             <div className="flex items-center gap-2">
@@ -62,7 +60,7 @@ export default async function SignalementPage() {
           className="p-1 sm:p-12"
         >
           <QuickSignalementForm />
-        </RubriqueCard>
+        </FamilyRubriqueCard>
       </div>
     </SectionShell>
   );

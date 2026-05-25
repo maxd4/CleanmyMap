@@ -76,3 +76,16 @@ For web verification on a localhost app without signing in every time:
 4. If the goal is UX review rather than auth behavior, use the public preview route:
    - `/preview/actions/new`
 5. For isolated tests, mock the session/auth server layer instead of depending on live Clerk redirects.
+
+## Localhost Stale Build Troubleshooting
+
+If `localhost` looks older than the GitHub repo or Turbopack logs mention missing cache files:
+
+1. Stop every running `Node.js JavaScript Runtime` / `next dev` process for this repo.
+2. Clear the Next.js cache and restart clean:
+   - `npm run dev:clean`
+3. If you want to fail fast instead of silently moving to another port:
+   - `npm run dev:strict`
+4. If the terminal says port `3000` is busy, do not open `3000` by reflex:
+   - the launcher may have started on `3001` or higher.
+5. If the browser still serves stale content after restart, hard refresh or clear `localhost` site data.

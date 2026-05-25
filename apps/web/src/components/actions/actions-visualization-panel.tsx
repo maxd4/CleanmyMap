@@ -133,13 +133,13 @@ export function ActionsVisualizationPanel({
     <div className={mainClass}>
       <div className={cn("flex flex-wrap items-center justify-between gap-4", compact ? "px-2" : "px-4")}>
         <div className="space-y-1">
-          <h2 className="cmm-text-caption font-semibold tracking-[0.14em] text-cyan-700">Lecture spatiale</h2>
-          <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600">Flux cockpit en temps réel</p>
+          <h2 className="cmm-text-caption font-semibold tracking-[0.14em] text-sky-700">Lecture spatiale</h2>
+          <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600">Flux en direct</p>
         </div>
       </div>
 
       {loading && (
-        <div className="flex h-48 items-center justify-center rounded-[2rem] bg-white border border-dashed border-cyan-200/80">
+        <div className="flex h-48 items-center justify-center rounded-[2rem] bg-white border border-dashed border-sky-200/80">
           <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600 animate-pulse">Synchronisation...</p>
         </div>
       )}
@@ -153,10 +153,10 @@ export function ActionsVisualizationPanel({
       {!loading && !error && (
         <>
           <div className="grid gap-6 lg:grid-cols-2">
-            <article className="rounded-[2.5rem] border border-cyan-200/80 bg-white p-8 relative overflow-hidden group hover:bg-cyan-50 transition-all duration-500">
+            <article className="rounded-[2.5rem] border border-sky-200/80 bg-white p-8 relative overflow-hidden group hover:bg-sky-50 transition-all duration-500">
               <div className="flex items-center justify-between gap-4 mb-8">
                 <h3 className="cmm-text-caption font-semibold tracking-[0.14em] text-slate-600">Tendance mensuelle</h3>
-                <span className="cmm-text-caption font-semibold tracking-[0.12em] text-cyan-700">{model.totals.actions} actions visibles</span>
+                <span className="cmm-text-caption font-semibold tracking-[0.12em] text-sky-700">{model.totals.actions} actions visibles</span>
               </div>
 
               <div className="relative h-40 w-full mt-4">
@@ -164,7 +164,7 @@ export function ActionsVisualizationPanel({
                   <svg className="h-full w-full overflow-visible" preserveAspectRatio="none" viewBox="0 0 100 40">
                     <defs>
                       <linearGradient id={`gradient-curve-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.4" />
+                        <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.32" />
                         <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
                       </linearGradient>
                     </defs>
@@ -206,7 +206,7 @@ export function ActionsVisualizationPanel({
               </div>
             </article>
 
-            <article className="rounded-[2.5rem] border border-cyan-200/80 bg-white p-8 group hover:bg-cyan-50 transition-all duration-500">
+            <article className="rounded-[2.5rem] border border-sky-200/80 bg-white p-8 group hover:bg-sky-50 transition-all duration-500">
               <h3 className="cmm-text-caption mb-8 font-semibold tracking-[0.14em] text-slate-600">Profil d&apos;impact</h3>
               <div className="flex items-center justify-center gap-10 h-40">
                 <div className="relative h-32 w-32 shrink-0">

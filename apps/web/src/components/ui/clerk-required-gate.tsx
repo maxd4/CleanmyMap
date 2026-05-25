@@ -1,7 +1,16 @@
 "use client";
 
-import Link from"next/link";
 import type { ReactNode } from"react";
+import { Lock } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
+import {
+ SystemStateAction,
+ SystemStateDescription,
+ SystemStateIcon,
+ SystemStateLayout,
+ SystemStateMeta,
+ SystemStateTitle,
+} from "@/components/ui/system-state";
 
 type ClerkRequiredGateProps = {
  isAuthenticated: boolean;
@@ -42,12 +51,9 @@ export function ClerkRequiredGate({
  </h2>
  <p className="mt-2 cmm-text-small cmm-text-secondary">{description}</p>
  <div className="mt-5 flex flex-wrap justify-center gap-3">
- <Link
- href={signInHref}
- className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 cmm-text-small font-bold text-white transition hover:bg-emerald-700"
- >
+ <CmmButton href={signInHref} tone="primary">
  {signInLabel}
- </Link>
+ </CmmButton>
  </div>
  </div>
  <div aria-hidden="true" className="pointer-events-none select-none opacity-60">
@@ -59,28 +65,28 @@ export function ClerkRequiredGate({
 
  return (
  <section className="relative overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
- <div aria-hidden="true" className="pointer-events-none select-none blur-sm opacity-55">
- {lockedPreview ?? children}
- </div>
+  <div aria-hidden="true" className="pointer-events-none select-none blur-sm opacity-55">
+  {lockedPreview ?? children}
+  </div>
 
- <div className="absolute inset-0 flex items-center justify-center bg-white/60 p-4 backdrop-blur-sm">
- <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-5 text-center shadow-2xl">
- <p className="cmm-text-caption font-bold uppercase tracking-[0.2em] text-emerald-700">
- {badge}
- </p>
- <h2 className="mt-2 text-2xl font-bold tracking-tight cmm-text-primary">
- {title}
- </h2>
- <p className="mt-2 cmm-text-small cmm-text-secondary">{description}</p>
- <div className="mt-5 flex flex-wrap justify-center gap-3">
- <Link
- href={signInHref}
- className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-3 cmm-text-small font-bold text-white transition hover:bg-emerald-700"
- >
+ <div className="absolute inset-0 flex items-center justify-center bg-white/54 p-4 backdrop-blur-sm">
+ <SystemStateLayout variant="forbidden" className="relative z-10 w-full max-w-xl">
+ <SystemStateIcon variant="forbidden">
+ <Lock className="h-7 w-7" />
+ </SystemStateIcon>
+ <SystemStateMeta variant="forbidden" label={badge}>
+ L&apos;accès est réservé aux comptes autorisés.
+ </SystemStateMeta>
+ <SystemStateTitle variant="forbidden">{title}</SystemStateTitle>
+ <SystemStateDescription variant="forbidden">
+ {description}
+ </SystemStateDescription>
+ <SystemStateAction>
+ <CmmButton href={signInHref} tone="primary">
  {signInLabel}
- </Link>
- </div>
- </div>
+ </CmmButton>
+ </SystemStateAction>
+ </SystemStateLayout>
  </div>
  </section>
  );

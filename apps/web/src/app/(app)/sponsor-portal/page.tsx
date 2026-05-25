@@ -19,6 +19,8 @@ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
+import { PageHero } from "@/components/ui/page-hero";
+import { getPageFamilyById } from "@/lib/ui/page-families";
 
 const SPONSOR_WINDOW_DAYS = 730;
 
@@ -40,6 +42,7 @@ export default async function SponsorPortalPage() {
   observedFrom.setDate(observedFrom.getDate() - SPONSOR_WINDOW_DAYS + 1);
   const observationWindowLabel = `${observedFrom.toLocaleDateString("fr-FR")} -> ${observedUntil.toLocaleDateString("fr-FR")}`;
   const classes = getBlockClasses("pilot");
+  const pageFamily = getPageFamilyById("accueil-pilotage");
 
   // Calculs ROI
   const totalKg = overview.comparison.current.impactVolumeKg;
@@ -66,14 +69,18 @@ export default async function SponsorPortalPage() {
         </div>
 
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
-          <div className="space-y-6">
-            <h1 className="text-7xl md:text-8xl xl:text-9xl font-black text-white tracking-tighter leading-[0.85] uppercase">
-              ROI <br/>Stratégique
-            </h1>
-            <p className="text-2xl text-white/30 max-w-2xl font-medium leading-tight tracking-tight">
-              Analyse de la valeur territoriale générée par la mobilisation citoyenne et conformité aux standards ESG.
-            </p>
-          </div>
+          <PageHero
+            family={pageFamily}
+            titleSize="display"
+            title={
+              <>
+                ROI <br />
+                Stratégique
+              </>
+            }
+            subtitle="Analyse de la valeur territoriale générée par la mobilisation citoyenne et conformité aux standards ESG."
+            className="space-y-6"
+          />
           
           <button className="group flex items-center gap-4 rounded-[2rem] bg-white px-10 py-7 text-[10px] font-black uppercase tracking-[0.2em] text-black transition-all hover:bg-amber-400 active:scale-95 shadow-2xl shadow-white/10">
             <Download size={20} />

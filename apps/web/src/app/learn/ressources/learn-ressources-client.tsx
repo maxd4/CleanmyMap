@@ -119,22 +119,22 @@ const RESOURCE_TONE_CLASSES: Record<
     chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
   },
   cyan: {
-    shell: "bg-[linear-gradient(180deg,rgba(236,254,255,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-cyan-200 bg-cyan-100 text-cyan-900",
-    accent: "text-cyan-700",
-    dot: "bg-cyan-700",
-    border: "border-cyan-200",
-    glow: "from-cyan-300/16 via-sky-200/10 to-transparent",
-    chip: "border-cyan-200 bg-cyan-50 text-cyan-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,253,231,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    accent: "text-yellow-700",
+    dot: "bg-yellow-700",
+    border: "border-yellow-200",
+    glow: "from-yellow-200/16 via-amber-100/10 to-transparent",
+    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
   },
   emerald: {
-    shell: "bg-[linear-gradient(180deg,rgba(236,253,245,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-emerald-200 bg-emerald-100 text-emerald-900",
-    accent: "text-emerald-700",
-    dot: "bg-emerald-700",
-    border: "border-emerald-200",
-    glow: "from-emerald-300/16 via-lime-200/10 to-transparent",
-    chip: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,253,231,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
+    accent: "text-yellow-700",
+    dot: "bg-yellow-700",
+    border: "border-yellow-200",
+    glow: "from-yellow-200/16 via-amber-100/10 to-transparent",
+    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
   },
 };
 
@@ -269,7 +269,7 @@ export function LearnRessourcesOverview({ locale }: { locale: LearnLocale }) {
               {locale === "fr" ? "Deux rendez-vous visibles" : "Two visible meetups"}
             </h3>
           </div>
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-200 bg-cyan-100 text-cyan-900">
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-yellow-200 bg-yellow-100 text-yellow-900">
             <CalendarDays className="h-5 w-5" aria-hidden="true" />
           </span>
         </div>
@@ -356,9 +356,9 @@ export function LearnRessourcesClient() {
   ] as const;
 
   const cueToneClasses = {
-    amber: "text-amber-700",
-    cyan: "text-cyan-700",
-    emerald: "text-emerald-700",
+    amber: "text-yellow-700",
+    cyan: "text-yellow-700",
+    emerald: "text-yellow-700",
   } as const;
 
   return (
@@ -374,7 +374,7 @@ export function LearnRessourcesClient() {
       }}
       backHref="/learn/hub"
       backLabel={{ fr: "Retour au hub", en: "Back to hub" }}
-      accent="orange"
+      accent="yellow"
       highlights={[
         { fr: "Kit terrain", en: "Field kit" },
         { fr: "Repères de tri", en: "Sorting cues" },
@@ -418,17 +418,17 @@ export function LearnRessourcesClient() {
                   {LEARN_RESOURCE_EVENTS.length}
                 </p>
               </div>
-              <div className="rounded-[1.35rem] border border-emerald-200 bg-emerald-50 p-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+              <div className="rounded-[1.35rem] border border-yellow-200 bg-yellow-50 p-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-yellow-700">
                   {isFrench ? "Repères" : "Cues"}
                 </p>
-                <p className="mt-2 text-2xl font-black tracking-tight text-emerald-800">4</p>
+                <p className="mt-2 text-2xl font-black tracking-tight text-yellow-800">4</p>
               </div>
-              <div className="rounded-[1.35rem] border border-cyan-200 bg-cyan-50 p-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
+              <div className="rounded-[1.35rem] border border-yellow-200 bg-yellow-50 p-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-yellow-700">
                   {isFrench ? "Support" : "Support"}
                 </p>
-                <p className="mt-2 text-2xl font-black tracking-tight text-cyan-800">1</p>
+                <p className="mt-2 text-2xl font-black tracking-tight text-yellow-800">1</p>
               </div>
             </div>
 
@@ -510,7 +510,7 @@ export function LearnRessourcesClient() {
                 </Link>
                 <Link
                   href="/sections/compost"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-emerald-700"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-yellow-200 bg-yellow-600 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-yellow-700"
                 >
                   {isFrench ? "Ouvrir le guide compost" : "Open the compost guide"}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />

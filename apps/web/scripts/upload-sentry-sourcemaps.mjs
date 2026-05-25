@@ -1,6 +1,8 @@
 #!/usr/bin/env node
-import { existsSync, readdirSync, rmSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
 
 function log(message) {
@@ -58,6 +60,163 @@ function deleteFiles(files) {
   }
 }
 
+function isUploadableArtifact(sourceFile) {
+  return (
+    sourceFile.endsWith(".js") ||
+    sourceFile.endsWith(".jsbundle") ||
+    sourceFile.endsWith(".bundle")
+  );
+}
+
+function copyFileWithParents(source, destinationRoot, sourceRoot) {
+  const relativePath = source.slice(sourceRoot.length + 1);
+  const destination = join(destinationRoot, relativePath);
+  mkdirSync(dirname(destination), { recursive: true });
+  copyFileSync(source, destination);
+}
+
+function resolveSourceFile(source, mapPath) {
+  if (!source) {
+    return null;
+  }
+
+  if (source.startsWith("file://")) {
+    try {
+      const filePath = fileURLToPath(source);
+      if (existsSync(filePath)) {
+        return filePath;
+      }
+    } catch {
+      // Fall through to the normal resolution strategy.
+    }
+  }
+
+  const candidates = [];
+  const rawSource = source.replace(/^webpack:\/\//, "").replace(/^\/+/, "");
+  if (rawSource) {
+    candidates.push(rawSource);
+    const segments = rawSource.split("/");
+    if (segments.length > 1 && segments[0] !== "." && segments[0] !== "..") {
+      candidates.push(segments.slice(1).join("/"));
+    }
+    if (rawSource.startsWith("./")) {
+      candidates.push(rawSource.slice(2));
+    }
+  }
+
+  const searchRoots = [];
+  let currentRoot = process.cwd();
+  while (!searchRoots.includes(currentRoot)) {
+    searchRoots.push(currentRoot);
+    const parent = dirname(currentRoot);
+    if (parent === currentRoot) {
+      break;
+    }
+    currentRoot = parent;
+  }
+
+  const mapDir = dirname(mapPath);
+  if (!searchRoots.includes(mapDir)) {
+    searchRoots.unshift(mapDir);
+  }
+
+  for (const candidate of candidates) {
+    for (const baseDir of searchRoots) {
+      const resolved = resolve(baseDir, candidate);
+      if (existsSync(resolved) && statSync(resolved).isFile()) {
+        return resolved;
+      }
+    }
+  }
+
+  return null;
+}
+
+function hydrateMissingSourceContent(mapPath) {
+  let map;
+  try {
+    map = JSON.parse(readFileSync(mapPath, "utf8"));
+  } catch (err) {
+    warn(`Unable to parse source map ${mapPath}: ${err instanceof Error ? err.message : String(err)}`);
+    return { hydratedSources: 0 };
+  }
+
+  if (!Array.isArray(map.sources) || map.sources.length === 0) {
+    return { hydratedSources: 0 };
+  }
+
+  const sourcesContent = Array.isArray(map.sourcesContent)
+    ? map.sourcesContent.slice()
+    : Array(map.sources.length).fill(null);
+
+  let hydratedSources = 0;
+  for (let index = 0; index < map.sources.length; index += 1) {
+    if (typeof sourcesContent[index] === "string" && sourcesContent[index].length > 0) {
+      continue;
+    }
+
+    const sourcePath = resolveSourceFile(map.sources[index], mapPath);
+    if (!sourcePath) {
+      if (map.sources[index]) {
+        sourcesContent[index] = "";
+      }
+      continue;
+    }
+
+    try {
+      sourcesContent[index] = readFileSync(sourcePath, "utf8");
+      hydratedSources += 1;
+    } catch (err) {
+      warn(`Unable to hydrate ${map.sources[index]} from ${sourcePath}: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  if (hydratedSources > 0) {
+    map.sourcesContent = sourcesContent;
+    writeFileSync(mapPath, `${JSON.stringify(map)}\n`);
+  }
+
+  return { hydratedSources };
+}
+
+function hydrateSourceMaps(rootDir) {
+  const maps = collectFiles(rootDir, (file) => file.endsWith(".map"));
+  let hydratedSources = 0;
+
+  for (const mapPath of maps) {
+    const result = hydrateMissingSourceContent(mapPath);
+    hydratedSources += result.hydratedSources;
+  }
+
+  return { mapsProcessed: maps.length, hydratedSources };
+}
+
+function stageMatchedArtifacts(sourceRoot, sourceMaps) {
+  const stagingRoot = join(tmpdir(), `cmm-sentry-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  mkdirSync(stagingRoot, { recursive: true });
+
+  const stagedFiles = [];
+  const skippedMaps = [];
+
+  for (const sourceMap of sourceMaps) {
+    const sourceFile = sourceMap.slice(0, -4);
+    if (!isUploadableArtifact(sourceFile)) {
+      skippedMaps.push(sourceMap);
+      continue;
+    }
+    if (!existsSync(sourceFile)) {
+      skippedMaps.push(sourceMap);
+      continue;
+    }
+
+    copyFileWithParents(sourceFile, stagingRoot, sourceRoot);
+    copyFileWithParents(sourceMap, stagingRoot, sourceRoot);
+    stagedFiles.push(sourceFile);
+  }
+
+  return { stagingRoot, stagedFiles, skippedMaps };
+}
+
 const authToken = process.env.SENTRY_AUTH_TOKEN?.trim();
 const org = process.env.SENTRY_ORG?.trim();
 const project = process.env.SENTRY_PROJECT?.trim();
@@ -89,48 +248,19 @@ if (clientMaps.length === 0) {
   process.exit(1);
 }
 
-log("Injecting debug IDs into client bundles.");
-const injectClientArgs = [
-  "sourcemaps",
-  "inject",
-  "--org",
-  org,
-  "--project",
-  project,
-  "--auth-token",
-  authToken,
-];
-if (release) {
-  injectClientArgs.push("--release", release);
+const clientStage = stageMatchedArtifacts(staticDir, clientMaps);
+if (clientStage.stagedFiles.length === 0) {
+  error("No client bundles with matching source maps were found in .next/static.");
+  process.exit(1);
 }
-injectClientArgs.push(staticDir);
-runSentryCli(injectClientArgs);
 
-log(`Uploading ${clientMaps.length} client source map file(s) to Sentry.`);
-const clientArgs = [
-  "sourcemaps",
-  "upload",
-  "--org",
-  org,
-  "--project",
-  project,
-  "--auth-token",
-  authToken,
-  "--validate",
-  "--wait",
-  "--url-prefix",
-  "~/_next/static",
-];
-if (release) {
-  clientArgs.push("--release", release);
+if (clientStage.skippedMaps.length > 0) {
+  warn(`Skipped ${clientStage.skippedMaps.length} orphaned client source map(s) without a matching bundle.`);
 }
-clientArgs.push(staticDir);
-runSentryCli(clientArgs);
-deleteFiles(clientMaps);
 
-if (serverMaps.length > 0) {
-  log("Injecting debug IDs into server bundles.");
-  const injectServerArgs = [
+try {
+  log("Injecting debug IDs into client bundles.");
+  const injectClientArgs = [
     "sourcemaps",
     "inject",
     "--org",
@@ -141,13 +271,18 @@ if (serverMaps.length > 0) {
     authToken,
   ];
   if (release) {
-    injectServerArgs.push("--release", release);
+    injectClientArgs.push("--release", release);
   }
-  injectServerArgs.push(serverDir);
-  runSentryCli(injectServerArgs);
+  injectClientArgs.push(clientStage.stagingRoot);
+  runSentryCli(injectClientArgs);
 
-  log(`Uploading ${serverMaps.length} server source map file(s) to Sentry.`);
-  const serverArgs = [
+  const clientHydration = hydrateSourceMaps(clientStage.stagingRoot);
+  if (clientHydration.hydratedSources > 0) {
+    log(`Hydrated ${clientHydration.hydratedSources} missing client sourceContent entr${clientHydration.hydratedSources === 1 ? "y" : "ies"} before upload.`);
+  }
+
+  log(`Uploading ${clientStage.stagedFiles.length} client source map file pair(s) to Sentry.`);
+  const clientArgs = [
     "sourcemaps",
     "upload",
     "--org",
@@ -158,15 +293,82 @@ if (serverMaps.length > 0) {
     authToken,
     "--validate",
     "--wait",
+    "--no-sourcemap-reference",
+    "--no-rewrite",
     "--url-prefix",
-    "~/_next/server",
+    "~/_next/static",
   ];
   if (release) {
-    serverArgs.push("--release", release);
+    clientArgs.push("--release", release);
   }
-  serverArgs.push(serverDir);
-  runSentryCli(serverArgs);
-  deleteFiles(serverMaps);
+  clientArgs.push(clientStage.stagingRoot);
+  runSentryCli(clientArgs);
+} finally {
+  deleteFiles(clientMaps);
+  rmSync(clientStage.stagingRoot, { recursive: true, force: true });
+}
+
+if (serverMaps.length > 0) {
+  const serverStage = stageMatchedArtifacts(serverDir, serverMaps);
+  if (serverStage.stagedFiles.length > 0) {
+    if (serverStage.skippedMaps.length > 0) {
+      warn(`Skipped ${serverStage.skippedMaps.length} orphaned server source map(s) without a matching bundle.`);
+    }
+
+    try {
+      log("Injecting debug IDs into server bundles.");
+      const injectServerArgs = [
+        "sourcemaps",
+        "inject",
+        "--org",
+        org,
+        "--project",
+        project,
+        "--auth-token",
+        authToken,
+      ];
+      if (release) {
+        injectServerArgs.push("--release", release);
+      }
+      injectServerArgs.push(serverStage.stagingRoot);
+      runSentryCli(injectServerArgs);
+
+      const serverHydration = hydrateSourceMaps(serverStage.stagingRoot);
+      if (serverHydration.hydratedSources > 0) {
+        log(`Hydrated ${serverHydration.hydratedSources} missing server sourceContent entr${serverHydration.hydratedSources === 1 ? "y" : "ies"} before upload.`);
+      }
+
+      log(`Uploading ${serverStage.stagedFiles.length} server source map file pair(s) to Sentry.`);
+      const serverArgs = [
+        "sourcemaps",
+        "upload",
+        "--org",
+        org,
+        "--project",
+        project,
+        "--auth-token",
+        authToken,
+        "--validate",
+        "--wait",
+        "--no-sourcemap-reference",
+        "--no-rewrite",
+        "--url-prefix",
+        "~/_next/server",
+      ];
+      if (release) {
+        serverArgs.push("--release", release);
+      }
+      serverArgs.push(serverStage.stagingRoot);
+      runSentryCli(serverArgs);
+    } finally {
+      deleteFiles(serverMaps);
+      rmSync(serverStage.stagingRoot, { recursive: true, force: true });
+    }
+  } else {
+    warn("No server bundles with matching source maps found in .next/server. Server stack traces will rely on runtime source maps only.");
+    deleteFiles(serverMaps);
+    rmSync(serverStage.stagingRoot, { recursive: true, force: true });
+  }
 } else {
   warn("No server source maps found in .next/server. Server stack traces will rely on runtime source maps only.");
 }

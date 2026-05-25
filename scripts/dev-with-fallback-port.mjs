@@ -10,6 +10,7 @@ const webDir = resolve(repoRoot, "apps/web");
 const require = createRequire(import.meta.url);
 const nextBin = require.resolve("next/dist/bin/next", { paths: [webDir] });
 const preferredHost = process.env.DEV_HOST ?? "localhost";
+const strictPort = process.env.DEV_STRICT_PORT === "1";
 
 function parsePortArgs(argv) {
   const passthrough = [];
@@ -54,19 +55,34 @@ function isPortFree(port) {
 
 const { preferredPort, passthrough } = parsePortArgs(process.argv.slice(2));
 
+if (strictPort && !(await isPortFree(preferredPort))) {
+  console.error(
+    `[dev] Le port ${preferredPort} est déjà utilisé. Arrête l'ancien serveur ou lance 'npm run dev:clean'.`,
+  );
+  process.exit(1);
+}
+
 let chosenPort = preferredPort;
-for (; chosenPort < preferredPort + 20; chosenPort += 1) {
-  // eslint-disable-next-line no-await-in-loop
-  if (await isPortFree(chosenPort)) {
-    break;
+if (!strictPort) {
+  for (; chosenPort < preferredPort + 20; chosenPort += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    if (await isPortFree(chosenPort)) {
+      break;
+    }
   }
 }
 
-if (chosenPort >= preferredPort + 20) {
+if (!strictPort && chosenPort >= preferredPort + 20) {
   console.error(
     `[dev] Aucun port libre trouvé à partir de ${preferredPort}. Libère un port ou lance avec PORT=XXXX.`,
   );
   process.exit(1);
+}
+
+if (!strictPort && chosenPort !== preferredPort) {
+  console.warn(
+    `[dev] Le port ${preferredPort} est occupé. Démarrage sur http://${preferredHost}:${chosenPort}. Si tu ouvres ${preferredPort}, tu verras probablement l'ancien serveur.`,
+  );
 }
 
 console.log(`[dev] Next.js démarre sur http://${preferredHost}:${chosenPort}`);

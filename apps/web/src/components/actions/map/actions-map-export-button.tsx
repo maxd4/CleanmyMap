@@ -52,7 +52,7 @@ export function ActionsMapExportButton({ items }: ActionsMapExportButtonProps) {
       onClick={handleExport}
       disabled={!canExport || isExporting}
       title={filename}
-      className="inline-flex items-center gap-2 rounded-2xl border border-cyan-200/80 bg-cyan-100 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-slate-950 transition hover:border-cyan-300 hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.14em] text-slate-950 transition hover:border-sky-300 hover:bg-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
       aria-label="Exporter la vue filtrée de la carte au format CSV"
     >
       <FileSpreadsheet size={16} aria-hidden="true" />

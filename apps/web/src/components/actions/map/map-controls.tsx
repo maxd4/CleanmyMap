@@ -72,7 +72,7 @@ export function MapControls({
     >
       <form
         onSubmit={handleSearch}
-        className="flex overflow-hidden rounded-2xl border border-cyan-200/80 bg-white shadow-[0_24px_56px_-32px_rgba(8,145,178,0.18)] backdrop-blur-xl transition hover:bg-cyan-50"
+        className="flex overflow-hidden rounded-2xl border border-sky-200/80 bg-white shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-xl transition hover:bg-sky-50"
       >
         <input
           type="text"
@@ -86,7 +86,7 @@ export function MapControls({
           type="submit"
           disabled={isSearching}
           aria-label={isSearching ? "Recherche en cours" : "Lancer la recherche"}
-          className="bg-cyan-200 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-cyan-300 disabled:opacity-50"
+          className="bg-sky-200 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-sky-300 disabled:opacity-50"
         >
           {isSearching ? "..." : "🔍"}
         </button>
@@ -102,7 +102,7 @@ export function MapControls({
         type="button"
         onClick={() => map.flyTo(center, 12)}
         aria-label="Recentrer la carte"
-        className="flex w-fit items-center gap-2 rounded-2xl border border-cyan-200/80 bg-cyan-100 px-4 py-2 text-sm font-black text-slate-950 shadow-[0_24px_56px_-32px_rgba(8,145,178,0.18)] backdrop-blur-xl transition hover:border-cyan-300 hover:bg-cyan-200"
+        className="flex w-fit items-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2 text-sm font-black text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-xl transition hover:border-sky-300 hover:bg-sky-200"
       >
         <span>📍</span> Reset vue
       </button>

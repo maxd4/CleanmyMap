@@ -62,7 +62,7 @@ export function FeedbackSection({
         ? "Votre avis nous permet d'ajuster les algorithmes et d'améliorer continuellement l'expérience utilisateur."
         : "Your feedback allows us to tune algorithms and continuously improve the user experience."}
       icon={MessageSquare}
-      gradient="from-cyan-500/20 via-blue-500/10 to-transparent"
+      gradient="from-rose-500/20 via-pink-500/10 to-transparent"
     >
       <div className="space-y-12 pt-8">
         {/* Questionnaire Grid */}
@@ -86,7 +86,7 @@ export function FeedbackSection({
            </div>
 
            <div className="relative z-10 flex items-center gap-8">
-              <div className="p-5 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shadow-2xl group-hover:scale-110 transition-transform duration-700">
+              <div className="p-5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 shadow-2xl group-hover:scale-110 transition-transform duration-700">
                  <Mail size={32} />
               </div>
               <div className="space-y-2">
@@ -107,7 +107,7 @@ export function FeedbackSection({
               </p>
               <a
                 href={`mailto:${contactEmail}`}
-                className="inline-flex h-16 items-center gap-4 rounded-2xl bg-white px-8 text-xs font-black uppercase tracking-[0.2em] text-slate-950 shadow-2xl hover:scale-105 active:scale-95 transition-all"
+                className="inline-flex h-16 items-center gap-4 rounded-2xl bg-rose-500 px-8 text-xs font-black uppercase tracking-[0.2em] text-white shadow-2xl hover:scale-105 active:scale-95 transition-all"
               >
                 {fr ? "Écrire un mail" : "Write an email"}
                 <ArrowRight size={18} />
@@ -118,7 +118,7 @@ export function FeedbackSection({
         {/* Quality Commitment */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            <div className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-950/20 backdrop-blur-3xl shadow-xl flex items-center gap-6 group">
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400">
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
                  <Sparkles size={20} />
               </div>
               <div className="space-y-1">
@@ -128,7 +128,7 @@ export function FeedbackSection({
            </div>
            
            <div className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-950/20 backdrop-blur-3xl shadow-xl flex items-center gap-6 group">
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-400">
+              <div className="p-4 rounded-2xl bg-pink-500/10 border border-pink-500/20 text-pink-400">
                  <MessageSquare size={20} />
               </div>
               <div className="space-y-1">

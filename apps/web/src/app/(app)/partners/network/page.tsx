@@ -36,11 +36,11 @@ export default async function PartnersNetworkPage() {
       desc: fr
         ? "Parcourir les structures, filtrer par rôle et repérer les acteurs utiles."
         : "Browse structures, filter by role and spot the relevant actors.",
-      iconBg: "bg-violet-400/16",
-      iconColor: "text-violet-50",
-      accent: "from-[rgba(52,39,98,0.96)] to-[rgba(79,52,138,0.94)]",
-      ring: "ring-violet-300/18",
-      dot: "bg-violet-300",
+      iconBg: "bg-indigo-400/16",
+      iconColor: "text-indigo-50",
+      accent: "from-[rgba(22,26,72,0.96)] to-[rgba(49,46,129,0.94)]",
+      ring: "ring-indigo-300/18",
+      dot: "bg-indigo-300",
       href: "/sections/annuaire",
     },
     {
@@ -49,11 +49,11 @@ export default async function PartnersNetworkPage() {
       desc: fr
         ? "Proposer votre structure et devenir visible dans le maillage local."
         : "Submit your structure and become visible in the local network.",
-      iconBg: "bg-rose-400/16",
-      iconColor: "text-rose-50",
-      accent: "from-[rgba(72,38,68,0.96)] to-[rgba(93,45,102,0.94)]",
-      ring: "ring-rose-300/18",
-      dot: "bg-rose-300",
+      iconBg: "bg-indigo-400/16",
+      iconColor: "text-indigo-50",
+      accent: "from-[rgba(22,26,72,0.96)] to-[rgba(67,56,202,0.94)]",
+      ring: "ring-indigo-300/18",
+      dot: "bg-indigo-300",
       href: "/partners/onboarding",
     },
     {
@@ -62,11 +62,11 @@ export default async function PartnersNetworkPage() {
       desc: fr
         ? "Contrôler les fiches, suivre les demandes et garder la coordination lisible."
         : "Review profiles, track requests and keep coordination readable.",
-      iconBg: "bg-fuchsia-400/16",
-      iconColor: "text-fuchsia-50",
-      accent: "from-[rgba(49,38,92,0.96)] to-[rgba(74,50,132,0.94)]",
-      ring: "ring-fuchsia-300/18",
-      dot: "bg-fuchsia-300",
+      iconBg: "bg-indigo-400/16",
+      iconColor: "text-indigo-50",
+      accent: "from-[rgba(22,26,72,0.96)] to-[rgba(67,56,202,0.94)]",
+      ring: "ring-indigo-300/18",
+      dot: "bg-indigo-300",
       href: "/partners/dashboard",
     },
     {
@@ -77,7 +77,7 @@ export default async function PartnersNetworkPage() {
         : "Switch to the sponsor portal for funders and decision makers.",
       iconBg: "bg-indigo-400/16",
       iconColor: "text-indigo-50",
-      accent: "from-[rgba(35,39,90,0.96)] to-[rgba(52,64,144,0.94)]",
+      accent: "from-[rgba(22,26,72,0.96)] to-[rgba(49,46,129,0.94)]",
       ring: "ring-indigo-300/18",
       dot: "bg-indigo-300",
       href: "/sponsor-portal",
@@ -86,15 +86,15 @@ export default async function PartnersNetworkPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_45%_at_20%_0%,rgba(139,92,246,0.16),transparent),radial-gradient(ellipse_50%_35%_at_85%_12%,rgba(168,85,247,0.12),transparent),radial-gradient(ellipse_55%_35%_at_75%_86%,rgba(79,70,229,0.10),transparent)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_75%_45%_at_20%_0%,rgba(99,102,241,0.16),transparent),radial-gradient(ellipse_50%_35%_at_85%_12%,rgba(129,140,248,0.12),transparent),radial-gradient(ellipse_55%_35%_at_75%_86%,rgba(67,56,202,0.10),transparent)]" />
       <div className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
-        <header className="relative overflow-hidden rounded-[3rem] border border-violet-300/18 bg-[rgba(30,20,64,0.96)] px-6 py-10 shadow-[0_32px_80px_-36px_rgba(139,92,246,0.30)] sm:px-10 lg:px-12 lg:py-14">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(167,139,250,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.10),transparent_30%)]" />
+        <header className="relative overflow-hidden rounded-[3rem] border border-indigo-300/18 bg-[rgba(18,18,42,0.96)] px-6 py-10 shadow-[0_32px_80px_-36px_rgba(99,102,241,0.30)] sm:px-10 lg:px-12 lg:py-14">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(129,140,248,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.10),transparent_30%)]" />
 
           <div className="relative z-10 grid gap-8 xl:grid-cols-[1.1fr_0.9fr] xl:items-end">
             <div className="space-y-6">
-              <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-violet-100/52">
-                <span className="inline-flex items-center gap-2 rounded-full border border-violet-300/18 bg-violet-400/12 px-3 py-1 text-violet-50">
+              <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-indigo-100/52">
+                <span className="inline-flex items-center gap-2 rounded-full border border-indigo-300/18 bg-indigo-400/12 px-3 py-1 text-indigo-50">
                   <Handshake size={12} />
                   Réseau
                 </span>
@@ -108,7 +108,7 @@ export default async function PartnersNetworkPage() {
                 <h1 className="max-w-4xl text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
                   {fr ? "Lire le réseau, choisir le bon contact, rejoindre une dynamique." : "Read the network, pick the right contact, and join the momentum."}
                 </h1>
-                <p className="max-w-3xl text-sm leading-relaxed text-violet-100/68 sm:text-base">
+                <p className="max-w-3xl text-sm leading-relaxed text-indigo-100/68 sm:text-base">
                   {fr
                     ? "Cette porte d'entrée rassemble les structures visibles, les parcours de qualification et les outils de pilotage. L'objectif: rendre le maillage local lisible et activable sans perdre la distinction entre acteurs, territoires et rôle institutionnel."
                     : "This entry point brings together visible structures, qualification flows and management tools. The goal is to make the local network readable and actionable while keeping actors, territories and institutional roles distinct."}
@@ -118,20 +118,20 @@ export default async function PartnersNetworkPage() {
               <div className="flex flex-wrap gap-3">
                 <Link
                   href="/sections/annuaire"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-violet-400 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-violet-950 transition hover:bg-violet-300"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-indigo-400 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-indigo-950 transition hover:bg-indigo-300"
                 >
                   {fr ? "Ouvrir l'annuaire" : "Open the directory"}
                   <ArrowRight size={14} />
                 </Link>
                 <Link
                   href="/partners/onboarding"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-violet-300/18 bg-[rgba(35,25,72,0.9)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-violet-50 transition hover:border-violet-300/30 hover:bg-[rgba(40,30,82,0.96)]"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-indigo-300/18 bg-[rgba(22,26,72,0.9)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-indigo-50 transition hover:border-indigo-300/30 hover:bg-[rgba(30,41,118,0.96)]"
                 >
                   {fr ? "Rejoindre le réseau" : "Join the network"}
                 </Link>
                 <Link
                   href="/partners/dashboard"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-violet-300/18 bg-[rgba(35,25,72,0.9)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-violet-50 transition hover:border-violet-300/30 hover:bg-[rgba(40,30,82,0.96)]"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-indigo-300/18 bg-[rgba(22,26,72,0.9)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-indigo-50 transition hover:border-indigo-300/30 hover:bg-[rgba(30,41,118,0.96)]"
                 >
                   {fr ? "Piloter les fiches" : "Manage profiles"}
                 </Link>
@@ -139,8 +139,8 @@ export default async function PartnersNetworkPage() {
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-              <div className="rounded-[2rem] border border-violet-300/16 bg-[rgba(34,24,75,0.92)] p-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-100/48">
+              <div className="rounded-[2rem] border border-indigo-300/16 bg-[rgba(22,26,72,0.92)] p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-100/48">
                   {fr ? "Acteurs visibles" : "Visible actors"}
                 </p>
                 <p className="mt-2 text-3xl font-black text-white">{formatCount(totalActors)}</p>
@@ -148,8 +148,8 @@ export default async function PartnersNetworkPage() {
                   {fr ? "Fiches actives dans l'annuaire local." : "Active profiles in the local directory."}
                 </p>
               </div>
-              <div className="rounded-[2rem] border border-violet-300/16 bg-[rgba(34,24,75,0.92)] p-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-100/48">
+              <div className="rounded-[2rem] border border-indigo-300/16 bg-[rgba(22,26,72,0.92)] p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-100/48">
                   {fr ? "Zones couvertes" : "Covered zones"}
                 </p>
                 <p className="mt-2 text-3xl font-black text-white">{formatCount(coveredZones)}</p>
@@ -157,8 +157,8 @@ export default async function PartnersNetworkPage() {
                   {fr ? "Arrondissements et périmètres utiles au repérage." : "Arrondissements and useful territorial scopes."}
                 </p>
               </div>
-              <div className="rounded-[2rem] border border-violet-300/16 bg-[rgba(34,24,75,0.92)] p-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-100/48">
+              <div className="rounded-[2rem] border border-indigo-300/16 bg-[rgba(22,26,72,0.92)] p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-100/48">
                   {fr ? "Fiches confirmées" : "Confirmed profiles"}
                 </p>
                 <p className="mt-2 text-3xl font-black text-white">{formatCount(trustedActors)}</p>
@@ -166,8 +166,8 @@ export default async function PartnersNetworkPage() {
                   {fr ? "Niveau de confiance et de lisibilité du réseau." : "Trust and readability level of the network."}
                 </p>
               </div>
-              <div className="rounded-[2rem] border border-violet-300/16 bg-[rgba(34,24,75,0.92)] p-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-100/48">
+              <div className="rounded-[2rem] border border-indigo-300/16 bg-[rgba(22,26,72,0.92)] p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-100/48">
                   {fr ? "Portée nationale" : "National scope"}
                 </p>
                 <p className="mt-2 text-3xl font-black text-white">{formatCount(nationalActors)}</p>
@@ -175,8 +175,8 @@ export default async function PartnersNetworkPage() {
                   {fr ? "Structures sans ancrage parisien obligatoire." : "Structures without a mandatory Paris footprint."}
                 </p>
               </div>
-              <div className="rounded-[2rem] border border-violet-300/16 bg-[rgba(34,24,75,0.92)] p-5">
-                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-violet-100/48">
+              <div className="rounded-[2rem] border border-indigo-300/16 bg-[rgba(22,26,72,0.92)] p-5">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-indigo-100/48">
                   {fr ? "En une" : "Featured"}
                 </p>
                 <p className="mt-2 text-3xl font-black text-white">{formatCount(featuredActors)}</p>
@@ -189,10 +189,10 @@ export default async function PartnersNetworkPage() {
         </header>
 
         {gestesPropres ? (
-          <section className="mt-8 rounded-[2.5rem] border border-violet-300/16 bg-[rgba(33,22,69,0.92)] p-6 shadow-[0_24px_56px_-32px_rgba(139,92,246,0.24)] sm:p-8">
+          <section className="mt-8 rounded-[2.5rem] border border-indigo-300/16 bg-[rgba(22,26,72,0.92)] p-6 shadow-[0_24px_56px_-32px_rgba(99,102,241,0.24)] sm:p-8">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-violet-100/48">
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-100/48">
                   {fr ? "Focus national" : "National spotlight"}
                 </p>
                 <h2 className="text-3xl font-black text-white">
@@ -203,7 +203,7 @@ export default async function PartnersNetworkPage() {
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <span className="rounded-full border border-violet-300/16 bg-violet-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-violet-100">
+                <span className="rounded-full border border-indigo-300/16 bg-indigo-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-indigo-100">
                   {fr ? "Association nationale" : "National association"}
                 </span>
                 <span className="rounded-full border border-violet-300/16 bg-violet-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-violet-100">

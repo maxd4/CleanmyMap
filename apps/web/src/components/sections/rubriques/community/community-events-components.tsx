@@ -60,7 +60,7 @@ export const EventTabsHeader = memo(function EventTabsHeader({
           {activeTab === "upcoming" && (
             <motion.div 
               layoutId="active-event-tab"
-              className="absolute inset-0 bg-emerald-600 rounded-xl shadow-xl shadow-emerald-600/40"
+              className="absolute inset-0 bg-rose-600 rounded-xl shadow-xl shadow-rose-600/40"
               transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
             />
           )}
@@ -76,7 +76,7 @@ export const EventTabsHeader = memo(function EventTabsHeader({
           {activeTab === "mine" && (
             <motion.div 
               layoutId="active-event-tab"
-              className="absolute inset-0 bg-indigo-600 rounded-xl shadow-xl shadow-indigo-600/40"
+              className="absolute inset-0 bg-pink-600 rounded-xl shadow-xl shadow-pink-600/40"
               transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
             />
           )}
@@ -145,7 +145,7 @@ export const EventListStates = memo(function EventListStates({
         kind={eventsLoadError.kind}
         title="Connexion perdue"
         message={eventsLoadError.message}
-        actions={onRetry ? <button type="button" onClick={onRetry} className="rounded-full bg-cyan-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-cyan-700">Réessayer</button> : null}
+        actions={onRetry ? <button type="button" onClick={onRetry} className="rounded-full bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700">Réessayer</button> : null}
       />
     );
   }
@@ -178,18 +178,18 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
   const relayLabel = fr ? "Je relaie" : "Relay";
 
   return (
-    <article className="group relative overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl transition-all duration-500 hover:border-emerald-500/30">
-      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+    <article className="group relative overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl transition-all duration-500 hover:border-rose-500/30">
+      <div className="absolute inset-0 bg-gradient-to-br from-rose-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
       
       <div className="relative flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between z-10">
         <div className="space-y-6 flex-1">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="inline-flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-rose-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-rose-500 animate-pulse" />
               {fr ? "Mission active" : "Active mission"}
             </span>
             {reminder && (
-              <span className="inline-flex items-center gap-2 rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-amber-400">
+            <span className="inline-flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 px-4 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-rose-400">
                 {reminder.reason}
               </span>
             )}
@@ -201,7 +201,7 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
             </h3>
             <div className="mt-4 flex flex-wrap items-center gap-x-8 gap-y-2 text-[11px] font-black uppercase tracking-widest text-slate-500">
               <span className="flex items-center gap-2 text-slate-200">
-                <Calendar size={14} className="text-emerald-500" />
+                <Calendar size={14} className="text-rose-500" />
                 {formatFrDate(event.eventDate)}
               </span>
               <span className="flex items-center gap-2">
@@ -217,12 +217,12 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
 
           <div className="flex flex-wrap gap-2">
             {event.cleanupObjective && (
-              <span className="rounded-xl bg-white/5 border border-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-sky-400">
+              <span className="rounded-xl bg-white/5 border border-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-rose-400">
                 Objectif: {event.cleanupObjective}
               </span>
             )}
             {event.cleanupZone && (
-              <span className="rounded-xl bg-white/5 border border-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-violet-400">
+              <span className="rounded-xl bg-white/5 border border-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-pink-400">
                 Zone: {event.cleanupZone}
               </span>
             )}
@@ -232,12 +232,12 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
               </span>
             )}
             {event.cleanupLogisticsNeeds && (
-              <span className="rounded-xl bg-white/5 border border-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-400">
+              <span className="rounded-xl bg-white/5 border border-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-rose-400">
                 Logistique: {event.cleanupLogisticsNeeds}
               </span>
             )}
             {event.cleanupWasteTypesExpected.length > 0 && (
-              <span className="rounded-xl bg-white/5 border border-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-cyan-400">
+              <span className="rounded-xl bg-white/5 border border-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-pink-400">
                 Déchets attendus: {formatCleanupWasteTypesLabel(event.cleanupWasteTypesExpected)}
               </span>
             )}
@@ -251,7 +251,7 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
                 </div>
               ))}
               {event.rsvpCounts.yes > 5 && (
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border-2 border-slate-900 bg-slate-950 text-[10px] font-black text-emerald-400 shadow-2xl">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl border-2 border-slate-900 bg-slate-950 text-[10px] font-black text-rose-400 shadow-2xl">
                   +{event.rsvpCounts.yes - 5}
                 </div>
               )}
@@ -272,8 +272,8 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
             className={cn(
               "group/rsvp w-full rounded-2xl py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden",
               event.myRsvpStatus === "yes" 
-                ? "bg-emerald-600 text-white shadow-2xl shadow-emerald-600/40" 
-                : "bg-white/5 border border-white/10 text-white hover:bg-emerald-600 hover:border-emerald-500"
+                ? "bg-rose-600 text-white shadow-2xl shadow-rose-600/40" 
+                : "bg-white/5 border border-white/10 text-white hover:bg-rose-600 hover:border-rose-500"
             )}
           >
             <span className="relative z-10">{primaryRsvpLabel}</span>
@@ -301,13 +301,13 @@ export const EventArticleUpcoming = memo(function EventArticleUpcoming({
 
           <Link
             href="#messagerie"
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/5 py-3 text-[9px] font-black uppercase tracking-[0.15em] text-emerald-400 hover:bg-emerald-500/10 transition-all"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/5 py-3 text-[9px] font-black uppercase tracking-[0.15em] text-rose-400 hover:bg-rose-500/10 transition-all"
           >
             📣 {relayLabel}
           </Link>
           <Link
             href={`/actions/new?mode=complete&fromEventId=${event.id}`}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/5 py-3 text-[9px] font-black uppercase tracking-[0.15em] text-sky-400 hover:bg-sky-500/10 transition-all"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-white/5 bg-white/5 py-3 text-[9px] font-black uppercase tracking-[0.15em] text-pink-400 hover:bg-pink-500/10 transition-all"
           >
             🧾 {fr ? "Caractériser" : "Characterize"}
           </Link>
@@ -329,16 +329,16 @@ export const EventArticleMine = memo(function EventArticleMine({
   event: CommunityEventItem;
 }) {
   return (
-    <article className="rounded-3xl border border-white/10 bg-slate-900/20 backdrop-blur-xl p-6 transition-all hover:border-indigo-500/30">
+    <article className="rounded-3xl border border-white/10 bg-slate-900/20 backdrop-blur-xl p-6 transition-all hover:border-rose-500/30">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
         <h3 className="text-xl font-black text-white uppercase tracking-tight">{event.title}</h3>
-        <span className="px-3 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-black uppercase tracking-widest text-indigo-400">
+        <span className="px-3 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-[9px] font-black uppercase tracking-widest text-rose-400">
            {toRsvpLabel(event.myRsvpStatus ?? "no")}
         </span>
       </div>
       <div className="flex flex-wrap items-center gap-6 text-[10px] font-black uppercase tracking-widest text-slate-500">
         <span className="flex items-center gap-2 text-slate-300">
-          <Calendar size={12} className="text-indigo-500" />
+          <Calendar size={12} className="text-rose-500" />
           {formatFrDate(event.eventDate)}
         </span>
         <span className="flex items-center gap-2">
@@ -368,7 +368,7 @@ export const EventArticlePast = memo(function EventArticlePast({
   const organizer = organizerView(event);
 
   return (
-    <article className="group relative overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl transition-all duration-500 hover:border-slate-500/30">
+    <article className="group relative overflow-hidden rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl transition-all duration-500 hover:border-rose-500/30">
       <div className="relative z-10">
         <div className="flex flex-col lg:flex-row items-start justify-between gap-8">
           <div className="space-y-6 flex-1">
@@ -386,11 +386,11 @@ export const EventArticlePast = memo(function EventArticlePast({
                </div>
                <div className="space-y-1">
                   <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 block">CONV. PRÉSENCE</span>
-                  <span className="text-lg font-black text-emerald-400">{formatPct(conversion?.rsvpToAttendanceRate ?? null)}</span>
+              <span className="text-lg font-black text-rose-400">{formatPct(conversion?.rsvpToAttendanceRate ?? null)}</span>
                </div>
                <div className="space-y-1">
                   <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 block">CONV. ACTION</span>
-                  <span className="text-lg font-black text-sky-400">{formatPct(conversion?.attendanceToActionRate ?? null)}</span>
+              <span className="text-lg font-black text-pink-400">{formatPct(conversion?.attendanceToActionRate ?? null)}</span>
                </div>
                <div className="space-y-1">
                   <span className="text-[8px] font-black uppercase tracking-widest text-slate-600 block">LOCALISATION</span>
@@ -423,7 +423,7 @@ export const EventArticlePast = memo(function EventArticlePast({
                   min={0}
                   value={opsDraft.attendanceCount}
                   onChange={(input) => updateOpsDraft(event.id, { attendanceCount: input.target.value })}
-                  className="w-full rounded-xl bg-slate-950/40 border border-white/10 px-4 py-2.5 text-sm text-white focus:border-emerald-500/50 outline-none transition-all"
+                className="w-full rounded-xl bg-slate-950/40 border border-white/10 px-4 py-2.5 text-sm text-white focus:border-rose-500/50 outline-none transition-all"
                 />
               </label>
 
@@ -434,7 +434,7 @@ export const EventArticlePast = memo(function EventArticlePast({
                   value={opsDraft.postMortem}
                   onChange={(input) => updateOpsDraft(event.id, { postMortem: input.target.value })}
                   placeholder="Points forts, défis, besoins..."
-                  className="w-full rounded-xl bg-slate-950/40 border border-white/10 px-4 py-2.5 text-sm text-white focus:border-emerald-500/50 outline-none transition-all resize-none"
+                className="w-full rounded-xl bg-slate-950/40 border border-white/10 px-4 py-2.5 text-sm text-white focus:border-rose-500/50 outline-none transition-all resize-none"
                 />
               </label>
             </div>
@@ -442,14 +442,14 @@ export const EventArticlePast = memo(function EventArticlePast({
             <button
               onClick={() => void onSaveEventOps(event)}
               disabled={isUpdating}
-              className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-emerald-600 hover:text-white hover:border-emerald-500 transition-all disabled:opacity-50"
+              className="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-300 hover:bg-rose-600 hover:text-white hover:border-rose-500 transition-all disabled:opacity-50"
             >
               {isUpdating ? "Synchronisation..." : "Enregistrer le suivi"}
             </button>
 
             <Link
               href={`/actions/new?mode=complete&fromEventId=${event.id}`}
-              className="flex w-full items-center justify-center gap-2 py-4 rounded-2xl bg-sky-600 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-sky-600/20 hover:bg-sky-500 transition-all"
+              className="flex w-full items-center justify-center gap-2 py-4 rounded-2xl bg-pink-600 text-white text-[10px] font-black uppercase tracking-widest shadow-xl shadow-pink-600/20 hover:bg-pink-500 transition-all"
             >
               Déclarer une action
             </Link>

@@ -13,21 +13,21 @@ export default async function PartnerOnboardingPage() {
  title="Parcours partenaire"
  description="Cette fonctionnalité nécessite une connexion Clerk."
  lockedPreview={
- <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 shadow-sm">
+ <section className="space-y-4 rounded-3xl border border-indigo-300/18 bg-[rgba(22,26,72,0.78)] p-5 shadow-sm">
  <div className="grid gap-3 md:grid-cols-2">
- <article className="rounded-2xl border border-slate-200 bg-white p-4">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
+ <article className="rounded-2xl border border-indigo-300/18 bg-[rgba(30,41,118,0.55)] p-4">
+ <p className="cmm-text-caption uppercase tracking-wide text-indigo-100/70">
  Structure
  </p>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
+ <p className="mt-2 cmm-text-small text-indigo-50/70">
  Nom, identité légale et périmètre sont rattachés au compte.
  </p>
  </article>
- <article className="rounded-2xl border border-slate-200 bg-white p-4">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
+ <article className="rounded-2xl border border-indigo-300/18 bg-[rgba(30,41,118,0.55)] p-4">
+ <p className="cmm-text-caption uppercase tracking-wide text-indigo-100/70">
  Contact
  </p>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
+ <p className="mt-2 cmm-text-small text-indigo-50/70">
  Les coordonnées sont validées après connexion.
  </p>
  </article>
@@ -42,16 +42,16 @@ export default async function PartnerOnboardingPage() {
 
  return (
  <div className="space-y-4">
- <header className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
- <h1 className="text-lg font-semibold cmm-text-primary">
+ <header className="rounded-xl border border-indigo-300/18 bg-[rgba(22,26,72,0.78)] p-4 shadow-sm">
+ <h1 className="text-lg font-semibold text-indigo-50">
  Parcours partenaire
  </h1>
- <p className="mt-1 cmm-text-small cmm-text-secondary">
+ <p className="mt-1 cmm-text-small text-indigo-50/70">
  Parcours en quelques minutes pour rejoindre le réseau. Votre demande est
  envoyée à l&apos;administration pour validation.
  </p>
  </header>
- <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+ <div className="rounded-xl border border-indigo-300/18 bg-[rgba(22,26,72,0.78)] p-4 shadow-sm">
  <PartnerOnboardingForm />
  </div>
  </div>

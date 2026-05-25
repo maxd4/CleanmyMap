@@ -18,13 +18,13 @@ export function FundingSection() {
         ? "Transparence, sponsoring de zones et mécénat pour une action environnementale pérenne."
         : "Transparency, zone sponsorship and patronage for sustainable environmental action."}
       icon={Banknote}
-      gradient="from-emerald-500/20 via-teal-500/10 to-transparent"
+      gradient="from-rose-500/20 via-pink-500/10 to-transparent"
     >
       <div className="space-y-12 pt-8">
         {/* Impact Message */}
         <div className="p-8 rounded-[3rem] border border-white/5 bg-slate-950/20 backdrop-blur-3xl shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8 group">
            <div className="flex items-center gap-6">
-              <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400">
                  <ShieldCheck size={24} />
               </div>
               <div className="space-y-1">
@@ -47,7 +47,7 @@ export function FundingSection() {
              whileInView={{ opacity: 1, y: 0 }}
              className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
            >
-              <div className="p-4 rounded-2xl w-fit bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+              <div className="p-4 rounded-2xl w-fit bg-rose-500/10 border border-rose-500/20 text-rose-400 group-hover:scale-110 transition-transform">
                  <Landmark size={24} />
               </div>
               <div className="space-y-4">
@@ -62,7 +62,7 @@ export function FundingSection() {
                       fr ? "Gouvernance indépendante" : "Independent governance"
                     ].map((item, i) => (
                       <li key={i} className="flex items-center gap-3">
-                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/40" />
+                         <div className="h-1.5 w-1.5 rounded-full bg-rose-500/40" />
                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
                       </li>
                     ))}
@@ -77,7 +77,7 @@ export function FundingSection() {
              transition={{ delay: 0.1 }}
              className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
            >
-              <div className="p-4 rounded-2xl w-fit bg-blue-500/10 border border-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform">
+              <div className="p-4 rounded-2xl w-fit bg-pink-500/10 border border-pink-500/20 text-pink-400 group-hover:scale-110 transition-transform">
                  <Target size={24} />
               </div>
               <div className="space-y-4">
@@ -92,7 +92,7 @@ export function FundingSection() {
                       fr ? "Zéro sur-compétition" : "Zero over-competition"
                     ].map((item, i) => (
                       <li key={i} className="flex items-center gap-3">
-                         <div className="h-1.5 w-1.5 rounded-full bg-blue-500/40" />
+                         <div className="h-1.5 w-1.5 rounded-full bg-pink-500/40" />
                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
                       </li>
                     ))}
@@ -107,7 +107,7 @@ export function FundingSection() {
              transition={{ delay: 0.2 }}
              className="p-8 rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl shadow-2xl space-y-6 group hover:bg-white/5 transition-all"
            >
-              <div className="p-4 rounded-2xl w-fit bg-rose-500/10 border border-rose-500/20 text-rose-400 group-hover:scale-110 transition-transform">
+              <div className="p-4 rounded-2xl w-fit bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-400 group-hover:scale-110 transition-transform">
                  <Heart size={24} />
               </div>
               <div className="space-y-4">
@@ -122,7 +122,7 @@ export function FundingSection() {
                       fr ? "Traçabilité des fonds" : "Fund traceability"
                     ].map((item, i) => (
                       <li key={i} className="flex items-center gap-3">
-                         <div className="h-1.5 w-1.5 rounded-full bg-rose-500/40" />
+                         <div className="h-1.5 w-1.5 rounded-full bg-fuchsia-500/40" />
                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
                       </li>
                     ))}
@@ -132,14 +132,14 @@ export function FundingSection() {
         </div>
 
         {/* Partner CTA */}
-        <div className="p-10 rounded-[3.5rem] border border-white/10 bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-12 group overflow-hidden relative">
+        <div className="p-10 rounded-[3.5rem] border border-white/10 bg-gradient-to-br from-rose-600 to-pink-700 text-white shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-12 group overflow-hidden relative">
            <div className="absolute top-0 right-0 p-20 opacity-10 pointer-events-none rotate-12">
               <Coins size={300} />
            </div>
 
            <div className="relative z-10 space-y-4 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-[9px] font-black uppercase tracking-widest">
-                 <Sparkles size={12} className="text-emerald-300" />
+                 <Sparkles size={12} className="text-rose-300" />
                  {fr ? "Rejoindre l'Action" : "Join the Action"}
               </div>
               <h3 className="text-4xl font-black tracking-tighter">{fr ? "Devenez Partenaire" : "Become a Partner"}</h3>

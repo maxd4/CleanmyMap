@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, ArrowRight, Globe, Users as UsersIcon, Building2, Sparkles, Target } from "lucide-react";
+import { ArrowRight, Globe, Building2, Sparkles, Target } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { AnnuaireFeaturedSection } from "./annuaire-featured-section";
 import { AnnuaireThematicExploration } from "./annuaire-thematic-exploration";
@@ -46,7 +46,7 @@ export function AnnuaireSection() {
       title={fr ? "Annuaire des acteurs" : "Actors directory"}
       subtitle={fr ? "Explorez l'écosystème engagé pour un territoire propre et durable." : "Explore the ecosystem committed to a clean and sustainable territory."}
       icon={Globe}
-      gradient="from-violet-600/20 via-indigo-500/10 to-transparent"
+      gradient="from-indigo-600/20 via-indigo-500/10 to-transparent"
     >
       <motion.div 
         variants={containerVariants}
@@ -62,11 +62,11 @@ export function AnnuaireSection() {
 
         {/* Featured Actors - Elegant Presentation */}
         <motion.section variants={itemVariants} className="relative">
-          <div className="absolute -inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/30 to-transparent" />
+          <div className="absolute -inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-indigo-500/30 to-transparent" />
           <div className="pt-24">
             <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12 mb-20 px-4">
               <div className="space-y-8 max-w-3xl">
-                <div className="inline-flex items-center gap-3 px-5 py-2 rounded-2xl bg-violet-500/10 border border-violet-500/20 text-[10px] font-black uppercase tracking-[0.3em] text-violet-400 shadow-2xl">
+                <div className="inline-flex items-center gap-3 px-5 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-[10px] font-black uppercase tracking-[0.3em] text-indigo-400 shadow-2xl">
                   <Building2 size={14} className="animate-pulse" />
                   {fr ? "Partenaires Stratégiques" : "Strategic Partners"}
                 </div>
@@ -80,7 +80,7 @@ export function AnnuaireSection() {
             </div>
             <div className="relative">
                <div className="absolute -left-20 top-1/2 -translate-y-1/2 p-20 opacity-5 pointer-events-none rotate-12">
-                  <Sparkles size={200} className="text-violet-500" />
+                  <Sparkles size={200} className="text-indigo-500" />
                </div>
                <AnnuaireFeaturedSection entries={featuredEntries} onFocusMap={handleFocusMap} fr={fr} />
             </div>
@@ -91,11 +91,11 @@ export function AnnuaireSection() {
         <motion.section 
           variants={itemVariants}
           id="exploration-canvas-anchor"
-          className="relative py-24 px-8 md:px-16 rounded-[4rem] bg-slate-900/40 border border-white/10 overflow-hidden shadow-[0_0_100px_rgba(139,92,246,0.1)] backdrop-blur-3xl"
+          className="relative py-24 px-8 md:px-16 rounded-[4rem] bg-slate-900/40 border border-white/10 overflow-hidden shadow-[0_0_100px_rgba(99,102,241,0.1)] backdrop-blur-3xl"
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.15),transparent_70%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(99,102,241,0.15),transparent_70%)]" />
           <div className="absolute -top-24 -right-24 p-24 opacity-5 text-indigo-400 pointer-events-none">
-            <Target size={300} />
+              <Target size={300} />
           </div>
           
           <div className="relative space-y-24">
@@ -132,10 +132,10 @@ export function AnnuaireSection() {
         {/* Final CTA - Institutional Premium */}
         <motion.div 
           variants={itemVariants}
-          className="p-16 rounded-[4rem] border border-violet-500/30 bg-gradient-to-br from-violet-600/20 to-indigo-600/5 backdrop-blur-3xl shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12 group"
+          className="p-16 rounded-[4rem] border border-indigo-500/30 bg-gradient-to-br from-indigo-600/20 to-sky-600/5 backdrop-blur-3xl shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-12 group"
         >
           <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-             <Building2 size={160} className="text-violet-400" />
+             <Building2 size={160} className="text-indigo-400" />
           </div>
           <div className="space-y-4 max-w-xl text-center md:text-left relative z-10">
             <h3 className="text-3xl font-black text-white tracking-tight">

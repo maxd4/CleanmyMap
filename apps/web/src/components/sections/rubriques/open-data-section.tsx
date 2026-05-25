@@ -4,8 +4,6 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { Database, FileJson, Globe, Code, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
-import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 export function OpenDataSection() {
   const { locale } = useSitePreferences();
@@ -19,17 +17,17 @@ export function OpenDataSection() {
         ? "Accédez aux données opérationnelles et indicateurs d'impact pour la recherche et l'innovation locale."
         : "Access operational data and impact indicators for research and local innovation."}
       icon={Database}
-      gradient="from-cyan-500/20 via-indigo-500/10 to-transparent"
+      gradient="from-pink-500/20 via-fuchsia-500/10 to-transparent"
     >
       <div className="space-y-12 pt-8">
         {/* Intro Highlight */}
         <RubriqueCard 
-          themeColor="sky"
+          themeColor="rose"
           withTopBar={false}
           className="p-8 flex flex-col md:flex-row items-center justify-between gap-8 group"
         >
            <div className="flex items-center gap-6">
-              <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+              <div className="p-4 rounded-2xl bg-pink-500/10 border border-pink-500/20 text-pink-400">
                  <Globe size={24} />
               </div>
               <div className="space-y-1">
@@ -50,12 +48,12 @@ export function OpenDataSection() {
            <RubriqueCard 
              initial={{ opacity: 0, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
-             themeColor="blue"
-             watermarkIcon={FileJson}
-             watermarkSize={160}
-             className="p-8 space-y-6 group"
-           >
-              <div className="p-4 rounded-2xl w-fit bg-blue-500/10 border border-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform">
+           themeColor="rose"
+           watermarkIcon={FileJson}
+           watermarkSize={160}
+           className="p-8 space-y-6 group"
+         >
+              <div className="p-4 rounded-2xl w-fit bg-pink-500/10 border border-pink-500/20 text-pink-400 group-hover:scale-110 transition-transform">
                  <FileJson size={24} />
               </div>
               <div className="space-y-3">
@@ -67,7 +65,7 @@ export function OpenDataSection() {
                        fr ? "Métadonnées de version" : "Version metadata"
                     ].map((item, i) => (
                        <li key={i} className="flex items-center gap-3">
-                          <div className="h-1.5 w-1.5 rounded-full bg-blue-500/40" />
+                          <div className="h-1.5 w-1.5 rounded-full bg-pink-500/40" />
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
                        </li>
                     ))}
@@ -80,12 +78,12 @@ export function OpenDataSection() {
              initial={{ opacity: 0, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.1 }}
-             themeColor="fuchsia"
+             themeColor="rose"
              watermarkIcon={Code}
              watermarkSize={160}
              className="p-8 space-y-6 group"
            >
-              <div className="p-4 rounded-2xl w-fit bg-fuchsia-500/10 border border-fuchsia-500/20 text-fuchsia-400 group-hover:scale-110 transition-transform">
+              <div className="p-4 rounded-2xl w-fit bg-pink-500/10 border border-pink-500/20 text-pink-400 group-hover:scale-110 transition-transform">
                  <Code size={24} />
               </div>
               <div className="space-y-3">
@@ -97,7 +95,7 @@ export function OpenDataSection() {
                        fr ? "Historique utilisateur" : "User history trends"
                     ].map((item, i) => (
                        <li key={i} className="flex items-center gap-3">
-                          <div className="h-1.5 w-1.5 rounded-full bg-fuchsia-500/40" />
+                          <div className="h-1.5 w-1.5 rounded-full bg-pink-500/40" />
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
                        </li>
                     ))}
@@ -110,12 +108,12 @@ export function OpenDataSection() {
              initial={{ opacity: 0, y: 20 }}
              whileInView={{ opacity: 1, y: 0 }}
              transition={{ delay: 0.2 }}
-             themeColor="emerald"
+             themeColor="rose"
              watermarkIcon={ShieldCheck}
              watermarkSize={160}
              className="p-8 space-y-6 group"
            >
-              <div className="p-4 rounded-2xl w-fit bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+              <div className="p-4 rounded-2xl w-fit bg-pink-500/10 border border-pink-500/20 text-pink-400 group-hover:scale-110 transition-transform">
                  <ShieldCheck size={24} />
               </div>
               <div className="space-y-3">
@@ -127,7 +125,7 @@ export function OpenDataSection() {
                        fr ? "Gouvernance de données" : "Data governance"
                     ].map((item, i) => (
                        <li key={i} className="flex items-center gap-3">
-                          <div className="h-1.5 w-1.5 rounded-full bg-emerald-500/40" />
+                          <div className="h-1.5 w-1.5 rounded-full bg-pink-500/40" />
                           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item}</span>
                        </li>
                     ))}
@@ -138,11 +136,11 @@ export function OpenDataSection() {
 
         {/* Technical Callout */}
         <div className="p-10 rounded-[3.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl overflow-hidden relative shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-12 group">
-           <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/20 to-blue-700/20 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-           <div className="absolute -right-24 -bottom-24 w-64 h-64 bg-cyan-500/10 blur-[100px] rounded-full pointer-events-none" />
+           <div className="absolute inset-0 bg-gradient-to-br from-pink-600/20 to-fuchsia-700/20 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
+           <div className="absolute -right-24 -bottom-24 w-64 h-64 bg-pink-500/10 blur-[100px] rounded-full pointer-events-none" />
            
            <div className="relative z-10 space-y-4 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[9px] font-black uppercase tracking-widest text-cyan-400">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-500/10 border border-pink-500/20 text-[9px] font-black uppercase tracking-widest text-pink-400">
                  <Sparkles size={12} />
                  {fr ? "Documentation Technique" : "Technical Documentation"}
               </div>
@@ -154,7 +152,7 @@ export function OpenDataSection() {
               </p>
            </div>
            
-           <button className="relative z-10 flex items-center gap-4 px-10 py-5 rounded-2xl bg-cyan-500 text-slate-950 text-xs font-black uppercase tracking-[0.3em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
+           <button className="relative z-10 flex items-center gap-4 px-10 py-5 rounded-2xl bg-pink-500 text-slate-950 text-xs font-black uppercase tracking-[0.3em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
               {fr ? "Accéder à l'API" : "Access API"}
               <ArrowRight size={18} />
            </button>

@@ -5,6 +5,8 @@ import type { PilotageLocale } from "../access-screen-constants";
 import type { AppProfile } from "@/lib/profiles";
 import { getProfileLabel, getProfileSubtitle } from "@/lib/profiles";
 import { NavigationGrid } from "@/components/ui/navigation-grid";
+import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
+import { getPageFamilyById } from "@/lib/ui/page-families";
 
 export function PilotageRestrictedPage({
   locale,
@@ -17,32 +19,32 @@ export function PilotageRestrictedPage({
   const profileLabel = getProfileLabel(profile, locale);
   const profileSubtitle = getProfileSubtitle(profile, locale);
   const links = buildAccessLinks(profile, locale).slice(0, 3);
+  const pageFamily = getPageFamilyById("accueil-pilotage");
 
   return (
     <section className="w-full space-y-6 p-4 md:p-8">
-      <div className="overflow-hidden rounded-[2.25rem] border border-stone-400/18 bg-[linear-gradient(180deg,rgba(44,28,15,0.96),rgba(52,34,18,0.99))] p-6 text-white shadow-[0_24px_56px_-32px_rgba(69,45,28,0.18)] md:p-8">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-orange-100">
-            <Sparkles size={14} aria-hidden="true" />
-            {locale === "fr" ? "Accueil & Pilotage" : "Home & Operations"}
-          </span>
-          <span className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
-            {profileLabel}
-          </span>
-          <span className="inline-flex items-center rounded-full border border-white/12 bg-white/8 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-white/80">
-            {profileSubtitle}
-          </span>
-        </div>
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
-          <div className="space-y-4">
-            <h1 className="text-4xl font-black tracking-tight text-white md:text-6xl">
-              {copy.title}
-            </h1>
-            <p className="max-w-2xl text-base leading-relaxed text-white/78 md:text-lg">
-              {copy.description}
-            </p>
-          </div>
+      <div className="space-y-8 md:p-2">
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
+          <PageHero
+            family={pageFamily}
+            titleSize="compact"
+            title={copy.title}
+            subtitle={copy.description}
+            badges={
+              <>
+                <PageHeroBadge family={pageFamily}>
+                  <Sparkles size={14} aria-hidden="true" />
+                  {locale === "fr" ? "Accueil & Pilotage" : "Home & Operations"}
+                </PageHeroBadge>
+                <PageHeroBadge family={pageFamily} muted>
+                  {profileLabel}
+                </PageHeroBadge>
+                <PageHeroBadge family={pageFamily} muted>
+                  {profileSubtitle}
+                </PageHeroBadge>
+              </>
+            }
+          />
 
           <aside className="rounded-[1.75rem] border border-white/12 bg-[rgba(69,45,28,0.82)] p-5">
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-100/70">

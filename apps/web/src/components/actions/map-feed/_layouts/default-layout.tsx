@@ -33,26 +33,26 @@ export function DefaultLayout({
               Sources partielles: {partialSourcesLabel}
             </span>
           ) : null}
-          <h2 className="text-xl font-semibold tracking-[-0.02em] text-slate-950">Lecture cartographique</h2>
+          <h2 className="text-xl font-semibold tracking-[-0.02em] text-slate-950">Carte terrain</h2>
           <p className="mt-1 text-sm text-slate-700">
-            Flux géolocalisé depuis <code>/api/actions/map</code> pour piloter les interventions terrain.
+            Flux géolocalisé depuis <code>/api/actions/map</code>.
           </p>
           {freshnessLabel ? (
-            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-cyan-200/80 bg-cyan-100 px-3 py-1.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950">
-              <span className="h-2 w-2 rounded-full bg-cyan-500" />
+            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-sky-200/80 bg-sky-100 px-3 py-1.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950">
+              <span className="h-2 w-2 rounded-full bg-sky-500" />
               {freshnessLabel}
             </div>
           ) : null}
         </div>
         <button
           onClick={onReload}
-          className="rounded-lg border border-cyan-200/80 bg-cyan-100 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:border-cyan-300 hover:bg-cyan-200"
+          className="rounded-lg border border-sky-200/80 bg-sky-100 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200"
         >
           {isValidating ? "Actualisation..." : "Rafraîchir"}
         </button>
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-cyan-200/80 bg-cyan-50 shadow-inner">
+      <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-sky-200/80 bg-sky-50 shadow-inner">
         {MapCanvas ? (
           <MapCanvas items={items} selectedActionId={selectedActionId} />
         ) : mapCanvasError ? (
@@ -65,13 +65,13 @@ export function DefaultLayout({
             </div>
           </div>
         ) : (
-          <div className="flex h-[28rem] items-center justify-center rounded-[1.75rem] border border-cyan-200/80 bg-cyan-50 px-6 text-center text-slate-950">
+          <div className="flex h-[28rem] items-center justify-center rounded-[1.75rem] border border-sky-200/80 bg-sky-50 px-6 text-center text-slate-950">
             <div className="max-w-sm space-y-2">
-              <div className="mx-auto h-10 w-10 animate-pulse rounded-2xl border border-cyan-200/80 bg-cyan-100" />
+              <div className="mx-auto h-10 w-10 animate-pulse rounded-2xl border border-sky-200/80 bg-sky-100" />
               <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-700">
                 Initialisation de la carte
               </p>
-              <p className="text-sm leading-6 text-slate-700">Chargement des couches interactives.</p>
+              <p className="text-sm leading-6 text-slate-700">Chargement des couches.</p>
             </div>
           </div>
         )}
