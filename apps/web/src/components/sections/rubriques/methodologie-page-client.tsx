@@ -113,8 +113,8 @@ const OPEN_SOURCE_DOCS = [
       en: "Impact Audit & Calculation Model",
     },
     desc: {
-      fr: "Transparence complète sur nos équations de calcul, les facteurs d'émission (ADEME, GIEC) et notre algorithme linéaire proxy.",
-      en: "Complete transparency on our calculation equations, emission factors (ADEME, IPCC), and our linear proxy algorithm.",
+      fr: "Découvrez en détail chaque étape de notre audit d’impact : des formules précises, les facteurs d’émission reconnus d’ADEME et du GIEC, ainsi qu’une explication claire de notre algorithme proxy linéaire, afin que vous compreniez comment chaque score est calculé et puissiez l’interpréter vous‑même.",
+      en: "Explore the complete impact‑audit process, including precise equations, reputable ADEME and IPCC emission factors, and a clear breakdown of our linear proxy algorithm, empowering you to understand exactly how each impact score is derived and interpret the results confidently.",
     },
     href: "/docs/impact_IA_CleanMyMap.pdf",
     icon: <Scaling className="h-6 w-6" />,
@@ -127,8 +127,8 @@ const OPEN_SOURCE_DOCS = [
       en: "Complete System Architecture",
     },
     desc: {
-      fr: "Documentation maîtresse détaillant les flux de données, les services managés et les principes de découpage du monorepo.",
-      en: "Master documentation detailing data flows, managed services, and monorepo splitting principles.",
+      fr: "Plongez dans l’architecture complète du projet : diagrammes détaillés des flux de données, description des services gérés, stratégie de découpage du monorepo, ainsi que les choix technologiques clés, pour vous permettre de comprendre et contribuer efficacement au code.",
+      en: "Dive into the full project architecture: detailed data‑flow diagrams, managed service descriptions, monorepo split strategy, and key technology choices, enabling you to grasp and contribute to the codebase effectively.",
     },
     href: "/docs/master-architecture.md",
     icon: <Layers className="h-6 w-6" />,
@@ -141,8 +141,8 @@ const OPEN_SOURCE_DOCS = [
       en: "Scientific Protocol",
     },
     desc: {
-      fr: "Règles, hypothèses et formules sous-jacentes pour la création et la révision de nos indicateurs d'impact environnemental.",
-      en: "Rules, assumptions, and underlying formulas for creating and reviewing our environmental impact indicators.",
+      fr: "Accédez au protocole scientifique complet : hypothèses clairement définies, méthodes de calcul rigoureuses, formules détaillées, critères de validation stricts et processus de révision transparent, garantissant la fiabilité de nos indicateurs d’impact environnemental.",
+      en: "Access the full scientific protocol: clearly defined hypotheses, rigorous calculation methods, detailed formulas, strict validation criteria, and a transparent review process, ensuring the reliability of our environmental impact indicators.",
     },
     href: "/docs/SCIENTIFIC_PROTOCOL.md",
     icon: <Beaker className="h-6 w-6" />,
@@ -155,8 +155,8 @@ const OPEN_SOURCE_DOCS = [
       en: "Non-Competitive Gamification",
     },
     desc: {
-      fr: "Analyse de notre approche produit pour engager la communauté sans utiliser de mécaniques toxiques de compétition.",
-      en: "Analysis of our product approach to engage the community without using toxic competitive mechanics.",
+      fr: "Explorez notre approche de gamification non‑compétitive : mécanismes de récompense motivants, progression structurée, études d’impact utilisateur, et comment ces éléments favorisent l’engagement citoyen sans créer de compétition néfaste.",
+      en: "Explore our non‑competitive gamification approach: motivating reward mechanisms, structured progression, user impact studies, and how these elements foster citizen engagement without harmful competition.",
     },
     href: "/docs/gamification-non-competitive.md",
     icon: <Heart className="h-6 w-6" />,
@@ -169,8 +169,8 @@ const OPEN_SOURCE_DOCS = [
       en: "Design System & Premium Charter",
     },
     desc: {
-      fr: "Règles visuelles, gestion des couleurs par bloc et principes de hiérarchie UI garantissant l'accessibilité et l'esthétique du projet.",
-      en: "Visual rules, color management by block, and UI hierarchy principles ensuring the project's accessibility and aesthetics.",
+      fr: "Découvrez notre charte visuelle premium : palette de couleurs multi‑teintes par bloc, typographies élégantes, icônes cohérentes, règles d’accessibilité avancées et guides UI, assurant une expérience esthétique, homogène et inclusive.",
+      en: "Discover our premium visual charter: multi‑tone color palette per block, elegant typography, consistent icons, advanced accessibility rules and UI guidelines, delivering an aesthetic, cohesive and inclusive experience.",
     },
     href: "/docs/BLOC_COLOR_SYSTEM_PREMIUM.md",
     icon: <Palette className="h-6 w-6" />,
@@ -183,8 +183,8 @@ const OPEN_SOURCE_DOCS = [
       en: "Full Technical Sheet",
     },
     desc: {
-      fr: "Vue d'ensemble de l'architecture technique, choix de stack (Next.js, Supabase), sécurité, et principes de conception.",
-      en: "Overview of technical architecture, stack choices (Next.js, Supabase), security, and design principles.",
+      fr: "Consultez la fiche technique détaillée : architecture technique du projet, choix de stack (Next.js, Supabase), mesures de sécurité, diagrammes d’infrastructure, bonnes pratiques de développement, pour les développeurs souhaitant approfondir le fonctionnement interne.",
+      en: "Review the detailed technical sheet: project technical architecture, stack choices (Next.js, Supabase), security measures, infrastructure diagrams, development best practices, for developers seeking deep insight into the internal workings.",
     },
     href: "/docs/fiche-technique-cleanmymap.md",
     icon: <Brain className="h-6 w-6" />,
@@ -197,8 +197,8 @@ const OPEN_SOURCE_DOCS = [
       en: "Publication Governance",
     },
     desc: {
-      fr: "Règles strictes sur la création, la validation et la publication de contenus sur la plateforme, garantissant la qualité de l'information.",
-      en: "Strict rules on the creation, validation, and publication of content on the platform, ensuring information quality.",
+      fr: "Lisez les règles de gouvernance des contenus : workflow complet de création, validation, publication et audit des pages, garantissant qualité, conformité et traçabilité des informations diffusées.",
+      en: "Read the content governance rules: complete workflow for creation, validation, publishing and auditing of pages, ensuring quality, compliance and traceability of disseminated information.",
     },
     href: "/docs/publication-governance.md",
     icon: <ShieldCheck className="h-6 w-6" />,
@@ -378,7 +378,24 @@ export function MethodologiePageClient() {
         </div>
       </div>
 
-      {/* Documentation Open Source */}
+      {{/* Gamification Logic */}
+<div className="space-y-10 pt-10 border-t border-white/10">
+  <div className="text-center space-y-4">
+    <h2 className="text-4xl font-black tracking-tight text-white">
+      {isFrench ? "Logique de Gamification (En cours)" : "Gamification Logic (Work in progress)"}
+    </h2>
+    <p className="max-w-2xl mx-auto text-lg font-medium leading-relaxed text-red-100/50">
+      {isFrench
+        ? "Nous développons actuellement un système de gamification non‑compétitive visant à encourager l’engagement citoyen via des récompenses, des badges et des tableaux de progression, le tout sans mécanismes de compétition agressifs."
+        : "We are currently developing a non‑competitive gamification system to encourage citizen engagement through rewards, badges and progression boards, without aggressive competitive mechanics."}
+    </p>
+    <p className="text-sm text-red-200/60">
+      {isFrench ? "🚧 En cours de développement – restez à l’écoute pour de nouvelles fonctionnalités !" : "🚧 Work in progress – stay tuned for upcoming features!"}
+    </p>
+  </div>
+</div>
+
+{/* Documentation Open Source */}}
       <div className="space-y-10 pt-10 border-t border-white/10">
         <div className="text-center space-y-4">
           <h2 className="text-4xl font-black tracking-tight text-white">
