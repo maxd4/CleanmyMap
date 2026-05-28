@@ -22,6 +22,7 @@ import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences"
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/lib/i18n/server-translation";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
+import { loadUserLabelSummary } from "@/lib/gamification/progression-data";
 import { Shield, Plus, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { PageHero } from "@/components/ui/page-hero";
@@ -37,6 +38,19 @@ type DashboardOverviewLoaded =
   | { status: "ok"; overview: Awaited<ReturnType<typeof loadPilotageOverview>> }
   | { status: "error"; message: string };
 
+type UserLevelRankingItem = {
+  rank: number;
+  userId: string;
+  actorName: string;
+  currentLevel: number;
+  xpValidated: number;
+};
+
+type UserLevelRanking = {
+  topRows: UserLevelRankingItem[];
+  currentUserRow: UserLevelRankingItem | null;
+};
+
 async function loadDashboardOverviewResult(locale: "fr" | "en"): Promise<DashboardOverviewLoaded> {
   try {
     const supabase = getSupabaseServerClient();
@@ -50,6 +64,44 @@ async function loadDashboardOverviewResult(locale: "fr" | "en"): Promise<Dashboa
         : "Dashboard data is temporarily unavailable.",
     };
   }
+}
+
+async function loadUserLevelRanking(userId: string): Promise<UserLevelRanking> {
+  const supabase = getSupabaseServerClient();
+  const [profilesResult, labelsByUser] = await Promise.all([
+    supabase
+      .from("progression_profiles")
+      .select("user_id, current_level, xp_validated, xp_total")
+      .order("current_level", { ascending: false })
+      .order("xp_validated", { ascending: false })
+      .order("xp_total", { ascending: false })
+      .limit(120),
+    loadUserLabelSummary(supabase).catch(() => new Map<string, { actorName: string }>()),
+  ]);
+
+  if (profilesResult.error) {
+    return { topRows: [], currentUserRow: null };
+  }
+
+  const rows =
+    (profilesResult.data as Array<{
+      user_id: string;
+      current_level: number | null;
+      xp_validated: number | null;
+    }> | null) ?? [];
+
+  const rankedRows: UserLevelRankingItem[] = rows.map((row, index) => ({
+    rank: index + 1,
+    userId: row.user_id,
+    actorName: labelsByUser.get(row.user_id)?.actorName?.trim() || `Utilisateur ${index + 1}`,
+    currentLevel: Math.max(1, Number(row.current_level ?? 1)),
+    xpValidated: Math.max(0, Number(row.xp_validated ?? 0)),
+  }));
+
+  return {
+    topRows: rankedRows.slice(0, 8),
+    currentUserRow: rankedRows.find((row) => row.userId === userId) ?? null,
+  };
 }
 
 function DashboardOverviewSkeleton() {
@@ -94,6 +146,7 @@ export default async function DashboardPage() {
     getCurrentUserRoleLabel().catch(() => "benevole" as const),
     getServerDisplayMode(),
   ]);
+  const userLevelRanking = await loadUserLevelRanking(userId);
   const profile = toProfile(role);
   const roleLabel = getProfileLabel(profile, locale);
   const primaryAction = getProfilePrimaryAction(profile);
@@ -189,6 +242,71 @@ export default async function DashboardPage() {
             {locale === "fr" ? "Accès rapides" : "Quick access"}
           </p>
           <RolePrimaryActions profile={profile} title="" tone="warm" />
+        </div>
+
+        <div className="mt-14 h-px bg-amber-200/24" />
+
+        {/* ── Classement global des niveaux utilisateur ── */}
+        <div data-gsap-reveal className="mt-10">
+          <FamilyRubriqueCard
+            withTopBar={true}
+            topBarContent={
+              locale === "fr"
+                ? "Classement global - niveau utilisateur"
+                : "Global ranking - user level"
+            }
+            className="p-8 sm:p-10"
+          >
+            {userLevelRanking.topRows.length === 0 ? (
+              <p className="text-sm text-amber-100/85">
+                {locale === "fr"
+                  ? "Le classement n'est pas encore disponible."
+                  : "Ranking data is not available yet."}
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {userLevelRanking.topRows.map((row) => {
+                  const isCurrentUser = row.userId === userId;
+                  return (
+                    <div
+                      key={row.userId}
+                      className={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
+                        isCurrentUser
+                          ? "border-amber-300/40 bg-amber-200/15"
+                          : "border-amber-200/18 bg-[rgba(69,26,3,0.38)]"
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-white">
+                          #{row.rank} - {row.actorName}
+                        </p>
+                        <p className="text-xs text-amber-100/80">
+                          {locale === "fr" ? "XP valides" : "Validated XP"}: {row.xpValidated}
+                        </p>
+                      </div>
+                      <span className="rounded-lg border border-amber-200/25 bg-[rgba(69,26,3,0.65)] px-3 py-1 text-xs font-black uppercase tracking-[0.15em] text-amber-50">
+                        {locale === "fr" ? "Niveau" : "Level"} {row.currentLevel}
+                      </span>
+                    </div>
+                  );
+                })}
+
+                {userLevelRanking.currentUserRow &&
+                !userLevelRanking.topRows.some((row) => row.userId === userId) ? (
+                  <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-200/10 px-4 py-3">
+                    <p className="text-sm font-bold text-white">
+                      {locale === "fr" ? "Votre position" : "Your position"}: #
+                      {userLevelRanking.currentUserRow.rank}
+                    </p>
+                    <p className="text-xs text-amber-100/80">
+                      {locale === "fr" ? "Niveau" : "Level"} {userLevelRanking.currentUserRow.currentLevel} ·{" "}
+                      {locale === "fr" ? "XP valides" : "Validated XP"} {userLevelRanking.currentUserRow.xpValidated}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </FamilyRubriqueCard>
         </div>
 
         <div className="mt-14 h-px bg-amber-200/24" />

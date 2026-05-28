@@ -28,7 +28,7 @@ export default function LearnSentrainerPage() {
         en: "Short sessions, mixed questions and immediate feedback.",
       }}
       backHref="/learn/hub"
-      backLabel={{ fr: "Retour au hub", en: "Back to hub" }}
+      backLabel={{ fr: "Retour au point de départ", en: "Back to start" }}
       accent="yellow"
       highlights={[
         { fr: "Rappel actif", en: "Active recall" },

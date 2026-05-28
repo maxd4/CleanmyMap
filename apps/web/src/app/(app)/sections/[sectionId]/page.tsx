@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { SectionRenderer } from "@/components/sections/rubriques/section-renderer";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
@@ -56,6 +56,11 @@ export async function generateMetadata({
 
 export default async function SectionPage({ params }: SectionPageProps) {
   const { sectionId } = await params;
+
+  if (sectionId === "dm") {
+    redirect("/sections/messagerie?tab=dm");
+  }
+
   const section = getSectionRubriqueById(sectionId);
 
   if (!section) {

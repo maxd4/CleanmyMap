@@ -1,7 +1,6 @@
 import type { PageFamilyDefinition, PageFamilyHeroTokens } from "@/lib/ui/page-families/types";
 import { ACCUEIL_PILOTAGE_FAMILY } from "@/lib/ui/page-families/families/01-accueil-pilotage";
 import {
-  ACCUEIL_PILOTAGE_CARD,
   ADMIN_CARD,
   AGIR_CARD,
   APPRENDRE_CARD,

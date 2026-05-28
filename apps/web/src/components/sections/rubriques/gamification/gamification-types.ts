@@ -108,6 +108,8 @@ export type CollectiveItem = {
   rank: number;
   associationName: string;
   score: number;
+  currentLevel: number;
+  potentialLevel: number;
   members: number;
   qualityAverage: number;
   validatedActions: number;

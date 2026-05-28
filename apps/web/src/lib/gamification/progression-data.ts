@@ -53,8 +53,8 @@ export async function insertProgressionEvent(
     source_id: params.sourceId,
     status_phase: params.statusPhase,
     weight: clampWeight(params.weight),
-    xp_base: Math.max(0, Math.round(params.xpBase)),
-    xp_awarded: Math.max(0, Math.round(params.xpAwarded)),
+    xp_base: Math.max(0, params.xpBase),
+    xp_awarded: Math.max(0, params.xpAwarded),
     occurred_on: params.occurredOn,
     metadata: params.metadata ?? {},
   });
@@ -136,7 +136,7 @@ export async function loadUserProgressionStats(
   const families = eventFamilyMap();
 
   for (const event of events) {
-    if (toInt(event.xp_awarded, 0) > 0) {
+    if (toFloat(event.xp_awarded, 0) > 0) {
       const family = families[event.event_type];
       if (family) {
         diversitySet.add(family);

@@ -41,3 +41,8 @@ export type FinalizedSectionId = Extract<
   SectionRubrique,
   { implementation: "finalized" }
 >["id"];
+
+export type VisibleFinalizedSectionId = Extract<
+  SectionRubrique,
+  { availability: "available"; implementation: "finalized" }
+>["id"];

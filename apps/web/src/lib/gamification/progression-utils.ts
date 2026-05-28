@@ -11,6 +11,8 @@ const EVENT_FAMILY_MAP: Record<ProgressionEventType, string> = {
   spot_validation_bonus: "spotter",
   community_ops_update: "communaute",
   route_recommend_use: "itineraire",
+  infinite_waste_milestone: "impact",
+  infinite_butts_milestone: "impact",
 };
 
 export function eventFamilyMap(): Readonly<Record<ProgressionEventType, string>> {
@@ -86,10 +88,11 @@ export function computeActionPendingAward(weight: number): {
   xpBase: number;
   xpAwarded: number;
 } {
-  const xpBase = clampWeight(weight) * 10;
+  // No XP for non-validated (pending) contributions.
+  const xpBase = 0;
   return {
     xpBase,
-    xpAwarded: Math.round(xpBase * 0.4),
+    xpAwarded: 0,
   };
 }
 
@@ -100,11 +103,16 @@ export function computeActionValidationAward(
   xpBase: number;
   xpAwarded: number;
 } {
-  const xpBase = clampWeight(weight) * 10;
-  const bonus = xpBase * qualityBonusRate(qualityGrade);
+  // XP is awarded only once validated.
+  // 1 XP for standard validated actions, 2 XP for strong/structuring actions.
+  // Quality requirements remain enforced at the level-gating stage.
+  const resolvedWeight = clampWeight(weight);
+  const xpBase = resolvedWeight >= 3 ? 2 : 1;
+  // Keep grade in signature for compatibility; no additional bonus in this simplified system.
+  void qualityGrade;
   return {
     xpBase,
-    xpAwarded: Math.round(xpBase * 0.6 + bonus),
+    xpAwarded: xpBase,
   };
 }
 

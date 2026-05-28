@@ -1,4 +1,4 @@
-# Hub léger
+# Point de départ
 
 ## Fiche canonique
 
@@ -27,7 +27,7 @@
 - longue introduction pédagogique
 - double explication
 - contenu de fond
-- **Bulles / cartes / contextes trop nombreux** : Le hub doit rester un index léger, pas une cinquième rubrique pédagogique.
+- **Bulles / cartes / contextes trop nombreux** : Le point de départ doit rester un index léger, pas une cinquième rubrique pédagogique.
 - **Composants UI concernés** :
 - barre de progression
 - tuiles d'accès direct

@@ -11,7 +11,7 @@ import {
 } from "./progression-data";
 import type { ProgressionStatusPhase } from "./progression-types";
 import {
-  toInt,
+  toFloat,
   toIsoDate,
 } from "./progression-utils";
 
@@ -41,7 +41,7 @@ export async function refreshProgressionProfile(
   let xpValidated = 0;
 
   for (const row of rows) {
-    const xp = toInt(row.xp_awarded, 0);
+    const xp = toFloat(row.xp_awarded, 0);
     xpTotal += xp;
     if (row.status_phase === "pending") {
       xpPending += xp;
@@ -135,7 +135,7 @@ export async function trackSpotCreated(
     return;
   }
 
-  const xpBase = 20;
+  const xpBase = 0;
   const inserted = await insertProgressionEvent(supabase, {
     userId: params.userId,
     eventType: "spot_create_pending",
@@ -144,7 +144,7 @@ export async function trackSpotCreated(
     statusPhase: "pending",
     weight: 2,
     xpBase,
-    xpAwarded: Math.round(xpBase * 0.4),
+    xpAwarded: 0,
     occurredOn: toIsoDate(spot.created_at),
     metadata: { label: spot.label },
   });
@@ -170,8 +170,8 @@ export async function trackSpotValidationBonus(
     sourceId: spot.id,
     statusPhase: "validated",
     weight: 3,
-    xpBase: 30,
-    xpAwarded: 30,
+    xpBase: 0.5,
+    xpAwarded: 0.5,
     occurredOn: new Date().toISOString().slice(0, 10),
     metadata: { status: spot.status },
   });
@@ -185,7 +185,7 @@ export async function trackCommunityRsvpYes(
   supabase: SupabaseClient,
   params: { userId: string; eventId: string; occurredOn?: string },
 ): Promise<void> {
-  const xpBase = 20;
+  const xpBase = 0;
   const inserted = await insertProgressionEvent(supabase, {
     userId: params.userId,
     eventType: "collective_rsvp_yes_pending",
@@ -194,7 +194,7 @@ export async function trackCommunityRsvpYes(
     statusPhase: "pending",
     weight: 2,
     xpBase,
-    xpAwarded: Math.round(xpBase * 0.4),
+    xpAwarded: 0,
     occurredOn: toIsoDate(params.occurredOn),
     metadata: { eventId: params.eventId },
   });
@@ -226,8 +226,8 @@ export async function trackCommunityOpsUpdate(
         sourceId: params.eventId,
         statusPhase: "validated",
         weight: 2,
-        xpBase: 20,
-        xpAwarded: 20,
+        xpBase: 2,
+        xpAwarded: 2,
         occurredOn,
         metadata: {
           attendanceCount: params.attendanceCount,
@@ -246,8 +246,8 @@ export async function trackCommunityOpsUpdate(
         sourceId: `${params.eventId}:attendance`,
         statusPhase: "validated",
         weight: 3,
-        xpBase: 30,
-        xpAwarded: 30,
+        xpBase: 2,
+        xpAwarded: 2,
         occurredOn,
         metadata: { attendanceCount: params.attendanceCount },
       }),
@@ -276,8 +276,8 @@ export async function trackRouteRecommendationUse(
     sourceId: `${params.userId}:${occurredOn}`,
     statusPhase: "validated",
     weight: 1,
-    xpBase: 10,
-    xpAwarded: 10,
+    xpBase: 1,
+    xpAwarded: 1,
     occurredOn,
     metadata: {},
   });

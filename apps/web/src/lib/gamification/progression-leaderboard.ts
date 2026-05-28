@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   assessLevelRequirements,
+  computePotentialLevel,
   deriveBadges,
   xpRequired,
 } from "./progression-formulas";
@@ -137,8 +138,8 @@ async function buildIndividualLeaderboard(
         actorName: labels.actorName,
         associationName: labels.associationName,
         score: Math.round(score * 10) / 10,
-        xpValidated: toInt(row.xp_validated, 0),
-        xpTotal: toInt(row.xp_total, 0),
+        xpValidated: toFloat(row.xp_validated, 0),
+        xpTotal: toFloat(row.xp_total, 0),
         currentLevel: toInt(row.current_level, 1),
         potentialLevel: toInt(row.potential_level, 1),
         qualityAverage: impact.qualityAverage,
@@ -160,7 +161,12 @@ async function buildIndividualLeaderboard(
         }),
       } as IndividualLeaderboardItem;
     })
-    .sort((a, b) => b.score - a.score || b.xpValidated - a.xpValidated)
+    .sort(
+      (a, b) =>
+        b.currentLevel - a.currentLevel ||
+        b.xpValidated - a.xpValidated ||
+        b.score - a.score,
+    )
     .slice(0, 60)
     .map((item, index) => ({
       ...item,
@@ -218,15 +224,15 @@ export async function getUserProgression(
 
   return {
     userId: profile.user_id,
-    xpTotal: toInt(profile.xp_total, 0),
-    xpValidated: toInt(profile.xp_validated, 0),
-    xpPending: toInt(profile.xp_pending, 0),
+    xpTotal: toFloat(profile.xp_total, 0),
+    xpValidated: toFloat(profile.xp_validated, 0),
+    xpPending: toFloat(profile.xp_pending, 0),
     currentLevel: toInt(profile.current_level, 1),
     potentialLevel: toInt(profile.potential_level, 1),
     nextLevel: {
       level: nextLevel,
       xpRequired: nextRequiredXp,
-      xpRemaining: Math.max(0, nextRequiredXp - toInt(profile.xp_total, 0)),
+      xpRemaining: Math.max(0, nextRequiredXp - toFloat(profile.xp_total, 0)),
       frozen: toInt(profile.potential_level, 1) > toInt(profile.current_level, 1),
       requirements: requirement,
     },
@@ -387,18 +393,27 @@ export async function getGamificationLeaderboard(
         qualityAverage * 0.6 +
         Math.min(500, value.wasteKg) * 0.25 +
         value.validatedActions * 0.15;
+      const structureXp = Math.round(score * 10);
+      const structureLevel = computePotentialLevel(structureXp);
 
       return {
         rank: 0,
         associationName,
         score: Math.round(score * 10) / 10,
+        currentLevel: structureLevel,
+        potentialLevel: structureLevel,
         members: value.members.size,
         qualityAverage,
         validatedActions: value.validatedActions,
         wasteKg: Math.round(value.wasteKg * 10) / 10,
       } as CollectiveLeaderboardItem;
     })
-    .sort((a, b) => b.score - a.score || b.validatedActions - a.validatedActions)
+    .sort(
+      (a, b) =>
+        b.currentLevel - a.currentLevel ||
+        b.score - a.score ||
+        b.validatedActions - a.validatedActions,
+    )
     .slice(0, 60)
     .map((item, index) => ({
       ...item,

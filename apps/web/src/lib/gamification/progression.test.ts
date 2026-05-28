@@ -8,18 +8,19 @@ import {
 } from "@/lib/gamification/progression";
 
 describe("gamification progression formulas", () => {
-  it("computes a soft exponential xp step", () => {
-    expect(xpStep(1)).toBe(40);
-    expect(xpStep(2)).toBe(47);
-    expect(xpStep(3)).toBe(56);
-    expect(xpStep(10)).toBeGreaterThan(xpStep(9));
+  it("computes a linear xp step", () => {
+    expect(xpStep(1)).toBe(1);
+    expect(xpStep(2)).toBe(2);
+    expect(xpStep(3)).toBe(3);
+    expect(xpStep(10)).toBe(10);
   });
 
-  it("computes cumulative required xp", () => {
+  it("computes triangular required xp", () => {
     expect(xpRequired(1)).toBe(0);
-    expect(xpRequired(2)).toBe(40);
-    expect(xpRequired(3)).toBe(87);
-    expect(xpRequired(4)).toBe(143);
+    expect(xpRequired(2)).toBe(1);
+    expect(xpRequired(3)).toBe(3);
+    expect(xpRequired(4)).toBe(6);
+    expect(xpRequired(5)).toBe(10);
   });
 
   it("keeps requirements increasing with level", () => {

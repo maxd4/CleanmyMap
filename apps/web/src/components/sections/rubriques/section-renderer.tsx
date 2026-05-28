@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import {
-  type FinalizedSectionId,
+  type VisibleFinalizedSectionId,
   type SectionRubriqueDefinition,
 } from "@/lib/sections-registry";
 import { CommunitySection } from "./community";
@@ -62,10 +62,9 @@ export const FINALIZED_SECTION_RENDERERS = {
   weather: () => <WeatherSection />,
   sandbox: () => <SandboxSection />,
   guide: () => <GuideSection />,
-  dm: () => <ConnectSection defaultTab="dm" />,
   messagerie: () => <ConnectSection defaultTab="discussions" />,
   elus: () => <ElusSection />,
-} satisfies Record<FinalizedSectionId, () => ReactNode>;
+} satisfies Record<VisibleFinalizedSectionId, () => ReactNode>;
 
 export function SectionRenderer({ section }: SectionRendererProps) {
   if (section.implementation === "pending") {
@@ -79,7 +78,7 @@ export function SectionRenderer({ section }: SectionRendererProps) {
   }
 
   const renderSection =
-    FINALIZED_SECTION_RENDERERS[section.id as FinalizedSectionId];
+    FINALIZED_SECTION_RENDERERS[section.id as VisibleFinalizedSectionId];
 
   return <>{renderSection()}</>;
 }

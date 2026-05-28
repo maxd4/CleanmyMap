@@ -25,7 +25,7 @@ export const CHANNEL_STATS: ChannelStat[] = [
   { label: { fr: "Privé", en: "Private" }, icon: Mail, count: "1:1", color: "text-pink-400" },
   { label: { fr: "Admin & élus", en: "Admin & elected" }, icon: Shield, count: "Réservé", color: "text-rose-300" },
   { label: { fr: "Territoire", en: "Territory" }, icon: MapPin, count: "Local", color: "text-amber-400" },
-  { label: { fr: "Feedback", en: "Feedback" }, icon: MessageSquare, count: "Direct", color: "text-rose-300" },
+  { label: { fr: "Idées et problèmes", en: "Ideas & issues" }, icon: MessageSquare, count: "Direct", color: "text-rose-300" },
 ];
 
 export const CONNECT_TABS: ConnectTabItem[] = [
@@ -40,7 +40,7 @@ export const CONNECT_TABS: ConnectTabItem[] = [
   },
   {
     id: "dm",
-    label: { fr: "Messages Privés", en: "Private Messages" },
+    label: { fr: "Messages privés", en: "Private messages" },
     icon: Mail,
     desc: {
       fr: "Confidentiel & Direct",

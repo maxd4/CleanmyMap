@@ -166,6 +166,12 @@ Implication pour CleanMyMap:
 
 ## Regles concretement recommandees
 
+### Contrainte produit temporaire (prioritaire)
+
+- pour l instant, **interdiction de proposer ou coder des objectifs globaux ou communautaires**;
+- la gamification active doit rester centree sur les **donnees utilisateur individuelles** (niveau, progression, qualite, regularite personnelle, badges personnels);
+- les classements autorises doivent rester des lectures de profil (ex: niveau utilisateur), sans introduire de cible collective a atteindre.
+
 ### Regle de base
 
 Une recompense doit toujours repondre a la question:

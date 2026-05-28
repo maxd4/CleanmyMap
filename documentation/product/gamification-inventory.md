@@ -68,7 +68,7 @@ La regle de fond reste la meme: la gamification doit servir l utilite, la confia
 
 | Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
 | --- | --- | --- | --- | --- |
-| Hub Éducatif | régulier | C est une porte d entree, pas un score final | Reprise de lecture, progression de parcours, recommandation suivante | Progression de lecture, reprise de module, repère de parcours continu |
+| Point de départ (Apprendre) | régulier | C est une porte d entree, pas un score final | Reprise de lecture, progression de parcours, recommandation suivante | Progression de lecture, reprise de module, repère de parcours continu |
 | Comprendre l enjeu | objectif infini | La comprehension peut monter par niveaux de maitrise | Paliers de comprehension, badges de maitrise, progression de lecture | Badge de comprehension, niveau de maitrise, badge evolutif de savoir |
 | S entrainer | régulier + objectif infini | Le repetition learning se prete tres bien aux paliers de maitrise | Streak sobre, mastery levels, validation de connaissances | Streak de revision sobre, niveau de maitrise, badge evolutif de réussite |
 | Bonnes pratiques | régulier | Les gestes utiles doivent etre reconsultes et appliques | Checklists, rappels, badges de pratique appliquee | Checklist completee, badge de pratique appliquee, rappel de routine utile |
@@ -112,6 +112,7 @@ La regle de fond reste la meme: la gamification doit servir l utilite, la confia
 
 ## Regles de conception transverses
 
+- contrainte active: ne pas proposer ni coder d objectifs globaux ou communautaires; rester sur la progression basee sur les donnees utilisateur individuelles;
 - un seul objectif visible a la fois suffit dans la plupart des ecrans;
 - un badge doit toujours avoir un sens lisible par un humain;
 - un `objectif infini` doit toujours changer visuellement et verbalement a chaque palier important;

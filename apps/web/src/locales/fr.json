@@ -102,7 +102,7 @@
   "learnHub": {
     "header_suptitle": "Parcours pédagogique",
     "header_title": "Comprendre pour agir",
-    "header_desc": "Le hub sert d'index et de reprise: on retrouve la dernière étape, puis on rouvre les quatre pages dédiées sans dupliquer leur contenu. La méthodologie reste séparée.",
+    "header_desc": "Le point de départ sert d'index et de reprise: on retrouve la dernière étape, puis on rouvre les quatre pages dédiées sans dupliquer leur contenu. La méthodologie reste séparée.",
     "tabs": {
       "comprendre": "Comprendre",
       "sentrainer": "S'entraîner",
@@ -212,5 +212,30 @@
     "btn_signal": "Signaler un lieu sale",
     "btn_impact": "Mon impact",
     "btn_eval": "3 validations en attente"
+  }
+  ,
+  "gamification": {
+    "badge": {
+      "panel": {
+        "eyebrow": "Progression",
+        "subtitle": "Deux familles de badges qui montent automatiquement selon vos contributions."
+      },
+      "dechets": {
+        "title": "Masses de déchets",
+        "description": "Progresse tous les 10 kg"
+      },
+      "megots": {
+        "title": "Nombre de mégots",
+        "description": "Progresse tous les 1 000 mégots"
+      },
+      "modal": {
+        "eyebrow": "Détail du badge",
+        "total": "Total",
+        "next": "Prochain palier",
+        "claimHint": "Le niveau se met à jour automatiquement quand vous déclarez une action. Ce bouton sert à valider votre progression.",
+        "claim": "Réclamer le niveau",
+        "close": "Fermer"
+      }
+    }
   }
 }
