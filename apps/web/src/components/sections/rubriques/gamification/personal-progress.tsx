@@ -5,6 +5,7 @@ import { getGamificationBadgeIconName } from "@/components/gamification/badge-ic
 import { AnimatedCounter } from "@/components/gamification/animated-counter";
 import { GamificationImpactMethodologyCard } from "@/components/sections/rubriques/gamification-impact-methodology-card";
 import { ShieldCheck, Sparkles, Trophy } from "lucide-react";
+import { MohsBadge } from "@/components/gamification/mohs-badge";
 import type { MeResponse } from "./gamification-types";
 
 type ProgressionType = MeResponse["progression"];
@@ -20,21 +21,7 @@ interface PersonalProgressProps {
   badgeTotalsError?: unknown;
 }
 
-function formatCompactNumber(value: number, locale: string) {
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
-}
 
-function formatCompactKg(value: number, locale: string) {
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
-}
-
-function nextWasteBadgeMilestoneKg(totalKg: number): number | null {
-  const milestones = [10, 100, 500];
-  for (const m of milestones) {
-    if (totalKg < m) return m;
-  }
-  return null;
-}
 
 export function PersonalProgress({
   progression,
@@ -141,54 +128,28 @@ export function PersonalProgress({
               </article>
             </div>
 
-            <div className="rounded-[2rem] border border-white/5 bg-slate-950/40 p-6">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
-                  {locale === "fr" ? "Impact attribué" : "Attributed impact"}
-                </p>
-                {badgeTotalsError && !badgeTotalsLoading ? (
-                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
-                    {locale === "fr" ? "Indispo." : "Offline"}
-                  </span>
-                ) : null}
+            {badgeTotals && (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <MohsBadge
+                  family="waste"
+                  value={badgeTotals.wasteKg}
+                  locale={locale}
+                  showHistory
+                />
+                <MohsBadge
+                  family="butts"
+                  value={badgeTotals.butts}
+                  locale={locale}
+                  showHistory
+                />
               </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
-                    {locale === "fr" ? "Déchets" : "Waste"}
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-white">
-                    {badgeTotals
-                      ? `${formatCompactKg(badgeTotals.wasteKg, locale)} kg`
-                      : "—"}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
-                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
-                    {locale === "fr" ? "Mégots" : "Butts"}
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-white">
-                    {badgeTotals ? formatCompactNumber(badgeTotals.butts, locale) : "—"}
-                  </p>
-                </div>
+            )}
+            {!badgeTotals && !badgeTotalsLoading && !badgeTotalsError && (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
+                <div className="rounded-[2rem] border border-white/5 bg-slate-950/40 p-5 h-32 animate-pulse" />
+                <div className="rounded-[2rem] border border-white/5 bg-slate-950/40 p-5 h-32 animate-pulse" />
               </div>
-
-              {badgeTotals ? (
-                <p className="mt-4 text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between">
-                  <span>{locale === "fr" ? "Badge proche" : "Next badge"}</span>
-                  <span className="text-white tracking-tighter text-sm">
-                    {(() => {
-                      const nextKg = nextWasteBadgeMilestoneKg(badgeTotals.wasteKg);
-                      if (!nextKg) return "—";
-                      return locale === "fr"
-                        ? `${nextKg} kg collectés`
-                        : `${nextKg} kg collected`;
-                    })()}
-                  </span>
-                </p>
-              ) : null}
-            </div>
+            )}
 
             {progression.monthlyMilestone && (
               <div className="rounded-[2rem] border border-white/5 bg-slate-950/60 p-6">

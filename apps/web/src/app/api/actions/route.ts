@@ -276,6 +276,14 @@ const created = await createAction(supabase, {
     wasteKg: Number(normalizedPayload.wasteKg) || 0,
   });
 
+  // Track if this is a new place
+  import("@/lib/gamification/progression-tracking").then(({ trackNewPlaceVisited }) => {
+    trackNewPlaceVisited(supabase, {
+      userId,
+      locationLabel: normalizedPayload.locationLabel,
+    }).catch((err) => console.error("trackNewPlaceVisited error", err));
+  });
+
   const retentionLoop = await buildActionRetentionLoop(supabase, {
  userId,
  actionId: created.id,

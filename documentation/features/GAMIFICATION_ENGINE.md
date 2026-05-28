@@ -37,3 +37,4 @@ Le système récompense la régularité plutôt que la quantité ponctuelle.
 - Pas de "Loot Boxes" ou de mécanismes de hasard.
 - Les points sont un reflet direct de l'impact scientifique.
 - Possibilité de masquer les scores pour un mode "Sobre" (Focus utilité pure).
+- **Règle de Transparence** : Informer systématiquement l'utilisateur quand l'action qu'il s'apprête à faire (ou vient de faire) sur le site lui apporte de l'XP ou des badges.

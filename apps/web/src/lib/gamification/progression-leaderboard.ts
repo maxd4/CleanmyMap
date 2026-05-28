@@ -232,7 +232,7 @@ export async function getUserProgression(
     nextLevel: {
       level: nextLevel,
       xpRequired: nextRequiredXp,
-      xpRemaining: Math.max(0, nextRequiredXp - toFloat(profile.xp_total, 0)),
+      xpRemaining: Math.max(0, nextRequiredXp - toFloat(profile.xp_validated, 0)),
       frozen: toInt(profile.potential_level, 1) > toInt(profile.current_level, 1),
       requirements: requirement,
     },

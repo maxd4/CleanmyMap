@@ -2,20 +2,22 @@ export interface GamificationRulesVersion {
   version: string;
   wasteMilestoneStepKg: number;
   buttsMilestoneStepCount: number;
+  minLevelForInfiniteXp: number;
   calculateWasteXp(milestoneKg: number): number;
   calculateButtsXp(milestoneButts: number): number;
 }
 
 export const rulesV1: GamificationRulesVersion = {
   version: "v1",
-  wasteMilestoneStepKg: 50,
+  wasteMilestoneStepKg: 10,
   buttsMilestoneStepCount: 1000,
+  minLevelForInfiniteXp: 3,
 
   calculateWasteXp: (milestoneKg: number): number => {
-    // Base 1 XP per 50kg palier + loyalty bonus.
+    // Base 1 XP per 10kg palier + loyalty bonus.
     // 50kg -> +1 bonus, 100kg -> +2 bonus
     const base = 1;
-    const bonus = milestoneKg % 100 === 0 ? 2 : 1;
+    const bonus = milestoneKg % 100 === 0 ? 2 : (milestoneKg % 50 === 0 ? 1 : 0);
     return base + bonus;
   },
 

@@ -13,6 +13,8 @@ const EVENT_FAMILY_MAP: Record<ProgressionEventType, string> = {
   route_recommend_use: "itineraire",
   infinite_waste_milestone: "impact",
   infinite_butts_milestone: "impact",
+  new_place_discovered: "exploration",
+  new_place_milestone: "exploration",
 };
 
 export function eventFamilyMap(): Readonly<Record<ProgressionEventType, string>> {

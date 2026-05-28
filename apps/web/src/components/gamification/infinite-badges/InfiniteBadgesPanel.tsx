@@ -8,7 +8,7 @@ import { BADGE_STEP_DECHETS, BADGE_STEP_MEGOTS } from "@/config/gamification.con
 export function InfiniteBadgesPanel({
   totals,
 }: {
-  totals: { wasteKg: number; butts: number };
+  totals: { wasteKg: number; butts: number; newPlaces?: number };
 }) {
   const { t } = useTranslation("gamification");
 
@@ -32,8 +32,17 @@ export function InfiniteBadgesPanel({
         step: BADGE_STEP_MEGOTS,
         unitLabel: "",
       },
+      {
+        key: "lieux",
+        icon: "map-pin",
+        title: "Explorateur",
+        description: "Nouveaux lieux nettoyés",
+        total: totals.newPlaces ?? 0,
+        step: 5,
+        unitLabel: "lieux",
+      },
     ],
-    [t, totals.butts, totals.wasteKg],
+    [t, totals.butts, totals.wasteKg, totals.newPlaces],
   );
 
   return (

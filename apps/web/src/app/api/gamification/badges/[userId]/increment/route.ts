@@ -4,6 +4,7 @@ import { z } from "zod";
 import { forbiddenJsonResponse, unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getUserProgression } from "@/lib/gamification/progression";
 import { BADGE_MAX_COUNTER, ACTIVE_RULES } from "@/config/gamification.config";
 
 export const runtime = "nodejs";
@@ -107,49 +108,54 @@ export async function POST(
 
     // Best-effort XP milestones: do not fail the request if inserts fail.
     try {
-      if (type === "dechets") {
-        const milestones = listCrossedIntegerMilestones({
-          previous: currentWaste,
-          next: nextWaste,
-          step: ACTIVE_RULES.wasteMilestoneStepKg,
-        });
-        for (const milestoneKg of milestones) {
-          const xp = ACTIVE_RULES.calculateWasteXp(milestoneKg);
-          await supabase.from("progression_events").insert({
-            user_id: userId,
-            event_type: "infinite_waste_milestone",
-            source_table: "user_badge_totals",
-            source_id: `waste:${milestoneKg}`,
-            status_phase: "validated",
-            weight: 1,
-            xp_base: xp,
-            xp_awarded: xp,
-            occurred_on: new Date().toISOString().slice(0, 10),
-            metadata: { milestoneKg, rulesVersion: ACTIVE_RULES.version },
-          });
-        }
-      }
+      const progression = await getUserProgression(supabase, userId);
+      const isEligibleForXp = progression.currentLevel >= ACTIVE_RULES.minLevelForInfiniteXp;
 
-      if (type === "megots") {
-        const milestones = listCrossedIntegerMilestones({
-          previous: currentButts,
-          next: nextButts,
-          step: ACTIVE_RULES.buttsMilestoneStepCount,
-        });
-        for (const milestoneButts of milestones) {
-          const xp = ACTIVE_RULES.calculateButtsXp(milestoneButts);
-          await supabase.from("progression_events").insert({
-            user_id: userId,
-            event_type: "infinite_butts_milestone",
-            source_table: "user_badge_totals",
-            source_id: `butts:${milestoneButts}`,
-            status_phase: "validated",
-            weight: 1,
-            xp_base: xp,
-            xp_awarded: xp,
-            occurred_on: new Date().toISOString().slice(0, 10),
-            metadata: { milestoneButts, rulesVersion: ACTIVE_RULES.version },
+      if (isEligibleForXp) {
+        if (type === "dechets") {
+          const milestones = listCrossedIntegerMilestones({
+            previous: currentWaste,
+            next: nextWaste,
+            step: ACTIVE_RULES.wasteMilestoneStepKg,
           });
+          for (const milestoneKg of milestones) {
+            const xp = ACTIVE_RULES.calculateWasteXp(milestoneKg);
+            await supabase.from("progression_events").insert({
+              user_id: userId,
+              event_type: "infinite_waste_milestone",
+              source_table: "user_badge_totals",
+              source_id: `waste:${milestoneKg}`,
+              status_phase: "pending",
+              weight: 1,
+              xp_base: xp,
+              xp_awarded: xp,
+              occurred_on: new Date().toISOString().slice(0, 10),
+              metadata: { milestoneKg, rulesVersion: ACTIVE_RULES.version },
+            });
+          }
+        }
+
+        if (type === "megots") {
+          const milestones = listCrossedIntegerMilestones({
+            previous: currentButts,
+            next: nextButts,
+            step: ACTIVE_RULES.buttsMilestoneStepCount,
+          });
+          for (const milestoneButts of milestones) {
+            const xp = ACTIVE_RULES.calculateButtsXp(milestoneButts);
+            await supabase.from("progression_events").insert({
+              user_id: userId,
+              event_type: "infinite_butts_milestone",
+              source_table: "user_badge_totals",
+              source_id: `butts:${milestoneButts}`,
+              status_phase: "pending",
+              weight: 1,
+              xp_base: xp,
+              xp_awarded: xp,
+              occurred_on: new Date().toISOString().slice(0, 10),
+              metadata: { milestoneButts, rulesVersion: ACTIVE_RULES.version },
+            });
+          }
         }
       }
     } catch {

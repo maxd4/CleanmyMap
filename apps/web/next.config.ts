@@ -8,6 +8,7 @@ const isProduction = env["NODE_ENV"] === "production";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  productionBrowserSourceMaps: true,
   outputFileTracingRoot: repoRoot,
   serverExternalPackages: ["@prisma/instrumentation", "@fastify/otel"],
   compress: true,
@@ -27,7 +28,8 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     lockDistDir: false,
-    serverSourceMaps: isProduction,
+    serverSourceMaps: false,
+
     optimizePackageImports: [
       'lucide-react',
       '@clerk/nextjs',
@@ -39,10 +41,13 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: repoRoot,
   },
-  productionBrowserSourceMaps:
-    Boolean(env["SENTRY_AUTH_TOKEN"]) &&
-    Boolean(env["SENTRY_ORG"]) &&
-    Boolean(env["SENTRY_PROJECT"]),
+  webpack: (config, { dev }) => {
+    // Let Next.js handle devtool for production to allow source maps
+    if (dev) {
+      config.devtool = "eval-source-map";
+    }
+    return config;
+  },
   async headers() {
     const headers = [
       {
