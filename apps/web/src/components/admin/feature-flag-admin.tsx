@@ -80,7 +80,7 @@ export function FeatureFlagAdmin() {
  <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
  <div className="grid grid-cols-2 gap-4">
  <CmmButton 
- onClick={() => window.open('/declaration-simple', '_blank')}
+ onClick={() => window.open('/actions/new', '_blank')}
  className="w-full"
  >
  Test Simple Form

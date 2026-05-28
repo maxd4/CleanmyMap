@@ -9,6 +9,7 @@ import {
  getNavigationSpacesForProfile,
 } from"@/lib/navigation";
 import type { AppProfile } from"@/lib/profiles";
+import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 type AppBreadcrumbProps = {
  currentProfile: AppProfile;
@@ -30,10 +31,10 @@ export function AppBreadcrumb({ currentProfile, profileLabel }: AppBreadcrumbPro
  aria-label="Breadcrumb"
  className="flex w-full items-center gap-1.5 rounded-2xl border border-white/40 bg-white/80 px-3 py-2 cmm-text-caption cmm-text-muted shadow-sm backdrop-blur-md"
  >
- <Link
- href="/dashboard"
+<Link
+ href={DASHBOARD_ROUTE}
  className="inline-flex shrink-0 items-center gap-1.5 font-medium transition hover:text-emerald-700"
- >
+>
  <Image
  src="/brand/pictogramme-cleanmymap.svg"
  alt="Logo CleanMyMap"

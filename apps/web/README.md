@@ -5,7 +5,7 @@
 - Node.js 20+
 - `npx supabase` CLI
 - `npx vercel` CLI
-- Local env file: `.env.local`
+- Local env file: `.env.local` (copy from `.env.local.example`)
 - Template d'env: `.env.example`
 
 ## Required backend env vars
@@ -21,6 +21,14 @@ Core required:
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - `NEXT_PUBLIC_CLERK_PROXY_URL` only if you intentionally route Clerk through the app proxy path `/__clerk` (otherwise leave it empty and use the direct Clerk frontend API domain)
 - `CLERK_SECRET_KEY`
+
+Localhost dev profile:
+
+- copy `.env.local.example` to `.env.local`
+- leave `NEXT_PUBLIC_CLERK_PROXY_URL` empty
+- omit `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` to use the built-in development fallback
+- set `CMM_DEV_AUTH_BYPASS=1`
+- set `CMM_DEV_AUTH_BYPASS_ROLE=max` to get the IMU profile locally
 
 Recommended for production:
 
@@ -113,10 +121,13 @@ npm run data:cleanup:supabase
 
 If the local site looks older than the repository or Turbopack cache errors appear:
 
-1. Run `npm run dev:clean` from the repo root to clear `apps/web/.next`.
-2. If you need an exact port and want to fail when `3000` is already used, run `npm run dev:strict`.
-3. Check the terminal banner before opening the browser. `npm run dev` can fall back to `3001+` when another dev server is still running.
-4. If the browser still serves stale content, hard refresh or clear the site data for `localhost`.
+0. If the machine is unstable in the browser, do not force a Codex localhost session; use the terminal output and the local browser outside Codex for the visual check.
+1. `npm run dev` now starts with Turbopack by default.
+2. Webpack is disabled in this repository.
+3. Run `npm run dev:clean` from the repo root to clear `apps/web/.next`.
+4. If you need an exact port and want to fail when `3000` is already used, run `npm run dev:strict`.
+5. Check the terminal banner before opening the browser. `npm run dev` can fall back to `3001+` when another dev server is still running.
+6. If the browser still serves stale content, hard refresh or clear the site data for `localhost`.
 
 ## Resend quick test (`/api/send`)
 

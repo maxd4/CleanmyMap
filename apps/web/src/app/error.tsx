@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from"react";
-import { useAuth } from"@clerk/nextjs";
-import { usePathname } from"next/navigation";
+import { useEffect } from"react";
 import * as Sentry from"@sentry/nextjs";
 import { ServerErrorCard } from"@/components/ui/server-error-card";
 import { buildSupportHref } from"@/lib/errors/app-errors";
@@ -16,20 +14,15 @@ export default function Error({
  reset: () => void;
 }) {
  const isSentryConfigured = isSentryEnabled();
- const { userId, sessionId } = useAuth();
- const pathname = usePathname();
-
- const supportHref = useMemo(() => {
-  return buildSupportHref({
-    message: error.message,
-    code: error.name !== "Error" ? error.name : null,
-    referenceCode: error.digest ?? null,
-    pagePath: pathname,
-    userId: userId ?? null,
-    sessionId: sessionId ?? null,
-    source: "runtime_error_page",
-  });
- }, [error.digest, error.message, error.name, pathname, sessionId, userId]);
+ const supportHref = buildSupportHref({
+  message: error.message,
+  code: error.name !== "Error" ? error.name : null,
+  referenceCode: error.digest ?? null,
+  pagePath: null,
+  userId: null,
+  sessionId: null,
+  source: "runtime_error_page",
+ });
 
  useEffect(() => {
  if (isSentryConfigured) {

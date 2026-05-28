@@ -7,6 +7,7 @@ import {
   type AppRoleLabel,
   type DisplayNameMode,
   normalizeDisplayNameMode,
+  normalizeProfileRole,
   resolveAccountDisplayName,
 } from "./profiles";
 import {
@@ -25,6 +26,7 @@ import {
   getDevAuthBypassRole,
   getDevAuthBypassUserId,
   getDevAuthBypassUsername,
+  isLocalhostHost,
   isDevAuthBypassEnabled,
 } from "@/lib/auth/dev-auth";
 
@@ -142,7 +144,16 @@ function extractRole(metadata: ClerkMetadata): string | null {
     return null;
   }
   const roleValue = metadata["role"] ?? metadata["profile"];
-  return typeof roleValue === "string" ? roleValue.trim().toLowerCase() : null;
+  if (typeof roleValue !== "string") {
+    return null;
+  }
+
+  const normalized = roleValue.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  return normalizeProfileRole(normalized) ?? normalized;
 }
 
 function extractBadgeIds(metadata: ClerkMetadata): string[] {
@@ -678,9 +689,14 @@ async function getDevAuthBypassSession() {
     return null;
   }
 
+  const bypassRole =
+    isLocalhostHost(host) && !process.env.CMM_DEV_AUTH_BYPASS_ROLE?.trim()
+      ? "super_admin"
+      : getDevAuthBypassRole();
+
   return {
     userId: getDevAuthBypassUserId(),
-    role: getDevAuthBypassRole(),
+    role: bypassRole,
     displayName: getDevAuthBypassDisplayName(),
     username: getDevAuthBypassUsername(),
   };

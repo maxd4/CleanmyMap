@@ -5,14 +5,12 @@ import {
   fetchActionById,
   fetchSpotById,
   insertProgressionEvent,
+  isSpontaneousActionNotes,
   loadUserProgressionStats,
+  syncUserActionProgression,
 } from "./progression-data";
 import type { ProgressionStatusPhase } from "./progression-types";
 import {
-  computeActionPendingAward,
-  computeActionValidationAward,
-  evaluateActionQualityScore,
-  inferActionWeight,
   toInt,
   toIsoDate,
 } from "./progression-utils";
@@ -106,30 +104,11 @@ export async function trackActionCreated(
   if (!action) {
     return;
   }
-
-  const weight = inferActionWeight(action);
-  const award = computeActionPendingAward(weight);
-
-  const inserted = await insertProgressionEvent(supabase, {
-    userId: params.userId,
-    eventType: "action_declare_pending",
-    sourceTable: "actions",
-    sourceId: action.id,
-    statusPhase: "pending",
-    weight,
-    xpBase: award.xpBase,
-    xpAwarded: award.xpAwarded,
-    occurredOn: toIsoDate(action.action_date || action.created_at),
-    metadata: {
-      locationLabel: action.location_label,
-      durationMinutes: action.duration_minutes,
-      wasteKg: action.waste_kg,
-    },
-  });
-
-  if (inserted) {
-    await refreshProgressionProfile(supabase, params.userId);
+  if (!isSpontaneousActionNotes(action.notes)) {
+    return;
   }
+  await syncUserActionProgression(supabase, params.userId);
+  await refreshProgressionProfile(supabase, params.userId);
 }
 
 export async function trackActionValidationBonus(
@@ -140,30 +119,11 @@ export async function trackActionValidationBonus(
   if (!action || action.status !== "approved") {
     return;
   }
-
-  const quality = evaluateActionQualityScore(action);
-  const weight = inferActionWeight(action);
-  const award = computeActionValidationAward(weight, quality.grade);
-
-  const inserted = await insertProgressionEvent(supabase, {
-    userId: action.created_by_clerk_id,
-    eventType: "action_declare_validation",
-    sourceTable: "actions",
-    sourceId: action.id,
-    statusPhase: "validated",
-    weight,
-    xpBase: award.xpBase,
-    xpAwarded: award.xpAwarded,
-    occurredOn: new Date().toISOString().slice(0, 10),
-    metadata: {
-      qualityGrade: quality.grade,
-      qualityScore: quality.score,
-    },
-  });
-
-  if (inserted) {
-    await refreshProgressionProfile(supabase, action.created_by_clerk_id);
+  if (!isSpontaneousActionNotes(action.notes)) {
+    return;
   }
+  await syncUserActionProgression(supabase, action.created_by_clerk_id);
+  await refreshProgressionProfile(supabase, action.created_by_clerk_id);
 }
 
 export async function trackSpotCreated(

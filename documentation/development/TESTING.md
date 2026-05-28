@@ -69,23 +69,29 @@ Pass criteria:
 For web verification on a localhost app without signing in every time:
 
 1. Prefer the automatic dev bypass on `localhost` during `next dev`.
-2. If you need to force it on another local host, set:
+2. For a clean local Clerk setup, copy `apps/web/.env.local.example` to `apps/web/.env.local`, leave `NEXT_PUBLIC_CLERK_PROXY_URL` empty, omit the live `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, and set:
+   - `CMM_DEV_AUTH_BYPASS=1`
+   - `CMM_DEV_AUTH_BYPASS_ROLE=max` for the IMU profile
+3. If you need to force it on another local host, set:
    - `CMM_DEV_AUTH_BYPASS=1`
    - `CMM_DEV_AUTH_BYPASS_ROLE=coordinateur` or `admin` depending on the screen you need to inspect
-3. For Playwright automation, prefer a saved `storageState` from one real Clerk login when you want to test the protected route itself.
-4. If the goal is UX review rather than auth behavior, use the public preview route:
+4. For Playwright automation, prefer a saved `storageState` from one real Clerk login when you want to test the protected route itself.
+5. If the goal is UX review rather than auth behavior, use the public preview route:
    - `/preview/actions/new`
-5. For isolated tests, mock the session/auth server layer instead of depending on live Clerk redirects.
+6. For isolated tests, mock the session/auth server layer instead of depending on live Clerk redirects.
 
 ## Localhost Stale Build Troubleshooting
 
 If `localhost` looks older than the GitHub repo or Turbopack logs mention missing cache files:
 
-1. Stop every running `Node.js JavaScript Runtime` / `next dev` process for this repo.
-2. Clear the Next.js cache and restart clean:
+0. If this machine is bugging out in the browser, do not force a Codex browser session on `localhost`; rely on the terminal logs and the local browser outside Codex for verification.
+1. `npm run dev` uses Turbopack by default.
+2. Webpack is disabled in this repository.
+3. Stop every running `Node.js JavaScript Runtime` / `next dev` process for this repo.
+4. Clear the Next.js cache and restart clean:
    - `npm run dev:clean`
-3. If you want to fail fast instead of silently moving to another port:
+5. If you want to fail fast instead of silently moving to another port:
    - `npm run dev:strict`
-4. If the terminal says port `3000` is busy, do not open `3000` by reflex:
+6. If the terminal says port `3000` is busy, do not open `3000` by reflex:
    - the launcher may have started on `3001` or higher.
-5. If the browser still serves stale content after restart, hard refresh or clear `localhost` site data.
+7. If the browser still serves stale content after restart, hard refresh or clear `localhost` site data.

@@ -6,19 +6,24 @@ import {
   getPrivateSectionRoutes,
   isPrivateAppPath,
 } from "./indexability";
+import {
+  DASHBOARD_ROUTE,
+  EXPLORER_ROUTE,
+  PROFIL_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 describe("indexability helpers", () => {
   it("keeps private and unfinished routes out of the public sitemap list", () => {
     const publicSitemapPaths = [...PUBLIC_APP_SITEMAP_PATHS] as readonly string[];
     const privatePrefixes = [...PRIVATE_APP_ROUTE_PREFIXES] as readonly string[];
 
-    expect(publicSitemapPaths).not.toContain("/dashboard");
-    expect(publicSitemapPaths).not.toContain("/profil");
+    expect(publicSitemapPaths).not.toContain(DASHBOARD_ROUTE);
+    expect(publicSitemapPaths).not.toContain(PROFIL_ROUTE);
     expect(publicSitemapPaths).not.toContain("/form-comparison");
     expect(publicSitemapPaths).not.toContain("/sign-in");
     expect(publicSitemapPaths).not.toContain("/sign-up");
     expect(publicSitemapPaths).toContain("/actions/map");
-    expect(publicSitemapPaths).toContain("/explorer");
+    expect(publicSitemapPaths).toContain(EXPLORER_ROUTE);
 
     for (const prefix of privatePrefixes) {
       expect(
@@ -35,7 +40,7 @@ describe("indexability helpers", () => {
     expect(isPrivateAppPath("/reglages")).toBe(true);
     expect(isPrivateAppPath("/actions/new")).toBe(true);
     expect(isPrivateAppPath("/partners/dashboard")).toBe(true);
-    expect(isPrivateAppPath("/dashboard")).toBe(false);
+    expect(isPrivateAppPath(DASHBOARD_ROUTE)).toBe(true);
     expect(isPrivateAppPath("/actions/map")).toBe(false);
     expect(isPrivateAppPath("/learn")).toBe(false);
   });

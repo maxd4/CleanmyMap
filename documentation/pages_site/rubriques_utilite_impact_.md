@@ -17,7 +17,7 @@ Ancienne structure 7 blocs → nouvelle structure 5 blocs (homepage) :
 1. Accueil perso
 2. Déclarer une action
 3. Carte des actions
-4. Tableau de bord
+4. Mon espace
 5. Profil & impact
 6. Rapports d'impact
 7. Méthodologie
@@ -112,11 +112,17 @@ quadrantChart
 - Utilite : piloter l'activité quotidienne.
 - Impact : décisions plus rapides, déclarations sans navigation supplémentaire.
 
-**Profil & impact** `/profil`
+**Espace personnel fusionné** `/dashboard`
 
-- Paramètres de compte, progression, badges, impact personnel.
+- Paramètres de compte, progression, badges, impact personnel, synthèse quotidienne.
 - Utilite : point central de gestion utilisateur.
 - Impact : personnalisation du parcours et confiance.
+
+**Alias compatibilité** `/profil`
+
+- Redirection vers `/dashboard`.
+- Utilite : conserver les liens historiques sans dupliquer la page.
+- Impact : aucune divergence d'usage.
 
 **Vue Pilotage / Gouvernance** `/pilotage`
 
@@ -279,7 +285,7 @@ quadrantChart
 
 ---
 
-### Bloc 5 — Apprendre · `yellow`
+### Bloc 5 — Apprendre · `yellow` / `amber`
 
 **Hub Éducatif** `/learn/hub`
 

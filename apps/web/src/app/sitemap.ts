@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { env } from "@/lib/env";
+import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 import {
   PUBLIC_APP_SITEMAP_PATHS,
   getPublicSectionSitemapPaths,
@@ -8,7 +9,7 @@ import {
 const SITEMAP_PATH_PRIORITY: Record<string, number> = {
   "/": 1,
   "/en": 0.9,
-  "/explorer": 0.9,
+  [EXPLORER_ROUTE]: 0.9,
   "/observatoire": 0.8,
   "/reports": 0.7,
   "/methodologie": 0.7,
@@ -19,7 +20,6 @@ const SITEMAP_PATH_PRIORITY: Record<string, number> = {
   "/learn/ressources": 0.55,
   "/learn/sentrainer": 0.55,
   "/actions/map": 0.7,
-  "/declaration-simple": 0.6,
   "/mentions-legales": 0.3,
   "/conditions-generales-utilisation": 0.3,
   "/conditions-utilisation": 0.3,
@@ -32,7 +32,7 @@ function toSitemapEntry(url: string, now: Date): MetadataRoute.Sitemap[number] {
     url,
     lastModified: now,
     changeFrequency:
-      url === "/" || url === "/en" || url === "/explorer" || url === "/actions/map"
+      url === "/" || url === "/en" || url === EXPLORER_ROUTE || url === "/actions/map"
         ? "daily"
         : url.startsWith("/learn/")
           ? "monthly"

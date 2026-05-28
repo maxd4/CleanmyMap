@@ -46,6 +46,20 @@ describe("action declaration draft storage", () => {
     expect(snapshot?.form.wasteKg).toBe("12");
   });
 
+  it("returns a stable snapshot reference while the stored draft stays unchanged", () => {
+    installLocalStorage();
+    const savedAt = "2026-05-13T10:45:00.000Z";
+    const draft = createInitialFormState("Alice");
+
+    expect(saveDraft(draft, savedAt)).toBe(savedAt);
+
+    const first = loadDraftSnapshot(createInitialFormState("Fallback"), "clean_place");
+    const second = loadDraftSnapshot(createInitialFormState("Fallback"), "clean_place");
+
+    expect(first).toBe(second);
+    expect(first?.form.recordType).toBe("clean_place");
+  });
+
   it("clears both the draft payload and its timestamp", () => {
     const { store } = installLocalStorage();
     store.set(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify(createInitialFormState("Alice")));

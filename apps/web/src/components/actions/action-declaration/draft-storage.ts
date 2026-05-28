@@ -8,6 +8,11 @@ export type ActionDeclarationDraftSnapshot = {
   savedAt: string | null;
 };
 
+type DraftSnapshotCacheEntry = {
+  key: string;
+  snapshot: ActionDeclarationDraftSnapshot | null;
+};
+
 const FORM_STATE_KEYS = [
   "actorName",
   "associationName",
@@ -51,6 +56,41 @@ export function getDraftSavedAt(): string | null {
 }
 
 const ACTION_DECLARATION_DRAFT_CHANGE_EVENT = "cmm-action-declaration-draft-change";
+const DRAFT_SNAPSHOT_CACHE_VERSION = "1";
+
+let cachedDraftSnapshot: DraftSnapshotCacheEntry | null = null;
+
+function buildDraftSnapshotCacheKey(
+  fallback: FormState,
+  recordTypeOverride: FormState["recordType"] | null,
+  saved: string | null,
+  savedAt: string | null,
+): string {
+  return [
+    DRAFT_SNAPSHOT_CACHE_VERSION,
+    saved ?? "",
+    savedAt ?? "",
+    JSON.stringify(fallback),
+    recordTypeOverride ?? "",
+  ].join("::");
+}
+
+function cacheDraftSnapshot(
+  key: string,
+  snapshot: ActionDeclarationDraftSnapshot | null,
+): ActionDeclarationDraftSnapshot | null {
+  cachedDraftSnapshot = { key, snapshot };
+  return snapshot;
+}
+
+function getCachedDraftSnapshot(
+  key: string,
+): ActionDeclarationDraftSnapshot | null | undefined {
+  if (cachedDraftSnapshot?.key === key) {
+    return cachedDraftSnapshot.snapshot;
+  }
+  return undefined;
+}
 
 function emitDraftChange(): void {
   if (
@@ -89,6 +129,7 @@ export function clearDraft(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(ACTION_DECLARATION_DRAFT_KEY);
   window.localStorage.removeItem(ACTION_DECLARATION_DRAFT_DATE_KEY);
+  cachedDraftSnapshot = null;
   emitDraftChange();
 }
 
@@ -96,24 +137,40 @@ export function saveDraft(form: FormState, savedAt = new Date().toISOString()): 
   if (typeof window === "undefined") return null;
   window.localStorage.setItem(ACTION_DECLARATION_DRAFT_KEY, JSON.stringify(form));
   window.localStorage.setItem(ACTION_DECLARATION_DRAFT_DATE_KEY, savedAt);
+  cachedDraftSnapshot = null;
   emitDraftChange();
   return savedAt;
 }
 
-export function loadDraftSnapshot(fallback: FormState): ActionDeclarationDraftSnapshot | null {
+export function loadDraftSnapshot(
+  fallback: FormState,
+  recordTypeOverride: FormState["recordType"] | null = null,
+): ActionDeclarationDraftSnapshot | null {
   if (typeof window === "undefined") {
     return null;
   }
 
   try {
     const saved = window.localStorage.getItem(ACTION_DECLARATION_DRAFT_KEY);
+    const savedAt = getDraftSavedAt();
+    const cacheKey = buildDraftSnapshotCacheKey(
+      fallback,
+      recordTypeOverride,
+      saved,
+      savedAt,
+    );
+    const cached = getCachedDraftSnapshot(cacheKey);
+    if (cached !== undefined) {
+      return cached;
+    }
+
     if (!saved) {
-      return null;
+      return cacheDraftSnapshot(cacheKey, null);
     }
 
     const parsed: unknown = JSON.parse(saved);
     if (!isRecord(parsed)) {
-      return null;
+      return cacheDraftSnapshot(cacheKey, null);
     }
 
     const next = { ...fallback } as Record<keyof FormState, string>;
@@ -126,13 +183,22 @@ export function loadDraftSnapshot(fallback: FormState): ActionDeclarationDraftSn
     }
 
     next.routeStyle = "souple";
+    if (recordTypeOverride) {
+      next.recordType = recordTypeOverride;
+    }
 
-    return {
+    return cacheDraftSnapshot(cacheKey, {
       form: next as FormState,
-      savedAt: getDraftSavedAt(),
-    };
+      savedAt,
+    });
   } catch {
-    return null;
+    const cacheKey = buildDraftSnapshotCacheKey(
+      fallback,
+      recordTypeOverride,
+      null,
+      null,
+    );
+    return cacheDraftSnapshot(cacheKey, null);
   }
 }
 

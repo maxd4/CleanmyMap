@@ -6,6 +6,7 @@ import {
   Shield, ArrowRight, CheckCircle2, Sparkles, MapPin, BarChart3
 } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { RubriqueCard, RubriqueTheme } from "@/components/ui/rubrique-card";
 import { cn } from "@/lib/utils";
 
@@ -153,10 +154,10 @@ export function MissionZeroSection() {
                     </div>
                   </div>
 
-                  <button className="mt-8 flex items-center justify-between w-full p-4 rounded-xl bg-white/5 border border-white/5 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] group-hover:bg-white/10 group-hover:text-white transition-all">
+                  <CmmButton type="button" tone="secondary" variant="pill" className="mt-8 flex items-center justify-between w-full p-4 text-[9px] font-black uppercase tracking-[0.2em] transition-all">
                      En savoir plus
                      <ArrowRight size={14} />
-                  </button>
+                  </CmmButton>
                 </RubriqueCard>
               );
            })}
@@ -177,10 +178,10 @@ export function MissionZeroSection() {
               </p>
            </div>
 
-           <button className="relative z-10 flex items-center gap-4 px-10 py-5 rounded-2xl bg-white text-slate-950 text-xs font-black uppercase tracking-[0.3em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
+           <CmmButton type="button" tone="primary" variant="pill" className="relative z-10 flex items-center gap-4 px-10 py-5 text-xs font-black uppercase tracking-[0.3em] shadow-2xl transition-all">
               Démarrer l'audit
               <ArrowRight size={18} />
-           </button>
+           </CmmButton>
         </RubriqueCard>
       </div>
     </SectionShell>

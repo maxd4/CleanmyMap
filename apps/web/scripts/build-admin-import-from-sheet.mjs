@@ -321,6 +321,7 @@ async function main() {
       "nombre megots",
     ]),
     megotsKg: findColumnIndex(headers, [
+      "megots (kg)",
       "megots(kg)",
       "megots kg",
       "mégots(kg)",

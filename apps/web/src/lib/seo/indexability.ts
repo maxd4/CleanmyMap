@@ -1,14 +1,23 @@
 import { getSectionClerkAccessMode } from "@/lib/clerk-access";
 import { RUBRIQUE_REGISTRY } from "@/lib/sections-registry";
+import { HOME_ALIAS_ROUTE } from "@/lib/home-routes";
+import {
+  ADMIN_ROUTE,
+  DASHBOARD_ROUTE,
+  EXPLORER_ROUTE,
+  PARCOURS_ROUTE,
+  PILOTAGE_ROUTE,
+  PROFIL_ROUTE,
+  SPONSOR_PORTAL_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 export const PUBLIC_APP_SITEMAP_PATHS = [
   "/",
   "/actions/map",
   "/conditions-generales-utilisation",
   "/conditions-utilisation",
-  "/declaration-simple",
   "/en",
-  "/explorer",
+  EXPLORER_ROUTE,
   "/learn",
   "/learn/bonnes-pratiques",
   "/learn/comprendre",
@@ -24,25 +33,26 @@ export const PUBLIC_APP_SITEMAP_PATHS = [
 ] as const;
 
 export const PRIVATE_APP_ROUTE_PREFIXES = [
-  "/accueil",
-  "/admin",
+  HOME_ALIAS_ROUTE,
+  ADMIN_ROUTE,
   "/actions/history",
   "/actions/new",
   "/declaration",
   "/form-comparison",
   "/onboarding",
-  "/parcours",
+  DASHBOARD_ROUTE,
+  PARCOURS_ROUTE,
   "/partners/dashboard",
   "/partners/network",
   "/partners/onboarding",
-  "/pilotage",
+  PILOTAGE_ROUTE,
   "/prints/report",
-  "/profil",
+  PROFIL_ROUTE,
   "/reglages",
   "/signalement",
   "/sign-in",
   "/sign-up",
-  "/sponsor-portal",
+  SPONSOR_PORTAL_ROUTE,
 ] as const;
 
 export const ROBOTS_NOINDEX_VALUE = "noindex, nofollow, noarchive";

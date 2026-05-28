@@ -22,7 +22,7 @@ import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
 import type { FormState, ValidationIssue, PostActionRetentionLoop } from "../action-declaration-form.model";
 
-type DeclarationMode = "quick" | "complete";
+type DeclarationMode = "complete";
 type SubmissionState = "idle" | "pending" | "success" | "error";
 
 export function useActionDeclarationForm({
@@ -30,7 +30,6 @@ export function useActionDeclarationForm({
   defaultActorName,
   userMetadata,
   linkedEventId,
-  initialMode = "quick",
 }: {
   actorNameOptions: string[];
   defaultActorName: string;
@@ -41,7 +40,6 @@ export function useActionDeclarationForm({
     email?: string;
   };
   linkedEventId?: string;
-  initialMode?: "quick" | "complete";
 }) {
   const resolvedActorOptions = actorNameOptions;
   const resolvedDefaultActorName = resolvedActorOptions.includes(
@@ -61,7 +59,7 @@ export function useActionDeclarationForm({
   const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
   const [visionStatus, setVisionStatus] = useState<"idle" | "processing" | "ready" | "error">("idle");
   const [routePreviewDrawing, setRoutePreviewDrawing] = useState<ActionDrawing | null>(null);
-  const [declarationMode] = useState<DeclarationMode>(initialMode);
+  const [declarationMode] = useState<DeclarationMode>("complete");
   const [submissionState, setSubmissionState] = useState<SubmissionState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);

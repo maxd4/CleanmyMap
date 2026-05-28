@@ -18,7 +18,7 @@ export type ActionDataQualityResult = {
 
 type ComputeActionDataQualityParams = {
  form: FormState;
- declarationMode:"quick" |"complete";
+ declarationMode:"complete";
  recordType?: "action" |"clean_place" |"spot";
  hasLocationProof: boolean;
  hasDrawingProof: boolean;

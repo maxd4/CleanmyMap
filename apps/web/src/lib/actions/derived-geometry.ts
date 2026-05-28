@@ -1,10 +1,10 @@
 import type { ActionDrawing, ActionGeometryKind } from "@/lib/actions/types";
 import { findMatchingGeometry } from "@/lib/geo/geometry-reference";
-export { GEOMETRY_CONFIDENCE } from "./geometry-core";
+export { GEOMETRY_CONFIDENCE } from "./geometry-core.ts";
 import {
   resolveBestGeometry as resolveBestGeometryResolution,
   resolveGeometrySourceFromConfidence as resolveGeometrySourceFromConfidenceResolution,
-} from "./geometry-resolution";
+} from "./geometry-resolution.ts";
 
 export type ActionGeometryOrigin =
   | "manual"

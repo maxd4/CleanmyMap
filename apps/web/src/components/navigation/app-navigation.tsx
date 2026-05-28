@@ -8,6 +8,7 @@ import {
  trackNavigationClick,
  trackRoleCtaClick,
 } from"@/lib/analytics/navigation-client";
+import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 import type { CtaSlot } from"@/lib/domain-language";
 import { isFeatureEnabled } from"@/lib/feature-flags";
 import {
@@ -22,7 +23,7 @@ import {
 import type { AppProfile } from"@/lib/profiles";
 
 function isActive(pathname: string, href: string): boolean {
- if (href ==="/dashboard") {
+ if (href === DASHBOARD_ROUTE) {
  return pathname === href;
  }
  return pathname === href || pathname.startsWith(`${href}/`);

@@ -130,7 +130,7 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 
 | Route | Canonique / alias | Bloc / famille | Exception UI ? | Note |
 |---|---|---|---:|---|
-| `/learn/hub` | Canonique | Apprendre | non | Palette `yellow` |
+| `/learn/hub` | Canonique | Apprendre | non | Index léger, palette `yellow` |
 | `/learn/comprendre` | Canonique | Apprendre | non | Palette `yellow` |
 | `/learn/sentrainer` | Canonique | Apprendre | non | Palette `yellow` |
 | `/learn/bonnes-pratiques` | Canonique | Apprendre | non | Palette `yellow` |

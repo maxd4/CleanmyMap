@@ -16,6 +16,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
@@ -82,10 +83,10 @@ export default async function SponsorPortalPage() {
             className="space-y-6"
           />
           
-          <button className="group flex items-center gap-4 rounded-[2rem] bg-white px-10 py-7 text-[10px] font-black uppercase tracking-[0.2em] text-black transition-all hover:bg-amber-400 active:scale-95 shadow-2xl shadow-white/10">
+          <CmmButton tone="primary" variant="pill" className="group flex items-center gap-4 rounded-[2rem] px-10 py-7 text-[10px] font-black uppercase tracking-[0.2em] text-black transition-all active:scale-95 shadow-2xl shadow-white/10">
             <Download size={20} />
             Exporter le bilan certifié
-          </button>
+          </CmmButton>
         </div>
       </header>
 
@@ -203,13 +204,10 @@ export default async function SponsorPortalPage() {
               Chaque kilogramme collecté génère une économie directe de <strong className="text-white">1,50€</strong> pour la collectivité. Ce calcul est certifié par nos protocoles de mesure d&apos;impact environnemental.
             </p>
             
-            <Link 
-              href="/methodologie" 
-              className="inline-flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.3em] text-amber-400 hover:text-white transition-all group"
-            >
+            <CmmButton href="/methodologie" tone="secondary" variant="pill" className="inline-flex items-center gap-4 text-[10px] font-black uppercase tracking-[0.3em] text-black transition-all group">
               Accéder au livre blanc méthodologique
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-2" />
-            </Link>
+            </CmmButton>
           </div>
         </div>
       </section>

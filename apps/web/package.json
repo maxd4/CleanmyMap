@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "node ../../scripts/dev-with-fallback-port.mjs",
-    "build": "node scripts/ensure-deterministic-routes-manifest.mjs --prepare && next build --webpack && node scripts/ensure-deterministic-routes-manifest.mjs --finalize && node scripts/upload-sentry-sourcemaps.mjs",
+    "build": "node scripts/ensure-deterministic-routes-manifest.mjs --prepare && next build && node scripts/ensure-deterministic-routes-manifest.mjs --finalize && node scripts/upload-sentry-sourcemaps.mjs",
     "start": "next start",
     "lint": "eslint src",
     "typecheck": "npx tsc --noEmit --pretty false --skipLibCheck",

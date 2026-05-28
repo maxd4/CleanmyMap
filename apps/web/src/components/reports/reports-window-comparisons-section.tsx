@@ -1,3 +1,5 @@
+"use client";
+
 import { KpiComparisonCard } from "@/components/pilotage/kpi-comparison-card";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import { motion, type Variants } from "framer-motion";

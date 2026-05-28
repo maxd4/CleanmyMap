@@ -3,6 +3,7 @@ import {
   normalizeThirtySecondsSummaryProps,
   type ThirtySecondsSummaryProps,
 } from "./thirty-seconds-summary";
+import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 describe("normalizeThirtySecondsSummaryProps", () => {
   it("falls back to flat props when summary is undefined", () => {
@@ -54,7 +55,7 @@ describe("normalizeThirtySecondsSummaryProps", () => {
           detail: "Une alerte est disponible.",
         },
         recommendedAction: {
-          href: "/admin",
+          href: ADMIN_ROUTE,
           label: "Traiter",
           reason: "Action prioritaire.",
         },
@@ -76,7 +77,7 @@ describe("normalizeThirtySecondsSummaryProps", () => {
 
     expect(normalized.kpis).toHaveLength(1);
     expect(normalized.alert?.title).toBe("Résumé prioritaire");
-    expect(normalized.recommendedAction?.href).toBe("/admin");
+    expect(normalized.recommendedAction?.href).toBe(ADMIN_ROUTE);
     expect(normalized.recommendedReason).toBe("Action prioritaire.");
   });
 });

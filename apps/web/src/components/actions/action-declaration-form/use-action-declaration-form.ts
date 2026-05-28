@@ -19,7 +19,6 @@ import {
   loadDraftSnapshot,
   saveDraft,
   subscribeToDraftChanges,
-  type ActionDeclarationDraftSnapshot,
 } from "../action-declaration/draft-storage";
 import { summarizeActionDrawingValidation } from "../map/actions-map-geometry.utils";
 import { computeActionDataQuality } from "../action-declaration-form.quality";
@@ -35,6 +34,7 @@ import type {
 type UseActionDeclarationFormProps = {
   actorNameOptions: string[];
   defaultActorName: string;
+  isAuthenticated: boolean;
   userMetadata: {
     userId: string;
     username?: string;
@@ -42,16 +42,15 @@ type UseActionDeclarationFormProps = {
     email?: string;
   };
   linkedEventId?: string;
-  initialMode?: "quick" | "complete";
   initialRecordType?: "action" | "clean_place";
 };
 
 export function useActionDeclarationForm({
   actorNameOptions,
   defaultActorName,
+  isAuthenticated,
   userMetadata,
   linkedEventId,
-  initialMode = "quick",
   initialRecordType = "action",
 }: UseActionDeclarationFormProps) {
   const resolvedActorOptions = actorNameOptions;
@@ -62,24 +61,12 @@ export function useActionDeclarationForm({
     : (resolvedActorOptions[0] ?? userMetadata.userId);
   const createCleanForm = () =>
     createInitialFormState(resolvedDefaultActorName, initialRecordType);
-  const coerceRecordType = (draft: FormState): FormState =>
-    initialRecordType === "clean_place"
-      ? { ...draft, recordType: "clean_place" }
-      : draft;
 
   const [form, setForm] = useState<FormState>(() => createCleanForm());
   const pendingDraft = useSyncExternalStore(
     subscribeToDraftChanges,
     () => {
-      const snapshot = loadDraftSnapshot(createCleanForm());
-      if (!snapshot) {
-        return null;
-      }
-
-      return {
-        ...snapshot,
-        form: coerceRecordType(snapshot.form),
-      } as ActionDeclarationDraftSnapshot;
+      return loadDraftSnapshot(createCleanForm(), initialRecordType);
     },
     () => null,
   );
@@ -89,7 +76,7 @@ export function useActionDeclarationForm({
   const [visionEstimate, setVisionEstimate] = useState<ActionVisionEstimate | null>(null);
   const [visionStatus, setVisionStatus] = useState<"idle" | "processing" | "ready" | "error">("idle");
   const [routePreviewDrawing, setRoutePreviewDrawing] = useState<ActionDrawing | null>(null);
-  const [declarationMode] = useState<"quick" | "complete">(initialMode);
+  const [declarationMode] = useState<"complete">("complete");
   const [submissionState, setSubmissionState] = useState<"idle" | "pending" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
@@ -103,7 +90,7 @@ export function useActionDeclarationForm({
 
   function handleResumeDraft() {
     if (!pendingDraft) return;
-    setForm(coerceRecordType(pendingDraft.form));
+    setForm(pendingDraft.form);
     clearDraft();
     setHasAttemptedSubmit(false);
   }
@@ -132,7 +119,7 @@ export function useActionDeclarationForm({
       buildCreateActionPayload({
         form,
         declarationMode,
-        effectiveManualDrawingEnabled: declarationMode === "complete" && manualDrawingEnabled,
+        effectiveManualDrawingEnabled: manualDrawingEnabled,
         drawingIsValid,
         manualDrawing,
         isEntrepriseMode,
@@ -266,6 +253,23 @@ export function useActionDeclarationForm({
 
   async function handleConfirmSubmit() {
     if (submissionState === "pending") return;
+    if (!isAuthenticated) {
+      setValidationIssues([
+        {
+          field: "associationName",
+          message:
+            "Connectez-vous sur ordinateur pour compléter et envoyer ce formulaire.",
+        },
+      ]);
+      setHasAttemptedSubmit(true);
+      setErrorMessage(
+        "Connectez-vous sur ordinateur pour compléter et envoyer ce formulaire.",
+      );
+      setSubmissionState("error");
+      setShowConfirmation(false);
+      return;
+    }
+
     const stepOneIssues = getStepOneValidationIssues(form);
     if (stepOneIssues.length > 0) {
       setValidationIssues(stepOneIssues);
@@ -300,7 +304,7 @@ export function useActionDeclarationForm({
       const submissionPayload = await prepareCreateActionPayload({
         form: normalizedForm,
         declarationMode,
-        effectiveManualDrawingEnabled: declarationMode === "complete" && manualDrawingEnabled,
+        effectiveManualDrawingEnabled: manualDrawingEnabled,
         drawingIsValid: manualDrawingValidation.isValid,
         manualDrawing,
         routePreviewDrawing: effectiveRoutePreviewDrawing,

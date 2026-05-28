@@ -1,7 +1,6 @@
 import {
   HomeHero,
-  HomeCommunityActivity,
-  OriginCredibility,
+  HomeCommunityCredibility,
 } from "@/components/accueil";
 import {
   buildHomeCommunityActivity,
@@ -9,6 +8,7 @@ import {
   formatLandingOverviewErrorMessage,
   loadLandingOverview,
 } from "@/lib/accueil/data";
+import { HOME_ROUTE } from "@/lib/home-routes";
 import {
   buildHomeMetrics,
   type HomeCounters,
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     title: "CleanMyMap - Carte Dépollution Paris & Actions Citoyennes Écologie",
     description:
       "La carte citoyenne de propreté Paris. Signalez, nettoyez, agissez pour l'environnement. Benevolat, ecologie, impact terrain.",
-    url: "/",
+    url: HOME_ROUTE,
     siteName: "CleanMyMap",
     locale: "fr_FR",
     type: "website",
@@ -127,11 +127,10 @@ export default async function HomePage() {
     <main className="relative min-h-screen overflow-hidden font-sans">
       <div className="relative z-10">
         <HomeHero metrics={metrics} />
-        <HomeCommunityActivity
+        <HomeCommunityCredibility
           activity={communityActivity}
           errorMessage={overviewLoadError}
         />
-        <OriginCredibility />
       </div>
     </main>
   );

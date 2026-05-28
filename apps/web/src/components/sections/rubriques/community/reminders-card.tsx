@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Bell, Copy, CheckCircle2, Clock, AlertTriangle, Info } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { EventReminder } from "@/lib/community/engagement";
 import { cn } from "@/lib/utils";
 
@@ -54,13 +55,15 @@ function CommunityRemindersCard(props: CommunityRemindersCardProps) {
                   </div>
                 </div>
                 
-                <button
+                <CmmButton
                   onClick={() => void onCopyReminderMessage(reminder.message)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-600/20 opacity-0 group-hover/item:opacity-100"
+                  tone="secondary"
+                  variant="pill"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:opacity-100 transition-all shadow-lg shadow-indigo-600/20 opacity-0 group-hover/item:opacity-100"
                 >
                   <Copy size={12} />
                   Copier
-                </button>
+                </CmmButton>
               </div>
 
               <div className="flex items-start gap-3 p-4 rounded-2xl bg-slate-950/40 border border-white/5 mb-4">

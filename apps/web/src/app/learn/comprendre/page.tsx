@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { LearnComprendreVisualIntro } from "@/components/learn/learn-comprendre-visual-intro";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
 import { ImpactOrderOfMagnitudeSection } from "@/components/learn/impact-order-of-magnitude";
+import Link from "next/link";
 import { GIECContent } from "@/components/learn/giac-content";
 import { PlanetaryBoundariesInteractive } from "@/components/learn/planetary-boundaries";
 import { SustainableGoalsInteractive } from "@/components/learn/sustainable-goals";
@@ -56,9 +57,18 @@ export default function LearnComprendrePage() {
             href: "/learn/sentrainer",
             label: locale === "fr" ? "Passer au quiz" : "Go to quiz",
           }}
-          className="border-yellow-200 bg-white/88"
+          className="border-amber-200 bg-white/88"
         />
         <ImpactOrderOfMagnitudeSection />
+        <div className="flex justify-end">
+          <Link
+            href="/methodologie"
+            className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-5 py-2.5 text-sm font-bold text-amber-900 transition hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/60"
+          >
+            {locale === "fr" ? "Comprendre la méthodologie complète" : "Explore our full methodology"}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+          </Link>
+        </div>
         <GIECContent />
         <PlanetaryBoundariesInteractive />
         <SustainableGoalsInteractive />

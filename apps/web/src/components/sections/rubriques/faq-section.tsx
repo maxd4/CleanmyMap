@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { HelpCircle, ChevronDown, User, Building2, Heart, Users, Search, Sparkles, MessageCircleQuestion } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 
 interface FAQItem {
@@ -133,19 +134,23 @@ export function FAQSection() {
         <div className="flex flex-col lg:flex-row gap-8 items-stretch lg:items-center justify-between">
            {/* Category Picker */}
            <div className="flex flex-wrap items-center gap-2 p-2 rounded-[2rem] bg-slate-950/40 border border-white/5 backdrop-blur-3xl shadow-2xl">
-              <button
+              <CmmButton
                 onClick={() => setActiveCategory("all")}
+                tone={activeCategory === "all" ? "primary" : "tertiary"}
+                variant="pill"
                 className={cn(
                   "px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all",
                   activeCategory === "all" ? "bg-white text-slate-950 shadow-2xl" : "text-slate-500 hover:text-white hover:bg-white/5"
                 )}
               >
                 Tous
-              </button>
+              </CmmButton>
               {CATEGORIES.map((cat) => (
-                <button
+                <CmmButton
                   key={cat.id}
                   onClick={() => setActiveCategory(cat.id)}
+                  tone={activeCategory === cat.id ? "primary" : "tertiary"}
+                  variant="pill"
                   className={cn(
                     "flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all",
                     activeCategory === cat.id ? "bg-white text-slate-950 shadow-2xl" : "text-slate-500 hover:text-white hover:bg-white/5"
@@ -153,7 +158,7 @@ export function FAQSection() {
                 >
                   <cat.icon size={14} />
                   {cat.label}
-                </button>
+                </CmmButton>
               ))}
            </div>
 
@@ -193,8 +198,10 @@ export function FAQSection() {
                     openItems.includes(item.question) ? "shadow-2xl" : ""
                   )}
                 >
-                  <button
+                  <CmmButton
                     onClick={() => toggleItem(item.question)}
+                    tone={openItems.includes(item.question) ? "primary" : "tertiary"}
+                    variant="pill"
                     className="w-full text-left p-8 flex items-start justify-between gap-6 group relative z-10"
                   >
                     <div className="space-y-2">
@@ -217,7 +224,7 @@ export function FAQSection() {
                     )}>
                        <ChevronDown size={20} />
                     </div>
-                  </button>
+                  </CmmButton>
                   <AnimatePresence>
                     {openItems.includes(item.question) && (
                       <motion.div
@@ -248,12 +255,14 @@ export function FAQSection() {
                 <h3 className="text-xl font-black text-white">Aucun résultat trouvé</h3>
                 <p className="text-slate-500 font-bold">Essayez d'autres mots-clés ou changez de catégorie.</p>
              </div>
-             <button
+             <CmmButton
                onClick={() => { setActiveCategory("all"); setSearchQuery(""); }}
+               tone="primary"
+               variant="pill"
                className="px-8 py-4 rounded-xl bg-white text-slate-950 text-xs font-black uppercase tracking-[0.2em] shadow-2xl hover:scale-105 transition-all"
              >
                 Réinitialiser
-             </button>
+             </CmmButton>
           </div>
         )}
 
@@ -272,9 +281,9 @@ export function FAQSection() {
                  <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Notre équipe support vous répond sous 24h</p>
               </div>
            </div>
-           <button className="relative z-10 px-8 py-4 rounded-xl border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all">
+          <CmmButton type="button" tone="secondary" variant="pill" className="relative z-10 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all">
               Contacter le support
-           </button>
+          </CmmButton>
         </RubriqueCard>
       </div>
     </SectionShell>

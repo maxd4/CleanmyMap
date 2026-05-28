@@ -9,11 +9,12 @@ import {
   Target,
   TrendingUp,
 } from "lucide-react";
-import Link from "next/link";
 import Image from "next/image";
 import { useRef } from "react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { DecisionSummary } from "@/lib/pilotage/overview";
 import type { ZoneComparisonRow } from "@/lib/pilotage/prioritization";
+import { REPORTS_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
 
 type HomeImpactSummaryProps = {
@@ -186,21 +187,35 @@ export function HomeImpactSummary({
               </div>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Link
+              <CmmButton
+                href={REPORTS_ROUTE}
+                tone="primary"
+                variant="pill"
+                title="Générer un rapport"
+                className="h-10 px-5 text-xs font-black uppercase tracking-[0.16em]"
+              >
+                <ArrowRight size={14} />
+                Générer un rapport
+              </CmmButton>
+              <CmmButton
                 href="/methodologie"
+                tone="secondary"
+                variant="pill"
                 title="Comprendre le calcul des indicateurs"
-              className="inline-flex items-center gap-2 rounded-2xl border border-white/14 bg-[rgba(8,34,20,0.94)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:border-white/24 hover:bg-[rgba(10,42,25,0.98)]"
+                className="h-10 px-5 text-xs font-black uppercase tracking-[0.16em]"
               >
                 <Info size={14} />
                 Méthodologie
-              </Link>
-              <Link
-                href="/reports"
-                className="inline-flex items-center gap-2 rounded-2xl bg-emerald-400 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:bg-emerald-300"
+              </CmmButton>
+              <CmmButton
+                href="/actions/history"
+                tone="secondary"
+                variant="pill"
+                className="inline-flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] transition"
               >
-                Voir les rapports
+                Historique des actions
                 <ArrowRight size={14} />
-              </Link>
+              </CmmButton>
             </div>
           </div>
 
@@ -383,13 +398,15 @@ export function HomeImpactSummary({
                         <p className="mt-2 text-sm leading-relaxed text-white">
                           {summary.recommendedAction.reason}
                         </p>
-                        <Link
+                        <CmmButton
                           href={summary.recommendedAction.href}
-                          className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-white/14 bg-white/10 px-4 py-2.5 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:border-white/24 hover:bg-white/14"
+                          tone="tertiary"
+                          variant="pill"
+                          className="mt-4 h-11 px-4 text-xs font-black uppercase tracking-[0.16em] gap-2"
                         >
                           Ouvrir la cible
                           <ArrowRight size={14} />
-                        </Link>
+                        </CmmButton>
                       </div>
                     </div>
                   ) : (

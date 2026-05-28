@@ -1,4 +1,9 @@
-const PROFILE_ROUTE_PREFIXES = ["/profil", "/parcours"] as const;
+import {
+  PARCOURS_ROUTE_PREFIX,
+  PROFILE_ROUTE_PREFIX,
+} from "@/lib/accueil-pilotage-routes";
+
+const PROFILE_ROUTE_PREFIXES = [PROFILE_ROUTE_PREFIX, PARCOURS_ROUTE_PREFIX] as const;
 
 export function getRoleSwitchTargetPath(
   currentPathname: string,

@@ -13,6 +13,7 @@ import { Bug, Lightbulb, Send, Info, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSubmissionLock } from "@/hooks/use-submission-lock";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -184,9 +185,11 @@ export function DiscussionBugReportForm() {
            <div className="space-y-2">
               <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-1">Type</span>
               <div className="flex p-1 rounded-xl bg-slate-950/50 border border-white/5 backdrop-blur-xl">
-                 <button
+                 <CmmButton
                     type="button"
                     onClick={() => setReportType("bug")}
+                    tone={reportType === "bug" ? "primary" : "tertiary"}
+                    variant="pill"
                     className={cn(
                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                        reportType === "bug" ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20" : "text-slate-500 hover:text-white"
@@ -194,10 +197,12 @@ export function DiscussionBugReportForm() {
                  >
                     <Bug size={14} />
                     {fr ? "Bug" : "Bug"}
-                 </button>
-                 <button
+                 </CmmButton>
+                 <CmmButton
                     type="button"
                     onClick={() => setReportType("idea")}
+                    tone={reportType === "idea" ? "primary" : "tertiary"}
+                    variant="pill"
                     className={cn(
                        "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
                        reportType === "idea" ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/20" : "text-slate-500 hover:text-white"
@@ -205,7 +210,7 @@ export function DiscussionBugReportForm() {
                  >
                     <Lightbulb size={14} />
                     {fr ? "Idée" : "Idea"}
-                 </button>
+                 </CmmButton>
               </div>
            </div>
 
@@ -252,9 +257,11 @@ export function DiscussionBugReportForm() {
              </p>
           </div>
 
-          <button
+          <CmmButton
             type="submit"
             disabled={!canSubmit}
+            tone={reportType === 'bug' ? "primary" : "secondary"}
+            variant="pill"
             className={cn(
                "w-full md:w-auto flex items-center justify-center gap-4 px-10 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all hover:scale-105 disabled:scale-100 disabled:opacity-40 disabled:cursor-not-allowed",
                reportType === 'bug' ? "bg-rose-500 text-white shadow-rose-500/20" : "bg-amber-500 text-slate-950 shadow-amber-500/20"
@@ -262,7 +269,7 @@ export function DiscussionBugReportForm() {
           >
             {submitState === "submitting" ? (fr ? "Envoi..." : "Sending...") : (fr ? "Envoyer" : "Send")}
             <Send size={14} />
-          </button>
+          </CmmButton>
         </div>
 
         <AnimatePresence>
@@ -299,13 +306,15 @@ export function DiscussionBugReportForm() {
                   title={fr ? "Une erreur a bloqué l'envoi" : "A problem blocked the submission"}
                   message={error.message}
                   actions={
-                    <button 
+                    <CmmButton 
                        type="button" 
                        onClick={() => void submitReport()} 
-                       className="px-4 py-2 rounded-xl bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 transition-all"
+                       tone="primary"
+                       variant="pill"
+                       className="px-4 py-2 rounded-xl text-white text-[10px] font-black uppercase tracking-widest hover:bg-rose-600 transition-all"
                     >
                        {fr ? "Réessayer" : "Retry"}
-                    </button>
+                    </CmmButton>
                   }
                 />
               )}

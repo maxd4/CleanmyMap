@@ -14,6 +14,7 @@ import {
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
 import { cn } from "@/lib/utils";
+import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 function severityClasses(severity: AlertSeverity): string {
   if (severity === "high") {
@@ -65,7 +66,7 @@ export function BusinessAlertsPanel() {
       subtitle="Supervision automatique des priorités terrain."
       headerAction={
         <Link
-          href="/admin"
+          href={ADMIN_ROUTE}
           className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400 hover:text-emerald-300 transition-colors"
         >
           Vue à traiter

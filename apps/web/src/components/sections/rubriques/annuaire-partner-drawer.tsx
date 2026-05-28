@@ -54,12 +54,14 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
               <div className="absolute top-[-20%] right-[-10%] h-[120%] w-[80%] rounded-full bg-violet-500/10 blur-[100px]" />
               
               <div className="absolute top-8 right-8 z-20">
-                <button
+                <CmmButton
                   onClick={onClose}
-                  className="rounded-2xl border border-white/10 bg-slate-950/40 p-4 text-white/60 backdrop-blur-xl transition-all hover:bg-white/10 hover:text-white active:scale-90 shadow-2xl"
+                  tone="tertiary"
+                  variant="pill"
+                  className="rounded-2xl p-4 text-white/60 backdrop-blur-xl transition-all hover:text-white active:scale-90 shadow-2xl"
                 >
                   <X size={20} />
-                </button>
+                </CmmButton>
               </div>
 
               <div className="absolute bottom-10 left-10 right-10 flex items-end gap-8 z-10">
@@ -309,12 +311,14 @@ export function AnnuairePartnerDrawer({ entry, isOpen, onClose, fr }: AnnuairePa
 
             {/* Footer Navigation */}
             <div className="flex gap-4 border-t border-white/5 bg-slate-950/40 p-10 backdrop-blur-3xl">
-              <button 
+              <CmmButton 
                 onClick={onClose}
-                className="h-16 flex-1 rounded-2xl border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white hover:bg-white/10 transition-all"
+                tone="tertiary"
+                variant="pill"
+                className="h-16 flex-1 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white hover:bg-white/10 transition-all"
               >
                 {fr ? "Fermer" : "Close"}
-              </button>
+              </CmmButton>
               <CmmButton 
                 tone="primary"
                 variant="default"

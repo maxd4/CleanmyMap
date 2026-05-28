@@ -13,6 +13,14 @@ import { createPublicRateLimitResponse } from "@/lib/security/validation";
 import { getTrustedClientIp } from "@/lib/rate-limit/utils";
 import { resolveBackdropToneKey } from "@/lib/ui/backdrop-tone";
 import { resolveFooterVariant } from "@/lib/ui/footer-variant";
+import {
+  ADMIN_ROUTE,
+  DASHBOARD_ROUTE,
+  EXPLORER_ROUTE,
+  PARCOURS_ROUTE,
+  PROFIL_ROUTE,
+  SPONSOR_PORTAL_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 const isProtectedRoute = createRouteMatcher([...PROTECTED_ROUTE_PATTERNS]);
 const PUBLIC_ROUTE_EXCEPTIONS = ["/actions/map", "/api/actions/map"] as const;
@@ -27,7 +35,6 @@ type PostRateLimitRule = {
 
 const POST_RATE_LIMIT_RULES: PostRateLimitRule[] = [
   { prefix: "/api/newsletter/subscribe", limit: 5, window: 60, label: "newsletter" },
-  { prefix: "/api/actions/simple", limit: 4, window: 300, label: "actions-simple" },
   { prefix: "/api/analytics/funnel", limit: 20, window: 60, label: "analytics-funnel" },
   { prefix: "/api/community/bug-reports", limit: 6, window: 60, label: "community-bug-reports" },
   { prefix: "/api/community/events", limit: 8, window: 60, label: "community-events" },
@@ -96,20 +103,20 @@ const LIMIT = 30; // requêtes
 const WINDOW = 60 * 1000; // 1 minute en ms
 export const APP_SHELL_ROUTE_PREFIXES = [
   "/actions",
-  "/admin",
-  "/dashboard",
-  "/explorer",
+  ADMIN_ROUTE,
+  DASHBOARD_ROUTE,
+  EXPLORER_ROUTE,
   "/learn",
   "/methodologie",
   "/observatoire",
-  "/parcours",
+  PARCOURS_ROUTE,
   "/partners",
   "/prints",
-  "/profil",
+  PROFIL_ROUTE,
   "/reports",
   "/sections",
   "/signalement",
-  "/sponsor-portal",
+  SPONSOR_PORTAL_ROUTE,
 ] as const;
 
 export function isAppShellRoute(pathname: string): boolean {

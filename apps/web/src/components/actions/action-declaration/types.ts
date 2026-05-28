@@ -34,7 +34,7 @@ export type FormState = {
 };
 
 export type SubmissionState ="idle" |"pending" |"success" |"error";
-export type DeclarationMode ="quick" |"complete";
+export type DeclarationMode ="complete";
 
 export type ValidationIssue = {
  field:
@@ -54,7 +54,6 @@ export type ActionDeclarationFormProps = {
  clerkIdentityLabel: string;
  clerkUserId: string;
  linkedEventId?: string;
- initialMode?: DeclarationMode;
 };
 
 export type UpdateFormField = <K extends keyof FormState>(

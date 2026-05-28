@@ -30,10 +30,10 @@ describe("navigation display modes", () => {
   it("limits to essential sections in minimaliste mode", () => {
     const minimaliste = collectRouteIds("coordinateur", "minimaliste");
 
-    expect(minimaliste).toContain("profile");
     expect(minimaliste).toContain("dashboard");
     expect(minimaliste).toContain("map");
     expect(minimaliste).toContain("community");
+    expect(minimaliste).not.toContain("profile");
     expect(minimaliste).not.toContain("climate");
     expect(minimaliste).not.toContain("recycling");
   });
@@ -120,6 +120,7 @@ describe("navigation display modes", () => {
     expect(networkSpace?.items.map((item) => item.routeId)).toEqual([
       "network",
       "community",
+      "feedback",
       "messagerie",
       "open-data",
     ]);
@@ -149,13 +150,26 @@ describe("navigation display modes", () => {
     expect(homeSpace?.items.map((item) => item.routeId)).toEqual([
       "dashboard",
       "explorer",
-      "profile",
-      "feedback",
       "pilotage",
       "admin",
       "sponsor",
       "elus",
       "godmode",
+    ]);
+  });
+
+  it("places feedback in the network block", () => {
+    const networkSpace = getNavigationSpacesForProfile(
+      "max",
+      "exhaustif",
+    ).find((space) => space.id === "network");
+
+    expect(networkSpace?.items.map((item) => item.routeId)).toEqual([
+      "network",
+      "community",
+      "feedback",
+      "messagerie",
+      "open-data",
     ]);
   });
 
@@ -174,15 +188,13 @@ describe("navigation display modes", () => {
     ).find((space) => space.id === "visualize");
 
     expect(homeSpace?.items.map((item) => item.label.fr)).toEqual([
-      "Tableau de bord",
+      "Mon espace",
       "Sommaire",
-      "Profil",
-      "Feedback",
       "Pilotage",
-      "Administration",
+      "Administration du site",
       "Espace décideur",
       "Gouvernance",
-      "Mode administrateur",
+      "Créateur du site",
     ]);
     expect(learnSpace?.items.map((item) => item.label.fr)).toContain("S'entraîner");
     expect(visualizeSpace?.items.map((item) => item.label.fr)).toContain("Rapports d'impact");
@@ -214,7 +226,7 @@ describe("navigation display modes", () => {
       "dashboard",
       "reports",
     ]);
-    expect(fallback[0]?.label.fr).toBe("Tableau de bord");
+    expect(fallback[0]?.label.fr).toBe("Mon espace");
     expect(fallback[1]?.label.fr).toBe("Rapports d'impact");
   });
 

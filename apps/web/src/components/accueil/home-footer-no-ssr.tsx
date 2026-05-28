@@ -1,13 +1,8 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import type { ComponentProps } from "react";
+import { HomeFooter } from "@/components/accueil";
+import type { HomeFooterProps } from "@/components/accueil/accueil-footer";
 
-const HomeFooterImpl = dynamic(
-  () => import("@/components/accueil").then((mod) => mod.HomeFooter),
-  { ssr: false, loading: () => null },
-);
-
-export function HomeFooterNoSSR(props: ComponentProps<typeof HomeFooterImpl>) {
-  return <HomeFooterImpl {...props} />;
+export function HomeFooterNoSSR(props: HomeFooterProps) {
+  return <HomeFooter {...props} />;
 }

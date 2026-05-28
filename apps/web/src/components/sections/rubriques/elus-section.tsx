@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 type PilotageOverviewResponse = {
   status: "ok";
@@ -137,9 +138,9 @@ export function ElusSection() {
           <p className="text-slate-400 font-bold max-w-md mx-auto leading-relaxed">
             Le dashboard de pilotage nécessite une authentification institutionnelle de haut niveau ou fait l'objet d'une maintenance technique périodique.
           </p>
-          <button className="mt-10 px-8 py-4 rounded-2xl bg-white text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl hover:translate-x-2 transition-transform">
+          <CmmButton type="button" tone="secondary" variant="pill" className="mt-10 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-transform">
              Demander un accès
-          </button>
+          </CmmButton>
         </div>
       </SectionShell>
     );
@@ -162,19 +163,20 @@ export function ElusSection() {
                 { id: "zones", label: fr ? "Priorités Zones" : "Zone Priorities", icon: MapPin },
                 { id: "methods", label: fr ? "Référentiel" : "Reference", icon: FileText },
               ].map((tab) => (
-                <button
+                <CmmButton
                   key={tab.id}
+                  type="button"
+                  tone={activeTab === tab.id ? "primary" : "tertiary"}
+                  variant="pill"
                   onClick={() => setActiveTab(tab.id as "overview" | "zones" | "methods")}
                   className={cn(
                     "flex items-center gap-3 px-8 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500",
-                    activeTab === tab.id 
-                      ? "bg-white text-slate-950 shadow-[0_0_40px_rgba(255,255,255,0.2)]" 
-                      : "text-slate-500 hover:text-white hover:bg-white/5"
+                    activeTab === tab.id ? "shadow-[0_0_40px_rgba(255,255,255,0.2)]" : ""
                   )}
                 >
                   <tab.icon size={14} className={cn(activeTab === tab.id ? "animate-pulse" : "")} />
                   {tab.label}
-                </button>
+                </CmmButton>
               ))}
            </div>
 
@@ -183,10 +185,10 @@ export function ElusSection() {
                  <Clock size={14} />
                  {fr ? "Dernière MAJ: il y a 12 min" : "Last Update: 12 min ago"}
               </div>
-              <button className="flex items-center gap-3 px-8 py-4 rounded-2xl bg-sky-500/10 border border-sky-500/20 text-sky-400 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-sky-500 hover:text-white transition-all shadow-2xl">
+              <CmmButton type="button" tone="secondary" variant="pill" className="flex items-center gap-3 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all">
                  <Download size={14} />
                  {fr ? "Rapport PDF" : "PDF Report"}
-              </button>
+              </CmmButton>
            </div>
         </div>
 
@@ -233,13 +235,10 @@ export function ElusSection() {
                                {data.summary.recommendedAction.reason}
                             </p>
                          </div>
-                         <Link 
-                            href={data.summary.recommendedAction.href}
-                            className="relative z-10 mt-12 flex items-center justify-between p-6 rounded-[1.5rem] bg-white text-slate-950 font-black uppercase tracking-[0.2em] text-[10px] shadow-2xl hover:translate-x-3 transition-transform"
-                         >
+                         <CmmButton href={data.summary.recommendedAction.href} tone="primary" variant="pill" className="relative z-10 mt-12 flex items-center justify-between p-6 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-transform">
                             {data.summary.recommendedAction.label}
                             <ArrowRight size={18} />
-                         </Link>
+                         </CmmButton>
                       </div>
                    </div>
 
@@ -311,9 +310,9 @@ export function ElusSection() {
                                className="bg-slate-950/40 border border-white/10 rounded-2xl pl-12 pr-6 py-4 text-xs font-black text-white placeholder-slate-700 outline-none focus:border-sky-500/50 transition-all w-64 backdrop-blur-3xl"
                             />
                          </div>
-                         <button className="p-4 rounded-2xl bg-white/5 border border-white/10 text-slate-500 hover:text-white transition-all">
+                         <CmmButton tone="tertiary" variant="pill" className="p-4 rounded-2xl text-slate-500 hover:text-white transition-all">
                             <Filter size={18} />
-                         </button>
+                         </CmmButton>
                       </div>
                    </div>
 

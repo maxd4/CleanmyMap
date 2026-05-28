@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useCallback, useState } from "react";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import {
   fetchCurrentAccountIdentity,
@@ -63,7 +64,7 @@ export function ChatShell({
   const { locale } = useSitePreferences();
   const pathname = usePathname();
   const userId = user?.id;
-  const supabase = useMemo(() => getSupabaseBrowserClient(() => getToken()), [getToken]);
+  const [supabase, setSupabase] = useState<SupabaseClient | null>(null);
   const [currentAccountIdentity, setCurrentAccountIdentity] =
     useState<CurrentAccountIdentity | null>(null);
 
@@ -120,6 +121,28 @@ export function ChatShell({
     () => extractZoneContextFromMetadata(publicMetadata),
     [publicMetadata]
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    try {
+      const client = getSupabaseBrowserClient(() => getToken());
+      if (!cancelled) {
+        setSupabase(client);
+      }
+    } catch (error) {
+      if (!cancelled) {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("[ChatShell] Supabase browser client unavailable:", error);
+        }
+        setSupabase(null);
+      }
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getToken]);
 
   const effectiveZone = useMemo(
     () => selectedZone || clerkZoneContext.zoneName || (clerkArrondissement ? `${clerkArrondissement}e arrondissement` : ""),

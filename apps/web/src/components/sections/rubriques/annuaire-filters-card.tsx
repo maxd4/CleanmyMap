@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { 
   KIND_FILTERS, 
   CONTRIBUTION_FILTERS, 
@@ -106,21 +107,22 @@ export function AnnuaireFiltersCard({
         </div>
         <div className="flex flex-wrap gap-2">
           {KIND_FILTERS.map((item) => (
-            <button
+            <CmmButton
               key={item.id}
+              type="button"
+              tone={filterKind === item.value ? "primary" : "tertiary"}
+              variant="pill"
               onClick={() => {
                 setActorCardsPage(1);
                 setFilterKind(item.value);
               }}
               className={cn(
-                "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border",
-                filterKind === item.value
-                  ? "border-violet-500 bg-violet-600/20 text-violet-300 shadow-lg scale-105"
-                  : "border-white/5 bg-white/5 text-slate-500 hover:border-white/20 hover:text-white"
+                "px-5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                filterKind === item.value ? "shadow-lg scale-105" : ""
               )}
             >
               {item.label}
-            </button>
+            </CmmButton>
           ))}
         </div>
       </div>
@@ -135,21 +137,22 @@ export function AnnuaireFiltersCard({
         </div>
         <div className="flex flex-wrap gap-2">
           {CONTRIBUTION_FILTERS.map((item) => (
-            <button
+            <CmmButton
               key={item.value}
+              type="button"
+              tone={filterContribution === item.value ? "primary" : "tertiary"}
+              variant="pill"
               onClick={() => {
                 setActorCardsPage(1);
                 setFilterContribution(item.value as ContributionType | "all");
               }}
               className={cn(
-                "px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border",
-                filterContribution === item.value
-                  ? "border-violet-500 bg-violet-600/20 text-violet-300 shadow-lg scale-105"
-                  : "border-white/5 bg-white/5 text-slate-500 hover:border-white/20 hover:text-white"
+                "px-5 py-2.5 text-[10px] font-black uppercase tracking-widest transition-all duration-300",
+                filterContribution === item.value ? "shadow-lg scale-105" : ""
               )}
             >
               {item.label}
-            </button>
+            </CmmButton>
           ))}
         </div>
       </div>
@@ -176,25 +179,30 @@ export function AnnuaireFiltersCard({
                   </div>
                </div>
                <div className="flex items-center gap-4">
-                  <button
+                  <CmmButton
+                    type="button"
+                    tone="secondary"
+                    variant="pill"
                     onClick={() => {
                       setZoneFilter("all");
                       setFilterKind("all");
                       setFilterContribution("all");
                       setSearchTerm("");
                     }}
-                    className="flex items-center gap-3 px-6 py-3 rounded-xl border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all"
+                    className="flex items-center gap-3 px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] transition-all"
                   >
                     <RotateCcw size={14} />
                     {fr ? "Réinitialiser" : "Reset"}
-                  </button>
-                  <Link
+                  </CmmButton>
+                  <CmmButton
                     href="/partners/onboarding"
-                    className="flex items-center gap-3 px-6 py-3 rounded-xl bg-amber-500 text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl hover:scale-105 transition-all"
+                    tone="primary"
+                    variant="pill"
+                    className="flex items-center gap-3 px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all"
                   >
                     <PlusCircle size={14} />
                     {fr ? "Proposer" : "Propose"}
-                  </Link>
+                  </CmmButton>
                </div>
             </div>
           </motion.div>

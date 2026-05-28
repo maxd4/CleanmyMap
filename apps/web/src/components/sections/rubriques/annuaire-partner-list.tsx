@@ -59,38 +59,42 @@ export function AnnuairePartnerList({
 
       {totalPages > 1 ? (
         <div className="mt-12 flex items-center justify-center gap-4 border-t border-white/5 pt-8">
-          <button
+          <CmmButton
             disabled={currentPage === 1}
             onClick={() => onPageChange(currentPage - 1)}
-            className="px-6 py-3 rounded-xl border border-white/5 bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            tone="tertiary"
+            variant="pill"
+            className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           >
             {fr ? "Précédent" : "Previous"}
-          </button>
+          </CmmButton>
           
           <div className="flex items-center gap-2">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
+              <CmmButton
                 key={p}
                 onClick={() => onPageChange(p)}
+                tone={currentPage === p ? "primary" : "tertiary"}
+                variant="pill"
                 className={cn(
                   "w-10 h-10 rounded-xl text-[11px] font-black tracking-tighter transition-all",
-                  currentPage === p
-                    ? "bg-white text-slate-950 shadow-2xl scale-110"
-                    : "border border-white/5 bg-slate-950/40 text-slate-500 hover:border-white/20 hover:text-white"
+                  currentPage === p ? "shadow-2xl scale-110" : "hover:shadow-md"
                 )}
               >
                 {p}
-              </button>
+              </CmmButton>
             ))}
           </div>
 
-          <button
+          <CmmButton
             disabled={currentPage === totalPages}
             onClick={() => onPageChange(currentPage + 1)}
-            className="px-6 py-3 rounded-xl border border-white/5 bg-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            tone="tertiary"
+            variant="pill"
+            className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           >
             {fr ? "Suivant" : "Next"}
-          </button>
+          </CmmButton>
         </div>
       ) : null}
     </div>

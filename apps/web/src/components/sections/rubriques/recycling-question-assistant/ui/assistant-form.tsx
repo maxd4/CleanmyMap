@@ -1,6 +1,7 @@
 import { Search, RotateCcw } from "lucide-react";
 import { QUICK_PROMPTS, Locale } from "../assistant-constants";
 import { cn } from "@/lib/utils";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 interface AssistantFormProps {
   question: string;
@@ -27,27 +28,31 @@ export function AssistantForm({ question, setQuestion, copy, locale }: Assistant
 
         <div className="flex flex-wrap gap-2">
           {QUICK_PROMPTS[locale].map((item) => (
-            <button
+            <CmmButton
               key={item}
               type="button"
               onClick={() => setQuestion(item)}
-              className="rounded-xl border border-white/5 bg-white/5 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-all hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-400"
+              tone="tertiary"
+              variant="pill"
+              className="rounded-xl px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-all hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-400"
             >
               {item}
-            </button>
+            </CmmButton>
           ))}
         </div>
       </div>
 
       <div className="pt-6 border-t border-white/5 flex flex-col gap-4">
         <div className="flex items-center gap-3">
-          <button
+          <CmmButton
             type="button"
             onClick={() => setQuestion("")}
-            className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-400 transition-all hover:bg-white/10 hover:text-white"
+            tone="tertiary"
+            variant="pill"
+            className="flex h-12 w-12 items-center justify-center rounded-xl text-slate-400 transition-all hover:bg-white/10 hover:text-white"
           >
             <RotateCcw size={18} />
-          </button>
+          </CmmButton>
           <div className="flex-grow rounded-xl bg-white/5 border border-white/5 px-5 py-3">
             <p className="text-[10px] font-black text-slate-500 leading-relaxed italic">
               {copy.hint}
@@ -55,12 +60,14 @@ export function AssistantForm({ question, setQuestion, copy, locale }: Assistant
           </div>
         </div>
 
-        <button
-          className="group flex items-center justify-center w-full h-14 rounded-2xl bg-emerald-500 px-6 py-2.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-950 transition-all hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98]"
+        <CmmButton
+          tone="primary"
+          variant="pill"
+          className="group flex items-center justify-center w-full h-14 rounded-2xl px-6 py-2.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-950 transition-all hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98]"
         >
           <Search size={18} className="mr-2" />
           {fr ? "Analyser le déchet" : "Analyze waste"}
-        </button>
+        </CmmButton>
       </div>
     </div>
   );

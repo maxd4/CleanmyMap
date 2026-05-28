@@ -7,7 +7,7 @@ describe("RubriquePdfExportButton", () => {
   it("renders the shared PDF label and generated filename", () => {
     const markup = renderToStaticMarkup(
       React.createElement(RubriquePdfExportButton, {
-        rubrique: "Tableau de bord",
+        rubrique: "Mon espace",
         periode: "2026-05",
         organizationType: "Association",
         defaultTitle: "Bilan mensuel",
@@ -18,7 +18,7 @@ describe("RubriquePdfExportButton", () => {
     );
 
     expect(markup).toContain("Ouvrir le rapport PDF");
-    expect(markup).toContain("rapport_tableau_de_bord_2026_05.pdf");
+    expect(markup).toContain("rapport_mon_espace_2026_05.pdf");
     expect(markup).toContain("Exporter le rapport PDF Bilan mensuel");
   });
 });

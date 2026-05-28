@@ -73,10 +73,11 @@ Le point important est le suivant :
 
 | Livrable | Statut |
 |---|---|
+| Routes canoniques du bloc centralisées dans `lib/accueil-pilotage-routes.ts` | Fait |
 | `01-accueil-pilotage.ts` | Fait |
 | `PageHero` | Fait |
 | `SectionShell` résout la famille via `pathname` | Fait |
-| Migration de `/dashboard`, `/pilotage`, `/profil/*`, `/sponsor-portal` | Fait |
+| Migration de `/dashboard` (canon), `/profil` (alias), `/pilotage`, `/profil/*`, `/sponsor-portal` | Fait |
 | Exception `/explorer` | Fait |
 
 ### Cartes et ponts bloc 01
@@ -90,13 +91,24 @@ Le point important est le suivant :
 | Migration bloc 01 de `/profil/[profile]` | Fait |
 | Hook `usePageFamily()` | Fait |
 
-### Blocs 02 à 05
+### Homepage autonome, bloc 00
 
 | Livrable | Statut |
 |---|---|
-| Affiner `hero` et `card` pour Agir, Cartographie/Impact, Réseau, Apprendre | En cours |
-| Migrer des pages pilotes par bloc | En cours |
-| Aligner `INDEX.md` et les fiches `pages_site` sur `PageFamilyId` | En cours |
+| Route canonique `/` centralisée pour les usages internes | Fait |
+| Alias `/accueil` conservé uniquement pour compatibilité | Fait |
+| Footer et variantes liées à la homepage alignés sur le même helper | Fait |
+| Documentation `pages_site` clarifiée sur la route canonique du bloc 00 | Fait |
+
+### Blocs 02 à 05
+
+Ce lot couvre la première vague de cohérence des blocs métier et de navigation visible. Les pages secondaires non encore alignées restent suivies dans `documentation/pages_site/INDEX.md`.
+
+| Livrable | Statut |
+|---|---|
+| Affiner `hero` et `card` pour Agir, Cartographie/Impact, Réseau, Apprendre | Fait |
+| Migrer des pages pilotes par bloc | Fait |
+| Aligner `INDEX.md` et les fiches `pages_site` sur `PageFamilyId` | Fait |
 
 ### Familles autonomes 06 à 10
 
@@ -234,11 +246,11 @@ Piste :
 | Type | Couverture attendue | Exemples de routes | Remarque |
 |---|---|---|---|
 | 00 Homepage | autonome | `/`, `/accueil` | hors bloc |
-| 01 Accueil & Pilotage | famille bloc | `/dashboard`, `/pilotage`, `/profil`, `/profil/[profile]`, `/sponsor-portal`, `/explorer`, `/parcours` | contient les exceptions UI et les profils |
+| 01 Accueil & Pilotage | famille bloc | `/dashboard`, `/profil` (alias), `/pilotage`, `/profil/[profile]`, `/sponsor-portal`, `/explorer`, `/parcours` | cockpit personnel fusionné, exceptions UI et profils détaillés |
 | 02 Agir | famille bloc | `/actions/new`, `/actions/history`, `/signalement`, `/missions/[id]`, `/sections/route`, `/declaration` | famille métier orientée action |
 | 03 Cartographie & Impact | famille bloc | `/actions/map`, `/methodologie`, `/gamification`, `/observatoire`, `/profil/impact`, `/reports`, `/sandbox` | deux sous-teintes logiques sky / red |
-| 04 Réseau & Discussions | famille bloc | `/community`, `/messagerie`, `/open-data`, `/partners/*` | palette indigo / pink selon les sous-espaces |
-| 05 Apprendre | famille bloc | `/learn/*` | palette yellow |
+| 04 Réseau & Discussions | famille bloc | `/community`, `/sections/feedback`, `/messagerie`, `/open-data`, `/partners/*` | palette indigo / pink selon les sous-espaces |
+| 05 Apprendre | famille bloc | `/learn/*` | palette yellow + amber |
 | 06 Auth & Onboarding | autonome | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | charte auth dédiée |
 | 07 Institutionnel & Légal | autonome | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en` | sobriété prioritaire |
 | 08 Système & Utilitaires | autonome | `/form-comparison`, `/preview/actions/new`, `/declaration-simple`, `/reglages`, `/error/429`, `/sections/[sectionId]` | inclut les états et dynamiques utilitaires |
@@ -267,6 +279,7 @@ Piste :
 | Date | Action |
 |---|---|
 | Session 1 | Phases 0–1 : registre `page-families`, `PageHero`, `SectionShell`, migration bloc 01, exception `/explorer`. |
+| Session 5 | Centralisation exhaustive des routes canoniques du bloc 01 via `lib/accueil-pilotage-routes.ts`. |
 | Session 4 | Reclassification de `/methodologie` vers le bloc 03 Cartographie & Impact et alignement documentaire associé. |
 | Session 2 | Phase 2 : `PageFamilyCardTokens`, `card-presets.ts`, `FamilyRubriqueCard`, migration `/profil/[profile]`. |
 | Session 3 | Correction `ADMIN_CARD` dans `card-presets.ts`. Pilote phase 3 : `/signalement` → `FamilyRubriqueCard`, gradient hero retiré. |
@@ -278,11 +291,11 @@ Piste :
 | Type | État actuel | Priorité |
 |---|---|---|
 | 00 Homepage | documentée, indépendante | faible |
-| 01 Accueil & Pilotage | fondations posées, finitions en cours | moyenne |
+| 01 Accueil & Pilotage | famille stabilisée, dashboard canonique + alias profil | moyenne |
 | 02 Agir | pilote en cours | critique |
 | 03 Cartographie & Impact | plusieurs routes à valider | critique |
 | 04 Réseau & Discussions | encore hétérogène | critique |
-| 05 Apprendre | à homogénéiser | moyenne |
+| 05 Apprendre | à homogénéiser (fond jaune, cartes amber/orange) | moyenne |
 | 06 Auth & Onboarding | stable | faible |
 | 07 Institutionnel & Légal | à stabiliser | moyenne |
 | 08 Système & Utilitaires | à cadrer route par route | critique |
@@ -293,7 +306,7 @@ Piste :
 
 ## Prochaine action recommandée
 
-1. Valider visuellement bloc 01 et le pilote bloc 02 (`/signalement`, `/profil/benevole`).
+1. Valider visuellement bloc 01 et le pilote bloc 02 (`/signalement`, `/dashboard`).
 2. Compléter le cadrage des familles autonomes 06 à 10.
 3. Migrer `/actions/new` ou `/actions/map` comme second pilote.
 4. Prioriser ensuite les cartes métier et les sections dynamiques.

@@ -22,6 +22,7 @@ import "./globals.css";
 import { resolveBackdropToneKey } from "@/lib/ui/backdrop-tone";
 import { getButtonThemeCssVariables } from "@/lib/ui/button-theme";
 import type { FooterVariant } from "@/lib/ui/footer-variant";
+import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export const metadata: Metadata = appMetadata;
 
@@ -83,7 +84,7 @@ export default async function RootLayout({
           <ClerkLocalizationProvider
             signInUrl="/sign-in"
             signUpUrl="/sign-up"
-            signInFallbackRedirectUrl="/profil"
+            signInFallbackRedirectUrl={PROFIL_ROUTE}
             signUpFallbackRedirectUrl="/onboarding/localisation"
             afterSignOutUrl="/"
             proxyUrl={clerkRuntime.proxyUrl}
@@ -104,7 +105,7 @@ export default async function RootLayout({
                 profileLabel={profileLabel}
                 identity={identity}
               />
-              <main className="flex flex-1 flex-col pt-2 sm:pt-0">
+              <main className="cmm-site-frame flex flex-1 flex-col pt-2 sm:pt-0">
                 {children}
               </main>
               <ConditionalAnalytics />

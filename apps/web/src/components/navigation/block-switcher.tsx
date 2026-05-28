@@ -4,6 +4,7 @@ import Link from"next/link";
 import { usePathname } from"next/navigation";
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
 import { trackNavigationClick } from"@/lib/analytics/navigation-client";
+import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 import {
  getActiveSpaceForPath,
  getNavigationSpacesForProfile,
@@ -45,7 +46,7 @@ export function BlockSwitcher({ currentProfile }: BlockSwitcherProps) {
  <div className="w-[calc(100vw-1rem)] overflow-hidden rounded-2xl border border-white/40 bg-white/85 shadow-xl backdrop-blur-md lg:w-1/2">
  <div className="flex items-center gap-1 overflow-x-auto px-2 pb-1 pt-2 scrollbar-none">
  {spaces.map((space) => {
- const firstHref = space.items[0]?.href ??"/dashboard";
+ const firstHref = space.items[0]?.href ?? DASHBOARD_ROUTE;
  const isActive = space.id === activeSpaceId;
  return (
  <Link

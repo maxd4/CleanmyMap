@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { LucideIcon, Sparkles, Target } from "lucide-react";
+import { DASHBOARD_ROUTE, EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export type L10n = { fr: string; en: string } | string;
@@ -171,7 +172,7 @@ export function NotFoundSection() {
           ? "Désolé, cette rubrique n'existe pas ou a été déplacée par nos équipes."
           : "Sorry, this section does not exist or has been moved by our teams."}
       </p>
-      <CmmButton href="/explorer" tone="primary" className="mt-12 h-16 px-10 rounded-2xl font-black shadow-xl shadow-rose-500/20">
+      <CmmButton href={EXPLORER_ROUTE} tone="primary" className="mt-12 h-16 px-10 rounded-2xl font-black shadow-xl shadow-rose-500/20">
         {locale === "fr" ? "Explorer le plan" : "Explore map"}
       </CmmButton>
     </div>
@@ -209,10 +210,10 @@ export function PendingSection({ label, description, note }: { label: L10n; desc
         </div>
 
         <CmmButtonGroup className="justify-center pt-12">
-          <CmmButton href="/dashboard" tone="secondary" variant="pill" className="h-14 px-8 font-black uppercase tracking-widest text-xs">
-            {fr ? "Tableau de bord" : "Dashboard"}
+          <CmmButton href={DASHBOARD_ROUTE} tone="secondary" variant="pill" className="h-14 px-8 font-black uppercase tracking-widest text-xs">
+            {fr ? "Mon espace" : "Dashboard"}
           </CmmButton>
-          <CmmButton href="/explorer" tone="primary" className="h-14 px-8 rounded-full font-black uppercase tracking-widest text-xs shadow-2xl shadow-emerald-500/20">
+          <CmmButton href={EXPLORER_ROUTE} tone="primary" className="h-14 px-8 rounded-full font-black uppercase tracking-widest text-xs shadow-2xl shadow-emerald-500/20">
             {fr ? "Explorer tout" : "Explore all"}
           </CmmButton>
         </CmmButtonGroup>

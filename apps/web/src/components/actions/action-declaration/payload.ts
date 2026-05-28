@@ -152,8 +152,6 @@ export function buildCreateActionPayload(params: {
  isEntrepriseMode,
  linkedEventId,
  } = params;
- const quickMode = declarationMode ==="quick";
-
  const departureLocationLabel = form.departureLocationLabel.trim();
  const arrivalLocationLabel = form.arrivalLocationLabel.trim();
  const routeLocationLabel =
@@ -199,18 +197,16 @@ export function buildCreateActionPayload(params: {
  routeStyle: "souple",
  routeAdjustmentMessage: form.routeAdjustmentMessage.trim() || undefined,
  recordType: form.recordType,
- latitude: quickMode ? undefined : latitude,
- longitude: quickMode ? undefined : longitude,
+ latitude,
+ longitude,
  wasteKg: toRequiredNumber(form.wasteKg, 0),
- cigaretteButts: quickMode ? 0 : enteredButtsCount ?? estimatedButtsFromWeight ?? 0,
+ cigaretteButts: enteredButtsCount ?? estimatedButtsFromWeight ?? 0,
  cigaretteButtsCount: enteredButtsCount ?? estimatedButtsFromWeight,
  volunteersCount: Math.max(
 1,
  Math.trunc(toRequiredNumber(form.volunteersCount, 1)),
  ),
- durationMinutes: quickMode
- ? 0
- : Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
+ durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
  notes: appendEventRefToNotes(
  form.notes.trim() || undefined,
  linkedEventId,

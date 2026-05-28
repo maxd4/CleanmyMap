@@ -31,6 +31,29 @@ const themeClasses: Record<RubriqueTheme, string> = {
   slate: "bg-slate-500",
 };
 
+const shellClasses: Record<RubriqueTheme, string> = {
+  fuchsia:
+    "border-fuchsia-200/18 bg-[linear-gradient(145deg,rgba(34,0,22,0.94)_0%,rgba(78,12,48,0.92)_58%,rgba(236,72,153,0.14)_100%)] shadow-[0_26px_80px_-38px_rgba(236,72,153,0.30)]",
+  amber:
+    "border-amber-200/18 bg-[linear-gradient(145deg,rgba(35,23,0,0.94)_0%,rgba(92,58,8,0.92)_58%,rgba(249,115,22,0.16)_100%)] shadow-[0_26px_80px_-38px_rgba(249,115,22,0.30)]",
+  emerald:
+    "border-emerald-200/18 bg-[linear-gradient(145deg,rgba(6,38,28,0.94)_0%,rgba(12,58,42,0.92)_58%,rgba(34,197,94,0.14)_100%)] shadow-[0_26px_80px_-38px_rgba(34,197,94,0.28)]",
+  sky:
+    "border-sky-200/18 bg-[linear-gradient(145deg,rgba(7,24,38,0.94)_0%,rgba(12,40,62,0.92)_58%,rgba(14,165,233,0.14)_100%)] shadow-[0_26px_80px_-38px_rgba(14,165,233,0.28)]",
+  rose:
+    "border-rose-200/18 bg-[linear-gradient(145deg,rgba(42,0,14,0.94)_0%,rgba(82,10,28,0.92)_58%,rgba(244,63,94,0.14)_100%)] shadow-[0_26px_80px_-38px_rgba(244,63,94,0.28)]",
+  indigo:
+    "border-indigo-200/18 bg-[linear-gradient(145deg,rgba(15,8,40,0.94)_0%,rgba(30,20,70,0.92)_58%,rgba(99,102,241,0.14)_100%)] shadow-[0_26px_80px_-38px_rgba(99,102,241,0.28)]",
+  violet:
+    "border-violet-200/18 bg-[linear-gradient(145deg,rgba(29,10,55,0.94)_0%,rgba(63,27,119,0.92)_58%,rgba(139,92,246,0.14)_100%)] shadow-[0_26px_80px_-38px_rgba(139,92,246,0.28)]",
+  purple:
+    "border-purple-200/18 bg-[linear-gradient(145deg,rgba(31,15,63,0.94)_0%,rgba(74,29,150,0.92)_58%,rgba(168,85,247,0.14)_100%)] shadow-[0_26px_80px_-38px_rgba(168,85,247,0.28)]",
+  blue:
+    "border-blue-200/18 bg-[linear-gradient(145deg,rgba(11,25,51,0.94)_0%,rgba(23,55,115,0.92)_58%,rgba(59,130,246,0.14)_100%)] shadow-[0_26px_80px_-38px_rgba(59,130,246,0.28)]",
+  slate:
+    "border-slate-200/18 bg-[linear-gradient(145deg,rgba(15,23,42,0.94)_0%,rgba(30,41,59,0.92)_58%,rgba(100,116,139,0.14)_100%)] shadow-[0_26px_80px_-38px_rgba(71,85,105,0.28)]",
+};
+
 const watermarkClasses: Record<RubriqueTheme, string> = {
   fuchsia: "text-fuchsia-400",
   amber: "text-amber-400",
@@ -76,8 +99,9 @@ export function RubriqueCard({
     <motion.div 
       layout
       className={cn(
-        "rounded-[2.5rem] border border-white/10 bg-black/30 backdrop-blur-3xl p-8 shadow-2xl relative overflow-hidden group",
-        withHover && "transition-colors hover:bg-black/40",
+        "relative overflow-hidden rounded-[2.5rem] border backdrop-blur-3xl p-8 text-white shadow-2xl group",
+        shellClasses[themeColor],
+        withHover && "transition-all duration-300 hover:-translate-y-0.5 hover:border-white/22",
         className
       )}
       {...props}
@@ -88,7 +112,7 @@ export function RubriqueCard({
           <div className="flex items-center gap-4">
             <div className={cn("h-[3px] flex-1 rounded-full", themeClasses[themeColor])} />
             {topBarContent && (
-              <div className="rounded-full border border-white/10 bg-black/25 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white/60 backdrop-blur-xl">
+              <div className="rounded-full border border-white/12 bg-white/8 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white/80 backdrop-blur-xl">
                 {topBarContent}
               </div>
             )}
@@ -126,16 +150,16 @@ export function RubriqueCardIcon({
   size?: number
 }) {
   const iconContainerClasses: Record<RubriqueTheme, string> = {
-    fuchsia: "text-fuchsia-300 bg-fuchsia-400/20 border-fuchsia-400/30",
-    amber: "text-amber-300 bg-amber-400/20 border-amber-400/30",
-    emerald: "text-emerald-300 bg-emerald-400/20 border-emerald-400/30",
-    sky: "text-sky-300 bg-sky-400/20 border-sky-400/30",
-    rose: "text-rose-300 bg-rose-400/20 border-rose-400/30",
-    indigo: "text-indigo-300 bg-indigo-400/20 border-indigo-400/30",
-    violet: "text-violet-300 bg-violet-400/20 border-violet-400/30",
-    purple: "text-purple-300 bg-purple-400/20 border-purple-400/30",
-    blue: "text-blue-300 bg-blue-400/20 border-blue-400/30",
-    slate: "text-slate-300 bg-slate-400/20 border-slate-400/30",
+    fuchsia: "text-fuchsia-200 bg-fuchsia-500/18 border-fuchsia-300/30",
+    amber: "text-amber-200 bg-amber-500/18 border-amber-300/30",
+    emerald: "text-emerald-200 bg-emerald-500/18 border-emerald-300/30",
+    sky: "text-sky-200 bg-sky-500/18 border-sky-300/30",
+    rose: "text-rose-200 bg-rose-500/18 border-rose-300/30",
+    indigo: "text-indigo-200 bg-indigo-500/18 border-indigo-300/30",
+    violet: "text-violet-200 bg-violet-500/18 border-violet-300/30",
+    purple: "text-purple-200 bg-purple-500/18 border-purple-300/30",
+    blue: "text-blue-200 bg-blue-500/18 border-blue-300/30",
+    slate: "text-slate-200 bg-slate-500/18 border-slate-300/30",
   };
 
   return (

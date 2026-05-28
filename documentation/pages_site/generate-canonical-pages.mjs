@@ -702,7 +702,7 @@ const entries = [
   {
     route: "/admin",
     slug: "admin",
-    title: "Administration",
+    title: "Administration du site",
     family: "09-admin-superadmin",
     kind: "page",
     status: "canonique",
@@ -735,7 +735,7 @@ const entries = [
   {
     route: "/admin/godmode",
     slug: "admin-godmode",
-    title: "God mode",
+    title: "Créateur du site",
     family: "09-admin-superadmin",
     kind: "page",
     status: "canonique",

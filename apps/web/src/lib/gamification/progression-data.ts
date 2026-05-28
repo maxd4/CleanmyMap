@@ -10,11 +10,37 @@ import type {
 import {
   actionRowToListItem,
   clampWeight,
+  computeActionPendingAward,
+  computeActionValidationAward,
   eventFamilyMap,
   evaluateActionQualityScore,
   toFloat,
   toInt,
+  inferActionWeight,
+  toIsoDate,
 } from "./progression-utils";
+
+const SPONTANEOUS_ASSOCIATION_KEY = "action spontanee";
+
+function normalizeAssociationName(raw: string | null | undefined): string {
+  return (raw ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+export function isSpontaneousActionAssociationName(
+  associationName: string | null | undefined,
+): boolean {
+  return normalizeAssociationName(associationName) === SPONTANEOUS_ASSOCIATION_KEY;
+}
+
+export function isSpontaneousActionNotes(notes: string | null | undefined): boolean {
+  return isSpontaneousActionAssociationName(
+    extractActionMetadataFromNotes(notes).associationName,
+  );
+}
 
 export async function insertProgressionEvent(
   supabase: SupabaseClient,
@@ -58,7 +84,9 @@ export async function loadActionRowsForUser(
   if (result.error) {
     throw new Error(result.error.message);
   }
-  return (result.data ?? []) as ActionRow[];
+  return ((result.data ?? []) as ActionRow[]).filter((row) =>
+    isSpontaneousActionNotes(row.notes),
+  );
 }
 
 export async function loadApprovedActionRows(
@@ -77,7 +105,9 @@ export async function loadApprovedActionRows(
   if (result.error) {
     throw new Error(result.error.message);
   }
-  return (result.data ?? []) as ActionRow[];
+  return ((result.data ?? []) as ActionRow[]).filter((row) =>
+    isSpontaneousActionNotes(row.notes),
+  );
 }
 
 export async function loadUserProgressionStats(
@@ -207,6 +237,9 @@ export async function loadUserLabelSummary(
     actor_name: string | null;
     notes: string | null;
   }>) {
+    if (!isSpontaneousActionNotes(row.notes)) {
+      continue;
+    }
     if (map.has(row.created_by_clerk_id)) {
       continue;
     }
@@ -256,6 +289,9 @@ export async function loadUserImpactStats(
   >();
 
   for (const row of (result.data ?? []) as ActionRow[]) {
+    if (!isSpontaneousActionNotes(row.notes)) {
+      continue;
+    }
     const quality = evaluateActionQualityScore(row).score;
     const previous = grouped.get(row.created_by_clerk_id) ?? {
       qualitySum: 0,
@@ -306,4 +342,62 @@ export function parseAssociationNameFromActionNotes(notes: string | null): strin
 
 export function actionListItemFromRow(row: ActionRow) {
   return actionRowToListItem(row);
+}
+
+export async function syncUserActionProgression(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<void> {
+  const deleted = await supabase
+    .from("progression_events")
+    .delete()
+    .eq("user_id", userId)
+    .eq("source_table", "actions");
+
+  if (deleted.error) {
+    throw new Error(deleted.error.message);
+  }
+
+  const actions = await loadActionRowsForUser(supabase, userId);
+  for (const action of actions) {
+    const weight = inferActionWeight(action);
+    const pendingAward = computeActionPendingAward(weight);
+    await insertProgressionEvent(supabase, {
+      userId,
+      eventType: "action_declare_pending",
+      sourceTable: "actions",
+      sourceId: action.id,
+      statusPhase: "pending",
+      weight,
+      xpBase: pendingAward.xpBase,
+      xpAwarded: pendingAward.xpAwarded,
+      occurredOn: toIsoDate(action.action_date || action.created_at),
+      metadata: {
+        associationName: "Action spontanée",
+      },
+    });
+
+    if (action.status !== "approved") {
+      continue;
+    }
+
+    const quality = evaluateActionQualityScore(action);
+    const validatedAward = computeActionValidationAward(weight, quality.grade);
+    await insertProgressionEvent(supabase, {
+      userId,
+      eventType: "action_declare_validation",
+      sourceTable: "actions",
+      sourceId: action.id,
+      statusPhase: "validated",
+      weight,
+      xpBase: validatedAward.xpBase,
+      xpAwarded: validatedAward.xpAwarded,
+      occurredOn: toIsoDate(action.action_date || action.created_at),
+      metadata: {
+        qualityGrade: quality.grade,
+        qualityScore: quality.score,
+        associationName: "Action spontanée",
+      },
+    });
+  }
 }

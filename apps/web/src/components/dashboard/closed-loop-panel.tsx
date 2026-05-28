@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from"react";
 import Link from"next/link";
+import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 type ImpactKpi = {
  label: string;
@@ -40,7 +41,7 @@ export function ClosedLoopPanel(props: ClosedLoopPanelProps) {
  reportType:"idea",
  title:"Feedback utilisateur - dashboard",
  description: feedback.trim(),
- pagePath:"/dashboard",
+ pagePath: DASHBOARD_ROUTE,
  }),
  });
  if (!response.ok) {

@@ -3,6 +3,10 @@ import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { isAppProfile, toProfile } from"@/lib/profiles";
+import {
+  buildParcoursRoute,
+  buildProfileRoute,
+} from "@/lib/accueil-pilotage-routes";
 
 type ParcoursProfilePageProps = {
  params: Promise<{ profile: string }>;
@@ -72,8 +76,8 @@ export default async function ParcoursProfilePage({
  const isAdmin = activeRole ==="admin";
 
  if (!isAdmin && normalized !== activeProfile) {
- redirect(`/parcours/${activeProfile}`);
- }
+ redirect(buildParcoursRoute(activeProfile));
+}
 
- redirect(`/profil/${normalized}`);
+ redirect(buildProfileRoute(normalized));
 }

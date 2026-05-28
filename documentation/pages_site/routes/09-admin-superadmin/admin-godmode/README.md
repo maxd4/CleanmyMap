@@ -1,4 +1,4 @@
-# God mode
+# Créateur du site
 
 ## Fiche canonique
 
@@ -8,9 +8,9 @@
 - **Type fonctionnel** : administration
 - **Famille / bloc fonctionnel** : Admin & Super-admin (hors bloc)
 - **Statut** : technique
-- **Contexte nécessaire** : Compte connecté, parfois rôle technique ou de supervision
-- **Objectif utilisateur principal** : Piloter les réglages avancés, la modération et la supervision.
-- **Action principale attendue** : Consulter un panneau d'administration ou agir sur une ressource.
+- **Contexte nécessaire** : Compte connecté, rôle super-admin réservé au créateur du site
+- **Objectif utilisateur principal** : Accéder au contrôle le plus sensible du site pour arbitrer les cas critiques.
+- **Action principale attendue** : Ouvrir un panneau de contrôle super-admin.
 - **Palette attendue** : amber / brun sombre
 - **Scope** : à corriger
 - **Terminée** : non
@@ -19,7 +19,7 @@
 - **Risque de conflit avec les couleurs existantes** : moyen à élevé : la palette doit rester technique et ne pas ressembler au pilotage.
 - **Niveau de surcharge textuelle** : fort
 - **Textes à conserver** :
-- Accès de rôle
+- Accès super-admin
 - tableaux
 - actions critiques
 - indicateurs de supervision
@@ -47,4 +47,6 @@
 ## Notes d'audit
 
 - Cette fiche est la source de vérité canonique pour la page.
+- La route est exposée uniquement au rôle `max` normalisé, aliasé par `super_admin`, `superadmin` et `créateur du site`.
+- La page est aussi visible depuis le bloc 01 pour les profils autorisés, mais reste auditée dans la famille technique.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

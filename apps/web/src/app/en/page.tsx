@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export const metadata: Metadata = {
   title: "CleanMyMap | Urban Cleanup & Environmental Action Platform",
@@ -46,5 +47,5 @@ export const metadata: Metadata = {
 };
 
 export default function EnglishHomePage() {
-  redirect("/explorer");
+  redirect(EXPLORER_ROUTE);
 }

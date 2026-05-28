@@ -1,6 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { 
   ShieldAlert, 
   Users, 
@@ -12,26 +10,25 @@ import {
   RotateCcw,
   ShieldHalf
 } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
-import { getCurrentUserIdentity } from "@/lib/authz";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
+import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export default async function GodModeAdminPage() {
-  const user = await currentUser();
   const identity = await getCurrentUserIdentity().catch(() => null);
+  const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
   const classes = getBlockClasses("pilot");
-  const publicMetadata = (user?.publicMetadata ?? {}) as Record<string, string | undefined>;
-  const role = publicMetadata["role"] || publicMetadata["profile"];
   const displayName =
     identity?.displayName?.trim() ||
-    user?.fullName?.trim() ||
-    [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
-    user?.username ||
-    "Super Admin";
-  const primaryEmail = user?.emailAddresses?.[0]?.emailAddress ?? "non disponible";
+    identity?.firstName?.trim() ||
+    identity?.username ||
+    identity?.handle ||
+    "Créateur du site";
 
-  // Sécurité : 404 pour cacher l'existence de la route aux non-admins
-  if (role !== "super_admin") {
+  // Sécurité : 404 pour cacher l'existence de la route aux comptes non autorisés
+  if (role !== "max") {
     return notFound();
   }
 
@@ -47,14 +44,14 @@ export default async function GodModeAdminPage() {
         <div className="space-y-4 relative z-10">
           <div className="flex items-center gap-3 text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">
             <ShieldHalf size={14} className="text-slate-500" />
-            Core Infrastructure Master
+            Créateur du site
           </div>
           <div className="space-y-1">
             <h1 className="text-5xl font-black tracking-tighter text-white flex items-center gap-4">
-              God Mode <span className="text-red-500 text-sm px-3 py-1 bg-red-500/10 rounded-full border border-red-500/20 uppercase tracking-widest font-black">Restricted</span>
+              Créateur du site <span className="text-red-500 text-sm px-3 py-1 bg-red-500/10 rounded-full border border-red-500/20 uppercase tracking-widest font-black">Super-admin</span>
             </h1>
             <p className="max-w-xl text-slate-400 text-sm leading-relaxed">
-              Root access to security parameters, role management, and sensitive system executions.
+              Accès racine du site pour l'arbitrage, la sécurité et les exécutions sensibles.
             </p>
           </div>
         </div>
@@ -81,14 +78,14 @@ export default async function GodModeAdminPage() {
               <div className="space-y-1">
                 <h3 className="text-2xl font-black tracking-tight flex items-center gap-3 text-white">
                   <Users className="text-slate-400" size={24} />
-                  User Explorer
+                  Explorateur des comptes
                 </h3>
-                <p className="text-xs text-slate-500 font-medium">Monitoring active administrative sessions</p>
+                <p className="text-xs text-slate-500 font-medium">Sessions administratives actives</p>
               </div>
               <div className="relative">
                 <input 
                   type="text" 
-                  placeholder="ID, Email or Name..." 
+                  placeholder="ID, email ou nom..." 
                   className="w-full md:w-64 bg-slate-950/50 border border-white/5 rounded-xl px-4 py-2.5 text-xs text-white placeholder:text-slate-600 outline-none focus:border-slate-400 transition-all backdrop-blur-md"
                 />
               </div>
@@ -99,7 +96,7 @@ export default async function GodModeAdminPage() {
                 <thead>
                   <tr className="border-b border-white/5 bg-white/5">
                     <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Acteur</th>
-                    <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Profil</th>
+                    <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Rôle</th>
                     <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">Connexion</th>
                     <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-slate-400">État</th>
                   </tr>
@@ -108,11 +105,11 @@ export default async function GodModeAdminPage() {
                   <tr className="hover:bg-white/5 transition-colors group">
                     <td className="py-6 px-6">
                       <p className="font-bold text-white group-hover:text-slate-200 transition-colors">{displayName}</p>
-                      <p className="text-[10px] text-slate-500 italic mt-1">{primaryEmail}</p>
+                      <p className="text-[10px] text-slate-500 italic mt-1">Compte super-admin</p>
                     </td>
                     <td className="py-6 px-6">
                       <span className="px-3 py-1 bg-slate-400/10 text-slate-400 rounded-full text-[10px] font-black uppercase tracking-widest border border-slate-400/20">
-                        Super Admin
+                        Créateur du site
                       </span>
                     </td>
                     <td className="py-6 px-6 text-slate-500 text-xs font-medium tracking-tight">Il y a 2 min</td>
@@ -129,7 +126,7 @@ export default async function GodModeAdminPage() {
             <div className="flex items-center gap-3 justify-center p-4 rounded-xl bg-slate-950/30 border border-white/5">
               <Terminal size={14} className="text-slate-600" />
               <p className="text-[10px] text-slate-600 font-bold uppercase tracking-widest italic">
-                Vue restreinte : Session courante uniquement
+                Vue restreinte : session courante uniquement
               </p>
             </div>
           </div>
@@ -147,41 +144,41 @@ export default async function GodModeAdminPage() {
             <div className="space-y-1 relative z-10">
               <h3 className="text-xl font-black tracking-tight flex items-center gap-3 text-white">
                 <ShieldAlert size={20} className="text-slate-400" />
-                Supervision
+                Supervision du site
               </h3>
-              <p className="text-xs text-slate-500 font-medium">Global system management</p>
+              <p className="text-xs text-slate-500 font-medium">Pilotage global et arbitrage</p>
             </div>
 
             <div className="space-y-4 relative z-10">
-              <Link href="/admin" className="w-full flex items-center gap-4 p-5 bg-slate-950/50 border border-white/5 rounded-2xl text-left hover:border-slate-400 transition-all group/btn backdrop-blur-md">
+              <CmmButton href={ADMIN_ROUTE} tone="secondary" variant="default" className="group/btn w-full justify-start gap-4 p-5 rounded-2xl text-left">
                 <div className="w-12 h-12 rounded-xl bg-slate-400/10 flex items-center justify-center text-slate-400 group-hover/btn:bg-slate-400 group-hover/btn:text-slate-950 transition-all duration-500">
                   <Zap size={22} className="transition-transform group-hover/btn:scale-110" />
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-sm font-bold text-white">Opérations</p>
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Modération & Audit</p>
+                  <p className="text-sm font-bold text-white">Administration du site</p>
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Modération et audit</p>
                 </div>
-              </Link>
+              </CmmButton>
 
-              <Link href="/reports" className="w-full flex items-center gap-4 p-5 bg-slate-950/50 border border-white/5 rounded-2xl text-left hover:border-red-500/50 transition-all group/btn backdrop-blur-md">
+              <CmmButton href="/reports" tone="primary" variant="default" className="group/btn w-full justify-start gap-4 p-5 rounded-2xl text-left">
                 <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-500 group-hover/btn:bg-red-500 group-hover/btn:text-white transition-all duration-500">
                   <Flame size={22} className="transition-transform group-hover/btn:scale-110" />
                 </div>
                 <div className="space-y-0.5">
                   <p className="text-sm font-bold text-white">Rapports d&apos;impact</p>
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Exports Décideurs</p>
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Exports décideurs</p>
                 </div>
-              </Link>
+              </CmmButton>
 
-              <a href="/api/health" className="w-full flex items-center gap-4 p-5 bg-slate-950/50 border border-white/5 rounded-2xl text-left hover:border-emerald-500/50 transition-all group/btn backdrop-blur-md outline-none">
+              <CmmButton href="/api/health" tone="tertiary" variant="default" className="group/btn w-full justify-start gap-4 p-5 rounded-2xl text-left">
                 <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover/btn:bg-emerald-500 group-hover/btn:text-white transition-all duration-500">
                   <RotateCcw size={22} className="transition-transform group-hover/btn:rotate-180 duration-700" />
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-sm font-bold text-white">Service Health</p>
-                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Endpoint Status</p>
+                  <p className="text-sm font-bold text-white">Santé du site</p>
+                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">État des endpoints</p>
                 </div>
-              </a>
+              </CmmButton>
             </div>
           </div>
 
@@ -189,10 +186,10 @@ export default async function GodModeAdminPage() {
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl pointer-events-none" />
             <h4 className="font-black uppercase tracking-[0.25em] text-[10px] text-white flex items-center gap-2">
               <ShieldAlert size={14} />
-              Avertissement Sécurité
+              Avertissement sécurité
             </h4>
             <p className="text-xs font-bold leading-relaxed text-white/90">
-              Toutes vos actions sur ce panel sont logguées et immuables. Chaque injection de données affecte directement les KPI de pilotage global.
+              Toutes les actions de ce panneau sont journalisées et immuables. Chaque opération sensible impacte directement la supervision du site.
             </p>
           </div>
         </section>

@@ -16,6 +16,7 @@ import {
   Globe
 } from "lucide-react";
 import { getDiscussionGuidance } from "@/components/chat/discussion-guidance";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { ConnectTab, CommunityAnnouncementTemplateKey, ChannelStat, ConnectTabItem } from "./connect-types";
 import { cn } from "@/lib/utils";
 
@@ -169,9 +170,11 @@ export const ConnectTabs = memo(function ConnectTabs({
       {CONNECT_TABS.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
-          <button
+          <CmmButton
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
+            tone={isActive ? "primary" : "tertiary"}
+            variant="pill"
             className={cn(
               "relative flex items-center gap-4 px-8 py-4 rounded-[1.75rem] transition-all duration-500 group overflow-hidden",
               isActive ? "text-rose-300" : "text-slate-500 hover:text-white"
@@ -193,7 +196,7 @@ export const ConnectTabs = memo(function ConnectTabs({
                 {fr ? tab.desc.fr : tab.desc.en}
               </span>
             </div>
-          </button>
+          </CmmButton>
         );
       })}
     </div>
@@ -279,13 +282,15 @@ export const ConnectAnnouncement = memo(function ConnectAnnouncement({
             </h3>
           </div>
           {announcementTemplate && (
-            <button
+            <CmmButton
               type="button"
               onClick={() => setAnnouncementTemplate(null)}
-              className="px-6 py-2 rounded-xl bg-black/50 border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white hover:bg-black/70 transition-all"
+              tone="tertiary"
+              variant="pill"
+              className="px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white hover:bg-black/70 transition-all"
             >
               {fr ? "Effacer le template" : "Clear template"}
-            </button>
+            </CmmButton>
           )}
         </div>
 
@@ -309,10 +314,12 @@ export const ConnectAnnouncement = memo(function ConnectAnnouncement({
           ].map((option) => {
             const isActive = announcementTemplate === option.key;
             return (
-              <button
+              <CmmButton
                 key={option.key}
                 type="button"
                 onClick={() => setAnnouncementTemplate(option.key)}
+                tone={isActive ? "primary" : "tertiary"}
+                variant="pill"
                 className={cn(
                   "flex items-center gap-4 px-6 py-4 rounded-[1.5rem] border transition-all duration-300 text-left group",
                   isActive
@@ -326,7 +333,7 @@ export const ConnectAnnouncement = memo(function ConnectAnnouncement({
                 <span className="text-[11px] font-black uppercase tracking-widest">
                   {option.label}
                 </span>
-              </button>
+              </CmmButton>
             );
           })}
         </div>

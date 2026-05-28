@@ -1,6 +1,7 @@
 import { subDays } from "date-fns";
 import { describe, expect, it } from "vitest";
 import { buildEnvironmentalImpactProjectSignals } from "./project-signals";
+import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 describe("environmental impact project signals", () => {
   it("builds project-specific site, user and monthly usage inputs", () => {
@@ -45,7 +46,7 @@ describe("environmental impact project signals", () => {
           meta: {
             source: "route_tracker",
             kind: "pageview",
-            pagePath: "/profil",
+            pagePath: PROFIL_ROUTE,
           },
           step: "page_view",
           mode: "complete",

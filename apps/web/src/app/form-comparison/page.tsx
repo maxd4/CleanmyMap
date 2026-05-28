@@ -94,7 +94,7 @@ export default function FormComparisonPage() {
  </div>
 
  <div className="pt-4">
- <Link href="/declaration-simple">
+ <Link href="/actions/new">
  <CmmButton className="w-full" tone="primary">
  Tester le formulaire simplifié
  </CmmButton>

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/system-state";
 import { SystemStateRetryButton } from "@/components/ui/system-state-retry-button";
 import { resolvePublicContactEmail } from "@/lib/email-config";
+import { HOME_ROUTE } from "@/lib/home-routes";
 
 export default function RateLimitErrorPage() {
   const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
@@ -38,7 +39,7 @@ export default function RateLimitErrorPage() {
 
         <SystemStateAction>
           <SystemStateRetryButton />
-          <CmmButton href="/accueil" tone="secondary">
+          <CmmButton href={HOME_ROUTE} tone="secondary">
             Retour à l&apos;accueil
           </CmmButton>
         </SystemStateAction>

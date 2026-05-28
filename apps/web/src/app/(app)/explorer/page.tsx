@@ -9,6 +9,10 @@ import {
 } from "@/lib/navigation";
 import { toProfile } from "@/lib/profiles";
 import { getServerDisplayModePreference, getServerLocale } from "@/lib/server-preferences";
+import {
+  DASHBOARD_ROUTE,
+  EXPLORER_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 export const metadata: Metadata = {
   title: "Sommaire CleanMyMap - Plan du site et navigation",
@@ -17,11 +21,11 @@ export const metadata: Metadata = {
 };
 
 const BLOCK_PREVIEW_PRIORITY: Record<NavigationBlockId, Partial<Record<NavigationItem["id"], number>>> = {
-  home:      { dashboard: 1, explorer: 2, profile: 3, feedback: 4, pilotage: 5, admin: 6, sponsor: 7, elus: 8, godmode: 9 },
+  home:      { dashboard: 1, explorer: 2, pilotage: 3, admin: 4, sponsor: 5, elus: 6, godmode: 7 },
   act:       { new: 1, route: 2, "trash-spotter": 3 },
   visualize: { map: 1, sandbox: 2, methodologie: 3, reports: 4, gamification: 5, weather: 6 },
   impact:    {},
-  network:   { network: 1, annuaire: 2, community: 3, messagerie: 4, "open-data": 5 },
+  network:   { network: 1, community: 2, feedback: 3, messagerie: 4, "open-data": 5, annuaire: 6 },
   connect:   { messagerie: 1, dm: 2 },
   learn:     { hub: 1, guide: 2, climate: 3, recycling: 4 },
   pilot:     { admin: 1, sponsor: 2, elus: 3, godmode: 4 },
@@ -187,7 +191,7 @@ export default async function ExplorerPage() {
   const spaces = getNavigationSpacesForProfile(currentProfile, displayModePreference.displayMode, locale);
   const visibleSpaces = spaces.map((space) => ({
     ...space,
-    items: space.items.filter((item) => item.routeId !== "explorer"),
+    items: space.items.filter((item) => item.href !== EXPLORER_ROUTE),
   }));
 
   return (
@@ -212,7 +216,7 @@ export default async function ExplorerPage() {
         <div className="flex flex-wrap justify-center gap-4 xl:flex-nowrap">
           {visibleSpaces.map((space) => {
             const orderedItems = getOrderedPreviewItems(space.id, space.items);
-            const firstHref = orderedItems[0]?.href ?? "/dashboard";
+            const firstHref = orderedItems[0]?.href ?? DASHBOARD_ROUTE;
             const t = BLOCK_THEME[space.id];
 
             return (

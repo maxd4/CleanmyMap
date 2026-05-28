@@ -18,6 +18,7 @@ import {
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 export function SandboxSection() {
   const { locale } = useSitePreferences();
@@ -129,14 +130,16 @@ export function SandboxSection() {
               </div>
             </div>
             
-            <button
+            <CmmButton
               onClick={() => void mutate()}
               disabled={isValidating}
-              className="flex items-center gap-3 px-6 py-3 rounded-xl bg-sky-100 border border-sky-200 text-[10px] font-black text-slate-950 uppercase tracking-widest hover:bg-sky-200 transition-all disabled:opacity-50"
+              tone="secondary"
+              variant="pill"
+              className="flex items-center gap-3 px-6 py-3 rounded-xl text-[10px] font-black text-slate-950 uppercase tracking-widest hover:bg-sky-200 transition-all disabled:opacity-50"
             >
               <RefreshCw size={14} className={cn(isValidating && "animate-spin")} />
               {isValidating ? (fr ? "Actualisation..." : "Refreshing...") : (fr ? "Rafraîchir" : "Refresh")}
-            </button>
+            </CmmButton>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -219,13 +222,15 @@ export function SandboxSection() {
 
               <div className="flex gap-2">
                 {(["ops", "admin", "dev"] as const).map((profile) => (
-                  <button
+                  <CmmButton
                     key={profile}
                     onClick={() => void triggerRunbook(profile)}
-                    className="px-4 py-2 rounded-lg bg-white border border-sky-200/80 text-[9px] font-black text-slate-950 uppercase tracking-widest hover:bg-sky-200 hover:border-sky-300 transition-all"
+                    tone="tertiary"
+                    variant="pill"
+                    className="px-4 py-2 rounded-lg text-[9px] font-black text-slate-950 uppercase tracking-widest hover:bg-sky-200 hover:border-sky-300 transition-all"
                   >
                     Run {profile.toUpperCase()}
-                  </button>
+                  </CmmButton>
                 ))}
               </div>
             </div>

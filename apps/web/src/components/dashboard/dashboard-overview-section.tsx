@@ -15,6 +15,7 @@ import { buildDashboardTodayState, type DashboardRecommendedAction } from "@/lib
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import { isAdminLikeProfile, type AppProfile, type ProfileAction } from "@/lib/profiles";
 import type { Locale } from "@/lib/ui/preferences";
+import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 type DashboardOverviewLoaded =
   | { status: "ok"; overview: PilotageOverview }
@@ -35,7 +36,7 @@ function resolveRecommendedAction(params: {
 }): DashboardRecommendedAction {
   if (
     !isAdminLikeProfile(params.profile) &&
-    params.summaryAction.href.startsWith("/admin")
+    params.summaryAction.href.startsWith(ADMIN_ROUTE)
   ) {
     return {
       href: params.primaryAction.href,

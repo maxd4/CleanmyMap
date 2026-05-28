@@ -7,6 +7,7 @@ import { normalizeActionPhotos } from "@/lib/actions/vision";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useSubmissionLock } from "@/hooks/use-submission-lock";
+import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 const WASTE_TYPES = [
   { id: "megots", label: "Mégots", icon: "🚬", color: "amber" },
@@ -95,7 +96,7 @@ export function QuickSignalementForm() {
             Nouveau Signalement
           </button>
           <Link 
-            href="/dashboard"
+            href={DASHBOARD_ROUTE}
             className="flex-1 py-6 rounded-[2rem] bg-white/5 border border-white/5 text-white/60 font-black text-xs uppercase tracking-[0.2em] hover:bg-white/10 transition-all text-center flex items-center justify-center"
           >
             Dashboard

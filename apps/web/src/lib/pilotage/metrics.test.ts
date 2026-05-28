@@ -63,4 +63,31 @@ describe("computePilotageComparison", () => {
     expect(result.current.reliability.score).toBeGreaterThanOrEqual(0);
     expect(result.current.reliability.score).toBeLessThanOrEqual(100);
   });
+
+  it("uses the best available waste proxy when the kg field is empty", () => {
+    const contracts = [
+      buildActionDataContract({
+        id: "sheet-import",
+        type: "action",
+        status: "approved",
+        source: "google_sheet",
+        observedAt: "2026-04-09",
+        createdAt: "2026-04-08T10:00:00.000Z",
+        locationLabel: "Paris 10e",
+        latitude: 48.87,
+        longitude: 2.35,
+        wasteKg: 0,
+        cigaretteButts: 3750,
+        volunteersCount: 5,
+      }),
+    ];
+
+    const result = computePilotageComparison(
+      contracts,
+      15,
+      new Date("2026-04-10T00:00:00.000Z"),
+    );
+
+    expect(result.current.impactVolumeKg).toBe(1.5);
+  });
 });

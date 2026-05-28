@@ -72,7 +72,7 @@ export const initialState: FormState = {
 };
 
 export type SubmissionState ="idle" |"pending" |"success" |"error";
-export type DeclarationMode ="quick" |"complete";
+export type DeclarationMode ="complete";
 
 export type PostActionRetentionLoop = {
   summary: string;

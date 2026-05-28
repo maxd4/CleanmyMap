@@ -60,7 +60,7 @@ export function HomeBenefits({ benefits }: HomeBenefitsProps) {
       ref={sectionRef}
       className="relative w-full overflow-hidden bg-transparent px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20"
     >
-      <div className="relative z-10 mx-auto max-w-[1540px] px-2 sm:px-4">
+      <div className="relative z-10 mx-auto w-full max-w-none px-1 sm:px-2 lg:px-4">
         <div className="cmm-home-section-header mb-6 space-y-3 sm:mb-8">
           <h2
             data-gsap-reveal

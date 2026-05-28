@@ -194,16 +194,16 @@ Ordre recommandé d'exécution:
 
 Objectif:
 
-- corriger les pages de gestion personnelle et les vues de profil sans casser le confort de navigation.
+- corriger la page personnelle centralisée sans casser le confort de navigation.
 
 Statut:
 
-- exécuté sur `/dashboard`, `/profil` et `/profil/[profile]`.
+- exécuté sur `/dashboard` (canon), `/profil` (alias) et `/profil/[profile]`.
 
 Routes concernées:
 
 - `/dashboard`
-- `/profil`
+- `/profil` (alias)
 - `/profil/[profile]`
 
 Fichiers à modifier:
@@ -215,7 +215,7 @@ Fichiers à modifier:
 Palette attendue:
 
 - `/dashboard` -> `amber / orange`
-- `/profil` -> `amber / orange`
+- `/profil` -> redirection vers `/dashboard`
 - `/profil/[profile]` -> `amber / orange`
 
 Textes à réduire:
@@ -616,7 +616,6 @@ Routes concernées:
 - `/open-data`
 - `/learn/bonnes-pratiques`
 - `/learn/comprendre`
-- `/learn/hub`
 - `/learn/ressources`
 - `/learn/sentrainer`
 
@@ -632,6 +631,7 @@ Déjà exécuté dans le lot 8:
 - composants pilotage méthodologique: palette warm amber rééquilibrée
 - sous-sections gamification: accents red/rose harmonisés
 - sous-sections partenaires et learn déjà normalisées selon la charte
+- hub `/learn/hub` réduit à un index léger avec progression et accès directs
 
 Reste prioritaire dans le lot 8:
 

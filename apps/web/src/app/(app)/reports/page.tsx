@@ -27,6 +27,7 @@ import { getServerLocale } from"@/lib/server-preferences";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { ReportsPageV2Layout } from "@/components/reports/page-sections/reports-page-v2-layout";
 import { ReportsPageV1Layout } from "@/components/reports/page-sections/reports-page-v1-layout";
+import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 async function loadReportsData() {
   const supabase = getSupabaseServerClient();
@@ -100,7 +101,7 @@ export default async function ReportsPage() {
   
   const headerActions = userId
     ? [
-        { href: "/profil", label: "Cockpit" },
+        { href: PROFIL_ROUTE, label: "Cockpit" },
         { href: "/learn/hub", label: "Apprendre" },
       ]
     : [

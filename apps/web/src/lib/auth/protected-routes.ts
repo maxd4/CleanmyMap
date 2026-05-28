@@ -1,6 +1,12 @@
+import {
+  ADMIN_ROUTE,
+  DASHBOARD_ROUTE,
+  SPONSOR_PORTAL_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
+
 export const PROTECTED_ROUTE_PATTERNS = [
-  "/admin(.*)",
-  "/dashboard(.*)",
+  `${ADMIN_ROUTE}(.*)`,
+  `${DASHBOARD_ROUTE}(.*)`,
   "/actions(.*)",
   "/form-comparison(.*)",
   "/sections(.*)",
@@ -22,5 +28,5 @@ export const PROTECTED_ROUTE_PATTERNS = [
   "/api/users(.*)",
   "/api/email/test(.*)",
   "/prints(.*)",
-  "/sponsor-portal(.*)",
+  `${SPONSOR_PORTAL_ROUTE}(.*)`,
 ] as const;

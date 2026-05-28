@@ -165,11 +165,11 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
 // Source de vérité navigation: profil -> espaces -> pages.
 const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   benevole: {
-    home: ["dashboard", "explorer", "profile", "feedback"],
+    home: ["dashboard", "explorer"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
-    network: ["network", "community", "messagerie", "open-data"],
+    network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
     learn: [
       "hub",
@@ -181,11 +181,11 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   coordinateur: {
-    home: ["dashboard", "explorer", "profile", "feedback", "pilotage", "elus"],
+    home: ["dashboard", "explorer", "pilotage", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
-    network: ["network", "community", "messagerie", "open-data"],
+    network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
     learn: [
       "hub",
@@ -197,11 +197,11 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   scientifique: {
-    home: ["dashboard", "explorer", "profile", "feedback", "elus"],
+    home: ["dashboard", "explorer", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
-    network: ["network", "community", "messagerie", "open-data"],
+    network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
     learn: [
       "hub",
@@ -213,11 +213,11 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   elu: {
-    home: ["dashboard", "explorer", "profile", "feedback", "sponsor", "elus"],
+    home: ["dashboard", "explorer", "sponsor", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
-    network: ["network", "community", "messagerie", "open-data"],
+    network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
     learn: [
       "hub",
@@ -229,11 +229,11 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   admin: {
-    home: ["dashboard", "explorer", "profile", "feedback", "admin"],
+    home: ["dashboard", "explorer", "admin"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
-    network: ["network", "community", "messagerie", "open-data"],
+    network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
     learn: [
       "hub",
@@ -245,11 +245,11 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   max: {
-    home: ["dashboard", "explorer", "profile", "feedback", "pilotage", "admin", "sponsor", "elus", "godmode"],
+    home: ["dashboard", "explorer", "pilotage", "admin", "sponsor", "elus", "godmode"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
-    network: ["network", "community", "messagerie", "open-data"],
+    network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
     learn: [
       "hub",
@@ -287,7 +287,7 @@ export function getPilotFallbackItems(locale: string = "fr"): NavigationItem[] {
       ...item,
       description: {
         fr: item.routeId === "dashboard"
-          ? "Vue synthèse du pilotage"
+          ? "Vue synthèse de Mon espace"
           : "Synthèse d'impact, exports et contrôle",
         en: item.routeId === "dashboard"
           ? "Operational overview"
@@ -296,7 +296,7 @@ export function getPilotFallbackItems(locale: string = "fr"): NavigationItem[] {
       label: {
         fr: isFrench
           ? item.routeId === "dashboard"
-            ? "Tableau de bord"
+            ? "Mon espace"
             : "Rapports d'impact"
           : item.routeId === "dashboard"
             ? "Dashboard"

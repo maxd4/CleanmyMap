@@ -6,6 +6,8 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
 import { DisplayNameModeSetting } from "@/components/account/display-name-mode-setting";
+import { HOME_ROUTE } from "@/lib/home-routes";
+import { DASHBOARD_ROUTE, PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export const metadata: Metadata = {
   title: "Réglages - CleanMyMap",
@@ -44,7 +46,7 @@ export default async function ReglagesPage() {
         {/* Navigation de retour */}
         <div className="mb-8">
           <Link
-            href="/profil"
+            href={PROFIL_ROUTE}
             className="inline-flex items-center gap-2 text-sm font-medium text-sky-700 transition-colors hover:text-sky-950"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -111,7 +113,7 @@ export default async function ReglagesPage() {
                 />
                 
                 <Link
-                  href="/profil"
+                  href={PROFIL_ROUTE}
                   className="block rounded-xl border border-sky-100 bg-white/80 p-4 transition-colors hover:border-sky-200 hover:bg-sky-50/70"
                 >
                   <p className="text-sm font-semibold text-slate-900">
@@ -228,7 +230,7 @@ export default async function ReglagesPage() {
             </h2>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <Link
-                href="/dashboard"
+                href={DASHBOARD_ROUTE}
                 className="flex items-center gap-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4 transition-colors hover:border-sky-200 hover:bg-sky-100/70"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
@@ -236,13 +238,13 @@ export default async function ReglagesPage() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-slate-900">
-                    {isFrench ? "Tableau de bord" : "Dashboard"}
+                    {isFrench ? "Mon espace" : "Dashboard"}
                   </p>
                 </div>
               </Link>
               
               <Link
-                href="/profil"
+                href={PROFIL_ROUTE}
                 className="flex items-center gap-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4 transition-colors hover:border-sky-200 hover:bg-sky-100/70"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sky-100 text-sky-700">
@@ -256,7 +258,7 @@ export default async function ReglagesPage() {
               </Link>
               
               <Link
-                href="/accueil"
+                href={HOME_ROUTE}
                 className="flex items-center gap-3 rounded-xl border border-sky-100 bg-amber-50/70 p-4 transition-colors hover:border-amber-200 hover:bg-amber-100/70"
               >
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-700">

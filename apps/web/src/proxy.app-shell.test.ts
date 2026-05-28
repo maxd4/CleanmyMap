@@ -1,24 +1,32 @@
 import { describe, expect, it } from "vitest";
 import { APP_SHELL_ROUTE_PREFIXES, isAppShellRoute } from "./proxy";
+import {
+  ADMIN_ROUTE,
+  DASHBOARD_ROUTE,
+  EXPLORER_ROUTE,
+  PARCOURS_ROUTE,
+  PROFIL_ROUTE,
+  SPONSOR_PORTAL_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 describe("proxy app shell routes", () => {
   it("marks the application routes as shell routes", () => {
     const required = [
       "/actions",
-      "/admin",
-      "/dashboard",
-      "/explorer",
+      ADMIN_ROUTE,
+      DASHBOARD_ROUTE,
+      EXPLORER_ROUTE,
       "/learn",
       "/methodologie",
       "/observatoire",
-      "/parcours",
+      PARCOURS_ROUTE,
       "/partners",
       "/prints",
-      "/profil",
+      PROFIL_ROUTE,
       "/reports",
       "/sections",
       "/signalement",
-      "/sponsor-portal",
+      SPONSOR_PORTAL_ROUTE,
     ];
 
     for (const route of required) {

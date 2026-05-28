@@ -6,6 +6,7 @@ import { AlertTriangle, Building2, Cookie, FileText, Scale, Shield, Users, Arrow
 import type { LucideIcon } from "lucide-react";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard, RubriqueTheme } from "@/components/ui/rubrique-card";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 
 type LegalCard = {
@@ -201,9 +202,9 @@ export function LegalSection() {
                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Contenu inapproprié ou illégal</p>
                   </div>
                </div>
-               <button className="relative z-10 text-[9px] font-black text-slate-600 uppercase tracking-widest hover:text-white transition-colors">
+               <CmmButton tone="tertiary" variant="pill" className="relative z-10 text-[9px] font-black text-slate-600 uppercase tracking-widest hover:text-white transition-colors">
                   Formulaire
-               </button>
+               </CmmButton>
              </RubriqueCard>
            </div>
         </div>

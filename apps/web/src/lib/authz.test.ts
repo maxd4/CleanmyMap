@@ -16,6 +16,7 @@ describe("authz helpers", () => {
     expect(__authz_testables.extractRole({ role: " Admin " })).toBe("admin");
     expect(__authz_testables.extractRole({ profile: " Admin " })).toBe("admin");
     expect(__authz_testables.extractRole({ role: " Max " })).toBe("max");
+    expect(__authz_testables.extractRole({ role: "super_admin" })).toBe("max");
     expect(__authz_testables.extractRole({ role: 123 })).toBeNull();
     expect(__authz_testables.extractRole(undefined)).toBeNull();
   });
@@ -45,6 +46,15 @@ describe("authz helpers", () => {
     expect(
       isAdminRole({
         publicMetadata: { role: "max" },
+        privateMetadata: {},
+      }),
+    ).toBe(true);
+  });
+
+  it("accepts super admin aliases as max", () => {
+    expect(
+      isAdminRole({
+        publicMetadata: { role: "super_admin" },
         privateMetadata: {},
       }),
     ).toBe(true);

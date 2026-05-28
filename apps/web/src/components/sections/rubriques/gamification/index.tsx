@@ -13,6 +13,7 @@ import type { LeaderboardResponse, MeResponse } from "./gamification-types";
 import { motion } from "framer-motion";
 import { Trophy, Zap, ShieldCheck, Map as MapIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 const ActionsMapCanvas = dynamic(
   () =>
@@ -131,8 +132,10 @@ export function GamificationSection() {
               </div>
 
               <div className="flex p-1.5 rounded-[1.5rem] bg-slate-950/50 border border-white/5 backdrop-blur-3xl shadow-inner">
-                <button
+                <CmmButton
                   onClick={() => setScope("individual")}
+                  tone={scope === "individual" ? "primary" : "tertiary"}
+                  variant="pill"
                   className={cn(
                     "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500",
                     scope === "individual" 
@@ -141,9 +144,11 @@ export function GamificationSection() {
                   )}
                 >
                   {fr ? "Contributeurs" : "Contributors"}
-                </button>
-                <button
+                </CmmButton>
+                <CmmButton
                   onClick={() => setScope("collective")}
+                  tone={scope === "collective" ? "primary" : "tertiary"}
+                  variant="pill"
                   className={cn(
                     "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500",
                     scope === "collective" 
@@ -152,7 +157,7 @@ export function GamificationSection() {
                   )}
                 >
                   {fr ? "Collectifs" : "Collectives"}
-                </button>
+                </CmmButton>
               </div>
             </div>
 

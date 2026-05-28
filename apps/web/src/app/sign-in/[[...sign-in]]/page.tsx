@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ClerkLoaded, ClerkLoading, SignIn } from "@clerk/nextjs";
 import Link from "next/link";
 import { ArrowLeft, Leaf } from "lucide-react";
+import { HOME_ROUTE } from "@/lib/home-routes";
 
 export const metadata: Metadata = {
   title: "Connexion - CleanMyMap",
@@ -112,7 +113,8 @@ export default function SignInPage() {
                 <SignIn
                   path="/sign-in"
                   routing="path"
-                  fallbackRedirectUrl="/accueil"
+                  oauthFlow="redirect"
+                  fallbackRedirectUrl={HOME_ROUTE}
                   signUpUrl="/sign-up"
                   appearance={{
                     elements: {

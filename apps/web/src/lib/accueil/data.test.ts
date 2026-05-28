@@ -44,6 +44,31 @@ describe("accueil data", () => {
     expect(counters.volunteers).toBe(10);
   });
 
+  it("falls back to cigarette butts when the explicit waste mass is missing", () => {
+    const counters = computeLandingCounters(
+      [
+        buildActionDataContract({
+          id: "sheet-import",
+          type: "action",
+          status: "approved",
+          source: "google_sheet",
+          observedAt: "2026-04-10",
+          createdAt: "2026-04-10T08:00:00.000Z",
+          locationLabel: "Paris 12e",
+          latitude: 48.84,
+          longitude: 2.39,
+          wasteKg: 0,
+          cigaretteButts: 3750,
+          volunteersCount: 8,
+        }),
+      ],
+      "2026-01-01",
+    );
+
+    expect(counters.wasteKg).toBe(1.5);
+    expect(counters.euroSaved).toBe(2);
+  });
+
   it("builds community activity only from approved actions", () => {
     const activity = buildHomeCommunityActivity(
       [

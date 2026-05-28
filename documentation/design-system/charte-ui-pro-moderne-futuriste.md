@@ -24,14 +24,14 @@ Cette charte est conçue pour être appliquée rapidement dans les rubriques Nex
 Chaque bloc a une couleur dominante structurée en trois niveaux :
 
 1. **Fond de page** : teinte claire/lumineuse de la couleur du bloc. C'est le niveau le plus clair.
-2. **Cartes et bulles** : fond sombre teinté dans la même couleur pour ressortir sur le fond de page.
+2. **Cartes et bulles** : fond à contraste élevé, dérivé de la couleur canonique du bloc, pour ressortir sur le fond de page.
 3. **Titres, chiffres, sous-titres** : colorés dans la teinte de l'accent (`text-orange-100`, `text-emerald-100`, etc.).
 4. **Textes** : blanc à 100% par défaut (`text-white`). Opacité réduite uniquement en exception justifiée (placeholder, état désactivé, hiérarchie secondaire explicite).
 
 **Référence visuelle** : la page sommaire (`/`) et `accueil-pillars.tsx` sont la référence à suivre.
 
 **Règles sur le blanc :**
-- Interdit sur les surfaces et cartes — les cartes sont toujours sombres teintées dans la couleur du bloc.
+- Interdit sur les surfaces et cartes neutres — les cartes de bloc doivent rester à contraste élevé et dérivées de la couleur canonique du bloc.
 - Autorisé uniquement pour le texte (`text-white`).
 - Les fonds de page peuvent être lumineux mais ne doivent pas dépasser ~34% de blanc dans le mix — au-delà la couleur du bloc disparaît. Si une page doit sembler plus claire, baisser la saturation ou changer la teinte, pas augmenter le blanc.
 
@@ -42,7 +42,7 @@ Chaque bloc a une couleur dominante structurée en trois niveaux :
 - **Visualiser** : `sky` — fond bleu clair, cartes `#071827`
 - **Impact** : `red` / `rose` — fond rouge clair, cartes `#3b0a0f`
 - **Réseau** : `indigo` / `violet` — fond indigo clair, cartes `#04020f`
-- **Apprendre** : `yellow` — fond jaune clair, cartes `#241f00`
+- **Apprendre** : `yellow` — fond jaune clair, cartes/bulles orange clair soleil à fort contraste
 - **Piloter** : `amber` / `brun` — fond brun-orangé dense, cartes `#2c1c0f`
 - **Discussion** : `pink` — fond rose clair, cartes `#490b38`
 

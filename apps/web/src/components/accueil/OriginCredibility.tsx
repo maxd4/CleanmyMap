@@ -2,7 +2,7 @@
 
 import { useRef } from "react";
 import { ArrowRight, CheckCircle2, GraduationCap, Users } from "lucide-react";
-import Link from "next/link";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { useGsapReveal } from "@/lib/animations/use-gsap-reveal";
 
 const PROOF_CARDS = [
@@ -41,7 +41,7 @@ export function OriginCredibility() {
       ref={sectionRef}
       className="relative overflow-hidden bg-transparent py-12 sm:py-16 lg:py-20"
     >
-      <div className="relative mx-auto max-w-[1540px] px-4 sm:px-8">
+      <div className="relative mx-auto w-full max-w-none px-1 sm:px-2 lg:px-4">
         <div className="cmm-home-section-header space-y-4">
           <h2
             data-gsap-reveal
@@ -118,20 +118,24 @@ export function OriginCredibility() {
               </div>
 
               <div className="flex flex-wrap gap-3 xl:justify-end">
-                <Link
+                <CmmButton
                   href="/actions/map"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#34d399] to-[#84cc16] px-4 text-[12px] font-bold text-emerald-950 transition-transform hover:-translate-y-0.5"
+                  tone="primary"
+                  variant="pill"
+                  className="h-11 px-4 text-[12px] font-bold gap-2 transition-transform hover:-translate-y-0.5"
                 >
                   Voir la carte
                   <ArrowRight size={14} />
-                </Link>
-                <Link
+                </CmmButton>
+                <CmmButton
                   href="/partners/network"
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#16a34a] to-[#0f766e] px-4 text-[12px] font-bold text-white transition-transform hover:-translate-y-0.5"
+                  tone="secondary"
+                  variant="pill"
+                  className="h-11 px-4 text-[12px] font-bold gap-2 transition-transform hover:-translate-y-0.5"
                 >
                   Annuaire partenaires
                   <ArrowRight size={14} />
-                </Link>
+                </CmmButton>
               </div>
             </div>
           </div>

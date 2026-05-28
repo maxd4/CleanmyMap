@@ -1,3 +1,5 @@
+"use client";
+
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import fr from "../../locales/fr.json";
 import en from "../../locales/en.json";

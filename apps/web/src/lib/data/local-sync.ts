@@ -7,6 +7,10 @@ import type {
 } from "@/lib/data/local-records";
 import { LOCAL_DB_FILES, upsertLocalRecords } from "@/lib/data/local-store";
 import { mapActionStatusToLocalStatus } from "@/lib/data/local-records";
+import {
+  deriveActionTitleFromMetadata,
+  extractActionMetadataFromNotes,
+} from "@/lib/actions/metadata";
 
 type ActionRow = {
   id: string;
@@ -73,12 +77,17 @@ function fromActionRow(
   validatedBy: string,
 ): LocalDataRecord {
   const localStatus = mapActionStatusToLocalStatus(row.status);
+  const parsedMetadata = extractActionMetadataFromNotes(row.notes);
   return {
     id: `validated-action-${row.id}`,
     recordType: "action",
     status: localStatus,
     source,
-    title: row.location_label,
+    title: deriveActionTitleFromMetadata({
+      associationName: parsedMetadata.associationName,
+      actorName: row.actor_name,
+      locationLabel: row.location_label,
+    }),
     description: row.notes,
     location: {
       label: row.location_label,
@@ -116,7 +125,10 @@ function fromLegacySubmissionRow(
     recordType,
     status: localStatus,
     source,
-    title: row.adresse,
+    title: deriveActionTitleFromMetadata({
+      actorName: row.nom,
+      locationLabel: row.adresse,
+    }),
     description: row.commentaire,
     location: {
       label: row.adresse,

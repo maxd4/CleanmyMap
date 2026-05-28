@@ -7,6 +7,7 @@ import {
   STATE_429_FAMILY,
 } from "@/lib/ui/page-families/families/defaults";
 import { PAGE_FAMILY_ROUTE_EXCEPTIONS } from "@/lib/ui/page-families/exceptions";
+import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 import type {
   PageFamilyId,
   ResolvedPageFamily,
@@ -63,7 +64,7 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
     return "system";
   }
 
-  if (base === "admin" || isRoute(pathname, "/admin")) {
+  if (base === "admin" || isRoute(pathname, ADMIN_ROUTE)) {
     return "admin";
   }
 

@@ -223,6 +223,8 @@ export const BACKDROP_TONES: Record<BackdropToneKey, BackdropTone> = {
   },
 };
 
+// Legacy copy kept only for historical context. The runtime source of truth
+// for button themes is `apps/web/src/lib/ui/button-theme.ts`.
 const BUTTON_THEME_TOKENS: Record<BackdropToneKey, ButtonThemeTokens> = {
   home: {
     primary: {

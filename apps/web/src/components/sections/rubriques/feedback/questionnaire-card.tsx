@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { SignInButton, useUser } from "@clerk/nextjs";
 import { ArrowRight } from "lucide-react";
 import { CmmCard } from "@/components/ui/cmm-card";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
 import type { QuestionnaireConfig } from "./questionnaire-config";
@@ -225,15 +226,17 @@ export function QuestionnaireCard({
               : "The feedback is recorded in the internal feedback space with real follow-up."}
           </p>
           <SignInButton mode="modal">
-            <button
+            <CmmButton
               type="button"
+              tone="secondary"
+              variant="pill"
               className={cn(
                 "mt-4 inline-flex min-h-11 items-center justify-center rounded-2xl border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2",
                 accentClasses.button,
               )}
             >
               {locale === "fr" ? "Se connecter" : "Sign in"}
-            </button>
+            </CmmButton>
           </SignInButton>
         </div>
       ) : null}
@@ -269,9 +272,11 @@ export function QuestionnaireCard({
                 ? "Le retour part dans la file de suivi CleanMyMap."
                 : "The feedback is sent into the CleanMyMap follow-up queue."}
             </p>
-            <button
+            <CmmButton
               type="submit"
               disabled={!canSubmit}
+              tone="primary"
+              variant="pill"
               className={cn(
                 "inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-55",
                 accentClasses.button,
@@ -285,7 +290,7 @@ export function QuestionnaireCard({
                   ? "Envoyer"
                   : "Send"}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </button>
+            </CmmButton>
           </div>
 
           {submitState === "success" ? (

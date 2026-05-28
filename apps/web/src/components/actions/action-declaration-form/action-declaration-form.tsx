@@ -1,7 +1,16 @@
 "use client";
 
-import { type ElementType, type FormEvent, useState } from "react";
-import { ClipboardCheck, Download, History, Sparkles, User } from "lucide-react";
+import { type ElementType, type FormEvent, useEffect, useState } from "react";
+import {
+  AlertTriangle,
+  ClipboardCheck,
+  Download,
+  History,
+  Smartphone,
+  Sparkles,
+  User,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { ActionDeclarationFormConfirmation } from "../action-declaration-form-confirmation";
@@ -22,6 +31,7 @@ import { useActionDeclarationForm } from "./use-action-declaration-form";
 type ActionDeclarationFormProps = {
   actorNameOptions: string[];
   defaultActorName: string;
+  isAuthenticated: boolean;
   userMetadata: {
     userId: string;
     username?: string;
@@ -29,7 +39,6 @@ type ActionDeclarationFormProps = {
     email?: string;
   };
   linkedEventId?: string;
-  initialMode?: "quick" | "complete";
   initialRecordType?: "action" | "clean_place";
 };
 
@@ -92,12 +101,42 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
     handleConfirmSubmit,
   } = useActionDeclarationForm(props);
   const [isExportPickerOpen, setIsExportPickerOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 768px)").matches
+      : false,
+  );
+  const [showRestrictionDialog, setShowRestrictionDialog] = useState(false);
 
   const actClasses = getBlockClasses("act");
   const formattedPendingDraftSavedAt = formatDraftDate(pendingDraftSavedAt);
+  const isCompletionBlocked = !props.isAuthenticated || isMobile;
+  const restrictionMessage = isMobile
+    ? "En attendant que l'application mobile Clean my map soit disponible pour récupérer le tracé GPS exact de l'action, le formulaire bénévole ne peut être créé que sur ordinateur pour tracer le chemin emprunté à la main avec le maximum de précision possible. Merci de déclarer votre action spontanée sur ordinateur ou d'attendre que l'organisateur de votre action crée le formulaire de groupe pour ensuite le rejoindre."
+    : "Ce formulaire est consultable publiquement, mais la saisie complète nécessite une connexion sur ordinateur.";
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const media = window.matchMedia("(max-width: 768px)");
+    const handleChange = () => setIsMobile(media.matches);
+
+    handleChange();
+    media.addEventListener("change", handleChange);
+
+    return () => {
+      media.removeEventListener("change", handleChange);
+    };
+  }, []);
 
   async function onSubmit(event?: FormEvent) {
     event?.preventDefault();
+    if (isCompletionBlocked) {
+      setShowRestrictionDialog(true);
+      return;
+    }
     setShowConfirmation(true);
   }
 
@@ -121,6 +160,73 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
         actorName={resolvedDefaultActorName}
       />
 
+      {showRestrictionDialog ? (
+        <div
+          className="cmm-backdrop fixed inset-0 z-50 flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="action-restriction-title"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setShowRestrictionDialog(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-2xl overflow-hidden rounded-[2.5rem] border border-amber-200/80 bg-[#FFF8EE]/98 shadow-[0_28px_72px_-28px_rgba(217,119,6,0.28)] backdrop-blur-xl">
+            <div className="flex items-start justify-between gap-4 border-b border-amber-200/70 bg-gradient-to-r from-amber-50 via-[#FFF6E7] to-[#FFF3DB] px-6 py-5">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-amber-200/80 bg-white text-amber-700 shadow-sm">
+                  <AlertTriangle size={18} />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700/80">
+                    Avertissement
+                  </p>
+                  <h3
+                    id="action-restriction-title"
+                    className="mt-1 text-xl font-black tracking-tight text-amber-950"
+                  >
+                    {isMobile
+                      ? "Formulaire mobile indisponible"
+                      : "Formulaire en lecture seule"}
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowRestrictionDialog(false)}
+                aria-label="Fermer le message"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-200/70 bg-white text-amber-700 transition hover:bg-amber-100/80"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="space-y-4 px-6 py-6">
+              <p className="text-sm leading-7 text-amber-950/82">
+                {restrictionMessage}
+              </p>
+              {isMobile ? (
+                <div className="flex items-start gap-3 rounded-2xl border border-amber-200/70 bg-amber-50 px-4 py-3">
+                  <Smartphone size={16} className="mt-0.5 shrink-0 text-amber-700" />
+                  <p className="text-sm leading-6 text-amber-950/76">
+                    Vous pouvez fermer ce message et revenir à l&apos;aperçu du formulaire et à la navigation.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+            <div className="flex justify-end gap-3 border-t border-amber-200/70 bg-[#FFF8EE] px-6 py-5">
+              <button
+                type="button"
+                onClick={() => setShowRestrictionDialog(false)}
+                className="rounded-2xl border border-amber-200/80 bg-white px-4 py-2.5 text-sm font-bold text-amber-900 transition hover:bg-amber-100/70"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div
         className={cn(
           "relative w-full overflow-hidden px-4 py-6 text-emerald-50 md:px-6 lg:px-8",
@@ -136,7 +242,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
         </div>
 
         <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-6">
-          {showDraftBanner ? (
+          {showDraftBanner && !isCompletionBlocked ? (
             <div className="flex flex-col gap-3 rounded-[2rem] border border-amber-200/80 bg-[#F3FBF6] px-4 py-3 shadow-[0_18px_36px_-28px_rgba(34,197,94,0.22)] sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-start gap-2">
                 <History size={15} className="shrink-0 text-amber-300" />
@@ -169,11 +275,51 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
             </div>
           ) : null}
 
+          {isMobile ? (
+            <div className="rounded-[2rem] border border-amber-200/80 bg-amber-50/95 px-4 py-3 text-amber-950 shadow-[0_18px_36px_-28px_rgba(245,158,11,0.24)]">
+              <button
+                type="button"
+                onClick={() => setShowRestrictionDialog(true)}
+                className="flex w-full items-start gap-3 text-left"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-amber-200/80 bg-white text-amber-700 shadow-sm">
+                  <Smartphone size={16} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-700/80">
+                    Mobile seulement
+                  </p>
+                  <p className="mt-1 text-sm font-semibold leading-6">
+                    Le formulaire complet ne se remplit pas sur téléphone. Touchez ici pour lire l&apos;explication.
+                  </p>
+                </div>
+              </button>
+            </div>
+          ) : null}
+
           <form
             onSubmit={onSubmit}
             className="overflow-hidden rounded-[3rem] border border-emerald-200/70 bg-[#F3FBF6] shadow-[0_20px_44px_-30px_rgba(34,197,94,0.18)] backdrop-blur-3xl"
           >
-            <div className="p-6 md:p-10 space-y-8">
+            <div className="relative p-6 md:p-10 space-y-8">
+              {isCompletionBlocked ? (
+                <button
+                  type="button"
+                  aria-label={
+                    isMobile
+                      ? "Ouvrir l'explication sur le formulaire mobile"
+                      : "Ouvrir l'explication sur le formulaire en lecture seule"
+                  }
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  onClick={() => setShowRestrictionDialog(true)}
+                  className="absolute inset-0 z-20 cursor-not-allowed rounded-[2.5rem] bg-transparent"
+                />
+              ) : null}
+              <fieldset
+                disabled={isCompletionBlocked}
+                className="relative z-10 space-y-8"
+              >
               <header className="flex flex-wrap items-start justify-between gap-4">
                 <div className="max-w-2xl">
                   <div className="mb-3 inline-flex items-center gap-2 rounded-xl border border-emerald-200/70 bg-[#ECF8EF] px-3 py-1">
@@ -300,6 +446,7 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
                   </div>
                 </section>
               </div>
+              </fieldset>
             </div>
           </form>
 

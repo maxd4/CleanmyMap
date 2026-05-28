@@ -1,13 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { CommunityEventRow, EventRsvpRow, SpotRow } from "./progression-types";
-import { loadActionRowsForUser, insertProgressionEvent } from "./progression-data";
-import {
-  computeActionPendingAward,
-  computeActionValidationAward,
-  evaluateActionQualityScore,
-  inferActionWeight,
-  toIsoDate,
-} from "./progression-utils";
+import { insertProgressionEvent, syncUserActionProgression } from "./progression-data";
+import { toIsoDate } from "./progression-utils";
 import {
   extractCommunityOpsFromDescription,
   refreshProgressionProfile,
@@ -17,44 +11,7 @@ async function backfillUserActions(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<void> {
-  const actions = await loadActionRowsForUser(supabase, userId);
-  for (const action of actions) {
-    const weight = inferActionWeight(action);
-    const pendingAward = computeActionPendingAward(weight);
-
-    await insertProgressionEvent(supabase, {
-      userId,
-      eventType: "action_declare_pending",
-      sourceTable: "actions",
-      sourceId: action.id,
-      statusPhase: "pending",
-      weight,
-      xpBase: pendingAward.xpBase,
-      xpAwarded: pendingAward.xpAwarded,
-      occurredOn: toIsoDate(action.action_date || action.created_at),
-      metadata: {},
-    });
-
-    if (action.status === "approved") {
-      const quality = evaluateActionQualityScore(action);
-      const validatedAward = computeActionValidationAward(weight, quality.grade);
-      await insertProgressionEvent(supabase, {
-        userId,
-        eventType: "action_declare_validation",
-        sourceTable: "actions",
-        sourceId: action.id,
-        statusPhase: "validated",
-        weight,
-        xpBase: validatedAward.xpBase,
-        xpAwarded: validatedAward.xpAwarded,
-        occurredOn: toIsoDate(action.action_date || action.created_at),
-        metadata: {
-          qualityGrade: quality.grade,
-          qualityScore: quality.score,
-        },
-      });
-    }
-  }
+  await syncUserActionProgression(supabase, userId);
 }
 
 async function backfillUserSpots(

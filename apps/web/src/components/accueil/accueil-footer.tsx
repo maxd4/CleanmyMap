@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Mail } from "lucide-react";
 import { resolvePublicContactEmail } from "@/lib/email-config";
+import { shouldUseFullFooter } from "@/lib/ui/footer-variant";
 
 function InstagramMark({
   className,
@@ -32,32 +33,10 @@ function InstagramMark({
   );
 }
 
-type HomeFooterProps = {
+export type HomeFooterProps = {
   variant?: "full" | "compact";
   initialVariant?: "full" | "compact";
 };
-
-const FULL_FOOTER_PATHS = [
-  "/",
-  "/accueil",
-  "/explorer",
-  "/dashboard",
-  "/sections/feedback",
-  "/contact",
-  "/a-propos",
-  "/about",
-] as const;
-
-const FULL_FOOTER_PREFIXES = ["/landing"] as const;
-
-function shouldUseFullFooter(pathname: string): boolean {
-  return (
-    FULL_FOOTER_PATHS.includes(pathname as (typeof FULL_FOOTER_PATHS)[number]) ||
-    FULL_FOOTER_PREFIXES.some(
-      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
-    )
-  );
-}
 
 export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
   const pathname = usePathname() ?? "/";
@@ -70,7 +49,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
     return (
       <footer className="cmm-ribbon-surface relative w-full overflow-hidden">
 
-        <div className="relative z-10 mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-4 py-4 text-center sm:px-8 md:flex-row md:gap-5 md:py-5 md:text-left">
+        <div className="relative z-10 mx-auto flex w-full max-w-none flex-col items-center justify-between gap-3 px-1 py-4 text-center sm:px-2 md:flex-row md:gap-5 md:py-5 md:text-left lg:px-4">
           <div className="flex flex-col items-center gap-1 md:items-start">
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white">
               Cultivons l&apos;entraide
@@ -111,7 +90,7 @@ export function HomeFooter({ variant, initialVariant }: HomeFooterProps) {
   return (
     <footer className="cmm-ribbon-surface relative w-full overflow-hidden">
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-7 lg:py-8">
+      <div className="relative z-10 mx-auto w-full max-w-none px-1 py-6 sm:px-2 sm:py-7 lg:px-4 lg:py-8">
         <div className="grid items-center gap-5 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-6">
           {/* Gauche : Contact discret */}
           <div className="flex min-w-0 flex-col items-center gap-2 text-center sm:flex-row sm:text-left lg:items-center">

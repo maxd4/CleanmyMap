@@ -9,6 +9,7 @@ import { formatSigned } from "@/components/sections/rubriques/helpers";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { dashboardPeriodStorage } from "@/lib/storage/ui-state-storage";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { 
   BarChart3, 
   ArrowUpRight, 
@@ -94,8 +95,11 @@ export function CompareSection() {
 
           <div className="flex gap-2 p-1.5 bg-slate-950/40 rounded-[1.5rem] border border-white/5">
             {[30, 90, 365].map((value) => (
-              <button
+              <CmmButton
                 key={`compare-${value}`}
+                type="button"
+                tone={periodDays === value ? "primary" : "tertiary"}
+                variant="pill"
                 onClick={() => setPeriodDays(value as 30 | 90 | 365)}
                 className={`px-8 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all ${
                   periodDays === value
@@ -104,7 +108,7 @@ export function CompareSection() {
                 }`}
               >
                 {value === 365 ? "1 an" : `${value}j`}
-              </button>
+              </CmmButton>
             ))}
           </div>
         </motion.div>

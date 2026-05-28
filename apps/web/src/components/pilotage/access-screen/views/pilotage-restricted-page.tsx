@@ -7,6 +7,11 @@ import { getProfileLabel, getProfileSubtitle } from "@/lib/profiles";
 import { NavigationGrid } from "@/components/ui/navigation-grid";
 import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { getPageFamilyById } from "@/lib/ui/page-families";
+import {
+  DASHBOARD_ROUTE,
+  OBSERVATOIRE_ROUTE,
+  REPORTS_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 export function PilotageRestrictedPage({
   locale,
@@ -125,21 +130,21 @@ export function PilotageRestrictedPage({
           </h2>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
-              href="/dashboard"
+              href={DASHBOARD_ROUTE}
               className="inline-flex min-h-11 items-center gap-2 rounded-full bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-slate-800"
             >
               {locale === "fr" ? "Dashboard" : "Dashboard"}
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
             <Link
-              href="/reports"
+              href={REPORTS_ROUTE}
               className="inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-sm font-black cmm-text-primary transition hover:-translate-y-[1px] hover:border-amber-300"
             >
               {locale === "fr" ? "Rapports" : "Reports"}
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
             <Link
-              href="/observatoire"
+              href={OBSERVATOIRE_ROUTE}
               className="inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-sm font-black cmm-text-primary transition hover:-translate-y-[1px] hover:border-amber-300"
             >
               {locale === "fr" ? "Observatoire" : "Observatory"}

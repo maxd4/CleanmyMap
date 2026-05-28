@@ -13,7 +13,6 @@ type UpdateField = <K extends keyof FormState>(
 ) => void;
 
 type CompleteModeFieldsProps = {
-  isQuickMode: boolean;
   form: FormState;
   updateField: UpdateField;
   photoAssets: ActionPhotoAsset[];
@@ -67,7 +66,6 @@ export function ActionDeclarationMegotsSection({
 }
 
 export function ActionDeclarationCompleteModeFields({
-  isQuickMode,
   form,
   updateField,
   photoAssets,
@@ -76,10 +74,6 @@ export function ActionDeclarationCompleteModeFields({
   onPhotoUpload,
   onClearPhotos,
 }: CompleteModeFieldsProps) {
-  if (isQuickMode) {
-    return null;
-  }
-
   return (
     <>
       <ActionDeclarationPhotoSection

@@ -41,9 +41,11 @@ export type AppErrorOptions = {
   source?: string;
 };
 
+import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
+
 const SUPPORT_FORM_PATH = "/sections/feedback";
 export const DEFAULT_SIGN_IN_HREF = "/sign-in";
-export const DEFAULT_DASHBOARD_HREF = "/profil";
+export const DEFAULT_DASHBOARD_HREF = PROFIL_ROUTE;
 
 function sanitizeSupportValue(value: string, maxLength = 220): string {
   const compact = value.replace(/\s+/g, " ").trim();

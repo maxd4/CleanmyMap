@@ -1,6 +1,7 @@
 import { HelpCircle, Sparkles } from "lucide-react";
 import { QUICK_PROMPTS, Locale } from "../assistant-constants";
 import { cn } from "@/lib/utils";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 interface AssistantHeaderProps {
   copy: any;
@@ -38,14 +39,16 @@ export function AssistantHeader({ copy, locale, setQuestion }: AssistantHeaderPr
         
         <div className="flex flex-wrap gap-2 relative z-10">
           {QUICK_PROMPTS[locale].slice(0, 3).map((item) => (
-            <button
+            <CmmButton
               key={item}
               type="button"
               onClick={() => setQuestion(item)}
-              className="rounded-xl border border-white/5 bg-white/5 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-slate-400 transition-all hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-400 hover:scale-105 active:scale-95"
+              tone="tertiary"
+              variant="pill"
+              className="rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-widest text-slate-400 transition-all hover:border-emerald-500/30 hover:bg-emerald-500/10 hover:text-emerald-400 hover:scale-105 active:scale-95"
             >
               {item}
-            </button>
+            </CmmButton>
           ))}
         </div>
       </div>

@@ -1,5 +1,9 @@
 import type { PilotageComparisonResult } from "./metrics";
 import { PILOTAGE_THRESHOLDS, PRIORITIZATION_RULESET } from "./constants";
+import {
+  ADMIN_ROUTE,
+  PILOTAGE_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 export type ZoneComparisonRow = {
   area: string;
@@ -77,7 +81,7 @@ function backlogPriority(
     impactEstimate:
       "Publication plus rapide des donnees et baisse du risque de pilotage en retard.",
     suggestedOwner: "Admin moderation",
-    recommendedAction: { href: "/admin", label: "Traiter la file admin" },
+    recommendedAction: { href: ADMIN_ROUTE, label: "Traiter la file admin" },
     evidence: [`Pending: ${pending}`, `Delai median: ${delay.toFixed(1)} j`],
     engineVersion: PRIORITIZATION_RULESET.version,
   };
@@ -133,7 +137,7 @@ function territorialPriority(zones: ZoneComparisonRow[]): OperationalPriority {
       impactEstimate:
         "Maintien d'un niveau de surveillance sans surcharge operationnelle.",
       suggestedOwner: "Coordination territoriale",
-      recommendedAction: { href: "/pilotage", label: "Suivre le pilotage" },
+      recommendedAction: { href: PILOTAGE_ROUTE, label: "Suivre le pilotage" },
       evidence: ["Zone prioritaire: n/a"],
       engineVersion: PRIORITIZATION_RULESET.version,
     };
@@ -155,7 +159,7 @@ function territorialPriority(zones: ZoneComparisonRow[]): OperationalPriority {
       "Reduction ciblee de la pression locale via allocation terrain prioritaire.",
     suggestedOwner: "Coordination territoriale",
     recommendedAction: {
-      href: "/pilotage",
+      href: PILOTAGE_ROUTE,
       label: "Ouvrir le pilotage",
     },
     evidence: [
@@ -236,7 +240,7 @@ function dataIntegrityPriority(
     impactEstimate: "Fiabilisation des rapports institutionnels et de l'IUR global.",
     suggestedOwner: "Data Steward",
     recommendedAction: {
-      href: "/admin",
+      href: ADMIN_ROUTE,
       label: "Vérifier le registre",
     },
     evidence: [`Anomalies détectées: ${anomalies}`, "Seuil tolérance: 2"],

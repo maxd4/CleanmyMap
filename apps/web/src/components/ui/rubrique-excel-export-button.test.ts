@@ -7,17 +7,17 @@ import { RubriqueExcelExportButton } from "./rubrique-excel-export-button";
 describe("RubriqueExcelExportButton", () => {
   it("renders the shared CSV label and filename hint", () => {
     const expectedFilename = `${buildDeliverableBaseName({
-      rubrique: normalizeDeliverableRubrique("Tableau de bord"),
+      rubrique: normalizeDeliverableRubrique("Mon espace"),
     })}.csv`;
     const markup = renderToStaticMarkup(
       React.createElement(RubriqueExcelExportButton, {
-        rubriqueTitle: "Tableau de bord",
+        rubriqueTitle: "Mon espace",
         data: [{ label: "Paris", value: 12 }],
       }),
     );
 
     expect(markup).toContain("Exporter CSV");
     expect(markup).toContain(`title="${expectedFilename}"`);
-    expect(markup).toContain("Exporter les donnees de Tableau de bord au format CSV");
+    expect(markup).toContain("Exporter les donnees de Mon espace au format CSV");
   });
 });

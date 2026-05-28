@@ -1,6 +1,7 @@
 "use client";
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { Database, FileJson, Globe, Code, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
@@ -147,10 +148,10 @@ export function OpenDataSection() {
               </p>
            </div>
            
-           <button className="relative z-10 flex items-center gap-4 px-10 py-5 rounded-2xl bg-pink-500 text-slate-950 text-xs font-black uppercase tracking-[0.3em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
+           <CmmButton type="button" tone="primary" variant="pill" className="relative z-10 flex items-center gap-4 px-10 py-5 text-xs font-black uppercase tracking-[0.3em] shadow-2xl transition-all">
               {fr ? "Accéder à l'API" : "Access API"}
               <ArrowRight size={18} />
-           </button>
+           </CmmButton>
         </div>
       </div>
     </SectionShell>

@@ -8,6 +8,14 @@ import {
 } from "lucide-react";
 import type { NavigationGridItem } from "@/components/ui/navigation-grid";
 import type { AppProfile } from "@/lib/profiles";
+import {
+  ADMIN_GODMODE_ROUTE,
+  ADMIN_ROUTE,
+  DASHBOARD_ROUTE,
+  OBSERVATOIRE_ROUTE,
+  REPORTS_ROUTE,
+  SPONSOR_PORTAL_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 export type PilotageLocale = "fr" | "en";
 
@@ -77,7 +85,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
   const baseItems: NavigationGridItem[] = [
     {
       icon: BarChart3,
-      title: locale === "fr" ? "Tableau de bord" : "Dashboard",
+      title: locale === "fr" ? "Mon espace" : "Dashboard",
       desc:
         locale === "fr"
           ? "KPI, synthèse 30 jours et priorités de la journée."
@@ -87,7 +95,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
       accent: "from-[#2C1C0F] to-[#4C3118]",
       ring: "ring-amber-200/30",
       dot: "bg-amber-300",
-      href: "/dashboard",
+      href: DASHBOARD_ROUTE,
     },
     {
       icon: FileText,
@@ -101,7 +109,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
       accent: "from-[#302115] to-[#52351C]",
       ring: "ring-orange-200/30",
       dot: "bg-orange-300",
-      href: "/reports",
+      href: REPORTS_ROUTE,
     },
     {
       icon: Compass,
@@ -115,7 +123,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
       accent: "from-[#2A1B10] to-[#4A3119]",
       ring: "ring-yellow-200/30",
       dot: "bg-yellow-300",
-      href: "/observatoire",
+      href: OBSERVATOIRE_ROUTE,
     },
   ];
 
@@ -132,7 +140,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
       accent: "from-[#2E1E12] to-[#4E341D]",
       ring: "ring-amber-200/30",
       dot: "bg-amber-300",
-      href: "/admin",
+      href: ADMIN_ROUTE,
     },
     {
       icon: ShieldCheck,
@@ -146,7 +154,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
       accent: "from-[#342216] to-[#5A3920]",
       ring: "ring-orange-200/30",
       dot: "bg-orange-300",
-      href: "/sponsor-portal",
+      href: SPONSOR_PORTAL_ROUTE,
     },
   ];
 
@@ -163,7 +171,7 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
       accent: "from-[#3A2516] to-[#6B4524]",
       ring: "ring-amber-100/30",
       dot: "bg-amber-200",
-      href: "/admin/godmode",
+      href: ADMIN_GODMODE_ROUTE,
     });
   }
 
