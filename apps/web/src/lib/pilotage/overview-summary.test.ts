@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { PilotageComparisonResult } from "./metrics";
 import type { OperationalPriority } from "./prioritization";
 import { buildSummary, pickDecisionRecommendation } from "./overview-summary";
+import { ADMIN_ROUTE, DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 function buildComparisonFixture(
   overrides?: Partial<PilotageComparisonResult["metrics"]>,
@@ -131,7 +132,7 @@ function buildComparisonFixture(
 describe("overview summary", () => {
   it("prefers moderation recommendation when moderation risk is highest", () => {
     const recommendation = pickDecisionRecommendation(buildComparisonFixture());
-    expect(recommendation.href).toBe("/admin");
+    expect(recommendation.href).toBe(ADMIN_ROUTE);
     expect(recommendation.label).toContain("moderation");
   });
 
@@ -166,7 +167,7 @@ describe("overview summary", () => {
       },
     });
     const recommendation = pickDecisionRecommendation(neutral);
-    expect(recommendation.href).toBe("/dashboard");
+    expect(recommendation.href).toBe(DASHBOARD_ROUTE);
   });
 
   it("buildSummary maps KPI cards and default alert when priorities are absent", () => {
@@ -177,6 +178,6 @@ describe("overview summary", () => {
     expect(summary.kpis[0].label).toBe("Impact terrain");
     expect(summary.kpis[0].deltaAbsolute).toContain("kg");
     expect(summary.alert.severity).toBe("low");
-    expect(summary.recommendedAction.href).toBe("/admin");
+    expect(summary.recommendedAction.href).toBe(ADMIN_ROUTE);
   });
 });

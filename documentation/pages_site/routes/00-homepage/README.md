@@ -14,5 +14,6 @@ Famille autonome de la page d'accueil et de sa reprise de session.
 ## Notes
 
 - Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
+- `/` est la route canonique de la homepage et toutes les surfaces internes doivent l'utiliser en priorité.
 - `/accueil` est un alias de compatibilité qui redirige vers `/`.
 - Les captures officielles, quand elles existent, vivent dans `photo/desktop/` et `photo/mobile/` à la racine de la famille et sont en WebP.

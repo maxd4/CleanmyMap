@@ -1,4 +1,5 @@
 import type { PageFamilyRouteException } from "@/lib/ui/page-families/types";
+import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 /**
  * Exceptions explicites par route.
@@ -9,7 +10,7 @@ export const PAGE_FAMILY_ROUTE_EXCEPTIONS: PageFamilyRouteException[] = [
     id: "explorer-sommaire",
     note: "Sommaire bloc 01 : fond yellow, cartes BLOCK_THEME inchangées dans explorer/page.tsx",
     match: (pathname) =>
-      pathname === "/explorer" || pathname.startsWith("/explorer/"),
+      pathname === EXPLORER_ROUTE || pathname.startsWith(`${EXPLORER_ROUTE}/`),
     familyId: "apprendre",
   },
   {

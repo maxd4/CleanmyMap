@@ -29,7 +29,7 @@ type UseChatSubmitParams = {
   setIsSending: React.Dispatch<React.SetStateAction<boolean>>;
   setSendError: React.Dispatch<React.SetStateAction<string | null>>;
   setIsUploading: React.Dispatch<React.SetStateAction<boolean>>;
-  supabase: SupabaseClient;
+  supabase: SupabaseClient | null | undefined;
   sendChatMessage: (params: { optimisticMessage: ChatMessage; body: any }) => Promise<void>;
   setMessage: React.Dispatch<React.SetStateAction<string>>;
   setFile: React.Dispatch<React.SetStateAction<File | null>>;
@@ -95,11 +95,16 @@ export function useChatSubmit({
     let attachmentUrl: string | undefined;
     let attachmentType: string | undefined;
 
-    try {
-      if (file) {
-        setIsUploading(true);
+      try {
+        if (file) {
+          if (!supabase) {
+            setSendError("Les pièces jointes nécessitent une configuration Supabase locale valide.");
+            return;
+          }
 
-        try {
+          setIsUploading(true);
+
+          try {
           const preparedFile = file.type.startsWith("image/")
             ? await compressImageFile(file, {
                 maxWidth: 1600,

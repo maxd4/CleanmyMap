@@ -3,6 +3,7 @@
 import type { AnnuaireEntry } from "./annuaire-map-canvas";
 import Link from "next/link";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { ShieldCheck, Info, Sparkles, Target, ArrowUpRight, Users, Clock, Mail } from "lucide-react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -53,20 +54,16 @@ export function AnnuaireGovernancePanel({
           </h3>
         </div>
         <div className="space-y-3 relative z-10">
-          <Link
-            href="/partners/onboarding"
-            className="flex items-center justify-center gap-2 w-full rounded-xl border border-violet-500/20 bg-violet-500/10 px-4 py-3 text-center text-[10px] font-black uppercase tracking-widest text-violet-50 transition-all hover:bg-violet-500 hover:text-white"
-          >
+          <CmmButton href="/partners/onboarding" tone="secondary" variant="pill" className="w-full justify-center gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest">
             {fr ? "Parcours partenaire (5 min)" : "Partner flow (5 min)"}
             <ArrowUpRight size={14} />
-          </Link>
-          <a
-            href="mailto:partenaires@cleanmymap.fr?subject=Rejoindre le réseau partenaire"
-            className="flex items-center justify-center gap-2 w-full rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-center text-[10px] font-black uppercase tracking-widest text-rose-50 transition-all hover:bg-rose-500 hover:text-white"
-          >
-            {fr ? "Rejoindre le réseau" : "Join the network"}
-            <Mail size={14} />
-          </a>
+          </CmmButton>
+          <CmmButton asChild tone="primary" variant="pill" className="w-full justify-center gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest">
+            <a href="mailto:partenaires@cleanmymap.fr?subject=Rejoindre le réseau partenaire">
+              {fr ? "Rejoindre le réseau" : "Join the network"}
+              <Mail size={14} />
+            </a>
+          </CmmButton>
         </div>
       </motion.section>
 

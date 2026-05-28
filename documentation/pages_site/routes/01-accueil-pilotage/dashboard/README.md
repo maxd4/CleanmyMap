@@ -1,4 +1,4 @@
-# Dashboard
+# Mon espace
 
 ## Fiche canonique
 
@@ -9,8 +9,8 @@
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
-- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Objectif utilisateur principal** : Centraliser la synthèse, le pilotage et les réglages personnels dans une seule page de référence.
+- **Action principale attendue** : Consulter l'état du compte, arbitrer une action ou ajuster ses paramètres.
 - **Palette attendue** : amber / orange
 - **Scope** : terminé
 - **Terminée** : oui
@@ -55,5 +55,6 @@
 
 ## Notes d'audit
 
-- Cette fiche est la source de vérité canonique pour la page.
+- Cette fiche est la source de vérité canonique pour la page `Mon espace` fusionnée avec les informations de profil.
+- Le chemin `/profil` est désormais un alias de compatibilité qui redirige vers `/dashboard`.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

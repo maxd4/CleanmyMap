@@ -7,6 +7,7 @@ import {
   Cigarette, Trash2, Droplets, Eye, Info, Share2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 const CAMPAIGN_THEMES = [
   {
@@ -117,9 +118,11 @@ export function CampaignsSection() {
       {/* Theme Selector */}
       <div className="flex flex-wrap gap-3 p-2 bg-slate-950/40 rounded-3xl w-fit border border-white/5 shadow-inner">
         {CAMPAIGN_THEMES.map((theme, i) => (
-          <button
+          <CmmButton
             key={theme.id}
             onClick={() => setActiveTheme(i)}
+            tone={activeTheme === i ? "primary" : "tertiary"}
+            variant="pill"
             className={cn(
               "relative px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-[0.25em] transition-all duration-500",
               activeTheme === i ? "text-white" : "text-slate-500 hover:text-slate-300"
@@ -133,7 +136,7 @@ export function CampaignsSection() {
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
-          </button>
+          </CmmButton>
         ))}
       </div>
 
@@ -158,12 +161,14 @@ export function CampaignsSection() {
               >
                 <div className="flex items-start justify-between gap-8">
                   <p className="text-lg font-bold text-slate-200 leading-relaxed group-hover:text-white transition-colors">{msg}</p>
-                  <button
+                  <CmmButton
                     onClick={() => copyToClipboard(msg, msgId)}
-                    className="shrink-0 h-14 w-14 flex items-center justify-center rounded-2xl bg-white/5 text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-600 hover:text-white border border-white/5 shadow-xl transform translate-x-4 group-hover:translate-x-0"
+                    tone="secondary"
+                    variant="pill"
+                    className="shrink-0 h-14 w-14 flex items-center justify-center rounded-2xl text-slate-400 opacity-0 group-hover:opacity-100 transition-all hover:text-white border border-white/5 shadow-xl transform translate-x-4 group-hover:translate-x-0"
                   >
                     {copiedId === msgId ? <Check size={20} className="animate-in zoom-in" /> : <Copy size={20} />}
-                  </button>
+                  </CmmButton>
                 </div>
               </motion.div>
             );

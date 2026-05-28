@@ -48,7 +48,7 @@ export default function SignUpPage() {
               </div>
               <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm">
                 <div className="h-2 w-2 rounded-full bg-violet-300" />
-                <p className="text-sm text-violet-100/90">Tableau de bord personnalisé</p>
+                <p className="text-sm text-violet-100/90">Mon espace personnalisé</p>
               </div>
               <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm">
                 <div className="h-2 w-2 rounded-full bg-emerald-200" />
@@ -112,6 +112,7 @@ export default function SignUpPage() {
                 <SignUp
                   path="/sign-up"
                   routing="path"
+                  oauthFlow="redirect"
                   fallbackRedirectUrl="/onboarding"
                   signInUrl="/sign-in"
                   appearance={{

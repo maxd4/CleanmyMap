@@ -1,10 +1,13 @@
+import { HOME_ALIAS_ROUTE, HOME_ROUTE } from "@/lib/home-routes";
+import { DASHBOARD_ROUTE, EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
+
 export type FooterVariant = "full" | "compact";
 
 const FULL_FOOTER_PATHS = [
-  "/",
-  "/accueil",
-  "/explorer",
-  "/dashboard",
+  HOME_ROUTE,
+  HOME_ALIAS_ROUTE,
+  EXPLORER_ROUTE,
+  DASHBOARD_ROUTE,
   "/sections/feedback",
   "/contact",
   "/a-propos",

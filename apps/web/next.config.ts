@@ -1,13 +1,14 @@
 import path from "path";
 import type { NextConfig } from "next";
 
-const appRoot = path.resolve(__dirname, "../..");
+const repoRoot = path.resolve(__dirname, "../..");
+const appRoot = path.resolve(__dirname);
 const env = process.env;
 const isProduction = env["NODE_ENV"] === "production";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  outputFileTracingRoot: appRoot,
+  outputFileTracingRoot: repoRoot,
   serverExternalPackages: ["@prisma/instrumentation", "@fastify/otel"],
   compress: true,
   generateEtags: true,
@@ -34,6 +35,9 @@ const nextConfig: NextConfig = {
       'zod',
       '@supabase/supabase-js',
     ],
+  },
+  turbopack: {
+    root: repoRoot,
   },
   productionBrowserSourceMaps:
     Boolean(env["SENTRY_AUTH_TOKEN"]) &&

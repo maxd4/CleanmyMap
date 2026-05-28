@@ -7,7 +7,6 @@ import { AccountSettingsSection } from "@/components/account/account-settings-se
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import {
-  getProfileEntryPath,
   getProfileLabel,
   getProfileSubtitle,
   getSwitchableProfiles,
@@ -17,7 +16,9 @@ import {
 } from "@/lib/profiles";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
+import { CmmButton } from "@/components/ui/cmm-button";
 import ImpactProfilePage from "@/components/profil/impact-profile-page";
+import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 
 type ProfilPageProps = {
   params: Promise<{ profile: string }>;
@@ -61,7 +62,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
   const activeProfile = toProfile(activeRole);
   const isAdmin = isAdminLikeProfile(activeProfile);
 
-  if (!isAdmin && normalized !== activeProfile) redirect(getProfileEntryPath(activeProfile));
+  if (!isAdmin && normalized !== activeProfile) redirect(buildProfileRoute(activeProfile));
 
   const profileLabel = getProfileLabel(normalized, "fr");
   const profileSubtitle = getProfileSubtitle(normalized, "fr");
@@ -104,9 +105,11 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           >
             <div className="flex flex-wrap gap-4">
               {switchableProfiles.map((p) => (
-                <Link
+                <CmmButton
                   key={p}
-                  href={getProfileEntryPath(p)}
+                  href={buildProfileRoute(p)}
+                  tone={p === activeProfile ? "primary" : "tertiary"}
+                  variant="pill"
                   className={
                     p === activeProfile
                       ? "rounded-2xl border border-amber-200/30 bg-amber-100/12 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-2xl transition-all hover:-translate-y-1"
@@ -114,7 +117,7 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
                   }
                 >
                   {getProfileLabel(p, "fr")}
-                </Link>
+                </CmmButton>
               ))}
             </div>
           </FamilyRubriqueCard>

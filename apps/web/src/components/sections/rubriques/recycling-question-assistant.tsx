@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Info, MapPin, Search } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { buildAnswer } from "./recycling-question-assistant/assistant-utils";
 import { QUICK_PROMPTS, type Tone } from "./recycling-question-assistant/assistant-constants";
@@ -108,13 +109,16 @@ export function RecyclingQuestionAssistant() {
             />
             <div className="absolute right-4 bottom-4 flex items-center gap-2">
                {question && (
-                 <button
+                 <CmmButton
                    onClick={() => setQuestion("")}
-                   className="p-2 rounded-xl bg-slate-800/50 text-slate-400 hover:text-rose-400 transition-colors"
+                   tone="tertiary"
+                   variant="pill"
+                   size="sm"
+                   className="p-2 rounded-xl text-slate-400 hover:text-rose-400 transition-colors"
                    title={copy.clear}
                  >
                    <Search size={18} className="rotate-45" />
-                 </button>
+                 </CmmButton>
                )}
             </div>
           </div>
@@ -125,14 +129,16 @@ export function RecyclingQuestionAssistant() {
             </p>
             <div className="flex flex-wrap gap-2">
               {QUICK_PROMPTS[locale].map((item) => (
-                <button
+                <CmmButton
                   key={item}
                   type="button"
                   onClick={() => setQuestion(item)}
-                  className="rounded-2xl border border-slate-800/40 bg-slate-800/20 px-4 py-2 text-xs font-bold text-slate-400 transition-all hover:border-emerald-500/30 hover:bg-emerald-500/5 hover:text-emerald-400 active:scale-95"
+                  tone="tertiary"
+                  variant="pill"
+                  className="rounded-2xl px-4 py-2 text-xs font-bold text-slate-400 transition-all active:scale-95"
                 >
                   {item}
-                </button>
+                </CmmButton>
               ))}
             </div>
           </div>
@@ -202,13 +208,15 @@ export function RecyclingQuestionAssistant() {
                 </div>
               )}
 
-              <Link
+              <CmmButton
                 href="/learn/ressources"
-                className="group flex items-center justify-center gap-3 rounded-2xl bg-white px-6 py-4 text-sm font-black text-slate-950 transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-white/5"
+                tone="secondary"
+                variant="pill"
+                className="group flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-sm font-black text-slate-950 transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-white/5"
               >
                 {copy.cta}
                 <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
-              </Link>
+              </CmmButton>
             </div>
           </motion.div>
         </AnimatePresence>

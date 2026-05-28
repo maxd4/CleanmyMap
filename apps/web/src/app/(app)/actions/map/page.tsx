@@ -9,6 +9,7 @@ import { ActionsMapFeed } from "@/components/actions/map-feed/actions-map-feed";
 import { ActionsMapTable } from "@/components/actions/actions-map-table";
 import { ActionsVisualizationPanel } from "@/components/actions/actions-visualization-panel";
 import { ActionStoriesCarousel } from "@/components/map/ActionStoriesCarousel";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
 import { isVisibleWithCategoryFilter } from "@/components/actions/map-marker-categories";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
@@ -125,15 +126,15 @@ export default function ActionsMapPage() {
           />
 
           <div className="flex flex-wrap items-center gap-3">
-            <Link href="/actions/new" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-sky-200 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition-colors hover:bg-sky-100">
+            <CmmButton href="/actions/new" tone="primary" variant="pill" className="px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3">
               Déclarer <ArrowRight size={14} className="transition-transform hover:translate-x-1" />
-            </Link>
-            <Link href="/observatoire" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white">
+            </CmmButton>
+            <CmmButton href="/observatoire" tone="secondary" variant="pill" className="px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3">
               Observatoire <ArrowRight size={14} />
-            </Link>
-            <Link href="/methodologie" className="inline-flex items-center gap-3 rounded-full border border-sky-200/80 bg-white/80 px-5 py-2.5 cmm-text-caption font-semibold tracking-[0.12em] text-sky-700 transition-colors hover:text-slate-950 hover:bg-white">
+            </CmmButton>
+            <CmmButton href="/methodologie" tone="tertiary" variant="pill" className="px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3">
               Méthodologie <ArrowRight size={14} />
-            </Link>
+            </CmmButton>
           </div>
         </header>
 
@@ -182,9 +183,11 @@ export default function ActionsMapPage() {
                     </p>
                   </div>
                   <div className="relative flex rounded-[2rem] border border-sky-200/80 bg-sky-50/90 p-1.5">
-                    <button
+                    <CmmButton
                       type="button"
                       onClick={() => setRailTab("insights")}
+                      tone={railTab === "insights" ? "primary" : "tertiary"}
+                      variant="pill"
                       className={cn(
                         "relative z-10 flex items-center justify-center gap-3 px-5 py-3 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
                         railTab === "insights" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
@@ -192,10 +195,12 @@ export default function ActionsMapPage() {
                     >
                       <BarChart3 size={16} />
                       Analytique
-                    </button>
-                    <button
+                    </CmmButton>
+                    <CmmButton
                       type="button"
                       onClick={() => setRailTab("journal")}
+                      tone={railTab === "journal" ? "primary" : "tertiary"}
+                      variant="pill"
                       className={cn(
                         "relative z-10 flex items-center justify-center gap-3 px-5 py-3 cmm-text-caption font-semibold tracking-[0.12em] transition-all duration-500",
                         railTab === "journal" ? "text-slate-950" : "text-slate-600 hover:text-slate-950"
@@ -203,7 +208,7 @@ export default function ActionsMapPage() {
                     >
                       <Table2 size={16} />
                       Journal
-                    </button>
+                    </CmmButton>
                     <div
                       className="absolute left-1.5 top-1.5 bottom-1.5 w-[calc(50%-4.5px)] rounded-[1.5rem] bg-sky-200 border border-sky-300 shadow-2xl transition-transform duration-700 ease-out"
                       style={{
@@ -254,13 +259,15 @@ export default function ActionsMapPage() {
                     Formules, sources et marges d&apos;erreur restent accessibles.
                 </p>
                 </div>
-                <Link
+                <CmmButton
                   href="/methodologie"
-                  className="inline-flex w-full items-center justify-center gap-3 rounded-[2rem] border border-sky-200/80 bg-white/80 px-6 py-4 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 transition-colors hover:text-slate-950 hover:bg-white"
+                  tone="secondary"
+                  variant="pill"
+                  className="w-full px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] gap-3"
                 >
                   Rubrique Méthodologie
                   <ArrowRight size={14} />
-                </Link>
+                </CmmButton>
               </section>
 
               <MapSupervision />

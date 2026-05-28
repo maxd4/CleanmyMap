@@ -1,5 +1,7 @@
 import { env } from "@/lib/env";
 
+export const PUBLIC_CONTACT_EMAIL = "contact@cleanmymap.fr";
+
 function trimToUndefined(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : undefined;
@@ -18,7 +20,7 @@ export function resolveContactEmail(): string | undefined {
 }
 
 export function resolvePublicContactEmail(): string | undefined {
-  return trimToUndefined(env.NEXT_PUBLIC_CONTACT_EMAIL) || resolveContactEmail();
+  return trimToUndefined(env.NEXT_PUBLIC_CONTACT_EMAIL) || PUBLIC_CONTACT_EMAIL;
 }
 
 export function resolveEmailReplyTo(): string | undefined {

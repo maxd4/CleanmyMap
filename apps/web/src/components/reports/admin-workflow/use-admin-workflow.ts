@@ -175,10 +175,11 @@ export function useAdminWorkflow(): AdminWorkflowController {
  const isCleanPlace = item.source ==="spots" || item.record_type ==="clean_place" || item.record_type ==="other";
  state.setModerationEntityType(isCleanPlace ?"clean_place" :"action");
  state.setModerationId(item.id);
+ state.setSelectedActionCreatorId(isCleanPlace ? null : item.created_by_clerk_id?.trim() || null);
  state.setActionEditDraft(isCleanPlace ? null : buildActionEditDraft(item));
  state.setCleanPlaceEditDraft(isCleanPlace ? buildCleanPlaceEditDraft(item) : null);
  state.resetModerationConfirmationState();
- }
+}
 
  function reloadPreview() {
  void preview.mutate();
@@ -203,21 +204,23 @@ export function useAdminWorkflow(): AdminWorkflowController {
  state.setImportPayload(value);
  state.clearImportConfirmationState();
  };
- const setModerationEntityTypeWithReset: AdminWorkflowController["setModerationEntityType"] =
+const setModerationEntityTypeWithReset: AdminWorkflowController["setModerationEntityType"] =
  (value) => {
  state.setModerationEntityType(value);
+ state.setSelectedActionCreatorId(null);
  state.setActionEditDraft(null);
  state.setCleanPlaceEditDraft(null);
  state.resetModerationConfirmationState();
- };
- const setModerationIdWithReset: AdminWorkflowController["setModerationId"] = (
+};
+const setModerationIdWithReset: AdminWorkflowController["setModerationId"] = (
  value,
  ) => {
  state.setModerationId(value);
+ state.setSelectedActionCreatorId(null);
  state.setActionEditDraft(null);
  state.setCleanPlaceEditDraft(null);
  state.resetModerationConfirmationState();
- };
+};
  const setActionStatusWithReset: AdminWorkflowController["setActionStatus"] = (
  value,
  ) => {
@@ -266,6 +269,7 @@ export function useAdminWorkflow(): AdminWorkflowController {
  moderationJournal: state.moderationJournal,
  moderationConfirmed: state.moderationConfirmed,
  moderationConfirmationText: state.moderationConfirmationText,
+ selectedActionCreatorId: state.selectedActionCreatorId,
  actionEditDraft: state.actionEditDraft,
  cleanPlaceEditDraft: state.cleanPlaceEditDraft,
  setModerationEntityType: setModerationEntityTypeWithReset,
@@ -274,6 +278,7 @@ export function useAdminWorkflow(): AdminWorkflowController {
  setCleanPlaceStatus: setCleanPlaceStatusWithReset,
  setModerationConfirmed: state.setModerationConfirmed,
  setModerationConfirmationText: state.setModerationConfirmationText,
+ setSelectedActionCreatorId: state.setSelectedActionCreatorId,
  setActionEditDraft: state.setActionEditDraft,
  setCleanPlaceEditDraft: state.setCleanPlaceEditDraft,
  previewRows,

@@ -171,6 +171,14 @@ export default function ExamplePage() {
 }
 ```
 
+### Boutons canoniques
+
+- Utiliser `CmmButton` pour tous les CTA visibles dans les blocs.
+- `tone="primary"` = CTA principal de la zone.
+- `tone="secondary"` = CTA de soutien.
+- `tone="tertiary"` = action contextuelle ou bas de hiérarchie.
+- Les couleurs viennent du thème de la page/famille, jamais d'une classe locale codée en dur.
+
 ### Utilisation dans les rubriques existantes
 
 ```typescript

@@ -11,6 +11,7 @@ import {
   type CompostPoint,
 } from "@/lib/learning/compost-guide-data";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { CmmButton } from "@/components/ui/cmm-button";
 import {
   CompostReflexGrid,
   CompostRulesList,
@@ -101,17 +102,14 @@ export function CompostSection() {
            </div>
 
            <div className="flex flex-wrap items-center gap-4">
-              <Link
-                href="/sections/recycling"
-                className="flex items-center gap-4 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all"
-              >
+              <CmmButton href="/sections/recycling" tone="secondary" variant="pill" className="flex items-center gap-4 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all">
                 {fr ? "Assistant Tri" : "Sorting Assistant"}
                 <ArrowRight size={16} />
-              </Link>
-              <button className="flex items-center gap-4 px-10 py-4 rounded-2xl bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl hover:scale-105 transition-all">
+              </CmmButton>
+              <CmmButton type="button" tone="primary" variant="pill" className="flex items-center gap-4 px-10 py-4 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all">
                 {fr ? "Signaler un bac plein" : "Report full bin"}
                 <Zap size={16} />
-              </button>
+              </CmmButton>
            </div>
         </RubriqueCard>
 

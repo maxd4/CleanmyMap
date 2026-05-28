@@ -7,7 +7,6 @@ import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from
 import {
   BarChart3,
   ChevronRight,
-  ChevronUp,
   Dumbbell,
   Info,
   MapPinned,
@@ -61,6 +60,7 @@ export function AppNavigationBlockDropdown({
   space,
 }: AppNavigationBlockDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [canHover, setCanHover] = useState(false);
   const router = useRouter();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -106,6 +106,21 @@ export function AppNavigationBlockDropdown({
   }, [isOpen]);
 
   useEffect(() => {
+    const mediaQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
+
+    const updateCanHover = () => {
+      setCanHover(mediaQuery.matches);
+    };
+
+    updateCanHover();
+    mediaQuery.addEventListener("change", updateCanHover);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateCanHover);
+    };
+  }, []);
+
+  useEffect(() => {
     return () => {
       if (closeTimerRef.current) {
         clearTimeout(closeTimerRef.current);
@@ -140,7 +155,12 @@ export function AppNavigationBlockDropdown({
   }
 
   function handleButtonClick() {
-    setIsOpen(true);
+    if (canHover) {
+      openMenu();
+      return;
+    }
+
+    setIsOpen((current) => !current);
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
@@ -160,9 +180,9 @@ export function AppNavigationBlockDropdown({
     <div
       ref={wrapperRef}
       className="group relative shrink-0"
-      onMouseEnter={openMenu}
-      onMouseLeave={closeMenuSoon}
-      onFocus={openMenu}
+      onMouseEnter={canHover ? openMenu : undefined}
+      onMouseLeave={canHover ? closeMenuSoon : undefined}
+      onFocus={canHover ? openMenu : undefined}
       onBlur={handleBlur}
     >
       <button
@@ -210,7 +230,7 @@ export function AppNavigationBlockDropdown({
                 placement.openUp ? "bottom-full" : "top-full",
               )}
               aria-hidden="true"
-              onMouseEnter={openMenu}
+              onMouseEnter={canHover ? openMenu : undefined}
             />
             <motion.div
               key={`block-${space.id}-menu`}
@@ -228,28 +248,17 @@ export function AppNavigationBlockDropdown({
                   : "absolute left-1/2 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.55rem] border text-black shadow-[0_32px_74px_-34px_rgba(15,23,42,0.24)]",
                 placement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
               )}
-              onMouseEnter={openMenu}
-              onMouseLeave={closeMenuSoon}
+              onMouseEnter={canHover ? openMenu : undefined}
+              onMouseLeave={canHover ? closeMenuSoon : undefined}
               onKeyDown={handleKeyDown}
               style={visualizePanelStyle}
             >
               {isVisualizeSpace ? (
                 <div className="px-3 pb-2.5 pt-2.5 sm:px-3.5 sm:pt-3">
-                  <header className="flex items-start justify-between gap-2.5">
-                    <div>
-                      <h3 className="whitespace-nowrap text-[0.9rem] font-black leading-tight tracking-[-0.03em] text-slate-950 sm:text-[0.98rem]">
-                        {getNavigationDropdownTitleLabel(locale, space.label[locale])}
-                      </h3>
-                    </div>
-
-                    <button
-                      type="button"
-                      aria-label={locale === "fr" ? "Réduire le menu" : "Collapse menu"}
-                      className="rounded-full p-2 text-cyan-700 transition hover:bg-cyan-100/70"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      <ChevronUp className="h-5 w-5 stroke-[3]" />
-                    </button>
+                  <header className="flex items-center justify-center">
+                    <h3 className="w-full whitespace-nowrap text-center text-[0.9rem] font-black leading-tight tracking-[-0.03em] text-slate-950 sm:text-[0.98rem]">
+                      {getNavigationDropdownTitleLabel(locale, space.label[locale])}
+                    </h3>
                   </header>
 
                   <nav className="mt-2" aria-label={space.label[locale]}>
@@ -268,14 +277,14 @@ export function AppNavigationBlockDropdown({
                                   handleTrackNavigation(item);
                                   router.push(item.href);
                                 }}
-                                className="group block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
+                                className="group/item block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
                               >
                                 <div
                                   className={cn(
                                     "rounded-[0.9rem] p-[1.5px] transition-all duration-200",
                                     isActiveItem
                                       ? "bg-[linear-gradient(90deg,rgba(34,211,238,0.96)_0%,rgba(255,255,255,0.98)_46%,rgba(239,68,68,0.92)_100%)] shadow-[0_7px_16px_rgba(15,23,42,0.05)]"
-                                      : "bg-[linear-gradient(90deg,rgba(34,211,238,0.92)_0%,rgba(255,255,255,0.92)_46%,rgba(239,68,68,0.86)_100%)] shadow-[0_7px_16px_rgba(15,23,42,0.05)] group-hover:scale-[1.01] group-hover:shadow-[0_10px_24px_rgba(15,23,42,0.09)]",
+                                      : "bg-[linear-gradient(90deg,rgba(34,211,238,0.92)_0%,rgba(255,255,255,0.92)_46%,rgba(239,68,68,0.86)_100%)] shadow-[0_7px_16px_rgba(15,23,42,0.05)] group-hover/item:scale-[1.01] group-hover/item:shadow-[0_10px_24px_rgba(15,23,42,0.09)]",
                                   )}
                                 >
                                   <div
@@ -283,12 +292,12 @@ export function AppNavigationBlockDropdown({
                                       "flex min-h-[1.95rem] items-center gap-1 rounded-[calc(0.9rem-1.5px)] border px-[0.55rem] py-[0.35rem] text-left transition-all duration-200",
                                       isActiveItem
                                         ? "border-cyan-300/80 bg-white/94 text-slate-950"
-                                        : "border-cyan-200/70 bg-white/82 group-hover:border-red-500 group-hover:ring-2 group-hover:ring-red-300/25 group-hover:bg-white",
+                                        : "border-cyan-200/70 bg-white/82 group-hover/item:border-red-500 group-hover/item:ring-2 group-hover/item:ring-red-300/25 group-hover/item:bg-white",
                                     )}
                                   >
                                     <span
                                       className={cn(
-                                        "flex h-[1.625rem] w-[1.625rem] shrink-0 items-center justify-center rounded-full border bg-gradient-to-br from-cyan-100 via-white to-rose-100 shadow-[0_0_0_2px_rgba(6,182,212,0.10)] transition-transform duration-200 group-hover:scale-[1.03] sm:h-7 sm:w-7",
+                                        "flex h-[1.625rem] w-[1.625rem] shrink-0 items-center justify-center rounded-full border bg-gradient-to-br from-cyan-100 via-white to-rose-100 shadow-[0_0_0_2px_rgba(6,182,212,0.10)] transition-transform duration-200 group-hover/item:scale-[1.03] sm:h-7 sm:w-7",
                                         isActiveItem
                                           ? "border-cyan-300 text-cyan-700"
                                           : "border-cyan-200 text-cyan-700",
@@ -298,14 +307,14 @@ export function AppNavigationBlockDropdown({
                                     </span>
 
                                     <span className="min-w-0 flex-1">
-                                      <span className="block whitespace-nowrap text-[0.7rem] font-medium tracking-tight text-slate-950 transition-all duration-200 origin-left group-hover:scale-[1.05] group-hover:font-bold sm:text-[0.76rem]">
+                                      <span className="block whitespace-nowrap text-[0.7rem] font-medium tracking-tight text-slate-950 transition-all duration-200 origin-left group-hover/item:scale-[1.05] group-hover/item:font-bold sm:text-[0.76rem]">
                                         {item.label[locale]}
                                       </span>
                                     </span>
 
                                     <ChevronRight
                                       className={cn(
-                                        "h-[0.68rem] w-[0.68rem] shrink-0 transition-transform duration-200 group-hover:translate-x-1.25 group-hover:scale-110 sm:h-3 sm:w-3",
+                                        "h-[0.68rem] w-[0.68rem] shrink-0 transition-transform duration-200 group-hover/item:translate-x-1.25 group-hover/item:scale-110 sm:h-3 sm:w-3",
                                         isActiveItem ? "text-red-500" : "text-cyan-700",
                                       )}
                                       strokeWidth={3}

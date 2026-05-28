@@ -57,7 +57,7 @@ const mockUserMetadata = {
 console.log("1. TEST ACTION SPONTANÉE AVEC MÉGOTS");
 const payloadSpontanee = buildCreateActionPayload({
   form: mockFormActionSpontanee,
-  declarationMode: "quick",
+  declarationMode: "complete",
   effectiveManualDrawingEnabled: false,
   drawingIsValid: false,
   manualDrawing: null,
@@ -76,7 +76,7 @@ console.log("✓ Champ cigaretteButtsCount présent:", payloadSpontanee.cigarett
 console.log("\n2. TEST ACTION ORGANISÉE SANS MÉGOTS");
 const payloadOrganisee = buildCreateActionPayload({
   form: mockFormActionOrganisee,
-  declarationMode: "quick",
+  declarationMode: "complete",
   effectiveManualDrawingEnabled: false,
   drawingIsValid: false,
   manualDrawing: null,

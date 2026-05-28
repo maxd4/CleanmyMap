@@ -1,13 +1,7 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import type { ComponentProps } from "react";
+import { VibrantBackground, type VibrantBackgroundProps } from "@/components/ui/vibrant-background";
 
-const VibrantBackgroundImpl = dynamic(
-  () => import("@/components/ui/vibrant-background").then((mod) => mod.VibrantBackground),
-  { ssr: false, loading: () => null },
-);
-
-export function VibrantBackgroundNoSSR(props: ComponentProps<typeof VibrantBackgroundImpl>) {
-  return <VibrantBackgroundImpl {...props} />;
+export function VibrantBackgroundNoSSR(props: VibrantBackgroundProps) {
+  return <VibrantBackground {...props} />;
 }

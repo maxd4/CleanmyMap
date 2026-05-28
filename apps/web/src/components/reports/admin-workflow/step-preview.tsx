@@ -43,6 +43,7 @@ export function StepPreview({ workflow }: StepPreviewProps) {
     <th className="px-2 py-2">{fr ? "ID" : "ID"}</th>
     <th className="px-2 py-2">{fr ? "Date" : "Date"}</th>
     <th className="px-2 py-2">{fr ? "Lieu" : "Location"}</th>
+    <th className="px-2 py-2">{fr ? "Compte" : "Account"}</th>
     <th className="px-2 py-2">{fr ? "Statut" : "Status"}</th>
     <th className="px-2 py-2">{fr ? "Qualité" : "Quality"}</th>
     <th className="px-2 py-2">{fr ? "Action" : "Action"}</th>
@@ -57,6 +58,9 @@ export function StepPreview({ workflow }: StepPreviewProps) {
  <td className="px-2 py-2 font-mono">{row.item.id.slice(0, 8)}...</td>
  <td className="px-2 py-2">{row.item.action_date}</td>
  <td className="px-2 py-2">{row.item.location_label}</td>
+ <td className="px-2 py-2 font-mono text-[11px]">
+ {row.item.created_by_clerk_id?.trim() || "anonymous"}
+ </td>
  <td className="px-2 py-2">{row.item.status}</td>
  <td className="px-2 py-2">
  <span
@@ -77,8 +81,8 @@ export function StepPreview({ workflow }: StepPreviewProps) {
  ))}
 {workflow.previewRows.length === 0 ? (
  <tr className="border-t border-slate-100">
- <td className="px-2 py-3 cmm-text-muted" colSpan={6}>
- Aucun élément ne correspond au filtre de modération.
+ <td className="px-2 py-3 cmm-text-muted" colSpan={7}>
+  Aucun élément ne correspond au filtre de modération.
  </td>
  </tr>
 ) : null}

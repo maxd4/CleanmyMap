@@ -2,6 +2,7 @@ import * as React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { EnvironmentalImpactProjectSignalsPanel } from "./environmental-impact-project-signals-panel";
+import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 describe("EnvironmentalImpactProjectSignalsPanel", () => {
   it("renders the fine-grained project signal block", () => {
@@ -14,7 +15,7 @@ describe("EnvironmentalImpactProjectSignalsPanel", () => {
             distinctRoutes: 3,
             topRoutes: [
               { path: "/community", count: 5 },
-              { path: "/profil", count: 4 },
+              { path: PROFIL_ROUTE, count: 4 },
             ],
           },
           community: {

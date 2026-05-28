@@ -86,9 +86,9 @@ export function MapControls({
           type="submit"
           disabled={isSearching}
           aria-label={isSearching ? "Recherche en cours" : "Lancer la recherche"}
-          className="bg-sky-200 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-sky-300 disabled:opacity-50"
+          className="flex w-11 items-center justify-center overflow-hidden bg-sky-200 px-3 py-2 text-sm font-black text-slate-950 transition-colors duration-200 hover:bg-sky-300 disabled:opacity-50"
         >
-          {isSearching ? "..." : "🔍"}
+          <span aria-hidden="true">{isSearching ? "..." : "🔍"}</span>
         </button>
       </form>
 
@@ -102,9 +102,12 @@ export function MapControls({
         type="button"
         onClick={() => map.flyTo(center, 12)}
         aria-label="Recentrer la carte"
-        className="flex w-fit items-center gap-2 rounded-2xl border border-sky-200/80 bg-sky-100 px-4 py-2 text-sm font-black text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-xl transition hover:border-sky-300 hover:bg-sky-200"
+        className="group/reset flex w-fit items-center gap-2 overflow-hidden rounded-2xl border border-sky-200/80 bg-sky-100 px-3 py-2 text-sm font-black text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-xl transition-[width,background-color,border-color] duration-200 hover:w-32 hover:border-sky-300 hover:bg-sky-200 focus-visible:w-32 focus-visible:border-sky-300 focus-visible:bg-sky-200"
       >
-        <span>📍</span> Reset vue
+        <span aria-hidden="true">📍</span>
+        <span className="max-w-0 overflow-hidden whitespace-nowrap text-[11px] font-black uppercase tracking-[0.16em] opacity-0 transition-all duration-200 group-hover/reset:max-w-20 group-hover/reset:opacity-100 group-focus-visible/reset:max-w-20 group-focus-visible/reset:opacity-100">
+          Reset vue
+        </span>
       </button>
     </div>
   );

@@ -30,36 +30,36 @@ const TONE_CLASSES: Record<
   { shell: string; badge: string; glow: string; border: string; accent: string; fill: string }
 > = {
   amber: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.94))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    glow: "from-yellow-300/24 via-amber-200/14 to-transparent",
-    border: "hover:border-yellow-300",
-    accent: "text-yellow-700",
-    fill: "bg-yellow-700",
+    shell: "bg-[linear-gradient(180deg,rgba(255,248,231,0.98),rgba(255,255,255,0.94))]",
+    badge: "border-amber-200 bg-amber-50 text-amber-900",
+    glow: "from-amber-300/24 via-orange-200/14 to-transparent",
+    border: "hover:border-amber-300",
+    accent: "text-amber-700",
+    fill: "bg-amber-600",
   },
   cyan: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.94))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    glow: "from-yellow-300/22 via-amber-200/16 to-transparent",
-    border: "hover:border-yellow-300",
-    accent: "text-yellow-700",
-    fill: "bg-yellow-700",
+    shell: "bg-[linear-gradient(180deg,rgba(255,250,238,0.98),rgba(255,255,255,0.94))]",
+    badge: "border-orange-200 bg-orange-50 text-orange-900",
+    glow: "from-orange-300/22 via-amber-200/16 to-transparent",
+    border: "hover:border-orange-300",
+    accent: "text-orange-700",
+    fill: "bg-orange-500",
   },
   emerald: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.94))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    glow: "from-yellow-300/24 via-amber-200/16 to-transparent",
-    border: "hover:border-yellow-300",
-    accent: "text-yellow-700",
-    fill: "bg-yellow-700",
+    shell: "bg-[linear-gradient(180deg,rgba(255,248,232,0.98),rgba(255,255,255,0.94))]",
+    badge: "border-amber-200 bg-amber-50 text-amber-900",
+    glow: "from-amber-300/24 via-orange-200/16 to-transparent",
+    border: "hover:border-amber-300",
+    accent: "text-amber-700",
+    fill: "bg-amber-500",
   },
   violet: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.94))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    glow: "from-yellow-300/24 via-amber-200/16 to-transparent",
-    border: "hover:border-yellow-300",
-    accent: "text-yellow-700",
-    fill: "bg-yellow-700",
+    shell: "bg-[linear-gradient(180deg,rgba(255,248,232,0.98),rgba(255,255,255,0.94))]",
+    badge: "border-orange-200 bg-amber-100 text-orange-900",
+    glow: "from-orange-300/24 via-amber-200/16 to-transparent",
+    border: "hover:border-orange-300",
+    accent: "text-orange-700",
+    fill: "bg-orange-600",
   },
 };
 
@@ -88,7 +88,7 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
         <div className={cn("absolute left-6 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full", iconFill)} />
         <div className={cn("absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full", iconFill)} />
         <div className={cn("absolute right-6 top-1/2 h-2.5 w-2.5 -translate-y-1/2 rounded-full", iconFill)} />
-        <div className="absolute left-1/2 top-5 -translate-x-1/2 rounded-2xl border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 shadow-sm">
+        <div className="absolute left-1/2 top-5 -translate-x-1/2 rounded-2xl border border-amber-200 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-amber-700 shadow-sm">
           <Icon size={14} className={cn("mr-1 inline-block align-text-bottom", iconTone)} />
           route
         </div>
@@ -112,15 +112,15 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
                 key={dot}
                 className={cn(
                   "h-2.5 rounded-full",
-                  dot <= 2 ? "bg-yellow-300" : dot === 3 ? "bg-yellow-400" : "bg-yellow-200",
+                dot <= 2 ? "bg-amber-300" : dot === 3 ? "bg-orange-400" : "bg-amber-200",
                 )}
               />
             ))}
           </div>
         </div>
-        <span className="h-12 w-12 rounded-2xl border border-yellow-200 bg-yellow-100/90 shadow-sm" />
-        <span className="h-20 w-12 rounded-2xl border border-yellow-200 bg-yellow-100/90 shadow-sm" />
-        <span className="h-16 w-12 rounded-2xl border border-yellow-200 bg-yellow-100/90 shadow-sm" />
+        <span className="h-12 w-12 rounded-2xl border border-amber-200 bg-amber-100/90 shadow-sm" />
+        <span className="h-20 w-12 rounded-2xl border border-amber-200 bg-orange-100/90 shadow-sm" />
+        <span className="h-16 w-12 rounded-2xl border border-amber-200 bg-amber-50/90 shadow-sm" />
       </div>
     );
   }
@@ -134,9 +134,9 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
             className={cn(
               "rounded-xl border shadow-sm",
               index === 1 || index === 4 || index === 7
-                ? "border-yellow-200 bg-yellow-100"
+                ? "border-amber-200 bg-amber-100"
                 : index === 2 || index === 6
-                  ? "border-yellow-200 bg-yellow-100"
+                  ? "border-orange-200 bg-orange-100"
                   : "border-slate-200 bg-white",
             )}
           />
@@ -149,7 +149,7 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
     return (
       <div className="flex h-full items-end justify-center gap-2">
         <span className="h-12 w-16 rounded-2xl border border-slate-200 bg-white shadow-sm" />
-        <span className="h-18 w-16 rounded-2xl border border-yellow-200 bg-yellow-100/95 shadow-sm" />
+        <span className="h-18 w-16 rounded-2xl border border-amber-200 bg-amber-100/95 shadow-sm" />
         <span className="h-14 w-16 rounded-2xl border border-slate-200 bg-white shadow-sm" />
       </div>
     );
@@ -158,10 +158,10 @@ function renderMotif(motif: LearnCardVisual["motif"], tone: LearnCardVisual["ton
   if (motif === "resources") {
     return (
       <div className="relative flex h-full items-center justify-center">
-        <div className="grid h-24 w-24 place-items-center rounded-3xl border border-yellow-200 bg-white shadow-sm">
+        <div className="grid h-24 w-24 place-items-center rounded-3xl border border-amber-200 bg-white shadow-sm">
           <Icon size={24} className={iconTone} />
         </div>
-        <div className="absolute bottom-2 right-2 rounded-2xl border border-slate-200 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 shadow-sm">
+        <div className="absolute bottom-2 right-2 rounded-2xl border border-amber-200 bg-white px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-amber-700 shadow-sm">
           kit
         </div>
       </div>

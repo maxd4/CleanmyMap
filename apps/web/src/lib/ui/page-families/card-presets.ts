@@ -77,10 +77,10 @@ export const RESEAU_INDIGO_CARD: PageFamilyCardTokens = buildDarkCardPreset({
 
 export const APPRENDRE_CARD: PageFamilyCardTokens = buildDarkCardPreset({
   rubriqueTheme: "amber",
-  border: "border-yellow-200/18",
+  border: "border-amber-200/18",
   gradient:
-    "bg-[linear-gradient(145deg,rgba(36,28,0,0.82)_0%,rgba(74,48,8,0.88)_56%,rgba(234,179,8,0.20)_100%)]",
-  shadow: "shadow-[0_18px_42px_-26px_rgba(234,179,8,0.22)]",
+    "bg-[linear-gradient(145deg,rgba(36,24,0,0.84)_0%,rgba(92,52,8,0.88)_56%,rgba(249,115,22,0.22)_100%)]",
+  shadow: "shadow-[0_18px_42px_-26px_rgba(249,115,22,0.20)]",
 });
 
 /** Cartes neutres (légal, système, fallback). */

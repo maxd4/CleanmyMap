@@ -8,6 +8,7 @@ import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { isLocalhostHost } from "@/lib/auth/dev-auth";
 import { toProfile } from "@/lib/profiles";
+import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export const metadata: Metadata = {
   title: "Bienvenue sur CleanMyMap - Configuration initiale",
@@ -26,13 +27,13 @@ type OnboardingPageProps = {
 
 function sanitizeNextPath(nextParam: string | undefined): string {
   if (!nextParam) {
-    return "/profil";
+    return PROFIL_ROUTE;
   }
   if (!nextParam.startsWith("/") || nextParam.startsWith("//")) {
-    return "/profil";
+    return PROFIL_ROUTE;
   }
   if (nextParam.startsWith("/onboarding")) {
-    return "/profil";
+    return PROFIL_ROUTE;
   }
   return nextParam;
 }

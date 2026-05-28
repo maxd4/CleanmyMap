@@ -1,14 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { PROTECTED_ROUTE_PATTERNS } from "@/lib/auth/protected-routes";
+import {
+  ADMIN_ROUTE,
+  DASHBOARD_ROUTE,
+  SPONSOR_PORTAL_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 describe("proxy protected routes", () => {
   it("keeps critical business routes protected", () => {
     const required = [
-      "/admin(.*)",
-      "/dashboard(.*)",
+      `${ADMIN_ROUTE}(.*)`,
+      `${DASHBOARD_ROUTE}(.*)`,
       "/actions(.*)",
       "/prints(.*)",
-      "/sponsor-portal(.*)",
+      `${SPONSOR_PORTAL_ROUTE}(.*)`,
       "/api/community(.*)",
       "/api/analytics(.*)",
       "/api/account(.*)",

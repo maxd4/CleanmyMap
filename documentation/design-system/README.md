@@ -182,7 +182,7 @@ Objectif :
 02. Agir → emerald
 03. Cartographie & Impact → sky (carto) + red (impact)
 04. Réseau & Discussions → pink (réseau / discussion) + indigo (partenaires)
-05. Apprendre → yellow
+05. Apprendre → yellow / amber
 ```
 
 ### Mapping Rubrique → Teinte
@@ -210,7 +210,7 @@ Objectif :
 **Autres blocs (teinte unique)**
 - Agir → `emerald`
 - Réseau & Discussions → `pink` / `indigo` (réseau / discussion vs partenaires)
-- Apprendre → `yellow`
+- Apprendre → `yellow` / `amber`
 
 **Référence complète** : `BLOC_COLOR_SYSTEM_PREMIUM.md`
 

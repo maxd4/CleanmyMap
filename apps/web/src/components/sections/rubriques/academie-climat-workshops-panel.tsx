@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { formatFrDate } from "./community/helpers";
 import {
   getTotalUpcomingAcademieClimatWorkshops,
@@ -145,15 +146,12 @@ export function AcademieClimatWorkshopsPanel() {
                         </div>
                       </div>
 
-                      <Link
-                        href={workshop.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest text-white hover:bg-white hover:text-slate-950 transition-all group/btn"
-                      >
-                        {fr ? "Détails" : "Details"}
-                        <ArrowUpRight size={14} className="group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5 transition-transform" />
-                      </Link>
+                      <CmmButton asChild tone="secondary" variant="pill" className="px-5 py-2.5 text-[9px] font-black uppercase tracking-widest gap-2">
+                        <a href={workshop.sourceUrl} target="_blank" rel="noopener noreferrer">
+                          {fr ? "Détails" : "Details"}
+                          <ArrowUpRight size={14} className="transition-transform group-hover/btn:translate-x-0.5 group-hover/btn:-translate-y-0.5" />
+                        </a>
+                      </CmmButton>
                     </div>
                   </div>
                 ))}

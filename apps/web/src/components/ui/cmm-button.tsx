@@ -19,6 +19,7 @@ export interface CmmButtonProps {
  className?: string;
  disabled?: boolean;
  ariaLabel?: string;
+ title?: string;
  type?:"button" |"submit" |"reset";
  asChild?: boolean;
 }
@@ -57,6 +58,7 @@ export function CmmButton({
  className,
  disabled,
  ariaLabel,
+ title,
  type ="button",
  asChild = false,
 }: CmmButtonProps) {
@@ -71,7 +73,7 @@ export function CmmButton({
 
  if (href) {
  return (
- <Link href={href} className={classes} aria-label={ariaLabel}>
+ <Link href={href} className={classes} aria-label={ariaLabel} title={title}>
  {children}
  </Link>
  );
@@ -92,6 +94,7 @@ export function CmmButton({
  disabled={disabled}
  className={classes}
  aria-label={ariaLabel}
+ title={title}
  >
  {children}
  </button>

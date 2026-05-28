@@ -17,6 +17,7 @@ import {
   Wind,
   type LucideIcon,
 } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 type KitTemplate = {
   id: string;
@@ -142,13 +143,15 @@ function CopyTemplateButton({
   }
 
   return (
-    <button
+    <CmmButton
       type="button"
       onClick={() => void handleCopy()}
-      className="rounded-full border border-current/15 bg-white/70 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] transition hover:bg-white"
+      tone="tertiary"
+      variant="pill"
+      className="rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] transition hover:bg-white"
     >
       {copied ? "Copié" : label}
-    </button>
+    </CmmButton>
   );
 }
 

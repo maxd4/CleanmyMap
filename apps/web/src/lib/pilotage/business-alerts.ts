@@ -1,5 +1,6 @@
 import { evaluateActionQuality } from "../actions/quality";
 import type { ActionMapItem, ActionListItem } from "../actions/types";
+import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export type AlertSeverity = "high" | "medium" | "low";
 
@@ -123,7 +124,7 @@ export function computeBusinessAlerts(params: {
       severity,
       ageLabel: `Anciennete max ${pendingOldestDays.toFixed(1)} j`,
       impactLabel: `${pending.length} actions en attente`,
-      actionHref: "/admin",
+      actionHref: ADMIN_ROUTE,
       actionLabel: "Traiter la file admin",
     });
   }

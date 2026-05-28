@@ -15,6 +15,7 @@ import "leaflet/dist/leaflet.css";
 import { MapPin, Sparkles } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { CompostPoint } from "@/lib/learning/compost-guide-data";
 
 type CompostMapCanvasProps = {
@@ -143,9 +144,9 @@ export function CompostMapCanvas({ points }: CompostMapCanvasProps) {
                   <p className="text-[11px] text-slate-500 leading-relaxed font-medium mb-3">
                     {point.address}
                   </p>
-                  <button className="w-full py-2 rounded-lg bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-colors">
+                  <CmmButton tone="secondary" variant="pill" className="w-full py-2 rounded-lg text-white text-[9px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-colors">
                      {isFrench ? "Voir détails" : "View details"}
-                  </button>
+                  </CmmButton>
                 </div>
               </Popup>
             </Marker>

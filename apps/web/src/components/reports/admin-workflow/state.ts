@@ -84,6 +84,8 @@ export function useAdminWorkflowState() {
  useState<boolean>(false);
  const [moderationConfirmationText, setModerationConfirmationText] =
  useState<string>("");
+ const [selectedActionCreatorId, setSelectedActionCreatorId] =
+ useState<string | null>(null);
  const [actionEditDraft, setActionEditDraft] =
  useState<ActionModerationEditDraft | null>(null);
  const [cleanPlaceEditDraft, setCleanPlaceEditDraft] =
@@ -170,6 +172,8 @@ export function useAdminWorkflowState() {
  setModerationConfirmed,
  moderationConfirmationText,
  setModerationConfirmationText,
+ selectedActionCreatorId,
+ setSelectedActionCreatorId,
  actionEditDraft,
  setActionEditDraft,
  cleanPlaceEditDraft,

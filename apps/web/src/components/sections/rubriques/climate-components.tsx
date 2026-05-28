@@ -22,6 +22,7 @@ import {
   MousePointer2,
   Scale
 } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 import { ClimateIndicator, IndicatorConfidence, ClimateDecision, ClimateMethodDefinition } from "@/lib/analytics/climate-context";
 
@@ -175,9 +176,9 @@ export function ClimateAlertBanner({ indicator, fr }: { indicator: ClimateIndica
       </div>
 
       <div className="relative z-10">
-        <button className="px-8 py-4 bg-rose-500 hover:bg-rose-600 rounded-2xl text-white font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-rose-500/40">
+        <CmmButton type="button" tone="primary" variant="pill" className="px-8 py-4 text-white font-black text-sm uppercase tracking-widest transition-all shadow-xl shadow-rose-500/40">
           {fr ? "Détails" : "Details"}
-        </button>
+        </CmmButton>
       </div>
     </motion.div>
   );
@@ -233,9 +234,12 @@ export function ClimateMethodology({ methods, limits, version, fr }: { methods: 
 
   return (
     <div className="rounded-[2.5rem] border border-white/10 bg-slate-900/40 backdrop-blur-xl overflow-hidden shadow-2xl">
-      <button 
+      <CmmButton
+        type="button"
+        tone="secondary"
+        variant="pill"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-8 flex items-center justify-between hover:bg-white/5 transition-all group"
+        className="w-full p-8 flex items-center justify-between transition-all group"
       >
         <div className="flex items-center gap-4">
           <div className="p-3 rounded-2xl bg-white/5 border border-white/10 group-hover:scale-110 transition-transform">
@@ -249,7 +253,7 @@ export function ClimateMethodology({ methods, limits, version, fr }: { methods: 
         <div className={cn("p-2 rounded-xl bg-white/5 text-slate-400 transition-transform duration-300", isOpen && "rotate-180")}>
           <ChevronDown size={20} />
         </div>
-      </button>
+      </CmmButton>
 
       <AnimatePresence>
         {isOpen && (

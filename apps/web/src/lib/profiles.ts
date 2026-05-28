@@ -1,6 +1,14 @@
 import type { Locale } from "@/lib/ui/preferences";
 import type { RubriqueSpaceId } from "@/lib/sections-registry";
 import type { Parcours, Role, SessionRole } from "@/lib/domain-language";
+import {
+  ADMIN_GODMODE_ROUTE,
+  ADMIN_ROUTE,
+  DASHBOARD_ROUTE,
+  REPORTS_ROUTE,
+  SPONSOR_PORTAL_ROUTE,
+  buildProfileRoute,
+} from "@/lib/accueil-pilotage-routes";
 
 // Alias legacy conservés pour compatibilité; vocabulaire canonique: Role/Parcours/SessionRole.
 export type AppProfile = Parcours;
@@ -135,6 +143,13 @@ const ROLE_ALIASES: Record<string, Role> = {
   imu: "max",
   owner: "max",
   superadmin: "max",
+  super_admin: "max",
+  "super-admin": "max",
+  godmode: "max",
+  creator: "max",
+  createur: "max",
+  createur_du_site: "max",
+  "créateur du site": "max",
   benevole: "benevole",
   volunteer: "benevole",
   user: "benevole",
@@ -207,7 +222,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       },
     },
     secondaryCTA: {
-      href: "/dashboard",
+      href: DASHBOARD_ROUTE,
       label: { fr: "Gérer les RSVPs", en: "Manage RSVPs" },
       description: {
         fr: "Suivre l'engagement et les confirmations",
@@ -224,7 +239,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         },
       },
       {
-        href: "/reports",
+        href: REPORTS_ROUTE,
         label: { fr: "Faire le bilan", en: "Review the outcome" },
         description: {
           fr: "Préparer la restitution après action",
@@ -235,7 +250,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
   },
   scientifique: {
     primaryCTA: {
-      href: "/reports",
+      href: REPORTS_ROUTE,
       label: { fr: "Analyser l'impact", en: "Analyze impact" },
       description: {
         fr: "Consolider les tendances et KPI utiles à la décision",
@@ -271,7 +286,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
   },
   elu: {
     primaryCTA: {
-      href: "/sponsor-portal",
+      href: SPONSOR_PORTAL_ROUTE,
       label: {
         fr: "Voir la synthèse territoriale",
         en: "View territorial summary",
@@ -282,7 +297,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       },
     },
     secondaryCTA: {
-      href: "/reports",
+      href: REPORTS_ROUTE,
       label: { fr: "Lire l'impact", en: "Read impact" },
       description: {
         fr: "Consulter les indicateurs consolidés",
@@ -310,7 +325,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
   },
   admin: {
     primaryCTA: {
-      href: "/admin",
+      href: ADMIN_ROUTE,
       label: {
         fr: "Inbox créateur",
         en: "Creator inbox",
@@ -321,7 +336,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       },
     },
     secondaryCTA: {
-      href: "/reports",
+      href: REPORTS_ROUTE,
       label: { fr: "Exporter les données", en: "Export data" },
       description: {
         fr: "Suivre les exports et les journaux",
@@ -330,7 +345,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     additionalActions: [
       {
-        href: "/admin/godmode",
+        href: ADMIN_GODMODE_ROUTE,
         label: { fr: "Contrôle système", en: "System control" },
         description: {
           fr: "Ouvrir l'arbitrage et les outils sensibles",
@@ -338,7 +353,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         },
       },
       {
-        href: "/dashboard",
+        href: DASHBOARD_ROUTE,
         label: { fr: "Santé du site", en: "Site health" },
         description: {
           fr: "Contrôler les flux et l'état général",
@@ -349,7 +364,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
   },
   max: {
     primaryCTA: {
-      href: "/admin/godmode",
+      href: ADMIN_GODMODE_ROUTE,
       label: {
         fr: "Arbitrer les cas sensibles",
         en: "Arbitrate sensitive cases",
@@ -360,7 +375,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       },
     },
     secondaryCTA: {
-      href: "/admin",
+      href: ADMIN_ROUTE,
       label: { fr: "Inbox créateur", en: "Creator inbox" },
       description: {
         fr: "Prioriser les demandes entrantes",
@@ -369,7 +384,7 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
     },
     additionalActions: [
       {
-        href: "/dashboard",
+        href: DASHBOARD_ROUTE,
         label: { fr: "Vue d'ensemble", en: "Overview" },
         description: {
           fr: "Suivre l'activité et la santé du site",
@@ -439,7 +454,7 @@ export function getSwitchableProfiles(
 }
 
 export function getProfileEntryPath(profile: AppProfile): string {
-  return `/profil/${profile}`;
+  return buildProfileRoute(profile);
 }
 
 export function isSelfServiceProfile(

@@ -23,7 +23,7 @@ type UseChatDataParams = {
   mentionQuery: string;
   recipientQuery: string;
   currentUserId?: string;
-  supabase?: SupabaseClient;
+  supabase?: SupabaseClient | null;
 };
 
 type SendChatMessageParams = {

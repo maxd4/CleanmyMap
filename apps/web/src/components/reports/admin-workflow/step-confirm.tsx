@@ -221,6 +221,16 @@ export function StepConfirm({ workflow }: StepConfirmProps) {
  </button>
  </div>
  </div>
+ {workflow.moderationEntityType ==="action" ? (
+ <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+ <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">
+ Compte auteur
+ </p>
+ <p className="mt-1 font-mono cmm-text-small cmm-text-secondary break-all">
+ {workflow.selectedActionCreatorId?.trim() || "Non renseigné depuis la sélection"}
+ </p>
+ </div>
+ ) : null}
  {workflow.moderationEntityType ==="action" && workflow.actionEditDraft ? (
  <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50/70 p-3">
  <p className="cmm-text-caption font-semibold uppercase tracking-wide text-emerald-800">

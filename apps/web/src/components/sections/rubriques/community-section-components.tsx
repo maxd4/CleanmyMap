@@ -21,6 +21,7 @@ import { FAQSection } from "@/components/sections/rubriques/faq-section";
 import { LegalSection } from "@/components/sections/rubriques/legal-section";
 import { ChatShell } from "@/components/chat/chat-shell";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { MapPin, Calendar, Lightbulb, Target, Sparkles, Globe, ShieldCheck, type LucideIcon } from "lucide-react";
 import type { UseCommunitySectionModel } from "./community/use-community-section";
 
@@ -52,9 +53,11 @@ export const CommunityHubNav = memo(function CommunityHubNav({
           const Icon = tab.icon;
           const isActive = category === tab.id;
           return (
-            <button
+            <CmmButton
               key={tab.id}
               onClick={() => setCategory(tab.id)}
+              tone={isActive ? "primary" : "tertiary"}
+              variant="pill"
               className={`relative flex items-center gap-3 px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all duration-300 ${
                 isActive ? "text-white" : "text-slate-500 hover:text-slate-200 hover:bg-white/5"
               }`}
@@ -70,7 +73,7 @@ export const CommunityHubNav = memo(function CommunityHubNav({
                 <Icon size={16} className={isActive ? "text-white" : tab.color} />
                 {tab.label}
               </span>
-            </button>
+            </CmmButton>
           );
         })}
       </div>

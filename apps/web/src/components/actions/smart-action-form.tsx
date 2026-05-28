@@ -1,8 +1,4 @@
 'use client'
-
-import { useFeatureFlag } from '@/lib/feature-flags'
-import { useABTest } from '@/lib/ab-testing'
-import { SimpleActionForm } from './simple-action-form'
 import dynamic from 'next/dynamic'
 
 import { CmmSkeleton } from '@/components/ui/cmm-skeleton'
@@ -32,20 +28,16 @@ const ComplexActionForm = dynamic(() =>
 )
 
 export function SmartActionForm() {
- const useSimpleForm = useFeatureFlag('useSimpleForm')
- const abTestVariant = useABTest('form-simplification')
- const fallbackProps = {
- actorNameOptions: [],
- defaultActorName: '',
- userMetadata: {
- userId: 'anonymous',
- },
- }
- 
- // Feature flag overrides A/B test
- const shouldUseSimpleForm = useSimpleForm || abTestVariant === 'treatment'
- 
- return shouldUseSimpleForm ? <SimpleActionForm /> : <ComplexActionForm {...fallbackProps} />
+  const fallbackProps = {
+    actorNameOptions: [],
+    defaultActorName: '',
+    isAuthenticated: false,
+    userMetadata: {
+      userId: 'anonymous',
+    },
+  }
+
+ return <ComplexActionForm {...fallbackProps} />
 }
 
 export default SmartActionForm

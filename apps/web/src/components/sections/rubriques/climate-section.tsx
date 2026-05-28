@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, RefreshCw, Leaf, Globe, Wind, ArrowRight, Info, Sparkles } from "lucide-react";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -82,9 +83,11 @@ export function ClimateSection() {
 
           <div className="flex items-center gap-2 bg-slate-950/50 p-2 rounded-2xl border border-white/10 backdrop-blur-xl">
             {[30, 90, 365].map((days) => (
-              <button
+              <CmmButton
                 key={days}
                 onClick={() => setPeriodDays(days as any)}
+                tone={periodDays === days ? "primary" : "tertiary"}
+                variant="pill"
                 className={`relative px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${
                   periodDays === days
                     ? "text-white"
@@ -99,7 +102,7 @@ export function ClimateSection() {
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
-              </button>
+              </CmmButton>
             ))}
           </div>
         </div>
@@ -110,13 +113,15 @@ export function ClimateSection() {
               <Info size={40} />
             </div>
             <p className="text-rose-400 font-bold uppercase tracking-widest">{fr ? "Erreur de chargement" : "Loading error"}</p>
-            <button 
+            <CmmButton
               onClick={() => mutate()}
+              tone="secondary"
+              variant="pill"
               className="mt-8 flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-white font-black transition-all"
             >
               <RefreshCw size={18} />
               {fr ? "Réessayer" : "Retry"}
-            </button>
+            </CmmButton>
           </div>
         )}
 
@@ -194,10 +199,10 @@ export function ClimateSection() {
                           : "80% of abandoned waste ends up in waterways. Your actions prevent this plastic leakage to the oceans, directly protecting marine biodiversity."}
                       </p>
                       <div className="pt-4">
-                        <button className="flex items-center gap-3 text-blue-400 font-black text-xs uppercase tracking-[0.3em] hover:text-blue-300 transition-colors group/btn">
+                        <CmmButton tone="secondary" variant="ghost" className="flex items-center gap-3 text-blue-400 font-black text-xs uppercase tracking-[0.3em] hover:text-blue-300 transition-colors group/btn">
                           {fr ? "En savoir plus sur l'impact hydrique" : "Learn more about water impact"}
                           <ArrowRight size={14} className="group-hover/btn:translate-x-2 transition-transform" />
-                        </button>
+                        </CmmButton>
                       </div>
                     </div>
                   </RubriqueCard>

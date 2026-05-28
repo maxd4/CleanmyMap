@@ -237,3 +237,27 @@ export function extractActionMetadataFromNotes(
     visionEstimate,
   };
 }
+
+export function deriveActionTitleFromMetadata(params: {
+  associationName?: string | null;
+  actorName?: string | null;
+  locationLabel?: string | null;
+  fallback?: string;
+}): string {
+  const associationName = params.associationName?.trim();
+  if (associationName) {
+    return associationName;
+  }
+
+  const actorName = params.actorName?.trim();
+  if (actorName) {
+    return actorName;
+  }
+
+  const locationLabel = params.locationLabel?.trim();
+  if (locationLabel) {
+    return locationLabel;
+  }
+
+  return params.fallback ?? "Action sans structure";
+}

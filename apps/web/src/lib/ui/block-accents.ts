@@ -6,7 +6,7 @@
  * - Agir               (act)        : emerald
  * - Cartographie & Impact (visualize): sky
  * - Réseau & Discussions (network + discussion)   : indigo / pink
- * - Apprendre           (learn)      : yellow
+ * - Apprendre           (learn)      : yellow / amber
  *
  * Les blocs "impact", "connect" (discussion) et "pilot" restent présents comme accents
  * techniques/compatibilité, mais ils ne sont plus exposés comme blocs visibles
@@ -43,7 +43,7 @@ export const BLOCK_ACCENT_MAP: Record<BlockId, BlockAccent> = {
   impact: "red",      // Impact   → Rouge
   network: "indigo",  // Réseau → Indigo
   connect: "pink",    // Discussion → Rose
-  learn: "yellow",    // Apprendre → Jaune
+  learn: "yellow",    // Apprendre → Jaune solaire / soleil doux
   pilot: "amber",     // Piloter  → Brun (amber-800 shade)
 };
 
@@ -175,23 +175,22 @@ export const ACCENT_TOKENS: Record<
     gradientDeep: "from-[#0f0004] via-[#1c0008] to-[#2a000e]",
   },
   yellow: {
-    // Apprendre — Jaune Solaire
-    // 60% #0c0b00 | 30% rgba(60,50,0,0.60) | 10% yellow-300/amber-300
+    // Apprendre — jaune clair, bulles et cartes en ambre/orange solaire
     light: "#fef9c3",
-    DEFAULT: "#eab308",
-    dark: "#713f12",
-    surface: "bg-[rgba(20,18,0,0.78)] backdrop-blur-xl",
-    surfaceMuted: "bg-[rgba(14,12,0,0.55)] backdrop-blur-md",
-    border: "border-yellow-400/18",
-    borderStrong: "border-yellow-400/38",
-    text: "text-yellow-50",
-    textMuted: "text-yellow-300/70",
-    shadow: "shadow-[0_32px_72px_-16px_rgba(234,179,8,0.22),0_8px_24px_-8px_rgba(0,0,0,0.55)]",
-    glow: "shadow-[0_0_48px_-12px_rgba(234,179,8,0.38),0_0_96px_-32px_rgba(253,224,71,0.18)]",
-    ring: "ring-yellow-400/35",
-    dot: "bg-yellow-400",
-    gradient: "from-yellow-200 via-yellow-400 to-amber-400",
-    gradientDeep: "from-[#0c0b00] via-[#181500] to-[#241f00]",
+    DEFAULT: "#f59e0b",
+    dark: "#92400e",
+    surface: "bg-[rgba(255,249,217,0.94)] backdrop-blur-xl",
+    surfaceMuted: "bg-[rgba(255,238,188,0.84)] backdrop-blur-md",
+    border: "border-amber-200/70",
+    borderStrong: "border-amber-300",
+    text: "text-stone-900",
+    textMuted: "text-amber-900/72",
+    shadow: "shadow-[0_20px_40px_-24px_rgba(245,158,11,0.18),0_8px_18px_-12px_rgba(15,23,42,0.08)]",
+    glow: "shadow-[0_0_0_1px_rgba(249,115,22,0.14)]",
+    ring: "ring-amber-300/30",
+    dot: "bg-amber-500",
+    gradient: "from-yellow-200 via-amber-300 to-orange-300",
+    gradientDeep: "from-[#fff8d8] via-[#fde68a] to-[#fdba74]",
   },
   indigo: {
     // Réseau — Indigo futuriste

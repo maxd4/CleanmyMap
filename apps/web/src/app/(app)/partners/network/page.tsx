@@ -4,6 +4,7 @@ import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigat
 import { getServerLocale } from "@/lib/server-preferences";
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
 import { getEntryTrustState } from "@/components/sections/rubriques/annuaire-helpers";
+import { SPONSOR_PORTAL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 function formatCount(value: number): string {
   return value.toLocaleString("fr-FR");
@@ -80,7 +81,7 @@ export default async function PartnersNetworkPage() {
       accent: "from-[rgba(22,26,72,0.96)] to-[rgba(49,46,129,0.94)]",
       ring: "ring-indigo-300/18",
       dot: "bg-indigo-300",
-      href: "/sponsor-portal",
+      href: SPONSOR_PORTAL_ROUTE,
     },
   ];
 

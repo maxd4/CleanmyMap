@@ -9,6 +9,11 @@ import type { PilotageOverview } from "@/lib/pilotage/overview";
 import { NavigationGrid } from "@/components/ui/navigation-grid";
 import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { getPageFamilyById } from "@/lib/ui/page-families";
+import {
+  ADMIN_ROUTE,
+  DASHBOARD_ROUTE,
+  REPORTS_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 export function PilotageOverviewPage({
   locale,
@@ -505,17 +510,17 @@ export function PilotageOverviewPage({
                 : "The Home & Operations area is for transverse supervision. Detailed evidence, long reports and institutional exports stay in their dedicated sections so that decision, observation and execution remain separate."}
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <Link
-                href="/reports"
-                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 text-sm font-black text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)] transition hover:-translate-y-[1px]"
-              >
+            <Link
+              href={REPORTS_ROUTE}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 text-sm font-black text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)] transition hover:-translate-y-[1px]"
+            >
                 {locale === "fr" ? "Ouvrir les rapports" : "Open reports"}
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
-              <Link
-                href="/admin"
-                className="inline-flex min-h-11 items-center gap-2 rounded-full border border-orange-200/30 bg-[rgba(44,28,15,0.60)] px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:border-orange-300/50"
-              >
+            <Link
+              href={ADMIN_ROUTE}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full border border-orange-200/30 bg-[rgba(44,28,15,0.60)] px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:border-orange-300/50"
+            >
                 {locale === "fr" ? "Aller à l'administration" : "Go to administration"}
                 <ArrowRight size={16} aria-hidden="true" />
               </Link>
@@ -531,10 +536,10 @@ export function PilotageOverviewPage({
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
-              href="/dashboard"
+              href={DASHBOARD_ROUTE}
               className="inline-flex min-h-11 items-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 px-4 py-2.5 text-sm font-black text-white shadow-[0_8px_24px_-8px_rgba(234,88,12,0.45)] transition hover:-translate-y-[1px]"
             >
-              {locale === "fr" ? "Tableau de bord" : "Dashboard"}
+                {locale === "fr" ? "Mon espace" : "Dashboard"}
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
             <Link

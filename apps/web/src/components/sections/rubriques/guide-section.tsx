@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { guideChecklistStorage } from "@/lib/storage/ui-state-storage";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { BookOpen, CheckCircle2, ChevronRight, LayoutList, PlayCircle, Sparkles, Trophy, ShieldCheck, Zap, ArrowRight, Settings2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -254,17 +254,17 @@ export function GuideSection() {
           </div>
 
           <div className="grid grid-cols-1 gap-3 pt-4">
-             <Link href="/actions/new" className="flex items-center justify-between p-4 rounded-xl bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
+             <CmmButton href="/actions/new" tone="primary" variant="pill" className="w-full justify-between px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl hover:-translate-y-0.5 active:scale-95 transition-all">
                 {fr ? "Déclarer une action" : "Declare an action"}
                 <ArrowRight size={16} />
-             </Link>
+             </CmmButton>
              <div className="grid grid-cols-2 gap-3">
-                <Link href="/actions/history" className="flex items-center justify-center p-4 rounded-xl bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all">
+                <CmmButton href="/actions/history" tone="secondary" variant="pill" className="w-full justify-center px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] transition-all hover:-translate-y-0.5">
                    {fr ? "Fix Qualité" : "Fix Quality"}
-                </Link>
-                <Link href="/reports" className="flex items-center justify-center p-4 rounded-xl bg-white/5 border border-white/5 text-[9px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all">
+                </CmmButton>
+                <CmmButton href="/reports" tone="tertiary" variant="pill" className="w-full justify-center px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] transition-all hover:-translate-y-0.5">
                    {fr ? "Exporter" : "Export"}
-                </Link>
+                </CmmButton>
              </div>
           </div>
         </motion.article>
@@ -316,32 +316,37 @@ export function GuideSection() {
                { id: "moderation", label: fr ? "Modération suivie pour fiabiliser la donnée" : "Moderation followed to make data reliable" },
                { id: "export", label: fr ? "Export CSV/JSON réalisé pour exploitation" : "CSV/JSON export produced for use" },
              ].map((check, idx) => (
-               <motion.button
+               <motion.div
                  key={check.id}
-                 onClick={() => toggleCheck(check.id)}
                  initial={{ opacity: 0, y: 10 }}
                  whileInView={{ opacity: 1, y: 0 }}
                  transition={{ delay: idx * 0.1 }}
-                 className={cn(
-                   "flex items-center gap-6 p-6 rounded-2xl border transition-all text-left group",
-                   checks[check.id] 
-                    ? "bg-emerald-500/10 border-emerald-500/20 shadow-lg" 
-                    : "bg-white/5 border-white/5 hover:border-white/10"
-                 )}
                >
-                  <div className={cn(
-                    "w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-500",
-                    checks[check.id] ? "bg-emerald-500 text-slate-950 scale-110" : "bg-slate-950/40 border border-white/10 text-slate-600"
-                  )}>
-                     {checks[check.id] ? <CheckCircle2 size={18} /> : <div className="w-2 h-2 rounded-full bg-slate-800" />}
-                  </div>
-                  <span className={cn(
-                    "text-sm font-black tracking-tight transition-colors",
-                    checks[check.id] ? "text-white" : "text-slate-400 group-hover:text-slate-200"
-                  )}>
-                     {check.label}
-                  </span>
-               </motion.button>
+                 <CmmButton
+                   onClick={() => toggleCheck(check.id)}
+                   tone={checks[check.id] ? "primary" : "tertiary"}
+                   variant="pill"
+                   className={cn(
+                     "flex items-center gap-6 p-6 rounded-2xl border transition-all text-left group w-full",
+                     checks[check.id]
+                       ? "bg-emerald-500/10 border-emerald-500/20 shadow-lg"
+                       : "bg-white/5 border-white/5 hover:border-white/10"
+                   )}
+                 >
+                     <div className={cn(
+                       "w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-500",
+                       checks[check.id] ? "bg-emerald-500 text-slate-950 scale-110" : "bg-slate-950/40 border border-white/10 text-slate-600"
+                     )}>
+                        {checks[check.id] ? <CheckCircle2 size={18} /> : <div className="w-2 h-2 rounded-full bg-slate-800" />}
+                     </div>
+                     <span className={cn(
+                       "text-sm font-black tracking-tight transition-colors",
+                       checks[check.id] ? "text-white" : "text-slate-400 group-hover:text-slate-200"
+                     )}>
+                        {check.label}
+                     </span>
+                 </CmmButton>
+               </motion.div>
              ))}
           </div>
 

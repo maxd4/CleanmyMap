@@ -1,5 +1,6 @@
 import React from "react";
 import { Leaf, Heart, Users, Trash2, Wind, Info, Sparkles } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -78,13 +79,11 @@ export function AnnuaireThematicExploration({
         const isActive = activeTag === theme.id;
         
         return (
-          <motion.button
+          <CmmButton
             key={theme.id}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            viewport={{ once: true }}
             onClick={() => onSelectTag(theme.id)}
+            tone={isActive ? "primary" : "tertiary"}
+            variant="pill"
             className={cn(
               "text-left group relative p-6 rounded-[2.5rem] border transition-all duration-500 backdrop-blur-xl overflow-hidden",
               isActive 
@@ -130,7 +129,7 @@ export function AnnuaireThematicExploration({
             )}>
                <Icon size={120} />
             </div>
-          </motion.button>
+          </CmmButton>
         );
       })}
     </div>

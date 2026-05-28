@@ -5,49 +5,30 @@
 - **Route** : `/profil`
 - **Fichier(s) source(s)** :
 - `apps/web/src/app/(app)/profil/page.tsx`
-- **Type fonctionnel** : page de bloc
+- **Type fonctionnel** : redirection / alias
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
-- **Statut** : protégé
+- **Statut** : redirection
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
-- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Objectif utilisateur principal** : Conserver la compatibilité des liens historiques vers l'espace personnel centralisé.
+- **Action principale attendue** : Rediriger vers `/dashboard`.
 - **Palette attendue** : amber / orange
-- **Scope** : terminé
+- **Scope** : hors scope
 - **Terminée** : oui
-- **Couleurs actuellement détectées** : amber/orange chaud — surfaces sombres, fond chaud, accents amber
-- **Incohérences de couleurs** : plus d'incohérence structurante détectée sur la famille visuelle ciblée.
-- **Risque de conflit avec les couleurs existantes** : faible : la logique warm doit rester distincte des blocs d'impact rouge et des blocs réseau/pink.
-- **Niveau de surcharge textuelle** : moyen
+- **Couleurs actuellement détectées** : aucune UI autonome, alias vers le tableau de bord fusionné.
+- **Incohérences de couleurs** : aucune, la route ne rend plus de surface autonome.
+- **Risque de conflit avec les couleurs existantes** : faible : la route ne doit plus porter de layout propre.
+- **Niveau de surcharge textuelle** : faible
 - **Textes à conserver** :
-- Titre de page
-- cartes métriques
-- CTA de navigation
-- indicateurs prioritaires
+- Message de compatibilité
+- redirection
 - **Textes à réduire ou supprimer** :
-- Rappels redondants
-- badges de contexte répétés
-- blocs d'aide trop verbeux
-- **Bulles / cartes / contextes trop nombreux** : Densité mieux maîtrisée, mais certains textes d'accompagnement peuvent encore être resserrés au fil des itérations.
+- Tout texte de présentation autonome
+- toute promesse fonctionnelle distincte du tableau de bord
+- **Bulles / cartes / contextes trop nombreux** : Aucun, car la route est un alias technique.
 - **Composants UI concernés** :
-- Titre
-- cards métriques
-- CTA
-- nav secondaire
-- sidebar / ribbon
-- **Captures attendues** : desktop, mobile
+- redirection
+- **Captures attendues** : aucune
 - **Priorité de correction** : faible
-
-
-## États à documenter
-
-- **loading** : fond `slate`, skeletons sobres, loader discret, même largeur et mêmes espacements que les autres états.
-- **empty state** : fond `slate` doux, ton encourageant, CTA utile unique.
-- **access refused** : `slate` avec léger `red` / `orange`, ton neutre et professionnel, pas de dramatisation.
-- **Architecture commune** : `SystemStateLayout`, `SystemStateIcon`, `SystemStateTitle`, `SystemStateDescription`, `SystemStateAction`, `SystemStateMeta`.
-- **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
-- **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
-
-
 
 ## Références legacy
 
@@ -55,5 +36,5 @@
 
 ## Notes d'audit
 
-- Cette fiche est la source de vérité canonique pour la page.
+- Cette fiche documente uniquement l'alias de compatibilité vers `/dashboard`.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

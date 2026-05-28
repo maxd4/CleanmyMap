@@ -15,7 +15,6 @@ const ActionDrawingMap = dynamic(
 
 type ActionDeclarationLocationSectionProps = {
   form: FormState;
-  isQuickMode: boolean;
   manualDrawingEnabled: boolean;
   displayDrawing: ActionDrawing | null;
   drawingMapReadOnly: boolean;
@@ -36,7 +35,6 @@ type ActionDeclarationLocationSectionProps = {
 
 export function ActionDeclarationLocationSection({
   form,
-  isQuickMode,
   manualDrawingEnabled,
   displayDrawing,
   drawingMapReadOnly,
@@ -113,26 +111,22 @@ export function ActionDeclarationLocationSection({
               Aperçu de localisation
             </p>
             <p className="cmm-text-small cmm-text-secondary">
-              {isQuickMode
-                ? "L'aperçu se base sur le lieu saisi."
-                : effectiveManualDrawingEnabled
-                  ? "Ajuste le repère directement sur la carte."
-                  : "Active l'ajustement manuel pour préciser la zone."}
+              {effectiveManualDrawingEnabled
+                ? "Ajuste le repère directement sur la carte."
+                : "Active l'ajustement manuel pour préciser la zone."}
             </p>
           </div>
-          {!isQuickMode ? (
-            <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-primary">
-              <input
-                type="checkbox"
-                checked={manualDrawingEnabled}
-                onChange={(event) =>
-                  onManualDrawingEnabledChange(event.target.checked)
-                }
-                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-              />
-              Ajustement manuel
-            </label>
-          ) : null}
+          <label className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 cmm-text-caption font-semibold cmm-text-primary">
+            <input
+              type="checkbox"
+              checked={manualDrawingEnabled}
+              onChange={(event) =>
+                onManualDrawingEnabledChange(event.target.checked)
+              }
+              className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+            />
+            Ajustement manuel
+          </label>
         </div>
 
         <div className="mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white">

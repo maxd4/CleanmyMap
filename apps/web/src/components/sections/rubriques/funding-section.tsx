@@ -1,6 +1,7 @@
 "use client";
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { Banknote, Landmark, Heart, ShieldCheck, ArrowRight, Sparkles, Target, Coins } from "lucide-react";
 import { motion } from "framer-motion";
@@ -150,10 +151,10 @@ export function FundingSection() {
               </p>
            </div>
            
-           <button className="relative z-10 flex items-center gap-4 px-10 py-5 rounded-2xl bg-white text-slate-950 text-xs font-black uppercase tracking-[0.3em] shadow-2xl hover:scale-105 active:scale-95 transition-all">
+           <CmmButton type="button" tone="secondary" variant="pill" className="relative z-10 flex items-center gap-4 px-10 py-5 text-xs font-black uppercase tracking-[0.3em] shadow-2xl transition-all">
               {fr ? "Ouvrir le dossier" : "Open the file"}
               <ArrowRight size={18} />
-           </button>
+           </CmmButton>
         </div>
       </div>
     </SectionShell>

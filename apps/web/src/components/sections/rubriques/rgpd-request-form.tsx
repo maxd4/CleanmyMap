@@ -82,12 +82,14 @@ export function RgpdRequestForm() {
           <span className="text-slate-950"> Envoyez-le </span> pour enregistrer votre demande officiellement.
         </p>
         
-        <button
+        <CmmButton
           onClick={() => setStatus("idle")}
+          tone="tertiary"
+          variant="pill"
           className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-sky-700 transition-colors hover:text-sky-900"
         >
           Envoyer une autre demande <ArrowUpRight size={14} />
-        </button>
+        </CmmButton>
       </motion.div>
     );
   }

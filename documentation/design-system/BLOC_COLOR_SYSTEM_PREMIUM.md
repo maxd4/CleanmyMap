@@ -5,7 +5,7 @@
 
 **Logique générale :**
 - Fond de page = teinte claire/lumineuse de la couleur du bloc
-- Cartes et bulles = fond sombre teinté dans la même couleur, pour ressortir sur le fond
+- Cartes et bulles = surfaces à contraste élevé dérivées de la couleur canonique du bloc, pour ressortir nettement sur le fond
 - Titres / chiffres / sous-titres = colorés dans l'accent (`text-[accent]-100`)
 - Textes = blanc a 100% par defaut (`text-white`). Opacite reduite uniquement en exception justifiee (placeholder, etat desactive, hierarchie secondaire explicite)
 - Bordures cartes = `border-[accent]-200/18`, hover `border-[accent]-200/38`
@@ -25,7 +25,7 @@
 | 02 | Agir | `emerald` | `emerald` | Toutes pages terrain |
 | 03 | Cartographie & Impact | `sky` + `red` / `rose` | `sky` | Pages carto → sky, Pages impact → red / rose, `/methodologie` → rouge d'impact |
 | 04 | Réseau & Discussions | `pink` + `indigo` | `pink` | Pages réseau / discussion → pink, Pages partenaires → indigo |
-| 05 | Apprendre | `yellow` | `yellow` | Toutes pages éducatives |
+| 05 | Apprendre | `yellow` | `yellow` / `amber` | Toutes pages éducatives, fond jaune et cartes orange/ambre |
 
 **Blocs système (non homepage) :**
 - Impact (standalone) : `red` — fusionné dans "Cartographie & Impact"
@@ -142,16 +142,16 @@ dot accent    : bg-pink-300
 
 ---
 
-## 05 — Bloc Apprendre · `yellow`
+## 05 — Bloc Apprendre · `yellow` / `amber`
 
 ```
 fond page     : jaune clair lumineux (radial-gradient yellow/amber)
-fond cartes   : #241f00 (sombre teinté jaune)
-bordure       : border-yellow-200/18  hover: border-yellow-200/38
-ombre         : shadow-[0_34px_76px_-34px_rgba(36,31,0,0.72)]
-texte titres  : text-yellow-100
+fond cartes   : ambre/orange solaire sur blanc cassé
+bordure       : border-amber-200/18  hover: border-amber-200/38
+ombre         : shadow-[0_34px_76px_-34px_rgba(249,115,22,0.24)]
+texte titres  : text-amber-100
 texte corps   : text-white / text-white/80
-dot accent    : bg-yellow-300
+dot accent    : bg-amber-300
 ```
 
 ---
@@ -221,10 +221,11 @@ bg-gradient-to-r from-[accent-500] via-[accent-400] to-[accent-300]  /* 3px */
 2. **Cartes** : fond sombre teinté, `backdrop-blur-xl`, bordure `[accent]-200/18`
 3. **Titres / chiffres** : `text-[accent]-100`, `font-black`
 4. **Textes** : `text-white` a 100% par defaut. Opacite reduite uniquement en exception justifiee (placeholder, etat desactive, hierarchie secondaire explicite).
-5. **CTA primaire** : gradient ou fond solide dans l'accent, ombre portée dans la teinte
-6. **CTA secondaire** : `bg-white/10 hover:bg-white/16`, texte blanc
-7. **Multi-teintes** : Certains blocs ont plusieurs teintes selon le type de page — vérifier le mapping rubrique → teinte
-8. **Référence** : toujours vérifier `accueil-pillars.tsx`, `navigation.ts`, `documentation/product/matrice-rubriques.md` et `documentation/architecture/traceability-matrix.md` avant d'implémenter
+5. **CTA primaire** : utiliser `CmmButton tone="primary"` et laisser le thème du bloc injecter les couleurs.
+6. **CTA secondaire** : utiliser `CmmButton tone="secondary"` pour le CTA de soutien principal du bloc.
+7. **CTA tertiaire** : utiliser `CmmButton tone="tertiary"` pour les actions de bas de hiérarchie ou les liens contextuels.
+8. **Multi-teintes** : Certains blocs ont plusieurs teintes selon le type de page — vérifier le mapping rubrique → teinte.
+9. **Référence** : toujours vérifier `accueil-pillars.tsx`, `navigation.ts`, `documentation/product/matrice-rubriques.md` et `documentation/architecture/traceability-matrix.md` avant d'implémenter.
 
 ---
 
@@ -250,4 +251,4 @@ bg-gradient-to-r from-[accent-500] via-[accent-400] to-[accent-300]  /* 3px */
 ### Autres blocs (teinte unique)
 - Agir → `emerald`
 - Réseau & Discussions → `pink` / `indigo` (réseau/discussion vs partenaires)
-- Apprendre → `yellow`
+- Apprendre → `yellow` / `amber`

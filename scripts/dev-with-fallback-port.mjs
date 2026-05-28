@@ -1,5 +1,6 @@
 import net from "node:net";
 import { spawn } from "node:child_process";
+import { access, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,10 +8,20 @@ import { fileURLToPath } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "..");
 const webDir = resolve(repoRoot, "apps/web");
+const turbopackCacheDirs = [
+  resolve(webDir, ".next/cache/turbopack"),
+  resolve(webDir, ".next/dev/cache/turbopack"),
+];
 const require = createRequire(import.meta.url);
 const nextBin = require.resolve("next/dist/bin/next", { paths: [webDir] });
 const preferredHost = process.env.DEV_HOST ?? "localhost";
 const strictPort = process.env.DEV_STRICT_PORT === "1";
+const requestedBundler = process.env.DEV_BUNDLER?.toLowerCase();
+
+if (requestedBundler === "webpack") {
+  console.error("[dev] Webpack is disabled in this repository. Use the default Turbopack flow.");
+  process.exit(1);
+}
 
 function parsePortArgs(argv) {
   const passthrough = [];
@@ -36,6 +47,15 @@ function parsePortArgs(argv) {
       continue;
     }
 
+    if (arg === "--webpack") {
+      console.error("[dev] Webpack is disabled in this repository. Remove --webpack and use Turbopack.");
+      process.exit(1);
+    }
+
+    if (arg === "--turbopack" || arg === "--turbo") {
+      continue;
+    }
+
     passthrough.push(arg);
   }
 
@@ -53,8 +73,31 @@ function isPortFree(port) {
   });
 }
 
+async function clearTurbopackCache() {
+  let clearedAny = false;
+
+  for (const cacheDir of turbopackCacheDirs) {
+    try {
+      await access(cacheDir);
+    } catch {
+      continue;
+    }
+
+    await rm(cacheDir, { recursive: true, force: true });
+    clearedAny = true;
+  }
+
+  if (clearedAny) {
+    console.log("[dev] Turbopack cache purged for a clean start.");
+  }
+}
+
 const { preferredPort, passthrough } = parsePortArgs(process.argv.slice(2));
 let forwardedSignal = null;
+
+if (process.env.DEV_CLEAR_TURBOPACK_CACHE === "1") {
+  await clearTurbopackCache();
+}
 
 if (strictPort && !(await isPortFree(preferredPort))) {
   console.error(
@@ -90,7 +133,7 @@ console.log(`[dev] Next.js démarre sur http://${preferredHost}:${chosenPort}`);
 
 const child = spawn(
   process.execPath,
-  [nextBin, "dev", "-H", preferredHost, "-p", String(chosenPort), ...passthrough],
+  [nextBin, "dev", "-H", preferredHost, "-p", String(chosenPort), "--turbopack", ...passthrough],
   {
     cwd: webDir,
     env: {

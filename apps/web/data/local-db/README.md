@@ -15,7 +15,7 @@ Schema (all files):
   - `recordType` (`action` | `clean_place` | `other`)
   - `status` (`test` | `pending` | `validated` | `rejected`)
   - `source`
-  - `title`, `description`
+  - `title` (for actions: name of the organizing structure), `description`
   - `location` (`label`, `city`, `latitude`, `longitude`)
   - `eventDate`
   - `metrics` (for actions)

@@ -25,6 +25,7 @@ import {
   Cloud
 } from "lucide-react";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { OPERATIONAL_ZONES, evaluateWeatherRisk } from "@/lib/weather/ops-weather";
 import type { OperationalZone, WeatherRiskAssessment, InterventionWindow } from "@/lib/weather/ops-weather";
 import { formatDateTimeShort } from "@/components/sections/rubriques/helpers";
@@ -54,9 +55,11 @@ export const WeatherTabs = memo(function WeatherTabs({
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
         return (
-          <button
+          <CmmButton
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
+            tone={isActive ? "primary" : "tertiary"}
+            variant="pill"
             className={cn(
               "relative flex items-center gap-3 px-8 py-3 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all duration-300",
               isActive ? "text-white" : "text-slate-500 hover:text-slate-200"
@@ -79,7 +82,7 @@ export const WeatherTabs = memo(function WeatherTabs({
                 {kitProgress}%
               </span>
             )}
-          </button>
+          </CmmButton>
         );
       })}
     </div>
@@ -119,24 +122,28 @@ export const WeatherZonePicker = memo(function WeatherZonePicker({
 
       <div className="space-y-6 relative z-10">
         <div className="grid grid-cols-2 gap-3">
-          <button
+          <CmmButton
             onClick={() => setZoneMode("auto")}
+            tone={zoneMode === "auto" ? "primary" : "tertiary"}
+            variant="pill"
             className={cn(
               "px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
               zoneMode === "auto" ? "bg-blue-500/20 border-blue-500/50 text-white shadow-xl" : "bg-white/5 border-white/5 text-slate-500"
             )}
           >
             {fr ? "Auto-détection" : "Auto-detect"}
-          </button>
-          <button
+          </CmmButton>
+          <CmmButton
             onClick={() => setZoneMode("manual")}
+            tone={zoneMode === "manual" ? "primary" : "tertiary"}
+            variant="pill"
             className={cn(
               "px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all",
               zoneMode === "manual" ? "bg-blue-500/20 border-blue-500/50 text-white shadow-xl" : "bg-white/5 border-white/5 text-slate-500"
             )}
           >
             {fr ? "Saisie manuelle" : "Manual entry"}
-          </button>
+          </CmmButton>
         </div>
 
         <div className="relative group">
@@ -250,16 +257,18 @@ export const WeatherForecast = memo(function WeatherForecast({
           { id: 'now', label: fr ? "Direct" : "Live" },
           { id: '13', label: fr ? "13 Prochains" : "Next 13" }
         ].map(p => (
-          <button
+          <CmmButton
             key={p.id}
             onClick={() => setActivePeriod(p.id as any)}
+            tone={activePeriod === p.id ? "primary" : "tertiary"}
+            variant="pill"
             className={cn(
               "px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all",
               activePeriod === p.id ? "bg-white text-slate-950 shadow-xl" : "text-slate-500 hover:text-white"
             )}
           >
             {p.label}
-          </button>
+          </CmmButton>
         ))}
       </div>
 
@@ -347,9 +356,9 @@ export const WeatherActionWindows = memo(function WeatherActionWindows({
                   </div>
                 </div>
               </div>
-              <button className="px-6 py-3 bg-white/5 hover:bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all">
+              <CmmButton tone="secondary" variant="pill" className="px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all">
                 {fr ? "Planifier" : "Schedule"}
-              </button>
+              </CmmButton>
             </motion.div>
           ))}
         </div>
@@ -421,9 +430,11 @@ export const KitConfiguration = memo(function KitConfiguration({
       <div className="space-y-10 relative z-10">
         <div className="grid grid-cols-3 gap-3">
           {(['solo', 'team', 'school'] as const).map((type) => (
-            <button
+            <CmmButton
               key={type}
               onClick={() => setPackType(type)}
+              tone={packType === type ? "primary" : "tertiary"}
+              variant="pill"
               className={cn(
                 "flex flex-col items-center gap-3 rounded-2xl border p-6 transition-all duration-300",
                 packType === type 
@@ -432,7 +443,7 @@ export const KitConfiguration = memo(function KitConfiguration({
               )}
             >
               <span className="text-[10px] font-black uppercase tracking-[0.2em]">{type}</span>
-            </button>
+            </CmmButton>
           ))}
         </div>
 

@@ -53,10 +53,10 @@ export const darkHero = (
       title: "text-stone-950",
     },
     yellow: {
-      gradient: "from-yellow-500/18 via-amber-500/12 to-transparent",
-      iconWrap: "rounded-2xl border border-yellow-200/35 bg-yellow-50/70 p-3",
-      icon: "text-yellow-900",
-      eyebrow: "text-yellow-950/85",
+      gradient: "from-yellow-500/18 via-orange-500/12 to-transparent",
+      iconWrap: "rounded-2xl border border-amber-200/35 bg-amber-50/70 p-3",
+      icon: "text-amber-900",
+      eyebrow: "text-amber-950/85",
       title: "text-stone-950",
     },
   } as const;

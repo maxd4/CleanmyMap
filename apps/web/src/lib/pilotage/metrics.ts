@@ -2,6 +2,7 @@ import {
   toActionListItem,
   type ActionDataContract,
 } from "../actions/data-contract";
+import { estimateActionWasteKg } from "../actions/impact-calculators";
 import { evaluateActionQuality } from "../actions/quality";
 import { DIGITAL_IMPACT_CONSTANTS, PILOTAGE_FORMULA_VERSION, PILOTAGE_THRESHOLDS } from "./constants";
 
@@ -158,7 +159,7 @@ function computeWindowMetrics(
 
   const approvedActions = approved.length;
   const impactVolumeKg = approved.reduce(
-    (acc, record) => acc + Number(record.metadata.wasteKg || 0),
+    (acc, record) => acc + estimateActionWasteKg(record),
     0,
   );
   const mobilizationCount = approved.reduce(

@@ -21,6 +21,7 @@ import {
 } from "@/lib/environmental-impact-estimator/service";
 import { ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS } from "@/lib/environmental-impact-estimator/constants";
 import type { EnvironmentalImpactDashboardResponse } from "@/lib/environmental-impact-estimator/types";
+import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 type ImpactPageProgression = {
   currentLevel: number;
@@ -181,7 +182,7 @@ export default function ImpactProfilePage() {
     <div className="w-full space-y-10 pb-20">
       <header className="flex flex-col justify-between gap-6 md:flex-row md:items-center">
         <Link
-          href="/dashboard"
+          href={DASHBOARD_ROUTE}
           className="group flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.2em] text-red-400/40 transition-all hover:text-red-400"
         >
           <ArrowLeft size={14} className="transition-transform group-hover:-translate-x-1" />

@@ -13,6 +13,7 @@ import {
   Map as MapIcon, 
   ChevronRight,
 } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
 
 // --- KPI Grid Component ---
@@ -108,9 +109,11 @@ export const SpotterForm = memo(function SpotterForm({
               { id: 'graffiti', label: fr ? 'Tags/Graffitis' : 'Graffiti', color: 'blue' },
               { id: 'other', label: fr ? 'Autre' : 'Other', color: 'slate' },
             ].map((type) => (
-              <button
+              <CmmButton
                 key={type.id}
                 onClick={() => setSpotType(type.id)}
+                tone={spotType === type.id ? "primary" : "tertiary"}
+                variant="pill"
                 className={cn(
                   "px-6 py-4 rounded-2xl text-xs font-black uppercase tracking-widest border transition-all duration-300",
                   spotType === type.id 
@@ -119,7 +122,7 @@ export const SpotterForm = memo(function SpotterForm({
                 )}
               >
                 {type.label}
-              </button>
+              </CmmButton>
             ))}
           </div>
         </div>
@@ -163,9 +166,11 @@ export const SpotterForm = memo(function SpotterForm({
         </div>
 
         {/* Action Button */}
-        <button
+        <CmmButton
           onClick={onCreateSpot}
           disabled={spotState === 'loading'}
+          tone="primary"
+          variant="pill"
           className={cn(
             "w-full py-6 rounded-[2rem] text-sm font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 shadow-2xl",
             spotState === 'success' 
@@ -181,7 +186,7 @@ export const SpotterForm = memo(function SpotterForm({
             <Plus size={20} />
           )}
           <span>{spotState === 'success' ? (fr ? "Transmis !" : "Sent !") : (fr ? "Publier le signalement" : "Publish report")}</span>
-        </button>
+        </CmmButton>
 
         {spotMessage && (
           <motion.p 
@@ -234,9 +239,9 @@ export const SpotterRecentList = memo(function SpotterRecentList({ fr, recent }:
                 </div>
               </div>
             </div>
-            <button className="p-3 rounded-xl bg-white/5 text-slate-500 hover:text-white hover:bg-white/10 transition-all">
+            <CmmButton tone="tertiary" variant="pill" className="p-3 rounded-xl text-slate-500 hover:text-white hover:bg-white/10 transition-all">
               <ChevronRight size={20} />
-            </button>
+            </CmmButton>
           </motion.div>
         ))}
       </div>

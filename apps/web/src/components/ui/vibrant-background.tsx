@@ -9,7 +9,7 @@ import {
 } from "@/lib/ui/backdrop-tone";
 import { getButtonThemeCssVariables } from "@/lib/ui/button-theme";
 
-type VibrantBackgroundProps = {
+export type VibrantBackgroundProps = {
   initialToneKey: BackdropToneKey | null;
 };
 

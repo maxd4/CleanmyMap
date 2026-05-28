@@ -1,4 +1,8 @@
-import { actionQualityScoreFromRow, parseAssociationNameFromActionNotes } from "./progression-data";
+import {
+  actionQualityScoreFromRow,
+  isSpontaneousActionNotes,
+  parseAssociationNameFromActionNotes,
+} from "./progression-data";
 import type {
   ActionRow,
   ContributorRecognitionCard,
@@ -213,7 +217,9 @@ export function buildContributorRecognitionIndex(
   rows: ActionRow[],
   currentUserId?: string | null,
 ): ContributorRecognitionIndex {
-  const approvedRows = rows.filter((row) => row.status === "approved");
+  const approvedRows = rows.filter(
+    (row) => row.status === "approved" && isSpontaneousActionNotes(row.notes),
+  );
   const grouped = new Map<string, RecognitionAggregate>();
 
   for (const row of approvedRows) {

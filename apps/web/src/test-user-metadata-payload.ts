@@ -46,7 +46,7 @@ const mockUserMetadata = {
 // Test du payload
 const payload = buildCreateActionPayload({
   form: mockForm,
-  declarationMode: "quick",
+  declarationMode: "complete",
   effectiveManualDrawingEnabled: false,
   drawingIsValid: false,
   manualDrawing: null,

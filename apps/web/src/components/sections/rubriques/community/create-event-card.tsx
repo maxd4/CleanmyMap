@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { PlusCircle, RefreshCw, Calendar, Users, MapPin, AlignLeft, Target, Layers, Info, Check } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import type { CreateCommunityEventForm } from "@/components/sections/rubriques/community/types";
 import { InlineFieldError } from "@/components/ui/inline-field-error";
 import { cn } from "@/lib/utils";
@@ -112,14 +113,16 @@ function CommunityCreateEventCard(props: CommunityCreateEventCardProps) {
             </div>
           </div>
           
-          <button
+          <CmmButton
             onClick={() => void onReloadEvents()}
             disabled={eventsValidating}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-300 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-50"
+            tone="secondary"
+            variant="pill"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl text-slate-300 text-[10px] font-black uppercase tracking-widest hover:bg-white/10 transition-all disabled:opacity-50"
           >
             <RefreshCw size={14} className={cn(eventsValidating && "animate-spin")} />
             {eventsValidating ? "Synchronisation..." : "Actualiser"}
-          </button>
+          </CmmButton>
         </div>
 
         <div className="grid gap-8 md:grid-cols-2">
@@ -234,20 +237,20 @@ function CommunityCreateEventCard(props: CommunityCreateEventCardProps) {
                 {CLEANUP_WASTE_TYPE_OPTIONS.map((opt) => {
                   const active = createForm.cleanupWasteTypesExpected.includes(opt.value);
                   return (
-                    <button
+                    <CmmButton
                       key={opt.value}
                       type="button"
                       onClick={() => toggleWasteType(opt.value)}
+                      tone={active ? "primary" : "tertiary"}
+                      variant="pill"
                       className={cn(
                         "flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 border",
-                        active 
-                          ? "bg-pink-600 border-pink-500 text-white shadow-lg shadow-pink-600/20" 
-                          : "bg-white/5 border-white/10 text-slate-500 hover:text-slate-300 hover:bg-white/10"
+                        active ? "shadow-lg shadow-pink-600/20" : "hover:text-slate-300 hover:bg-white/10"
                       )}
                     >
                       {active && <Check size={10} />}
                       {opt.label}
-                    </button>
+                    </CmmButton>
                   );
                 })}
               </div>
@@ -260,16 +263,18 @@ function CommunityCreateEventCard(props: CommunityCreateEventCardProps) {
           <p className="text-[10px] font-medium text-slate-500 italic max-w-sm">
             L&apos;événement sera validé par l&apos;IA CleanMyMap pour optimiser la logistique et les ressources.
           </p>
-          <button
+          <CmmButton
             onClick={() => void onCreateEvent()}
             disabled={isCreatingEvent || !canSubmit}
-            className="px-10 py-4 rounded-2xl bg-pink-600 text-white text-xs font-black uppercase tracking-[0.2em] hover:bg-pink-500 transition-all shadow-2xl shadow-pink-600/40 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed group/btn overflow-hidden relative"
+            tone="primary"
+            variant="pill"
+            className="px-10 py-4 rounded-2xl text-white text-xs font-black uppercase tracking-[0.2em] hover:bg-pink-500 transition-all shadow-2xl shadow-pink-600/40 disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed group/btn overflow-hidden relative"
           >
             <span className="relative z-10">{isCreatingEvent ? "Processus en cours..." : "Lancer l'événement"}</span>
             <motion.div 
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
             />
-          </button>
+          </CmmButton>
         </div>
       </div>
     </div>

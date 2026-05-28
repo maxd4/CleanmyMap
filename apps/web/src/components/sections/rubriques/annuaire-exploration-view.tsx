@@ -108,18 +108,20 @@ export function AnnuaireExplorationView({
               { id: "social", label: "SOCIAL" },
               { id: "humanitaire", label: "HUMANITAIRE" },
             ].map(theme => (
-              <button
+              <CmmButton
                 key={theme.id}
                 onClick={() => setSearchTerm(theme.id === searchTerm ? "" : theme.id)}
+                tone={searchTerm === theme.id ? "primary" : "tertiary"}
+                variant="pill"
                 className={cn(
-                  "rounded-xl border px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all duration-300",
-                  searchTerm === theme.id 
-                    ? "border-violet-500 bg-violet-600/20 text-violet-300 shadow-lg" 
-                    : "border-white/5 bg-white/5 text-slate-500 hover:border-white/20 hover:text-white"
+                  "rounded-xl px-4 py-2 text-[9px] font-black uppercase tracking-widest transition-all duration-300",
+                  searchTerm === theme.id
+                    ? "shadow-lg"
+                    : "hover:shadow-md"
                 )}
               >
                 {theme.label}
-              </button>
+              </CmmButton>
             ))}
           </div>
 
@@ -200,24 +202,28 @@ export function AnnuaireExplorationView({
         
         {/* View Mode Toggle - Premium Interface */}
         <div className="absolute top-8 right-8 z-20 flex rounded-2xl border border-white/10 bg-slate-950/60 p-1.5 backdrop-blur-3xl shadow-2xl">
-          <button 
+          <CmmButton
             onClick={() => setViewMode("map")}
+            tone={viewMode === "map" ? "primary" : "tertiary"}
+            variant="pill"
             className={cn(
               "px-4 py-2.5 rounded-xl flex items-center justify-center transition-all",
-              viewMode === "map" ? "bg-white text-slate-950 shadow-2xl" : "text-slate-500 hover:text-white"
+              viewMode === "map" ? "shadow-2xl" : "hover:shadow-md"
             )}
           >
             <MapIcon size={18} />
-          </button>
-          <button 
+          </CmmButton>
+          <CmmButton
             onClick={() => setViewMode("network")}
+            tone={viewMode === "network" ? "primary" : "tertiary"}
+            variant="pill"
             className={cn(
               "px-4 py-2.5 rounded-xl flex items-center justify-center transition-all",
-              viewMode === "network" ? "bg-white text-slate-950 shadow-2xl" : "text-slate-500 hover:text-white"
+              viewMode === "network" ? "shadow-2xl" : "hover:shadow-md"
             )}
           >
             <Share2 size={18} />
-          </button>
+          </CmmButton>
         </div>
 
         {/* Selected Actor Drawer - Integrated Experience */}

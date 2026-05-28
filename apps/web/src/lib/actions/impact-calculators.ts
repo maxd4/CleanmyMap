@@ -1,3 +1,4 @@
+import type { ActionDataContract } from "./data-contract";
 import { ActionMegotsCondition } from "./types";
 
 export const BUTTS_PER_KG_REFERENCE = 2500;
@@ -34,4 +35,28 @@ export function estimateButtsWeightKg(
   }
 
   return count / (BUTTS_PER_KG_REFERENCE * factor);
+}
+
+/**
+ * Retourne la masse d'impact la plus fiable disponible pour une action.
+ *
+ * Priorité:
+ * 1. poids total déclaré
+ * 2. poids détaillé des mégots si présent dans les métadonnées
+ * 3. conversion de secours depuis le nombre de mégots
+ */
+export function estimateActionWasteKg(
+  contract: Pick<ActionDataContract, "metadata">,
+): number {
+  const directWasteKg = Math.max(0, Number(contract.metadata.wasteKg || 0));
+  const breakdownWasteKg = Math.max(
+    0,
+    Number(contract.metadata.wasteBreakdown?.megotsKg || 0),
+  );
+  const derivedWasteKg = Math.max(
+    0,
+    Number(contract.metadata.cigaretteButts || 0) / BUTTS_PER_KG_REFERENCE,
+  );
+
+  return Math.max(directWasteKg, breakdownWasteKg, derivedWasteKg);
 }

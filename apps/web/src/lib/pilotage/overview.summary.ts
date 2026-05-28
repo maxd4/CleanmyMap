@@ -2,6 +2,7 @@ import type { PilotageComparisonResult } from "./metrics";
 import type { OperationalPriority } from "./prioritization";
 import type { DecisionSummary } from "./overview.types";
 import { formatSigned } from "./overview.utils";
+import { ADMIN_ROUTE, DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export function pickDecisionRecommendation(comparison: PilotageComparisonResult): {
   href: string;
@@ -24,7 +25,7 @@ export function pickDecisionRecommendation(comparison: PilotageComparisonResult)
   const ranked = [
     {
       risk: moderationRisk,
-      href: "/admin",
+      href: ADMIN_ROUTE,
       label: "Traiter backlog moderation",
       reason: `Delai moderation en degradation (${comparison.metrics.moderationDelayDays.deltaAbsolute >= 0 ? "+" : ""}${comparison.metrics.moderationDelayDays.deltaAbsolute.toFixed(1)} j, ${comparison.current.moderationDelayDays.toFixed(1)} j actuels).`,
     },
@@ -45,7 +46,7 @@ export function pickDecisionRecommendation(comparison: PilotageComparisonResult)
   const top = ranked[0];
   if (!top || top.risk <= 0) {
     return {
-      href: "/dashboard",
+      href: DASHBOARD_ROUTE,
       label: "Maintenir le pilotage courant",
       reason:
         "Aucune degradation majeure detectee sur qualite, couverture ou moderation.",

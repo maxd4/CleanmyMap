@@ -73,7 +73,8 @@ Règles non négociables à reprendre dans le PROMPT 2 de chaque audit :
 Certains blocs ont plusieurs teintes directrices selon le type de page :
 
 **Bloc "Accueil & Pilotage"** :
-- Pages accueil (`/dashboard`, `/profil`) → `amber` / `orange`
+- Page accueil centrale (`/dashboard`) → `amber` / `orange`
+- Alias de compatibilité (`/profil`) → même rendu que `/dashboard`
 - Pages pilotage (`/pilotage`, `/sponsor-portal`, `/elus`) → `amber` / `brun`
 - Sommaire (`/explorer`) → exception validée, palette dédiée conservée
 
@@ -85,7 +86,7 @@ Certains blocs ont plusieurs teintes directrices selon le type de page :
 - Auth & Onboarding (`/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`) → `auth`
 - Institutionnel & Légal (`/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`) → `legal`
 - Système & Utilitaires (`/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`) → `system`
-- Admin & Super-admin (`/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`) → `admin`
+- Admin & Super-admin (`/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`) → `admin` et exposés depuis le bloc 01 pour les profils autorisés
 - Print & Export (`/prints/report`) → `print`
 
 **Bloc "Cartographie & Impact"** :
@@ -95,7 +96,7 @@ Certains blocs ont plusieurs teintes directrices selon le type de page :
 **Autres blocs (teinte unique)** :
 - Agir → `emerald`
 - Réseau & Discussions → `pink` (réseau) + `indigo` (partenaires)
-- Apprendre → `yellow`
+- Apprendre → `yellow` / `amber`
 
 **Règle stricte** : Une page = une teinte dominante. Ne pas mélanger orange ET brun, ou sky ET red/rose sur la même page.
 

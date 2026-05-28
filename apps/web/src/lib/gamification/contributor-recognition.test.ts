@@ -33,7 +33,7 @@ describe("buildContributorRecognitionIndex", () => {
         actor_name: "Alice",
         action_date: "2026-01-12",
         location_label: "Paris 11e",
-        notes: "association: Cleanwalk Paris\nrelais de communication",
+        notes: "association: Action spontanée\nrelais de communication",
         volunteers_count: 2,
       }),
       createRow({
@@ -42,7 +42,7 @@ describe("buildContributorRecognitionIndex", () => {
         actor_name: "Alice",
         action_date: "2026-02-18",
         location_label: "Paris 11e",
-        notes: "association: Cleanwalk Paris\nrelais de communication",
+        notes: "association: Action spontanée\nrelais de communication",
         volunteers_count: 2,
       }),
       createRow({
@@ -51,7 +51,7 @@ describe("buildContributorRecognitionIndex", () => {
         actor_name: "Bob",
         action_date: "2026-01-05",
         location_label: "Paris 12e",
-        notes: "association: Réseau Local\ncoordination terrain",
+        notes: "association: Action spontanée\ncoordination terrain",
         volunteers_count: 7,
         duration_minutes: 90,
       }),
@@ -61,7 +61,7 @@ describe("buildContributorRecognitionIndex", () => {
         actor_name: "Bob",
         action_date: "2026-02-05",
         location_label: "Paris 12e",
-        notes: "association: Réseau Local\ncoordination terrain",
+        notes: "association: Action spontanée\ncoordination terrain",
         volunteers_count: 7,
         duration_minutes: 90,
       }),
@@ -71,7 +71,7 @@ describe("buildContributorRecognitionIndex", () => {
         actor_name: "Bob",
         action_date: "2026-03-05",
         location_label: "Paris 12e",
-        notes: "association: Réseau Local\ncoordination terrain",
+        notes: "association: Action spontanée\ncoordination terrain",
         volunteers_count: 7,
         duration_minutes: 90,
       }),
@@ -81,7 +81,7 @@ describe("buildContributorRecognitionIndex", () => {
         actor_name: "Bob",
         action_date: "2026-04-05",
         location_label: "Paris 12e",
-        notes: "association: Réseau Local\ncoordination terrain",
+        notes: "association: Action spontanée\ncoordination terrain",
         volunteers_count: 7,
         duration_minutes: 90,
       }),
@@ -91,7 +91,7 @@ describe("buildContributorRecognitionIndex", () => {
         actor_name: "Bob",
         action_date: "2026-05-05",
         location_label: "Paris 12e",
-        notes: "association: Réseau Local\ncoordination terrain",
+        notes: "association: Action spontanée\ncoordination terrain",
         volunteers_count: 7,
         duration_minutes: 90,
       }),
@@ -101,7 +101,7 @@ describe("buildContributorRecognitionIndex", () => {
         actor_name: "Bob",
         action_date: "2026-06-05",
         location_label: "Paris 12e",
-        notes: "association: Réseau Local\ncoordination terrain",
+        notes: "association: Action spontanée\ncoordination terrain",
         volunteers_count: 7,
         duration_minutes: 90,
       }),
@@ -111,7 +111,7 @@ describe("buildContributorRecognitionIndex", () => {
         actor_name: "Bob",
         action_date: "2026-07-05",
         location_label: "Paris 12e",
-        notes: "association: Réseau Local\ncoordination terrain",
+        notes: "association: Action spontanée\ncoordination terrain",
         volunteers_count: 7,
         duration_minutes: 90,
       }),
@@ -121,7 +121,7 @@ describe("buildContributorRecognitionIndex", () => {
         actor_name: "Bob",
         action_date: "2026-08-05",
         location_label: "Paris 12e",
-        notes: "association: Réseau Local\ncoordination terrain",
+        notes: "association: Action spontanée\ncoordination terrain",
         volunteers_count: 7,
         duration_minutes: 90,
       }),
@@ -134,7 +134,7 @@ describe("buildContributorRecognitionIndex", () => {
     expect(recognition.topContributors[0]?.topZone).toBe("12e");
     expect(recognition.topContributors[0]?.regularityLabel).toBe("Régulier");
     expect(recognition.currentContributor?.userId).toBe("user-bob");
-    expect(recognition.currentContributor?.thanksMessage).toContain("Réseau Local");
+    expect(recognition.currentContributor?.thanksMessage).toContain("Action spontanée");
     expect(recognition.currentContributor?.badges).toContain("Mentor local");
     expect(recognition.currentContributor?.badges).toContain("Coordination vérifiée");
   });

@@ -40,7 +40,7 @@ export interface CmmBlockAccentProps {
  * - Impact    : red     (Rouge)
  * - Réseau    : indigo  (Indigo/Violet)
  * - Discussion: pink    (Rose)
- * - Apprendre : yellow  (Jaune)
+ * - Apprendre : yellow / amber  (Jaune solaire)
  * - Piloter   : amber   (Brun)
  *
  * Règles de la charte:

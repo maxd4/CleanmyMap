@@ -91,13 +91,13 @@ describe("action declaration payload helpers", () => {
     expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
   });
 
-  it("preserves the declaration mode in the payload", () => {
+  it("keeps the record type in the payload", () => {
     const form = buildBaseForm();
     form.recordType = "clean_place";
 
     const payload = buildCreateActionPayload({
       form,
-      declarationMode: "quick",
+      declarationMode: "complete",
       effectiveManualDrawingEnabled: false,
       drawingIsValid: false,
       manualDrawing: null,
@@ -115,7 +115,7 @@ describe("action declaration payload helpers", () => {
 
     const payload = buildCreateActionPayload({
       form,
-      declarationMode: "quick",
+      declarationMode: "complete",
       effectiveManualDrawingEnabled: false,
       drawingIsValid: false,
       manualDrawing: null,
@@ -158,36 +158,6 @@ describe("action declaration payload helpers", () => {
     expect(payload.latitude).toBeCloseTo(48.855, 6);
     expect(payload.longitude).toBeCloseTo(2.355, 6);
   });
-
-  it("builds quick mode payload without geo and keeps megots data available", () => {
- const form = buildBaseForm();
- form.departureLocationLabel ="Place des Vosges";
- form.arrivalLocationLabel ="";
-
- const payload = buildCreateActionPayload({
- form,
- declarationMode:"quick",
- effectiveManualDrawingEnabled: true,
- drawingIsValid: false,
- manualDrawing: null,
- isEntrepriseMode: false,
- linkedEventId:"EVENT-12345",
- photos: [],
- visionEstimate: null,
- });
-
- expect(payload.latitude).toBeUndefined();
- expect(payload.longitude).toBeUndefined();
- expect(payload.departureLocationLabel).toBe("Place des Vosges");
- expect(payload.arrivalLocationLabel).toBeUndefined();
- expect(payload.cigaretteButts).toBe(0);
- expect(payload.durationMinutes).toBe(0);
- expect(payload.wasteBreakdown).toBeDefined();
- expect(payload.wasteBreakdown?.megotsKg).toBe(1.5);
- expect(payload.wasteBreakdown?.megotsCondition).toBe("propre");
- expect(payload.notes).toContain("Collecte de test");
- expect(payload.notes).toContain("[EVENT_REF]EVENT-12345");
- });
 
   it("keeps synchronized megots count and weight coherent in the payload", () => {
     const form = buildBaseForm();

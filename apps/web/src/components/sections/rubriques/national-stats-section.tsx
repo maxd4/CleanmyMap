@@ -21,9 +21,9 @@ import {
   Zap,
   Leaf
 } from "lucide-react";
-import Link from "next/link";
 import useSWR from "swr";
 import { fetchActions } from "@/lib/actions/http";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -292,10 +292,10 @@ export function NationalStatsSection() {
                  </p>
               </div>
            </div>
-           <Link href="/methodologie" className="relative z-10 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white hover:text-slate-950 transition-all flex items-center gap-3">
+           <CmmButton href="/methodologie" tone="secondary" variant="pill" className="relative z-10 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] gap-3">
               En savoir plus
               <ArrowRight size={16} />
-           </Link>
+           </CmmButton>
         </div>
       </div>
     </SectionShell>

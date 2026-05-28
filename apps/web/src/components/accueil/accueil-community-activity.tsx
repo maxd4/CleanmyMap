@@ -38,7 +38,7 @@ export function HomeCommunityActivity({
       ref={sectionRef}
       className="relative overflow-hidden bg-transparent py-12 sm:py-16 lg:py-20"
     >
-      <div className="relative mx-auto max-w-[1540px] px-4 sm:px-8">
+      <div className="relative mx-auto w-full max-w-none px-1 sm:px-2 lg:px-4">
         <div className="cmm-home-section-header space-y-3">
           <h2
             data-gsap-reveal
@@ -57,7 +57,7 @@ export function HomeCommunityActivity({
           </p>
         </div>
 
-        <div className="relative mx-auto mt-10 w-full max-w-4xl">
+        <div className="relative mx-auto mt-10 w-full">
           <div className="relative space-y-4">
             {errorMessage ? (
               <div

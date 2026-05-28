@@ -19,6 +19,11 @@ import {
 import type { AppProfile } from "@/lib/profiles";
 import { trackNavigationClick } from "@/lib/analytics/navigation-client";
 import { cn } from "@/lib/utils";
+import {
+  EXPLORER_ROUTE,
+  PROFIL_ROUTE,
+  buildOnboardingLocalisationHref,
+} from "@/lib/accueil-pilotage-routes";
 import { GlobalSearch } from "./global-search";
 import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
@@ -245,12 +250,12 @@ export function AppNavigationRibbon({
           </Link>
 
           <div className="hidden min-w-0 flex-1 items-center gap-1.5 xl:flex">
-            <Link
-              href="/explorer"
-              onClick={() => onTrackNavigation("/explorer", locale === "fr" ? "Sommaire" : "Summary", null)}
-              className="group inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-cyan-100/16 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 px-4 text-white shadow-[0_18px_36px_-22px_rgba(20,184,166,0.58)] transition-transform hover:scale-[1.01] hover:border-cyan-100/28 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
-              aria-label={locale === "fr" ? "Sommaire" : "Summary"}
-            >
+          <Link
+            href={EXPLORER_ROUTE}
+            onClick={() => onTrackNavigation(EXPLORER_ROUTE, locale === "fr" ? "Sommaire" : "Summary", null)}
+            className="group inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-full border border-cyan-100/16 bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 px-4 text-white shadow-[0_18px_36px_-22px_rgba(20,184,166,0.58)] transition-transform hover:scale-[1.01] hover:border-cyan-100/28 hover:from-cyan-400 hover:via-teal-400 hover:to-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
+            aria-label={locale === "fr" ? "Sommaire" : "Summary"}
+          >
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/16 bg-white/14">
                 <List className="h-4 w-4" aria-hidden="true" />
               </span>
@@ -359,8 +364,8 @@ export function AppNavigationRibbon({
                       <SitePreferencesControls />
                       <div className="mt-3 border-t border-white/10 pt-3">
                         <Link
-                          href="/onboarding/localisation?next=/profil"
-                          onClick={() => onTrackNavigation("/onboarding/localisation?next=/profil", locale === "fr" ? "Préférences de compte" : "Account preferences", null)}
+                          href={buildOnboardingLocalisationHref(PROFIL_ROUTE)}
+                          onClick={() => onTrackNavigation(buildOnboardingLocalisationHref(PROFIL_ROUTE), locale === "fr" ? "Préférences de compte" : "Account preferences", null)}
                           className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-cyan-100/14 bg-white/10 px-4 py-3 cmm-text-small font-semibold text-white/92 transition hover:border-cyan-300/40 hover:bg-white/16 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"
                         >
                           {locale === "fr" ? "Préférences de compte" : "Account preferences"}

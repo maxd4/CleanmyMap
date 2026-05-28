@@ -1,4 +1,4 @@
-# Hub éducatif
+# Hub léger
 
 ## Fiche canonique
 
@@ -9,30 +9,29 @@
 - **Famille / bloc fonctionnel** : Apprendre (bloc)
 - **Statut** : public
 - **Contexte nécessaire** : Aucun
-- **Objectif utilisateur principal** : Transmettre les connaissances utiles et guider la montée en compétence.
-- **Action principale attendue** : Lire un contenu ou ouvrir une ressource.
+- **Objectif utilisateur principal** : Reprendre rapidement le parcours sans dupliquer la matière.
+- **Action principale attendue** : Reprendre la bonne rubrique.
 - **Palette attendue** : yellow
 - **Scope** : à corriger
 - **Terminée** : non
 - **Couleurs actuellement détectées** : yellow — canvas #fef9c3, halo rgba(234, 179, 8, 0.30)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : faible à moyen : le jaune doit rester lisible sans devenir pâle sur fond clair.
-- **Niveau de surcharge textuelle** : fort
+- **Niveau de surcharge textuelle** : faible
 - **Textes à conserver** :
-- Titre de module
-- résumés
-- ressources
-- CTA d'apprentissage
+- progression
+- dernière étape
+- accès directs
+- CTA de reprise
 - **Textes à réduire ou supprimer** :
-- Paragraphes introductifs trop longs
+- longue introduction pédagogique
 - double explication
-- bulle d'orientation inutile
-- **Bulles / cartes / contextes trop nombreux** : Le contenu pédagogique peut rapidement s'alourdir si l'on empile des encarts d'aide.
+- contenu de fond
+- **Bulles / cartes / contextes trop nombreux** : Le hub doit rester un index léger, pas une cinquième rubrique pédagogique.
 - **Composants UI concernés** :
-- Cards pédagogiques
-- chapitres
-- ressources
-- CTA
+- barre de progression
+- tuiles d'accès direct
+- CTA de reprise
 - navigation secondaire
 - **Captures attendues** : desktop, mobile
 - **Priorité de correction** : moyenne
@@ -46,5 +45,5 @@
 
 ## Notes d'audit
 
-- Cette fiche est la source de vérité canonique pour la page.
+- Cette fiche est la source de vérité canonique pour la page légère de reprise.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

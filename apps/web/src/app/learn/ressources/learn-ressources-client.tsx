@@ -110,31 +110,31 @@ const RESOURCE_TONE_CLASSES: Record<
   }
 > = {
   amber: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,253,231,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    accent: "text-yellow-700",
-    dot: "bg-yellow-700",
-    border: "border-yellow-200",
-    glow: "from-yellow-200/18 via-amber-100/10 to-transparent",
-    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,248,231,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-amber-200 bg-amber-50 text-amber-900",
+    accent: "text-amber-700",
+    dot: "bg-amber-600",
+    border: "border-amber-200",
+    glow: "from-amber-200/18 via-orange-100/10 to-transparent",
+    chip: "border-amber-200 bg-amber-50 text-amber-800",
   },
   cyan: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,253,231,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    accent: "text-yellow-700",
-    dot: "bg-yellow-700",
-    border: "border-yellow-200",
-    glow: "from-yellow-200/16 via-amber-100/10 to-transparent",
-    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,250,238,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-orange-200 bg-orange-50 text-orange-900",
+    accent: "text-orange-700",
+    dot: "bg-orange-600",
+    border: "border-orange-200",
+    glow: "from-orange-200/16 via-amber-100/10 to-transparent",
+    chip: "border-orange-200 bg-orange-50 text-orange-800",
   },
   emerald: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,253,231,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    accent: "text-yellow-700",
-    dot: "bg-yellow-700",
-    border: "border-yellow-200",
-    glow: "from-yellow-200/16 via-amber-100/10 to-transparent",
-    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,248,232,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-amber-200 bg-amber-50 text-amber-900",
+    accent: "text-amber-700",
+    dot: "bg-amber-600",
+    border: "border-amber-200",
+    glow: "from-amber-200/16 via-orange-100/10 to-transparent",
+    chip: "border-amber-200 bg-amber-50 text-amber-800",
   },
 };
 
@@ -172,7 +172,7 @@ function ResourceSpotlightCard({
         <div className={cn("inline-flex h-11 w-11 items-center justify-center rounded-2xl border", tone.badge)}>
           <Icon className="h-5 w-5" aria-hidden="true" />
         </div>
-        <span className="inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+          <span className="inline-flex rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
           {String(index).padStart(2, "0")}
         </span>
       </div>
@@ -269,7 +269,7 @@ export function LearnRessourcesOverview({ locale }: { locale: LearnLocale }) {
               {locale === "fr" ? "Deux rendez-vous visibles" : "Two visible meetups"}
             </h3>
           </div>
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-yellow-200 bg-yellow-100 text-yellow-900">
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-900">
             <CalendarDays className="h-5 w-5" aria-hidden="true" />
           </span>
         </div>
@@ -356,9 +356,9 @@ export function LearnRessourcesClient() {
   ] as const;
 
   const cueToneClasses = {
-    amber: "text-yellow-700",
-    cyan: "text-yellow-700",
-    emerald: "text-yellow-700",
+    amber: "text-amber-700",
+    cyan: "text-orange-700",
+    emerald: "text-amber-700",
   } as const;
 
   return (
@@ -404,7 +404,7 @@ export function LearnRessourcesClient() {
                     : "The current month stays readable, but the three blocks above remain the main entry."}
                 </p>
               </div>
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-yellow-200 bg-yellow-100 text-yellow-900">
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-amber-200 bg-amber-100 text-amber-900">
                 <CalendarDays className="h-5 w-5" aria-hidden="true" />
               </span>
             </div>
@@ -418,17 +418,17 @@ export function LearnRessourcesClient() {
                   {LEARN_RESOURCE_EVENTS.length}
                 </p>
               </div>
-              <div className="rounded-[1.35rem] border border-yellow-200 bg-yellow-50 p-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-yellow-700">
+              <div className="rounded-[1.35rem] border border-amber-200 bg-amber-50 p-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
                   {isFrench ? "Repères" : "Cues"}
                 </p>
-                <p className="mt-2 text-2xl font-black tracking-tight text-yellow-800">4</p>
+                <p className="mt-2 text-2xl font-black tracking-tight text-amber-800">4</p>
               </div>
-              <div className="rounded-[1.35rem] border border-yellow-200 bg-yellow-50 p-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-yellow-700">
+              <div className="rounded-[1.35rem] border border-amber-200 bg-amber-50 p-3">
+                <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
                   {isFrench ? "Support" : "Support"}
                 </p>
-                <p className="mt-2 text-2xl font-black tracking-tight text-yellow-800">1</p>
+                <p className="mt-2 text-2xl font-black tracking-tight text-amber-800">1</p>
               </div>
             </div>
 
@@ -474,7 +474,7 @@ export function LearnRessourcesClient() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/80 bg-white shadow-sm">
+                            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-white/80 bg-white shadow-sm">
                             <Icon size={18} className={cueToneClasses[cue.tone]} aria-hidden="true" />
                           </span>
                           <div>
@@ -510,7 +510,7 @@ export function LearnRessourcesClient() {
                 </Link>
                 <Link
                   href="/sections/compost"
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-yellow-200 bg-yellow-600 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-yellow-700"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-amber-200 bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:from-amber-600 hover:to-orange-600"
                 >
                   {isFrench ? "Ouvrir le guide compost" : "Open the compost guide"}
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />

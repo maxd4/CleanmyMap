@@ -10,7 +10,7 @@ Il fait partie des exceptions assumées aux règles visuelles de base: contraire
 Les boutons exposent trois tons stables:
 
 - `primary`: action principale, fond en dégradé diagonal de deux couleurs complémentaires à la page
-- `secondary`: action alternative, fond en dégradé diagonal de deux couleurs de la page
+- `secondary`: action alternative, fond en dégradé diagonal de deux couleurs proches de la page
 - `tertiary`: action discrète, fond en dégradé subtil, visuellement présent sans dominer
 
 `tertiary` est le nom canonique. `muted` reste un alias de compatibilité interne uniquement.
@@ -19,8 +19,8 @@ La couleur du bouton est pilotée par la teinte de page active. Le composant ne 
 
 ## Règles d'usage
 
-- Utiliser `primary` pour l'action la plus importante d'une zone.
-- Utiliser `secondary` pour l'alternative principale.
+- Utiliser `primary` pour l'action la plus importante d'une zone. Sa palette doit contraster franchement avec la teinte dominante de la page.
+- Utiliser `secondary` pour l'alternative principale. Sa palette doit rester proche de la teinte dominante de la page.
 - Utiliser `tertiary` pour les actions moins prioritaires, les liens de soutien et les CTA discrets.
 - Garder un contraste lisible dans les trois tons, avec un vrai fond visible et une diagonale colorée dans le gradient.
 - Ne pas réappliquer les règles générales de texte sur les labels de bouton: la couleur du texte est pilotée par le ton du bouton.

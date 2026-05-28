@@ -29,6 +29,10 @@ function resolveProxyUrl(raw: string | undefined, appOrigin: string | undefined)
     return candidate;
   }
 
+  if (candidate.startsWith("/")) {
+    return candidate;
+  }
+
   if (!appOrigin) {
     return candidate;
   }

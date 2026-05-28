@@ -6,6 +6,7 @@ import {
   Calendar, MapPin, Users, ClipboardList, Truck, 
   Megaphone, CheckCircle, ChevronRight, Leaf 
 } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 const STEPS = [
   {
@@ -88,8 +89,10 @@ export function CleanupGuideCard() {
               transition={{ delay: index * 0.05 }}
               className="rounded-2xl border border-slate-100 bg-white/50 backdrop-blur-sm overflow-hidden shadow-sm"
             >
-              <button
+              <CmmButton
                 onClick={() => setExpandedStep(isExpanded ? null : step.id)}
+                tone="secondary"
+                variant="default"
                 className="w-full flex items-center gap-4 p-4 text-left hover:bg-slate-50 transition-colors"
               >
                 <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center shrink-0">
@@ -105,7 +108,7 @@ export function CleanupGuideCard() {
                   size={18} 
                   className={`text-slate-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                 />
-              </button>
+              </CmmButton>
               
               <AnimatePresence>
                 {isExpanded && (

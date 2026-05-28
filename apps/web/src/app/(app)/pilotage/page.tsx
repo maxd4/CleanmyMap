@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { toProfile } from "@/lib/profiles";
+import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
@@ -30,7 +31,7 @@ export default async function PilotageAccessPage() {
   const profile = toProfile(role);
 
   if (userId && profile === "admin") {
-    redirect("/admin");
+    redirect(ADMIN_ROUTE);
   }
 
   if (!userId) {

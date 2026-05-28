@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { env } from "@/lib/env";
+import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 import {
   getPrivateSectionRoutes,
   PRIVATE_APP_ROUTE_PREFIXES,
@@ -23,7 +24,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "GPTBot",
         allow: [
           "/observatoire",
-          "/explorer",
+          EXPLORER_ROUTE,
           "/methodologie",
           "/learn",
         ],
@@ -35,7 +36,7 @@ export default function robots(): MetadataRoute.Robots {
         userAgent: "ChatGPT-User",
         allow: [
           "/observatoire",
-          "/explorer",
+          EXPLORER_ROUTE,
           "/methodologie",
         ],
         disallow: [

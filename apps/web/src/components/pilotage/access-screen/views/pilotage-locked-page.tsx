@@ -4,6 +4,11 @@ import { PAGE_COPY } from "../access-screen-constants";
 import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { getPageFamilyById } from "@/lib/ui/page-families";
 import type { PilotageLocale } from "../access-screen-constants";
+import {
+  DASHBOARD_ROUTE,
+  OBSERVATOIRE_ROUTE,
+  buildPilotageSignInHref,
+} from "@/lib/accueil-pilotage-routes";
 
 export function PilotageLockedPage({
   locale,
@@ -122,7 +127,7 @@ export function PilotageLockedPage({
             <div className="mt-5 flex flex-wrap gap-3">
               {!isAuthenticated ? (
                 <Link
-                  href="/sign-in?redirect_url=/pilotage"
+                  href={buildPilotageSignInHref()}
                   className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-black text-slate-900 transition hover:-translate-y-[1px] hover:bg-orange-50"
                 >
                   {copy.connectLabel}
@@ -130,14 +135,14 @@ export function PilotageLockedPage({
                 </Link>
               ) : null}
               <Link
-                href="/dashboard"
+                href={DASHBOARD_ROUTE}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-white/14"
               >
                 <BarChart3 size={16} aria-hidden="true" />
-                {locale === "fr" ? "Tableau de bord" : "Dashboard"}
+                {locale === "fr" ? "Mon espace" : "Dashboard"}
               </Link>
               <Link
-                href="/observatoire"
+                href={OBSERVATOIRE_ROUTE}
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-white/14"
               >
                 <Compass size={16} aria-hidden="true" />

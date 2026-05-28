@@ -150,6 +150,21 @@ function composeActionNotes(item) {
   return parts.join("\n");
 }
 
+function deriveActionTitle(associationName, actorName, fallbackLabel) {
+  const association = typeof associationName === "string" ? associationName.trim() : "";
+  if (association) {
+    return association;
+  }
+
+  const actor = typeof actorName === "string" ? actorName.trim() : "";
+  if (actor) {
+    return actor;
+  }
+
+  const fallback = typeof fallbackLabel === "string" ? fallbackLabel.trim() : "";
+  return fallback || "Action sans structure";
+}
+
 async function main() {
   const cliArgs = process.argv.slice(2);
   const geocodeEnabled = cliArgs.includes("--geocode");
@@ -244,6 +259,7 @@ async function main() {
       "nombre megots",
     ]),
     megotsKg: findColumnIndex(headers, [
+      "megots (kg)",
       "megots(kg)",
       "megots kg",
       "mégots(kg)",
@@ -462,7 +478,7 @@ async function main() {
       recordType: "action",
       status,
       source: "google_sheet",
-      title: locationLabel,
+      title: deriveActionTitle(associationName, actorName, locationLabel),
       description: fullNotes,
       location: {
         label: locationLabel,

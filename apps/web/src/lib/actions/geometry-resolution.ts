@@ -8,7 +8,7 @@ import {
   hasPreciseLocationLabel,
   normalizeLabel,
   toPointCoordinates,
-} from "./geometry-core";
+} from "./geometry-core.ts";
 
 export type ActionGeometrySource =
   | "manual"

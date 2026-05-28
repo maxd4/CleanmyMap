@@ -32,36 +32,36 @@ const TONE_CLASSES: Record<
   { shell: string; badge: string; accent: string; border: string; glow: string; chip: string }
 > = {
   amber: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-amber-200 bg-amber-100 text-amber-900",
+    shell: "bg-[linear-gradient(180deg,rgba(255,248,231,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-amber-200 bg-amber-50 text-amber-900",
     accent: "text-amber-700",
     border: "border-amber-200",
     glow: "from-amber-300/18 via-orange-200/12 to-transparent",
     chip: "border-amber-200 bg-amber-50 text-amber-800",
   },
   cyan: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    accent: "text-yellow-700",
-    border: "border-yellow-200",
-    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
-    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,250,238,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-orange-200 bg-orange-50 text-orange-900",
+    accent: "text-orange-700",
+    border: "border-orange-200",
+    glow: "from-orange-300/18 via-amber-200/12 to-transparent",
+    chip: "border-orange-200 bg-orange-50 text-orange-800",
   },
   emerald: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    accent: "text-yellow-700",
-    border: "border-yellow-200",
-    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
-    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,248,232,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-amber-200 bg-amber-50 text-amber-900",
+    accent: "text-amber-700",
+    border: "border-amber-200",
+    glow: "from-amber-300/18 via-orange-200/12 to-transparent",
+    chip: "border-amber-200 bg-amber-50 text-amber-800",
   },
   violet: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    accent: "text-yellow-700",
-    border: "border-yellow-200",
-    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
-    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,248,232,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-orange-200 bg-amber-100 text-orange-900",
+    accent: "text-orange-700",
+    border: "border-orange-200",
+    glow: "from-orange-300/18 via-amber-200/12 to-transparent",
+    chip: "border-orange-200 bg-amber-50 text-orange-800",
   },
 };
 
@@ -152,9 +152,9 @@ function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
 
           <div className="mt-4 grid gap-3">
             <div className="relative overflow-hidden rounded-[1.2rem] border border-slate-200 bg-white p-3">
-              <div className="absolute inset-0 bg-gradient-to-r from-yellow-50 via-transparent to-transparent" />
-              <div className="relative flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-700">
+        <div className="absolute inset-0 bg-gradient-to-r from-amber-50 via-transparent to-transparent" />
+        <div className="relative flex items-center gap-3">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
                   <Map className="h-4 w-4" aria-hidden="true" />
                 </span>
                 <div className="flex-1">
@@ -163,9 +163,9 @@ function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
                 </div>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-2">
-                <span className="h-12 rounded-2xl bg-yellow-50" />
-                <span className="h-16 rounded-2xl bg-yellow-100" />
-                <span className="h-10 rounded-2xl bg-yellow-50" />
+                <span className="h-12 rounded-2xl bg-amber-50" />
+                <span className="h-16 rounded-2xl bg-orange-100" />
+                <span className="h-10 rounded-2xl bg-amber-50" />
               </div>
             </div>
 
@@ -174,12 +174,12 @@ function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
                 title={card.visual.chips[0] ? getLocaleText(locale, card.visual.chips[0]) : (locale === "fr" ? "Repères" : "Cues")}
                 subtitle={locale === "fr" ? "Lire les écarts et les seuils" : "Read gaps and thresholds"}
                 icon={BarChart3}
-                accent="text-yellow-700"
+                accent="text-amber-700"
               >
                 <div className="space-y-2">
-                  <div className="h-2 w-full rounded-full bg-yellow-100" />
-                  <div className="h-2 w-4/5 rounded-full bg-yellow-200" />
-                  <div className="h-2 w-2/3 rounded-full bg-yellow-300" />
+                  <div className="h-2 w-full rounded-full bg-amber-100" />
+                  <div className="h-2 w-4/5 rounded-full bg-orange-200" />
+                  <div className="h-2 w-2/3 rounded-full bg-amber-300" />
                 </div>
               </RightCard>
 
@@ -187,14 +187,14 @@ function renderArtwork(card: LearnLinkCard, locale: LearnLocale) {
                 title={card.visual.chips[1] ? getLocaleText(locale, card.visual.chips[1]) : (locale === "fr" ? "Méthode" : "Method")}
                 subtitle={locale === "fr" ? "Suivre la logique avant l'action" : "Follow the logic before action"}
                 icon={Route}
-                accent="text-yellow-700"
+                accent="text-orange-700"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-yellow-50 text-yellow-700">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-50 text-amber-700">
                     <Compass className="h-4 w-4" aria-hidden="true" />
                   </span>
-                  <div className="h-0.5 flex-1 rounded-full bg-yellow-200" />
-                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-yellow-100 text-yellow-700">
+                  <div className="h-0.5 flex-1 rounded-full bg-amber-200" />
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-2xl bg-orange-100 text-orange-700">
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </span>
                 </div>

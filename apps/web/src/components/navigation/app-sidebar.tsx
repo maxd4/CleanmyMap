@@ -5,6 +5,7 @@ import { usePathname } from"next/navigation";
 import { useState } from"react";
 import { useSitePreferences } from"@/components/ui/site-preferences-provider";
 import { trackNavigationClick } from"@/lib/analytics/navigation-client";
+import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 import {
  getActiveSpaceForPath,
  getNavigationSpacesForProfile,
@@ -14,7 +15,7 @@ import {
 import type { AppProfile } from"@/lib/profiles";
 
 function isActive(pathname: string, href: string): boolean {
- if (href ==="/dashboard") return pathname === href;
+ if (href === DASHBOARD_ROUTE) return pathname === href;
  return pathname === href || pathname.startsWith(`${href}/`);
 }
 

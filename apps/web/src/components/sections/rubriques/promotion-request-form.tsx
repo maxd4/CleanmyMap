@@ -14,6 +14,7 @@ import { ShieldCheck, Send, Sparkles, UserPlus, Info, ArrowUpRight, Lock } from 
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSubmissionLock } from "@/hooks/use-submission-lock";
+import { CmmButton } from "@/components/ui/cmm-button";
 
 type SubmitState = "idle" | "submitting" | "success" | "error";
 
@@ -303,22 +304,24 @@ export function PromotionRequestForm({ currentRole }: PromotionRequestFormProps)
             </div>
             
             <div className="flex items-center gap-4 w-full sm:w-auto">
-              <Link
+              <CmmButton
                 href="/sections/feedback#collaboration"
-                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-white/5 text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all"
+                tone="secondary"
+                variant="pill"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all"
               >
                 {fr ? "Guide Rôles" : "Role Guide"}
                 <ArrowUpRight size={14} />
-              </Link>
+              </CmmButton>
               
-              <button
+              <CmmButton
                 type="submit"
                 disabled={!canSubmit}
+                tone="primary"
+                variant="pill"
                 className={cn(
                   "flex-1 sm:flex-none flex items-center justify-center gap-3 px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden group/btn",
-                  canSubmit 
-                    ? "bg-amber-500 text-white hover:bg-amber-400 hover:scale-[1.02] active:scale-[0.98] shadow-2xl shadow-amber-500/20" 
-                    : "bg-white/5 text-slate-500 cursor-not-allowed border border-white/5"
+                  canSubmit ? "hover:scale-[1.02] active:scale-[0.98]" : "cursor-not-allowed"
                 )}
               >
                 {submitState === "submitting" ? (
@@ -332,7 +335,7 @@ export function PromotionRequestForm({ currentRole }: PromotionRequestFormProps)
                     <span>{fr ? "Soumettre" : "Submit Request"}</span>
                   </>
                 )}
-              </button>
+              </CmmButton>
             </div>
           </div>
 
@@ -369,13 +372,15 @@ export function PromotionRequestForm({ currentRole }: PromotionRequestFormProps)
                     title={fr ? "Échec de l'envoi" : "Sending failed"}
                     message={error.message}
                     actions={
-                      <button
+                      <CmmButton
                         type="button"
                         onClick={() => void submitRequest()}
-                        className="rounded-full bg-amber-500 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-amber-400"
+                        tone="primary"
+                        variant="pill"
+                        className="rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-amber-400"
                       >
                         {fr ? "Réessayer" : "Retry"}
-                      </button>
+                      </CmmButton>
                     }
                   />
                 )}

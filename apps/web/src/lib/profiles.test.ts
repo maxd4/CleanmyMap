@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { getProfileActions, getProfileLabel, normalizeProfileRole, resolveProfile, PROFILE_ORDER, type AppProfile } from "./profiles";
+import {
+  ADMIN_GODMODE_ROUTE,
+  ADMIN_ROUTE,
+  DASHBOARD_ROUTE,
+  SPONSOR_PORTAL_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 const EXPECTED_PROFILE_ACTIONS: Record<AppProfile, readonly string[]> = {
   benevole: ["/actions/new", "/sections/community", "/actions/map", "/learn/hub"],
-  coordinateur: ["/sections/community", "/dashboard", "/sections/messagerie", "/reports"],
+  coordinateur: ["/sections/community", DASHBOARD_ROUTE, "/sections/messagerie", "/reports"],
   scientifique: ["/reports", "/sections/open-data", "/methodologie", "/prints/report"],
-  elu: ["/sponsor-portal", "/reports", "/actions/map", "/prints/report"],
-  admin: ["/admin", "/reports", "/admin/godmode", "/dashboard"],
-  max: ["/admin/godmode", "/admin", "/dashboard", "/prints/report"],
+  elu: [SPONSOR_PORTAL_ROUTE, "/reports", "/actions/map", "/prints/report"],
+  admin: [ADMIN_ROUTE, "/reports", ADMIN_GODMODE_ROUTE, DASHBOARD_ROUTE],
+  max: [ADMIN_GODMODE_ROUTE, ADMIN_ROUTE, DASHBOARD_ROUTE, "/prints/report"],
 };
 
 describe("profile aliases", () => {
@@ -18,6 +24,7 @@ describe("profile aliases", () => {
 
   it("maps IMU metadata back to the internal top profile", () => {
     expect(normalizeProfileRole("IMU")).toBe("max");
+    expect(normalizeProfileRole("super_admin")).toBe("max");
     expect(
       resolveProfile({
         metadataRole: "imu",

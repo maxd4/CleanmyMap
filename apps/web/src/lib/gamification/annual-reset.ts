@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { evaluateActionQualityScore, toFloat, toInt } from "./progression-utils";
 import type { ActionRow } from "./progression-types";
+import { isSpontaneousActionNotes } from "./progression-data";
 
 export function getCurrentYearStartDate(): string {
   const year = new Date().getFullYear();
@@ -47,6 +48,9 @@ export async function loadUserAnnualImpactStats(
   >();
 
   for (const row of (result.data ?? []) as ActionRow[]) {
+    if (!isSpontaneousActionNotes(row.notes)) {
+      continue;
+    }
     const quality = evaluateActionQualityScore(row).score;
     const previous = grouped.get(row.created_by_clerk_id) ?? {
       qualitySum: 0,
@@ -94,7 +98,7 @@ export async function getUserAnnualImpact(
   
   const result = await supabase
     .from("actions")
-    .select("waste_kg, status")
+    .select("waste_kg, status, notes")
     .eq("created_by_clerk_id", userId)
     .eq("status", "approved")
     .gte("action_date", startDate.slice(0, 10));
@@ -107,6 +111,9 @@ export async function getUserAnnualImpact(
   let validatedActions = 0;
 
   for (const row of result.data ?? []) {
+    if (!isSpontaneousActionNotes((row as { notes?: string | null }).notes ?? null)) {
+      continue;
+    }
     wasteKg += toFloat(row.waste_kg, 0);
     validatedActions += 1;
   }

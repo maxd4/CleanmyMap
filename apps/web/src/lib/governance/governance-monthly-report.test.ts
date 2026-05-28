@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildGovernanceMonthlyReportLines, buildGovernanceMonthlyReportPayload } from "./governance-monthly-report";
+import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 describe("governance monthly report", () => {
   const report = buildGovernanceMonthlyReportPayload({
@@ -42,7 +43,7 @@ describe("governance monthly report", () => {
             distinctRoutes: 2,
             topRoutes: [
               { path: "/community", count: 1 },
-              { path: "/profil", count: 1 },
+              { path: PROFIL_ROUTE, count: 1 },
             ],
           },
           community: {
@@ -498,7 +499,7 @@ describe("governance monthly report", () => {
             distinctRoutes: 2,
             topRoutes: [
               { path: "/community", count: 2 },
-              { path: "/profil", count: 1 },
+              { path: PROFIL_ROUTE, count: 1 },
             ],
           },
           community: {

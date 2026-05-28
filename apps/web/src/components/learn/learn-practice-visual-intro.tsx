@@ -33,36 +33,36 @@ const TONE_CLASSES: Record<
   { shell: string; badge: string; accent: string; border: string; glow: string; chip: string }
 > = {
   amber: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-amber-200 bg-amber-100 text-amber-900",
+    shell: "bg-[linear-gradient(180deg,rgba(255,248,231,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-amber-200 bg-amber-50 text-amber-900",
     accent: "text-amber-700",
     border: "border-amber-200",
     glow: "from-amber-300/18 via-orange-200/12 to-transparent",
     chip: "border-amber-200 bg-amber-50 text-amber-800",
   },
   cyan: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    accent: "text-yellow-700",
-    border: "border-yellow-200",
-    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
-    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,250,238,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-orange-200 bg-orange-50 text-orange-900",
+    accent: "text-orange-700",
+    border: "border-orange-200",
+    glow: "from-orange-300/18 via-amber-200/12 to-transparent",
+    chip: "border-orange-200 bg-orange-50 text-orange-800",
   },
   emerald: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    accent: "text-yellow-700",
-    border: "border-yellow-200",
-    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
-    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,248,232,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-amber-200 bg-amber-50 text-amber-900",
+    accent: "text-amber-700",
+    border: "border-amber-200",
+    glow: "from-amber-300/18 via-orange-200/12 to-transparent",
+    chip: "border-amber-200 bg-amber-50 text-amber-800",
   },
   violet: {
-    shell: "bg-[linear-gradient(180deg,rgba(255,251,235,0.98),rgba(255,255,255,0.96))]",
-    badge: "border-yellow-200 bg-yellow-100 text-yellow-900",
-    accent: "text-yellow-700",
-    border: "border-yellow-200",
-    glow: "from-yellow-300/18 via-amber-200/12 to-transparent",
-    chip: "border-yellow-200 bg-yellow-50 text-yellow-800",
+    shell: "bg-[linear-gradient(180deg,rgba(255,248,232,0.98),rgba(255,255,255,0.96))]",
+    badge: "border-orange-200 bg-amber-100 text-orange-900",
+    accent: "text-orange-700",
+    border: "border-orange-200",
+    glow: "from-orange-300/18 via-amber-200/12 to-transparent",
+    chip: "border-orange-200 bg-amber-50 text-orange-800",
   },
 };
 
@@ -230,7 +230,7 @@ export function LearnPracticeVisualIntro({
 
           <Link
             href={action.href}
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-slate-900 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300/50"
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-amber-200 bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-black text-white shadow-[0_12px_24px_-14px_rgba(249,115,22,0.55)] transition hover:-translate-y-[1px] hover:from-amber-600 hover:to-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300/50"
           >
             {action.label}
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -291,9 +291,9 @@ export function LearnPracticeVisualIntro({
             </div>
 
             <div className="mt-4 grid grid-cols-3 gap-2">
-              <span className="h-2 rounded-full bg-yellow-200" />
-              <span className="h-2 rounded-full bg-yellow-300" />
-              <span className="h-2 rounded-full bg-yellow-100" />
+              <span className="h-2 rounded-full bg-amber-200" />
+              <span className="h-2 rounded-full bg-orange-300" />
+              <span className="h-2 rounded-full bg-amber-100" />
             </div>
           </div>
         </div>

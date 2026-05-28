@@ -37,6 +37,51 @@ async function fetchPaged(table, selectClause, statusColumn, statusValue) {
   return rows;
 }
 
+function extractAssociationNameFromNotes(notes) {
+  if (typeof notes !== "string" || notes.trim().length === 0) {
+    return null;
+  }
+
+  for (const line of notes.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("[cmm-meta]")) {
+      const legacyMatch = trimmed.match(/^association\s*:\s*(.+)$/i);
+      if (legacyMatch) {
+        const value = legacyMatch[1]?.trim();
+        if (value) {
+          return value;
+        }
+      }
+      continue;
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed.slice("[cmm-meta]".length));
+      const value = typeof parsed.associationName === "string" ? parsed.associationName.trim() : "";
+      if (value) {
+        return value;
+      }
+    } catch {
+      // Ignore malformed metadata blocks.
+    }
+  }
+
+  return null;
+}
+
+function deriveActionTitle(row) {
+  const associationName = extractAssociationNameFromNotes(row.notes);
+  if (associationName) {
+    return associationName;
+  }
+  const actorName = typeof row.actor_name === "string" ? row.actor_name.trim() : "";
+  if (actorName) {
+    return actorName;
+  }
+  const locationLabel = typeof row.location_label === "string" ? row.location_label.trim() : "";
+  return locationLabel || "Action sans structure";
+}
+
 function actionToRecord(row) {
   const latitude = row.latitude === null ? null : Number(row.latitude);
   const longitude = row.longitude === null ? null : Number(row.longitude);
@@ -45,7 +90,7 @@ function actionToRecord(row) {
     recordType: "action",
     status: "validated",
     source: "system_sync",
-    title: row.location_label,
+    title: deriveActionTitle(row),
     description: row.notes ?? null,
     location: {
       label: row.location_label,

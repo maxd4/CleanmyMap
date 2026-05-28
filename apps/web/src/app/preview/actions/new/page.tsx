@@ -34,8 +34,8 @@ export default function PreviewActionsNewPage() {
           username: "preview-local",
           email: undefined,
         }}
-        initialMode="complete"
         initialRecordType="action"
+        isAuthenticated={false}
       />
     </div>
   );

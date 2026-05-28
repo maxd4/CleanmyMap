@@ -3,24 +3,29 @@
 import { useEffect, useMemo, useRef } from "react";
 import { usePathname, useSearchParams, type ReadonlyURLSearchParams } from "next/navigation";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
+import {
+  ADMIN_ROUTE,
+  EXPLORER_ROUTE,
+  PROFIL_ROUTE,
+} from "@/lib/accueil-pilotage-routes";
 
 function deriveRouteKind(pathname: string): string {
   if (pathname === "/") {
     return "home";
   }
-  if (pathname.startsWith("/admin")) {
+  if (pathname.startsWith(ADMIN_ROUTE)) {
     return "admin";
   }
   if (pathname.startsWith("/community")) {
     return "community";
   }
-  if (pathname.startsWith("/profil")) {
+  if (pathname.startsWith(PROFIL_ROUTE)) {
     return "profile";
   }
   if (pathname.startsWith("/methodologie")) {
     return "methodology";
   }
-  if (pathname.startsWith("/explorer")) {
+  if (pathname.startsWith(EXPLORER_ROUTE)) {
     return "explorer";
   }
   return pathname.split("/").filter(Boolean)[0] ?? "home";

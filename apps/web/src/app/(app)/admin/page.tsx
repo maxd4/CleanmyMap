@@ -34,8 +34,8 @@ import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 
 export const metadata: Metadata = {
-  title: 'Administration - CleanMyMap',
-  description: 'Panel d\'administration pour gérer les utilisateurs, la modération et les demandes.',
+  title: 'Administration du site - CleanMyMap',
+  description: 'Back-office du site pour gérer les utilisateurs, la modération et les demandes.',
 };
 
 async function loadAdminOverview() {
@@ -53,10 +53,10 @@ export default async function AdminPage() {
 
   if (!userId) {
     return (
-      <ClerkRequiredGate
+        <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
-        title="Pilotage administratif"
+        title="Administration du site"
         description="Accès réservé aux comptes Clerk autorisés."
         lockedPreview={
           <div className="grid gap-6 md:grid-cols-3 rounded-[3rem] border border-stone-400/18 p-8 bg-[rgba(44,28,15,0.40)] backdrop-blur-2xl">
@@ -95,7 +95,7 @@ export default async function AdminPage() {
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400/60">Accès Restreint</p>
           <h1 className="mt-4 text-4xl font-black tracking-tight text-white">
-            Privilèges administrateur requis
+            Privilèges d'administration du site requis
           </h1>
           <p className="mt-4 text-sm text-amber-100/40 max-w-md mx-auto leading-relaxed">
             Votre compte actuel ne dispose pas des autorisations nécessaires pour accéder au pilotage système. Contactez un administrateur Clerk.
@@ -272,8 +272,8 @@ export default async function AdminPage() {
   return (
     <SectionShell
       id="admin"
-      title="Pilotage Système"
-      subtitle="Console d'administration centrale pour la supervision des flux, la modération et la gestion des privilèges."
+      title="Administration du site"
+      subtitle="Console centrale pour la supervision des flux, la modération et la gestion des privilèges."
       gradient="from-amber-700/20 via-stone-500/10 to-transparent"
     >
       <div className="space-y-20 pt-8">
@@ -297,17 +297,17 @@ export default async function AdminPage() {
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-400">Console Active</span>
           </div>
           <RubriquePdfExportButton
-            rubrique="administration"
+            rubrique="administration-du-site"
             periode={`30_jours_${new Date().getFullYear()}`}
             organizationType="admin"
-            defaultTitle="Rapport administration"
+            defaultTitle="Rapport administration du site"
             data={adminPdfData}
             className="w-full max-w-xl"
           />
         </div>
 
         {/* Navigation Grid Premium */}
-        <RubriqueCard themeColor="amber" withTopBar={true} topBarContent="Accès Rapides" className="p-12">
+        <RubriqueCard themeColor="amber" withTopBar={true} topBarContent="Administration du site" className="p-12">
           <NavigationGrid items={navigationItems} columns={{ default: 1, sm: 2, md: 4, xl: 5 }} />
         </RubriqueCard>
 
@@ -316,11 +316,11 @@ export default async function AdminPage() {
             <RubriqueCard 
               themeColor="amber" 
               withTopBar={true} 
-              topBarContent="Inbox Créateur"
+              topBarContent="Accès privilégié"
               className="p-12"
             >
               <div className="mb-10">
-                <h2 className="text-4xl font-black tracking-tight text-white mt-2">Demandes de Collaboration</h2>
+                <h2 className="text-4xl font-black tracking-tight text-white mt-2">Demandes de collaboration</h2>
                 <p className="mt-4 text-sm text-amber-100/40 max-w-2xl leading-relaxed">
                   Supervision des flux entrants : promotion, événements et partenariats stratégiques.
                 </p>
@@ -331,11 +331,11 @@ export default async function AdminPage() {
           <RubriqueCard 
             themeColor="amber" 
             withTopBar={true} 
-            topBarContent="Gestion de Flotte"
+            topBarContent="Gestion des rôles"
             className="p-12"
           >
               <div className="mb-10">
-                <h2 className="text-4xl font-black tracking-tight text-white mt-2">Comptes & Rôles</h2>
+                <h2 className="text-4xl font-black tracking-tight text-white mt-2">Comptes et rôles</h2>
               </div>
               <RoleManagementPanel initialAccounts={roleAccounts} currentUserId={userId} />
             </RubriqueCard>

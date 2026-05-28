@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { LayerGroup, LayersControl, MapContainer, TileLayer } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import type { ActionMapItem } from "@/lib/actions/types";
+import { cn } from "@/lib/utils";
 import { MapControls } from "./map/map-controls";
 import { SignalementMarkers, ShapeLayers, InfrastructureMarkers } from "./map/map-layers";
 import { getActionsMapCenter } from "./actions-map-canvas.utils";
@@ -17,12 +18,16 @@ type ActionsMapCanvasProps = {
   items: ActionMapItem[];
   selectedActionId?: string | null;
   fullViewport?: boolean;
+  compact?: boolean;
+  className?: string;
 };
 
 export function ActionsMapCanvas({
   items,
   selectedActionId = null,
   fullViewport = false,
+  compact = false,
+  className,
 }: ActionsMapCanvasProps) {
   const center = useMemo(() => getActionsMapCenter(items), [items]);
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_MAP_LAYERS);
@@ -32,9 +37,15 @@ export function ActionsMapCanvas({
   }
 
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-sky-300/16 bg-[rgba(10,31,50,0.98)] shadow-[0_32px_64px_-12px_rgba(56,189,248,0.28)] ring-1 ring-sky-300/10">
+    <div
+      className={cn(
+        "relative overflow-hidden rounded-[2rem] border border-sky-300/16 bg-[rgba(10,31,50,0.98)] shadow-[0_32px_64px_-12px_rgba(56,189,248,0.28)] ring-1 ring-sky-300/10",
+        compact && "rounded-none border-0 bg-transparent shadow-none ring-0",
+        className,
+      )}
+    >
       <div className="pointer-events-none absolute left-3 top-28 z-[1000] flex flex-wrap gap-2 md:top-32">
-        {[
+        {compact ? null : [
           { key: "points" as const, label: "Points" },
           { key: "shapes" as const, label: "Tracés" },
           { key: "infrastructure" as const, label: "Infras" },
@@ -61,15 +72,20 @@ export function ActionsMapCanvas({
 
       <MapContainer
         center={center}
-        zoom={12}
+        zoom={compact ? 11 : 12}
         scrollWheelZoom
         className={
-          fullViewport
+          compact
+            ? cn(
+                "h-full min-h-[18rem] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500",
+                fullViewport ? "min-h-full" : null,
+              )
+            : fullViewport
             ? "h-[100dvh] min-h-[100dvh] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500"
             : "h-[68vh] min-h-[34rem] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500 md:h-[74vh] md:min-h-[42rem]"
         }
       >
-        <MapControls center={center} variant="immersive" />
+        <MapControls center={center} variant={compact ? "default" : "immersive"} />
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Plan clair">
             <TileLayer

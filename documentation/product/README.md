@@ -10,6 +10,8 @@ Documentation produit pour agents IA. Contexte métier et vision.
 - **vision-et-objectifs.md** ⭐ - Vision et objectifs du produit
 - **roadmap-priorisee.md** - Roadmap priorisée
 - **dimension-communautaire.md** - Strategie communautaire et engagement recurrent
+- **gamification-non-competitive.md** - Cadre de gamification non competitive, badges et objectifs
+- **gamification-inventory.md** - Inventaire des surfaces a gamifier et type de mecanique associee
 - **chantiers-q2-q3.md** - Chantiers en cours
 
 ### Parcours Utilisateurs

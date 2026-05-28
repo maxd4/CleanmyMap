@@ -1,13 +1,23 @@
 import { Suspense } from "react";
 import { DashboardOverviewSection } from "@/components/dashboard/dashboard-overview-section";
 import { DashboardEntrance } from "@/components/dashboard/dashboard-entrance";
+import { AccountSettingsSection } from "@/components/account/account-settings-section";
+import { PromotionRequestForm } from "@/components/sections/rubriques/promotion-request-form";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
-import { getProfileLabel, getProfilePrimaryAction, toProfile } from "@/lib/profiles";
+import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
+import {
+  getProfileLabel,
+  getProfilePrimaryAction,
+  getSwitchableProfiles,
+  isAdminLikeProfile,
+  toProfile,
+} from "@/lib/profiles";
 import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/lib/i18n/server-translation";
@@ -16,10 +26,11 @@ import { Shield, Plus, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { PageHero } from "@/components/ui/page-hero";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export const metadata: Metadata = {
-  title: "Mon Dashboard - CleanMyMap",
-  description: "Suivez votre impact environnemental, déclarez vos actions de nettoyage et consultez vos statistiques personnelles.",
+  title: "Mon espace - CleanMyMap",
+  description: "Suivez votre impact, consultez vos statistiques et gérez votre compte depuis un espace centralisé.",
 };
 
 type DashboardOverviewLoaded =
@@ -34,8 +45,8 @@ async function loadDashboardOverviewResult(locale: "fr" | "en"): Promise<Dashboa
   } catch {
     return {
       status: "error",
-      message: locale === "fr"
-        ? "Les données du tableau de bord sont momentanément indisponibles."
+        message: locale === "fr"
+        ? "Les données de Mon espace sont momentanément indisponibles."
         : "Dashboard data is temporarily unavailable.",
     };
   }
@@ -61,8 +72,8 @@ export default async function DashboardPage() {
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
-        title={locale === "fr" ? "Tableau de bord" : "Dashboard"}
-        description={locale === "fr" ? "Connectez-vous pour accéder à votre tableau de bord." : "Sign in to access your dashboard."}
+        title={locale === "fr" ? "Mon espace" : "Dashboard"}
+        description={locale === "fr" ? "Connectez-vous pour accéder à votre espace personnel." : "Sign in to access your dashboard."}
         lockedPreview={
           <div className="grid gap-3 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] p-6 shadow-[0_18px_42px_-26px_rgba(124,45,18,0.30)] md:grid-cols-3">
             {["Aujourd'hui", "Priorité", "Accès"].map((label) => (
@@ -88,7 +99,9 @@ export default async function DashboardPage() {
   const primaryAction = getProfilePrimaryAction(profile);
   const { t } = getTranslation("dashboard", locale);
   const overviewPromise = loadDashboardOverviewResult(locale);
-  const pageFamily = resolvePageFamily("/dashboard");
+  const pageFamily = resolvePageFamily(DASHBOARD_ROUTE);
+  const isAdmin = isAdminLikeProfile(profile);
+  const switchableProfiles = isAdmin ? getSwitchableProfiles(profile) : [profile];
 
   return (
     <main
@@ -177,6 +190,46 @@ export default async function DashboardPage() {
           </p>
           <RolePrimaryActions profile={profile} title="" tone="warm" />
         </div>
+
+        <div className="mt-14 h-px bg-amber-200/24" />
+
+        <div data-gsap-reveal className="mt-10 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+          <FamilyRubriqueCard withTopBar={true} topBarContent={locale === "fr" ? "Évolution du compte" : "Account progress"} className="p-8 sm:p-10">
+            <PromotionRequestForm currentRole={profile} />
+          </FamilyRubriqueCard>
+
+          <FamilyRubriqueCard withTopBar={true} topBarContent={locale === "fr" ? "Configuration" : "Settings"} className="p-8 sm:p-10">
+            <AccountSettingsSection />
+          </FamilyRubriqueCard>
+        </div>
+
+        {switchableProfiles.length > 1 ? (
+          <div data-gsap-reveal className="mt-6">
+            <FamilyRubriqueCard
+              withTopBar={true}
+              topBarContent={isAdmin ? (locale === "fr" ? "Switch de profil (Admin)" : "Profile switch (Admin)") : (locale === "fr" ? "Identité active" : "Active identity")}
+              className="p-8 sm:p-10"
+            >
+              <div className="flex flex-wrap gap-4">
+                {switchableProfiles.map((p) => (
+                  <CmmButton
+                    key={p}
+                    href={buildProfileRoute(p)}
+                    tone={p === profile ? "primary" : "tertiary"}
+                    variant="pill"
+                    className={
+                      p === profile
+                        ? "rounded-2xl border border-amber-200/30 bg-amber-100/12 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-2xl transition-all hover:-translate-y-1"
+                        : "rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.38)] px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-amber-50/70 transition-all hover:-translate-y-1 hover:bg-[rgba(69,26,3,0.54)] hover:text-white"
+                    }
+                  >
+                    {getProfileLabel(p, locale)}
+                  </CmmButton>
+                ))}
+              </div>
+            </FamilyRubriqueCard>
+          </div>
+        ) : null}
 
       </DashboardEntrance>
     </main>

@@ -2,6 +2,7 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
+import { estimateActionWasteKg } from "@/lib/actions/impact-calculators";
 
 export type HomeCommunityActivityItem = {
   id: string;
@@ -228,7 +229,7 @@ export function computeLandingCounters(
   const inWindow = getAccueilVisibleContracts(contracts, floorDate);
 
   const wasteKg = inWindow.reduce(
-    (acc, contract) => acc + Number(contract.metadata.wasteKg || 0),
+    (acc, contract) => acc + estimateActionWasteKg(contract),
     0,
   );
   const butts = inWindow.reduce(

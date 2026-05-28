@@ -5,6 +5,7 @@ import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { toProfile } from "@/lib/profiles";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
+import { buildParcoursRoute } from "@/lib/accueil-pilotage-routes";
 
 export default async function ParcoursRootPage() {
   const { userId, clerkReachable } = await getSafeAuthSession();
@@ -58,5 +59,5 @@ export default async function ParcoursRootPage() {
 
   const role = await getCurrentUserRoleLabel().catch(() => "anonymous" as const);
   const profile = toProfile(role);
-  redirect(`/parcours/${profile}`);
+  redirect(buildParcoursRoute(profile));
 }

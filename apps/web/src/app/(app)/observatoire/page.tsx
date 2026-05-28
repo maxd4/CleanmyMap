@@ -7,9 +7,11 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Globe, ArrowRight, Activity, Zap, Eye, BarChart3, Users, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
+import { SPONSOR_PORTAL_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export const revalidate = 60; // 1 minute Cache for public observatory
 
@@ -198,12 +200,9 @@ export default async function ObservatoirePage() {
                     Accédez à des rapports personnalisés et boostez votre RSE en parrainant des zones de nettoyage.
                   </p>
                 </div>
-                <Link 
-                  href="/sponsor-portal" 
-                  className="block w-full py-5 rounded-2xl bg-white text-black text-center text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95"
-                >
+                <CmmButton href={SPONSOR_PORTAL_ROUTE} tone="secondary" variant="pill" className="block w-full py-5 text-[10px] font-black uppercase tracking-[0.2em] text-black active:scale-95">
                   Accéder au Portail
-                </Link>
+                </CmmButton>
               </RubriqueCard>
             </div>
           </div>
