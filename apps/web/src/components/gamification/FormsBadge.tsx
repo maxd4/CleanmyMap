@@ -35,7 +35,6 @@ export default function FormsBadge({
   const progressTarget = progressEnd - progressStart;
   const progressPercent = progressTarget > 0 ? Math.round((progressCurrent / progressTarget) * 100) : 100;
 
-  // Gem emoji mapping
   // Plant growth emoji mapping
   const plantEmoji: Record<string, string> = {
     "seed": "🌱",
@@ -63,7 +62,7 @@ export default function FormsBadge({
         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
       }}
     >
-      {/* Gem icon and grade label */}
+      {/* Plant icon and grade label */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
         <span style={{ fontSize: 32 }}>{plantIcon}</span>
         <div>
