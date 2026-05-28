@@ -92,7 +92,7 @@ export function LearnRubricShell({
               badges={
                 <>
                   <PageHeroBadge family={pageFamily}>
-                    {isFrench ? "Hub pédagogique" : "Learning hub"}
+                    {isFrench ? "Parcours pédagogique" : "Learning path"}
                   </PageHeroBadge>
                   <PageHeroBadge family={pageFamily} muted>
                     {isFrench ? "Index + reprise" : "Index + resume"}

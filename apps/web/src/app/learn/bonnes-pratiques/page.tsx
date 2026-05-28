@@ -32,11 +32,11 @@ export default function LearnBonnesPratiquesPage() {
         en: "Short guides, useful gestures, before / during / after sequence",
       }}
       description={{
-        fr: "Des guides courts pour lire vite, choisir le bon geste et éviter de répéter le hub ou le bloc Agir.",
-        en: "Short guides to read fast, choose the right gesture and avoid repeating the hub or the Act block.",
+        fr: "Des guides courts pour lire vite, choisir le bon geste et éviter de répéter le point de départ ou le bloc Agir.",
+        en: "Short guides to read fast, choose the right gesture and avoid repeating the starting point or the Act block.",
       }}
       backHref="/learn/hub"
-      backLabel={{ fr: "Retour au hub", en: "Back to hub" }}
+      backLabel={{ fr: "Retour au point de départ", en: "Back to start" }}
       accent="yellow"
       highlights={[
         { fr: "Gestes opérationnels", en: "Operational gestures" },

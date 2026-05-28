@@ -1,6 +1,7 @@
 "use client";
 
 import { MessageSquare, Sparkles } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { ChatShell } from "@/components/chat/chat-shell";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { DiscussionBadgesPanel } from "./discussion-badges-panel";
@@ -17,7 +18,11 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: ConnectTab }) {
   const { locale } = useSitePreferences();
+  const searchParams = useSearchParams();
   const fr = locale === "fr";
+  const tabParam = searchParams?.get("tab");
+  const initialTab: ConnectTab =
+    tabParam === "dm" || tabParam === "discussions" ? tabParam : defaultTab;
 
   const {
     activeTab,
@@ -31,7 +36,7 @@ export function ConnectSection({ defaultTab = "discussions" }: { defaultTab?: Co
     communityInitialMessage,
     discussionShellKey,
     dmShellKey,
-  } = useConnectData(defaultTab);
+  } = useConnectData(initialTab);
 
   return (
     <SectionShell

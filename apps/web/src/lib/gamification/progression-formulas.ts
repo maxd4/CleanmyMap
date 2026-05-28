@@ -3,9 +3,6 @@ import type {
   UserProgressionStats,
 } from "./progression-types";
 
-const XP_BASE = 40;
-const XP_GROWTH = 1.18;
-
 const NON_GAME_BADGE_LEVELS = [
   { minLevel: 3, label: "Contributeur regulier" },
   { minLevel: 6, label: "Contributeur confirme" },
@@ -14,21 +11,17 @@ const NON_GAME_BADGE_LEVELS = [
 ] as const;
 
 export function xpStep(level: number): number {
-  if (!Number.isFinite(level) || level < 1) {
-    return XP_BASE;
-  }
-  return Math.round(XP_BASE * XP_GROWTH ** (level - 1));
+  if (!Number.isFinite(level) || level < 1) return 1;
+  // Niveau n → nécessite n XP supplémentaires (système simple).
+  return Math.floor(level);
 }
 
 export function xpRequired(level: number): number {
-  if (!Number.isFinite(level) || level <= 1) {
-    return 0;
-  }
-  let total = 0;
-  for (let current = 1; current < level; current += 1) {
-    total += xpStep(current);
-  }
-  return total;
+  if (!Number.isFinite(level) || level <= 1) return 0;
+  const n = Math.floor(level) - 1;
+  // Cumul requis pour atteindre le niveau `level`:
+  // sum_{k=1..n} k = n(n+1)/2
+  return (n * (n + 1)) / 2;
 }
 
 export function minValidatedActions(level: number): number {

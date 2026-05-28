@@ -378,24 +378,28 @@ export function MethodologiePageClient() {
         </div>
       </div>
 
-      {{/* Gamification Logic */}
-<div className="space-y-10 pt-10 border-t border-white/10">
-  <div className="text-center space-y-4">
-    <h2 className="text-4xl font-black tracking-tight text-white">
-      {isFrench ? "Logique de Gamification (En cours)" : "Gamification Logic (Work in progress)"}
-    </h2>
-    <p className="max-w-2xl mx-auto text-lg font-medium leading-relaxed text-red-100/50">
-      {isFrench
-        ? "Nous développons actuellement un système de gamification non‑compétitive visant à encourager l’engagement citoyen via des récompenses, des badges et des tableaux de progression, le tout sans mécanismes de compétition agressifs."
-        : "We are currently developing a non‑competitive gamification system to encourage citizen engagement through rewards, badges and progression boards, without aggressive competitive mechanics."}
-    </p>
-    <p className="text-sm text-red-200/60">
-      {isFrench ? "🚧 En cours de développement – restez à l’écoute pour de nouvelles fonctionnalités !" : "🚧 Work in progress – stay tuned for upcoming features!"}
-    </p>
-  </div>
-</div>
+      {/* Gamification Logic */}
+      <div className="space-y-10 pt-10 border-t border-white/10">
+        <div className="text-center space-y-4">
+          <h2 className="text-4xl font-black tracking-tight text-white">
+            {isFrench
+              ? "Logique de Gamification (En cours)"
+              : "Gamification Logic (Work in progress)"}
+          </h2>
+          <p className="max-w-2xl mx-auto text-lg font-medium leading-relaxed text-red-100/50">
+            {isFrench
+              ? "Nous développons actuellement un système de gamification non‑compétitive visant à encourager l’engagement citoyen via des récompenses, des badges et des tableaux de progression, le tout sans mécanismes de compétition agressifs."
+              : "We are currently developing a non‑competitive gamification system to encourage citizen engagement through rewards, badges and progression boards, without aggressive competitive mechanics."}
+          </p>
+          <p className="text-sm text-red-200/60">
+            {isFrench
+              ? "🚧 En cours de développement – restez à l’écoute pour de nouvelles fonctionnalités !"
+              : "🚧 Work in progress – stay tuned for upcoming features!"}
+          </p>
+        </div>
+      </div>
 
-{/* Documentation Open Source */}}
+      {/* Documentation Open Source */}
       <div className="space-y-10 pt-10 border-t border-white/10">
         <div className="text-center space-y-4">
           <h2 className="text-4xl font-black tracking-tight text-white">

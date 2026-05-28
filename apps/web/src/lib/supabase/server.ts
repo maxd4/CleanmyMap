@@ -66,7 +66,7 @@ export function getSupabaseServerClient(useServiceRole = true) {
     return failFastClient(errorMsg);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+   
   return createClient(url!, key, {
     auth: {
       persistSession: false,

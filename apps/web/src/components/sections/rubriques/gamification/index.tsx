@@ -11,7 +11,7 @@ import { ContributorRecognitionPanel } from "./contributor-recognition-panel";
 import { PersonalProgress } from "./personal-progress";
 import type { LeaderboardResponse, MeResponse } from "./gamification-types";
 import { motion } from "framer-motion";
-import { Trophy, Zap, ShieldCheck, Map as MapIcon } from "lucide-react";
+import { Trophy, Zap, ShieldCheck, Map as MapIcon, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CmmButton } from "@/components/ui/cmm-button";
 
@@ -40,12 +40,27 @@ export function GamificationSection() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
   const [scope, setScope] = useState<"individual" | "collective">("individual");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const {
     data: meData,
     isLoading: meLoading,
     error: meError,
   } = useSWR("gamification-me", () => fetchJson<MeResponse>("/api/gamification/me"));
+
+  const progression = meData?.progression;
+  const userId = progression?.userId;
+
+  const {
+    data: badgeTotalsData,
+    isLoading: badgeTotalsLoading,
+    error: badgeTotalsError,
+  } = useSWR(
+    userId ? ["gamification-badge-totals", userId] : null,
+    () => fetchJson<{ status: "ok"; totals: { wasteKg: number; butts: number } }>(
+      `/api/gamification/badges/${userId}`,
+    ),
+  );
 
   const {
     data: leaderboardData,
@@ -59,7 +74,6 @@ export function GamificationSection() {
       ),
   );
 
-  const progression = meData?.progression;
   const progressToNext = useMemo(() => {
     if (!progression) {
       return 0;
@@ -94,6 +108,31 @@ export function GamificationSection() {
 
   const rows = leaderboardData?.items ?? [];
   const recognition = leaderboardData?.recognition;
+  const filteredRows = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) {
+      return rows;
+    }
+
+    if (scope === "individual") {
+      return rows.filter((item) => {
+        const individual = item as LeaderboardResponse["items"][number] & {
+          actorName?: string;
+          associationName?: string;
+        };
+        const actor = (individual.actorName ?? "").toLowerCase();
+        const association = (individual.associationName ?? "").toLowerCase();
+        return actor.includes(query) || association.includes(query);
+      });
+    }
+
+    return rows.filter((item) => {
+      const collective = item as LeaderboardResponse["items"][number] & {
+        associationName?: string;
+      };
+      return (collective.associationName ?? "").toLowerCase().includes(query);
+    });
+  }, [rows, scope, searchQuery]);
 
   return (
     <SectionShell
@@ -116,6 +155,9 @@ export function GamificationSection() {
             loading={meLoading}
             error={meError}
             locale={locale}
+            badgeTotals={badgeTotalsData?.totals}
+            badgeTotalsLoading={badgeTotalsLoading}
+            badgeTotalsError={badgeTotalsError}
           />
         </aside>
 
@@ -143,7 +185,7 @@ export function GamificationSection() {
                       : "text-slate-500 hover:text-white hover:bg-white/5"
                   )}
                 >
-                  {fr ? "Contributeurs" : "Contributors"}
+                  {fr ? "Comptes" : "Accounts"}
                 </CmmButton>
                 <CmmButton
                   onClick={() => setScope("collective")}
@@ -156,9 +198,48 @@ export function GamificationSection() {
                       : "text-slate-500 hover:text-white hover:bg-white/5"
                   )}
                 >
-                  {fr ? "Collectifs" : "Collectives"}
+                  {fr ? "Structures" : "Organizations"}
                 </CmmButton>
               </div>
+            </div>
+
+            <div className="space-y-2 px-2">
+              <div className="relative">
+                <Search
+                  size={16}
+                  className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                  aria-hidden="true"
+                />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder={
+                    scope === "individual"
+                      ? fr
+                        ? "Rechercher un compte (nom, structure)..."
+                        : "Search an account (name, organization)..."
+                      : fr
+                        ? "Rechercher une structure..."
+                        : "Search an organization..."
+                  }
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/45 py-3 pl-11 pr-12 text-sm text-white placeholder:text-slate-500 focus:border-red-400/40 focus:outline-none"
+                />
+                {searchQuery.trim().length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 inline-flex -translate-y-1/2 items-center justify-center rounded-lg border border-white/10 bg-white/5 p-1.5 text-slate-300 transition hover:border-red-400/30 hover:text-white"
+                    aria-label={fr ? "Effacer la recherche" : "Clear search"}
+                    title={fr ? "Effacer" : "Clear"}
+                  >
+                    <X size={14} aria-hidden="true" />
+                  </button>
+                ) : null}
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                {fr ? "Résultats" : "Results"}: {filteredRows.length} / {rows.length}
+              </p>
             </div>
 
             <motion.div
@@ -167,7 +248,7 @@ export function GamificationSection() {
               animate={{ opacity: 1, y: 0 }}
             >
               <LeaderboardTable
-                rows={rows}
+                rows={filteredRows}
                 scope={scope}
                 loading={leaderboardLoading}
                 error={leaderboardError}
@@ -210,8 +291,8 @@ export function GamificationSection() {
               </h4>
               <p className="text-[11px] font-medium text-slate-400 leading-relaxed italic">
                 {fr 
-                  ? "La progression durable privilégie la qualité des données, l'impact environnemental vérifié et la régularité de la contribution collective sur le simple volume d'actions. Chaque point XP est le reflet d'une action concrète pour la planète."
-                  : "Sustainable progression prioritizes data quality, verified environmental impact, and collective contribution consistency over simple action volume. Each XP point reflects a concrete action for the planet."}
+                  ? "La progression (XP) reflète uniquement des objectifs validés. L'impact affiché (kg, mégots, surface, etc.) est un indicateur séparé, issu d'estimations et de données vérifiées selon une méthodologie explicitée."
+                  : "Progression (XP) reflects validated objectives only. Displayed impact (kg, butts, surface, etc.) is a separate indicator based on verified data and an explicit methodology."}
               </p>
             </div>
           </div>

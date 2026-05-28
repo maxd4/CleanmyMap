@@ -44,7 +44,7 @@
   "learnHub": {
     "header_suptitle": "Learning path",
     "header_title": "Understand to act",
-    "header_desc": "The hub acts as an index and resume point: pick up the last step, then reopen the four dedicated pages without duplicating their content. Methodology stays separate.",
+    "header_desc": "The starting point acts as an index and resume point: pick up the last step, then reopen the four dedicated pages without duplicating their content. Methodology stays separate.",
     "tabs": {
       "comprendre": "Understand",
       "sentrainer": "Practice",
@@ -154,5 +154,30 @@
     "btn_signal": "Report dirty zone",
     "btn_impact": "My impact",
     "btn_eval": "3 validations pending"
+  }
+  ,
+  "gamification": {
+    "badge": {
+      "panel": {
+        "eyebrow": "Progress",
+        "subtitle": "Two badge families that update automatically based on your contributions."
+      },
+      "dechets": {
+        "title": "Mass of waste",
+        "description": "Progresses every 10 kg"
+      },
+      "megots": {
+        "title": "Cigarette butts",
+        "description": "Progresses every 1,000 butts"
+      },
+      "modal": {
+        "eyebrow": "Badge details",
+        "total": "Total",
+        "next": "Next threshold",
+        "claimHint": "Your level updates automatically when you submit an action. This button lets you acknowledge your progress.",
+        "claim": "Claim level",
+        "close": "Close"
+      }
+    }
   }
 }

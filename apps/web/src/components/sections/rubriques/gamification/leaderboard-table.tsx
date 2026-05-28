@@ -51,14 +51,15 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
                   <th className="px-8 py-6 w-20 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Rank</th>
                   <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Identité</th>
                   <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Niv.</th>
-                  <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">XP Validée</th>
+                  <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">XP progression</th>
                   <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Qualité</th>
                   <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Score</th>
                 </>
               ) : (
                 <>
                   <th className="px-8 py-6 w-20 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Rank</th>
-                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Collectif</th>
+                  <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Structure</th>
+                  <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Niv.</th>
                   <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Membres</th>
                   <th className="px-8 py-6 text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Actions</th>
                   <th className="px-8 py-6 text-right text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Qualité</th>
@@ -109,7 +110,9 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
                         <span className="text-base font-black text-red-400 tracking-tighter">
                           {row.xpValidated.toLocaleString()}
                         </span>
-                        <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">XP points</span>
+                        <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest">
+                          XP (validés)
+                        </span>
                       </div>
                     </td>
                     <td className="px-8 py-5 text-right">
@@ -150,6 +153,12 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
                       </div>
                     </td>
                     <td className="px-8 py-5 text-center">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover:border-red-500/20 transition-colors">
+                        <Sparkles size={10} className="text-red-500" />
+                        Lvl {row.currentLevel}
+                      </div>
+                    </td>
+                    <td className="px-8 py-5 text-center">
                       <span className="text-[11px] font-black text-slate-300 uppercase tracking-widest">
                         {row.members} <span className="text-slate-600">p.</span>
                       </span>
@@ -174,7 +183,7 @@ export function LeaderboardTable({ rows, scope, loading, error }: LeaderboardTab
                 ))}
             {rows.length === 0 ? (
               <tr>
-                <td className="px-8 py-32 text-center" colSpan={6}>
+                <td className="px-8 py-32 text-center" colSpan={scope === "individual" ? 6 : 7}>
                   <div className="flex flex-col items-center gap-6 opacity-40">
                     <Sparkles size={48} className="text-slate-500" />
                     <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] max-w-xs leading-relaxed mx-auto italic">

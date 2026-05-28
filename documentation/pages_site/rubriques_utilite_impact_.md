@@ -24,7 +24,7 @@ Ancienne structure 7 blocs → nouvelle structure 5 blocs (homepage) :
 8. Itinéraire IA
 9. Signalement Déchets
 10. Carte d'entraînement
-11. Hub Éducatif
+11. Point de départ (Apprendre)
 12. Guide terrain
 13. Annuaire partenaires
 14. Opérations collectives
@@ -79,7 +79,7 @@ quadrantChart
   "Annuaire partenaires": [0.79, 0.83]
   "Open data": [0.70, 0.81]
   "Funding / Sponsoring": [0.64, 0.78]
-  "Hub educatif": [0.81, 0.85]
+  "Point de départ (Apprendre)": [0.81, 0.85]
   "Mode d'emploi": [0.76, 0.79]
   "Kit terrain": [0.61, 0.68]
   "Comprendre l'Enjeu": [0.63, 0.74]
@@ -287,7 +287,7 @@ quadrantChart
 
 ### Bloc 5 — Apprendre · `yellow` / `amber`
 
-**Hub Éducatif** `/learn/hub`
+**Point de départ** `/learn/hub`
 
 - Index + reprise : quatre rubriques internes (Comprendre, S'entraîner, Bonnes pratiques, Ressources).
 - Utilite : centraliser l'entrée du bloc et rediriger vers les pages dédiées sans mélanger les usages.

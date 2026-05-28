@@ -6,7 +6,7 @@ Date de génération: 2026-04-28
 
 Le site n’est pas prêt pour une première version publique. La base fonctionnelle existe, mais le rendu global reste trop inégal, trop chargé et trop indulgent dans son évaluation actuelle. En lecture publique stricte, le score moyen tombe plutôt autour de **54/100**. Les écrans centraux les plus défendables se situent plus près de **63/100** que de 74/100.
 
-Les surfaces réellement proches d’une mise en ligne publique sont encore peu nombreuses: accueil, Explorer, hub éducatif, rapports, actions et quelques rubriques réseau. Le reste reste soit trop fragile, soit trop dépendant du runtime, soit trop enfermé visuellement, soit trop orienté back-office pour être exposé tel quel.
+Les surfaces réellement proches d’une mise en ligne publique sont encore peu nombreuses: accueil, Explorer, point de départ (Apprendre), rapports, actions et quelques rubriques réseau. Le reste reste soit trop fragile, soit trop dépendant du runtime, soit trop enfermé visuellement, soit trop orienté back-office pour être exposé tel quel.
 
 Les zones les plus faibles sont nettes et doivent être traitées comme des freins de lancement: `admin/forms`, `sign-in`, `sign-up`, `onboarding/localisation`, la comparaison interne des formulaires, `parcours`, `profil`, `parcours/[profile]`, `sections/[sectionId]` et les écrans très dépendants de Clerk ou de données serveur non garanties.
 
@@ -57,7 +57,7 @@ Axes notés:
 | Accueil                    | `/`                        | 83             | 81  | 84  | 82                   | 80            | 79         | 81               | 81          | Presque prêt        | Basse    |
 | Explorer / Plan du site    | `/explorer`                | 84             | 84  | 85  | 83                   | 83            | 80         | 82               | 83          | Presque prêt        | Basse    |
 | Rapports d'impact          | `/reports`                 | 80             | 78  | 78  | 75                   | 77            | 73         | 78               | 77          | Utilisable          | Moyenne  |
-| Hub éducatif               | `/learn/hub`               | 82             | 80  | 83  | 84                   | 79            | 75         | 79               | 80          | Presque prêt        | Basse    |
+| Point de départ (Apprendre) | `/learn/hub`               | 82             | 80  | 83  | 84                   | 79            | 75         | 79               | 80          | Presque prêt        | Basse    |
 | Déclarer une action        | `/actions/new`             | 80             | 78  | 77  | 75                   | 78            | 74         | 77               | 77          | Utilisable          | Moyenne  |
 | Carte des actions          | `/actions/map`             | 79             | 77  | 78  | 76                   | 76            | 72         | 75               | 76          | Utilisable          | Moyenne  |
 | Historique des actions     | `/actions/history`         | 70             | 68  | 69  | 66                   | 69            | 65         | 67               | 68          | Fonctionnel partiel | Moyenne  |
@@ -120,7 +120,7 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 | Financement / sponsoring | `/sections/funding`       | 78             | 76  | 77  | 75                   | 76            | 73         | 74               | 75          | Utilisable          | Moyenne  |
 | Signalement Déchets      | `/sections/trash-spotter` | 76             | 74  | 75  | 73                   | 74            | 70         | 71               | 73          | Utilisable          | Moyenne  |
 | Découvrir le réseau      | `/partners/network`       | 82             | 80  | 82  | 83                   | 80            | 77         | 79               | 80          | Presque prêt        | Basse    |
-| Hub Éducatif             | `/learn/hub`              | 82             | 80  | 83  | 84                   | 79            | 75         | 79               | 80          | Presque prêt        | Basse    |
+| Point de départ (Apprendre) | `/learn/hub`              | 82             | 80  | 83  | 84                   | 79            | 75         | 79               | 80          | Presque prêt        | Basse    |
 | Portail Décideur         | `/sponsor-portal`         | 82             | 80  | 81  | 81                   | 78            | 75         | 77               | 79          | Presque prêt        | Moyenne  |
 | God Mode                 | `/admin/godmode`          | 55             | 52  | 54  | 57                   | 52            | 60         | 47               | 54          | Fonctionnel partiel | Haute    |
 
@@ -129,7 +129,7 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 
 1. Geler le périmètre public de la V1: garder seulement les routes qui peuvent être comprises sans aide et sans rupture visuelle.
 2. Écarter du périmètre public tout ce qui reste fragile: `admin/forms`, `admin/godmode`, `sign-in`, `sign-up`, `onboarding/localisation`, la comparaison interne des formulaires, `profil`, `parcours`, `parcours/[profile]`, `sections/[sectionId]`.
-3. Nettoyer en priorité les surfaces visibles de l’entrée de site: accueil, Explorer, hub éducatif, rapports, actions, réseau.
+3. Nettoyer en priorité les surfaces visibles de l’entrée de site: accueil, Explorer, point de départ (Apprendre), rapports, actions, réseau.
 4. Simplifier les écrans encore trop “bulles / cartes / encadrés” avant toute ouverture publique.
 5. Normaliser les états de vide, d’erreur, de chargement et les retours de formulaire sur les pages réellement exposables.
 

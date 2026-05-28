@@ -462,7 +462,7 @@ const entries = [
   {
     route: "/learn/hub",
     slug: "learn-hub",
-    title: "Hub éducatif",
+    title: "Point de départ",
     family: "05-apprendre",
     kind: "page",
     status: "canonique",

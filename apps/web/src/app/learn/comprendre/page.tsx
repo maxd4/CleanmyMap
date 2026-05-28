@@ -31,7 +31,7 @@ export default function LearnComprendrePage() {
         en: "This page groups scientific context, orders of magnitude and links to methodology to verify the calculations.",
       }}
       backHref="/learn/hub"
-      backLabel={{ fr: "Retour au hub", en: "Back to hub" }}
+      backLabel={{ fr: "Retour au point de départ", en: "Back to start" }}
       accent="yellow"
       highlights={[
         { fr: "Contexte scientifique", en: "Scientific context" },

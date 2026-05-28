@@ -373,7 +373,7 @@ export function LearnRessourcesClient() {
         en: "Three visible entry points first, then a lighter calendar to keep the page action-oriented.",
       }}
       backHref="/learn/hub"
-      backLabel={{ fr: "Retour au hub", en: "Back to hub" }}
+      backLabel={{ fr: "Retour au point de départ", en: "Back to start" }}
       accent="yellow"
       highlights={[
         { fr: "Kit terrain", en: "Field kit" },

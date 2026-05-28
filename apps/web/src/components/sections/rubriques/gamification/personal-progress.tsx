@@ -15,9 +15,37 @@ interface PersonalProgressProps {
   loading: boolean;
   error: unknown;
   locale: string;
+  badgeTotals?: { wasteKg: number; butts: number };
+  badgeTotalsLoading?: boolean;
+  badgeTotalsError?: unknown;
 }
 
-export function PersonalProgress({ progression, progressToNext, loading, error, locale }: PersonalProgressProps) {
+function formatCompactNumber(value: number, locale: string) {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
+}
+
+function formatCompactKg(value: number, locale: string) {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
+}
+
+function nextWasteBadgeMilestoneKg(totalKg: number): number | null {
+  const milestones = [10, 100, 500];
+  for (const m of milestones) {
+    if (totalKg < m) return m;
+  }
+  return null;
+}
+
+export function PersonalProgress({
+  progression,
+  progressToNext,
+  loading,
+  error,
+  locale,
+  badgeTotals,
+  badgeTotalsLoading,
+  badgeTotalsError,
+}: PersonalProgressProps) {
   return (
     <div className="space-y-6">
       <div className="rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl relative overflow-hidden">
@@ -90,7 +118,9 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                   <Sparkles size={40} className="text-red-500" />
                 </div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/60 mb-2">XP Validée (2026)</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/60 mb-2">
+                  {locale === "fr" ? "XP de progression (validés)" : "Progress XP (validated)"}
+                </p>
                 <p className="text-3xl font-black text-red-400 tracking-tighter">
                   <AnimatedCounter value={progression.xpValidated} direction="up" />
                 </p>
@@ -99,12 +129,65 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
                 <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
                   <ShieldCheck size={40} className="text-red-500" />
                 </div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/60 mb-2">XP en attente</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-red-500/60 mb-2">
+                  {locale === "fr" ? "XP en attente (non comptés)" : "Pending XP (not counted)"}
+                </p>
                 <p className="text-3xl font-black text-red-400 tracking-tighter">
                   <AnimatedCounter value={progression.xpPending} direction="up" />
                 </p>
-                <p className="mt-1 text-[8px] font-black text-red-500/40 uppercase tracking-widest">Vérification manuelle</p>
+                <p className="mt-1 text-[8px] font-black text-red-500/40 uppercase tracking-widest">
+                  {locale === "fr" ? "Vérification manuelle" : "Manual review"}
+                </p>
               </article>
+            </div>
+
+            <div className="rounded-[2rem] border border-white/5 bg-slate-950/40 p-6">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
+                  {locale === "fr" ? "Impact attribué" : "Attributed impact"}
+                </p>
+                {badgeTotalsError && !badgeTotalsLoading ? (
+                  <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">
+                    {locale === "fr" ? "Indispo." : "Offline"}
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                    {locale === "fr" ? "Déchets" : "Waste"}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-white">
+                    {badgeTotals
+                      ? `${formatCompactKg(badgeTotals.wasteKg, locale)} kg`
+                      : "—"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-4 py-3">
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">
+                    {locale === "fr" ? "Mégots" : "Butts"}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-white">
+                    {badgeTotals ? formatCompactNumber(badgeTotals.butts, locale) : "—"}
+                  </p>
+                </div>
+              </div>
+
+              {badgeTotals ? (
+                <p className="mt-4 text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between">
+                  <span>{locale === "fr" ? "Badge proche" : "Next badge"}</span>
+                  <span className="text-white tracking-tighter text-sm">
+                    {(() => {
+                      const nextKg = nextWasteBadgeMilestoneKg(badgeTotals.wasteKg);
+                      if (!nextKg) return "—";
+                      return locale === "fr"
+                        ? `${nextKg} kg collectés`
+                        : `${nextKg} kg collected`;
+                    })()}
+                  </span>
+                </p>
+              ) : null}
             </div>
 
             {progression.monthlyMilestone && (
@@ -155,8 +238,10 @@ export function PersonalProgress({ progression, progressToNext, loading, error, 
                 />
               </div>
               <p className="mt-4 text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center justify-between">
-                <span>Ressources requises :</span>
-                <span className="text-white tracking-tighter text-sm">-{progression.nextLevel.xpRemaining} XP</span>
+                <span>{locale === "fr" ? "XP restantes" : "XP remaining"}</span>
+                <span className="text-white tracking-tighter text-sm">
+                  {progression.nextLevel.xpRemaining} XP
+                </span>
               </p>
               
               {progression.nextLevel.frozen && (

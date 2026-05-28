@@ -59,7 +59,7 @@ flowchart LR
 | Agir | `emerald` | Passage à l'action terrain | déclaration, itinéraire, signalement |
 | Cartographie & Impact | `sky` / `red` | Lecture territoriale + preuve | carte, rapports, badges |
 | Réseau & Discussions | `indigo` | Mise en relation | partenaires, messagerie, communauté |
-| Apprendre | `yellow` | Montée en compétence | hub, quiz, guides |
+| Apprendre | `yellow` | Montée en compétence | point de départ, quiz, guides |
 
 ## Blocs fusionnés (ancienne structure)
 

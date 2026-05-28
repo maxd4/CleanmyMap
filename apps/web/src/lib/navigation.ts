@@ -71,7 +71,7 @@ const SPACE_DEFINITIONS: Record<NavigationBlockId, NavigationSpaceMeta> = {
     icon: "🤝",
     color: "text-indigo-600",
   },
-  connect: { id: "connect", label: { fr: "Discussion", en: "Discussion" }, icon: "💬", color: "text-pink-600" },
+  connect: { id: "connect", label: { fr: "Discussion", en: "Discussions" }, icon: "💬", color: "text-pink-600" },
   learn: { id: "learn", label: { fr: "Apprendre", en: "Learn" }, icon: "📚", color: "text-yellow-600" },
   pilot: {
     id: "pilot",

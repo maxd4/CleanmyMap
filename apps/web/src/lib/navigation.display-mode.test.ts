@@ -192,7 +192,7 @@ describe("navigation display modes", () => {
       "Sommaire",
       "Pilotage",
       "Administration du site",
-      "Espace décideur",
+      "Portail décideurs",
       "Gouvernance",
       "Créateur du site",
     ]);

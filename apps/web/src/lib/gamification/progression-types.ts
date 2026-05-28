@@ -13,7 +13,9 @@ export type ProgressionEventType =
   | "spot_create_pending"
   | "spot_validation_bonus"
   | "community_ops_update"
-  | "route_recommend_use";
+  | "route_recommend_use"
+  | "infinite_waste_milestone"
+  | "infinite_butts_milestone";
 
 export type ActionRow = {
   id: string;
@@ -151,8 +153,8 @@ export type IndividualLeaderboardItem = {
   actorName: string;
   associationName: string;
   score: number;
-  xpValidated: number; // For Lifetime display
-  xpTotal: number; // For Lifetime display
+  xpValidated: number; // May be decimal (0.5 increments)
+  xpTotal: number; // May be decimal (0.5 increments)
   currentLevel: number;
   potentialLevel: number;
   qualityAverage: number;
@@ -177,6 +179,8 @@ export type CollectiveLeaderboardItem = {
   rank: number;
   associationName: string;
   score: number;
+  currentLevel: number;
+  potentialLevel: number;
   members: number;
   qualityAverage: number;
   validatedActions: number;

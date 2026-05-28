@@ -90,16 +90,16 @@ export default function LearnHubPage() {
             <PageHero
               family={pageFamily}
               eyebrow={locale === "fr" ? "Point d'entrée" : "Entry point"}
-              title={locale === "fr" ? "Hub" : "Learning hub"}
+              title={locale === "fr" ? "Point de départ" : "Starting point"}
               subtitle={
                 locale === "fr"
-                  ? "Un hub léger pour reprendre le parcours sans dupliquer le contenu."
-                  : "A lightweight hub to resume the journey without duplicating content."
+                  ? "Un point de départ léger pour reprendre le parcours sans dupliquer le contenu."
+                  : "A lightweight starting point to resume the journey without duplicating content."
               }
               badges={
                 <>
                   <PageHeroBadge family={pageFamily}>
-                    {locale === "fr" ? "Hub léger" : "Light hub"}
+                    {locale === "fr" ? "Point de départ" : "Starting point"}
                   </PageHeroBadge>
                   <PageHeroBadge family={pageFamily} muted>
                     {locale === "fr" ? "Progression" : "Progress"}

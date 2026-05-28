@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
@@ -19,6 +18,8 @@ import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import ImpactProfilePage from "@/components/profil/impact-profile-page";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
+import { getInfiniteBadgeTotals } from "@/lib/gamification/infinite-badges-server";
+import { InfiniteBadgesPanel } from "@/components/gamification/infinite-badges/InfiniteBadgesPanel";
 
 type ProfilPageProps = {
   params: Promise<{ profile: string }>;
@@ -67,6 +68,10 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
   const profileLabel = getProfileLabel(normalized, "fr");
   const profileSubtitle = getProfileSubtitle(normalized, "fr");
   const switchableProfiles = isAdmin ? getSwitchableProfiles(activeProfile) : [activeProfile];
+  const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
+    wasteKg: 0,
+    butts: 0,
+  }));
 
   return (
     <SectionShell
@@ -85,6 +90,15 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           <div className="relative z-10">
             <RolePrimaryActions profile={normalized} title="" tone="warm" />
           </div>
+        </FamilyRubriqueCard>
+
+        {/* ── Badges infinis ── */}
+        <FamilyRubriqueCard
+          withTopBar={true}
+          topBarContent="Badges"
+          className="p-12"
+        >
+          <InfiniteBadgesPanel totals={infiniteTotals} />
         </FamilyRubriqueCard>
 
         {/* ── Promotion & Évolution ── */}

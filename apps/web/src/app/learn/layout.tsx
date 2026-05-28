@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Apprendre - Ressources Écologie & Bonnes Pratiques | CleanMyMap",
   description:
-    "Hub d'apprentissage CleanMyMap. Reprenez votre dernière étape, comprenez le contexte, entraînez-vous et retrouvez les ressources utiles sans dupliquer le contenu des pages dédiées.",
+    "Point de départ pédagogique CleanMyMap. Reprenez votre dernière étape, comprenez le contexte, entraînez-vous et retrouvez les ressources utiles sans dupliquer le contenu des pages dédiées.",
   keywords: [
     "apprendre écologie",
     "bonnes pratiques dépollution",

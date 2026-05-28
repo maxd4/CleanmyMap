@@ -193,7 +193,7 @@ export const RUBRIQUE_REGISTRY = [
     priority: 30,
     kind: "section",
     route: "/sections/route",
-    label: { fr: "Itinéraire prioritaire", en: "AI routing" },
+    label: { fr: "Où agir ?", en: "Where to act?" },
     description: { fr: "Optimisez votre parcours selon l'impact", en: "Optimize your route based on impact" },
     availability: "available",
     implementation: "finalized",
@@ -286,7 +286,7 @@ export const RUBRIQUE_REGISTRY = [
     priority: 41,
     kind: "section",
     route: "/sections/feedback",
-    label: { fr: "Feedback", en: "Feedback" },
+    label: { fr: "Idées et problèmes", en: "Ideas & issues" },
     description: {
       fr: "Partagez vos idées et signalez des problèmes",
       en: "Share ideas and report issues",
@@ -325,7 +325,7 @@ export const RUBRIQUE_REGISTRY = [
     priority: 42,
     kind: "app-route",
     route: "/partners/network",
-    label: { fr: "Cartographie des partenaires", en: "Partner map" },
+    label: { fr: "Carte des partenaires", en: "Partner map" },
     description: {
       fr: "Accédez aux fiches des partenaires actifs",
       en: "Access active partner profiles",
@@ -355,12 +355,12 @@ export const RUBRIQUE_REGISTRY = [
     priority: 41,
     kind: "section",
     route: "/sections/dm",
-    label: { fr: "Messages Privés", en: "Messages" },
+    label: { fr: "Messages privés", en: "Messages" },
     description: {
       fr: "Échanges directs avec les membres du réseau",
       en: "Direct exchanges with network members",
     },
-    availability: "available",
+    availability: "hidden",
     implementation: "finalized",
   },
   {
@@ -370,7 +370,7 @@ export const RUBRIQUE_REGISTRY = [
     priority: 42,
     kind: "section",
     route: "/sections/messagerie",
-    label: { fr: "Canaux de Discussion", en: "Discussion Channels" },
+    label: { fr: "Groupes de discussion", en: "Discussion groups" },
     description: {
       fr: "Échanges collectifs thématiques et locaux",
       en: "Thematic and local group discussions",
@@ -427,7 +427,7 @@ export const RUBRIQUE_REGISTRY = [
     priority: 5,
     kind: "app-route",
     route: "/learn/hub",
-    label: { fr: "Hub", en: "Learning hub" },
+    label: { fr: "Point de départ", en: "Starting point" },
     description: {
       fr: "Point d'entrée léger vers les quatre rubriques du bloc",
       en: "Light entry point to the four pages of the block",
@@ -502,7 +502,7 @@ export const RUBRIQUE_REGISTRY = [
     priority: 35,
     kind: "app-route",
     route: SPONSOR_PORTAL_ROUTE,
-    label: { fr: "Espace décideur", en: "Sponsor portal" },
+    label: { fr: "Portail décideurs", en: "Sponsor portal" },
     description: { fr: "Analyse d'impact et pilotage territorial", en: "Impact analysis and territorial monitoring" },
     availability: "available",
     implementation: "finalized",
