@@ -1,0 +1,112 @@
+/* Atmospheric/ecological color tokens for clean zones badge family */
+
+:root {
+  /* Brise — Light breeze, gentle winds */
+  --atmosphere-breeze-light: #f0f8fc;
+  --atmosphere-breeze-dark: #d4e8f5;
+  --atmosphere-breeze-progress: #a0d4f0;
+  --atmosphere-breeze-border: #b0d8f5;
+
+  /* Horizon — Where sky meets earth */
+  --atmosphere-horizon-light: #f5f3f8;
+  --atmosphere-horizon-dark: #dfc8e8;
+  --atmosphere-horizon-progress: #c0a8e0;
+  --atmosphere-horizon-border: #cdb8e8;
+
+  /* Azur — Deep blue sky */
+  --atmosphere-azure-light: #e8f4ff;
+  --atmosphere-azure-dark: #b8d8f0;
+  --atmosphere-azure-progress: #5cb3ff;
+  --atmosphere-azure-border: #7cc8ff;
+
+  /* Aurore — Dawn, pink-orange sunrise */
+  --atmosphere-dawn-light: #fff5f0;
+  --atmosphere-dawn-dark: #ffe0d0;
+  --atmosphere-dawn-progress: #ffb8a0;
+  --atmosphere-dawn-border: #ffc8b0;
+
+  /* Zénith — Bright zenith */
+  --atmosphere-zenith-light: #fffef0;
+  --atmosphere-zenith-dark: #ffe8b0;
+  --atmosphere-zenith-progress: #ffc800;
+  --atmosphere-zenith-border: #ffd820;
+
+  /* Stratosphère — High altitude, cool blues */
+  --atmosphere-stratosphere-light: #e8f0ff;
+  --atmosphere-stratosphere-dark: #c0d8f0;
+  --atmosphere-stratosphere-progress: #6a8cff;
+  --atmosphere-stratosphere-border: #8aa8ff;
+
+  /* Éther — Ethereal, light purples */
+  --atmosphere-ether-light: #f5e8ff;
+  --atmosphere-ether-dark: #d8c8f0;
+  --atmosphere-ether-progress: #b8a0e0;
+  --atmosphere-ether-border: #c8b8e8;
+
+  /* Hélios — Sun worship, golden */
+  --atmosphere-helios-light: #fffaf0;
+  --atmosphere-helios-dark: #ffe8c8;
+  --atmosphere-helios-progress: #ffa500;
+  --atmosphere-helios-border: #ffb820;
+
+  /* Harmonie — Balanced, green-blue harmony */
+  --atmosphere-harmony-light: #f0fffb;
+  --atmosphere-harmony-dark: #b8f0e0;
+  --atmosphere-harmony-progress: #40d8a8;
+  --atmosphere-harmony-border: #60e0b8;
+
+  /* Eden — Garden paradise, deep green */
+  --atmosphere-eden-light: #f0fef5;
+  --atmosphere-eden-dark: #b8e8c8;
+  --atmosphere-eden-progress: #20b858;
+  --atmosphere-eden-border: #40c870;
+}
+
+/* Texture overlays (subtle atmospheric shimmer) */
+.clean-zones-badge[class*="breeze"]::before,
+.clean-zones-badge[class*="horizon"]::before,
+.clean-zones-badge[class*="azure"]::before,
+.clean-zones-badge[class*="dawn"]::before,
+.clean-zones-badge[class*="zenith"]::before,
+.clean-zones-badge[class*="stratosphere"]::before,
+.clean-zones-badge[class*="ether"]::before,
+.clean-zones-badge[class*="helios"]::before,
+.clean-zones-badge[class*="harmony"]::before,
+.clean-zones-badge[class*="eden"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 12px;
+  background-image: 
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.15) 2px,
+      rgba(255,255,255,0.15) 4px
+    );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Atmosphere variant - soft glow finish */
+.clean-zones-badge[class*="atmosphere"] {
+  background-blend-mode: overlay;
+  filter: opacity(0.98) brightness(1.02);
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,0.08),
+    inset 0 1px 3px rgba(255,255,255,0.6);
+}
+
+/* Precious variant - glossy iridescent */
+.clean-zones-badge[class*="precious"] {
+  background-blend-mode: screen;
+  filter: opacity(0.99) brightness(1.05) saturate(1.1);
+  box-shadow: 
+    0 6px 16px rgba(0,0,0,0.12),
+    inset 0 2px 4px rgba(255,255,255,0.7),
+    inset -1px -1px 3px rgba(0,0,0,0.05);
+}

@@ -1,7 +1,6 @@
 {
   "name": "web",
   "version": "0.1.0",
-  "type": "module",
   "private": true,
   "scripts": {
     "dev": "node ../../scripts/dev-with-fallback-port.mjs",

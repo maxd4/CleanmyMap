@@ -190,6 +190,10 @@ Une recompense doit toujours repondre a la question:
 - un badge doit etre defendable devant un humain;
 - les roles plus avancés doivent etre restreints a des profils qualifies.
 
+### Regle de transparence
+
+- informer systématiquement l'utilisateur quand l'action qu'il s'apprête à faire (ou vient de faire) sur le site lui apporte de l'XP ou des badges.
+
 ### Regle de sobriete
 
 - un seul prochain objectif visible suffit dans la plupart des ecrans;

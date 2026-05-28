@@ -1,6 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["cdg1"],
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_SOURCE_MAP": "true"
+    }
+  },
   "rewrites": [
     {
       "source": "/docs/visuels-rapport/data_pipeline.png",

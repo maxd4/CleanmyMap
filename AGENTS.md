@@ -75,3 +75,7 @@ Sans cet accord, utiliser uniquement la branche courante et les fichiers du doss
 ## Règle Markdown et Quarto
 
 - Ne jamais mettre de numéros de section ou de titre en dur (ex: `1.`, `## 2.`) dans les fichiers Markdown destinés à l'export. Ces numéros sont générés automatiquement par Quarto lors de l'export. Utilisez uniquement la hiérarchie standard (`#`, `##`, `###`).
+
+## Règle de Gamification et Transparence
+
+- Informer systématiquement l'utilisateur quand l'action qu'il s'apprête à faire (ou vient de faire) sur le site lui apporte de l'XP ou des badges.

@@ -14,6 +14,7 @@ import {
   toFloat,
   toIsoDate,
 } from "./progression-utils";
+import { awardPoints } from "./points/system";
 
 export async function refreshProgressionProfile(
   supabase: SupabaseClient,
@@ -51,8 +52,8 @@ export async function refreshProgressionProfile(
     }
   }
 
-  const potentialLevel = computePotentialLevel(xpTotal);
-  const currentLevel = computeCurrentLevel(xpTotal, stats);
+  const potentialLevel = computePotentialLevel(xpValidated);
+  const currentLevel = computeCurrentLevel(xpValidated, stats);
 
   // --- Level Up Detection ---
   try {
@@ -107,6 +108,16 @@ export async function trackActionCreated(
   if (!isSpontaneousActionNotes(action.notes)) {
     return;
   }
+  
+  // Award initial points for action creation
+  await awardPoints(supabase, {
+    userId: params.userId,
+    xpEarned: 10,
+    sourceEvent: "action_created",
+    sourceId: action.id,
+    reason: "Action déclarée",
+  });
+
   await syncUserActionProgression(supabase, params.userId);
   await refreshProgressionProfile(supabase, params.userId);
 }
@@ -122,6 +133,16 @@ export async function trackActionValidationBonus(
   if (!isSpontaneousActionNotes(action.notes)) {
     return;
   }
+
+  // Award points for validation
+  await awardPoints(supabase, {
+    userId: action.created_by_clerk_id,
+    xpEarned: 25,
+    sourceEvent: "action_validated",
+    sourceId: action.id,
+    reason: "Action validée",
+  });
+
   await syncUserActionProgression(supabase, action.created_by_clerk_id);
   await refreshProgressionProfile(supabase, action.created_by_clerk_id);
 }
@@ -162,6 +183,15 @@ export async function trackSpotValidationBonus(
   if (!spot || (spot.status !== "validated" && spot.status !== "cleaned")) {
     return;
   }
+
+  // Award points for spot validation
+  await awardPoints(supabase, {
+    userId: spot.created_by_clerk_id,
+    xpEarned: 30,
+    sourceEvent: "spot_validated",
+    sourceId: spot.id,
+    reason: `Lieu propre validé: ${spot.label}`,
+  });
 
   const inserted = await insertProgressionEvent(supabase, {
     userId: spot.created_by_clerk_id,
@@ -297,4 +327,84 @@ export function extractCommunityOpsFromDescription(description: string | null): 
     hasPostMortem: (ops.postMortem ?? "").trim().length >= 20,
     attendanceCount: ops.attendanceCount ?? 0,
   };
+}
+
+export async function trackNewPlaceVisited(
+  supabase: SupabaseClient,
+  params: { userId: string; locationLabel: string; occurredOn?: string }
+): Promise<void> {
+  const normalizedLabel = params.locationLabel.trim().toLowerCase();
+  if (!normalizedLabel) return;
+  
+  // 1. Insert in user_visited_places
+  const { error } = await supabase
+    .from("user_visited_places")
+    .insert({ user_id: params.userId, place_label: normalizedLabel });
+    
+  if (error && error.code !== "23505" && error.code !== "23503") { // Ignore unique constraint & fkey if badge totals doesn't exist yet
+    console.error("Error inserting user_visited_places", error);
+    return;
+  }
+  
+  // If successfully inserted (no error), it's a new place
+  if (!error) {
+    const occurredOn = toIsoDate(params.occurredOn);
+    
+    // Check total new places count
+    const { count } = await supabase
+      .from("user_visited_places")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", params.userId);
+
+    const placesCount = count ?? 1;
+
+    // +5 points for every new place
+    await awardPoints(supabase, {
+      userId: params.userId,
+      xpEarned: 5,
+      sourceEvent: "new_place_discovered",
+      sourceId: `${params.userId}:${normalizedLabel}`,
+      reason: `Nouveau lieu découvert: ${params.locationLabel}`,
+    });
+
+    // +1 XP for every new place
+    await insertProgressionEvent(supabase, {
+      userId: params.userId,
+      eventType: "new_place_discovered",
+      sourceTable: "user_visited_places",
+      sourceId: `${params.userId}:${normalizedLabel}`,
+      statusPhase: "validated",
+      weight: 1,
+      xpBase: 1,
+      xpAwarded: 1,
+      occurredOn,
+      metadata: { locationLabel: params.locationLabel, currentTotal: placesCount },
+    });
+
+    // Bonus for milestone (every 5 places)
+    if (placesCount > 0 && placesCount % 5 === 0) {
+      await awardPoints(supabase, {
+        userId: params.userId,
+        xpEarned: 20,
+        sourceEvent: "new_place_milestone",
+        sourceId: `${params.userId}:milestone:${placesCount}`,
+        reason: `Jalon: ${placesCount} lieux découverts!`,
+      });
+
+      await insertProgressionEvent(supabase, {
+        userId: params.userId,
+        eventType: "new_place_milestone",
+        sourceTable: "user_visited_places",
+        sourceId: `${params.userId}:milestone:${placesCount}`,
+        statusPhase: "validated",
+        weight: 1,
+        xpBase: 1,
+        xpAwarded: 1,
+        occurredOn,
+        metadata: { milestone: placesCount },
+      });
+    }
+
+    await refreshProgressionProfile(supabase, params.userId);
+  }
 }

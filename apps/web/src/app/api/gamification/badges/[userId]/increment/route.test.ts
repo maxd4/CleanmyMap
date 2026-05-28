@@ -11,6 +11,22 @@ vi.mock("@/lib/supabase/server", () => ({
   getSupabaseServerClient: getSupabaseServerClientMock,
 }));
 
+// Mock progression and config to avoid heavy top-level logic during imports
+vi.mock("@/lib/gamification/progression", () => ({
+  getUserProgression: () => Promise.resolve({ currentLevel: 0 }),
+}));
+vi.mock("@/config/gamification.config", () => ({
+  BADGE_MAX_COUNTER: 1000000,
+  ACTIVE_RULES: {
+    minLevelForInfiniteXp: 999999,
+    wasteMilestoneStepKg: 1,
+    buttsMilestoneStepCount: 1,
+    calculateWasteXp: (n: number) => 0,
+    calculateButtsXp: (n: number) => 0,
+    version: "test",
+  },
+}));
+
 describe("POST /api/gamification/badges/:userId/increment", () => {
   beforeEach(() => {
     vi.resetModules();

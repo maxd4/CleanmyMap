@@ -1,0 +1,94 @@
+/* Gem grades texture and color system for forms badge family */
+
+:root {
+  /* Plant growth color tokens */
+  --plant-seed-light: #f3f7f1;
+  --plant-seed-dark: #e0efe0;
+  --plant-seed-progress: #c7e9c7;
+  --plant-seed-border: #c0e0c0;
+
+  /* Sprout */
+  --plant-sprout-light: #eef9ee;
+  --plant-sprout-dark: #d4efd4;
+  --plant-sprout-progress: #b7e8b7;
+  --plant-sprout-border: #a8e0a8;
+
+  /* Seedling */
+  --plant-seedling-light: #eaf7ea;
+  --plant-seedling-dark: #cfe9cf;
+  --plant-seedling-progress: #9fd89f;
+  --plant-seedling-border: #8fd08f;
+
+  /* Sapling */
+  --plant-sapling-light: #f0f8f0;
+  --plant-sapling-dark: #d1edd1;
+  --plant-sapling-progress: #76d376;
+  --plant-sapling-border: #60c960;
+
+  /* Young tree */
+  --plant-young-tree-light: #eafaf0;
+  --plant-young-tree-dark: #bfeecf;
+  --plant-young-tree-progress: #4fbf5f;
+  --plant-young-tree-border: #3fa94f;
+
+  /* Mature tree */
+  --plant-mature-tree-light: #e6fbef;
+  --plant-mature-tree-dark: #b7e6c6;
+  --plant-mature-tree-progress: #2fa84a;
+  --plant-mature-tree-border: #2a9b40;
+
+  /* Grove */
+  --plant-grove-light: #eafbf2;
+  --plant-grove-dark: #bdebcf;
+  --plant-grove-progress: #27a64a;
+  --plant-grove-border: #1f8b3a;
+
+  /* Primary forest */
+  --plant-primary-forest-light: #eafbf4;
+  --plant-primary-forest-dark: #b7e9d8;
+  --plant-primary-forest-progress: #19904a;
+  --plant-primary-forest-border: #15783a;
+}
+
+/* Texture overlays (subtle) */
+.forms-badge[class*="quartz"]::before,
+.forms-badge[class*="opal"]::before,
+.forms-badge[class*="amethyst"]::before,
+.forms-badge[class*="topaz"]::before,
+.forms-badge[class*="sapphire"]::before,
+.forms-badge[class*="ruby"]::before,
+.forms-badge[class*="emerald"]::before,
+.forms-badge[class*="diamond"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 12px;
+  background-image: 
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.1) 2px,
+      rgba(255,255,255,0.1) 4px
+    );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Stone variant - matte finish */
+.forms-badge[class*="stone"] {
+  background-blend-mode: multiply;
+  filter: opacity(0.95);
+}
+
+/* Precious variant - glossy finish */
+.forms-badge[class*="precious"] {
+  background-blend-mode: screen;
+  filter: opacity(0.98) brightness(1.05);
+  box-shadow: 
+    0 4px 12px rgba(0,0,0,0.1),
+    inset 0 1px 3px rgba(255,255,255,0.5);
+}

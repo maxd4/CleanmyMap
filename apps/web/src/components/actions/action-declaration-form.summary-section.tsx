@@ -45,6 +45,23 @@ export function ActionDeclarationSummarySection({
  </span>
  </label>
 
+  <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50 p-4">
+    <div className="flex items-center gap-2">
+      <span className="text-xl">🏆</span>
+      <h3 className="cmm-text-small font-semibold text-emerald-900">
+        Récompenses potentielles
+      </h3>
+    </div>
+    <div className="mt-2 space-y-2">
+      <p className="cmm-text-small text-emerald-800">
+        <strong>+{2 + photoCount} XP</strong> estimés après validation (+2 pour l'action, +{photoCount} pour les photos). Un bonus supplémentaire sera accordé s'il s'agit d'un nouveau lieu.
+      </p>
+      <p className="cmm-text-small text-emerald-800">
+        <strong>Badges en progression :</strong> Déchets (+{form.wasteKg || "0"} kg), Mégots (+{form.wasteMegotsKg || "0"} kg), et Explorateur (nouveaux lieux).
+      </p>
+    </div>
+  </div>
+
  <div className="mt-4 grid gap-3 md:grid-cols-2">
  <div className="rounded-xl border border-white/70 bg-white p-3">
  <p className="cmm-text-caption font-semibold uppercase tracking-wide cmm-text-muted">

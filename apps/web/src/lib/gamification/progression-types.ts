@@ -15,7 +15,9 @@ export type ProgressionEventType =
   | "community_ops_update"
   | "route_recommend_use"
   | "infinite_waste_milestone"
-  | "infinite_butts_milestone";
+  | "infinite_butts_milestone"
+  | "new_place_discovered"
+  | "new_place_milestone";
 
 export type ActionRow = {
   id: string;
