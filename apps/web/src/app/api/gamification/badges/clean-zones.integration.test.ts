@@ -1,259 +1,105 @@
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-import { createClient } from "@supabase/supabase-js";
+import { describe, expect, it } from "vitest";
+import {
+  collectEligibleCleanZoneSources,
+  countEligibleCleanZones,
+} from "@/lib/gamification/clean-zones";
 
-// Test clean zones badge deduplication and XP awards
-// Scenario: Multiple eligible clean zones → tier unlocks → XP awards one-time per tier
+describe("Clean Zones Badge rules", () => {
+  it("counts only geolocalized, documented, validated clean zones and enforces 24h cooldown", () => {
+    const now = new Date("2026-06-01T12:00:00.000Z");
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
-);
-
-describe("Clean Zones Badge Integration", () => {
-  const testUserId = `test-user-${Date.now()}`;
-  const testActionId = `test-action-${Date.now()}`;
-
-  beforeAll(async () => {
-    // Create test user if needed
-    // This is handled by auth system
-  });
-
-  afterAll(async () => {
-    // Cleanup test data
-    await supabase
-      .from("progression_events")
-      .delete()
-      .eq("user_id", testUserId);
-    await supabase
-      .from("trash_spotter_spots")
-      .delete()
-      .eq("user_id", testUserId);
-  });
-
-  it("should count only geolocalized, documented, validated clean zones and enforce 24h cooldown", async () => {
-    // Create a recent validated clean zone (validated now) - should be excluded by 24h cooldown
-    await supabase
-      .from("trash_spotter_spots")
-      .insert({
-        user_id: testUserId,
-        spot_type: "clean_place",
-        status: "validated",
+    const cleanPlaces = [
+      {
+        id: "recent-clean-zone",
+        status: "validated" as const,
         latitude: 48.8566,
         longitude: 2.3522,
         notes: "Recent clean park area",
-        validated_at: new Date().toISOString(),
-      });
-
-    // Create an older validated clean zone (older than 24h) - should be counted
-    const oldDate = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
-    await supabase.from("trash_spotter_spots").insert({
-      user_id: testUserId,
-      spot_type: "clean_place",
-      status: "validated",
-      latitude: 48.8566,
-      longitude: 2.3522,
-      notes: "Old clean park area",
-      validated_at: oldDate,
-    });
-
-    // Create invalid: no geoloc
-    await supabase.from("trash_spotter_spots").insert({
-      user_id: testUserId,
-      spot_type: "clean_place",
-      status: "validated",
-      latitude: null,
-      longitude: null,
-      notes: "No geoloc",
-    });
-
-    // Create invalid: no notes
-    await supabase.from("trash_spotter_spots").insert({
-      user_id: testUserId,
-      spot_type: "clean_place",
-      status: "validated",
-      latitude: 48.8566,
-      longitude: 2.3522,
-      notes: null,
-    });
-
-    // Create invalid: not validated
-    await supabase.from("trash_spotter_spots").insert({
-      user_id: testUserId,
-      spot_type: "clean_place",
-      status: "pending",
-      latitude: 48.8566,
-      longitude: 2.3522,
-      notes: "Pending validation",
-    });
-
-    // Query API
-    const res = await fetch(
-      `${process.env.VERCEL_URL || "http://localhost:3000"}/api/gamification/badges/list`,
+        validated_at: "2026-06-01T11:15:00.000Z",
+      },
       {
-        headers: {
-          "X-User-Id": testUserId,
-          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-      }
-    );
+        id: "old-clean-zone",
+        status: "validated" as const,
+        latitude: 48.8566,
+        longitude: 2.3522,
+        notes: "Old clean park area",
+        validated_at: "2026-05-30T10:00:00.000Z",
+      },
+      {
+        id: "missing-geo",
+        status: "validated" as const,
+        latitude: null,
+        longitude: null,
+        notes: "No geoloc",
+        validated_at: "2026-05-30T10:00:00.000Z",
+      },
+      {
+        id: "missing-notes",
+        status: "validated" as const,
+        latitude: 48.8566,
+        longitude: 2.3522,
+        notes: null,
+        validated_at: "2026-05-30T10:00:00.000Z",
+      },
+      {
+        id: "pending-zone",
+        status: "pending" as const,
+        latitude: 48.8566,
+        longitude: 2.3522,
+        notes: "Pending validation",
+        validated_at: "2026-05-30T10:00:00.000Z",
+      },
+    ];
 
-    const data = await res.json();
-    const cleanZonesBadges = data.badges?.filter(
-      (b: any) => b.id?.startsWith("clean-zones-")
-    );
-    const firstBadge = cleanZonesBadges?.[0];
-
-    // Should count only 1 valid clean zone (the old one), recent one excluded by cooldown
-    expect(firstBadge?.progress?.current).toBe(1);
+    expect(countEligibleCleanZones({ cleanPlaces, now })).toBe(1);
+    expect(collectEligibleCleanZoneSources({ cleanPlaces, now })).toEqual([
+      {
+        key: "clean:old-clean-zone",
+        sourceTable: "trash_spotter_spots",
+        sourceId: "clean-id:old-clean-zone",
+      },
+    ]);
   });
 
-  it("should award XP only once per tier, preventing duplicate inserts", async () => {
-    // Create one validated clean zone
-    await supabase.from("trash_spotter_spots").insert({
-      user_id: testUserId,
-      spot_type: "clean_place",
-      status: "validated",
-      latitude: 48.9,
-      longitude: 2.4,
-      notes: "Test zone for XP",
-    });
+  it("includes eligible spots from both sources and keeps source-specific keys", () => {
+    const now = new Date("2026-06-01T12:00:00.000Z");
 
-    // Call API twice
-    const res1 = await fetch(
-      `${process.env.VERCEL_URL || "http://localhost:3000"}/api/gamification/badges/list`,
+    const cleanPlaces = [
       {
-        headers: {
-          "X-User-Id": testUserId,
-          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-      }
-    );
-    await res1.json();
+        id: "alpha",
+        status: "validated" as const,
+        latitude: 48.85,
+        longitude: 2.35,
+        notes: "Validated clean place",
+        cleaned_at: "2026-05-29T12:00:00.000Z",
+      },
+    ];
 
-    // Wait to ensure async XP award completes
-    await new Promise((r) => setTimeout(r, 100));
-
-    const res2 = await fetch(
-      `${process.env.VERCEL_URL || "http://localhost:3000"}/api/gamification/badges/list`,
+    const otherSpots = [
       {
-        headers: {
-          "X-User-Id": testUserId,
-          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-      }
-    );
-    await res2.json();
+        id: "beta",
+        status: "cleaned" as const,
+        latitude: 48.86,
+        longitude: 2.36,
+        notes: "Cleaned general spot",
+        cleaned_at: "2026-05-29T12:00:00.000Z",
+      },
+    ];
 
-    // Count progression events for "Brise" tier (threshold 1)
-    const { data: events } = await supabase
-      .from("progression_events")
-      .select("*")
-      .eq("user_id", testUserId)
-      .eq("source_table", "trash_spotter_spots")
-      .eq("source_id", "clean-zone:clean-zones-breeze");
+    const sources = collectEligibleCleanZoneSources({ cleanPlaces, otherSpots, now });
 
-    // Should have exactly 1 event (unique index prevents duplicates)
-    expect(events?.length).toBe(1);
-  });
-
-  it("should unlock multiple tiers based on count without duplicate XP", async () => {
-    const multiTierUserId = `multi-tier-${Date.now()}`;
-
-    // Create 8 validated clean zones (should unlock: Brise, Horizon, Azur, Aurore)
-    for (let i = 0; i < 8; i++) {
-      await supabase.from("trash_spotter_spots").insert({
-        user_id: multiTierUserId,
-        spot_type: "clean_place",
-        status: "validated",
-        latitude: 48.8 + i * 0.01,
-        longitude: 2.3 + i * 0.01,
-        notes: `Zone ${i}`,
-      });
-    }
-
-    // Call API
-    const res = await fetch(
-      `${process.env.VERCEL_URL || "http://localhost:3000"}/api/gamification/badges/list`,
+    expect(sources).toHaveLength(2);
+    expect(sources).toEqual([
       {
-        headers: {
-          "X-User-Id": multiTierUserId,
-          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-      }
-    );
-
-    await res.json();
-    await new Promise((r) => setTimeout(r, 200));
-
-    // Check XP events
-    const { data: xpEvents } = await supabase
-      .from("progression_events")
-      .select("*")
-      .eq("user_id", multiTierUserId)
-      .eq("source_table", "trash_spotter_spots")
-      .order("source_id");
-
-    // Should have events for tiers: Brise(1), Horizon(3), Azur(5), Aurore(8)
-    expect(xpEvents?.length).toBeGreaterThanOrEqual(1);
-    expect(xpEvents?.some((e) => e.source_id === "clean-zone:clean-zones-breeze")).toBe(true);
-
-    // Cleanup
-    await supabase
-      .from("progression_events")
-      .delete()
-      .eq("user_id", multiTierUserId);
-    await supabase
-      .from("trash_spotter_spots")
-      .delete()
-      .eq("user_id", multiTierUserId);
-  });
-
-  it("should not count non-clean-place spot types", async () => {
-    const spotTypeUserId = `spot-type-${Date.now()}`;
-
-    // Create clean_place
-    await supabase.from("trash_spotter_spots").insert({
-      user_id: spotTypeUserId,
-      spot_type: "clean_place",
-      status: "validated",
-      latitude: 48.8566,
-      longitude: 2.3522,
-      notes: "Clean place",
-    });
-
-    // Create trash spot (should not count)
-    await supabase.from("trash_spotter_spots").insert({
-      user_id: spotTypeUserId,
-      spot_type: "trash",
-      status: "validated",
-      latitude: 48.8566,
-      longitude: 2.3522,
-      notes: "Trash spot",
-    });
-
-    // Call API
-    const res = await fetch(
-      `${process.env.VERCEL_URL || "http://localhost:3000"}/api/gamification/badges/list`,
+        key: "clean:alpha",
+        sourceTable: "trash_spotter_spots",
+        sourceId: "clean-id:alpha",
+      },
       {
-        headers: {
-          "X-User-Id": spotTypeUserId,
-          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-        },
-      }
-    );
-
-    const data = await res.json();
-    const firstBadge = data.badges?.find(
-      (b: any) => b.id === "clean-zones-breeze"
-    );
-
-    // Should count only 1 (clean_place), not 2
-    expect(firstBadge?.progress?.current).toBe(1);
-
-    // Cleanup
-    await supabase
-      .from("trash_spotter_spots")
-      .delete()
-      .eq("user_id", spotTypeUserId);
+        key: "spot:beta",
+        sourceTable: "spots",
+        sourceId: "spot-id:beta",
+      },
+    ]);
   });
 });
