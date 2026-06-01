@@ -24,7 +24,8 @@ export function FamilyRubriqueCard({
   withHover = true,
   ...props
 }: FamilyRubriqueCardProps) {
-  const family = familyProp ?? usePageFamily();
+  const resolvedFamily = usePageFamily();
+  const family = familyProp ?? resolvedFamily;
   const card = family.card;
 
   return (
