@@ -4,6 +4,9 @@ import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
 import { loadValidatedCompleteActionCountForUser } from "@/lib/gamification/progression-data";
+import {
+  collectEligibleCleanZoneSources,
+} from "@/lib/gamification/clean-zones";
 import type { GemGrade } from "@/lib/gamification/types";
 
 export const runtime = "nodejs";
@@ -293,7 +296,7 @@ export async function GET() {
       const cooldownCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(); // 24h ago
 
       // 1) Count clean_place entries (forms 'zone propre' and trash_spotter_spots)
-      const { data: cleanPlaces, count: cleanPlacesCount } = await supabase
+      const { data: cleanPlaces } = await supabase
         .from('trash_spotter_spots')
         .select('id, validated_at, cleaned_at', { count: 'exact', head: false })
         .eq('user_id', userId)
@@ -322,49 +325,61 @@ export async function GET() {
         otherSpots = [];
       }
 
-      // Merge unique ids across both sources to avoid double counting
-      const ids = new Set<string>();
-      (cleanPlaces || []).forEach((r: any) => ids.add(`clean:${r.id}`));
-      otherSpots.forEach((r: any) => ids.add(`spot:${r.id}`));
+      const cleanZoneSources = collectEligibleCleanZoneSources({
+        cleanPlaces: (cleanPlaces || []) as any[],
+        otherSpots: otherSpots as any[],
+        now,
+      });
 
-      cleanZonesCount = ids.size;
+      cleanZonesCount = cleanZoneSources.length;
 
       // Award per-task XP (+1 XP) for each newly-counted spot if not already awarded
-      for (const key of Array.from(ids)) {
+      for (const source of cleanZoneSources) {
         try {
-          const [prefix, id] = key.split(':');
-          const sourceTable = prefix === 'clean' ? 'trash_spotter_spots' : 'spots';
-          const sourceId = `${prefix}-id:${id}`;
-
           const existing = await supabase
             .from('progression_events')
             .select('id')
             .eq('user_id', userId)
-            .eq('source_table', sourceTable)
-            .eq('source_id', sourceId)
+            .eq('source_table', source.sourceTable)
+            .eq('source_id', source.sourceId)
             .maybeSingle();
 
           if (!existing || !existing.data) {
             await supabase.from('progression_events').insert({
               user_id: userId,
               event_type: 'clean_zone_task',
-              source_table: sourceTable,
-              source_id: sourceId,
+              source_table: source.sourceTable,
+              source_id: source.sourceId,
               status_phase: 'validated',
               weight: 1,
               xp_base: 1,
               xp_awarded: 1,
               occurred_on: new Date().toISOString().slice(0, 10),
-              metadata: { origin: prefix, spot_id: id },
+              metadata: {
+                origin: source.key.startsWith("clean:") ? "clean" : "spot",
+                spot_id: source.sourceId.replace(/^[^-]+-id:/, ""),
+              },
             });
 
             try {
               const { auditXpAttribution } = await import('@/lib/gamification/notifications');
-              await auditXpAttribution(supabase, userId, null, `Clean zone task ${sourceId} awarded`, 1, sourceTable, sourceId, { origin: prefix, spot_id: id });
+              await auditXpAttribution(
+                supabase,
+                userId,
+                null,
+                `Clean zone task ${source.sourceId} awarded`,
+                1,
+                source.sourceTable,
+                source.sourceId,
+                {
+                  origin: source.key.startsWith("clean:") ? "clean" : "spot",
+                  spot_id: source.sourceId.replace(/^[^-]+-id:/, ""),
+                },
+              );
             } catch {}
 
             try {
-              await supabase.rpc('notify_gamification', { channel: 'gamification', payload: JSON.stringify({ type: 'clean_zone_task_awarded', userId, sourceTable, sourceId }) });
+              await supabase.rpc('notify_gamification', { channel: 'gamification', payload: JSON.stringify({ type: 'clean_zone_task_awarded', userId, sourceTable: source.sourceTable, sourceId: source.sourceId }) });
             } catch {}
           }
         } catch (e) {}
