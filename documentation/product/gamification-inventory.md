@@ -33,7 +33,7 @@ La regle de fond reste la meme: la gamification doit servir l utilite, la confia
 
 | Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
 | --- | --- | --- | --- | --- |
-| Declarer une action | one-shot + régulier + objectif infini | C est le coeur de l engagement terrain | Premiere action validee, cadence mensuelle, niveau d expert terrain | Badge de premiere action, streak mensuel sobre, badge evolutif de niveau de confiance, palier de qualite |
+| Declarer une action | one-shot + régulier + objectif infini | C est le coeur de l engagement terrain | Premiere action validee, cadence mensuelle, niveau d expert terrain | Badge `Première trace utile` (+1 XP), badge compagnon `Trace fondatrice`, streak mensuel sobre, badge evolutif de niveau de confiance, palier de qualite, badge infini `Actions créées` (uniquement apres formulaire validé et attribution aux organisateurs renseignés), badge infini `Équilibre des contextes` pour varier entre spontané, association et entreprise |
 | Itineraire IA | régulier | L usage doit devenir une habitude de preparation | Badge d usage recurrent, rappel de bonne preparation, progression d efficacite | Badge d usage recurrent, compteur de preparation utile, niveau de maitrise d itineraire |
 | Signalement Dechets | one-shot + régulier | Le premier signalement est un jalon, la recurrence montre l utilite | Badge de premier signalement, puis repere de regularite locale | Badge de premier signalement, streak de signalements utiles, palier de couverture locale |
 | Météo | autre | Surface utilitaire, pas un terrain de score | Eventuellement un rappel de preparation, sans badge propre | Aucune gamification directe; au plus un etat de preparation recommande |

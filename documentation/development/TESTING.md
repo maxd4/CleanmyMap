@@ -11,8 +11,8 @@
    - `powershell -ExecutionPolicy Bypass -File scripts/run_checks.ps1`
 
 2. Fast changed-scope validation:
-   - `npm run checks:changed:quick`
-   - `npm run checks:changed:quick:build` (includes `next build`)
+   - `powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1`
+   - `powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1 -IncludeBuild` (includes `next build`)
 
 3. Focused low-noise logs:
    - `npm run logs:focus:test`
@@ -50,7 +50,7 @@ After each production redeploy, verify:
 Run this sequence for every incremental patch:
 
 1. Local changed-scope checks:
-   - `npm run checks:changed:quick`
+   - `powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1`
 2. Web app quality gates:
    - `npm --prefix apps/web run lint`
    - `npm --prefix apps/web run build`

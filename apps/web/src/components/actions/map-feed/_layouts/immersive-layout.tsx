@@ -1,6 +1,16 @@
 import type { ActionMapItem } from "@/lib/actions/types";
-import { ActionStoriesCarousel } from "@/components/map/ActionStoriesCarousel";
+import dynamic from "next/dynamic";
 import type { ActionsMapCanvasComponent } from "../map-feed.types";
+
+const ActionStoriesCarousel = dynamic(
+  () => import("@/components/map/ActionStoriesCarousel").then((mod) => mod.ActionStoriesCarousel),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[420px] rounded-[2rem] border border-sky-200/60 bg-white/80" />
+    ),
+  },
+);
 
 type ImmersiveLayoutProps = {
   items: ActionMapItem[];

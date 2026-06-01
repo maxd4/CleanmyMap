@@ -58,6 +58,39 @@ export async function awardPoints(
 }
 
 /**
+ * Award points once for a stable source key.
+ * If an identical source_event/source_id already exists in the ledger, skip the insert.
+ */
+export async function awardPointsOnce(
+  supabase: SupabaseClient,
+  params: {
+    userId: string;
+    xpEarned: number;
+    sourceEvent: string;
+    sourceId: string;
+    reason?: string;
+  },
+): Promise<boolean> {
+  const existing = await supabase
+    .from("points_ledger")
+    .select("id")
+    .eq("user_id", params.userId)
+    .eq("source_event", params.sourceEvent)
+    .eq("source_id", params.sourceId)
+    .maybeSingle();
+
+  if (existing.error) {
+    console.error("[PointsSystem] Failed to check existing points:", existing.error);
+    return false;
+  }
+  if (existing.data) {
+    return false;
+  }
+
+  return awardPoints(supabase, params);
+}
+
+/**
  * Spend/deduct points from a user
  */
 export async function spendPoints(

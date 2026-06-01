@@ -20,6 +20,7 @@ import {
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { NationalStatsSection } from "@/components/sections/rubriques/national-stats-section";
+import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
@@ -231,6 +232,14 @@ export function MethodologiePageClient() {
       </header>
 
       <NationalStatsSection />
+
+      <TerritoryMapComparisonCards
+        title="Deux lectures de la cartographie"
+        subtitle="La carte de base garde une lecture précise et opérationnelle. La carte Terraink ajoute une lecture plus pédagogique et plus éditoriale. On garde les deux pour comparer la clarté et l'intérêt visuel dans le contexte méthodologique."
+        locationLabel="Périmètre de référence"
+        tone="rose"
+        note="Ici, la double carte sert d'outil d'explication. La version brute montre la donnée; la version Terraink montre la mise en scène possible pour un rapport ou une page de présentation."
+      />
 
       <div
         className={cn(

@@ -1,9 +1,14 @@
 import type { NavigationBlockId } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
+
 type NavigationDropdownTheme = {
   backgroundColor: string;
   backgroundImage: string;
   borderColor: string;
+};
+
+type NavigationDropdownTitleGradient = {
+  stops: string[];
 };
 
 const NAVIGATION_DROPDOWN_THEMES: Record<NavigationBlockId, NavigationDropdownTheme> = {
@@ -57,6 +62,20 @@ const NAVIGATION_DROPDOWN_THEMES: Record<NavigationBlockId, NavigationDropdownTh
   },
 };
 
+const NAVIGATION_DROPDOWN_TITLE_GRADIENTS: Record<
+  NavigationBlockId,
+  NavigationDropdownTitleGradient
+> = {
+  home: { stops: ["#f97316", "#f59e0b", "#b45309"] },
+  act: { stops: ["#10b981", "#22c55e", "#059669"] },
+  visualize: { stops: ["#06b6d4", "#38bdf8", "#ef4444"] },
+  impact: { stops: ["#ef4444", "#fb7185", "#e11d48"] },
+  network: { stops: ["#4f46e5", "#6366f1", "#ec4899"] },
+  connect: { stops: ["#db2777", "#d946ef", "#8b5cf6"] },
+  learn: { stops: ["#eab308", "#f59e0b", "#d97706"] },
+  pilot: { stops: ["#c2410c", "#f59e0b", "#92400e"] },
+};
+
 export function getNavigationDropdownPanelStyle(spaceId: NavigationBlockId | null) {
   const theme = NAVIGATION_DROPDOWN_THEMES[spaceId ?? "home"];
 
@@ -65,6 +84,18 @@ export function getNavigationDropdownPanelStyle(spaceId: NavigationBlockId | nul
     backgroundImage: theme.backgroundImage,
     borderColor: theme.borderColor,
     color: "#000000",
+  } as const;
+}
+
+export function getNavigationDropdownTitleGradientStyle(spaceId: NavigationBlockId | null) {
+  const gradient = NAVIGATION_DROPDOWN_TITLE_GRADIENTS[spaceId ?? "home"];
+
+  return {
+    backgroundImage: `linear-gradient(90deg, ${gradient.stops.join(", ")})`,
+    WebkitBackgroundClip: "text",
+    backgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    color: "transparent",
   } as const;
 }
 

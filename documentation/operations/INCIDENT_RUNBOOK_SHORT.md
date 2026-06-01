@@ -85,7 +85,7 @@ Immediate remediation:
 3. Run minimum verification:
    - `npm --prefix apps/web run lint`
    - `npm --prefix apps/web run build`
-   - `npm run checks:changed:quick`
+   - `powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1`
 4. Confirm supervision panel:
    - `/api/uptime` -> `criticalStatus: "ok"`
    - optional integrations may stay in warning without blocking runtime.

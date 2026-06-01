@@ -1,10 +1,11 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
 import { env } from "@/lib/env";
 import { resolveContactEmail, resolveEmailFrom } from "@/lib/email-config";
-import { getResendClient } from "@/lib/services/resend";
+import { sendEmail } from "@/lib/services/email";
 
 export const runtime = "nodejs";
 
@@ -26,6 +27,7 @@ function hasValidTestToken(request: Request): boolean {
 
 export async function POST(request: Request) {
   const tokenAuthorized = hasValidTestToken(request);
+  const { userId: actorUserId } = await auth();
 
   if (!tokenAuthorized) {
     const access = await requireAdminAccess();
@@ -33,11 +35,9 @@ export async function POST(request: Request) {
       return adminAccessErrorJsonResponse(access);
     }
   }
-
-  const resend = getResendClient();
   const from = resolveEmailFrom();
   const replyTo = resolveContactEmail();
-  if (!resend || !from || !replyTo) {
+  if (!env.RESEND_API_KEY?.trim() || !from || !replyTo) {
     return NextResponse.json({ error: "Resend not configured" }, { status: 503 });
   }
 
@@ -63,7 +63,8 @@ export async function POST(request: Request) {
   const to = payload.to ?? replyTo;
 
   try {
-    const result = await resend.emails.send({
+    const result = await sendEmail({
+      actorUserId,
       from,
       to,
       subject: payload.subject ?? "[CleanMyMap] Test Resend",
@@ -73,24 +74,10 @@ export async function POST(request: Request) {
       replyTo,
     });
 
-    if (result.error) {
-      console.error("[Resend test] send failed", {
-        to,
-        subject: payload.subject ?? "[CleanMyMap] Test Resend",
-        from,
-        replyTo,
-        error: result.error.message,
-      });
-      return NextResponse.json(
-        { error: "Resend send failed", details: "Unavailable" },
-        { status: 502 },
-      );
-    }
-
     return NextResponse.json({
       ok: true,
-      status: "queued",
-      id: result.data?.id ?? null,
+      status: result.status,
+      id: result.id ?? null,
       to,
     });
   } catch (error) {

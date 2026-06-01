@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { CmmPageShell } from "@/components/ui/cmm-card";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
-import { PageHero } from "@/components/ui/page-hero";
+import { PageHeader } from "@/components/ui/page-header";
 import { usePageFamily } from "@/lib/ui/page-families";
 
 type TemplateAction = {
@@ -35,13 +35,11 @@ export function PageReadingTemplate(props: PageReadingTemplateProps) {
 
    {/* Header */}
    <header className="border-t border-[color:var(--border-default)] pt-5">
-    <PageHero
+    <PageHeader
      family={pageFamily}
      eyebrow={props.context}
      title={props.title}
      subtitle={props.objective}
-     titleSize="compact"
-     className="max-w-3xl"
     />
    </header>
 

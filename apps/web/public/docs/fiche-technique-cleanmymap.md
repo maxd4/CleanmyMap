@@ -20,7 +20,7 @@ Ce document est un inventaire technique du projet tel qu'il existe dans le works
 - Monitoring : Sentry via `@sentry/nextjs`, configs [apps/web/sentry.server.config.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/sentry.server.config.ts) et [apps/web/sentry.edge.config.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/sentry.edge.config.ts), activation conditionnelle dans [apps/web/next.config.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/next.config.ts).
 - Emails : Resend via [apps/web/src/lib/services/resend.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/services/resend.ts) et couche unifiée dans [apps/web/src/lib/services/email.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/lib/services/email.ts).
 - Tests : Vitest via [apps/web/vitest.config.ts](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/vitest.config.ts), tests `*.test.ts` dans `src`, plus Playwright pour les captures.
-- Screenshots : script Playwright + Sharp dans [documentation/liberte-UX-UI/capture-pages.mjs](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/liberte-UX-UI/capture-pages.mjs), exposé par `npm run screenshots`.
+- Screenshots : pipeline Playwright + Sharp dans [documentation/pages_site/screen/capture-pages.mjs](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/pages_site/screen/capture-pages.mjs), exposé par `npm run screenshots:screen`.
 
 ## 2. Commandes utiles
 - Installation :
@@ -45,7 +45,7 @@ npm run test
 ```
 - Screenshot :
 ```bash
-npm run screenshots
+npm run screenshots:screen
 ```
 - Audit :
 ```bash
@@ -167,7 +167,7 @@ npm run checks
 - Stack centrale : Next.js 16, React 19, TypeScript, Tailwind v4, Clerk, Supabase.
 - UI : design system CMM maison, cartes/boutons/tokens CSS, Framer Motion, Lucide.
 - Observabilité et services : PostHog, Sentry, Vercel Analytics, Resend, Stripe, Pinecone, Upstash.
-- Captures : Playwright + Sharp via [documentation/liberte-UX-UI/capture-pages.mjs](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/liberte-UX-UI/capture-pages.mjs).
+- Captures : Playwright + Sharp via [documentation/pages_site/screen/capture-pages.mjs](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/pages_site/screen/capture-pages.mjs).
 - Fichier principal créé : [documentation/fiche-technique-cleanmymap.md](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/documentation/fiche-technique-cleanmymap.md).
 
 

@@ -10,25 +10,18 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
     let insertCount = 0;
     const inserts: any[] = [];
 
-    const supabaseMock = {
+    const supabaseMock: any = {
       from: vi.fn((table: string) => {
         if (table === 'progression_events') {
           return {
             select: vi.fn(() => ({
-              eq: vi.fn(function(this: any) {
-                return this;
-              })
-              .bind({
-                eq: vi.fn(function(this: any) {
-                  return this;
-                }).bind({
-                  eq: vi.fn(function(this: any) {
-                    return this;
-                  }).bind({
+              eq: vi.fn((..._args: unknown[]) => ({
+                eq: vi.fn((..._nextArgs: unknown[]) => ({
+                  eq: vi.fn((..._finalArgs: unknown[]) => ({
                     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-                  }),
-                }),
-              }),
+                  })),
+                })),
+              })),
             })),
             insert: vi.fn(async (payload: any) => {
               insertCount++;
@@ -101,14 +94,14 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
     let selectCount = 0;
     let insertCount = 0;
 
-    const supabaseMock = {
+    const supabaseMock: any = {
       from: vi.fn((table: string) => {
         if (table === 'progression_events') {
           return {
             select: vi.fn(() => ({
-              eq: vi.fn(() => ({
-                eq: vi.fn(() => ({
-                  eq: vi.fn(() => ({
+              eq: vi.fn((..._args: unknown[]) => ({
+                eq: vi.fn((..._nextArgs: unknown[]) => ({
+                  eq: vi.fn((..._finalArgs: unknown[]) => ({
                     maybeSingle: vi.fn(async () => {
                       selectCount++;
                       // return existing row (data is not null) to simulate duplicate

@@ -9,6 +9,7 @@ export type FormState = {
  actorName: string;
  associationName: string;
  enterpriseName: string;
+ organizerAccounts: string;
  actionDate: string;
  locationLabel: string;
  departureLocationLabel: string;
@@ -42,6 +43,7 @@ export const initialState: FormState = {
  actorName:"",
  associationName: ASSOCIATION_SELECTION_OPTIONS[0],
  enterpriseName:"",
+ organizerAccounts:"",
  actionDate: new Date().toISOString().slice(0, 10),
  locationLabel:"",
  departureLocationLabel:"",

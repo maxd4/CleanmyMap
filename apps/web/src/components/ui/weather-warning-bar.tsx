@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from"react";
 import { fetchCurrentWeather, WeatherData } from"@/lib/pilotage/weather-service";
 import { CloudRain, Wind, AlertTriangle, X } from"lucide-react";
+import { canRequestGeolocation } from "@/lib/browser/geolocation";
 
 export function WeatherWarningBar() {
  const [data, setData] = useState<WeatherData | null>(null);
@@ -17,8 +18,8 @@ export function WeatherWarningBar() {
  }, []);
 
  useEffect(() => {
- // Attempt only if we have geo permission or silently fail
- if (typeof navigator !=="undefined" && navigator.geolocation) {
+ // Attempt only if geolocation is allowed on this page.
+ if (canRequestGeolocation()) {
  navigator.geolocation.getCurrentPosition(
  async (position) => {
  try {

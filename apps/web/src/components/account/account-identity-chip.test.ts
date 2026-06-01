@@ -14,6 +14,7 @@ describe("account identity chip helpers", () => {
   it("cycles only the self-service profiles", () => {
     expect(cycleRoleForSelfService("benevole")).toBe("coordinateur");
     expect(cycleRoleForSelfService("coordinateur")).toBe("scientifique");
-    expect(cycleRoleForSelfService("scientifique")).toBe("benevole");
+    expect(cycleRoleForSelfService("scientifique")).toBe("entreprise");
+    expect(cycleRoleForSelfService("entreprise")).toBe("benevole");
   });
 });

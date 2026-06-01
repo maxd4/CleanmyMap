@@ -9,6 +9,7 @@ const buildPostActionRetentionLoopMock = vi.hoisted(() => vi.fn());
 const trackServerEventMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
 const createActionMock = vi.hoisted(() => vi.fn());
+const resolveActionOrganizersMock = vi.hoisted(() => vi.fn());
 const emitActionCreatedMock = vi.hoisted(() => vi.fn());
 const emitSpotCreatedMock = vi.hoisted(() => vi.fn());
 const hasAnalyticsConsentCookieMock = vi.hoisted(() => vi.fn());
@@ -47,12 +48,28 @@ vi.mock("@/lib/actions/store", () => ({
   createAction: createActionMock,
 }));
 
+vi.mock("@/lib/actions/organizers", () => ({
+  resolveActionOrganizers: resolveActionOrganizersMock,
+}));
+
 describe("POST /api/actions", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     getSupabaseServerClientMock.mockReturnValue({});
     createActionMock.mockResolvedValue({ id: "action-test-1" });
+    resolveActionOrganizersMock.mockResolvedValue({
+      organizers: [
+        {
+          userId: "user-test-1",
+          displayName: "Test User",
+          handle: "test@example.org",
+          isPrimary: true,
+          sourceToken: null,
+        },
+      ],
+      unresolvedTokens: [],
+    });
     authMock.mockResolvedValue({ userId: "user-test-1" });
     getCurrentUserIdentityMock.mockResolvedValue({
       userId: "user-test-1",
@@ -108,6 +125,11 @@ describe("POST /api/actions", () => {
     expect(response.status).toBe(201);
     expect(body.id).toBe("action-test-1");
     expect(createActionMock).toHaveBeenCalledTimes(1);
+    expect(resolveActionOrganizersMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizerAccounts: [],
+      }),
+    );
     expect(emitActionCreatedMock).toHaveBeenCalledWith({
       actionId: "action-test-1",
       userId: "user-test-1",
@@ -119,6 +141,36 @@ describe("POST /api/actions", () => {
       actionId: "action-test-1",
     });
     expect(trackServerEventMock).not.toHaveBeenCalled();
+  }, 15000);
+
+  it("rejects non-spontaneous actions without an explicit organizer", async () => {
+    const { POST } = await import("./route");
+
+    const payload = toContractCreatePayload({
+      actorName: "Test User",
+      associationName: "Association Sans Murs Paris 15",
+      actionDate: "2026-04-22",
+      locationLabel: "Test lieu action",
+      wasteKg: 2.5,
+      cigaretteButts: 0,
+      volunteersCount: 4,
+      durationMinutes: 45,
+      notes: "Formulaire bénévole de test",
+      submissionMode: "quick",
+    });
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    const body = (await response.json()) as { details?: { organizerAccounts?: string[] } };
+    expect(response.status).toBe(422);
+    expect(body.details?.organizerAccounts?.[0]).toContain("Renseignez au moins un compte organisateur");
+    expect(createActionMock).not.toHaveBeenCalled();
+    expect(resolveActionOrganizersMock).not.toHaveBeenCalled();
   }, 15000);
 
   it("creates a spot when the payload declares a clean place", async () => {

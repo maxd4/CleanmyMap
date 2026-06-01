@@ -2,12 +2,13 @@
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { getProfileLabel, type AppProfile } from "@/lib/profiles";
-import { Info, Microscope, Landmark, ShieldAlert, Users, Layers, Sparkles, type LucideIcon } from "lucide-react";
+import { Info, Microscope, Landmark, ShieldAlert, Users, Layers, Sparkles, Building2, type LucideIcon } from "lucide-react";
 
 const PROFILE_CONTEXT_MESSAGES: Record<AppProfile, string> = {
   benevole: "Interface optimisée pour la déclaration terrain et le suivi de proximité.",
   coordinateur: "Vue de pilotage opérationnel pour la gestion des équipes et événements.",
   scientifique: "Console d'analyse avancée axée sur l'intégrité des données et les statistiques.",
+  entreprise: "Portail professionnel pour les partenariats, le mécénat et le suivi d'impact.",
   elu: "Portail de gouvernance avec indicateurs de ROI et impact territorial global.",
   admin: "Espace de supervision système et modération critique.",
   max: "Espace IMU avec arbitrage final et traitement des demandes sensibles.",
@@ -17,6 +18,7 @@ const PROFILE_ICONS: Record<AppProfile, LucideIcon> = {
   benevole: Users,
   coordinateur: Layers,
   scientifique: Microscope,
+  entreprise: Building2,
   elu: Landmark,
   admin: ShieldAlert,
   max: ShieldAlert,

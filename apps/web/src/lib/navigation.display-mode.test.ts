@@ -9,7 +9,7 @@ import {
 } from "./navigation";
 
 function collectRouteIds(
-  profile: "benevole" | "coordinateur" | "scientifique" | "elu" | "admin" | "max",
+  profile: "benevole" | "coordinateur" | "scientifique" | "entreprise" | "elu" | "admin" | "max",
   mode: "exhaustif" | "sobre" | "minimaliste",
 ) {
   return getNavigationSpacesForProfile(profile, mode).flatMap((space) =>
@@ -156,6 +156,22 @@ describe("navigation display modes", () => {
       "elus",
       "godmode",
     ]);
+  });
+
+  it("shows the admin home block without godmode but with pilotage and elus", () => {
+    const homeSpace = getNavigationSpacesForProfile(
+      "admin",
+      "exhaustif",
+    ).find((space) => space.id === "home");
+
+    expect(homeSpace?.items.map((item) => item.routeId)).toEqual([
+      "dashboard",
+      "explorer",
+      "pilotage",
+      "admin",
+      "elus",
+    ]);
+    expect(homeSpace?.items.map((item) => item.routeId)).not.toContain("godmode");
   });
 
   it("places feedback in the network block", () => {

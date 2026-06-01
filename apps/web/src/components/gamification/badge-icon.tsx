@@ -4,6 +4,7 @@ import type { LucideIcon } from"lucide-react";
 import {
  Award,
  BadgeCheck,
+ Building2,
  Crown,
  Droplets,
  Leaf,
@@ -20,6 +21,7 @@ import {
 export type BadgeIconName =
  |"award"
  |"badge-check"
+ |"building-2"
  |"crown"
  |"droplets"
  |"leaf"
@@ -35,6 +37,7 @@ export type BadgeIconName =
 const ICONS: Record<BadgeIconName, LucideIcon> = {
  award: Award,
 "badge-check": BadgeCheck,
+ "building-2": Building2,
  crown: Crown,
  droplets: Droplets,
  leaf: Leaf,
@@ -74,6 +77,10 @@ const GAMIFICATION_LABEL_ICON_KEYS: Record<string, BadgeIconName> = {
 "Bras Armé (Bronze)":"award",
 "Sentinelle Exemplaire":"badge-check",
 "Données de Qualité":"sparkles",
+"Première trace utile":"badge-check",
+"Trace fondatrice":"sparkles",
+"Équilibre des contextes":"sliders-horizontal",
+"Equilibre des contextes":"sliders-horizontal",
 "Pilier de Communauté":"users",
 "Esprit d'Équipe":"users",
 };
@@ -84,11 +91,13 @@ const ACCOUNT_BADGE_ICON_KEYS: Record<string, BadgeIconName> = {
  role_benevole:"users",
  role_coordinateur:"target",
  role_scientifique:"sparkles",
+ role_entreprise:"building-2",
  role_elu:"badge-check",
  profile_admin:"shield",
  profile_benevole:"users",
  profile_coordinateur:"target",
  profile_scientifique:"sparkles",
+ profile_entreprise:"building-2",
  profile_elu:"badge-check",
  pioneer:"zap",
  mentor:"award",

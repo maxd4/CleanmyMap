@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from 'next/link'
 import { CmmCard } from '@/components/ui/cmm-card'
 import { CmmButton } from '@/components/ui/cmm-button'
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Comparaison interne des formulaires - CleanMyMap",
@@ -17,12 +18,14 @@ export default function FormComparisonPage() {
  return (
  <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_left,_rgba(186,230,253,0.45)_0%,_rgba(255,255,255,0.96)_52%,_rgba(248,250,252,1)_100%)] py-8">
  <div className="container mx-auto max-w-4xl px-4">
- <div className="text-center mb-8">
- <h1 className="mb-4 text-3xl font-bold text-slate-950">Comparer les formulaires</h1>
- <p className="cmm-text-secondary">
-      Comparez la version actuelle et la version simplifiée du formulaire de déclaration.
- </p>
- </div>
+ <PageHeader
+   tone="sky"
+   align="center"
+   badge={<PageHeaderBadge tone="sky">Vue interne</PageHeaderBadge>}
+   title="Comparer les formulaires"
+   subtitle="Comparez la version actuelle et la version simplifiée du formulaire de déclaration."
+   className="mb-8"
+ />
 
  <div className="grid md:grid-cols-2 gap-8">
   {/* Complex Form */}

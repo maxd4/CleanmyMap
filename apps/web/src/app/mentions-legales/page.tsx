@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
@@ -39,22 +40,13 @@ export default function MentionsLegalesPage() {
       </div>
 
       <div className="space-y-10 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
-        <header className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">
-            Cadre juridique
-          </p>
-          <h1 className="text-4xl font-black tracking-tight text-slate-950">
-            Mentions légales
-          </h1>
-          <p className="max-w-3xl text-base text-slate-600">
-            Point d&apos;entrée unique vers les documents juridiques de CleanMyMap.
-            Les pages détaillées sont séparées pour éviter les doublons et garder
-            la conformité lisible.
-          </p>
-          <p className="text-sm font-medium text-slate-500">
-            Dernière mise à jour : 5 mai 2026
-          </p>
-        </header>
+        <PageHeader
+          tone="slate"
+          badge={<PageHeaderBadge tone="slate">Cadre juridique</PageHeaderBadge>}
+          title="Mentions légales"
+          subtitle="Point d'entrée unique vers les documents juridiques de CleanMyMap. Les pages détaillées restent séparées pour garder la conformité lisible."
+          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 5 mai 2026</p>}
+        />
 
         <section className="grid gap-4 md:grid-cols-2">
           <Link

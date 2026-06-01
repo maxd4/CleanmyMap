@@ -27,6 +27,21 @@ Lecture de la colonne `Exception UI ?` :
 | `/reports` | Page d'impact rouge conservée comme exception visuelle du bloc Cartographie & Impact | Rouge d'impact |
 | `/gamification` | Variante d'impact rouge, même logique visuelle que les pages d'impact | Rouge d'impact |
 
+## Routes `account-complete gated`
+
+Ces routes utilisent le gate de complétion de compte en plus de leur UI canonique. Elles ne sont pas des exceptions de palette, mais des routes où l'accès au contenu dépend d'un compte entièrement renseigné.
+
+| Route | Statut | Note |
+|---|---|---|
+| `/dashboard` | `account-complete gated` | Mon espace, contenu personnel et réglages liés au compte |
+| `/sponsor-portal` | `account-complete gated` | Portail décideur et exports liés au profil |
+| `/signalement` | `account-complete gated` | Déclaration terrain certifiée |
+| `/actions/history` | `account-complete gated` | Historique terrain et fiabilisation du compte |
+| `/partners/dashboard` | `account-complete gated` | Pilotage réseau et gestion des fiches |
+| `/partners/onboarding` | `account-complete gated` | Parcours partenaire et saisie des informations requises |
+| `/reports` | `account-complete gated` | Rapports d'impact avec contexte utilisateur complet |
+| `/admin` | `account-complete gated` | Back-office central avec accès réservé |
+
 ## Familles UI autonomes
 
 Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visuel propre, stable et indépendant.
@@ -163,6 +178,46 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | `/politique-confidentialite` | Canonique | Institutionnel & Légal | non | Page juridique |
 | `/politique-cookies` | Canonique | Institutionnel & Légal | non | Page juridique |
 | `/en` | Canonique | Institutionnel & Légal | non | Variante linguistique |
+
+## Pages non migrées vers `PageHeader`
+
+Les pages ci-dessous n'utilisent pas encore le composant canonique directement. La raison indiquée est celle qui bloque ou justifie la migration à ce stade.
+
+### Encore à migrer
+
+| Route | Pourquoi ce n'est pas encore migré | Priorité |
+|---|---|---|
+| `/explorer` | sommaire validé comme surface dédiée, pas un simple header de page | faible |
+| `/not-found` | page système d'erreur, doit rester sur un traitement `SystemState` | faible |
+| `/explorer` | sommaire validé comme surface dédiée, pas un simple header de page | faible |
+| `/not-found` | page système d'erreur, doit rester sur un traitement `SystemState` | faible |
+
+### Migrées sur `PageHeader`
+
+| Route | Pourquoi la page n'est plus dans la liste précédente | Note |
+|---|---|---|
+| `/admin` | en-tête principal harmonisé sur le composant canonique | console admin autonome, sections internes conservées |
+| `/admin/services` | en-tête principal harmonisé sur le composant canonique | supervision technique autonome, panneaux internes conservés |
+| `/admin/godmode` | en-tête principal harmonisé sur le composant canonique | accès racine autonome, garde-fou `notFound()` conservé |
+| `/reglages` | en-tête principal harmonisé sur le composant canonique | famille système, layout privé conservé |
+| `/observatoire` | en-tête principal harmonisé sur le composant canonique | surface analytique publique, sections métiers conservées |
+| `/partners/dashboard` | en-tête principal harmonisé sur le composant canonique | page réseau/pilotage, contenu métier conservé |
+| `/partners/network` | en-tête principal harmonisé sur le composant canonique | page réseau d'orientation, contenu métier conservé |
+| `/partners/onboarding` | en-tête principal harmonisé sur le composant canonique | parcours partenaire, gate de connexion conservé |
+| `/sections/route` | en-tête principal harmonisé sur le composant canonique | itinéraire Agir, CTA conservés |
+| `/prints/report` | en-tête principal harmonisé sur le composant canonique | en-tête de document conservé, layout imprimable inchangé |
+| `/missions/[id]` | en-tête principal harmonisé sur le composant canonique | détail mission, carte et statistiques conservées |
+| `/learn/ressources` | en-tête principal harmonisé via le shell d'apprentissage | shell d'apprentissage inchangé |
+| `/actions/history` | en-tête principal harmonisé via `PageReadingTemplate` et `DecisionPageHeader` | chronologie métier conservée |
+
+### Familles autonomes où `PageHeader` n'est pas la bonne brique principale
+
+| Route | Pourquoi | Composant de référence |
+|---|---|---|
+| `/sign-in`, `/sign-up` | écran Clerk / auth, la structure est pilotée par le fournisseur | écran auth dédié |
+| `/onboarding` | parcours pas à pas, davantage un flow qu'une page éditoriale | shell onboarding |
+| `/onboarding/localisation` | étape de configuration du parcours, même logique que l'onboarding | shell onboarding |
+| `/error/429` | état système / quota, pas un header de page standard | `SystemState*` |
 
 ## Règles d’usage
 

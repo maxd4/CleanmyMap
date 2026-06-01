@@ -37,6 +37,15 @@ export type ActionRow = {
   manual_drawing?: ActionDrawing | null;
 };
 
+export type ActionOrganizerRow = {
+  action_id: string;
+  organizer_clerk_id: string;
+  organizer_label: string;
+  organizer_handle: string | null;
+  is_primary: boolean;
+  created_at: string;
+};
+
 export type SpotRow = {
   id: string;
   created_at: string;

@@ -170,6 +170,7 @@ export type ActionDrawing = {
 export type CreateActionPayload = {
   actorName?: string;
   associationName?: string;
+  organizerAccounts?: string[];
   actionDate: string;
   locationLabel: string;
   departureLocationLabel?: string;
@@ -274,7 +275,7 @@ export type ActionMapItem = Pick<
 export type ActionMapResponse = {
   status: "ok";
   count: number;
-  daysWindow: number;
+  daysWindow: number | null;
   items: ActionMapItem[];
   partialSource?: boolean;
   sourceHealth?: {

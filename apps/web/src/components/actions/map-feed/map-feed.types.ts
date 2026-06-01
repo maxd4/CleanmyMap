@@ -6,6 +6,7 @@ import type {
   ActionStatus,
 } from "@/lib/actions/types";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
+import type { ActionsMapDateScope } from "@/components/actions/map/actions-map-filters.utils";
 
 export type ActionsMapCanvasComponent = ComponentType<{
   items: ActionMapItem[];
@@ -16,9 +17,11 @@ export type ActionsMapCanvasComponent = ComponentType<{
 export type ActionsMapFeedProps = {
   types?: ActionRecordType[] | "all";
   days: number;
+  dateScope?: ActionsMapDateScope;
   statusFilter: ActionStatus | "all";
   impactFilter: ActionImpactLevel | "all";
   qualityMin: number;
+  limit?: number;
   presentation?: "default" | "immersive";
   showIntro?: boolean;
   fullViewport?: boolean;

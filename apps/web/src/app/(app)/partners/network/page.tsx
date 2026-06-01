@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Handshake, ArrowRight, Network, Users, LayoutDashboard, UserPlus, Search } from "lucide-react";
 import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigation-grid";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { getServerLocale } from "@/lib/server-preferences";
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
 import { getEntryTrustState } from "@/components/sections/rubriques/annuaire-helpers";
@@ -94,49 +95,49 @@ export default async function PartnersNetworkPage() {
 
           <div className="relative z-10 grid gap-8 xl:grid-cols-[1.1fr_0.9fr] xl:items-end">
             <div className="space-y-6">
-              <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-indigo-100/52">
-                <span className="inline-flex items-center gap-2 rounded-full border border-indigo-300/18 bg-indigo-400/12 px-3 py-1 text-indigo-50">
-                  <Handshake size={12} />
-                  Réseau
-                </span>
-                <span>Partenaires</span>
-                <span>Onboarding</span>
-                <span>Pilotage</span>
-                <span>Sponsor portal</span>
-              </div>
-
-              <div className="space-y-4">
-                <h1 className="max-w-4xl text-4xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
-                  {fr ? "Lire le réseau, choisir le bon contact, rejoindre une dynamique." : "Read the network, pick the right contact, and join the momentum."}
-                </h1>
-                <p className="max-w-3xl text-sm leading-relaxed text-indigo-100/68 sm:text-base">
-                  {fr
-                    ? "Cette porte d'entrée rassemble les structures visibles, les parcours de qualification et les outils de pilotage. L'objectif: rendre le maillage local lisible et activable sans perdre la distinction entre acteurs, territoires et rôle institutionnel."
-                    : "This entry point brings together visible structures, qualification flows and management tools. The goal is to make the local network readable and actionable while keeping actors, territories and institutional roles distinct."}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <Link
-                  href="/sections/annuaire"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-indigo-400 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-indigo-950 transition hover:bg-indigo-300"
-                >
-                  {fr ? "Ouvrir l'annuaire" : "Open the directory"}
-                  <ArrowRight size={14} />
-                </Link>
-                <Link
-                  href="/partners/onboarding"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-indigo-300/18 bg-[rgba(22,26,72,0.9)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-indigo-50 transition hover:border-indigo-300/30 hover:bg-[rgba(30,41,118,0.96)]"
-                >
-                  {fr ? "Rejoindre le réseau" : "Join the network"}
-                </Link>
-                <Link
-                  href="/partners/dashboard"
-                  className="inline-flex items-center gap-2 rounded-2xl border border-indigo-300/18 bg-[rgba(22,26,72,0.9)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-indigo-50 transition hover:border-indigo-300/30 hover:bg-[rgba(30,41,118,0.96)]"
-                >
-                  {fr ? "Piloter les fiches" : "Manage profiles"}
-                </Link>
-              </div>
+              <PageHeader
+                tone="indigo"
+                contrast="inverse"
+                eyebrow={fr ? "Réseau & partenaires" : "Network & partners"}
+                title={fr ? "Lire le réseau, choisir le bon contact, rejoindre une dynamique." : "Read the network, pick the right contact, and join the momentum."}
+                subtitle={fr
+                  ? "Cette porte d'entrée rassemble les structures visibles, les parcours de qualification et les outils de pilotage. L'objectif: rendre le maillage local lisible et activable sans perdre la distinction entre acteurs, territoires et rôle institutionnel."
+                  : "This entry point brings together visible structures, qualification flows and management tools. The goal is to make the local network readable and actionable while keeping actors, territories and institutional roles distinct."}
+                badges={
+                  <>
+                    <PageHeaderBadge tone="indigo" contrast="inverse">
+                      <Handshake size={12} className="mr-2 inline-block align-[-2px]" />
+                      Réseau
+                    </PageHeaderBadge>
+                    <PageHeaderBadge tone="indigo" contrast="inverse" muted>Partenaires</PageHeaderBadge>
+                    <PageHeaderBadge tone="indigo" contrast="inverse" muted>Onboarding</PageHeaderBadge>
+                  </>
+                }
+                action={
+                  <div className="flex flex-wrap gap-3">
+                    <Link
+                      href="/sections/annuaire"
+                      className="inline-flex items-center gap-2 rounded-2xl bg-indigo-400 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-indigo-950 transition hover:bg-indigo-300"
+                    >
+                      {fr ? "Ouvrir l'annuaire" : "Open the directory"}
+                      <ArrowRight size={14} />
+                    </Link>
+                    <Link
+                      href="/partners/onboarding"
+                      className="inline-flex items-center gap-2 rounded-2xl border border-indigo-300/18 bg-[rgba(22,26,72,0.9)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-indigo-50 transition hover:border-indigo-300/30 hover:bg-[rgba(30,41,118,0.96)]"
+                    >
+                      {fr ? "Rejoindre le réseau" : "Join the network"}
+                    </Link>
+                    <Link
+                      href="/partners/dashboard"
+                      className="inline-flex items-center gap-2 rounded-2xl border border-indigo-300/18 bg-[rgba(22,26,72,0.9)] px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-indigo-50 transition hover:border-indigo-300/30 hover:bg-[rgba(30,41,118,0.96)]"
+                    >
+                      {fr ? "Piloter les fiches" : "Manage profiles"}
+                    </Link>
+                  </div>
+                }
+                className="max-w-4xl"
+              />
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">

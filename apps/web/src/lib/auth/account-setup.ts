@@ -1,8 +1,18 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
-
-const ACCOUNT_SETUP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+import {
+  ACCOUNT_SETUP_SCHEMA_VERSION,
+  ACCOUNT_SETUP_WINDOW_MS,
+} from "@/lib/auth/account-setup-config";
 
 type ClerkMetadata = Record<string, unknown> | null | undefined;
+
+export type AccountSetupRequirement = {
+  requiresSetup: boolean;
+  setupCompleted: boolean;
+  createdAt: number | null;
+  setupVersion: number | null;
+  reason: "initial_setup" | "schema_update" | null;
+};
 
 function extractSetupCompletionFlag(metadata: ClerkMetadata): boolean {
   if (!metadata) {
@@ -10,6 +20,28 @@ function extractSetupCompletionFlag(metadata: ClerkMetadata): boolean {
   }
 
   return metadata["profileSetupCompleted"] === true;
+}
+
+function extractSetupVersion(metadata: ClerkMetadata): number | null {
+  if (!metadata) {
+    return null;
+  }
+
+  const rawValue =
+    metadata["profileSetupVersion"] ??
+    metadata["profile_setup_version"] ??
+    metadata["profileSetupSchemaVersion"];
+
+  if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+    return Math.max(0, Math.trunc(rawValue));
+  }
+
+  if (typeof rawValue === "string" && rawValue.trim().length > 0) {
+    const parsed = Number.parseInt(rawValue, 10);
+    return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
+  }
+
+  return null;
 }
 
 function toCreatedAtTimestamp(createdAt: Date | string | number | null | undefined): number | null {
@@ -39,17 +71,26 @@ export function shouldRequireAccountSetup(
   return Date.now() - createdAtTimestamp < ACCOUNT_SETUP_WINDOW_MS;
 }
 
-export async function getCurrentUserAccountSetupRequirement(): Promise<{
-  requiresSetup: boolean;
-  setupCompleted: boolean;
-  createdAt: number | null;
-}> {
+export function shouldRequireAccountSetupRefresh(
+  setupVersion: number | null | undefined,
+  requiredVersion: number = ACCOUNT_SETUP_SCHEMA_VERSION,
+): boolean {
+  if (setupVersion == null) {
+    return true;
+  }
+
+  return setupVersion < requiredVersion;
+}
+
+export async function getCurrentUserAccountSetupRequirement(): Promise<AccountSetupRequirement> {
   const { userId } = await auth();
   if (!userId) {
     return {
       requiresSetup: false,
       setupCompleted: true,
       createdAt: null,
+      setupVersion: null,
+      reason: null,
     };
   }
 
@@ -60,11 +101,19 @@ export async function getCurrentUserAccountSetupRequirement(): Promise<{
       extractSetupCompletionFlag(user.publicMetadata) ||
       extractSetupCompletionFlag(user.privateMetadata) ||
       extractSetupCompletionFlag(user.unsafeMetadata);
+    const setupVersion =
+      extractSetupVersion(user.publicMetadata) ??
+      extractSetupVersion(user.privateMetadata) ??
+      extractSetupVersion(user.unsafeMetadata);
+    const needsInitialSetup = shouldRequireAccountSetup(user.createdAt, setupCompleted);
+    const needsSchemaUpdate = shouldRequireAccountSetupRefresh(setupVersion);
 
     return {
-      requiresSetup: shouldRequireAccountSetup(user.createdAt, setupCompleted),
+      requiresSetup: needsInitialSetup || needsSchemaUpdate,
       setupCompleted,
       createdAt: toCreatedAtTimestamp(user.createdAt),
+      setupVersion,
+      reason: needsSchemaUpdate ? "schema_update" : needsInitialSetup ? "initial_setup" : null,
     };
   } catch (error) {
     console.error("Current user setup requirement resolution failed", error);
@@ -72,6 +121,8 @@ export async function getCurrentUserAccountSetupRequirement(): Promise<{
       requiresSetup: false,
       setupCompleted: true,
       createdAt: null,
+      setupVersion: null,
+      reason: null,
     };
   }
 }

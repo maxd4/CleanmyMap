@@ -12,10 +12,10 @@
 - **Objectif utilisateur principal** : Faire circuler l'information et faciliter les échanges entre acteurs.
 - **Action principale attendue** : Lire, contacter ou rejoindre une discussion / un réseau.
 - **Palette attendue** : pink
-- **Scope** : à valider
+- **Scope** : à corriger
 - **Terminée** : non
-- **Couleurs actuellement détectées** : pink — canvas #fce7f3, halo rgba(236, 72, 153, 0.22)
-- **Incohérences de couleurs** : Pas d'incohérence détectée après réalignement; validation visuelle à confirmer.
+- **Couleurs actuellement détectées** : slate — canvas #eef0f3, halo rgba(148, 163, 184, 0.18)
+- **Incohérences de couleurs** : Écart détecté: attendu pink, code actuel slate / neutral.
 - **Risque de conflit avec les couleurs existantes** : moyen : indigo et pink doivent rester distincts du légal et des zones techniques.
 - **Niveau de surcharge textuelle** : fort
 - **Textes à conserver** :

@@ -12,9 +12,8 @@
 - **Objectif utilisateur principal** : Permettre l'action terrain, la déclaration et la préparation rapide.
 - **Action principale attendue** : Lancer une action, signaler ou compléter un formulaire.
 - **Palette attendue** : emerald
-- **Scope** : terminé (fond + hero via `page-families` / `SectionShell` ; formulaire dans `FamilyRubriqueCard`)
-- **Registre code** : `PageFamilyId` = `agir` — preset `AGIR_CARD` dans `card-presets.ts`
-- **Terminée** : oui (shell page-families ; contenu formulaire inchangé)
+- **Scope** : à corriger
+- **Terminée** : non
 - **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
 - **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
 - **Risque de conflit avec les couleurs existantes** : moyen : le vert doit rester distinct des panneaux de support et des surfaces techniques.

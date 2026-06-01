@@ -78,7 +78,12 @@ const BADGE_CATALOG: Record<string, AccountBadge> = {
     label: "Scientifique",
     icon: "sparkles",
   },
-  role_elu: { id: "role_elu", label: "Autorité locale", icon: "badge-check" },
+  role_entreprise: {
+    id: "role_entreprise",
+    label: "Entreprise",
+    icon: "building-2",
+  },
+  role_elu: { id: "role_elu", label: "Elu", icon: "badge-check" },
   role_max: { id: "role_max", label: "IMU", icon: "shield-check" },
   profile_admin: {
     id: "profile_admin",
@@ -100,7 +105,12 @@ const BADGE_CATALOG: Record<string, AccountBadge> = {
     label: "Profil scientifique",
     icon: "sparkles",
   },
-  profile_elu: { id: "profile_elu", label: "Profil autorité locale", icon: "badge-check" },
+  profile_entreprise: {
+    id: "profile_entreprise",
+    label: "Profil Entreprise",
+    icon: "building-2",
+  },
+  profile_elu: { id: "profile_elu", label: "Profil Elu", icon: "badge-check" },
   profile_max: {
     id: "profile_max",
     label: "Profil IMU",

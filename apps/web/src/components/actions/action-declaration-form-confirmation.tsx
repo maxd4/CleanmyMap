@@ -80,6 +80,15 @@ export function ActionDeclarationFormConfirmation({
             {form.enterpriseName && (
               <p className="text-sm text-emerald-900/65 mt-1">{form.enterpriseName}</p>
             )}
+            {payload.recordType === "action" && (
+              <p className="text-sm text-emerald-900/65 mt-2">
+                {payload.associationName === "Action spontanée"
+                  ? "Le compte connecté sera compté automatiquement comme organisateur."
+                  : payload.organizerAccounts && payload.organizerAccounts.length > 0
+                    ? `Organisateurs déclarés: ${payload.organizerAccounts.join(", ")}`
+                    : "Au moins un organisateur doit être renseigné pour cette action."}
+              </p>
+            )}
           </div>
 
           {/* Date et lieu */}

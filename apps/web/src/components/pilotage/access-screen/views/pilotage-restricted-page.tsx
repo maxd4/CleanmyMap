@@ -32,7 +32,6 @@ export function PilotageRestrictedPage({
         <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-center">
           <PageHero
             family={pageFamily}
-            titleSize="compact"
             title={copy.title}
             subtitle={copy.description}
             badges={

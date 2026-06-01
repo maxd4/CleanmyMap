@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
+import { evaluateActionQuality } from "@/lib/actions/quality";
 import type {
   ActionRow,
   EventInsertParams,
@@ -7,6 +8,9 @@ import type {
   UserLabelSummary,
   UserProgressionStats,
 } from "./progression-types";
+import {
+  loadActionOrganizerIdsForAction,
+} from "@/lib/actions/organizers";
 import {
   actionRowToListItem,
   clampWeight,
@@ -19,6 +23,7 @@ import {
   inferActionWeight,
   toIsoDate,
 } from "./progression-utils";
+import { awardPointsOnce } from "./points/system";
 
 const SPONTANEOUS_ASSOCIATION_KEY = "action spontanee";
 
@@ -72,21 +77,149 @@ export async function loadActionRowsForUser(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<ActionRow[]> {
+  const [ownedResult, organizerResult] = await Promise.all([
+    supabase
+      .from("actions")
+      .select(
+        "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
+      )
+      .eq("created_by_clerk_id", userId)
+      .order("action_date", { ascending: false })
+      .limit(6000),
+    supabase
+      .from("action_organizers")
+      .select("action_id")
+      .eq("organizer_clerk_id", userId)
+      .limit(6000),
+  ]);
+
+  if (ownedResult.error) {
+    throw new Error(ownedResult.error.message);
+  }
+
+  if (organizerResult.error) {
+    throw new Error(organizerResult.error.message);
+  }
+
+  const organizedActionIds = [...new Set(
+    (organizerResult.data ?? [])
+      .map((row) => (row as { action_id?: string | null }).action_id)
+      .filter((actionId): actionId is string => typeof actionId === "string" && actionId.length > 0),
+  )];
+
+  let organizedActions: ActionRow[] = [];
+  if (organizedActionIds.length > 0) {
+    const organizedResult = await supabase
+      .from("actions")
+      .select(
+        "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
+      )
+      .in("id", organizedActionIds)
+      .order("action_date", { ascending: false })
+      .limit(6000);
+
+    if (organizedResult.error) {
+      throw new Error(organizedResult.error.message);
+    }
+
+    organizedActions = (organizedResult.data ?? []) as ActionRow[];
+  }
+
+  const rowsById = new Map<string, ActionRow>();
+  for (const row of organizedActions) {
+    if (!rowsById.has(row.id)) {
+      rowsById.set(row.id, row);
+    }
+  }
+
+  for (const row of (ownedResult.data ?? []) as ActionRow[]) {
+    if (!isSpontaneousActionNotes(row.notes)) {
+      continue;
+    }
+    if (!rowsById.has(row.id)) {
+      rowsById.set(row.id, row);
+    }
+  }
+
+  return [...rowsById.values()];
+}
+
+export async function loadValidatedActionIdsForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<Set<string>> {
+  const actions = await loadActionRowsForUser(supabase, userId);
+  const approvedActionIds = actions
+    .filter((row) => row.status === "approved")
+    .map((row) => row.id);
+
+  if (approvedActionIds.length === 0) {
+    return new Set();
+  }
+
   const result = await supabase
-    .from("actions")
+    .from("forms")
     .select(
-      "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
+      "action_id, group_id, status, created_at, validated_by_admin, is_duplicate, is_deleted, is_test",
     )
-    .eq("created_by_clerk_id", userId)
-    .order("action_date", { ascending: false })
-    .limit(6000);
+    .in("action_id", approvedActionIds)
+    .neq("status", "draft")
+    .neq("status", "deleted")
+    .neq("status", "incomplete")
+    .eq("validated_by_admin", true)
+    .is("is_duplicate", false)
+    .is("is_deleted", false)
+    .is("is_test", false)
+    .order("created_at", { ascending: true });
 
   if (result.error) {
-    throw new Error(result.error.message);
+    console.error("[Gamification] Failed to load validated action forms:", result.error);
+    return new Set();
   }
-  return ((result.data ?? []) as ActionRow[]).filter((row) =>
-    isSpontaneousActionNotes(row.notes),
-  );
+
+  const validatedActionIds = new Set<string>();
+  for (const row of (result.data ?? []) as Array<{ action_id: string | null }>) {
+    if (row.action_id) {
+      validatedActionIds.add(row.action_id);
+    }
+  }
+
+  return validatedActionIds;
+}
+
+export async function loadValidatedCompleteActionCountForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<number> {
+  const [ownedResult, validatedActionIds] = await Promise.all([
+    supabase
+      .from("actions")
+      .select(
+        "id, created_at, created_by_clerk_id, actor_name, action_date, location_label, latitude, longitude, waste_kg, cigarette_butts, volunteers_count, duration_minutes, status, notes, manual_drawing",
+      )
+      .eq("created_by_clerk_id", userId)
+      .eq("status", "approved")
+      .order("action_date", { ascending: false })
+      .limit(6000),
+    loadValidatedActionIdsForUser(supabase, userId),
+  ]);
+
+  if (ownedResult.error) {
+    throw new Error(ownedResult.error.message);
+  }
+
+  let count = 0;
+  for (const row of (ownedResult.data ?? []) as ActionRow[]) {
+    if (!validatedActionIds.has(row.id)) {
+      continue;
+    }
+    const quality = evaluateActionQuality(actionRowToListItem(row));
+    if (quality.breakdown.completeness >= 100) {
+      count += 1;
+    }
+  }
+
+  return count;
 }
 
 export async function loadApprovedActionRows(
@@ -114,13 +247,14 @@ export async function loadUserProgressionStats(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<UserProgressionStats> {
-  const [eventsResult, actionRows] = await Promise.all([
+  const [eventsResult, actionRows, validatedActionIds] = await Promise.all([
     supabase
       .from("progression_events")
       .select("event_type, status_phase, xp_awarded")
       .eq("user_id", userId)
       .limit(12000),
     loadActionRowsForUser(supabase, userId),
+    loadValidatedActionIdsForUser(supabase, userId),
   ]);
 
   if (eventsResult.error) {
@@ -152,6 +286,7 @@ export async function loadUserProgressionStats(
 
   let totalActions = 0;
   let approvedActions = 0;
+  let validatedActions = 0;
   let qualitySum = 0;
   let totalKg = 0;
   let totalButts = 0;
@@ -160,6 +295,9 @@ export async function loadUserProgressionStats(
     totalActions += 1;
     if (row.status === "approved") {
       approvedActions += 1;
+    }
+    if (row.status === "approved" && validatedActionIds.has(row.id)) {
+      validatedActions += 1;
       qualitySum += evaluateActionQualityScore(row).score;
       totalKg += toFloat(row.waste_kg, 0);
       totalButts += toInt(row.cigarette_butts, 0);
@@ -169,10 +307,10 @@ export async function loadUserProgressionStats(
   return {
     totalActions,
     approvedActions,
-    validatedActions: approvedActions,
+    validatedActions,
     qualityAverage:
-      approvedActions > 0 ? Math.round((qualitySum / approvedActions) * 10) / 10 : 0,
-    validationRatio: totalActions > 0 ? approvedActions / totalActions : 0,
+      validatedActions > 0 ? Math.round((qualitySum / validatedActions) * 10) / 10 : 0,
+    validationRatio: totalActions > 0 ? validatedActions / totalActions : 0,
     diversityTypes: diversitySet.size,
     collectiveEvents,
     totalKg,
@@ -347,7 +485,7 @@ export function actionListItemFromRow(row: ActionRow) {
 export async function syncUserActionProgression(
   supabase: SupabaseClient,
   userId: string,
-): Promise<void> {
+): Promise<number> {
   const deleted = await supabase
     .from("progression_events")
     .delete()
@@ -359,7 +497,17 @@ export async function syncUserActionProgression(
   }
 
   const actions = await loadActionRowsForUser(supabase, userId);
+  const validatedActionIds = await loadValidatedActionIdsForUser(supabase, userId);
+  let validatedActionCount = 0;
+
   for (const action of actions) {
+    const associationName = parseAssociationNameFromActionNotes(action.notes);
+    const organizerIds = await loadActionOrganizerIdsForAction(
+      supabase,
+      action.id,
+      action.created_by_clerk_id,
+    ).catch(() => [action.created_by_clerk_id].filter((value): value is string => typeof value === "string" && value.trim().length > 0));
+    const organizerCount = Math.max(1, organizerIds.length);
     const weight = inferActionWeight(action);
     const pendingAward = computeActionPendingAward(weight);
     await insertProgressionEvent(supabase, {
@@ -373,16 +521,20 @@ export async function syncUserActionProgression(
       xpAwarded: pendingAward.xpAwarded,
       occurredOn: toIsoDate(action.action_date || action.created_at),
       metadata: {
-        associationName: "Action spontanée",
+        associationName,
       },
     });
 
-    if (action.status !== "approved") {
+    if (action.status !== "approved" || !validatedActionIds.has(action.id)) {
       continue;
     }
 
     const quality = evaluateActionQualityScore(action);
-    const validatedAward = computeActionValidationAward(weight, quality.grade);
+    const validatedAward = computeActionValidationAward(
+      weight,
+      quality.grade,
+      organizerCount,
+    );
     await insertProgressionEvent(supabase, {
       userId,
       eventType: "action_declare_validation",
@@ -396,8 +548,47 @@ export async function syncUserActionProgression(
       metadata: {
         qualityGrade: quality.grade,
         qualityScore: quality.score,
-        associationName: "Action spontanée",
+        associationName,
+        hasValidatedForm: true,
+        organizerCount,
+        organizerShare: validatedAward.xpAwarded,
       },
     });
+
+    if (organizerCount === 1) {
+      await awardPointsOnce(supabase, {
+        userId,
+        xpEarned: validatedAward.xpAwarded,
+        sourceEvent: "action_validated_form",
+        sourceId: action.id,
+        reason: "Action validée avec formulaire",
+      });
+    }
+
+    try {
+      const { auditXpAttribution } = await import("./notifications");
+      await auditXpAttribution(
+        supabase,
+        userId,
+        null,
+        "Action validée avec formulaire",
+        validatedAward.xpAwarded,
+        "actions",
+        action.id,
+        {
+          qualityGrade: quality.grade,
+          qualityScore: quality.score,
+          sourceEvent: "action_validated_form",
+          organizerCount,
+          organizerShare: validatedAward.xpAwarded,
+        },
+      );
+    } catch {
+      // Audit best-effort only.
+    }
+
+    validatedActionCount += 1;
   }
+
+  return validatedActionCount;
 }

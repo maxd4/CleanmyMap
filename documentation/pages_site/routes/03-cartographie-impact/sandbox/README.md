@@ -12,10 +12,10 @@
 - **Objectif utilisateur principal** : Lire, comparer et partager les données de carte et d'impact.
 - **Action principale attendue** : Explorer la carte ou lire les résultats.
 - **Palette attendue** : sky
-- **Scope** : à valider
+- **Scope** : à corriger
 - **Terminée** : non
-- **Couleurs actuellement détectées** : sky — canvas #e0f2fe, halo rgba(14, 165, 233, 0.22)
-- **Incohérences de couleurs** : Pas d'incohérence détectée après réalignement; validation visuelle à confirmer.
+- **Couleurs actuellement détectées** : slate — canvas #eef0f3, halo rgba(148, 163, 184, 0.18)
+- **Incohérences de couleurs** : Écart détecté: attendu sky, code actuel slate / neutral.
 - **Risque de conflit avec les couleurs existantes** : moyen : attention au chevauchement entre sky cartographique et rouge impact / alerte.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

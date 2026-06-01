@@ -24,10 +24,21 @@ export const associationOptionLabels: Record<string, string> = {
   Entreprise: "Entreprise - participation dans un cadre RSE",
 };
 
+export function parseOrganizerAccounts(input: string): string[] {
+ return [...new Set(
+ input
+ .split(/[,;\n]+/)
+ .map((token) => token.trim())
+ .map((token) => token.replace(/^@+/, ""))
+ .filter((token) => token.length > 0),
+ )];
+}
+
 const BASE_FORM_STATE: FormState = {
  actorName:"",
  associationName: ASSOCIATION_SELECTION_OPTIONS[0],
  enterpriseName:"",
+ organizerAccounts:"",
  actionDate: new Date().toISOString().slice(0, 10),
  locationLabel:"",
  departureLocationLabel:"",
@@ -69,6 +80,7 @@ export function getFormResetState(previous: FormState): FormState {
  ...BASE_FORM_STATE,
  actorName: previous.actorName,
  associationName: previous.associationName,
+ organizerAccounts: previous.organizerAccounts,
  actionDate: previous.actionDate,
  recordType: previous.recordType,
  };
@@ -178,6 +190,7 @@ export function buildCreateActionPayload(params: {
  : form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE
  ? "Action spontanée"
  : form.associationName;
+ const isSpontaneousAction = associationName === "Action spontanée";
  const enteredButtsCount = toOptionalNumber(form.cigaretteButtsCount);
  const estimatedButtsFromWeight =
  toOptionalNumber(form.wasteMegotsKg) && toRequiredNumber(form.wasteMegotsKg, 0) > 0
@@ -187,9 +200,15 @@ export function buildCreateActionPayload(params: {
  )
  : undefined;
 
-  return {
+ return {
  actorName: form.actorName.trim() || undefined,
  associationName,
+ organizerAccounts: isSpontaneousAction
+   ? undefined
+   : (() => {
+     const tokens = parseOrganizerAccounts(form.organizerAccounts);
+     return tokens.length > 0 ? tokens : undefined;
+   })(),
  actionDate: form.actionDate,
  locationLabel: routeLocationLabel,
  departureLocationLabel: departureLocationLabel || undefined,

@@ -78,6 +78,49 @@ describe("POST /api/account/profile-role", () => {
     expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
   });
 
+  it("allows self-service users to switch to the enterprise role", async () => {
+    const getUser = vi.fn().mockResolvedValue({
+      id: "user-1",
+      publicMetadata: { role: "benevole", badge: "pioneer" },
+      privateMetadata: {},
+    });
+    const updateUser = vi.fn().mockResolvedValue({
+      id: "user-1",
+      publicMetadata: { role: "entreprise", badge: "pioneer" },
+      privateMetadata: {},
+    });
+    clerkClientMock.mockResolvedValue({
+      users: { getUser, updateUser },
+    });
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/account/profile-role", {
+        method: "POST",
+        body: JSON.stringify({ profile: "entreprise" }),
+      }),
+    );
+
+    const body = (await response.json()) as {
+      role?: string;
+      profilePath?: string;
+      error?: string;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.role).toBe("entreprise");
+    expect(body.profilePath).toBe("/profil/entreprise");
+    expect(updateUser).toHaveBeenCalledWith("user-1", {
+      publicMetadata: {
+        role: "entreprise",
+        profile: "entreprise",
+        badge: "pioneer",
+      },
+      privateMetadata: { role: "entreprise", profile: "entreprise" },
+    });
+    expect(syncClerkUserToSupabaseMock).toHaveBeenCalledTimes(1);
+  });
+
   it("stores IMU in Clerk metadata while keeping the internal owner role", async () => {
     getCurrentUserRoleLabelMock.mockResolvedValue("admin");
     const getUser = vi.fn().mockResolvedValue({

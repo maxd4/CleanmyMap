@@ -5,6 +5,7 @@ import type {
 } from "@/lib/actions/types";
 import type { ActionRow } from "@/types/database";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { ResolvedActionOrganizer } from "@/lib/actions/organizers";
 import { DRAWING_NOTE_PREFIX } from "@/lib/actions/drawing";
 import {
   buildPersistedGeometry,
@@ -134,7 +135,11 @@ export async function fetchRecentActionsByUser(
 
 export async function createAction(
   supabase: SupabaseClient,
-  params: { userId: string; payload: CreateActionPayload },
+  params: {
+    userId: string;
+    payload: CreateActionPayload;
+    organizers: ResolvedActionOrganizer[];
+  },
 ): Promise<{ id: string }> {
   const payload = params.payload;
 
@@ -201,6 +206,27 @@ export async function createAction(
   }
 
   const actionId = inserted.data.id;
+
+  if (params.organizers.length === 0) {
+    throw new Error("At least one organizer is required for action creation.");
+  }
+
+  const organizerRows = params.organizers.map((organizer, index) => ({
+    action_id: actionId,
+    organizer_clerk_id: organizer.userId,
+    organizer_label: organizer.displayName,
+    organizer_handle: organizer.handle,
+    is_primary: organizer.isPrimary || index === 0,
+  }));
+
+  const organizersInserted = await supabase
+    .from("action_organizers")
+    .insert(organizerRows);
+
+  if (organizersInserted.error) {
+    await supabase.from("actions").delete().eq("id", actionId);
+    throw organizersInserted.error;
+  }
 
   try {
     const trainingExample = buildTrainingExampleInsert({

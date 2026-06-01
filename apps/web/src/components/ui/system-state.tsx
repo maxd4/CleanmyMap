@@ -131,7 +131,7 @@ export function SystemStateTitle({ variant, className, children }: SystemStateTi
   const styles = SYSTEM_STATE_STYLES[variant ?? "warning"];
 
   return (
-    <h1 className={cn("text-balance text-2xl font-semibold tracking-tight sm:text-3xl", styles.title, className)}>
+    <h1 className={cn("cmm-page-header-title text-balance", styles.title, className)}>
       {children}
     </h1>
   );
@@ -151,7 +151,7 @@ export function SystemStateDescription({
   const styles = SYSTEM_STATE_STYLES[variant ?? "warning"];
 
   return (
-    <p className={cn("max-w-prose text-pretty text-sm leading-7 sm:text-base", styles.description, className)}>
+    <p className={cn("cmm-page-header-subtitle text-pretty", styles.description, className)}>
       {children}
     </p>
   );

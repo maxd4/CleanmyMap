@@ -22,4 +22,4 @@ Parcours d'action, déclaration, signalement et préparation terrain.
 ## Notes
 
 - Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
-- Les captures officielles, quand elles existent, vivent dans `photo/desktop/` et `photo/mobile/` à la racine de la famille et sont en WebP.
+- Les captures officielles, quand elles existent, vivent dans `photo/` de chaque route canonique et sont en `WebP`.

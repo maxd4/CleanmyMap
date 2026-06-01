@@ -18,19 +18,41 @@ export default function FormsBadge({
   current: number;
   onGradeReached?: (grade: GemGrade) => void;
 }) {
-  const activeGrade = grades.slice().reverse().find((g) => current >= g.threshold) || grades[0];
+  const activeGrade = grades.length ? (grades.slice().reverse().find((g) => current >= g.threshold) || grades[0]) : null;
+  const activeGradeId = activeGrade?.id ?? "none";
+  const didMountRef = React.useRef(false);
+  const previousGradeIdRef = React.useRef<string | null>(null);
+  const previousCurrentRef = React.useRef<number | null>(null);
+  const [isCelebrating, setIsCelebrating] = React.useState(false);
 
   React.useEffect(() => {
-    if (onGradeReached) onGradeReached(activeGrade);
-  }, [activeGrade.id]);
+    const previousGradeId = previousGradeIdRef.current;
+    const previousCurrent = previousCurrentRef.current;
+    previousGradeIdRef.current = activeGrade?.id ?? null;
+    previousCurrentRef.current = current;
+
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      return;
+    }
+
+    if (activeGrade && current > (previousCurrent ?? -1) && previousGradeId !== activeGrade.id) {
+      onGradeReached?.(activeGrade);
+      setIsCelebrating(true);
+      const timeout = window.setTimeout(() => setIsCelebrating(false), 900);
+      return () => window.clearTimeout(timeout);
+    }
+
+    return undefined;
+  }, [activeGradeId, current, onGradeReached]);
 
   // Find next tier
-  const nextGrade = grades.find((g) => g.threshold > activeGrade.threshold);
+  const nextGrade = activeGrade ? grades.find((g) => g.threshold > activeGrade.threshold) : null;
   const remaining = nextGrade ? Math.max(0, nextGrade.threshold - current) : 0;
 
   // Progress bar logic
-  const progressStart = activeGrade.threshold;
-  const progressEnd = nextGrade?.threshold ?? activeGrade.threshold + 10;
+  const progressStart = activeGrade?.threshold ?? 0;
+  const progressEnd = nextGrade?.threshold ?? progressStart + 10;
   const progressCurrent = Math.min(current - progressStart, progressEnd - progressStart);
   const progressTarget = progressEnd - progressStart;
   const progressPercent = progressTarget > 0 ? Math.round((progressCurrent / progressTarget) * 100) : 100;
@@ -47,12 +69,12 @@ export default function FormsBadge({
     "primary-forest": "🌳🌳",
   };
 
-  const gradeType = activeGrade.id.replace("forms-", "").replace(/forms-/, "");
+  const gradeType = activeGrade?.id.replace("forms-", "").replace(/forms-/, "") ?? "seed";
   const plantIcon = plantEmoji[gradeType] || "🌱";
 
-  return (
+  return activeGrade ? (
     <div
-      className="forms-badge"
+      className={`forms-badge ${isCelebrating ? "cmm-gamification-celebrate" : ""}`}
       style={{
         padding: 16,
         textAlign: "center",
@@ -67,10 +89,10 @@ export default function FormsBadge({
         <span style={{ fontSize: 32 }}>{plantIcon}</span>
         <div>
           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gray-800, #333)" }}>
-            {activeGrade.label} — Création de formulaires
-          </div>
-          <div style={{ fontSize: 12, color: "var(--gray-600, #666)" }}>
-            {activeGrade.label === 'Seed' ? 'Graine' : ''}
+          {activeGrade.label} — Création de formulaires
+        </div>
+        <div style={{ fontSize: 12, color: "var(--gray-600, #666)" }}>
+          {activeGrade.label === 'Seed' ? 'Graine' : ''}
           </div>
         </div>
       </div>
@@ -93,6 +115,7 @@ export default function FormsBadge({
               width: `${progressPercent}%`,
               transition: "width 0.3s ease",
             }}
+            className={isCelebrating ? "cmm-gamification-progress" : undefined}
           />
         </div>
         <div style={{ fontSize: 12, color: "var(--gray-700, #555)", marginTop: 6 }}>
@@ -119,6 +142,21 @@ export default function FormsBadge({
           {activeGrade.tooltip}
         </div>
       )}
+    </div>
+  ) : (
+    <div
+      className="forms-badge"
+      style={{
+        padding: 16,
+        textAlign: "center",
+        borderRadius: 12,
+        background: "#f5f5f5",
+        border: "2px solid #ccc",
+      }}
+    >
+      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gray-700, #555)" }}>
+        Aucun palier de formulaires disponible
+      </div>
     </div>
   );
 }

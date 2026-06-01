@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 import { Bell, Check, MessageSquare, ShieldCheck, UserCheck, AlertTriangle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { enUS, fr } from "date-fns/locale";
@@ -35,6 +36,7 @@ function getNotificationIcon(type: AppNotification["type"]) {
 }
 
 export function NotificationBell() {
+  const { isLoaded, isSignedIn } = useAuth();
   const router = useRouter();
   const { locale } = useSitePreferences();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -49,6 +51,11 @@ export function NotificationBell() {
   );
 
   const fetchNotifications = async () => {
+    if (!isLoaded || !isSignedIn) {
+      setNotifications([]);
+      return;
+    }
+
     if (fetchInFlightRef.current) {
       return;
     }
@@ -70,12 +77,17 @@ export function NotificationBell() {
   };
 
   useEffect(() => {
+    if (!isLoaded || !isSignedIn) {
+      setNotifications([]);
+      return;
+    }
+
     void fetchNotifications();
     const interval = window.setInterval(() => {
       void fetchNotifications();
     }, 60000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [isLoaded, isSignedIn]);
 
   useEffect(() => {
     if (
@@ -100,6 +112,10 @@ export function NotificationBell() {
   }, [notifications, unreadCount]);
 
   const markAsRead = async (id: string) => {
+    if (!isLoaded || !isSignedIn) {
+      return;
+    }
+
     try {
       if (fetchInFlightRef.current || markReadInFlightRef.current) {
         return;

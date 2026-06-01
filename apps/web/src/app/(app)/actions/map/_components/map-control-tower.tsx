@@ -5,16 +5,18 @@ import { ActionsMapFilterControls } from "@/components/actions/map/actions-map-f
 import { ActionsMapExportButton } from "@/components/actions/map/actions-map-export-button";
 import { buildActionsMapGeoQuality } from "@/components/actions/map/actions-map-quality";
 import type { ActionMapItem } from "@/lib/actions/types";
-import type { ActionsMapFilters } from "@/components/actions/map/actions-map-filters.utils";
+import type {
+  ActionsMapFilters,
+  ActionsMapDateScope,
+} from "@/components/actions/map/actions-map-filters.utils";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 
 type MapControlTowerProps = {
   filters: ActionsMapFilters;
-  initialDays: number;
   visibleCount: number;
   loadedCount: number;
   filteredMapItems: ActionMapItem[];
-  onDaysChange: (days: number) => void;
+  onDateScopeChange: (dateScope: ActionsMapDateScope) => void;
   onStatusChange: (status: ActionsMapFilters["statusFilter"]) => void;
   onCategoryToggle: (category: MarkerCategory) => void;
   onReset: () => void;
@@ -22,11 +24,10 @@ type MapControlTowerProps = {
 
 export function MapControlTower({
   filters,
-  initialDays,
   visibleCount,
   loadedCount,
   filteredMapItems,
-  onDaysChange,
+  onDateScopeChange,
   onStatusChange,
   onCategoryToggle,
   onReset,
@@ -58,8 +59,7 @@ export function MapControlTower({
 
       <ActionsMapFilterControls
         filters={filters}
-        initialDays={initialDays}
-        onDaysChange={onDaysChange}
+        onDateScopeChange={onDateScopeChange}
         onStatusChange={onStatusChange}
         onCategoryToggle={onCategoryToggle}
         onReset={onReset}

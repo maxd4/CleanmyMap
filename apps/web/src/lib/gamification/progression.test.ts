@@ -5,6 +5,7 @@ import {
   minValidatedActions,
   xpRequired,
   xpStep,
+  syncUserActionProgression,
 } from "@/lib/gamification/progression";
 
 describe("gamification progression formulas", () => {
@@ -34,5 +35,9 @@ describe("gamification progression formulas", () => {
     expect(minCollectiveEvents(1)).toBe(0);
     expect(minCollectiveEvents(4)).toBe(1);
     expect(minCollectiveEvents(8)).toBe(2);
+  });
+
+  it("exports syncUserActionProgression from the public barrel", () => {
+    expect(typeof syncUserActionProgression).toBe("function");
   });
 });

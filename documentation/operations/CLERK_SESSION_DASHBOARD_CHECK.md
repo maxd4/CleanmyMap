@@ -28,7 +28,7 @@ Date: 2026-04-08
 
 6. **Google OAuth on Live instance**
    - In Clerk Live -> Google OAuth, ensure **Use custom credentials** is enabled.
-   - Ensure Google OAuth `Client ID` / `Client Secret` are set (no empty values).
+   - Ensure Google OAuth `Client ID` / `Client Secret` are set in Clerk Dashboard only (no empty values, do not commit them to the repo).
    - Ensure Google redirect URI includes:
      - `https://clerk.auth.cleanmymap.fr/v1/oauth_callback`
 
@@ -36,3 +36,29 @@ Date: 2026-04-08
    - Verify admin user has either:
      - `publicMetadata.role = "admin"`, or
      - user id listed in `CLERK_ADMIN_USER_IDS` (Vercel Production env).
+
+## Route access matrix
+
+This matrix summarizes the current route behavior verified in runtime. Keep it aligned with the code whenever Clerk routing changes.
+
+| Route | Access mechanism | No-session behavior | Entry point or CTA |
+| --- | --- | --- | --- |
+| `/sign-in` | Public auth page | Renders the Clerk sign-in UI directly | `path="/sign-in"` |
+| `/sign-up` | Public auth page | Renders the Clerk sign-up UI directly | `path="/sign-up"` |
+| `/dashboard` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
+| `/admin` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
+| `/actions/new` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
+| `/prints/report` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
+| `/sponsor-portal` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
+| `/sections/messagerie` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
+| `/sections/community` | Middleware-protected | Redirects to Clerk hosted sign-in with `redirect_url=<current url>` | `https://accounts.auth.cleanmymap.fr/sign-in?...` |
+| `/profil` | Soft-gated UI | Keeps the page on the same URL and shows a `Se connecter` CTA | `href="/sign-in"` |
+| `/parcours` | Soft-gated UI | Keeps the page on the same URL and shows a `Se connecter` CTA | `href="/sign-in"` |
+| `/partners/onboarding` | Soft-gated UI | Keeps the page on the same URL and shows a `Se connecter` CTA | `href="/sign-in"` |
+| `/signalement` | Soft-gated UI | Keeps the page on the same URL and shows a `Se connecter` CTA | `href="/sign-in"` |
+
+Notes:
+
+- The middleware-protected routes use the Vercel-managed Clerk hosted sign-in domain, not the local `/sign-in` page.
+- The soft-gated routes rely on `ClerkRequiredGate`, so the CTA remains local and can be styled or redirected independently.
+- If the Clerk domain or redirect contract changes, update this table together with `apps/web/src/proxy.ts` and the auth pages.

@@ -247,6 +247,20 @@ export function ActionStepReview({
             value={fmtAssociation(payload.associationName)}
             valueClass="text-violet-700"
           />
+          {payload.recordType === "action" && (
+            <DataRow
+              icon={Users}
+              label={payload.associationName === "Action spontanée" ? "Organisateur" : "Organisateurs"}
+              value={
+                payload.associationName === "Action spontanée"
+                  ? "Compte connecté automatiquement"
+                  : payload.organizerAccounts && payload.organizerAccounts.length > 0
+                    ? payload.organizerAccounts.join(", ")
+                    : "À renseigner"
+              }
+              valueClass="text-violet-700"
+            />
+          )}
           <DataRow
             icon={MapPin}
             label="Lieu"

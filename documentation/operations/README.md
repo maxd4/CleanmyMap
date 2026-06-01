@@ -13,6 +13,7 @@ Les documents de session et de mémoire interne sont gérés ailleurs et ne doiv
 - `runbook-deploiement.md`
 - `checklist-push-deploy.md`
 - `cloudflare-uptimerobot-checklist.md`
+- `fix_vercel_deploy.md` - note de travail sur les warnings de source maps Vercel
 
 ### Incidents & maintenance
 - `INCIDENT_RUNBOOK_SHORT.md`
@@ -22,6 +23,8 @@ Les documents de session et de mémoire interne sont gérés ailleurs et ne doiv
 ### Monitoring & logs
 - `runbook-monitoring-logs.md`
 - `CLERK_SESSION_DASHBOARD_CHECK.md`
+- `account-completion-modal.md`
+- la fenêtre de complétion de compte est branchée route par route, pas au niveau du shell global
 - `clerk-supabase-audit.md`
 - `clerk-supabase-audit.md` sert aussi de point d'entrée vers `npm run data:audit:clerk-supabase`
 

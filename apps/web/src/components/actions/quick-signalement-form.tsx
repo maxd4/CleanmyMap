@@ -8,6 +8,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useSubmissionLock } from "@/hooks/use-submission-lock";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { canRequestGeolocation } from "@/lib/browser/geolocation";
 
 const WASTE_TYPES = [
   { id: "megots", label: "Mégots", icon: "🚬", color: "amber" },
@@ -28,7 +29,7 @@ export function QuickSignalementForm() {
   const { acquire, release } = useSubmissionLock();
 
   useEffect(() => {
-    if (typeof navigator !== "undefined" && navigator.geolocation) {
+    if (canRequestGeolocation()) {
       setLocStatus("locating");
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -38,6 +39,8 @@ export function QuickSignalementForm() {
         () => setLocStatus("error"),
         { enableHighAccuracy: true, timeout: 10000 }
       );
+    } else {
+      setLocStatus("error");
     }
   }, []);
 

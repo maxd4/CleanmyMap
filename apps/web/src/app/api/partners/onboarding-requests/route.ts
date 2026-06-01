@@ -19,8 +19,7 @@ import {
 } from"@/lib/partners/onboarding-requests-store";
 import { getCurrentUserIdentity } from"@/lib/authz";
 import { sendCreatorInboxEmail } from"@/lib/community/creator-inbox-email";
-import { resolveContactEmail, resolveEmailFrom } from "@/lib/email-config";
-import { getResendClient } from"@/lib/services/resend";
+import { ensureEmailQuotaAvailable, sendEmail } from "@/lib/services/email";
 import { createServerRateLimitResponse, verifyRateLimit } from"@/lib/rate-limit/server";
 import { parsePositiveInteger } from"@/lib/reports/csv";
 import {
@@ -83,15 +82,10 @@ const onboardingSchema = z.object({
  }
 });
 
-async function tryNotifyAdmins(payload: z.infer<typeof onboardingSchema>) {
- const resend = getResendClient();
- const from = resolveEmailFrom();
- if (!resend || !from) {
- return;
- }
-
- const to ="partenaires@cleanmymap.fr";
- const replyTo = resolveContactEmail();
+async function tryNotifyAdmins(
+ payload: z.infer<typeof onboardingSchema>,
+ actorUserId: string,
+) {
 const html = `
 <h2>Nouvelle demande onboarding commercant engage</h2>
 <p><strong>Organisation:</strong> ${payload.organizationName}</p>
@@ -106,12 +100,11 @@ const html = `
 <p><strong>Motivation:</strong> ${payload.motivation}</p>
  `;
 
- await resend.emails.send({
- from,
- to,
- subject: `[CleanMyMap] Demande onboarding partenaire - ${payload.organizationName}`,
- html,
- replyTo,
+ await sendEmail({
+  to: "partenaires@cleanmymap.fr",
+  subject: `[CleanMyMap] Demande onboarding partenaire - ${payload.organizationName}`,
+  html,
+  actorUserId,
  });
 }
 
@@ -182,7 +175,8 @@ export async function POST(request: Request) {
  });
 
  try {
-  await tryNotifyAdmins(parsed.data);
+  await ensureEmailQuotaAvailable(userId, 2);
+  await tryNotifyAdmins(parsed.data, userId);
   await sendCreatorInboxEmail({
    actorUserId: userId,
    subject: `[CleanMyMap] Nouvelle demande partenaire - ${parsed.data.organizationName}`,

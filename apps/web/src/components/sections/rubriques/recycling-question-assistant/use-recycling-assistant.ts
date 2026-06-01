@@ -1,3 +1,5 @@
+"use client";
+
 import { useMemo, useState } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { buildAnswer } from "./assistant-utils";

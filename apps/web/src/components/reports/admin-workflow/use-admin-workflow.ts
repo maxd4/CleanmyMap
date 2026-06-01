@@ -4,7 +4,7 @@ import { useEffect, useMemo } from"react";
 import useSWR from"swr";
 import { fetchActions } from"@/lib/actions/http";
 import { evaluateActionQuality } from"@/lib/actions/quality";
-import type { ActionListItem } from"@/lib/actions/types";
+import type { ActionListItem, ActionListResponse } from"@/lib/actions/types";
 import { swrRecentViewOptions } from"@/lib/swr-config";
 import {
  buildReportScopeOptions,
@@ -21,11 +21,19 @@ import type {
  ActionModerationEditDraft,
  AdminWorkflowController,
  CleanPlaceModerationEditDraft,
+ AdminOperationAuditItem,
 } from"./types";
 
 export { buildExportQuery, parseAdminApiError } from"./helpers";
 
-export function useAdminWorkflow(): AdminWorkflowController {
+type UseAdminWorkflowParams = {
+ initialPreview?: ActionListResponse | null;
+ initialAuditItems?: AdminOperationAuditItem[] | null;
+};
+
+export function useAdminWorkflow(
+ params: UseAdminWorkflowParams = {},
+): AdminWorkflowController {
  const state = useAdminWorkflowState();
 
  const scope = useMemo(
@@ -55,7 +63,7 @@ export function useAdminWorkflow(): AdminWorkflowController {
  const csvExportUrl = `/api/reports/actions.csv?${query}`;
  const jsonExportUrl = `/api/reports/actions.json?${query}`;
 
- const preview = useSWR(
+ const preview = useSWR<ActionListResponse>(
  [
 "admin-workflow-preview",
  state.status,
@@ -75,13 +83,22 @@ export function useAdminWorkflow(): AdminWorkflowController {
  scopeValue: state.scopeValue,
  association: state.association,
  }),
- swrRecentViewOptions,
+ {
+ ...swrRecentViewOptions,
+ fallbackData: params.initialPreview ?? undefined,
+ revalidateOnMount: params.initialPreview ? false : undefined,
+ },
  );
 
- const audit = useSWR(
+ const audit = useSWR<{ items?: AdminOperationAuditItem[] }>(
  ["admin-operation-audit"],
  () => fetchAdminOperationAudit(fetch, 25),
- swrRecentViewOptions,
+ {
+ ...swrRecentViewOptions,
+ fallbackData:
+ params.initialAuditItems ? { items: params.initialAuditItems } : undefined,
+ revalidateOnMount: params.initialAuditItems ? false : undefined,
+ },
  );
 
  const scopeOptions = useMemo(

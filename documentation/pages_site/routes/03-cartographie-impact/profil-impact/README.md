@@ -52,7 +52,6 @@
 ## Références legacy
 
 - [mon_profil_impact.md](../../../../3-BLOC-VISUALISER&IMPACTER/mon_profil_impact.md)
-- Capture legacy non disponible: cible canonique à produire dans `../photo/desktop/profil-impact-desktop.webp` et `../photo/mobile/profil-impact-mobile.webp`.
 
 ## Notes d'audit
 

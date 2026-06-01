@@ -8,8 +8,11 @@ import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { AccountCompletionGate } from "@/components/account/account-completion-gate";
+import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
+import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
 import {
   getProfileLabel,
@@ -25,7 +28,7 @@ import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { loadUserLabelSummary } from "@/lib/gamification/progression-data";
 import { Shield, Plus, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
-import { PageHero } from "@/components/ui/page-hero";
+import { PageHeader } from "@/components/ui/page-header";
 import { resolvePageFamily } from "@/lib/ui/page-families";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
@@ -116,7 +119,7 @@ function DashboardOverviewSkeleton() {
 }
 
 export default async function DashboardPage() {
-  const { userId } = await getSafeAuthSession();
+  const { userId, clerkReachable } = await getSafeAuthSession();
   const locale = await getServerLocale();
 
   if (!userId) {
@@ -142,12 +145,19 @@ export default async function DashboardPage() {
     );
   }
 
+  const accountCompletion = await loadAccountCompletionGateState({
+    userId,
+    clerkReachable,
+  }).catch(() => null);
+
   const [role, displayMode] = await Promise.all([
-    getCurrentUserRoleLabel().catch(() => "benevole" as const),
+    accountCompletion
+      ? Promise.resolve(accountCompletion.role)
+      : getCurrentUserRoleLabel().catch(() => "benevole" as const),
     getServerDisplayMode(),
   ]);
   const userLevelRanking = await loadUserLevelRanking(userId);
-  const profile = toProfile(role);
+  const profile = accountCompletion?.currentProfile ?? toProfile(role);
   const roleLabel = getProfileLabel(profile, locale);
   const primaryAction = getProfilePrimaryAction(profile);
   const { t } = getTranslation("dashboard", locale);
@@ -157,11 +167,12 @@ export default async function DashboardPage() {
   const switchableProfiles = isAdmin ? getSwitchableProfiles(profile) : [profile];
 
   return (
-    <main
-      className="relative min-h-screen overflow-hidden"
-      data-display-mode={displayMode}
-    >
-      <DashboardEntrance className="relative z-10 mx-auto max-w-[1400px] px-5 pb-24 pt-8 sm:px-8 sm:pt-10">
+    <AccountCompletionGate state={accountCompletion}>
+      <main
+        className="relative min-h-screen overflow-hidden"
+        data-display-mode={displayMode}
+      >
+        <DashboardEntrance className="relative z-10 mx-auto max-w-[1400px] px-5 pb-24 pt-8 sm:px-8 sm:pt-10">
 
         {/* ── Configuration active ── */}
         <div data-gsap-reveal>
@@ -170,7 +181,7 @@ export default async function DashboardPage() {
 
         {/* ── Header ── */}
         <div data-gsap-reveal className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <PageHero
+          <PageHeader
             family={pageFamily}
             eyebrow={locale === "fr" ? "Cockpit opérationnel" : "Operational cockpit"}
             title={t("title_v1")}
@@ -196,6 +207,24 @@ export default async function DashboardPage() {
               primaryAction={primaryAction}
             />
           </Suspense>
+        </div>
+
+        <div data-gsap-reveal className="mt-10">
+          <TerritoryMapComparisonCards
+            title={locale === "fr" ? "Deux lectures du territoire suivi" : "Two views of the tracked territory"}
+            subtitle={
+              locale === "fr"
+                ? "La carte de base sert au repérage opérationnel. La version Terraink joue le rôle de carte de présentation. On garde les deux pour choisir plus tard celle qui sert le mieux l’usage final."
+                : "The base map supports operational reading. The Terraink version acts as a presentation map. Both are kept so the team can later choose the most useful one."
+            }
+            locationLabel={locale === "fr" ? "Secteur suivi" : "Tracked sector"}
+            tone="amber"
+            note={
+              locale === "fr"
+                ? "Ici, les deux cartes coexistent volontairement. La base reste la référence terrain; Terraink sert de variante visuelle à comparer."
+                : "Both cards intentionally coexist here. The base map remains the field reference; Terraink is the visual variant to compare later."
+            }
+          />
         </div>
 
         {/* ── Séparateur ── */}
@@ -349,7 +378,8 @@ export default async function DashboardPage() {
           </div>
         ) : null}
 
-      </DashboardEntrance>
-    </main>
+        </DashboardEntrance>
+      </main>
+    </AccountCompletionGate>
   );
 }

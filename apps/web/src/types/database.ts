@@ -59,6 +59,16 @@ export type ActionRow = {
   geometry_source?: ActionGeometrySource | null;
 };
 
+export type ActionOrganizerRow = {
+  id: string;
+  created_at: string;
+  action_id: string;
+  organizer_clerk_id: string;
+  organizer_label: string;
+  organizer_handle: string | null;
+  is_primary: boolean;
+};
+
 export type TrainingExampleRow = {
   action_id: string;
   created_at: string;

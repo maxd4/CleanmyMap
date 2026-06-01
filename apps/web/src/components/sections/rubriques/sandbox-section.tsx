@@ -5,6 +5,7 @@ import { formatDateTimeShort } from "@/components/sections/rubriques/helpers";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
+import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
 import { 
   Terminal, 
   Activity, 
@@ -110,7 +111,14 @@ export function SandboxSection() {
               </PageHeroBadge>
             </>
           }
-          className="max-w-3xl"
+        />
+
+        <TerritoryMapComparisonCards
+          title="Deux lectures de la carte technique"
+          subtitle="La carte de base sert aux vérifications opérationnelles. La carte Terraink fournit une version plus graphique pour tester la lecture, la hiérarchie visuelle et le rendu de présentation."
+          locationLabel="Bac à sable"
+          tone="sky"
+          note="Le bac à sable est l'endroit idéal pour comparer les deux sans toucher aux écrans métier. La base reste utile au debug, Terraink à l'illustration."
         />
 
         {/* Health Monitoring Dashboard */}

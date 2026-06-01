@@ -9,7 +9,7 @@
     "lint": "eslint src",
     "typecheck": "npx tsc --noEmit --pretty false --skipLibCheck",
     "test": "vitest run",
-    "test:security": "vitest run src/lib/security/validation.test.ts src/lib/security/indexation-invariants.test.ts src/lib/seo/indexability.test.ts src/lib/auth/protected-routes.test.ts src/lib/community/discussion-rate-limit.test.ts src/proxy.protected-routes.test.ts src/proxy.app-shell.test.ts src/app/api/public-form-security.test.ts src/app/api/notifications/route.test.ts src/app/api/actions/route.submit.test.ts src/app/api/account/display-mode/route.test.ts src/app/api/account/profile-role/route.test.ts",
+    "test:security": "vitest run src/lib/security/validation.test.ts src/lib/security/indexation-invariants.test.ts src/lib/seo/indexability.test.ts src/lib/auth/protected-routes.test.ts src/lib/community/discussion-rate-limit.test.ts src/proxy.protected-routes.test.ts src/proxy.app-shell.test.ts src/app/api/public-form-security.test.ts src/app/api/api-boundary.test.ts src/app/api/notifications/route.test.ts src/app/api/actions/route.submit.test.ts src/app/api/account/display-mode/route.test.ts src/app/api/account/profile-role/route.test.ts",
     "test:regression-gates": "vitest run src/lib/actions/contract-regression-gates.test.ts src/lib/sections-registry.invariants.test.ts src/lib/navigation.registry-consistency.test.ts src/proxy.protected-routes.test.ts",
     "backup:actions": "node scripts/export-actions-backup.mjs",
     "import:actions": "node scripts/import-actions-backup.mjs",
@@ -29,7 +29,8 @@
     "backend:supabase:advisors:linked": "node scripts/supabase-security-advisors.mjs --linked",
     "backend:vercel:env:sync": "node scripts/vercel-sync-env.mjs --file=.env.local --environments=development,production",
     "backend:supabase:push": "npx supabase db push --workdir . --yes",
-    "backend:bootstrap": "node scripts/backend-bootstrap.mjs"
+    "backend:bootstrap": "node scripts/backend-bootstrap.mjs",
+    "gamification:backfill:actions": "node scripts/backfill-action-gamification.mjs"
   },
   "dependencies": {
     "@clerk/localizations": "^4.6.0",

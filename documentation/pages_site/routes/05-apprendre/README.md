@@ -16,6 +16,5 @@ Contenus pédagogiques et guides de compréhension.
 
 ## Notes
 
-- Le point de départ `/learn/hub` reste un point d'entrée léger: progression, reprise et accès directs. Le contenu détaillé vit dans les quatre autres rubriques.
 - Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
-- Les captures officielles, quand elles existent, vivent dans `photo/desktop/` et `photo/mobile/` à la racine de la famille et sont en WebP.
+- Les captures officielles, quand elles existent, vivent dans `photo/` de chaque route canonique et sont en `WebP`.

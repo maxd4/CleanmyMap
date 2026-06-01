@@ -151,18 +151,19 @@ Implication pour CleanMyMap:
 
 ### Badges
 
-- badges one-shot pour les premieres etapes;
+- badges one-shot pour les premieres etapes, par exemple `Première trace utile` et son badge compagnon de jalon;
 - badges de regularite pour les contributions repetees;
 - badges de confiance pour les profils fiables;
 - badges de territoire pour la couverture locale;
 - badges de qualite pour la fiabilite des donnees;
+- badges d equilibre des contextes pour encourager une alternance saine entre actions spontanées, associatives et entreprises;
 - badges collectifs pour l action de groupe.
 
 ### Objectifs
 
 - **one-shot**: premiere action validee, premiere action collective, premier badge de confiance;
 - **uniformes**: objectif mensuel simple, check-in de participation, quota de retours;
-- **infinis**: une meme logique qui continue a monter en paliers, avec un badge qui evolue graphiquement et change de nom a chaque seuil important; exemples: niveaux, regularite sur plusieurs mois, seuils de qualite, role de mentor.
+- **infinis**: une meme logique qui continue a monter en paliers, avec un badge qui evolue graphiquement et change de nom a chaque seuil important; exemples: niveaux, regularite sur plusieurs mois, seuils de qualite, role de mentor, equilibre des contextes.
 
 ## Regles concretement recommandees
 
@@ -177,6 +178,18 @@ Implication pour CleanMyMap:
 Une recompense doit toujours repondre a la question:
 
 **qu a fait la personne, comment est-ce verifie, et pourquoi cela compte pour la communaute ?**
+
+### Creation d action
+
+- la creation d action recompense la **mise en place reelle** d une depollution, pas le remplissage du formulaire;
+- tous les parcours de saisie d action appliquent la meme regle de saisie des organisateurs;
+- hors `Action spontanée`, le compte qui remplit le formulaire est distinct des organisateurs et ne doit pas etre recompense automatiquement;
+- pour une `Action spontanée`, le champ co-organisateurs n'est pas affiché et le compte qui remplit le formulaire devient automatiquement l'organisateur de reference;
+- pour les autres actions, le formulaire doit renseigner explicitement un ou plusieurs comptes organisateurs;
+- les co-organisateurs saisis dans le formulaire sont rattaches a la meme action et constituent la source de verite pour l attribution;
+- le total de recompense de creation est de **+1 XP par action validee**, puis il est **divise a parts egales** entre tous les organisateurs reconnus;
+- tant qu aucun formulaire valide n est rattache a l action, **aucun XP** n est attribue aux organisateurs.
+- la repartition fine est portee par la **progression XP**; le ledger historique de points reste entier et ne sert pas de source de verite pour les parts fractionnaires.
 
 ### Regle de visibilite
 
@@ -209,6 +222,19 @@ Les hypotheses suivantes sont des inférences produit a valider sur le terrain:
 - la reconnaissance par les pairs augmente la retention plus qu un score numerique;
 - des objectifs mensuels simples fonctionnent mieux que des mecanismes trop riches;
 - la transparence des criteres renforce la confiance.
+
+## Memoire des objectifs retenus
+
+Pour ne pas perdre les choix déjà validés, consulter aussi:
+
+- [objectifs-valides.md](./objectifs-valides.md)
+- [objectifs-non-pertinents.md](./objectifs-non-pertinents.md)
+
+## Memoire des objectifs ecartés
+
+Pour eviter de recycler des idees deja tranchées, consulter aussi:
+
+- [objectifs-non-pertinents.md](./objectifs-non-pertinents.md)
 
 ## Recommandation d implementation prioritaire
 

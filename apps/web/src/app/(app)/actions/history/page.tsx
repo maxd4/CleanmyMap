@@ -1,13 +1,18 @@
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
-import { ActionsHistoryList } from"@/components/actions/actions-history-list";
+import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { DecisionPageHeader } from"@/components/ui/decision-page-header";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
 import { PageReadingTemplate } from"@/components/ui/page-reading-template";
 import { isFeatureEnabled } from"@/lib/feature-flags";
+import { ActionsHistoryList } from "@/components/actions/actions-history-list";
+import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 
 export default async function ActionsHistoryPage() {
  const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
- const { userId } = await getSafeAuthSession();
+ const { userId, clerkReachable } = await getSafeAuthSession();
+ const accountCompletion = userId
+  ? await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null)
+  : null;
 
  if (!userId) {
  return (
@@ -53,110 +58,114 @@ export default async function ActionsHistoryPage() {
  }
 
  if (pageTemplateV2Enabled) {
- return (
- <PageReadingTemplate
- context="Profil supervision"
- title="Historique des actions validées"
- objective="Prioriser les fiches à corriger et fiabiliser l'historique."
- summary={
- <div className="space-y-3">
- <div className="grid gap-3 md:grid-cols-3">
- <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
- Qualité visible
- </p>
- <p className="mt-1 text-lg font-semibold cmm-text-primary">
- Score + grade
- </p>
- <p className="mt-1 cmm-text-caption cmm-text-muted">
- N-1: score partiel
- </p>
- <p className="mt-1 cmm-text-caption cmm-text-secondary">
- Delta abs: n/a | Delta %: n/a
- </p>
- </article>
- <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
- Raisons explicites
- </p>
- <p className="mt-1 text-lg font-semibold cmm-text-primary">
- Facteurs détaillés
- </p>
- <p className="mt-1 cmm-text-caption cmm-text-muted">
- N-1: tooltip partiel
- </p>
- <p className="mt-1 cmm-text-caption cmm-text-secondary">
- Delta abs: n/a | Delta %: n/a
- </p>
- </article>
- <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
- Filtrage qualité
- </p>
- <p className="mt-1 text-lg font-semibold cmm-text-primary">
- A / B / C + à corriger
- </p>
- <p className="mt-1 cmm-text-caption cmm-text-muted">
- N-1: filtrage limité
- </p>
- <p className="mt-1 cmm-text-caption cmm-text-secondary">
- Delta abs: n/a | Delta %: n/a
- </p>
- </article>
- </div>
- <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 cmm-text-small text-rose-800">
- <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em]">
- Alerte prioritaire
- </p>
- <p className="mt-1">
- Traiter en premier les lignes grade C pour limiter les biais
- d’analyse.
- </p>
- </div>
- <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 cmm-text-small text-emerald-900">
- <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em]">
- Action recommandée
- </p>
- <p className="mt-1">
- Appliquer le filtre “à corriger” puis corriger les champs
- géoloc/trace en priorité.
- </p>
- </div>
- </div>
+  return (
+   <AccountCompletionGate state={accountCompletion}>
+    <PageReadingTemplate
+     context="Profil supervision"
+     title="Historique des actions validées"
+     objective="Prioriser les fiches à corriger et fiabiliser l'historique."
+     summary={
+      <div className="space-y-3">
+       <div className="grid gap-3 md:grid-cols-3">
+        <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+         <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
+          Qualité visible
+         </p>
+         <p className="mt-1 text-lg font-semibold cmm-text-primary">
+          Score + grade
+         </p>
+         <p className="mt-1 cmm-text-caption cmm-text-muted">
+          N-1: score partiel
+         </p>
+         <p className="mt-1 cmm-text-caption cmm-text-secondary">
+          Delta abs: n/a | Delta %: n/a
+         </p>
+        </article>
+        <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+         <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
+          Raisons explicites
+         </p>
+         <p className="mt-1 text-lg font-semibold cmm-text-primary">
+          Facteurs détaillés
+         </p>
+         <p className="mt-1 cmm-text-caption cmm-text-muted">
+          N-1: tooltip partiel
+         </p>
+         <p className="mt-1 cmm-text-caption cmm-text-secondary">
+          Delta abs: n/a | Delta %: n/a
+         </p>
+        </article>
+        <article className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+         <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">
+          Filtrage qualité
+         </p>
+         <p className="mt-1 text-lg font-semibold cmm-text-primary">
+          A / B / C + à corriger
+         </p>
+         <p className="mt-1 cmm-text-caption cmm-text-muted">
+          N-1: filtrage limité
+         </p>
+         <p className="mt-1 cmm-text-caption cmm-text-secondary">
+          Delta abs: n/a | Delta %: n/a
+         </p>
+        </article>
+       </div>
+       <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 cmm-text-small text-rose-800">
+        <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em]">
+         Alerte prioritaire
+        </p>
+        <p className="mt-1">
+         Traiter en premier les lignes grade C pour limiter les biais
+         d’analyse.
+        </p>
+       </div>
+       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 cmm-text-small text-emerald-900">
+        <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em]">
+         Action recommandée
+        </p>
+        <p className="mt-1">
+         Appliquer le filtre “à corriger” puis corriger les champs
+         géoloc/trace en priorité.
+        </p>
+       </div>
+      </div>
+     }
+     primaryAction={{ href:"/actions/new", label:"Déclarer" }}
+     secondaryAction={{ href:"/reports", label:"Ouvrir reporting" }}
+     analysis={<ActionsHistoryList />}
+    />
+   </AccountCompletionGate>
+   );
  }
- primaryAction={{ href:"/actions/new", label:"Déclarer" }}
- secondaryAction={{ href:"/reports", label:"Ouvrir reporting" }}
- analysis={<ActionsHistoryList />}
- />
- );
- }
 
  return (
- <div data-rubrique-report-root className="space-y-4">
- <DecisionPageHeader
- context="Profil supervision"
- title="Historique terrain"
- objective="Identifier les fiches à corriger et fiabiliser l'historique."
- actions={[
- {
- href:"/actions/new",
- label:"Nouvelle déclaration",
- tone:"primary",
- },
- { href:"/reports", label:"Ouvrir reporting" },
- ]}
- />
+ <AccountCompletionGate state={accountCompletion}>
+  <div data-rubrique-report-root className="space-y-4">
+   <DecisionPageHeader
+    context="Profil supervision"
+    title="Historique terrain"
+    objective="Identifier les fiches à corriger et fiabiliser l'historique."
+    actions={[
+     {
+      href:"/actions/new",
+      label:"Nouvelle déclaration",
+      tone:"primary",
+     },
+     { href:"/reports", label:"Ouvrir reporting" },
+    ]}
+   />
 
- <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
- <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
- Tracer
- </p>
- <p className="mt-2 cmm-text-small cmm-text-secondary">
- L&apos;export PDF est disponible directement dans la liste filtrable.
- </p>
- </section>
+   <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
+     Tracer
+    </p>
+    <p className="mt-2 cmm-text-small cmm-text-secondary">
+     L&apos;export PDF est disponible directement dans la liste filtrable.
+    </p>
+   </section>
 
- <ActionsHistoryList />
- </div>
+   <ActionsHistoryList />
+  </div>
+ </AccountCompletionGate>
  );
 }

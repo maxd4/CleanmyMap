@@ -6,6 +6,7 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { IdentityBadge } from "@/components/ui/identity-badge";
 import { BadgePictogram, getAccountBadgeIconName } from "@/components/gamification/badge-icon";
 import { BadgeSurface } from "@/components/gamification/badge-surface";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
@@ -234,12 +235,17 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                             : "text-white hover:bg-white/10 hover:text-white disabled:opacity-40",
                         )}
                       >
-                        <span className="min-w-0">
-                          <span className="block truncate text-[13px] font-bold text-white">
-                            {getProfileLabel(profile, locale)}
+                        <span className="flex min-w-0 items-start gap-2">
+                          <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[9px] font-black uppercase leading-none text-white/80">
+                            i
                           </span>
-                          <span className="mt-0.5 block line-clamp-1 text-[10px] uppercase tracking-wide text-white/70">
-                            {getProfileSubtitle(profile, locale)}
+                          <span className="min-w-0">
+                            <span className="block truncate text-[13px] font-bold text-white">
+                              {getProfileLabel(profile, locale)}
+                            </span>
+                            <span className="mt-0.5 block line-clamp-1 text-[10px] uppercase tracking-wide text-white/70">
+                              {getProfileSubtitle(profile, locale)}
+                            </span>
                           </span>
                         </span>
                         {isActive ? (
@@ -264,6 +270,37 @@ export function AccountIdentityChip({ identity }: AccountIdentityChipProps) {
                   );
                 })}
               </ul>
+              <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-[10px] leading-5 text-white/78">
+                {locale === "fr" ? (
+                  <>
+                    Tu peux changer de rôle à tout moment depuis ce menu.
+                    Pour le faire, rouvre le badge de profil puis choisis un
+                    autre rôle. Pour demander une promotion vers Elu ou
+                    Administration, utilise le formulaire de la rubrique{" "}
+                    <Link
+                      href="/sections/feedback#collaboration"
+                      className="font-bold text-emerald-200 underline underline-offset-2 hover:text-white"
+                    >
+                      Retour et amélioration
+                    </Link>
+                    .
+                  </>
+                ) : (
+                  <>
+                    You can change your role at any time from this menu.
+                    To do it, reopen the profile badge and choose another role.
+                    To request a promotion to Elected or Administration, use
+                    the form in the{" "}
+                    <Link
+                      href="/sections/feedback#collaboration"
+                      className="font-bold text-emerald-200 underline underline-offset-2 hover:text-white"
+                    >
+                      Feedback &amp; improvement
+                    </Link>
+                    section.
+                  </>
+                )}
+              </div>
             </div>
           </details>
         ) : (

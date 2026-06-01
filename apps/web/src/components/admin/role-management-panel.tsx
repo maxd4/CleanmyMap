@@ -25,7 +25,10 @@ function roleBadgeLabel(roleLabel: RoleAccountRecord["roleLabel"], fr: boolean) 
     return fr ? "Admin" : "Admin";
   }
   if (roleLabel === "elu") {
-    return fr ? "Élu" : "Elected";
+    return fr ? "Elu" : "Elected";
+  }
+  if (roleLabel === "entreprise") {
+    return fr ? "Entreprise" : "Business";
   }
   if (roleLabel === "max") {
     return "IMU";
@@ -39,6 +42,9 @@ function roleTone(roleLabel: RoleAccountRecord["roleLabel"]) {
   }
   if (roleLabel === "elu") {
     return "border-violet-200 bg-violet-50 text-violet-700";
+  }
+  if (roleLabel === "entreprise") {
+    return "border-blue-200 bg-blue-50 text-blue-700";
   }
   if (roleLabel === "max") {
     return "border-amber-200 bg-amber-50 text-amber-700";

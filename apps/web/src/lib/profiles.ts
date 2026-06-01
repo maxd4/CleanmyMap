@@ -66,6 +66,7 @@ export const PROFILE_ORDER: AppProfile[] = [
   "benevole",
   "coordinateur",
   "scientifique",
+  "entreprise",
   "elu",
   "admin",
   "max",
@@ -75,6 +76,7 @@ export const SELF_SERVICE_PROFILE_ORDER = [
   "benevole",
   "coordinateur",
   "scientifique",
+  "entreprise",
 ] as const satisfies readonly AppProfile[];
 
 export type SelfServiceProfile = (typeof SELF_SERVICE_PROFILE_ORDER)[number];
@@ -107,9 +109,18 @@ export const PROFILE_DEFINITIONS: Record<AppProfile, ProfileDefinition> = {
     },
     spacePriority: { decide: 1, supervise: 2, prepare: 3, execute: 4 },
   },
+  entreprise: {
+    id: "entreprise",
+    label: { fr: "Entreprise", en: "Business" },
+    subtitle: {
+      fr: "Partenariats et mécénat d'entreprise",
+      en: "Partnerships and corporate sponsorship",
+    },
+    spacePriority: { decide: 1, supervise: 2, prepare: 3, execute: 4 },
+  },
   elu: {
     id: "elu",
-    label: { fr: "Autorité locale", en: "Local authority" },
+    label: { fr: "Elu", en: "Local authority" },
     subtitle: {
       fr: "Pilotage institutionnel et décisionnel",
       en: "Institutional and decision oversight",
@@ -164,6 +175,12 @@ const ROLE_ALIASES: Record<string, Role> = {
   analyst: "scientifique",
   statisticien: "scientifique",
   statistician: "scientifique",
+  entreprise: "entreprise",
+  company: "entreprise",
+  business: "entreprise",
+  professionnel: "entreprise",
+  professionnelle: "entreprise",
+  professional: "entreprise",
   elu: "elu",
   elue: "elu",
   decideur: "elu",
@@ -280,6 +297,45 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         description: {
           fr: "Ouvrir la version imprimable consolidée",
           en: "Open the consolidated printable view",
+        },
+      },
+    ],
+  },
+  entreprise: {
+    primaryCTA: {
+      href: SPONSOR_PORTAL_ROUTE,
+      label: {
+        fr: "Accéder au portail partenaires",
+        en: "Open the partner portal",
+      },
+      description: {
+        fr: "Suivre les engagements, partenariats et impacts",
+        en: "Track commitments, partnerships and impact",
+      },
+    },
+    secondaryCTA: {
+      href: "/partners/network",
+      label: { fr: "Voir le réseau", en: "View the network" },
+      description: {
+        fr: "Identifier les acteurs et partenaires actifs",
+        en: "Identify active organizations and partners",
+      },
+    },
+    additionalActions: [
+      {
+        href: "/sections/funding",
+        label: { fr: "Soutenir le projet", en: "Support the project" },
+        description: {
+          fr: "Découvrir les possibilités de mécénat",
+          en: "Explore sponsorship opportunities",
+        },
+      },
+      {
+        href: REPORTS_ROUTE,
+        label: { fr: "Consulter l'impact", en: "Review impact" },
+        description: {
+          fr: "Lire les indicateurs consolidés",
+          en: "Review consolidated indicators",
         },
       },
     ],

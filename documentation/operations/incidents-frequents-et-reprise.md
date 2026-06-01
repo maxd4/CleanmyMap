@@ -105,5 +105,5 @@ Fallback statique:
 ```bash
 npm --prefix apps/web run lint
 npm --prefix apps/web run build
-npm run checks:changed:quick
+powershell -ExecutionPolicy Bypass -File scripts/check_changed_quick.ps1
 ```

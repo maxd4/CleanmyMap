@@ -16,6 +16,7 @@ const requestSchema = z.object({
       "benevole",
       "coordinateur",
       "scientifique",
+      "entreprise",
       "elu",
       "local_authority",
       "admin",

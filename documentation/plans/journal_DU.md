@@ -14,6 +14,6 @@ Le journal détaillé et tenu à jour se trouve dans [journal_impact_DU.md](./jo
 
 ## Liens utiles
 
-- [atelier_DU.md](./atelier_DU.md)
+- [ateliers_DU.md](./ateliers_DU.md)
 - [journal_impact_DU.md](./journal_impact_DU.md)
 - [rapport_impact/impact_IA.md](./rapport_impact/impact_IA.md)

@@ -30,6 +30,7 @@ type FetchMapActionsParams = {
   status?: ActionStatus | "all";
   limit?: number;
   days?: number;
+  floorDate?: string | null;
   types?: ActionTypeFilter;
   association?: string | "all";
   scopeKind?: ReportScopeKind;
@@ -177,7 +178,13 @@ export function buildMapActionsQueryString(
 ): string {
   const query = new URLSearchParams();
   query.set("limit", String(clampInteger(params.limit, 1, 300, 80)));
-  query.set("days", String(clampInteger(params.days, 1, 3650, 30)));
+  if (typeof params.floorDate === "string") {
+    query.set("floorDate", params.floorDate);
+  } else if (params.floorDate === null) {
+    query.set("floorDate", "all");
+  } else {
+    query.set("days", String(clampInteger(params.days, 1, 3650, 30)));
+  }
   query.set("types", serializeTypes(params.types, "all"));
   const resolvedStatus = params.status ?? "approved";
   if (resolvedStatus !== "all") {

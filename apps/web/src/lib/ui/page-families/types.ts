@@ -19,7 +19,7 @@ export type PageFamilyId =
 export type PageFamilyHeroTokens = {
   eyebrow: string;
   title: string;
-  /** Variante plus petite (pilotage, profil SectionShell). */
+  /** Alias de compatibilité: même géométrie canonique que `title`. */
   titleCompact: string;
   subtitle: string;
   badge: string;

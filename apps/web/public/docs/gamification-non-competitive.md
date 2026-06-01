@@ -200,6 +200,13 @@ Les hypotheses suivantes sont des inférences produit a valider sur le terrain:
 - des objectifs mensuels simples fonctionnent mieux que des mecanismes trop riches;
 - la transparence des criteres renforce la confiance.
 
+## Memoire des objectifs retenus
+
+Pour ne pas perdre les choix déjà validés, consulter aussi:
+
+- [objectifs-valides.md](./objectifs-valides.md)
+- [objectifs-non-pertinents.md](./objectifs-non-pertinents.md)
+
 ## Recommandation d implementation prioritaire
 
 ### Phase 1

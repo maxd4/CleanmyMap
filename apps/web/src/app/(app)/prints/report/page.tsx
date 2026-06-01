@@ -5,8 +5,11 @@ import { aggregateMonthlyAnalytics } from"@/lib/pilotage/analytics-data-utils";
 import { AnalyticsCockpit } from"@/components/reports/analytics-cockpit";
 import Image from"next/image";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
+import { PageHeader, PageHeaderBadge } from"@/components/ui/page-header";
+import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { reportPdfColors } from "@/lib/pdf-export/report-pdf-theme";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 async function loadFullAuditData() {
   const supabase = getSupabaseServerClient();
@@ -31,44 +34,62 @@ async function loadFullAuditData() {
 
 export default async function PrintReportPage() {
  const { userId, clerkReachable } = await getSafeAuthSession();
+ const pageFamily = resolvePageFamily("/prints/report");
  if (!userId) {
  return (
- <ClerkRequiredGate
- isAuthenticated={false}
- mode="blur"
- title="Rapport d'impact imprimable"
- description={
- clerkReachable
- ?"Cette fonctionnalité nécessite une connexion Clerk."
- :"Connexion Clerk temporairement indisponible. La vue reste lisible."
- }
-        lockedPreview={
- <section className="space-y-4 rounded-3xl border border-stone-200 bg-stone-50/90 p-5 shadow-sm">
- <div className="grid gap-3 md:grid-cols-4">
- {[
-"Masse récoltée",
-"Bénévoles",
-"Score qualité",
-"Zones couvertes",
- ].map((label) => (
- <article
- key={label}
- className="rounded-2xl border border-stone-200 bg-white/90 p-4"
- >
- <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">{label}</p>
- <p className="mt-2 text-lg font-semibold cmm-text-primary">—</p>
- </article>
- ))}
+ <div className="space-y-6">
+  <div className="print:hidden">
+   <PageHeader
+    family={pageFamily}
+    eyebrow="Bloc Cartographie & Impact"
+    title="Rapport d'impact imprimable"
+    subtitle="Synthèse documentaire, export visuel et lecture d’impact pour l’audit."
+    badges={
+     <>
+      <PageHeaderBadge family={pageFamily}>Print</PageHeaderBadge>
+      <PageHeaderBadge family={pageFamily} muted>
+       Export
+      </PageHeaderBadge>
+     </>
+    }
+   />
+  </div>
+  <ClerkRequiredGate
+   isAuthenticated={false}
+   mode="blur"
+   title="Rapport d'impact imprimable"
+   description={
+    clerkReachable
+     ?"Cette fonctionnalité nécessite une connexion Clerk."
+     :"Connexion Clerk temporairement indisponible. La vue reste lisible."
+   }
+   lockedPreview={
+    <section className="space-y-4 rounded-3xl border border-stone-200 bg-stone-50/90 p-5 shadow-sm">
+     <div className="grid gap-3 md:grid-cols-4">
+      {[
+       "Masse récoltée",
+       "Bénévoles",
+       "Score qualité",
+       "Zones couvertes",
+      ].map((label) => (
+       <article
+        key={label}
+        className="rounded-2xl border border-stone-200 bg-white/90 p-4"
+       >
+        <p className="cmm-text-caption uppercase tracking-wide cmm-text-muted">{label}</p>
+        <p className="mt-2 text-lg font-semibold cmm-text-primary">—</p>
+       </article>
+      ))}
+     </div>
+     <div className="rounded-2xl border border-stone-200 bg-white/90 p-4 cmm-text-small cmm-text-secondary">
+      Le rapport complet, les exports et la méthodologie détaillée se déverrouillent après connexion.
+     </div>
+    </section>
+   }
+  >
+   <div />
+  </ClerkRequiredGate>
  </div>
- <div className="rounded-2xl border border-stone-200 bg-white/90 p-4 cmm-text-small cmm-text-secondary">
- Le rapport complet, les exports et la méthodologie détaillée
- se déverrouillent après connexion.
- </div>
-</section>
- }
- >
- <div />
- </ClerkRequiredGate>
  );
  }
 
@@ -83,7 +104,23 @@ export default async function PrintReportPage() {
  const reportDate = new Date("2026-04-25").toLocaleDateString("fr-FR");
 
  return (
- <div className="min-h-screen p-0 sm:p-12 print:p-0">
+ <div className="space-y-6 min-h-screen p-0 sm:p-12 print:p-0">
+  <div className="print:hidden">
+   <PageHeader
+    family={pageFamily}
+    eyebrow="Bloc Cartographie & Impact"
+    title="Rapport d'impact imprimable"
+    subtitle="Synthèse documentaire, export visuel et lecture d’impact pour l’audit."
+    badges={
+     <>
+      <PageHeaderBadge family={pageFamily}>Print</PageHeaderBadge>
+      <PageHeaderBadge family={pageFamily} muted>
+       Document
+      </PageHeaderBadge>
+     </>
+    }
+   />
+  </div>
  <div className="min-h-screen bg-white/95 p-0 sm:p-0">
  {/* HEADER PROFESSIONNEL */}
  <header
@@ -120,16 +157,24 @@ export default async function PrintReportPage() {
  { label:"Bénévoles", value: overview.comparison.current.mobilizationCount },
  { label:"Score Qualité", value:"AA" },
  { label:"Zones Couvertes", value: overview.zones.length }
- ].map((stat, i) => (
- <div key={i} className="bg-white p-6 space-y-1">
- <p className="cmm-text-caption font-bold cmm-text-muted uppercase tracking-widest">{stat.label}</p>
- <p className="text-3xl font-bold cmm-text-primary">{stat.value}</p>
- </div>
- ))}
- </section>
+  ].map((stat, i) => (
+  <div key={i} className="bg-white p-6 space-y-1">
+  <p className="cmm-text-caption font-bold cmm-text-muted uppercase tracking-widest">{stat.label}</p>
+  <p className="text-3xl font-bold cmm-text-primary">{stat.value}</p>
+  </div>
+  ))}
+  </section>
 
- {/* ANALYTICS BLOCK */}
- <section className="space-y-6 mb-12">
+  <TerritoryMapComparisonCards
+   title="Deux lectures du territoire imprimable"
+   subtitle="La carte de base garde un repère terrain direct. La carte Terraink ajoute une lecture plus graphique, utile pour la couverture d'un rapport, une annexe ou une présentation imprimée."
+   locationLabel="Rapport imprimable"
+   tone="rose"
+   note="Le rendu imprimable ne remplace pas la version de base. Il sert surtout à comparer la lisibilité et le rendu documentaire dans un contexte d'export."
+  />
+
+  {/* ANALYTICS BLOCK */}
+  <section className="space-y-6 mb-12">
  <h2
  className="text-xl font-bold cmm-text-primary uppercase tracking-tight border-l-4 pl-4"
  style={{ borderColor: reportPdfColors.green }}

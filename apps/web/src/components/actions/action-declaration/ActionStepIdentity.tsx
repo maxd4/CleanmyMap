@@ -102,6 +102,8 @@ function Field({ icon: Icon, children, className }: { icon: LucideIcon; children
 
 export function ActionStepIdentity({ form, updateField, userMetadata, recordType, hasAttemptedSubmit }: Props) {
   const isCleanPlaceMode = recordType === "clean_place";
+  const isActionMode = recordType === "action";
+  const isSpontaneousAction = form.associationName === "Action spontanée";
   const isEntreprise = form.associationName === "Entreprise" || form.associationName.startsWith("Entreprise - ");
   const isAutreBénévole = form.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE;
   const missingDate = hasAttemptedSubmit && !form.actionDate;
@@ -117,6 +119,9 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
   function handleAssociationChange(val: string) {
     updateField("associationName", val);
     if (val !== "Entreprise") updateField("enterpriseName", "");
+    if (val === "Action spontanée") {
+      updateField("organizerAccounts", "");
+    }
     if (val !== OTHER_VOLUNTEER_ASSOCIATION_VALUE) {
       updateField("actorName", userMetadata.displayName ?? userMetadata.username ?? "");
     }
@@ -244,6 +249,24 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
                 </Field>
                 <p className="text-xs text-emerald-900/55 pl-1">
                   Les données seront rattachées à cette entreprise et aux rapports d&apos;impact collectifs.
+                </p>
+              </div>
+            )}
+
+            {isActionMode && !isSpontaneousAction && (
+              <div className="mt-3 space-y-1">
+                <Field icon={Users}>
+                  <input
+                    type="text"
+                    className={inputCls}
+                    placeholder="Pseudo, nom affiché ou ID, séparés par des virgules"
+                    value={form.organizerAccounts}
+                    onChange={(e) => updateField("organizerAccounts", e.target.value)}
+                    maxLength={300}
+                  />
+                </Field>
+                <p className="text-xs text-emerald-900/55 pl-1">
+                  Renseignez les comptes qui ont réellement organisé l&apos;action. La récompense de création sera partagée entre eux si l&apos;action est validée.
                 </p>
               </div>
             )}

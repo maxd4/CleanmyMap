@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUserIdentity } from "@/lib/authz";
 import { findZoneWithNeighbors } from "@/lib/geo/paris-neighborhood";
+import { extractArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError, validationErrorResponse } from "@/lib/http/api-errors";
 import {
@@ -244,7 +245,9 @@ export async function POST(request: Request) {
     const profileArrondissement = profile?.paris_arrondissement ?? parsedArr;
 
     const zoneName = parsed.data.zoneName?.trim() || metadataZone.zoneName;
-    const arrondissementId = parsed.data.arrondissementId ?? profileArrondissement;
+    const inferredZoneArrondissement = zoneName ? extractArrondissementFromLabel(zoneName) : null;
+    const arrondissementId =
+      parsed.data.arrondissementId ?? profileArrondissement ?? inferredZoneArrondissement;
     const zoneContext = buildZoneContext(zoneName, arrondissementId);
     const arrondissementLabel =
       !zoneName && arrondissementId && arrondissementId >= 1 && arrondissementId <= 20
@@ -293,7 +296,7 @@ export async function POST(request: Request) {
       case "territory": {
         if (zoneName && findZoneWithNeighbors(zoneName)) {
           targetZoneName = zoneName;
-          targetArrondissementId = null;
+          targetArrondissementId = arrondissementId;
         } else if (arrondissementId && arrondissementId >= 1 && arrondissementId <= 20) {
           targetArrondissementId = arrondissementId;
           targetZoneName = arrondissementLabel;

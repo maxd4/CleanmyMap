@@ -21,6 +21,7 @@ import {
  getProfileNavigationEntries,
 } from"@/lib/navigation";
 import type { AppProfile } from"@/lib/profiles";
+import { getNavigationDropdownTitleGradientStyle } from "./navigation-dropdown-theme";
 
 function isActive(pathname: string, href: string): boolean {
  if (href === DASHBOARD_ROUTE) {
@@ -196,8 +197,13 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
  key={space.id}
  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
  >
- <h2 className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
+ <h2 className="cmm-text-caption font-semibold uppercase tracking-[0.14em]">
+ <span
+ className="inline-block"
+ style={getNavigationDropdownTitleGradientStyle(space.id)}
+ >
  {space.label[locale]}
+ </span>
  </h2>
  <ul className="mt-2 space-y-2">
  {getRenderedSpaceItems(space).map((item) => {
@@ -250,7 +256,12 @@ key={space.id}
 className="group rounded-xl border border-slate-200 bg-white p-3 shadow-sm"
 >
 <summary className="cmm-dropdown-trigger flex min-h-11 list-none items-center justify-between gap-2 rounded-lg px-3 cmm-text-small font-semibold cmm-text-primary [&::-webkit-details-marker]:hidden">
+<span
+className="block min-w-0 flex-1 truncate"
+style={getNavigationDropdownTitleGradientStyle(space.id)}
+>
 {space.label[locale]}
+</span>
 <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-150 group-open:rotate-180" aria-hidden="true" />
 </summary>
  <ul className="mt-2 space-y-2">

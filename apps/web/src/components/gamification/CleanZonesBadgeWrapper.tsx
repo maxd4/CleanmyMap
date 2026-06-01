@@ -3,6 +3,7 @@
 import React from "react";
 import CleanZonesBadge from "./CleanZonesBadge";
 import type { GemGrade } from "@/lib/gamification/types";
+import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
 
 export default function CleanZonesBadgeWrapper() {
   const [isLoading, setIsLoading] = React.useState(true);
@@ -137,7 +138,13 @@ export default function CleanZonesBadgeWrapper() {
         grades={cleanZonesData.grades}
         current={cleanZonesData.current}
         onGradeReached={(grade) => {
-          console.log(`Clean zones badge reached: ${grade.label}`);
+          dispatchGamificationCelebration({
+            title: "Palier zone propre atteint",
+            message: `${grade.label} débloqué pour les zones propres validées.`,
+            tone: "clean-zones",
+            icon: grade.iconVariant || "🌍",
+            source: "clean-zones-badge",
+          });
         }}
       />
     );

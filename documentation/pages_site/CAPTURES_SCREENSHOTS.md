@@ -2,16 +2,17 @@
 
 ## Organisation des captures
 
-Le script `documentation/pages_site/generate-canonical-pages.mjs` structure le registre canonique par route. L’inventaire exhaustif, le statut de capture et la priorité d’audit sont centralisés dans `documentation/pages_site/INDEX.md`. Le script de capture alimente ensuite le dossier `photo/` des fiches route-first, avec uniquement des fichiers `.webp`. Les captures legacy restent aussi miroir dans `documentation/liberte-UX-UI/`.
+Le registre canonique des routes vit dans `documentation/pages_site/generate-canonical-pages.mjs` et l’inventaire exhaustif reste centralisé dans `documentation/pages_site/INDEX.md`. Le nouveau pipeline d’écran alimente le dossier `documentation/pages_site/screen/` en PNG desktop full page. Les captures route-first historiques dans `photo/` et le miroir legacy `documentation/liberte-UX-UI/` restent disponibles tant que la migration n’est pas terminée.
 
 ### Règle impérative
 
-- Toute capture canonique doit être enregistrée dans le dossier `photo/` du dossier route canonique sous `documentation/pages_site/routes/.../`.
-- Les fichiers doivent être au format WebP uniquement.
-- Les captures doivent aussi rester miroirs dans `documentation/liberte-UX-UI/...` tant que le pipeline n'est pas entièrement migré.
-- Ne pas déposer de capture canonique ailleurs dans `documentation/pages_site/` ou à la racine du repo.
-- Les fichiers de contexte, alias temporaires ou exports intermédiaires doivent rester séparés des captures WebP officielles.
-- Les fiches route décrivent aussi la capture attendue, même lorsque le dossier `photo/` est encore vide.
+- Les captures écran canoniques du nouveau pipeline doivent être enregistrées dans `documentation/pages_site/screen/<family>/<slug>/desktop.png`.
+- Le format de sortie est PNG uniquement.
+- Les captures route-first historiques en `photo/` restent documentées pour compatibilité tant que le pipeline n’est pas totalement migré.
+- Les captures legacy peuvent rester en miroir dans `documentation/liberte-UX-UI/...` tant que les scripts historiques existent.
+- Ne pas déposer de captures écran en dehors de `documentation/pages_site/screen/`.
+- Les fichiers de contexte, alias temporaires ou exports intermédiaires doivent rester séparés des captures officielles.
+- Les fiches route continuent de documenter la capture attendue, même lorsque le dossier `screen/` ou `photo/` est encore vide.
 
 ### Consigne temporaire
 
@@ -22,16 +23,19 @@ Le script `documentation/pages_site/generate-canonical-pages.mjs` structure le r
 ### Structure des dossiers
 
 ```
-documentation/pages_site/routes/
-├── 00-homepage/
-│   └── root/
-│       ├── README.md
-│       └── photo/
-├── 01-accueil-pilotage/
-│   └── dashboard/
-│       ├── README.md
-│       └── photo/
-└── ...
+documentation/pages_site/
+├── INDEX.md
+├── screen/
+│   ├── README.md
+│   ├── capture-pages.mjs
+│   ├── capture-routes.mjs
+│   └── <family>/<slug>/desktop.png
+└── routes/
+    ├── 00-homepage/
+    │   └── root/
+    │       ├── README.md
+    │       └── photo/
+    └── ...
 
 documentation/liberte-UX-UI/
 └── [miroir legacy des captures, conservé le temps de la migration]
@@ -39,8 +43,8 @@ documentation/liberte-UX-UI/
 
 ### Formats générés
 
-**Captures officielles** :
-- `photo/[route]-desktop.webp` (1440x1200, WebP)
+**Captures écran officielles** :
+- `screen/<family>/<slug>/desktop.png` (1440x1200, PNG, full page)
 - les captures `mobile` sont suspendues jusqu'à nouvel ordre
 
 ## Utilisation
@@ -48,10 +52,10 @@ documentation/liberte-UX-UI/
 ```bash
 # Serveur local
 npm run dev
-npm run screenshots
+npm run screenshots:screen
 
 # URL déployée
-BASE_URL=https://mon-site.vercel.app npm run screenshots
+BASE_URL=https://mon-site.vercel.app npm run screenshots:screen
 ```
 
 ## Fonctionnalités avancées
@@ -59,75 +63,32 @@ BASE_URL=https://mon-site.vercel.app npm run screenshots
 ### Auto-scroll intelligent
 Pour les pages complètes, le script effectue un scroll automatique pour charger les sections lazy-loaded avant la capture.
 
-### Captures WebP automatiques
-Les pages principales génèrent automatiquement des captures WebP dans leur dossier `photo/` :
-- **Redimensionnement proportionnel** : la plus grande dimension ne dépasse jamais 3000px
-- **Compression WebP** : qualité 85% pour un bon compromis taille/qualité
-- **Optimisation Sharp** : algorithme Lanczos3 pour une qualité optimale
+### Captures PNG automatiques
+Les pages principales génèrent automatiquement des captures PNG dans leur dossier `screen/` :
+- **Redimensionnement et compression** : Sharp ré-encode le PNG en sortie finale
+- **Optimisation** : le rendu est généré en full page desktop pour réduire les captures manuelles
 
-### Configuration des versions contexte
-Seules certaines pages génèrent des captures officielles (flag `generateContext: true`) :
-- Accueil
-- Accueil
-- Agir
-- Visualiser
-- Profil-impact
+### Configuration des routes
+Les routes sont lues depuis `documentation/pages_site/screen/capture-routes.mjs`, qui s’appuie sur le registre canonique exporté par `documentation/pages_site/generate-canonical-pages.mjs`.
 
-## Captures de blocs spécifiques
-
-Pour capturer des blocs individuels de l'accueil, le script recherche ces sélecteurs CSS et enregistre les sorties dans `01-ACCUEIL` :
-
-- `[data-section='hero']` ou `.hero-section`
-- `[data-section='benefits']` ou `.benefits-section`
-- `[data-section='pillars']` ou `.pillars-section`
-- `[data-section='impact-summary']` ou `.impact-summary-section`
-- `[data-section='community-activity']` ou `.community-activity-section`
-- `[data-section='credibility-footer']` ou `.credibility-footer-section`
-
-### Ajout des attributs data-section
-
-Pour capturer des blocs spécifiques, ajoutez les attributs `data-section` aux composants React :
-
-```jsx
-// Exemple pour le hero
-<section data-section="hero" className="hero-section">
-  {/* Contenu du hero */}
-</section>
-
-// Exemple pour les benefits
-<section data-section="benefits" className="benefits-section">
-  {/* Contenu des avantages */}
-</section>
-```
-
-## Fallback
-
-Si un sélecteur de bloc n'est pas trouvé, le script capture automatiquement la page complète comme fallback.
-
-## Structure par format
-
-Chaque dossier de capture utilise maintenant un seul sous-dossier dédié :
-- `photo/` pour les captures officielles WebP
-- cette séparation s'applique aussi bien à `01-ACCUEIL` qu'aux blocs `02` à `09` et aux pages standalone de `10`
-
-## Branchement 01 et 10
-
-- `01-ACCUEIL` est le dossier principal des captures liées à l'accueil complet et à ses sections internes
-- `02-BLOC-ACCUEIL` ne doit pas contenir des captures de l'accueil public
-- `10-PAGES-STANDALONE` reste réservé aux autres pages autonomes
-- l'accueil n'est plus dupliqué dans `10-PAGES-STANDALONE`
+### Actions avant capture
+Le pipeline supporte des actions optionnelles avant capture :
+- fermer le bandeau cookies
+- ouvrir un menu de bloc
+- ouvrir le menu de préférences
+- cliquer le menu profil
+- cliquer un sélecteur arbitraire
+- attendre avant la capture
 
 ## Rapport de capture
 
 Le script génère un rapport détaillé indiquant :
 - ✅ Captures réussies
-- 📐 Versions contexte générées
 - ❌ Captures échouées
-- 🔍 Sélecteurs CSS manquants
-- 💡 Suggestions d'amélioration
+- 🔍 Routes en échec avec la raison
 
 ## Dépendances
 
-- **Playwright** : Capture d'écran
-- **Sharp** : Redimensionnement et compression d'images
+- **Playwright** : capture d'écran et orchestration navigateur
+- **Sharp** : ré-encodage et compression du PNG de sortie
 

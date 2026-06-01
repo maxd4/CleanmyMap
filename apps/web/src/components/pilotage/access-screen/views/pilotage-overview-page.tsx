@@ -38,7 +38,6 @@ export function PilotageOverviewPage({
       <div className="space-y-8">
         <PageHero
           family={pageFamily}
-          titleSize="compact"
           title={copy.title}
           subtitle={copy.description}
           badges={

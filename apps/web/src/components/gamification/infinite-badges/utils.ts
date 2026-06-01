@@ -1,6 +1,6 @@
 import { BADGE_MAX_COUNTER } from "@/config/gamification.config";
 
-export type BadgeFamily = "dechets" | "megots" | "lieux";
+export type BadgeFamily = "dechets" | "megots" | "lieux" | "actions";
 
 export function clampBadgeCounter(value: number): number {
   if (!Number.isFinite(value)) return 0;
@@ -114,6 +114,73 @@ export function computePlacesRank(level: number): PlacesBadgeRank {
   return PLACES_RANKS[level];
 }
 
+export type ActionCreationBadgeRank = BadgeRank & { icon: string; title: string };
+
+const ACTION_CREATION_RANKS: ActionCreationBadgeRank[] = [
+  { grade: "Observateur", subGrade: "", tier: "wood", icon: "users", title: "Observateur" },
+  { grade: "Promeneur", subGrade: "Local", tier: "wood", icon: "users", title: "Promeneur Local" },
+  { grade: "Arpenteur", subGrade: "", tier: "bronze", icon: "users", title: "Arpenteur" },
+  { grade: "Éclaireur", subGrade: "", tier: "bronze", icon: "users", title: "Éclaireur" },
+  { grade: "Patrouilleur", subGrade: "", tier: "bronze", icon: "users", title: "Patrouilleur" },
+  { grade: "Repéreur", subGrade: "", tier: "silver", icon: "users", title: "Repéreur" },
+  { grade: "Cartographe", subGrade: "", tier: "gold", icon: "users", title: "Cartographe" },
+  { grade: "Coordinateur", subGrade: "", tier: "gold", icon: "users", title: "Coordinateur" },
+  { grade: "Sentinelle", subGrade: "", tier: "diamond", icon: "users", title: "Sentinelle" },
+  { grade: "Régulateur", subGrade: "", tier: "diamond", icon: "users", title: "Régulateur" },
+  { grade: "Conservateur", subGrade: "", tier: "diamond", icon: "users", title: "Conservateur" },
+  { grade: "Gardien", subGrade: "", tier: "cosmic", icon: "users", title: "Gardien" },
+  { grade: "Maître des Cartes", subGrade: "", tier: "cosmic", icon: "users", title: "Maître des Cartes" },
+];
+
+function toRomanNumeral(value: number): string {
+  if (!Number.isFinite(value) || value < 1) {
+    return "II";
+  }
+
+  const numerals: Array<[number, string]> = [
+    [1000, "M"],
+    [900, "CM"],
+    [500, "D"],
+    [400, "CD"],
+    [100, "C"],
+    [90, "XC"],
+    [50, "L"],
+    [40, "XL"],
+    [10, "X"],
+    [9, "IX"],
+    [5, "V"],
+    [4, "IV"],
+    [1, "I"],
+  ];
+
+  let remaining = Math.max(1, Math.trunc(value));
+  let result = "";
+  for (const [threshold, glyph] of numerals) {
+    while (remaining >= threshold) {
+      result += glyph;
+      remaining -= threshold;
+    }
+  }
+  return result || "I";
+}
+
+export function computeActionCreationRank(level: number): ActionCreationBadgeRank {
+  if (level <= 0) return ACTION_CREATION_RANKS[0];
+  if (level < ACTION_CREATION_RANKS.length) {
+    return ACTION_CREATION_RANKS[level];
+  }
+
+  const infiniteIndex = level - ACTION_CREATION_RANKS.length + 2;
+  const numeral = toRomanNumeral(infiniteIndex);
+  return {
+    grade: "Pilier",
+    subGrade: numeral,
+    tier: "cosmic",
+    icon: "users",
+    title: `Pilier ${numeral}`,
+  };
+}
+
 export const BADGE_TIER_STYLES: Record<BadgeTier, {
   container: string;
   glow: string;
@@ -199,4 +266,3 @@ export const BADGE_TIER_STYLES: Record<BadgeTier, {
     primaryButton: "bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-600 text-white hover:from-fuchsia-500 hover:via-purple-500 hover:to-indigo-500 shadow-[0_0_20px_rgba(192,38,211,0.5)]",
   }
 };
-

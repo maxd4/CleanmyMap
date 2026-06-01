@@ -2636,6 +2636,8 @@ Le choix technique le plus durable n’est pas d’ajouter une couche verte au-d
 
 Conclusion nette : la durabilité réelle de CleanMyMap dépendra moins du fournisseur d’hébergement que de sa capacité à supprimer, mutualiser, mesurer et refuser les fonctionnalités qui n'augmentent pas clairement le nombre ou la qualité des actions écologiques concrètes.
 
+Cette exigence de discernement rejoint une mise en garde classique d’Edgar Morin : « À force de sacrifier l’essentiel pour l’urgence, on finit par oublier l’urgence de l’essentiel » [@morin_essentiel_urgence]. Dans CleanMyMap, la phrase rappelle qu’un projet numérique à visée écologique peut très vite se laisser absorber par les urgences de livraison, les correctifs techniques et les ajouts de fonctionnalités, au point de reléguer sa finalité première au second plan. Le rapport doit donc préserver un ordre clair des priorités : d’abord l’impact terrain, ensuite la coordination, puis seulement les gains de productivité ou d’automatisation qui servent réellement cette finalité.
+
 # Partie IX — Plan de réduction des impacts {#partie-ix-plan-de-reduction-des-impacts}
 
 ## Actions complémentaires hors site

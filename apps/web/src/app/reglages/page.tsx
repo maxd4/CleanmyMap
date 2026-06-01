@@ -6,8 +6,10 @@ import { getCurrentUserIdentity } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
 import { DisplayNameModeSetting } from "@/components/account/display-name-mode-setting";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { HOME_ROUTE } from "@/lib/home-routes";
 import { DASHBOARD_ROUTE, PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export const metadata: Metadata = {
   title: "Réglages - CleanMyMap",
@@ -34,6 +36,7 @@ export default async function ReglagesPage() {
 
   const isFrench = locale === "fr";
   const displayNameMode = identity?.displayNameMode ?? "full_name";
+  const pageFamily = resolvePageFamily("/reglages");
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_rgba(186,230,253,0.45)_0%,_rgba(255,255,255,0.96)_52%,_rgba(248,250,252,1)_100%)] px-4 py-8">
@@ -43,39 +46,37 @@ export default async function ReglagesPage() {
       </div>
 
       <div className="relative mx-auto max-w-4xl">
-        {/* Navigation de retour */}
-        <div className="mb-8">
-          <Link
-            href={PROFIL_ROUTE}
-            className="inline-flex items-center gap-2 text-sm font-medium text-sky-700 transition-colors hover:text-sky-950"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            {isFrench ? "Retour au profil" : "Back to profile"}
-          </Link>
-        </div>
-
         <div className="space-y-8">
-          {/* En-tête */}
-          <header className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-sky-100 bg-sky-50 text-sky-700">
-                <Settings className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.24em] text-slate-500">
-                  {isFrench ? "Configuration" : "Configuration"}
-                </p>
-                <h1 className="text-3xl font-black tracking-tight text-slate-900">
-                  {isFrench ? "Réglages" : "Settings"}
-                </h1>
-              </div>
-            </div>
-            <p className="max-w-2xl text-base leading-relaxed text-slate-600">
-              {isFrench
+          <PageHeader
+            family={pageFamily}
+            eyebrow={isFrench ? "Configuration" : "Configuration"}
+            title={isFrench ? "Réglages" : "Settings"}
+            subtitle={
+              isFrench
                 ? "Personnalisez votre expérience CleanMyMap selon vos préférences et besoins."
-                : "Customize your CleanMyMap experience according to your preferences and needs."}
-            </p>
-          </header>
+                : "Customize your CleanMyMap experience according to your preferences and needs."
+            }
+            badges={
+              <>
+                <PageHeaderBadge family={pageFamily}>
+                  {isFrench ? "Préférences" : "Preferences"}
+                </PageHeaderBadge>
+                <PageHeaderBadge family={pageFamily} muted>
+                  {isFrench ? "Compte privé" : "Private account"}
+                </PageHeaderBadge>
+              </>
+            }
+            action={
+              <Link
+                href={PROFIL_ROUTE}
+                className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-white px-4 py-2.5 text-sm font-black text-sky-800 transition hover:-translate-y-[1px] hover:bg-sky-50"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {isFrench ? "Retour au profil" : "Back to profile"}
+              </Link>
+            }
+            className="max-w-4xl"
+          />
 
           {/* Sections de réglages */}
           <div className="grid gap-6 lg:grid-cols-2">

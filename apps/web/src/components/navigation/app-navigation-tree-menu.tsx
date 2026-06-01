@@ -11,7 +11,7 @@ import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
 import {
   getNavigationDropdownPanelStyle,
-  getNavigationDropdownTitleLabel,
+  getNavigationDropdownTitleGradientStyle,
 } from "./navigation-dropdown-theme";
 
 type AppNavigationTreeMenuProps = {
@@ -239,14 +239,17 @@ export function AppNavigationTreeMenu({
                               ? "bg-white/75 text-black"
                               : "text-black/80 hover:bg-white/60 hover:text-black",
                           )}
-                        >
+                          >
                           <span className="flex min-w-0 items-center gap-2.5">
                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-white/70 text-lg text-black">
                               {space.icon}
                             </span>
                             <span className="min-w-0">
-                              <span className="block truncate cmm-text-small font-bold tracking-[0.02em] text-black">
-                                {getNavigationDropdownTitleLabel(locale, space.label[locale])}
+                              <span
+                                className="block cmm-text-small font-bold tracking-[-0.02em]"
+                                style={getNavigationDropdownTitleGradientStyle(space.id)}
+                              >
+                                {space.label[locale]}
                               </span>
                             </span>
                           </span>

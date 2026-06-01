@@ -7,6 +7,8 @@ Guides de développement pour agents IA.
 ## 🤖 Fichiers Essentiels pour IA
 
 ### Guides IA Spécifiques
+- **SPEC_KIT_PLAYBOOK.md** ⭐ - Workflow Spec Kit adapte a CleanMyMap
+- **MATT_POCOCK_SKILLS_PLAYBOOK.md** ⭐ - Workflow des skills Matt Pocock adapte a CleanMyMap
 - **AI_DEVELOPER_GUIDE.md** ⭐ - Guide développeur IA
 - **AI_MINDSET_KAIZEN.md** ⭐ - Mindset amélioration continue
 
@@ -38,9 +40,11 @@ Guides de développement pour agents IA.
 ## 🤖 Instructions IA
 
 ### Avant de Coder
-1. Lire **AI_DEVELOPER_GUIDE.md** pour les règles IA
-2. Consulter **AI_MINDSET_KAIZEN.md** pour l'esprit d'amélioration
-3. Vérifier **conventions-composants.md** pour les patterns
+1. Lire **SPEC_KIT_PLAYBOOK.md** si la tâche doit passer par spec, plan et tâches avant implémentation
+2. Lire **MATT_POCOCK_SKILLS_PLAYBOOK.md** si la tâche implique plan, debug, TDD ou transfert de session
+3. Lire **AI_DEVELOPER_GUIDE.md** pour les règles IA
+4. Consulter **AI_MINDSET_KAIZEN.md** pour l'esprit d'amélioration
+5. Vérifier **conventions-composants.md** pour les patterns
 
 ### Lors du Développement
 1. Respecter **api-standard.md** pour les APIs

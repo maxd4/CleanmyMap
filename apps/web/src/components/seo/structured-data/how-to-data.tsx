@@ -141,7 +141,7 @@ export function HowToJoinCommunityJsonLd() {
       {
         "@type": "HowToStep",
         name: "2. Choisir votre profil",
-        text: "Sélectionnez votre profil (bénévole, coordinateur, élu, scientifique) pour personnaliser votre expérience.",
+        text: "Sélectionnez votre profil (bénévole, coordinateur, scientifique, entreprise, élu) pour personnaliser votre expérience.",
       },
       {
         "@type": "HowToStep",

@@ -101,20 +101,19 @@ export function computeActionPendingAward(weight: number): {
 export function computeActionValidationAward(
   weight: number,
   qualityGrade: ActionQualityGrade,
+  organizerCount = 1,
 ): {
   xpBase: number;
   xpAwarded: number;
 } {
-  // XP is awarded only once validated.
-  // 1 XP for standard validated actions, 2 XP for strong/structuring actions.
-  // Quality requirements remain enforced at the level-gating stage.
-  const resolvedWeight = clampWeight(weight);
-  const xpBase = resolvedWeight >= 3 ? 2 : 1;
-  // Keep grade in signature for compatibility; no additional bonus in this simplified system.
+  // XP is awarded only once a real action has been validated through an issued form.
+  // The base reward is 1 XP, then split equally across all organizers.
+  void weight;
   void qualityGrade;
+  const safeOrganizerCount = Math.max(1, Math.trunc(organizerCount));
   return {
-    xpBase,
-    xpAwarded: xpBase,
+    xpBase: 1,
+    xpAwarded: 1 / safeOrganizerCount,
   };
 }
 

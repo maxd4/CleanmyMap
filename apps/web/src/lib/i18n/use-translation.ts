@@ -4,9 +4,11 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import fr from "../../locales/fr.json";
 import en from "../../locales/en.json";
 
-const dictionaries: Record<string, any> = {
-  fr,
-  en,
+type TranslationDictionary = Record<string, unknown>;
+
+const dictionaries: Record<string, TranslationDictionary> = {
+  fr: fr as TranslationDictionary,
+  en: en as TranslationDictionary,
 };
 
 export function useTranslation(namespace: string) {
@@ -15,11 +17,11 @@ export function useTranslation(namespace: string) {
 
   const t = (key: string, values?: Record<string, string | number>) => {
     const keys = key.split(".");
-    let result = dict[namespace];
+    let result: unknown = dict[namespace];
 
     for (const k of keys) {
       if (result && typeof result === "object") {
-        result = result[k];
+        result = (result as Record<string, unknown>)[k];
       } else {
         return key;
       }

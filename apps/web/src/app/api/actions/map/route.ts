@@ -49,6 +49,20 @@ function buildDateFloor(daysWindow: number): string {
  return now.toISOString().slice(0, 10);
 }
 
+function parseFloorDateParam(raw: string | null): string | null | undefined {
+ if (raw === null || raw.trim() === "") {
+ return undefined;
+ }
+ if (raw === "all") {
+ return null;
+ }
+ const parsed = new Date(raw);
+ if (Number.isNaN(parsed.getTime())) {
+ return undefined;
+ }
+ return parsed.toISOString().slice(0, 10);
+}
+
 function parseQualityMin(raw: string | null): number | null {
  if (!raw || raw.trim() ==="") {
  return null;
@@ -76,12 +90,14 @@ export async function GET(request: Request) {
  const url = new URL(request.url);
  const reportQuery = resolveReportQuery(url);
  const limit = parsePositiveInteger(url.searchParams.get("limit"), 1, 300, 80);
+ const explicitFloorDate = parseFloorDateParam(url.searchParams.get("floorDate"));
  const days = parsePositiveInteger(url.searchParams.get("days"), 1, 3650, 30);
  const status = parseStatusParam(url.searchParams.get("status"));
  const types = parseEntityTypesParam(url.searchParams.get("types"));
  const qualityMin = parseQualityMin(url.searchParams.get("qualityMin"));
  const impact = parseImpactParam(url.searchParams.get("impact"));
- const floorDate = buildDateFloor(days);
+ const floorDate =
+ explicitFloorDate === undefined ? buildDateFloor(days) : explicitFloorDate;
 
  try {
  const supabase = getSupabaseServerClient(false);
@@ -123,7 +139,7 @@ export async function GET(request: Request) {
  status:"ok",
  source:"unified_actions",
  count: items.length,
- daysWindow: days,
+ daysWindow: explicitFloorDate === undefined ? days : null,
  items,
  sourceHealth: result.sourceHealth,
  partialSource: result.sourceHealth.partial,

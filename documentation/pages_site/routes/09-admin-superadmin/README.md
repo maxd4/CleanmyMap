@@ -1,6 +1,6 @@
-# Administration du site & Créateur du site
+# Admin & Super-admin
 
-Administration, services et supervision avancée, avec une entrée super-admin réservée au créateur du site.
+Administration, services et supervision avancée.
 
 ## Routes canoniques
 
@@ -16,5 +16,4 @@ Administration, services et supervision avancée, avec une entrée super-admin r
 ## Notes
 
 - Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
-- Les captures officielles, quand elles existent, vivent dans `photo/desktop/` et `photo/mobile/` à la racine de la famille et sont en WebP.
-- Le bloc 01 expose ces deux entrées privilégiées aux profils autorisés; elles restent masquées pour les autres rôles.
+- Les captures officielles, quand elles existent, vivent dans `photo/` de chaque route canonique et sont en `WebP`.

@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
 import {
   getNavigationDropdownPanelStyle,
+  getNavigationDropdownTitleGradientStyle,
   getNavigationDropdownTitleLabel,
 } from "./navigation-dropdown-theme";
 
@@ -256,7 +257,10 @@ export function AppNavigationBlockDropdown({
               {isVisualizeSpace ? (
                 <div className="px-3 pb-2.5 pt-2.5 sm:px-3.5 sm:pt-3">
                   <header className="flex items-center justify-center">
-                    <h3 className="w-full whitespace-nowrap text-center text-[0.9rem] font-black leading-tight tracking-[-0.03em] text-slate-950 sm:text-[0.98rem]">
+                    <h3
+                      className="w-full whitespace-nowrap text-center text-[0.9rem] font-black leading-tight tracking-[-0.03em] sm:text-[0.98rem]"
+                      style={getNavigationDropdownTitleGradientStyle(space.id)}
+                    >
                       {getNavigationDropdownTitleLabel(locale, space.label[locale])}
                     </h3>
                   </header>
@@ -283,16 +287,16 @@ export function AppNavigationBlockDropdown({
                                   className={cn(
                                     "rounded-[0.9rem] p-[1.5px] transition-all duration-200",
                                     isActiveItem
-                                      ? "bg-[linear-gradient(90deg,rgba(34,211,238,0.96)_0%,rgba(255,255,255,0.98)_46%,rgba(239,68,68,0.92)_100%)] shadow-[0_7px_16px_rgba(15,23,42,0.05)]"
-                                      : "bg-[linear-gradient(90deg,rgba(34,211,238,0.92)_0%,rgba(255,255,255,0.92)_46%,rgba(239,68,68,0.86)_100%)] shadow-[0_7px_16px_rgba(15,23,42,0.05)] group-hover/item:scale-[1.01] group-hover/item:shadow-[0_10px_24px_rgba(15,23,42,0.09)]",
+                                      ? "bg-[linear-gradient(90deg,rgba(34,211,238,0.96)_0%,rgba(255,255,255,0.98)_46%,rgba(239,68,68,0.92)_100%)] shadow-[0_7px_16px_rgba(15,23,42,0.05)] group-hover/item:p-[2px] group-hover/item:saturate-125 group-hover/item:shadow-[0_10px_24px_rgba(15,23,42,0.09)]"
+                                      : "bg-[linear-gradient(90deg,rgba(34,211,238,0.92)_0%,rgba(255,255,255,0.92)_46%,rgba(239,68,68,0.86)_100%)] shadow-[0_7px_16px_rgba(15,23,42,0.05)] group-hover/item:p-[2px] group-hover/item:saturate-125 group-hover/item:shadow-[0_10px_24px_rgba(15,23,42,0.09)]",
                                   )}
                                 >
                                   <div
                                     className={cn(
                                       "flex min-h-[1.95rem] items-center gap-1 rounded-[calc(0.9rem-1.5px)] border px-[0.55rem] py-[0.35rem] text-left transition-all duration-200",
                                       isActiveItem
-                                        ? "border-cyan-300/80 bg-white/94 text-slate-950"
-                                        : "border-cyan-200/70 bg-white/82 group-hover/item:border-red-500 group-hover/item:ring-2 group-hover/item:ring-red-300/25 group-hover/item:bg-white",
+                                        ? "border-cyan-300/80 bg-white/94 text-slate-950 group-hover/item:border-cyan-300/90 group-hover/item:ring-1 group-hover/item:ring-cyan-200/30 group-hover/item:bg-white"
+                                        : "border-cyan-200/70 bg-white/82 group-hover/item:border-cyan-300/90 group-hover/item:ring-1 group-hover/item:ring-cyan-200/30 group-hover/item:bg-white",
                                     )}
                                   >
                                     <span
@@ -314,7 +318,7 @@ export function AppNavigationBlockDropdown({
 
                                     <ChevronRight
                                       className={cn(
-                                        "h-[0.68rem] w-[0.68rem] shrink-0 transition-transform duration-200 group-hover/item:translate-x-1.25 group-hover/item:scale-110 sm:h-3 sm:w-3",
+                                        "h-[0.68rem] w-[0.68rem] shrink-0 transition-transform duration-200 group-hover/item:translate-x-1.25 group-hover/item:scale-110 group-hover/item:text-red-500 sm:h-3 sm:w-3",
                                         isActiveItem ? "text-red-500" : "text-cyan-700",
                                       )}
                                       strokeWidth={3}
@@ -339,7 +343,10 @@ export function AppNavigationBlockDropdown({
               ) : (
                 <>
                   <div className="border-b border-black/10 px-4 py-3.5">
-                    <h3 className="truncate text-[0.95rem] font-black tracking-[0.02em] text-black">
+                    <h3
+                      className="flex items-center justify-center text-[0.95rem] font-black tracking-[-0.02em]"
+                      style={getNavigationDropdownTitleGradientStyle(space.id)}
+                    >
                       {getNavigationDropdownTitleLabel(locale, space.label[locale])}
                     </h3>
                   </div>

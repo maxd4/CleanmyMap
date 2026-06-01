@@ -17,11 +17,12 @@ import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
-import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
-import { PageHero } from "@/components/ui/page-hero";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { getPageFamilyById } from "@/lib/ui/page-families";
+import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 
 const SPONSOR_WINDOW_DAYS = 730;
 
@@ -42,8 +43,10 @@ export default async function SponsorPortalPage() {
   const observedFrom = new Date(observedUntil);
   observedFrom.setDate(observedFrom.getDate() - SPONSOR_WINDOW_DAYS + 1);
   const observationWindowLabel = `${observedFrom.toLocaleDateString("fr-FR")} -> ${observedUntil.toLocaleDateString("fr-FR")}`;
-  const classes = getBlockClasses("pilot");
   const pageFamily = getPageFamilyById("accueil-pilotage");
+  const accountCompletion = userId
+    ? await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null)
+    : null;
 
   // Calculs ROI
   const totalKg = overview.comparison.current.impactVolumeKg;
@@ -57,29 +60,25 @@ export default async function SponsorPortalPage() {
       {/* Premium Cockpit Header */}
       <header className="relative space-y-12 pt-16">
         <div className="absolute -top-24 -left-24 w-[500px] h-[500px] bg-amber-500/10 rounded-full blur-[120px] pointer-events-none" />
-        
-        <div className="flex flex-wrap gap-3">
-          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-amber-400/20 bg-amber-400/5 backdrop-blur-md">
-            <TrendingUp size={14} className="text-amber-400 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-400">Gouvernance & Impact</span>
-          </div>
-          <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/5 rounded-full border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 backdrop-blur-md">
-            <ShieldCheck size={12} className="text-amber-400/60" />
-            {observationWindowLabel}
-          </div>
-        </div>
 
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-12">
-          <PageHero
+          <PageHeader
             family={pageFamily}
-            titleSize="display"
-            title={
+            eyebrow="Gouvernance & impact"
+            title="ROI stratégique"
+            subtitle="Analyse de la valeur territoriale générée par la mobilisation citoyenne et conformité aux standards ESG."
+            badges={
               <>
-                ROI <br />
-                Stratégique
+                <PageHeaderBadge family={pageFamily}>
+                  <TrendingUp size={12} className="mr-2 inline-block align-[-2px] text-amber-500" />
+                  Gouvernance & impact
+                </PageHeaderBadge>
+                <PageHeaderBadge family={pageFamily} muted>
+                  <ShieldCheck size={12} className="mr-2 inline-block align-[-2px] text-amber-500/80" />
+                  {observationWindowLabel}
+                </PageHeaderBadge>
               </>
             }
-            subtitle="Analyse de la valeur territoriale générée par la mobilisation citoyenne et conformité aux standards ESG."
             className="space-y-6"
           />
           
@@ -225,7 +224,9 @@ export default async function SponsorPortalPage() {
           : "Le service d'authentification est indisponible. Lecture seule activée."
       }
     >
-      {page}
+      <AccountCompletionGate state={accountCompletion}>
+        {page}
+      </AccountCompletionGate>
     </ClerkRequiredGate>
   );
 }

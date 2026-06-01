@@ -19,6 +19,8 @@ const BADGE_CONFIG: Record<string, { tone:"admin" |"role" |"profile" |"mode" |"g
 "Force de la Nature (Argent)": { tone:"gamification", description:"100kg+ récoltés" },
 "Bras Armé (Bronze)": { tone:"gamification", description:"10kg+ récoltés" },
 "Sentinelle Exemplaire": { tone:"gamification", description:"Qualité moyenne > 90%" },
+"Première trace utile": { tone:"gamification", description:"Première action validée avec données complètes" },
+"Trace fondatrice": { tone:"gamification", description:"Premier jalon d'une action totalement documentée" },
 "Esprit d'Équipe": { tone:"gamification", description:"Participé à 3+ actions collectives" },
 };
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 
 export const metadata: Metadata = {
   title: "Politique cookies - CleanMyMap",
@@ -48,22 +49,13 @@ export default function PolitiqueCookiesPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="space-y-10 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
-        <header className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">
-            Cookies et traceurs
-          </p>
-          <h1 className="text-4xl font-black tracking-tight text-slate-950">
-            Politique cookies
-          </h1>
-          <p className="max-w-3xl text-base text-slate-600">
-            CleanMyMap utilise des cookies et du stockage local pour faire
-            fonctionner l&apos;application, mémoriser vos préférences et, si vous
-            y consentez, mesurer l&apos;usage du site.
-          </p>
-          <p className="text-sm font-medium text-slate-500">
-            Dernière mise à jour : 5 mai 2026
-          </p>
-        </header>
+        <PageHeader
+          tone="slate"
+          badge={<PageHeaderBadge tone="slate">Cookies et traceurs</PageHeaderBadge>}
+          title="Politique cookies"
+          subtitle="CleanMyMap utilise des cookies et du stockage local pour faire fonctionner l'application, mémoriser vos préférences et, si vous y consentez, mesurer l'usage du site."
+          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 5 mai 2026</p>}
+        />
 
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
           <h2 className="text-xl font-bold text-slate-950">

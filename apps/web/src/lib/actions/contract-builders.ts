@@ -30,6 +30,7 @@ export type ActionContractCreatePayload = {
   metadata: {
     actorName?: string;
     associationName?: string;
+    organizerAccounts?: string[];
     placeType?: string;
     wasteKg: number;
     cigaretteButts?: number;
@@ -77,6 +78,7 @@ export function toContractCreatePayload(
     metadata: {
       actorName: payload.actorName,
       associationName: payload.associationName,
+      organizerAccounts: payload.organizerAccounts,
       placeType: payload.placeType,
       wasteKg: payload.wasteKg,
       cigaretteButts: payload.cigaretteButts,
@@ -105,6 +107,7 @@ export function normalizeCreatePayload(
   return {
     actorName: payload.metadata.actorName,
     associationName: payload.metadata.associationName,
+    organizerAccounts: payload.metadata.organizerAccounts ?? undefined,
     actionDate: payload.dates.observedAt,
     recordType: payload.type,
     locationLabel: payload.location.label,

@@ -8,6 +8,7 @@ type ActionDeclarationMainFieldsProps = {
   form: FormState;
   onAssociationNameChange: (value: string) => void;
   onEnterpriseNameChange: (value: string) => void;
+  onOrganizerAccountsChange: (value: string) => void;
   onActionDateChange: (value: string) => void;
   onPlaceTypeChange: (value: string) => void;
   onWasteKgChange: (value: string) => void;
@@ -38,6 +39,7 @@ export function ActionDeclarationMainFields({
   form,
   onAssociationNameChange,
   onEnterpriseNameChange,
+  onOrganizerAccountsChange,
   onActionDateChange,
   onPlaceTypeChange,
   onWasteKgChange,
@@ -94,6 +96,24 @@ export function ActionDeclarationMainFields({
               minLength={2}
               maxLength={100}
             />
+          </label>
+        </div>
+      )}
+
+      {form.recordType === "action" && !isActionSpontanee && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">
+            Organisateurs
+            <input
+              type="text"
+              className="rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 cmm-text-primary outline-none transition focus:border-emerald-500 focus:bg-white shadow-sm"
+              value={form.organizerAccounts}
+              onChange={(event) => onOrganizerAccountsChange(event.target.value)}
+              placeholder="Pseudo, nom affiché ou ID, séparés par des virgules"
+            />
+            <p className="cmm-text-caption cmm-text-muted font-normal">
+              Hors action spontanée, indiquez les comptes qui ont réellement organisé l&apos;action.
+            </p>
           </label>
         </div>
       )}

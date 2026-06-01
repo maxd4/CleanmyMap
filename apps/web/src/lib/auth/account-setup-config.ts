@@ -1,0 +1,2 @@
+export const ACCOUNT_SETUP_SCHEMA_VERSION = 2;
+export const ACCOUNT_SETUP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;

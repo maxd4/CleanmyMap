@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { usePathname, useSearchParams, type ReadonlyURLSearchParams } from "next/navigation";
 import { trackFunnel } from "@/lib/analytics/funnel-client";
 import {
@@ -8,6 +8,11 @@ import {
   EXPLORER_ROUTE,
   PROFIL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
+
+const PAGEVIEW_TRACKING_STORAGE_KEY = "cleanmymap.funnel.pageviews";
+const PAGEVIEW_DEDUPE_WINDOW_MS = 5000;
+
+type TrackedPageviewMap = Record<string, number>;
 
 function deriveRouteKind(pathname: string): string {
   if (pathname === "/") {
@@ -51,6 +56,76 @@ function buildRouteMeta(
   };
 }
 
+function readTrackedPageviews(): TrackedPageviewMap {
+  if (typeof window === "undefined") {
+    return {};
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(PAGEVIEW_TRACKING_STORAGE_KEY);
+    if (!raw) {
+      return {};
+    }
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") {
+      return {};
+    }
+
+    return Object.entries(parsed as Record<string, unknown>).reduce<TrackedPageviewMap>(
+      (acc, [key, value]) => {
+        if (typeof key === "string" && typeof value === "number") {
+          acc[key] = value;
+        }
+        return acc;
+      },
+      {},
+    );
+  } catch {
+    return {};
+  }
+}
+
+function writeTrackedPageviews(trackedPageviews: TrackedPageviewMap): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.sessionStorage.setItem(
+      PAGEVIEW_TRACKING_STORAGE_KEY,
+      JSON.stringify(trackedPageviews),
+    );
+  } catch {
+    // Ignore storage failures and keep the tracker best-effort.
+  }
+}
+
+function shouldTrackPageview(routeKey: string): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  const now = Date.now();
+  const trackedPageviews = readTrackedPageviews();
+  const lastTrackedAt = trackedPageviews[routeKey];
+
+  if (typeof lastTrackedAt === "number" && now - lastTrackedAt < PAGEVIEW_DEDUPE_WINDOW_MS) {
+    return false;
+  }
+
+  trackedPageviews[routeKey] = now;
+
+  for (const [trackedRouteKey, trackedAt] of Object.entries(trackedPageviews)) {
+    if (now - trackedAt > PAGEVIEW_DEDUPE_WINDOW_MS * 4) {
+      delete trackedPageviews[trackedRouteKey];
+    }
+  }
+
+  writeTrackedPageviews(trackedPageviews);
+  return true;
+}
+
 export function ProjectPageviewTracker() {
   const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
@@ -62,15 +137,13 @@ export function ProjectPageviewTracker() {
     const queryString = entries.map(([key, value]) => `${key}=${value}`).join("&");
     return `${pathname}${queryString ? `?${queryString}` : ""}`;
   }, [pathname, searchParams]);
-  const lastTrackedRouteKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (lastTrackedRouteKeyRef.current === routeKey) {
+    if (!shouldTrackPageview(routeKey)) {
       return;
     }
-    lastTrackedRouteKeyRef.current = routeKey;
     void trackFunnel("page_view", "complete", buildRouteMeta(pathname, searchParams));
-  }, [pathname, routeKey]);
+  }, [pathname, routeKey, searchParams]);
 
   return null;
 }

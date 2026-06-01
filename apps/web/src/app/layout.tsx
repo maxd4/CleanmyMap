@@ -9,6 +9,7 @@ import { HomeFooterNoSSR } from "@/components/accueil/home-footer-no-ssr";
 import { SitePreferencesProvider } from "@/components/ui/site-preferences-provider";
 import { SiteTooltips } from "@/components/ui/site-tooltips";
 import { NetworkToastHost } from "@/components/ui/network-toast";
+import { GamificationCelebrationHost } from "@/components/gamification/GamificationCelebrationHost";
 import { OrganizationJsonLd, WebSiteJsonLd, FAQJsonLd } from "@/components/seo/structured-data/";
 import { ProjectPageviewTracker } from "@/components/analytics/project-pageview-tracker";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
@@ -98,6 +99,7 @@ export default async function RootLayout({
             <PostHogProvider>
               <ProjectPageviewTracker />
               <NetworkToastHost />
+              <GamificationCelebrationHost />
               <VibrantBackgroundNoSSR initialToneKey={initialBackdropToneKey} />
               <SiteTooltips />
               <AppNavigationRibbon

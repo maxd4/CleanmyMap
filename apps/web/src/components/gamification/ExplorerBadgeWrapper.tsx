@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import ExplorerBadge from "./ExplorerBadge";
+import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
 
 export default function ExplorerBadgeWrapper({ userId }: { userId: string }) {
   const [tiers, setTiers] = React.useState<any[]>([]);
@@ -26,5 +27,19 @@ export default function ExplorerBadgeWrapper({ userId }: { userId: string }) {
     };
   }, [userId]);
 
-  return <ExplorerBadge tiers={tiers} current={current} onTierReached={() => {}} />;
+  return (
+    <ExplorerBadge
+      tiers={tiers}
+      current={current}
+      onTierReached={(tier) => {
+        dispatchGamificationCelebration({
+          title: "Palier d'exploration atteint",
+          message: `${tier.title} débloqué sur les zones visitées.`,
+          tone: "explorer",
+          icon: tier.icon,
+          source: "explorer-badge",
+        });
+      }}
+    />
+  );
 }
