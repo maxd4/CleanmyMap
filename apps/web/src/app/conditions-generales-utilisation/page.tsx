@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
@@ -25,22 +26,13 @@ export default function ConditionsGeneralesUtilisationPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="space-y-10 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
-        <header className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-emerald-600">
-            Conditions d&apos;utilisation
-          </p>
-          <h1 className="text-4xl font-black tracking-tight text-slate-950">
-            Conditions Générales d&apos;Utilisation
-          </h1>
-          <p className="max-w-3xl text-base text-slate-600">
-            Ce document décrit les règles d&apos;accès et d&apos;utilisation du
-            service CleanMyMap. Il complète la Politique de confidentialité et la
-            Politique cookies.
-          </p>
-          <p className="text-sm font-medium text-slate-500">
-            Dernière mise à jour : 5 mai 2026
-          </p>
-        </header>
+        <PageHeader
+          tone="slate"
+          badge={<PageHeaderBadge tone="slate">Conditions d'utilisation</PageHeaderBadge>}
+          title="Conditions Générales d'Utilisation"
+          subtitle="Règles d'accès et d'utilisation du service CleanMyMap. Ce texte complète la Politique de confidentialité et la Politique cookies."
+          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 5 mai 2026</p>}
+        />
 
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
           <h2 className="text-xl font-bold text-slate-950">1. Objet</h2>

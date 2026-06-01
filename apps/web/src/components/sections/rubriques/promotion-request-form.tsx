@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { InlineFieldError } from "@/components/ui/inline-field-error";
@@ -27,15 +26,19 @@ const REQUESTABLE_ROLES: Record<
   { requestedRole: "elu" | "admin"; label: string }[]
 > = {
   benevole: [
-    { requestedRole: "elu", label: "Demander le rôle élu" },
+    { requestedRole: "elu", label: "Demander le rôle Elu" },
     { requestedRole: "admin", label: "Demander le rôle admin" },
   ],
   coordinateur: [
-    { requestedRole: "elu", label: "Demander le rôle élu" },
+    { requestedRole: "elu", label: "Demander le rôle Elu" },
     { requestedRole: "admin", label: "Demander le rôle admin" },
   ],
   scientifique: [
-    { requestedRole: "elu", label: "Demander le rôle élu" },
+    { requestedRole: "elu", label: "Demander le rôle Elu" },
+    { requestedRole: "admin", label: "Demander le rôle admin" },
+  ],
+  entreprise: [
+    { requestedRole: "elu", label: "Demander le rôle Elu" },
     { requestedRole: "admin", label: "Demander le rôle admin" },
   ],
   elu: [{ requestedRole: "admin", label: "Demander le rôle admin" }],

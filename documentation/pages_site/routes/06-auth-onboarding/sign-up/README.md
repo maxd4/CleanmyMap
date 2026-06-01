@@ -12,10 +12,10 @@
 - **Objectif utilisateur principal** : Créer ou reprendre l'accès au compte puis initialiser le profil.
 - **Action principale attendue** : Se connecter, s'inscrire ou continuer l'onboarding.
 - **Palette attendue** : lavande claire / vert menthe clair
-- **Scope** : terminé
-- **Terminée** : oui
-- **Couleurs actuellement détectées** : auth — canvas lavande claire -> vert menthe clair, carte Clerk violet nuit / indigo foncé, bulles indigo / violet / vert profond
-- **Incohérences de couleurs** : Aucune incohérence détectée après réalignement visuel.
+- **Scope** : à corriger
+- **Terminée** : non
+- **Couleurs actuellement détectées** : auth — canvas #eef2ff, halo rgba(99, 102, 241, 0.24)
+- **Incohérences de couleurs** : Écart détecté: attendu lavande claire / vert menthe clair, code actuel indigo / violet.
 - **Risque de conflit avec les couleurs existantes** : moyen : éviter une dérive vers une esthétique admin ou cartographique.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :
@@ -31,12 +31,11 @@
 - **Composants UI concernés** :
 - Formulaire auth
 - inputs
-- boutons auth / Clerk
 - CTA
 - helpers
 - progression onboarding
 - **Captures attendues** : desktop, mobile
-- **Priorité de correction** : faible
+- **Priorité de correction** : moyenne
 
 
 
@@ -49,9 +48,3 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
-- Les boutons auth sont inclus dans le lot UI et doivent suivre la même ambiance de surfaces et d'accents.
-
-## Captures officielles
-
-- Desktop: [photo/desktop/sign-up-desktop.webp](../photo/desktop/sign-up-desktop.webp)
-- Mobile: [photo/mobile/sign-up-mobile.webp](../photo/mobile/sign-up-mobile.webp)

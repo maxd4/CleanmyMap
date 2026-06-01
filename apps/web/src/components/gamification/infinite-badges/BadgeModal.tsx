@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { useMemo } from "react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { useTranslation } from "@/lib/i18n/use-translation";
-import { computeBadgeRank, BADGE_TIER_STYLES, formatCompactNumber, nextThreshold } from "./utils";
+import { computeBadgeRank, computeActionCreationRank, BADGE_TIER_STYLES, formatCompactNumber, nextThreshold, type BadgeFamily } from "./utils";
 
 type BadgeModalProps = {
   isOpen: boolean;
@@ -15,7 +15,7 @@ type BadgeModalProps = {
   total: number;
   step: number;
   unitLabel?: string;
-  family?: string;
+  family?: BadgeFamily;
 };
 
 export function BadgeModal({
@@ -32,7 +32,10 @@ export function BadgeModal({
   const { t } = useTranslation("gamification");
 
   const level = Math.floor(Math.max(0, total) / step);
-  const rank = computeBadgeRank(level);
+  const rank =
+    family === "actions"
+      ? computeActionCreationRank(level)
+      : computeBadgeRank(level);
   const tier = rank.tier;
   const styles = BADGE_TIER_STYLES[tier];
 
@@ -128,7 +131,7 @@ export function BadgeModal({
                   onClick={onClose}
                   className={`w-full rounded-2xl py-4 text-sm font-black transition-all shadow-lg hover:-translate-y-0.5 ${styles.primaryButton}`}
                 >
-                  Continuer l'exploration
+                  {family === "actions" ? "Continuer la progression" : "Continuer l'exploration"}
                 </button>
               </div>
             </motion.div>
@@ -138,4 +141,3 @@ export function BadgeModal({
     </AnimatePresence>
   );
 }
-

@@ -1,15 +1,8 @@
 "use client";
 
 import { useId, useMemo } from "react";
-import useSWR from "swr";
-import { fetchMapActions } from "@/lib/actions/http";
 import { extractArrondissement, monthKey } from "@/components/sections/rubriques/helpers";
-import type { ActionImpactLevel, ActionStatus } from "@/lib/actions/types";
-import {
-  DEFAULT_VISIBLE_CATEGORIES,
-  isVisibleWithCategoryFilter,
-  type MarkerCategory,
-} from "@/components/actions/map-marker-categories";
+import type { ActionMapItem } from "@/lib/actions/types";
 import { cn } from "@/lib/utils";
 
 type ZoneStats = {
@@ -20,11 +13,9 @@ type ZoneStats = {
 };
 
 type ActionsVisualizationPanelProps = {
-  days: number;
-  status: ActionStatus | "all";
-  impact?: ActionImpactLevel | "all";
-  qualityMin?: number;
-  visibleCategories?: Record<MarkerCategory, boolean>;
+  items: ActionMapItem[];
+  isLoading?: boolean;
+  error?: Error | null;
   compact?: boolean;
 };
 
@@ -32,32 +23,14 @@ type ImpactLevel = "faible" | "moyen" | "fort" | "critique";
 const IMPACT_LEVELS: ImpactLevel[] = ["faible", "moyen", "fort", "critique"];
 
 export function ActionsVisualizationPanel({
-  days,
-  status,
-  impact = "all",
-  qualityMin = 0,
-  visibleCategories = DEFAULT_VISIBLE_CATEGORIES,
+  items,
+  isLoading = false,
+  error = null,
   compact = false,
 }: ActionsVisualizationPanelProps) {
   const gradientId = useId();
-  const mapQuery = useSWR(
-    ["visualization-map", String(days), status, impact, String(qualityMin)],
-    () =>
-      fetchMapActions({
-        status,
-        days,
-        impact: impact === "all" ? undefined : impact,
-        qualityMin: qualityMin > 0 ? qualityMin : undefined,
-        limit: 300,
-        types: "all",
-      }),
-  );
 
   const model = useMemo(() => {
-    const mapItems = (mapQuery.data?.items ?? []).filter((item) =>
-      isVisibleWithCategoryFilter(item, visibleCategories),
-    );
-
     let wasteKg = 0;
     let butts = 0;
     let volunteers = 0;
@@ -70,7 +43,7 @@ export function ActionsVisualizationPanel({
       impacts.set(level, 0);
     }
 
-    for (const item of mapItems) {
+    for (const item of items) {
       wasteKg += Number(item.waste_kg || 0);
       butts += Number(item.cigarette_butts || 0);
       const volunteersCount = Number(item.contract?.metadata.volunteersCount || 0);
@@ -112,7 +85,7 @@ export function ActionsVisualizationPanel({
     const maxMonth = monthRows.reduce((acc, row) => Math.max(acc, row.actions), 1);
     return {
       totals: {
-        actions: mapItems.length,
+        actions: items.length,
         wasteKg,
         butts,
         volunteers,
@@ -123,10 +96,8 @@ export function ActionsVisualizationPanel({
       impactRows,
       maxMonth,
     };
-  }, [mapQuery.data?.items, visibleCategories]);
+  }, [items]);
 
-  const loading = mapQuery.isLoading;
-  const error = mapQuery.error;
   const mainClass = compact ? "space-y-6" : "space-y-8";
 
   return (
@@ -138,7 +109,7 @@ export function ActionsVisualizationPanel({
         </div>
       </div>
 
-      {loading && (
+      {isLoading && (
         <div className="flex h-48 items-center justify-center rounded-[2rem] bg-white border border-dashed border-sky-200/80">
           <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600 animate-pulse">Synchronisation...</p>
         </div>
@@ -150,7 +121,7 @@ export function ActionsVisualizationPanel({
         </div>
       )}
 
-      {!loading && !error && (
+      {!isLoading && !error && (
         <>
           <div className="grid gap-6 lg:grid-cols-2">
             <article className="rounded-[2.5rem] border border-sky-200/80 bg-white p-8 relative overflow-hidden group hover:bg-sky-50 transition-all duration-500">

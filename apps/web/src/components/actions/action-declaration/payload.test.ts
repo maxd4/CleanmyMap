@@ -5,6 +5,7 @@ import {
  isDrawingValid,
  isLocationLikelyPark,
  prepareCreateActionPayload,
+ parseOrganizerAccounts,
  toOptionalNumber,
  toRequiredNumber,
 } from"./payload";
@@ -26,14 +27,38 @@ function buildBaseForm() {
 }
 
 describe("action declaration payload helpers", () => {
- it("parses optional/required numbers safely", () => {
- expect(toOptionalNumber("")).toBeUndefined();
- expect(toOptionalNumber("12.5")).toBe(12.5);
- expect(toOptionalNumber("abc")).toBeUndefined();
+  it("parses optional/required numbers safely", () => {
+    expect(toOptionalNumber("")).toBeUndefined();
+    expect(toOptionalNumber("12.5")).toBe(12.5);
+    expect(toOptionalNumber("abc")).toBeUndefined();
 
  expect(toRequiredNumber("10", 0)).toBe(10);
- expect(toRequiredNumber("invalid", 3)).toBe(3);
- });
+    expect(toRequiredNumber("invalid", 3)).toBe(3);
+  });
+
+  it("normalizes organizer account tokens before payload creation", () => {
+    expect(parseOrganizerAccounts("  @alice, bob ; alice\ncarol  ")).toEqual([
+      "alice",
+      "bob",
+      "carol",
+    ]);
+
+    const form = buildBaseForm();
+    form.associationName = "Association Sans Murs Paris 15";
+    form.organizerAccounts = "alice, bob, alice";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode:"complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.organizerAccounts).toEqual(["alice", "bob"]);
+  });
 
  it("validates drawing minima by kind", () => {
  const polyline: ActionDrawing = {
@@ -125,6 +150,25 @@ describe("action declaration payload helpers", () => {
 
     expect(payload.actorName).toBe("Bénévole invité");
     expect(payload.associationName).toBe("Action spontanée");
+  });
+
+  it("drops organizer accounts for spontaneous actions", () => {
+    const form = buildBaseForm();
+    form.associationName = "Action spontanée";
+    form.organizerAccounts = "alice, bob";
+
+    const payload = buildCreateActionPayload({
+      form,
+      declarationMode: "complete",
+      effectiveManualDrawingEnabled: false,
+      drawingIsValid: false,
+      manualDrawing: null,
+      isEntrepriseMode: false,
+      linkedEventId: undefined,
+    });
+
+    expect(payload.associationName).toBe("Action spontanée");
+    expect(payload.organizerAccounts).toBeUndefined();
   });
 
   it("normalizes duplicate drawing points before building the payload", () => {

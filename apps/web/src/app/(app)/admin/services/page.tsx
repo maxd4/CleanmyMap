@@ -4,13 +4,16 @@ import { EnvironmentalImpactCapturePanel } from"@/components/admin/environmental
 import { FreePlanServicesPanel } from"@/components/admin/free-plan-services-panel";
 import { StorageUsagePanel } from"@/components/dashboard/storage-usage-panel";
 import { SystemStatusPanel } from"@/components/dashboard/system-status-panel";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { listGovernanceMonthlyReports } from"@/lib/governance/governance-monthly-report-store";
 import { formatStorageBytes } from"@/lib/supabase/storage-usage";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export default async function AdminServicesPage() {
  const { userId } = await getSafeAuthSession();
+ const pageFamily = resolvePageFamily("/admin/services");
 
  if (!userId) {
  return (
@@ -39,22 +42,57 @@ export default async function AdminServicesPage() {
 
  if (role !=="admin") {
  return (
+ <div className="space-y-6">
+ <PageHeader
+  family={pageFamily}
+  eyebrow="Supervision technique"
+  title="Services techniques"
+  subtitle="Accès réservé aux administrateurs connectés."
+  badges={
+    <>
+      <PageHeaderBadge family={pageFamily}>
+        Admin only
+      </PageHeaderBadge>
+      <PageHeaderBadge family={pageFamily} muted>
+        État des services
+      </PageHeaderBadge>
+    </>
+  }
+ />
  <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-amber-700">
  Accès admin requis
  </p>
- <h1 className="mt-2 text-2xl font-semibold text-amber-900">
+ <h2 className="mt-2 text-2xl font-semibold text-amber-900">
  Supervision technique réservée aux admins
- </h1>
+ </h2>
  <p className="mt-2 cmm-text-small text-amber-800">
  Vous devez disposer du rôle <span className="font-semibold">admin</span> pour voir cette page.
  </p>
  </section>
+ </div>
  );
  }
 
  return (
  <div className="space-y-6">
+ <PageHeader
+  family={pageFamily}
+  eyebrow="Supervision technique"
+  title="Santé des services"
+  subtitle="Visualisez l'état des intégrations critiques, optionnelles et externes de CleanMyMap, ainsi que la dérive du stockage Supabase et son historique mensuel."
+  badges={
+    <>
+      <PageHeaderBadge family={pageFamily}>
+        Services techniques
+      </PageHeaderBadge>
+      <PageHeaderBadge family={pageFamily} muted>
+        Rapports et stockage
+      </PageHeaderBadge>
+    </>
+  }
+ />
+
  <div id="codex-usage">
  <CodexUsagePanel />
  </div>
@@ -73,9 +111,9 @@ export default async function AdminServicesPage() {
  <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
  Supervision des intégrations
  </p>
- <h1 className="mt-2 text-3xl font-bold cmm-text-primary">
+ <h2 className="mt-2 text-3xl font-bold cmm-text-primary">
  Santé des services
- </h1>
+ </h2>
  <p className="mt-3 max-w-2xl cmm-text-small leading-6 cmm-text-secondary">
  Visualisez l&apos;état des intégrations critiques, optionnelles et externes de
  CleanMyMap, ainsi que la dérive du stockage Supabase et son historique mensuel.

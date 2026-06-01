@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminAccess } from "@/lib/authz";
 import { adminAccessErrorJsonResponse } from "@/lib/http/auth-responses";
+import { env } from "@/lib/env";
 import { resolveContactEmail, resolveEmailFrom } from "@/lib/email-config";
-import { getResendClient } from "@/lib/services/resend";
+import { sendEmail } from "@/lib/services/email";
 
 const testEmailSchema = z.object({
   to: z.string().email().optional(),
@@ -17,10 +18,9 @@ export async function POST(request: Request) {
     return adminAccessErrorJsonResponse(access);
   }
 
-  const resend = getResendClient();
   const from = resolveEmailFrom();
   const replyTo = resolveContactEmail();
-  if (!resend || !from || !replyTo) {
+  if (!env.RESEND_API_KEY?.trim() || !from || !replyTo) {
     return NextResponse.json({ error: "Resend not configured" }, { status: 503 });
   }
 
@@ -45,7 +45,8 @@ export async function POST(request: Request) {
   const html =
     payload.html || "<p>Test email from CleanMyMap modern stack baseline.</p>";
 
-  const result = await resend.emails.send({
+  const result = await sendEmail({
+    actorUserId: access.userId,
     from,
     to,
     subject,
@@ -53,5 +54,5 @@ export async function POST(request: Request) {
     replyTo,
   });
 
-  return NextResponse.json({ status: "queued", id: result.data?.id ?? null });
+  return NextResponse.json({ status: result.status, id: result.id ?? null });
 }

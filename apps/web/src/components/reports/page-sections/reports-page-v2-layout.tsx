@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { AnimatedImpactMetrics } from "@/components/reports/AnimatedImpactMetrics";
 import { RadialProgressGauge } from "@/components/reports/RadialProgressGauge";
@@ -10,8 +11,53 @@ import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
 import { ReportsWebDocument } from "@/components/reports/reports-web-document";
 import { ReportsKpiSummary } from "@/components/reports/reports-kpi-summary";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
+import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
+import type { CommunityEventItem } from "@/lib/community/http";
+import type { ActionDataContract } from "@/lib/actions/data-contract";
+import type { Locale } from "@/lib/ui/preferences";
+import type { AppProfile, ProfileAction } from "@/lib/profiles";
 import { isAdminLikeProfile } from "@/lib/profiles";
 import { getActionOperationalContext } from "@/lib/actions/data-contract";
+import type { MonthlyAnalyticsPoint } from "@/lib/pilotage/analytics-data-utils";
+import type { PilotageOverview } from "@/lib/pilotage/overview";
+import type { ActionListResponse } from "@/lib/actions/types";
+import type { AdminOperationAuditItem } from "@/components/reports/admin-workflow/types";
+
+type ReportsWeather = {
+  current?: {
+    temperature_2m?: number;
+    precipitation?: number;
+    wind_speed_10m?: number;
+  };
+} | null;
+
+type ReportsSummaryKpi = {
+  label: string;
+  value: string;
+  previousValue: string;
+  deltaAbsolute?: string;
+  deltaPercent?: string;
+  interpretation?: "positive" | "negative" | "neutral";
+};
+
+type ReportsPageV2LayoutProps = {
+  locale: Locale;
+  roleLabel: string;
+  profile: AppProfile;
+  primaryAction: ProfileAction;
+  secondaryAction?: ProfileAction | null;
+  summaryKpis: readonly [ReportsSummaryKpi, ReportsSummaryKpi, ReportsSummaryKpi];
+  navigationItems: NavigationGridItem[];
+  overview: PilotageOverview | null;
+  contracts: ActionDataContract[];
+  communityEvents: CommunityEventItem[];
+  weather: ReportsWeather;
+  adminWorkflowPreview: ActionListResponse | null;
+  adminWorkflowAudit: AdminOperationAuditItem[] | null;
+  monthlyData: MonthlyAnalyticsPoint[];
+  toReportsExportRow: (contract: ActionDataContract) => Record<string, unknown>;
+  publicAccessBanner: ReactNode;
+};
 
 export function ReportsPageV2Layout({
   locale,
@@ -23,10 +69,14 @@ export function ReportsPageV2Layout({
   navigationItems,
   overview,
   contracts,
+  communityEvents,
+  weather,
+  adminWorkflowPreview,
+  adminWorkflowAudit,
   monthlyData,
   toReportsExportRow,
   publicAccessBanner,
-}: any) {
+}: ReportsPageV2LayoutProps) {
   return (
     <div className="space-y-4">
       {publicAccessBanner}
@@ -83,6 +133,14 @@ export function ReportsPageV2Layout({
         }
         analysis={
           <div className="space-y-16">
+            <TerritoryMapComparisonCards
+              title="Deux lectures du territoire d'impact"
+              subtitle="La carte de base garde une lecture terrain et opérationnelle. La version Terraink ajoute une lecture plus éditoriale, utile pour les rapports, les exports et les présentations. Les deux restent disponibles pour trancher plus tard."
+              locationLabel="Territoire audité"
+              tone="rose"
+              note="La version Terraink ne remplace rien ici. Elle sert de piste visuelle à comparer avec la carte brute et à valider selon le contexte d'usage."
+            />
+
             <div id="comparisons">
               {overview ? (
                 <ReportsWindowComparisonsSection
@@ -104,7 +162,7 @@ export function ReportsPageV2Layout({
                 <p className="cmm-text-secondary font-medium italic">Les actions les plus significatives sur le terrain</p>
               </div>
               <EcologicalTimeline
-                actions={contracts.map((c: any) => ({
+                actions={contracts.map((c: ActionDataContract) => ({
                   id: c.id,
                   date: c.dates.observedAt,
                   label: c.location.label,
@@ -152,16 +210,23 @@ export function ReportsPageV2Layout({
         </section>
 
         <section id="document" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
-          <ReportsWebDocument />
+          <ReportsWebDocument
+            contracts={contracts}
+            communityEvents={communityEvents}
+            weather={weather}
+          />
         </section>
 
         <section id="kpi-summary" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
-          <ReportsKpiSummary />
+          <ReportsKpiSummary contracts={contracts} />
         </section>
 
         <section className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
           {isAdminLikeProfile(profile) ? (
-            <ActionsReportPanel />
+            <ActionsReportPanel
+              initialPreview={adminWorkflowPreview}
+              initialAuditItems={adminWorkflowAudit}
+            />
           ) : (
             <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
               <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-amber-700">

@@ -10,8 +10,8 @@ const allowedRootFiles = new Set([
   ".editorconfig",
   ".gitattributes",
   ".gitignore",
+  ".vercelignore",
   "AGENTS.md",
-  "LANCER_SITE_LOCAL.bat",
   "package-lock.json",
   "package.json",
   "PRE_PUSH_GUARD.md",
@@ -30,7 +30,7 @@ function listRootFiles(directory) {
 const rootFiles = listRootFiles(repoRoot);
 const forbidden = allowRootFileGeneration
   ? []
-  : rootFiles.filter((file) => !allowedRootFiles.has(file));
+  : rootFiles.filter((file) => !allowedRootFiles.has(file) && !file.toLowerCase().endsWith(".bat"));
 
 if (forbidden.length > 0) {
   console.error(

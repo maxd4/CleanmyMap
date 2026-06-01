@@ -30,7 +30,7 @@ Le journal détaillé renvoie aux autres pièces de travail ci-dessous pour gard
 ```mermaid
 flowchart TD
   JD["documentation/plans/journal_DU.md"]
-  AJ["documentation/plans/atelier_DU.md"]
+  AJ["documentation/plans/ateliers_DU.md"]
   RI["documentation/plans/rapport_impact/impact_IA.md"]
   GI["documentation/plans/rapport_impact/graphique_impact_CO2e.md"]
   JI["documentation/plans/journal_impact_DU.md"]
@@ -60,7 +60,7 @@ flowchart TD
 Lecture rapide:
 
 - `journal_DU.md` sert d'index court;
-- `atelier_DU.md` fixe le cadre des ateliers;
+- `ateliers_DU.md` fixe le cadre des ateliers;
 - `journal_impact_DU.md` conserve l'historique détaillé et les ajouts de code;
 - `rapport_impact/impact_IA.md` concentre l'analyse principale;
 - `graphique_impact_CO2e.md` documente la méthode du graphe;

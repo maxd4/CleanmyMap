@@ -13,7 +13,7 @@ Le registre `page-families` sert à stabiliser la couleur, le fond, le hero et l
 Une modification de palette sur une page de bloc doit se faire dans un fichier famille + exceptions nommées, puis se propager à :
 
 1. Fond de page global (`VibrantBackground`)
-2. En-tête de page (`PageHero` / `SectionShell`)
+2. En-tête de page (`PageHeader`, alias historique `PageHero` / `SectionShell`)
 3. Cartes rubrique standard (`RubriqueCard` / `FamilyRubriqueCard`)
 4. Plus tard, cartes métier spécialisées, boutons et états système
 
@@ -75,7 +75,7 @@ Le point important est le suivant :
 |---|---|
 | Routes canoniques du bloc centralisées dans `lib/accueil-pilotage-routes.ts` | Fait |
 | `01-accueil-pilotage.ts` | Fait |
-| `PageHero` | Fait |
+| `PageHeader` | Fait |
 | `SectionShell` résout la famille via `pathname` | Fait |
 | Migration de `/dashboard` (canon), `/profil` (alias), `/pilotage`, `/profil/*`, `/sponsor-portal` | Fait |
 | Exception `/explorer` | Fait |
@@ -142,7 +142,7 @@ Ce lot couvre la première vague de cohérence des blocs métier et de navigatio
 Un bloc est considéré comme migré quand :
 
 1. Toutes ses routes résolvent vers la bonne `PageFamilyId`, sauf exceptions documentées.
-2. Chaque page migrée utilise `PageHero` ou `SectionShell` sans classe hero en dur.
+2. Chaque page migrée utilise `PageHeader` (ou l'alias `PageHero`) ou `SectionShell` sans classe hero en dur.
 3. Les cartes standard passent par `FamilyRubriqueCard` ou un `pageFamily` explicite.
 4. Aucun nouveau `linear-gradient` spécifique au bloc n’est ajouté dans les `page.tsx` du bloc.
 5. La fiche `routes/.../README.md` et la colonne palette de `INDEX.md` sont à jour.
@@ -278,7 +278,7 @@ Piste :
 
 | Date | Action |
 |---|---|
-| Session 1 | Phases 0–1 : registre `page-families`, `PageHero`, `SectionShell`, migration bloc 01, exception `/explorer`. |
+| Session 1 | Phases 0–1 : registre `page-families`, `PageHeader` (alias `PageHero`), `SectionShell`, migration bloc 01, exception `/explorer`. |
 | Session 5 | Centralisation exhaustive des routes canoniques du bloc 01 via `lib/accueil-pilotage-routes.ts`. |
 | Session 4 | Reclassification de `/methodologie` vers le bloc 03 Cartographie & Impact et alignement documentaire associé. |
 | Session 2 | Phase 2 : `PageFamilyCardTokens`, `card-presets.ts`, `FamilyRubriqueCard`, migration `/profil/[profile]`. |

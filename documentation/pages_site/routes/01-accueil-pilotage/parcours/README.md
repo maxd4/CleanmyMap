@@ -12,10 +12,10 @@
 - **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
 - **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
 - **Palette attendue** : amber / orange
-- **Scope** : à valider
+- **Scope** : à corriger
 - **Terminée** : non
-- **Couleurs actuellement détectées** : amber — canvas #fff7ed, halo rgba(245, 158, 11, 0.22)
-- **Incohérences de couleurs** : Pas d'incohérence détectée après réalignement; validation visuelle à confirmer.
+- **Couleurs actuellement détectées** : emerald — canvas #e8f8ef, halo rgba(34, 197, 94, 0.22)
+- **Incohérences de couleurs** : Écart détecté: attendu amber / orange, code actuel emerald.
 - **Risque de conflit avec les couleurs existantes** : moyen : la frontière rouge doit rester nette pour éviter la confusion avec les blocs d'impact et d'alerte.
 - **Niveau de surcharge textuelle** : moyen
 - **Textes à conserver** :

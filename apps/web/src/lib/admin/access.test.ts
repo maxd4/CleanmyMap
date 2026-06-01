@@ -13,7 +13,7 @@ describe('Middleware - Admin access control', () => {
 
   it('should redirect unauthenticated users to signin', async () => {
     const { auth } = await import('@clerk/nextjs/server');
-    vi.mocked(auth).mockResolvedValue({ userId: null, sessionId: null });
+    vi.mocked(auth).mockResolvedValue({ userId: null, sessionId: null } as never);
 
     // Note: Full middleware testing requires NextRequest context
     // This is a simplified test demonstrating the access check logic
@@ -24,7 +24,7 @@ describe('Middleware - Admin access control', () => {
 
   it('should allow authenticated users through to admin pages', async () => {
     const { auth } = await import('@clerk/nextjs/server');
-    vi.mocked(auth).mockResolvedValue({ userId: 'user-123', sessionId: 'session-456' });
+    vi.mocked(auth).mockResolvedValue({ userId: 'user-123', sessionId: 'session-456' } as never);
 
     const userId = (await auth()).userId;
     expect(userId).toBe('user-123');

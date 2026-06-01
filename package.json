@@ -45,7 +45,8 @@
     "session:bootstrap": "node scripts/session_bootstrap.mjs",
     "session:close": "node scripts/update_session_memory.mjs",
     "session:budget": "node scripts/context-budget-check.mjs",
-    "screenshots": "node documentation/liberte-UX-UI/capture-pages.mjs"
+    "screenshots": "node documentation/liberte-UX-UI/capture-pages.mjs",
+    "screenshots:screen": "node documentation/pages_site/screen/capture-pages.mjs"
   },
   "repository": {
     "type": "git",

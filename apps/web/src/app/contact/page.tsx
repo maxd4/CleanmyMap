@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, Mail, MessageSquare, Shield } from "lucide-react";
 import { RgpdRequestForm } from "@/components/sections/rubriques/rgpd-request-form";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
@@ -29,23 +30,17 @@ export default function ContactPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-slate-700 transition-colors hover:text-slate-950"
         >
           <ArrowLeft className="h-4 w-4" />
-          Retour à l'accueil
+          Retour à l&apos;accueil
         </Link>
       </div>
 
       <div className="space-y-10 rounded-[2.5rem] border border-slate-200/70 bg-white/82 p-6 shadow-[0_24px_80px_-55px_rgba(15,23,42,0.35)] backdrop-blur-2xl sm:p-10">
-        <header className="space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-700">
-            Contact
-          </p>
-          <h1 className="text-4xl font-black tracking-tight text-slate-950">
-            Contactez CleanMyMap
-          </h1>
-          <p className="max-w-3xl text-base text-slate-600">
-            Pour les demandes générales, juridiques ou liées aux données,
-            utilisez l'adresse officielle ou le formulaire ci-dessous.
-          </p>
-        </header>
+        <PageHeader
+          tone="slate"
+          badge={<PageHeaderBadge tone="slate">Contact</PageHeaderBadge>}
+          title="Contactez CleanMyMap"
+          subtitle="Pour les demandes générales, juridiques ou RGPD, utilisez l'adresse officielle ou le formulaire ci-dessous."
+        />
 
         <section className="grid gap-4 lg:grid-cols-2">
           <div className="rounded-3xl border border-slate-200/70 bg-white/82 p-5 shadow-[0_14px_40px_-40px_rgba(15,23,42,0.28)]">
@@ -95,12 +90,12 @@ export default function ContactPage() {
               </div>
             </div>
             <p className="mt-4 text-sm leading-6 text-slate-600">
-              Remplissez le formulaire pour générer un email pré-rempli vers
-              l'adresse officielle.
+              Remplissez le formulaire pour envoyer la demande depuis le site
+              ou ouvrir votre boîte mail afin de modifier le texte avant envoi.
             </p>
             <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-700">
               <Shield className="h-4 w-4 text-sky-600" />
-              Réponse via votre client mail
+              Deux modes disponibles
             </div>
           </div>
         </section>
@@ -111,8 +106,8 @@ export default function ContactPage() {
           </h2>
           <p className="text-sm leading-6 text-slate-600">
             Utilisez ce formulaire pour une demande RGPD, un support ou une
-            question générale. Le bouton ouvre votre client de messagerie avec
-            les informations préremplies.
+            question générale. Vous choisissez si le message part depuis le
+            site ou s&apos;ouvre dans votre client mail pour être ajusté.
           </p>
           <RgpdRequestForm />
         </section>

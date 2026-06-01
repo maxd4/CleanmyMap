@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Compass, Layers3, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
-import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { usePageFamily } from "@/lib/ui/page-families";
 
@@ -84,30 +84,29 @@ export function LearnRubricShell({
               ) : null}
             </div>
 
-            <PageHero
+            <PageHeader
               family={pageFamily}
               eyebrow={isFrench ? "Page dédiée" : "Dedicated page"}
               title={title[locale]}
               subtitle={subtitle[locale]}
               badges={
                 <>
-                  <PageHeroBadge family={pageFamily}>
+                  <PageHeaderBadge family={pageFamily}>
                     {isFrench ? "Parcours pédagogique" : "Learning path"}
-                  </PageHeroBadge>
-                  <PageHeroBadge family={pageFamily} muted>
+                  </PageHeaderBadge>
+                  <PageHeaderBadge family={pageFamily} muted>
                     {isFrench ? "Index + reprise" : "Index + resume"}
-                  </PageHeroBadge>
-                  <PageHeroBadge family={pageFamily} muted>
+                  </PageHeaderBadge>
+                  <PageHeaderBadge family={pageFamily} muted>
                     {isFrench ? "Lecture courte" : "Short read"}
-                  </PageHeroBadge>
+                  </PageHeaderBadge>
                   {highlights?.map((item) => (
-                    <PageHeroBadge key={item[locale]} family={pageFamily} muted>
+                    <PageHeaderBadge key={item[locale]} family={pageFamily} muted>
                       {item[locale]}
-                    </PageHeroBadge>
+                    </PageHeaderBadge>
                   ))}
                 </>
               }
-              className="max-w-3xl"
             />
 
             <p

@@ -1,6 +1,6 @@
-import React from 'react';
 import { getSupabaseServerClient } from '@/lib/supabase/server';
 import { checkAdminAccess } from '@/lib/admin/access';
+import { PageHeader, PageHeaderBadge } from '@/components/ui/page-header';
 
 export default async function Page({ searchParams }: { searchParams: any }) {
   await checkAdminAccess();
@@ -23,7 +23,12 @@ export default async function Page({ searchParams }: { searchParams: any }) {
 
   return (
     <div style={{padding:20}}>
-      <h1>Admin — XP Audit</h1>
+      <PageHeader
+        tone="slate"
+        badge={<PageHeaderBadge tone="slate">Admin</PageHeaderBadge>}
+        title="XP Audit"
+        subtitle="Journal technique des variations d'expérience."
+      />
       <section>
         <h2>Totals per day</h2>
         <table>

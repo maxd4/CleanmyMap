@@ -4,11 +4,46 @@ import { useMemo } from "react";
 import { useTranslation } from "@/lib/i18n/use-translation";
 import { InfiniteBadge } from "./InfiniteBadge";
 import { BADGE_STEP_DECHETS, BADGE_STEP_MEGOTS } from "@/config/gamification.config";
+import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { ActionBalanceBadge } from "../action-balance-badge";
 
 export function InfiniteBadgesPanel({
   totals,
 }: {
-  totals: { wasteKg: number; butts: number; newPlaces?: number };
+  totals: {
+    wasteKg: number;
+    butts: number;
+    newPlaces?: number;
+    actionsCreated?: number;
+    actionBalance?: {
+      spontaneous: number;
+      association: number;
+      enterprise: number;
+      totalValidated: number;
+      balancedCycles: number;
+      currentGrade: {
+        id: string;
+        label: string;
+        threshold: number;
+        iconVariant?: string;
+        visualVariant?: string;
+        tooltip?: string;
+        xp?: number;
+      };
+      nextGrade: {
+        id: string;
+        label: string;
+        threshold: number;
+        iconVariant?: string;
+        visualVariant?: string;
+        tooltip?: string;
+        xp?: number;
+      } | null;
+      progressPercent: number;
+      currentLabel: string;
+      nextLabel: string | null;
+    };
+  };
 }) {
   const { t } = useTranslation("gamification");
 
@@ -41,8 +76,18 @@ export function InfiniteBadgesPanel({
         step: 5,
         unitLabel: "lieux",
       },
+      {
+        key: "actions",
+        icon: "users",
+        title: "Actions créées",
+        description: "Actions réelles validées par un formulaire",
+        total: totals.actionsCreated ?? 0,
+        step: 5,
+        unitLabel: "actions",
+        family: "actions" as const,
+      },
     ],
-    [t, totals.butts, totals.wasteKg, totals.newPlaces],
+    [t, totals.actionsCreated, totals.butts, totals.newPlaces, totals.wasteKg],
   );
 
   return (
@@ -66,10 +111,25 @@ export function InfiniteBadgesPanel({
             total={item.total}
             step={item.step}
             unitLabel={item.unitLabel}
+            family={item.family}
+            onMilestoneReached={(payload) => {
+              dispatchGamificationCelebration({
+                title: "Palier infini atteint",
+                message: `${payload.title} est maintenant au niveau ${payload.level}.`,
+                tone: item.key === "lieux" ? "explorer" : item.key === "actions" ? "actions" : "generic",
+                icon: payload.icon,
+                source: `infinite-${item.key}`,
+              });
+            }}
           />
         ))}
       </div>
+
+      {totals.actionBalance ? (
+        <div className="pt-1">
+          <ActionBalanceBadge summary={totals.actionBalance} />
+        </div>
+      ) : null}
     </div>
   );
 }
-

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
@@ -7,9 +8,43 @@ import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { ReportsWebDocument } from "@/components/reports/reports-web-document";
 import { ReportsKpiSummary } from "@/components/reports/reports-kpi-summary";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
+import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
+import type { CommunityEventItem } from "@/lib/community/http";
+import type { ActionDataContract } from "@/lib/actions/data-contract";
+import type { PilotageOverview } from "@/lib/pilotage/overview";
+import type { Locale } from "@/lib/ui/preferences";
+import type { AppProfile, ProfileAction } from "@/lib/profiles";
 import { isAdminLikeProfile } from "@/lib/profiles";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import type { ThirtySecondsSummaryProps } from "@/components/pilotage/thirty-seconds-summary";
+import type { ActionListResponse } from "@/lib/actions/types";
+import type { AdminOperationAuditItem } from "@/components/reports/admin-workflow/types";
+
+type ReportsWeather = {
+  current?: {
+    temperature_2m?: number;
+    precipitation?: number;
+    wind_speed_10m?: number;
+  };
+} | null;
+
+type ReportsPageV1LayoutProps = {
+  locale: Locale;
+  roleLabel: string;
+  profile: AppProfile;
+  primaryAction: ProfileAction;
+  summaryKpis: NonNullable<ThirtySecondsSummaryProps["kpis"]>;
+  headerActions: Array<{ href: string; label: string }>;
+  overview: PilotageOverview | null;
+  contracts: ActionDataContract[];
+  communityEvents: CommunityEventItem[];
+  weather: ReportsWeather;
+  adminWorkflowPreview: ActionListResponse | null;
+  adminWorkflowAudit: AdminOperationAuditItem[] | null;
+  toReportsExportRow: (contract: ActionDataContract) => Record<string, unknown>;
+  publicAccessBanner: ReactNode;
+};
 
 export function ReportsPageV1Layout({
   locale,
@@ -20,9 +55,13 @@ export function ReportsPageV1Layout({
   headerActions,
   overview,
   contracts,
+  communityEvents,
+  weather,
+  adminWorkflowPreview,
+  adminWorkflowAudit,
   toReportsExportRow,
   publicAccessBanner,
-}: any) {
+}: ReportsPageV1LayoutProps) {
   const pageFamily = resolvePageFamily("/reports");
 
   return (
@@ -70,6 +109,14 @@ export function ReportsPageV1Layout({
         recommendedReason={overview?.summary.recommendedAction.reason}
       />
 
+      <TerritoryMapComparisonCards
+        title="Deux lectures du territoire d'impact"
+        subtitle="La carte de base reste la référence terrain. La carte Terraink ajoute une lecture plus éditoriale et plus imprimable. On conserve les deux pour comparer la clarté, l'usage et la valeur documentaire."
+        locationLabel="Territoire audité"
+        tone="rose"
+        note="Cette double présentation évite de figer trop tôt un seul style. La carte brute et la carte Terraink servent à comparer deux intentions différentes."
+      />
+
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
           Tracer
@@ -90,12 +137,19 @@ export function ReportsPageV1Layout({
 
       {overview ? <KpiMethodBlock methods={overview.methods} title="Méthode" /> : null}
 
-      <ReportsWebDocument />
+      <ReportsWebDocument
+        contracts={contracts}
+        communityEvents={communityEvents}
+        weather={weather}
+      />
 
-      <ReportsKpiSummary />
+      <ReportsKpiSummary contracts={contracts} />
 
       {isAdminLikeProfile(profile) ? (
-        <ActionsReportPanel />
+        <ActionsReportPanel
+          initialPreview={adminWorkflowPreview}
+          initialAuditItems={adminWorkflowAudit}
+        />
       ) : (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
           <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-amber-700">

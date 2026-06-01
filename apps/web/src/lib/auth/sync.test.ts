@@ -221,6 +221,38 @@ describe("syncClerkUserToSupabase", () => {
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
 
+  it("derives the arrondissement from a district zone name during sync", async () => {
+    const { supabase, upsert } = createSupabaseMock({
+      existingProfile: null,
+    });
+    getSupabaseAdminClientMock.mockReturnValue(supabase);
+
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await syncClerkUserToSupabase({
+      id: "user_zone",
+      username: "zone_user",
+      emailAddresses: [],
+      imageUrl: "https://example.com/avatar.png",
+      publicMetadata: {
+        zoneName: "5e arrondissement",
+      },
+      privateMetadata: {},
+      firstName: "Zone",
+      lastName: "User",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        paris_arrondissement: 5,
+      }),
+      { onConflict: "id" },
+    );
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(consoleWarnSpy).not.toHaveBeenCalled();
+  });
+
   it("preserves a pseudo display preference during sync", async () => {
     const { supabase, upsert } = createSupabaseMock({
       existingProfile: {

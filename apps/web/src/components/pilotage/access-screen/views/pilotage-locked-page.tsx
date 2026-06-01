@@ -26,7 +26,6 @@ export function PilotageLockedPage({
           <div className="space-y-5">
             <PageHero
               family={pageFamily}
-              titleSize="compact"
               title={isAuthenticated ? copy.restrictedTitle : copy.lockedTitle}
               subtitle={
                 isAuthenticated ? copy.restrictedDescription : copy.lockedDescription

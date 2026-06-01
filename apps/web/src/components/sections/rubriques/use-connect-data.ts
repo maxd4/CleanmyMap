@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { isChatChannelType, type ChatChannelType } from "@/lib/chat/channels";

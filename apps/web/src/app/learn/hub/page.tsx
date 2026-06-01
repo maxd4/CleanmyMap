@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRight, BookOpen } from "lucide-react";
-import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   LEARN_OVERVIEW_CARDS,
@@ -87,7 +87,7 @@ export default function LearnHubPage() {
 
         <div className="relative grid gap-6 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
           <div className="space-y-5">
-            <PageHero
+            <PageHeader
               family={pageFamily}
               eyebrow={locale === "fr" ? "Point d'entrée" : "Entry point"}
               title={locale === "fr" ? "Point de départ" : "Starting point"}
@@ -98,18 +98,17 @@ export default function LearnHubPage() {
               }
               badges={
                 <>
-                  <PageHeroBadge family={pageFamily}>
+                  <PageHeaderBadge family={pageFamily}>
                     {locale === "fr" ? "Point de départ" : "Starting point"}
-                  </PageHeroBadge>
-                  <PageHeroBadge family={pageFamily} muted>
+                  </PageHeaderBadge>
+                  <PageHeaderBadge family={pageFamily} muted>
                     {locale === "fr" ? "Progression" : "Progress"}
-                  </PageHeroBadge>
-                  <PageHeroBadge family={pageFamily} muted>
+                  </PageHeaderBadge>
+                  <PageHeaderBadge family={pageFamily} muted>
                     {locale === "fr" ? "4 accès directs" : "4 direct links"}
-                  </PageHeroBadge>
+                  </PageHeaderBadge>
                 </>
               }
-              className="max-w-3xl"
             />
 
             <div className="flex flex-wrap gap-3">

@@ -59,7 +59,7 @@ export function ChatShell({
   initialRecipient,
   initialMessage,
 }: ChatShellProps) {
-  const { getToken } = useAuth();
+  const { getToken, isLoaded, isSignedIn } = useAuth();
   const { user } = useUser();
   const { locale } = useSitePreferences();
   const pathname = usePathname();
@@ -218,6 +218,7 @@ export function ChatShell({
     mentionQuery,
     recipientQuery,
     currentUserId: userId,
+    canAccessProtectedChat: isLoaded && isSignedIn,
     supabase,
   });
 
@@ -314,12 +315,14 @@ export function ChatShell({
   
   const canSubmitMessage = useMemo(() => Boolean(
     userId &&
+      isLoaded &&
+      isSignedIn &&
       (message.trim().length > 0 || file) &&
       !isSending &&
       !isUploading &&
       !(activeChannelType === "dm" && !selectedRecipient) &&
       !(activeChannelType === "territory" && !effectiveZone && territoryFocus === null)
-  ), [userId, message, file, isSending, isUploading, activeChannelType, selectedRecipient, effectiveZone, territoryFocus]);
+  ), [userId, isLoaded, isSignedIn, message, file, isSending, isUploading, activeChannelType, selectedRecipient, effectiveZone, territoryFocus]);
 
   const sidebarChannels = useMemo(() => CHAT_CHANNEL_ORDER.map((channelType) => {
     const visual = CHANNEL_VISUALS[channelType];

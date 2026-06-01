@@ -23,6 +23,7 @@ type UseChatDataParams = {
   mentionQuery: string;
   recipientQuery: string;
   currentUserId?: string;
+  canAccessProtectedChat?: boolean;
   supabase?: SupabaseClient | null;
 };
 
@@ -98,21 +99,28 @@ export function useChatData({
   mentionQuery,
   recipientQuery,
   currentUserId,
+  canAccessProtectedChat = Boolean(currentUserId),
   supabase,
 }: UseChatDataParams) {
-  const messagesKey = buildMessagesKey({
-    activeChannelType,
-    selectedRecipientId,
-    effectiveZone,
-    territoryFocus,
-  });
+  const canQueryProtectedChat = canAccessProtectedChat && Boolean(currentUserId);
+  const messagesKey = canQueryProtectedChat
+    ? buildMessagesKey({
+        activeChannelType,
+        selectedRecipientId,
+        effectiveZone,
+        territoryFocus,
+      })
+    : null;
 
   const mentionUsersKey =
-    showMentions && mentionQuery.trim().length > 0
+    canQueryProtectedChat &&
+    showMentions &&
+    mentionQuery.trim().length > 0
       ? `/api/chat/users?q=${encodeURIComponent(mentionQuery.trim())}`
       : null;
 
   const dmUsersKey =
+    canQueryProtectedChat &&
     activeChannelType === "dm"
       ? `/api/chat/users${
           recipientQuery.trim().length > 0
@@ -137,7 +145,7 @@ export function useChatData({
 
   // Real-time subscription
   useEffect(() => {
-    if (!supabase || !messagesKey) return;
+    if (!supabase || !messagesKey || !canQueryProtectedChat) return;
 
     const channel = supabase
       .channel("chat-updates")
@@ -185,6 +193,7 @@ export function useChatData({
   }, [
     supabase,
     messagesKey,
+    canQueryProtectedChat,
     activeChannelType,
     selectedRecipientId,
     currentUserId,
@@ -269,6 +278,6 @@ export function useChatData({
     mentionSuggestions,
     dmSuggestions,
     sendChatMessage,
-    isLive: !!supabase,
+    isLive: !!supabase && canQueryProtectedChat,
   };
 }

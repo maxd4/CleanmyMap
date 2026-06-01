@@ -79,3 +79,33 @@ Sans cet accord, utiliser uniquement la branche courante et les fichiers du doss
 ## Règle de Gamification et Transparence
 
 - Informer systématiquement l'utilisateur quand l'action qu'il s'apprête à faire (ou vient de faire) sur le site lui apporte de l'XP ou des badges.
+
+## Contrat projet migré depuis `.cursorrules`
+
+Ce bloc reprend les règles repo-wide qui vivaient dans `.cursorrules` afin de centraliser le contrat d'IA à la racine du projet.
+
+### Stack et structure
+
+- Framework: `Next.js 15` avec App Router.
+- Styling: `Tailwind CSS 4`.
+- Auth: `Clerk` via `@clerk/nextjs`.
+- Base de donnees / backend: `Supabase` avec PostgreSQL.
+- Cartes: `react-leaflet` doit toujours etre charge dynamiquement avec `next/dynamic` et `{ ssr: false }`.
+- Icones: `lucide-react`.
+- `apps/web/src/app` contient les routes application.
+- `apps/web/src/components/ui` contient les composants reutilisables.
+- `apps/web/src/components/sections/rubriques` contient les modules fonctionnels principaux.
+- Quand un nouveau module est ajoute dans `apps/web/src/components/sections/rubriques`, il doit etre enregistre dans `apps/web/src/lib/sections-registry.ts`.
+- `apps/web/src/lib/domain-language.ts` est la source de verite pour la logique `Role`, `SessionRole` et `Parcours`.
+- `scripts/` et `legacy/` contiennent les scripts d'ingestion de donnees et l'historique code.
+
+### Regles critiques
+
+1. Ne jamais utiliser de SQL brut. Utiliser les clients Supabase.
+2. Ne pas modifier `@/lib/domain-language.ts` ou `@/lib/profiles.ts` sans extreme prudence.
+3. Garder les Client Components (`"use client"`) aussi minces que possible. Preferez SWR ou Server Actions pour le fetch.
+4. Pour Leaflet, ne jamais accceder a `window` pendant le SSR.
+5. Ecrire le texte public facing en francais (`label`, `title`, `description`) sauf si un objet `{ fr: "...", en: "..." }` est explicitement utilise.
+6. Ne jamais modifier la homepage (`apps/web/src/app/page.tsx` et ses composants associes dans `apps/web/src/components/accueil/`) sans demande explicite.
+7. Preserver le sens semantique du code et ne pas supprimer des definitions de types necessaires.
+8. Ne jamais mettre de numerotation de sections ou de titres en dur dans les fichiers Markdown destines a Quarto.

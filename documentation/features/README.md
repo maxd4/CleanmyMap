@@ -6,6 +6,9 @@ Documentation des fonctionnalités pour agents IA.
 
 ## 🎮 Fichiers Disponibles
 
+### Participation de groupe
+- **group-action.md** - Guide utilisateur du flux d'action de groupe
+
 ### Gamification
 - **GAMIFICATION_ENGINE.md** - Moteur de gamification complet
   - Système de badges

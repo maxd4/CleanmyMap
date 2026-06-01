@@ -230,6 +230,9 @@ export function useActionDeclarationForm({
     if (key === "routeStyle") {
       nextForm.routeStyle = "souple";
     }
+    if (key === "associationName" && value === "Action spontanée") {
+      nextForm.organizerAccounts = "";
+    }
     if (!pendingDraft && submissionState !== "success") {
       saveDraft(nextForm);
     }
@@ -244,6 +247,9 @@ export function useActionDeclarationForm({
     normalized.routeStyle = "souple";
     if (normalized.associationName === OTHER_VOLUNTEER_ASSOCIATION_VALUE) {
       normalized.associationName = "Action spontanée";
+    }
+    if (normalized.associationName === "Action spontanée") {
+      normalized.organizerAccounts = "";
     }
     if (!normalized.locationLabel.trim() && normalized.departureLocationLabel.trim()) {
       normalized.locationLabel = normalized.departureLocationLabel.trim();
@@ -388,6 +394,18 @@ function getStepOneValidationIssues(form: FormState): ValidationIssue[] {
       field: "associationName",
       message:
         "Renseignez le nom ou pseudo du bénévole avant l’envoi.",
+    });
+  }
+
+  if (
+    form.recordType === "action" &&
+    form.associationName !== "Action spontanée" &&
+    !form.organizerAccounts.trim()
+  ) {
+    issues.push({
+      field: "associationName",
+      message:
+        "Renseignez au moins un compte organisateur pour cette action.",
     });
   }
 

@@ -13,6 +13,25 @@ Documentation optimisée pour les agents IA qui développent ce projet.
 
 ## 📚 Guides Disponibles
 
+### 🧱 Spec Kit
+
+1. **[SPEC_KIT_PLAYBOOK.md](./SPEC_KIT_PLAYBOOK.md)**
+   - Cycle Spec -> Plan -> Tasks -> Implement
+   - Commandes d'installation et d'initialisation
+   - Adaptation du workflow Spec Kit à CleanMyMap
+
+2. **[SPEC_KIT_ACTIONS.md](./SPEC_KIT_ACTIONS.md)**
+   - Liste concrète des choses a faire apres la lecture de Spec Kit
+   - Priorisation court / moyen terme
+
+### 🧠 Skills Matt Pocock
+
+1. **[MATT_POCOCK_SKILLS_PLAYBOOK.md](./MATT_POCOCK_SKILLS_PLAYBOOK.md)**
+   - Principe des skills petits, composables et reutilisables
+   - Quickstart du repo de reference
+   - Quand activer `grill-me`, `tdd`, `diagnose`, `zoom-out`, `handoff` et les skills de garde-fou
+   - Note de coherence documentaire sur les commandes de checks rapides
+
 ### 🖼️ Standards visuels de documentation
 
 1. **[standards-visuels.md](./standards-visuels.md)**

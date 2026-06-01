@@ -398,9 +398,83 @@ html[data-theme="dark"] {
     font-variant-numeric: tabular-nums;
   }
 
+  /* Canonical page headers
+     - Same typography across the repo
+     - Only colors vary by block / tone
+  */
+  .cmm-page-header {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 42rem;
+  }
+
+  .cmm-page-header--left {
+    align-items: flex-start;
+    padding-left: 0.125rem;
+    padding-top: 0.25rem;
+    text-align: left;
+  }
+
+  .cmm-page-header--center {
+    align-items: center;
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .cmm-page-header-eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+
+  .cmm-page-header-title {
+    font-size: clamp(3rem, 6vw, 5.5rem);
+    font-weight: 900;
+    line-height: 0.92;
+    letter-spacing: -0.05em;
+    text-wrap: balance;
+  }
+
+  .cmm-page-header-subtitle {
+    max-width: 42rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.7;
+    text-wrap: pretty;
+  }
+
+  .cmm-page-header-badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .cmm-page-header-badge,
+  .cmm-page-header-badge-muted {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 9999px;
+    border-width: 1px;
+    padding: 0.375rem 0.75rem;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    backdrop-filter: blur(16px);
+  }
+
+  .cmm-page-header-action {
+    margin-top: 0.25rem;
+  }
+
   /* Homepage section headers
      - Exclude the upper hero
-     - Keep one shared title size and one shared subtitle size
+     - Keep the same structure as the canonical page header
      - Center the introduction at the start of each section
   */
   .cmm-home-section-header {
@@ -410,20 +484,22 @@ html[data-theme="dark"] {
   }
 
   .cmm-home-section-title {
-    font-size: clamp(2.25rem, 3.8vw, 3.75rem);
-    line-height: 0.95;
+    font-size: clamp(3rem, 6vw, 5.5rem);
+    line-height: 0.92;
     font-weight: 900;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.05em;
     color: #064e3b;
+    text-wrap: balance;
   }
 
   .cmm-home-section-subtitle {
     max-width: 42rem;
     margin-inline: auto;
-    font-size: clamp(1rem, 1.1vw, 1.125rem);
+    font-size: 1rem;
     line-height: 1.7;
-    font-weight: 300;
+    font-weight: 500;
     color: rgba(6, 78, 59, 0.66);
+    text-wrap: pretty;
   }
 
   .cmm-ribbon-surface {
@@ -766,6 +842,89 @@ html[data-theme="dark"] {
 
   .animate-bounce-slow {
     animation: cmm-bounce-slow 3.2s ease-in-out infinite;
+  }
+
+  @keyframes cmm-gamification-dot-pop {
+    0% {
+      transform: translateY(2px) scale(0.7);
+      opacity: 0.35;
+    }
+    55% {
+      transform: translateY(-1px) scale(1.18);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(0) scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes cmm-gamification-pop {
+    0% {
+      transform: translateY(0) scale(1);
+      box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    }
+    45% {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.08);
+    }
+    100% {
+      transform: translateY(0) scale(1);
+      box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    }
+  }
+
+  @keyframes cmm-gamification-progress-glow {
+    0% {
+      filter: brightness(1);
+    }
+    50% {
+      filter: brightness(1.2);
+    }
+    100% {
+      filter: brightness(1);
+    }
+  }
+
+  .cmm-gamification-dot {
+    display: block;
+    height: 0.5rem;
+    width: 100%;
+    border-radius: 9999px;
+    transition:
+      transform 180ms ease,
+      opacity 180ms ease,
+      background-color 180ms ease,
+      box-shadow 180ms ease;
+  }
+
+  .cmm-gamification-dot--empty {
+    background: rgba(148, 163, 184, 0.36);
+    opacity: 0.72;
+  }
+
+  .cmm-gamification-dot--filled {
+    background: linear-gradient(90deg, rgba(251, 191, 36, 0.95), rgba(252, 211, 77, 0.95));
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
+    animation: cmm-gamification-dot-pop 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .cmm-gamification-dot--active {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.24),
+      0 0 16px rgba(251, 191, 36, 0.35);
+  }
+
+  .cmm-gamification-celebrate {
+    animation: cmm-gamification-pop 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .cmm-gamification-progress {
+    animation: cmm-gamification-progress-glow 720ms ease-out both;
+  }
+
+  .cmm-gamification-toast-shell {
+    animation: cmm-modal-enter 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
   /* Sticky header/footer inside modal: subtle separator */
@@ -1134,6 +1293,10 @@ html[data-theme="dark"][data-display-mode="sobre"] .cmm-sober {
 
 [data-user-profile="coordinateur"] {
   --profile-primary: 8 145 178; /* Cyan */
+}
+
+[data-user-profile="entreprise"] {
+  --profile-primary: 37 99 235; /* Blue */
 }
 
 /* Profile-specific accent - classe canonique au lieu d'override global des classes emerald */

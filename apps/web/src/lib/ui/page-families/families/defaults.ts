@@ -61,15 +61,14 @@ export const darkHero = (
   } as const;
   const t = map[accent];
   return {
-    eyebrow: `text-[11px] font-bold uppercase tracking-[0.3em] ${t.eyebrow}`,
-    title: `text-[clamp(3rem,6vw,5.5rem)] font-black leading-[0.92] tracking-[-0.05em] ${t.title}`,
-    titleCompact: `text-4xl font-black leading-none tracking-tighter ${t.title} md:text-5xl`,
-    subtitle:
-      "max-w-2xl text-base font-medium leading-relaxed text-stone-800/90 md:text-lg",
+    eyebrow: `cmm-page-header-eyebrow ${t.eyebrow}`,
+    title: `cmm-page-header-title ${t.title}`,
+    titleCompact: `cmm-page-header-title ${t.title}`,
+    subtitle: "cmm-page-header-subtitle text-stone-800/90",
     badge:
-      "inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-stone-900",
+      `cmm-page-header-badge border-white/20 bg-white/50 text-stone-900`,
     badgeMuted:
-      "inline-flex items-center rounded-full border border-stone-300/35 bg-white/40 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-stone-800/90",
+      "cmm-page-header-badge-muted border-stone-300/35 bg-white/40 text-stone-800/90",
     sectionGradient: t.gradient,
     iconWrap: t.iconWrap,
     icon: t.icon,
@@ -78,15 +77,14 @@ export const darkHero = (
 
 /** Sommaire `/explorer` — fond jaune, hero clair (cartes = exception locale). */
 const SOMMAIRE_EXPLORER_HERO: PageFamilyHeroTokens = {
-  eyebrow: "text-[11px] font-bold uppercase tracking-[0.3em] text-yellow-950/85",
-  title:
-    "text-[clamp(3rem,6vw,5.5rem)] font-black leading-[0.92] tracking-[-0.05em] text-white",
-  titleCompact: "text-4xl font-black leading-none tracking-tighter text-white md:text-5xl",
-  subtitle: "max-w-xl text-base font-medium leading-relaxed text-white/82",
+  eyebrow: "cmm-page-header-eyebrow text-yellow-950/85",
+  title: "cmm-page-header-title text-white",
+  titleCompact: "cmm-page-header-title text-white",
+  subtitle: "cmm-page-header-subtitle text-white/82",
   badge:
-    "inline-flex items-center gap-2 rounded-full border border-yellow-200/35 bg-yellow-50/50 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-yellow-950",
+    "cmm-page-header-badge border-yellow-200/35 bg-yellow-50/50 text-yellow-950",
   badgeMuted:
-    "inline-flex items-center rounded-full border border-white/25 bg-white/15 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.18em] text-white/90",
+    "cmm-page-header-badge-muted border-white/25 bg-white/15 text-white/90",
   sectionGradient: "from-yellow-400/22 via-amber-400/14 to-transparent",
   iconWrap: "rounded-2xl border border-yellow-200/30 bg-yellow-50/40 p-3",
   icon: "text-yellow-900",
@@ -141,15 +139,14 @@ export const PAGE_FAMILIES = {
     label: "Institutionnel & Légal",
     backdropToneKey: "legal",
     hero: {
-      eyebrow: "text-[11px] font-bold uppercase tracking-[0.3em] text-slate-600",
-      title:
-        "text-[clamp(2.5rem,5vw,4rem)] font-black leading-[0.95] tracking-tight text-slate-950",
-      titleCompact: "text-3xl font-black tracking-tight text-slate-950 md:text-4xl",
-      subtitle: "max-w-2xl text-base font-medium leading-relaxed text-slate-700",
+      eyebrow: "cmm-page-header-eyebrow text-slate-600",
+      title: "cmm-page-header-title text-slate-950",
+      titleCompact: "cmm-page-header-title text-slate-950",
+      subtitle: "cmm-page-header-subtitle text-slate-700",
       badge:
-        "inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-slate-700",
+        "cmm-page-header-badge border-slate-200 bg-slate-50 text-slate-700",
       badgeMuted:
-        "inline-flex items-center rounded-full border border-slate-200/80 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600",
+        "cmm-page-header-badge-muted border-slate-200/80 bg-white text-slate-600",
       sectionGradient: "from-slate-200/40 via-transparent to-transparent",
       iconWrap: "rounded-2xl border border-slate-200 bg-white p-3",
       icon: "text-slate-700",

@@ -28,6 +28,18 @@ type ServiceEmailStore = {
   records: ServiceEmailEvent[];
 };
 
+type ServiceEmailEventRow = {
+  created_at?: string | null;
+  provider?: string | null;
+  actor_user_id?: string | null;
+  recipient_count?: number | string | null;
+  subject?: string | null;
+  status?: ServiceEmailEventStatus | string | null;
+  message_id?: string | null;
+  meta?: Record<string, unknown> | null;
+  at?: string | null;
+};
+
 const FILE_PATH = join(process.cwd(), "data", "local-db", "service_email_events.json");
 
 function emptyStore(): ServiceEmailStore {
@@ -52,12 +64,31 @@ async function writeStore(store: ServiceEmailStore): Promise<void> {
   await writeFile(FILE_PATH, `${JSON.stringify(store, null, 2)}\n`, "utf8");
 }
 
+function normalizeServiceEmailEventRow(row: ServiceEmailEventRow): ServiceEmailEvent {
+  return {
+    at: row.created_at ?? row.at ?? new Date().toISOString(),
+    provider: row.provider === "mock" ? "mock" : "resend",
+    actorUserId: row.actor_user_id ?? null,
+    recipientCount: Number(row.recipient_count ?? 0),
+    subject: row.subject ?? "",
+    status:
+      row.status === "sent" ||
+      row.status === "mocked" ||
+      row.status === "missing_config" ||
+      row.status === "error"
+        ? row.status
+        : "error",
+    messageId: row.message_id ?? null,
+    meta: row.meta ?? undefined,
+  };
+}
+
 export async function appendServiceEmailEvent(event: ServiceEmailEvent): Promise<void> {
   if (canUseSupabaseServerPersistence()) {
     try {
       const supabase = getSupabaseServerClient();
       const result = await supabase.from("service_email_events").insert({
-        at: event.at,
+        created_at: event.at,
         provider: event.provider,
         actor_user_id: event.actorUserId,
         recipient_count: event.recipientCount,
@@ -96,27 +127,18 @@ export async function listServiceEmailEvents(
       const floorIso = new Date(floor).toISOString();
       const result = await supabase
         .from("service_email_events")
-        .select("at, provider, actor_user_id, recipient_count, subject, status, message_id, meta")
-        .gte("at", floorIso)
-        .order("at", { ascending: false })
+        .select("created_at, provider, actor_user_id, recipient_count, subject, status, message_id, meta")
+        .gte("created_at", floorIso)
+        .order("created_at", { ascending: false })
         .limit(12000);
 
       if (!result.error) {
         return (result.data ?? [])
           .filter((entry) => {
-            const ms = new Date(entry.at).getTime();
+            const ms = new Date(entry.created_at ?? "").getTime();
             return Number.isFinite(ms) && ms >= floor && ms <= nowMs;
           })
-          .map((entry) => ({
-            at: entry.at,
-            provider: entry.provider,
-            actorUserId: entry.actor_user_id ?? null,
-            recipientCount: Number(entry.recipient_count ?? 0),
-            subject: entry.subject,
-            status: entry.status,
-            messageId: entry.message_id ?? null,
-            meta: (entry.meta ?? undefined) as Record<string, unknown> | undefined,
-          }));
+          .map((entry) => normalizeServiceEmailEventRow(entry as ServiceEmailEventRow));
       }
       if (!allowLocalFileStoreFallback()) {
         return [];
@@ -133,4 +155,46 @@ export async function listServiceEmailEvents(
     const ms = new Date(entry.at).getTime();
     return Number.isFinite(ms) && ms >= floor && ms <= nowMs;
   });
+}
+
+export async function countServiceEmailEventsForActorSince(params: {
+  actorUserId: string;
+  sinceIso: string;
+  statuses?: ServiceEmailEventStatus[];
+}): Promise<number> {
+  const statuses = params.statuses ?? ["sent"];
+
+  if (canUseSupabaseServerPersistence()) {
+    try {
+      const supabase = getSupabaseServerClient();
+      const result = await supabase
+        .from("service_email_events")
+        .select("created_at, status, actor_user_id")
+        .eq("actor_user_id", params.actorUserId)
+        .gte("created_at", params.sinceIso)
+        .in("status", statuses);
+
+      if (!result.error) {
+        return (result.data ?? []).length;
+      }
+      if (!allowLocalFileStoreFallback()) {
+        return 0;
+      }
+    } catch {
+      if (!allowLocalFileStoreFallback()) {
+        return 0;
+      }
+    }
+  }
+
+  const store = await readStore();
+  return store.records.filter((entry) => {
+    const ms = new Date(entry.at).getTime();
+    return (
+      entry.actorUserId === params.actorUserId &&
+      statuses.includes(entry.status) &&
+      Number.isFinite(ms) &&
+      ms >= new Date(params.sinceIso).getTime()
+    );
+  }).length;
 }

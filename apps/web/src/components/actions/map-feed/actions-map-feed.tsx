@@ -3,33 +3,29 @@
 import { useEffect, useState } from "react";
 import { DEFAULT_VISIBLE_CATEGORIES } from "@/components/actions/map-marker-categories";
 import type { ActionsMapCanvasComponent, ActionsMapFeedProps } from "./map-feed.types";
-import { useMapFeedData } from "./use-map-feed-data";
+import { useMapFeedData, type MapFeedDataState } from "./use-map-feed-data";
 import { ImmersiveLayout } from "./_layouts/immersive-layout";
 import { DefaultLayout } from "./_layouts/default-layout";
 
-export function ActionsMapFeed({
-  types = "all",
-  days,
-  statusFilter,
-  impactFilter,
-  qualityMin,
+type ActionsMapFeedContentProps = {
+  feedData: MapFeedDataState;
+  presentation?: "default" | "immersive";
+  showIntro?: boolean;
+  fullViewport?: boolean;
+  showStoriesCarousel?: boolean;
+  selectedActionId?: string | null;
+  onOpenAction?: (actionId: string) => void;
+};
+
+export function ActionsMapFeedContent({
+  feedData,
   presentation = "default",
   showIntro = true,
   fullViewport = false,
   showStoriesCarousel = true,
-  visibleCategories = DEFAULT_VISIBLE_CATEGORIES,
   selectedActionId = null,
   onOpenAction,
-}: ActionsMapFeedProps) {
-  const feedData = useMapFeedData({
-    types,
-    days,
-    statusFilter,
-    impactFilter,
-    qualityMin,
-    visibleCategories,
-  });
-
+}: ActionsMapFeedContentProps) {
   const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
   const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);
 
@@ -106,5 +102,45 @@ export function ActionsMapFeed({
         </p>
       ) : null}
     </section>
+  );
+}
+
+export function ActionsMapFeed({
+  types = "all",
+  days,
+  dateScope = "current_year",
+  statusFilter,
+  impactFilter,
+  qualityMin,
+  limit = 120,
+  presentation = "default",
+  showIntro = true,
+  fullViewport = false,
+  showStoriesCarousel = true,
+  visibleCategories = DEFAULT_VISIBLE_CATEGORIES,
+  selectedActionId = null,
+  onOpenAction,
+}: ActionsMapFeedProps) {
+  const feedData = useMapFeedData({
+    types,
+    days,
+    dateScope,
+    statusFilter,
+    impactFilter,
+    qualityMin,
+    visibleCategories,
+    limit,
+  });
+
+  return (
+    <ActionsMapFeedContent
+      feedData={feedData}
+      presentation={presentation}
+      showIntro={showIntro}
+      fullViewport={fullViewport}
+      showStoriesCarousel={showStoriesCarousel}
+      selectedActionId={selectedActionId}
+      onOpenAction={onOpenAction}
+    />
   );
 }

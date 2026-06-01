@@ -71,6 +71,28 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
   const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
     wasteKg: 0,
     butts: 0,
+    newPlaces: 0,
+    actionsCreated: 0,
+    actionBalance: {
+      spontaneous: 0,
+      association: 0,
+      enterprise: 0,
+      totalValidated: 0,
+      balancedCycles: 0,
+      currentGrade: {
+        id: "balance-observateur",
+        label: "Observateur",
+        threshold: 0,
+        iconVariant: "sliders-horizontal",
+        visualVariant: "stone",
+        tooltip: "Aucun cycle équilibré encore",
+        xp: 0,
+      },
+      nextGrade: null,
+      progressPercent: 0,
+      currentLabel: "Observateur",
+      nextLabel: null,
+    },
   }));
 
   return (

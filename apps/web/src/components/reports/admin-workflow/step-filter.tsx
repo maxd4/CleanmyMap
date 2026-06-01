@@ -1,3 +1,5 @@
+"use client";
+
 import type { ActionStatus } from"@/lib/actions/types";
 import type { AdminWorkflowController } from"./types";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";

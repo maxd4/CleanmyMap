@@ -11,6 +11,7 @@ const EXPECTED_PROFILE_ACTIONS: Record<AppProfile, readonly string[]> = {
   benevole: ["/actions/new", "/sections/community", "/actions/map", "/learn/hub"],
   coordinateur: ["/sections/community", DASHBOARD_ROUTE, "/sections/messagerie", "/reports"],
   scientifique: ["/reports", "/sections/open-data", "/methodologie", "/prints/report"],
+  entreprise: [SPONSOR_PORTAL_ROUTE, "/partners/network", "/sections/funding", "/reports"],
   elu: [SPONSOR_PORTAL_ROUTE, "/reports", "/actions/map", "/prints/report"],
   admin: [ADMIN_ROUTE, "/reports", ADMIN_GODMODE_ROUTE, DASHBOARD_ROUTE],
   max: [ADMIN_GODMODE_ROUTE, ADMIN_ROUTE, DASHBOARD_ROUTE, "/prints/report"],
@@ -32,6 +33,11 @@ describe("profile aliases", () => {
         isMax: false,
       }),
     ).toBe("max");
+  });
+
+  it("labels the enterprise profile consistently", () => {
+    expect(getProfileLabel("entreprise", "fr")).toBe("Entreprise");
+    expect(getProfileLabel("entreprise", "en")).toBe("Business");
   });
 });
 

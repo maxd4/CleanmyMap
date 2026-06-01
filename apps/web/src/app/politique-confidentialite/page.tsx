@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { RgpdRequestForm } from "@/components/sections/rubriques/rgpd-request-form";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
@@ -48,20 +49,13 @@ export default function PolitiqueConfidentialitePage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
       <div className="space-y-10 rounded-[2rem] border border-slate-200 bg-white/95 p-6 shadow-xl sm:p-10">
-        <header className="space-y-4">
-          <Pill>RGPD</Pill>
-          <h1 className="text-4xl font-black tracking-tight text-slate-950">
-            Politique de confidentialité
-          </h1>
-          <p className="max-w-3xl text-base text-slate-600">
-            Cette page décrit précisément les données collectées par le produit
-            CleanMyMap, les finalités, les sous-traitants, les durées de
-            conservation et les droits des utilisateurs européens.
-          </p>
-          <p className="text-sm font-medium text-slate-500">
-            Dernière mise à jour : 5 mai 2026
-          </p>
-        </header>
+        <PageHeader
+          tone="slate"
+          badge={<PageHeaderBadge tone="slate">RGPD</PageHeaderBadge>}
+          title="Politique de confidentialité"
+          subtitle="Cette page décrit les données collectées par CleanMyMap, les finalités, les sous-traitants, les durées de conservation et les droits des utilisateurs européens."
+          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 5 mai 2026</p>}
+        />
 
         <section className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 lg:grid-cols-2">
           <div className="space-y-2">

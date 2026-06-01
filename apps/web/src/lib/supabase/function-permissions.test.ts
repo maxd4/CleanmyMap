@@ -51,6 +51,16 @@ describe("Supabase function permissions", () => {
     expect(migration).toContain("revoke all on function public.can_view_territory_message(integer) from public;");
   });
 
+  it("enables RLS on xp_audit and restricts it to the service role", () => {
+    const migration = readMigration("../../../supabase/migrations/20260601000001_harden_xp_audit_rls.sql");
+
+    expect(migration).toContain("alter table public.xp_audit enable row level security;");
+    expect(migration).toContain("drop policy if exists xp_audit_service_only on public.xp_audit;");
+    expect(migration).toContain("create policy xp_audit_service_only on public.xp_audit");
+    expect(migration).toContain("using (auth.role() = 'service_role')");
+    expect(migration).toContain("with check (auth.role() = 'service_role')");
+  });
+
   it("removes legacy neighborhood helpers and pins trigger search paths", () => {
     const legacyChatMigration = readMigration("../../../supabase/migrations/20260420000015_advanced_chat_core.sql");
     const communityRateLimitMigration = readMigration("../../../supabase/migrations/20260419000004_community_rate_limit.sql");

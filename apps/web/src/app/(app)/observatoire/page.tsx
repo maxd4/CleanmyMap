@@ -9,9 +9,11 @@ import { Globe, ArrowRight, Activity, Zap, Eye, BarChart3, Users, CheckCircle } 
 import { cn } from "@/lib/utils";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { SectionShell } from "@/components/sections/rubriques/shared";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
 import { SPONSOR_PORTAL_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export const revalidate = 60; // 1 minute Cache for public observatory
 
@@ -55,6 +57,7 @@ export default async function ObservatoirePage() {
   const data = await loadPublicStats().catch(() => null);
   const overview = data?.overview;
   const monthlyData = data ? aggregateMonthlyAnalytics(data.contracts) : [];
+  const pageFamily = resolvePageFamily("/observatoire");
   const observatoirePdfData = overview
     ? {
         title: "Rapport observatoire public",
@@ -87,31 +90,40 @@ export default async function ObservatoirePage() {
   return (
     <SectionShell
       id="observatoire"
-      title="Impact Global"
-      subtitle="Transparence totale sur l'état de la dépollution citoyenne. Suivez les indicateurs clés et l'évolution de la propreté de nos territoires."
+      hideHeader
       gradient="from-sky-500/20 via-sky-500/10 to-transparent"
     >
       <div className="space-y-24 pt-8">
-        {/* Badges Status */}
-        <div className="flex flex-wrap gap-3">
-          <div className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-sky-400/20 bg-sky-400/5 backdrop-blur-md">
-            <Globe size={14} className="text-sky-400 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-400">Observatoire Public</span>
-          </div>
-          <div className="inline-flex items-center gap-3 px-5 py-2.5 bg-white/5 rounded-full border border-white/5 text-[10px] font-black uppercase tracking-widest text-white/40 backdrop-blur-md">
-            <Eye size={12} className="text-sky-400/60" />
-            Données Ouvertes
-          </div>
-          <RubriquePdfExportButton
-            rubrique="observatoire"
-            periode={`365_jours_${new Date().getFullYear()}`}
-            organizationType="public"
-            defaultTitle="Rapport observatoire public"
-            data={observatoirePdfData}
-            disabled={!overview}
-            className="w-full max-w-xl"
-          />
-        </div>
+        <PageHeader
+          family={pageFamily}
+          eyebrow="Transparence publique"
+          title="Impact global"
+          subtitle="Transparence totale sur l'état de la dépollution citoyenne. Suivez les indicateurs clés et l'évolution de la propreté de nos territoires."
+          badges={
+            <>
+              <PageHeaderBadge family={pageFamily}>
+                <Globe size={12} className="mr-2 inline-block align-[-2px]" />
+                Observatoire public
+              </PageHeaderBadge>
+              <PageHeaderBadge family={pageFamily} muted>
+                <Eye size={12} className="mr-2 inline-block align-[-2px]" />
+                Données ouvertes
+              </PageHeaderBadge>
+            </>
+          }
+          action={
+            <RubriquePdfExportButton
+              rubrique="observatoire"
+              periode={`365_jours_${new Date().getFullYear()}`}
+              organizationType="public"
+              defaultTitle="Rapport observatoire public"
+              data={observatoirePdfData}
+              disabled={!overview}
+              className="w-full max-w-xl"
+            />
+          }
+          className="max-w-5xl"
+        />
 
         {/* Main Observatory Stats */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

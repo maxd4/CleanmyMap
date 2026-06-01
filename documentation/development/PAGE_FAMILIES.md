@@ -13,7 +13,8 @@ Centraliser **fond de page**, **tokens hero** (titre / sous-titre) et **cartes r
 | Registre + résolution | `apps/web/src/lib/ui/page-families/` |
 | Presets cartes | `apps/web/src/lib/ui/page-families/card-presets.ts` |
 | Fond global | `apps/web/src/lib/ui/backdrop-tone.ts` → `resolvePageFamily` |
-| Hero | `apps/web/src/components/ui/page-hero.tsx` |
+| Hero canonique | `apps/web/src/components/ui/page-header.tsx` |
+| Alias historique | `apps/web/src/components/ui/page-hero.tsx` |
 | Cartes rubrique | `apps/web/src/components/ui/family-rubrique-card.tsx` |
 | Hook client | `usePageFamily()` |
 
@@ -46,10 +47,10 @@ Overrides implicites : `/reports`, `/sections/gamification`, `/partners/*`, `/er
 ### Hero
 
 ```tsx
-import { PageHero } from "@/components/ui/page-hero";
+import { PageHeader } from "@/components/ui/page-header";
 import { getPageFamilyById } from "@/lib/ui/page-families";
 
-<PageHero
+<PageHeader
   family={getPageFamilyById("accueil-pilotage")}
   eyebrow="Cockpit opérationnel"
   title="Mon tableau de bord"

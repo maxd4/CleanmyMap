@@ -1,3 +1,5 @@
+"use client";
+
 import type { EnrichedAnnuaireEntry } from "./annuaire-helpers";
 import {
   CONTRIBUTION_LABELS,

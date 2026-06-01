@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { fetchMapActions } from "@/lib/actions/http";
 import type {
   ActionImpactLevel,
-  ActionMapItem,
   ActionRecordType,
   ActionStatus,
 } from "@/lib/actions/types";
+import { buildDateFloor } from "@/lib/pilotage/overview.utils";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import {
   isVisibleWithCategoryFilter,
@@ -14,23 +14,28 @@ import {
 } from "@/components/actions/map-marker-categories";
 import { mapItemCigaretteButts, mapItemWasteKg } from "@/lib/actions/data-contract";
 import { formatMapFreshnessLabel } from "../actions-map-freshness.utils";
+import type { ActionsMapDateScope } from "@/components/actions/map/actions-map-filters.utils";
 
 type UseMapFeedDataParams = {
   types: ActionRecordType[] | "all";
   days: number;
+  dateScope: ActionsMapDateScope;
   statusFilter: ActionStatus | "all";
   impactFilter: ActionImpactLevel | "all";
   qualityMin: number;
   visibleCategories: Record<MarkerCategory, boolean>;
+  limit?: number;
 };
 
 export function useMapFeedData({
   types,
   days,
+  dateScope,
   statusFilter,
   impactFilter,
   qualityMin,
   visibleCategories,
+  limit = 120,
 }: UseMapFeedDataParams) {
   const serializedTypes = useMemo(
     () => (types === "all" ? "all" : [...new Set(types)].sort().join(",")),
@@ -41,26 +46,35 @@ export function useMapFeedData({
     () => [
       "actions-map",
       String(days),
+      dateScope,
       statusFilter,
       serializedTypes,
       impactFilter,
       String(qualityMin),
     ],
-    [days, statusFilter, serializedTypes, impactFilter, qualityMin],
+    [days, dateScope, statusFilter, serializedTypes, impactFilter, qualityMin],
   );
+
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<number | null>(null);
 
   const { data, error, isLoading, isValidating, mutate: reload } = useSWR(
     swrKey,
     () =>
       fetchMapActions({
         status: statusFilter,
-        days,
+        days: dateScope === "current_year" ? days : undefined,
+        floorDate: dateScope === "all_time" ? null : buildDateFloor(days),
         impact: impactFilter === "all" ? undefined : impactFilter,
         qualityMin: qualityMin > 0 ? qualityMin : undefined,
-        limit: 120,
+        limit,
         types,
       }),
-    swrRecentViewOptions,
+    {
+      ...swrRecentViewOptions,
+      onSuccess: () => {
+        setLastRefreshedAt(Date.now());
+      },
+    },
   );
 
   const allItems = useMemo(() => data?.items ?? [], [data?.items]);
@@ -85,14 +99,6 @@ export function useMapFeedData({
   const failedSources = data?.sourceHealth?.failedSources ?? [];
   const partialSourcesLabel = failedSources.length > 0 ? failedSources.join(", ") : "inconnues";
 
-  const [lastRefreshedAt, setLastRefreshedAt] = useState<number | null>(null);
-  
-  useEffect(() => {
-    if (data) {
-      setLastRefreshedAt(Date.now());
-    }
-  }, [data]);
-
   const freshnessLabel = useMemo(
     () => formatMapFreshnessLabel(lastRefreshedAt),
     [lastRefreshedAt],
@@ -100,6 +106,7 @@ export function useMapFeedData({
 
   return {
     data,
+    allItems,
     items,
     summary,
     error,
@@ -111,3 +118,5 @@ export function useMapFeedData({
     hasPartialSource: data?.partialSource ?? false,
   };
 }
+
+export type MapFeedDataState = ReturnType<typeof useMapFeedData>;

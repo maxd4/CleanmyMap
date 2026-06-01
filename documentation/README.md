@@ -19,6 +19,13 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 3. **Architecture** → Consulter **architecture/README.md** puis **architecture/master-architecture.md**
 4. **Code** → Consulter **development/README.md**
 
+### Guides IA utiles
+
+- **[ai-guides/SPEC_KIT_PLAYBOOK.md](./ai-guides/SPEC_KIT_PLAYBOOK.md)** - workflow Spec Kit adapte a CleanMyMap.
+- **[ai-guides/SPEC_KIT_ACTIONS.md](./ai-guides/SPEC_KIT_ACTIONS.md)** - liste d'actions derivee de la lecture de Spec Kit.
+- **[ai-guides/MATT_POCOCK_SKILLS_PLAYBOOK.md](./ai-guides/MATT_POCOCK_SKILLS_PLAYBOOK.md)** - workflow CleanMyMap pour les skills Matt Pocock, avec quand les utiliser et les commandes de check rapides reelles.
+- **[ai-guides/README.md](./ai-guides/README.md)** - porte d'entree des guides IA.
+
 ---
 
 ## 📁 Structure Documentation
@@ -29,6 +36,9 @@ documentation/
 ├── guide-de-demarrage.md        ⭐ Règles et contexte de session
 │
 ├── ai-guides/                   🤖 Guides spécifiques IA
+│   ├── SPEC_KIT_PLAYBOOK.md
+│   ├── SPEC_KIT_ACTIONS.md
+│   ├── MATT_POCOCK_SKILLS_PLAYBOOK.md
 │   ├── AI_MODULARIZATION_GUIDE.md
 │   └── AI_MODULARIZATION_CHEATSHEET.md
 │
@@ -71,8 +81,13 @@ documentation/
 │
 ├── features/                    🎮 Fonctionnalités
 │   ├── README.md
+│   ├── group-action.md
 │   ├── GAMIFICATION_ENGINE.md
 │   └── quiz-srs.md
+│
+├── specs/                       🧭 Spécifications structurées
+│   ├── README.md
+│   └── group-action/
 │
 ├── liberte-UX-UI/               🎨 Audits UX/UI
 │   └── [10 dossiers de blocs]
@@ -91,6 +106,8 @@ documentation/
 ## Règle de captures UX/UI
 
 Les captures d'écran canoniques des pages doivent être déposées dans le dossier `photo/desktop/` de la fiche route canonique sous `documentation/pages_site/routes/.../`, au format WebP. L’inventaire des pages et le statut de capture sont centralisés dans `documentation/pages_site/INDEX.md`. Le dossier `documentation/liberte-UX-UI/` reste un miroir legacy tant que la migration des scripts n'est pas terminée.
+
+Chaque page du site dispose de son propre sous-dossier dans `documentation/pages_site/routes/`. Ce sous-dossier contient les captures de la page complète, un markdown dédié aux exceptions UI de la page et un markdown de présentation qui explique le fonctionnement de la page et son rôle dans le parcours utilisateur.
 
 Jusqu'à nouvel ordre, seules les captures desktop sont produites. Les captures mobile restent documentées comme attendues, mais elles ne doivent pas être générées sans instruction explicite.
 

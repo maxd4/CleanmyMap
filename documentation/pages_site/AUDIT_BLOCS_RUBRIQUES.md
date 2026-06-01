@@ -86,7 +86,7 @@ Certains blocs ont plusieurs teintes directrices selon le type de page :
 - Auth & Onboarding (`/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`) → `auth`
 - Institutionnel & Légal (`/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`) → `legal`
 - Système & Utilitaires (`/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`) → `system`
-- Admin & Super-admin (`/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`) → `admin` et exposés depuis le bloc 01 pour les profils autorisés
+- Admin & Super-admin (`/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`) → `admin` et `max`; le bloc 01 expose `/pilotage` et `/sections/elus` au profil `admin`, tandis que `/admin/godmode` reste réservé au profil `max`
 - Print & Export (`/prints/report`) → `print`
 
 **Bloc "Cartographie & Impact"** :

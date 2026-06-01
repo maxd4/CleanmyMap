@@ -9,12 +9,15 @@ import {
   loadUserProgressionStats,
   syncUserActionProgression,
 } from "./progression-data";
+import { loadActionOrganizerIdsForAction } from "@/lib/actions/organizers";
 import type { ProgressionStatusPhase } from "./progression-types";
 import {
   toFloat,
   toIsoDate,
 } from "./progression-utils";
 import { awardPoints } from "./points/system";
+
+export { syncUserActionProgression } from "./progression-data";
 
 export async function refreshProgressionProfile(
   supabase: SupabaseClient,
@@ -108,18 +111,18 @@ export async function trackActionCreated(
   if (!isSpontaneousActionNotes(action.notes)) {
     return;
   }
-  
-  // Award initial points for action creation
-  await awardPoints(supabase, {
-    userId: params.userId,
-    xpEarned: 10,
-    sourceEvent: "action_created",
-    sourceId: action.id,
-    reason: "Action déclarée",
-  });
 
-  await syncUserActionProgression(supabase, params.userId);
-  await refreshProgressionProfile(supabase, params.userId);
+  const organizerIds = await loadActionOrganizerIdsForAction(
+    supabase,
+    action.id,
+    params.userId,
+  );
+  await Promise.all(
+    organizerIds.map(async (organizerId) => {
+      await syncUserActionProgression(supabase, organizerId);
+      await refreshProgressionProfile(supabase, organizerId);
+    }),
+  );
 }
 
 export async function trackActionValidationBonus(
@@ -134,17 +137,17 @@ export async function trackActionValidationBonus(
     return;
   }
 
-  // Award points for validation
-  await awardPoints(supabase, {
-    userId: action.created_by_clerk_id,
-    xpEarned: 25,
-    sourceEvent: "action_validated",
-    sourceId: action.id,
-    reason: "Action validée",
-  });
-
-  await syncUserActionProgression(supabase, action.created_by_clerk_id);
-  await refreshProgressionProfile(supabase, action.created_by_clerk_id);
+  const organizerIds = await loadActionOrganizerIdsForAction(
+    supabase,
+    action.id,
+    action.created_by_clerk_id,
+  );
+  await Promise.all(
+    organizerIds.map(async (organizerId) => {
+      await syncUserActionProgression(supabase, organizerId);
+      await refreshProgressionProfile(supabase, organizerId);
+    }),
+  );
 }
 
 export async function trackSpotCreated(

@@ -53,7 +53,8 @@ function dedupeRecords(records: RoleAccountRecord[]): RoleAccountRecord[] {
       if (role === "max") return 0;
       if (role === "admin") return 1;
       if (role === "elu") return 2;
-      return 3;
+      if (role === "entreprise") return 3;
+      return 4;
     };
     return (
       roleRank(a.roleLabel) - roleRank(b.roleLabel) ||

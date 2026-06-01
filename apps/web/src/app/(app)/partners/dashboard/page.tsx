@@ -1,19 +1,27 @@
 import { INITIAL_ANNUAIRE_ENTRIES } from "@/components/sections/rubriques/annuaire/seed-index";
 import { hasRecentActivity } from "@/components/sections/rubriques/annuaire-helpers";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
+import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { PublishedAnnuaireReviewPanel } from "@/components/partners/published-annuaire-review-panel";
 import { getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { countPartnerOnboardingRequests } from "@/lib/partners/onboarding-requests-store";
 import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
 import { canUseSupabaseServerPersistence } from "@/lib/persistence/runtime-store";
 import { getBlockClasses } from "@/lib/ui/block-accents";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 import { cn } from "@/lib/utils";
 import { Network, ShieldCheck, ClipboardCheck, Users, MapPin, AlertCircle } from "lucide-react";
 
 export default async function PartnersDashboardPage() {
-  const { userId } = await getSafeAuthSession();
+  const { userId, clerkReachable } = await getSafeAuthSession();
   const classes = getBlockClasses("network");
+  const pageFamily = resolvePageFamily("/partners/dashboard");
+  const accountCompletion = userId
+    ? await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null)
+    : null;
   const publishedEntries = await listPublishedPartnerAnnuaireEntries().catch(() => []);
   const currentRole = userId ? await getCurrentUserRoleLabel().catch(() => null) : null;
   
@@ -65,21 +73,24 @@ export default async function PartnersDashboardPage() {
 
   const page = (
     <div className="w-full max-w-7xl mx-auto space-y-10 pb-20">
-      {/* Premium Header */}
-      <header className="space-y-6 pt-10">
-        <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full border border-slate-400/20 bg-slate-400/5">
-          <Network size={14} className="text-slate-400 animate-pulse" />
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400/60">Pilotage Réseau</span>
-        </div>
-        <div className="space-y-4">
-          <h1 className="text-6xl md:text-7xl font-black text-white tracking-tighter leading-tight">
-            Gouvernance <br/>des Partenariats
-          </h1>
-          <p className="text-xl text-slate-100/40 max-w-2xl font-medium leading-relaxed">
-            Suivi des demandes d&apos;onboarding, modération des fiches et analyse de la couverture territoriale.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        family={pageFamily}
+        eyebrow="Pilotage réseau"
+        title="Gouvernance des partenariats"
+        subtitle="Suivi des demandes d'onboarding, modération des fiches et analyse de la couverture territoriale."
+        badges={
+          <>
+            <PageHeaderBadge family={pageFamily}>
+              <Network size={12} className="mr-2 inline-block align-[-2px] animate-pulse" />
+              Réseau actif
+            </PageHeaderBadge>
+            <PageHeaderBadge family={pageFamily} muted>
+              Fiches et demandes
+            </PageHeaderBadge>
+          </>
+        }
+        className="pt-10"
+      />
 
       {/* Stats Grid */}
       <section className="grid grid-cols-2 gap-6 md:grid-cols-4 lg:grid-cols-5">
@@ -162,8 +173,10 @@ export default async function PartnersDashboardPage() {
       mode="disabled"
       title="Pilotage réseau"
       description="Cette vue reste lisible, mais les actions demandent une connexion."
-  >
-      {page}
+    >
+      <AccountCompletionGate state={accountCompletion}>
+        {page}
+      </AccountCompletionGate>
     </ClerkRequiredGate>
   );
 }

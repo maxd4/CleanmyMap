@@ -11,6 +11,7 @@ export type Role =
   | "benevole"
   | "coordinateur"
   | "scientifique"
+  | "entreprise"
   | "elu"
   | "admin"
   | "max";
@@ -55,7 +56,7 @@ export const DOMAIN_GLOSSARY: Record<
   | "effective_access",
   string
 > = {
-  role: "Attribution metier d'un utilisateur (benevole, coordinateur, scientifique, elu, admin, max / IMU).",
+  role: "Attribution metier d'un utilisateur (benevole, coordinateur, scientifique, entreprise, elu, admin, max / IMU).",
   parcours:
     "Projection UX du role dans la navigation, sans dupliquer les pages.",
   espace:

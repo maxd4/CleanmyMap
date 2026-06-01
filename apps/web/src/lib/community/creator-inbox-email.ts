@@ -4,7 +4,6 @@ import {
   resolveEmailFrom,
   resolveEmailReplyTo,
 } from "@/lib/email-config";
-import { getResendClient } from "@/lib/services/resend";
 import { sendEmail } from "@/lib/services/email";
 
 function escapeHtml(value: string): string {
@@ -40,12 +39,12 @@ export async function sendCreatorInboxEmail(params: {
   footer?: string;
   extraRecipients?: string[];
   actorUserId?: string | null;
+  replyTo?: string;
   meta?: Record<string, unknown>;
 }): Promise<boolean> {
-  const resend = getResendClient();
   const from = resolveEmailFrom();
   const to = resolveCreatorInboxRecipients(params.extraRecipients);
-  if (!resend || !from || to.length === 0) {
+  if (!from || to.length === 0) {
     return false;
   }
 
@@ -64,7 +63,7 @@ export async function sendCreatorInboxEmail(params: {
   await sendEmail({
     to,
     from,
-    replyTo: resolveCreatorReplyTo(),
+    replyTo: params.replyTo?.trim() || resolveCreatorReplyTo(),
     subject: params.subject,
     html,
     actorUserId: params.actorUserId ?? null,

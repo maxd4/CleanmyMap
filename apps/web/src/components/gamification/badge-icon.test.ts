@@ -11,6 +11,7 @@ describe("badge icon mapping", () => {
  expect(getGamificationBadgeIconName("Sentinelle Exemplaire")).toBe(
 "badge-check",
  );
+ expect(getGamificationBadgeIconName("Première trace utile")).toBe("badge-check");
  });
 
  it("maps account badge keys to pictograms", () => {

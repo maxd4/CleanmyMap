@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -28,15 +28,19 @@ vi.mock("@/config/gamification.config", () => ({
 }));
 
 describe("POST /api/gamification/badges/:userId/increment", () => {
+  let routeModule: Awaited<typeof import("./route")>;
+
+  beforeAll(async () => {
+    routeModule = await import("./route");
+  });
+
   beforeEach(() => {
-    vi.resetModules();
     vi.clearAllMocks();
   });
 
   it("returns 401 when unauthenticated", async () => {
     authMock.mockResolvedValue({ userId: null });
-    const { POST } = await import("./route");
-    const res = await POST(
+    const res = await routeModule.POST(
       new Request("http://localhost", {
         method: "POST",
         body: JSON.stringify({ type: "dechets", amount: 10 }),
@@ -48,8 +52,7 @@ describe("POST /api/gamification/badges/:userId/increment", () => {
 
   it("returns 422 on invalid body", async () => {
     authMock.mockResolvedValue({ userId: "user-1" });
-    const { POST } = await import("./route");
-    const res = await POST(
+    const res = await routeModule.POST(
       new Request("http://localhost", {
         method: "POST",
         body: JSON.stringify({ type: "dechets", amount: -1 }),
@@ -106,8 +109,7 @@ describe("POST /api/gamification/badges/:userId/increment", () => {
     };
     getSupabaseServerClientMock.mockReturnValue(supabaseMock);
 
-    const { POST } = await import("./route");
-    const res = await POST(
+    const res = await routeModule.POST(
       new Request("http://localhost", {
         method: "POST",
         body: JSON.stringify({ type: "dechets", amount: 10 }),
@@ -124,4 +126,3 @@ describe("POST /api/gamification/badges/:userId/increment", () => {
     expect(body.totals).toEqual({ wasteKg: 15, butts: 0 });
   });
 });
-

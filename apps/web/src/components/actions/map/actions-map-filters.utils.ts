@@ -6,9 +6,11 @@ import {
 
 export const ACTIONS_MAP_FILTERS_STORAGE_KEY = "cmm_actions_map_filters";
 export type ActionsMapStatusFilter = ActionStatus | "all";
+export type ActionsMapDateScope = "current_year" | "all_time";
 
 export type ActionsMapFilters = {
   days: number;
+  dateScope: ActionsMapDateScope;
   statusFilter: ActionsMapStatusFilter;
   impactFilter: ActionImpactLevel | "all";
   qualityMin: number;
@@ -18,6 +20,10 @@ export type ActionsMapFilters = {
 const VALID_STATUSES = new Set<ActionsMapStatusFilter>([
   "all",
   "approved",
+]);
+const VALID_DATE_SCOPES = new Set<ActionsMapDateScope>([
+  "current_year",
+  "all_time",
 ]);
 
 const VALID_IMPACTS = new Set<ActionImpactLevel | "all">([
@@ -64,6 +70,7 @@ export function buildDefaultActionsMapFilters(
 ): ActionsMapFilters {
   return {
     days: clampInteger(initialDays, 1, 3650, 90),
+    dateScope: "current_year",
     statusFilter: "approved",
     impactFilter: "all",
     qualityMin: 0,
@@ -80,12 +87,20 @@ export function normalizeActionsMapFilters(
     value && typeof value === "object"
       ? (value as Partial<ActionsMapFilters>)
       : {};
+  const legacyDays = clampInteger(source.days, 1, 3650, defaults.days);
+  const explicitDateScope = source.dateScope;
+  const normalizedDateScope =
+    typeof explicitDateScope === "string"
+      ? VALID_DATE_SCOPES.has(explicitDateScope)
+        ? explicitDateScope
+        : defaults.dateScope
+      : legacyDays >= 3650
+        ? "all_time"
+        : defaults.dateScope;
 
   return {
-    days: (() => {
-      const normalizedDays = clampInteger(source.days, 1, 3650, defaults.days);
-      return normalizedDays === 90 ? defaults.days : normalizedDays;
-    })(),
+    days: defaults.days,
+    dateScope: normalizedDateScope,
     statusFilter: VALID_STATUSES.has(source.statusFilter ?? "all")
       ? ((source.statusFilter === "all" ? "approved" : source.statusFilter) as ActionsMapStatusFilter)
       : defaults.statusFilter,

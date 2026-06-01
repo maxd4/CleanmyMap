@@ -24,6 +24,7 @@ export {
 
 export {
   refreshProgressionProfile,
+  syncUserActionProgression,
   trackActionCreated,
   trackActionValidationBonus,
   trackSpotCreated,

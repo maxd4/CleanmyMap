@@ -2,6 +2,7 @@ import { Navigation, MapPin, History, FilePlus2 } from "lucide-react";
 import { RouteSection } from "@/components/sections/rubriques/route-section";
 import { WeatherWarningBar } from "@/components/ui/weather-warning-bar";
 import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 
@@ -23,54 +24,74 @@ export default function RoutePage() {
       </div>
 
       <div className="relative mx-auto flex w-full max-w-7xl flex-col gap-10">
-        <header className="space-y-6 pt-4">
-          <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.4em] text-emerald-400/60">
-            <Navigation className="h-4 w-4" />
-            Bloc Agir
-          </p>
-          <div className="max-w-4xl space-y-4">
-            <h1 className="text-6xl md:text-7xl font-black leading-[1.02] tracking-tighter text-white">
-              Itinéraire IA
-            </h1>
-            <p className="max-w-2xl text-lg leading-relaxed text-emerald-100/40 font-medium">
-              Décidez vite où agir aujourd&apos;hui avec le temps disponible, la
-              météo, l&apos;accessibilité et le niveau d&apos;impact prioritaire.
-            </p>
-          </div>
-
-          <CmmButtonGroup>
-            <CmmButton
-              href="/actions/new"
-              tone="secondary"
-              variant="pill"
-              size="lg"
-              className={cn("px-8 py-5 rounded-[2rem] transition-all duration-300 hover:scale-[1.02]", classes.surface, classes.borderStrong)}
-            >
-              <FilePlus2 className="h-4 w-4 text-emerald-400" />
-              <span className="text-xs font-black uppercase tracking-widest">Déclarer une action</span>
-            </CmmButton>
-            <CmmButton 
-              href="/actions/map" 
-              tone="secondary" 
-              variant="pill" 
-              size="lg"
-              className={cn("px-8 py-5 rounded-[2rem] transition-all duration-300 hover:scale-[1.02] bg-white/5 border-white/5")}
-            >
-              <MapPin className="h-4 w-4 text-emerald-400/60" />
-              <span className="text-xs font-black uppercase tracking-widest text-white/60">Carte des actions</span>
-            </CmmButton>
-            <CmmButton 
-              href="/actions/history" 
-              tone="secondary" 
-              variant="pill" 
-              size="lg"
-              className={cn("px-8 py-5 rounded-[2rem] transition-all duration-300 hover:scale-[1.02] bg-white/5 border-white/5")}
-            >
-              <History className="h-4 w-4 text-emerald-400/60" />
-              <span className="text-xs font-black uppercase tracking-widest text-white/60">Historique</span>
-            </CmmButton>
-          </CmmButtonGroup>
-        </header>
+        <PageHeader
+          tone="emerald"
+          contrast="inverse"
+          eyebrow={
+            <span className="inline-flex items-center gap-2">
+              <Navigation className="h-4 w-4" />
+              Bloc Agir
+            </span>
+          }
+          title="Itinéraire IA"
+          subtitle="Décidez vite où agir aujourd’hui avec le temps disponible, la météo, l’accessibilité et l’impact prioritaire."
+          badges={
+            <>
+              <PageHeaderBadge tone="emerald" contrast="inverse">Agir</PageHeaderBadge>
+              <PageHeaderBadge tone="emerald" contrast="inverse" muted>
+                Itinéraire
+              </PageHeaderBadge>
+            </>
+          }
+          action={
+            <CmmButtonGroup>
+              <CmmButton
+                href="/actions/new"
+                tone="secondary"
+                variant="pill"
+                size="lg"
+                className={cn(
+                  "rounded-[2rem] px-8 py-5 transition-all duration-300 hover:scale-[1.02]",
+                  classes.surface,
+                  classes.borderStrong,
+                )}
+              >
+                <FilePlus2 className="h-4 w-4 text-emerald-400" />
+                <span className="text-xs font-black uppercase tracking-widest">
+                  Déclarer une action
+                </span>
+              </CmmButton>
+              <CmmButton
+                href="/actions/map"
+                tone="secondary"
+                variant="pill"
+                size="lg"
+                className={cn(
+                  "rounded-[2rem] px-8 py-5 transition-all duration-300 hover:scale-[1.02] bg-white/5 border-white/5",
+                )}
+              >
+                <MapPin className="h-4 w-4 text-emerald-400/60" />
+                <span className="text-xs font-black uppercase tracking-widest text-white/60">
+                  Carte des actions
+                </span>
+              </CmmButton>
+              <CmmButton
+                href="/actions/history"
+                tone="secondary"
+                variant="pill"
+                size="lg"
+                className={cn(
+                  "rounded-[2rem] px-8 py-5 transition-all duration-300 hover:scale-[1.02] bg-white/5 border-white/5",
+                )}
+              >
+                <History className="h-4 w-4 text-emerald-400/60" />
+                <span className="text-xs font-black uppercase tracking-widest text-white/60">
+                  Historique
+                </span>
+              </CmmButton>
+            </CmmButtonGroup>
+          }
+        />
 
         <WeatherWarningBar />
 

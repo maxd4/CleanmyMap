@@ -6,6 +6,7 @@ import { createActionSchema } from"@/lib/validation/action";
 import { createAction } from"@/lib/actions/store";
 import { getCurrentUserIdentity, pickTraceableActorName } from"@/lib/authz";
 import { toActionListItem } from"@/lib/actions/data-contract";
+import { resolveActionOrganizers } from"@/lib/actions/organizers";
 import {
  fetchUnifiedActionContracts,
  parseEntityTypesParam,
@@ -205,11 +206,51 @@ export async function POST(request: Request) {
  try {
  const supabase = getSupabaseServerClient();
  const identity = await getCurrentUserIdentity();
+ const resolvedIdentity = identity ?? {
+  displayName: userId,
+  handle: userId,
+  username: userId,
+  email: null,
+ };
  const actorName = pickTraceableActorName(identity, parsed.data.actorName);
  const normalizedPayload = {
   ...parsed.data,
   actorName,
  };
+ const isSpontaneousAction =
+  normalizedPayload.recordType === "action" &&
+  normalizedPayload.associationName === "Action spontanée";
+ const organizerAccounts = normalizedPayload.organizerAccounts ?? [];
+ if (!isSpontaneousAction && organizerAccounts.length === 0 && normalizedPayload.recordType === "action") {
+  return validationErrorResponse({
+    organizerAccounts: [
+      "Renseignez au moins un compte organisateur pour attribuer les récompenses de création.",
+    ],
+  });
+ }
+ const organizerResolution =
+  normalizedPayload.recordType === "action"
+    ? await resolveActionOrganizers({
+        supabase,
+        creator: {
+          userId,
+          displayName: resolvedIdentity.displayName,
+          handle: resolvedIdentity.handle,
+          username: resolvedIdentity.username,
+          email: resolvedIdentity.email,
+        },
+        organizerAccounts: isSpontaneousAction ? [] : organizerAccounts,
+        includeCreatorAsPrimary: isSpontaneousAction,
+      })
+    : { organizers: [], unresolvedTokens: [] as string[] };
+
+ if (organizerResolution.unresolvedTokens.length > 0) {
+  return validationErrorResponse({
+    organizerAccounts: [
+      `Comptes organisateurs introuvables: ${organizerResolution.unresolvedTokens.join(", ")}`,
+    ],
+  });
+ }
 
  if (normalizedPayload.recordType === "clean_place" || normalizedPayload.recordType === "spot") {
  const label = normalizedPayload.locationLabel.trim();
@@ -267,6 +308,7 @@ emitSpotCreated({
 const created = await createAction(supabase, {
     userId,
     payload: normalizedPayload,
+    organizers: organizerResolution.organizers,
   });
 
   emitActionCreated({

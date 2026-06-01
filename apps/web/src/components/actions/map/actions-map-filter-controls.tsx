@@ -4,6 +4,7 @@ import { RotateCcw, SlidersHorizontal } from "lucide-react";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
 import type {
   ActionsMapFilters,
+  ActionsMapDateScope,
   ActionsMapStatusFilter,
 } from "./actions-map-filters.utils";
 
@@ -24,8 +25,7 @@ const CATEGORY_LABELS: Array<{ value: MarkerCategory; label: string }> = [
 
 type ActionsMapFilterControlsProps = {
   filters: ActionsMapFilters;
-  initialDays: number;
-  onDaysChange: (days: number) => void;
+  onDateScopeChange: (dateScope: ActionsMapDateScope) => void;
   onStatusChange: (status: ActionsMapStatusFilter) => void;
   onCategoryToggle: (category: MarkerCategory) => void;
   onReset: () => void;
@@ -33,8 +33,7 @@ type ActionsMapFilterControlsProps = {
 
 export function ActionsMapFilterControls({
   filters,
-  initialDays,
-  onDaysChange,
+  onDateScopeChange,
   onStatusChange,
   onCategoryToggle,
   onReset,
@@ -46,12 +45,14 @@ export function ActionsMapFilterControls({
           Période
         </span>
         <select
-          value={String(filters.days)}
-          onChange={(event) => onDaysChange(Number(event.target.value))}
+          value={filters.dateScope}
+          onChange={(event) =>
+            onDateScopeChange(event.target.value as ActionsMapDateScope)
+          }
           className="h-11 rounded-2xl border border-sky-200/80 bg-white px-3 text-sm font-bold text-slate-950 shadow-[0_10px_28px_-18px_rgba(14,165,233,0.16)] outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/12"
         >
-          <option value={String(initialDays)}>Année en cours</option>
-          <option value="3650">Historique complet</option>
+          <option value="current_year">Année en cours</option>
+          <option value="all_time">Depuis la création</option>
         </select>
       </label>
 

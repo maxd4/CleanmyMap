@@ -58,6 +58,66 @@
 
 ---
 
+## En-tête canonique des pages
+
+**Règle obligatoire :**
+- tout titre principal de page visible doit utiliser `PageHeader`
+- `PageHero` reste un alias de compatibilité pour les pages héritées, sans nouvelle variante de taille
+- toute nouvelle page avec une UI visible doit passer par `PageHeader`
+- les sous-titres doivent rester courts, lisibles et non exhaustifs
+- les majuscules décoratives sont interdites sauf eyebrow très court
+
+**Props autorisées**
+
+| Prop | Obligatoire | Rôle |
+|---|---:|---|
+| `title` | oui | titre principal de la page |
+| `eyebrow` | non | repère court au-dessus du titre |
+| `subtitle` | non | sous-titre bref et lisible |
+| `badge` | non | badge unique ou courte étiquette |
+| `badges` | non | rangée de badges |
+| `action` | non | action contextuelle du header |
+| `align` | non | `left` par défaut, `center` uniquement si documenté |
+| `family` | non | source de vérité prioritaire quand la page appartient à une famille de bloc |
+| `tone` | non | fallback pour les surfaces autonomes sans famille résolue |
+| `className` | non | ajustement de layout strictement local |
+| `badgesClassName` | non | ajustement local des badges |
+| `actionClassName` | non | ajustement local de l'action |
+
+**Tons disponibles dans `PageHeader`**
+
+| Tone | Usage canonique |
+|---|---|
+| `emerald` | pages Agir |
+| `sky` | pages Cartographie |
+| `red` | pages Impact |
+| `pink` | pages Réseau / discussion |
+| `indigo` | pages partenaires / surfaces relationnelles |
+| `yellow` | pages Apprendre |
+| `slate` | surfaces système, légales ou neutres |
+| `stone` | fallback neutre par défaut |
+
+**Couleurs par bloc**
+
+| Bloc / famille | Couleur canonique à lire via `family` | Remarque |
+|---|---|---|
+| Accueil & Pilotage | `amber` / `orange` pour l'accueil, `amber` / `brun` pour le pilotage | utiliser `family` plutôt que `tone` |
+| Agir | `emerald` | blocs terrain |
+| Cartographie & Impact | `sky` pour la cartographie, `red` / `rose` pour l'impact | `/methodologie` reste rattachée à l'impact |
+| Réseau & Discussions | `pink` / `indigo` | `pink` pour discussion, `indigo` pour partenaires |
+| Apprendre | `yellow` / `amber` | fond jaune, cartes soleil/ambre |
+| Familles autonomes | `slate`, `stone` ou palette dédiée | auth, legal, system, admin, print |
+
+**Règle de mise en page**
+- même taille de h1 partout
+- même graisse
+- même largeur maximale
+- même espacement entre eyebrow, titre et sous-titre
+- même marge basse après header
+- alignement centré seulement pour les landings et dashboards explicitement documentés
+
+---
+
 ## 01 — Bloc Accueil & Pilotage · Orange + brun (combinés)
 
 ```
@@ -217,6 +277,7 @@ bg-gradient-to-r from-[accent-500] via-[accent-400] to-[accent-300]  /* 3px */
 
 ## Règles pour agents IA
 
+- **En-tête canonique** : utiliser `PageHeader` comme composant de référence pour les titres/sous-titres de page. `PageHero` reste un alias de compatibilité et ne doit plus introduire de variantes de taille.
 1. **Fond de page** : teinte claire/lumineuse de la couleur du bloc — jamais neutre ou gris
 2. **Cartes** : fond sombre teinté, `backdrop-blur-xl`, bordure `[accent]-200/18`
 3. **Titres / chiffres** : `text-[accent]-100`, `font-black`

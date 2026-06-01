@@ -21,6 +21,11 @@ Core required:
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - `NEXT_PUBLIC_CLERK_PROXY_URL` only if you intentionally route Clerk through the app proxy path `/__clerk` (otherwise leave it empty and use the direct Clerk frontend API domain)
 - `CLERK_SECRET_KEY`
+- `CLERK_DOMAIN=auth.cleanmymap.fr` for the Vercel-managed Clerk production domain
+
+Google OAuth is configured in the Clerk Dashboard, not in repo env files. For the Live instance, keep the Google `Client ID` / `Client Secret` in Clerk and use:
+
+- `https://clerk.auth.cleanmymap.fr/v1/oauth_callback`
 
 Localhost dev profile:
 
@@ -178,6 +183,7 @@ curl -X POST http://localhost:3000/api/send \
 - `SENTRY_RELEASE` can be pinned manually; otherwise the Vercel commit SHA is used when available.
 - Standard Clerk mode uses `CLERK_DOMAIN=auth.cleanmymap.fr` and no app proxy.
 - Proxy mode is optional and only applies when `NEXT_PUBLIC_CLERK_PROXY_URL=/__clerk` is explicitly set.
+- If Google OAuth was recently rotated in Clerk, do not mirror the Google credentials in this repo; only refresh them in Clerk Dashboard and redeploy if needed.
 - Local verification:
   - Run `npm run dev`, open the app, then trigger a tracked action (e.g. navigation click).
   - If `localhost:3000` is already taken, the dev launcher automatically uses the next free port so you can keep another local session open at the same time.

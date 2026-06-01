@@ -7,6 +7,7 @@ type ActionDeclarationIdentitySectionProps = {
  onActorNameChange: (value: string) => void;
  onAssociationNameChange: (value: string) => void;
  onEnterpriseNameChange: (value: string) => void;
+ onOrganizerAccountsChange: (value: string) => void;
  onActionDateChange: (value: string) => void;
 };
 
@@ -16,6 +17,7 @@ export function ActionDeclarationIdentitySection({
  onActorNameChange,
  onAssociationNameChange,
  onEnterpriseNameChange,
+ onOrganizerAccountsChange,
  onActionDateChange,
 }: ActionDeclarationIdentitySectionProps) {
  return (
@@ -36,12 +38,15 @@ export function ActionDeclarationIdentitySection({
  <div className="grid gap-4 md:grid-cols-2">
  <ActionDeclarationIdentityFields
  resolvedActorOptions={resolvedActorOptions}
+ recordType={form.recordType}
  actorName={form.actorName}
  associationName={form.associationName}
  enterpriseName={form.enterpriseName}
+ organizerAccounts={form.organizerAccounts}
  onActorNameChange={onActorNameChange}
  onAssociationNameChange={onAssociationNameChange}
  onEnterpriseNameChange={onEnterpriseNameChange}
+ onOrganizerAccountsChange={onOrganizerAccountsChange}
  />
 
  <label className="flex flex-col gap-2 cmm-text-small font-bold cmm-text-secondary">

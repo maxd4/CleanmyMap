@@ -1,4 +1,4 @@
-# Mon espace
+# Dashboard
 
 ## Fiche canonique
 
@@ -9,15 +9,15 @@
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Centraliser la synthèse, le pilotage et les réglages personnels dans une seule page de référence.
-- **Action principale attendue** : Consulter l'état du compte, arbitrer une action ou ajuster ses paramètres.
+- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
+- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
 - **Palette attendue** : amber / orange
-- **Scope** : terminé
-- **Terminée** : oui
-- **Couleurs actuellement détectées** : amber/orange chaud — surfaces sombres, fond chaud, accents amber
-- **Incohérences de couleurs** : plus d'incohérence structurante détectée sur la famille visuelle ciblée.
-- **Risque de conflit avec les couleurs existantes** : faible : la logique warm doit rester distincte des blocs d'impact rouge et des blocs réseau/pink.
-- **Niveau de surcharge textuelle** : moyen
+- **Scope** : à corriger
+- **Terminée** : non
+- **Couleurs actuellement détectées** : amber — canvas #fff2df, halo rgba(249, 115, 22, 0.26)
+- **Incohérences de couleurs** : Aucune incohérence de couleur détectée avec la règle actuelle.
+- **Risque de conflit avec les couleurs existantes** : moyen : la frontière rouge doit rester nette pour éviter la confusion avec les blocs d'impact et d'alerte.
+- **Niveau de surcharge textuelle** : fort
 - **Textes à conserver** :
 - Titre de page
 - cartes métriques
@@ -27,7 +27,7 @@
 - Rappels redondants
 - badges de contexte répétés
 - blocs d'aide trop verbeux
-- **Bulles / cartes / contextes trop nombreux** : Densité mieux maîtrisée, mais certains textes d'accompagnement peuvent encore être resserrés au fil des itérations.
+- **Bulles / cartes / contextes trop nombreux** : Le bloc mélange des cartes de lecture et des CTA, la densité doit rester maîtrisée.
 - **Composants UI concernés** :
 - Titre
 - cards métriques
@@ -35,7 +35,7 @@
 - nav secondaire
 - sidebar / ribbon
 - **Captures attendues** : desktop, mobile
-- **Priorité de correction** : faible
+- **Priorité de correction** : moyenne
 
 
 ## États à documenter
@@ -55,6 +55,5 @@
 
 ## Notes d'audit
 
-- Cette fiche est la source de vérité canonique pour la page `Mon espace` fusionnée avec les informations de profil.
-- Le chemin `/profil` est désormais un alias de compatibilité qui redirige vers `/dashboard`.
+- Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

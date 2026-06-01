@@ -5,7 +5,8 @@ describe("cycleRoleForSelfService", () => {
   it("cycles only through the self-service roles", () => {
     expect(cycleRoleForSelfService("benevole")).toBe("coordinateur");
     expect(cycleRoleForSelfService("coordinateur")).toBe("scientifique");
-    expect(cycleRoleForSelfService("scientifique")).toBe("benevole");
+    expect(cycleRoleForSelfService("scientifique")).toBe("entreprise");
+    expect(cycleRoleForSelfService("entreprise")).toBe("benevole");
   });
 });
 

@@ -95,6 +95,7 @@ export default async function OnboardingPage({
 
           <AccountSetupForm
             nextPath={nextPath}
+            submitMode="navigate"
             initialProfile={profile}
             clerkReachable={clerkReachable}
             isLocalHost={isLocalHost}

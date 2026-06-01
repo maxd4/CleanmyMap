@@ -9,8 +9,8 @@
 - **Famille / bloc fonctionnel** : Admin & Super-admin (hors bloc)
 - **Statut** : technique
 - **Contexte nécessaire** : Compte connecté, parfois rôle technique ou de supervision
-- **Objectif utilisateur principal** : Piloter les réglages avancés, la modération et la supervision du site.
-- **Action principale attendue** : Consulter un panneau d'administration ou agir sur une ressource du site.
+- **Objectif utilisateur principal** : Piloter les réglages avancés, la modération et la supervision.
+- **Action principale attendue** : Consulter un panneau d'administration ou agir sur une ressource.
 - **Palette attendue** : amber / brun sombre
 - **Scope** : à corriger
 - **Terminée** : non
@@ -47,5 +47,4 @@
 ## Notes d'audit
 
 - Cette fiche est la source de vérité canonique pour la page.
-- La page est exposée depuis le bloc 01 pour les profils autorisés, mais son audit canonique reste dans la famille technique.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

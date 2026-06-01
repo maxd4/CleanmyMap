@@ -21,6 +21,7 @@ describe("actions map filters utils", () => {
   it("builds safe defaults", () => {
     const filters = buildDefaultActionsMapFilters(120);
     expect(filters.days).toBe(120);
+    expect(filters.dateScope).toBe("current_year");
     expect(filters.statusFilter).toBe("approved");
     expect(filters.impactFilter).toBe("all");
     expect(filters.qualityMin).toBe(0);
@@ -39,12 +40,29 @@ describe("actions map filters utils", () => {
       90,
     );
 
-    expect(filters.days).toBe(3650);
+    expect(filters.days).toBe(90);
+    expect(filters.dateScope).toBe("all_time");
     expect(filters.statusFilter).toBe("approved");
     expect(filters.impactFilter).toBe("all");
     expect(filters.qualityMin).toBe(0);
     expect(filters.visibleCategories.blue).toBe(false);
     expect(filters.visibleCategories.green).toBe(true);
+  });
+
+  it("normalizes explicit time scope values", () => {
+    const allTime = normalizeActionsMapFilters(
+      { dateScope: "all_time", days: 24 },
+      90,
+    );
+    expect(allTime.dateScope).toBe("all_time");
+    expect(allTime.days).toBe(90);
+
+    const currentYear = normalizeActionsMapFilters(
+      { dateScope: "current_year", days: 24 },
+      90,
+    );
+    expect(currentYear.dateScope).toBe("current_year");
+    expect(currentYear.days).toBe(90);
   });
 
   it("normalizes legacy all or rejected status filters to approved", () => {
@@ -72,6 +90,7 @@ describe("actions map filters utils", () => {
     const filters = normalizeActionsMapFilters(
       {
         days: 3650,
+        dateScope: "all_time",
         statusFilter: "pending",
         impactFilter: "critique",
         qualityMin: 70,

@@ -1,3 +1,5 @@
+"use client";
+
 import type { ActionQualityGrade } from"@/lib/actions/quality";
 import type { AdminWorkflowController } from"./types";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";

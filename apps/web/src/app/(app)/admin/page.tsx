@@ -12,10 +12,12 @@ import { BusinessAlertsPanel } from"@/components/dashboard/business-alerts-panel
 import { CreatorInboxPanel } from"@/components/admin/creator-inbox-panel";
 import { RoleManagementPanel } from"@/components/admin/role-management-panel";
 import { RolePrimaryActions } from"@/components/navigation/role-primary-actions";
+import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 
 import { ThirtySecondsSummary } from"@/components/pilotage/thirty-seconds-summary";
 import { ActionsReportPanel } from"@/components/reports/actions-report-panel";
 import { ClerkRequiredGate } from"@/components/ui/clerk-required-gate";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { RubriquePdfExportButton } from"@/components/ui/rubrique-pdf-export-button";
 import { listAdminOperationAudit } from"@/lib/admin/operation-audit";
 import { listManagedRoleAccounts } from"@/lib/admin/role-management";
@@ -32,6 +34,8 @@ import { NavigationGrid, type NavigationGridItem } from"@/components/ui/navigati
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { RubriqueCard } from "@/components/ui/rubrique-card";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
+import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export const metadata: Metadata = {
   title: 'Administration du site - CleanMyMap',
@@ -48,7 +52,7 @@ async function loadAdminOverview() {
 }
 
 export default async function AdminPage() {
-  const { userId } = await getSafeAuthSession();
+  const { userId, clerkReachable } = await getSafeAuthSession();
   const locale = await getServerLocale();
 
   if (!userId) {
@@ -82,9 +86,13 @@ export default async function AdminPage() {
     );
   }
 
+  const accountCompletion = userId
+    ? await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null)
+    : null;
   const role = await getCurrentUserRoleLabel();
   const profile = toProfile(role);
   const primaryAction = getProfilePrimaryAction(profile);
+  const pageFamily = resolvePageFamily("/admin");
 
   if (!isAdminLikeProfile(profile)) {
     return (
@@ -94,9 +102,9 @@ export default async function AdminPage() {
             <ShieldCheck size={32} />
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400/60">Accès Restreint</p>
-          <h1 className="mt-4 text-4xl font-black tracking-tight text-white">
+          <h2 className="mt-4 text-4xl font-black tracking-tight text-white">
             Privilèges d'administration du site requis
-          </h1>
+          </h2>
           <p className="mt-4 text-sm text-amber-100/40 max-w-md mx-auto leading-relaxed">
             Votre compte actuel ne dispose pas des autorisations nécessaires pour accéder au pilotage système. Contactez un administrateur Clerk.
           </p>
@@ -270,13 +278,41 @@ export default async function AdminPage() {
   ];
 
   return (
-    <SectionShell
-      id="admin"
-      title="Administration du site"
-      subtitle="Console centrale pour la supervision des flux, la modération et la gestion des privilèges."
-      gradient="from-amber-700/20 via-stone-500/10 to-transparent"
-    >
-      <div className="space-y-20 pt-8">
+    <AccountCompletionGate state={accountCompletion}>
+      <SectionShell
+        id="admin"
+        hideHeader
+        gradient="from-amber-700/20 via-stone-500/10 to-transparent"
+      >
+        <div className="space-y-20 pt-8">
+        <PageHeader
+          family={pageFamily}
+          eyebrow="Back-office central"
+          title="Administration du site"
+          subtitle="Console centrale pour la supervision des flux, la modération et la gestion des privilèges."
+          badges={
+            <>
+              <PageHeaderBadge family={pageFamily}>
+                <Zap size={12} className="mr-2 inline-block align-[-2px]" />
+                Console active
+              </PageHeaderBadge>
+              <PageHeaderBadge family={pageFamily} muted>
+                Rôle: {role}
+              </PageHeaderBadge>
+            </>
+          }
+          action={
+            <RubriquePdfExportButton
+              rubrique="administration-du-site"
+              periode={`30_jours_${new Date().getFullYear()}`}
+              organizationType="admin"
+              defaultTitle="Rapport administration du site"
+              data={adminPdfData}
+              className="w-full max-w-xl"
+            />
+          }
+          className="max-w-5xl"
+        />
         
         {/* Résumé Décisionnel (ThirtySecondsSummary) */}
         {overview && (
@@ -290,21 +326,6 @@ export default async function AdminPage() {
             recommendedReason={overview.summary.recommendedAction.reason}
           />
         )}
-
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex items-center gap-3 px-6 py-2.5 rounded-full border border-amber-400/20 bg-amber-400/5 backdrop-blur-md">
-            <Zap size={14} className="text-amber-400 animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-amber-400">Console Active</span>
-          </div>
-          <RubriquePdfExportButton
-            rubrique="administration-du-site"
-            periode={`30_jours_${new Date().getFullYear()}`}
-            organizationType="admin"
-            defaultTitle="Rapport administration du site"
-            data={adminPdfData}
-            className="w-full max-w-xl"
-          />
-        </div>
 
         {/* Navigation Grid Premium */}
         <RubriqueCard themeColor="amber" withTopBar={true} topBarContent="Administration du site" className="p-12">
@@ -384,7 +405,8 @@ export default async function AdminPage() {
           <RolePrimaryActions profile={profile} tone="dark" />
         </div>
 
-      </div>
-    </SectionShell>
+        </div>
+      </SectionShell>
+    </AccountCompletionGate>
   );
 }

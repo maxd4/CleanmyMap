@@ -11,42 +11,118 @@ import {
  Info, 
  DownloadCloud 
 } from"lucide-react";
+import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { type NavigationGridItem } from"@/components/ui/navigation-grid";
 import { getCurrentUserRoleLabel } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
+import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { isFeatureEnabled } from"@/lib/feature-flags";
-import { getActionOperationalContext, type ActionDataContract } from"@/lib/actions/data-contract";
+import { getActionOperationalContext, toActionListItem, type ActionDataContract } from"@/lib/actions/data-contract";
+import { fetchCommunityEvents } from "@/lib/community/http";
 import { loadPilotageOverview } from"@/lib/pilotage/overview";
 import {
  getProfilePrimaryAction,
  getProfileSecondaryAction,
  getProfileLabel,
- toProfile,
+  isAdminLikeProfile,
+  toProfile,
 } from"@/lib/profiles";
 import { getServerLocale } from"@/lib/server-preferences";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { ReportsPageV2Layout } from "@/components/reports/page-sections/reports-page-v2-layout";
 import { ReportsPageV1Layout } from "@/components/reports/page-sections/reports-page-v1-layout";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { listAdminOperationAudit } from "@/lib/admin/operation-audit";
 
-async function loadReportsData() {
+type ReportsSummaryKpi = {
+  label: string;
+  value: string;
+  previousValue: string;
+  deltaAbsolute: string;
+  deltaPercent: string;
+  interpretation: "positive" | "negative" | "neutral";
+};
+
+function buildDateFloor(daysWindow: number): string {
+  const now = new Date();
+  now.setUTCHours(0, 0, 0, 0);
+  now.setUTCDate(now.getUTCDate() - (daysWindow - 1));
+  return now.toISOString().slice(0, 10);
+}
+
+async function loadReportsData(showAdminWorkflow: boolean) {
   const supabase = getSupabaseServerClient();
-  const overview = await loadPilotageOverview({
-    supabase,
-    periodDays: 90,
-    limit: 2200,
-  });
-
   const { fetchUnifiedActionContracts } = await import("@/lib/actions/unified-source");
-  const { items: contracts } = await fetchUnifiedActionContracts(supabase, {
-    limit: 1000,
-    status: "approved",
-    floorDate: null,
-    requireCoordinates: false,
-    types: null,
-  });
 
-  return { overview, contracts };
+  const [overview, contractsResult, communityEvents, weather, adminWorkflowPreview, adminWorkflowAudit] = await Promise.all([
+    loadPilotageOverview({
+      supabase,
+      periodDays: 90,
+      limit: 2200,
+    }),
+    fetchUnifiedActionContracts(supabase, {
+      limit: 1000,
+      status: "approved",
+      floorDate: null,
+      requireCoordinates: false,
+      types: null,
+    }),
+    fetchCommunityEvents({ limit: 240 }).then((result) => result.items).catch(() => []),
+    fetch(
+      "https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,precipitation,wind_speed_10m&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Europe%2FParis",
+      { cache: "no-store" },
+    )
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+        return response.json() as Promise<{
+          current?: {
+            temperature_2m?: number;
+            precipitation?: number;
+            wind_speed_10m?: number;
+          };
+        }>;
+      })
+      .catch(() => null),
+    showAdminWorkflow
+      ? fetchUnifiedActionContracts(supabase, {
+          limit: 250,
+          status: null,
+          floorDate: buildDateFloor(90),
+          requireCoordinates: false,
+          types: null,
+        })
+          .then((result) => ({
+            status: "ok" as const,
+            count: result.items.length,
+            items: result.items.map((contract) => toActionListItem(contract)),
+          }))
+          .catch(() => null)
+      : Promise.resolve(null),
+    showAdminWorkflow
+      ? listAdminOperationAudit(25)
+          .then((items) => items.slice(0, 25).map((entry) => ({
+            operationId: entry.operationId,
+            at: entry.at,
+            actorUserId: entry.actorUserId,
+            operationType: entry.operationType,
+            outcome: entry.outcome,
+            targetId: entry.targetId,
+            details: entry.details,
+          })))
+          .catch(() => null)
+      : Promise.resolve(null),
+  ]);
+
+  return {
+    overview,
+    contracts: contractsResult.items,
+    communityEvents,
+    weather,
+    adminWorkflowPreview,
+    adminWorkflowAudit,
+  };
 }
 
 function toReportsExportRow(contract: ActionDataContract) {
@@ -72,11 +148,15 @@ export default async function ReportsPage() {
     getSafeAuthSession(),
     getServerLocale(),
   ]);
+  const accountCompletion = userId
+    ? await loadAccountCompletionGateState({ userId, clerkReachable }).catch(() => null)
+    : null;
   const role =
     userId && clerkReachable
       ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)
       : ("anonymous" as const);
   const profile = toProfile(role);
+  const isAdmin = isAdminLikeProfile(profile);
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
   const roleLabel =
@@ -84,13 +164,17 @@ export default async function ReportsPage() {
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
 
   const [data, utils] = await Promise.all([
-    loadReportsData().catch(() => null),
+    loadReportsData(isAdmin).catch(() => null),
     import("@/lib/pilotage/analytics-data-utils"),
   ]);
   const { aggregateMonthlyAnalytics } = utils;
   
   const overview = data?.overview ?? null;
   const contracts = data?.contracts ?? [];
+  const communityEvents = data?.communityEvents ?? [];
+  const weather = data?.weather ?? null;
+  const adminWorkflowPreview = data?.adminWorkflowPreview ?? null;
+  const adminWorkflowAudit = data?.adminWorkflowAudit ?? null;
   const monthlyData = aggregateMonthlyAnalytics(contracts);
   const publicAccessBanner = !userId ? (
     <section className="rounded-2xl border border-rose-200 bg-rose-50 p-4 cmm-text-small text-rose-900 shadow-sm">
@@ -109,34 +193,34 @@ export default async function ReportsPage() {
         { href: "/sign-in", label: "Se connecter" },
       ];
 
-  const summaryKpis = overview
-    ? ([
+  const summaryKpis: [ReportsSummaryKpi, ReportsSummaryKpi, ReportsSummaryKpi] = overview
+    ? [
         {
           label: overview.summary.kpis[0].label,
           value: overview.summary.kpis[0].value,
           previousValue: overview.summary.kpis[0].previousValue,
-          deltaAbsolute: overview.summary.kpis[0].deltaAbsolute,
-          deltaPercent: overview.summary.kpis[0].deltaPercent,
-          interpretation: overview.summary.kpis[0].interpretation,
+          deltaAbsolute: overview.summary.kpis[0].deltaAbsolute ?? "",
+          deltaPercent: overview.summary.kpis[0].deltaPercent ?? "",
+          interpretation: overview.summary.kpis[0].interpretation ?? "neutral",
         },
         {
           label: overview.summary.kpis[1].label,
           value: overview.summary.kpis[1].value,
           previousValue: overview.summary.kpis[1].previousValue,
-          deltaAbsolute: overview.summary.kpis[1].deltaAbsolute,
-          deltaPercent: overview.summary.kpis[1].deltaPercent,
-          interpretation: overview.summary.kpis[1].interpretation,
+          deltaAbsolute: overview.summary.kpis[1].deltaAbsolute ?? "",
+          deltaPercent: overview.summary.kpis[1].deltaPercent ?? "",
+          interpretation: overview.summary.kpis[1].interpretation ?? "neutral",
         },
         {
           label: overview.summary.kpis[2].label,
           value: overview.summary.kpis[2].value,
           previousValue: overview.summary.kpis[2].previousValue,
-          deltaAbsolute: overview.summary.kpis[2].deltaAbsolute,
-          deltaPercent: overview.summary.kpis[2].deltaPercent,
-          interpretation: overview.summary.kpis[2].interpretation,
+          deltaAbsolute: overview.summary.kpis[2].deltaAbsolute ?? "",
+          deltaPercent: overview.summary.kpis[2].deltaPercent ?? "",
+          interpretation: overview.summary.kpis[2].interpretation ?? "neutral",
         },
-      ] as const)
-    : ([
+      ]
+    : [
         {
           label: "Impact terrain",
           value: "n/a",
@@ -161,7 +245,7 @@ export default async function ReportsPage() {
           deltaPercent: "n/a",
           interpretation: "neutral",
         },
-      ] as const);
+      ];
 
   const navigationItems: NavigationGridItem[] = [
     {
@@ -212,35 +296,47 @@ export default async function ReportsPage() {
 
   if (pageTemplateV2Enabled) {
     return (
-      <ReportsPageV2Layout
-        locale={locale}
-        roleLabel={roleLabel}
-        profile={profile}
-        primaryAction={primaryAction}
-        secondaryAction={secondaryAction}
-        summaryKpis={summaryKpis}
-        navigationItems={navigationItems}
-        overview={overview}
-        contracts={contracts}
-        monthlyData={monthlyData}
-        toReportsExportRow={toReportsExportRow}
-        publicAccessBanner={publicAccessBanner}
-      />
+      <AccountCompletionGate state={accountCompletion}>
+        <ReportsPageV2Layout
+          locale={locale}
+          roleLabel={roleLabel}
+          profile={profile}
+          primaryAction={primaryAction}
+          secondaryAction={secondaryAction}
+          summaryKpis={summaryKpis}
+          navigationItems={navigationItems}
+          overview={overview}
+          contracts={contracts}
+          communityEvents={communityEvents}
+          weather={weather}
+          adminWorkflowPreview={adminWorkflowPreview}
+          adminWorkflowAudit={adminWorkflowAudit}
+          monthlyData={monthlyData}
+          toReportsExportRow={toReportsExportRow}
+          publicAccessBanner={publicAccessBanner}
+        />
+      </AccountCompletionGate>
     );
   }
 
   return (
-    <ReportsPageV1Layout
-      locale={locale}
-      roleLabel={roleLabel}
-      profile={profile}
-      primaryAction={primaryAction}
-      summaryKpis={summaryKpis}
-      headerActions={headerActions}
-      overview={overview}
-      contracts={contracts}
-      toReportsExportRow={toReportsExportRow}
-      publicAccessBanner={publicAccessBanner}
-    />
+    <AccountCompletionGate state={accountCompletion}>
+      <ReportsPageV1Layout
+        locale={locale}
+        roleLabel={roleLabel}
+        profile={profile}
+        primaryAction={primaryAction}
+        summaryKpis={summaryKpis}
+        headerActions={headerActions}
+        overview={overview}
+        contracts={contracts}
+        communityEvents={communityEvents}
+        weather={weather}
+        adminWorkflowPreview={adminWorkflowPreview}
+        adminWorkflowAudit={adminWorkflowAudit}
+        toReportsExportRow={toReportsExportRow}
+        publicAccessBanner={publicAccessBanner}
+      />
+    </AccountCompletionGate>
   );
 }

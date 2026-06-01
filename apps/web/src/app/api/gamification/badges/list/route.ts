@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { unauthorizedJsonResponse } from "@/lib/http/auth-responses";
 import { handleApiError } from "@/lib/http/api-errors";
+import { loadValidatedCompleteActionCountForUser } from "@/lib/gamification/progression-data";
 import type { GemGrade } from "@/lib/gamification/types";
 
 export const runtime = "nodejs";
@@ -14,6 +15,8 @@ const BADGES = [
   { id: "active", name: "Actif", description: "Accumuler 500 points", minPoints: 500, icon: "🔥" },
   { id: "champion", name: "Champion", description: "Accumuler 1000 points", minPoints: 1000, icon: "⭐" },
   { id: "legend", name: "Légende", description: "Accumuler 5000 points", minPoints: 5000, icon: "👑" },
+  { id: "first_trace_utile", name: "Première trace utile", description: "Valider une première action avec des données complètes", minPoints: 0, special: "first_trace_utile", icon: "badge-check" },
+  { id: "trace_fondatrice", name: "Trace fondatrice", description: "Première action validée avec dossier complet", minPoints: 0, special: "trace_fondatrice", icon: "sparkles" },
   { id: "cleaner", name: "Nettoyeur", description: "Valider 5 actions", minPoints: 0, special: "actions_validated" },
   { id: "discoverer", name: "Explorateur", description: "Visiter des lieux pour révéler la carte", minPoints: 0, special: "places_visited" },
 ];
@@ -60,6 +63,11 @@ export async function GET() {
       .select("*", { count: "exact", head: true })
       .eq("created_by_clerk_id", userId)
       .eq("status", "approved");
+
+    const completeActionsCount = await loadValidatedCompleteActionCountForUser(
+      supabase,
+      userId,
+    ).catch(() => 0);
 
     const { count: placesCount } = await supabase
       .from("user_visited_places")
@@ -508,6 +516,11 @@ export async function GET() {
       let isUnlocked = false;
       if (badge.special === 'actions_validated') {
         isUnlocked = (actionsCount ?? 0) >= 5;
+      } else if (
+        badge.special === "first_trace_utile" ||
+        badge.special === "trace_fondatrice"
+      ) {
+        isUnlocked = completeActionsCount >= 1;
       } else {
         isUnlocked = totalPoints >= (badge.minPoints ?? 0);
       }
@@ -518,8 +531,65 @@ export async function GET() {
         icon: badge.icon,
         unlocked: isUnlocked,
         minPoints: badge.minPoints || null,
-        progress: badge.special === 'actions_validated' ? { current: actionsCount ?? 0, target: 5 } : { current: totalPoints, target: badge.minPoints },
+        progress:
+          badge.special === "actions_validated"
+            ? { current: actionsCount ?? 0, target: 5 }
+            : badge.special === "first_trace_utile" ||
+              badge.special === "trace_fondatrice"
+              ? { current: completeActionsCount, target: 1 }
+              : { current: totalPoints, target: badge.minPoints },
       });
+
+      if (badge.special === "first_trace_utile" && isUnlocked) {
+        (async () => {
+          try {
+            const existing = await supabase
+              .from("progression_events")
+              .select("id")
+              .eq("user_id", userId)
+              .eq("source_table", "actions")
+              .eq("source_id", "first_trace_utile")
+              .maybeSingle();
+            if (!existing || !existing.data) {
+              await supabase.from("progression_events").insert({
+                user_id: userId,
+                event_type: "action_declare_validation",
+                source_table: "actions",
+                source_id: "first_trace_utile",
+                status_phase: "validated",
+                weight: 1,
+                xp_base: 1,
+                xp_awarded: 1,
+                occurred_on: new Date().toISOString().slice(0, 10),
+                metadata: {
+                  badge: "first_trace_utile",
+                  completeActionsCount,
+                },
+              });
+
+              try {
+                const { auditXpAttribution } = await import('@/lib/gamification/notifications');
+                await auditXpAttribution(
+                  supabase,
+                  userId,
+                  null,
+                  "Première trace utile débloquée",
+                  1,
+                  "actions",
+                  "first_trace_utile",
+                  { badge: "first_trace_utile", completeActionsCount },
+                );
+              } catch {}
+
+              try {
+                await supabase.rpc('notify_gamification', { channel: 'gamification', payload: JSON.stringify({ type: 'first_trace_utile_unlocked', userId, badgeId: 'first_trace_utile' }) });
+              } catch {}
+            }
+          } catch (error) {
+            console.error("[Gamification] Failed to award first_trace_utile badge", error);
+          }
+        })();
+      }
     }
 
     const unlockedCount = badges.filter((b) => b.unlocked).length;

@@ -111,7 +111,7 @@ const BACKDROP_TONE_SWATCHES = {
   print: { canvas: "#faf7f0", halo: "rgba(148, 163, 184, 0.14)" },
 };
 
-const entries = [
+export const entries = [
   // Homepage
   {
     route: "/",
@@ -1552,4 +1552,3 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
-

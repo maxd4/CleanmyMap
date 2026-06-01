@@ -212,6 +212,22 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     ],
     pilot: [],
   },
+  entreprise: {
+    home: ["dashboard", "explorer", "sponsor", "funding"],
+    act: ["new", "route", "weather", "guide", "trash-spotter"],
+    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
+    impact: [],
+    network: ["network", "community", "feedback", "messagerie", "open-data"],
+    connect: [],
+    learn: [
+      "hub",
+      "learn-comprendre",
+      "learn-sentrainer",
+      "learn-bonnes-pratiques",
+      "learn-ressources",
+    ],
+    pilot: [],
+  },
   elu: {
     home: ["dashboard", "explorer", "sponsor", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
@@ -229,7 +245,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   admin: {
-    home: ["dashboard", "explorer", "admin"],
+    home: ["dashboard", "explorer", "pilotage", "admin", "elus"],
     act: ["new", "route", "weather", "guide", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],

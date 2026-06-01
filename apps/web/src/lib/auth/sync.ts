@@ -10,6 +10,7 @@ import {
 } from "@/lib/profiles";
 import { isCreatorInboxEmail } from "@/lib/auth/privileged-identities";
 import { getDisplayNameModeOverride } from "@/lib/account/display-name-mode-store";
+import { extractArrondissementFromLabel } from "@/lib/geo/paris-arrondissements";
 
 const MAX_HANDLE_LENGTH = 30;
 
@@ -18,6 +19,8 @@ type ProfileRow = {
   handle: string | null;
   display_name_mode: string | null;
 };
+
+type ProfileMetadata = Record<string, unknown> | null;
 
 function extractDisplayNameModeFromMetadata(
   metadata: Record<string, unknown> | null | undefined,
@@ -31,6 +34,57 @@ function extractDisplayNameModeFromMetadata(
     metadata["displayNameMode"];
 
   return typeof rawValue === "string" ? normalizeDisplayNameMode(rawValue) : null;
+}
+
+function extractProfileMetadataFromSource(
+  metadata: Record<string, unknown> | null | undefined,
+): ProfileMetadata {
+  if (!metadata) {
+    return null;
+  }
+
+  const keys = [
+    "zoneName",
+    "zoneDepartment",
+    "zoneAreaType",
+    "zoneLocationType",
+    "parisArrondissement",
+    "parisLocationType",
+    "profileSetupCompleted",
+    "profileSetupVersion",
+    "profileSetupSchemaVersion",
+  ] as const;
+
+  const extracted: Record<string, unknown> = {};
+  for (const key of keys) {
+    const value = metadata[key];
+    if (value !== undefined) {
+      extracted[key] = value;
+    }
+  }
+
+  return Object.keys(extracted).length > 0 ? extracted : null;
+}
+
+function extractProfileMetadata(user: User): Record<string, unknown> {
+  const sources = [
+    user.unsafeMetadata as Record<string, unknown> | null | undefined,
+    user.publicMetadata as Record<string, unknown> | null | undefined,
+    user.privateMetadata as Record<string, unknown> | null | undefined,
+  ];
+
+  const merged: Record<string, unknown> = {};
+  for (const source of sources) {
+    const extracted = extractProfileMetadataFromSource(source);
+    if (!extracted) continue;
+    for (const [key, value] of Object.entries(extracted)) {
+      if (merged[key] === undefined) {
+        merged[key] = value;
+      }
+    }
+  }
+
+  return merged;
 }
 
 export type SyncClerkUserOptions = {
@@ -187,6 +241,7 @@ export async function syncClerkUserToSupabase(
     (user.privateMetadata as any)?.profile;
   const profile = resolveProfile({ metadataRole, isAdmin, isMax });
   const persistedProfile = profile === "max" ? "imu" : profile;
+  const profileMetadata = extractProfileMetadata(user);
 
   const firstName = user.firstName?.trim() ?? "";
   const lastName = user.lastName?.trim() ?? "";
@@ -198,6 +253,11 @@ export async function syncClerkUserToSupabase(
       : typeof rawArrondissement === "string"
         ? parseInt(rawArrondissement, 10)
         : null;
+  const metadataZoneName =
+    typeof profileMetadata?.zoneName === "string" ? profileMetadata.zoneName : null;
+  const inferredArrondissement = metadataZoneName
+    ? extractArrondissementFromLabel(metadataZoneName)
+    : null;
 
   const { data: existingProfile, error: existingProfileError } = await supabase
     .from("profiles")
@@ -232,19 +292,20 @@ export async function syncClerkUserToSupabase(
 
   const { data, error } = await supabase
     .from("profiles")
-    .upsert({
+      .upsert({
       id: user.id,
       display_name: displayName,
       display_name_mode: displayNameMode,
       handle,
       role_label: persistedProfile,
       avatar_url: user.imageUrl,
+      metadata: profileMetadata,
       paris_arrondissement:
         parsedArrondissement &&
         parsedArrondissement >= 1 &&
         parsedArrondissement <= 20
           ? parsedArrondissement
-          : null,
+          : inferredArrondissement,
       updated_at: new Date().toISOString(),
     }, { onConflict: "id" })
     .select()

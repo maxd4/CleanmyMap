@@ -91,6 +91,7 @@ const userMetadataSchema = z.object({
 const createActionLegacySchema = z.object({
   actorName: z.string().min(1).max(120).optional(),
   associationName: associationNameSchema,
+  organizerAccounts: z.array(z.string().min(1).max(120)).max(20).optional(),
   recordType: z.enum(["action", "clean_place", "spot"]).optional(),
   placeType: z.string().max(80).optional(),
   actionDate: z.string().date(),
@@ -139,6 +140,7 @@ const createActionContractSchema = z.object({
   metadata: z.object({
     actorName: z.string().min(1).max(120).optional(),
     associationName: associationNameSchema,
+    organizerAccounts: z.array(z.string().min(1).max(120)).max(20).optional(),
     placeType: z.string().max(80).optional(),
     wasteKg: z.number().min(0).max(100000),
     cigaretteButts: z.number().int().min(0).max(5000000).optional(),

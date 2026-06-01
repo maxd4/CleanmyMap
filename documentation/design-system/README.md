@@ -9,6 +9,7 @@ Système de design pour agents IA. **TOUJOURS consulter avant toute modification
 ### Charte Visuelle (PRIORITÉ ABSOLUE)
 - **charte-ui-pro-moderne-futuriste.md** - Charte UI complète
 - **BLOC_COLOR_SYSTEM_PREMIUM.md** - Système de couleurs par bloc (5 blocs, multi-teintes)
+- **PAGE_HEADER.md** - Composant canonique obligatoire pour tous les titres de page
 - **UI_EXCEPTION_PAGES.md** - Exceptions UI, familles autonomes et matrice exhaustive des routes
 - **VISUAL_STORYTELLING.md** - Priorité aux visuels sur le texte
 - **principes-visuels.md** - Principes de base
@@ -34,6 +35,7 @@ Système de design pour agents IA. **TOUJOURS consulter avant toute modification
 
 ### Patterns
 - **patterns-cartes-filtres-etats.md** - Patterns cartes/filtres/états
+- **TERRAINK_MAP_CARDS.md** - Cartes comparatives base + Terraink
 - **cleanmymap-ui-ux-pro-max.md** - Synthèse CleanMyMap des règles UI/UX Pro Max
 - **TEXTURE_SURFACES.md** - Textures discrètes réutilisables pour cartes et grands panneaux
 
@@ -66,9 +68,12 @@ Objectif :
    // ✅ BON
    import { CmmCard } from '@/components/ui/cmm-card';
    import { CmmButton } from '@/components/ui/cmm-button';
+   import { PageHeader } from '@/components/ui/page-header';
    
    // ❌ MAUVAIS
    import { Card } from 'shadcn';
+   // ❌ MAUVAIS pour un titre de page
+   <h1 className="text-[24px] font-extrabold">...</h1>
    ```
 
 3. **Utiliser les classes typographiques ET les teintes appropriées**

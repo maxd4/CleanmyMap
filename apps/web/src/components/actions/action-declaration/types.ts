@@ -4,6 +4,7 @@ export type FormState = {
  actorName: string;
  associationName: string;
  enterpriseName: string;
+ organizerAccounts: string;
  actionDate: string;
  locationLabel: string;
  departureLocationLabel: string;

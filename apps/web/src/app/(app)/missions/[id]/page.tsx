@@ -3,6 +3,7 @@ import { MissionMap } from "@/components/missions/mission-map";
 import { MissionQR } from "@/components/missions/mission-qr";
 import { MapPin, Clock, Trophy, Share2, Zap, Droplets, ShieldCheck } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
@@ -81,45 +82,45 @@ export default async function MissionPage({ params }: MissionPageParams) {
   const gpsPoints = points && points.length > 0 ? points : mockPoints;
   const isTracking = m.status === "tracking";
   const isPending = m.status === "pending";
+  const statusLabel =
+    m.status === "completed"
+      ? "Mission terminée"
+      : isTracking
+        ? "Action en cours"
+        : "Mission planifiée";
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-12 pb-20">
-      <header className="flex flex-col items-start justify-between gap-8 pt-10 md:flex-row md:items-center">
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span
-              className={cn(
-                "px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border",
-                m.status === "completed"
-                  ? "border-emerald-400/20 bg-emerald-400/10 text-emerald-400"
-                  : isTracking
-                    ? "border-rose-400/20 bg-rose-400/10 text-rose-400 animate-pulse"
-                    : "border-white/10 bg-white/5 text-white/40"
-              )}
-            >
-              {m.status === "completed" ? "Mission Terminée" : isTracking ? "Action en cours" : "Mission Planifiée"}
-            </span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/20">
+      <PageHeader
+        tone="emerald"
+        contrast="inverse"
+        eyebrow="Bloc Agir"
+        title={m.label}
+        subtitle="Tracé terrain, preuves d’impact et indicateurs de mission."
+        badges={
+          <div className="flex flex-wrap gap-2">
+            <PageHeaderBadge tone="emerald" contrast="inverse">{statusLabel}</PageHeaderBadge>
+            <PageHeaderBadge tone="emerald" contrast="inverse" muted>
               Identifiant #{id.split("-")[0]}
-            </span>
+            </PageHeaderBadge>
           </div>
-          <h1 className="text-5xl font-black leading-tight tracking-tighter text-white md:text-6xl">
-            {m.label}
-          </h1>
-        </div>
-
-        <CmmButton
-          tone="secondary"
-          className={cn(
-            "flex items-center gap-2 rounded-2xl border px-6 py-4 transition-all duration-300 hover:scale-[1.02]",
-            classes.surface,
-            classes.border
-          )}
-        >
-          <Share2 size={16} className="text-emerald-400" />
-          <span className="text-xs font-black uppercase tracking-widest">Partager l'impact</span>
-        </CmmButton>
-      </header>
+        }
+        action={
+          <CmmButton
+            tone="secondary"
+            className={cn(
+              "flex items-center gap-2 rounded-2xl border px-6 py-4 transition-all duration-300 hover:scale-[1.02]",
+              classes.surface,
+              classes.border,
+            )}
+          >
+            <Share2 size={16} className="text-emerald-400" />
+            <span className="text-xs font-black uppercase tracking-widest">
+              Partager l'impact
+            </span>
+          </CmmButton>
+        }
+      />
 
       <div className="grid gap-10 lg:grid-cols-3">
         <div className="space-y-8">

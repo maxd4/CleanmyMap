@@ -75,4 +75,12 @@ describe("buildMapActionsQueryString", () => {
     expect(params.get("impact")).toBe("critique");
     expect(params.get("qualityMin")).toBe("73");
   });
+
+  it("supports an all time map window", () => {
+    const query = buildMapActionsQueryString({ floorDate: null });
+    const params = new URLSearchParams(query);
+
+    expect(params.get("floorDate")).toBe("all");
+    expect(params.has("days")).toBe(false);
+  });
 });

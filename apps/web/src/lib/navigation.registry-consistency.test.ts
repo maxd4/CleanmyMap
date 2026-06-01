@@ -5,7 +5,7 @@ import {
   type NavigationSpace,
 } from "@/lib/navigation";
 
-const PROFILES = ["benevole", "coordinateur", "scientifique", "elu", "admin", "max"] as const;
+const PROFILES = ["benevole", "coordinateur", "scientifique", "entreprise", "elu", "admin", "max"] as const;
 const MODES = ["exhaustif", "sobre", "minimaliste"] as const;
 
 function collectRouteIds(spaces: NavigationSpace[]): string[] {

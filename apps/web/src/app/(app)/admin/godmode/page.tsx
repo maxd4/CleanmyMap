@@ -11,15 +11,18 @@ import {
   ShieldHalf
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { resolvePageFamily } from "@/lib/ui/page-families";
 
 export default async function GodModeAdminPage() {
   const identity = await getCurrentUserIdentity().catch(() => null);
   const role = await getCurrentUserRoleLabel().catch(() => "anonymous");
   const classes = getBlockClasses("pilot");
+  const pageFamily = resolvePageFamily("/admin/godmode");
   const displayName =
     identity?.displayName?.trim() ||
     identity?.firstName?.trim() ||
@@ -34,27 +37,27 @@ export default async function GodModeAdminPage() {
 
   return (
     <div className={cn("w-full space-y-10 min-h-screen pb-20")}>
-      <header className={cn(
-        "flex flex-col md:flex-row md:items-end justify-between gap-8 p-10 rounded-[2.5rem] border transition-all duration-700 relative overflow-hidden",
-        classes.surface,
-        classes.shadow
-      )}>
+      <header className={cn("flex flex-col md:flex-row md:items-end justify-between gap-8 p-10 rounded-[2.5rem] border transition-all duration-700 relative overflow-hidden")}>
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-slate-400/5 rounded-full blur-[120px] pointer-events-none" />
-        
-        <div className="space-y-4 relative z-10">
-          <div className="flex items-center gap-3 text-slate-400 font-black uppercase tracking-[0.3em] text-[10px]">
-            <ShieldHalf size={14} className="text-slate-500" />
-            Créateur du site
-          </div>
-          <div className="space-y-1">
-            <h1 className="text-5xl font-black tracking-tighter text-white flex items-center gap-4">
-              Créateur du site <span className="text-red-500 text-sm px-3 py-1 bg-red-500/10 rounded-full border border-red-500/20 uppercase tracking-widest font-black">Super-admin</span>
-            </h1>
-            <p className="max-w-xl text-slate-400 text-sm leading-relaxed">
-              Accès racine du site pour l'arbitrage, la sécurité et les exécutions sensibles.
-            </p>
-          </div>
-        </div>
+
+        <PageHeader
+          family={pageFamily}
+          eyebrow="Accès racine"
+          title="Créateur du site"
+          subtitle="Accès racine du site pour l'arbitrage, la sécurité et les exécutions sensibles."
+          badges={
+            <>
+              <PageHeaderBadge family={pageFamily}>
+                <ShieldHalf size={12} className="mr-2 inline-block align-[-2px]" />
+                Super-admin
+              </PageHeaderBadge>
+              <PageHeaderBadge family={pageFamily} muted>
+                Rôle normalisé: max
+              </PageHeaderBadge>
+            </>
+          }
+          className="relative z-10 max-w-3xl"
+        />
 
         <div className="flex gap-3 relative z-10">
           <div className="flex items-center gap-4 px-6 py-4 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">

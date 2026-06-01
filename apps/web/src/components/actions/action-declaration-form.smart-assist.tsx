@@ -3,6 +3,7 @@ import { useMemo, useState } from"react";
 import { estimateWasteKg } from"./action-declaration-form.estimation";
 import type { ActionVisionEstimate } from"@/lib/actions/types";
 import type { FormState } from"./action-declaration-form.model";
+import { canRequestGeolocation } from "@/lib/browser/geolocation";
 import {
  resolveWasteSuggestion,
 } from"./action-declaration-form.vision-suggestion";
@@ -50,6 +51,11 @@ export function useActionDeclarationSmartAssist({
  const wasteSuggestionSource = wasteSuggestion.source;
 
  function autofillGps() {
+ if (!canRequestGeolocation()) {
+ setGpsStatus("error");
+ setGpsMessage("La geolocalisation est bloquee sur cette page.");
+ return;
+ }
  if (typeof navigator ==="undefined" || !navigator.geolocation) {
  setGpsStatus("error");
  setGpsMessage("Geolocalisation non disponible sur cet appareil.");

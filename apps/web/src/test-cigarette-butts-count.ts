@@ -13,6 +13,7 @@ const mockFormActionSpontanee: FormState = {
   locationLabel: "Test Location",
   departureLocationLabel: "Départ Test",
   arrivalLocationLabel: "",
+  organizerAccounts: "",
   routeStyle: "souple" as const,
   routeAdjustmentMessage: "",
   recordType: "action" as const,

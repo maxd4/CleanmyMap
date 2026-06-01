@@ -6,13 +6,26 @@ import { StepJournal } from "@/components/reports/admin-workflow/step-journal";
 import { StepPreview } from "@/components/reports/admin-workflow/step-preview";
 import { useAdminWorkflow } from "@/components/reports/admin-workflow/use-admin-workflow";
 import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
+import type { ActionListResponse } from "@/lib/actions/types";
+import type { AdminOperationAuditItem } from "@/components/reports/admin-workflow/types";
 
 /**
  * Standardized Admin Workflow Panel.
  * Uses AdminPanelShell for UI consistency and software sobriety.
  */
-export function ActionsReportPanel() {
-  const workflow = useAdminWorkflow();
+type ActionsReportPanelProps = {
+  initialPreview?: ActionListResponse | null;
+  initialAuditItems?: AdminOperationAuditItem[] | null;
+};
+
+export function ActionsReportPanel({
+  initialPreview,
+  initialAuditItems,
+}: ActionsReportPanelProps) {
+  const workflow = useAdminWorkflow({
+    initialPreview,
+    initialAuditItems,
+  });
 
   return (
     <AdminPanelShell

@@ -13,7 +13,7 @@ import {
   createGreaterParisMetadataFromZoneName,
   extractGreaterParisLocationPreferenceFromMetadata,
 } from "@/lib/user-location-preference";
-import { getProfileLabel, getSwitchableProfiles, type AppProfile } from "@/lib/profiles";
+import { getProfileLabel, getProfileSubtitle, getSwitchableProfiles, type AppProfile } from "@/lib/profiles";
 import { InlineFieldError } from "@/components/ui/inline-field-error";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { PermissionErrorState } from "@/components/ui/permission-error-state";
@@ -28,14 +28,18 @@ import {
 import { CmmButton } from "@/components/ui/cmm-button";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import { defaultMessageForKind, isAppError, toAppError, type AppError } from "@/lib/errors/app-errors";
+import { cn } from "@/lib/utils";
+import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
 
 type AccountSetupFormProps = {
-  nextPath: string;
+  nextPath?: string;
   initialProfile: AppProfile;
   clerkReachable: boolean;
   isLocalHost: boolean;
   initialArrondissement?: number | null;
   initialLocationType?: "residence" | "work" | null;
+  submitMode?: "navigate" | "refresh";
 };
 
 async function updateProfileRole(profile: AppProfile) {
@@ -63,6 +67,7 @@ export function AccountSetupForm({
   isLocalHost,
   initialArrondissement = null,
   initialLocationType = null,
+  submitMode = "navigate",
 }: AccountSetupFormProps) {
   const router = useRouter();
   const { user, isLoaded } = useUser();
@@ -162,6 +167,8 @@ export function AccountSetupForm({
       const metadata: Record<string, unknown> = {
         ...(user.unsafeMetadata ?? {}),
         profileSetupCompleted: true,
+        profileSetupVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
+        profileSetupSchemaVersion: ACCOUNT_SETUP_SCHEMA_VERSION,
       };
 
       const parsedArr = parseParisArrondissement(arrondissement);
@@ -194,8 +201,12 @@ export function AccountSetupForm({
 
       await user.update({ unsafeMetadata: metadata });
 
-      router.replace(nextPath);
-      router.refresh();
+      if (submitMode === "refresh") {
+        router.refresh();
+      } else {
+        router.replace(nextPath ?? PROFIL_ROUTE);
+        router.refresh();
+      }
     } catch (error) {
       console.error("Account setup update failed", error);
       const appError = isAppError(error)
@@ -291,23 +302,63 @@ export function AccountSetupForm({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <label className="block space-y-2">
-          <span className="cmm-text-small font-medium text-white/90">Rôle</span>
-          <select
-            className="w-full rounded-xl border border-white/10 bg-white/[0.08] px-3 py-2 cmm-text-small text-white shadow-none outline-none placeholder:text-violet-100/40 focus:border-emerald-300/30 focus:bg-white/[0.12] focus:ring-1 focus:ring-emerald-300/30"
-            value={selectedProfile}
-            onChange={(event) =>
-              setSelectedProfile(event.target.value as AppProfile)
-            }
-          >
-            {profileOptions.map((profile) => (
-              <option key={profile} value={profile}>
-                {getProfileLabel(profile, selectedLocale)}
-              </option>
-            ))}
-          </select>
+        <div className="space-y-3 lg:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <span className="cmm-text-small font-medium text-white/90">Rôle</span>
+            <p className="cmm-text-caption text-violet-100/65">
+              {selectedLocale === "fr"
+                ? "Choisis le rôle le plus proche de ton usage actuel."
+                : "Choose the role closest to your current use case."}
+            </p>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {profileOptions.map((profile) => {
+              const isSelected = selectedProfile === profile;
+              return (
+                <button
+                  key={profile}
+                  type="button"
+                  onClick={() => setSelectedProfile(profile)}
+                  aria-pressed={isSelected}
+                  className={cn(
+                    "flex items-start gap-3 rounded-2xl border px-4 py-3 text-left transition-all",
+                    isSelected
+                      ? "border-emerald-300/50 bg-emerald-300/15 shadow-[0_18px_32px_-24px_rgba(16,185,129,0.7)]"
+                      : "border-white/10 bg-white/[0.06] hover:border-white/20 hover:bg-white/[0.09]",
+                  )}
+                >
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-white/20 bg-white/10 text-[10px] font-black uppercase tracking-[0.08em] text-white/80">
+                    i
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-white">
+                        {getProfileLabel(profile, selectedLocale)}
+                      </span>
+                      {isSelected ? (
+                        <span className="rounded-full border border-emerald-300/30 bg-emerald-300/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-emerald-100">
+                          {selectedLocale === "fr" ? "Sélectionné" : "Selected"}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="mt-1 block text-[11px] leading-5 text-violet-100/72">
+                      {getProfileSubtitle(profile, selectedLocale)}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {profileError ? <InlineFieldError message={profileError} /> : null}
-        </label>
+
+          <p className="max-w-3xl text-[11px] leading-5 text-violet-100/70">
+            {selectedLocale === "fr"
+              ? "Tu peux changer de rôle à tout moment depuis le badge de profil puis le menu « Changer de rôle ». Pour demander une promotion vers Elu ou Administration, utilise le formulaire de la rubrique « Retours & Qualité » (collaboration)."
+              : "You can change your role at any time from your profile badge and the \"Switch role\" menu. To request a promotion to Elected or Administration, use the form in the \"Feedback & Quality\" section (collaboration)."}
+          </p>
+        </div>
 
         <label className="block space-y-2">
           <span className="cmm-text-small font-medium text-white/90">
