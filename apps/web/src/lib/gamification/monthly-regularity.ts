@@ -109,9 +109,7 @@ function getMonthKey(raw: string): string {
 }
 
 function currentMonthKey(referenceDate: Date): string {
-  const year = referenceDate.getFullYear();
-  const month = String(referenceDate.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
+  return referenceDate.toISOString().slice(0, 7);
 }
 
 function previousMonthKey(monthKey: string): string {
@@ -310,7 +308,7 @@ export function computeMonthlyRegularitySummary(
   const referenceMonthKey = currentMonthKey(referenceDate);
 
   let currentStreak = 0;
-  let currentMonthHasEligibleAction = eligibleMonthKeys.has(referenceMonthKey);
+  const currentMonthHasEligibleAction = eligibleMonthKeys.has(referenceMonthKey);
 
   if (currentMonthHasEligibleAction) {
     let cursor = referenceMonthKey;
