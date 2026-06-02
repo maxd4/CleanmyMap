@@ -77,8 +77,8 @@
       },
       "map": {
         "title": "Indice pollution carte",
-        "formula": "Score % = ([Poids/20kg] × 65) + ([Mégots/2000] × 35)",
-        "desc": "Ce score normalise la pollution observée sur 100 et alimente la couleur des zones sur la carte.",
+        "formula": "Scores séparés: déchets = [Poids/bénévole] ÷ [Réf déchets] × 100; mégots = [Mégots/bénévole] ÷ [Réf mégots] × 100.",
+        "desc": "Références dynamiques par bénévole. La carte prend le score le plus élevé. Une nouvelle action plus forte devient la nouvelle référence. Le détail se charge à l'ouverture d'une action.",
         "source": "SOURCE: Algorithme de calibration terrain CleanMyMap v1."
       },
       "roi": {
@@ -89,7 +89,7 @@
       }
     },
     "audit": {
-      "title": "Bilan d’Impact IA 2026",
+      "title": "Bilan d'Impact IA 2026",
       "desc": "Consultez notre audit complet sur l'usage de l'Intelligence Artificielle au sein de CleanMyMap : impacts environnementaux, sociaux et analyse systémique.",
       "cta": "Télécharger l'audit (PDF)"
     },

@@ -4,9 +4,9 @@ Date de génération: 2026-04-28
 
 ## Résumé global
 
-Le site n’est pas prêt pour une première version publique. La base fonctionnelle existe, mais le rendu global reste trop inégal, trop chargé et trop indulgent dans son évaluation actuelle. En lecture publique stricte, le score moyen tombe plutôt autour de **54/100**. Les écrans centraux les plus défendables se situent plus près de **63/100** que de 74/100.
+Le site n'est pas prêt pour une première version publique. La base fonctionnelle existe, mais le rendu global reste trop inégal, trop chargé et trop indulgent dans son évaluation actuelle. En lecture publique stricte, le score moyen tombe plutôt autour de **54/100**. Les écrans centraux les plus défendables se situent plus près de **63/100** que de 74/100.
 
-Les surfaces réellement proches d’une mise en ligne publique sont encore peu nombreuses: accueil, Explorer, point de départ (Apprendre), rapports, actions et quelques rubriques réseau. Le reste reste soit trop fragile, soit trop dépendant du runtime, soit trop enfermé visuellement, soit trop orienté back-office pour être exposé tel quel.
+Les surfaces réellement proches d'une mise en ligne publique sont encore peu nombreuses: accueil, Explorer, point de départ (Apprendre), rapports, actions et quelques rubriques réseau. Le reste reste soit trop fragile, soit trop dépendant du runtime, soit trop enfermé visuellement, soit trop orienté back-office pour être exposé tel quel.
 
 Les zones les plus faibles sont nettes et doivent être traitées comme des freins de lancement: `admin/forms`, `sign-in`, `sign-up`, `onboarding/localisation`, la comparaison interne des formulaires, `parcours`, `profil`, `parcours/[profile]`, `sections/[sectionId]` et les écrans très dépendants de Clerk ou de données serveur non garanties.
 
@@ -15,7 +15,7 @@ Deuxième passe:
 - **33 routes de pages non API** recensées dans `apps/web/src/app`.
 - **27 entrées de rubriques** repérées dans `RUBRIQUE_REGISTRY`: 26 visibles et 1 cachée (`history`).
 - Les routes API sous `apps/web/src/app/api` sont repérées comme support technique, mais non notées dans le tableau UI car elles ne sont pas des pages ou rubriques affichées.
-- Les pages Clerk, admin et dynamiques sont à vérifier en runtime, car leur état réel dépend de l’authentification, du rôle, du profil ou des données.
+- Les pages Clerk, admin et dynamiques sont à vérifier en runtime, car leur état réel dépend de l'authentification, du rôle, du profil ou des données.
 
 ## Méthode de notation
 
@@ -28,8 +28,8 @@ Deuxième passe:
   - 56-70 %: acceptable uniquement pour un périmètre simple et stable
   - 71-84 %: bon mais pas encore public sans retouche
   - 85-100 %: réellement prêt
-- Le `Score moyen` reste une moyenne simple des axes ci-dessous, mais la lecture produit doit retrancher une pénalité quand une page dépend d’un runtime, d’une authentification Clerk, d’un état visuel non vérifié, ou de conventions trop décoratives.
-- Quand une page dépend d’un runtime, d’une authentification Clerk ou d’un état visuel difficile à confirmer depuis le code, le statut est noté `À vérifier`, même si le score brut paraît élevé.
+- Le `Score moyen` reste une moyenne simple des axes ci-dessous, mais la lecture produit doit retrancher une pénalité quand une page dépend d'un runtime, d'une authentification Clerk, d'un état visuel non vérifié, ou de conventions trop décoratives.
+- Quand une page dépend d'un runtime, d'une authentification Clerk ou d'un état visuel difficile à confirmer depuis le code, le statut est noté `À vérifier`, même si le score brut paraît élevé.
 
 Périmètre scanné:
 
@@ -91,7 +91,7 @@ Axes notés:
 
 ## Détail par rubrique
 
-Le registre de navigation contient **26 rubriques visibles**. La rubrique `history` existe dans le registre mais reste cachée (`availability: hidden`), donc elle n’est pas comptée dans les rubriques accessibles ci-dessous.
+Le registre de navigation contient **26 rubriques visibles**. La rubrique `history` existe dans le registre mais reste cachée (`availability: hidden`), donc elle n'est pas comptée dans les rubriques accessibles ci-dessous.
 
 Note de deuxième passe: `/actions/history` est bien une page existante. En revanche, son entrée de rubrique est cachée dans le registre, ce qui signifie que son exposition exacte dans la navigation doit être vérifiée en runtime.
 
@@ -129,16 +129,16 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 
 1. Geler le périmètre public de la V1: garder seulement les routes qui peuvent être comprises sans aide et sans rupture visuelle.
 2. Écarter du périmètre public tout ce qui reste fragile: `admin/forms`, `admin/godmode`, `sign-in`, `sign-up`, `onboarding/localisation`, la comparaison interne des formulaires, `profil`, `parcours`, `parcours/[profile]`, `sections/[sectionId]`.
-3. Nettoyer en priorité les surfaces visibles de l’entrée de site: accueil, Explorer, point de départ (Apprendre), rapports, actions, réseau.
-4. Simplifier les écrans encore trop “bulles / cartes / encadrés” avant toute ouverture publique.
-5. Normaliser les états de vide, d’erreur, de chargement et les retours de formulaire sur les pages réellement exposables.
+3. Nettoyer en priorité les surfaces visibles de l'entrée de site: accueil, Explorer, point de départ (Apprendre), rapports, actions, réseau.
+4. Simplifier les écrans encore trop "bulles / cartes / encadrés" avant toute ouverture publique.
+5. Normaliser les états de vide, d'erreur, de chargement et les retours de formulaire sur les pages réellement exposables.
 
 ## Points bloquants ou incertitudes
 
 - En lecture publique stricte, le score global est plutôt autour de **54/100**. La valeur **63/100** reste une lecture optimiste des écrans les plus centraux.
 - Les routes API sous `/api` ne sont pas notées individuellement, car elles ne correspondent pas à des pages ou rubriques affichées.
-- `/sections/route` existe comme route dédiée et cohabite avec la route dynamique `/sections/[sectionId]`; l’exposition exacte dans les menus doit être vérifiée visuellement.
-- Les pages `sign-in/[[...sign-in]]` et `sign-up/[[...sign-up]]` dépendent fortement de Clerk; l’expérience finale n’est pas entièrement évaluable depuis le code seul.
+- `/sections/route` existe comme route dédiée et cohabite avec la route dynamique `/sections/[sectionId]`; l'exposition exacte dans les menus doit être vérifiée visuellement.
+- Les pages `sign-in/[[...sign-in]]` et `sign-up/[[...sign-up]]` dépendent fortement de Clerk; l'expérience finale n'est pas entièrement évaluable depuis le code seul.
 - `sections/[sectionId]` est une route dynamique: la qualité finale dépend de chaque rubrique rendue derrière `SectionRenderer`.
 - `profil`, `parcours` et leurs variantes dynamiques agissent surtout comme des routes de redirection ou des shells de profil; leur valeur produit doit être vérifiée au runtime.
 - `actions/history` existe mais est masquée dans le registre de navigation, donc sa visibilité produit reste volontairement réduite.
@@ -159,7 +159,7 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 1. Finaliser les tokens de couleur et de surface pour éliminer les fonds trop sombres et les textes trop blancs.
 2. Réduire le nombre de cartes superposées sur chaque page.
 3. Remplacer les conteneurs trop fermés par des sections ouvertes, des bandes lisibles et des séparations plus légères.
-4. Uniformiser les boutons, badges, champs et encadrés avec moins de contraste brutal et moins d’effets de bloc.
+4. Uniformiser les boutons, badges, champs et encadrés avec moins de contraste brutal et moins d'effets de bloc.
 
 ### Phase 3 - Nettoiement des pages publiques
 
@@ -167,13 +167,13 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 2. Explorer: garder une lecture rapide du site, réduire les panneaux trop denses et vérifier les contrastes.
 3. Learn hub: conserver le contenu, mais casser la répétition des cartes et étaler davantage les sections.
 4. Reports: supprimer les encadrés trop lourds, renforcer la hiérarchie et alléger les tableaux.
-5. Actions: simplifier les formulaires et réduire la sensation d’interface administrative.
-6. Réseau: garder l’exploration, mais réduire les couches visuelles et les micro-blocs décoratifs.
+5. Actions: simplifier les formulaires et réduire la sensation d'interface administrative.
+6. Réseau: garder l'exploration, mais réduire les couches visuelles et les micro-blocs décoratifs.
 
 ### Phase 4 - Fiabilisation fonctionnelle
 
 1. Vérifier les formulaires publics avec des états vide, erreur, validation et succès réellement lisibles.
-2. Contrôler les routes dépendantes de Clerk et des profils: elles ne doivent pas casser l’expérience si l’utilisateur est hors contexte.
+2. Contrôler les routes dépendantes de Clerk et des profils: elles ne doivent pas casser l'expérience si l'utilisateur est hors contexte.
 3. Fermer les pages non essentielles qui restent trop incertaines au runtime.
 4. Vérifier les redirections, retours et CTA de sortie partout où une page mène à une action.
 
@@ -183,7 +183,7 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 2. Vérifier les contrastes sur les pages publiques les plus visibles.
 3. Vérifier les états mobile et desktop sur les routes de sortie.
 4. Supprimer toute page ou section qui ne sert pas la première impression publique.
-5. N’ouvrir la publication qu’après validation des 10 routes retenues, pas avant.
+5. N'ouvrir la publication qu'après validation des 10 routes retenues, pas avant.
 
 ## Priorités IA recommandées
 
@@ -197,7 +197,7 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 
 ### Modèle intermédiaire
 
-- Améliorer le responsive des pages de tableau de bord, d’admin et de parcours.
+- Améliorer le responsive des pages de tableau de bord, d'admin et de parcours.
 - Uniformiser les composants locaux entre les pages similaires.
 - Corriger les petits écarts TypeScript ou de props.
 - Rééquilibrer la hiérarchie visuelle des rubriques secondaires.
@@ -205,8 +205,8 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 
 ### Modèle fort
 
-- Refactorer la logique de navigation et les registres de rubriques si l’uniformisation devient nécessaire.
-- Modulariser les pages très longues du dashboard, de l’admin et des rapports.
-- Repenser les flux d’authentification et de redirection.
+- Refactorer la logique de navigation et les registres de rubriques si l'uniformisation devient nécessaire.
+- Modulariser les pages très longues du dashboard, de l'admin et des rapports.
+- Repenser les flux d'authentification et de redirection.
 - Normaliser les schémas de données et les contrats entre front et API.
 - Travailler la robustesse globale des écrans dépendants de Clerk ou des données serveur.

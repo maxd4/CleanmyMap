@@ -14,7 +14,7 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 ### Avant Toute Modification
 1. **UI** → Lire **design-system/README.md** (CRITIQUE)
    Puis lire **design-system/cleanmymap-ui-ux-pro-max.md** pour les écrans opérationnels, formulaires, pilotage, validation et analytics
-   Puis consulter **pages_site/INDEX.md** pour l’inventaire canonique des routes UI, avec `pages_site/README.md` comme porte d’entrée
+   Puis consulter **pages_site/INDEX.md** pour l'inventaire canonique des routes UI, avec `pages_site/README.md` comme porte d'entrée
 2. **Sécurité** → Lire **security/README.md** (CRITIQUE)
 3. **Architecture** → Consulter **architecture/README.md** puis **architecture/master-architecture.md**
 4. **Code** → Consulter **development/README.md**
@@ -105,7 +105,7 @@ documentation/
 
 ## Règle de captures UX/UI
 
-Les captures d'écran canoniques des pages doivent être déposées dans le dossier `photo/desktop/` de la fiche route canonique sous `documentation/pages_site/routes/.../`, au format WebP. L’inventaire des pages et le statut de capture sont centralisés dans `documentation/pages_site/INDEX.md`. Le dossier `documentation/liberte-UX-UI/` reste un miroir legacy tant que la migration des scripts n'est pas terminée.
+Les captures d'écran canoniques des pages doivent être déposées dans le dossier `photo/desktop/` de la fiche route canonique sous `documentation/pages_site/routes/.../`, au format WebP. L'inventaire des pages et le statut de capture sont centralisés dans `documentation/pages_site/INDEX.md`. Le dossier `documentation/liberte-UX-UI/` reste un miroir legacy tant que la migration des scripts n'est pas terminée.
 
 Chaque page du site dispose de son propre sous-dossier dans `documentation/pages_site/routes/`. Ce sous-dossier contient les captures de la page complète, un markdown dédié aux exceptions UI de la page et un markdown de présentation qui explique le fonctionnement de la page et son rôle dans le parcours utilisateur.
 

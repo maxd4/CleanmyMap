@@ -4,7 +4,7 @@ Voici une structure simple et robuste pour CleanMyMap dans Linear.
 
 - 1 projet principal : `CleanMyMap`
 - 1 seule source de vérité pour le produit
-- pas de tickets “fourre-tout”
+- pas de tickets "fourre-tout"
 - chaque ticket doit correspondre à une décision, un bug, ou une tâche testable
 
 **2. Statuts**
@@ -46,7 +46,7 @@ Chaque ticket doit suivre ce format :
 Exemple court :
 
 - `Contexte` : le formulaire bénévole génère des erreurs silencieuses
-- `Problème` : l’utilisateur ne sait pas pourquoi l’envoi échoue
+- `Problème` : l'utilisateur ne sait pas pourquoi l'envoi échoue
 - `Solution attendue` : afficher un message clair et bloquer la soumission invalide
 - `Validation` : test manuel sur desktop et mobile
 
@@ -80,7 +80,7 @@ Un ticket ne passe en `Validé` que si :
 
 - le comportement attendu est vérifié
 - le cas limite principal est testé
-- il n’y a pas de régression évidente
+- il n'y a pas de régression évidente
 
 **10. Routine hebdo**
 Chaque semaine :

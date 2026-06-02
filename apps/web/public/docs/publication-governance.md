@@ -25,13 +25,13 @@ Ces fichiers ou sous-arbres ne doivent pas être exposés comme documentation pu
 - [`documentation/maintenance/vercel_deployments.txt`](./maintenance/vercel_deployments.txt)
 - [`documentation/rapport_IA/`](./rapport_IA/)
 - [`backups/actions-backup-2026-04-24T07-54-44.951Z.json`](../backups/actions-backup-2026-04-24T07-54-44.951Z.json)
-- [`legacy/data/cleanmymap.db`](../legacy/data/cleanmymap.db)
+- Les archives Python historiques et leurs dumps ne doivent pas être exposés comme documentation publique.
 
 ---
 
 ## Zones publiques autorisées
 
-Les familles suivantes peuvent rester visibles dans la documentation publique si elles n’y référencent pas les éléments ci-dessus :
+Les familles suivantes peuvent rester visibles dans la documentation publique si elles n'y référencent pas les éléments ci-dessus :
 
 - `architecture/`
 - `backend/`
@@ -64,5 +64,5 @@ Les éléments ci-dessous peuvent rester dans le dépôt, mais doivent être ide
 ## Garde-fous
 
 - Aucun index public ne doit faire un lien direct vers un élément de la liste strictement non publique.
-- Si un nouveau fichier de mémoire, de session, de backup ou de dump apparaît, il doit rejoindre l’inventaire strict avant toute publication.
-- Toute section de documentation publique doit rester lisible sans dépendre d’un contexte de session interne.
+- Si un nouveau fichier de mémoire, de session, de backup ou de dump apparaît, il doit rejoindre l'inventaire strict avant toute publication.
+- Toute section de documentation publique doit rester lisible sans dépendre d'un contexte de session interne.

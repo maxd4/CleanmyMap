@@ -119,7 +119,7 @@ npm run checks
   - texte : `.cmm-text-h1` à `.cmm-text-h4`, `.cmm-text-body`, `.cmm-text-small`, `.cmm-text-caption`, `.cmm-text-primary`, `.cmm-text-secondary`, `.cmm-text-muted`
   - interactions : `.cmm-cta-pop`, `.cmm-surface-action`, `.cmm-clickable`, `.cmm-interactive`, `.cmm-input`
   - accessibilité / lisibilité : `.cmm-focus-ring`, `.cmm-prose`, `.cmm-line-clamp-*`, `.cmm-nowrap`
-  - modes d’affichage : `[data-display-mode="minimaliste"]`, `[data-display-mode="sobre"]`
+  - modes d'affichage : `[data-display-mode="minimaliste"]`, `[data-display-mode="sobre"]`
   - profils : `[data-user-profile="scientifique"]`, `[data-user-profile="elu"]`, `[data-user-profile="admin"]`, `[data-user-profile="coordinateur"]`
 - Style des boutons :
   - `CmmButton` applique les tons `primary`, `secondary`, `tertiary` et les variantes `default`, `pill`, `ghost`
@@ -134,7 +134,7 @@ npm run checks
   - base Tailwind : `sm` 640, `md` 768, `lg` 1024, `xl` 1280, `2xl` 1536
   - `@media (max-width: 640px)` dans [apps/web/src/app/globals.css](C:/Users/sophi/Desktop/MAXENCE/business/CleanmyMap-main/apps/web/src/app/globals.css) pour densité mobile
   - `@media (min-width: 1024px)` pour le sizing global
-  - `@media print` pour l’export
+  - `@media print` pour l'export
 - Conventions de nommage :
   - préfixe `cmm-` pour les utilitaires canoniques
   - `HOME_*` pour les constantes de l'accueil
@@ -161,7 +161,7 @@ npm run checks
   - `community`
   - `credibility`
   - `footer`
-- Éviter de demander une “refonte globale” si le but est une modification ciblée.
+- Éviter de demander une "refonte globale" si le but est une modification ciblée.
 
 ## 7. Résumé final ultra court
 - Stack centrale : Next.js 16, React 19, TypeScript, Tailwind v4, Clerk, Supabase.

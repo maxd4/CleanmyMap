@@ -4,9 +4,9 @@ Ce document sert de matrice de référence pour les agents.
 
 Règle générale :
 - une page suit la teinte de sa famille visuelle ou de son bloc fonctionnel;
-- la homepage (`/` et `/accueil`) constitue une famille autonome avec sa propre palette, ce n’est pas une exception de bloc;
+- la homepage (`/` et `/accueil`) constitue une famille autonome avec sa propre palette, ce n'est pas une exception de bloc;
 - une exception UI doit être explicitement documentée avant tout changement de palette;
-- une exception validée reste stable tant qu’elle sert de référence UX.
+- une exception validée reste stable tant qu'elle sert de référence UX.
 
 Lecture de la colonne `Exception UI ?` :
 - `oui` = la route déroge à la palette standard de sa famille;
@@ -104,7 +104,7 @@ Ces familles ne sont pas des exceptions de bloc. Elles suivent un système visue
 | `/actions/new` | Canonique | Agir | non | Palette `emerald` |
 | `/actions/history` | Canonique | Agir | non | Palette `emerald` |
 | `/declaration` | Alias vers `/actions/new` | Agir | n/a | Redirection sans UI propre |
-| `/declaration-simple` | Canonique | Agir / utilitaire | non | Formulaire simplifié, même logique d’action |
+| `/declaration-simple` | Canonique | Agir / utilitaire | non | Formulaire simplifié, même logique d'action |
 | `/missions/[id]` | Dynamique | Agir | non | Palette `emerald` |
 | `/parcours` | Canonique | Agir | non | Palette `emerald` |
 | `/parcours/[profile]` | Dynamique | Agir | non | Palette `emerald` |
@@ -219,23 +219,23 @@ Les pages ci-dessous n'utilisent pas encore le composant canonique directement. 
 | `/onboarding/localisation` | étape de configuration du parcours, même logique que l'onboarding | shell onboarding |
 | `/error/429` | état système / quota, pas un header de page standard | `SystemState*` |
 
-## Règles d’usage
+## Règles d'usage
 
 - Ne pas recolorer `/explorer` pour le faire rentrer artificiellement dans `Accueil & Pilotage`.
-- Ne pas traiter la homepage comme une exception de bloc: c’est une famille autonome.
-- Toute nouvelle exception UI doit être ajoutée ici avant d’être appliquée dans le code.
-- Si une page n’est pas listée dans ce document, elle doit suivre la palette standard de son bloc ou de sa famille technique.
+- Ne pas traiter la homepage comme une exception de bloc: c'est une famille autonome.
+- Toute nouvelle exception UI doit être ajoutée ici avant d'être appliquée dans le code.
+- Si une page n'est pas listée dans ce document, elle doit suivre la palette standard de son bloc ou de sa famille technique.
 
 ## Annexe API
 
-Les routes API n’ont pas de UI de page, donc la colonne `Exception UI ?` y est toujours `n/a`. Elles restent listées ici pour exhaustivité.
+Les routes API n'ont pas de UI de page, donc la colonne `Exception UI ?` y est toujours `n/a`. Elles restent listées ici pour exhaustivité.
 
 | Préfixe | Endpoints | Note |
 |---|---|---|
 | `/api/account` | `display-mode`, `profile-role` | Compte et préférences |
-| `/api/actions` | `/`, `import`, `map`, `prefill`, `simple` | Flux d’actions |
-| `/api/admin` | `codex-usage`, `creator-inbox`, `environmental-impact`, `free-plan-services`, `moderation`, `operations`, `partners/published-directory`, `promotion-requests`, `role-accounts`, `storage-usage` | Outils d’administration |
-| `/api/analytics` | `funnel` | Mesure d’audience |
+| `/api/actions` | `/`, `import`, `map`, `prefill`, `simple` | Flux d'actions |
+| `/api/admin` | `codex-usage`, `creator-inbox`, `environmental-impact`, `free-plan-services`, `moderation`, `operations`, `partners/published-directory`, `promotion-requests`, `role-accounts`, `storage-usage` | Outils d'administration |
+| `/api/analytics` | `funnel` | Mesure d'audience |
 | `/api/chat` | `/`, `users` | Messagerie |
 | `/api/community` | `bug-reports`, `events`, `events/ops`, `funnel.csv`, `promotion-requests`, `rsvps` | Communauté |
 | `/api/cron` | `environmental-impact`, `storage-usage` | Jobs planifiés |

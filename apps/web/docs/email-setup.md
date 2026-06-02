@@ -3,11 +3,11 @@
 Configuration cible :
 
 - envoi transactionnel via Resend
-- domaine d’envoi : `mail.cleanmymap.fr`
+- domaine d'envoi : `mail.cleanmymap.fr`
 - inbox de contact : `contact@cleanmymap.fr`
 - réception gratuite via redirection LWS vers Gmail
 
-## 1. Variables d’environnement
+## 1. Variables d'environnement
 
 À définir dans `.env.local`, Vercel Preview et Vercel Production :
 
@@ -25,7 +25,7 @@ RESEND_FROM_EMAIL=...
 RESEND_REPLY_TO=...
 ```
 
-Le projet lit d’abord `EMAIL_FROM` et `CONTACT_EMAIL`.
+Le projet lit d'abord `EMAIL_FROM` et `CONTACT_EMAIL`.
 Les composants client qui affichent ou ouvrent un `mailto:` lisent aussi `NEXT_PUBLIC_CONTACT_EMAIL` pour éviter les valeurs codées en dur.
 
 ## 2. DNS à créer dans LWS
@@ -47,20 +47,20 @@ Dans le DNS LWS, ajoute exactement les valeurs fournies par Resend. Les noms att
 
 - SPF en `TXT`
 - DKIM en `TXT` sur `resend._domainkey`
-- DMARC en `TXT` sur `_dmarc` si tu l’actives
+- DMARC en `TXT` sur `_dmarc` si tu l'actives
 
-Ne crée pas d’enregistrement MX pour Resend dans ce setup, puisque la réception passe par LWS puis redirection Gmail.
+Ne crée pas d'enregistrement MX pour Resend dans ce setup, puisque la réception passe par LWS puis redirection Gmail.
 
 ## 3. Réception gratuite via LWS
 
-Crée l’adresse `contact@cleanmymap.fr` ou une redirection équivalente dans LWS, puis redirige-la vers ta boîte Gmail personnelle.
+Crée l'adresse `contact@cleanmymap.fr` ou une redirection équivalente dans LWS, puis redirige-la vers ta boîte Gmail personnelle.
 
 LWS documente deux approches :
 
-- création d’une adresse email de redirection dans le panel LWS
+- création d'une adresse email de redirection dans le panel LWS
 - redirection via cPanel ou webmail selon ton offre
 
-Le plus simple est de configurer une redirection de `contact@cleanmymap.fr` vers Gmail, puis d’envoyer un message de test pour valider que le transfert arrive bien dans la boîte de destination.
+Le plus simple est de configurer une redirection de `contact@cleanmymap.fr` vers Gmail, puis d'envoyer un message de test pour valider que le transfert arrive bien dans la boîte de destination.
 
 ## 4. Vérification dans Resend
 
@@ -71,11 +71,11 @@ Quand les DNS ont propagé :
 3. confirme que SPF et DKIM passent
 4. ajoute DMARC ensuite si tu veux renforcer la politique du domaine
 
-Resend indique qu’un domaine vérifié passe SPF et DKIM. DMARC devient ensuite un ajout de durcissement, pas un prérequis de base.
+Resend indique qu'un domaine vérifié passe SPF et DKIM. DMARC devient ensuite un ajout de durcissement, pas un prérequis de base.
 
-## 5. Test d’envoi
+## 5. Test d'envoi
 
-Depuis `apps/web`, tu peux tester avec l’endpoint admin `/api/send`.
+Depuis `apps/web`, tu peux tester avec l'endpoint admin `/api/send`.
 
 Exemple :
 
@@ -88,8 +88,8 @@ curl -X POST http://localhost:3000/api/send \
 
 Attendu :
 
-- l’API répond avec un `id` Resend
-- l’expéditeur est `CleanMyMap <contact@mail.cleanmymap.fr>`
+- l'API répond avec un `id` Resend
+- l'expéditeur est `CleanMyMap <contact@mail.cleanmymap.fr>`
 - la réponse / le reply-to pointe vers `contact@cleanmymap.fr`
 
 ## 6. Sources officielles

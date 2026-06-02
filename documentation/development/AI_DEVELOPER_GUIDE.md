@@ -42,7 +42,10 @@ Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionR
 8. **Précision TypeScript** : `any` est un dernier recours interdit par défaut, les casts doivent être prouvés, `Record<string, unknown>` ne sert qu'aux frontières brutes, et tout accès dynamique doit être normalisé avant d'atteindre la logique métier.
 
 ## 5. Scripts et Automatisation
-Les scripts Python legacy sont dans `/legacy/`. Ne casse pas ces routines car elles sont critiques pour l'historique des données.
+Les scripts Python de maintenance sont dans `/maintenance/python/`. Ne casse pas ces routines car elles sont critiques pour l'historique des données.
+- Évite de lancer plusieurs commandes lourdes en parallèle, notamment `npm run checks`, `pytest`, `typecheck`, `rg -n` sur tout le repo et les scans de documentation.
+- N'active pas en même temps `npm run dev`, les tests `vitest`, les watchers de build et les scripts de maintenance Python.
+- Si un contrôle ciblé suffit, préfère-le à un scan global pour préserver la réactivité de la machine.
 
 ## 6. Encodage et Accents Français (CRITIQUE)
 - **Tous les fichiers doivent être encodés en UTF-8 sans BOM.** Le `.editorconfig` à la racine l'impose.

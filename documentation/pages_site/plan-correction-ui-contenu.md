@@ -627,7 +627,7 @@ Fichiers à modifier:
 Déjà exécuté dans le lot 8:
 
 - hub communautaire: accent rose/pink recentré sur les sous-sections communautaires
-- pages `/reports` et composants d’impact: palette red/rose réalignée
+- pages `/reports` et composants d'impact: palette red/rose réalignée
 - composants pilotage méthodologique: palette warm amber rééquilibrée
 - sous-sections gamification: accents red/rose harmonisés
 - sous-sections partenaires et learn déjà normalisées selon la charte

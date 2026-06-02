@@ -1,29 +1,29 @@
 Audit final du parcours formulaire
-Audite le parcours complet de déclaration d’action après les modifications.
+Audite le parcours complet de déclaration d'action après les modifications.
 
 Objectif :
 Vérifier que le formulaire est court, clair, fiable et compréhensible.
 
 À vérifier :
-- Le formulaire n’a plus de texte inutile ou redondant.
+- Le formulaire n'a plus de texte inutile ou redondant.
 - Il y a une case/champ par ligne.
-- La première case est bien “Structure / cadre d’engagement”.
+- La première case est bien "Structure / cadre d'engagement".
 - Les structures sont triées alphabétiquement.
 - Les structures populaires ont un marqueur visuel.
 - Les données utilisateur sont envoyées automatiquement.
-- Le champ “Nombre de mégots” fonctionne pour les actions spontanées.
+- Le champ "Nombre de mégots" fonctionne pour les actions spontanées.
 - La carte est utile, lisible et exploitable.
 - Le tracé manuel fonctionne sur ordinateur.
 - Les polygones peuvent suivre un contour réel.
-- Il n’y a qu’une seule zone de texte libre à la fin.
-- L’impact estimé apparaît seulement à la confirmation.
-- Le bouton “Confirmer l’envoi” envoie correctement le formulaire.
+- Il n'y a qu'une seule zone de texte libre à la fin.
+- L'impact estimé apparaît seulement à la confirmation.
+- Le bouton "Confirmer l'envoi" envoie correctement le formulaire.
 - Le layout 60/40 (deux colonnes : a gauche le formulaire et a droite la carte de tracé) fonctionne sur desktop.
 - Le responsive mobile est propre.
-- Les admins peuvent identifier correctement l’auteur.
+- Les admins peuvent identifier correctement l'auteur.
 
 Contraintes :
-- Ne modifie aucun fichier pendant l’audit.
+- Ne modifie aucun fichier pendant l'audit.
 - Liste uniquement les problèmes restants.
 - Classe les problèmes en P0, P1, P2.
 - Propose un plan de correction minimal.
@@ -51,12 +51,12 @@ redeployer et vérifier /api/uptime.
 Corrige proprement les erreurs Next.js / Clerk / Supabase restantes du projet CleanMyMap.
 
 Contexte :
-Gemini CLI a tenté une correction globale mais a consommé beaucoup de quota et n’a probablement pas tout corrigé. Tu connais déjà bien le projet : fais une correction ciblée, robuste et minimale.
+Gemini CLI a tenté une correction globale mais a consommé beaucoup de quota et n'a probablement pas tout corrigé. Tu connais déjà bien le projet : fais une correction ciblée, robuste et minimale.
 
 Priorités à traiter dans cet ordre :
 
 1. Erreur Next.js bloquante
-- Corriger : “Event handlers cannot be passed to Client Component props”
+- Corriger : "Event handlers cannot be passed to Client Component props"
 - Trouver le ou les `<button onClick={...}>` utilisés dans un Server Component.
 - Si le bouton sert seulement à naviguer, remplacer par `next/link`.
 - Si une vraie interaction client est nécessaire, isoler uniquement cette partie dans un petit composant `"use client"`.
@@ -73,24 +73,24 @@ Priorités à traiter dans cet ordre :
 - Ne pas deviner la solution.
 - Si `profiles` est réellement nécessaire, proposer/ajouter une migration claire.
 - Si le code doit utiliser `progression_profiles`, corriger proprement les requêtes/types.
-- Si la synchronisation profil est obsolète, la neutraliser proprement sans casser l’auth.
-- Préserver Clerk et les règles d’autorisation existantes.
+- Si la synchronisation profil est obsolète, la neutraliser proprement sans casser l'auth.
+- Préserver Clerk et les règles d'autorisation existantes.
 
 4. Clerk development keys
-- Ne pas “corriger” les clés localement si c’est seulement un warning dev.
+- Ne pas "corriger" les clés localement si c'est seulement un warning dev.
 - Vérifier que la configuration distingue correctement dev/prod.
 - Si nécessaire, ajouter une note claire dans la doc ou `.env.example`, sans exposer de secret.
 
 Contraintes :
 - Ne fais pas de refonte UI.
-- Ne modifie pas la homepage sauf si nécessaire pour corriger l’erreur.
+- Ne modifie pas la homepage sauf si nécessaire pour corriger l'erreur.
 - Ne touche pas aux routes, composants ou styles non concernés.
 - Ne change pas la logique métier sans justification.
 - Pas de dépendance inutile.
 - Garde les corrections petites, vérifiables et faciles à relire.
 
 Méthode :
-- Inspecte d’abord les fichiers responsables.
+- Inspecte d'abord les fichiers responsables.
 - Fais un plan court.
 - Applique les corrections minimales.
 - Lance les checks disponibles :
@@ -162,7 +162,7 @@ Direction visuelle attendue :
 - Carte hero plus premium : surface sombre émeraude, bordure subtile, ombre douce, glow contrôlé.
 - Plus de contraste entre fond, carte, texte et boutons.
 - Accents turquoise/vert mieux maîtrisés.
-- Moins d’effet “grand bloc bleu plat”.
+- Moins d'effet "grand bloc bleu plat".
 - Ambiance plus moderne, plus dense, plus élégante.
 
 À corriger :
@@ -183,7 +183,7 @@ Contraintes :
 - Ne pas ajouter de dépendance.
 - Ne pas refaire toute la homepage.
 - Ne pas créer une nouvelle charte graphique incompatible avec CleanMyMap.
-- Préserver l’accessibilité : contraste, focus visible, textes lisibles.
+- Préserver l'accessibilité : contraste, focus visible, textes lisibles.
 
 Méthode :
 1. Inspecter les fichiers du hero et les tokens/styles existants.
@@ -230,10 +230,10 @@ Objectif :
 - chaque jour doit afficher jour, date, météo, température, pluie/vent si dispo ;
 - code couleur du fond et du contour :
   - vert = conditions favorables / soleil ;
-  - orange = risque d’intempérie ou vigilance légère ;
+  - orange = risque d'intempérie ou vigilance légère ;
   - rouge = conditions défavorables.
 
-Ajouter sous la météo une section “Matériel recommandé” en 3 colonnes :
+Ajouter sous la météo une section "Matériel recommandé" en 3 colonnes :
 1. Standard
 2. Chaleur
 3. Intempéries
@@ -315,7 +315,7 @@ Replace placeholder, shortcut-like, or generic badge icons with high-quality, vi
 Requirements:
 - redesign all badge icons
 - make them unique, clear, and aesthetically strong
-- keep full consistency with the site’s branding and visual system
+- keep full consistency with the site's branding and visual system
 - ensure each icon matches the meaning of its badge
 - avoid cheap, default, emoji-like, or shortcut-looking visuals
 - make icons clean, readable, and scalable at small sizes
@@ -344,7 +344,7 @@ exécute ce plan
 
 
 
-explique : "Les sélecteurs de scope de génération des livrables côté UI dépendent encore des données chargées côté client, donc sur de très gros volumes la liste d’options peut rester partielle. Les exports serveur, eux, sont désormais branchés sur le bon périmètre."
+explique : "Les sélecteurs de scope de génération des livrables côté UI dépendent encore des données chargées côté client, donc sur de très gros volumes la liste d'options peut rester partielle. Les exports serveur, eux, sont désormais branchés sur le bon périmètre."
 
 
 

@@ -83,7 +83,7 @@ Examples from the repo:
 
 ### Example 1: Adding a standalone page
 
-If the request is “create `/accessibilite`”:
+If the request is "create `/accessibilite`":
 
 - create `apps/web/src/app/(app)/accessibilite/page.tsx`
 - reuse shared UI from `components/` if needed
@@ -91,7 +91,7 @@ If the request is “create `/accessibilite`”:
 
 ### Example 2: Adding a new rubrique
 
-If the request is “add a rubrique for partner tracking”:
+If the request is "add a rubrique for partner tracking":
 
 - add the section entry in `apps/web/src/lib/sections-registry/config.ts`
 - add the UI in `apps/web/src/components/sections/rubriques/`
@@ -120,4 +120,3 @@ If the logic is reused by several rubriques or APIs:
 - Does the route still resolve from `app/`?
 - Is the section still visible in the registry if it should be?
 - Is the public entrypoint of a complex rubrique unique?
-

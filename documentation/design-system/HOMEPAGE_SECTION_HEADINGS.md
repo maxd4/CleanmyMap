@@ -6,7 +6,7 @@ Règle de cohérence pour les titres et sous-titres de la homepage, hors hero su
 
 - tous les titres de section utilisent la même taille, la même graisse et le même tracking
 - tous les sous-titres utilisent la même taille, la même graisse et la même couleur
-- l’introduction de section est centrée au début de chaque bloc
+- l'introduction de section est centrée au début de chaque bloc
 - le hero supérieur reste une exception et conserve sa hiérarchie propre
 
 ## Application
@@ -17,9 +17,9 @@ Règle de cohérence pour les titres et sous-titres de la homepage, hors hero su
 
 ## Usage
 
-- `cmm-home-section-header` centre l’introduction
+- `cmm-home-section-header` centre l'introduction
 - `cmm-home-section-title` uniformise les H2 de la homepage
-- `cmm-home-section-subtitle` uniformise les paragraphes d’introduction
+- `cmm-home-section-subtitle` uniformise les paragraphes d'introduction
 
 ## Exemple
 
