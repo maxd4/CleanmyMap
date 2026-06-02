@@ -14,11 +14,11 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
 
 ## 1 bis) Limite de blanc sur les backgrounds
 - Sur un background de page teinté, la couche la plus lumineuse ne doit jamais dépasser un mix blanc de `34%` sur une base colorée.
-- Au-delà d’environ `40%` de blanc perçu, la teinte se lave et le fond lit comme un blanc cassé au lieu d’une vraie couleur.
+- Au-delà d'environ `40%` de blanc perçu, la teinte se lave et le fond lit comme un blanc cassé au lieu d'une vraie couleur.
 - Si une page doit paraître plus claire, il faut baisser la saturation ou changer la teinte de base, pas augmenter la part de blanc.
-- Valeur critique à retenir: `rgba(255,255,255,0.34)` max pour la couche lumineuse principale d’un fond coloré.
+- Valeur critique à retenir: `rgba(255,255,255,0.34)` max pour la couche lumineuse principale d'un fond coloré.
 - Règle pratique: une page = une teinte dominante, un même système de glows et de contrastes, puis seulement la couleur change selon la route.
-- Exception de cadrage: la homepage (`/` et `/accueil`) n’est pas une exception de bloc; c’est une famille autonome avec sa propre palette.
+- Exception de cadrage: la homepage (`/` et `/accueil`) n'est pas une exception de bloc; c'est une famille autonome avec sa propre palette.
 - Exception validée: le Sommaire (`/explorer`) conserve sa palette actuelle tant qu'il reste la référence UX la plus aboutie.
 - Bloc "Cartographie & Impact": la Méthodologie (`/methodologie`) adopte la palette rouge d'impact comme lecture scientifique dédiée.
 - Les pages d'impact (`/reports`, `/gamification`, `/methodologie`) restent des exceptions rouges documentées.
@@ -59,9 +59,9 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
 ## 4) Cartes KPI et blocs de données
 - Les cartes KPI doivent partager:
   - la même hauteur minimale,
-  - la même densité d’information,
+  - la même densité d'information,
   - le même niveau de contraste titre/valeur.
-- Les grilles KPI desktop doivent éviter les lignes orphelines (ex: 5 + 1). Préférer des grilles stables (2x3, 3xN, 4xN selon le nombre d’items).
+- Les grilles KPI desktop doivent éviter les lignes orphelines (ex: 5 + 1). Préférer des grilles stables (2x3, 3xN, 4xN selon le nombre d'items).
 - Les unités (kg, L, €) restent visuellement séparées de la valeur sans réduire la lisibilité.
 - Dans les cartes sombres et bulles, les petits textes restent blancs par défaut.
 - Les titres, sous-titres et chiffres doivent être accentués, jamais neutralisés en gris faible contraste.
@@ -72,14 +72,14 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
 - Les badges de rôle/profil gardent un contraste >= 4.5:1.
 - Les infobulles utilisent un fond opaque (pas translucide faible contraste).
 
-## 6) États d’erreur, succès, info
-- Message d’état + icône + couleur + texte explicite.
+## 6) États d'erreur, succès, info
+- Message d'état + icône + couleur + texte explicite.
 - Ne jamais transmettre une information critique uniquement par la couleur.
 - Tous les états doivent rester lisibles en clair et sombre.
 
 ## 7) Règles de QA avant merge
 - Vérifier manuellement au minimum:
-  - page d’accueil,
+  - page d'accueil,
   - navigation/ruban,
   - principal CTA,
   - cartes KPI,
@@ -97,8 +97,8 @@ Garantir une interface lisible en permanence, sans texte invisible, sans bouton 
 ## 8) Interdictions
 - Pas de texte avec opacité < 70% pour des actions importantes.
 - Pas de bouton sans style `focus-visible`.
-- Pas d’effet visuel (blur, glass, gradient) qui dégrade la lecture du texte.
-- Pas d’utilisation de gris proches pour texte et fond.
+- Pas d'effet visuel (blur, glass, gradient) qui dégrade la lecture du texte.
+- Pas d'utilisation de gris proches pour texte et fond.
 
 ## 9) Checklist rapide (obligatoire)
 - Texte principal lisible partout.

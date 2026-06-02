@@ -286,8 +286,8 @@ let report = fs.readFileSync(reportFile, 'utf8');
 
 report = replaceOrFail(
   report,
-  /Le dépôt fournit une photographie du projet à (?:une date donnée|l’instant du relevé)\. Il contient \*\*[\d\s\u202f]+\s*fichiers source\*\* et \*\*[\d\s\u202f]+\s*lignes source\*\* hors dépendances, builds, documentation, fichiers publics et lockfiles\./,
-  `Le dépôt fournit une photographie du projet à l’instant du relevé. Il contient **${formatFr(repoStats.files)} fichiers source** et **${formatFr(repoStats.lines)} lignes source** hors dépendances, builds, documentation, fichiers publics et lockfiles.`,
+  /Le dépôt fournit une photographie du projet à (?:une date donnée|l'instant du relevé)\. Il contient \*\*[\d\s\u202f]+\s*fichiers source\*\* et \*\*[\d\s\u202f]+\s*lignes source\*\* hors dépendances, builds, documentation, fichiers publics et lockfiles\./,
+  `Le dépôt fournit une photographie du projet à l'instant du relevé. Il contient **${formatFr(repoStats.files)} fichiers source** et **${formatFr(repoStats.lines)} lignes source** hors dépendances, builds, documentation, fichiers publics et lockfiles.`,
   'repo snapshot sentence',
 );
 
@@ -370,29 +370,29 @@ report = replaceOrFail(
 
 report = replaceOrFail(
   report,
-  /Le projet a été créé le 20 février 2026 et la période active retenue s’étend(?: jusqu’au 13 mai 2026| jusqu’au 16 mai 2026, soit environ \*\*12,1 semaines\*\*\. Sur cette base, l’hypothèse de travail retient environ \*\*100 h\*\* de développement assisté par IA, auxquelles s’ajoutent environ \*\*20 h\*\* de rédaction, restructuration et intégration documentaire\. Cela correspond à environ \*\*8,2 h\/semaine\*\* pour la seule partie assistée par IA et à un impact total estimé de \*\*100 kWh\*\*, \*\*20 kgCO2e\*\* et \*\*100 L d’eau\*\*, soit environ \*\*8,2 kWh\*\*, \*\*1,6 kgCO2e\*\* et \*\*8,2 L par semaine\*\* sur l’intervalle retenu\.)?[^.]*?servent à cadrer la suite du raisonnement\./,
-  `Le projet a été créé le 20 février 2026 et la période active retenue s’étend jusqu’au 16 mai 2026, soit environ **${weeksRounded} semaines**. Sur cette base, l’hypothèse de travail retient environ **${devHours} h** de développement assisté par IA, auxquelles s’ajoutent environ **${writeHours} h** de rédaction, restructuration et intégration documentaire. Cela correspond à environ **${devHoursPerWeek} h/semaine** pour la seule partie assistée par IA et à un impact total estimé de **100 kWh**, **20 kgCO2e** et **100 L d’eau**, soit environ **${kwhPerWeek} kWh**, **${kgPerWeek} kgCO2e** et **${litersPerWeek} L par semaine** sur l’intervalle retenu. Ces chiffres ne décrivent pas une productivité universelle : ils servent à cadrer la suite du raisonnement.`,
+  /Le projet a été créé le 20 février 2026 et la période active retenue s'étend(?: jusqu'au 13 mai 2026| jusqu'au 16 mai 2026, soit environ \*\*12,1 semaines\*\*\. Sur cette base, l'hypothèse de travail retient environ \*\*100 h\*\* de développement assisté par IA, auxquelles s'ajoutent environ \*\*20 h\*\* de rédaction, restructuration et intégration documentaire\. Cela correspond à environ \*\*8,2 h\/semaine\*\* pour la seule partie assistée par IA et à un impact total estimé de \*\*100 kWh\*\*, \*\*20 kgCO2e\*\* et \*\*100 L d'eau\*\*, soit environ \*\*8,2 kWh\*\*, \*\*1,6 kgCO2e\*\* et \*\*8,2 L par semaine\*\* sur l'intervalle retenu\.)?[^.]*?servent à cadrer la suite du raisonnement\./,
+  `Le projet a été créé le 20 février 2026 et la période active retenue s'étend jusqu'au 16 mai 2026, soit environ **${weeksRounded} semaines**. Sur cette base, l'hypothèse de travail retient environ **${devHours} h** de développement assisté par IA, auxquelles s'ajoutent environ **${writeHours} h** de rédaction, restructuration et intégration documentaire. Cela correspond à environ **${devHoursPerWeek} h/semaine** pour la seule partie assistée par IA et à un impact total estimé de **100 kWh**, **20 kgCO2e** et **100 L d'eau**, soit environ **${kwhPerWeek} kWh**, **${kgPerWeek} kgCO2e** et **${litersPerWeek} L par semaine** sur l'intervalle retenu. Ces chiffres ne décrivent pas une productivité universelle : ils servent à cadrer la suite du raisonnement.`,
   'project duration sentence',
 );
 
 report = replaceOrFail(
   report,
-  /Le projet comptabilise à l'heure actuelle(?: \(16 mai 2026\))? environ \*\*100 h estimées de développement assisté par IA\*\* pour environ \*\*[\d\s\u202f]+ lignes de code\*\* applicatif figées, incluant de nombreux refactors et l’usage majoritaire de modèles légers complétés par des modèles plus lourds pour les tâches complexes\./,
-  `Le projet comptabilise à l'heure actuelle environ **${devHours} h estimées de développement assisté par IA** pour environ **${formatFr(webSrcStats.lines)} lignes de code** applicatif figées, incluant de nombreux refactors et l’usage majoritaire de modèles légers complétés par des modèles plus lourds pour les tâches complexes.`,
+  /Le projet comptabilise à l'heure actuelle(?: \(16 mai 2026\))? environ \*\*100 h estimées de développement assisté par IA\*\* pour environ \*\*[\d\s\u202f]+ lignes de code\*\* applicatif figées, incluant de nombreux refactors et l'usage majoritaire de modèles légers complétés par des modèles plus lourds pour les tâches complexes\./,
+  `Le projet comptabilise à l'heure actuelle environ **${devHours} h estimées de développement assisté par IA** pour environ **${formatFr(webSrcStats.lines)} lignes de code** applicatif figées, incluant de nombreux refactors et l'usage majoritaire de modèles légers complétés par des modèles plus lourds pour les tâches complexes.`,
   'current development volume sentence',
 );
 
 report = replaceOrFail(
   report,
-  /Cette section identifie les principaux postes de consommation numérique, énergétique et computationnelle visibles dans (?:le dépôt au 13 mai 2026|l’état courant du dépôt)\./,
-  'Cette section identifie les principaux postes de consommation numérique, énergétique et computationnelle visibles dans l’état courant du dépôt.',
+  /Cette section identifie les principaux postes de consommation numérique, énergétique et computationnelle visibles dans (?:le dépôt au 13 mai 2026|l'état courant du dépôt)\./,
+  "Cette section identifie les principaux postes de consommation numérique, énergétique et computationnelle visibles dans l'état courant du dépôt.",
   'technical section intro',
 );
 
 report = replaceOrFail(
   report,
-  /Repères locaux utilisés : application Next\.js\/React dans `apps\/web` avec [\d\s\u202f]+ fichiers sources dans `apps\/web\/src`, 55 fichiers de routes API, [\d\s\u202f]+ fichiers déclarés comme composants ou modules client, [\d\s\u202f]+ imports de `framer-motion`, [\d\s\u202f]+ usages de SWR, [\d\s\u202f]+ occurrences de `fetch\(` dans `apps\/web\/src`, [\d\s\u202f]+ occurrences de `no-store`, [\d\s\u202f]+ exports `revalidate`, 5 PNG publics et 1 WebP public jusqu’à environ [\d\s\u202f]+ Ko, Leaflet et Leaflet Draw présents, analytics PostHog\/Vercel\/Sentry conditionnées par consentement ou configuration\./,
-  `Repères locaux utilisés : application Next.js/React dans \`apps/web\` avec ${formatFr(webSrcStats.files)} fichiers sources dans \`apps/web/src\`, 55 fichiers de routes API, ${formatFr(webSrcStats.useClientFiles)} fichiers déclarés comme composants ou modules client, ${formatFr(webSrcStats.framerMotionImports)} imports de \`framer-motion\`, ${formatFr(webSrcStats.swrUsages)} usages de SWR, ${formatFr(webSrcStats.fetchUsages)} occurrences de \`fetch(\` dans \`apps/web/src\`, ${formatFr(webSrcStats.noStoreUsages)} occurrences de \`no-store\`, ${formatFr(webSrcStats.revalidateExports)} exports \`revalidate\`, ${publicImageCountText} jusqu’à environ ${maxRasterKo} Ko, Leaflet et Leaflet Draw présents, analytics PostHog/Vercel/Sentry conditionnées par consentement ou configuration.`,
+  /Repères locaux utilisés : application Next\.js\/React dans `apps\/web` avec [\d\s\u202f]+ fichiers sources dans `apps\/web\/src`, 55 fichiers de routes API, [\d\s\u202f]+ fichiers déclarés comme composants ou modules client, [\d\s\u202f]+ imports de `framer-motion`, [\d\s\u202f]+ usages de SWR, [\d\s\u202f]+ occurrences de `fetch\(` dans `apps\/web\/src`, [\d\s\u202f]+ occurrences de `no-store`, [\d\s\u202f]+ exports `revalidate`, 5 PNG publics et 1 WebP public jusqu'à environ [\d\s\u202f]+ Ko, Leaflet et Leaflet Draw présents, analytics PostHog\/Vercel\/Sentry conditionnées par consentement ou configuration\./,
+  `Repères locaux utilisés : application Next.js/React dans \`apps/web\` avec ${formatFr(webSrcStats.files)} fichiers sources dans \`apps/web/src\`, 55 fichiers de routes API, ${formatFr(webSrcStats.useClientFiles)} fichiers déclarés comme composants ou modules client, ${formatFr(webSrcStats.framerMotionImports)} imports de \`framer-motion\`, ${formatFr(webSrcStats.swrUsages)} usages de SWR, ${formatFr(webSrcStats.fetchUsages)} occurrences de \`fetch(\` dans \`apps/web/src\`, ${formatFr(webSrcStats.noStoreUsages)} occurrences de \`no-store\`, ${formatFr(webSrcStats.revalidateExports)} exports \`revalidate\`, ${publicImageCountText} jusqu'à environ ${maxRasterKo} Ko, Leaflet et Leaflet Draw présents, analytics PostHog/Vercel/Sentry conditionnées par consentement ou configuration.`,
   'local reps sentence',
 );
 

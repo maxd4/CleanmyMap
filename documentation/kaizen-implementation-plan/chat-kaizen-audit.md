@@ -8,9 +8,9 @@ Fichier cible principal: `apps/web/src/components/chat/chat-shell.tsx`
 - Envoi optimiste via `useChatData` avec `mutate(..., { optimisticData, rollbackOnError })`.
 - Retour serveur réinjecté dans le cache sans attendre un second fetch.
 - Le composer accepte `Entrée` pour envoyer, et `Shift+Entrée` pour revenir à la ligne.
-- Le bouton d’envoi et le champ texte sont bloqués pendant l’envoi / upload pour éviter les doubles soumissions.
+- Le bouton d'envoi et le champ texte sont bloqués pendant l'envoi / upload pour éviter les doubles soumissions.
 - Un upload de fichier trop lourd ou en échec déclenche un toast explicite, pas une alerte native.
-- En cas d’erreur réseau sur l’envoi, le toast propose un nouvel essai et un rafraîchissement.
+- En cas d'erreur réseau sur l'envoi, le toast propose un nouvel essai et un rafraîchissement.
 
 ## Points vérifiés
 

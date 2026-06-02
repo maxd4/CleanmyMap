@@ -13,7 +13,7 @@ Fichier cible principal: `apps/web/src/components/actions/action-declaration/Act
   - bénévoles: minimum `1`
 - Les handlers de synchronisation ne propagent plus de valeurs aberrantes dans les conversions.
 - Le slider visuel possède maintenant un `id` explicite et un `aria-labelledby` associé.
-- Les champs poids / état / nombre des mégots et le champ déchets ont des identifiants stables pour l’accessibilité.
+- Les champs poids / état / nombre des mégots et le champ déchets ont des identifiants stables pour l'accessibilité.
 
 ## Points vérifiés
 

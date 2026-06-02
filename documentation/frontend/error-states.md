@@ -1,8 +1,8 @@
 # Gestion des erreurs
 
-Objectif: afficher une erreur avec la surface la plus légère possible, tout en gardant une sortie claire pour l’utilisateur.
+Objectif: afficher une erreur avec la surface la plus légère possible, tout en gardant une sortie claire pour l'utilisateur.
 
-## Types d’erreurs
+## Types d'erreurs
 
 ### 1. Validation
 - Source: données invalides, champ requis manquant, format incorrect.
@@ -25,7 +25,7 @@ Objectif: afficher une erreur avec la surface la plus légère possible, tout en
 ### 4. Permission
 - Source: accès refusé, session expirée, page protégée.
 - Surface recommandée: `PermissionErrorState`.
-- Message recommandé: `Vous n’avez pas accès à cette page.`
+- Message recommandé: `Vous n'avez pas accès à cette page.`
 - Actions recommandées: `Se connecter`, `Retour au tableau de bord`.
 
 ## Composants centralisés
@@ -34,7 +34,7 @@ Objectif: afficher une erreur avec la surface la plus légère possible, tout en
 - `InlineFieldError`: validation inline sous un champ.
 - `NetworkToast`: toast non bloquant pour le réseau.
 - `ServerErrorCard`: état bloquant local avec retry.
-- `PermissionErrorState`: état d’accès refusé avec sortie claire.
+- `PermissionErrorState`: état d'accès refusé avec sortie claire.
 - `ErrorBoundary`: fallback global pour les erreurs runtime.
 
 ## Règles UX

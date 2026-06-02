@@ -150,7 +150,7 @@ Quand tu travailles sur la rubrique `/actions/map`, considère la carte comme un
 - `greater-paris.ts` centralise le périmètre Paris + proche banlieue.
 
 ### 3.3 Invariants À Préserver
-- Ne pas réintroduire de géométrie simulée comme source principale d’affichage.
+- Ne pas réintroduire de géométrie simulée comme source principale d'affichage.
 - Ne pas modifier le contrat public `/api/actions/map`.
 - Ne pas laisser un lien de popup pointer vers `lat=null&lng=null`.
 - Ne pas faire diverger la carte, le journal, les KPI et les filtres globaux.
@@ -165,7 +165,7 @@ Quand tu travailles sur la rubrique `/actions/map`, considère la carte comme un
 - `action-drawing-map.tsx` pour la validation des tracés saisis.
 
 ### 3.5 Règle De Sécurité
-Si une modification touche la carte et qu’elle change le périmètre, la géométrie ou les filtres, valide toujours:
+Si une modification touche la carte et qu'elle change le périmètre, la géométrie ou les filtres, valide toujours:
 - la carte visuelle
 - le journal
 - les KPI
@@ -173,12 +173,12 @@ Si une modification touche la carte et qu’elle change le périmètre, la géom
 - le lint ciblé sur les fichiers modifiés
 
 ### 3.6 Fonctionnalités Carte Déjà En Place
-Avant d’ajouter une nouvelle logique carte, vérifier que les capacités suivantes restent intactes:
+Avant d'ajouter une nouvelle logique carte, vérifier que les capacités suivantes restent intactes:
 - contour `Paris + proche banlieue` visible dans le canvas
 - bouton de recentrage sur le périmètre projet
 - toggles locaux `Points`, `Tracés`, `Infras`
-- sélection d’une action depuis le journal avec surlignage visuel
-- fiche compacte de l’action sélectionnée dans le rail
+- sélection d'une action depuis le journal avec surlignage visuel
+- fiche compacte de l'action sélectionnée dans le rail
 - export CSV de la vue filtrée
 - indicateur de fraîcheur des données issu de SWR
 - synchronisation carte / KPI / journal / filtres / sélection

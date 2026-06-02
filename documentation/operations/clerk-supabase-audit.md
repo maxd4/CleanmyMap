@@ -7,7 +7,7 @@ Ce guide sert à vérifier où vivent les données importantes du projet :
 - les badges / progression
 
 Quand il y a peu de comptes, le SQL manuel peut dépanner.
-Quand il y a beaucoup de comptes, il faut utiliser l’audit automatisé.
+Quand il y a beaucoup de comptes, il faut utiliser l'audit automatisé.
 
 ## Ce qui est source de vérité
 
@@ -24,13 +24,13 @@ Quand il y a beaucoup de comptes, il faut utiliser l’audit automatisé.
 
 ## Mode recommandé pour beaucoup d'utilisateurs
 
-Lance l’audit automatique depuis la racine du repo :
+Lance l'audit automatique depuis la racine du repo :
 
 ```bash
 npm run data:audit:clerk-supabase
 ```
 
-Le script lit automatiquement les variables d’environnement dans l’ordre suivant :
+Le script lit automatiquement les variables d'environnement dans l'ordre suivant :
 
 - `process.env`
 - `apps/web/.env.local`
@@ -76,15 +76,15 @@ Le SQL manuel reste utile pour un contrôle ponctuel.
 
 ## Étape Clerk
 
-Si tu veux lancer l’audit automatique, le script peut déjà lire la clé depuis les fichiers `.env` locaux.
+Si tu veux lancer l'audit automatique, le script peut déjà lire la clé depuis les fichiers `.env` locaux.
 
-Si tu préfères l’imposer manuellement dans la session courante :
+Si tu préfères l'imposer manuellement dans la session courante :
 
 ```powershell
 $env:CLERK_SECRET_KEY="sk_live_xxx"
 ```
 
-Puis lance l’audit :
+Puis lance l'audit :
 
 ```powershell
 npm run data:audit:clerk-supabase
@@ -103,7 +103,7 @@ Le script écrit alors :
 
 ## Résultat attendu
 
-Une fois l’audit prêt, on peut comparer :
+Une fois l'audit prêt, on peut comparer :
 
 - les comptes Clerk
 - les rôles / admin

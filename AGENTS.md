@@ -24,7 +24,7 @@ Sur les héros et titres de page, éviter les retours à la ligne décoratifs. P
 3. réduire la largeur utile,
 4. réorganiser le bloc sur mobile.
 
-Un titre ou sous-titre doit tenir sur une seule ligne sur desktop standard si c’est possible sans nuire à la lisibilité.
+Un titre ou sous-titre doit tenir sur une seule ligne sur desktop standard si c'est possible sans nuire à la lisibilité.
 
 ## Règle UI de lisibilité
 
@@ -80,6 +80,13 @@ Sans cet accord, utiliser uniquement la branche courante et les fichiers du doss
 
 - Informer systématiquement l'utilisateur quand l'action qu'il s'apprête à faire (ou vient de faire) sur le site lui apporte de l'XP ou des badges.
 
+## Règle de charge machine
+
+- Éviter de lancer plusieurs commandes lourdes en parallèle, notamment `npm run checks`, `pytest`, `typecheck`, `rg -n` sur tout le repo et les scans de documentation.
+- Éviter de laisser tourner en parallèle `npm run dev`, les tests `vitest`, les watchers de build et les scripts de maintenance Python.
+- Avant de lancer une commande lourde, vérifier qu'une autre tâche active sur le repo ne produit pas déjà la même charge.
+- Si une seule vérification ciblée suffit, préférer cette vérification à un scan global.
+
 ## Contrat projet migré depuis `.cursorrules`
 
 Ce bloc reprend les règles repo-wide qui vivaient dans `.cursorrules` afin de centraliser le contrat d'IA à la racine du projet.
@@ -97,7 +104,7 @@ Ce bloc reprend les règles repo-wide qui vivaient dans `.cursorrules` afin de c
 - `apps/web/src/components/sections/rubriques` contient les modules fonctionnels principaux.
 - Quand un nouveau module est ajoute dans `apps/web/src/components/sections/rubriques`, il doit etre enregistre dans `apps/web/src/lib/sections-registry.ts`.
 - `apps/web/src/lib/domain-language.ts` est la source de verite pour la logique `Role`, `SessionRole` et `Parcours`.
-- `scripts/` et `legacy/` contiennent les scripts d'ingestion de donnees et l'historique code.
+- `scripts/` et `maintenance/python/` contiennent les scripts d'ingestion de donnees et l'historique code.
 
 ### Regles critiques
 

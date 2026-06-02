@@ -18,7 +18,7 @@ const replacements = [
   [/\bprompts?\b/gi, (m) => (m.toLowerCase().endsWith('s') ? 'instructions' : 'instruction')],
   [/\bopen source\b/gi, 'source ouverte'],
   [/\blegacy\b/gi, 'héritage'],
-  [/\banalytics\b/gi, 'mesure d’audience'],
+  [/\banalytics\b/gi, "mesure d'audience"],
   [/\bfeatures?\b/gi, (m) => (m.toLowerCase().endsWith('s') ? 'fonctionnalités' : 'fonctionnalité')],
   [/\bsampling\b/gi, 'échantillonnage'],
   [/\block-in\b/gi, 'enfermement propriétaire'],
@@ -53,19 +53,19 @@ function applyReplacements(text) {
   }
   output = output.replace(/\bCommits depuis le début du projet\b/g, 'Validations Git depuis le début du projet');
   output = output.replace(/\bCommit(s)?\b/g, (m) => (m.toLowerCase().endsWith('s') ? 'validations Git' : 'validation Git'));
-  output = output.replace(/AI-driven Bloat/g, 'gonflement induit par l’IA');
+  output = output.replace(/AI-driven Bloat/g, "gonflement induit par l'IA");
   output = output.replace(/fonctionnalité creep/g, 'dérive fonctionnelle');
   output = output.replace(/jailbreak progressif/g, 'contournement progressif des garde-fous');
   output = output.replace(/jailbreak/g, 'contournement des garde-fous');
-  output = output.replace(/### mesure d’audience, notifications et bruit numérique/g, '### Mesures d’audience, notifications et bruit numérique');
-  output = output.replace(/\bles mesure d’audience\b/g, 'les mesures d’audience');
-  output = output.replace(/\bmesure d’audience minimales\b/g, 'mesures d’audience minimales');
-  output = output.replace(/\bmesure d’audience avancés\b/g, 'outils de mesure d’audience avancés');
-  output = output.replace(/\bVolume d'mesure d’audience\b/g, 'Volume de mesure d’audience');
-  output = output.replace(/\bChaque événement mesure d’audience\b/g, 'Chaque événement de mesure d’audience');
-  output = output.replace(/\bévénements mesure d’audience\b/g, 'événements de mesure d’audience');
-  output = output.replace(/\bmesure d’audience et des services tiers\b/g, 'mesures d’audience et des services tiers');
-  output = output.replace(/\bmesure d’audience PostHog\/Vercel\/Sentry\b/g, 'mesures d’audience PostHog/Vercel/Sentry');
+  output = output.replace(/### mesure d'audience, notifications et bruit numérique/g, "### Mesures d'audience, notifications et bruit numérique");
+  output = output.replace(/\bles mesure d'audience\b/g, "les mesures d'audience");
+  output = output.replace(/\bmesure d'audience minimales\b/g, "mesures d'audience minimales");
+  output = output.replace(/\bmesure d'audience avancés\b/g, "outils de mesure d'audience avancés");
+  output = output.replace(/\bVolume d'mesure d'audience\b/g, "Volume de mesure d'audience");
+  output = output.replace(/\bChaque événement mesure d'audience\b/g, "Chaque événement de mesure d'audience");
+  output = output.replace(/\bévénements mesure d'audience\b/g, "événements de mesure d'audience");
+  output = output.replace(/\bmesure d'audience et des services tiers\b/g, "mesures d'audience et des services tiers");
+  output = output.replace(/\bmesure d'audience PostHog\/Vercel\/Sentry\b/g, "mesures d'audience PostHog/Vercel/Sentry");
   return output;
 }
 

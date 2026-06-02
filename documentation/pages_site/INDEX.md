@@ -22,6 +22,9 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 - Les routes dynamiques sont documentées par un exemple canonique par pattern.
 - Les routes alias ou redirections restent inventoriées mais ne sont pas traitées comme des pages UI autonomes.
 - Chaque route canonique possède son propre sous-dossier dans `documentation/pages_site/routes/`, avec les captures de la page complète, un markdown des exceptions UI et un markdown de présentation du fonctionnement de la page.
+- Chaque sous-dossier de page doit conserver `IDEES_NON_PERTINENTES.md`, la mémoire locale des améliorations écartées pour cette page.
+- Les markdown de `documentation/pages_site/routes/` suivent un style court et direct : chiffres exacts, unités abrégées, listes sans article en tête quand c'est possible.
+- Les pages de lecture documentent aussi le choix de sobriété : carte légère, calculs à la demande, détails chargés seulement quand ils servent.
 - Les captures disponibles ne sont pas obligatoires pour exister dans l'inventaire.
 - Les incohérences de couleurs sont évaluées par comparaison entre la règle attendue et la teinte actuellement résolue par le code.
 - La charte complémentaire des pages hors blocs vit dans `charte-pages-hors-blocs.md` ([lien](./charte-pages-hors-blocs.md)).
@@ -166,5 +169,3 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 | Route | Type de page | Fiche | Famille / hors bloc | Statut | Contexte d'accès | Palette attendue | Scope | Fichier source | Dossier canonique | Capture disponible | Surcharge textuelle | Incohérence couleur | Priorité |
 |---|---|---|---|---|---|---|---|---|---|:---:|---|:---:|---|
 | `/prints/report` | rapport / export | [Rapport imprimable](./routes/10-print-export/prints-report/README.md) | Print & Export (hors bloc) | standalone | Accès direct depuis le shell ou un outil interne | ardoise / bleu nuit / vert discret | à corriger | apps/web/src/app/(app)/prints/report/page.tsx | ./routes/10-print-export/prints-report | non | moyen | oui | critique |
-
-

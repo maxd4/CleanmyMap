@@ -1,6 +1,6 @@
 # Plan — Registre `page-families` (couleurs par type de route)
 
-Document de référence pour piloter la transition de la charte couleur par pages. Il complète le guide d’usage [`PAGE_FAMILIES.md`](../development/PAGE_FAMILIES.md).
+Document de référence pour piloter la transition de la charte couleur par pages. Il complète le guide d'usage [`PAGE_FAMILIES.md`](../development/PAGE_FAMILIES.md).
 
 **Dernière mise à jour** : le plan est aligné sur les 11 types de routes inventoriés dans `documentation/pages_site`.
 
@@ -17,13 +17,13 @@ Une modification de palette sur une page de bloc doit se faire dans un fichier f
 3. Cartes rubrique standard (`RubriqueCard` / `FamilyRubriqueCard`)
 4. Plus tard, cartes métier spécialisées, boutons et états système
 
-Ce plan ne remplace pas l’index `pages_site`. Il sert à rendre la migration exécutable.
+Ce plan ne remplace pas l'index `pages_site`. Il sert à rendre la migration exécutable.
 
 ---
 
 ## Taxonomie des 11 types de routes
 
-Le dossier `documentation/pages_site` organise l’inventaire autour de 11 types. Le plan `page-families` doit rester lisible dans cette taxonomie.
+Le dossier `documentation/pages_site` organise l'inventaire autour de 11 types. Le plan `page-families` doit rester lisible dans cette taxonomie.
 
 | # | Type de route | Dossier canonique | Rôle vis-à-vis de `page-families` |
 |---|---|---|---|
@@ -37,7 +37,7 @@ Le dossier `documentation/pages_site` organise l’inventaire autour de 11 types
 | 07 | Institutionnel & Légal (hors bloc) | `routes/07-legal` | famille autonome, sobriété prioritaire |
 | 08 | Système & Utilitaires (hors bloc) | `routes/08-systeme-utilitaires` | famille autonome, pages outil, erreurs et dynamiques |
 | 09 | Admin & Super-admin (hors bloc) | `routes/09-admin-superadmin` | famille autonome, accès technique |
-| 10 | Print & Export (hors bloc) | `routes/10-print-export` | famille autonome, contraintes d’impression |
+| 10 | Print & Export (hors bloc) | `routes/10-print-export` | famille autonome, contraintes d'impression |
 
 ---
 
@@ -45,7 +45,7 @@ Le dossier `documentation/pages_site` organise l’inventaire autour de 11 types
 
 Le plan doit permettre de répondre rapidement à ces questions :
 
-- quelle famille couleur s’applique à une route donnée ;
+- quelle famille couleur s'applique à une route donnée ;
 - quelles exceptions sont documentées ;
 - quelles routes restent hors migration ;
 - quel composant UI porte la vérité visuelle ;
@@ -125,7 +125,7 @@ Ce lot couvre la première vague de cohérence des blocs métier et de navigatio
 |---|---|
 | Inventaire des cartes hors `RubriqueCard` | À faire |
 | Décision sur des tokens `panel` / `kpi` / `stat` | À faire |
-| Migration progressive ou documentation d’un legacy local | À faire |
+| Migration progressive ou documentation d'un legacy local | À faire |
 
 ### Gouvernance et outillage
 
@@ -144,7 +144,7 @@ Un bloc est considéré comme migré quand :
 1. Toutes ses routes résolvent vers la bonne `PageFamilyId`, sauf exceptions documentées.
 2. Chaque page migrée utilise `PageHeader` (ou l'alias `PageHero`) ou `SectionShell` sans classe hero en dur.
 3. Les cartes standard passent par `FamilyRubriqueCard` ou un `pageFamily` explicite.
-4. Aucun nouveau `linear-gradient` spécifique au bloc n’est ajouté dans les `page.tsx` du bloc.
+4. Aucun nouveau `linear-gradient` spécifique au bloc n'est ajouté dans les `page.tsx` du bloc.
 5. La fiche `routes/.../README.md` et la colonne palette de `INDEX.md` sont à jour.
 
 ---
@@ -161,7 +161,7 @@ Un bloc est considéré comme migré quand :
 
 ## Limites connues
 
-Ces points sont documentés pour éviter qu’ils soient oubliés. Ils ne sont pas tous traités par les phases actuelles.
+Ces points sont documentés pour éviter qu'ils soient oubliés. Ils ne sont pas tous traités par les phases actuelles.
 
 ### Coexistence de plusieurs systèmes couleur
 
@@ -195,11 +195,11 @@ Piste :
 - créer des wrappers dédiés ou des variants de composants existants ;
 - inventorier les routes concernées dans `pages_site`.
 
-### Boutons et liens d’action
+### Boutons et liens d'action
 
 Symptôme :
 
-- la logique des boutons dépend encore d’autres thèmes que la famille complète.
+- la logique des boutons dépend encore d'autres thèmes que la famille complète.
 
 Piste :
 
@@ -225,7 +225,7 @@ Symptôme :
 
 Piste :
 
-- limiter le nombre d’exceptions par release ;
+- limiter le nombre d'exceptions par release ;
 - rattacher chaque exception à une fiche `pages_site`.
 
 ### Homepage et marketing
@@ -237,7 +237,7 @@ Symptôme :
 Piste :
 
 - maintenir une séparation volontaire entre homepage et bloc 01 ;
-- documenter ce choix dans l’index.
+- documenter ce choix dans l'index.
 
 ---
 
@@ -255,7 +255,7 @@ Piste :
 | 07 Institutionnel & Légal | autonome | `/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en` | sobriété prioritaire |
 | 08 Système & Utilitaires | autonome | `/form-comparison`, `/preview/actions/new`, `/declaration-simple`, `/reglages`, `/error/429`, `/sections/[sectionId]` | inclut les états et dynamiques utilitaires |
 | 09 Admin & Super-admin | autonome | `/admin/*` | accès restreint |
-| 10 Print & Export | autonome | `/prints/report` | contraintes de lisibilité et d’impression |
+| 10 Print & Export | autonome | `/prints/report` | contraintes de lisibilité et d'impression |
 
 ---
 

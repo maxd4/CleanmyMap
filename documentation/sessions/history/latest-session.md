@@ -9,7 +9,7 @@
 - `npm run test:security -w apps/web` passe.
 - `npm run lint -w apps/web` passe avec warnings tolérés en développement.
 - Les runs et deployments GitHub obsolètes ont été purgés.
-- Le point d’entrée pour le prochain audit est [documentation/maintenance/quality-audit-snapshot.md](../../maintenance/quality-audit-snapshot.md).
+- Le point d'entrée pour le prochain audit est [documentation/maintenance/quality-audit-snapshot.md](../../maintenance/quality-audit-snapshot.md).
 
 ## Travaux accomplis (Cette session)
 
@@ -45,7 +45,7 @@
 - **Déplacements** : `standards-visuels.md` a été déplacé vers `documentation/ai-guides/standards-visuels.md` et les anciens plans ponctuels ont été sortis du noyau documentaire.
 - **Index réécrit** : `documentation/design-system/README.md` distingue désormais code live, docs canoniques, legacy et hors périmètre.
 - **Liens corrigés** : mises à jour de `AI_DEVELOPER_GUIDE.md`, `display-modes-implementation.md`, `USAGE_GUIDE.md`, `AGENTS.md` et `ai-guides/README.md`.
-- **Découverte** : ajout du guide `documentation/ai-guides/standards-visuels.md` dans l’index des guides IA.
+- **Découverte** : ajout du guide `documentation/ai-guides/standards-visuels.md` dans l'index des guides IA.
 
 ## En attente d'exécution (Next & Risks)
 - **Observabilité admin** : compléter le lot message 3 avec timeline courte des incidents et vue centralisée plus narrative.
@@ -64,4 +64,4 @@
 - **Dette Lint** : warnings restants acceptés pour le moment; le snapshot qualité courant sert de backlog de priorisation.
 - **Complexité Framer Motion** : Veiller à ce que les animations `layoutId` ne créent pas de conflits de rendu sur mobile.
 - **Chemins Documentation** : Risque de liens brisés dans d'autres docs suite à la migration racine (audit des liens à prévoir).
-- **Références historiques** : certains bookmarks ou commentaires peuvent encore pointer vers l’ancien `design-system.md`; surveiller les retours d’usage avant suppression définitive des mentions résiduelles.
+- **Références historiques** : certains bookmarks ou commentaires peuvent encore pointer vers l'ancien `design-system.md`; surveiller les retours d'usage avant suppression définitive des mentions résiduelles.

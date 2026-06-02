@@ -2,13 +2,13 @@
 
 ## Organisation des captures
 
-Le registre canonique des routes vit dans `documentation/pages_site/generate-canonical-pages.mjs` et l’inventaire exhaustif reste centralisé dans `documentation/pages_site/INDEX.md`. Le nouveau pipeline d’écran alimente le dossier `documentation/pages_site/screen/` en PNG desktop full page. Les captures route-first historiques dans `photo/` et le miroir legacy `documentation/liberte-UX-UI/` restent disponibles tant que la migration n’est pas terminée.
+Le registre canonique des routes vit dans `documentation/pages_site/generate-canonical-pages.mjs` et l'inventaire exhaustif reste centralisé dans `documentation/pages_site/INDEX.md`. Le nouveau pipeline d'écran alimente le dossier `documentation/pages_site/screen/` en PNG desktop full page. Les captures route-first historiques dans `photo/` et le miroir legacy `documentation/liberte-UX-UI/` restent disponibles tant que la migration n'est pas terminée.
 
 ### Règle impérative
 
 - Les captures écran canoniques du nouveau pipeline doivent être enregistrées dans `documentation/pages_site/screen/<family>/<slug>/desktop.png`.
 - Le format de sortie est PNG uniquement.
-- Les captures route-first historiques en `photo/` restent documentées pour compatibilité tant que le pipeline n’est pas totalement migré.
+- Les captures route-first historiques en `photo/` restent documentées pour compatibilité tant que le pipeline n'est pas totalement migré.
 - Les captures legacy peuvent rester en miroir dans `documentation/liberte-UX-UI/...` tant que les scripts historiques existent.
 - Ne pas déposer de captures écran en dehors de `documentation/pages_site/screen/`.
 - Les fichiers de contexte, alias temporaires ou exports intermédiaires doivent rester séparés des captures officielles.
@@ -69,7 +69,7 @@ Les pages principales génèrent automatiquement des captures PNG dans leur doss
 - **Optimisation** : le rendu est généré en full page desktop pour réduire les captures manuelles
 
 ### Configuration des routes
-Les routes sont lues depuis `documentation/pages_site/screen/capture-routes.mjs`, qui s’appuie sur le registre canonique exporté par `documentation/pages_site/generate-canonical-pages.mjs`.
+Les routes sont lues depuis `documentation/pages_site/screen/capture-routes.mjs`, qui s'appuie sur le registre canonique exporté par `documentation/pages_site/generate-canonical-pages.mjs`.
 
 ### Actions avant capture
 Le pipeline supporte des actions optionnelles avant capture :
