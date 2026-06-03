@@ -138,7 +138,7 @@ export function ArticleRessourceJsonLd() {
     headline: "Guide des bonnes pratiques de dépollution urbaine",
     description:
       "Apprenez les bonnes pratiques pour nettoyer efficacement les espaces urbains. Guide complet pour les bénévoles éco-responsables.",
-    image: "https://cleanmymap.fr/brand/nouveau-logo.png",
+    image: "https://cleanmymap.fr/brand/nouveau-logo.svg",
     author: {
       "@type": "Organization",
       name: "CleanMyMap",
@@ -148,7 +148,7 @@ export function ArticleRessourceJsonLd() {
       name: "CleanMyMap",
       logo: {
         "@type": "ImageObject",
-        url: "https://cleanmymap.fr/brand/nouveau-logo.png",
+        url: "https://cleanmymap.fr/brand/nouveau-logo.svg",
       },
     },
     datePublished: "2026-01-15",
@@ -183,7 +183,7 @@ export function VideoTutorialJsonLd() {
     name: "Comment déclarer une action sur CleanMyMap",
     description:
       "Tutoriel vidéo pour apprendre à déclarer vos actions de nettoyage et累计 votre impact environnemental sur la plateforme CleanMyMap.",
-    thumbnailUrl: "https://cleanmymap.fr/brand/nouveau-logo.png",
+    thumbnailUrl: "https://cleanmymap.fr/brand/nouveau-logo.svg",
     uploadDate: "2026-01-15",
     duration: "PT5M30S",
     contentUrl: "https://cleanmymap.fr/videos/declaration-action.mp4",
@@ -193,7 +193,7 @@ export function VideoTutorialJsonLd() {
       name: "CleanMyMap",
       logo: {
         "@type": "ImageObject",
-        url: "https://cleanmymap.fr/brand/nouveau-logo.png",
+        url: "https://cleanmymap.fr/brand/nouveau-logo.svg",
       },
     },
     author: {
@@ -232,7 +232,7 @@ export function EventCleanwalkJsonLd() {
       name: "CleanMyMap",
       url: "https://cleanmymap.fr",
     },
-    image: "https://cleanmymap.fr/brand/nouveau-logo.png",
+    image: "https://cleanmymap.fr/brand/nouveau-logo.svg",
     offers: {
       "@type": "Offer",
       price: "0",

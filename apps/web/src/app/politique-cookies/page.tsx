@@ -54,7 +54,7 @@ export default function PolitiqueCookiesPage() {
           badge={<PageHeaderBadge tone="slate">Cookies et traceurs</PageHeaderBadge>}
           title="Politique cookies"
           subtitle="CleanMyMap utilise des cookies et du stockage local pour faire fonctionner l'application, mémoriser vos préférences et, si vous y consentez, mesurer l'usage du site."
-          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 5 mai 2026</p>}
+          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 1 juin 2026</p>}
         />
 
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -68,11 +68,17 @@ export default function PolitiqueCookiesPage() {
           </p>
           <p className="text-sm leading-6 text-slate-600">
             La préférence est enregistrée dans <strong>localStorage</strong>{" "}
-            et synchronisée avec un cookie technique{" "}
+            sous <code className="rounded bg-slate-100 px-1 py-0.5">cleanmymap_cookie_consent</code>{" "}
+            et synchronisée avec le cookie analytique{" "}
             <code className="rounded bg-slate-100 px-1 py-0.5">
               cleanmymap_analytics_consent
             </code>{" "}
             pour appliquer le choix côté navigateur et côté serveur.
+          </p>
+          <p className="text-sm leading-6 text-slate-600">
+            Le parrainage et les liens d&apos;invitation n&apos;utilisent pas de
+            cookie dédié : ils sont suivis en base de données via le profil
+            utilisateur.
           </p>
         </section>
 
@@ -82,7 +88,7 @@ export default function PolitiqueCookiesPage() {
             title="Cookies et stockages nécessaires"
             items={[
               "Authentification Clerk : cookies de session requis pour l'accès au compte et la sécurité.",
-              "Préférences techniques du site : langue (`cleanmymap.locale`) et mode d'affichage (`cleanmymap.display_mode`).",
+              "Préférences techniques du site : langue (`cleanmymap.locale`) et mode d'affichage (`cleanmymap.display_mode`) synchronisées via cookies SameSite=Lax.",
               "Mode d'affichage en attente de synchronisation (`cleanmymap.display_mode_pending_sync`).",
               "Consentement utilisateur enregistré pour éviter d'afficher la bannière à chaque visite.",
               "Cookie Cloudflare `_cfuvid` lorsque l'infrastructure du fournisseur le nécessite.",

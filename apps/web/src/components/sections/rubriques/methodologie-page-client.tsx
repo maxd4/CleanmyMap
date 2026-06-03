@@ -117,7 +117,7 @@ const OPEN_SOURCE_DOCS = [
       fr: "Découvrez en détail chaque étape de notre audit d’impact : des formules précises, les facteurs d’émission reconnus d’ADEME et du GIEC, ainsi qu’une explication claire de notre algorithme proxy linéaire, afin que vous compreniez comment chaque score est calculé et puissiez l’interpréter vous‑même.",
       en: "Explore the complete impact‑audit process, including precise equations, reputable ADEME and IPCC emission factors, and a clear breakdown of our linear proxy algorithm, empowering you to understand exactly how each impact score is derived and interpret the results confidently.",
     },
-    href: "/docs/impact_IA_CleanMyMap.pdf",
+    href: "/docs/plans/rapport_impact/impact_IA.md",
     icon: <Scaling className="h-6 w-6" />,
     isPdf: true,
   },

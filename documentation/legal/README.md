@@ -19,7 +19,22 @@ Ces documents sont également accessibles directement depuis la plateforme Clean
 
 Ces documents sont régulièrement mis à jour pour refléter les changements dans nos services et la réglementation applicables.
 
-**Dernière mise à jour :** 30 Avril 2026
+Les dernières mises à jour couvrent notamment le parrainage, l'alignement des cookies de consentement et des préférences, ainsi que les évolutions des fonctionnalités communautaires.
+
+**Dernière mise à jour :** 1 Juin 2026
+
+## Licence du projet
+
+Le projet reste distribué en open source, mais le choix précis de licence est encore en cours d'arbitrage.
+
+Les pistes actuellement envisagées pour conserver un cadre communautaire et bénévole sont:
+
+- AGPLv3
+- GPLv3
+- MPL 2.0
+- Apache 2.0
+
+La décision finale doit être validée après avis de personnes compétentes. Cette note sert de trace interne pour la gouvernance du projet.
 
 ## Contact
 

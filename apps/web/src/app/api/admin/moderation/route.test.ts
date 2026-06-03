@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const requireAdminAccessMock = vi.hoisted(() => vi.fn());
 const getSupabaseAdminClientMock = vi.hoisted(() => vi.fn());
@@ -28,11 +28,17 @@ vi.mock("@/lib/events/emit", () => ({
 }));
 
 describe("POST /api/admin/moderation", () => {
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     requireAdminAccessMock.mockResolvedValue({ ok: true, userId: "admin-1" });
     appendAdminOperationAuditMock.mockResolvedValue(undefined);
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
   });
 
   it("updates action form fields and status in one admin operation", async () => {

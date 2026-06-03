@@ -51,6 +51,17 @@ describe("Supabase function permissions", () => {
     expect(migration).toContain("revoke all on function public.can_view_territory_message(integer) from public;");
   });
 
+  it("exposes pollution score references through a public read-only RPC", () => {
+    const migration = readMigration("../../../supabase/migrations/20260602000001_action_pollution_score_references_rpc.sql");
+
+    expect(migration).toContain("create or replace function public.action_pollution_score_references()");
+    expect(migration).toContain("returns table (");
+    expect(migration).toContain("security invoker");
+    expect(migration).toContain("set search_path = pg_catalog");
+    expect(migration).toContain("revoke all on function public.action_pollution_score_references() from public;");
+    expect(migration).toContain("grant execute on function public.action_pollution_score_references() to public;");
+  });
+
   it("enables RLS on xp_audit and restricts it to the service role", () => {
     const migration = readMigration("../../../supabase/migrations/20260601000001_harden_xp_audit_rls.sql");
 
@@ -59,6 +70,29 @@ describe("Supabase function permissions", () => {
     expect(migration).toContain("create policy xp_audit_service_only on public.xp_audit");
     expect(migration).toContain("using (auth.role() = 'service_role')");
     expect(migration).toContain("with check (auth.role() = 'service_role')");
+  });
+
+  it("hardens user_roles to server-only access", () => {
+    const migration = readMigration("../../../supabase/migrations/20260603000001_harden_user_roles_rls.sql");
+
+    expect(migration).toContain("alter table if exists public.user_roles");
+    expect(migration).toContain("enable row level security;");
+    expect(migration).toContain("drop policy if exists system_can_manage_roles on public.user_roles;");
+    expect(migration).toContain("drop policy if exists user_roles_service_only on public.user_roles;");
+    expect(migration).toContain("create policy user_roles_service_only on public.user_roles");
+    expect(migration).toContain("for select");
+    expect(migration).toContain("using (auth.role() = 'service_role')");
+    expect(migration).toContain("revoke all on table public.user_roles from anon, authenticated;");
+    expect(migration).toContain("grant select, insert, update, delete on table public.user_roles to service_role;");
+  });
+
+  it("creates user_roles with Clerk-compatible text identifiers", () => {
+    const migration = readMigration("../../../supabase/migrations/20260529000000_add_user_roles.sql");
+
+    expect(migration).toContain("CREATE TABLE IF NOT EXISTS public.user_roles");
+    expect(migration).toContain("user_id TEXT NOT NULL UNIQUE");
+    expect(migration).not.toContain("REFERENCES auth.users");
+    expect(migration).toContain("ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;");
   });
 
   it("removes legacy neighborhood helpers and pins trigger search paths", () => {

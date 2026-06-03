@@ -1,6 +1,5 @@
 import { getSectionClerkAccessMode } from "@/lib/clerk-access";
 import { RUBRIQUE_REGISTRY } from "@/lib/sections-registry";
-import { HOME_ALIAS_ROUTE } from "@/lib/home-routes";
 import {
   ADMIN_ROUTE,
   DASHBOARD_ROUTE,
@@ -33,7 +32,6 @@ export const PUBLIC_APP_SITEMAP_PATHS = [
 ] as const;
 
 export const PRIVATE_APP_ROUTE_PREFIXES = [
-  HOME_ALIAS_ROUTE,
   ADMIN_ROUTE,
   "/actions/history",
   "/actions/new",

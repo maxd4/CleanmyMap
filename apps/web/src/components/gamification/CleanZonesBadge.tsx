@@ -1,6 +1,10 @@
 "use client";
 
 import React from "react";
+import {
+  GamificationBadgePanel,
+  getGamificationBadgeState,
+} from "@/components/gamification/badge-ui";
 
 type AtmosphericGrade = {
   id: string;
@@ -20,8 +24,11 @@ export default function CleanZonesBadge({
   current: number;
   onGradeReached?: (grade: AtmosphericGrade) => void;
 }) {
-  const activeGrade = grades.length ? (grades.slice().reverse().find((g) => current >= g.threshold) || grades[0]) : null;
+  const activeGrade = grades.length
+    ? grades.slice().reverse().find((g) => current >= g.threshold) || grades[0]
+    : null;
   const activeGradeId = activeGrade?.id ?? "none";
+  const tooltipId = React.useId();
   const didMountRef = React.useRef(false);
   const previousGradeIdRef = React.useRef<string | null>(null);
   const previousCurrentRef = React.useRef<number | null>(null);
@@ -65,92 +72,81 @@ export default function CleanZonesBadge({
 
   // Atmospheric emoji mapping
   const atmosphericEmoji: Record<string, string> = {
-    "breeze": "🌬️",
-    "horizon": "🌅",
-    "azure": "🔵",
-    "dawn": "🌄",
-    "zenith": "☀️",
-    "stratosphere": "☁️",
-    "ether": "✨",
-    "helios": "🌟",
-    "harmony": "🦋",
-    "eden": "🌿",
+    breeze: "🌬️",
+    horizon: "🌅",
+    azure: "🔵",
+    dawn: "🌄",
+    zenith: "☀️",
+    stratosphere: "☁️",
+    ether: "✨",
+    helios: "🌟",
+    harmony: "🦋",
+    eden: "🌿",
   };
 
   const gradeType = activeGrade?.id.replace("clean-zones-", "") ?? "breeze";
   const atmosphereIcon = atmosphericEmoji[gradeType] || "🌍";
 
   return activeGrade ? (
-    <div
-      className={`clean-zones-badge ${isCelebrating ? "cmm-gamification-celebrate" : ""}`}
-      style={{
+    <GamificationBadgePanel
+      shellClassName={`clean-zones-badge ${isCelebrating ? "cmm-gamification-celebrate" : ""}`}
+      glowClassName=""
+      shellStyle={{
         padding: 16,
         textAlign: "center",
         borderRadius: 12,
         background: `linear-gradient(135deg, var(--atmosphere-${gradeType}-light, #f5f5f5), var(--atmosphere-${gradeType}-dark, #e0e0e0))`,
-        border: "2px solid var(--atmosphere-${gradeType}-border, #ccc)",
+        border: `2px solid var(--atmosphere-${gradeType}-border, #ccc)`,
         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
       }}
-    >
-      {/* Atmospheric icon and grade label */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-        <span style={{ fontSize: 32 }}>{atmosphereIcon}</span>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gray-800, #333)" }}>
-            {activeGrade.label} — Zones propres et déclarées
+      glowStyle={{
+        background: `linear-gradient(135deg, var(--atmosphere-${gradeType}-light, #f5f5f5), var(--atmosphere-${gradeType}-dark, #e0e0e0))`,
+      }}
+      progressClassName={isCelebrating ? "cmm-gamification-progress" : ""}
+      celebrating={isCelebrating}
+      eyebrow={
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <span style={{ fontSize: 32 }}>{atmosphereIcon}</span>
+          <div style={{ textAlign: "left" }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gray-800, #333)" }}>
+              {activeGrade.label} — Zones propres et déclarées
+            </div>
+            <div style={{ fontSize: 12, color: "var(--gray-600, #666)" }}>
+              Exploration positive & veille environnementale
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: "var(--gray-600, #666)" }}>
-            Exploration positive & veille environnementale
-          </div>
         </div>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ marginTop: 12 }}>
-        <div
-          style={{
-            height: 8,
-            background: "rgba(0,0,0,0.1)",
-            borderRadius: 4,
-            overflow: "hidden",
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              height: "100%",
-              background: `var(--atmosphere-${gradeType}-progress, #7cb9e8)`,
-              width: `${progressPercent}%`,
-              transition: "width 0.3s ease",
-            }}
-            className={isCelebrating ? "cmm-gamification-progress" : undefined}
-          />
-        </div>
-        <div style={{ fontSize: 12, color: "var(--gray-700, #555)", marginTop: 6 }}>
-          {current} / {activeGrade.threshold} zones propres validées
-          {remaining > 0 && (
-            <span style={{ marginLeft: 8, color: "var(--gray-500, #999)" }}>
-              (+{remaining} pour {nextGrade?.label || "suivant"})
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Tooltip */}
-      {activeGrade.tooltip && (
-        <div
-          style={{
-            fontSize: 11,
-            color: "var(--gray-600, #666)",
-            marginTop: 8,
-            fontStyle: "italic",
-            lineHeight: 1.3,
-          }}
-        >
-          {activeGrade.tooltip}
-        </div>
-      )}
-    </div>
+      }
+      description="Les zones propres validées alimentent une progression lisible, avec un palier suivant toujours affiché."
+      summaryLabel={activeGrade.label}
+      summaryValue={current}
+      summaryUnit="zones propres"
+      state={getGamificationBadgeState(current, activeGrade.threshold)}
+      metrics={[
+        {
+          label: "Zones propres",
+          value: current,
+        },
+        {
+          label: "Zone active",
+          value: activeGrade.label,
+        },
+        {
+          label: "Prochain palier",
+          value: nextGrade?.label || "Suivant",
+        },
+      ]}
+      progressLabel={`Progression vers ${nextGrade?.label ?? "le prochain palier"}`}
+      progressValue={`${current} / ${activeGrade.threshold}`}
+      progressPercent={progressPercent}
+      progressFooterLeft={`Palier actuel: ${activeGrade.label}${nextGrade ? ` → ${nextGrade.label}` : ""}`}
+      progressFooterRight={remaining > 0 ? `+${remaining} zones propres` : "Palier atteint"}
+      tooltip={{
+        id: tooltipId,
+        label: "Détails du palier",
+        content: activeGrade.tooltip ?? "Les zones propres validées font progresser ce badge.",
+      }}
+    />
   ) : (
     <div
       className="clean-zones-badge"
@@ -162,8 +158,9 @@ export default function CleanZonesBadge({
         border: "2px solid #ccc",
       }}
     >
-      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gray-700, #555)" }}>
-        Aucune zone propre disponible
+      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gray-700, #555)" }}>Observateur</div>
+      <div style={{ fontSize: 12, color: "var(--gray-600, #666)", marginTop: 6 }}>
+        Aucune zone propre disponible pour le moment.
       </div>
     </div>
   );

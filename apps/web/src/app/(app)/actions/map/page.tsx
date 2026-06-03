@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { BarChart3, Table2, ArrowRight } from "lucide-react";
 import { buildHomeMetrics } from "@/lib/accueil/config";
 import { ActionsMapFeedContent } from "@/components/actions/map-feed/actions-map-feed";
 import { ActionsMapTable } from "@/components/actions/actions-map-table";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { useActionsMapFilters } from "@/components/actions/map/use-actions-map-filters";
-import { isVisibleWithCategoryFilter } from "@/components/actions/map-marker-categories";
 import type { MarkerCategory } from "@/components/actions/map-marker-categories";
+import type { MapViewportState } from "@/components/actions/map/map-export.types";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
 import { resolvePageFamily } from "@/lib/ui/page-families";
@@ -17,8 +18,12 @@ import { cn } from "@/lib/utils";
 import { useMapKpiStats } from "./_hooks/use-map-kpi-stats";
 import { MapKpiRibbon } from "./_components/map-kpi-ribbon";
 import { MapControlTower } from "./_components/map-control-tower";
-import { MapSupervision } from "./_components/map-supervision";
+import { MapSidebarAid } from "./_components/map-sidebar-aid";
 import { useMapFeedData } from "@/components/actions/map-feed/use-map-feed-data";
+import {
+  ActionPollutionScoreReferencesProvider,
+  useActionPollutionScoreReferences,
+} from "@/components/actions/map/action-pollution-score-references-context";
 
 const ActionsVisualizationPanel = dynamic(
   () =>
@@ -30,8 +35,8 @@ const ActionsVisualizationPanel = dynamic(
     loading: () => (
       <div className="rounded-[2.5rem] border border-sky-200/80 bg-white p-8">
         <div className="space-y-4">
-          <div className="h-5 w-40 animate-pulse rounded bg-sky-100" />
-          <div className="h-40 animate-pulse rounded-[2rem] bg-sky-50" />
+          <CmmSkeleton variant="title" className="w-40" />
+          <CmmSkeleton variant="chart" className="h-40" />
         </div>
       </div>
     ),
@@ -43,7 +48,10 @@ const ActionStoriesCarousel = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[420px] rounded-[2rem] border border-cyan-200/80 bg-white/80" />
+      <div className="space-y-4 rounded-[2rem] border border-cyan-200/80 bg-white/80 p-5">
+        <CmmSkeleton variant="title" className="w-40" />
+        <CmmSkeleton variant="card" className="h-[340px]" />
+      </div>
     ),
   },
 );
@@ -54,11 +62,21 @@ const INITIAL_DAYS = Math.ceil(
 );
 
 export default function ActionsMapPage() {
+  return (
+    <ActionPollutionScoreReferencesProvider>
+      <ActionsMapPageContent />
+    </ActionPollutionScoreReferencesProvider>
+  );
+}
+
+function ActionsMapPageContent() {
   const pageFamily = resolvePageFamily("/actions/map");
+  const { references } = useActionPollutionScoreReferences();
   const {
     filters,
     setDateScope,
     setStatusFilter,
+    setZoneQuery,
     toggleCategory,
     resetFilters,
   } = useActionsMapFilters(INITIAL_DAYS);
@@ -68,12 +86,14 @@ export default function ActionsMapPage() {
     statusFilter,
     impactFilter,
     qualityMin,
+    zoneQuery,
     visibleCategories,
   } = filters;
 
   const [railTab, setRailTab] = useState<"insights" | "journal">("insights");
   const [selectedActionId, setSelectedActionId] = useState<string | null>(null);
-  
+  const [mapViewport, setMapViewport] = useState<MapViewportState | null>(null);
+  const mapExportTargetRef = useRef<HTMLDivElement | null>(null);
   const handleSelectAction = (actionId: string) => {
     setSelectedActionId((current) => (current === actionId ? null : actionId));
     setRailTab("journal");
@@ -88,6 +108,11 @@ export default function ActionsMapPage() {
     setSelectedActionId(null);
     setStatusFilter(statusValue);
   }, [setStatusFilter]);
+
+  const handleZoneQueryChange = useCallback((zoneQueryValue: string) => {
+    setSelectedActionId(null);
+    setZoneQuery(zoneQueryValue);
+  }, [setZoneQuery]);
 
   const handleCategoryToggle = useCallback((category: MarkerCategory) => {
     setSelectedActionId(null);
@@ -106,15 +131,13 @@ export default function ActionsMapPage() {
     statusFilter,
     impactFilter,
     qualityMin,
+    zoneQuery,
     visibleCategories,
+    pollutionScoreReferences: references,
     limit: 300,
   });
-  const mapItems = useMemo(() => mapFeedData.items ?? [], [mapFeedData.items]);
+  const filteredMapItems = useMemo(() => mapFeedData.items ?? [], [mapFeedData.items]);
   const loadedItems = useMemo(() => mapFeedData.allItems ?? [], [mapFeedData.allItems]);
-  const filteredMapItems = useMemo(
-    () => mapItems.filter((item) => isVisibleWithCategoryFilter(item, visibleCategories)),
-    [mapItems, visibleCategories],
-  );
   const visibleCount = filteredMapItems.length;
   const loadedCount = loadedItems.length;
   const stats = useMapKpiStats(filteredMapItems);
@@ -159,29 +182,33 @@ export default function ActionsMapPage() {
             className="max-w-4xl"
           />
 
-          <div className="flex flex-wrap items-center gap-3">
-            <CmmButton href="/actions/new" tone="primary" variant="pill" className="px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <CmmButton href="/actions/new" tone="primary" variant="pill" className="w-full justify-center px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">
               Déclarer <ArrowRight size={14} className="transition-transform hover:translate-x-1" />
             </CmmButton>
-            <CmmButton href="/observatoire" tone="secondary" variant="pill" className="px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3">
+            <CmmButton href="/observatoire" tone="secondary" variant="pill" className="w-full justify-center px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">
               Observatoire <ArrowRight size={14} />
             </CmmButton>
-            <CmmButton href="/methodologie" tone="tertiary" variant="pill" className="px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3">
+            <CmmButton href="/methodologie" tone="tertiary" variant="pill" className="w-full justify-center px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">
               Méthodologie <ArrowRight size={14} />
             </CmmButton>
           </div>
         </header>
 
-        <section className="relative left-1/2 right-1/2 mx-auto w-[calc(100vw-1rem)] -translate-x-1/2 lg:w-[calc(100vw-1.5rem)]">
+        <section className="relative mx-auto w-full lg:left-1/2 lg:right-1/2 lg:w-[calc(100vw-1.5rem)] lg:-translate-x-1/2">
           <ActionsMapFeedContent
             feedData={mapFeedData}
             presentation="immersive"
             showIntro={false}
             fullViewport
-            showStoriesCarousel={false}
-            selectedActionId={selectedActionId}
-            onOpenAction={handleSelectAction}
-          />
+          showStoriesCarousel={false}
+          zoneQuery={zoneQuery}
+          selectedActionId={selectedActionId}
+          onOpenAction={handleSelectAction}
+          onResetFilters={handleResetFilters}
+          mapExportTargetRef={mapExportTargetRef}
+          onViewportChange={setMapViewport}
+        />
         </section>
 
         <div className="mx-auto max-w-[1680px] px-6 space-y-10">
@@ -193,7 +220,12 @@ export default function ActionsMapPage() {
                 filters={filters}
                 visibleCount={visibleCount}
                 loadedCount={loadedCount}
+                allMapItems={loadedItems}
                 filteredMapItems={filteredMapItems}
+                freshnessLabel={mapFeedData.freshnessLabel}
+                mapExportTargetRef={mapExportTargetRef}
+                viewport={mapViewport}
+                onZoneQueryChange={handleZoneQueryChange}
                 onDateScopeChange={handleDateScopeChange}
                 onStatusChange={handleStatusChange}
                 onCategoryToggle={handleCategoryToggle}
@@ -271,37 +303,15 @@ export default function ActionsMapPage() {
               </section>
             </div>
 
-            <aside className="space-y-6 self-start xl:sticky xl:top-8">
-              <section className={cn(surfaceCard, "p-6 sm:p-8")}>
-                <ActionStoriesCarousel items={filteredMapItems} onOpenAction={handleSelectAction} />
+            <aside className="space-y-4 self-start xl:sticky xl:top-8">
+              <section className={cn(surfaceCard, "p-5 sm:p-6")}>
+                <ActionStoriesCarousel items={filteredMapItems} onOpenAction={handleSelectAction} compact />
               </section>
 
-              <section className={cn(surfaceCard, "p-6 sm:p-8 space-y-4")}>
-                <div className="space-y-2">
-                  <p className="flex items-center gap-3 cmm-text-caption font-semibold tracking-[0.14em] text-slate-950">
-                    <span className="h-4 w-4 rounded-full bg-sky-500 shadow-[0_0_18px_rgba(56,189,248,0.45)]" />
-                    Méthodologie
-                  </p>
-                <p className="text-sm font-medium leading-relaxed text-slate-600">
-                    Formules, sources et marges d&apos;erreur restent accessibles.
-                </p>
-                </div>
-                <CmmButton
-                  href="/methodologie"
-                  tone="secondary"
-                  variant="pill"
-                  className="w-full px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] gap-3"
-                >
-                  Rubrique Méthodologie
-                  <ArrowRight size={14} />
-                </CmmButton>
-              </section>
-
-              <MapSupervision />
+              <MapSidebarAid />
             </aside>
           </div>
         </div>
-
       </div>
     </main>
   );

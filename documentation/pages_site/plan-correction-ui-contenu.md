@@ -96,7 +96,6 @@ Pages hors scope à éviter:
 
 - `/explorer`
 - `/`
-- `/accueil`
 
 Risques de régression:
 

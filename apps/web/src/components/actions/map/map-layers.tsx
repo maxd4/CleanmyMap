@@ -14,17 +14,32 @@ import { divIcon } from "leaflet";
 import { Info } from "lucide-react";
 import { ActionMapItem } from "@/lib/actions/types";
 import {
-  mapItemCoordinates,
-  mapItemShouldRenderPoint,
-  mapItemWasteKg,
   mapItemCigaretteButts,
+  mapItemCoordinates,
+  mapItemWasteKg,
+  mapItemShouldRenderPoint,
 } from "@/lib/actions/data-contract";
-import { computePollutionScore } from "@/lib/actions/pollution-score";
+import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
 import {
   resolveInfrastructureEmoji,
   resolveDynamicColor,
+  resolveItemPollutionScores,
 } from "@/components/actions/map-marker-categories";
+import { useActionPollutionScoreReferences } from "./action-pollution-score-references-context";
 import { ActionPopupContent } from "./action-popup-content";
+import {
+  formatNumber,
+  formatThresholdScore,
+  getInfrastructureReading,
+} from "./map-layers.helpers";
+import {
+  formatClusterCount,
+  resolveClusterAriaLabel,
+  resolveClusterDensityTier,
+  resolveClusterIconSize,
+  resolveClusterRadius,
+} from "./map-cluster.utils";
+import { GeometryTooltipContent } from "./map-geometry-tooltip-content";
 import {
   formatGeometryConfidenceLabel,
   formatGeometryModeLabel,
@@ -33,16 +48,15 @@ import {
   resolveInfrastructureAnchor,
   resolveGeometryRenderStyle,
 } from "./actions-map-geometry.utils";
+import {
+  INFRASTRUCTURE_ALERT_THRESHOLD,
+} from "@/components/actions/map-marker-categories";
 
-function getPollutionScore(item: ActionMapItem): number {
-  return computePollutionScore({
-    wasteKg: mapItemWasteKg(item),
-    cigaretteButts: mapItemCigaretteButts(item),
-  });
-}
-
-function resolvePointColor(item: ActionMapItem): string {
-  const score = getPollutionScore(item);
+function resolvePointColor(
+  item: ActionMapItem,
+  references?: PollutionScoreReferences | null,
+): string {
+  const score = resolveItemPollutionScores(item, references).severityScore;
   if (
     (mapItemWasteKg(item) ?? 0) <= 0 &&
     (mapItemCigaretteButts(item) ?? 0) <= 0
@@ -52,62 +66,18 @@ function resolvePointColor(item: ActionMapItem): string {
   return resolveDynamicColor(score);
 }
 
-function GeometryTooltipContent({
-  title,
-  geometryModeLabel,
-  geometryPointsLabel,
-  geometryMetricLabel,
-  geometryConfidenceLabel,
-  color,
-}: {
-  title: string;
-  geometryModeLabel: string;
-  geometryPointsLabel: string;
-  geometryMetricLabel: string | null;
-  geometryConfidenceLabel: string | null;
-  color: string;
-}) {
-  return (
-    <div className="min-w-[150px] rounded-2xl border border-slate-200/80 bg-white/95 px-3 py-2.5 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.5)] backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-950/95">
-      <div className="flex items-center justify-between gap-2">
-        <span className="cmm-text-caption font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
-          {geometryModeLabel}
-        </span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[9px] font-semibold text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
-          {geometryPointsLabel}
-        </span>
-      </div>
-
-      <p className="mt-1 text-[11px] font-bold leading-tight text-slate-900 dark:text-slate-50">
-        {title}
-      </p>
-
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {geometryMetricLabel && (
-          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-            {geometryMetricLabel}
-          </span>
-        )}
-        {geometryConfidenceLabel && (
-          <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-            {geometryConfidenceLabel}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export function SignalementMarkers({
   items,
   visible = true,
   selectedActionId = null,
+  onSelectAction,
 }: {
   items: ActionMapItem[];
   visible?: boolean;
   selectedActionId?: string | null;
+  onSelectAction?: (actionId: string) => void;
 }) {
+  const { references } = useActionPollutionScoreReferences();
   const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
 
   useEffect(() => {
@@ -126,8 +96,39 @@ export function SignalementMarkers({
   return (
     <MarkerClusterGroup
       chunkedLoading
-      maxClusterRadius={50}
+      maxClusterRadius={resolveClusterRadius}
+      disableClusteringAtZoom={18}
       spiderfyOnMaxZoom={true}
+      spiderfyDistanceMultiplier={1.6}
+      showCoverageOnHover={false}
+      iconCreateFunction={(cluster) => {
+        const childCount = cluster.getChildCount();
+        const tier = resolveClusterDensityTier(childCount);
+        const size = resolveClusterIconSize(childCount);
+        const ariaLabel = resolveClusterAriaLabel(childCount);
+
+        return divIcon({
+          className: `cmm-action-cluster ${
+            tier === "dense"
+              ? "cmm-action-cluster--dense"
+              : tier === "high"
+                ? "cmm-action-cluster--high"
+                : tier === "medium"
+                  ? "cmm-action-cluster--medium"
+                  : "cmm-action-cluster--low"
+          }`,
+          html: `
+            <div class="cmm-action-cluster__body" aria-label="${ariaLabel}">
+              <span class="cmm-action-cluster__count">${formatClusterCount(childCount)}</span>
+              <span class="cmm-action-cluster__label">actions</span>
+            </div>
+          `,
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+          popupAnchor: [0, -(size / 2)],
+          tooltipAnchor: [0, -(size / 2)],
+        });
+      }}
     >
       {items.map((item) => {
         const coords = mapItemCoordinates(item);
@@ -139,8 +140,7 @@ export function SignalementMarkers({
           return null;
         }
 
-        const score = getPollutionScore(item);
-        const color = resolvePointColor(item);
+        const color = resolvePointColor(item, references);
         const geometry = resolveActionMapGeometryViewModel(item);
         const renderStyle = resolveGeometryRenderStyle(geometry);
         const isFallbackPoint = geometry.presentation.strokeStyle === "point";
@@ -158,6 +158,11 @@ export function SignalementMarkers({
             }}
             center={geometry.anchor ?? [coords.latitude, coords.longitude]}
             radius={renderStyle.pointRadius ?? (isFallbackPoint ? 4.5 : 6) + (isSelected ? 2 : 0)}
+            eventHandlers={{
+              click: () => {
+                onSelectAction?.(item.id);
+              },
+            }}
             pathOptions={{
               color: color,
               fillColor: color,
@@ -171,9 +176,9 @@ export function SignalementMarkers({
           >
             <Popup className="glass-popup custom-popup">
               <ActionPopupContent
+                key={item.id}
                 item={item}
                 color={color}
-                score={score}
                 coords={coords}
               />
             </Popup>
@@ -188,11 +193,14 @@ export function ShapeLayers({
   items,
   visible = true,
   selectedActionId = null,
+  onSelectAction,
 }: {
   items: ActionMapItem[];
   visible?: boolean;
   selectedActionId?: string | null;
+  onSelectAction?: (actionId: string) => void;
 }) {
+  const { references } = useActionPollutionScoreReferences();
   const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
 
   useEffect(() => {
@@ -216,8 +224,9 @@ export function ShapeLayers({
           return null;
         }
 
-        const color = resolvePointColor(item);
-        const score = getPollutionScore(item);
+        const pollutionScores = resolveItemPollutionScores(item, references);
+        const color = resolvePointColor(item, references);
+        const score = pollutionScores.severityScore;
         const coords = mapItemCoordinates(item);
         const renderStyle = resolveGeometryRenderStyle(geometry);
         const geometryModeLabel = formatGeometryModeLabel(geometry.presentation);
@@ -240,6 +249,11 @@ export function ShapeLayers({
                 }
               }}
               positions={geometry.positions}
+              eventHandlers={{
+                click: () => {
+                  onSelectAction?.(item.id);
+                },
+              }}
               pathOptions={{
                 color: color,
                 weight: (renderStyle.strokeWeight ?? 2) + (isSelected ? 2 : 0),
@@ -260,9 +274,9 @@ export function ShapeLayers({
               </Tooltip>
               <Popup className="glass-popup custom-popup">
                 <ActionPopupContent
+                  key={item.id}
                   item={item}
                   color={color}
-                  score={score}
                   coords={coords}
                 />
               </Popup>
@@ -281,6 +295,11 @@ export function ShapeLayers({
               }
             }}
             positions={geometry.positions}
+            eventHandlers={{
+              click: () => {
+                onSelectAction?.(item.id);
+              },
+            }}
             pathOptions={{
               color: color,
               weight: (renderStyle.strokeWeight ?? 4) + (isSelected ? 2 : 0),
@@ -300,9 +319,9 @@ export function ShapeLayers({
             </Tooltip>
             <Popup className="glass-popup custom-popup">
               <ActionPopupContent
+                key={item.id}
                 item={item}
                 color={color}
-                score={score}
                 coords={coords}
               />
             </Popup>
@@ -317,11 +336,14 @@ export function InfrastructureMarkers({
   items,
   visible = true,
   selectedActionId = null,
+  onSelectAction,
 }: {
   items: ActionMapItem[];
   visible?: boolean;
   selectedActionId?: string | null;
+  onSelectAction?: (actionId: string) => void;
 }) {
+  const { references } = useActionPollutionScoreReferences();
   const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
 
   useEffect(() => {
@@ -340,7 +362,7 @@ export function InfrastructureMarkers({
   return (
     <>
       {items.map((item) => {
-        const emoji = resolveInfrastructureEmoji(item);
+        const emoji = resolveInfrastructureEmoji(item, references);
         if (!emoji) {
           return null;
         }
@@ -350,6 +372,7 @@ export function InfrastructureMarkers({
           return null;
         }
         const isSelected = selectedActionId === item.id;
+        const infra = getInfrastructureReading(item, references);
 
         return (
           <Marker
@@ -363,6 +386,11 @@ export function InfrastructureMarkers({
             }}
             position={anchor}
             interactive={true}
+            eventHandlers={{
+              click: () => {
+                onSelectAction?.(item.id);
+              },
+            }}
             icon={divIcon({
               className: "cmm-infrastructure-marker",
               html: `
@@ -393,12 +421,56 @@ export function InfrastructureMarkers({
                   <div className="flex items-center justify-between">
                     <span className="cmm-text-caption cmm-text-muted">Type suggéré</span>
                     <span className="text-xs font-bold cmm-text-primary">
-                      {item.cigarette_butts && item.cigarette_butts > 0 ? "Cendrier de rue" : "Bac de collecte"}
+                      {infra.needLabel}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="cmm-text-caption cmm-text-muted">Priorité</span>
-                    <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[9px] font-black uppercase tracking-widest">Critique</span>
+                    <span className="px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[9px] font-black uppercase tracking-widest">
+                      {infra.priorityLabel}
+                    </span>
+                  </div>
+                  <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="cmm-text-caption cmm-text-muted">Seuil infra</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-600">
+                        {INFRASTRUCTURE_ALERT_THRESHOLD}/100
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Déchets</p>
+                        <p className="text-xs font-semibold text-slate-700">
+                          {formatNumber(infra.wasteKg, " kg")}
+                        </p>
+                      </div>
+                      <div className="text-right space-y-0.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Contribution</p>
+                        <p className={infra.needsBin ? "text-xs font-black text-rose-700" : "text-xs font-semibold text-slate-700"}>
+                          {formatThresholdScore(infra.wasteScore)}
+                        </p>
+                      </div>
+                      <span className={infra.needsBin ? "rounded-full bg-rose-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-rose-700" : "rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-slate-600"}>
+                        {infra.needsBin ? "Atteint" : "Sous seuil"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-950/70">
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Mégots</p>
+                        <p className="text-xs font-semibold text-slate-700">
+                          {formatNumber(infra.butts)}
+                        </p>
+                      </div>
+                      <div className="text-right space-y-0.5">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Contribution</p>
+                        <p className={infra.needsAshtray ? "text-xs font-black text-rose-700" : "text-xs font-semibold text-slate-700"}>
+                          {formatThresholdScore(infra.buttsScore)}
+                        </p>
+                      </div>
+                      <span className={infra.needsAshtray ? "rounded-full bg-rose-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-rose-700" : "rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-slate-600"}>
+                        {infra.needsAshtray ? "Atteint" : "Sous seuil"}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -406,7 +478,7 @@ export function InfrastructureMarkers({
                   <div className="flex items-start gap-2 p-3 rounded-xl bg-violet-50 dark:bg-violet-950/30 text-violet-900 dark:text-violet-200">
                     <div className="mt-0.5"><Info size={14} className="text-violet-500" /></div>
                     <p className="text-[10px] leading-relaxed italic">
-                      <strong>Analyse Scientifique :</strong> Ce besoin est généré automatiquement car la densité de déchets observée ({mapItemWasteKg(item)}kg) dépasse le seuil de saturation des infrastructures existantes.
+                      <strong>Lecture seuil :</strong> besoin déclenché quand la contribution déchets ou mégots atteint {INFRASTRUCTURE_ALERT_THRESHOLD}/100. Le marqueur peut être bac, cendrier ou combiné selon le signal atteint.
                     </p>
                   </div>
                 </div>

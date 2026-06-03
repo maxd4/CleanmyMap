@@ -16,8 +16,6 @@ import { filterActionContractsByScope, type ReportScope } from"@/lib/reports/sco
 import { hasAnalyticsConsentCookie } from "@/lib/analytics-consent";
 import {
  buildPostActionRetentionLoop as buildActionRetentionLoop,
- trackActionCreated,
- trackSpotCreated,
 } from"@/lib/gamification/progression";
 import { trackServerEvent } from"@/lib/analytics.server";
 import { unauthorizedJsonResponse } from"@/lib/http/auth-responses";
@@ -25,8 +23,10 @@ import { handleApiError, validationErrorResponse } from"@/lib/http/api-errors";
 import { resolveReportQuery } from"@/lib/reports/csv";
 import { emitActionCreated, emitSpotCreated } from"@/lib/events/emit";
 import { verifyRateLimit, createServerRateLimitResponse } from"@/lib/rate-limit";
+import { getVolunteerActionValidationIssues } from"@/lib/actions/submission-validation";
 
 export const runtime ="nodejs";
+export const dynamic = "force-dynamic";
 const QUALITY_GRADES = ["A","B","C"] as const;
 const IMPACT_LEVELS = ["faible","moyen","fort","critique"] as const;
 
@@ -217,6 +217,19 @@ export async function POST(request: Request) {
   ...parsed.data,
   actorName,
  };
+ const volunteerIssues = getVolunteerActionValidationIssues(normalizedPayload);
+ if (volunteerIssues.length > 0) {
+  const details = volunteerIssues.reduce<Record<string, string[]>>(
+   (acc, issue) => {
+    const current = acc[issue.field] ?? [];
+    current.push(issue.message);
+    acc[issue.field] = current;
+    return acc;
+   },
+   {},
+  );
+  return validationErrorResponse(details);
+ }
  const isSpontaneousAction =
   normalizedPayload.recordType === "action" &&
   normalizedPayload.associationName === "Action spontanée";

@@ -9,6 +9,8 @@ import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { isLocalhostHost } from "@/lib/auth/dev-auth";
 import { toProfile } from "@/lib/profiles";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { claimReferralInviteForUser } from "@/lib/gamification/referrals";
 
 export const metadata: Metadata = {
   title: "Bienvenue sur CleanMyMap - Configuration initiale",
@@ -22,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 type OnboardingPageProps = {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; ref?: string }>;
 };
 
 function sanitizeNextPath(nextParam: string | undefined): string {
@@ -49,12 +51,24 @@ export default async function OnboardingPage({
 
   const requestHeaders = await headers();
   const isLocalHost = isLocalhostHost(requestHeaders.get("host"));
+  const resolvedSearchParams = await searchParams;
+  const referralCode = resolvedSearchParams.ref?.trim() ?? "";
+
+  if (referralCode) {
+    const supabase = getSupabaseServerClient(true);
+    await claimReferralInviteForUser(supabase, {
+      userId,
+      code: referralCode,
+    }).catch((error) => {
+      console.warn("Referral claim failed during onboarding", error);
+    });
+  }
+
   const [existingPreference, role] = await Promise.all([
     getCurrentUserLocationPreference(),
     getCurrentUserRoleLabel(),
   ]);
   const profile = toProfile(role);
-  const resolvedSearchParams = await searchParams;
   const nextPath = sanitizeNextPath(resolvedSearchParams.next);
 
   return (

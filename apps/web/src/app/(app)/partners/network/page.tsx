@@ -21,7 +21,6 @@ export default async function PartnersNetworkPage() {
   const trustedActors = entries.filter((entry) => getEntryTrustState(entry) === "trusted").length;
   const coveredZones = new Set(entries.flatMap((entry) => entry.coveredArrondissements)).size;
   const nationalActors = entries.filter((entry) => entry.scope === "national" || entry.scope === "france").length;
-  const gestesPropres = entries.find((entry) => entry.name === "Gestes Propres");
 
   const byKind = [
     { label: fr ? "Associations" : "Associations", count: entries.filter((entry) => entry.kind === "association").length },
@@ -189,35 +188,6 @@ export default async function PartnersNetworkPage() {
             </div>
           </div>
         </header>
-
-        {gestesPropres ? (
-          <section className="mt-8 rounded-[2.5rem] border border-indigo-300/16 bg-[rgba(22,26,72,0.92)] p-6 shadow-[0_24px_56px_-32px_rgba(99,102,241,0.24)] sm:p-8">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-indigo-100/48">
-                  {fr ? "Focus national" : "National spotlight"}
-                </p>
-                <h2 className="text-3xl font-black text-white">
-                  {gestesPropres.name}
-                </h2>
-                <p className="max-w-3xl text-sm leading-relaxed text-violet-100/72">
-                  {gestesPropres.description}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <span className="rounded-full border border-indigo-300/16 bg-indigo-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-indigo-100">
-                  {fr ? "Association nationale" : "National association"}
-                </span>
-                <span className="rounded-full border border-violet-300/16 bg-violet-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-violet-100">
-                  {fr ? "Couverture France" : "France coverage"}
-                </span>
-                <span className="rounded-full border border-violet-300/16 bg-violet-400/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-violet-100">
-                  {fr ? "Relais associatif" : "Association relay"}
-                </span>
-              </div>
-            </div>
-          </section>
-        ) : null}
 
         <section className="mt-8">
           <div className="rounded-[2.5rem] border border-violet-300/16 bg-[rgba(28,20,58,0.9)] p-5 shadow-[0_24px_56px_-32px_rgba(139,92,246,0.24)] sm:p-6">

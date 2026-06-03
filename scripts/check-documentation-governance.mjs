@@ -35,7 +35,7 @@ const forbiddenReferences = [
   "operations/session-standard-runbook.md",
   "operations\\session-standard-runbook.md",
   "backups/actions-backup-2026-04-24T07-54-44.951Z.json",
-  "legacy/data/cleanmymap.db",
+  "maintenance/python/data/cleanmymap.db",
 ];
 
 function walk(dir) {

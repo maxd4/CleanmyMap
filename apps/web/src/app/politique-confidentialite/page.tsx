@@ -54,7 +54,7 @@ export default function PolitiqueConfidentialitePage() {
           badge={<PageHeaderBadge tone="slate">RGPD</PageHeaderBadge>}
           title="Politique de confidentialité"
           subtitle="Cette page décrit les données collectées par CleanMyMap, les finalités, les sous-traitants, les durées de conservation et les droits des utilisateurs européens."
-          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 5 mai 2026</p>}
+          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 1 juin 2026</p>}
         />
 
         <section className="grid gap-4 rounded-3xl border border-slate-200 bg-slate-50 p-5 lg:grid-cols-2">
@@ -99,6 +99,7 @@ export default function PolitiqueConfidentialitePage() {
               "Adresse email principale et, si fournie par l'utilisateur, numéro de téléphone.",
               "Image de profil / avatar.",
               "Métadonnées de compte : rôle / profil public ou privé, badges, niveau de progression, arrondissement Paris éventuellement renseigné.",
+              "Parrainage : code d'invitation, identifiant du parrain, date de rattachement et compteur des filleuls associés.",
               "Cookies de session Clerk nécessaires à l'authentification et à la sécurité.",
             ]}
           />
@@ -140,6 +141,7 @@ export default function PolitiqueConfidentialitePage() {
               "Messages de bug / feedback : type de retour, titre, description, page concernée, source d'envoi, nom d'affichage, email et rôle.",
               "Demandes de promotion : rôle demandé et motivation, plus les coordonnées de profil visibles par l'utilisateur.",
               "Demandes d'onboarding partenaires : nom de l'organisation, type, identité légale, zones couvertes, quartiers, types de contribution, disponibilités, personne de contact et motivation.",
+              "Parrainage communautaire : lien d'invitation, rattachement du compte invité au profil parrain et attribution du badge one-shot 'Inviter un ami'.",
             ]}
           />
         </section>
@@ -154,8 +156,8 @@ export default function PolitiqueConfidentialitePage() {
           <DataList
             items={[
               "Préférences d'interface : langue, thème et mode d'affichage.",
-              "Le choix de consentement est mémorisé dans `localStorage` et reflété par un cookie technique côté navigateur pour permettre l'application de la préférence aux requêtes serveur.",
-              "Les préférences `cleanmymap.locale` et `cleanmymap.display_mode` sont écrites dans `localStorage` et reflétées dans des cookies SameSite=Lax lorsqu'elles sont actives.",
+              "Le choix de consentement est mémorisé dans `localStorage` sous `cleanmymap_cookie_consent` et synchronisé avec le cookie `cleanmymap_analytics_consent` pour appliquer la préférence analytique côté navigateur.",
+              "Les préférences `cleanmymap.locale` et `cleanmymap.display_mode` sont écrites dans `localStorage` puis synchronisées dans des cookies SameSite=Lax lorsqu'elles sont actives.",
               "Analytics PostHog, Vercel Analytics et Vercel Speed Insights sont déclenchés uniquement si l'utilisateur accepte les cookies analytiques.",
               "PostHog est configuré sur l'hôte UE par défaut via `eu.i.posthog.com`.",
               "Si Sentry est activé, les erreurs techniques peuvent inclure des traces, messages console et métadonnées de requêtes, avec un masquage par défaut des informations sensibles selon la configuration du SDK.",
@@ -199,6 +201,10 @@ export default function PolitiqueConfidentialitePage() {
                 <tr className="border-t border-slate-200">
                   <td className="px-4 py-3">Journalisation, anti-fraude, prévention des abus</td>
                   <td className="px-4 py-3">Intérêt légitime</td>
+                </tr>
+                <tr className="border-t border-slate-200">
+                  <td className="px-4 py-3">Parrainage, invitations et badge communautaire</td>
+                  <td className="px-4 py-3">Exécution du service et intérêt légitime d'animation de la communauté</td>
                 </tr>
               </tbody>
             </table>
@@ -259,6 +265,10 @@ export default function PolitiqueConfidentialitePage() {
                 <tr className="border-t border-slate-200">
                   <td className="px-4 py-3">Compte utilisateur / profil</td>
                   <td className="px-4 py-3">Pendant la vie du compte puis jusqu&apos;à 30 jours après suppression, sauf obligation légale</td>
+                </tr>
+                <tr className="border-t border-slate-200">
+                  <td className="px-4 py-3">Données de parrainage / chaîne relationnelle</td>
+                  <td className="px-4 py-3">Même durée que le compte et le profil liés, puis purge ou anonymisation selon les demandes et contraintes légales</td>
                 </tr>
                 <tr className="border-t border-slate-200">
                   <td className="px-4 py-3">Contributions publiques / historiques</td>

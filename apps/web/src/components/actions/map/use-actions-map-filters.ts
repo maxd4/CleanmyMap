@@ -38,6 +38,8 @@ export function useActionsMapFilters(initialDays: number) {
       setFilters((current) => ({ ...current, impactFilter })),
     setQualityMin: (qualityMin: number) =>
       setFilters((current) => ({ ...current, qualityMin })),
+    setZoneQuery: (zoneQuery: string) =>
+      setFilters((current) => ({ ...current, zoneQuery })),
     toggleCategory: (category: MarkerCategory) =>
       setFilters((current) => ({
         ...current,

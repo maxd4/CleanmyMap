@@ -1,5 +1,12 @@
 # Journal d'Impact : Ateliers DU x Audit IA x Ajouts de code
 
+Résumé d'ouverture:
+
+- ce journal sert de porte d'entrée courte vers l'historique détaillé lié aux ateliers DU et à l'impact ;
+- il conserve les décisions, les arbitrages et les ajouts de code utiles comme trace partagée ;
+- il remplace l'ancien index court, désormais absorbé dans ce document ;
+- il reste le point d'accès partagé pour les contributeurs qui ont besoin du contexte complet.
+
 Ce journal ne conserve que les **ajouts de code** réalisés en lien direct avec :
 
 - les apprentissages issus des ateliers du DU ;
@@ -29,7 +36,6 @@ Le journal détaillé renvoie aux autres pièces de travail ci-dessous pour gard
 
 ```mermaid
 flowchart TD
-  JD["documentation/plans/journal_DU.md"]
   AJ["documentation/plans/ateliers_DU.md"]
   RI["documentation/plans/rapport_impact/impact_IA.md"]
   GI["documentation/plans/rapport_impact/graphique_impact_CO2e.md"]
@@ -37,9 +43,8 @@ flowchart TD
   EI["Estimateur d'impact environnemental"]
   QG["Estimateur des quotas gratuits<br/>des services web utilisés"]
 
-  JD --> AJ
-  JD --> RI
-  JD --> JI
+  JI --> AJ
+  JI --> RI
   RI --> GI
   RI --> EI
   RI --> QG
@@ -48,7 +53,6 @@ flowchart TD
   EI --> QG
   QG --> RI
 
-  style JD fill:#0f172a,stroke:#38bdf8,color:#e2e8f0
   style AJ fill:#111827,stroke:#34d399,color:#e5e7eb
   style RI fill:#111827,stroke:#f59e0b,color:#e5e7eb
   style GI fill:#111827,stroke:#f97316,color:#e5e7eb
@@ -59,7 +63,6 @@ flowchart TD
 
 Lecture rapide:
 
-- `journal_DU.md` sert d'index court;
 - `ateliers_DU.md` fixe le cadre des ateliers;
 - `journal_impact_DU.md` conserve l'historique détaillé et les ajouts de code;
 - `rapport_impact/impact_IA.md` concentre l'analyse principale;

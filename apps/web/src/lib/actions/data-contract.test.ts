@@ -41,7 +41,11 @@ describe("action data contract", () => {
         '{"type":"Polygon","coordinates":[[[2.36,48.87],[2.361,48.871],[2.362,48.872]]]}',
     });
 
-    const mapItem = toActionMapItem(contract);
+    const mapItem = toActionMapItem(
+      contract,
+      undefined,
+      { wastePerVolunteer: 5, buttsPerVolunteer: 500 },
+    );
     expect(mapItem.latitude).toBe(48.87);
     expect(mapItem.longitude).toBe(2.36);
     expect(mapItem.contract?.metadata.associationName).toBe("Action spontanee");
@@ -52,6 +56,8 @@ describe("action data contract", () => {
     expect(mapItem.contract?.geometry.confidence).toBe(1);
     expect(mapItem.contract?.geometry.geometrySource).toBe("manual");
     expect(mapItem.contract?.geometry.origin).toBe("manual");
+    expect(mapItem.waste_pollution_score).toBe(63);
+    expect(mapItem.cigarette_butts_pollution_score).toBe(6);
   });
 
   it("keeps geometry optional when normalizing create payload", () => {

@@ -66,7 +66,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/brand/logo-cleanmymap.webp",
+        url: "/brand/logo-cleanmymap.svg",
         width: 1200,
         height: 630,
         alt: "CleanMyMap - Carte propreté Paris et cleanwalks",
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
     title: "CleanMyMap - Écologie Action Paris",
     description:
       "La carte citoyenne de depollution - Benevolat, ecologie, impact terrain",
-    images: ["/brand/logo-cleanmymap.webp"],
+    images: ["/brand/logo-cleanmymap.svg"],
   },
   robots: {
     index: true,

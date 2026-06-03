@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { useSubmissionLock } from "@/hooks/use-submission-lock";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { canRequestGeolocation } from "@/lib/browser/geolocation";
+import { logFailure } from "@/lib/logging/failure-log";
 
 const WASTE_TYPES = [
   { id: "megots", label: "Mégots", icon: "🚬", color: "amber" },
@@ -72,7 +73,10 @@ export function QuickSignalementForm() {
       });
       setIsSuccess(true);
     } catch (err) {
-      console.error(err);
+      logFailure("QuickSignalement", "Submission failed", err, {
+        selectedType,
+        hasLocation: Boolean(location),
+      });
       setError("Transmission échouée. Vérifiez votre GPS et réessayez.");
     } finally {
       setIsPreparingPhotos(false);

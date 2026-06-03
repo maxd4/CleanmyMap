@@ -1,10 +1,11 @@
 import { registerEventHandlers } from "./handlers";
+import { logFailure } from "@/lib/logging/failure-log";
 
 if (typeof window === "undefined") {
   try {
     registerEventHandlers();
   } catch (error) {
-    console.error("[Events] Failed to register handlers:", error);
+    logFailure("Events", "Handler registration failed", error);
   }
 }
 

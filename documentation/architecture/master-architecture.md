@@ -38,7 +38,7 @@ flowchart LR
     ROOT[CleanMyMap-main /]
     ROOT --> APPS[apps/]
     ROOT --> DOCS[documentation/]
-    ROOT --> LEGACY[legacy/ : Archives]
+    ROOT --> MAINT[maintenance/python/ : Archives]
 
     APPS --> WEB[web/ : React & API]
     WEB --> SRC[src/]

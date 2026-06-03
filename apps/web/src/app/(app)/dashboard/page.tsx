@@ -21,10 +21,14 @@ import {
   isAdminLikeProfile,
   toProfile,
 } from "@/lib/profiles";
-import { getServerDisplayMode, getServerLocale } from "@/lib/server-preferences";
+import {
+  getServerDisplayMode,
+  getServerLocale,
+} from "@/lib/server-preferences";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getTranslation } from "@/lib/i18n/server-translation";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
+import { loadReferralSummary } from "@/lib/gamification/referrals";
 import { loadUserLabelSummary } from "@/lib/gamification/progression-data";
 import { Shield, Plus, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
@@ -34,7 +38,8 @@ import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export const metadata: Metadata = {
   title: "Mon espace - CleanMyMap",
-  description: "Suivez votre impact, consultez vos statistiques et gérez votre compte depuis un espace centralisé.",
+  description:
+    "Suivez votre impact, consultez vos statistiques et gérez votre compte depuis un espace centralisé.",
 };
 
 type DashboardOverviewLoaded =
@@ -54,23 +59,34 @@ type UserLevelRanking = {
   currentUserRow: UserLevelRankingItem | null;
 };
 
-async function loadDashboardOverviewResult(locale: "fr" | "en"): Promise<DashboardOverviewLoaded> {
+type ReferralDashboardSummary = Awaited<ReturnType<typeof loadReferralSummary>>;
+
+async function loadDashboardOverviewResult(
+  locale: "fr" | "en",
+): Promise<DashboardOverviewLoaded> {
   try {
     const supabase = getSupabaseServerClient();
-    const overview = await loadPilotageOverview({ supabase, periodDays: 30, limit: 1800 });
+    const overview = await loadPilotageOverview({
+      supabase,
+      periodDays: 30,
+      limit: 1800,
+    });
     return { status: "ok", overview };
   } catch {
     return {
       status: "error",
-        message: locale === "fr"
-        ? "Les données de Mon espace sont momentanément indisponibles."
-        : "Dashboard data is temporarily unavailable.",
+      message:
+        locale === "fr"
+          ? "Les données de Mon espace sont momentanément indisponibles."
+          : "Dashboard data is temporarily unavailable.",
     };
   }
 }
 
-async function loadUserLevelRanking(userId: string): Promise<UserLevelRanking> {
-  const supabase = getSupabaseServerClient();
+async function loadUserLevelRanking(
+  supabase: ReturnType<typeof getSupabaseServerClient>,
+  userId: string,
+): Promise<UserLevelRanking> {
   const [profilesResult, labelsByUser] = await Promise.all([
     supabase
       .from("progression_profiles")
@@ -79,7 +95,9 @@ async function loadUserLevelRanking(userId: string): Promise<UserLevelRanking> {
       .order("xp_validated", { ascending: false })
       .order("xp_total", { ascending: false })
       .limit(120),
-    loadUserLabelSummary(supabase).catch(() => new Map<string, { actorName: string }>()),
+    loadUserLabelSummary(supabase).catch(
+      () => new Map<string, { actorName: string }>(),
+    ),
   ]);
 
   if (profilesResult.error) {
@@ -96,7 +114,9 @@ async function loadUserLevelRanking(userId: string): Promise<UserLevelRanking> {
   const rankedRows: UserLevelRankingItem[] = rows.map((row, index) => ({
     rank: index + 1,
     userId: row.user_id,
-    actorName: labelsByUser.get(row.user_id)?.actorName?.trim() || `Utilisateur ${index + 1}`,
+    actorName:
+      labelsByUser.get(row.user_id)?.actorName?.trim() ||
+      `Utilisateur ${index + 1}`,
     currentLevel: Math.max(1, Number(row.current_level ?? 1)),
     xpValidated: Math.max(0, Number(row.xp_validated ?? 0)),
   }));
@@ -107,11 +127,119 @@ async function loadUserLevelRanking(userId: string): Promise<UserLevelRanking> {
   };
 }
 
+function DashboardReferralCard({
+  locale,
+  summary,
+  profile,
+}: {
+  locale: "fr" | "en";
+  summary: ReferralDashboardSummary | null;
+  profile: string;
+}) {
+  const invitedUsersCount = summary?.invitedUsersCount ?? 0;
+  const hasReferralData = summary !== null;
+  const referralLabel = locale === "fr" ? "parrainage" : "referral";
+  const referralPlural = locale === "fr" ? "parrainages" : "referrals";
+
+  return (
+    <FamilyRubriqueCard
+      id="parrainage"
+      withTopBar={true}
+      topBarContent={locale === "fr" ? "Parrainages" : "Referrals"}
+      className="h-full scroll-mt-28 p-7 sm:p-8"
+    >
+      <div className="flex h-full flex-col justify-between gap-6">
+        <div className="space-y-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-amber-100/72">
+            {locale === "fr" ? "Compteur persistant" : "Persistent counter"}
+          </p>
+          <div className="flex items-end gap-3">
+            <span className="text-5xl font-black tracking-tight text-white sm:text-6xl">
+              {hasReferralData ? invitedUsersCount : "—"}
+            </span>
+            {hasReferralData ? (
+              <span className="pb-1 text-sm font-bold uppercase tracking-[0.18em] text-amber-100/78">
+                {invitedUsersCount <= 1 ? referralLabel : referralPlural}
+              </span>
+            ) : null}
+          </div>
+          <p className="max-w-sm text-sm leading-relaxed text-amber-50/80">
+            {hasReferralData
+              ? locale === "fr"
+                ? "Ce compteur suit les comptes créés depuis votre lien de parrainage persistant."
+                : "This counter tracks accounts created from your persistent referral link."
+              : locale === "fr"
+                ? "Les données de parrainage sont momentanément indisponibles."
+                : "Referral data is temporarily unavailable."}
+          </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.34)] px-4 py-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-100/55">
+              {locale === "fr" ? "Badge" : "Badge"}
+            </p>
+            <p className="mt-1 text-sm font-bold text-white">
+              {!hasReferralData
+                ? locale === "fr"
+                  ? "Indisponible"
+                  : "Unavailable"
+                : summary?.badgeUnlocked
+                  ? locale === "fr"
+                    ? "Débloqué"
+                    : "Unlocked"
+                  : locale === "fr"
+                    ? "À générer"
+                    : "To generate"}
+            </p>
+          </div>
+
+          <div className="rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.34)] px-4 py-3">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-100/55">
+              {locale === "fr" ? "Lien" : "Link"}
+            </p>
+            <p className="mt-1 text-sm font-bold text-white">
+              {!hasReferralData
+                ? locale === "fr"
+                  ? "Indisponible"
+                  : "Unavailable"
+                : summary?.inviteUrl
+                  ? locale === "fr"
+                    ? "Prêt à partager"
+                    : "Ready to share"
+                  : locale === "fr"
+                    ? "Non créé"
+                    : "Not created"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <CmmButton
+            href={buildProfileRoute(profile)}
+            tone="secondary"
+            variant="pill"
+            className="h-11 px-4 text-[11px] font-black gap-2"
+          >
+            <ArrowRight size={14} />
+            {locale === "fr" ? "Ouvrir le badge" : "Open badge"}
+          </CmmButton>
+        </div>
+      </div>
+    </FamilyRubriqueCard>
+  );
+}
+
 function DashboardOverviewSkeleton() {
   return (
     <div className="space-y-5 animate-pulse">
       <div className="grid gap-4 md:grid-cols-3">
-        {[0, 1, 2].map(i => <div key={i} className="h-44 rounded-3xl bg-[rgba(44,28,15,0.55)] border border-orange-200/18" />)}
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="h-44 rounded-3xl bg-[rgba(44,28,15,0.55)] border border-orange-200/18"
+          />
+        ))}
       </div>
       <div className="h-36 rounded-3xl bg-[rgba(44,28,15,0.55)] border border-orange-200/18" />
     </div>
@@ -128,12 +256,21 @@ export default async function DashboardPage() {
         isAuthenticated={false}
         mode="blur"
         title={locale === "fr" ? "Mon espace" : "Dashboard"}
-        description={locale === "fr" ? "Connectez-vous pour accéder à votre espace personnel." : "Sign in to access your dashboard."}
+        description={
+          locale === "fr"
+            ? "Connectez-vous pour accéder à votre espace personnel."
+            : "Sign in to access your dashboard."
+        }
         lockedPreview={
           <div className="grid gap-3 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] p-6 shadow-[0_18px_42px_-26px_rgba(124,45,18,0.30)] md:grid-cols-3">
             {["Aujourd'hui", "Priorité", "Accès"].map((label) => (
-              <div key={label} className="rounded-2xl border border-amber-200/18 bg-[rgba(69,26,3,0.58)] p-5">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-100">{label}</p>
+              <div
+                key={label}
+                className="rounded-2xl border border-amber-200/18 bg-[rgba(69,26,3,0.58)] p-5"
+              >
+                <p className="text-[10px] font-bold uppercase tracking-widest text-amber-100">
+                  {label}
+                </p>
                 <div className="mt-3 h-3 w-3/4 rounded bg-amber-200/22" />
               </div>
             ))}
@@ -156,7 +293,11 @@ export default async function DashboardPage() {
       : getCurrentUserRoleLabel().catch(() => "benevole" as const),
     getServerDisplayMode(),
   ]);
-  const userLevelRanking = await loadUserLevelRanking(userId);
+  const supabase = getSupabaseServerClient();
+  const [userLevelRanking, referralSummary] = await Promise.all([
+    loadUserLevelRanking(supabase, userId),
+    loadReferralSummary(supabase, userId).catch(() => null),
+  ]);
   const profile = accountCompletion?.currentProfile ?? toProfile(role);
   const roleLabel = getProfileLabel(profile, locale);
   const primaryAction = getProfilePrimaryAction(profile);
@@ -164,7 +305,9 @@ export default async function DashboardPage() {
   const overviewPromise = loadDashboardOverviewResult(locale);
   const pageFamily = resolvePageFamily(DASHBOARD_ROUTE);
   const isAdmin = isAdminLikeProfile(profile);
-  const switchableProfiles = isAdmin ? getSwitchableProfiles(profile) : [profile];
+  const switchableProfiles = isAdmin
+    ? getSwitchableProfiles(profile)
+    : [profile];
 
   return (
     <AccountCompletionGate state={accountCompletion}>
@@ -173,211 +316,266 @@ export default async function DashboardPage() {
         data-display-mode={displayMode}
       >
         <DashboardEntrance className="relative z-10 mx-auto max-w-[1400px] px-5 pb-24 pt-8 sm:px-8 sm:pt-10">
-
-        {/* ── Configuration active ── */}
-        <div data-gsap-reveal>
-          <IdentityProfileBanner profile={profile} />
-        </div>
-
-        {/* ── Header ── */}
-        <div data-gsap-reveal className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <PageHeader
-            family={pageFamily}
-            eyebrow={locale === "fr" ? "Cockpit opérationnel" : "Operational cockpit"}
-            title={t("title_v1")}
-            className="flex-1"
-          />
-          <div className="flex items-center gap-2.5 pb-1">
-            <span className="h-2 w-2 rounded-full bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.55)]" />
-            <span className="text-sm font-semibold text-amber-900">{roleLabel}</span>
-            <span className="rounded-lg border border-amber-200/18 bg-[rgba(69,26,3,0.72)] px-3 py-1 text-[11px] font-mono font-bold text-amber-50 shadow-sm">
-              <Shield size={10} className="mr-1.5 inline text-amber-300" />
-              {userId.slice(-8).toUpperCase()}
-            </span>
+          {/* ── Configuration active ── */}
+          <div data-gsap-reveal>
+            <IdentityProfileBanner profile={profile} />
           </div>
-        </div>
 
-        {/* ── Résumé décisionnel + Plan de journée ── */}
-        <div data-gsap-reveal className="mt-12">
-          <Suspense fallback={<DashboardOverviewSkeleton />}>
-            <DashboardOverviewSection
-              overviewPromise={overviewPromise}
-              locale={locale}
-              profile={profile}
-              primaryAction={primaryAction}
-            />
-          </Suspense>
-        </div>
-
-        <div data-gsap-reveal className="mt-10">
-          <TerritoryMapComparisonCards
-            title={locale === "fr" ? "Deux lectures du territoire suivi" : "Two views of the tracked territory"}
-            subtitle={
-              locale === "fr"
-                ? "La carte de base sert au repérage opérationnel. La version Terraink joue le rôle de carte de présentation. On garde les deux pour choisir plus tard celle qui sert le mieux l’usage final."
-                : "The base map supports operational reading. The Terraink version acts as a presentation map. Both are kept so the team can later choose the most useful one."
-            }
-            locationLabel={locale === "fr" ? "Secteur suivi" : "Tracked sector"}
-            tone="amber"
-            note={
-              locale === "fr"
-                ? "Ici, les deux cartes coexistent volontairement. La base reste la référence terrain; Terraink sert de variante visuelle à comparer."
-                : "Both cards intentionally coexist here. The base map remains the field reference; Terraink is the visual variant to compare later."
-            }
-          />
-        </div>
-
-        {/* ── Séparateur ── */}
-        <div className="mt-14 h-px bg-amber-200/24" />
-
-        {/* ── Action prioritaire ── */}
-        <div data-gsap-reveal className="mt-10 relative overflow-hidden rounded-3xl">
-          {/* Layer fond isolé */}
-          <div className="pointer-events-none absolute inset-0 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] shadow-[0_22px_54px_-34px_rgba(124,45,18,0.30)]" />
-          <div className="relative z-10 flex flex-col gap-5 px-7 py-7 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1.5">
-              <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100">
-                {locale === "fr" ? "Action prioritaire" : "Priority action"}
-              </p>
-              <h2 className="text-2xl font-black tracking-tight text-white">
-                {locale === "fr" ? "Déclarer une action" : "Declare an action"}
-              </h2>
-              <p className="text-base font-medium text-white max-w-md leading-relaxed">
-                {locale === "fr"
-                  ? "Enregistrez une intervention terrain depuis le formulaire dédié."
-                  : "Log a field intervention from the dedicated form."}
-              </p>
-            </div>
-            <CmmButton
-              href="/actions/new"
-              tone="primary"
-              variant="pill"
-              size="lg"
-              className="group h-14 px-7 text-[14px] font-black shadow-[0_8px_32px_-8px_rgba(0,0,0,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.4)]"
-            >
-              <Plus size={18} />
-              {locale === "fr" ? "Ouvrir le formulaire" : "Open the form"}
-              <ArrowRight size={15} className="ml-1 transition-transform group-hover:translate-x-1" />
-            </CmmButton>
-          </div>
-        </div>
-
-        {/* ── Séparateur ── */}
-        <div className="mt-14 h-px bg-amber-200/24" />
-
-        {/* ── Accès rapides ── */}
-        <div data-gsap-reveal className="mt-10">
-          <p className="mb-6 text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100/78">
-            {locale === "fr" ? "Accès rapides" : "Quick access"}
-          </p>
-          <RolePrimaryActions profile={profile} title="" tone="warm" />
-        </div>
-
-        <div className="mt-14 h-px bg-amber-200/24" />
-
-        {/* ── Classement global des niveaux utilisateur ── */}
-        <div data-gsap-reveal className="mt-10">
-          <FamilyRubriqueCard
-            withTopBar={true}
-            topBarContent={
-              locale === "fr"
-                ? "Classement global - niveau utilisateur"
-                : "Global ranking - user level"
-            }
-            className="p-8 sm:p-10"
+          {/* ── Header ── */}
+          <div
+            data-gsap-reveal
+            className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
           >
-            {userLevelRanking.topRows.length === 0 ? (
-              <p className="text-sm text-amber-100/85">
-                {locale === "fr"
-                  ? "Le classement n'est pas encore disponible."
-                  : "Ranking data is not available yet."}
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {userLevelRanking.topRows.map((row) => {
-                  const isCurrentUser = row.userId === userId;
-                  return (
-                    <div
-                      key={row.userId}
-                      className={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
-                        isCurrentUser
-                          ? "border-amber-300/40 bg-amber-200/15"
-                          : "border-amber-200/18 bg-[rgba(69,26,3,0.38)]"
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-white">
-                          #{row.rank} - {row.actorName}
-                        </p>
-                        <p className="text-xs text-amber-100/80">
-                          {locale === "fr" ? "XP valides" : "Validated XP"}: {row.xpValidated}
-                        </p>
-                      </div>
-                      <span className="rounded-lg border border-amber-200/25 bg-[rgba(69,26,3,0.65)] px-3 py-1 text-xs font-black uppercase tracking-[0.15em] text-amber-50">
-                        {locale === "fr" ? "Niveau" : "Level"} {row.currentLevel}
-                      </span>
-                    </div>
-                  );
-                })}
+            <PageHeader
+              family={pageFamily}
+              eyebrow={
+                locale === "fr" ? "Cockpit opérationnel" : "Operational cockpit"
+              }
+              title={t("title_v1")}
+              className="flex-1"
+            />
+            <div className="flex items-center gap-2.5 pb-1">
+              <span className="h-2 w-2 rounded-full bg-amber-300 shadow-[0_0_8px_rgba(251,191,36,0.55)]" />
+              <span className="text-sm font-semibold text-amber-900">
+                {roleLabel}
+              </span>
+              <span className="rounded-lg border border-amber-200/18 bg-[rgba(69,26,3,0.72)] px-3 py-1 text-[11px] font-mono font-bold text-amber-50 shadow-sm">
+                <Shield size={10} className="mr-1.5 inline text-amber-300" />
+                {userId.slice(-8).toUpperCase()}
+              </span>
+            </div>
+          </div>
 
-                {userLevelRanking.currentUserRow &&
-                !userLevelRanking.topRows.some((row) => row.userId === userId) ? (
-                  <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-200/10 px-4 py-3">
-                    <p className="text-sm font-bold text-white">
-                      {locale === "fr" ? "Votre position" : "Your position"}: #
-                      {userLevelRanking.currentUserRow.rank}
-                    </p>
-                    <p className="text-xs text-amber-100/80">
-                      {locale === "fr" ? "Niveau" : "Level"} {userLevelRanking.currentUserRow.currentLevel} ·{" "}
-                      {locale === "fr" ? "XP valides" : "Validated XP"} {userLevelRanking.currentUserRow.xpValidated}
-                    </p>
-                  </div>
-                ) : null}
+          {/* ── Résumé décisionnel + Plan de journée ── */}
+          <div data-gsap-reveal className="mt-12">
+            <Suspense fallback={<DashboardOverviewSkeleton />}>
+              <DashboardOverviewSection
+                overviewPromise={overviewPromise}
+                locale={locale}
+                profile={profile}
+                primaryAction={primaryAction}
+              />
+            </Suspense>
+          </div>
+
+          <div data-gsap-reveal className="mt-10">
+            <TerritoryMapComparisonCards
+              title={
+                locale === "fr"
+                  ? "Deux lectures du territoire suivi"
+                  : "Two views of the tracked territory"
+              }
+              subtitle={
+                locale === "fr"
+                  ? "La carte de base sert au repérage opérationnel. La version Terraink joue le rôle de carte de présentation. On garde les deux pour choisir plus tard celle qui sert le mieux l’usage final."
+                  : "The base map supports operational reading. The Terraink version acts as a presentation map. Both are kept so the team can later choose the most useful one."
+              }
+              locationLabel={
+                locale === "fr" ? "Secteur suivi" : "Tracked sector"
+              }
+              tone="amber"
+              note={
+                locale === "fr"
+                  ? "Ici, les deux cartes coexistent volontairement. La base reste la référence terrain; Terraink sert de variante visuelle à comparer."
+                  : "Both cards intentionally coexist here. The base map remains the field reference; Terraink is the visual variant to compare later."
+              }
+            />
+          </div>
+
+          {/* ── Séparateur ── */}
+          <div className="mt-14 h-px bg-amber-200/24" />
+
+          {/* ── Action prioritaire ── */}
+          <div
+            data-gsap-reveal
+            className="mt-10 relative overflow-hidden rounded-3xl"
+          >
+            {/* Layer fond isolé */}
+            <div className="pointer-events-none absolute inset-0 rounded-3xl border border-amber-200/18 bg-[linear-gradient(145deg,rgba(44,28,15,0.78)_0%,rgba(92,45,12,0.84)_56%,rgba(245,158,11,0.26)_100%)] shadow-[0_22px_54px_-34px_rgba(124,45,18,0.30)]" />
+            <div className="relative z-10 flex flex-col gap-5 px-7 py-7 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1.5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100">
+                  {locale === "fr" ? "Action prioritaire" : "Priority action"}
+                </p>
+                <h2 className="text-2xl font-black tracking-tight text-white">
+                  {locale === "fr"
+                    ? "Déclarer une action"
+                    : "Declare an action"}
+                </h2>
+                <p className="text-base font-medium text-white max-w-md leading-relaxed">
+                  {locale === "fr"
+                    ? "Enregistrez une intervention terrain depuis le formulaire dédié."
+                    : "Log a field intervention from the dedicated form."}
+                </p>
               </div>
-            )}
-          </FamilyRubriqueCard>
-        </div>
+              <CmmButton
+                href="/actions/new"
+                tone="primary"
+                variant="pill"
+                size="lg"
+                className="group h-14 px-7 text-[14px] font-black shadow-[0_8px_32px_-8px_rgba(0,0,0,0.35)] transition-all hover:-translate-y-0.5 hover:shadow-[0_16px_40px_-8px_rgba(0,0,0,0.4)]"
+              >
+                <Plus size={18} />
+                {locale === "fr" ? "Ouvrir le formulaire" : "Open the form"}
+                <ArrowRight
+                  size={15}
+                  className="ml-1 transition-transform group-hover:translate-x-1"
+                />
+              </CmmButton>
+            </div>
+          </div>
 
-        <div className="mt-14 h-px bg-amber-200/24" />
+          {/* ── Séparateur ── */}
+          <div className="mt-14 h-px bg-amber-200/24" />
 
-        <div data-gsap-reveal className="mt-10 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <FamilyRubriqueCard withTopBar={true} topBarContent={locale === "fr" ? "Évolution du compte" : "Account progress"} className="p-8 sm:p-10">
-            <PromotionRequestForm currentRole={profile} />
-          </FamilyRubriqueCard>
+          {/* ── Accès rapides ── */}
+          <div data-gsap-reveal className="mt-10">
+            <p className="mb-6 text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100/78">
+              {locale === "fr" ? "Accès rapides" : "Quick access"}
+            </p>
+            <RolePrimaryActions profile={profile} title="" tone="warm" />
+          </div>
 
-          <FamilyRubriqueCard withTopBar={true} topBarContent={locale === "fr" ? "Configuration" : "Settings"} className="p-8 sm:p-10">
-            <AccountSettingsSection />
-          </FamilyRubriqueCard>
-        </div>
+          <div className="mt-14 h-px bg-amber-200/24" />
 
-        {switchableProfiles.length > 1 ? (
-          <div data-gsap-reveal className="mt-6">
+          {/* ── Parrainages + Classement global des niveaux utilisateur ── */}
+          <div
+            data-gsap-reveal
+            className="mt-10 grid gap-6 xl:grid-cols-[0.72fr_1.28fr]"
+          >
+            <DashboardReferralCard
+              locale={locale}
+              summary={referralSummary}
+              profile={profile}
+            />
+
             <FamilyRubriqueCard
               withTopBar={true}
-              topBarContent={isAdmin ? (locale === "fr" ? "Switch de profil (Admin)" : "Profile switch (Admin)") : (locale === "fr" ? "Identité active" : "Active identity")}
+              topBarContent={
+                locale === "fr"
+                  ? "Classement global - niveau utilisateur"
+                  : "Global ranking - user level"
+              }
               className="p-8 sm:p-10"
             >
-              <div className="flex flex-wrap gap-4">
-                {switchableProfiles.map((p) => (
-                  <CmmButton
-                    key={p}
-                    href={buildProfileRoute(p)}
-                    tone={p === profile ? "primary" : "tertiary"}
-                    variant="pill"
-                    className={
-                      p === profile
-                        ? "rounded-2xl border border-amber-200/30 bg-amber-100/12 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-2xl transition-all hover:-translate-y-1"
-                        : "rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.38)] px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-amber-50/70 transition-all hover:-translate-y-1 hover:bg-[rgba(69,26,3,0.54)] hover:text-white"
-                    }
-                  >
-                    {getProfileLabel(p, locale)}
-                  </CmmButton>
-                ))}
-              </div>
+              {userLevelRanking.topRows.length === 0 ? (
+                <p className="text-sm text-amber-100/85">
+                  {locale === "fr"
+                    ? "Le classement n'est pas encore disponible."
+                    : "Ranking data is not available yet."}
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {userLevelRanking.topRows.map((row) => {
+                    const isCurrentUser = row.userId === userId;
+                    return (
+                      <div
+                        key={row.userId}
+                        className={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
+                          isCurrentUser
+                            ? "border-amber-300/40 bg-amber-200/15"
+                            : "border-amber-200/18 bg-[rgba(69,26,3,0.38)]"
+                        }`}
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-bold text-white">
+                            #{row.rank} - {row.actorName}
+                          </p>
+                          <p className="text-xs text-amber-100/80">
+                            {locale === "fr" ? "XP valides" : "Validated XP"}:{" "}
+                            {row.xpValidated}
+                          </p>
+                        </div>
+                        <span className="rounded-lg border border-amber-200/25 bg-[rgba(69,26,3,0.65)] px-3 py-1 text-xs font-black uppercase tracking-[0.15em] text-amber-50">
+                          {locale === "fr" ? "Niveau" : "Level"}{" "}
+                          {row.currentLevel}
+                        </span>
+                      </div>
+                    );
+                  })}
+
+                  {userLevelRanking.currentUserRow &&
+                  !userLevelRanking.topRows.some(
+                    (row) => row.userId === userId,
+                  ) ? (
+                    <div className="mt-4 rounded-2xl border border-amber-300/30 bg-amber-200/10 px-4 py-3">
+                      <p className="text-sm font-bold text-white">
+                        {locale === "fr" ? "Votre position" : "Your position"}:
+                        #{userLevelRanking.currentUserRow.rank}
+                      </p>
+                      <p className="text-xs text-amber-100/80">
+                        {locale === "fr" ? "Niveau" : "Level"}{" "}
+                        {userLevelRanking.currentUserRow.currentLevel} ·{" "}
+                        {locale === "fr" ? "XP valides" : "Validated XP"}{" "}
+                        {userLevelRanking.currentUserRow.xpValidated}
+                      </p>
+                    </div>
+                  ) : null}
+                </div>
+              )}
             </FamilyRubriqueCard>
           </div>
-        ) : null}
 
+          <div className="mt-14 h-px bg-amber-200/24" />
+
+          <div
+            data-gsap-reveal
+            className="mt-10 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]"
+          >
+            <FamilyRubriqueCard
+              withTopBar={true}
+              topBarContent={
+                locale === "fr" ? "Évolution du compte" : "Account progress"
+              }
+              className="p-8 sm:p-10"
+            >
+              <PromotionRequestForm currentRole={profile} />
+            </FamilyRubriqueCard>
+
+            <FamilyRubriqueCard
+              withTopBar={true}
+              topBarContent={locale === "fr" ? "Configuration" : "Settings"}
+              className="p-8 sm:p-10"
+            >
+              <AccountSettingsSection />
+            </FamilyRubriqueCard>
+          </div>
+
+          {switchableProfiles.length > 1 ? (
+            <div data-gsap-reveal className="mt-6">
+              <FamilyRubriqueCard
+                withTopBar={true}
+                topBarContent={
+                  isAdmin
+                    ? locale === "fr"
+                      ? "Switch de profil (Admin)"
+                      : "Profile switch (Admin)"
+                    : locale === "fr"
+                      ? "Identité active"
+                      : "Active identity"
+                }
+                className="p-8 sm:p-10"
+              >
+                <div className="flex flex-wrap gap-4">
+                  {switchableProfiles.map((p) => (
+                    <CmmButton
+                      key={p}
+                      href={buildProfileRoute(p)}
+                      tone={p === profile ? "primary" : "tertiary"}
+                      variant="pill"
+                      className={
+                        p === profile
+                          ? "rounded-2xl border border-amber-200/30 bg-amber-100/12 px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-white shadow-2xl transition-all hover:-translate-y-1"
+                          : "rounded-2xl border border-amber-200/14 bg-[rgba(69,26,3,0.38)] px-8 py-4 text-xs font-black uppercase tracking-[0.2em] text-amber-50/70 transition-all hover:-translate-y-1 hover:bg-[rgba(69,26,3,0.54)] hover:text-white"
+                      }
+                    >
+                      {getProfileLabel(p, locale)}
+                    </CmmButton>
+                  ))}
+                </div>
+              </FamilyRubriqueCard>
+            </div>
+          ) : null}
         </DashboardEntrance>
       </main>
     </AccountCompletionGate>

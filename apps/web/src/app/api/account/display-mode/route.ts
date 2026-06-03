@@ -2,6 +2,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from"zod";
 import { ENABLED_DISPLAY_MODES } from "@/lib/ui/preferences";
+import { logFailure } from "@/lib/logging/failure-log";
 
 const requestSchema = z.object({
   displayMode: z.enum(ENABLED_DISPLAY_MODES),
@@ -37,7 +38,9 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("Display mode persistence failed", error);
+    logFailure("Account/DisplayMode", "Persistence failed", error, {
+      userId: session.userId,
+    });
     return NextResponse.json(
       { error: "Impossible de synchroniser le mode d'affichage pour le moment." },
       { status: 503 },

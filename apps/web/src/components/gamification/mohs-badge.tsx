@@ -1,6 +1,6 @@
 import React from "react";
 
-// Échelle de Mohs : 10 minéraux = 10 grades
+// Échelle Mohs héritée : 10 minéraux = 10 grades
 const MOHS_GRADES = [
   { grade: 1, name: "Talc",      emoji: "🪨" },
   { grade: 2, name: "Gypse",     emoji: "🪨" },
@@ -61,8 +61,8 @@ export function MohsBadge({ family, value, locale, showHistory = false }: MohsBa
 
   const unit = family === "waste" ? "kg" : (locale === "fr" ? "mégots" : "butts");
   const label = family === "waste"
-    ? (locale === "fr" ? "Badge Déchets" : "Waste Badge")
-    : (locale === "fr" ? "Badge Mégots" : "Butts Badge");
+    ? (locale === "fr" ? "Badge Déchets - Échelle Mohs héritée" : "Waste Badge - inherited Mohs scale")
+    : (locale === "fr" ? "Badge Mégots - Échelle Mohs héritée" : "Butts Badge - inherited Mohs scale");
 
   // Grades franchis (pour l'historique)
   const achievedGradeIndex = Math.min(9, Math.floor(value / stepPerGrade));
@@ -85,6 +85,9 @@ export function MohsBadge({ family, value, locale, showHistory = false }: MohsBa
           <p className={`text-xl font-black tracking-tight ${colors.text}`}>{current.name}</p>
           <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
             {value.toLocaleString(locale)} {unit} collectés
+          </p>
+          <p className="mt-1 text-[8px] font-black uppercase tracking-[0.18em] text-slate-500">
+            Échelle minérale héritée distincte de la gemme
           </p>
         </div>
       </div>

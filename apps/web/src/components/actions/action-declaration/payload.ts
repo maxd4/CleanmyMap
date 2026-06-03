@@ -221,10 +221,7 @@ export function buildCreateActionPayload(params: {
  wasteKg: toRequiredNumber(form.wasteKg, 0),
  cigaretteButts: enteredButtsCount ?? estimatedButtsFromWeight ?? 0,
  cigaretteButtsCount: enteredButtsCount ?? estimatedButtsFromWeight,
- volunteersCount: Math.max(
-1,
- Math.trunc(toRequiredNumber(form.volunteersCount, 1)),
- ),
+ volunteersCount: Math.trunc(toRequiredNumber(form.volunteersCount, 0)),
  durationMinutes: Math.max(0, Math.trunc(toRequiredNumber(form.durationMinutes, 0))),
  notes: appendEventRefToNotes(
  form.notes.trim() || undefined,

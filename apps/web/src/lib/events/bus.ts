@@ -1,4 +1,5 @@
 import type { Event, EventType, EventHandler, EventPayload } from "./types";
+import { logFailure } from "@/lib/logging/failure-log";
 
 type AsyncEventHandler = (event: Event) => Promise<void>;
 
@@ -43,7 +44,7 @@ export async function emit<T extends EventType>(
       delivered++;
     } else {
       failed++;
-      console.error(`[EventBus] Handler failed for ${event.type}:`, result.reason);
+      logFailure("EventBus", "Handler failed", result.reason, { type: event.type });
     }
   });
 

@@ -2,6 +2,10 @@
 
 Documentation complète des familles de badges et des systèmes de progression utilisés dans CleanMyMap.
 
+Référence canonique à lire en premier:
+
+- [Spec canonique de la gamification](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md)
+
 ## Vue d ensemble
 
 Le système de gamification comprend 4 familles de badges exposées par l API, 2 systèmes infinis affichés dans la zone profil, 2 badges one-shot d'entrée, ainsi que 5 badges hérités basés sur des points. Chaque famille récompense un comportement différent :
@@ -14,13 +18,37 @@ Le système de gamification comprend 4 familles de badges exposées par l API, 2
 - **Infinite Badges** : progression personnelle continue sur les déchets, les mégots, les nouveaux lieux, les actions créées et l équilibre des contextes
 - **Mohs Badge** : progression continue de type minérale pour les déchets et les mégots
 
+## Matrice des échelles
+
+| Famille | Échelle | Remarque |
+|---|---|---|
+| Explorer | Échelle d exploration dédiée | Pas de vocabulaire gemme |
+| Participant | Échelle cartographique dédiée | Base `Observateur`, paliers propres à la participation |
+| Forms | Échelle végétale dédiée | Graine → Forêt primaire |
+| Clean Zones | Échelle atmosphérique dédiée | Brise → Eden |
+| Actions créées | Échelle gemme | Observateur → Pilier |
+| Équilibre des contextes | Échelle gemme | Observateur → Pilier |
+| Régularité mensuelle | Échelle gemme | Observateur → Pilier |
+| Zone sensible apaisée | Échelle gemme | Observateur → Pilier |
+| Mohs | Échelle minérale héritée | Talc → Diamant, distincte de la gemme |
+
+Règle produit:
+
+- toute nouvelle famille doit déclarer explicitement son échelle;
+- les échelles non gemme ne doivent pas emprunter le vocabulaire `Quartz / Topaze / Pilier`;
+- `Mohs` reste une exception héritée documentée à part.
+
 ---
 
-## 1. Badge Explorer - Zones découvertes
+## 1. Badge Explorer - Échelle d exploration dédiée
 
 **Objectif** : récompenser l exploration géographique et la révélation de nouvelles zones sur la carte.
 
-**Échelle** : minérale / cartographique - 13 paliers
+**Échelle d exploration** : dédiée / cartographique - 13 paliers
+
+- cette famille n utilise pas l échelle gemme;
+- ses grades et son vocabulaire restent propres à l exploration;
+- l UI doit afficher des `paliers d exploration`, jamais des grades gemmes.
 
 | Palier | Nom | Icône | Seuil | Progression | Déclenchement |
 |-------|------|-------|-------|-------------|---------------|
@@ -62,11 +90,12 @@ Le système de gamification comprend 4 familles de badges exposées par l API, 2
 
 **Objectif** : récompenser la participation aux actions communautaires de dépollution.
 
-**Échelle** : exploration / cartographie - 8 paliers
+**Échelle** : exploration / cartographie - base zéro + 8 paliers
 
 | Palier | Nom | Icône | Seuil | Emoji | Info-bulle |
 |-------|------|-------|-------|-------|------------|
-| 1 | Observateur | marker | 1 | 👀 | Participation initiale |
+| 0 | Observateur | marker | 0 | 👀 | Point de départ de la participation |
+| 1 | Promeneur Local | footprints | 1 | 👣 | Première participation utile |
 | 2 | Éclaireur | compass | 3 | 🔦 | Participation assidue |
 | 3 | Patrouilleur | boots | 5 | 🚶 | Participation récurrente |
 | 4 | Cartographe | map | 10 | 🗺️ | Contribue à la couverture |
@@ -75,7 +104,7 @@ Le système de gamification comprend 4 familles de badges exposées par l API, 2
 | 7 | Conservateur | tree | 25 | 🌳 | Impact notable |
 | 8 | Gardien | guardian | 30 | 🦺 | Ambassadeur de terrain |
 
-**Seuils** : 1 → 3 → 5 → 10 → 15 → 20 → 25 → 30 participations
+**Seuils** : 0 → 1 → 3 → 5 → 10 → 15 → 20 → 25 → 30 participations
 
 **Récompense XP** : +1 XP par palier débloqué, sans bonus
 
@@ -272,7 +301,7 @@ bonus_xp = floor(clean_zones_count / 10) * 2  // un bonus par décennie
 - **Butts** : progression `butts` basée sur `BADGE_STEP_MEGOTS`
 - **Places** : progression `newPlaces` basée sur un pas de 5 lieux
 - **Actions créées** : progression `actionsCreated` basée sur les actions de dépollution réelles validées par un formulaire, puis prolongée avec des grades infinis
-- **Équilibre des contextes** : progression `balancedCycles` basée sur le plus petit compteur entre actions spontanées, associatives et entreprises, avec paliers gem puis suite infinie
+- **Équilibre des contextes** : progression `balancedCycles` par cycles croissants sur les actions validées: 1 de chaque type, puis 2, puis 3, etc., avec remise à zéro entre paliers, XP gagnés = 1, puis 2, puis 3, une ligne d audit indiquant les types et quantités manquants, et suite infinie en grades gem puis Pilier
 
 **Échelle** : progression ouverte avec changement de titre, de rang, d icône et de style visuel lorsque le total augmente.
 
@@ -284,7 +313,7 @@ bonus_xp = floor(clean_zones_count / 10) * 2  // un bonus par décennie
 - pour l équilibre des contextes, la progression avance uniquement quand les trois contextes sont présents dans les actions validées: spontanée, association et entreprise
 - le compteur d équilibre est gouverné par le contexte le moins représenté afin d encourager une répartition plus diverse sans punir les préférences individuelles
 
-**Source de données** : table `user_badge_totals` - `waste_kg`, `butts`, `places_count` pour les trois premières familles, et calcul dérivé depuis les actions + formulaires validés pour `Actions créées` et `Équilibre des contextes`
+**Source de données** : table `user_badge_totals` - `waste_kg`, `butts`, `places_count` pour les trois premières familles, et calcul dérivé depuis les actions + formulaires validés pour `Actions créées`; pour `Équilibre des contextes`, la progression est reconstruite chronologiquement avec remise à zéro de chaque cycle
 
 **Direction visuelle** :
 
@@ -299,7 +328,7 @@ bonus_xp = floor(clean_zones_count / 10) * 2  // un bonus par décennie
 - `InfiniteBadge.tsx` - calcul et affichage du rang
 - `infinite-badges/utils.ts` - helpers de mappage rang / tier
 - `infinite-badges/BadgeModal.tsx` - vue détaillée en modal
-- `action-balance-badge.tsx` - badge gem d équilibre des contextes entre spontané, association et entreprise
+- `action-balance-badge.tsx` - badge gem d équilibre des contextes avec cycle courant, XP cumulés, progression vers le prochain palier et ligne d audit des manquants
 
 **État d implémentation** : ✅ complet
 
@@ -315,6 +344,13 @@ bonus_xp = floor(clean_zones_count / 10) * 2  // un bonus par décennie
 - **Butts** : un grade tous les 2 000 mégots
 
 **Échelle** : progression Mohs - 10 grades de Talc à Diamant
+
+**Règle de séparation** :
+
+- cette échelle reste explicitement distincte de l échelle gemme utilisée par les autres badges infinis;
+- elle ne doit pas être convertie en `Observateur / Quartz / Topaze ...`;
+- elle sert uniquement aux compteurs hérités déchets et mégots;
+- elle conserve ses noms minéraux propres et son affichage compact secondaire.
 
 **Sources de données** :
 

@@ -4,7 +4,7 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 
 ## Familles
 
-- [Homepage (hors bloc)](./routes/00-homepage/README.md)
+- [Homepage (hors bloc)](./routes/00-homepage/homepage-README.md)
 - [Accueil & Pilotage (bloc)](./routes/01-accueil-pilotage/README.md)
 - [Agir (bloc)](./routes/02-agir/README.md)
 - [Cartographie & Impact (bloc)](./routes/03-cartographie-impact/README.md)
@@ -21,8 +21,14 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 - Une route = une fiche canonique.
 - Les routes dynamiques sont documentées par un exemple canonique par pattern.
 - Les routes alias ou redirections restent inventoriées mais ne sont pas traitées comme des pages UI autonomes.
-- Chaque route canonique possède son propre sous-dossier dans `documentation/pages_site/routes/`, avec les captures de la page complète, un markdown des exceptions UI et un markdown de présentation du fonctionnement de la page.
-- Chaque sous-dossier de page doit conserver `IDEES_NON_PERTINENTES.md`, la mémoire locale des améliorations écartées pour cette page.
+- Chaque route canonique possède son propre sous-dossier dans `documentation/pages_site/routes/`.
+- Ce sous-dossier contient des captures de la page complète, un `README.md` préfixé et titré avec le nom de la page, un `presentation-detaillee.md`, un `liste-propositions-a-traiter.md` et un `objectifs-non-pertinents.md`, tous préfixés par le nom de la page.
+- Les captures `.webp` vivent dans un dossier photo centralisé au niveau d'entrée du bloc concerné.
+- Les captures sont nommées avec la route, le nom lisible de la page et la date de capture.
+- Chaque sous-dossier de page doit conserver ces quatre fichiers préfixés par le nom de la page.
+- Le nom du dossier canonique et le nom de chaque fichier doivent contenir le nom de la page ou de la rubrique dont ils dépendent.
+- Le dossier photo centralisé doit contenir le nom du bloc ou de la famille qu'il couvre.
+- Les fichiers optionnels ne sont créés que lorsqu ils deviennent pertinents pour la page ou la rubrique. On évite les fichiers vides créés par anticipation.
 - Les markdown de `documentation/pages_site/routes/` suivent un style court et direct : chiffres exacts, unités abrégées, listes sans article en tête quand c'est possible.
 - Les pages de lecture documentent aussi le choix de sobriété : carte légère, calculs à la demande, détails chargés seulement quand ils servent.
 - Les captures disponibles ne sont pas obligatoires pour exister dans l'inventaire.
@@ -35,8 +41,7 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 
 | Route | Type de page | Fiche | Famille / hors bloc | Statut | Contexte d'accès | Palette attendue | Scope | Fichier source | Dossier canonique | Capture disponible | Surcharge textuelle | Incohérence couleur | Priorité |
 |---|---|---|---|---|---|---|---|---|---|:---:|---|:---:|---|
-| `/` | homepage | [Page d'accueil](./routes/00-homepage/root/README.md) | Homepage (hors bloc) | public | Aucun | vert clair / emerald | à corriger | apps/web/src/app/page.tsx | ./routes/00-homepage/root | non | moyen | non | faible |
-| `/accueil` | homepage | [Accueil](./routes/00-homepage/accueil/README.md) | Homepage (hors bloc) | public | Aucun | vert clair / emerald | à corriger | apps/web/src/app/accueil/page.tsx | ./routes/00-homepage/accueil | non | moyen | non | faible |
+| `/` | homepage | [Homepage](./routes/00-homepage/homepage/homepage-README.md) | Homepage (hors bloc) | public | Aucun | vert clair / emerald | à corriger | apps/web/src/app/page.tsx | ./routes/00-homepage/homepage | non | moyen | non | faible |
 
 
 
@@ -46,7 +51,6 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 |---|---|---|---|---|---|---|---|---|---|:---:|---|:---:|---|
 | `/dashboard` | page de bloc | [Dashboard](./routes/01-accueil-pilotage/dashboard/README.md) | Accueil & Pilotage (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | amber / orange | à corriger | apps/web/src/app/(app)/dashboard/page.tsx | ./routes/01-accueil-pilotage/dashboard | non | fort | non | moyenne |
 | `/explorer` | exception UI — sommaire | [Sommaire](./routes/01-accueil-pilotage/explorer/README.md) | Accueil & Pilotage (bloc) | public | Aucun | yellow | terminé | apps/web/src/app/(app)/explorer/page.tsx | ./routes/01-accueil-pilotage/explorer | non | moyen | non | faible |
-| `/methodologie` | exception UI — impact | [Méthodologie](./routes/01-accueil-pilotage/methodologie/README.md) | Accueil & Pilotage (bloc) | public | Aucun | red | terminé | apps/web/src/app/(app)/methodologie/page.tsx | ./routes/01-accueil-pilotage/methodologie | non | moyen | non | faible |
 | `/parcours` | page d'action | [Parcours](./routes/01-accueil-pilotage/parcours/README.md) | Accueil & Pilotage (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | amber / orange | à corriger | apps/web/src/app/(app)/parcours/page.tsx | ./routes/01-accueil-pilotage/parcours | non | moyen | oui | critique |
 | `/parcours/[profile] (ex. /parcours/benevole)` | dynamique — parcours | [Parcours par profil](./routes/01-accueil-pilotage/parcours-profile/README.md) | Accueil & Pilotage (bloc) | dynamique | Paramètre de route requis (profil, id, section, mission...) | amber / orange | à corriger | apps/web/src/app/(app)/parcours/[profile]/page.tsx | ./routes/01-accueil-pilotage/parcours-profile | non | moyen | oui | moyenne |
 | `/pilotage` | page de bloc | [Pilotage](./routes/01-accueil-pilotage/pilotage/README.md) | Accueil & Pilotage (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | amber / brun | à corriger | apps/web/src/app/(app)/pilotage/page.tsx | ./routes/01-accueil-pilotage/pilotage | non | fort | non | moyenne |
@@ -78,6 +82,7 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 | Route | Type de page | Fiche | Famille / hors bloc | Statut | Contexte d'accès | Palette attendue | Scope | Fichier source | Dossier canonique | Capture disponible | Surcharge textuelle | Incohérence couleur | Priorité |
 |---|---|---|---|---|---|---|---|---|---|:---:|---|:---:|---|
 | `/actions/map` | page d'action | [Carte des actions](./routes/03-cartographie-impact/actions-map/README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | sky | à corriger | apps/web/src/app/(app)/actions/map/page.tsx | ./routes/03-cartographie-impact/actions-map | non | moyen | non | faible |
+| `/methodologie` | exception UI — impact | [Méthodologie](./routes/03-cartographie-impact/methodologie/README.md) | Cartographie & Impact (bloc) | public | Aucun | red | terminé | apps/web/src/app/(app)/methodologie/page.tsx | ./routes/03-cartographie-impact/methodologie | non | moyen | non | faible |
 | `/gamification` | page de bloc | [Progression & badges](./routes/03-cartographie-impact/gamification/README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | red | à corriger | apps/web/src/app/(app)/gamification/page.tsx | ./routes/03-cartographie-impact/gamification | non | moyen | oui | critique |
 | `/observatoire` | page de bloc | [Observatoire public](./routes/03-cartographie-impact/observatoire/README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | sky | à corriger | apps/web/src/app/(app)/observatoire/page.tsx | ./routes/03-cartographie-impact/observatoire | non | moyen | oui | critique |
 | `/profil/impact` | page de bloc | [Profil impact](./routes/03-cartographie-impact/profil-impact/README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | amber / orange | à corriger | apps/web/src/app/(app)/profil/impact/page.tsx | ./routes/03-cartographie-impact/profil-impact | non | fort | non | moyenne |

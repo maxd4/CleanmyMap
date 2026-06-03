@@ -1,11 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { DEFAULT_VISIBLE_CATEGORIES } from "@/components/actions/map-marker-categories";
 import type { ActionsMapCanvasComponent, ActionsMapFeedProps } from "./map-feed.types";
 import { useMapFeedData, type MapFeedDataState } from "./use-map-feed-data";
 import { ImmersiveLayout } from "./_layouts/immersive-layout";
 import { DefaultLayout } from "./_layouts/default-layout";
+import { logFailure } from "@/lib/logging/failure-log";
+import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
+import type { MapViewportState } from "@/components/actions/map/map-export.types";
 
 type ActionsMapFeedContentProps = {
   feedData: MapFeedDataState;
@@ -13,8 +16,12 @@ type ActionsMapFeedContentProps = {
   showIntro?: boolean;
   fullViewport?: boolean;
   showStoriesCarousel?: boolean;
+  zoneQuery?: string;
   selectedActionId?: string | null;
   onOpenAction?: (actionId: string) => void;
+  onResetFilters?: () => void;
+  mapExportTargetRef?: RefObject<HTMLDivElement | null>;
+  onViewportChange?: (viewport: MapViewportState) => void;
 };
 
 export function ActionsMapFeedContent({
@@ -23,8 +30,12 @@ export function ActionsMapFeedContent({
   showIntro = true,
   fullViewport = false,
   showStoriesCarousel = true,
+  zoneQuery = "",
   selectedActionId = null,
   onOpenAction,
+  onResetFilters,
+  mapExportTargetRef,
+  onViewportChange,
 }: ActionsMapFeedContentProps) {
   const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
   const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);
@@ -45,7 +56,7 @@ export function ActionsMapFeedContent({
             importError instanceof Error
               ? importError.message
               : "Le module de cartographie n'a pas pu être chargé. Veuillez rafraîchir la page.";
-          console.error("Map canvas import failed", importError);
+          logFailure("ActionsMapFeed", "Map canvas import failed", importError);
           setMapCanvasError(message);
         }
       });
@@ -63,6 +74,7 @@ export function ActionsMapFeedContent({
 
   const layoutProps = {
     items: feedData.items,
+    allItems: feedData.allItems,
     summary: feedData.summary,
     hasPartialSource: feedData.hasPartialSource,
     partialSourcesLabel: feedData.partialSourcesLabel,
@@ -72,10 +84,15 @@ export function ActionsMapFeedContent({
     MapCanvas,
     selectedActionId,
     onOpenAction: onOpenAction ?? (() => {}),
+    onSelectAction: onOpenAction ?? (() => {}),
     onReload: () => void feedData.reload(),
+    onResetFilters: onResetFilters ?? (() => {}),
     showIntro,
     fullViewport,
     showStoriesCarousel,
+    zoneQuery,
+    mapExportTargetRef,
+    onViewportChange,
   };
 
   return (
@@ -87,10 +104,24 @@ export function ActionsMapFeedContent({
       )}
 
       {feedData.isLoading ? (
-        <div className="mt-5 space-y-2">
-          <div className="h-11 animate-pulse rounded-lg bg-sky-200/35" />
-          <div className="h-11 animate-pulse rounded-lg bg-sky-200/35" />
-          <div className="h-11 animate-pulse rounded-lg bg-sky-200/35" />
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="space-y-3 rounded-2xl border border-sky-200/80 bg-white/80 p-4">
+            <CmmSkeleton variant="text" className="w-32" />
+            <CmmSkeleton variant="title" className="w-48" />
+            <CmmSkeleton variant="text" className="w-3/4" />
+          </div>
+          <div className="space-y-3 rounded-2xl border border-sky-200/80 bg-white/80 p-4">
+            <CmmSkeleton variant="text" className="w-28" />
+            <CmmSkeleton variant="title" className="w-40" />
+            <div className="flex gap-2">
+              <CmmSkeleton variant="rectangular" className="h-8 w-20 rounded-full" />
+              <CmmSkeleton variant="rectangular" className="h-8 w-16 rounded-full" />
+            </div>
+          </div>
+          <div className="space-y-3 rounded-2xl border border-sky-200/80 bg-white/80 p-4">
+            <CmmSkeleton variant="text" className="w-24" />
+            <CmmSkeleton variant="chart" className="h-24" />
+          </div>
         </div>
       ) : null}
 
@@ -112,6 +143,7 @@ export function ActionsMapFeed({
   statusFilter,
   impactFilter,
   qualityMin,
+  zoneQuery,
   limit = 120,
   presentation = "default",
   showIntro = true,
@@ -120,6 +152,9 @@ export function ActionsMapFeed({
   visibleCategories = DEFAULT_VISIBLE_CATEGORIES,
   selectedActionId = null,
   onOpenAction,
+  onResetFilters,
+  mapExportTargetRef,
+  onViewportChange,
 }: ActionsMapFeedProps) {
   const feedData = useMapFeedData({
     types,
@@ -128,6 +163,7 @@ export function ActionsMapFeed({
     statusFilter,
     impactFilter,
     qualityMin,
+    zoneQuery,
     visibleCategories,
     limit,
   });
@@ -139,8 +175,12 @@ export function ActionsMapFeed({
       showIntro={showIntro}
       fullViewport={fullViewport}
       showStoriesCarousel={showStoriesCarousel}
+      zoneQuery={zoneQuery}
       selectedActionId={selectedActionId}
       onOpenAction={onOpenAction}
+      onResetFilters={onResetFilters}
+      mapExportTargetRef={mapExportTargetRef}
+      onViewportChange={onViewportChange}
     />
   );
 }

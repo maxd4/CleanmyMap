@@ -10,6 +10,7 @@ import {
   hasHoneypotSignal,
   hasRecentSubmission,
 } from "@/lib/security/validation";
+import { logWarning } from "@/lib/logging/failure-log";
 
 export const runtime = "nodejs";
 
@@ -124,7 +125,10 @@ export async function POST(request: Request) {
       status: "failed",
       notificationError: message,
     }).catch(() => undefined);
-    console.warn("Contact notification failed", error);
+    logWarning("Contact", "Notification failed", {
+      requestId: created.id,
+      reason: message,
+    });
 
     return NextResponse.json(
       {

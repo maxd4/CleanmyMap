@@ -1,6 +1,10 @@
 import type { ActionMapItem } from "@/lib/actions/types";
+import type { RefObject } from "react";
 import dynamic from "next/dynamic";
 import type { ActionsMapCanvasComponent } from "../map-feed.types";
+import { MapEmptyState } from "./map-empty-state";
+import { MapLoadingState } from "./map-loading-state";
+import type { MapViewportState } from "@/components/actions/map/map-export.types";
 
 const ActionStoriesCarousel = dynamic(
   () => import("@/components/map/ActionStoriesCarousel").then((mod) => mod.ActionStoriesCarousel),
@@ -14,6 +18,7 @@ const ActionStoriesCarousel = dynamic(
 
 type ImmersiveLayoutProps = {
   items: ActionMapItem[];
+  allItems: ActionMapItem[];
   hasPartialSource: boolean;
   partialSourcesLabel: string;
   freshnessLabel: string | null;
@@ -22,14 +27,20 @@ type ImmersiveLayoutProps = {
   MapCanvas: ActionsMapCanvasComponent | null;
   selectedActionId: string | null;
   onOpenAction: (actionId: string) => void;
+  onSelectAction: (actionId: string) => void;
   onReload: () => void;
+  onResetFilters: () => void;
   showIntro?: boolean;
   fullViewport?: boolean;
   showStoriesCarousel?: boolean;
+  zoneQuery?: string;
+  mapExportTargetRef?: RefObject<HTMLDivElement | null>;
+  onViewportChange?: (viewport: MapViewportState) => void;
 };
 
 export function ImmersiveLayout({
   items,
+  allItems,
   hasPartialSource,
   partialSourcesLabel,
   freshnessLabel,
@@ -38,11 +49,19 @@ export function ImmersiveLayout({
   MapCanvas,
   selectedActionId,
   onOpenAction,
+  onSelectAction,
   onReload,
+  onResetFilters,
   showIntro = true,
   fullViewport = false,
   showStoriesCarousel = true,
+  zoneQuery = "",
+  mapExportTargetRef,
+  onViewportChange,
 }: ImmersiveLayoutProps) {
+  const hasItems = items.length > 0;
+  const emptyMode = allItems.length > 0 ? "filtered" : "empty";
+
   return (
     <>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.26),transparent_28%),radial-gradient(circle_at_top_right,rgba(191,219,254,0.24),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]" />
@@ -78,10 +97,11 @@ export function ImmersiveLayout({
         ) : null}
 
         <div className="grid gap-6">
-          <div className="relative min-h-[600px] overflow-hidden rounded-[2.75rem] border border-sky-200/80 bg-sky-50 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]">
-            {MapCanvas ? (
-              <MapCanvas items={items} selectedActionId={selectedActionId} fullViewport={fullViewport} />
-            ) : mapCanvasError ? (
+          <div
+            ref={mapExportTargetRef}
+            className="relative min-h-[600px] overflow-hidden rounded-[2.75rem] border border-sky-200/80 bg-sky-50 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]"
+          >
+            {mapCanvasError ? (
               <div className="flex h-full items-center justify-center bg-rose-50 px-6 text-center text-slate-950">
                 <div className="max-w-md space-y-3 rounded-[2rem] border border-rose-200/70 bg-white px-8 py-10">
                   <p className="cmm-text-caption font-semibold tracking-[0.12em] text-rose-800">
@@ -92,15 +112,27 @@ export function ImmersiveLayout({
                   </p>
                 </div>
               </div>
+            ) : !hasItems ? (
+              <MapEmptyState
+                mode={emptyMode}
+                freshnessLabel={freshnessLabel}
+                hasPartialSource={hasPartialSource}
+                partialSourcesLabel={partialSourcesLabel}
+                onResetFilters={onResetFilters}
+                onReload={onReload}
+                isValidating={isValidating}
+                zoneQuery={zoneQuery}
+              />
+            ) : !MapCanvas ? (
+              <MapLoadingState fullViewport />
             ) : (
-              <div className="flex h-full items-center justify-center bg-sky-50 px-6 text-center text-slate-950">
-                <div className="max-w-md space-y-4">
-                  <div className="mx-auto h-16 w-16 animate-spin rounded-full border-4 border-sky-200 border-t-sky-500" />
-                  <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-700">
-                    Initialisation du cockpit
-                  </p>
-                </div>
-              </div>
+              <MapCanvas
+                items={items}
+                selectedActionId={selectedActionId}
+                onSelectAction={onSelectAction}
+                fullViewport={fullViewport}
+                onViewportChange={onViewportChange}
+              />
             )}
           </div>
         </div>

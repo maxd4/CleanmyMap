@@ -17,18 +17,10 @@ const captureConfig = [
   {
     route: "/",
     type: "page",
-    section: "accueil",
+    section: "homepage",
     outputDir: "documentation/liberte-UX-UI/01-ACCUEIL",
-    filename: "accueil",
+    filename: "homepage",
     generateContext: true // Génère aussi une version contexte
-  },
-  {
-    route: "/accueil",
-    type: "page", 
-    section: "accueil",
-    outputDir: "documentation/liberte-UX-UI/01-ACCUEIL",
-    filename: "accueil",
-    generateContext: true
   },
   {
     route: "/agir",
@@ -97,7 +89,7 @@ const captureConfig = [
     filename: "reglages"
   },
   
-  // Blocs spécifiques de l'accueil (nécessitent des sélecteurs CSS)
+  // Blocs spécifiques de la homepage (nécessitent des sélecteurs CSS)
   {
     route: "/",
     type: "block",
@@ -350,9 +342,9 @@ async function captureElement(page, config, viewport) {
       console.log(`  ✓ Saved page ${path.basename(filePath)}`);
 
       if (config.route === "/" && viewport.name === "desktop") {
-        const accueilFullPath = path.join(screenshotsDir, "page-accueil-full.png");
-        await fs.copyFile(filePath, accueilFullPath);
-        console.log(`  ✓ Saved accueil alias ${path.basename(accueilFullPath)}`);
+        const homepageFullPath = path.join(screenshotsDir, "page-homepage-full.png");
+        await fs.copyFile(filePath, homepageFullPath);
+        console.log(`  ✓ Saved homepage alias ${path.basename(homepageFullPath)}`);
       }
     }
     

@@ -45,7 +45,7 @@ export default function MentionsLegalesPage() {
           badge={<PageHeaderBadge tone="slate">Cadre juridique</PageHeaderBadge>}
           title="Mentions légales"
           subtitle="Point d'entrée unique vers les documents juridiques de CleanMyMap. Les pages détaillées restent séparées pour garder la conformité lisible."
-          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 5 mai 2026</p>}
+          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 1 juin 2026</p>}
         />
 
         <section className="grid gap-4 md:grid-cols-2">

@@ -34,15 +34,15 @@ describe("map marker categories", () => {
  expect(DEFAULT_VISIBLE_CATEGORIES.combo).toBe(true);
  });
 
- it("classifies pollution color with defined thresholds", () => {
- expect(
- classifyPollutionColor(
- buildItem({ waste_kg: 40, cigarette_butts: 3000 }),
- ),
+  it("classifies pollution color with defined thresholds", () => {
+    expect(
+      classifyPollutionColor(
+        buildItem({ waste_kg: 40, cigarette_butts: 3000 }),
+      ),
  ).toBe("violet");
- expect(
- classifyPollutionColor(buildItem({ waste_kg: 20, cigarette_butts: 0 })),
- ).toBe("yellow");
+    expect(
+      classifyPollutionColor(buildItem({ waste_kg: 20, cigarette_butts: 0 })),
+    ).toBe("violet");
  expect(
  classifyPollutionColor(buildItem({ waste_kg: 1, cigarette_butts: 0 })),
  ).toBe("green");
@@ -89,6 +89,30 @@ describe("map marker categories", () => {
  false,
  );
  });
+
+ it("uses the shared reference when provided", () => {
+ const references = {
+ wastePerVolunteer: 10,
+ buttsPerVolunteer: 1000,
+ };
+
+ expect(classifyPollutionColor(buildItem({ waste_kg: 2, cigarette_butts: 0 }), references)).toBe(
+ "green",
+ );
+ expect(
+ classifyPollutionColor(buildItem({ waste_kg: 20, cigarette_butts: 0 }), references),
+ ).toBe("violet");
+ expect(
+ resolveInfrastructureNeed(buildItem({ waste_kg: 8, cigarette_butts: 900 }), references),
+ ).toBe("combo");
+ expect(
+ isVisibleWithCategoryFilter(
+ buildItem({ waste_kg: 20, cigarette_butts: 0 }),
+ DEFAULT_VISIBLE_CATEGORIES,
+ references,
+ ),
+ ).toBe(true);
+  });
 
  it("lets each infrastructure category be hidden independently", () => {
  const ashtrayItem = buildItem({ waste_kg: 0, cigarette_butts: 1500 });

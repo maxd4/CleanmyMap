@@ -20,6 +20,7 @@ import { useActionDeclarationSmartAssist } from "../action-declaration-form.smar
 import { loadDraft } from "./draft-storage";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
+import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import type { FormState, ValidationIssue, PostActionRetentionLoop } from "../action-declaration-form.model";
 
 type DeclarationMode = "complete";
@@ -64,7 +65,7 @@ export function useActionDeclarationForm({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdId, setCreatedId] = useState<string | null>(null);
   const [retentionLoop, setRetentionLoop] = useState<PostActionRetentionLoop | null>(null);
-  const [validationIssues] = useState<ValidationIssue[]>([]);
+  const [validationIssues, setValidationIssues] = useState<ValidationIssue[]>([]);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState<boolean>(false);
   const [showConfirmation, setShowConfirmation] = useState<boolean>(false);
   const hasTrackedStartRef = useRef<boolean>(false);
@@ -227,6 +228,16 @@ export function useActionDeclarationForm({
 
   async function handleConfirmSubmit() {
     if (submissionState === "pending") return;
+    const volunteerIssues = getVolunteerActionValidationIssues(payload);
+    if (volunteerIssues.length > 0) {
+      setValidationIssues(volunteerIssues);
+      setHasAttemptedSubmit(true);
+      setErrorMessage(volunteerIssues[0]?.message ?? null);
+      setSubmissionState("error");
+      setShowConfirmation(false);
+      return;
+    }
+    setValidationIssues([]);
     setSubmissionState("pending");
     try {
       const submissionPayload = await prepareCreateActionPayload({

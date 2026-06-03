@@ -1,0 +1,101 @@
+[
+  {
+    "docKey": "00-homepage",
+    "runtimeId": "homepage",
+    "label": "Homepage",
+    "scope": "hors bloc",
+    "legacyFolder": "0-HOMEPAGE",
+    "description": "Famille autonome de la homepage canonique.",
+    "backdropToneKey": "home"
+  },
+  {
+    "docKey": "01-accueil-pilotage",
+    "runtimeId": "accueil-pilotage",
+    "label": "Accueil & Pilotage",
+    "scope": "bloc",
+    "legacyFolder": "1-BLOC-ACCUEIL&PILOTAGE",
+    "description": "Entrées opérationnelles de pilotage, profil, sommaire et méthodologie.",
+    "backdropToneKey": "pilotage"
+  },
+  {
+    "docKey": "02-agir",
+    "runtimeId": "agir",
+    "label": "Agir",
+    "scope": "bloc",
+    "legacyFolder": "2-BLOC-AGIR",
+    "description": "Parcours d'action, déclaration, signalement et préparation terrain.",
+    "backdropToneKey": "emerald"
+  },
+  {
+    "docKey": "03-cartographie-impact",
+    "runtimeId": "cartographie-impact",
+    "label": "Cartographie & Impact",
+    "scope": "bloc",
+    "legacyFolder": "3-BLOC-VISUALISER&IMPACTER",
+    "description": "Vue carte, impact, observatoire et lecture des résultats.",
+    "backdropToneKey": "sky"
+  },
+  {
+    "docKey": "04-reseau-discussions",
+    "runtimeId": "reseau-discussions",
+    "label": "Réseau & Discussions",
+    "scope": "bloc",
+    "legacyFolder": "4-BLOC-RESEAU&DISCUSSION",
+    "description": "Pages de réseau, entraide, partenaires et messagerie.",
+    "backdropToneKey": "pink"
+  },
+  {
+    "docKey": "05-apprendre",
+    "runtimeId": "apprendre",
+    "label": "Apprendre",
+    "scope": "bloc",
+    "legacyFolder": "5-BLOC-APPRENDRE",
+    "description": "Contenus pédagogiques et guides de compréhension.",
+    "backdropToneKey": "yellow"
+  },
+  {
+    "docKey": "06-auth-onboarding",
+    "runtimeId": "authentification",
+    "label": "Auth & Onboarding",
+    "scope": "hors bloc",
+    "legacyFolder": "6-PAGES-STANDALONE",
+    "description": "Connexion, inscription et configuration initiale.",
+    "backdropToneKey": "auth"
+  },
+  {
+    "docKey": "07-legal",
+    "runtimeId": "juridique",
+    "label": "Institutionnel & Légal",
+    "scope": "hors bloc",
+    "legacyFolder": "6-PAGES-STANDALONE",
+    "description": "Contacts et pages institutionnelles / juridiques, sobres et cohérentes entre elles.",
+    "backdropToneKey": "legal"
+  },
+  {
+    "docKey": "08-systeme-utilitaires",
+    "runtimeId": "systeme",
+    "label": "Système & Utilitaires",
+    "scope": "hors bloc",
+    "legacyFolder": "6-PAGES-STANDALONE",
+    "description": "Réglages, comparateurs, preview et routes techniques. Les pages standalone gardent une mood layer autonome par usage.",
+    "backdropToneKey": "system"
+  },
+  {
+    "docKey": "09-admin-superadmin",
+    "runtimeId": "administration",
+    "label": "Admin & Super-admin",
+    "scope": "hors bloc",
+    "legacyFolder": "6-PAGES-STANDALONE",
+    "description": "Administration, services et supervision avancée.",
+    "backdropToneKey": "admin"
+  },
+  {
+    "docKey": "10-print-export",
+    "runtimeId": "impression",
+    "label": "Print & Export",
+    "scope": "hors bloc",
+    "legacyFolder": "6-PAGES-STANDALONE",
+    "description": "Rapports imprimables et exports PDF avec une ambiance documentaire autonome.",
+    "backdropToneKey": "print"
+  }
+]

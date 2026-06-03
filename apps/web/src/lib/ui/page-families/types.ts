@@ -9,12 +9,12 @@ export type PageFamilyId =
   | "cartographie-impact"
   | "reseau-discussions"
   | "apprendre"
-  | "auth"
-  | "legal"
-  | "system"
-  | "admin"
-  | "print"
-  | "fallback";
+  | "authentification"
+  | "juridique"
+  | "systeme"
+  | "administration"
+  | "impression"
+  | "secours";
 
 export type PageFamilyHeroTokens = {
   eyebrow: string;

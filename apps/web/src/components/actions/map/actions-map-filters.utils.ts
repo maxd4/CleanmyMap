@@ -1,4 +1,5 @@
-import type { ActionImpactLevel, ActionStatus } from "@/lib/actions/types";
+import type { ActionImpactLevel, ActionMapItem, ActionStatus } from "@/lib/actions/types";
+import { extractArrondissement } from "@/components/sections/rubriques/helpers";
 import {
   DEFAULT_VISIBLE_CATEGORIES,
   type MarkerCategory,
@@ -14,6 +15,7 @@ export type ActionsMapFilters = {
   statusFilter: ActionsMapStatusFilter;
   impactFilter: ActionImpactLevel | "all";
   qualityMin: number;
+  zoneQuery: string;
   visibleCategories: Record<MarkerCategory, boolean>;
 };
 
@@ -33,6 +35,8 @@ const VALID_IMPACTS = new Set<ActionImpactLevel | "all">([
   "fort",
   "critique",
 ]);
+
+const MAX_ZONE_QUERY_LENGTH = 120;
 
 function clampInteger(
   value: unknown,
@@ -65,6 +69,72 @@ function normalizeVisibleCategories(
   ) as Record<MarkerCategory, boolean>;
 }
 
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildArrondissementAliases(label: string): string[] {
+  const arrondissement = extractArrondissement(label);
+  if (arrondissement === "Hors arrondissement") {
+    return [];
+  }
+
+  const number = arrondissement.replace(/e$/, "");
+  return [
+    arrondissement,
+    `${number}e`,
+    `${number}eme`,
+    `${number} arrondissement`,
+    `${number}e arrondissement`,
+    `paris ${number}`,
+    `paris ${number}e`,
+  ];
+}
+
+function buildZoneSearchIndex(item: ActionMapItem): string {
+  const locationLabel = item.location_label ?? "";
+  const contractLocationLabel = item.contract?.location.label ?? "";
+  const contractMetadata = item.contract?.metadata;
+  const parts = [
+    locationLabel,
+    contractLocationLabel,
+    item.notes_plain ?? "",
+    contractMetadata?.notesPlain ?? "",
+    contractMetadata?.associationName ?? "",
+    contractMetadata?.placeType ?? "",
+    contractMetadata?.departureLocationLabel ?? "",
+    contractMetadata?.arrivalLocationLabel ?? "",
+    extractArrondissement(locationLabel),
+    extractArrondissement(contractLocationLabel),
+    ...buildArrondissementAliases(locationLabel),
+    ...buildArrondissementAliases(contractLocationLabel),
+  ];
+
+  return normalizeSearchText(parts.filter((part) => part.trim().length > 0).join(" "));
+}
+
+export function normalizeZoneQuery(value: unknown): string {
+  if (typeof value !== "string") {
+    return "";
+  }
+  return value.trim().replace(/\s+/g, " ").slice(0, MAX_ZONE_QUERY_LENGTH);
+}
+
+export function matchesZoneQuery(item: ActionMapItem, zoneQuery: string): boolean {
+  const normalizedQuery = normalizeSearchText(normalizeZoneQuery(zoneQuery));
+  if (!normalizedQuery) {
+    return true;
+  }
+
+  return buildZoneSearchIndex(item).includes(normalizedQuery);
+}
+
 export function buildDefaultActionsMapFilters(
   initialDays: number,
 ): ActionsMapFilters {
@@ -74,6 +144,7 @@ export function buildDefaultActionsMapFilters(
     statusFilter: "approved",
     impactFilter: "all",
     qualityMin: 0,
+    zoneQuery: "",
     visibleCategories: { ...DEFAULT_VISIBLE_CATEGORIES },
   };
 }
@@ -108,6 +179,7 @@ export function normalizeActionsMapFilters(
       ? (source.impactFilter as ActionImpactLevel | "all")
       : defaults.impactFilter,
     qualityMin: clampInteger(source.qualityMin, 0, 100, defaults.qualityMin),
+    zoneQuery: normalizeZoneQuery(source.zoneQuery),
     visibleCategories: normalizeVisibleCategories(source.visibleCategories),
   };
 }

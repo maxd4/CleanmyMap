@@ -26,6 +26,15 @@ Documentation complète du projet CleanMyMap optimisée pour agents IA.
 - **[ai-guides/MATT_POCOCK_SKILLS_PLAYBOOK.md](./ai-guides/MATT_POCOCK_SKILLS_PLAYBOOK.md)** - workflow CleanMyMap pour les skills Matt Pocock, avec quand les utiliser et les commandes de check rapides reelles.
 - **[ai-guides/README.md](./ai-guides/README.md)** - porte d'entree des guides IA.
 
+### Origine et attribution
+
+- **[origin-about.md](./origin-about.md)** - origine du projet, attribution initiale, releases et traçabilité.
+- **[AUTHORS.md](../AUTHORS.md)** - attribution des auteurs et repères de contribution.
+
+### Instantanés de documentation
+
+- **[documentation-push-status.md](./documentation-push-status.md)** - arborescence locale avec statut `✅` / `❌` / `⚪` pour suivre ce qui est déjà poussé.
+
 ---
 
 ## 📁 Structure Documentation

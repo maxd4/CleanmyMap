@@ -18,6 +18,7 @@ import {
   Layers,
   ChevronRight,
   AlertCircle,
+  BookOpen,
   Sparkles,
   Droplets,
   Calendar,
@@ -41,8 +42,8 @@ export const WeatherTabs = memo(function WeatherTabs({
   kitProgress,
   fr,
 }: {
-  activeTab: "weather" | "kit";
-  setActiveTab: (tab: "weather" | "kit") => void;
+  activeTab: "weather" | "kit" | "guide";
+  setActiveTab: (tab: "weather" | "kit" | "guide") => void;
   kitProgress: number;
   fr: boolean;
 }) {
@@ -51,6 +52,7 @@ export const WeatherTabs = memo(function WeatherTabs({
       {[
         { id: "weather", label: fr ? "Météo d'action" : "Action weather", icon: CloudSun },
         { id: "kit", label: fr ? "Kit terrain" : "Field kit", icon: ClipboardCheck },
+        { id: "guide", label: fr ? "Mode opératoire" : "Operating guide", icon: BookOpen },
       ].map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
@@ -72,7 +74,18 @@ export const WeatherTabs = memo(function WeatherTabs({
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
-            <Icon size={16} className={isActive ? "text-blue-400" : "text-slate-500"} />
+            <Icon
+              size={16}
+              className={
+                isActive
+                  ? tab.id === "kit"
+                    ? "text-amber-400"
+                    : tab.id === "guide"
+                      ? "text-emerald-400"
+                      : "text-blue-400"
+                  : "text-slate-500"
+              }
+            />
             {tab.label}
             {tab.id === 'kit' && (
               <span className={cn(

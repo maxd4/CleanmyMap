@@ -14,6 +14,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import useSWR from "swr";
+import { ActionPollutionScoreReferencesProvider } from "@/components/actions/map/action-pollution-score-references-context";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { SitePreferencesControls } from "@/components/ui/site-preferences-controls";
 import { fetchMapActions } from "@/lib/actions/http";
@@ -164,12 +165,14 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                       Impossible de charger la carte pour le moment.
                     </div>
                   ) : (
-                    <HomeMapCanvas
-                      items={mapData?.items ?? []}
-                      selectedActionId={null}
-                      compact
-                      className="absolute inset-0 h-full w-full rounded-none border-0 bg-transparent shadow-none ring-0"
-                    />
+                    <ActionPollutionScoreReferencesProvider>
+                      <HomeMapCanvas
+                        items={mapData?.items ?? []}
+                        selectedActionId={null}
+                        compact
+                        className="absolute inset-0 h-full w-full rounded-none border-0 bg-transparent shadow-none ring-0"
+                      />
+                    </ActionPollutionScoreReferencesProvider>
                   )}
                 </div>
 

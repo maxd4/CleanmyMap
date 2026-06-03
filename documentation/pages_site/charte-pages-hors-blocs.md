@@ -65,7 +65,7 @@ Le plan `PAGE_FAMILIES_PLAN.md` documente deja les limites du modele `page-famil
 
 - `/explorer` reste la page Sommaire de reference.
 - Les pages d'impact rouges (`/reports`, `/gamification`) sont documentees comme exceptions UI rouges du bloc Cartographie & Impact.
-- La homepage (`/` et `/accueil`) est une famille autonome, pas une exception de bloc.
+- La homepage (`/`) est une famille autonome, pas une exception de bloc.
 
 ### Familles autonomes deja reconnues
 
@@ -81,7 +81,7 @@ Ces elements sont hors perimetre de la charte parce qu ils sont deja figes, term
 
 | Route ou famille | Statut | Pourquoi |
 |---|---|---|
-| `/` et `/accueil` | Famille autonome | Identite visuelle propre de la homepage |
+| `/` | Famille autonome | Identite visuelle propre de la homepage |
 | `/explorer` | Exception UI validee | Sommaire considere comme abouti |
 | `/reports` et `/gamification` | Exceptions UI rouges | Impact conserve comme exception visuelle rouge |
 | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | Famille autonome | Fond lavande clair vers vert menthe clair, Clerk violet nuit / indigo fonce |

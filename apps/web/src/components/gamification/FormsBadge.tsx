@@ -1,4 +1,8 @@
 import React from "react";
+import {
+  GamificationBadgePanel,
+  getGamificationBadgeState,
+} from "@/components/gamification/badge-ui";
 
 type GemGrade = {
   id: string;
@@ -20,6 +24,7 @@ export default function FormsBadge({
 }) {
   const activeGrade = grades.length ? (grades.slice().reverse().find((g) => current >= g.threshold) || grades[0]) : null;
   const activeGradeId = activeGrade?.id ?? "none";
+  const tooltipId = React.useId();
   const didMountRef = React.useRef(false);
   const previousGradeIdRef = React.useRef<string | null>(null);
   const previousCurrentRef = React.useRef<number | null>(null);
@@ -44,7 +49,7 @@ export default function FormsBadge({
     }
 
     return undefined;
-  }, [activeGradeId, current, onGradeReached]);
+  }, [activeGrade, activeGradeId, current, onGradeReached]);
 
   // Find next tier
   const nextGrade = activeGrade ? grades.find((g) => g.threshold > activeGrade.threshold) : null;
@@ -73,76 +78,60 @@ export default function FormsBadge({
   const plantIcon = plantEmoji[gradeType] || "🌱";
 
   return activeGrade ? (
-    <div
-      className={`forms-badge ${isCelebrating ? "cmm-gamification-celebrate" : ""}`}
-      style={{
+    <GamificationBadgePanel
+      shellClassName={`forms-badge ${isCelebrating ? "cmm-gamification-celebrate" : ""}`}
+      glowClassName=""
+      shellStyle={{
         padding: 16,
         textAlign: "center",
         borderRadius: 12,
         background: `linear-gradient(135deg, var(--plant-${gradeType}-light, #f5f5f5), var(--plant-${gradeType}-dark, #e0e0e0))`,
-        border: "2px solid var(--plant-${gradeType}-border, #ccc)",
+        border: `2px solid var(--plant-${gradeType}-border, #ccc)`,
         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
       }}
-    >
-      {/* Plant icon and grade label */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-        <span style={{ fontSize: 32 }}>{plantIcon}</span>
-        <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gray-800, #333)" }}>
-          {activeGrade.label} — Création de formulaires
+      glowStyle={{
+        background: `linear-gradient(135deg, var(--plant-${gradeType}-light, #f5f5f5), var(--plant-${gradeType}-dark, #e0e0e0))`,
+      }}
+      progressClassName={`cmm-gamification-progress`}
+      celebrating={isCelebrating}
+      eyebrow={
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white/80">
+          <span style={{ fontSize: 16 }}>{plantIcon}</span>
+          Création de formulaires
         </div>
-        <div style={{ fontSize: 12, color: "var(--gray-600, #666)" }}>
-          {activeGrade.label === 'Seed' ? 'Graine' : ''}
-          </div>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ marginTop: 12 }}>
-        <div
-          style={{
-            height: 8,
-            background: "rgba(0,0,0,0.1)",
-            borderRadius: 4,
-            overflow: "hidden",
-            position: "relative",
-          }}
-        >
-          <div
-            style={{
-              height: "100%",
-              background: `var(--plant-${gradeType}-progress, #9b59b6)`,
-              width: `${progressPercent}%`,
-              transition: "width 0.3s ease",
-            }}
-            className={isCelebrating ? "cmm-gamification-progress" : undefined}
-          />
-        </div>
-        <div style={{ fontSize: 12, color: "var(--gray-700, #555)", marginTop: 6 }}>
-          {current} / {activeGrade.threshold} formulaires
-          {remaining > 0 && (
-            <span style={{ marginLeft: 8, color: "var(--gray-500, #999)" }}>
-              (+{remaining} pour {nextGrade?.label || "suivant"})
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Tooltip */}
-      {activeGrade.tooltip && (
-        <div
-          style={{
-            fontSize: 11,
-            color: "var(--gray-600, #666)",
-            marginTop: 8,
-            fontStyle: "italic",
-            lineHeight: 1.3,
-          }}
-        >
-          {activeGrade.tooltip}
-        </div>
-      )}
-    </div>
+      }
+      description={
+        activeGrade.label === "Seed" ? "Graine" : "Progression des formulaires validés."
+      }
+      summaryLabel={activeGrade.label}
+      summaryValue={current}
+      summaryUnit="formulaires"
+      state={getGamificationBadgeState(current, activeGrade.threshold)}
+      metrics={[
+        {
+          label: "Formulaires comptés",
+          value: current,
+        },
+        {
+          label: "Prochain palier",
+          value: nextGrade?.label || "Suivant",
+        },
+        {
+          label: "Type",
+          value: activeGrade.label === "Seed" ? "Graine" : "Actif",
+        },
+      ]}
+      progressLabel={`Progression vers ${nextGrade?.label ?? "le prochain palier"}`}
+      progressValue={`${current} / ${activeGrade.threshold}`}
+      progressPercent={progressPercent}
+      progressFooterLeft={`Palier actuel: ${activeGrade.label}${nextGrade ? ` → ${nextGrade.label}` : ""}`}
+      progressFooterRight={remaining > 0 ? `+${remaining} formulaires` : "Palier atteint"}
+      tooltip={{
+        id: tooltipId,
+        label: "Détails du palier",
+        content: activeGrade.tooltip ?? "Les formulaires validés font progresser ce badge.",
+      }}
+    />
   ) : (
     <div
       className="forms-badge"
@@ -154,8 +143,9 @@ export default function FormsBadge({
         border: "2px solid #ccc",
       }}
     >
-      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gray-700, #555)" }}>
-        Aucun palier de formulaires disponible
+      <div style={{ fontSize: 14, fontWeight: 700, color: "var(--gray-700, #555)" }}>Observateur</div>
+      <div style={{ fontSize: 12, color: "var(--gray-600, #666)", marginTop: 6 }}>
+        Aucun palier de formulaires défini pour le moment.
       </div>
     </div>
   );

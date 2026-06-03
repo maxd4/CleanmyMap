@@ -4,6 +4,7 @@ import { useId, useMemo } from "react";
 import { extractArrondissement, monthKey } from "@/components/sections/rubriques/helpers";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { cn } from "@/lib/utils";
+import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 
 type ZoneStats = {
   zone: string;
@@ -100,6 +101,62 @@ export function ActionsVisualizationPanel({
 
   const mainClass = compact ? "space-y-6" : "space-y-8";
 
+  if (isLoading) {
+    return (
+      <div className={mainClass}>
+        <div className={cn("flex flex-wrap items-center justify-between gap-4", compact ? "px-2" : "px-4")}>
+          <div className="space-y-1">
+            <CmmSkeleton variant="title" className="w-40" />
+            <CmmSkeleton variant="text" className="w-28" />
+          </div>
+          <CmmSkeleton variant="rectangular" className="h-8 w-28 rounded-full" />
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <article className="rounded-[2.5rem] border border-sky-200/80 bg-white p-8">
+            <div className="mb-8 flex items-center justify-between gap-4">
+              <CmmSkeleton variant="text" className="w-40" />
+              <CmmSkeleton variant="text" className="w-32" />
+            </div>
+            <CmmSkeleton variant="chart" className="h-40" />
+            <div className="mt-6 flex justify-between gap-2 px-1">
+              <CmmSkeleton variant="text" className="w-10" />
+              <CmmSkeleton variant="text" className="w-10" />
+              <CmmSkeleton variant="text" className="w-10" />
+              <CmmSkeleton variant="text" className="w-10" />
+              <CmmSkeleton variant="text" className="w-10" />
+              <CmmSkeleton variant="text" className="w-10" />
+            </div>
+          </article>
+
+          <article className="rounded-[2.5rem] border border-sky-200/80 bg-white p-8">
+            <CmmSkeleton variant="title" className="w-32" />
+            <div className="mt-8 flex items-center justify-center gap-10">
+              <CmmSkeleton variant="circular" className="h-32 w-32" />
+              <div className="space-y-3">
+                <CmmSkeleton variant="text" className="w-28" />
+                <CmmSkeleton variant="text" className="w-24" />
+                <CmmSkeleton variant="text" className="w-32" />
+                <CmmSkeleton variant="text" className="w-20" />
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <article className="rounded-[2.5rem] border border-cyan-200/80 bg-white p-8">
+          <div className="mb-8 flex items-center justify-between gap-4">
+            <CmmSkeleton variant="title" className="w-36" />
+          </div>
+          <div className="space-y-5">
+            <CmmSkeleton variant="list-item" className="h-12" />
+            <CmmSkeleton variant="list-item" className="h-12" />
+            <CmmSkeleton variant="list-item" className="h-12" />
+          </div>
+        </article>
+      </div>
+    );
+  }
+
   return (
     <div className={mainClass}>
       <div className={cn("flex flex-wrap items-center justify-between gap-4", compact ? "px-2" : "px-4")}>
@@ -108,12 +165,6 @@ export function ActionsVisualizationPanel({
           <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600">Flux en direct</p>
         </div>
       </div>
-
-      {isLoading && (
-        <div className="flex h-48 items-center justify-center rounded-[2rem] bg-white border border-dashed border-sky-200/80">
-          <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-600 animate-pulse">Synchronisation...</p>
-        </div>
-      )}
 
       {error && (
         <div className="p-8 rounded-[2rem] bg-rose-50 border border-rose-200/70 text-center">

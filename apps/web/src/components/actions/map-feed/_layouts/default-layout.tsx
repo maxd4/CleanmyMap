@@ -1,8 +1,13 @@
+import type { RefObject } from "react";
 import type { ActionMapItem } from "@/lib/actions/types";
 import type { ActionsMapCanvasComponent } from "../map-feed.types";
+import { MapEmptyState } from "./map-empty-state";
+import { MapLoadingState } from "./map-loading-state";
+import type { MapViewportState } from "@/components/actions/map/map-export.types";
 
 type DefaultLayoutProps = {
   items: ActionMapItem[];
+  allItems: ActionMapItem[];
   hasPartialSource: boolean;
   partialSourcesLabel: string;
   freshnessLabel: string | null;
@@ -10,11 +15,17 @@ type DefaultLayoutProps = {
   mapCanvasError: string | null;
   MapCanvas: ActionsMapCanvasComponent | null;
   selectedActionId: string | null;
+  onSelectAction: (actionId: string) => void;
+  onResetFilters: () => void;
   onReload: () => void;
+  zoneQuery?: string;
+  mapExportTargetRef?: RefObject<HTMLDivElement | null>;
+  onViewportChange?: (viewport: MapViewportState) => void;
 };
 
 export function DefaultLayout({
   items,
+  allItems,
   hasPartialSource,
   partialSourcesLabel,
   freshnessLabel,
@@ -22,8 +33,16 @@ export function DefaultLayout({
   mapCanvasError,
   MapCanvas,
   selectedActionId,
+  onSelectAction,
+  onResetFilters,
   onReload,
+  zoneQuery = "",
+  mapExportTargetRef,
+  onViewportChange,
 }: DefaultLayoutProps) {
+  const hasItems = items.length > 0;
+  const emptyMode = allItems.length > 0 ? "filtered" : "empty";
+
   return (
     <>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -52,10 +71,11 @@ export function DefaultLayout({
         </button>
       </div>
 
-      <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-sky-200/80 bg-sky-50 shadow-inner">
-        {MapCanvas ? (
-          <MapCanvas items={items} selectedActionId={selectedActionId} />
-        ) : mapCanvasError ? (
+      <div
+        ref={mapExportTargetRef}
+        className="mt-5 overflow-hidden rounded-[1.75rem] border border-sky-200/80 bg-sky-50 shadow-inner"
+      >
+        {mapCanvasError ? (
           <div className="flex h-[28rem] items-center justify-center rounded-[1.75rem] border border-rose-200/70 bg-rose-50 px-6 text-center text-slate-950">
             <div className="max-w-sm space-y-2 rounded-[1.5rem] border border-rose-200/70 bg-white px-5 py-6 shadow-sm">
               <p className="cmm-text-caption font-semibold tracking-[0.12em] text-rose-800">
@@ -64,16 +84,26 @@ export function DefaultLayout({
               <p className="text-sm leading-6 text-slate-700">{mapCanvasError}</p>
             </div>
           </div>
+        ) : !MapCanvas ? (
+          <MapLoadingState />
+        ) : !hasItems ? (
+          <MapEmptyState
+            mode={emptyMode}
+            freshnessLabel={freshnessLabel}
+            hasPartialSource={hasPartialSource}
+            partialSourcesLabel={partialSourcesLabel}
+            onResetFilters={onResetFilters}
+            onReload={onReload}
+            isValidating={isValidating}
+            zoneQuery={zoneQuery}
+          />
         ) : (
-          <div className="flex h-[28rem] items-center justify-center rounded-[1.75rem] border border-sky-200/80 bg-sky-50 px-6 text-center text-slate-950">
-            <div className="max-w-sm space-y-2">
-              <div className="mx-auto h-10 w-10 animate-pulse rounded-2xl border border-sky-200/80 bg-sky-100" />
-              <p className="cmm-text-caption font-semibold tracking-[0.12em] text-slate-700">
-                Initialisation de la carte
-              </p>
-              <p className="text-sm leading-6 text-slate-700">Chargement des couches.</p>
-            </div>
-          </div>
+          <MapCanvas
+            items={items}
+            selectedActionId={selectedActionId}
+            onSelectAction={onSelectAction}
+            onViewportChange={onViewportChange}
+          />
         )}
       </div>
     </>

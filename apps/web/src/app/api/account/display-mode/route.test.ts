@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
 const clerkClientMock = vi.hoisted(() => vi.fn());
@@ -9,12 +9,18 @@ vi.mock("@clerk/nextjs/server", () => ({
 }));
 
 describe("POST /api/account/display-mode", () => {
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
   beforeEach(() => {
     authMock.mockResolvedValue({ userId: "user-1" });
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    consoleErrorSpy.mockRestore();
   });
 
   it("persists only the exhaustive display mode in Clerk metadata", async () => {

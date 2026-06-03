@@ -1,7 +1,7 @@
 # CleanMyMap
 
 <p align="center">
-  <img src="apps/web/public/brand/logo-cleanmymap-officiel.svg" alt="CleanMyMap" width="180" />
+  <img src="apps/web/src/app/favicon.ico" alt="CleanMyMap" width="180" />
 </p>
 
 <p align="center">
@@ -55,10 +55,28 @@ CleanMyMap est une monorepo civic-tech centrée sur le terrain, la cartographie 
 - Synchroniser les données avec Supabase, Clerk et Vercel.
 - Maintenir une documentation riche pour l'équipe, les agents IA et l'exploitation.
 
+## Origine / About
+
+CleanMyMap a été initié et conçu par **Maxence Deroome**. Le lancement initial du dépôt est horodaté au **5 mars 2026** dans l'historique Git.
+
+La page de référence "Origin / About" est documentée ici:
+- [`documentation/origin-about.md`](./documentation/origin-about.md)
+- [`AUTHORS.md`](./AUTHORS.md)
+
+Règles de traçabilité recommandées:
+- publier des releases datées et identifiées par des tags Git
+- signer les tags et releases quand c'est possible
+- conserver une attribution claire dans les commits, la documentation et l'historique
+
+Statut licence:
+- le projet reste publié en open source, mais le choix exact de licence est encore à arbitrer
+- les options étudiées pour un projet bénévole et communautaire sont principalement AGPLv3, GPLv3, MPL 2.0 et Apache 2.0
+- la décision finale sera prise après avis de personnes compétentes, afin de garder une trace claire sans figer le cadre trop tôt
+
 ## Ce qui est actif
 
 - L'application de production est dans [`apps/web`](./apps/web).
-- Le code Python historique est archivé dans [`legacy`](./legacy) et n'est plus dans le runtime actif.
+- Le code Python de maintenance est archivé dans [`maintenance/python`](./maintenance/python) et n'est plus dans le runtime actif.
 - La documentation structurée vit dans [`documentation`](./documentation).
 
 ## Aperçu produit
@@ -96,7 +114,7 @@ npm run screenshots         # Captures d'écran de documentation
 | [`documentation`](./documentation) | Architecture, design system, sécurité, opérations, sessions |
 | [`scripts`](./scripts) | Automatisations de maintenance et garde-fous |
 | [`companion-app`](./companion-app) | Application compagnon mobile |
-| [`legacy`](./legacy) | Archives historiques hors runtime |
+| [`maintenance/python`](./maintenance/python) | Outils Python de maintenance hors runtime |
 
 ## Documentation clé
 
@@ -120,6 +138,7 @@ npm run screenshots         # Captures d'écran de documentation
 2. Travailler dans la branche courante, sans worktree parallèle.
 3. Lancer les vérifications utiles.
 4. Mettre à jour la documentation quand une structure ou un comportement change.
+5. Pour les contributions externes significatives, demander un engagement DCO ou un CLA selon le niveau de gouvernance retenu.
 
 ## Notes d'exploitation
 

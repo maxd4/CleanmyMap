@@ -12,7 +12,7 @@ import {
  copyValidatedSpotToLocalStore,
 } from"@/lib/data/local-sync";
 import { appendAdminOperationAudit } from"@/lib/admin/operation-audit";
-import { emitActionValidated, emitSpotValidated } from"@/lib/events/emit";
+import { emitActionRejected, emitActionValidated, emitSpotValidated } from"@/lib/events/emit";
 import {
  adminErrorResponse,
  adminSuccessResponse,
@@ -240,6 +240,18 @@ let copied = false;
       .single();
 
     emitActionValidated({
+      actionId: parsed.data.id,
+      userId: actionDetails?.created_by_clerk_id || "",
+      moderatorId: access.userId,
+    });
+  } else if (parsed.data.status ==="rejected") {
+    const { data: actionDetails } = await supabase
+      .from("actions")
+      .select("created_by_clerk_id")
+      .eq("id", parsed.data.id)
+      .single();
+
+    emitActionRejected({
       actionId: parsed.data.id,
       userId: actionDetails?.created_by_clerk_id || "",
       moderatorId: access.userId,

@@ -1,5 +1,5 @@
+import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -9,36 +9,23 @@ type DocumentationAsset = {
   filename: string;
 };
 
+const DOCUMENTATION_ROOT = path.resolve(process.cwd(), "..", "..", "documentation");
+
 const DOCUMENTATION_ASSETS: Record<string, DocumentationAsset> = {
   "graphique-impact-co2e": {
-    filePath: resolve(
-      process.cwd(),
-      "..",
-      "..",
-      "documentation",
-      "plans",
-      "rapport_impact",
-      "graphique_impact_CO2e.md",
-    ),
+    filePath: path.join("plans", "rapport_impact", "graphique_impact_CO2e.md"),
     filename: "graphique_impact_CO2e.md",
   },
   atelier_DU: {
-    filePath: resolve(process.cwd(), "..", "..", "documentation", "plans", "atelier_DU.md"),
+    filePath: path.join("plans", "ateliers_DU.md"),
     filename: "atelier_DU.md",
   },
   journal_DU: {
-    filePath: resolve(process.cwd(), "..", "..", "documentation", "plans", "journal_DU.md"),
+    filePath: path.join("plans", "journal_DU.md"),
     filename: "journal_DU.md",
   },
   journal_impact_DU: {
-    filePath: resolve(
-      process.cwd(),
-      "..",
-      "..",
-      "documentation",
-      "plans",
-      "journal_impact_DU.md",
-    ),
+    filePath: path.join("plans", "journal_impact_DU.md"),
     filename: "journal_impact_DU.md",
   },
 };
@@ -68,16 +55,26 @@ export async function GET(
     );
   }
 
+  const resolvedPath = path.resolve(DOCUMENTATION_ROOT, asset.filePath);
+
+  if (!resolvedPath.startsWith(DOCUMENTATION_ROOT)) {
+    return NextResponse.json(
+      {
+        status: "error",
+        error: "Document invalide.",
+      },
+      { status: 400 },
+    );
+  }
+
   try {
-    const content = await readFile(asset.filePath, "utf8");
+    const content = await readFile(resolvedPath, "utf8");
 
     return new Response(content, {
       status: 200,
       headers: buildDownloadHeaders(asset.filename),
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-
+  } catch {
     return NextResponse.json(
       {
         status: "error",
@@ -88,3 +85,4 @@ export async function GET(
     );
   }
 }
+

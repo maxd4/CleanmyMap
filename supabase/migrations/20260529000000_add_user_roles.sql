@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS user_roles (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id TEXT NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL UNIQUE,
   role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin', 'godmode', 'moderator')),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

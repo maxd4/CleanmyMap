@@ -5,14 +5,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, List, Menu } from "lucide-react";
 import Link from "next/link";
 import type { NavigationSpace, NavigationItem } from "@/lib/navigation";
+import { getLocalizedText } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
 import { cn } from "@/lib/utils";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
 import {
-  getNavigationDropdownPanelStyle,
   getNavigationDropdownTitleGradientStyle,
 } from "./navigation-dropdown-theme";
+import { getNavigationDropdownPanelStyle } from "./navigation-dropdown-shell-theme";
 
 type AppNavigationTreeMenuProps = {
   activeSpaceId: NavigationSpace["id"] | null;
@@ -229,7 +230,7 @@ export function AppNavigationTreeMenu({
                           type="button"
                           aria-expanded={isOpenSpace}
                           aria-controls={panelId}
-                          aria-label={locale === "fr" ? `Ouvrir l'espace ${space.label.fr}` : `Open space ${space.label.en}`}
+                          aria-label={locale === "fr" ? `Ouvrir l'espace ${getLocalizedText(space.label, locale, space.id)}` : `Open space ${getLocalizedText(space.label, locale, space.id)}`}
                           onClick={() =>
                             setOpenSpaceId((current) => (current === space.id ? null : space.id))
                           }
@@ -249,7 +250,7 @@ export function AppNavigationTreeMenu({
                                 className="block cmm-text-small font-bold tracking-[-0.02em]"
                                 style={getNavigationDropdownTitleGradientStyle(space.id)}
                               >
-                                {space.label[locale]}
+                                {getLocalizedText(space.label, locale, space.id)}
                               </span>
                             </span>
                           </span>
@@ -284,7 +285,7 @@ export function AppNavigationTreeMenu({
                                         href={item.href}
                                         aria-current={isActiveItem ? "page" : undefined}
                                         onClick={() => {
-                                          onTrackNavigation(item.href, item.label[locale], space.id);
+                                          onTrackNavigation(item.href, getLocalizedText(item.label, locale, item.href), space.id);
                                           setIsOpen(false);
                                         }}
                                         className={cn(
@@ -295,7 +296,7 @@ export function AppNavigationTreeMenu({
                                         )}
                                       >
                                         <span className="block cmm-text-small font-semibold text-black">
-                                          {item.label[locale]}
+                                          {getLocalizedText(item.label, locale, item.href)}
                                         </span>
                                       </Link>
                                     </li>

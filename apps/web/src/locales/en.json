@@ -24,8 +24,8 @@
       },
       "map": {
         "title": "Map pollution index",
-        "formula": "Score % = ([Weight/20kg] × 65) + ([Butts/2000] × 35)",
-        "desc": "This score normalizes observed pollution on a 0 to 100 scale and drives map coloring.",
+        "formula": "Separate scores: waste = [Weight/volunteer] ÷ [Waste ref] × 100; butts = [Butts/volunteer] ÷ [Butts ref] × 100.",
+        "desc": "Dynamic per-volunteer references. The map uses the highest score for color. A stronger new action becomes the new reference. The detailed score loads when an action is opened.",
         "source": "SOURCE: CleanMyMap v1 field calibration algorithm."
       },
       "roi": {

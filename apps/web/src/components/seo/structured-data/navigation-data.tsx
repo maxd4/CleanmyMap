@@ -30,7 +30,7 @@ export function WebPageJsonLd() {
     url: "https://cleanmymap.fr",
     primaryImageOfPage: {
       "@type": "ImageObject",
-      url: "https://cleanmymap.fr/brand/nouveau-logo.png",
+      url: "https://cleanmymap.fr/brand/nouveau-logo.svg",
     },
     inLanguage: "fr-FR",
     datePublished: "2024-01-01",
@@ -44,7 +44,7 @@ export function WebPageJsonLd() {
       name: "CleanMyMap",
       logo: {
         "@type": "ImageObject",
-        url: "https://cleanmymap.fr/brand/nouveau-logo.png",
+        url: "https://cleanmymap.fr/brand/nouveau-logo.svg",
       },
     },
     about: {

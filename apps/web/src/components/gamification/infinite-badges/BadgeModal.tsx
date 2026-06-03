@@ -101,7 +101,7 @@ export function BadgeModal({
                 <div className="grid grid-cols-2 gap-4">
                   <div className={`rounded-3xl border p-4 ${styles.modalStatCard}`}>
                     <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${styles.text} opacity-60`}>
-                      {t("badge.modal.total")}
+                      Niveau actuel
                     </p>
                     <p className={`mt-2 text-2xl font-black tracking-tight ${styles.text}`}>
                       {formatCompactNumber(total, locale)}
@@ -114,7 +114,7 @@ export function BadgeModal({
                   </div>
                   <div className={`rounded-3xl border p-4 ${styles.modalStatCard}`}>
                     <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${styles.text} opacity-60`}>
-                      {t("badge.modal.next")}
+                      Niveau suivant
                     </p>
                     <p className={`mt-2 text-2xl font-black tracking-tight ${styles.text}`}>
                       {formatCompactNumber(next, locale)}

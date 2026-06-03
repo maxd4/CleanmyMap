@@ -35,7 +35,11 @@ describe("geometry core helpers", () => {
     expect(ellipse.kind).toBe("polygon");
     expect(ellipse.coordinates).toHaveLength(12);
     expect(route.kind).toBe("polyline");
-    expect(route.coordinates).toHaveLength(3);
+    expect(route.coordinates).toHaveLength(5);
+    expect(route.coordinates[0][0]).toBeLessThan(48.85);
+    expect(route.coordinates[0][1]).toBeLessThan(2.35);
+    expect(route.coordinates[route.coordinates.length - 1][0]).toBeGreaterThan(48.85);
+    expect(route.coordinates[route.coordinates.length - 1][1]).toBeGreaterThan(2.35);
   });
 
   it("recognizes precise location labels without overfitting", () => {

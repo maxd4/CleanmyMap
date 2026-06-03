@@ -11,6 +11,14 @@ Une rubrique peut recevoir **0, 1 ou plusieurs** mecanismes de gamification selo
 
 La regle de fond reste la meme: la gamification doit servir l utilite, la confiance et la retention, pas la comparaison.
 
+Les familles récentes à garder visibles dans cet inventaire sont:
+
+- `Régularité mensuelle`: badge infini personnel, lisible dans le profil et le dashboard;
+- `Zone sensible apaisée`: badge infini personnel, centré sur les zones critiques ou historiquement très sales;
+- `Inviter un ami`: badge one-shot personnel, lié à l activation communautaire et au lien d invitation persistant;
+- `Actions créées`: badge infini de contribution validée, toujours lié à l attribution réelle aux organisateurs;
+- `Équilibre des contextes`: badge infini qui encourage une répartition saine entre spontané, association et entreprise, avec un cycle qui repart à zéro puis demande 1, 2, 3 actions de chaque type pour débloquer 1, 2, 3 XP, et affiche la ligne d audit des manquants.
+
 ## Inventaire par bloc
 
 ### Bloc Accueil & Pilotage
@@ -18,8 +26,8 @@ La regle de fond reste la meme: la gamification doit servir l utilite, la confia
 | Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
 | --- | --- | --- | --- | --- |
 | Accueil perso | objectif infini + régulier | C est le point d entree naturel vers la progression personnelle | Niveau courant, niveau potentiel, prochaine etape, retour d impact | Barre de progression vers le prochain palier, badge de reprise de session, rappel d objectif du jour |
-| Dashboard | objectif infini + régulier | C est la synthese de la vie du compte | Barre de progression, badges, objectif du jour ou du mois | Bloc "prochain palier", carte de badge evolutif, resume d impact et de regularite |
-| Profil & impact | objectif infini | L impact personnel doit evoluer par paliers lisibles | Badges de progression, badges d impact, rangs de confiance | Badge evolutif par palier, rang de fiabilite, jalon d impact annuel |
+| Dashboard | objectif infini + régulier | C est la synthese de la vie du compte | Barre de progression, badges, objectif du jour ou du mois | Bloc "prochain palier", carte de badge evolutif, resume d impact, regularite mensuelle et zone sensible apaisée |
+| Profil & impact | objectif infini + régulier | L impact personnel doit evoluer par paliers lisibles | Badges de progression, badges d impact, rangs de confiance | Badge evolutif par palier, rang de fiabilite, jalon d impact annuel, badge de regularite mensuelle, badge de zone sensible apaisée, badge one-shot de parrainage |
 | Connexion / inscription | one-shot | Le premier passage d activation est un jalon fort | Badge de premiere connexion utile, puis orientation vers la premiere action | Badge de demarrage, message de bienvenue, redirection vers l action suivante |
 | Onboarding localisation | one-shot | C est un jalon de mise en route, pas une habitude | Badge de configuration terminee, puis disparition du rappel | Badge de localisation validee, etat "pret a contribuer" |
 | Parcours | régulier | Le parcours utilisateur sert a maintenir le retour | Etape suivante, objectif de reprise, repere de session | Prochaine etape visible, compteur de progression de parcours, rappel de reprise |
@@ -33,7 +41,7 @@ La regle de fond reste la meme: la gamification doit servir l utilite, la confia
 
 | Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
 | --- | --- | --- | --- | --- |
-| Declarer une action | one-shot + régulier + objectif infini | C est le coeur de l engagement terrain | Premiere action validee, cadence mensuelle, niveau d expert terrain | Badge `Première trace utile` (+1 XP), badge compagnon `Trace fondatrice`, streak mensuel sobre, badge evolutif de niveau de confiance, palier de qualite, badge infini `Actions créées` (uniquement apres formulaire validé et attribution aux organisateurs renseignés), badge infini `Équilibre des contextes` pour varier entre spontané, association et entreprise |
+| Declarer une action | one-shot + régulier + objectif infini | C est le coeur de l engagement terrain | Premiere action validee, cadence mensuelle, niveau d expert terrain | Badge `Première trace utile` (+1 XP), badge compagnon `Trace fondatrice`, streak mensuel sobre, badge evolutif de niveau de confiance, palier de qualite, badge infini `Actions créées` (uniquement apres formulaire validé et attribution aux organisateurs renseignés), badge infini `Équilibre des contextes` qui repart à zéro a chaque palier et demande 1, 2, 3 actions de chaque type pour 1, 2, 3 XP |
 | Itineraire IA | régulier | L usage doit devenir une habitude de preparation | Badge d usage recurrent, rappel de bonne preparation, progression d efficacite | Badge d usage recurrent, compteur de preparation utile, niveau de maitrise d itineraire |
 | Signalement Dechets | one-shot + régulier | Le premier signalement est un jalon, la recurrence montre l utilite | Badge de premier signalement, puis repere de regularite locale | Badge de premier signalement, streak de signalements utiles, palier de couverture locale |
 | Météo | autre | Surface utilitaire, pas un terrain de score | Eventuellement un rappel de preparation, sans badge propre | Aucune gamification directe; au plus un etat de preparation recommande |
@@ -45,19 +53,19 @@ La regle de fond reste la meme: la gamification doit servir l utilite, la confia
 
 | Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
 | --- | --- | --- | --- | --- |
-| Carte des actions | objectif infini | La carte doit valoriser la couverture et la progression territoriale | Paliers de zones couvertes, badges de territoire, niveaux de couverture | Badge de territoire, niveau de couverture locale, palier de zones completees |
+| Carte des actions | objectif infini | La carte doit valoriser la couverture et la progression territoriale | Paliers de zones couvertes, badges de territoire, niveaux de couverture | Badge de territoire, niveau de couverture locale, palier de zones completees, badge de zone sensible apaisée |
 | Carte d entrainement / sandbox | régulier | C est un espace de pratique, donc la repetition a du sens | Defis de test, objectifs de maitrise, usage recurrent sans pression | Badge de pratique, compteur d usages d entrainement, niveau de maitrise cartographique |
 | Observatoire public | autre | La lecture publique doit rester informative, pas ludifiee | Pas de score; seulement des repères de lecture et de qualite | Aucune gamification directe; seulement des repères de fiabilite et de lecture |
 | Rapports d impact | one-shot + objectif infini | Le rapport partageable est un jalon, mais la maitrise peut progresser | Badge de livrable genere, puis palier de qualite de restitution | Badge de rapport genere, badge de qualite de restitution, progression de niveau d impact |
 | Profil impact | objectif infini | L impact personnel doit suivre une progression ouverte | Paliers d impact, badges d evolution, visualisation du rang personnel | Badge evolutif d impact, paliers annuels, rang personnel non competitif |
-| Progression & Badges | objectif infini | C est la colonne vertébrale du systeme | Niveaux, badges evolutifs, prerequis de confiance | Niveaux evolutifs, badges a nom changeant, progression de confiance |
-| Historique des actions | régulier | Le retour sur l historique soutient la retention et la relecture | Jalons de regularite, recap de periode, reflexion post-action | Recap mensuel, streak de contributions utiles, badge de regularité |
+| Progression & Badges | objectif infini | C est la colonne vertébrale du systeme | Niveaux, badges evolutifs, prerequis de confiance | Niveaux evolutifs, badges a nom changeant, progression de confiance, badges de regularite et de zone sensible apaisée |
+| Historique des actions | régulier | Le retour sur l historique soutient la retention et la relecture | Jalons de regularite, recap de periode, reflexion post-action | Recap mensuel, streak de contributions utiles, badge de regularité mensuelle |
 
 ### Bloc Réseau & Discussions
 
 | Surface | Type | Pourquoi c est pertinent | Ce que je ferais | Gamification concrète |
 | --- | --- | --- | --- | --- |
-| Découvrir le réseau | régulier | Le reseau doit donner envie de revenir et de cooperer | Badges de participation au reseau, progression de presence locale | Badge de presence reseau, compteur de participation, badge de reseau actif |
+| Découvrir le réseau | régulier | Le reseau doit donner envie de revenir et de cooperer | Badges de participation au reseau, progression de presence locale | Badge de presence reseau, compteur de participation, badge de reseau actif, lien d invitation partageable |
 | Annuaire partenaires | one-shot + régulier | L entree dans le reseau est un jalon, la tenue a jour est recurrente | Badge de partenaire actif, rappels de mise a jour | Badge de premier rattachement, badge de mise a jour, statut de partenaire actif |
 | Onboarding partenaire | one-shot | Le franchissement de l onboarding est un vrai jalon | Badge de partenaire onboarde, puis sortie du flux | Badge de validation d onboarding, disparition du checklist une fois complete |
 | Opérations collectives | régulier + objectif infini | La participation collective est un moteur de retention | Rythme d actions collectives, rang de coordination, evolution de role | Badge de participation collective, rang de coordination, palier de contribution d equipe |

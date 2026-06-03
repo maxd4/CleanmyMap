@@ -4,9 +4,10 @@ import {
  mapItemWasteKg,
 } from"../../lib/actions/data-contract";
 import {
- computeButtsContributionScore,
- computePollutionScore,
- computeWasteContributionScore,
+  computePollutionScoresRelativeToReferences,
+  computeButtsContributionScore,
+  computeWasteContributionScore,
+  type PollutionScoreReferences,
 } from"@/lib/actions/pollution-score";
 
 export type MarkerCategory =
@@ -43,6 +44,43 @@ export const DEFAULT_VISIBLE_CATEGORIES: Record<MarkerCategory, boolean> = {
  bin: true,
  combo: true,
 };
+
+export function resolveItemPollutionScores(
+ item: ActionMapItem,
+ references?: PollutionScoreReferences | null,
+): {
+ wasteScore: number;
+ buttsScore: number;
+ severityScore: number;
+} {
+ if (references) {
+ const pollutionScores = computePollutionScoresRelativeToReferences(
+ {
+ wasteKg: mapItemWasteKg(item),
+ cigaretteButts: mapItemCigaretteButts(item),
+ volunteersCount: item.contract?.metadata.volunteersCount,
+ },
+ references,
+ );
+
+ return pollutionScores;
+ }
+
+ const wasteScore =
+ typeof item.waste_pollution_score === "number"
+ ? item.waste_pollution_score
+ : computeWasteContributionScore(mapItemWasteKg(item));
+ const buttsScore =
+ typeof item.cigarette_butts_pollution_score === "number"
+ ? item.cigarette_butts_pollution_score
+ : computeButtsContributionScore(mapItemCigaretteButts(item));
+
+ return {
+ wasteScore,
+ buttsScore,
+ severityScore: Math.max(wasteScore, buttsScore),
+ };
+}
 
 export function resolveDynamicOpacity(score: number): number {
  if (score >= SCORE_THRESHOLDS.CRITICAL) return 1.0;
@@ -84,13 +122,11 @@ export function resolveDynamicColor(score: number): string {
 
 export function classifyPollutionColor(
  item: ActionMapItem,
+ references?: PollutionScoreReferences | null,
 ): Exclude<MarkerCategory,"ashtray" |"bin"> {
  const wasteKg = mapItemWasteKg(item);
  const butts = mapItemCigaretteButts(item);
- const score = computePollutionScore({
- wasteKg,
- cigaretteButts: butts,
- });
+ const score = resolveItemPollutionScores(item, references).severityScore;
 
  if (score >= SCORE_THRESHOLDS.CRITICAL) return"violet";
  if (score >= SCORE_THRESHOLDS.MEDIUM) return"yellow";
@@ -98,9 +134,12 @@ export function classifyPollutionColor(
  return"green";
 }
 
-export function deriveMarkerCategories(item: ActionMapItem): MarkerCategory[] {
- const categories: MarkerCategory[] = [classifyPollutionColor(item)];
- const infrastructureNeed = resolveInfrastructureNeed(item);
+export function deriveMarkerCategories(
+ item: ActionMapItem,
+ references?: PollutionScoreReferences | null,
+): MarkerCategory[] {
+ const categories: MarkerCategory[] = [classifyPollutionColor(item, references)];
+ const infrastructureNeed = resolveInfrastructureNeed(item, references);
 
  if (infrastructureNeed) {
  categories.push(infrastructureNeed);
@@ -111,9 +150,11 @@ export function deriveMarkerCategories(item: ActionMapItem): MarkerCategory[] {
 
 export function resolveInfrastructureNeed(
  item: ActionMapItem,
+ references?: PollutionScoreReferences | null,
 ): InfrastructureNeed | null {
- const wasteScore = computeWasteContributionScore(mapItemWasteKg(item));
- const buttsScore = computeButtsContributionScore(mapItemCigaretteButts(item));
+ const pollutionScores = resolveItemPollutionScores(item, references);
+ const wasteScore = pollutionScores.wasteScore;
+ const buttsScore = pollutionScores.buttsScore;
  const needsBin = wasteScore >= INFRASTRUCTURE_ALERT_THRESHOLD;
  const needsAshtray = buttsScore >= INFRASTRUCTURE_ALERT_THRESHOLD;
 
@@ -129,8 +170,11 @@ export function resolveInfrastructureNeed(
  return null;
 }
 
-export function resolveInfrastructureEmoji(item: ActionMapItem): string | null {
- const need = resolveInfrastructureNeed(item);
+export function resolveInfrastructureEmoji(
+ item: ActionMapItem,
+ references?: PollutionScoreReferences | null,
+): string | null {
+ const need = resolveInfrastructureNeed(item, references);
  if (need ==="combo") {
  return"💰";
  }
@@ -146,7 +190,8 @@ export function resolveInfrastructureEmoji(item: ActionMapItem): string | null {
 export function isVisibleWithCategoryFilter(
  item: ActionMapItem,
  visibleCategories: Record<MarkerCategory, boolean>,
+ references?: PollutionScoreReferences | null,
 ): boolean {
- const categories = deriveMarkerCategories(item);
+ const categories = deriveMarkerCategories(item, references);
  return categories.some((category) => visibleCategories[category]);
 }

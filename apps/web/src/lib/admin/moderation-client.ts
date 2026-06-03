@@ -3,6 +3,9 @@ import type {
   ActionSubmissionMode,
   ActionWasteBreakdown,
 } from "@/lib/actions/types";
+import {
+  dispatchActionPollutionScoreReferencesInvalidated,
+} from "@/lib/actions/pollution-score-references-events";
 
 export type ModerationEntityType = "action" | "clean_place";
 export type ModerationActionStatus = "pending" | "approved" | "rejected";
@@ -210,6 +213,10 @@ export async function postAdminModeration(
       code: "server_error",
       message: "Reponse moderation incomplete.",
     });
+  }
+
+  if (payload.entityType === "action" && payload.status === "approved") {
+    dispatchActionPollutionScoreReferencesInvalidated();
   }
 
   return {

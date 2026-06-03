@@ -2,6 +2,7 @@ import type { Event, EventType, EventPayload } from "./types";
 import {
   trackActionCreated,
   trackActionValidationBonus,
+  trackActionRejection,
   trackSpotCreated,
   trackSpotValidationBonus,
   trackCommunityRsvpYes,
@@ -29,6 +30,16 @@ export async function handleProgressionEvent(event: Event): Promise<void> {
         await trackActionValidationBonus(supabase, { actionId: payload.actionId });
       } catch (error) {
         console.error("[Progression] Action validation tracking failed:", { actionId: payload.actionId, error });
+      }
+      break;
+    }
+
+    case "ACTION_REJECTED": {
+      const payload = event.payload as EventPayload["ACTION_REJECTED"];
+      try {
+        await trackActionRejection(supabase, { actionId: payload.actionId });
+      } catch (error) {
+        console.error("[Progression] Action rejection tracking failed:", { actionId: payload.actionId, error });
       }
       break;
     }
@@ -139,6 +150,7 @@ export function registerEventHandlers(): void {
   
     subscribe("ACTION_CREATED", handleProgressionEvent);
     subscribe("ACTION_VALIDATED", handleProgressionEvent);
+    subscribe("ACTION_REJECTED", handleProgressionEvent);
     subscribe("ACTION_VALIDATED", handleNotificationEvent);
     subscribe("SPOT_CREATED", handleProgressionEvent);
     subscribe("SPOT_VALIDATED", handleProgressionEvent);

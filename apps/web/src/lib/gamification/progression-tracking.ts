@@ -5,7 +5,6 @@ import {
   fetchActionById,
   fetchSpotById,
   insertProgressionEvent,
-  isSpontaneousActionNotes,
   loadUserProgressionStats,
   syncUserActionProgression,
 } from "./progression-data";
@@ -16,6 +15,7 @@ import {
   toIsoDate,
 } from "./progression-utils";
 import { awardPoints } from "./points/system";
+import { logFailure } from "@/lib/logging/failure-log";
 
 export { syncUserActionProgression } from "./progression-data";
 
@@ -78,7 +78,9 @@ export async function refreshProgressionProfile(
       });
     }
   } catch (notifError) {
-    console.error("[LevelUp Notif] Silent failure:", notifError);
+    logFailure("Gamification/LevelUp", "Notification write skipped", notifError, {
+      userId,
+    });
   }
   // --- End Level Up Detection ---
 
@@ -108,9 +110,6 @@ export async function trackActionCreated(
   if (!action) {
     return;
   }
-  if (!isSpontaneousActionNotes(action.notes)) {
-    return;
-  }
 
   const organizerIds = await loadActionOrganizerIdsForAction(
     supabase,
@@ -133,7 +132,26 @@ export async function trackActionValidationBonus(
   if (!action || action.status !== "approved") {
     return;
   }
-  if (!isSpontaneousActionNotes(action.notes)) {
+
+  const organizerIds = await loadActionOrganizerIdsForAction(
+    supabase,
+    action.id,
+    action.created_by_clerk_id,
+  );
+  await Promise.all(
+    organizerIds.map(async (organizerId) => {
+      await syncUserActionProgression(supabase, organizerId);
+      await refreshProgressionProfile(supabase, organizerId);
+    }),
+  );
+}
+
+export async function trackActionRejection(
+  supabase: SupabaseClient,
+  params: { actionId: string },
+): Promise<void> {
+  const action = await fetchActionById(supabase, params.actionId);
+  if (!action || action.status !== "rejected") {
     return;
   }
 
@@ -142,6 +160,7 @@ export async function trackActionValidationBonus(
     action.id,
     action.created_by_clerk_id,
   );
+
   await Promise.all(
     organizerIds.map(async (organizerId) => {
       await syncUserActionProgression(supabase, organizerId);
@@ -345,7 +364,10 @@ export async function trackNewPlaceVisited(
     .insert({ user_id: params.userId, place_label: normalizedLabel });
     
   if (error && error.code !== "23505" && error.code !== "23503") { // Ignore unique constraint & fkey if badge totals doesn't exist yet
-    console.error("Error inserting user_visited_places", error);
+    logFailure("Gamification/Progression", "Visited place insert failed", error, {
+      userId: params.userId,
+      placeLabel: normalizedLabel,
+    });
     return;
   }
   

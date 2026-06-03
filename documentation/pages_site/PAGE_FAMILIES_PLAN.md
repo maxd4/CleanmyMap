@@ -2,6 +2,8 @@
 
 Document de référence pour piloter la transition de la charte couleur par pages. Il complète le guide d'usage [`PAGE_FAMILIES.md`](../development/PAGE_FAMILIES.md).
 
+**Mémoire de non-régression** : [`PAGE_FAMILIES_NON_REGRESSION.md`](./PAGE_FAMILIES_NON_REGRESSION.md)
+
 **Dernière mise à jour** : le plan est aligné sur les 11 types de routes inventoriés dans `documentation/pages_site`.
 
 ---
@@ -66,15 +68,16 @@ Le point important est le suivant :
 |---|---|
 | `lib/ui/page-families/` (types, resolve, exceptions) | Fait |
 | `resolveBackdropToneKey` délègue à `resolvePageFamily` | Fait |
-| Familles 00–10 définies dans `defaults.ts` | Fait |
+| Familles 00–10 définies dans `families/registry.ts` et `page-families.manifest.json` | Fait |
 | Guide court `PAGE_FAMILIES.md` | Fait |
+| Mémoire de non-régression dédiée | Fait |
 
 ### Bloc 01, accueil et pilotage
 
 | Livrable | Statut |
 |---|---|
 | Routes canoniques du bloc centralisées dans `lib/accueil-pilotage-routes.ts` | Fait |
-| `01-accueil-pilotage.ts` | Fait |
+| `registry.ts` | Fait |
 | `PageHeader` | Fait |
 | `SectionShell` résout la famille via `pathname` | Fait |
 | Migration de `/dashboard` (canon), `/profil` (alias), `/pilotage`, `/profil/*`, `/sponsor-portal` | Fait |
@@ -96,7 +99,6 @@ Le point important est le suivant :
 | Livrable | Statut |
 |---|---|
 | Route canonique `/` centralisée pour les usages internes | Fait |
-| Alias `/accueil` conservé uniquement pour compatibilité | Fait |
 | Footer et variantes liées à la homepage alignés sur le même helper | Fait |
 | Documentation `pages_site` clarifiée sur la route canonique du bloc 00 | Fait |
 
@@ -245,7 +247,7 @@ Piste :
 
 | Type | Couverture attendue | Exemples de routes | Remarque |
 |---|---|---|---|
-| 00 Homepage | autonome | `/`, `/accueil` | hors bloc |
+| 00 Homepage | autonome | `/` | hors bloc |
 | 01 Accueil & Pilotage | famille bloc | `/dashboard`, `/profil` (alias), `/pilotage`, `/profil/[profile]`, `/sponsor-portal`, `/explorer`, `/parcours` | cockpit personnel fusionné, exceptions UI et profils détaillés |
 | 02 Agir | famille bloc | `/actions/new`, `/actions/history`, `/signalement`, `/missions/[id]`, `/sections/route`, `/declaration` | famille métier orientée action |
 | 03 Cartographie & Impact | famille bloc | `/actions/map`, `/methodologie`, `/gamification`, `/observatoire`, `/profil/impact`, `/reports`, `/sandbox` | deux sous-teintes logiques sky / red |

@@ -83,7 +83,7 @@ export const APPRENDRE_CARD: PageFamilyCardTokens = buildDarkCardPreset({
   shadow: "shadow-[0_18px_42px_-26px_rgba(249,115,22,0.20)]",
 });
 
-/** Cartes neutres (légal, système, fallback). */
+/** Cartes neutres (juridique, systeme, secours). */
 export const NEUTRAL_LIGHT_CARD: PageFamilyCardTokens = {
   rubriqueTheme: "slate",
   shell:

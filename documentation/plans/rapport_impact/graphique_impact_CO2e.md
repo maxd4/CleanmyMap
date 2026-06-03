@@ -53,5 +53,4 @@ Le graphique doit permettre de retrouver:
 ## Liens de lecture
 
 - [ateliers_DU.md](../ateliers_DU.md)
-- [journal_DU.md](../journal_DU.md)
 - [journal_impact_DU.md](../journal_impact_DU.md)

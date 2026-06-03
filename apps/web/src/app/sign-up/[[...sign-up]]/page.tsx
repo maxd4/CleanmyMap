@@ -12,7 +12,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function SignUpPage() {
+type SignUpPageProps = {
+  searchParams: Promise<{ ref?: string }>;
+};
+
+export default async function SignUpPage({ searchParams }: SignUpPageProps) {
+  const { ref } = await searchParams;
+  const referralQuery = ref?.trim()
+    ? `?ref=${encodeURIComponent(ref.trim())}`
+    : "";
+  const fallbackRedirectUrl = `/onboarding/localisation${referralQuery}`;
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top_left,_rgba(219,234,254,0.72)_0%,_rgba(232,233,255,0.82)_34%,_rgba(206,250,225,0.9)_72%,_rgba(245,247,250,1)_100%)]">
       <div className="pointer-events-none absolute inset-0">
@@ -113,7 +123,7 @@ export default function SignUpPage() {
                   path="/sign-up"
                   routing="path"
                   oauthFlow="redirect"
-                  fallbackRedirectUrl="/onboarding"
+                  fallbackRedirectUrl={fallbackRedirectUrl}
                   signInUrl="/sign-in"
                   appearance={{
                     elements: {

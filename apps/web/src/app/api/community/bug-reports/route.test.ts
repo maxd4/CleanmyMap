@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
 const getCurrentUserIdentityMock = vi.hoisted(() => vi.fn());
@@ -61,6 +61,8 @@ vi.mock("@/lib/security/validation", () => ({
 }));
 
 describe("POST /api/community/bug-reports", () => {
+  const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -108,6 +110,10 @@ describe("POST /api/community/bug-reports", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    consoleWarnSpy.mockRestore();
   });
 
   it("persists the feedback and sends the creator notification", async () => {

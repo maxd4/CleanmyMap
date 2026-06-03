@@ -2,24 +2,36 @@
 import React from "react";
 import ExplorerBadge from "./ExplorerBadge";
 import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import { EXPLORER_TIERS } from "@/lib/gamification/badges/families";
+
+type ExplorerBadgeListResponse = {
+  summary?: {
+    currentPlaces?: number;
+  };
+};
 
 export default function ExplorerBadgeWrapper({ userId }: { userId: string }) {
-  const [tiers, setTiers] = React.useState<any[]>([]);
+  const [tiers, setTiers] = React.useState<
+    Array<{ id: string; title: string; icon: string; min: number; max: number; texture?: string }>
+  >([]);
   const [current, setCurrent] = React.useState(0);
 
   React.useEffect(() => {
     let mounted = true;
     fetch(`/api/gamification/badges/list`)
-      .then((r) => r.json())
+      .then((r) => r.json() as Promise<ExplorerBadgeListResponse>)
       .then((body) => {
         if (!mounted) return;
-        const explorerTiers = body.badges.filter((b: any) => b.id.startsWith("explorer-"));
-        setTiers(
-          explorerTiers.map((t: any) => ({ id: t.id, title: t.name, icon: t.icon, min: 0, max: t.progress?.target ?? 10, texture: t.icon && t.icon.length ? t.icon : undefined })),
-        );
-        // set current from highest tier progress
-        const total = explorerTiers.reduce((acc: number, t: any) => acc + (t.progress?.current || 0), 0);
-        setCurrent(total);
+        const explorerTiers = EXPLORER_TIERS.map((tier) => ({
+          id: tier.id,
+          title: tier.title,
+          icon: tier.icon,
+          min: tier.min,
+          max: tier.max,
+          texture: tier.texture,
+        }));
+        setTiers(explorerTiers);
+        setCurrent(Number(body.summary?.currentPlaces ?? 0));
       })
       .catch(() => {});
     return () => {
