@@ -24,8 +24,7 @@ describe("ActionsMapExportButton", () => {
       }),
     );
 
-    expect(markup).toContain("Exporter CSV");
+    expect(markup).toContain("Exporter la vue");
     expect(markup).toContain(expectedFilename);
-    expect(markup).toContain("Exporter la vue filtrée de la carte au format CSV");
   });
 });

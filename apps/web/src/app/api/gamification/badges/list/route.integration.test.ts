@@ -45,6 +45,7 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
 
     // Simulate the tier unlock logic from badges/list route
     const PARTICIPANT_TIERS = [
+      { threshold: 0, id: 'participant-0', xp: 0 },
       { threshold: 1, id: 'participant-1', xp: 1 },
       { threshold: 3, id: 'participant-3', xp: 1 },
       { threshold: 5, id: 'participant-5', xp: 1 },
@@ -57,6 +58,9 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
     // Simulate the loop from badges list route
     for (const tier of PARTICIPANT_TIERS) {
       if (participationCount >= tier.threshold) {
+        if (tier.xp <= 0) {
+          continue;
+        }
         const existing = await supabaseMock
           .from('progression_events')
           .select('id')
@@ -82,7 +86,7 @@ describe('POST /api/gamification/badges/list - participant tier unlock', () => {
       }
     }
 
-    // Verify: 3 inserts for tiers 1, 3, 5 (threshold <= 5)
+    // Verify: 3 inserts for tiers 1, 3, 5 (threshold <= 5); the 0-tier is a base badge and does not award XP
     expect(insertCount).toBe(3);
     expect(inserts).toHaveLength(3);
     expect(inserts[0].source_id).toBe('participant:participant-1');

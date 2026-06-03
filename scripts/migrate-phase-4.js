@@ -16,7 +16,7 @@ const path = require('path')
 class Phase4Migration {
   constructor() {
     this.webRoot = path.join(__dirname, '../../apps/web')
-    this.backupDir = path.join(__dirname, '../../legacy/complex-form-backup')
+    this.backupDir = path.join(__dirname, '../../backups/complex-form-backup')
   }
 
   async execute() {
@@ -151,7 +151,7 @@ La migration vers le formulaire simplifié est maintenant **TERMINÉE** !
 - **Redirection** : \`/declaration\` → \`/declaration-simple\`
 
 #### 📦 Archivage Formulaire Complexe
-- **Composants archivés** dans \`legacy/complex-form-backup/\`
+- **Composants archivés** dans \`backups/complex-form-backup/\`
 - **Manifest de sauvegarde** créé pour rollback éventuel
 - **Smart router** mis à jour pour utiliser uniquement le formulaire simple
 
@@ -189,7 +189,7 @@ Si problème critique détecté :
 featureFlags.disable('useSimpleForm')
 
 # Ou restaurer depuis l'archive
-cp legacy/complex-form-backup/* src/components/actions/
+cp backups/complex-form-backup/* src/components/actions/
 \`\`\`
 
 ### 🚀 Prochaines Optimisations

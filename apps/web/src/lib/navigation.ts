@@ -109,6 +109,18 @@ export type NavigationProfileOverview = {
   secondaryCTA: ProfileAction | null;
 };
 
+export function getLocalizedText(
+  text: LocalizedText | undefined | null,
+  locale: Locale,
+  fallback = "",
+): string {
+  if (!text) {
+    return fallback;
+  }
+
+  return text[locale] ?? text.fr ?? text.en ?? fallback;
+}
+
 type RouteId = Rubrique["id"];
 type ProfileSpacePageMap = Record<
   AppProfile,
@@ -122,7 +134,6 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "history",
   "dashboard",
   "feedback",
-  "guide",
   "sandbox",
   "methodologie",
   "community",
@@ -166,7 +177,7 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
 const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   benevole: {
     home: ["dashboard", "explorer"],
-    act: ["new", "route", "weather", "guide", "trash-spotter"],
+    act: ["new", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -182,7 +193,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   },
   coordinateur: {
     home: ["dashboard", "explorer", "pilotage", "elus"],
-    act: ["new", "route", "weather", "guide", "trash-spotter"],
+    act: ["new", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -198,7 +209,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   },
   scientifique: {
     home: ["dashboard", "explorer", "elus"],
-    act: ["new", "route", "weather", "guide", "trash-spotter"],
+    act: ["new", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -214,7 +225,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   },
   entreprise: {
     home: ["dashboard", "explorer", "sponsor", "funding"],
-    act: ["new", "route", "weather", "guide", "trash-spotter"],
+    act: ["new", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -230,7 +241,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   },
   elu: {
     home: ["dashboard", "explorer", "sponsor", "elus"],
-    act: ["new", "route", "weather", "guide", "trash-spotter"],
+    act: ["new", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -246,7 +257,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   },
   admin: {
     home: ["dashboard", "explorer", "pilotage", "admin", "elus"],
-    act: ["new", "route", "weather", "guide", "trash-spotter"],
+    act: ["new", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -262,7 +273,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   },
   max: {
     home: ["dashboard", "explorer", "pilotage", "admin", "sponsor", "elus", "godmode"],
-    act: ["new", "route", "weather", "guide", "trash-spotter"],
+    act: ["new", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],

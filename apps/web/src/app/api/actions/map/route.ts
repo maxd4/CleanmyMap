@@ -12,7 +12,7 @@ import { resolveReportQuery } from"@/lib/reports/csv";
 import { handleApiError } from"@/lib/http/api-errors";
 
 export const runtime ="nodejs";
-export const revalidate = 60; // Cache 1 minute for public map
+export const dynamic = "force-dynamic";
 
 function parseStatusParam(raw: string | null): ActionStatus | null {
  if (!raw || raw.trim() ==="") {

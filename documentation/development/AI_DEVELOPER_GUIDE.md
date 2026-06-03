@@ -34,6 +34,7 @@ Pour vérifier les accès côté serveur, utilise `getEffectiveAccessForSessionR
    - [Typography](../design-system/TYPOGRAPHY_SYSTEM.md) (Système typographique).
    - [Data Governance](../technical/data-governance.md) (Contrats et Ingestion).
    - [API Standard](../technical/api-standard.md) (Erreurs et Sécurité).
+2. **Fichiers miroir interdits** : ne crée pas de dossier ou de fichier miroir pour reproduire un contenu déjà publié ou déjà interne; choisis un seul emplacement source de vérité et documente explicitement toute copie nécessaire.
 3. **Nomenclature Utilisateur** : Utilise toujours les noms engageants pour les rubriques FR (ex: "Signalement Déchets" au lieu de "Trash Spotter", "Mon Profil & Impact" au lieu de "Compte", "Entraide Locale" au lieu de "Discussion").
 4. **Pas de logique lourde en Client Components** : Isole la data-fetching côté serveur.
 5. **Dynamic Imports pour Leaflet** : Obligatoire pour éviter les crashs SSR.
@@ -46,6 +47,9 @@ Les scripts Python de maintenance sont dans `/maintenance/python/`. Ne casse pas
 - Évite de lancer plusieurs commandes lourdes en parallèle, notamment `npm run checks`, `pytest`, `typecheck`, `rg -n` sur tout le repo et les scans de documentation.
 - N'active pas en même temps `npm run dev`, les tests `vitest`, les watchers de build et les scripts de maintenance Python.
 - Si un contrôle ciblé suffit, préfère-le à un scan global pour préserver la réactivité de la machine.
+- Arrête une commande dès qu'elle n'est plus utile.
+- Ferme les commandes qui tournent pour un `localhost` dès que ce `localhost` n'est plus ouvert ou plus utilisé.
+- Les commandes `git` peuvent rester en arrière-plan car leur coût machine est généralement faible.
 
 ## 6. Encodage et Accents Français (CRITIQUE)
 - **Tous les fichiers doivent être encodés en UTF-8 sans BOM.** Le `.editorconfig` à la racine l'impose.

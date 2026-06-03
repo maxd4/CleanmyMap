@@ -22,7 +22,11 @@ export async function generateMetadata({
   params,
 }: SectionPageProps): Promise<Metadata> {
   const { sectionId } = await params;
-  const section = getSectionRubriqueById(sectionId);
+  const normalizedSectionId = sectionId.toLowerCase();
+  const section =
+    normalizedSectionId === "guide"
+      ? getSectionRubriqueById("weather")
+      : getSectionRubriqueById(normalizedSectionId);
 
   if (!section) {
     return {
@@ -59,6 +63,10 @@ export default async function SectionPage({ params }: SectionPageProps) {
 
   if (sectionId === "dm") {
     redirect("/sections/messagerie?tab=dm");
+  }
+
+  if (sectionId === "guide") {
+    redirect("/sections/weather?tab=guide");
   }
 
   const section = getSectionRubriqueById(sectionId);

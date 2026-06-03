@@ -20,6 +20,7 @@ import {
  hasHoneypotSignal,
  hasRecentSubmission,
 } from"@/lib/security/validation";
+import { logWarning } from "@/lib/logging/failure-log";
 
 export const runtime ="nodejs";
 
@@ -133,7 +134,10 @@ export async function POST(request: Request) {
  footer: "Le retour est enregistré dans l'espace créateur avec la date et la source de soumission.",
  });
  } catch (error) {
- console.warn("Creator inbox notification failed for feedback", error);
+ logWarning("CommunityBugReports", "Creator inbox notification failed", {
+  reportId: created.id,
+  reason: error instanceof Error ? error.message : String(error),
+ });
  }
 
  return NextResponse.json(

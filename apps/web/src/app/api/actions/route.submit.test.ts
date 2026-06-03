@@ -173,6 +173,44 @@ describe("POST /api/actions", () => {
     expect(resolveActionOrganizersMock).not.toHaveBeenCalled();
   }, 15000);
 
+  it("rejects volunteer actions without waste or cigarette butts", async () => {
+    const { POST } = await import("./route");
+
+    const payload = {
+      type: "action",
+      source: "web_form",
+      location: {
+        label: "Test lieu action",
+      },
+      dates: {
+        observedAt: "2026-04-22",
+      },
+      metadata: {
+        associationName: "Action spontanée",
+        wasteKg: 0,
+        cigaretteButts: 0,
+        volunteersCount: 1,
+        durationMinutes: 45,
+        notes: "Formulaire bénévole de test",
+      },
+    };
+
+    const response = await POST(
+      new Request("http://localhost/api/actions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    const body = (await response.json()) as {
+      details?: { wasteKg?: string[] };
+    };
+    expect(response.status).toBe(422);
+    expect(body.details?.wasteKg?.[0]).toContain("déchets ou des mégots");
+    expect(createActionMock).not.toHaveBeenCalled();
+    expect(resolveActionOrganizersMock).not.toHaveBeenCalled();
+  }, 15000);
+
   it("creates a spot when the payload declares a clean place", async () => {
     const { POST } = await import("./route");
     const insertMock = vi.fn().mockReturnValue({

@@ -37,7 +37,7 @@ export const metadata: Metadata = {
       "The citizen platform for urban cleanup. Report, clean, act for the environment. Sustainable development, volunteer action, community coordination.",
     images: [
       {
-        url: "/brand/nouveau-logo.png",
+        url: "/brand/nouveau-logo.svg",
         width: 1200,
         height: 630,
         alt: "CleanMyMap - Urban cleanup map and cleanwalks - Ecology",

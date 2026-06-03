@@ -100,7 +100,7 @@ quadrantChart
 - Utilite : premier point d'entrée public pour comprendre le projet et conduire le visiteur vers l'engagement citoyen.
 - Impact : augmente la conversion des visiteurs en déclarants, améliore l'adoption des pages clefs.
 
-**Reprise de session** `/accueil`
+**Reprise de session** `/`
 
 - Espace personnel contextualisé : où j'en suis, quoi faire ensuite.
 - Utilite : reprise rapide de session sans friction.

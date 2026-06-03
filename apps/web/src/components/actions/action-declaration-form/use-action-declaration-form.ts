@@ -25,6 +25,7 @@ import { computeActionDataQuality } from "../action-declaration-form.quality";
 import { deriveAutoDrawingFromLocation } from "@/lib/actions/route-geometry";
 import { normalizeActionPhotos, inferActionVisionEstimate } from "@/lib/actions/vision";
 import { useActionDeclarationSmartAssist } from "../action-declaration-form.smart-assist";
+import { getVolunteerActionValidationIssues } from "@/lib/actions/submission-validation";
 import type {
   FormState,
   PostActionRetentionLoop,
@@ -281,6 +282,16 @@ export function useActionDeclarationForm({
       setValidationIssues(stepOneIssues);
       setHasAttemptedSubmit(true);
       setErrorMessage(stepOneIssues[0]?.message ?? null);
+      setSubmissionState("error");
+      setShowConfirmation(false);
+      return;
+    }
+
+    const volunteerIssues = getVolunteerActionValidationIssues(payload);
+    if (volunteerIssues.length > 0) {
+      setValidationIssues(volunteerIssues);
+      setHasAttemptedSubmit(true);
+      setErrorMessage(volunteerIssues[0]?.message ?? null);
       setSubmissionState("error");
       setShowConfirmation(false);
       return;

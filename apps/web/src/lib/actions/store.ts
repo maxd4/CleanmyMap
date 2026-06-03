@@ -19,6 +19,7 @@ import {
   buildTrainingExampleInsert,
   recordTrainingExample,
 } from "@/lib/actions/training";
+import { logFailure } from "@/lib/logging/failure-log";
 
 /** @deprecated Use ActionRow from @/types/database */
 export type StoredAction = ActionRow;
@@ -243,9 +244,8 @@ export async function createAction(
     });
     await recordTrainingExample(supabase, trainingExample);
   } catch (trainingError) {
-    console.error("[Action Create] Training example creation failed, action created:", {
+    logFailure("Actions/Create", "Training example creation failed", trainingError, {
       actionId,
-      error: trainingError instanceof Error ? trainingError.message : String(trainingError),
     });
   }
 

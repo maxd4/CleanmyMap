@@ -29,6 +29,7 @@ import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
 import { AppNavigationBlockDropdown } from "./app-navigation-block-dropdown";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
+import { getLocalizedText } from "@/lib/navigation";
 
 type AppNavigationRibbonProps = {
   currentProfile: AppProfile;
@@ -443,7 +444,7 @@ export function AppNavigationRibbon({
                             key={item.href}
                             href={item.href}
                             onClick={() => {
-                              onTrackNavigation(item.href, item.label, null);
+                              onTrackNavigation(item.href, getLocalizedText(item.label, locale, item.href), null);
                               closeFeedbackMenu();
                             }}
                             className="flex w-full items-center rounded-xl px-3 py-2.5 text-left cmm-text-small font-semibold text-white/90 transition hover:bg-white/12 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/40"

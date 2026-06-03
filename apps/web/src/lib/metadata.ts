@@ -132,7 +132,7 @@ export const metadata: Metadata = {
       "La carte citoyenne de depollution. Signalez, nettoyez, agissez pour l'environnement. Developpement durable, benevolat, action citoyenne, coordination communautaire.",
     images: [
       {
-        url: "/brand/logo-cleanmymap.webp",
+        url: "/brand/logo-cleanmymap.svg",
         width: 1200,
         height: 630,
         alt: "CleanMyMap - Carte propreté Paris et cleanwalks - Écologie",
@@ -144,7 +144,7 @@ export const metadata: Metadata = {
     title: "CleanMyMap - Dépollution Paris & Carte Propréte",
     description:
       "La carte citoyenne de depollution. Signalez, nettoyez, agissez pour l'environnement.",
-    images: ["/brand/logo-cleanmymap.webp"],
+    images: ["/brand/logo-cleanmymap.svg"],
   },
   robots: {
     index: true,
@@ -162,7 +162,7 @@ export const metadata: Metadata = {
     apple: "/brand/pictogramme-cleanmymap.svg",
     shortcut: "/brand/pictogramme-cleanmymap.svg",
   },
-  manifest: "/manifest.json",
+  manifest: "/api/manifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

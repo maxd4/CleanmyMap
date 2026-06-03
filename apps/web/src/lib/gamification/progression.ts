@@ -15,6 +15,12 @@ export type {
 } from "./progression-types";
 
 export {
+  computeMonthlyRegularityAwards,
+  computeMonthlyRegularitySummary,
+  MONTHLY_REGULARITY_GEM_GRADES,
+} from "./monthly-regularity";
+
+export {
   xpStep,
   xpRequired,
   minValidatedActions,
@@ -27,6 +33,7 @@ export {
   syncUserActionProgression,
   trackActionCreated,
   trackActionValidationBonus,
+  trackActionRejection,
   trackSpotCreated,
   trackSpotValidationBonus,
   trackCommunityRsvpYes,
@@ -38,6 +45,13 @@ export {
   backfillUserProgression,
   backfillAllProgression,
 } from "./progression-backfill";
+
+export {
+  buildReferralInviteUrl,
+  claimReferralInviteForUser,
+  ensureReferralInviteForUser,
+  loadReferralSummary,
+} from "./referrals";
 
 export {
   buildPostActionRetentionLoop,

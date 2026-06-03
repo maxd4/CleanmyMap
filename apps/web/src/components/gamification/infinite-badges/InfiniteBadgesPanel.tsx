@@ -5,7 +5,10 @@ import { useTranslation } from "@/lib/i18n/use-translation";
 import { InfiniteBadge } from "./InfiniteBadge";
 import { BADGE_STEP_DECHETS, BADGE_STEP_MEGOTS } from "@/config/gamification.config";
 import { dispatchGamificationCelebration } from "@/lib/gamification/celebration";
+import type { ActionBalanceSummary } from "@/lib/gamification/action-balance";
 import { ActionBalanceBadge } from "../action-balance-badge";
+import { MonthlyRegularityBadge } from "../monthly-regularity-badge";
+import { SensitiveZoneBadge } from "../sensitive-zone-badge";
 
 export function InfiniteBadgesPanel({
   totals,
@@ -15,12 +18,45 @@ export function InfiniteBadgesPanel({
     butts: number;
     newPlaces?: number;
     actionsCreated?: number;
-    actionBalance?: {
-      spontaneous: number;
-      association: number;
-      enterprise: number;
-      totalValidated: number;
-      balancedCycles: number;
+    actionBalance?: ActionBalanceSummary;
+    monthlyRegularity?: {
+      currentStreak: number;
+      eligibleMonths: number;
+      currentMonthHasEligibleAction: boolean;
+      currentGrade: {
+        id: string;
+        label: string;
+        threshold: number;
+        iconVariant?: string;
+        visualVariant?: string;
+        tooltip?: string;
+        xp?: number;
+      };
+      nextGrade: {
+        id: string;
+        label: string;
+        threshold: number;
+        iconVariant?: string;
+        visualVariant?: string;
+        tooltip?: string;
+        xp?: number;
+      } | null;
+      progressPercent: number;
+      currentLabel: string;
+      nextLabel: string | null;
+      monthlyAwards: Array<{
+        monthKey: string;
+        occurredOn: string;
+        actionCount: number;
+        streak: number;
+        xpAwarded: number;
+        sourceId: string;
+      }>;
+    };
+    sensitiveZoneApaisement?: {
+      eligibleValidatedActions: number;
+      sensitiveAreaCount: number;
+      sensitiveAreas: string[];
       currentGrade: {
         id: string;
         label: string;
@@ -128,6 +164,18 @@ export function InfiniteBadgesPanel({
       {totals.actionBalance ? (
         <div className="pt-1">
           <ActionBalanceBadge summary={totals.actionBalance} />
+        </div>
+      ) : null}
+
+      {totals.monthlyRegularity ? (
+        <div className="pt-1">
+          <MonthlyRegularityBadge summary={totals.monthlyRegularity} />
+        </div>
+      ) : null}
+
+      {totals.sensitiveZoneApaisement ? (
+        <div className="pt-1">
+          <SensitiveZoneBadge summary={totals.sensitiveZoneApaisement} />
         </div>
       ) : null}
     </div>

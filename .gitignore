@@ -50,6 +50,7 @@ runtime/
 *secrets*
 *credentials*
 CleanmyMap-sync/
+documentation/pages_site/routes/04-reseau-discussions/partners-network/partnerships/
 
 .vercel
 .playwright-mcp/

@@ -12,6 +12,7 @@ import type {
 import { fetchActions, type StoredAction } from "@/lib/actions/store";
 import type { ActionStatus } from "@/lib/actions/types";
 import { loadLocalActionContracts } from "@/lib/data/map-records";
+import { logFailure } from "@/lib/logging/failure-log";
 
 type UnifiedActionContractsParams = {
   limit: number;
@@ -266,11 +267,8 @@ export async function fetchUnifiedActionContracts(
 
   if (remoteRowsResult.status === "rejected") {
     failedSources.push("actions");
-    console.error("Unified source warning: actions fetch failed", {
-      message:
-        remoteRowsResult.reason instanceof Error
-          ? remoteRowsResult.reason.message
-          : String(remoteRowsResult.reason),
+    logFailure("UnifiedSource", "Actions fetch failed", remoteRowsResult.reason, {
+      source: "actions",
     });
   } else {
     availableSources.push("actions");
@@ -278,11 +276,8 @@ export async function fetchUnifiedActionContracts(
 
   if (remoteSpotsResult.status === "rejected") {
     failedSources.push("spots");
-    console.error("Unified source warning: spots fetch failed", {
-      message:
-        remoteSpotsResult.reason instanceof Error
-          ? remoteSpotsResult.reason.message
-          : String(remoteSpotsResult.reason),
+    logFailure("UnifiedSource", "Spots fetch failed", remoteSpotsResult.reason, {
+      source: "spots",
     });
   } else {
     availableSources.push("spots");

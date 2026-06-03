@@ -12,7 +12,7 @@ Documentation produit pour agents IA. Contexte métier et vision.
 - **dimension-communautaire.md** - Strategie communautaire et engagement recurrent
 - **gamification-non-competitive.md** - Cadre de gamification non competitive, badges et objectifs
 - **objectifs-valides.md** - Memoire des objectifs de gamification retenus et a continuer a proposer
-- **objectifs-non-pertinents.md** - Memoire des objectifs de gamification proposes puis ecartes
+- **[gamification-objectifs-non-pertinents.md](../pages_site/routes/03-cartographie-impact/gamification/gamification-objectifs-non-pertinents.md)** - Memoire des objectifs de gamification proposes puis ecartes, stockee dans la rubrique gamification
 - **gamification-inventory.md** - Inventaire des surfaces a gamifier et type de mecanique associee
 - **chantiers-q2-q3.md** - Chantiers en cours
 

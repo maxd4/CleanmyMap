@@ -1,6 +1,6 @@
 # Politique de Confidentialité - CleanMyMap
 
-**Dernière mise à jour :** 30 Avril 2026
+**Dernière mise à jour :** 1 Juin 2026
 
 ## 1. Responsable du Traitement
 
@@ -39,6 +39,7 @@ Le traitement des données personnelles repose sur les bases légales suivantes 
 - Statistiques d'impact personnel
 - Badges et achievements
 - Contributions aux événements
+- Données de parrainage : code d'invitation, identifiant du parrain, date de rattachement et compteur de filleuls
 
 ### Données techniques
 - Adresse IP
@@ -69,6 +70,7 @@ Pour activer ces options, allez dans : Profil > Préférences > Confidentialité
 | Signalement de pollution | Consentement | 5 ans |
 | Déclaration d'actions | Contrat | 5 ans |
 | Calcul et affichage de l'impact | Contrat | 5 ans |
+| Parrainage / invitations communautaires | Exécution du service + intérêt légitime | Durée du compte + purge ou anonymisation à la suppression |
 | Communication/newsletter | Consentement | jusqu'au retrait |
 | Analytics (PostHog) | Consentement | 13 mois |
 | Support utilisateur | Intérêt légitime | 2 ans |

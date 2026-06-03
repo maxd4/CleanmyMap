@@ -1,6 +1,6 @@
 # Charte du Bénévole - CleanMyMap
 
-**Dernière mise à jour :** 30 Avril 2026
+**Dernière mise à jour :** 1 Juin 2026
 
 ---
 

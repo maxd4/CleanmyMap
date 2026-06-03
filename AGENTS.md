@@ -71,6 +71,7 @@ Sans cet accord, utiliser uniquement la branche courante et les fichiers du doss
 - Les fichiers temporaires, captures, logs, exports et artefacts de debug doivent aller dans `artifacts/`, `documentation/`, `backups/` ou un sous-dossier dedie.
 - Si un fichier doit absolument vivre a la racine, il faut que ce soit un fichier d'architecture du projet ou un livrable racine clairement justifie.
 - Tout fichier racine ajoute sans demande explicite doit etre considere comme une regression de gouvernance et etre nettoye avant validation.
+- Interdiction de creer des dossiers ou fichiers miroir: ne duplique pas un meme contenu dans deux emplacements paralleles juste pour le contourner ou le republier.
 
 ## Règle Markdown et Quarto
 
@@ -86,6 +87,9 @@ Sans cet accord, utiliser uniquement la branche courante et les fichiers du doss
 - Éviter de laisser tourner en parallèle `npm run dev`, les tests `vitest`, les watchers de build et les scripts de maintenance Python.
 - Avant de lancer une commande lourde, vérifier qu'une autre tâche active sur le repo ne produit pas déjà la même charge.
 - Si une seule vérification ciblée suffit, préférer cette vérification à un scan global.
+- Arrêter toute commande qui n'est plus utile dès qu'elle a terminé son rôle.
+- Fermer les commandes liées à un `localhost` dès que ce `localhost` n'est plus ouvert ou n'est plus utilisé.
+- Les commandes `git` peuvent rester en arrière-plan car elles sont généralement peu coûteuses.
 
 ## Contrat projet migré depuis `.cursorrules`
 

@@ -9,7 +9,7 @@ export function OrganizationJsonLd() {
     "@type": "Organization",
     name: "CleanMyMap",
     url: "https://cleanmymap.fr",
-    logo: "https://cleanmymap.fr/brand/nouveau-logo.png",
+    logo: "https://cleanmymap.fr/brand/nouveau-logo.svg",
     description:
       "Plateforme citoyenne de depollution urbaine, d'action ecologique et de developpement durable a Paris et en France. Coordination benevoles, mutualisation resultats, valorisation dechets.",
     sameAs: [
@@ -37,7 +37,7 @@ export function LocalBusinessJsonLd() {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
     name: "CleanMyMap",
-    image: "https://cleanmymap.fr/brand/nouveau-logo.png",
+    image: "https://cleanmymap.fr/brand/nouveau-logo.svg",
     address: {
       "@type": "PostalAddress",
       addressLocality: "Paris",

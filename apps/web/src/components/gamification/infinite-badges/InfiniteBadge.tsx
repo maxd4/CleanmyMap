@@ -3,6 +3,10 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BadgeSurface } from "@/components/gamification/badge-surface";
+import {
+  GamificationStatePill,
+  getGamificationBadgeState,
+} from "@/components/gamification/badge-ui";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   computeLevel,
@@ -59,6 +63,7 @@ export function InfiniteBadge({
   );
   const tier = rank.tier;
   const styles = BADGE_TIER_STYLES[tier];
+  const state = getGamificationBadgeState(total, level * step);
 
   const isPlaces = family === "lieux";
   const isActions = family === "actions";
@@ -147,6 +152,9 @@ export function InfiniteBadge({
               <p className={`mt-1 text-3xl font-black tracking-tight ${styles.text} drop-shadow-md`}>
                 Niv {level}
               </p>
+              <div className="mt-2 flex justify-end">
+                <GamificationStatePill state={state} />
+              </div>
             </div>
           </div>
 

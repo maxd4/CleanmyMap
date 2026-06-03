@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
 const appendContactRequestMock = vi.hoisted(() => vi.fn());
@@ -35,6 +35,8 @@ vi.mock("@/lib/security/validation", () => ({
 }));
 
 describe("POST /api/contact", () => {
+  const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
@@ -78,6 +80,10 @@ describe("POST /api/contact", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    consoleWarnSpy.mockRestore();
   });
 
   it("persists the contact request and sends the notification email", async () => {

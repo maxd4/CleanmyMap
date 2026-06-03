@@ -8,12 +8,19 @@ import { SectionShell } from "@/components/sections/rubriques/shared";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { LeaderboardTable } from "./leaderboard-table";
 import { ContributorRecognitionPanel } from "./contributor-recognition-panel";
+import { CollectionsPanel } from "./collections-panel";
+import { LightCelebrationsPanel } from "./light-celebrations-panel";
+import { ImpactFeedbackPanel } from "./impact-feedback-panel";
+import { ProgressionVisiblePanel } from "./progression-visible-panel";
+import { PersonalizationPanel } from "./personalization-panel";
+import { RolesStatusPanel } from "./roles-status-panel";
 import { PersonalProgress } from "./personal-progress";
 import type { LeaderboardResponse, MeResponse } from "./gamification-types";
 import { motion } from "framer-motion";
 import { Trophy, Zap, ShieldCheck, Map as MapIcon, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CmmButton } from "@/components/ui/cmm-button";
+import { ActionPollutionScoreReferencesProvider } from "@/components/actions/map/action-pollution-score-references-context";
 
 const ActionsMapCanvas = dynamic(
   () =>
@@ -106,7 +113,7 @@ export function GamificationSection() {
     }));
   }, [progression?.history.mapPoints]);
 
-  const rows = leaderboardData?.items ?? [];
+  const rows = useMemo(() => leaderboardData?.items ?? [], [leaderboardData?.items]);
   const recognition = leaderboardData?.recognition;
   const filteredRows = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -149,6 +156,17 @@ export function GamificationSection() {
               {fr ? "Profil de Performance" : "Performance Profile"}
             </h3>
           </div>
+          <ProgressionVisiblePanel
+            progression={progression}
+            progressToNext={progressToNext}
+            loading={meLoading}
+            error={meError}
+            locale={locale}
+          />
+          <RolesStatusPanel
+            currentContributor={progression?.recognition.currentContributor}
+            locale={locale}
+          />
           <PersonalProgress
             progression={progression}
             progressToNext={progressToNext}
@@ -159,6 +177,7 @@ export function GamificationSection() {
             badgeTotalsLoading={badgeTotalsLoading}
             badgeTotalsError={badgeTotalsError}
           />
+          <PersonalizationPanel />
         </aside>
 
         {/* Main Content */}
@@ -262,6 +281,22 @@ export function GamificationSection() {
             loading={leaderboardLoading}
           />
 
+          <ImpactFeedbackPanel
+            progression={progression}
+            loading={meLoading}
+            error={meError}
+            locale={locale}
+          />
+
+          <CollectionsPanel
+            progression={progression}
+            loading={meLoading}
+            error={meError}
+            locale={locale}
+          />
+
+          <LightCelebrationsPanel locale={locale} />
+
           {/* Personal Map */}
           {progression && personalMapItems.length > 0 && (
             <div className="space-y-4">
@@ -274,7 +309,9 @@ export function GamificationSection() {
               <div className="rounded-[3rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl p-4 overflow-hidden shadow-2xl relative group">
               <div className="absolute inset-0 bg-red-500/5 pointer-events-none group-hover:opacity-0 transition-opacity duration-700" />
                 <div className="h-[350px] rounded-[2rem] overflow-hidden border border-white/5">
-                  <ActionsMapCanvas items={personalMapItems.slice(0, 50)} />
+                  <ActionPollutionScoreReferencesProvider>
+                    <ActionsMapCanvas items={personalMapItems.slice(0, 50)} />
+                  </ActionPollutionScoreReferencesProvider>
                 </div>
               </div>
             </div>

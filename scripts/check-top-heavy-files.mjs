@@ -42,7 +42,7 @@ const ignoredDirs = new Set([
   "dist",
   "build",
   "coverage",
-  "legacy",
+  "maintenance",
 ]);
 
 function toRepoRelative(pathname) {

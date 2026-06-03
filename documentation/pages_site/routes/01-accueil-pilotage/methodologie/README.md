@@ -1,16 +1,19 @@
 # Méthodologie
 
+> Fiche legacy conservée pour transition. La fiche canonique est maintenant dans
+> [documentation/pages_site/routes/03-cartographie-impact/methodologie/README.md](../../03-cartographie-impact/methodologie/README.md).
+
 ## Fiche canonique
 
 - **Route** : `/methodologie`
 - **Fichier(s) source(s)** :
 - `apps/web/src/app/(app)/methodologie/page.tsx`
 - **Type fonctionnel** : exception UI — impact
-- **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
+- **Famille / bloc fonctionnel** : Cartographie & Impact (bloc)
 - **Statut** : public
 - **Contexte nécessaire** : Aucun
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
-- **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
+- **Objectif utilisateur principal** : Consulter la méthodologie d'impact et les repères de synthèse.
+- **Action principale attendue** : Lire la méthode de calcul et les pages d'impact associées.
 - **Palette attendue** : red
 - **Scope** : terminé
 - **Terminée** : oui
@@ -46,5 +49,5 @@
 
 ## Notes d'audit
 
-- Cette fiche est la source de vérité canonique pour la page.
-- Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+- Cette fiche est conservée comme alias documentaire.
+- La source de vérité canonique est la fiche du bloc [Cartographie & Impact](../../03-cartographie-impact/methodologie/README.md).

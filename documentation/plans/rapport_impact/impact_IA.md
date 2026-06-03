@@ -3481,7 +3481,7 @@ Solutions :
 
 ### Vidéos
 
-Aucune présence évidente de vidéos publiques dans `apps/web/public` . Le risque vidéo actuel semble faible.
+Aucune présence évidente de vidéos publiques dans l'ancien dossier `apps/web/public`. Le risque vidéo actuel semble faible.
 
 Impact probable : faible aujourd'hui.
 

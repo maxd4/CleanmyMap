@@ -30,7 +30,11 @@ describe("actions contract regression gates", () => {
       notesPlain: "ok",
     });
 
-    const mapItem = toActionMapItem(contract);
+    const pollutionScoreReferences = {
+      wastePerVolunteer: 10,
+      buttsPerVolunteer: 500,
+    };
+    const mapItem = toActionMapItem(contract, undefined, pollutionScoreReferences);
     expect(mapItem.id).toBe("gate-1");
     expect(mapItem.action_date).toBe("2026-04-12");
     expect(mapItem.location_label).toBe("Paris 11");
@@ -38,16 +42,20 @@ describe("actions contract regression gates", () => {
     expect(mapItem.longitude).toBe(2.37);
     expect(mapItem.waste_kg).toBe(7.5);
     expect(mapItem.cigarette_butts).toBe(120);
+    expect(mapItem.waste_pollution_score).toBe(25);
+    expect(mapItem.cigarette_butts_pollution_score).toBe(8);
     expect(mapItem.status).toBe("approved");
     expect(mapItem.geometry_source).toBe("estimated_area");
     expect(mapItem.contract?.metadata.volunteersCount).toBe(3);
 
-    const listItem = toActionListItem(contract);
+    const listItem = toActionListItem(contract, undefined, pollutionScoreReferences);
     expect(listItem.created_at).toBe("2026-04-12T10:00:00.000Z");
     expect(listItem.volunteers_count).toBe(3);
     expect(listItem.duration_minutes).toBe(45);
     expect(listItem.association_name).toBe("Action spontanee");
     expect(listItem.contract?.dates.validatedAt).toBe("2026-04-12T11:00:00.000Z");
+    expect(listItem.waste_pollution_score).toBe(25);
+    expect(listItem.cigarette_butts_pollution_score).toBe(8);
   });
 
   it("keeps entity type parsing stable for API filters", () => {

@@ -5,7 +5,7 @@ import {
   PAGE_FAMILIES,
   PARTNERS_NETWORK_FAMILY,
   STATE_429_FAMILY,
-} from "@/lib/ui/page-families/families/defaults";
+} from "@/lib/ui/page-families/families/registry";
 import { PAGE_FAMILY_ROUTE_EXCEPTIONS } from "@/lib/ui/page-families/exceptions";
 import { ADMIN_ROUTE } from "@/lib/accueil-pilotage-routes";
 import type {
@@ -31,12 +31,8 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
 
   const base = pathname.split("/")[1] ?? "";
 
-  if (base === "accueil") {
-    return "homepage";
-  }
-
   if (base === "sign-in" || base === "sign-up" || isRoute(pathname, "/onboarding")) {
-    return "auth";
+    return "authentification";
   }
 
   if (
@@ -48,7 +44,7 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
     base === "politique-cookies" ||
     base === "en"
   ) {
-    return "legal";
+    return "juridique";
   }
 
   if (
@@ -57,19 +53,19 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
     base === "reglages" ||
     isRoute(pathname, "/preview/actions/new")
   ) {
-    return "system";
+    return "systeme";
   }
 
   if (isRoute(pathname, "/error/429")) {
-    return "system";
+    return "systeme";
   }
 
   if (base === "admin" || isRoute(pathname, ADMIN_ROUTE)) {
-    return "admin";
+    return "administration";
   }
 
   if (base === "prints" || isRoute(pathname, "/prints/report")) {
-    return "print";
+    return "impression";
   }
 
   if (
@@ -130,7 +126,7 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
     return "reseau-discussions";
   }
 
-  return "fallback";
+  return "secours";
 }
 
 function resolveExceptionFamily(

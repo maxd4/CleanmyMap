@@ -10,13 +10,13 @@ export type {
 export {
   ACCUEIL_PILOTAGE_FAMILY,
   ACCUEIL_PILOTAGE_PAGE_HERO,
-} from "@/lib/ui/page-families/families/01-accueil-pilotage";
+} from "@/lib/ui/page-families/families/registry";
 
 export {
   EXPLORER_SOMMAIRE_FAMILY,
   METHODOLOGIE_FAMILY,
   PAGE_FAMILIES,
-} from "@/lib/ui/page-families/families/defaults";
+} from "@/lib/ui/page-families/families/registry";
 export { PAGE_FAMILY_ROUTE_EXCEPTIONS } from "@/lib/ui/page-families/exceptions";
 
 export {

@@ -31,7 +31,7 @@ export default function ConditionsGeneralesUtilisationPage() {
           badge={<PageHeaderBadge tone="slate">Conditions d'utilisation</PageHeaderBadge>}
           title="Conditions Générales d'Utilisation"
           subtitle="Règles d'accès et d'utilisation du service CleanMyMap. Ce texte complète la Politique de confidentialité et la Politique cookies."
-          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 5 mai 2026</p>}
+          action={<p className="text-sm font-medium text-slate-500">Dernière mise à jour : 1 juin 2026</p>}
         />
 
         <section className="space-y-4 rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -67,6 +67,7 @@ export default function ConditionsGeneralesUtilisationPage() {
             <li>Déclaration d&apos;une action de nettoyage.</li>
             <li>Carte, observatoire, rapports et tableaux de bord d&apos;impact.</li>
             <li>Événements communautaires, messagerie et coordination locale.</li>
+            <li>Parrainage, liens d&apos;invitation et badge communautaire one-shot.</li>
             <li>Newsletter et formulaires d&apos;échange avec l&apos;équipe.</li>
           </ul>
         </section>
@@ -80,6 +81,7 @@ export default function ConditionsGeneralesUtilisationPage() {
             <li>Ne pas publier de contenu illicite, haineux, trompeur ou abusif.</li>
             <li>Ne pas tenter d&apos;extraire massivement les données ou de contourner les protections.</li>
             <li>Ne pas détourner le service à des fins commerciales non autorisées.</li>
+            <li>Ne pas utiliser les liens d&apos;invitation pour du spam, de l&apos;autopromotion abusive ou une fraude au parrainage.</li>
             <li>Ne pas diffuser de fichiers malveillants, de spam ou de contenu non sollicité.</li>
           </ul>
         </section>

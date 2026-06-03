@@ -2,25 +2,34 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 import {
   BarChart3,
   ChevronRight,
-  Dumbbell,
   Info,
+  Dumbbell,
   MapPinned,
   Medal,
 } from "lucide-react";
 import type { NavigationItem, NavigationSpace } from "@/lib/navigation";
+import { getLocalizedText } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
 import { cn } from "@/lib/utils";
+import { AppNavigationBlockDropdownAct } from "./app-navigation-block-dropdown-act";
+import { AppNavigationBlockDropdownHome } from "./app-navigation-block-dropdown-home";
 import type { RibbonChrome } from "./app-navigation-ribbon-theme";
+import { AppNavigationBlockDropdownLearn } from "./app-navigation-block-dropdown-learn";
+import { AppNavigationBlockDropdownNetwork } from "./app-navigation-block-dropdown-network";
+import { NavigationDropdownItemCard } from "./navigation-dropdown-item-card";
+import { NavigationDropdownHelpText } from "./navigation-dropdown-help-text";
+import { getNavigationDropdownCardBorderTokens } from "./navigation-dropdown-border-theme";
+import { getNavigationDropdownCardGeometry } from "./navigation-dropdown-card-theme";
+import { getNavigationDropdownItemTone } from "./navigation-dropdown-item-theme";
+import { getNavigationDropdownShellTokens } from "./navigation-dropdown-shell-theme";
 import {
-  getNavigationDropdownPanelStyle,
   getNavigationDropdownTitleGradientStyle,
-  getNavigationDropdownTitleLabel,
+  getNavigationDropdownTitlePrefix,
 } from "./navigation-dropdown-theme";
 
 type AppNavigationBlockDropdownProps = {
@@ -62,7 +71,6 @@ export function AppNavigationBlockDropdown({
 }: AppNavigationBlockDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [canHover, setCanHover] = useState(false);
-  const router = useRouter();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,23 +78,18 @@ export function AppNavigationBlockDropdown({
   const placement = useDropdownPlacement({
     isOpen,
     triggerRef,
-    minPanelWidth: 340,
+    minPanelWidth: 448,
   });
 
-  const panelStyle = getNavigationDropdownPanelStyle(space.id);
+  const shellTokens = getNavigationDropdownShellTokens(space.id);
+  const cardBorderTokens = getNavigationDropdownCardBorderTokens(space.id);
+  const cardGeometry = getNavigationDropdownCardGeometry(space.id);
   const isActiveSpace = space.id === activeSpaceId;
+  const isHomeSpace = space.id === "home";
+  const isActSpace = space.id === "act";
   const isVisualizeSpace = space.id === "visualize";
-  const visualizePanelStyle = isVisualizeSpace
-    ? {
-        ...panelStyle,
-        backgroundColor: "#ffffff",
-        borderColor: "transparent",
-        borderStyle: "solid",
-        borderWidth: "1px",
-        borderImage:
-          "linear-gradient(90deg, rgba(34,211,238,0.95) 0%, rgba(255,255,255,0.55) 38%, rgba(239,68,68,0.95) 100%) 1",
-      }
-    : panelStyle;
+  const isNetworkSpace = space.id === "network";
+  const isLearnSpace = space.id === "learn";
 
   useEffect(() => {
     if (!isOpen) {
@@ -173,7 +176,7 @@ export function AppNavigationBlockDropdown({
   }
 
   function handleTrackNavigation(item: NavigationItem) {
-    onTrackNavigation(item.href, item.label[locale], space.id);
+    onTrackNavigation(item.href, getLocalizedText(item.label, locale, item.href), space.id);
     setIsOpen(false);
   }
 
@@ -200,23 +203,12 @@ export function AppNavigationBlockDropdown({
             ? "bg-white/[0.08] text-white"
             : "text-white/86 hover:bg-white/[0.07] hover:text-white",
         )}
-        title={space.label[locale]}
       >
         <span className="select-none" aria-hidden="true">
           {space.icon}
         </span>
-        <span className="sr-only">{space.label[locale]}</span>
+        <span className="sr-only">{getLocalizedText(space.label, locale, space.id)}</span>
       </button>
-      <span
-        aria-hidden="true"
-        className={cn(
-          "pointer-events-none absolute left-1/2 bottom-full z-40 mb-2 -translate-x-1/2 translate-y-1 scale-95 whitespace-nowrap rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] opacity-0 shadow-[0_18px_36px_-24px_rgba(2,6,23,0.18)] transition-all duration-150 text-black",
-          "group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100",
-        )}
-        style={panelStyle}
-      >
-        {space.label[locale]}
-      </span>
 
       <AnimatePresence initial={false}>
         {isOpen ? (
@@ -237,97 +229,54 @@ export function AppNavigationBlockDropdown({
               key={`block-${space.id}-menu`}
               id={`block-${space.id}-menu`}
               role="region"
-              aria-label={`${space.label[locale]} - ${locale === "fr" ? "rubriques" : "pages"}`}
+              aria-label={`${getLocalizedText(space.label, locale, space.id)} - ${locale === "fr" ? "rubriques" : "pages"}`}
               tabIndex={-1}
               initial={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98, x: "-50%" }}
               animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
               exit={{ opacity: 0, y: placement.openUp ? 10 : -10, scale: 0.98, x: "-50%" }}
               transition={{ duration: 0.16, ease: "easeOut" }}
               className={cn(
-                  isVisualizeSpace
-                  ? "absolute left-1/2 z-50 mt-2 w-[min(20.75rem,calc(100vw-1.5rem))] overflow-hidden rounded-[1.5rem] border text-[#0f2567] shadow-[0_24px_52px_-26px_rgba(15,23,42,0.16)]"
-                  : "absolute left-1/2 z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-[1.55rem] border text-black shadow-[0_32px_74px_-34px_rgba(15,23,42,0.24)]",
+                shellTokens.className,
                 placement.openUp ? "bottom-[calc(100%+0.75rem)]" : "top-[calc(100%+0.75rem)]",
               )}
               onMouseEnter={canHover ? openMenu : undefined}
               onMouseLeave={canHover ? closeMenuSoon : undefined}
               onKeyDown={handleKeyDown}
-              style={visualizePanelStyle}
+              style={shellTokens.style}
             >
               {isVisualizeSpace ? (
                 <div className="px-3 pb-2.5 pt-2.5 sm:px-3.5 sm:pt-3">
                   <header className="flex items-center justify-center">
-                    <h3
-                      className="w-full whitespace-nowrap text-center text-[0.9rem] font-black leading-tight tracking-[-0.03em] sm:text-[0.98rem]"
-                      style={getNavigationDropdownTitleGradientStyle(space.id)}
-                    >
-                      {getNavigationDropdownTitleLabel(locale, space.label[locale])}
+                    <h3 className="w-full whitespace-nowrap text-center text-[0.9rem] font-black leading-tight tracking-[-0.03em] sm:text-[0.98rem]">
+                      <span className="text-slate-950">{getNavigationDropdownTitlePrefix(locale)} </span>
+                      <span
+                        className="inline-block"
+                        style={getNavigationDropdownTitleGradientStyle(space.id)}
+                      >
+                        {getLocalizedText(space.label, locale, space.id)}
+                      </span>
                     </h3>
                   </header>
 
-                  <nav className="mt-2" aria-label={space.label[locale]}>
+                  <nav className="mt-2" aria-label={getLocalizedText(space.label, locale, space.id)}>
                     <ul className="space-y-1">
                       {space.items.length > 0 ? (
                         space.items.map((item) => {
-                          const isActiveItem = isActivePath(pathname, item.href);
                           const Icon = getVisualizeItemIcon(item.routeId);
                           return (
-                            <li key={item.id}>
-                              <button
-                                type="button"
-                                title={item.description[locale]}
-                                aria-pressed={isActiveItem}
-                                onClick={() => {
-                                  handleTrackNavigation(item);
-                                  router.push(item.href);
-                                }}
-                                className="group/item block w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40"
-                              >
-                                <div
-                                  className={cn(
-                                    "rounded-[0.9rem] p-[1.5px] transition-all duration-200",
-                                    isActiveItem
-                                      ? "bg-[linear-gradient(90deg,rgba(34,211,238,0.96)_0%,rgba(255,255,255,0.98)_46%,rgba(239,68,68,0.92)_100%)] shadow-[0_7px_16px_rgba(15,23,42,0.05)] group-hover/item:p-[2px] group-hover/item:saturate-125 group-hover/item:shadow-[0_10px_24px_rgba(15,23,42,0.09)]"
-                                      : "bg-[linear-gradient(90deg,rgba(34,211,238,0.92)_0%,rgba(255,255,255,0.92)_46%,rgba(239,68,68,0.86)_100%)] shadow-[0_7px_16px_rgba(15,23,42,0.05)] group-hover/item:p-[2px] group-hover/item:saturate-125 group-hover/item:shadow-[0_10px_24px_rgba(15,23,42,0.09)]",
-                                  )}
-                                >
-                                  <div
-                                    className={cn(
-                                      "flex min-h-[1.95rem] items-center gap-1 rounded-[calc(0.9rem-1.5px)] border px-[0.55rem] py-[0.35rem] text-left transition-all duration-200",
-                                      isActiveItem
-                                        ? "border-cyan-300/80 bg-white/94 text-slate-950 group-hover/item:border-cyan-300/90 group-hover/item:ring-1 group-hover/item:ring-cyan-200/30 group-hover/item:bg-white"
-                                        : "border-cyan-200/70 bg-white/82 group-hover/item:border-cyan-300/90 group-hover/item:ring-1 group-hover/item:ring-cyan-200/30 group-hover/item:bg-white",
-                                    )}
-                                  >
-                                    <span
-                                      className={cn(
-                                        "flex h-[1.625rem] w-[1.625rem] shrink-0 items-center justify-center rounded-full border bg-gradient-to-br from-cyan-100 via-white to-rose-100 shadow-[0_0_0_2px_rgba(6,182,212,0.10)] transition-transform duration-200 group-hover/item:scale-[1.03] sm:h-7 sm:w-7",
-                                        isActiveItem
-                                          ? "border-cyan-300 text-cyan-700"
-                                          : "border-cyan-200 text-cyan-700",
-                                      )}
-                                    >
-                                      <Icon className="h-[0.68rem] w-[0.68rem] sm:h-3 sm:w-3" strokeWidth={2.25} aria-hidden="true" />
-                                    </span>
-
-                                    <span className="min-w-0 flex-1">
-                                      <span className="block whitespace-nowrap text-[0.7rem] font-medium tracking-tight text-slate-950 transition-all duration-200 origin-left group-hover/item:scale-[1.05] group-hover/item:font-bold sm:text-[0.76rem]">
-                                        {item.label[locale]}
-                                      </span>
-                                    </span>
-
-                                    <ChevronRight
-                                      className={cn(
-                                        "h-[0.68rem] w-[0.68rem] shrink-0 transition-transform duration-200 group-hover/item:translate-x-1.25 group-hover/item:scale-110 group-hover/item:text-red-500 sm:h-3 sm:w-3",
-                                        isActiveItem ? "text-red-500" : "text-cyan-700",
-                                      )}
-                                      strokeWidth={3}
-                                      aria-hidden="true"
-                                    />
-                                  </div>
-                                </div>
-                              </button>
-                            </li>
+                            <NavigationDropdownItemCard
+                              key={item.id}
+                              item={item}
+                              locale={locale}
+                              pathname={pathname}
+                              spaceId={space.id}
+                              onTrackNavigation={handleTrackNavigation}
+                              Icon={Icon}
+                              iconClassName="bg-gradient-to-br from-cyan-100 via-white to-rose-100 shadow-[0_0_0_2px_rgba(6,182,212,0.10)]"
+                              iconStrokeWidth={2.25}
+                              cardGeometry={cardGeometry}
+                              cardBorderTokens={cardBorderTokens}
+                            />
                           );
                         })
                       ) : (
@@ -340,38 +289,80 @@ export function AppNavigationBlockDropdown({
                     </ul>
                   </nav>
                 </div>
+              ) : isHomeSpace ? (
+                <AppNavigationBlockDropdownHome
+                  locale={locale}
+                  onTrackNavigation={onTrackNavigation}
+                  pathname={pathname}
+                  space={space}
+                />
+              ) : isActSpace ? (
+                <AppNavigationBlockDropdownAct
+                  locale={locale}
+                  onTrackNavigation={onTrackNavigation}
+                  pathname={pathname}
+                  space={space}
+                />
+              ) : isNetworkSpace ? (
+                <AppNavigationBlockDropdownNetwork
+                  locale={locale}
+                  onTrackNavigation={onTrackNavigation}
+                  pathname={pathname}
+                  space={space}
+                />
+              ) : isLearnSpace ? (
+                <AppNavigationBlockDropdownLearn
+                  locale={locale}
+                  onTrackNavigation={onTrackNavigation}
+                  pathname={pathname}
+                  space={space}
+                />
               ) : (
                 <>
-                  <div className="border-b border-black/10 px-4 py-3.5">
-                    <h3
-                      className="flex items-center justify-center text-[0.95rem] font-black tracking-[-0.02em]"
-                      style={getNavigationDropdownTitleGradientStyle(space.id)}
-                    >
-                      {getNavigationDropdownTitleLabel(locale, space.label[locale])}
+                <div className="px-3 pb-2.5 pt-2.5 sm:px-3.5 sm:pt-3">
+                  <header className="flex items-center justify-center">
+                    <h3 className="w-full whitespace-nowrap text-center text-[0.9rem] font-black leading-tight tracking-[-0.03em] sm:text-[0.98rem]">
+                      <span className="text-black">{getNavigationDropdownTitlePrefix(locale)} </span>
+                      <span
+                        className="inline-block"
+                        style={getNavigationDropdownTitleGradientStyle(space.id)}
+                      >
+                        {getLocalizedText(space.label, locale, space.id)}
+                      </span>
                     </h3>
-                  </div>
+                  </header>
+                </div>
 
-                  <ul className="max-h-[min(22rem,calc(100vh-10rem))] space-y-1 overflow-y-auto px-3 py-3">
+                  <ul className="max-h-[min(22rem,calc(100vh-10rem))] space-y-1 overflow-y-auto px-3 pb-3 pt-0">
                     {space.items.length > 0 ? (
                       space.items.map((item) => {
                         const isActiveItem = isActivePath(pathname, item.href);
+                        const itemTone = getNavigationDropdownItemTone(space.id, item.routeId);
                         return (
                           <li key={item.id}>
                             <Link
                               href={item.href}
                               aria-current={isActiveItem ? "page" : undefined}
-                              title={item.description[locale]}
                               onClick={() => handleTrackNavigation(item)}
                               className={cn(
-                                "block rounded-2xl border px-3 py-2.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20",
+                                "group/item flex items-center gap-1.5 rounded-[0.9rem] border px-[0.55rem] py-[0.35rem] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20",
                                 isActiveItem
                                   ? "border-black/18 bg-white/70 text-black"
                                   : "border-black/10 bg-white/45 text-black/80 hover:border-black/18 hover:bg-white/65 hover:text-black",
                               )}
                             >
-                              <span className="block text-[13px] font-semibold leading-snug text-black">
-                                {item.label[locale]}
+                              <span
+                              className={cn(
+                                "min-w-0 flex-1 block whitespace-nowrap text-[0.72rem] font-normal tracking-tight transition-colors duration-200 sm:text-[0.8rem]",
+                                itemTone.labelClassName,
+                              )}
+                                style={itemTone.labelStyle}
+                              >
+                                {getLocalizedText(item.label, locale, item.href)}
                               </span>
+                              <NavigationDropdownHelpText
+                                text={getLocalizedText(item.description, locale, item.href)}
+                              />
                             </Link>
                           </li>
                         );

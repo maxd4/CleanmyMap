@@ -18,8 +18,14 @@ import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { CmmButton } from "@/components/ui/cmm-button";
 import ImpactProfilePage from "@/components/profil/impact-profile-page";
 import { buildProfileRoute } from "@/lib/accueil-pilotage-routes";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { getInfiniteBadgeTotals } from "@/lib/gamification/infinite-badges-server";
 import { InfiniteBadgesPanel } from "@/components/gamification/infinite-badges/InfiniteBadgesPanel";
+import { computeMonthlyRegularitySummary } from "@/lib/gamification/monthly-regularity";
+import { createFallbackSensitiveZoneApaisementSummary } from "@/lib/gamification/sensitive-zone-badge";
+import { loadReferralSummary } from "@/lib/gamification/referrals";
+import { buildReferralLineageView } from "@/lib/gamification/referral-lineage";
+import { ReferralProfileTabs } from "@/components/gamification/referral-profile-tabs";
 
 type ProfilPageProps = {
   params: Promise<{ profile: string }>;
@@ -59,15 +65,21 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
     );
   }
 
-  const activeRole = await getCurrentUserRoleLabel().catch(() => "benevole" as const);
+  const activeRole = await getCurrentUserRoleLabel().catch(
+    () => "benevole" as const,
+  );
   const activeProfile = toProfile(activeRole);
   const isAdmin = isAdminLikeProfile(activeProfile);
 
-  if (!isAdmin && normalized !== activeProfile) redirect(buildProfileRoute(activeProfile));
+  if (!isAdmin && normalized !== activeProfile)
+    redirect(buildProfileRoute(activeProfile));
 
   const profileLabel = getProfileLabel(normalized, "fr");
   const profileSubtitle = getProfileSubtitle(normalized, "fr");
-  const switchableProfiles = isAdmin ? getSwitchableProfiles(activeProfile) : [activeProfile];
+  const switchableProfiles = isAdmin
+    ? getSwitchableProfiles(activeProfile)
+    : [activeProfile];
+  const supabase = getSupabaseServerClient(true);
   const infiniteTotals = await getInfiniteBadgeTotals(userId).catch(() => ({
     wasteKg: 0,
     butts: 0,
@@ -79,6 +91,15 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       enterprise: 0,
       totalValidated: 0,
       balancedCycles: 0,
+      totalXpAwarded: 0,
+      currentCycleTarget: 1,
+      currentCycleProgress: 0,
+      currentCycleXpReward: 1,
+      missingCounts: {
+        spontaneous: 1,
+        association: 1,
+        enterprise: 1,
+      },
       currentGrade: {
         id: "balance-observateur",
         label: "Observateur",
@@ -92,8 +113,34 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       progressPercent: 0,
       currentLabel: "Observateur",
       nextLabel: null,
+      awards: [],
     },
+    monthlyRegularity: computeMonthlyRegularitySummary([]),
+    sensitiveZoneApaisement: createFallbackSensitiveZoneApaisementSummary(),
   }));
+  const referralSummary = await loadReferralSummary(supabase, userId).catch(
+    () => ({
+      referralCode: null,
+      inviteUrl: null,
+      invitedUsersCount: 0,
+      invitedBy: null,
+      badgeUnlocked: false,
+      referralAwardedXp: 0,
+    }),
+  );
+  const referralLineageProfilesResult = await supabase
+    .from("profiles")
+    .select(
+      "id, display_name, referral_code, referred_by_profile_id, referred_at, created_at",
+    )
+    .order("created_at", { ascending: true });
+  const referralLineageView = referralLineageProfilesResult.error
+    ? null
+    : buildReferralLineageView(
+        userId,
+        referralLineageProfilesResult.data ?? [],
+      );
+  const referralInviteHref = `${buildProfileRoute(normalized)}#parrainage`;
 
   return (
     <SectionShell
@@ -102,7 +149,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
       subtitle={`${profileSubtitle}. Gérez votre compte et accédez à vos outils privilégiés.`}
     >
       <div className="space-y-12 pt-8">
-        
         {/* ── Actions recommandées ── */}
         <FamilyRubriqueCard
           withTopBar={true}
@@ -123,6 +169,19 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
           <InfiniteBadgesPanel totals={infiniteTotals} />
         </FamilyRubriqueCard>
 
+        <FamilyRubriqueCard
+          id="parrainage"
+          withTopBar={true}
+          topBarContent="Parrainage"
+          className="p-12 scroll-mt-28"
+        >
+          <ReferralProfileTabs
+            summary={referralSummary}
+            lineageView={referralLineageView}
+            emptyCtaHref={referralInviteHref}
+          />
+        </FamilyRubriqueCard>
+
         {/* ── Promotion & Évolution ── */}
         <FamilyRubriqueCard
           withTopBar={true}
@@ -136,7 +195,9 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
         {switchableProfiles.length > 1 && (
           <FamilyRubriqueCard
             withTopBar={true}
-            topBarContent={isAdmin ? "Switch de Profil (Admin)" : "Identité Active"}
+            topBarContent={
+              isAdmin ? "Switch de Profil (Admin)" : "Identité Active"
+            }
             className="p-12"
           >
             <div className="flex flex-wrap gap-4">
@@ -167,7 +228,6 @@ export default async function ProfilPage({ params }: ProfilPageProps) {
         >
           <AccountSettingsSection />
         </FamilyRubriqueCard>
-
       </div>
     </SectionShell>
   );

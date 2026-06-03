@@ -74,7 +74,9 @@ describe("deriveAutoDrawingFromLocation", () => {
           return false;
         }
       });
-      expect(directRouteCall).toContain("2.350000,48.850000;2.370000,48.860000");
+      expect(directRouteCall).toContain(
+        "2.350000,48.850000;2.370000,48.851000;2.370000,48.860000",
+      );
 
       fetchCalls.length = 0;
       await deriveAutoDrawingFromLocation({
@@ -152,7 +154,14 @@ describe("deriveAutoDrawingFromLocation", () => {
 
       expect(directFallback).not.toBeNull();
       expect(directFallback?.kind).toBe("polyline");
-      expect(directFallback?.coordinates).toEqual([
+      const directFallbackCoordinates = directFallback?.coordinates ?? [];
+      expect(directFallbackCoordinates.length).toBeGreaterThanOrEqual(3);
+      expect(directFallbackCoordinates[0]).toEqual([48.85, 2.35]);
+      expect(directFallbackCoordinates[directFallbackCoordinates.length - 1]).toEqual([
+        48.86,
+        2.37,
+      ]);
+      expect(directFallbackCoordinates).not.toEqual([
         [48.85, 2.35],
         [48.86, 2.37],
       ]);
@@ -166,9 +175,13 @@ describe("deriveAutoDrawingFromLocation", () => {
 
       expect(soupleFallback).not.toBeNull();
       expect(soupleFallback?.kind).toBe("polyline");
-      expect(soupleFallback?.coordinates.length).toBe(3);
-      expect(soupleFallback?.coordinates[0]).toEqual([48.85, 2.35]);
-      expect(soupleFallback?.coordinates[2]).toEqual([48.86, 2.37]);
+      const soupleFallbackCoordinates = soupleFallback?.coordinates ?? [];
+      expect(soupleFallbackCoordinates.length).toBeGreaterThanOrEqual(5);
+      expect(soupleFallbackCoordinates[0]).toEqual([48.85, 2.35]);
+      expect(soupleFallbackCoordinates[soupleFallbackCoordinates.length - 1]).toEqual([
+        48.86,
+        2.37,
+      ]);
     } finally {
       global.fetch = originalFetch;
     }

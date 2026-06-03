@@ -10,6 +10,7 @@ import {
  getNavigationSpacesForProfile,
  getPilotFallbackItems,
 } from"@/lib/navigation";
+import { getLocalizedText } from "@/lib/navigation";
 import type { AppProfile } from"@/lib/profiles";
 
 type BlockSwitcherProps = {
@@ -52,9 +53,9 @@ export function BlockSwitcher({ currentProfile }: BlockSwitcherProps) {
  <Link
  key={space.id}
  href={firstHref}
- title={space.label[locale]}
+ title={getLocalizedText(space.label, locale, space.id)}
  onClick={() =>
- onTrackNavigation(firstHref, space.label[locale], space.id)
+ onTrackNavigation(firstHref, getLocalizedText(space.label, locale, space.id), space.id)
  }
  className={`flex min-h-14 min-w-14 flex-col items-center justify-center gap-1 rounded-xl px-3 py-2 transition shrink-0 sm:min-w-16 ${
  isActive
@@ -68,7 +69,7 @@ export function BlockSwitcher({ currentProfile }: BlockSwitcherProps) {
  isActive ?"text-emerald-800" :"cmm-text-muted"
  }`}
  >
- {space.label[locale].split("")[0]}
+ {getLocalizedText(space.label, locale, space.id).split("")[0]}
  </span>
  </Link>
  );
@@ -82,7 +83,7 @@ export function BlockSwitcher({ currentProfile }: BlockSwitcherProps) {
  </p>
  {activeSpace ? (
  <p className="truncate cmm-text-caption font-medium cmm-text-secondary">
- {activeSpace.icon} {activeSpace.label[locale]}
+ {activeSpace.icon} {getLocalizedText(activeSpace.label, locale, activeSpace.id)}
  </p>
  ) : null}
  </div>
@@ -96,15 +97,15 @@ export function BlockSwitcher({ currentProfile }: BlockSwitcherProps) {
  <Link
  key={item.id}
  href={item.href}
- onClick={() => onTrackNavigation(item.href, item.label[locale], activeSpace?.id ?? null)}
- title={item.description[locale]}
+ onClick={() => onTrackNavigation(item.href, getLocalizedText(item.label, locale, item.href), activeSpace?.id ?? null)}
+ title={getLocalizedText(item.description, locale, item.href)}
  className={`inline-flex shrink-0 items-center rounded-full border px-3 py-2 cmm-text-small font-medium transition ${
  isActive
  ?"border-emerald-300 bg-emerald-50 text-emerald-900"
  :"border-slate-200 bg-white cmm-text-secondary hover:border-emerald-200 hover:bg-emerald-50 hover:cmm-text-primary"
  }`}
  >
- {item.label[locale]}
+ {getLocalizedText(item.label, locale, item.href)}
  {activeItem?.id === item.id ? (
  <span className="ml-2 inline-block h-2 w-2 rounded-full bg-emerald-500" />
  ) : null}

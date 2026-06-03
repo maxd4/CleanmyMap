@@ -43,7 +43,7 @@ export default function ExplorerBadge({
       return () => window.clearTimeout(timeout);
     }
     return undefined;
-  }, [activeTierId, current, onTierReached]);
+  }, [activeTier, activeTierId, current, onTierReached]);
 
   return activeTier ? (
     <div
@@ -54,6 +54,25 @@ export default function ExplorerBadge({
         className="explorer-badge__texture"
         style={{ backgroundImage: `url(${activeTier.texture || ""})`, borderRadius: 12, padding: 18 }}
       >
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            marginBottom: 10,
+            borderRadius: 999,
+            padding: "4px 10px",
+            fontSize: 10,
+            fontWeight: 800,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "#6b7280",
+            background: "rgba(255,255,255,0.7)",
+            border: "1px solid rgba(148,163,184,0.18)",
+          }}
+        >
+          Échelle d&apos;exploration dédiée
+        </div>
         <div className="explorer-badge__icon" style={{ fontSize: 40 }}>
           {activeTier.icon}
         </div>
@@ -104,7 +123,7 @@ export default function ExplorerBadge({
             })}
           </div>
           <div style={{ fontSize: 12, color: "#666", marginTop: 6 }}>
-            {`${Math.min(current, activeTier.max)} / ${activeTier.max === Number.MAX_SAFE_INTEGER ? "∞" : activeTier.max}`}
+            {`${Math.min(current, activeTier.max)} / ${activeTier.max === Number.MAX_SAFE_INTEGER ? "∞" : activeTier.max} lieux explorés`}
           </div>
         </div>
       </div>
@@ -112,6 +131,9 @@ export default function ExplorerBadge({
   ) : (
     <div className="explorer-badge" style={{ padding: 12, textAlign: "center" }}>
       <div className="explorer-badge__texture" style={{ borderRadius: 12, padding: 18 }}>
+        <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", color: "#6b7280", marginBottom: 8 }}>
+          Échelle d&apos;exploration dédiée
+        </div>
         <div style={{ fontSize: 14, fontWeight: 700, color: "#666" }}>
           Progression d&apos;exploration en attente
         </div>

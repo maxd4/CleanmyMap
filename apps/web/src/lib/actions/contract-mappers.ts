@@ -1,7 +1,6 @@
 import {
   ActionMapItem,
   ActionListItem,
-  ActionRecordType,
   LegacyActionRecordType,
   ActionQualityGrade,
   ActionQualityBreakdown,
@@ -10,6 +9,10 @@ import {
 } from "./types";
 import { ActionDataContract, ActionEntityType } from "./contract-model";
 import { toGeoJsonString, isRenderableDrawing } from "./derived-geometry";
+import {
+  computePollutionScoresRelativeToReferences,
+  type PollutionScoreReferences,
+} from "./pollution-score";
 
 type ActionInsightsLike = {
   qualityScore: number;
@@ -18,6 +21,10 @@ type ActionInsightsLike = {
   qualityBreakdown: ActionQualityBreakdown;
   toFixPriority: boolean;
   impactLevel: ActionImpactLevel;
+};
+
+type ContractMetadataWithProvided = {
+  provided?: string[];
 };
 
 function toLegacyRecordType(type: ActionEntityType): LegacyActionRecordType {
@@ -33,7 +40,19 @@ function toLegacyRecordType(type: ActionEntityType): LegacyActionRecordType {
 export function toActionMapItem(
   contract: ActionDataContract,
   insights?: ActionInsightsLike,
+  pollutionScoreReferences?: PollutionScoreReferences | null,
 ): ActionMapItem {
+  const pollutionScores = pollutionScoreReferences
+    ? computePollutionScoresRelativeToReferences(
+        {
+          wasteKg: contract.metadata.wasteKg,
+          cigaretteButts: contract.metadata.cigaretteButts,
+          volunteersCount: contract.metadata.volunteersCount,
+        },
+        pollutionScoreReferences,
+      )
+    : null;
+
   return {
     id: contract.id,
     action_date: contract.dates.observedAt,
@@ -42,6 +61,8 @@ export function toActionMapItem(
     longitude: contract.location.longitude,
     waste_kg: contract.metadata.wasteKg,
     cigarette_butts: contract.metadata.cigaretteButts,
+    waste_pollution_score: pollutionScores?.wasteScore,
+    cigarette_butts_pollution_score: pollutionScores?.buttsScore,
     status: contract.status,
     record_type: toLegacyRecordType(contract.type),
     source: contract.source,
@@ -70,7 +91,19 @@ export function toActionMapItem(
 export function toActionListItem(
   contract: ActionDataContract,
   insights?: ActionInsightsLike,
+  pollutionScoreReferences?: PollutionScoreReferences | null,
 ): ActionListItem {
+  const pollutionScores = pollutionScoreReferences
+    ? computePollutionScoresRelativeToReferences(
+        {
+          wasteKg: contract.metadata.wasteKg,
+          cigaretteButts: contract.metadata.cigaretteButts,
+          volunteersCount: contract.metadata.volunteersCount,
+        },
+        pollutionScoreReferences,
+      )
+    : null;
+
   return {
     id: contract.id,
     created_at:
@@ -85,6 +118,8 @@ export function toActionListItem(
     longitude: contract.location.longitude,
     waste_kg: contract.metadata.wasteKg,
     cigarette_butts: contract.metadata.cigaretteButts,
+    waste_pollution_score: pollutionScores?.wasteScore,
+    cigarette_butts_pollution_score: pollutionScores?.buttsScore,
     volunteers_count: contract.metadata.volunteersCount,
     duration_minutes: contract.metadata.durationMinutes,
     notes: contract.metadata.notes,
@@ -132,7 +167,7 @@ export function mapItemWasteKg(item: ActionMapItem): number | null {
   const rawValue = item.waste_kg ?? null;
 
   if (contract) {
-    const provided = (contract.metadata as any).provided as string[] | undefined;
+    const provided = (contract.metadata as ContractMetadataWithProvided).provided;
     if (provided && !provided.includes("waste_kg")) {
       return null;
     }
@@ -147,7 +182,7 @@ export function mapItemCigaretteButts(item: ActionMapItem): number | null {
   const rawValue = item.cigarette_butts ?? null;
 
   if (contract) {
-    const provided = (contract.metadata as any).provided as string[] | undefined;
+    const provided = (contract.metadata as ContractMetadataWithProvided).provided;
     if (provided && !provided.includes("cigarette_butts")) {
       return null;
     }

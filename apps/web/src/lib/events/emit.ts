@@ -1,5 +1,6 @@
 import { emit, createEvent } from "./bus";
 import type { EventType, EventPayload } from "./types";
+import { logFailure } from "@/lib/logging/failure-log";
 
 export async function publishEvent<T extends EventType>(
   type: T,
@@ -12,7 +13,7 @@ export async function publishEvent<T extends EventType>(
     const result = await emit(event);
     return result;
   } catch (error) {
-    console.error(`[EventBus] Failed to emit ${type}:`, error);
+    logFailure("EventBus", "Emit failed", error, { type, source });
     return { delivered: 0, failed: 1 };
   }
 }

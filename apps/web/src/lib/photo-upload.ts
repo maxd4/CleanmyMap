@@ -1,6 +1,7 @@
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { compressImageFile } from "@/lib/media/image-compression";
 import { buildStorageBusinessMetadata } from "@/lib/supabase/storage-business-classification";
+import { logFailure, logWarning } from "@/lib/logging/failure-log";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface PhotoUploadResult {
@@ -24,7 +25,9 @@ export class PhotoUploadService {
       return this.supabase;
     } catch (error) {
       if (process.env.NODE_ENV !== "production") {
-        console.warn("[PhotoUploadService] Supabase browser client unavailable in dev:", error);
+        logWarning("PhotoUpload", "Supabase browser client unavailable in dev", {
+          reason: error instanceof Error ? error.message : String(error),
+        });
         return null;
       }
 
@@ -80,11 +83,17 @@ export class PhotoUploadService {
         )
 
       if (error) {
-        console.error('Upload error:', error)
         if (this.isMissingBucketError(error)) {
+          logWarning("PhotoUpload", "Supabase bucket missing", {
+            bucket: this.bucket,
+          });
           return { url: '', path: '', error: this.bucketHint }
         }
 
+        logFailure("PhotoUpload", "Upload failed", error, {
+          bucket: this.bucket,
+          actionId,
+        });
         return { url: '', path: '', error: "Impossible d'envoyer la photo. Veuillez vérifier votre connexion et réessayer." }
       }
 
@@ -98,11 +107,17 @@ export class PhotoUploadService {
       }
 
     } catch (error) {
-      console.error('Photo upload service error:', error)
       if (this.isMissingBucketError(error)) {
+        logWarning("PhotoUpload", "Supabase bucket missing", {
+          bucket: this.bucket,
+        });
         return { url: '', path: '', error: this.bucketHint }
       }
 
+      logFailure("PhotoUpload", "Service failure", error, {
+        bucket: this.bucket,
+        actionId,
+      });
       return { url: '', path: '', error: "Une erreur technique est survenue lors de l'upload. Si le problème persiste, contactez le support." }
     }
   }
@@ -162,7 +177,10 @@ export class PhotoUploadService {
 
       return !error
     } catch (error) {
-      console.error('Delete photo error:', error)
+      logFailure("PhotoUpload", "Delete failed", error, {
+        bucket: this.bucket,
+        path,
+      });
       return false
     }
   }

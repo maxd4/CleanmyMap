@@ -28,7 +28,14 @@ Avant de démarrer :
 2. **Ciblage de la PR** : Gardez vos modifications ("diff") hyper ciblées sur la fonctionnalité ou le bug que vous réglez. Évitez les "mass refactor" globaux dans une seule PR.
 3. **Messages de Commit** : Écrivez un historique clair et descriptif pour vos commits (en anglais par convention ou en français selon l'accord de l'équipe).
 4. **Vérifications CI** : Assurez-vous que toutes les actions GitHub et les vérifications de non-régression (`npm run test:regression-gates`) passent au vert.
+5. **Traçabilité auteur** : Pour une contribution externe significative, ajoutez un engagement DCO (`Signed-off-by`) ou un CLA si la gouvernance du projet le demande.
 
-## 5. Règles Documentaires et d'Architecture
+## 5. Releases et historique Git
+
+- Publiez les releases avec une date claire et un tag Git dédié.
+- Signez les tags et releases quand c'est possible.
+- Conservez un historique Git propre, avec des commits petits et lisibles.
+
+## 6. Règles Documentaires et d'Architecture
 - Nous appliquons strictement un paradigme **Visual-First**. Si une explication textuelle architecturale ou métier met plus de 5 lignes, vous devez créer un diagramme au format texte (Mermaid) à la place. Lisez le `[README.md](../README.md)` de la documentation pour plus détails.
 - Lors d'une modification structurelle majeure assistée par IA, incluez le contexte interne courant et la mémoire de session historique si elle est disponible dans l'environnement de travail.

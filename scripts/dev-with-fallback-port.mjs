@@ -101,7 +101,7 @@ if (process.env.DEV_CLEAR_TURBOPACK_CACHE === "1") {
 
 if (strictPort && !(await isPortFree(preferredPort))) {
   console.error(
-    `[dev] Le port ${preferredPort} est déjà utilisé. Arrête l'ancien serveur ou lance 'npm run dev:clean'.`,
+    `[dev] Le port ${preferredPort} est déjà utilisé. Arrête l'ancien serveur ou lance 'npm run dev:clean'. Pour forcer un échec au lieu d'un port de secours, utilise 'npm run dev:strict'.`,
   );
   process.exit(1);
 }
@@ -125,7 +125,12 @@ if (!strictPort && chosenPort >= preferredPort + 20) {
 
 if (!strictPort && chosenPort !== preferredPort) {
   console.warn(
-    `[dev] Le port ${preferredPort} est occupé. Démarrage sur http://${preferredHost}:${chosenPort}. Si tu ouvres ${preferredPort}, tu verras probablement l'ancien serveur.`,
+    [
+      `[dev] Le port ${preferredPort} est occupé.`,
+      `[dev] Démarrage sur http://${preferredHost}:${chosenPort} au lieu de ${preferredPort}.`,
+      `[dev] Si tu veux empêcher toute bascule automatique, lance 'npm run dev:strict'.`,
+      `[dev] Si tu veux libérer le port, arrête l'ancien serveur ou lance 'npm run dev:clean'.`,
+    ].join("\n"),
   );
 }
 

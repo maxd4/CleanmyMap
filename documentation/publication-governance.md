@@ -9,6 +9,7 @@ Ce document fixe la frontière entre ce qui peut être publié sur un GitHub pub
 - Les fichiers publics peuvent être indexés dans `documentation/README.md`.
 - Les fichiers internes ou sensibles ne doivent jamais être listés dans les index publics.
 - Les artefacts générés peuvent être conservés dans le dépôt, mais doivent être identifiés comme archives ou sorties de génération.
+- Interdiction de créer des dossiers ou fichiers miroir: un même contenu ne doit pas être dupliqué dans un chemin public et un chemin interne sans décision explicite de gouvernance.
 
 ---
 

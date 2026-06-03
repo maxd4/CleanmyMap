@@ -1,5 +1,46 @@
 # Carte des actions
 
+## Présentation détaillée
+
+- [Fiche de présentation métier](./PRESENTATION.md)
+- [Idées non pertinentes](./IDEES_NON_PERTINENTES.md)
+
+## Logique de score
+
+- 2 scores séparés sur `100`
+- score déchets = `kg / bénévole`
+- score mégots = `mégots / bénévole`
+- référence = plus grosse action par bénévole sur les actions approuvées
+- nouvelle action au-dessus du max = nouvelle référence
+- référence chargée une fois par page
+- même référence pour carte, popup et tableau
+- popup chargé à la demande, sans fetch score séparé
+- regroupement adaptatif des points en zone dense
+- export PNG et GeoJSON de la vue courante
+- score déchets = `clamp((kg / bénévole / réf déchets) * 100, 0, 100)`
+- score mégots = `clamp((mégots / bénévole / réf mégots) * 100, 0, 100)`
+- score global = `max(score déchets, score mégots)`
+- aucun mélange
+- aucune pondération
+- recalcul au prochain fetch
+- invalidation automatique après une validation `approved`
+- carte = même référence partagée
+- popup = même référence partagée
+- tableau = même référence partagée
+- recherche de zone hors carte
+- filtre texte sur lieu, quartier, arrondissement, commune
+
+## Lecture rapide
+
+- bleu = `0` déchets et `0` mégots
+- vert = score global `< 30`
+- jaune = score global `30-79`
+- violet = score global `>= 80`
+- bac = besoin collecte
+- cendrier = besoin mégots
+- combiné = 2 besoins
+- seuil infra = `75`
+
 ## Fiche canonique
 
 - **Route** : `/actions/map`

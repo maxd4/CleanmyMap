@@ -31,6 +31,7 @@ import { defaultMessageForKind, isAppError, toAppError, type AppError } from "@/
 import { cn } from "@/lib/utils";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { ACCOUNT_SETUP_SCHEMA_VERSION } from "@/lib/auth/account-setup-config";
+import { logFailure } from "@/lib/logging/failure-log";
 
 type AccountSetupFormProps = {
   nextPath?: string;
@@ -208,7 +209,9 @@ export function AccountSetupForm({
         router.refresh();
       }
     } catch (error) {
-      console.error("Account setup update failed", error);
+      logFailure("AccountSetup", "Update failed", error, {
+        profile: selectedProfile,
+      });
       const appError = isAppError(error)
         ? error
         : toAppError(error, {

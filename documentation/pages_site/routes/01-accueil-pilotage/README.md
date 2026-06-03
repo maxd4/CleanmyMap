@@ -1,6 +1,6 @@
 # Accueil & Pilotage
 
-Entrées opérationnelles de pilotage, profil, sommaire et méthodologie.
+Entrées opérationnelles de pilotage, profil et sommaire.
 
 ## Routes canoniques
 
@@ -8,7 +8,6 @@ Entrées opérationnelles de pilotage, profil, sommaire et méthodologie.
 |---|---|---|---|---|:---:|---|---|
 | `/dashboard` | [Dashboard](./dashboard/README.md) | page de bloc | protégé | à corriger | non | moyenne | apps/web/src/app/(app)/dashboard/page.tsx |
 | `/explorer` | [Sommaire](./explorer/README.md) | exception UI — sommaire | public | terminé | non | faible | apps/web/src/app/(app)/explorer/page.tsx |
-| `/methodologie` | [Méthodologie](./methodologie/README.md) | exception UI — impact | public | terminé | non | faible | apps/web/src/app/(app)/methodologie/page.tsx |
 | `/parcours` | [Parcours](./parcours/README.md) | page d'action | protégé | à corriger | non | critique | apps/web/src/app/(app)/parcours/page.tsx |
 | `/parcours/[profile] (ex. /parcours/benevole)` | [Parcours par profil](./parcours-profile/README.md) | dynamique — parcours | dynamique | à corriger | non | moyenne | apps/web/src/app/(app)/parcours/[profile]/page.tsx |
 | `/pilotage` | [Pilotage](./pilotage/README.md) | page de bloc | protégé | à corriger | non | moyenne | apps/web/src/app/(app)/pilotage/page.tsx |
@@ -22,3 +21,4 @@ Entrées opérationnelles de pilotage, profil, sommaire et méthodologie.
 
 - Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
 - Les captures officielles, quand elles existent, vivent dans `photo/` de chaque route canonique et sont en `WebP`.
+- `/methodologie` est désormais documentée dans la famille [Cartographie & Impact](../03-cartographie-impact/README.md) et sa fiche canonique vit dans [03-cartographie-impact/methodologie/README.md](../03-cartographie-impact/methodologie/README.md).

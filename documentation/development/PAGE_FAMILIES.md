@@ -6,11 +6,15 @@ Centraliser **fond de page**, **tokens hero** (titre / sous-titre) et **cartes r
 
 **Plan détaillé et limites hors périmètre** : [`PAGE_FAMILIES_PLAN.md`](./PAGE_FAMILIES_PLAN.md)
 
+**Mémoire de non-régression** : [`PAGE_FAMILIES_NON_REGRESSION.md`](../pages_site/PAGE_FAMILIES_NON_REGRESSION.md)
+
 ## Emplacement code
 
 | Rôle | Chemin |
 |------|--------|
 | Registre + résolution | `apps/web/src/lib/ui/page-families/` |
+| Registre canonique runtime | `apps/web/src/lib/ui/page-families/families/registry.ts` |
+| Manifeste partagé runtime/doc | `apps/web/src/lib/ui/page-families/page-families.manifest.json` |
 | Presets cartes | `apps/web/src/lib/ui/page-families/card-presets.ts` |
 | Fond global | `apps/web/src/lib/ui/backdrop-tone.ts` → `resolvePageFamily` |
 | Hero canonique | `apps/web/src/components/ui/page-header.tsx` |
@@ -20,9 +24,11 @@ Centraliser **fond de page**, **tokens hero** (titre / sous-titre) et **cartes r
 
 ## Modifier une famille (ex. bloc 01)
 
-1. **Hero + carte bloc** : `families/01-accueil-pilotage.ts` et `card-presets.ts` (`ACCUEIL_PILOTAGE_CARD`).
+1. **Hero + carte bloc** : `families/registry.ts` et `card-presets.ts` (`ACCUEIL_PILOTAGE_CARD`).
 2. **Routes** : `resolve-page-family.ts` → `resolveBasePageFamilyId`.
 3. **Exceptions** : `exceptions.ts` (sommaire, méthodologie, …).
+4. **Manifeste** : `page-families.manifest.json` si le label, la portée ou le ton changent.
+5. **Non-régression** : vérifier le test `registry-manifest.test.ts`.
 
 ## Ce qui est centralisé
 
@@ -32,6 +38,14 @@ Centraliser **fond de page**, **tokens hero** (titre / sous-titre) et **cartes r
 | Titre / sous-titre de page | Oui |
 | `RubriqueCard` via `FamilyRubriqueCard` | Oui (phase 2) |
 | KPI, panneaux métier, sommaire `/explorer` | Non — voir plan § limites |
+
+## Erreurs déjà corrigées
+
+- `/accueil` a été supprimée comme alias caché.
+- Le bloc 01 n'a plus de fichier `defaults.ts` concurrent.
+- Le registre runtime est maintenant unique dans `families/registry.ts`.
+- Le générateur documentaire lit le même manifeste que le runtime.
+- Les tests de cohérence empêchent un décalage entre doc et code.
 
 ## Exceptions actuelles
 
@@ -75,6 +89,6 @@ import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 |------|------|-----------------|
 | 01 Accueil & Pilotage | Fait | Fait (`/profil/[profile]`) |
 | 02 Agir | `SectionShell` (famille) | Pilote : `/signalement` |
-| 03–05 | Définition base dans `defaults.ts` | À faire |
+| 03–05 | Définition base dans `families/registry.ts` | À faire |
 
 Voir le tableau de phases dans [`PAGE_FAMILIES_PLAN.md`](./PAGE_FAMILIES_PLAN.md).

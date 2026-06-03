@@ -2,6 +2,10 @@
 
 Ce document formalise une direction de gamification adaptee a CleanMyMap: **reconnaissance utile, progression lisible, pas de logique de jeu mobile ni de competition agressive**.
 
+La spec canonique des règles opérationnelles vit ici:
+
+- [Spécification canonique de la gamification](../pages_site/routes/03-cartographie-impact/gamification/gamification-SPEC_CANONIQUE.md)
+
 ## Objectif produit
 
 La gamification doit aider a:
@@ -151,19 +155,20 @@ Implication pour CleanMyMap:
 
 ### Badges
 
-- badges one-shot pour les premieres etapes, par exemple `Première trace utile` et son badge compagnon de jalon;
-- badges de regularite pour les contributions repetees;
+- badges one-shot pour les premieres etapes, par exemple `Première trace utile`, `Inviter un ami` et leur badge compagnon de jalon;
+- badges de regularite pour les contributions repetees, dont la regularite mensuelle;
 - badges de confiance pour les profils fiables;
 - badges de territoire pour la couverture locale;
 - badges de qualite pour la fiabilite des donnees;
+- badges de zone sensible apaisée pour les zones critiques ou historiquement tres sales;
 - badges d equilibre des contextes pour encourager une alternance saine entre actions spontanées, associatives et entreprises;
 - badges collectifs pour l action de groupe.
 
 ### Objectifs
 
-- **one-shot**: premiere action validee, premiere action collective, premier badge de confiance;
+- **one-shot**: premiere action validee, premiere action collective, premier badge de confiance, premier lien d invitation utile;
 - **uniformes**: objectif mensuel simple, check-in de participation, quota de retours;
-- **infinis**: une meme logique qui continue a monter en paliers, avec un badge qui evolue graphiquement et change de nom a chaque seuil important; exemples: niveaux, regularite sur plusieurs mois, seuils de qualite, role de mentor, equilibre des contextes.
+- **infinis**: une meme logique qui continue a monter en paliers, avec un badge qui evolue graphiquement et change de nom a chaque seuil important; exemples: niveaux, regularite sur plusieurs mois, seuils de qualite, role de mentor, equilibre des contextes, zone sensible apaisée.
 
 ## Regles concretement recommandees
 
@@ -190,6 +195,16 @@ Une recompense doit toujours repondre a la question:
 - le total de recompense de creation est de **+1 XP par action validee**, puis il est **divise a parts egales** entre tous les organisateurs reconnus;
 - tant qu aucun formulaire valide n est rattache a l action, **aucun XP** n est attribue aux organisateurs.
 - la repartition fine est portee par la **progression XP**; le ledger historique de points reste entier et ne sert pas de source de verite pour les parts fractionnaires.
+- une action en attente peut compter provisoirement pour la regularite mensuelle, mais elle doit etre retiree retroactivement si elle finit rejetee et etait la seule action valide du mois.
+- pour les objectifs infinis a rythme croissant, le palier repart a zéro apres validation et l XP du palier correspond au rang courant du cycle (1, puis 2, puis 3, etc.).
+- pour les objectifs infinis de type équilibre, l interface doit afficher clairement les types d actions encore manquants et leur quantité restante avant le prochain palier.
+
+### Familles recentes retenues
+
+- `Régularité mensuelle`: progression de mois calendaires consecutifs, avec 1 XP au premier mois, 2 XP au deuxieme, puis +1 a chaque mois consécutif utile;
+- `Zone sensible apaisée`: progression sur les zones critiques ou historiquement tres sales, basee sur les actions validées et sur les paliers 1, 3, 5, 8, 10, 15, 20...;
+- `Inviter un ami`: badge one-shot qui genere un lien d invitation pour faire venir un nouveau membre, conserve la chaine de parrainage en base et donne +2 XP;
+- ces deux badges restent non competitifs, lisibles, et places dans le parcours personnel.
 
 ### Regle de visibilite
 
@@ -228,13 +243,13 @@ Les hypotheses suivantes sont des inférences produit a valider sur le terrain:
 Pour ne pas perdre les choix déjà validés, consulter aussi:
 
 - [objectifs-valides.md](./objectifs-valides.md)
-- [objectifs-non-pertinents.md](./objectifs-non-pertinents.md)
+- [gamification-objectifs-non-pertinents.md](../pages_site/routes/03-cartographie-impact/gamification/gamification-objectifs-non-pertinents.md)
 
 ## Memoire des objectifs ecartés
 
 Pour eviter de recycler des idees deja tranchées, consulter aussi:
 
-- [objectifs-non-pertinents.md](./objectifs-non-pertinents.md)
+- [gamification-objectifs-non-pertinents.md](../pages_site/routes/03-cartographie-impact/gamification/gamification-objectifs-non-pertinents.md)
 
 ## Recommandation d implementation prioritaire
 

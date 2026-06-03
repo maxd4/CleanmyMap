@@ -6,7 +6,7 @@ export function hasValidCoordinates(coords: {
 }
 
 export function buildActionUpdateHref(
-  score: number,
+  hasPollution: boolean,
   coords: { latitude: number | null; longitude: number | null },
 ): string | null {
   if (!hasValidCoordinates(coords)) {
@@ -14,5 +14,5 @@ export function buildActionUpdateHref(
   }
 
   const baseUrl = `/actions/new?lat=${coords.latitude}&lng=${coords.longitude}`;
-  return score > 0 ? baseUrl : `${baseUrl}&mode=propre`;
+  return hasPollution ? baseUrl : `${baseUrl}&mode=propre`;
 }

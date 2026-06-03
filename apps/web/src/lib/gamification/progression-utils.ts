@@ -5,11 +5,13 @@ import type { ActionRow, ProgressionEventType } from "./progression-types";
 const EVENT_FAMILY_MAP: Record<ProgressionEventType, string> = {
   action_declare_pending: "action",
   action_declare_validation: "action",
+  action_monthly_regularity: "action",
   collective_rsvp_yes_pending: "collectif",
   collective_attendance_confirmed: "collectif",
   spot_create_pending: "spotter",
   spot_validation_bonus: "spotter",
   community_ops_update: "communaute",
+  community_referral_invite: "communaute",
   route_recommend_use: "itineraire",
   infinite_waste_milestone: "impact",
   infinite_butts_milestone: "impact",

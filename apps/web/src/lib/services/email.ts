@@ -4,6 +4,7 @@ import {
   appendServiceEmailEvent,
   countServiceEmailEventsForActorSince,
 } from "@/lib/environmental-impact-estimator/service-email-events-store";
+import { logFailure, logWarning } from "@/lib/logging/failure-log";
 
 export const SERVICE_EMAIL_DAILY_LIMIT = 2;
 
@@ -82,10 +83,10 @@ async function recordEmailEvent(params: {
       meta: params.meta,
     });
   } catch (error) {
-    console.warn("[Email Service] Failed to record email event", {
+    logWarning("EmailService", "Failed to record email event", {
       subject: params.subject,
       actorUserId: params.actorUserId,
-      error: error instanceof Error ? error.message : String(error),
+      reason: error instanceof Error ? error.message : String(error),
     });
   }
 }
@@ -107,7 +108,7 @@ export async function sendEmail(payload: EmailPayload) {
   const resend = getResendClient();
 
   if (!resend) {
-    console.warn("[Email Service] No RESEND_API_KEY found. Logging email instead:", {
+    logWarning("EmailService", "RESEND_API_KEY missing, logging email instead", {
       to: payload.to,
       subject: payload.subject,
       from,
@@ -126,7 +127,7 @@ export async function sendEmail(payload: EmailPayload) {
   }
 
   if (!from) {
-    console.error("[Email Service] Missing sender configuration", {
+    logFailure("EmailService", "Missing sender configuration", undefined, {
       to: payload.to,
       subject: payload.subject,
     });
@@ -167,12 +168,11 @@ export async function sendEmail(payload: EmailPayload) {
 
     return { id: data?.id, status: "sent" };
   } catch (error) {
-    console.error("[Email Service] Failed to send email", {
+    logFailure("EmailService", "Send failed", error, {
       to: payload.to,
       subject: payload.subject,
       from,
       replyTo,
-      error: error instanceof Error ? error.message : String(error),
     });
     await recordEmailEvent({
       actorUserId,

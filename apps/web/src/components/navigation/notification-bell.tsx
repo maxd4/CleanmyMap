@@ -9,6 +9,7 @@ import { enUS, fr } from "date-fns/locale";
 
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { buildChatNotificationHref } from "@/lib/chat/chat-notification-targets";
+import { logFailure } from "@/lib/logging/failure-log";
 
 type AppNotification = {
   id: string;
@@ -69,7 +70,7 @@ export function NotificationBell() {
         setNotifications(data.notifications ?? []);
       }
     } catch (err) {
-      console.error("Failed to fetch notifications", err);
+      logFailure("Notifications", "Fetch failed", err);
     } finally {
       setLoading(false);
       fetchInFlightRef.current = false;
@@ -136,7 +137,7 @@ export function NotificationBell() {
         );
       }
     } catch (err) {
-      console.error("Failed to mark as read", err);
+      logFailure("Notifications", "Mark as read failed", err, { id });
     } finally {
       markReadInFlightRef.current = false;
     }

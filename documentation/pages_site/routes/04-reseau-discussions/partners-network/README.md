@@ -47,7 +47,13 @@
 - **Variantes** : `variant="loading"`, `variant="empty"`, `variant="forbidden"`.
 - **Règle** : aucune route de ce type ne doit avoir un état vide sans CTA utile.
 
+## Référence collaboration
 
+- Le dossier local `documentation/pages_site/routes/04-reseau-discussions/partners-network/partnerships/` sert à centraliser les fiches de documentation liées aux collaborations.
+- Les sous-dossiers de `partnerships/` peuvent être organisés par partenaire, par exemple `PEPITE/` pour les notes et traces dédiées à Pépite Sorbonne Université.
+- Ce dossier est une référence documentaire interne et ne doit pas être confondu avec la rubrique Partenariat du site web.
+- La rubrique Partenariat du site web relève du code applicatif dans `apps/web/src/app/(app)/partners/` et n'entre pas dans ce registre documentaire.
+- Le dossier `partnerships/` est exclu du dépôt Git pour éviter toute publication involontaire sur GitHub.
 
 ## Références legacy
 

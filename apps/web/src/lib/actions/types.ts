@@ -78,6 +78,8 @@ export type ActionListItem = {
   longitude: number | null;
   waste_kg: number | null;
   cigarette_butts: number | null;
+  waste_pollution_score?: number | null;
+  cigarette_butts_pollution_score?: number | null;
   volunteers_count: number;
   duration_minutes: number;
   notes: string | null;
@@ -124,23 +126,23 @@ export type ActionListItem = {
       importedAt: string | null;
       validatedAt: string | null;
     };
-      metadata: {
-        actorName: string | null;
-        associationName?: string | null;
-        notes: string | null;
-        notesPlain: string | null;
-        wasteKg: number | null;
-        cigaretteButts: number | null;
-        volunteersCount: number;
-        durationMinutes: number;
-        manualDrawing: ActionDrawing | null;
-        wasteBreakdown?: ActionWasteBreakdown | null;
-        placeType?: string | null;
-        submissionMode?: ActionSubmissionMode | null;
-        departureLocationLabel?: string | null;
-        arrivalLocationLabel?: string | null;
-        routeStyle?: "direct" | "souple" | null;
-        routeAdjustmentMessage?: string | null;
+    metadata: {
+      actorName: string | null;
+      associationName?: string | null;
+      notes: string | null;
+      notesPlain: string | null;
+      wasteKg: number | null;
+      cigaretteButts: number | null;
+      volunteersCount: number;
+      durationMinutes: number;
+      manualDrawing: ActionDrawing | null;
+      wasteBreakdown?: ActionWasteBreakdown | null;
+      placeType?: string | null;
+      submissionMode?: ActionSubmissionMode | null;
+      departureLocationLabel?: string | null;
+      arrivalLocationLabel?: string | null;
+      routeStyle?: "direct" | "souple" | null;
+      routeAdjustmentMessage?: string | null;
       photos?: ActionPhotoAsset[] | null;
       visionEstimate?: ActionVisionEstimate | null;
     };
@@ -210,6 +212,8 @@ export type ActionMapItem = Pick<
   | "longitude"
   | "waste_kg"
   | "cigarette_butts"
+  | "waste_pollution_score"
+  | "cigarette_butts_pollution_score"
   | "status"
   | "created_by_clerk_id"
 > & {

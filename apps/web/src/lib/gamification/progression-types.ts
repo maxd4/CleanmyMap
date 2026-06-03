@@ -8,11 +8,13 @@ type ActionDrawing = {
 export type ProgressionEventType =
   | "action_declare_pending"
   | "action_declare_validation"
+  | "action_monthly_regularity"
   | "collective_rsvp_yes_pending"
   | "collective_attendance_confirmed"
   | "spot_create_pending"
   | "spot_validation_bonus"
   | "community_ops_update"
+  | "community_referral_invite"
   | "route_recommend_use"
   | "infinite_waste_milestone"
   | "infinite_butts_milestone"

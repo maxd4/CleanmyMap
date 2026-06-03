@@ -19,6 +19,7 @@ import { InlineFieldError } from"@/components/ui/inline-field-error";
 import { PermissionErrorState } from"@/components/ui/permission-error-state";
 import { notifyNetworkToast } from"@/lib/errors/network-toast";
 import { defaultMessageForKind, isAppError, toAppError, type AppError } from"@/lib/errors/app-errors";
+import { logFailure } from"@/lib/logging/failure-log";
 
 type UserLocationOnboardingFormProps = {
  nextPath: string;
@@ -101,7 +102,9 @@ export function UserLocationOnboardingForm({
     router.replace(nextPath);
     router.refresh();
   } catch (error) {
-    console.error("User location preference update failed", error);
+    logFailure("UserLocation", "Preference update failed", error, {
+      nextPath,
+    });
     const appError = isAppError(error)
       ? error
       : toAppError(error, {

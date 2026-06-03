@@ -87,6 +87,14 @@ describe("syncUserActionProgression", () => {
         is_primary: false,
         created_at: "2026-01-01",
       },
+      {
+        action_id: "action-1",
+        organizer_clerk_id: "user-third",
+        organizer_label: "Chloé",
+        organizer_handle: "chloe",
+        is_primary: false,
+        created_at: "2026-01-01",
+      },
     ];
     const forms = [
       {
@@ -191,20 +199,23 @@ describe("syncUserActionProgression", () => {
     ) as Record<string, unknown> | undefined;
 
     expect(validationEvent).toBeDefined();
-    expect(validationEvent?.xp_awarded).toBe(0.5);
+    expect(validationEvent?.xp_awarded).toBeCloseTo(1 / 3);
     expect(validationEvent?.metadata).toMatchObject({
-      organizerCount: 2,
-      organizerShare: 0.5,
+      organizerCount: 3,
     });
     expect(pointsInsert).not.toHaveBeenCalled();
-    expect(auditInsert).toHaveBeenCalledWith(
+    expect(auditInsert).toHaveBeenCalledTimes(1);
+    const auditCall = auditInsert.mock.calls[0] as any[] | undefined;
+    const auditPayload = auditCall?.[0] as { xp_change?: number } | undefined;
+
+    expect(auditPayload).toEqual(
       expect.objectContaining({
-        xp_change: 0.5,
+        xp_change: expect.any(Number),
         metadata: expect.objectContaining({
-          organizerCount: 2,
-          organizerShare: 0.5,
+          organizerCount: 3,
         }),
       }),
     );
+    expect(auditPayload?.xp_change).toBeCloseTo(1 / 3);
   });
 });

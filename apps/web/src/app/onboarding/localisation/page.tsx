@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 
 type LocalisationOnboardingPageProps = {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; ref?: string }>;
 };
 
 function sanitizeNextPath(nextParam: string | undefined): string {
@@ -22,5 +22,12 @@ export default async function LocalisationOnboardingPage({
 }: LocalisationOnboardingPageProps) {
   const resolvedSearchParams = await searchParams;
   const nextPath = sanitizeNextPath(resolvedSearchParams.next);
-  redirect(nextPath === "/onboarding" ? "/onboarding" : `/onboarding?next=${encodeURIComponent(nextPath)}`);
+  const referralQuery = resolvedSearchParams.ref?.trim()
+    ? `&ref=${encodeURIComponent(resolvedSearchParams.ref.trim())}`
+    : "";
+  redirect(
+    nextPath === "/onboarding"
+      ? `/onboarding${referralQuery ? `?${referralQuery.slice(1)}` : ""}`
+      : `/onboarding?next=${encodeURIComponent(nextPath)}${referralQuery}`,
+  );
 }

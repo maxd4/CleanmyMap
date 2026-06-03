@@ -14,7 +14,12 @@ import {
 } from "@/components/actions/map-marker-categories";
 import { mapItemCigaretteButts, mapItemWasteKg } from "@/lib/actions/data-contract";
 import { formatMapFreshnessLabel } from "../actions-map-freshness.utils";
-import type { ActionsMapDateScope } from "@/components/actions/map/actions-map-filters.utils";
+import {
+  matchesZoneQuery,
+  normalizeZoneQuery,
+  type ActionsMapDateScope,
+} from "@/components/actions/map/actions-map-filters.utils";
+import type { PollutionScoreReferences } from "@/lib/actions/pollution-score";
 
 type UseMapFeedDataParams = {
   types: ActionRecordType[] | "all";
@@ -23,7 +28,9 @@ type UseMapFeedDataParams = {
   statusFilter: ActionStatus | "all";
   impactFilter: ActionImpactLevel | "all";
   qualityMin: number;
+  zoneQuery?: string;
   visibleCategories: Record<MarkerCategory, boolean>;
+  pollutionScoreReferences?: PollutionScoreReferences | null;
   limit?: number;
 };
 
@@ -34,9 +41,16 @@ export function useMapFeedData({
   statusFilter,
   impactFilter,
   qualityMin,
+  zoneQuery,
   visibleCategories,
+  pollutionScoreReferences,
   limit = 120,
 }: UseMapFeedDataParams) {
+  const normalizedZoneQuery = useMemo(
+    () => normalizeZoneQuery(zoneQuery),
+    [zoneQuery],
+  );
+
   const serializedTypes = useMemo(
     () => (types === "all" ? "all" : [...new Set(types)].sort().join(",")),
     [types],
@@ -78,13 +92,18 @@ export function useMapFeedData({
   );
 
   const allItems = useMemo(() => data?.items ?? [], [data?.items]);
-  
+
   const items = useMemo(
     () =>
-      allItems.filter((item) =>
-        isVisibleWithCategoryFilter(item, visibleCategories),
+      allItems.filter(
+        (item) =>
+          isVisibleWithCategoryFilter(
+            item,
+            visibleCategories,
+            pollutionScoreReferences,
+          ) && matchesZoneQuery(item, normalizedZoneQuery),
       ),
-    [allItems, visibleCategories],
+    [allItems, normalizedZoneQuery, pollutionScoreReferences, visibleCategories],
   );
 
   const summary = useMemo(() => {

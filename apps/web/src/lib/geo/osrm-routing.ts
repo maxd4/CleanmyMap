@@ -1,3 +1,5 @@
+import { logFailure, logWarning } from "@/lib/logging/failure-log";
+
 export async function snapPolylineToStreetNetwork(
   coordinates: [number, number][]
 ): Promise<[number, number][] | null> {
@@ -29,7 +31,9 @@ export async function snapPolylineToStreetNetwork(
     });
 
     if (!response.ok) {
-      console.warn("OSRM routing API returned an error:", response.status);
+      logWarning("OSRM", "Routing API returned an error", {
+        status: response.status,
+      });
       return null;
     }
 
@@ -48,7 +52,9 @@ export async function snapPolylineToStreetNetwork(
     
     return null;
   } catch (error) {
-    console.warn("OSRM routing API failed:", error);
+    logFailure("OSRM", "Routing failed", error, {
+      pointCount: coordinates.length,
+    });
     return null;
   }
 }

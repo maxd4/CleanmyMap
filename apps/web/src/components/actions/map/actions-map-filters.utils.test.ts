@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
+import type { ActionMapItem } from "@/lib/actions/types";
 import {
   ACTIONS_MAP_FILTERS_STORAGE_KEY,
   buildDefaultActionsMapFilters,
+  matchesZoneQuery,
   normalizeActionsMapFilters,
+  normalizeZoneQuery,
   readActionsMapFiltersFromStorage,
   writeActionsMapFiltersToStorage,
 } from "./actions-map-filters.utils";
@@ -25,6 +28,7 @@ describe("actions map filters utils", () => {
     expect(filters.statusFilter).toBe("approved");
     expect(filters.impactFilter).toBe("all");
     expect(filters.qualityMin).toBe(0);
+    expect(filters.zoneQuery).toBe("");
     expect(filters.visibleCategories.blue).toBe(true);
   });
 
@@ -35,6 +39,7 @@ describe("actions map filters utils", () => {
         statusFilter: "archived",
         impactFilter: "massif",
         qualityMin: -40,
+        zoneQuery: "  République   ",
         visibleCategories: { blue: false, unknown: false },
       },
       90,
@@ -45,6 +50,7 @@ describe("actions map filters utils", () => {
     expect(filters.statusFilter).toBe("approved");
     expect(filters.impactFilter).toBe("all");
     expect(filters.qualityMin).toBe(0);
+    expect(filters.zoneQuery).toBe("République");
     expect(filters.visibleCategories.blue).toBe(false);
     expect(filters.visibleCategories.green).toBe(true);
   });
@@ -94,6 +100,7 @@ describe("actions map filters utils", () => {
         statusFilter: "pending",
         impactFilter: "critique",
         qualityMin: 70,
+        zoneQuery: "  Canal Saint-Martin  ",
         visibleCategories: { violet: false },
       },
       90,
@@ -102,5 +109,36 @@ describe("actions map filters utils", () => {
     writeActionsMapFiltersToStorage(storage, filters);
 
     expect(readActionsMapFiltersFromStorage(storage, 90)).toEqual(filters);
+  });
+
+  it("normalizes zone queries and matches labels", () => {
+    expect(normalizeZoneQuery("  Paris   11e  ")).toBe("Paris 11e");
+    expect(normalizeZoneQuery(42)).toBe("");
+
+    const item = {
+      location_label: "Canal Saint-Martin",
+      contract: {
+        location: { label: "Canal Saint-Martin" },
+        metadata: {
+          notesPlain: "",
+          associationName: "",
+          placeType: "",
+          departureLocationLabel: null,
+          arrivalLocationLabel: null,
+        },
+      },
+      notes_plain: "",
+    } as ActionMapItem;
+
+    expect(matchesZoneQuery(item, "canal")).toBe(true);
+    expect(matchesZoneQuery(item, "république")).toBe(false);
+
+    const arrondissementItem = {
+      location_label: "11e",
+      contract: null,
+      notes_plain: "",
+    } as ActionMapItem;
+
+    expect(matchesZoneQuery(arrondissementItem, "paris 11")).toBe(true);
   });
 });

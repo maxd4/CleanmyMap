@@ -2,7 +2,7 @@
 
 ## Scope
 - Project: CleanMyMap monorepo.
-- Active runtime: Next.js app in `apps/web`. The repository root has been sanitized; all legacy Python code, data, and scripts are archived in `legacy/` and are out of the active runtime path.
+- Active runtime: Next.js app in `apps/web`. The repository root has been sanitized; the historical Python maintenance code now lives in `maintenance/python/` and is out of the active runtime path.
 
 ## Stack
 - Frontend/API: Next.js (App Router), React, TypeScript.
@@ -33,7 +33,7 @@
 
 ## ADR decisions (active)
 - Root lockfile is source of truth; `apps/web/package-lock.json` must remain absent.
-- Active runtime is only `apps/web`; `legacy/` is archive and out of runtime scope.
+- Active runtime is only `apps/web`; `maintenance/python/` is archive and out of runtime scope.
 - Session memory protocol is mandatory (`AGENTS.md` + `project_context.md` + `documentation/sessions/history/latest-session.md`).
 
 ## Sensitive zones

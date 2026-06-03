@@ -9,6 +9,7 @@ import {
   MapPinned,
   ShieldCheck,
   Clock3,
+  UserPlus,
   Users,
 } from "lucide-react";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -122,12 +123,16 @@ export function HomeCommunityCredibility({
                   className="cmm-home-section-subtitle"
                   style={COMPACT_SECTION_SUBTITLE_STYLE}
                 >
-                  Les dernières actions remontent ici depuis les données du terrain.
-                  Rien d&apos;inventé, seulement des actions vérifiées et récentes.
+                  Les dernières actions remontent ici depuis les données du
+                  terrain. Rien d&apos;inventé, seulement des actions vérifiées
+                  et récentes.
                 </p>
               </div>
 
-              <div data-gsap-reveal className="rounded-[1.45rem] border border-emerald-200/28 bg-white/35 px-4 py-4 shadow-[0_16px_34px_-28px_rgba(6,95,70,0.2)]">
+              <div
+                data-gsap-reveal
+                className="rounded-[1.45rem] border border-emerald-200/28 bg-white/35 px-4 py-4 shadow-[0_16px_34px_-28px_rgba(6,95,70,0.2)]"
+              >
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-900/70">
@@ -189,6 +194,32 @@ export function HomeCommunityCredibility({
                     </p>
                   </div>
                 ) : null}
+
+                <div
+                  data-gsap-reveal
+                  className="rounded-[1.4rem] border border-emerald-200/24 bg-white/40 px-4 py-4 shadow-[0_18px_36px_-24px_rgba(6,95,70,0.18)]"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-emerald-900/70">
+                        Parrainage
+                      </p>
+                      <p className="mt-1 text-sm leading-relaxed text-emerald-900/74">
+                        Invitez un ami et retrouvez votre lien persistant dans
+                        votre profil.
+                      </p>
+                    </div>
+                    <CmmButton
+                      href="/profil#parrainage"
+                      tone="secondary"
+                      variant="pill"
+                      className="h-10 shrink-0 gap-2 px-4 text-[11px] font-black transition-transform hover:-translate-y-0.5"
+                    >
+                      <UserPlus size={14} />
+                      Inviter un ami
+                    </CmmButton>
+                  </div>
+                </div>
 
                 {activity.items.length === 0 ? (
                   <div
@@ -284,9 +315,9 @@ export function HomeCommunityCredibility({
                   className="cmm-home-section-subtitle"
                   style={COMPACT_SECTION_SUBTITLE_STYLE}
                 >
-                  CleanMyMap est un projet étudiant construit autour d&apos;actions terrain
-                  réelles, porté par une ambition partenariale progressive et une rigueur
-                  universitaire.
+                  CleanMyMap est un projet étudiant construit autour
+                  d&apos;actions terrain réelles, porté par une ambition
+                  partenariale progressive et une rigueur universitaire.
                 </p>
               </div>
 
@@ -310,12 +341,17 @@ export function HomeCommunityCredibility({
 
                 <div className="cmm-text-card-copy space-y-4 text-[15px] leading-relaxed sm:text-base">
                   <p>
-                    Né au sein du <span className="font-semibold text-white">DU Engagement de Sorbonne Université</span>, ce projet transforme l&apos;engagement citoyen en un outil de pilotage concret pour le territoire.
+                    Né au sein du{" "}
+                    <span className="font-semibold text-white">
+                      DU Engagement de Sorbonne Université
+                    </span>
+                    , ce projet transforme l&apos;engagement citoyen en un outil
+                    de pilotage concret pour le territoire.
                   </p>
                   <p>
-                    Notre objectif est de structurer, cartographier et valoriser les
-                    actions de dépollution pour offrir une visibilité inédite sur
-                    l&apos;impact environnemental local.
+                    Notre objectif est de structurer, cartographier et valoriser
+                    les actions de dépollution pour offrir une visibilité
+                    inédite sur l&apos;impact environnemental local.
                   </p>
                 </div>
 
@@ -330,7 +366,9 @@ export function HomeCommunityCredibility({
                           data-gsap-reveal
                           className="rounded-[1.35rem] border border-emerald-100/16 bg-white/5 p-4 shadow-[0_18px_40px_-28px_rgba(5,34,20,0.8)]"
                         >
-                          <div className={`mb-3 flex items-center gap-2 ${card.tone}`}>
+                          <div
+                            className={`mb-3 flex items-center gap-2 ${card.tone}`}
+                          >
                             <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/10 bg-white/10">
                               <Icon size={15} />
                             </div>

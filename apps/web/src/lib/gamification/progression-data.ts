@@ -18,12 +18,15 @@ import {
   computeActionValidationAward,
   eventFamilyMap,
   evaluateActionQualityScore,
+  inferActionWeight,
   toFloat,
   toInt,
-  inferActionWeight,
   toIsoDate,
 } from "./progression-utils";
 import { awardPointsOnce } from "./points/system";
+import { computeMonthlyRegularityAwards } from "./monthly-regularity";
+import { logFailure } from "@/lib/logging/failure-log";
+import { writeProgressionEventWithPolicy } from "./progression-event-write-policy";
 
 const SPONTANEOUS_ASSOCIATION_KEY = "action spontanee";
 
@@ -51,26 +54,28 @@ export async function insertProgressionEvent(
   supabase: SupabaseClient,
   params: EventInsertParams,
 ): Promise<boolean> {
-  const result = await supabase.from("progression_events").insert({
-    user_id: params.userId,
-    event_type: params.eventType,
-    source_table: params.sourceTable,
-    source_id: params.sourceId,
-    status_phase: params.statusPhase,
-    weight: clampWeight(params.weight),
-    xp_base: Math.max(0, params.xpBase),
-    xp_awarded: Math.max(0, params.xpAwarded),
-    occurred_on: params.occurredOn,
-    metadata: params.metadata ?? {},
-  });
+  const result = await writeProgressionEventWithPolicy(
+    async () =>
+      supabase.from("progression_events").insert({
+        user_id: params.userId,
+        event_type: params.eventType,
+        source_table: params.sourceTable,
+        source_id: params.sourceId,
+        status_phase: params.statusPhase,
+        weight: clampWeight(params.weight),
+        xp_base: Math.max(0, params.xpBase),
+        xp_awarded: Math.max(0, params.xpAwarded),
+        occurred_on: params.occurredOn,
+        metadata: params.metadata ?? {},
+      }),
+    { mode: "strict" },
+  );
 
-  if (!result.error) {
-    return true;
-  }
-  if (result.error.code === "23505") {
+  if (result.duplicate) {
     return false;
   }
-  throw new Error(result.error.message);
+
+  return true;
 }
 
 export async function loadActionRowsForUser(
@@ -173,7 +178,9 @@ export async function loadValidatedActionIdsForUser(
     .order("created_at", { ascending: true });
 
   if (result.error) {
-    console.error("[Gamification] Failed to load validated action forms:", result.error);
+    logFailure("Gamification", "Validated action forms load failed", result.error, {
+      userId,
+    });
     return new Set();
   }
 
@@ -588,6 +595,26 @@ export async function syncUserActionProgression(
     }
 
     validatedActionCount += 1;
+  }
+
+  const monthlyAwards = computeMonthlyRegularityAwards(actions);
+  for (const award of monthlyAwards) {
+    await insertProgressionEvent(supabase, {
+      userId,
+      eventType: "action_monthly_regularity",
+      sourceTable: "actions",
+      sourceId: award.sourceId,
+      statusPhase: "validated",
+      weight: 1,
+      xpBase: award.xpAwarded,
+      xpAwarded: award.xpAwarded,
+      occurredOn: award.occurredOn,
+      metadata: {
+        monthKey: award.monthKey,
+        actionCount: award.actionCount,
+        streak: award.streak,
+      },
+    });
   }
 
   return validatedActionCount;

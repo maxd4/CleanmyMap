@@ -22,6 +22,7 @@ import {
 import { ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS } from "@/lib/environmental-impact-estimator/constants";
 import type { EnvironmentalImpactDashboardResponse } from "@/lib/environmental-impact-estimator/types";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
+import { logFailure } from "@/lib/logging/failure-log";
 
 type ImpactPageProgression = {
   currentLevel: number;
@@ -112,7 +113,7 @@ export default function ImpactProfilePage() {
         colors: ["#ef4444", "#f87171", "#ffffff"],
       });
     } catch (err) {
-      console.error("Export failed", err);
+      logFailure("ImpactProfile", "Export failed", err);
     } finally {
       setIsExporting(false);
     }

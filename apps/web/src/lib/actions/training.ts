@@ -4,6 +4,7 @@ import type {
   ActionVisionEstimate,
 } from "@/lib/actions/types";
 import { env } from "@/lib/env";
+import { logWarning } from "@/lib/logging/failure-log";
 
 export type TrainingExampleStatus =
   | "pending_label"
@@ -102,15 +103,15 @@ export async function recordTrainingExample(
   try {
     const result = await supabase.from("training_examples").insert(insert);
     if (result.error) {
-      console.warn("Training example persistence skipped", {
+      logWarning("Training", "Training example persistence skipped", {
         actionId: insert.action_id,
-        message: result.error.message,
+        reason: result.error.message,
       });
     }
   } catch (error) {
-    console.warn("Training example persistence skipped", {
+    logWarning("Training", "Training example persistence skipped", {
       actionId: insert.action_id,
-      message: error instanceof Error ? error.message : String(error),
+      reason: error instanceof Error ? error.message : String(error),
     });
   }
 }

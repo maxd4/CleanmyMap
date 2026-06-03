@@ -1,6 +1,6 @@
 # Conditions Générales d'Utilisation (CGU) - CleanMyMap
 
-**Dernière mise à jour :** 30 Avril 2026
+**Dernière mise à jour :** 1 Juin 2026
 
 ---
 
@@ -80,6 +80,9 @@ Suivre son impact personnel :
 - Surface nettoyée
 - Comparaison avec la communauté
 
+### Parrainage
+Inviter d'autres personnes à rejoindre la communauté via un lien d'invitation persistant, avec attribution d'un badge one-shot et d'un suivi de chaîne de parrainage.
+
 ### Certificat d'Impact
 Générer un justificatif de ses actions pour valoriser son engagement.
 
@@ -108,6 +111,7 @@ Sont strictement interdits :
 - L'extraction massive de données (scraping)
 - Les tentatives de piratage ou d'intrusion
 - L'utilisation commerciale non autorisée
+- L'utilisation frauduleuse ou abusive des liens d'invitation, du parrainage ou des badges communautaires
 - Le spam et les messages répétitifs
 - La publication de données personnelles d'autrui
 

@@ -1,90 +1,19 @@
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
+import pageFamiliesManifest from "../../apps/web/src/lib/ui/page-families/page-families.manifest.json" with { type: "json" };
 
 const rootDir = path.resolve("documentation/pages_site");
 const canonicalRoot = path.join(rootDir, "routes");
 const appRoot = path.resolve("apps/web/src/app");
 
-const families = [
-  {
-    key: "00-homepage",
-    label: "Homepage",
-    scope: "hors bloc",
-    legacyFolder: "0-HOMEPAGE",
-    description: "Famille autonome de la page d'accueil et de sa reprise de session.",
-  },
-  {
-    key: "01-accueil-pilotage",
-    label: "Accueil & Pilotage",
-    scope: "bloc",
-    legacyFolder: "1-BLOC-ACCUEIL&PILOTAGE",
-    description: "Entrées opérationnelles de pilotage, profil, sommaire et méthodologie.",
-  },
-  {
-    key: "02-agir",
-    label: "Agir",
-    scope: "bloc",
-    legacyFolder: "2-BLOC-AGIR",
-    description: "Parcours d'action, déclaration, signalement et préparation terrain.",
-  },
-  {
-    key: "03-cartographie-impact",
-    label: "Cartographie & Impact",
-    scope: "bloc",
-    legacyFolder: "3-BLOC-VISUALISER&IMPACTER",
-    description: "Vue carte, impact, observatoire et lecture des résultats.",
-  },
-  {
-    key: "04-reseau-discussions",
-    label: "Réseau & Discussions",
-    scope: "bloc",
-    legacyFolder: "4-BLOC-RESEAU&DISCUSSION",
-    description: "Pages de réseau, entraide, partenaires et messagerie.",
-  },
-  {
-    key: "05-apprendre",
-    label: "Apprendre",
-    scope: "bloc",
-    legacyFolder: "5-BLOC-APPRENDRE",
-    description: "Contenus pédagogiques et guides de compréhension.",
-  },
-  {
-    key: "06-auth-onboarding",
-    label: "Auth & Onboarding",
-    scope: "hors bloc",
-    legacyFolder: "6-PAGES-STANDALONE",
-    description: "Connexion, inscription et configuration initiale.",
-  },
-  {
-    key: "07-legal",
-    label: "Institutionnel & Légal",
-    scope: "hors bloc",
-    legacyFolder: "6-PAGES-STANDALONE",
-    description: "Contacts et pages institutionnelles / juridiques, sobres et cohérentes entre elles.",
-  },
-  {
-    key: "08-systeme-utilitaires",
-    label: "Système & Utilitaires",
-    scope: "hors bloc",
-    legacyFolder: "6-PAGES-STANDALONE",
-    description: "Réglages, comparateurs, preview et routes techniques. Les pages standalone gardent une mood layer autonome par usage.",
-  },
-  {
-    key: "09-admin-superadmin",
-    label: "Admin & Super-admin",
-    scope: "hors bloc",
-    legacyFolder: "6-PAGES-STANDALONE",
-    description: "Administration, services et supervision avancée.",
-  },
-  {
-    key: "10-print-export",
-    label: "Print & Export",
-    scope: "hors bloc",
-    legacyFolder: "6-PAGES-STANDALONE",
-    description: "Rapports imprimables et exports PDF avec une ambiance documentaire autonome.",
-  },
-];
+const families = pageFamiliesManifest.map((family) => ({
+  key: family.docKey,
+  label: family.label,
+  scope: family.scope,
+  legacyFolder: family.legacyFolder,
+  description: family.description,
+}));
 
 const BACKDROP_TONE_SWATCHES = {
   home: { canvas: "#e6f8ef", halo: "rgba(34, 197, 94, 0.28)" },
@@ -116,7 +45,7 @@ export const entries = [
   {
     route: "/",
     slug: "root",
-    title: "Page d'accueil",
+    title: "Homepage",
     family: "00-homepage",
     kind: "page",
     status: "canonique",
@@ -127,18 +56,6 @@ export const entries = [
       "../0-HOMEPAGE/RUBRIQUE-HOMEPAGE.md",
     ],
   },
-  {
-    route: "/accueil",
-    slug: "accueil",
-    title: "Accueil",
-    family: "00-homepage",
-    kind: "page",
-    status: "canonique",
-    exception: false,
-    summary: "Reprise de session et porte d'entrée personnelle.",
-    legacyDocs: ["../0-HOMEPAGE/RUBRIQUE-HOMEPAGE.md"],
-  },
-
   // Bloc 1 / Accueil & Pilotage
   {
     route: "/dashboard",
@@ -796,7 +713,7 @@ function pageTypeFor(entry) {
     return "dynamique";
   }
 
-  if (pattern === "/" || pattern === "/accueil") return "homepage";
+  if (pattern === "/") return "homepage";
   if (pattern === "/explorer") return "exception UI — sommaire";
   if (pattern === "/methodologie") return "exception UI — impact";
   if (base === "sign-in" || base === "sign-up") return "authentification";
@@ -908,7 +825,6 @@ function expectedToneKeyForRoute(routePattern) {
   const isRoute = (route) => routePattern === route || routePattern.startsWith(`${route}/`);
 
   if (!routePattern || routePattern === "/") return "home";
-  if (base === "accueil") return "home";
   if (base === "methodologie") return "red";
 
   if (base === "dashboard" || base === "profil") return "amber";
@@ -948,7 +864,7 @@ function routeStatus(entry) {
   if (base === "sign-in" || base === "sign-up" || base === "onboarding") return "auth";
   if (base === "form-comparison" || base === "reglages" || pattern.startsWith("/preview/")) return "standalone";
   if (pattern === "/declaration-simple" || pattern === "/prints/report") return "standalone";
-  if (pattern === "/explorer" || pattern === "/methodologie" || base === "learn" || base === "accueil" || pattern === "/") {
+  if (pattern === "/explorer" || pattern === "/methodologie" || base === "learn" || pattern === "/") {
     return "public";
   }
   if (base === "contact" || base === "conditions-generales-utilisation" || base === "conditions-utilisation" || base === "mentions-legales" || base === "politique-confidentialite" || base === "politique-cookies" || base === "en") return "légal";
@@ -990,7 +906,7 @@ function textLoadForRoute(entry) {
   const pattern = routePatternFromDisplay(entry.route);
   const base = pattern.split("/")[1] ?? "";
 
-  if (pattern === "/" || pattern === "/accueil") return "moyen";
+  if (pattern === "/") return "moyen";
   if (entry.kind === "alias") return "faible";
   if (entry.kind === "dynamic") return "moyen";
   if (pattern.startsWith("/error/")) return "faible";
@@ -1150,10 +1066,6 @@ function resolveBackdropToneKey(pathname) {
 
   const isRoute = (route) => pathname === route || pathname.startsWith(`${route}/`);
   const base = pathname.split("/")[1] ?? "";
-
-  if (base === "accueil") {
-    return "home";
-  }
 
   if (base === "sign-in" || base === "sign-up" || isRoute("/onboarding")) {
     return "auth";

@@ -1,13 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { LayerGroup, LayersControl, MapContainer, TileLayer } from "react-leaflet";
+import { useEffect, useMemo, useState } from "react";
+import {
+  LayerGroup,
+  LayersControl,
+  MapContainer,
+  TileLayer,
+  useMapEvents,
+} from "react-leaflet";
 import "leaflet/dist/leaflet.css";
+import type { Map as LeafletMap } from "leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { cn } from "@/lib/utils";
 import { MapControls } from "./map/map-controls";
 import { SignalementMarkers, ShapeLayers, InfrastructureMarkers } from "./map/map-layers";
 import { getActionsMapCenter } from "./actions-map-canvas.utils";
+import type { MapViewportState } from "./map/map-export.types";
 import {
   DEFAULT_VISIBLE_MAP_LAYERS,
   toggleVisibleMapLayer,
@@ -17,17 +25,57 @@ import {
 type ActionsMapCanvasProps = {
   items: ActionMapItem[];
   selectedActionId?: string | null;
+  onSelectAction?: (actionId: string) => void;
   fullViewport?: boolean;
   compact?: boolean;
   className?: string;
+  onViewportChange?: (viewport: MapViewportState) => void;
 };
+
+function MapViewportReporter({
+  onViewportChange,
+}: {
+  onViewportChange?: (viewport: MapViewportState) => void;
+}) {
+  const map = useMapEvents({
+    moveend: () => {
+      onViewportChange?.(resolveViewportState(map));
+    },
+    zoomend: () => {
+      onViewportChange?.(resolveViewportState(map));
+    },
+  });
+
+  useEffect(() => {
+    onViewportChange?.(resolveViewportState(map));
+  }, [map, onViewportChange]);
+
+  return null;
+}
+
+function resolveViewportState(map: LeafletMap): MapViewportState {
+  const center = map.getCenter();
+  const bounds = map.getBounds();
+  return {
+    center: [Number(center.lat.toFixed(6)), Number(center.lng.toFixed(6))],
+    zoom: map.getZoom(),
+    bounds: {
+      south: Number(bounds.getSouth().toFixed(6)),
+      west: Number(bounds.getWest().toFixed(6)),
+      north: Number(bounds.getNorth().toFixed(6)),
+      east: Number(bounds.getEast().toFixed(6)),
+    },
+  };
+}
 
 export function ActionsMapCanvas({
   items,
   selectedActionId = null,
+  onSelectAction,
   fullViewport = false,
   compact = false,
   className,
+  onViewportChange,
 }: ActionsMapCanvasProps) {
   const center = useMemo(() => getActionsMapCenter(items), [items]);
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_MAP_LAYERS);
@@ -74,6 +122,7 @@ export function ActionsMapCanvas({
         center={center}
         zoom={compact ? 11 : 12}
         scrollWheelZoom
+        wheelPxPerZoomLevel={120}
         className={
           compact
             ? cn(
@@ -84,19 +133,22 @@ export function ActionsMapCanvas({
             ? "h-[100dvh] min-h-[100dvh] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500"
             : "h-[68vh] min-h-[34rem] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500 md:h-[74vh] md:min-h-[42rem]"
         }
-      >
+        >
+        <MapViewportReporter onViewportChange={onViewportChange} />
         <MapControls center={center} variant={compact ? "default" : "immersive"} />
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Plan clair">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
               url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+              crossOrigin="anonymous"
             />
           </LayersControl.BaseLayer>
           <LayersControl.BaseLayer name="Plan contrasté">
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; CARTO'
               url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              crossOrigin="anonymous"
             />
           </LayersControl.BaseLayer>
         </LayersControl>
@@ -106,16 +158,19 @@ export function ActionsMapCanvas({
             items={items}
             visible={visibleLayers.points}
             selectedActionId={selectedActionId}
+            onSelectAction={onSelectAction}
           />
           <ShapeLayers
             items={items}
             visible={visibleLayers.shapes}
             selectedActionId={selectedActionId}
+            onSelectAction={onSelectAction}
           />
           <InfrastructureMarkers
             items={items}
             visible={visibleLayers.infrastructure}
             selectedActionId={selectedActionId}
+            onSelectAction={onSelectAction}
           />
         </LayerGroup>
 
