@@ -11,10 +11,20 @@ export type PdfReportStat = {
   detail?: string;
 };
 
+export type PdfReportChapter = {
+  title: string;
+  subtitle?: string;
+  lines?: string[];
+  stats?: PdfReportStat[];
+  rows?: Record<string, unknown>[];
+  columns?: PdfReportColumn[];
+};
+
 export type PdfReportData = {
   title?: string;
   summary?: string[];
   stats?: PdfReportStat[];
+  chapters?: PdfReportChapter[];
   rows?: Record<string, unknown>[];
   columns?: PdfReportColumn[];
   generatedAt?: string;
@@ -44,6 +54,7 @@ export function hasPdfReportData(data: PdfReportData | null | undefined): boolea
   if (!data) return false;
   if (data.summary?.some((line) => line.trim().length > 0)) return true;
   if (data.stats?.length) return true;
+  if (data.chapters?.length) return true;
   if (data.rows?.length) return true;
   return false;
 }
@@ -94,6 +105,38 @@ export function buildPdfReportLines(payload: PdfReportPayload): string[] {
       lines.push(`- ${stat.label}: ${formatValue(stat.value)}${detail}`);
     }
     lines.push("");
+  }
+
+  if (payload.data.chapters?.length) {
+    lines.push("Chapitres");
+    payload.data.chapters.forEach((chapter, index) => {
+      lines.push(`${index + 1}. ${chapter.title}`);
+      if (chapter.subtitle?.trim()) {
+        lines.push(`- ${chapter.subtitle.trim()}`);
+      }
+      if (chapter.lines?.length) {
+        for (const line of chapter.lines) {
+          if (line.trim().length > 0) {
+            lines.push(`- ${line.trim()}`);
+          }
+        }
+      }
+      if (chapter.stats?.length) {
+        for (const stat of chapter.stats) {
+          const detail = stat.detail ? ` (${stat.detail})` : "";
+          lines.push(`  • ${stat.label}: ${formatValue(stat.value)}${detail}`);
+        }
+      }
+      if (chapter.rows?.length) {
+        const chapterColumns =
+          chapter.columns ?? Object.keys(chapter.rows[0] ?? {}).map((key) => ({ key, label: key }));
+        lines.push(`  ${chapterColumns.map((column) => column.label).join(" | ")}`);
+        for (const row of chapter.rows.slice(0, 40)) {
+          lines.push(`  ${chapterColumns.map((column) => formatValue(row[column.key])).join(" | ")}`);
+        }
+      }
+      lines.push("");
+    });
   }
 
   if (payload.data.rows?.length) {

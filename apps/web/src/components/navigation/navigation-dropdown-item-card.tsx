@@ -11,6 +11,11 @@ import type { NavigationDropdownCardBorderTokens } from "./navigation-dropdown-b
 import type { NavigationDropdownCardGeometry } from "./navigation-dropdown-card-theme";
 import { getNavigationDropdownItemTone } from "./navigation-dropdown-item-theme";
 import { NavigationDropdownHelpText } from "./navigation-dropdown-help-text";
+import {
+  NAVIGATION_DROPDOWN_CARD_OUTER_HOVER_CLASS_NAME,
+  NAVIGATION_DROPDOWN_CARD_OUTER_SHADOW_CLASS_NAME,
+  NAVIGATION_DROPDOWN_ITEM_CONTENT_GAP_CLASS_NAME,
+} from "./navigation-dropdown-size-theme";
 
 type NavigationDropdownItemCardProps = {
   item: NavigationItem;
@@ -54,6 +59,7 @@ export function NavigationDropdownItemCard({
         aria-current={isActiveItem ? "page" : undefined}
         aria-describedby={descriptionId}
         onClick={() => onTrackNavigation(item.href, itemLabel, spaceId)}
+        style={isActiveItem ? cardBorderTokens.activeStyle : cardBorderTokens.inactiveStyle}
         className={cn(
           "group/item block w-full focus-visible:outline-none",
           cardBorderTokens.focusRing,
@@ -62,28 +68,28 @@ export function NavigationDropdownItemCard({
         <div
           className={cn(
             cardGeometry.outerClassName,
-            isActiveItem
-              ? `${cardBorderTokens.outerActive} shadow-[0_7px_16px_rgba(15,23,42,0.05)] group-hover/item:p-[2px] group-hover/item:shadow-[0_10px_24px_rgba(15,23,42,0.09)]`
-              : `${cardBorderTokens.outerInactive} shadow-[0_7px_16px_rgba(15,23,42,0.05)] group-hover/item:p-[2px] group-hover/item:shadow-[0_10px_24px_rgba(15,23,42,0.09)]`,
+            cardBorderTokens.outerClassName,
+            NAVIGATION_DROPDOWN_CARD_OUTER_SHADOW_CLASS_NAME,
+            NAVIGATION_DROPDOWN_CARD_OUTER_HOVER_CLASS_NAME,
           )}
         >
           <div
             className={cn(
               cardGeometry.bodyClassName,
-              isActiveItem ? cardBorderTokens.bodyActive : cardBorderTokens.bodyInactive,
+              cardBorderTokens.bodyClassName,
             )}
           >
             <span
               className={cn(
                 cardGeometry.iconClassName,
                 iconClassName,
-                isActiveItem ? cardBorderTokens.iconActive : cardBorderTokens.iconInactive,
+                cardBorderTokens.iconClassName,
               )}
             >
               <Icon className={cardGeometry.iconGlyphClassName} strokeWidth={iconStrokeWidth} aria-hidden="true" />
             </span>
 
-            <span className="flex min-w-0 flex-1 items-center gap-2">
+            <span className={cn("flex min-w-0 flex-1 items-center", NAVIGATION_DROPDOWN_ITEM_CONTENT_GAP_CLASS_NAME)}>
               <span
                 className={cn(cardGeometry.labelClassName, itemTone.labelClassName, "min-w-0 flex-1")}
                 style={itemTone.labelStyle}
@@ -94,7 +100,7 @@ export function NavigationDropdownItemCard({
             </span>
 
             <ChevronRight
-              className={cn(cardGeometry.chevronClassName, itemTone.chevronClassName)}
+              className={cn(cardGeometry.chevronClassName, cardBorderTokens.chevronClassName, itemTone.chevronClassName)}
               strokeWidth={2.8}
               aria-hidden="true"
             />

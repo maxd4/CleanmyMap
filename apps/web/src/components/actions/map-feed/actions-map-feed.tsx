@@ -13,6 +13,7 @@ import type { MapViewportState } from "@/components/actions/map/map-export.types
 type ActionsMapFeedContentProps = {
   feedData: MapFeedDataState;
   presentation?: "default" | "immersive";
+  tone?: "sky" | "emerald";
   showIntro?: boolean;
   fullViewport?: boolean;
   showStoriesCarousel?: boolean;
@@ -27,6 +28,7 @@ type ActionsMapFeedContentProps = {
 export function ActionsMapFeedContent({
   feedData,
   presentation = "default",
+  tone = "sky",
   showIntro = true,
   fullViewport = false,
   showStoriesCarousel = true,
@@ -39,6 +41,7 @@ export function ActionsMapFeedContent({
 }: ActionsMapFeedContentProps) {
   const [MapCanvas, setMapCanvas] = useState<ActionsMapCanvasComponent | null>(null);
   const [mapCanvasError, setMapCanvasError] = useState<string | null>(null);
+  const isEmerald = tone === "emerald";
 
   useEffect(() => {
     let cancelled = false;
@@ -69,8 +72,12 @@ export function ActionsMapFeedContent({
   const isImmersive = presentation === "immersive";
 
   const shellClass = isImmersive
-    ? "relative overflow-hidden rounded-[2.25rem] border border-sky-200/80 bg-[linear-gradient(180deg,rgba(233,244,252,0.96),rgba(248,253,255,0.98))] p-4 shadow-[0_28px_80px_-36px_rgba(14,165,233,0.18)] sm:p-6"
-    : "rounded-2xl border border-sky-200/80 bg-[rgba(239,248,253,0.96)] p-6 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]";
+    ? isEmerald
+      ? "relative overflow-hidden rounded-[2.25rem] border border-emerald-200/70 bg-[linear-gradient(180deg,rgba(244,250,241,0.98),rgba(250,253,247,1))] p-4 shadow-[0_28px_80px_-36px_rgba(34,197,94,0.16)] sm:p-6"
+      : "relative overflow-hidden rounded-[2.25rem] border border-sky-200/80 bg-[linear-gradient(180deg,rgba(233,244,252,0.96),rgba(248,253,255,0.98))] p-4 shadow-[0_28px_80px_-36px_rgba(14,165,233,0.18)] sm:p-6"
+    : isEmerald
+      ? "rounded-2xl border border-emerald-200/70 bg-[rgba(245,251,244,0.96)] p-6 shadow-[0_24px_56px_-32px_rgba(34,197,94,0.14)]"
+      : "rounded-2xl border border-sky-200/80 bg-[rgba(239,248,253,0.96)] p-6 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]";
 
   const layoutProps = {
     items: feedData.items,
@@ -92,6 +99,7 @@ export function ActionsMapFeedContent({
     showStoriesCarousel,
     zoneQuery,
     mapExportTargetRef,
+    tone,
     onViewportChange,
   };
 
@@ -105,12 +113,12 @@ export function ActionsMapFeedContent({
 
       {feedData.isLoading ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <div className="space-y-3 rounded-2xl border border-sky-200/80 bg-white/80 p-4">
+          <div className={`space-y-3 rounded-2xl border p-4 ${isEmerald ? "border-emerald-200/70 bg-white/86" : "border-sky-200/80 bg-white/80"}`}>
             <CmmSkeleton variant="text" className="w-32" />
             <CmmSkeleton variant="title" className="w-48" />
             <CmmSkeleton variant="text" className="w-3/4" />
           </div>
-          <div className="space-y-3 rounded-2xl border border-sky-200/80 bg-white/80 p-4">
+          <div className={`space-y-3 rounded-2xl border p-4 ${isEmerald ? "border-emerald-200/70 bg-white/86" : "border-sky-200/80 bg-white/80"}`}>
             <CmmSkeleton variant="text" className="w-28" />
             <CmmSkeleton variant="title" className="w-40" />
             <div className="flex gap-2">
@@ -118,7 +126,7 @@ export function ActionsMapFeedContent({
               <CmmSkeleton variant="rectangular" className="h-8 w-16 rounded-full" />
             </div>
           </div>
-          <div className="space-y-3 rounded-2xl border border-sky-200/80 bg-white/80 p-4">
+          <div className={`space-y-3 rounded-2xl border p-4 ${isEmerald ? "border-emerald-200/70 bg-white/86" : "border-sky-200/80 bg-white/80"}`}>
             <CmmSkeleton variant="text" className="w-24" />
             <CmmSkeleton variant="chart" className="h-24" />
           </div>
@@ -146,6 +154,7 @@ export function ActionsMapFeed({
   zoneQuery,
   limit = 120,
   presentation = "default",
+  tone = "sky",
   showIntro = true,
   fullViewport = false,
   showStoriesCarousel = true,
@@ -176,6 +185,7 @@ export function ActionsMapFeed({
       fullViewport={fullViewport}
       showStoriesCarousel={showStoriesCarousel}
       zoneQuery={zoneQuery}
+      tone={tone}
       selectedActionId={selectedActionId}
       onOpenAction={onOpenAction}
       onResetFilters={onResetFilters}

@@ -8,6 +8,11 @@ import { getNavigationDropdownCardBorderTokens } from "./navigation-dropdown-bor
 import { getNavigationDropdownCardGeometry } from "./navigation-dropdown-card-theme";
 import { NavigationDropdownItemCard } from "./navigation-dropdown-item-card";
 import {
+  NAVIGATION_DROPDOWN_PANEL_CONTENT_CLASS_NAME,
+  NAVIGATION_DROPDOWN_PANEL_LIST_CLASS_NAME,
+  NAVIGATION_DROPDOWN_TITLE_CLASS_NAME,
+} from "./navigation-dropdown-size-theme";
+import {
   getNavigationDropdownTitleGradientStyle,
   getNavigationDropdownTitlePrefix,
 } from "./navigation-dropdown-theme";
@@ -46,9 +51,9 @@ export function AppNavigationBlockDropdownLearn({
   const cardGeometry = getNavigationDropdownCardGeometry(space.id);
 
   return (
-    <div className="px-3 pb-2.5 pt-2.5 sm:px-3.5 sm:pt-3">
+    <div className={NAVIGATION_DROPDOWN_PANEL_CONTENT_CLASS_NAME}>
       <header className="flex items-center justify-center">
-        <h3 className="w-full whitespace-nowrap text-center text-[0.92rem] font-black leading-tight tracking-[-0.03em] sm:text-[1rem]">
+        <h3 className={NAVIGATION_DROPDOWN_TITLE_CLASS_NAME}>
           <span className="text-black">{getNavigationDropdownTitlePrefix(locale)} </span>
           <span className="inline-block" style={getNavigationDropdownTitleGradientStyle(space.id)}>
             {getLocalizedText(space.label, locale, space.id)}
@@ -56,7 +61,7 @@ export function AppNavigationBlockDropdownLearn({
         </h3>
       </header>
 
-      <nav className="mt-2" aria-label={getLocalizedText(space.label, locale, space.id)}>
+      <nav className={NAVIGATION_DROPDOWN_PANEL_LIST_CLASS_NAME} aria-label={getLocalizedText(space.label, locale, space.id)}>
         <ul className="space-y-1">
           {space.items.length > 0 ? (
             space.items.map((item) => {

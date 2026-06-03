@@ -18,6 +18,7 @@ type DefaultLayoutProps = {
   onSelectAction: (actionId: string) => void;
   onResetFilters: () => void;
   onReload: () => void;
+  tone?: "sky" | "emerald";
   zoneQuery?: string;
   mapExportTargetRef?: RefObject<HTMLDivElement | null>;
   onViewportChange?: (viewport: MapViewportState) => void;
@@ -36,10 +37,12 @@ export function DefaultLayout({
   onSelectAction,
   onResetFilters,
   onReload,
+  tone = "sky",
   zoneQuery = "",
   mapExportTargetRef,
   onViewportChange,
 }: DefaultLayoutProps) {
+  const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
   const emptyMode = allItems.length > 0 ? "filtered" : "empty";
 
@@ -48,7 +51,7 @@ export function DefaultLayout({
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           {hasPartialSource ? (
-            <span className="inline-flex items-center rounded-full border border-amber-300/40 bg-amber-100 px-2.5 py-1 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950">
+            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 ${isEmerald ? "border-emerald-300/40 bg-emerald-100" : "border-amber-300/40 bg-amber-100"}`}>
               Sources partielles: {partialSourcesLabel}
             </span>
           ) : null}
@@ -103,6 +106,7 @@ export function DefaultLayout({
             selectedActionId={selectedActionId}
             onSelectAction={onSelectAction}
             onViewportChange={onViewportChange}
+            tone={tone}
           />
         )}
       </div>

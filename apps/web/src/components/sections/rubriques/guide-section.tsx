@@ -2,38 +2,58 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  ArrowRight,
-  BookOpen,
-  CheckCircle2,
-  ChevronRight,
-  Settings2,
-  Sparkles,
-  Trophy,
-} from "lucide-react";
+import { CheckCircle2, ShieldCheck, Sparkles, Trophy } from "lucide-react";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import { CmmButton } from "@/components/ui/cmm-button";
+import { CmmButton, CmmButtonGroup } from "@/components/ui/cmm-button";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { guideChecklistStorage } from "@/lib/storage/ui-state-storage";
 import { cn } from "@/lib/utils";
 
+const CHECKLIST_ITEMS = [
+  {
+    id: "phone",
+    fr: "Charger son téléphone",
+    en: "Charge your phone",
+  },
+  {
+    id: "gear",
+    fr: "Prévoir gants, sacs, pinces, eau",
+    en: "Bring gloves, bags, grabbers and water",
+  },
+  {
+    id: "danger",
+    fr: "Éviter les déchets dangereux",
+    en: "Avoid hazardous waste",
+  },
+  {
+    id: "photos",
+    fr: "Prendre quelques photos utiles",
+    en: "Take a few useful photos",
+  },
+  {
+    id: "report",
+    fr: "Renseigner poids, durée, bénévoles, types de déchets",
+    en: "Record weight, duration, volunteers and waste types",
+  },
+  {
+    id: "validate",
+    fr: "Valider le bilan après l’action",
+    en: "Validate the post-action report",
+  },
+] as const;
+
 export function GuideOperationalPanel() {
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
-  const [resourceVariant, setResourceVariant] = useState<
-    "solo" | "team" | "school" | "weather"
-  >("team");
   const [checks, setChecks] = useState<Record<string, boolean>>(() => {
-    const defaults = {
-      briefing: false,
-      declaration: false,
-      tracing: false,
-      moderation: false,
-      export: false,
-    };
+    const defaults = Object.fromEntries(
+      CHECKLIST_ITEMS.map((item) => [item.id, false]),
+    ) as Record<string, boolean>;
+
     if (typeof window === "undefined") {
       return defaults;
     }
+
     return { ...defaults, ...(guideChecklistStorage.read() ?? {}) };
   });
   const [serverReady, setServerReady] = useState(false);
@@ -91,305 +111,81 @@ export function GuideOperationalPanel() {
     setChecks((prev) => ({ ...prev, [key]: !prev[key] }));
   }
 
-  const sop = useMemo(() => {
-    if (resourceVariant === "solo") {
-      return [
-        {
-          phase: fr ? "Avant sortie" : "Before outing",
-          content: fr
-            ? "Brief sécurité, météo et zone ciblée validés."
-            : "Safety, weather and target zone briefing validated.",
-        },
-        {
-          phase: fr ? "Pendant collecte" : "During collection",
-          content: fr
-            ? "Déclencher mode déclaration rapide, capturer 1 preuve géo minimale."
-            : "Trigger quick-declare mode, capture 1 minimal geo proof.",
-        },
-        {
-          phase: fr ? "Après action" : "After action",
-          content: fr
-            ? "Compléter les champs manquants et publier le récap 5 lignes."
-            : "Fill missing fields and publish a 5-line recap.",
-        },
-        {
-          phase: fr ? "Qualité / export" : "Quality / export",
-          content: fr
-            ? "Vérifier score qualité et exporter CSV pour suivi local."
-            : "Check quality score and export CSV for local follow-up.",
-        },
-      ];
-    }
-
-    if (resourceVariant === "school") {
-      return [
-        {
-          phase: fr ? "Avant sortie" : "Before outing",
-          content: fr
-            ? "Répartition des rôles élèves/adultes + rappel EPI obligatoire."
-            : "Split roles between students/adults + mandatory PPE reminder.",
-        },
-        {
-          phase: fr ? "Pendant collecte" : "During collection",
-          content: fr
-            ? "Progression par binômes, pauses cadencées, zone délimitée."
-            : "Move in pairs, paced breaks, defined area.",
-        },
-        {
-          phase: fr ? "Après action" : "After action",
-          content: fr
-            ? "Débrief classe + no-show + incidents sécurité."
-            : "Class debrief + no-show + safety incidents.",
-        },
-        {
-          phase: fr ? "Qualité / export" : "Quality / export",
-          content: fr
-            ? "Exporter bilan pédagogique + géocouverture + volumes triés."
-            : "Export pedagogical summary + geo coverage + sorted volumes.",
-        },
-      ];
-    }
-
-    if (resourceVariant === "weather") {
-      return [
-        {
-          phase: fr ? "Avant sortie" : "Before outing",
-          content: fr
-            ? "Confirmer niveau risque météo et équipements EPI renforcés."
-            : "Confirm weather risk level and reinforced PPE.",
-        },
-        {
-          phase: fr ? "Pendant collecte" : "During collection",
-          content: fr
-            ? "Limiter durée de rotation, pauses imposées, binômes obligatoires."
-            : "Limit rotation time, enforced breaks, mandatory pairs.",
-        },
-        {
-          phase: fr ? "Après action" : "After action",
-          content: fr
-            ? "Tracer contraintes terrain subies (pluie, vent, chaleur, froid)."
-            : "Record weather-related constraints (rain, wind, heat, cold).",
-        },
-        {
-          phase: fr ? "Qualité / export" : "Quality / export",
-          content: fr
-            ? "Tagger l'action météo-défavorable pour lecture KPI robuste."
-            : "Tag the weather-disrupted action for robust KPI reading.",
-        },
-      ];
-    }
-
-    return [
-      {
-        phase: fr ? "Avant sortie" : "Before outing",
-        content: fr
-          ? "Assignation des rôles équipe, vérification kit, rappel sécurité."
-          : "Assign team roles, verify kit, safety reminder.",
-      },
-      {
-        phase: fr ? "Pendant collecte" : "During collection",
-        content: fr
-          ? "Déclaration rapide sur mobile + trace/polygone par zone."
-          : "Quick mobile declaration + trace/polygon per area.",
-      },
-      {
-        phase: fr ? "Après action" : "After action",
-        content: fr
-          ? "Consolidation des volumes, contrôle cohérence et relance corrections."
-          : "Consolidate volumes, check consistency, chase corrections.",
-      },
-      {
-        phase: fr ? "Qualité / export" : "Quality / export",
-        content: fr
-          ? "Validation score qualité et export partenaire/collectivité."
-          : "Validate quality score and export partner/local-authority report.",
-      },
-    ];
-  }, [fr, resourceVariant]);
-
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-10 pt-8 items-start">
+    <div className="grid grid-cols-1 gap-8 pt-8">
       <motion.article
-        initial={{ opacity: 0, x: -20 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        className="rounded-[2.5rem] border border-white/5 bg-slate-900/40 backdrop-blur-3xl p-8 shadow-2xl space-y-8"
+        initial={{ opacity: 0, y: 12 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-[2.5rem] border border-emerald-200/70 bg-[linear-gradient(180deg,rgba(244,251,240,0.98)_0%,rgba(255,255,255,0.99)_100%)] p-8 shadow-[0_28px_80px_rgba(15,23,42,0.08)] lg:p-10"
       >
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              <Settings2 size={20} />
-            </div>
-            <h3 className="text-xl font-black text-white tracking-tight">
-              {fr ? "Configuration" : "Setup"}
-            </h3>
-          </div>
-          <div className="relative group">
-            <select
-              value={resourceVariant}
-              onChange={(event) =>
-                setResourceVariant(event.target.value as typeof resourceVariant)
-              }
-              className="appearance-none bg-slate-950/40 border border-white/10 rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer pr-10"
-            >
-              <option value="solo">Solo</option>
-              <option value="team">{fr ? "Équipe" : "Team"}</option>
-              <option value="school">{fr ? "Scolaire" : "School"}</option>
-              <option value="weather">{fr ? "Météo" : "Weather"}</option>
-            </select>
-            <ChevronRight
-              size={14}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none rotate-90"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          {sop.map((step, idx) => (
-            <motion.div
-              key={step.phase}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              className="p-5 rounded-2xl border border-white/5 bg-white/5 group hover:bg-white/10 transition-all"
-            >
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400 mb-2">
-                {step.phase}
-              </p>
-              <p className="text-sm font-bold text-slate-300 leading-relaxed">
-                {step.content}
-              </p>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 pt-4">
-          <CmmButton
-            href="/actions/new"
-            tone="primary"
-            variant="pill"
-            className="w-full justify-between px-4 py-4 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl hover:-translate-y-0.5 active:scale-95 transition-all"
-          >
-            {fr ? "Déclarer une action" : "Declare an action"}
-            <ArrowRight size={16} />
-          </CmmButton>
-          <div className="grid grid-cols-2 gap-3">
-            <CmmButton
-              href="/actions/history"
-              tone="secondary"
-              variant="pill"
-              className="w-full justify-center px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] transition-all hover:-translate-y-0.5"
-            >
-              {fr ? "Fix Qualité" : "Fix Quality"}
-            </CmmButton>
-            <CmmButton
-              href="/reports"
-              tone="tertiary"
-              variant="pill"
-              className="w-full justify-center px-4 py-4 text-[9px] font-black uppercase tracking-[0.2em] transition-all hover:-translate-y-0.5"
-            >
-              {fr ? "Exporter" : "Export"}
-            </CmmButton>
-          </div>
-        </div>
-      </motion.article>
-
-      <motion.article
-        initial={{ opacity: 0, x: 20 }}
-        whileInView={{ opacity: 1, x: 0 }}
-        className="rounded-[3rem] border border-white/5 bg-slate-950/20 backdrop-blur-3xl p-10 shadow-2xl space-y-10 relative overflow-hidden"
-      >
-        <div className="absolute top-0 right-0 p-20 opacity-5 pointer-events-none">
-          <Trophy size={300} className="text-emerald-400" />
+        <div className="pointer-events-none absolute -right-10 top-0 p-20 opacity-10">
+          <Trophy size={300} className="text-emerald-500" />
         </div>
 
         <div className="relative z-10 space-y-6">
-          <div className="flex flex-wrap items-center justify-between gap-6">
-            <div className="space-y-1">
-              <h3 className="text-2xl font-black text-white tracking-tight">
-                {fr ? "Playbook Bénévole" : "Volunteer Playbook"}
+          <div className="flex flex-wrap items-start justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">
+                <ShieldCheck size={14} />
+                {fr ? "Protocole opérationnel" : "Operational protocol"}
+              </div>
+              <h3 className="text-2xl font-black tracking-tight text-slate-900">
+                {fr ? "Avant / pendant / après" : "Before / during / after"}
               </h3>
-              <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
-                {fr ? "Parcours de Certification" : "Certification Path"}
+              <p className="max-w-2xl text-sm font-medium text-slate-600">
+                {fr
+                  ? "Suivez cette séquence courte pour garder une donnée exploitable."
+                  : "Follow this short sequence to keep the data usable."}
               </p>
             </div>
+
             <div className="text-right">
-              <p className="text-3xl font-black text-emerald-400 tracking-tighter">
+              <p className="text-3xl font-black tracking-tighter text-emerald-700">
                 {progress}%
               </p>
-              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">
                 {fr ? "Complété" : "Completed"}
               </p>
             </div>
           </div>
 
-          <div className="relative h-3 w-full bg-slate-900 rounded-full overflow-hidden border border-white/5">
+          <div className="relative h-3 w-full overflow-hidden rounded-full border border-emerald-100 bg-slate-100">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
-              className="h-full bg-gradient-to-r from-emerald-600 to-blue-500 rounded-full shadow-[0_0_20px_rgba(16,185,129,0.3)]"
+              className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.2)]"
             />
           </div>
         </div>
 
-        <div className="relative z-10 grid gap-4">
-          {[
-            {
-              id: "briefing",
-              label: fr
-                ? "Briefing équipe, météo et sécurité validés"
-                : "Team, weather and safety briefing validated",
-            },
-            {
-              id: "declaration",
-              label: fr
-                ? "Déclaration créée avec lieu, date, quantités"
-                : "Declaration created with place, date and quantities",
-            },
-            {
-              id: "tracing",
-              label: fr
-                ? "Trace ou polygone capturés pour la zone"
-                : "Trace or polygon captured for the area",
-            },
-            {
-              id: "moderation",
-              label: fr
-                ? "Modération suivie pour fiabiliser la donnée"
-                : "Moderation followed to make data reliable",
-            },
-            {
-              id: "export",
-              label: fr
-                ? "Export CSV/JSON réalisé pour exploitation"
-                : "CSV/JSON export produced for use",
-            },
-          ].map((check, idx) => (
+        <div className="relative z-10 mt-8 grid gap-4">
+          {CHECKLIST_ITEMS.map((item, idx) => (
             <motion.div
-              key={check.id}
-              initial={{ opacity: 0, y: 10 }}
+              key={item.id}
+              initial={{ opacity: 0, y: 8 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
+              transition={{ delay: idx * 0.05 }}
             >
               <CmmButton
-                onClick={() => toggleCheck(check.id)}
-                tone={checks[check.id] ? "primary" : "tertiary"}
+                onClick={() => toggleCheck(item.id)}
+                tone={checks[item.id] ? "primary" : "tertiary"}
                 variant="pill"
                 className={cn(
-                  "flex items-center gap-6 p-6 rounded-2xl border transition-all text-left group w-full",
-                  checks[check.id]
+                  "flex items-center gap-5 p-5 rounded-2xl border transition-all text-left group w-full",
+                  checks[item.id]
                     ? "bg-emerald-500/10 border-emerald-500/20 shadow-lg"
                     : "bg-white/5 border-white/5 hover:border-white/10",
                 )}
               >
                 <div
                   className={cn(
-                    "w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-500",
-                    checks[check.id]
+                    "w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-500 shrink-0",
+                    checks[item.id]
                       ? "bg-emerald-500 text-slate-950 scale-110"
                       : "bg-slate-950/40 border border-white/10 text-slate-600",
                   )}
                 >
-                  {checks[check.id] ? (
+                  {checks[item.id] ? (
                     <CheckCircle2 size={18} />
                   ) : (
                     <div className="w-2 h-2 rounded-full bg-slate-800" />
@@ -398,27 +194,47 @@ export function GuideOperationalPanel() {
                 <span
                   className={cn(
                     "text-sm font-black tracking-tight transition-colors",
-                    checks[check.id]
+                    checks[item.id]
                       ? "text-white"
-                      : "text-slate-400 group-hover:text-slate-200",
+                      : "text-slate-300 group-hover:text-slate-200",
                   )}
                 >
-                  {check.label}
+                  {fr ? item.fr : item.en}
                 </span>
               </CmmButton>
             </motion.div>
           ))}
         </div>
 
-        <div className="relative z-10 p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex items-center gap-6">
-          <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400">
+        <div className="relative z-10 mt-8 flex items-center gap-4 rounded-[1.5rem] border border-emerald-200 bg-emerald-50/80 p-5">
+          <div className="rounded-xl bg-emerald-50 p-3 text-emerald-700">
             <Sparkles size={20} />
           </div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
+          <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed text-slate-500">
             {fr
-              ? "Complétez le playbook pour débloquer votre certificat d'impact et rejoindre les contributeurs certifiés."
-              : "Complete the playbook to unlock your impact certificate and join certified contributors."}
+              ? "Checklist rapide, sans surcharge, pour standardiser la remontée de terrain."
+              : "Short checklist, no clutter, to standardize field reporting."}
           </p>
+        </div>
+
+        <div className="relative z-10 pt-2">
+          <CmmButtonGroup className="flex flex-col sm:flex-row gap-3">
+            <CmmButton
+              href="/sections/route"
+              tone="primary"
+              className="h-14 px-6 rounded-full font-black uppercase tracking-widest text-xs shadow-2xl shadow-emerald-500/20"
+            >
+              {fr ? "Planifier une action" : "Plan an action"}
+            </CmmButton>
+            <CmmButton
+              href="/sections/weather?tab=preparation"
+              tone="secondary"
+              variant="pill"
+              className="h-14 px-6 font-black uppercase tracking-widest text-xs"
+            >
+              {fr ? "Ouvrir la fiche terrain" : "Open field sheet"}
+            </CmmButton>
+          </CmmButtonGroup>
         </div>
       </motion.article>
     </div>
@@ -432,13 +248,13 @@ export function GuideSection() {
   return (
     <SectionShell
       id="guide"
-      title={fr ? "Mode Opératoire" : "Operating Procedures"}
+      title={fr ? "Protocole opérationnel" : "Operational protocol"}
       subtitle={
         fr
-          ? "Guide pratique et protocoles terrain pour une collecte de données fiable et sécurisée."
-          : "Practical guide and field protocols for reliable and secure data collection."
+          ? "Avant / pendant / après"
+          : "Before / during / after"
       }
-      icon={BookOpen}
+      icon={ShieldCheck}
       gradient="from-emerald-500/20 via-blue-500/10 to-transparent"
     >
       <GuideOperationalPanel />

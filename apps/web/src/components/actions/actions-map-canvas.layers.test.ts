@@ -10,6 +10,7 @@ describe("actions map canvas layers", () => {
       points: true,
       shapes: true,
       infrastructure: true,
+      trashSpotter: true,
     });
   });
 
@@ -20,11 +21,13 @@ describe("actions map canvas layers", () => {
       points: true,
       shapes: false,
       infrastructure: true,
+      trashSpotter: true,
     });
     expect(DEFAULT_VISIBLE_MAP_LAYERS).toEqual({
       points: true,
       shapes: true,
       infrastructure: true,
+      trashSpotter: true,
     });
   });
 });

@@ -14,6 +14,19 @@ import {
   getNavigationDropdownTitleGradientStyle,
 } from "./navigation-dropdown-theme";
 import { getNavigationDropdownPanelStyle } from "./navigation-dropdown-shell-theme";
+import {
+  NAVIGATION_DROPDOWN_TREE_ITEM_ACTIVE_CLASS_NAME,
+  NAVIGATION_DROPDOWN_TREE_ITEM_CARD_CLASS_NAME,
+  NAVIGATION_DROPDOWN_TREE_ITEM_INACTIVE_CLASS_NAME,
+  NAVIGATION_DROPDOWN_TREE_ITEM_LABEL_CLASS_NAME,
+  NAVIGATION_DROPDOWN_TREE_LIST_CLASS_NAME,
+  NAVIGATION_DROPDOWN_TREE_PANEL_INNER_CLASS_NAME,
+  NAVIGATION_DROPDOWN_TREE_SECTION_ACTIVE_CLASS_NAME,
+  NAVIGATION_DROPDOWN_TREE_SECTION_CLASS_NAME,
+  NAVIGATION_DROPDOWN_TREE_SECTION_CURRENT_CLASS_NAME,
+  NAVIGATION_DROPDOWN_TREE_SECTION_LABEL_CLASS_NAME,
+  NAVIGATION_DROPDOWN_TREE_SECTION_INACTIVE_CLASS_NAME,
+} from "./navigation-dropdown-size-theme";
 
 type AppNavigationTreeMenuProps = {
   activeSpaceId: NavigationSpace["id"] | null;
@@ -217,12 +230,12 @@ export function AppNavigationTreeMenu({
                       <section
                         key={space.id}
                         className={cn(
-                          "rounded-[1.2rem] border bg-white/45 p-1.5",
+                          NAVIGATION_DROPDOWN_TREE_SECTION_CLASS_NAME,
                           isOpenSpace
-                            ? "border-black/18 bg-white/65"
+                            ? NAVIGATION_DROPDOWN_TREE_SECTION_ACTIVE_CLASS_NAME
                             : isCurrentSpace
-                              ? "border-black/16 bg-white/55"
-                              : "border-black/10",
+                              ? NAVIGATION_DROPDOWN_TREE_SECTION_CURRENT_CLASS_NAME
+                              : NAVIGATION_DROPDOWN_TREE_SECTION_INACTIVE_CLASS_NAME,
                         )}
                       >
                         <button
@@ -247,7 +260,7 @@ export function AppNavigationTreeMenu({
                             </span>
                             <span className="min-w-0">
                               <span
-                                className="block cmm-text-small font-bold tracking-[-0.02em]"
+                                className={NAVIGATION_DROPDOWN_TREE_SECTION_LABEL_CLASS_NAME}
                                 style={getNavigationDropdownTitleGradientStyle(space.id)}
                               >
                                 {getLocalizedText(space.label, locale, space.id)}
@@ -274,9 +287,9 @@ export function AppNavigationTreeMenu({
                               animate={{ opacity: 1, height: "auto" }}
                               exit={{ opacity: 0, height: 0 }}
                               transition={{ duration: 0.16, ease: "easeOut" }}
-                              className="overflow-hidden"
+                              className={NAVIGATION_DROPDOWN_TREE_PANEL_INNER_CLASS_NAME}
                             >
-                              <ul className="mt-1.5 space-y-1 px-1 pb-1">
+                              <ul className={NAVIGATION_DROPDOWN_TREE_LIST_CLASS_NAME}>
                                 {space.items.map((item: NavigationItem) => {
                                   const isActiveItem = isActivePath(pathname, item.href);
                                   return (
@@ -289,13 +302,13 @@ export function AppNavigationTreeMenu({
                                           setIsOpen(false);
                                         }}
                                         className={cn(
-                                          "block rounded-xl border px-3 py-2.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20",
+                                          NAVIGATION_DROPDOWN_TREE_ITEM_CARD_CLASS_NAME,
                                           isActiveItem
-                                            ? "border-black/18 bg-white/72 text-black"
-                                            : "border-black/8 bg-white/40 text-black/78 hover:border-black/12 hover:bg-white/60 hover:text-black",
+                                            ? NAVIGATION_DROPDOWN_TREE_ITEM_ACTIVE_CLASS_NAME
+                                            : NAVIGATION_DROPDOWN_TREE_ITEM_INACTIVE_CLASS_NAME,
                                         )}
                                       >
-                                        <span className="block cmm-text-small font-semibold text-black">
+                                        <span className={NAVIGATION_DROPDOWN_TREE_ITEM_LABEL_CLASS_NAME}>
                                           {getLocalizedText(item.label, locale, item.href)}
                                         </span>
                                       </Link>

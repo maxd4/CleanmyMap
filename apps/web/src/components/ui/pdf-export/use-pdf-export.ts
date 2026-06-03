@@ -25,6 +25,7 @@ type UsePdfExportParams = {
   data?: PdfReportData | null;
   disabled?: boolean;
   onGenerate?: (payload: PdfReportPayload) => void | Promise<void>;
+  buildPrintableHtml?: (payload: PdfReportPayload) => string;
 };
 
 const STORAGE_KEY = "cleanmymap.rubrique_export_history.v2";
@@ -135,7 +136,10 @@ export function usePdfExport(params: UsePdfExportParams) {
       if (params.onGenerate) {
         await params.onGenerate(payload);
       } else {
-        const opened = openPrintableReport(buildOfficialReportHtml(payload));
+        const printableHtml = params.buildPrintableHtml
+          ? params.buildPrintableHtml(payload)
+          : buildOfficialReportHtml(payload);
+        const opened = openPrintableReport(printableHtml);
         if (!opened) {
           downloadPdf(filename, buildPdfReportLines(payload));
         }

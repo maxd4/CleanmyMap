@@ -20,4 +20,11 @@ export const PAGE_FAMILY_ROUTE_EXCEPTIONS: PageFamilyRouteException[] = [
       pathname === "/methodologie" || pathname.startsWith("/methodologie/"),
     familyId: "cartographie-impact",
   },
+  {
+    id: "weather-operations",
+    note: "Météo et logistique rattachée au bloc Agir pour centraliser les tokens hero",
+    match: (pathname) =>
+      pathname === "/sections/weather" || pathname.startsWith("/sections/weather/"),
+    familyId: "agir",
+  },
 ];

@@ -43,7 +43,7 @@ export function TrashSpotterSection() {
   return (
     <SectionShell
       id="trash-spotter"
-      title={fr ? "Trash Spotter Engine" : "Trash Spotter Engine"}
+      title={fr ? "Signaler un déchet" : "Trash Spotter"}
       subtitle={fr ? "Signalement rapide et cartographie collaborative des zones à traiter." : "Quick reporting and collaborative mapping of areas to treat."}
       icon={Target}
       gradient="from-amber-500/20 via-orange-500/10 to-transparent"
@@ -172,7 +172,7 @@ export function TrashSpotterSection() {
 
                   <div className="rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl bg-slate-900/40 backdrop-blur-3xl min-h-[500px]">
                     <ActionsMapFeed
-                      types={["clean_place", "spot"]}
+                      types={["spot"]}
                       days={180}
                       statusFilter="approved"
                       impactFilter="all"

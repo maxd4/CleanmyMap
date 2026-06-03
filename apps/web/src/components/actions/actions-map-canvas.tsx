@@ -13,7 +13,13 @@ import type { Map as LeafletMap } from "leaflet";
 import type { ActionMapItem } from "@/lib/actions/types";
 import { cn } from "@/lib/utils";
 import { MapControls } from "./map/map-controls";
-import { SignalementMarkers, ShapeLayers, InfrastructureMarkers } from "./map/map-layers";
+import {
+  SignalementMarkers,
+  ShapeLayers,
+  InfrastructureMarkers,
+  TrashSpotterMarkers,
+  isTrashSpotterItem,
+} from "./map/map-layers";
 import { getActionsMapCenter } from "./actions-map-canvas.utils";
 import type { MapViewportState } from "./map/map-export.types";
 import {
@@ -29,6 +35,7 @@ type ActionsMapCanvasProps = {
   fullViewport?: boolean;
   compact?: boolean;
   className?: string;
+  tone?: "sky" | "emerald";
   onViewportChange?: (viewport: MapViewportState) => void;
 };
 
@@ -75,10 +82,34 @@ export function ActionsMapCanvas({
   fullViewport = false,
   compact = false,
   className,
+  tone = "sky",
   onViewportChange,
 }: ActionsMapCanvasProps) {
   const center = useMemo(() => getActionsMapCenter(items), [items]);
   const [visibleLayers, setVisibleLayers] = useState(DEFAULT_VISIBLE_MAP_LAYERS);
+  const isEmerald = tone === "emerald";
+  const mapShellClasses = isEmerald
+    ? "border-emerald-200/30 bg-[rgba(245,251,244,0.98)] shadow-[0_32px_64px_-12px_rgba(34,197,94,0.18)] ring-1 ring-emerald-200/20"
+    : "border-sky-300/16 bg-[rgba(10,31,50,0.98)] shadow-[0_32px_64px_-12px_rgba(56,189,248,0.28)] ring-1 ring-sky-300/10";
+  const mapCanvasClass = isEmerald
+    ? "bg-[rgba(244,249,241,0.98)]"
+    : "bg-[rgba(10,31,50,0.98)]";
+  const layerButtonClasses = {
+    active: isEmerald
+      ? "border-emerald-300/35 bg-emerald-400/18 text-emerald-950"
+      : "border-sky-300/35 bg-sky-400/18 text-sky-50",
+    inactive: isEmerald
+      ? "border-emerald-300/16 bg-white/78 text-emerald-900/58 hover:border-emerald-300/28 hover:text-emerald-950"
+      : "border-sky-300/12 bg-[rgba(16,40,64,0.9)] text-sky-100/56 hover:border-sky-300/24 hover:text-sky-50",
+  };
+  const mainItems = useMemo(
+    () => items.filter((item) => !isTrashSpotterItem(item)),
+    [items],
+  );
+  const trashSpotterItems = useMemo(
+    () => items.filter((item) => isTrashSpotterItem(item)),
+    [items],
+  );
 
   function toggleLayer(key: VisibleMapLayerKey) {
     setVisibleLayers((current) => toggleVisibleMapLayer(current, key));
@@ -87,7 +118,8 @@ export function ActionsMapCanvas({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-[2rem] border border-sky-300/16 bg-[rgba(10,31,50,0.98)] shadow-[0_32px_64px_-12px_rgba(56,189,248,0.28)] ring-1 ring-sky-300/10",
+        "relative overflow-hidden rounded-[2rem]",
+        mapShellClasses,
         compact && "rounded-none border-0 bg-transparent shadow-none ring-0",
         className,
       )}
@@ -97,6 +129,7 @@ export function ActionsMapCanvas({
           { key: "points" as const, label: "Points" },
           { key: "shapes" as const, label: "Tracés" },
           { key: "infrastructure" as const, label: "Infras" },
+          { key: "trashSpotter" as const, label: "Trash Spotter" },
         ].map((layer) => {
           const active = visibleLayers[layer.key];
           return (
@@ -106,9 +139,7 @@ export function ActionsMapCanvas({
               onClick={() => toggleLayer(layer.key)}
               className={[
                 "pointer-events-auto rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl transition",
-                active
-                  ? "border-sky-300/35 bg-sky-400/18 text-sky-50"
-                  : "border-sky-300/12 bg-[rgba(16,40,64,0.9)] text-sky-100/56 hover:border-sky-300/24 hover:text-sky-50",
+                active ? layerButtonClasses.active : layerButtonClasses.inactive,
               ].join(" ")}
               aria-pressed={active}
             >
@@ -126,16 +157,17 @@ export function ActionsMapCanvas({
         className={
           compact
             ? cn(
-                "h-full min-h-[18rem] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500",
+                "h-full min-h-[18rem] w-full transition-colors duration-500",
+                mapCanvasClass,
                 fullViewport ? "min-h-full" : null,
               )
             : fullViewport
-            ? "h-[100dvh] min-h-[100dvh] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500"
-            : "h-[68vh] min-h-[34rem] w-full bg-[rgba(10,31,50,0.98)] transition-colors duration-500 md:h-[74vh] md:min-h-[42rem]"
+            ? `h-[100dvh] min-h-[100dvh] w-full transition-colors duration-500 ${mapCanvasClass}`
+            : `h-[68vh] min-h-[34rem] w-full transition-colors duration-500 md:h-[74vh] md:min-h-[42rem] ${mapCanvasClass}`
         }
         >
         <MapViewportReporter onViewportChange={onViewportChange} />
-        <MapControls center={center} variant={compact ? "default" : "immersive"} />
+        <MapControls center={center} variant={compact ? "default" : "immersive"} tone={tone} />
         <LayersControl position="topright">
           <LayersControl.BaseLayer checked name="Plan clair">
             <TileLayer
@@ -155,20 +187,26 @@ export function ActionsMapCanvas({
 
         <LayerGroup>
           <SignalementMarkers
-            items={items}
+            items={mainItems}
             visible={visibleLayers.points}
             selectedActionId={selectedActionId}
             onSelectAction={onSelectAction}
           />
           <ShapeLayers
-            items={items}
+            items={mainItems}
             visible={visibleLayers.shapes}
             selectedActionId={selectedActionId}
             onSelectAction={onSelectAction}
           />
           <InfrastructureMarkers
-            items={items}
+            items={mainItems}
             visible={visibleLayers.infrastructure}
+            selectedActionId={selectedActionId}
+            onSelectAction={onSelectAction}
+          />
+          <TrashSpotterMarkers
+            items={trashSpotterItems}
+            visible={visibleLayers.trashSpotter}
             selectedActionId={selectedActionId}
             onSelectAction={onSelectAction}
           />
@@ -214,13 +252,42 @@ export function ActionsMapCanvas({
           .cmm-infrastructure-marker__emoji {
             font-size: 20px;
           }
+          .cmm-trash-spotter-cluster {
+            background: transparent;
+            border: none;
+          }
+          .cmm-trash-spotter-cluster__body {
+            width: 100%;
+            height: 100%;
+            border-radius: 999px;
+            border: 1px solid rgba(34, 197, 94, 0.28);
+            background: linear-gradient(180deg, rgba(236, 253, 245, 0.96), rgba(209, 250, 229, 0.86));
+            color: #14532d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            box-shadow: 0 20px 30px -16px rgba(34, 197, 94, 0.28);
+          }
+          .cmm-trash-spotter-cluster__count {
+            font-size: 0.95rem;
+            font-weight: 900;
+            line-height: 1;
+          }
+          .cmm-trash-spotter-cluster__label {
+            font-size: 0.48rem;
+            font-weight: 900;
+            letter-spacing: 0.26em;
+            text-transform: uppercase;
+            opacity: 0.72;
+          }
           @keyframes pulse-glow {
             0% { transform: scale(0.95); opacity: 0.5; }
             50% { transform: scale(1.2); opacity: 0.8; }
             100% { transform: scale(0.95); opacity: 0.5; }
           }
           .leaflet-container {
-            background: var(--bg-canvas, #061423);
+            background: var(--bg-canvas, ${isEmerald ? "#f5fbf3" : "#061423"});
           }
         `}</style>
       </MapContainer>

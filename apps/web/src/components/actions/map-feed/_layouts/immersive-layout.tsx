@@ -30,6 +30,7 @@ type ImmersiveLayoutProps = {
   onSelectAction: (actionId: string) => void;
   onReload: () => void;
   onResetFilters: () => void;
+  tone?: "sky" | "emerald";
   showIntro?: boolean;
   fullViewport?: boolean;
   showStoriesCarousel?: boolean;
@@ -52,6 +53,7 @@ export function ImmersiveLayout({
   onSelectAction,
   onReload,
   onResetFilters,
+  tone = "sky",
   showIntro = true,
   fullViewport = false,
   showStoriesCarousel = true,
@@ -59,6 +61,7 @@ export function ImmersiveLayout({
   mapExportTargetRef,
   onViewportChange,
 }: ImmersiveLayoutProps) {
+  const isEmerald = tone === "emerald";
   const hasItems = items.length > 0;
   const emptyMode = allItems.length > 0 ? "filtered" : "empty";
 
@@ -67,10 +70,10 @@ export function ImmersiveLayout({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.26),transparent_28%),radial-gradient(circle_at_top_right,rgba(191,219,254,0.24),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]" />
       <div className="relative z-10 flex flex-col gap-6">
         {showIntro ? (
-          <div className="flex flex-wrap items-start justify-between gap-3 rounded-[2.25rem] border border-sky-200/80 bg-sky-50 px-6 py-5 text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-xl">
+          <div className={`flex flex-wrap items-start justify-between gap-3 rounded-[2.25rem] px-6 py-5 text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-xl border ${isEmerald ? "border-emerald-200/80 bg-emerald-50" : "border-sky-200/80 bg-sky-50"}`}>
             <div className="max-w-2xl">
               {hasPartialSource ? (
-                <span className="inline-flex items-center rounded-full border border-amber-300/40 bg-amber-100 px-2.5 py-1 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950">
+                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 ${isEmerald ? "border-emerald-300/40 bg-emerald-100" : "border-amber-300/40 bg-amber-100"}`}>
                   Sources partielles: {partialSourcesLabel}
                 </span>
               ) : null}
@@ -89,7 +92,7 @@ export function ImmersiveLayout({
           </div>
             <button
               onClick={onReload}
-              className="rounded-2xl border border-sky-200/80 bg-sky-100 px-6 py-3 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition hover:border-sky-300 hover:bg-sky-200 active:scale-95"
+              className={`rounded-2xl px-6 py-3 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition active:scale-95 border ${isEmerald ? "border-emerald-200/80 bg-emerald-100 hover:border-emerald-300 hover:bg-emerald-200" : "border-sky-200/80 bg-sky-100 hover:border-sky-300 hover:bg-sky-200"}`}
             >
               {isValidating ? "Actualisation..." : "Rafraîchir les données"}
             </button>
@@ -131,6 +134,7 @@ export function ImmersiveLayout({
                 selectedActionId={selectedActionId}
                 onSelectAction={onSelectAction}
                 fullViewport={fullViewport}
+                tone={tone}
                 onViewportChange={onViewportChange}
               />
             )}
@@ -138,7 +142,7 @@ export function ImmersiveLayout({
         </div>
 
         {showStoriesCarousel ? (
-          <div className="rounded-[2.75rem] border border-sky-200/80 bg-sky-50 p-6 text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-3xl">
+          <div className={`rounded-[2.75rem] p-6 text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-3xl border ${isEmerald ? "border-emerald-200/80 bg-emerald-50" : "border-sky-200/80 bg-sky-50"}`}>
             <ActionStoriesCarousel items={items} onOpenAction={onOpenAction} />
           </div>
         ) : null}

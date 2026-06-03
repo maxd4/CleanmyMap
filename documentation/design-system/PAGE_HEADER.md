@@ -8,6 +8,8 @@
 - le titre principal doit être rendu en `h1` par le composant
 - `PageHero` reste un alias de compatibilité pour les pages héritées
 - aucun nouveau système de titre décoratif ne doit être créé hors cas documenté
+- le header canonique n'affiche plus de bulles, badges ou contexte au-dessus du titre
+- les titres et sous-titres doivent tenir sur une seule ligne sur desktop standard
 - les sous-titres doivent rester courts, lisibles et non exhaustifs
 - les majuscules décoratives ne sont admises que pour un eyebrow très court
 
@@ -16,10 +18,10 @@
 | Prop | Type | Rôle |
 |---|---|---|
 | `title` | `ReactNode` | titre principal obligatoire |
-| `eyebrow` | `ReactNode` | repère court au-dessus du titre |
+| `eyebrow` | `ReactNode` | conservé pour compatibilité, non rendu dans le header canonique |
 | `subtitle` | `ReactNode` | sous-titre bref |
-| `badge` | `ReactNode` | badge unique, si besoin |
-| `badges` | `ReactNode` | rangée de badges |
+| `badge` | `ReactNode` | conservé pour compatibilité, non rendu dans le header canonique |
+| `badges` | `ReactNode` | conservé pour compatibilité, non rendu dans le header canonique |
 | `action` | `ReactNode` | action contextuelle associée au header |
 | `align` | `"left" \| "center"` | alignement du bloc, `left` par défaut |
 | `family` | `ResolvedPageFamily` | source de vérité prioritaire pour une page appartenant à un bloc |
@@ -82,8 +84,17 @@
 ## Alignement
 
 - `left` est l'alignement standard
-- `center` ne doit être utilisé que pour les landings ou dashboards explicitement documentés
+- `center` doit être utilisé quand le titre et le sous-titre sont présentés comme un hero centré
+- le titre et le sous-titre doivent rester centrés l'un au-dessus de l'autre
 - un changement d'alignement doit rester documenté dans la fiche de page ou la charte concernée
+
+## Lisibilité
+
+- éviter les retours à la ligne manuels sur `title` et `subtitle`
+- réduire d'abord la taille, puis le tracking, puis la largeur utile avant toute autre solution
+- si le texte ne peut pas tenir, privilégier l'ellipsis plutôt qu'un retour décoratif
+- conserver une lecture centrée pour les pages qui passent en `align="center"`
+- les repères de contexte au-dessus du titre doivent être déplacés vers le corps de page ou supprimés
 
 ## Règle d'évolution
 

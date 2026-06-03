@@ -406,7 +406,7 @@ export const RUBRIQUE_REGISTRY = [
     priority: 50,
     kind: "section",
     route: "/sections/trash-spotter",
-    label: { fr: "Signalement de déchets", en: "Trash spotting" },
+    label: { fr: "Signaler un déchet", en: "Trash Spotter" },
     description: { fr: "Localisez un nouveau hotspot de pollution", en: "Locate a new pollution hotspot" },
     availability: "available",
     implementation: "finalized",
