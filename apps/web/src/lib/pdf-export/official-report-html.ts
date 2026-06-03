@@ -1,5 +1,5 @@
 import { buildOfficialReportCss } from "./report-pdf-theme";
-import type { PdfReportPayload } from "./simple-pdf";
+import type { PdfReportChapter, PdfReportPayload } from "./simple-pdf";
 
 type CalloutKind = "note" | "important" | "limite";
 
@@ -194,12 +194,74 @@ function renderRows(payload: PdfReportPayload): string {
   `;
 }
 
+function renderChapter(chapter: PdfReportChapter, index: number): string {
+  const lines = chapter.lines ?? [];
+  const hasStats = Boolean(chapter.stats?.length);
+  const hasRows = Boolean(chapter.rows?.length);
+  const columns =
+    chapter.columns ?? Object.keys(chapter.rows?.[0] ?? {}).map((key) => ({ key, label: key }));
+
+  return `
+    <section class="cmm-section" id="chapter-${index + 1}">
+      <p class="cmm-kicker">Chapitre ${index + 1}</p>
+      <h2 class="cmm-section-title">${escapeHtml(chapter.title)}</h2>
+      ${chapter.subtitle ? `<p>${escapeHtml(chapter.subtitle)}</p>` : ""}
+      ${lines.length ? `<div class="cmm-callout note">${renderList(lines)}</div>` : ""}
+      ${
+        hasStats
+          ? `
+            <div class="cmm-stat-grid">
+              ${chapter.stats!
+                .map(
+                  (stat) => `
+                    <article class="cmm-card">
+                      <div class="cmm-card-label">${escapeHtml(stat.label)}</div>
+                      <div class="cmm-card-value">${escapeHtml(formatValue(stat.value))}</div>
+                      ${stat.detail ? `<p class="cmm-muted">${escapeHtml(stat.detail)}</p>` : ""}
+                    </article>
+                  `,
+                )
+                .join("")}
+            </div>
+          `
+          : ""
+      }
+      ${
+        hasRows
+          ? `
+            <div class="cmm-table-wrap">
+              <table>
+                <thead>
+                  <tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}</tr>
+                </thead>
+                <tbody>
+                  ${chapter.rows!
+                    .slice(0, 40)
+                    .map(
+                      (row) => `
+                        <tr>
+                          ${columns.map((column) => `<td>${escapeHtml(formatValue(row[column.key]))}</td>`).join("")}
+                        </tr>
+                      `,
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
+          `
+          : ""
+      }
+    </section>
+  `;
+}
+
 export function buildOfficialReportHtml(payload: PdfReportPayload): string {
   const generatedAt = formatGeneratedAt(payload.data.generatedAt);
   const title = payload.title || payload.data.title || "Rapport CleanMyMap";
   const summary = payload.data.summary?.filter((line) => line.trim().length > 0) ?? [];
   const hasSummary = summary.length > 0;
   const hasStats = Boolean(payload.data.stats?.length);
+  const hasChapters = Boolean(payload.data.chapters?.length);
   const hasRows = Boolean(payload.data.rows?.length);
 
   return `<!doctype html>
@@ -248,6 +310,7 @@ export function buildOfficialReportHtml(payload: PdfReportPayload): string {
         <h2 class="cmm-section-title">Sommaire</h2>
         <ul>
           ${hasSummary ? "<li>Résumé</li>" : ""}
+          ${hasChapters ? "<li>Chapitres détaillés</li>" : ""}
           ${hasStats ? "<li>Indicateurs</li>" : ""}
           ${hasRows ? "<li>Données visibles</li>" : ""}
           <li>Méthode et limites</li>
@@ -257,6 +320,23 @@ export function buildOfficialReportHtml(payload: PdfReportPayload): string {
       ${
         hasSummary
           ? `<section class="cmm-section"><h2 class="cmm-section-title">Résumé</h2><div class="cmm-callout note">${renderList(summary)}</div></section>`
+          : ""
+      }
+      ${
+        hasChapters
+          ? `
+            <section class="cmm-section">
+              <h2 class="cmm-section-title">Chapitres détaillés</h2>
+              <div class="cmm-callout note">
+                <ul>
+                  ${payload.data.chapters!
+                    .map((chapter, index) => `<li><a href="#chapter-${index + 1}">${escapeHtml(chapter.title)}</a></li>`)
+                    .join("")}
+                </ul>
+              </div>
+            </section>
+            ${payload.data.chapters!.map((chapter, index) => renderChapter(chapter, index)).join("\n")}
+          `
           : ""
       }
       ${renderStats(payload)}

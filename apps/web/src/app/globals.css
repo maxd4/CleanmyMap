@@ -431,19 +431,27 @@ html[data-theme="dark"] {
   }
 
   .cmm-page-header-title {
-    font-size: clamp(3rem, 6vw, 5.5rem);
+    display: block;
+    width: 100%;
+    font-size: clamp(2.75rem, 5vw, 5rem);
     font-weight: 900;
-    line-height: 0.92;
+    line-height: 0.96;
     letter-spacing: -0.05em;
-    text-wrap: balance;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .cmm-page-header-subtitle {
+    display: block;
+    width: 100%;
     max-width: 42rem;
     font-size: 1rem;
     font-weight: 500;
-    line-height: 1.7;
-    text-wrap: pretty;
+    line-height: 1.55;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .cmm-page-header-badges {
@@ -484,22 +492,26 @@ html[data-theme="dark"] {
   }
 
   .cmm-home-section-title {
-    font-size: clamp(3rem, 6vw, 5.5rem);
-    line-height: 0.92;
+    font-size: clamp(2.75rem, 5vw, 5rem);
+    line-height: 0.96;
     font-weight: 900;
     letter-spacing: -0.05em;
     color: #064e3b;
-    text-wrap: balance;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .cmm-home-section-subtitle {
     max-width: 42rem;
     margin-inline: auto;
     font-size: 1rem;
-    line-height: 1.7;
+    line-height: 1.55;
     font-weight: 500;
     color: rgba(6, 78, 59, 0.66);
-    text-wrap: pretty;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .cmm-ribbon-surface {

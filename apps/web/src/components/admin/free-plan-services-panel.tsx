@@ -3,6 +3,7 @@
 import useSWR from "swr";
 import { RefreshCcw, ShieldCheck } from "lucide-react";
 import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
+import { FreePlanServicesVisual } from "@/components/admin/free-plan-services-visual";
 import { buildGovernanceMethodologyLinks } from "@/lib/governance/governance-links";
 import {
   buildServiceRiskRows,
@@ -360,6 +361,12 @@ export function FreePlanServicesPanel() {
             </article>
           </div>
 
+          <FreePlanServicesVisual
+            services={services}
+            previousServices={snapshots[1]?.model.infrastructure.services ?? []}
+            serviceHealth={serviceHealth}
+          />
+
           <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
             <article className="rounded-3xl border border-sky-400/20 bg-sky-500/10 p-4 text-sm text-sky-100/80">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -642,8 +649,16 @@ export function FreePlanServicesPanel() {
               const extraMetrics = Math.max(0, service.metricEstimates.length - metrics.length);
               const deltaLabel =
                 previousSnapshot === null
-                  ? "sans base"
+                  ? "NA"
                   : `${row.deltaKgCo2eProxy > 0 ? "+" : ""}${formatNumber(row.deltaKgCo2eProxy, 2)} kg`;
+              const growthLabel =
+                previousSnapshot === null
+                  ? "NA"
+                  : `+${formatNumber(row.growthPercent, 0)}%`;
+              const deltaBadgeLabel =
+                previousSnapshot === null
+                  ? "NA"
+                  : `${formatNumber(row.deltaKgCo2eProxy, 2)} kg`;
 
               return (
                 <article
@@ -696,7 +711,7 @@ export function FreePlanServicesPanel() {
                         Croissance
                       </p>
                       <p className="mt-1 text-lg font-black text-white">
-                        +{formatNumber(row.growthPercent, 0)}%
+                        {growthLabel}
                       </p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
@@ -737,7 +752,7 @@ export function FreePlanServicesPanel() {
                       confiance {formatNumber(service.confidencePercent, 0)}%
                     </span>
                     <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] opacity-80">
-                      delta {formatNumber(row.deltaKgCo2eProxy, 2)} kg
+                      delta {deltaBadgeLabel}
                     </span>
                     {health ? (
                       <span

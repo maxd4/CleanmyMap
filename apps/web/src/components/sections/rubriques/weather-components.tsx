@@ -39,63 +39,66 @@ import { cn } from "@/lib/utils";
 export const WeatherTabs = memo(function WeatherTabs({
   activeTab,
   setActiveTab,
-  kitProgress,
   fr,
 }: {
-  activeTab: "weather" | "kit" | "guide";
-  setActiveTab: (tab: "weather" | "kit" | "guide") => void;
-  kitProgress: number;
+  activeTab: "conditions" | "preparation" | "protocol";
+  setActiveTab: (tab: "conditions" | "preparation" | "protocol") => void;
   fr: boolean;
 }) {
+  const tabs = [
+    { id: "conditions", label: fr ? "Météo" : "Weather", icon: CloudSun },
+    { id: "preparation", label: fr ? "Préparation terrain" : "Field prep", icon: ClipboardCheck },
+    { id: "protocol", label: fr ? "Protocole opérationnel" : "Operational protocol", icon: BookOpen },
+  ] as const;
+
   return (
-    <div className="flex items-center gap-3 p-2 bg-slate-950/40 border border-white/10 rounded-[2rem] backdrop-blur-3xl shadow-2xl">
-      {[
-        { id: "weather", label: fr ? "Météo d'action" : "Action weather", icon: CloudSun },
-        { id: "kit", label: fr ? "Kit terrain" : "Field kit", icon: ClipboardCheck },
-        { id: "guide", label: fr ? "Mode opératoire" : "Operating guide", icon: BookOpen },
-      ].map((tab) => {
+    <div className="inline-flex w-full overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white/90 p-1 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+      {tabs.map((tab) => {
         const Icon = tab.icon;
         const isActive = activeTab === tab.id;
+
         return (
-          <CmmButton
+          <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
-            tone={isActive ? "primary" : "tertiary"}
-            variant="pill"
+            type="button"
+            onClick={() => setActiveTab(tab.id)}
             className={cn(
-              "relative flex items-center gap-3 px-8 py-3 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all duration-300",
-              isActive ? "text-white" : "text-slate-500 hover:text-slate-200"
+              "relative flex min-h-[4.5rem] flex-1 items-center gap-3 px-5 py-4 text-left transition-all duration-300",
+              isActive ? "text-emerald-800" : "text-slate-500 hover:text-slate-800",
             )}
           >
             {isActive && (
-              <motion.div
-                layoutId="weather-tab-active"
-                className="absolute inset-0 bg-white/10 border border-white/10 rounded-xl -z-10 shadow-xl"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-              />
+              <span className="absolute inset-x-0 bottom-0 h-1 rounded-t-full bg-emerald-600" />
             )}
-            <Icon
-              size={16}
-              className={
+            <span
+              className={cn(
+                "flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition-all",
                 isActive
-                  ? tab.id === "kit"
-                    ? "text-amber-400"
-                    : tab.id === "guide"
-                      ? "text-emerald-400"
-                      : "text-blue-400"
-                  : "text-slate-500"
-              }
-            />
-            {tab.label}
-            {tab.id === 'kit' && (
-              <span className={cn(
-                "ml-2 px-2 py-0.5 rounded-full text-[9px] font-black",
-                isActive ? "bg-amber-500 text-white shadow-lg shadow-amber-500/20" : "bg-white/5 text-slate-500"
-              )}>
-                {kitProgress}%
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 shadow-sm"
+                  : "border-slate-200 bg-slate-50 text-slate-400",
+              )}
+            >
+              <Icon size={17} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold tracking-tight">
+                {tab.label}
               </span>
-            )}
-          </CmmButton>
+              <span className="mt-0.5 block text-[11px] font-medium text-slate-400">
+                {tab.id === "conditions"
+                  ? fr
+                    ? "Est-ce le bon moment pour agir ?"
+                    : "Is it the right time to act?"
+                  : tab.id === "preparation"
+                    ? fr
+                      ? "Quoi emporter ?"
+                      : "What to bring?"
+                    : fr
+                      ? "Avant / pendant / après"
+                      : "Before / during / after"}
+              </span>
+            </span>
+          </button>
         );
       })}
     </div>

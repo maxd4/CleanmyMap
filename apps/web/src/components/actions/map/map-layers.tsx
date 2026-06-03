@@ -16,6 +16,7 @@ import { ActionMapItem } from "@/lib/actions/types";
 import {
   mapItemCigaretteButts,
   mapItemCoordinates,
+  mapItemType,
   mapItemWasteKg,
   mapItemShouldRenderPoint,
 } from "@/lib/actions/data-contract";
@@ -64,6 +65,11 @@ function resolvePointColor(
     return "#0284c7"; // Bleu propre
   }
   return resolveDynamicColor(score);
+}
+
+export function isTrashSpotterItem(item: ActionMapItem): boolean {
+  const type = mapItemType(item);
+  return type === "spot" || item.source === "spots" || item.record_type === "other";
 }
 
 export function SignalementMarkers({
@@ -329,6 +335,122 @@ export function ShapeLayers({
         );
       })}
     </>
+  );
+}
+
+export function TrashSpotterMarkers({
+  items,
+  visible = true,
+  selectedActionId = null,
+  onSelectAction,
+}: {
+  items: ActionMapItem[];
+  visible?: boolean;
+  selectedActionId?: string | null;
+  onSelectAction?: (actionId: string) => void;
+}) {
+  const spotItems = items.filter(isTrashSpotterItem);
+  const layerRefs = useRef<Record<string, { openPopup?: () => void; closePopup?: () => void }>>({});
+
+  useEffect(() => {
+    if (!selectedActionId) {
+      return;
+    }
+
+    const layer = layerRefs.current[selectedActionId];
+    layer?.openPopup?.();
+  }, [selectedActionId]);
+
+  if (!visible) {
+    return null;
+  }
+
+  return (
+    <MarkerClusterGroup
+      chunkedLoading
+      maxClusterRadius={resolveClusterRadius}
+      disableClusteringAtZoom={18}
+      spiderfyOnMaxZoom={true}
+      spiderfyDistanceMultiplier={1.6}
+      showCoverageOnHover={false}
+      iconCreateFunction={(cluster) => {
+        const childCount = cluster.getChildCount();
+        const tier = resolveClusterDensityTier(childCount);
+        const size = resolveClusterIconSize(childCount);
+        const ariaLabel = resolveClusterAriaLabel(childCount);
+
+        return divIcon({
+          className: `cmm-trash-spotter-cluster ${
+            tier === "dense"
+              ? "cmm-trash-spotter-cluster--dense"
+              : tier === "high"
+                ? "cmm-trash-spotter-cluster--high"
+                : tier === "medium"
+                  ? "cmm-trash-spotter-cluster--medium"
+                  : "cmm-trash-spotter-cluster--low"
+          }`,
+          html: `
+            <div class="cmm-trash-spotter-cluster__body" aria-label="${ariaLabel}">
+              <span class="cmm-trash-spotter-cluster__count">${formatClusterCount(childCount)}</span>
+              <span class="cmm-trash-spotter-cluster__label">trash spotter</span>
+            </div>
+          `,
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+          popupAnchor: [0, -(size / 2)],
+          tooltipAnchor: [0, -(size / 2)],
+        });
+      }}
+    >
+      {spotItems.map((item) => {
+        const coords = mapItemCoordinates(item);
+        if (
+          !mapItemShouldRenderPoint(item) ||
+          coords.latitude === null ||
+          coords.longitude === null
+        ) {
+          return null;
+        }
+
+        const isSelected = selectedActionId === item.id;
+
+        return (
+          <CircleMarker
+            key={`trash-spotter-${item.id}`}
+            ref={(layer) => {
+              if (layer) {
+                layerRefs.current[item.id] = layer;
+              } else {
+                delete layerRefs.current[item.id];
+              }
+            }}
+            center={[coords.latitude, coords.longitude]}
+            radius={7 + (isSelected ? 2 : 0)}
+            eventHandlers={{
+              click: () => {
+                onSelectAction?.(item.id);
+              },
+            }}
+            pathOptions={{
+              color: "#16a34a",
+              fillColor: "#22c55e",
+              fillOpacity: isSelected ? 0.9 : 0.82,
+              weight: 2 + (isSelected ? 1 : 0),
+              opacity: 1,
+            }}
+          >
+            <Popup className="glass-popup custom-popup">
+              <ActionPopupContent
+                key={item.id}
+                item={item}
+                color="#22c55e"
+                coords={coords}
+              />
+            </Popup>
+          </CircleMarker>
+        );
+      })}
+    </MarkerClusterGroup>
   );
 }
 

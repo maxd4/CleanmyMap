@@ -30,7 +30,7 @@ export function useTrashSpotter(fr: boolean) {
       status: "approved",
       days: 180,
       limit: 250,
-      types: ["clean_place", "spot"],
+      types: ["spot"],
     }),
     swrRecentViewOptions,
   );

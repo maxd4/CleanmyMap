@@ -58,9 +58,10 @@ export function useWeatherData() {
         longitude: String(selectedZone.longitude),
         timezone: "Europe/Paris",
         forecast_days: "8",
-        current: "temperature_2m,precipitation,wind_speed_10m",
+        current: "temperature_2m,precipitation,wind_speed_10m,uv_index,relative_humidity_2m",
         hourly: "temperature_2m,precipitation,wind_speed_10m",
-        daily: "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max",
+        daily:
+          "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,uv_index_max",
       });
       const response = await fetch(`https://api.open-meteo.com/v1/forecast?${query.toString()}`, { cache: "no-store" });
       if (!response.ok) throw new Error("weather_unavailable");
@@ -98,6 +99,7 @@ export function useWeatherData() {
       max: Number(data?.daily?.temperature_2m_max?.[index + 1] ?? 0),
       rain: Number(data?.daily?.precipitation_sum?.[index + 1] ?? 0),
       wind: Number(data?.daily?.wind_speed_10m_max?.[index + 1] ?? 0),
+      uv: Number(data?.daily?.uv_index_max?.[index + 1] ?? 0),
     }));
   }, [data]);
 
@@ -109,6 +111,7 @@ export function useWeatherData() {
       min: Number(data?.daily?.temperature_2m_min?.[index] ?? 0),
       max: Number(data?.daily?.temperature_2m_max?.[index] ?? 0),
       wind: Number(data?.daily?.wind_speed_10m_max?.[index] ?? 0),
+      uv: Number(data?.daily?.uv_index_max?.[index] ?? 0),
     };
   }, [data]);
 

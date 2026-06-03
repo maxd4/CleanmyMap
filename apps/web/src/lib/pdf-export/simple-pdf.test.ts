@@ -75,6 +75,27 @@ describe("simple PDF export", () => {
     expect(html).toContain("Méthode et limites");
   });
 
+  it("renders detailed chapters in the printable report html", () => {
+    const html = buildOfficialReportHtml({
+      ...payload,
+      data: {
+        ...payload.data,
+        chapters: [
+          {
+            title: "Synthèse exécutive",
+            subtitle: "Vue d’ensemble",
+            lines: ["Résumé du rapport.", "Chiffres clés disponibles."],
+            stats: [{ label: "Actions", value: 12 }],
+          },
+        ],
+      },
+    });
+
+    expect(html).toContain("Chapitres détaillés");
+    expect(html).toContain("Synthèse exécutive");
+    expect(html).toContain("Résumé du rapport.");
+  });
+
   it("renders the controlled markdown grammar and escapes html", () => {
     const html = renderOfficialMarkdown([
       "# Titre",

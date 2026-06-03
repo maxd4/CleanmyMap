@@ -30,23 +30,6 @@ describe("FreePlanServicesPanel", () => {
           },
         },
       },
-      {
-        snapshotDate: "2026-04-01",
-        model: {
-          infrastructure: {
-            services: [
-              {
-                key: "vercel",
-                monthlyKgCo2eProxy: 1.1,
-              },
-              {
-                key: "supabase",
-                monthlyKgCo2eProxy: 1.9,
-              },
-            ],
-          },
-        },
-      },
     ] as unknown as EnvironmentalImpactSnapshotRecord[];
 
     useSWRMock.mockImplementation((key: unknown) => {
@@ -187,13 +170,15 @@ describe("FreePlanServicesPanel", () => {
     expect(markup).toContain("Pression mensuelle totale");
     expect(markup).toContain("Vercel");
     expect(markup).toContain("Supabase");
+    expect(markup).toContain("Sélecteur des plans gratuits");
+    expect(markup).toContain("Pollution mensuelle");
+    expect(markup).toContain("Pollution annuelle");
+    expect(markup).toContain("NA");
     expect(markup).toContain("Dérive mensuelle");
     expect(markup).toContain("Service le plus exposé");
     expect(markup).toContain("Lecture de décision");
     expect(markup).toContain("Part quota");
     expect(markup).toContain("Franchissement de seuil");
-    expect(markup).toContain("Croissance mensuelle excessive");
-    expect(markup).toContain("Action recommandée");
     expect(markup).toContain("Liens de pilotage");
     expect(markup).toContain("Méthodologie de calcul");
   });

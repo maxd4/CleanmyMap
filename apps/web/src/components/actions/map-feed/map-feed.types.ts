@@ -15,6 +15,7 @@ export type ActionsMapCanvasComponent = ComponentType<{
   selectedActionId?: string | null;
   onSelectAction?: (actionId: string) => void;
   fullViewport?: boolean;
+  tone?: "sky" | "emerald";
   onViewportChange?: (viewport: MapViewportState) => void;
 }>;
 
@@ -28,6 +29,7 @@ export type ActionsMapFeedProps = {
   zoneQuery?: string;
   limit?: number;
   presentation?: "default" | "immersive";
+  tone?: "sky" | "emerald";
   showIntro?: boolean;
   fullViewport?: boolean;
   showStoriesCarousel?: boolean;

@@ -210,16 +210,12 @@ export type PageHeaderProps = {
 export function PageHeader({
   family: familyProp,
   tone,
-  eyebrow,
   title,
   subtitle,
-  badges,
-  badge,
   action,
   align = "left",
   contrast = "default",
   className,
-  badgesClassName,
   actionClassName,
 }: PageHeaderProps) {
   const pathname = usePathname();
@@ -235,21 +231,6 @@ export function PageHeader({
         className,
       )}
     >
-      {badge || badges ? (
-        <div
-          className={cn(
-            "cmm-page-header-badges",
-            isCenter ? "justify-center" : "justify-start",
-            badgesClassName,
-          )}
-        >
-          {badge}
-          {badges}
-        </div>
-      ) : null}
-
-      {eyebrow ? <p className={tokens.eyebrow}>{eyebrow}</p> : null}
-
       <h1 className={tokens.title}>{title}</h1>
 
       {subtitle ? <p className={tokens.subtitle}>{subtitle}</p> : null}

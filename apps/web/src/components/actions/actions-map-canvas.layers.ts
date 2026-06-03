@@ -2,12 +2,14 @@ export type VisibleMapLayers = {
   points: boolean;
   shapes: boolean;
   infrastructure: boolean;
+  trashSpotter: boolean;
 };
 
 export const DEFAULT_VISIBLE_MAP_LAYERS: VisibleMapLayers = {
   points: true,
   shapes: true,
   infrastructure: true,
+  trashSpotter: true,
 };
 
 export type VisibleMapLayerKey = keyof VisibleMapLayers;

@@ -1,439 +1,672 @@
 "use client";
 
-import Link from"next/link";
-import { CHAPTERS, GLOSSARY_ROWS } from"./constants";
-import { toFrInt, toFrNumber } from"./analytics";
-import { GeoCoverageRing, InsightBox, MetricCard, MonthlyBars, ReportPage, ReportTable } from"./ui";
-import type { ReportModel } from"./types";
+import Link from "next/link";
+import Image from "next/image";
+import { REPORT_SECTIONS, GLOSSARY_ROWS } from "./constants";
+import { toFrInt, toFrNumber } from "./analytics";
+import { GeoCoverageRing, InsightBox, MetricCard, MonthlyBars, ReportPage, ReportTable } from "./ui";
+import type { ReportModel } from "./types";
+import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import type { ReportAccountScopeCoverage } from "@/lib/reports/scope";
 
-type ReportsWebSectionsProps = {
- report: ReportModel;
- weather: {
- current?: {
- temperature_2m?: number;
- precipitation?: number;
- wind_speed_10m?: number;
- };
- };
- weatherAdvice: string;
- isLoading: boolean;
- hasError: boolean;
+type WasteProfile = {
+  categories: Array<{
+    key: string;
+    label: string;
+    kg: number;
+    actions: number;
+  }>;
+  coveragePercent: number;
+  dominantLabel: string;
+  dominantKg: number;
 };
 
+type ReportsWebSectionsProps = {
+  report: ReportModel;
+  activeScopeLabel: string;
+  accountCoverage: ReportAccountScopeCoverage;
+  wasteProfile: WasteProfile;
+  weather: {
+    current?: {
+      temperature_2m?: number;
+      precipitation?: number;
+      wind_speed_10m?: number;
+    };
+  };
+  weatherAdvice: string;
+  isLoading: boolean;
+  hasError: boolean;
+};
+
+function formatSourceLabel(key: string): string {
+  if (key === "water") return "Eau";
+  if (key === "co2") return "CO2";
+  if (key === "surface") return "Surface";
+  if (key === "roi") return "ROI";
+  return key;
+}
+
+function buildSurfaceProxy(report: ReportModel): number {
+  const factors = IMPACT_PROXY_CONFIG.factors;
+  return (
+    report.totals.kg * factors.surfaceM2PerWasteKg +
+    report.totals.hours * 60 * factors.surfaceM2PerVolunteerMinute
+  );
+}
+
 export function ReportsWebSections(props: ReportsWebSectionsProps) {
- const { report, weather, weatherAdvice, isLoading, hasError } = props;
- const [chapter0, chapter1, chapter2, chapter3, chapter4, chapter5, chapter6, chapter7, chapter8, chapter9] = CHAPTERS;
- if (
-  !chapter0 ||
-  !chapter1 ||
-  !chapter2 ||
-  !chapter3 ||
-  !chapter4 ||
-  !chapter5 ||
-  !chapter6 ||
-  !chapter7 ||
-  !chapter8 ||
-  !chapter9
- ) {
-  return null;
- }
+  const {
+    report,
+    activeScopeLabel,
+    accountCoverage,
+    wasteProfile,
+    weather,
+    weatherAdvice,
+    isLoading,
+    hasError,
+  } = props;
 
- return (
- <div className="space-y-8">
- <ReportPage {...chapter0}>
- <div className="grid gap-3 md:grid-cols-2">
- <InsightBox
- title="Lecture terrain"
- lines={[
-"Priorités opérationnelles, itinéraires, météo et checklists lisibles en moins de 2 minutes.",
-"Zones à traiter, volumes estimés et points de vigilance directement exploitables.",
- ]}
- />
- <InsightBox
- title="Lecture décideur"
- lines={[
-"KPI consolidés, qualité des données, tendances et priorisation territoriale.",
-"Section gouvernance + annexes pour arbitrage budgétaire et diffusion institutionnelle.",
- ]}
- />
- </div>
- <ReportTable
- headers={["Partie","Objectif","Public principal"]}
- rows={CHAPTERS.slice(1).map((chapter) => [
- chapter.title,
- chapter.subtitle,
- chapter.audience ==="terrain"
- ?"Bénévoles"
- : chapter.audience ==="strategie"
- ?"Décideurs"
- :"Mixte",
- ])}
- />
- </ReportPage>
+  const [
+    section1,
+    section2,
+    section3,
+    section4,
+    section5,
+    section6,
+    section7,
+    section8,
+    section9,
+    section10,
+    section11,
+    section12,
+  ] = REPORT_SECTIONS;
 
- <ReportPage {...chapter1}>
- <div className="grid gap-3 md:grid-cols-3">
- <MetricCard
- label="Actions validées"
- value={toFrInt(report.totals.actions)}
- hint="Périmètre: 12 derniers mois"
- />
- <MetricCard label="Volume collecte" value={`${toFrNumber(report.totals.kg)} kg`} tone="accent" />
- <MetricCard label="Mégots retirés" value={toFrInt(report.totals.butts)} tone="accent" />
- <MetricCard label="Bénévoles mobilisés" value={toFrInt(report.totals.volunteers)} />
- <MetricCard label="Heures bénévoles" value={`${toFrNumber(report.totals.hours)} h`} />
- <MetricCard
- label="Tendance 30j"
- value={`${report.trendPercent >= 0 ?"+" :""}${toFrNumber(report.trendPercent)}%`}
- hint="vs période précédente"
- tone={report.trendPercent > 0 ?"danger" :"base"}
- />
- </div>
- <MonthlyBars rows={report.monthRows6} />
- </ReportPage>
+  if (
+    !section1 ||
+    !section2 ||
+    !section3 ||
+    !section4 ||
+    !section5 ||
+    !section6 ||
+    !section7 ||
+    !section8 ||
+    !section9 ||
+    !section10 ||
+    !section11 ||
+    !section12
+  ) {
+    return null;
+  }
 
- <ReportPage {...chapter2}>
- <div className="grid gap-3 md:grid-cols-4">
- <MetricCard label="Pending" value={toFrInt(report.moderation.pending)} />
- <MetricCard label="Approved" value={toFrInt(report.moderation.approved)} />
- <MetricCard label="Rejected" value={toFrInt(report.moderation.rejected)} />
- <MetricCard
- label="Conversion modération"
- value={`${toFrNumber(report.moderation.conversion)}%`}
- tone="accent"
- />
- </div>
- <div className="grid gap-3 md:grid-cols-2">
- <InsightBox
- title="Qualité de données"
- lines={[
- `Complétude: ${toFrNumber(report.quality.completenessScore)}%`,
- `Cohérence: ${toFrNumber(report.quality.coherenceScore)}%`,
- `Fraîcheur médiane: ${toFrNumber(report.quality.freshnessDays)} jours`,
- `Taux de géolocalisation: ${toFrNumber(report.quality.geolocRate)}%`,
- ]}
- />
- <InsightBox
- title="Priorités décisionnelles"
- lines={[
-"Cibler en priorité les 3 zones avec score de récurrence le plus élevé.",
-"Stabiliser un délai de modération court pour fiabiliser la publication.",
-"Exploiter la tendance glissante 30 jours pour arbitrage hebdomadaire.",
- ]}
- />
- </div>
- <ReportTable
- headers={["Zone","Actions","Kg","Recurrence","Score"]}
- rows={report.areas.slice(0, 8).map((row) => [
- row.area,
- toFrInt(row.actions),
- toFrNumber(row.kg),
- toFrInt(row.recurrence),
- toFrNumber(row.score),
- ])}
- />
- </ReportPage>
+  const executive = report.executive as {
+    summary: string;
+    watchouts: string[];
+    budgetUseCases: string[];
+    readinessLabel: string;
+    readinessScore: number;
+    evidence: string[];
+    headline: string;
+  };
+  const surfaceProxy = buildSurfaceProxy(report);
 
- <ReportPage {...chapter3}>
- <div className="grid gap-3 md:grid-cols-4">
- <MetricCard label="Actions terrain" value={toFrInt(report.terrain.actionCount)} />
- <MetricCard label="Spots signalés" value={toFrInt(report.terrain.spotCount)} />
- <MetricCard label="Lieux propres" value={toFrInt(report.terrain.cleanPlaceCount)} />
- <MetricCard label="Distance itinéraire" value={`${toFrNumber(report.routeDistance)} km`} tone="accent" />
- </div>
- <div className="grid gap-3 md:grid-cols-2">
- <GeoCoverageRing coveragePercent={report.map.geoCoverage} tracePercent={report.map.traceCoverage} />
- <InsightBox
- title="Recommandations opérationnelles"
- lines={[
-"Passer en priorité par les étapes à score kg+mégots le plus élevé.",
-"Capturer une trace/polygone quand l'action couvre plusieurs segments.",
-"Documenter les zones de tri dès la collecte pour accélérer la valorisation.",
- ]}
- />
- </div>
- <ReportTable
- headers={["Étape","Zone","Kg","Mégots","Segment","Navigation"]}
- rows={
- report.routeSteps.length > 0
- ? report.routeSteps.map((step) => [
- `#${step.index}`,
- step.label,
- `${toFrNumber(step.kg)} kg`,
- toFrInt(step.butts),
- `${toFrNumber(step.segmentKm)} km`,
- `${toFrNumber(step.latitude, 4)}, ${toFrNumber(step.longitude, 4)}`,
- ])
- : [["-","Aucune étape calculable","-","-","-","-"]]
- }
- />
- </ReportPage>
+  return (
+    <div className="space-y-8">
+      <ReportPage id={section1.id} {...section1}>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            label="Période analysée"
+            value="12 mois glissants"
+            hint={`Généré le ${report.generatedAt}`}
+          />
+          <MetricCard
+            label="Territoire couvert"
+            value={activeScopeLabel}
+            tone="accent"
+            hint="Périmètre actif"
+          />
+          <MetricCard
+            label="Organisation ou collectif"
+            value={activeScopeLabel === "Global" ? "Collectif CleanMyMap" : activeScopeLabel}
+            hint="Lecture contextuelle"
+          />
+          <MetricCard
+            label="Sources des données"
+            value={`${Object.keys(report.impactMethodology.sources).length} familles`}
+            tone="accent"
+            hint="Actions, carte, communauté, météo"
+          />
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <InsightBox
+            title="Périmètre de lecture"
+            lines={[
+              `Fenêtre consolidée: ${report.generatedAt}.`,
+              `Territoire actif: ${activeScopeLabel}.`,
+              "Le rapport agrège les données validées, la cartographie d’action, les événements communauté et les proxys météo.",
+            ]}
+          />
+          <ReportTable
+            headers={["Source", "Rôle", "Statut"]}
+            rows={Object.entries(report.impactMethodology.sources).map(([key, value]) => [
+              formatSourceLabel(key),
+              value,
+              "Documentée",
+            ])}
+          />
+        </div>
+      </ReportPage>
 
- <ReportPage {...chapter4}>
- <div className="grid gap-3 md:grid-cols-4">
- <MetricCard label="6 mois - actions" value={toFrInt(report.climate.six.actions)} />
- <MetricCard label="6 mois - kg" value={`${toFrNumber(report.climate.six.kg)} kg`} />
- <MetricCard label="12 mois - actions" value={toFrInt(report.climate.twelve.actions)} />
- <MetricCard label="12 mois - kg" value={`${toFrNumber(report.climate.twelve.kg)} kg`} />
- </div>
- <div className="grid gap-3 md:grid-cols-2">
- <InsightBox
- title="Impacts estimés"
- lines={[
- `Eau potentiellement protégée: ${toFrInt(report.climate.waterProtectedLiters)} L`,
- `CO2e évité (proxy): ${toFrNumber(report.climate.co2AvoidedKg)} kg`,
- `Indice de tri propre: ${toFrNumber(report.recycling.triIndex)} / 100`,
- `Volume triable (proxy): ${toFrNumber(report.recycling.recyclableKg)} kg`,
- ]}
- />
- <InsightBox
- title="Météo opérationnelle"
- lines={[
- weatherAdvice,
- `Température: ${weather.current?.temperature_2m ??"n/a"} °C`,
- `Précipitations: ${weather.current?.precipitation ??"n/a"} mm`,
- `Vent: ${weather.current?.wind_speed_10m ??"n/a"} km/h`,
- ]}
- />
- </div>
- <ReportTable
- headers={["Zone","Actions","Kg","Mégots","Kg/action"]}
- rows={report.annualRows.length > 0 ? report.annualRows : [["n/a","0","0","0","0"]]}
- />
- </ReportPage>
+      <ReportPage id={section2.id} {...section2}>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <MetricCard label="Actions recensées" value={toFrInt(report.totals.actions)} />
+          <MetricCard
+            label="Déchets collectés"
+            value={`${toFrNumber(report.totals.kg)} kg`}
+            tone="accent"
+          />
+          <MetricCard label="Déchets signalés" value={toFrInt(report.terrain.spotCount)} />
+          <MetricCard
+            label="Participation bénévole"
+            value={toFrInt(report.totals.volunteers)}
+            tone="accent"
+          />
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <InsightBox
+            title="Zones traitées et zones restantes"
+            lines={[
+              `Zones traitées: ${toFrInt(report.areas.length)} zones cartographiées.`,
+              `Couverture géographique: ${toFrNumber(report.map.geoCoverage)}%.`,
+              `Zones restantes (proxy): ${toFrNumber(Math.max(0, 100 - report.map.geoCoverage))}% du périmètre cartographiable.`,
+            ]}
+          />
+          <InsightBox
+            title="Mobilisation terrain"
+            lines={[
+              `Bénévoles mobilisés: ${toFrInt(report.totals.volunteers)}.`,
+              `Heures cumulées: ${toFrNumber(report.totals.hours)} h.`,
+              `Actions terrain certifiées: ${toFrInt(report.terrain.actionCount)}.`,
+            ]}
+          />
+        </div>
+        <ReportTable
+          headers={["Zone", "Actions", "Kg", "Mégots", "Récurrence"]}
+          rows={report.areas.slice(0, 6).map((row) => [
+            row.area,
+            toFrInt(row.actions),
+            toFrNumber(row.kg),
+            toFrInt(row.butts),
+            `${toFrNumber(row.recurrence, 1)}x`,
+          ])}
+        />
+      </ReportPage>
 
- <ReportPage {...chapter5}>
- <div className="grid gap-3 md:grid-cols-4">
- <MetricCard label="Événements créés" value={toFrInt(report.community.totalEvents)} />
- <MetricCard label="À venir" value={toFrInt(report.community.upcomingEvents)} />
- <MetricCard label="Passés" value={toFrInt(report.community.pastEvents)} />
- <MetricCard label="Taux RSVP oui" value={`${toFrNumber(report.community.participationRate)}%`} tone="accent" />
- </div>
- <div className="grid gap-3 md:grid-cols-2">
- <ReportTable
- headers={["Indicateur","Valeur","Lecture"]}
- rows={[
- [
-"RSVP oui / maybe / non",
- `${toFrInt(report.community.rsvp.yes)} / ${toFrInt(report.community.rsvp.maybe)} / ${toFrInt(report.community.rsvp.no)}`,
-"Niveau d'engagement des événements",
- ],
- [
-"Badges confirmés (5+)",
- toFrInt(report.community.badgeConfirmed),
-"Progression régulière des contributeurs",
- ],
- [
-"Badges experts (10+)",
- toFrInt(report.community.badgeExpert),
-"Noyau bénévole structurant",
- ],
- [
-"Répartition citoyen/asso/institution",
- `${toFrInt(report.community.sourceBuckets.citoyen)} / ${toFrInt(report.community.sourceBuckets.associatif)} / ${toFrInt(report.community.sourceBuckets.institutionnel)}`,
-"Équilibre de l'écosystème",
- ],
- ]}
- />
- <InsightBox
- title="Actions recommandées"
- lines={[
-"Caler les campagnes terrain sur les événements à plus fort RSVP oui.",
-"Rendre les paliers de badges visibles dans les parcours bénévoles.",
-"Activer des partenariats commerçants/entreprises sur les zones de récurrence.",
- ]}
- />
- </div>
- <ReportTable
- headers={["Rang","Contributeur","Actions","Kg","Mégots"]}
- rows={
- report.community.topLeaderboard.length > 0
- ? report.community.topLeaderboard.map((entry, index) => [
- `#${index + 1}`,
- entry.name,
- toFrInt(entry.actions),
- toFrNumber(entry.kg),
- toFrInt(entry.butts),
- ])
- : [["-","Aucune donnée","0","0","0"]]
- }
- />
- </ReportPage>
+      <ReportPage id={section3.id} {...section3}>
+        <div className="grid gap-3 md:grid-cols-4">
+          <MetricCard label="Couverture GPS" value={`${toFrNumber(report.map.geoCoverage)}%`} />
+          <MetricCard
+            label="Traces / polylignes"
+            value={`${toFrInt(report.map.traces)} / ${toFrInt(report.map.polylines)}`}
+            tone="accent"
+          />
+          <MetricCard label="Taux de traces" value={`${toFrNumber(report.map.traceCoverage)}%`} />
+          <MetricCard
+            label="Évolution des signalements"
+            value={`${report.trendPercent >= 0 ? "+" : ""}${toFrNumber(report.trendPercent)}%`}
+            tone={report.trendPercent > 0 ? "danger" : "base"}
+          />
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <GeoCoverageRing coveragePercent={report.map.geoCoverage} tracePercent={report.map.traceCoverage} />
+          <InsightBox
+            title="Lecture territoriale"
+            lines={[
+              `Zone la plus sensible: ${report.areas[0]?.area ?? "n/a"}.`,
+              `Distance d’itinéraire recommandée: ${toFrNumber(report.routeDistance)} km.`,
+              "Les zones prioritaires sont repérées à partir du cumul kg + mégots + récurrence.",
+            ]}
+          />
+        </div>
+        <MonthlyBars rows={report.monthRows6} />
+        <ReportTable
+          headers={["Zone", "Actions", "Kg", "Récurrence", "Score"]}
+          rows={report.areas.slice(0, 8).map((row) => [
+            row.area,
+            toFrInt(row.actions),
+            toFrNumber(row.kg),
+            toFrNumber(row.recurrence, 1),
+            toFrNumber(row.score, 1),
+          ])}
+        />
+      </ReportPage>
 
- <ReportPage {...chapter6}>
- <div className="grid gap-3 md:grid-cols-2">
- <InsightBox
- title="Encadré méthodologie"
- lines={[
-"Sources: actions validées, carte, événements communauté, météo opérationnelle.",
-"Définitions: les KPI sont recalculés en direct sur la fenêtre de données affichée.",
- `Version proxy: ${report.impactMethodology.proxyVersion} | Règles qualité: ${report.impactMethodology.qualityRulesVersion}.`,
- `Score pollution moyen: ${toFrNumber(report.impactMethodology.pollutionScoreAverage)} / 100.`,
-"Règle qualité: publication externe recommandée seulement si complétude > 85%.",
- ]}
- />
- <ReportTable
- headers={["Version","Date","Périmètre","Auteur"]}
- rows={[
- [
-"v3.0 web-report",
- report.generatedAt,
-"Rubrique reports (web native exhaustive)",
-"Équipe CleanMyMap",
- ],
- ["v2.x PDF","Pipeline back-office","Rapport PDF institutionnel","Équipe data"],
- ]}
- />
- </div>
- <ReportTable
- headers={["Mesure","Formule","Interprétation"]}
- rows={report.impactMethodology.formulas.map((formula) => [
- formula.label,
- formula.formula,
- formula.interpretation,
- ])}
- />
- <div className="grid gap-3 md:grid-cols-2">
- <ReportTable
- headers={["Hypothèse","Détail"]}
- rows={report.impactMethodology.hypotheses.map((item) => [
-"Hypothèse de calcul",
- item,
- ])}
- />
- <ReportTable
- headers={["Marge d'erreur","Valeur","Nature"]}
- rows={[
- [
-"Eau sauvée (proxy)",
- `+/- ${toFrNumber(report.impactMethodology.errorMargins.waterSavedLitersPct, 0)}%`,
-"Approximation",
- ],
- [
-"CO2 évité (proxy)",
- `+/- ${toFrNumber(report.impactMethodology.errorMargins.co2AvoidedKgPct, 0)}%`,
-"Approximation",
- ],
- [
-"Surface nettoyée (proxy)",
- `+/- ${toFrNumber(report.impactMethodology.errorMargins.surfaceCleanedM2Pct, 0)}%`,
-"Approximation",
- ],
- [
-"Score pollution moyen",
- `+/- ${toFrNumber(report.impactMethodology.errorMargins.pollutionScoreMeanPoints, 0)} pts`,
-"Incertitude de mesure",
- ],
- ]}
- />
- </div>
- <ReportTable
- headers={["Contrôle","Valeur","Interprétation"]}
- rows={[
- ["Complétude", `${toFrNumber(report.quality.completenessScore)}%`,"Présence des champs clés"],
- ["Cohérence", `${toFrNumber(report.quality.coherenceScore)}%`,"Valeurs plausibles et non négatives"],
- ["Fraîcheur médiane", `${toFrNumber(report.quality.freshnessDays)} j`,"Délai médian entre action et consultation"],
- ["Géolocalisation", `${toFrNumber(report.quality.geolocRate)}%`,"Taux de preuves spatiales exploitables"],
- ["Délai modération moyen", `${toFrNumber(report.moderation.delayDays)} j`,"Vitesse de publication validée"],
- ]}
- />
- </ReportPage>
+      <ReportPage id={section4.id} {...section4}>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            label="Impact estimé"
+            value={`${toFrNumber(report.totals.kg)} kg`}
+            hint="Base de proxy"
+          />
+          <MetricCard
+            label="Émissions évitées"
+            value={`${toFrNumber(report.climate.twelve.kg * IMPACT_PROXY_CONFIG.factors.co2KgPerWasteKg)} kg`}
+            tone="accent"
+            hint="Proxy CO2"
+          />
+          <MetricCard
+            label="Eau préservée"
+            value={`${toFrInt(report.climate.waterProtectedLiters)} L`}
+            hint="Proxy mégots"
+          />
+          <MetricCard
+            label="Surface d’action"
+            value={`${toFrNumber(surfaceProxy)} m²`}
+            tone="accent"
+            hint="Poids + temps bénévoles"
+          />
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <InsightBox
+            title="Indice de pollution"
+            lines={[
+              `Score pollution moyen: ${toFrNumber(report.impactMethodology.pollutionScoreAverage)} / 100.`,
+              `Indice de tri propre: ${toFrNumber(report.recycling.triIndex)} / 100.`,
+              "Les indicateurs environnementaux sont des proxies de décision et non des mesures instrumentales.",
+            ]}
+          />
+          <InsightBox
+            title="Lecture opérationnelle"
+            lines={[
+              weatherAdvice,
+              `Température: ${weather.current?.temperature_2m ?? "n/a"} °C`,
+              `Précipitations: ${weather.current?.precipitation ?? "n/a"} mm`,
+              `Vent: ${weather.current?.wind_speed_10m ?? "n/a"} km/h`,
+            ]}
+          />
+        </div>
+      </ReportPage>
 
- <ReportPage {...chapter7}>
- <ReportTable
- headers={["Sprint","Période","Objectif principal","Responsables"]}
- rows={report.calendar}
- />
- <div className="grid gap-3 md:grid-cols-2">
- <InsightBox
- title="Lecture bénévoles"
- lines={[
-"Sprint 2 priorise la lisibilité des zones, parcours et checklists opérationnelles.",
-"Sprint 4 diffuse les bonnes pratiques pour montée en charge nationale.",
- ]}
- />
- <InsightBox
- title="Lecture décideurs"
- lines={[
-"Sprint 1 sécurise la fiabilité data avant tout arbitrage public.",
-"Sprint 3 structure la preuve d'impact pour les budgets et infrastructures environnementales.",
- ]}
- />
- </div>
- </ReportPage>
+      <ReportPage id={section5.id} {...section5}>
+        <div className="grid gap-3 md:grid-cols-3">
+          <MetricCard
+            label="Typologie dominante"
+            value={wasteProfile.dominantLabel}
+            hint={`${toFrNumber(wasteProfile.dominantKg)} kg agrégés`}
+          />
+          <MetricCard
+            label="Données typées"
+            value={`${toFrNumber(wasteProfile.coveragePercent)}%`}
+            tone="accent"
+            hint="Actions avec breakdown"
+          />
+          <MetricCard
+            label="Points de vigilance"
+            value={toFrInt(report.areas.filter((row) => row.recurrence > 1).length)}
+            hint="Zones récurrentes"
+          />
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <InsightBox
+            title="Contraintes du territoire"
+            lines={[
+              "La météo et la densité urbaine influencent la récurrence des dépôts.",
+              "Les axes de passage et les franges de quartier restent les zones les plus sensibles.",
+              "Le rapport doit être lu en tenant compte du périmètre actif et du niveau de couverture cartographique.",
+            ]}
+          />
+          <InsightBox
+            title="Besoins identifiés"
+            lines={[
+              "Renforcer les points de collecte sur les zones récurrentes.",
+              "Consolider les traces géographiques sur les actions multi-segments.",
+              "Mieux typiser les déchets dans les formulaires de terrain.",
+            ]}
+          />
+        </div>
+        <ReportTable
+          headers={["Déchet", "Kg", "Actions concernées"]}
+          rows={
+            wasteProfile.categories.length > 0
+              ? wasteProfile.categories.map((category) => [
+                  category.label,
+                  toFrNumber(category.kg),
+                  toFrInt(category.actions),
+                ])
+              : [["Aucune typologie exploitée", "-", "-"]]
+          }
+        />
+      </ReportPage>
 
- <ReportPage {...chapter8}>
- <ReportTable
- headers={["Terme","Définition claire"]}
- rows={GLOSSARY_ROWS.map((row) => [...row])}
- />
- </ReportPage>
+      <ReportPage id={section6.id} {...section6}>
+        <div className="grid gap-3 md:grid-cols-2">
+          <InsightBox
+            title="Mode de calcul"
+            lines={[
+              `Version proxy: ${report.impactMethodology.proxyVersion}.`,
+              `Règles qualité: ${report.impactMethodology.qualityRulesVersion}.`,
+              `Scope: ${report.impactMethodology.scope}`,
+            ]}
+          />
+          <ReportTable
+            headers={["Contrôle", "Valeur", "Lecture"]}
+            rows={[
+              ["Complétude", `${toFrNumber(report.quality.completenessScore)}%`, "Présence des champs clés"],
+              ["Cohérence", `${toFrNumber(report.quality.coherenceScore)}%`, "Valeurs plausibles"],
+              ["Fraîcheur médiane", `${toFrNumber(report.quality.freshnessDays)} j`, "Ancienneté médiane"],
+              ["Géolocalisation", `${toFrNumber(report.quality.geolocRate)}%`, "Preuves spatiales"],
+            ]}
+          />
+        </div>
+        <ReportTable
+          headers={["Formule", "Lecture", "Interprétation"]}
+          rows={report.impactMethodology.formulas.map((formula) => [
+            formula.label,
+            formula.formula,
+            formula.interpretation,
+          ])}
+        />
+        <div className="grid gap-3 md:grid-cols-2">
+          <ReportTable
+            headers={["Hypothèse", "Détail"]}
+            rows={report.impactMethodology.hypotheses.map((item) => ["Hypothèse de calcul", item])}
+          />
+          <ReportTable
+            headers={["Limite", "Valeur", "Nature"]}
+            rows={[
+              [
+                "Eau sauvée",
+                `+/- ${toFrNumber(report.impactMethodology.errorMargins.waterSavedLitersPct, 0)}%`,
+                "Approximation",
+              ],
+              [
+                "CO2 évité",
+                `+/- ${toFrNumber(report.impactMethodology.errorMargins.co2AvoidedKgPct, 0)}%`,
+                "Approximation",
+              ],
+              [
+                "Surface nettoyée",
+                `+/- ${toFrNumber(report.impactMethodology.errorMargins.surfaceCleanedM2Pct, 0)}%`,
+                "Approximation",
+              ],
+              [
+                "Score pollution moyen",
+                `+/- ${toFrNumber(report.impactMethodology.errorMargins.pollutionScoreMeanPoints, 0)} pts`,
+                "Incertitude de mesure",
+              ],
+            ]}
+          />
+        </div>
+        <ReportTable
+          headers={["Source", "Description"]}
+          rows={Object.entries(report.impactMethodology.sources).map(([key, value]) => [
+            formatSourceLabel(key),
+            value,
+          ])}
+        />
+      </ReportPage>
 
- <ReportPage {...chapter9}>
- <div className="grid gap-3 md:grid-cols-2">
- <ReportTable
- headers={["Section","Donnée clé","Usage"]}
- rows={[
- [
-"Pilotage",
- `${toFrInt(report.totals.actions)} actions / ${toFrNumber(report.totals.kg)} kg`,
-"Arbitrage de priorités et suivi des performances",
- ],
- ["Terrain", `${toFrNumber(report.routeDistance)} km de circuit recommandé`,"Préparation opérationnelle des équipes"],
- [
-"Contexte",
- `${toFrInt(report.climate.waterProtectedLiters)} L eau protégée (proxy)`,
-"Plaidoyer et communication institutionnelle",
- ],
- ["Communauté", `${toFrInt(report.community.totalEvents)} événements`,"Activation réseau bénévole et partenaires"],
- ]}
- />
- <article className="rounded-2xl border border-slate-200 bg-[#f8fafc] p-4">
- <h3 className="cmm-text-small font-semibold cmm-text-primary">Liens d&apos;action immédiate</h3>
- <div className="mt-3 flex flex-wrap gap-2">
- <Link
- href="/actions/new"
- className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 cmm-text-small font-semibold text-emerald-800 transition hover:bg-emerald-100"
- >
- Déclarer une action
- </Link>
- <Link
- href="/actions/map"
- className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100"
- >
- Ouvrir la carte
- </Link>
- <Link
- href="/actions/history"
- className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100"
- >
- Historique valide
- </Link>
- <a
- href="#sommaire"
- className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100"
- >
- Retour au sommaire
- </a>
- </div>
- <p className="mt-3 cmm-text-caption cmm-text-muted">
- Les exports CSV/JSON et la modération admin restent disponibles dans le panneau opérationnel en bas
- de page.
- </p>
- </article>
- </div>
- </ReportPage>
+      <ReportPage id={section7.id} {...section7}>
+        <div className="grid gap-3 md:grid-cols-4">
+          <MetricCard label="Événements créés" value={toFrInt(report.community.totalEvents)} />
+          <MetricCard label="À venir" value={toFrInt(report.community.upcomingEvents)} tone="accent" />
+          <MetricCard label="Passés" value={toFrInt(report.community.pastEvents)} />
+          <MetricCard
+            label="Taux RSVP oui"
+            value={`${toFrNumber(report.community.participationRate)}%`}
+            tone="accent"
+          />
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <ReportTable
+            headers={["Indicateur", "Valeur", "Lecture"]}
+            rows={[
+              [
+                "RSVP oui / maybe / non",
+                `${toFrInt(report.community.rsvp.yes)} / ${toFrInt(report.community.rsvp.maybe)} / ${toFrInt(report.community.rsvp.no)}`,
+                "Engagement événementiel",
+              ],
+              [
+                "Badges confirmés (5+)",
+                toFrInt(report.community.badgeConfirmed),
+                "Progression régulière",
+              ],
+              [
+                "Badges experts (10+)",
+                toFrInt(report.community.badgeExpert),
+                "Noyau bénévole",
+              ],
+              [
+                "Répartition citoyen/asso/institution",
+                `${toFrInt(report.community.sourceBuckets.citoyen)} / ${toFrInt(report.community.sourceBuckets.associatif)} / ${toFrInt(report.community.sourceBuckets.institutionnel)}`,
+                "Équilibre de l’écosystème",
+              ],
+            ]}
+          />
+          <InsightBox
+            title="Dynamique collective"
+            lines={[
+              "Les événements structurent la mobilisation et servent de point d’entrée pour les nouveaux bénévoles.",
+              "Les partenaires associatifs et institutionnels renforcent la capacité de passage à l’échelle.",
+              "La contribution citoyenne reste la base de diffusion la plus large.",
+            ]}
+          />
+        </div>
+        <ReportTable
+          headers={["Rang", "Contributeur", "Actions", "Kg", "Mégots"]}
+          rows={
+            report.community.topLeaderboard.length > 0
+              ? report.community.topLeaderboard.map((entry, index) => [
+                  `#${index + 1}`,
+                  entry.name,
+                  toFrInt(entry.actions),
+                  toFrNumber(entry.kg),
+                  toFrInt(entry.butts),
+                ])
+              : [["-", "Aucune donnée", "0", "0", "0"]]
+          }
+        />
+      </ReportPage>
 
- {isLoading ? (
- <p className="rounded-xl border border-slate-200 bg-white p-3 cmm-text-small cmm-text-muted">
- Mise à jour du rapport web en cours...
- </p>
- ) : null}
- {hasError ? (
- <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 cmm-text-small text-rose-700">
- Certaines sources n&apos;ont pas pu être chargées. Le rapport reste visible avec les données disponibles.
- </p>
- ) : null}
- </div>
- );
+      <ReportPage id={section8.id} {...section8}>
+        <div className="grid gap-3 md:grid-cols-2">
+          <InsightBox
+            title="Validation des données"
+            lines={[
+              `Conversion de modération: ${toFrNumber(report.moderation.conversion)}%.`,
+              `Délai moyen de traitement: ${toFrNumber(report.moderation.delayDays)} j.`,
+              `Couverture compte sur created_by_clerk_id: ${toFrNumber(accountCoverage.coveragePercent)}%.`,
+            ]}
+          />
+          <InsightBox
+            title="Protection des données"
+            lines={[
+              accountCoverage.hasMeasurableBase
+                ? `${accountCoverage.missingCreatedByClerkId} entrée(s) restent sans clé stable.`
+                : "Données insuffisantes pour mesurer la couverture compte.",
+              "Les données publiques évitent les champs sensibles inutiles et conservent une traçabilité de génération.",
+              "Les exports et la diffusion externe restent bornés aux champs nécessaires au pilotage.",
+            ]}
+          />
+        </div>
+        <ReportTable
+          headers={["Contrôle", "Valeur", "Lecture"]}
+          rows={[
+            ["Pending", toFrInt(report.moderation.pending), "En attente de validation"],
+            ["Approved", toFrInt(report.moderation.approved), "Données publiables"],
+            ["Rejected", toFrInt(report.moderation.rejected), "Données non retenues"],
+            ["Fraîcheur", `${toFrNumber(report.quality.freshnessDays)} j`, "Temporalité du signal"],
+          ]}
+        />
+        <ReportTable
+          headers={["Traçabilité", "Source", "Statut"]}
+          rows={Object.entries(report.impactMethodology.sources).map(([key, value]) => [
+            formatSourceLabel(key),
+            value,
+            "Documentée",
+          ])}
+        />
+      </ReportPage>
+
+      <ReportPage id={section9.id} {...section9}>
+        <div className="grid gap-3 md:grid-cols-3">
+          <InsightBox title="Actions à court terme" lines={executive.budgetUseCases.slice(0, 1)} />
+          <InsightBox
+            title="Actions à moyen terme"
+            lines={[
+              "Stabiliser les zones récurrentes avec un rythme de collecte plus serré.",
+              "Typiser davantage les déchets pour fiabiliser les tendances locales.",
+            ]}
+          />
+          <InsightBox
+            title="Priorités territoriales"
+            lines={[
+              report.areas[0] ? `Zone prioritaire: ${report.areas[0].area}.` : "Aucune zone prioritaire identifiée.",
+              "Renforcer la cartographie sur les zones à récurrence forte.",
+            ]}
+          />
+        </div>
+        <ReportTable
+          headers={["Recommandation", "Pourquoi", "Effet attendu"]}
+          rows={executive.budgetUseCases.map((line, index) => [
+            line,
+            index === 0 ? "Décision et financement" : index === 1 ? "Terrain" : "Diffusion",
+            index === 0 ? "Arbitrage plus rapide" : index === 1 ? "Traitement plus ciblé" : "Crédibilité renforcée",
+          ])}
+        />
+      </ReportPage>
+
+      <ReportPage id={section10.id} {...section10}>
+        <ReportTable headers={["Sprint", "Période", "Objectif principal", "Responsables"]} rows={report.calendar} />
+        <div className="grid gap-3 md:grid-cols-2">
+          <InsightBox
+            title="Objectifs de suivi"
+            lines={[
+              "Suivre la complétude des données avant toute diffusion institutionnelle.",
+              "Vérifier la couverture cartographique et le taux de traces géométriques.",
+            ]}
+          />
+          <InsightBox
+            title="Échéances recommandées"
+            lines={[
+              "Court terme: consolidation data + modération.",
+              "Moyen terme: renfort terrain et priorisation des zones récurrentes.",
+            ]}
+          />
+        </div>
+      </ReportPage>
+
+      <ReportPage id={section11.id} {...section11}>
+        <ReportTable headers={["Terme", "Définition claire"]} rows={GLOSSARY_ROWS.map((row) => [...row])} />
+      </ReportPage>
+
+      <ReportPage id={section12.id} {...section12}>
+        <div className="grid gap-3 md:grid-cols-2">
+          <ReportTable
+            headers={["Section", "Donnée clé", "Usage"]}
+            rows={[
+              [
+                "Pilotage",
+                `${toFrInt(report.totals.actions)} actions / ${toFrNumber(report.totals.kg)} kg`,
+                "Arbitrage de priorités et suivi des performances",
+              ],
+              [
+                "Terrain",
+                `${toFrNumber(report.routeDistance)} km de circuit recommandé`,
+                "Préparation opérationnelle des équipes",
+              ],
+              [
+                "Contexte",
+                `${toFrInt(report.climate.waterProtectedLiters)} L eau protégée (proxy)`,
+                "Plaidoyer et communication institutionnelle",
+              ],
+              [
+                "Communauté",
+                `${toFrInt(report.community.totalEvents)} événements`,
+                "Activation réseau bénévole et partenaires",
+              ],
+            ]}
+          />
+          <article className="rounded-2xl border border-slate-200 bg-[#f8fafc] p-4">
+            <h3 className="cmm-text-small font-semibold cmm-text-primary">Liens d’action immédiate</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/actions/new"
+                className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 cmm-text-small font-semibold text-emerald-800 transition hover:bg-emerald-100"
+              >
+                Déclarer une action
+              </Link>
+              <Link
+                href="/actions/map"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100"
+              >
+                Ouvrir la carte
+              </Link>
+              <Link
+                href="/actions/history"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100"
+              >
+                Historique valide
+              </Link>
+              <a
+                href="#synthese-executive"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 cmm-text-small font-semibold cmm-text-secondary transition hover:bg-slate-100"
+              >
+                Retour au sommaire
+              </a>
+            </div>
+            <p className="mt-3 cmm-text-caption cmm-text-muted">
+              Les exports CSV/JSON et la modération admin restent disponibles dans le panneau
+              opérationnel en bas de page.
+            </p>
+          </article>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          {report.highlightPhotos.length > 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="cmm-text-small font-semibold cmm-text-primary">Cartes complémentaires</p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {report.highlightPhotos.slice(0, 4).map((photo) => (
+                  <figure key={`${photo.label}-${photo.date}`} className="overflow-hidden rounded-xl border border-slate-200">
+                    <Image
+                      src={photo.url}
+                      alt={photo.label}
+                      width={800}
+                      height={450}
+                      unoptimized
+                      className="h-36 w-full object-cover"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                    <figcaption className="bg-white p-2 cmm-text-caption cmm-text-secondary">
+                      <span className="block font-semibold cmm-text-primary">{photo.label}</span>
+                      <span className="block">{photo.date}</span>
+                    </figcaption>
+                  </figure>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 cmm-text-small cmm-text-secondary">
+              Aucune photo certifiée disponible pour ce périmètre.
+            </div>
+          )}
+          <ReportTable
+            headers={["Zone", "Actions", "Kg", "Mégots", "Recurrence"]}
+            rows={report.annualRows.length > 0 ? report.annualRows : [["n/a", "0", "0", "0", "0"]]}
+          />
+        </div>
+      </ReportPage>
+
+      {isLoading ? (
+        <p className="rounded-xl border border-slate-200 bg-white p-3 cmm-text-small cmm-text-muted">
+          Mise à jour du rapport web en cours...
+        </p>
+      ) : null}
+      {hasError ? (
+        <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 cmm-text-small text-rose-700">
+          Certaines sources n’ont pas pu être chargées. Le rapport reste visible avec les données
+          disponibles.
+        </p>
+      ) : null}
+    </div>
+  );
 }

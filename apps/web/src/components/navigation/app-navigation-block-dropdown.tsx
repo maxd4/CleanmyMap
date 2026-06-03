@@ -27,6 +27,16 @@ import { getNavigationDropdownCardBorderTokens } from "./navigation-dropdown-bor
 import { getNavigationDropdownCardGeometry } from "./navigation-dropdown-card-theme";
 import { getNavigationDropdownItemTone } from "./navigation-dropdown-item-theme";
 import { getNavigationDropdownShellTokens } from "./navigation-dropdown-shell-theme";
+import { getNavigationDropdownItemIconClassName } from "./navigation-dropdown-accent-theme";
+import {
+  NAVIGATION_DROPDOWN_PANEL_CONTENT_CLASS_NAME,
+  NAVIGATION_DROPDOWN_PANEL_LIST_CLASS_NAME,
+  NAVIGATION_DROPDOWN_PANEL_SCROLL_LIST_CLASS_NAME,
+  NAVIGATION_DROPDOWN_PANEL_MIN_WIDTH,
+  NAVIGATION_DROPDOWN_TITLE_CLASS_NAME,
+  NAVIGATION_DROPDOWN_CARD_LABEL_CLASS_NAME,
+  NAVIGATION_DROPDOWN_ITEM_LINK_GAP_CLASS_NAME,
+} from "./navigation-dropdown-size-theme";
 import {
   getNavigationDropdownTitleGradientStyle,
   getNavigationDropdownTitlePrefix,
@@ -78,11 +88,10 @@ export function AppNavigationBlockDropdown({
   const placement = useDropdownPlacement({
     isOpen,
     triggerRef,
-    minPanelWidth: 448,
+    minPanelWidth: NAVIGATION_DROPDOWN_PANEL_MIN_WIDTH,
   });
 
   const shellTokens = getNavigationDropdownShellTokens(space.id);
-  const cardBorderTokens = getNavigationDropdownCardBorderTokens(space.id);
   const cardGeometry = getNavigationDropdownCardGeometry(space.id);
   const isActiveSpace = space.id === activeSpaceId;
   const isHomeSpace = space.id === "home";
@@ -245,9 +254,9 @@ export function AppNavigationBlockDropdown({
               style={shellTokens.style}
             >
               {isVisualizeSpace ? (
-                <div className="px-3 pb-2.5 pt-2.5 sm:px-3.5 sm:pt-3">
+                <div className={NAVIGATION_DROPDOWN_PANEL_CONTENT_CLASS_NAME}>
                   <header className="flex items-center justify-center">
-                    <h3 className="w-full whitespace-nowrap text-center text-[0.9rem] font-black leading-tight tracking-[-0.03em] sm:text-[0.98rem]">
+                    <h3 className={NAVIGATION_DROPDOWN_TITLE_CLASS_NAME}>
                       <span className="text-slate-950">{getNavigationDropdownTitlePrefix(locale)} </span>
                       <span
                         className="inline-block"
@@ -258,11 +267,19 @@ export function AppNavigationBlockDropdown({
                     </h3>
                   </header>
 
-                  <nav className="mt-2" aria-label={getLocalizedText(space.label, locale, space.id)}>
+                  <nav className={NAVIGATION_DROPDOWN_PANEL_LIST_CLASS_NAME} aria-label={getLocalizedText(space.label, locale, space.id)}>
                     <ul className="space-y-1">
                       {space.items.length > 0 ? (
                         space.items.map((item) => {
                           const Icon = getVisualizeItemIcon(item.routeId);
+                          const itemBorderTokens = getNavigationDropdownCardBorderTokens(
+                            space.id,
+                            item.routeId,
+                          );
+                          const itemIconClassName = getNavigationDropdownItemIconClassName(
+                            space.id,
+                            item.routeId,
+                          );
                           return (
                             <NavigationDropdownItemCard
                               key={item.id}
@@ -272,10 +289,10 @@ export function AppNavigationBlockDropdown({
                               spaceId={space.id}
                               onTrackNavigation={handleTrackNavigation}
                               Icon={Icon}
-                              iconClassName="bg-gradient-to-br from-cyan-100 via-white to-rose-100 shadow-[0_0_0_2px_rgba(6,182,212,0.10)]"
+                              iconClassName={itemIconClassName}
                               iconStrokeWidth={2.25}
                               cardGeometry={cardGeometry}
-                              cardBorderTokens={cardBorderTokens}
+                              cardBorderTokens={itemBorderTokens}
                             />
                           );
                         })
@@ -319,9 +336,9 @@ export function AppNavigationBlockDropdown({
                 />
               ) : (
                 <>
-                <div className="px-3 pb-2.5 pt-2.5 sm:px-3.5 sm:pt-3">
+                <div className={NAVIGATION_DROPDOWN_PANEL_CONTENT_CLASS_NAME}>
                   <header className="flex items-center justify-center">
-                    <h3 className="w-full whitespace-nowrap text-center text-[0.9rem] font-black leading-tight tracking-[-0.03em] sm:text-[0.98rem]">
+                    <h3 className={NAVIGATION_DROPDOWN_TITLE_CLASS_NAME}>
                       <span className="text-black">{getNavigationDropdownTitlePrefix(locale)} </span>
                       <span
                         className="inline-block"
@@ -333,11 +350,15 @@ export function AppNavigationBlockDropdown({
                   </header>
                 </div>
 
-                  <ul className="max-h-[min(22rem,calc(100vh-10rem))] space-y-1 overflow-y-auto px-3 pb-3 pt-0">
+                  <ul className={NAVIGATION_DROPDOWN_PANEL_SCROLL_LIST_CLASS_NAME}>
                     {space.items.length > 0 ? (
                       space.items.map((item) => {
                         const isActiveItem = isActivePath(pathname, item.href);
                         const itemTone = getNavigationDropdownItemTone(space.id, item.routeId);
+                        const itemBorderTokens = getNavigationDropdownCardBorderTokens(
+                          space.id,
+                          item.routeId,
+                        );
                         return (
                           <li key={item.id}>
                             <Link
@@ -345,17 +366,19 @@ export function AppNavigationBlockDropdown({
                               aria-current={isActiveItem ? "page" : undefined}
                               onClick={() => handleTrackNavigation(item)}
                               className={cn(
-                                "group/item flex items-center gap-1.5 rounded-[0.9rem] border px-[0.55rem] py-[0.35rem] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20",
-                                isActiveItem
-                                  ? "border-black/18 bg-white/70 text-black"
-                                  : "border-black/10 bg-white/45 text-black/80 hover:border-black/18 hover:bg-white/65 hover:text-black",
+                                "group/item flex items-center rounded-[0.9rem] px-[0.55rem] py-[0.35rem] transition focus-visible:outline-none",
+                                NAVIGATION_DROPDOWN_ITEM_LINK_GAP_CLASS_NAME,
+                                itemBorderTokens.focusRing,
+                                itemBorderTokens.bodyClassName,
                               )}
+                              style={isActiveItem ? itemBorderTokens.activeStyle : itemBorderTokens.inactiveStyle}
                             >
                               <span
-                              className={cn(
-                                "min-w-0 flex-1 block whitespace-nowrap text-[0.72rem] font-normal tracking-tight transition-colors duration-200 sm:text-[0.8rem]",
-                                itemTone.labelClassName,
-                              )}
+                                className={cn(
+                                  "min-w-0 flex-1 block whitespace-nowrap font-normal tracking-tight transition-colors duration-200",
+                                  NAVIGATION_DROPDOWN_CARD_LABEL_CLASS_NAME,
+                                  itemTone.labelClassName,
+                                )}
                                 style={itemTone.labelStyle}
                               >
                                 {getLocalizedText(item.label, locale, item.href)}

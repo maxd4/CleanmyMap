@@ -5,7 +5,6 @@ import {
   Beaker,
   BookOpen,
   Brain,
-  Download,
   ExternalLink,
   Info,
   Layers,
@@ -34,6 +33,19 @@ type MethodologyCardProps = {
   source: string;
   color: MethodologyColor;
   icon: ReactNode;
+};
+
+type OpenSourceDoc = {
+  id: string;
+  title: { fr: string; en: string };
+  desc: { fr: string; en: string };
+  href: string;
+  icon: ReactNode;
+  isPdf: boolean;
+  secondaryAction?: {
+    href: string;
+    label: { fr: string; en: string };
+  };
 };
 
 function MethodologyCard({
@@ -106,7 +118,7 @@ function MethodologyCard({
   );
 }
 
-const OPEN_SOURCE_DOCS = [
+const OPEN_SOURCE_DOCS: OpenSourceDoc[] = [
   {
     id: "impact",
     title: {
@@ -131,7 +143,7 @@ const OPEN_SOURCE_DOCS = [
       fr: "Plongez dans l’architecture complète du projet : diagrammes détaillés des flux de données, description des services gérés, stratégie de découpage du monorepo, ainsi que les choix technologiques clés, pour vous permettre de comprendre et contribuer efficacement au code.",
       en: "Dive into the full project architecture: detailed data‑flow diagrams, managed service descriptions, monorepo split strategy, and key technology choices, enabling you to grasp and contribute to the codebase effectively.",
     },
-    href: "/docs/master-architecture.md",
+    href: "/docs/architecture/master-architecture.md",
     icon: <Layers className="h-6 w-6" />,
     isPdf: false,
   },
@@ -145,7 +157,7 @@ const OPEN_SOURCE_DOCS = [
       fr: "Accédez au protocole scientifique complet : hypothèses clairement définies, méthodes de calcul rigoureuses, formules détaillées, critères de validation stricts et processus de révision transparent, garantissant la fiabilité de nos indicateurs d’impact environnemental.",
       en: "Access the full scientific protocol: clearly defined hypotheses, rigorous calculation methods, detailed formulas, strict validation criteria, and a transparent review process, ensuring the reliability of our environmental impact indicators.",
     },
-    href: "/docs/SCIENTIFIC_PROTOCOL.md",
+    href: "/docs/product/SCIENTIFIC_PROTOCOL.md",
     icon: <Beaker className="h-6 w-6" />,
     isPdf: false,
   },
@@ -159,7 +171,7 @@ const OPEN_SOURCE_DOCS = [
       fr: "Explorez notre approche de gamification non‑compétitive : mécanismes de récompense motivants, progression structurée, études d’impact utilisateur, et comment ces éléments favorisent l’engagement citoyen sans créer de compétition néfaste.",
       en: "Explore our non‑competitive gamification approach: motivating reward mechanisms, structured progression, user impact studies, and how these elements foster citizen engagement without harmful competition.",
     },
-    href: "/docs/gamification-non-competitive.md",
+    href: "/docs/product/gamification-non-competitive.md",
     icon: <Heart className="h-6 w-6" />,
     isPdf: false,
   },
@@ -192,6 +204,41 @@ const OPEN_SOURCE_DOCS = [
     isPdf: false,
   },
   {
+    id: "site-methodology",
+    title: {
+      fr: "Fonctionnement du site",
+      en: "Site Operation",
+    },
+    desc: {
+      fr: "Fiche de méthodologie technique qui explique l'architecture du site, le rôle de Leaflet, le lien GitHub/Vercel, Supabase, Codex, PostHog, Sentry, Resend et le domaine LWS.",
+      en: "Technical methodology sheet that explains the site architecture, Leaflet, the GitHub/Vercel link, Supabase, Codex, PostHog, Sentry, Resend, and the LWS domain.",
+    },
+    href: "/docs/architecture/methodologie-fonctionnement-site.md",
+    icon: <Layers className="h-6 w-6" />,
+    isPdf: false,
+  },
+  {
+    id: "quota-free-services",
+    title: {
+      fr: "Estimateur des quotas gratuits",
+      en: "Free Quota Estimator",
+    },
+    desc: {
+      fr: "Texte d'appui pour comprendre les quotas gratuits, ouvrir l'estimateur et consulter la photo du graphique admin réel liée au même tableau de bord.",
+      en: "Supporting text to explain free quotas, open the estimator, and view the real admin graph photo tied to the same dashboard.",
+    },
+    href: "/docs/plans/journal_impact_DU.md",
+    icon: <Sparkles className="h-6 w-6" />,
+    isPdf: false,
+    secondaryAction: {
+      href: "/docs/pages_site/routes/09-admin-superadmin/admin-services/photo/desktop/quota-graph.webp",
+      label: {
+        fr: "Voir le graphique réel",
+        en: "View real graph",
+      },
+    },
+  },
+  {
     id: "gov",
     title: {
       fr: "Gouvernance des Publications",
@@ -215,269 +262,273 @@ export function MethodologiePageClient() {
   const classes = getBlockClasses("impact");
 
   return (
-    <div className="mx-auto w-full max-w-7xl space-y-16 pb-20 pt-10">
-      <header className="space-y-6 text-center">
-        <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-red-400/20 bg-red-400/5 px-6 py-2">
-          <Beaker size={14} className="animate-pulse text-red-400" />
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-400/60">
-            {t("header_suptitle")}
-          </span>
-        </div>
-        <h1 className="text-6xl font-black tracking-tighter text-white md:text-7xl">
-          {t("header_title")}
-        </h1>
-        <p className="mx-auto max-w-3xl text-xl font-medium leading-relaxed text-red-100/40">
-          {t("header_desc")}
-        </p>
-      </header>
-
-      <NationalStatsSection />
-
-      <TerritoryMapComparisonCards
-        title="Deux lectures de la cartographie"
-        subtitle="La carte de base garde une lecture précise et opérationnelle. La carte Terraink ajoute une lecture plus pédagogique et plus éditoriale. On garde les deux pour comparer la clarté et l'intérêt visuel dans le contexte méthodologique."
-        locationLabel="Périmètre de référence"
-        tone="rose"
-        note="Ici, la double carte sert d'outil d'explication. La version brute montre la donnée; la version Terraink montre la mise en scène possible pour un rapport ou une page de présentation."
+    <div className="relative left-1/2 w-screen -translate-x-1/2 isolate overflow-x-clip bg-[linear-gradient(180deg,rgba(255,244,246,0.98)_0%,rgba(255,251,252,0.92)_28%,rgba(15,23,42,1)_100%)] pb-20 pt-10">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[44rem] bg-[radial-gradient(circle_at_top,rgba(251,113,133,0.26)_0%,rgba(251,113,133,0.12)_24%,rgba(255,255,255,0.88)_52%,rgba(15,23,42,0.98)_100%)]"
       />
 
-      <div
-        className={cn(
-          "relative overflow-hidden rounded-[3rem] border p-10 transition-all duration-700 md:p-16",
-          classes.surface,
-          classes.shadow,
-        )}
-      >
-        <div className="pointer-events-none absolute right-0 top-0 p-12 opacity-5">
-          <ShieldCheck size={400} className="text-red-400" />
-        </div>
+      <div className="mx-auto flex w-full max-w-[1600px] flex-col space-y-16 px-4 sm:px-6 lg:px-8">
+        <header className="space-y-6 text-center">
+          <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-red-400/20 bg-red-400/5 px-6 py-2">
+            <Beaker size={14} className="animate-pulse text-red-400" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-red-400/60">
+              {t("header_suptitle")}
+            </span>
+          </div>
+          <h1 className="text-6xl font-black tracking-tighter text-white md:text-7xl">
+            {t("header_title")}
+          </h1>
+          <p className="mx-auto max-w-3xl text-xl font-medium leading-relaxed text-red-100/40">
+            {t("header_desc")}
+          </p>
+        </header>
 
-        <div className="relative z-10 grid items-center gap-16 md:grid-cols-2">
-          <div className="space-y-8">
-            <h2 className="flex items-center gap-4 text-4xl font-black tracking-tight text-white">
-              <Brain className="text-red-400" />
-              Transparence <br /> Algorithmique
-            </h2>
-            <p className="max-w-md text-lg font-medium leading-relaxed text-red-100/40">
-              Chaque donnée terrain est convertie via des coefficients scientifiques rigoureux issus de l&apos;ADEME et du GIEC.
-            </p>
-            <div className="flex gap-4">
-              <div className="rounded-xl bg-white/5 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-400/60">
-                Version {version}
-              </div>
-              <div className="rounded-xl bg-red-500 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-red-500/20">
-                Audit Scientifique OK
-              </div>
-            </div>
+        <NationalStatsSection />
+
+        <TerritoryMapComparisonCards
+          title="Deux lectures de la cartographie"
+          subtitle="La carte de base garde une lecture précise et opérationnelle. La carte Terraink ajoute une lecture plus pédagogique et plus éditoriale. On garde les deux pour comparer la clarté et l'intérêt visuel dans le contexte méthodologique."
+          locationLabel="Périmètre de référence"
+          tone="rose"
+          note="Ici, la double carte sert d'outil d'explication. La version brute montre la donnée; la version Terraink montre la mise en scène possible pour un rapport ou une page de présentation."
+        />
+
+        <div
+          className={cn(
+            "relative overflow-hidden rounded-[3rem] border p-10 transition-all duration-700 md:p-16",
+            classes.surface,
+            classes.shadow,
+          )}
+        >
+          <div className="pointer-events-none absolute right-0 top-0 p-12 opacity-5">
+            <ShieldCheck size={400} className="text-red-400" />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: "Données Sources", val: "ADEME / GIEC", icon: <BookOpen size={16} /> },
-              { label: "Audit", val: "Semestriel", icon: <Zap size={16} /> },
-              { label: "Marge Erreur", val: "< 2%", icon: <Scaling size={16} /> },
-              { label: "Algorithme", val: "Linéaire Proxy", icon: <Sparkles size={16} /> },
-            ].map((item, index) => (
-              <div
-                key={index}
-                className="group flex flex-col gap-3 rounded-[2rem] border border-white/5 bg-white/5 p-6 shadow-sm transition-all hover:border-red-400/30"
-              >
-                <div className="text-red-400 transition-transform group-hover:scale-110">
-                  {item.icon}
+          <div className="relative z-10 grid items-center gap-16 md:grid-cols-2">
+            <div className="space-y-8">
+              <h2 className="flex items-center gap-4 text-3xl font-black tracking-tight text-white md:text-4xl">
+                <Brain className="text-red-400" />
+                <span>Transparence Algorithmique</span>
+              </h2>
+              <p className="max-w-md text-lg font-medium leading-relaxed text-red-100/40">
+                Chaque donnée terrain est convertie via des coefficients scientifiques rigoureux issus de l&apos;ADEME et du GIEC.
+              </p>
+              <div className="flex gap-4">
+                <div className="rounded-xl bg-white/5 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-400/60">
+                  Version {version}
                 </div>
-                <div className="space-y-1">
-                  <div className="text-[9px] font-black uppercase tracking-widest text-white/30">
-                    {item.label}
+                <div className="rounded-xl bg-red-500 px-5 py-2.5 text-[10px] font-black uppercase tracking-widest text-white shadow-xl shadow-red-500/20">
+                  Audit Scientifique OK
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "Données Sources", val: "ADEME / GIEC", icon: <BookOpen size={16} /> },
+                { label: "Audit", val: "Semestriel", icon: <Zap size={16} /> },
+                { label: "Marge Erreur", val: "< 2%", icon: <Scaling size={16} /> },
+                { label: "Algorithme", val: "Linéaire Proxy", icon: <Sparkles size={16} /> },
+              ].map((item, index) => (
+                <div
+                  key={index}
+                  className="group flex flex-col gap-3 rounded-[2rem] border border-white/5 bg-white/5 p-6 shadow-sm transition-all hover:border-red-400/30"
+                >
+                  <div className="text-red-400 transition-transform group-hover:scale-110">
+                    {item.icon}
                   </div>
-                  <div className="text-sm font-bold text-red-100">{item.val}</div>
+                  <div className="space-y-1">
+                    <div className="text-[9px] font-black uppercase tracking-widest text-white/30">
+                      {item.label}
+                    </div>
+                    <div className="text-sm font-bold text-red-100">{item.val}</div>
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          {[
+            { icon: <MapPin className="text-red-400" />, title: "Collecte Terrain", desc: "Données GPS et volumes saisis via l'App" },
+            { icon: <Zap className="text-red-400" />, title: "Calcul Instantané", desc: "Application des coefficients scientifiques" },
+            { icon: <ShieldCheck className="text-red-400" />, title: "Impact Certifié", desc: "Visualisation immédiate de l'impact réel" },
+          ].map((step, index) => (
+            <div
+              key={index}
+              className="group flex flex-col items-center space-y-6 rounded-[2.5rem] border border-white/5 bg-white/5 p-10 text-center transition-all duration-500 hover:border-white/10"
+            >
+              <div className="flex h-20 w-20 items-center justify-center rounded-[2rem] bg-white/5 shadow-inner transition-transform duration-700 group-hover:scale-110">
+                {step.icon}
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">
+                  {step.title}
+                </h3>
+                <p className="text-sm font-medium leading-relaxed text-red-100/30">
+                  {step.desc}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <section className="grid gap-10 xl:grid-cols-2">
+          <MethodologyCard
+            title={t("cards.water.title")}
+            formula={t("cards.water.formula", { val: factors.waterLitersPerCigaretteButt })}
+            description={t("cards.water.desc", { val: factors.waterLitersPerCigaretteButt })}
+            source={t("cards.water.source", { src: sources.water })}
+            color="red"
+            icon={<BookOpen size={24} />}
+          />
+
+          <MethodologyCard
+            title={t("cards.co2.title")}
+            formula={t("cards.co2.formula", { val: factors.co2KgPerWasteKg })}
+            description={t("cards.co2.desc")}
+            source={t("cards.co2.source", { src: sources.co2 })}
+            color="red"
+            icon={<Scaling size={24} />}
+          />
+
+          <MethodologyCard
+            title={t("cards.surface.title")}
+            formula={t("cards.surface.formula", {
+              valkg: factors.surfaceM2PerWasteKg,
+              valmin: factors.surfaceM2PerVolunteerMinute,
+            })}
+            description={t("cards.surface.desc")}
+            source={t("cards.surface.source", { src: sources.surface })}
+            color="slate"
+            icon={<Info size={24} />}
+          />
+
+          <MethodologyCard
+            title={t("cards.map.title")}
+            formula={t("cards.map.formula")}
+            description={t("cards.map.desc")}
+            source={t("cards.map.source")}
+            color="red"
+            icon={<Scaling size={24} />}
+          />
+        </section>
+
+        {/* Compromis Rigueur Scientifique vs Expérience Utilisateur (Formulaire Bénévole) */}
+        <div className="relative overflow-hidden rounded-[3rem] border border-white/5 bg-white/5 p-10 md:p-12 space-y-6">
+          <div className="flex items-center gap-4 text-red-400">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-400/5 shadow-inner">
+              <Scaling size={20} />
+            </div>
+            <h3 className="text-2xl font-black tracking-tight text-white">
+              {isFrench ? "Compromis Rigueur Scientifique & UX du Formulaire Bénévole" : "Scientific Rigor & UX Compromise on the Volunteer Form"}
+            </h3>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 text-red-100/50 leading-relaxed font-medium text-sm">
+            <p>
+              {isFrench
+                ? "Afin d'encourager l'action citoyenne et de simplifier le geste de déclaration sur le terrain, notre formulaire bénévole a été conçu pour être le plus fluide possible. Exiger de chaque participant qu'il pèse ou caractérise précisément chaque type de déchet découragerait la majorité des utilisateurs."
+                : "To encourage citizen action and simplify reporting on the ground, our volunteer form was designed to be as fluid as possible. Requiring every participant to weigh or categorize each type of waste precisely would discourage most users."}
+            </p>
+            <p>
+              {isFrench
+                ? "C'est pourquoi nous utilisons des proxies linéaires (comme estimer la surface d'action d'après le temps passé ou le poids moyen des déchets collectés). Ce compromis pragmatique permet de collecter des données à grande échelle tout en garantissant des ordres de grandeur fiables validés scientifiquement."
+                : "This is why we use linear proxies (such as estimating the action area based on time spent or average weight of collected waste). This pragmatic compromise allows large-scale data collection while ensuring reliable, scientifically validated orders of magnitude."}
+            </p>
+          </div>
+        </div>
+
+        {/* Gamification Logic */}
+        <div className="space-y-10 pt-10 border-t border-white/10">
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl font-black tracking-tight text-white">
+              {isFrench
+                ? "Logique de Gamification (En cours)"
+                : "Gamification Logic (Work in progress)"}
+            </h2>
+            <p className="max-w-2xl mx-auto text-lg font-medium leading-relaxed text-red-100/50">
+              {isFrench
+                ? "Nous développons actuellement un système de gamification non‑compétitive visant à encourager l’engagement citoyen via des récompenses, des badges et des tableaux de progression, le tout sans mécanismes de compétition agressifs."
+                : "We are currently developing a non‑competitive gamification system to encourage citizen engagement through rewards, badges and progression boards, without aggressive competitive mechanics."}
+            </p>
+            <p className="text-sm text-red-200/60">
+              {isFrench
+                ? "🚧 En cours de développement – restez à l’écoute pour de nouvelles fonctionnalités !"
+                : "🚧 Work in progress – stay tuned for upcoming features!"}
+            </p>
+          </div>
+        </div>
+
+        {/* Documentation Open Source */}
+        <div className="space-y-10 pt-10 border-t border-white/10">
+          <div className="text-center space-y-4">
+            <h2 className="text-4xl font-black tracking-tight text-white">
+              {isFrench ? "Documentation & Vision Open Source" : "Documentation & Open Source Vision"}
+            </h2>
+            <p className="max-w-2xl mx-auto text-lg font-medium leading-relaxed text-red-100/50">
+              {isFrench 
+                ? "Retrouvez tous nos documents de référence, protocoles et fiches techniques en libre accès." 
+                : "Find all our reference documents, protocols and technical sheets in open access."}
+            </p>
+          </div>
+          
+        <div className="grid gap-6 md:grid-cols-2">
+            {OPEN_SOURCE_DOCS.map((doc) => (
+              <div
+                key={doc.id}
+                className={cn(
+                  "group relative overflow-hidden rounded-[2.5rem] border p-8 transition-all duration-500 hover:scale-[1.01]",
+                  classes.surface,
+                  classes.shadow
+                )}
+              >
+                <div className="flex items-start gap-5 mb-6">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-400/10 text-red-400 shadow-inner">
+                    {doc.icon}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-2">{doc.title[locale]}</h3>
+                    <p className="text-xs font-medium leading-relaxed text-red-100/50">{doc.desc[locale]}</p>
+                  </div>
+                </div>
+                <a
+                  href={doc.href}
+                  className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-red-500 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all hover:bg-red-400"
+                >
+                  <ExternalLink size={14} />
+                  {isFrench ? "Consulter" : "View"}
+                </a>
+                {doc.secondaryAction ? (
+                  <a
+                    href={doc.secondaryAction.href}
+                    className="mt-3 inline-flex w-full items-center justify-center gap-3 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white/80 shadow-lg transition-all hover:border-white/20 hover:bg-white/10"
+                  >
+                    <ExternalLink size={14} />
+                    {doc.secondaryAction.label[locale]}
+                  </a>
+                ) : null}
               </div>
             ))}
           </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-8 px-4 md:grid-cols-3">
-        {[
-          { icon: <MapPin className="text-red-400" />, title: "Collecte Terrain", desc: "Données GPS et volumes saisis via l'App" },
-          { icon: <Zap className="text-red-400" />, title: "Calcul Instantané", desc: "Application des coefficients scientifiques" },
-          { icon: <ShieldCheck className="text-red-400" />, title: "Impact Certifié", desc: "Visualisation immédiate de l'impact réel" },
-        ].map((step, index) => (
+        <footer className="cmm-ribbon-surface flex flex-col items-center justify-between gap-10 pt-20 sm:flex-row">
+          <div className="space-y-3 text-center sm:text-left">
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-red-200/60">
+              CleanMyMap Engine v{version}
+            </p>
+            <p className="max-w-md text-xs font-bold leading-relaxed text-red-100/70">
+              Tous les calculs sont open-source et vérifiables par les autorités locales et partenaires scientifiques.
+            </p>
+          </div>
           <div
-            key={index}
-            className="group flex flex-col items-center space-y-6 rounded-[2.5rem] border border-white/5 bg-white/5 p-10 text-center transition-all duration-500 hover:border-white/10"
-          >
-            <div className="flex h-20 w-20 items-center justify-center rounded-[2rem] bg-white/5 shadow-inner transition-transform duration-700 group-hover:scale-110">
-              {step.icon}
-            </div>
-            <div className="space-y-2">
-              <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">
-                {step.title}
-              </h3>
-              <p className="text-sm font-medium leading-relaxed text-red-100/30">
-                {step.desc}
-              </p>
-            </div>
-          </div>
-        ))}
+            className="rounded-2xl border border-white/10 bg-red-950/35 px-8 py-4 text-center text-[10px] font-black uppercase tracking-widest text-red-100/60 shadow-sm backdrop-blur-sm"
+            dangerouslySetInnerHTML={{ __html: t("footer.partner") }}
+          />
+        </footer>
       </div>
-
-      <section className="grid gap-10 xl:grid-cols-2">
-        <MethodologyCard
-          title={t("cards.water.title")}
-          formula={t("cards.water.formula", { val: factors.waterLitersPerCigaretteButt })}
-          description={t("cards.water.desc", { val: factors.waterLitersPerCigaretteButt })}
-          source={t("cards.water.source", { src: sources.water })}
-          color="red"
-          icon={<BookOpen size={24} />}
-        />
-
-        <MethodologyCard
-          title={t("cards.co2.title")}
-          formula={t("cards.co2.formula", { val: factors.co2KgPerWasteKg })}
-          description={t("cards.co2.desc")}
-          source={t("cards.co2.source", { src: sources.co2 })}
-          color="red"
-          icon={<Scaling size={24} />}
-        />
-
-        <MethodologyCard
-          title={t("cards.surface.title")}
-          formula={t("cards.surface.formula", {
-            valkg: factors.surfaceM2PerWasteKg,
-            valmin: factors.surfaceM2PerVolunteerMinute,
-          })}
-          description={t("cards.surface.desc")}
-          source={t("cards.surface.source", { src: sources.surface })}
-          color="slate"
-          icon={<Info size={24} />}
-        />
-
-        <MethodologyCard
-          title={t("cards.map.title")}
-          formula={t("cards.map.formula")}
-          description={t("cards.map.desc")}
-          source={t("cards.map.source")}
-          color="red"
-          icon={<Scaling size={24} />}
-        />
-      </section>
-
-      {/* Compromis Rigueur Scientifique vs Expérience Utilisateur (Formulaire Bénévole) */}
-      <div className="relative overflow-hidden rounded-[3rem] border border-white/5 bg-white/5 p-10 md:p-12 space-y-6">
-        <div className="flex items-center gap-4 text-red-400">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-400/5 shadow-inner">
-            <Scaling size={20} />
-          </div>
-          <h3 className="text-2xl font-black tracking-tight text-white">
-            {isFrench ? "Compromis Rigueur Scientifique & UX du Formulaire Bénévole" : "Scientific Rigor & UX Compromise on the Volunteer Form"}
-          </h3>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2 text-red-100/50 leading-relaxed font-medium text-sm">
-          <p>
-            {isFrench
-              ? "Afin d'encourager l'action citoyenne et de simplifier le geste de déclaration sur le terrain, notre formulaire bénévole a été conçu pour être le plus fluide possible. Exiger de chaque participant qu'il pèse ou caractérise précisément chaque type de déchet découragerait la majorité des utilisateurs."
-              : "To encourage citizen action and simplify reporting on the ground, our volunteer form was designed to be as fluid as possible. Requiring every participant to weigh or categorize each type of waste precisely would discourage most users."}
-          </p>
-          <p>
-            {isFrench
-              ? "C'est pourquoi nous utilisons des proxies linéaires (comme estimer la surface d'action d'après le temps passé ou le poids moyen des déchets collectés). Ce compromis pragmatique permet de collecter des données à grande échelle tout en garantissant des ordres de grandeur fiables validés scientifiquement."
-              : "This is why we use linear proxies (such as estimating the action area based on time spent or average weight of collected waste). This pragmatic compromise allows large-scale data collection while ensuring reliable, scientifically validated orders of magnitude."}
-          </p>
-        </div>
-      </div>
-
-      {/* Gamification Logic */}
-      <div className="space-y-10 pt-10 border-t border-white/10">
-        <div className="text-center space-y-4">
-          <h2 className="text-4xl font-black tracking-tight text-white">
-            {isFrench
-              ? "Logique de Gamification (En cours)"
-              : "Gamification Logic (Work in progress)"}
-          </h2>
-          <p className="max-w-2xl mx-auto text-lg font-medium leading-relaxed text-red-100/50">
-            {isFrench
-              ? "Nous développons actuellement un système de gamification non‑compétitive visant à encourager l’engagement citoyen via des récompenses, des badges et des tableaux de progression, le tout sans mécanismes de compétition agressifs."
-              : "We are currently developing a non‑competitive gamification system to encourage citizen engagement through rewards, badges and progression boards, without aggressive competitive mechanics."}
-          </p>
-          <p className="text-sm text-red-200/60">
-            {isFrench
-              ? "🚧 En cours de développement – restez à l’écoute pour de nouvelles fonctionnalités !"
-              : "🚧 Work in progress – stay tuned for upcoming features!"}
-          </p>
-        </div>
-      </div>
-
-      {/* Documentation Open Source */}
-      <div className="space-y-10 pt-10 border-t border-white/10">
-        <div className="text-center space-y-4">
-          <h2 className="text-4xl font-black tracking-tight text-white">
-            {isFrench ? "Documentation & Vision Open Source" : "Documentation & Open Source Vision"}
-          </h2>
-          <p className="max-w-2xl mx-auto text-lg font-medium leading-relaxed text-red-100/50">
-            {isFrench 
-              ? "Retrouvez tous nos documents de référence, protocoles et fiches techniques en libre accès." 
-              : "Find all our reference documents, protocols and technical sheets in open access."}
-          </p>
-        </div>
-        
-        <div className="grid gap-6 md:grid-cols-2">
-          {OPEN_SOURCE_DOCS.map((doc) => (
-            <div
-              key={doc.id}
-              className={cn(
-                "group relative overflow-hidden rounded-[2.5rem] border p-8 transition-all duration-500 hover:scale-[1.01]",
-                classes.surface,
-                classes.shadow
-              )}
-            >
-              <div className="flex items-start gap-5 mb-6">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-400/10 text-red-400 shadow-inner">
-                  {doc.icon}
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-2">{doc.title[locale]}</h3>
-                  <p className="text-xs font-medium leading-relaxed text-red-100/50">{doc.desc[locale]}</p>
-                </div>
-              </div>
-              <a
-                href={doc.href}
-                download
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-red-500 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all hover:bg-red-400"
-              >
-                {doc.isPdf ? (
-                  <>
-                    <Download size={14} />
-                    {isFrench ? "Télécharger" : "Download"}
-                  </>
-                ) : (
-                  <>
-                    <ExternalLink size={14} />
-                    {isFrench ? "Consulter" : "View"}
-                  </>
-                )}
-              </a>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <footer className="cmm-ribbon-surface flex flex-col items-center justify-between gap-10 pt-20 sm:flex-row">
-        <div className="space-y-3 text-center sm:text-left">
-          <p className="text-[10px] font-black uppercase tracking-[0.4em] text-red-200/60">
-            CleanMyMap Engine v{version}
-          </p>
-          <p className="max-w-md text-xs font-bold leading-relaxed text-red-100/70">
-            Tous les calculs sont open-source et vérifiables par les autorités locales et partenaires scientifiques.
-          </p>
-        </div>
-        <div
-          className="rounded-2xl border border-white/10 bg-red-950/35 px-8 py-4 text-center text-[10px] font-black uppercase tracking-widest text-red-100/60 shadow-sm backdrop-blur-sm"
-          dangerouslySetInnerHTML={{ __html: t("footer.partner") }}
-        />
-      </footer>
     </div>
   );
 }

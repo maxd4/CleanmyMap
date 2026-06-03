@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { PackType } from "./weather-types";
 
-export function useKitData(activeTab: "weather" | "kit", fr: boolean) {
+export function useKitData(activeTab: "conditions" | "preparation" | "protocol", fr: boolean) {
   const [packType, setPackType] = useState<PackType>("team");
   const [kitChecks, setKitChecks] = useState<Record<string, boolean>>({
     ppe: false,
@@ -51,7 +51,7 @@ export function useKitData(activeTab: "weather" | "kit", fr: boolean) {
   };
 
   useEffect(() => {
-    if (activeTab !== "kit") return;
+    if (activeTab !== "preparation") return;
     let active = true;
     void fetch("/api/users/checklist-progress?checklistId=kit-main", {
       method: "GET",
@@ -67,7 +67,7 @@ export function useKitData(activeTab: "weather" | "kit", fr: boolean) {
   }, [activeTab]);
 
   useEffect(() => {
-    if (!kitReady || activeTab !== "kit") return;
+    if (!kitReady || activeTab !== "preparation") return;
     void fetch("/api/users/checklist-progress", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

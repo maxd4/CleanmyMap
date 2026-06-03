@@ -255,7 +255,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     },
     {
       href: "/sections/trash-spotter",
-      title: "Signalement de déchets",
+      title: "Signaler un déchet",
       detail: "Remonter un point avec le bon contexte.",
       visual: {
         tone: "violet",
@@ -341,7 +341,7 @@ export const LEARN_PRACTICE_LINKS: Record<LearnLocale, LearnLinkCard[]> = {
     },
     {
       href: "/sections/trash-spotter",
-      title: "Trash spotting",
+      title: "Trash Spotter",
       detail: "Report a point with the right context.",
       visual: {
         tone: "violet",
