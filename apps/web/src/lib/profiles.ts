@@ -217,11 +217,11 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
         },
       },
       {
-        href: "/learn/hub",
-        label: { fr: "Kit organisateur", en: "Organizer kit" },
+        href: "/learn/comprendre",
+        label: { fr: "Vulgarisation", en: "Explanation" },
         description: {
-          fr: "Guides, fiches et affiches pour aller plus loin",
-          en: "Guides, checklists and posters to go further",
+          fr: "Contexte, ordres de grandeur et méthodologie",
+          en: "Context, orders of magnitude and methodology",
         },
       },
     ],
@@ -314,8 +314,8 @@ const PROFILE_CTA_CONFIG: Record<AppProfile, ProfileCtaConfig> = {
       },
     },
     secondaryCTA: {
-      href: "/partners/network",
-      label: { fr: "Voir le réseau", en: "View the network" },
+      href: "/sections/community?tab=partners",
+      label: { fr: "Voir les partenaires", en: "View partners" },
       description: {
         fr: "Identifier les acteurs et partenaires actifs",
         en: "Identify active organizations and partners",

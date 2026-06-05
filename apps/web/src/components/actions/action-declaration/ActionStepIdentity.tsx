@@ -297,6 +297,27 @@ export function ActionStepIdentity({ form, updateField, userMetadata, recordType
               </div>
             )}
 
+            {isActionMode && (
+              <div className="mt-3 rounded-2xl border border-sky-200/70 bg-sky-50/60 p-4 shadow-sm">
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 rounded border-sky-300 text-sky-600 focus:ring-sky-500"
+                    checked={form.groupJoinEnabled}
+                    onChange={(e) => updateField("groupJoinEnabled", e.target.checked)}
+                  />
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-sky-950">
+                      Ouvrir le formulaire de groupe
+                    </p>
+                    <p className="text-xs leading-relaxed text-sky-900/70">
+                      L&apos;organisateur principal et les coorganisateurs peuvent partager le lien. L&apos;action devient rejoignable après validation, et chaque participation est enregistrée séparément.
+                    </p>
+                  </div>
+                </label>
+              </div>
+            )}
+
             {!isCleanPlaceMode && (
               <div className="space-y-6 pt-2">
                 <div>

@@ -25,6 +25,15 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 30,
+    remotePatterns: [
+      { protocol: "https", hostname: "www.artchive.com" },
+      { protocol: "https", hostname: "images.squarespace-cdn.com" },
+      { protocol: "https", hostname: "commons.wikimedia.org" },
+      { protocol: "https", hostname: "media.wired.com" },
+      { protocol: "https", hostname: "www.veronikarichterova.com" },
+      { protocol: "https", hostname: "ocean.si.edu" },
+      { protocol: "https", hostname: "i0.wp.com" },
+    ],
   },
   experimental: {
     lockDistDir: false,

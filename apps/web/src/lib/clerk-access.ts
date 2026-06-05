@@ -7,7 +7,6 @@ const SECTION_ACCESS_MODES: Record<string, ClerkAccessMode> = {
   weather: "visible",
   route: "visible",
   recycling: "visible",
-  sandbox: "visible",
   "open-data": "visible",
   funding: "visible",
   actors: "visible",
@@ -37,7 +36,6 @@ const ROUTE_ACCESS_RULES: Array<{
   { pattern: /^\/partners\/network$/, mode: "disabled" },
   { pattern: /^\/sponsor-portal$/, mode: "disabled" },
   { pattern: /^\/reports$/, mode: "visible" },
-  { pattern: /^\/learn\/hub$/, mode: "visible" },
   { pattern: /^\/methodologie$/, mode: "visible" },
 ];
 

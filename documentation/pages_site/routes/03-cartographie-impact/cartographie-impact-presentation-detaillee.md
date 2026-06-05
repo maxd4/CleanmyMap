@@ -5,7 +5,7 @@
 - **Bloc** : Cartographie & Impact
 - **Dossier canonique** : `03-cartographie-impact`
 - **Rôle** : lire, comparer et partager les données de carte et d'impact.
-- **Sous-rubriques** : carte des actions, méthodologie, profil impact, rapports, sandbox, progression.
+- **Sous-rubriques** : carte des actions, méthodologie, profil impact, rapports, progression.
 - **Dossier photo centralisé** : `photo/`
 
 ## Points à compléter

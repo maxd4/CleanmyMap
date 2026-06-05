@@ -126,7 +126,7 @@ export function ExternalHubSection() {
       color: "emerald" as const,
       icon: <Users size={24} />,
       links: [
-        { label: "Annuaire CleanMyMap", url: "/partners/network", badge: "Live", icon: <MapPin size={16} /> },
+        { label: "Partenaires CleanMyMap", url: "/sections/community?tab=partners", badge: "Live", icon: <MapPin size={16} /> },
         { label: "J'agis pour la nature", url: "https://jagispourlanature.fr" },
         { label: "Zero Waste Paris", url: "https://www.zerowasteparis.fr" },
         { label: "Surfrider Foundation", url: "https://surfrider.eu" },

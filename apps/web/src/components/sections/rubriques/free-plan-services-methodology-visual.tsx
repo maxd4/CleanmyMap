@@ -1,14 +1,12 @@
 "use client";
 
-import { useMemo, useState, type LucideIcon } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import {
   BarChart3,
   Bot,
   Bell,
-  ArrowRight,
-  ChevronRight,
-  CheckCircle2,
   CreditCard,
+  ExternalLink,
   Database,
   Fingerprint,
   Globe,
@@ -16,24 +14,22 @@ import {
   Leaf,
   Mail,
   Monitor,
-  Megaphone,
   PieChart,
   MoreHorizontal,
-  Search,
   Plug,
   Radar,
   ShieldAlert,
   Sparkles,
-  Users,
-  X,
   Triangle,
   Zap,
   Cloud,
+  type LucideIcon,
 } from "lucide-react";
 import type {
   EnvironmentalImpactInfrastructureServiceEstimate,
   EnvironmentalImpactInfrastructureServiceKey,
 } from "@/lib/environmental-impact-estimator/types";
+import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import { getServicePlanInfo, type ServicePlanType } from "@/lib/environmental-impact-estimator/service-plan";
 import {
   buildServiceQuotaSummary,
@@ -46,7 +42,7 @@ import { cn } from "@/lib/utils";
 
 type QuotaDisplayServiceKey = "supabase" | "vercel" | "github" | "resend" | "posthog" | "lwsDomain";
 
-type MethodologyTabKey = "overview" | "quota" | "impact";
+type MethodologyTabKey = "quota" | "impact";
 
 type DisplayService = {
   key: QuotaDisplayServiceKey;
@@ -59,22 +55,20 @@ type DisplayService = {
   state: ServiceQuotaState;
   primaryMetric: ServiceQuotaMetricSummary | null;
   metrics: ServiceQuotaMetricSummary[];
+  summary: string;
+  details: string[];
+  linkHref: string | null;
+  linkLabel: string | null;
 };
 
 type ServiceIconCardProps = {
   service: DisplayService;
   selected: boolean;
   onSelect: (key: QuotaDisplayServiceKey) => void;
-};
-
-type ServiceRowProps = {
-  service: DisplayService;
-  selected: boolean;
-  onSelect: (key: QuotaDisplayServiceKey) => void;
+  onHover: (key: QuotaDisplayServiceKey | null) => void;
 };
 
 const TAB_ITEMS = [
-  { key: "overview", label: "Vue d'ensemble", icon: BarChart3 },
   { key: "quota", label: "Quotas & plans", icon: PieChart },
   { key: "impact", label: "Impact carbone", icon: Leaf },
 ] as const;
@@ -114,14 +108,14 @@ function formatPercent(value: number | null | undefined): string {
   return `${new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 0 }).format(value)}%`;
 }
 
-function formatKg(value: number | null | undefined): string {
+function formatImpactKg(value: number | null | undefined): string {
   if (typeof value !== "number" || Number.isNaN(value)) {
     return "NA";
   }
 
   return `${new Intl.NumberFormat("fr-FR", {
-    maximumFractionDigits: value >= 10 ? 0 : 2,
-  }).format(value)} kgCO2e`;
+    maximumFractionDigits: value >= 10 ? 0 : 1,
+  }).format(value)} kg`;
 }
 
 function getPlanTone(planType: ServicePlanType): string {
@@ -169,21 +163,6 @@ function getMetricFillClass(state: ServiceQuotaState): string {
   }
 }
 
-function getServiceStateRank(state: ServiceQuotaState): number {
-  switch (state) {
-    case "dépassé":
-      return 4;
-    case "proche limite":
-      return 3;
-    case "attention":
-      return 2;
-    case "ok":
-      return 1;
-    default:
-      return 0;
-  }
-}
-
 function getTabTone(active: boolean): string {
   return active
     ? "border-rose-300 bg-rose-50 text-rose-700 shadow-[0_12px_30px_-24px_rgba(244,63,94,0.45)]"
@@ -192,10 +171,6 @@ function getTabTone(active: boolean): string {
 
 function getTabIconTone(active: boolean): string {
   return active ? "text-rose-500" : "text-slate-500";
-}
-
-function formatMetricCount(count: number): string {
-  return `${new Intl.NumberFormat("fr-FR").format(count)} service${count > 1 ? "s" : ""}`;
 }
 
 function getImpactVisual(serviceKey: EnvironmentalImpactInfrastructureServiceKey): {
@@ -222,7 +197,7 @@ function getMetricIcon(metricKey: string): LucideIcon {
   return ShieldAlert;
 }
 
-function renderMetricIcon(metricKey: string): JSX.Element {
+function renderMetricIcon(metricKey: string): ReactElement {
   const Icon = getMetricIcon(metricKey);
   return <Icon size={16} />;
 }
@@ -253,131 +228,64 @@ function TabPill({
   );
 }
 
-function ImpactBadge({ children }: { children: string }) {
-  return (
-    <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
-      {children}
-    </span>
-  );
-}
-
-function ImpactFeedCard({
-  service,
-  selected,
-  onSelect,
-}: {
-  service: DisplayService;
-  selected: boolean;
-  onSelect: (key: QuotaDisplayServiceKey) => void;
-}) {
-  const Icon = service.icon;
-  const primaryMetric = service.primaryMetric;
-  const impactMonthly = service.service?.monthlyKgCo2eProxy ?? null;
-  const impactShare = service.service?.sharePercent ?? null;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(service.key)}
-      className={cn(
-        "w-full rounded-[1.6rem] border bg-white p-4 text-left shadow-[0_18px_45px_-34px_rgba(15,23,42,0.24)] transition hover:-translate-y-0.5 hover:shadow-[0_22px_55px_-36px_rgba(15,23,42,0.26)]",
-        selected ? "border-rose-300 ring-1 ring-rose-200" : "border-slate-200",
-      )}
-    >
-      <div className="flex items-start gap-4">
-        <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50"
-          style={{ color: service.accent, boxShadow: `inset 0 0 0 1px ${service.accent}1c` }}
-        >
-          <Icon size={22} />
-        </div>
-
-        <div className="min-w-0 flex-1 space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <h5 className="truncate text-base font-black text-slate-950">{service.label}</h5>
-            <span className={cn("rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize", getPlanTone(service.planType))}>
-              {service.planType}
-            </span>
-            {service.price !== "NA" ? (
-              <span className="rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700">
-                {service.price}
-              </span>
-            ) : null}
-            <span className={cn("rounded-full border px-2.5 py-1 text-[11px] font-semibold capitalize", getStateTone(service.state))}>
-              {formatServiceQuotaStateLabel(service.state)}
-            </span>
-          </div>
-
-          <p className="text-sm leading-relaxed text-slate-600">
-            {service.service?.description ?? "NA"}
-          </p>
-
-          <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
-            <ImpactBadge>
-              Part du total {impactShare === null ? "NA" : formatPercent(impactShare)}
-            </ImpactBadge>
-            <ImpactBadge>
-              Impact mensuel {impactMonthly === null ? "NA" : formatKg(impactMonthly)}
-            </ImpactBadge>
-            <ImpactBadge>
-              Quota principal {primaryMetric?.label ?? "NA"}
-            </ImpactBadge>
-          </div>
-        </div>
-
-        <ChevronRight size={16} className="mt-2 shrink-0 text-slate-400" />
-      </div>
-    </button>
-  );
-}
-
-function ImpactSummaryCard({
-  icon: Icon,
-  label,
-  value,
-  caption,
-}: {
-  icon: LucideIcon;
-  label: string;
-  value: string;
-  caption: string;
-}) {
-  return (
-    <article className="flex items-center gap-4 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_12px_30px_-26px_rgba(15,23,42,0.24)]">
-      <div className="flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-rose-50 text-rose-600">
-        <Icon size={28} />
-      </div>
-      <div>
-        <p className="text-sm text-slate-600">{label}</p>
-        <p className="mt-1 text-4xl font-black text-rose-600">{value}</p>
-        <p className="mt-1 text-xs font-medium text-slate-500">{caption}</p>
-      </div>
-    </article>
-  );
-}
-
 function buildDisplayedServices(
   services: EnvironmentalImpactInfrastructureServiceEstimate[],
+  githubStats: GitHubRepositoryStats | null,
 ): DisplayService[] {
   const webServices = services.filter((service) => !isDevelopmentAiServiceKey(service.key));
   const serviceByKey = new Map(webServices.map((service) => [service.key, service] as const));
 
   return DISPLAY_ORDER.map((definition) => {
     if (definition.key === "github") {
+      const dependabotCount = githubStats?.dependabotOpenAlertsCount;
+      const warningCount = githubStats?.codeScanningWarningCount;
+      const hasSecuritySignals =
+        typeof dependabotCount === "number" || typeof warningCount === "number";
+      const details = [
+        githubStats?.actionsQuotaLabel ?? "NA",
+        ...(githubStats?.actionsNotes ?? []),
+        dependabotCount === null ? "Dependabot: NA" : `Dependabot: ${dependabotCount}`,
+        warningCount === null ? "Warnings: NA" : `Warnings: ${warningCount}`,
+      ];
+
       return {
         ...definition,
         service: null,
-        planType: "NA",
+        planType: "gratuit",
         price: "NA",
-        state: "NA",
+        state: hasSecuritySignals
+          ? dependabotCount === 0 && warningCount === 0
+            ? "ok"
+            : "attention"
+          : "NA",
         primaryMetric: null,
         metrics: [],
+        summary:
+          githubStats === null
+            ? "NA"
+            : `Repo ${githubStats.isPrivate ? "privé" : "public"} · Actions ${githubStats.isPrivate ? "quota" : "gratuites et illimitées"}`,
+        details,
+        linkHref: githubStats?.htmlUrl ?? "https://github.com/maxd4/CleanmyMap",
+        linkLabel: "Repo GitHub",
       };
     }
 
     const service = serviceByKey.get(definition.key) ?? null;
     const quotaSummary = service ? buildServiceQuotaSummary(service) : null;
     const planInfo = getServicePlanInfo(definition.key);
+    const details = [
+      ...(planInfo.cycleResetLabel ? [planInfo.cycleResetLabel] : []),
+      ...(planInfo.notes ?? []),
+      ...(definition.key === "lwsDomain"
+        ? [
+            "2 Go d’hébergement web",
+            "2 adresses e-mails pro",
+            "2 Go par boîte mail",
+            "10 000 e-mails stockés par boîte",
+            "Pièce jointe jusqu’à 25 Mo",
+          ]
+        : []),
+    ];
 
     return {
       ...definition,
@@ -387,22 +295,28 @@ function buildDisplayedServices(
       state: quotaSummary?.state ?? "NA",
       primaryMetric: quotaSummary?.primaryMetric ?? null,
       metrics: quotaSummary?.metrics ?? [],
+      summary: quotaSummary?.primaryMetric
+        ? `${quotaSummary.primaryMetric.label} · ${formatPercent(quotaSummary.primaryMetric.consumedPercent)} · ${formatServiceQuotaStateLabel(quotaSummary.primaryMetric.state)}`
+        : "NA",
+      details,
+      linkHref: null,
+      linkLabel: null,
     };
   });
 }
 
-function ServiceIconCard({ service, selected, onSelect }: ServiceIconCardProps) {
+function ServiceIconCard({ service, selected, onSelect, onHover }: ServiceIconCardProps) {
   const Icon = service.icon;
-  const primaryMetric = service.primaryMetric;
-  const primarySummary =
-    primaryMetric === null
-      ? "NA"
-      : `${primaryMetric.label} · ${formatPercent(primaryMetric.consumedPercent)} · ${formatServiceQuotaStateLabel(primaryMetric.state)}`;
+  const primarySummary = service.summary;
 
   return (
     <button
       type="button"
       onClick={() => onSelect(service.key)}
+      onMouseEnter={() => onHover(service.key)}
+      onMouseLeave={() => onHover(null)}
+      onFocus={() => onHover(service.key)}
+      onBlur={() => onHover(null)}
       className={cn(
         "group rounded-[1.4rem] border bg-white p-4 text-left shadow-[0_10px_30px_-24px_rgba(15,23,42,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-24px_rgba(15,23,42,0.28)]",
         selected ? "border-rose-300 ring-1 ring-rose-200" : "border-slate-200",
@@ -447,73 +361,19 @@ function ServiceIconCard({ service, selected, onSelect }: ServiceIconCardProps) 
           <p className="mt-3 text-[12px] leading-relaxed text-slate-500">
             {primarySummary}
           </p>
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function ServiceRow({ service, selected, onSelect }: ServiceRowProps) {
-  const Icon = service.icon;
-  const primaryMetric = service.primaryMetric;
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(service.key)}
-      className={cn(
-        "flex w-full items-center gap-4 rounded-[1.35rem] border px-4 py-3 text-left transition",
-        selected
-          ? "border-rose-300 bg-rose-50 shadow-[0_12px_30px_-24px_rgba(244,63,94,0.5)]"
-          : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50",
-      )}
-    >
-      <div
-        className={cn(
-          "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border",
-          selected ? "border-rose-200 bg-white text-rose-500" : "border-slate-200 bg-slate-50 text-slate-800",
-        )}
-        style={{
-          color: service.accent,
-          boxShadow: selected ? `inset 0 0 0 1px ${service.accent}1c` : undefined,
-        }}
-      >
-        <Icon size={22} />
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-slate-950">{service.label}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className={cn("rounded-full border px-3 py-1 text-[11px] font-semibold capitalize", getPlanTone(service.planType))}>
-                {service.planType}
-              </span>
-              {service.price !== "NA" ? (
-                <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700">
-                  {service.price}
+          {service.details.length > 0 ? (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {service.details.map((detail) => (
+                <span
+                  key={detail}
+                  className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold text-slate-600"
+                >
+                  {detail}
                 </span>
-              ) : service.planType === "NA" ? (
-                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold text-slate-500">
-                  NA
-                </span>
-              ) : null}
+              ))}
             </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2 text-slate-500">
-            <span className={cn("rounded-full border px-3 py-1 text-[11px] font-semibold capitalize", getStateTone(service.state))}>
-              {formatServiceQuotaStateLabel(service.state)}
-            </span>
-            <ChevronRight size={16} className={selected ? "text-rose-500" : "text-slate-400"} />
-          </div>
+          ) : null}
         </div>
-
-        <p className="mt-3 text-[12px] leading-relaxed text-slate-500">
-          {primaryMetric === null
-            ? "NA"
-            : `${primaryMetric.label} · ${formatPercent(primaryMetric.consumedPercent)} · ${formatServiceQuotaStateLabel(primaryMetric.state)}`}
-        </p>
       </div>
     </button>
   );
@@ -569,10 +429,12 @@ function QuotaMetricRow({ metric }: { metric: ServiceQuotaMetricSummary }) {
 export function FreePlanServicesMethodologyVisual({
   services,
   impactTotals,
+  githubStats,
   isFrench = true,
   initialTab = "impact",
 }: {
   services: EnvironmentalImpactInfrastructureServiceEstimate[];
+  githubStats?: GitHubRepositoryStats | null;
   impactTotals?: {
     monthlyKgCo2eProxy: number | null;
     annualKgCo2eProxy: number | null;
@@ -588,41 +450,19 @@ export function FreePlanServicesMethodologyVisual({
     totalKgCo2eProxy: null,
     generatedAt: null,
   };
-  const displayedServices = useMemo(() => buildDisplayedServices(services), [services]);
-  const visibleTabs = TAB_ITEMS.filter((tab) => tab.key !== "overview");
+  const displayedServices = useMemo(
+    () => buildDisplayedServices(services, githubStats ?? null),
+    [githubStats, services],
+  );
   const initialSelectedKey = displayedServices.find((service) => service.key === "supabase")?.key ?? displayedServices[0]?.key ?? "github";
   const [selectedKey, setSelectedKey] = useState<QuotaDisplayServiceKey>(initialSelectedKey);
+  const [hoveredKey, setHoveredKey] = useState<QuotaDisplayServiceKey | null>(null);
   const [activeTab, setActiveTab] = useState<MethodologyTabKey>(initialTab);
 
+  const activeKey = hoveredKey ?? selectedKey;
   const selectedService =
-    displayedServices.find((service) => service.key === selectedKey) ?? displayedServices[0] ?? null;
+    displayedServices.find((service) => service.key === activeKey) ?? displayedServices[0] ?? null;
   const SelectedIcon = selectedService?.icon ?? PieChart;
-  const selectedPlanInfo =
-    selectedService && selectedService.key !== "github"
-      ? getServicePlanInfo(selectedService.key)
-      : null;
-  const developmentServices = services.filter((service) => isDevelopmentAiServiceKey(service.key));
-  const impactServices = displayedServices
-    .slice()
-    .sort((left, right) => {
-      const byState = getServiceStateRank(right.state) - getServiceStateRank(left.state);
-      if (byState !== 0) {
-        return byState;
-      }
-
-      const byImpact = (right.service?.monthlyKgCo2eProxy ?? 0) - (left.service?.monthlyKgCo2eProxy ?? 0);
-      if (byImpact !== 0) {
-        return byImpact;
-      }
-
-      return left.label.localeCompare(right.label, "fr");
-    });
-  const featuredService = impactServices[0] ?? null;
-  const impactFeedServices = [
-    selectedService,
-    ...impactServices.filter((service) => service.key !== selectedService?.key).slice(0, 3),
-  ].filter((service, index, array) => Boolean(service) && array.findIndex((item) => item?.key === service?.key) === index) as DisplayService[];
-
   const paidPlansCount = displayedServices.filter((service) => service.planType === "payant").length;
   const nearLimitCount = displayedServices.filter(
     (service) => service.state === "proche limite" || service.state === "dépassé",
@@ -631,89 +471,11 @@ export function FreePlanServicesMethodologyVisual({
     (sum, service) => sum + (service.service?.monthlyKgCo2eProxy ?? 0),
     0,
   );
-  const totalDevelopmentKgCo2eProxy = developmentServices.reduce(
-    (sum, service) => sum + (service.monthlyKgCo2eProxy ?? 0),
-    0,
-  );
 
   const title = isFrench ? "Quotas & plans des services web" : "Web services quotas and plans";
   const subtitle = isFrench
-    ? "Lecture service par service des limites de plan, sans comparaison trompeuse entre services."
-    : "Service-by-service reading of plan limits, without misleading cross-service comparison.";
-
-  if (activeTab === "overview") {
-    return (
-      <section
-        id="impact-services"
-        className="rounded-[2.75rem] border border-slate-200 bg-white p-6 text-slate-900 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.24)] md:p-8"
-      >
-        <div className="space-y-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="space-y-3">
-              <p className="text-[11px] font-black uppercase tracking-[0.28em] text-rose-500/75">
-                {isFrench ? "Pilotage des services" : "Service pilot"}
-              </p>
-              <h3 className="max-w-4xl text-3xl font-black tracking-tight text-slate-950 md:text-5xl">
-                {isFrench ? "Vue d'ensemble" : "Overview"}
-              </h3>
-              <p className="max-w-3xl text-base leading-relaxed text-slate-600 md:text-lg">
-                {isFrench
-                  ? "Les services suivis sont exposés sans moyenne trompeuse. Les valeurs absentes restent marquées NA."
-                  : "Tracked services are exposed without misleading averages. Missing values remain marked NA."}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              {visibleTabs.map((tab) => (
-                <TabPill
-                  key={tab.key}
-                  tab={tab}
-                  active={tab.key === activeTab}
-                  onClick={() => setActiveTab(tab.key)}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <ImpactSummaryCard
-              icon={Users}
-              label={isFrench ? "Services suivis" : "Tracked services"}
-              value={new Intl.NumberFormat("fr-FR").format(displayedServices.length)}
-              caption={
-                isFrench
-                  ? "GitHub reste affiché en NA quand la donnée manque."
-                  : "GitHub stays marked NA when data is missing."
-              }
-            />
-            <ImpactSummaryCard
-              icon={CreditCard}
-              label={isFrench ? "Plans payants" : "Paid plans"}
-              value={new Intl.NumberFormat("fr-FR").format(paidPlansCount)}
-              caption={isFrench ? "LWS est le seul plan payant documenté." : "LWS is the only documented paid plan."}
-            />
-            <ImpactSummaryCard
-              icon={ShieldAlert}
-              label={isFrench ? "Services proches d'une limite" : "Services near a limit"}
-              value={new Intl.NumberFormat("fr-FR").format(nearLimitCount)}
-              caption={isFrench ? "Seulement les états réellement calculés." : "Only actually computed states are shown."}
-            />
-          </div>
-
-          <div className="rounded-[2.25rem] border border-slate-200 bg-slate-50 p-5">
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-rose-500/70">
-              {isFrench ? "Lecture synthétique" : "Synthetic reading"}
-            </p>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              {isFrench
-                ? "L'onglet Impact carbone compare les postes qui pèsent réellement dans l'ACV numérique de CleanMyMap. Les services de développement IA sont séparés des quotas web et restent marqués Inclus ACV / Hors production / Hors quotas web."
-                : "The Impact carbone tab compares the items that actually weigh in CleanMyMap's digital LCA. Development AI services are separated from web quotas and remain marked Included in LCA / Outside production / Outside web quotas."}
-            </p>
-          </div>
-        </div>
-      </section>
-    );
-  }
+    ? "Lecture service par service des limites de plan, sans comparaison trompeuse entre services. GitHub est relié au dépôt réel."
+    : "Service-by-service reading of plan limits, without misleading cross-service comparison. GitHub is linked to the real repository.";
 
   if (activeTab === "impact") {
     const impactServices = services
@@ -734,10 +496,6 @@ export function FreePlanServicesMethodologyVisual({
       (service) => !isDevelopmentAiServiceKey(service.key),
     );
     const totalMonthlyImpact = impactServices.reduce(
-      (sum, service) => sum + (service.monthlyKgCo2eProxy ?? 0),
-      0,
-    );
-    const totalProductionImpact = productionImpactServices.reduce(
       (sum, service) => sum + (service.monthlyKgCo2eProxy ?? 0),
       0,
     );
@@ -805,15 +563,10 @@ export function FreePlanServicesMethodologyVisual({
         : []),
     ];
     const topContributors = productionImpactServices.slice(0, 6);
-    const topContributorCount = topContributors.length;
-    const topContributorLabel =
-      topContributorCount > 0
-        ? topContributors[0]?.label ?? "NA"
-        : "NA";
     const developmentLineLabel =
       developmentImpactServices.length > 0
         ? developmentImpactServices
-            .map((service) => service.label.split(" — ")[0] ?? service.label)
+            .map((service) => service.label)
             .join(" · ")
         : "NA";
 
@@ -839,7 +592,7 @@ export function FreePlanServicesMethodologyVisual({
             </div>
 
             <div className="flex flex-wrap gap-3">
-              {visibleTabs.map((tab) => (
+              {TAB_ITEMS.map((tab) => (
                 <TabPill
                   key={tab.key}
                   tab={tab}
@@ -861,12 +614,12 @@ export function FreePlanServicesMethodologyVisual({
                     {isFrench ? "Impact carbone année en cours" : "Current year carbon impact"}
                   </p>
                   <p className="mt-2 text-4xl font-black text-rose-600">
-                    {formatKg(resolvedImpactTotals.monthlyKgCo2eProxy)}
+                    {formatImpactKg(resolvedImpactTotals.monthlyKgCo2eProxy)}
                   </p>
                   <p className="mt-2 text-lg font-medium text-slate-600">
                     {isFrench
-                      ? `(${formatKg(totalAnnualImpact)} projetés)`
-                      : `(${formatKg(totalAnnualImpact)} projected)`}
+                      ? `(${formatImpactKg(totalAnnualImpact)} projetés)`
+                      : `(${formatImpactKg(totalAnnualImpact)} projected)`}
                   </p>
                   <p className="mt-3 text-sm text-slate-500">
                     {isFrench
@@ -887,7 +640,7 @@ export function FreePlanServicesMethodologyVisual({
                     {isFrench ? "Total carbone depuis la création du site" : "Total carbon since site creation"}
                   </p>
                   <p className="mt-2 text-4xl font-black text-rose-600">
-                    {formatKg(totalLifetimeImpact)}
+                    {formatImpactKg(totalLifetimeImpact)}
                   </p>
                   <p className="mt-2 text-lg font-medium text-slate-600">
                     {developmentSharePercent === null
@@ -955,6 +708,19 @@ export function FreePlanServicesMethodologyVisual({
                           </p>
                           {isDevelopment && developmentLineLabel !== "NA" ? (
                             <p className="text-[10px] leading-tight text-slate-500">{developmentLineLabel}</p>
+                          ) : null}
+                          {isDevelopment ? (
+                            <div className="mt-1 flex flex-wrap justify-center gap-1.5">
+                              <span className="rounded-full border border-rose-200 bg-white px-2 py-0.5 text-[9px] font-semibold text-rose-600">
+                                Inclus ACV
+                              </span>
+                              <span className="rounded-full border border-rose-200 bg-white px-2 py-0.5 text-[9px] font-semibold text-rose-600">
+                                Hors production
+                              </span>
+                              <span className="rounded-full border border-rose-200 bg-white px-2 py-0.5 text-[9px] font-semibold text-rose-600">
+                                Hors quotas web
+                              </span>
+                            </div>
                           ) : null}
                           <p
                             className={cn(
@@ -1144,7 +910,7 @@ export function FreePlanServicesMethodologyVisual({
           </div>
 
           <div className="flex flex-wrap gap-3">
-            {visibleTabs.map((tab) => (
+            {TAB_ITEMS.map((tab) => (
               <TabPill
                 key={tab.key}
                 tab={tab}
@@ -1160,94 +926,131 @@ export function FreePlanServicesMethodologyVisual({
             <ServiceIconCard
               key={service.key}
               service={service}
-              selected={service.key === selectedKey}
+              selected={service.key === activeKey}
               onSelect={setSelectedKey}
+              onHover={setHoveredKey}
             />
           ))}
         </div>
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)]">
-          <aside className="rounded-[2.25rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.28)]">
-            <h4 className="text-xl font-black text-slate-950">
-              {isFrench ? "Suivi des quotas par service" : "Quota tracking by service"}
-            </h4>
+        {githubStats ? (
+          <div className="flex justify-end">
+            <a
+              href={githubStats.htmlUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-slate-600 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.24)] transition hover:border-slate-300 hover:text-slate-900"
+            >
+              <ExternalLink size={14} />
+              {isFrench ? "Ouvrir le repo GitHub" : "Open GitHub repo"}
+            </a>
+          </div>
+        ) : null}
 
-            <div className="mt-5 space-y-3">
-              {displayedServices.map((service) => (
-                <ServiceRow
-                  key={service.key}
-                  service={service}
-                  selected={service.key === selectedKey}
-                  onSelect={setSelectedKey}
-                />
-              ))}
-            </div>
-          </aside>
-
-          <section className="rounded-[2.25rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.28)]">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div
-                  className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50"
-                  style={{
-                    color: selectedService?.accent ?? "#0f172a",
-                    boxShadow: selectedService ? `inset 0 0 0 1px ${selectedService.accent}1c` : undefined,
-                  }}
-                >
-                  <SelectedIcon size={28} />
-                </div>
-                <div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h4 className="text-2xl font-black text-slate-950">
-                      {selectedService?.label ?? "NA"}
-                    </h4>
-                    <span className={cn("rounded-full border px-3 py-1 text-[11px] font-semibold capitalize", getPlanTone(selectedService?.planType ?? "NA"))}>
-                      {selectedService?.planType ?? "NA"}
-                    </span>
-                    {selectedService?.price && selectedService.price !== "NA" ? (
-                      <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700">
-                        {selectedService.price}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-                    <span>{isFrench ? "Détail des quotas" : "Quota details"}</span>
-                    <span className="text-slate-300">•</span>
-                    <span>
-                      {isFrench
-                        ? "Un service peut comporter plusieurs quotas internes."
-                        : "A service can include multiple internal quotas."}
-                    </span>
-                  </div>
-                </div>
+        <div className="rounded-[2.25rem] border border-slate-200 bg-white p-5 shadow-[0_18px_45px_-34px_rgba(15,23,42,0.28)]">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div
+                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50"
+                style={{
+                  color: selectedService?.accent ?? "#0f172a",
+                  boxShadow: selectedService ? `inset 0 0 0 1px ${selectedService.accent}1c` : undefined,
+                }}
+              >
+                <SelectedIcon size={28} />
               </div>
-
-              <div className="flex items-center gap-2">
-                <span className={cn("rounded-full border px-3 py-1 text-[11px] font-semibold capitalize", getStateTone(selectedService?.state ?? "NA"))}>
-                  {selectedService ? formatServiceQuotaStateLabel(selectedService.state) : "NA"}
-                </span>
+              <div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h4 className="text-2xl font-black text-slate-950">
+                    {selectedService?.label ?? "NA"}
+                  </h4>
+                  <span className={cn("rounded-full border px-3 py-1 text-[11px] font-semibold capitalize", getPlanTone(selectedService?.planType ?? "NA"))}>
+                    {selectedService?.planType ?? "NA"}
+                  </span>
+                  {selectedService?.price && selectedService.price !== "NA" ? (
+                    <span className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700">
+                      {selectedService.price}
+                    </span>
+                  ) : null}
+                </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                <span>{isFrench ? "Survolez une carte pour afficher le détail" : "Hover a card to reveal details"}</span>
+                <span className="text-slate-300">•</span>
+                <span>
+                  {isFrench
+                      ? "Le clic conserve le dernier service consulté."
+                      : "Click keeps the last viewed service."}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="mt-6">
-              {selectedService?.service && selectedService.metrics.length > 0 ? (
-                <div className="space-y-3">
-                  {selectedService.metrics.map((metric) => (
-                    <QuotaMetricRow key={metric.key} metric={metric} />
+            <div className="flex items-center gap-2">
+              <span className={cn("rounded-full border px-3 py-1 text-[11px] font-semibold capitalize", getStateTone(selectedService?.state ?? "NA"))}>
+                {selectedService ? formatServiceQuotaStateLabel(selectedService.state) : "NA"}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-4">
+            {selectedService?.service && selectedService.metrics.length > 0 ? (
+              <div className="space-y-3">
+                {selectedService.metrics.map((metric) => (
+                  <QuotaMetricRow key={metric.key} metric={metric} />
+                ))}
+              </div>
+            ) : null}
+
+            {selectedService?.details.length > 0 ? (
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {selectedService.details.map((detail) => (
+                    <span
+                      key={detail}
+                      className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11px] font-semibold text-slate-600"
+                    >
+                      {detail}
+                    </span>
                   ))}
                 </div>
-              ) : (
-                <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 p-5">
-                  <p className="text-lg font-black text-slate-950">NA</p>
-                  <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                    {isFrench
-                      ? "Aucune donnée de quota n'est branchée pour ce service dans le repo."
-                      : "No quota data is connected for this service in the repo."}
-                  </p>
-                </div>
-              )}
-            </div>
-          </section>
+
+                {selectedService.linkHref ? (
+                  <a
+                    href={selectedService.linkHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-rose-700 transition hover:bg-rose-100"
+                  >
+                    <ExternalLink size={14} />
+                    {selectedService.linkLabel ?? "Ouvrir le repo"}
+                  </a>
+                ) : null}
+              </div>
+            ) : selectedService?.service && selectedService.metrics.length === 0 ? (
+              <div className="space-y-4">
+                {selectedService.linkHref ? (
+                  <a
+                    href={selectedService.linkHref}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-rose-50 px-4 py-2 text-[11px] font-black uppercase tracking-[0.18em] text-rose-700 transition hover:bg-rose-100"
+                  >
+                    <ExternalLink size={14} />
+                    {selectedService.linkLabel ?? "Ouvrir le repo"}
+                  </a>
+                ) : null}
+              </div>
+            ) : (
+              <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 p-5">
+                <p className="text-lg font-black text-slate-950">NA</p>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  {isFrench
+                    ? "Aucune donnée de quota n'est branchée pour ce service dans le repo."
+                    : "No quota data is connected for this service in the repo."}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -1295,7 +1098,7 @@ export function FreePlanServicesMethodologyVisual({
               {" "}
               Le total mensuel affiché ici est
               {" "}
-              <span className="font-semibold text-slate-800">{formatKg(totalMonthlyKgCo2eProxy)}</span>.
+              <span className="font-semibold text-slate-800">{formatImpactKg(totalMonthlyKgCo2eProxy)}</span>.
             </>
           ) : (
             <>
@@ -1307,7 +1110,7 @@ export function FreePlanServicesMethodologyVisual({
               {" "}
               The monthly total shown here is
               {" "}
-              <span className="font-semibold text-slate-800">{formatKg(totalMonthlyKgCo2eProxy)}</span>.
+              <span className="font-semibold text-slate-800">{formatImpactKg(totalMonthlyKgCo2eProxy)}</span>.
             </>
           )}
         </div>

@@ -57,3 +57,9 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+
+## Fichiers associés
+
+- [Présentation détaillée](./partners-onboarding-presentation-detaillee.md)
+- [Liste des propositions à traiter](./partners-onboarding-liste-propositions-a-traiter.md)
+- [Objectifs non pertinents](./partners-onboarding-objectifs-non-pertinents.md)

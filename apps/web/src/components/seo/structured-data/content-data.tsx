@@ -135,9 +135,9 @@ export function ArticleRessourceJsonLd() {
   const data = {
     "@context": "https://schema.org",
     "@type": "Article",
-    headline: "Guide des bonnes pratiques de dépollution urbaine",
+    headline: "Tri, composte, comportements",
     description:
-      "Apprenez les bonnes pratiques pour nettoyer efficacement les espaces urbains. Guide complet pour les bénévoles éco-responsables.",
+      "Repères courts pour trier, composter et garder les bons comportements sur le terrain.",
     image: "https://cleanmymap.fr/brand/nouveau-logo.svg",
     author: {
       "@type": "Organization",
@@ -170,7 +170,7 @@ export function ArticleRessourceJsonLd() {
         name: "Développement durable",
       },
     ],
-    keywords: "bonnes pratiques, depollution, benevolat, ecologie, guide",
+    keywords: "tri, compostage, comportements, depollution, benevolat, ecologie, guide",
   };
 
   return <JsonLd id="json-ld-article" data={data} />;

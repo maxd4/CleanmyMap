@@ -26,6 +26,7 @@ type ActionPopupContentBodyProps = {
   sourceLabel: string;
   updateHref: string | null;
   joinHref?: string | null;
+  joinStatusLabel?: string | null;
   hasPollution: boolean;
 };
 
@@ -43,6 +44,7 @@ export function ActionPopupContentBody({
   sourceLabel,
   updateHref,
   joinHref,
+  joinStatusLabel,
   hasPollution,
 }: ActionPopupContentBodyProps) {
   return (
@@ -186,6 +188,15 @@ export function ActionPopupContentBody({
         >
           Rejoindre un formulaire
         </CmmButton>
+      ) : joinStatusLabel ? (
+        <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-center dark:border-slate-700 dark:bg-slate-800/60">
+          <span className="cmm-text-small font-bold text-slate-600 dark:text-slate-200">
+            {joinStatusLabel}
+          </span>
+          <span className="mt-1 block cmm-text-caption text-slate-400 dark:text-slate-400">
+            Le partage de ce formulaire est désactivé côté organisateur.
+          </span>
+        </div>
       ) : null}
     </div>
   );

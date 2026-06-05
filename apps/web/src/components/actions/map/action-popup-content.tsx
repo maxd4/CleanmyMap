@@ -80,9 +80,14 @@ export function ActionPopupContent({
   const isJoinableAction =
     item.status === "approved" &&
     (item.record_type === "action" || contract?.type === "action");
+  const groupJoinEnabled = contract?.metadata.groupJoinEnabled !== false;
   const joinHref =
-    isJoinableAction
+    isJoinableAction && groupJoinEnabled
       ? `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(item.id)}`
+      : null;
+  const joinStatusLabel =
+    isJoinableAction && !groupJoinEnabled
+      ? "Formulaire fermé par l'organisateur"
       : null;
 
   return (
@@ -122,6 +127,7 @@ export function ActionPopupContent({
         sourceLabel={`Source: ${contract?.source ?? item.source ?? "n/a"}`}
         updateHref={updateHref}
         joinHref={joinHref}
+        joinStatusLabel={joinStatusLabel}
         hasPollution={hasPollution}
       />
     </div>

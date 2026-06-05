@@ -8,7 +8,7 @@
  * - Réseau & Discussions (network + discussion)   : indigo / pink
  * - Apprendre           (learn)      : yellow / amber
  *
- * Les blocs "impact", "connect" (discussion) et "pilot" restent présents comme accents
+ * Les blocs "impact" et "connect" (discussion) restent présents comme accents
  * techniques/compatibilité, mais ils ne sont plus exposés comme blocs visibles
  * de navigation principale.
  */
@@ -30,8 +30,7 @@ export type BlockId =
   | "impact"
   | "network"
   | "connect"
-  | "learn"
-  | "pilot";
+  | "learn";
 
 /**
  * Mapping bloc -> accent (source de vérité des tokens visuels)
@@ -44,7 +43,6 @@ export const BLOCK_ACCENT_MAP: Record<BlockId, BlockAccent> = {
   network: "indigo",  // Réseau → Indigo
   connect: "pink",    // Discussion → Rose
   learn: "yellow",    // Apprendre → Jaune solaire / soleil doux
-  pilot: "amber",     // Piloter  → Brun (amber-800 shade)
 };
 
 /**

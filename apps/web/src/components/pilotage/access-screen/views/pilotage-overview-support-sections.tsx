@@ -6,19 +6,13 @@ import { NavigationGrid } from "@/components/ui/navigation-grid";
 import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 import type { PilotageLocale } from "../access-screen-constants";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
-
-type PilotageOverviewLink = {
-  id: string;
-  href: string;
-  label: string;
-  description: string;
-};
+import type { NavigationGridItem } from "@/components/ui/navigation-grid";
 
 type PilotageOverviewSupportSectionsProps = {
   locale: PilotageLocale;
   accessEyebrow: string;
   overview: PilotageOverview | null;
-  overviewLinks: PilotageOverviewLink[];
+  overviewLinks: NavigationGridItem[];
   accessAllowed: boolean;
 };
 

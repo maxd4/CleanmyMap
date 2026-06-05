@@ -20,8 +20,6 @@ export const PUBLIC_APP_SITEMAP_PATHS = [
   "/learn",
   "/learn/bonnes-pratiques",
   "/learn/comprendre",
-  "/learn/hub",
-  "/learn/ressources",
   "/learn/sentrainer",
   "/mentions-legales",
   "/methodologie",

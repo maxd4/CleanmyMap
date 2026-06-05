@@ -9,8 +9,8 @@
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Faire circuler l'information et faciliter les échanges entre acteurs.
-- **Action principale attendue** : Lire, contacter ou rejoindre une discussion / un réseau.
+- **Objectif utilisateur principal** : Faire circuler l'information, faciliter les échanges entre acteurs et accéder au réseau partenaire.
+- **Action principale attendue** : Lire, contacter, rejoindre une discussion ou basculer vers l'onglet Partenaires.
 - **Palette attendue** : pink
 - **Scope** : à corriger
 - **Terminée** : non
@@ -57,3 +57,10 @@
 
 - Cette fiche est la source de vérité canonique pour la page.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.
+- L'onglet Partenaires est intégré à la même page et remplace l'ancienne carte de partenaires autonome.
+
+## Fichiers associés
+
+- [Présentation détaillée](./community-presentation-detaillee.md)
+- [Liste des propositions à traiter](./community-liste-propositions-a-traiter.md)
+- [Objectifs non pertinents](./community-objectifs-non-pertinents.md)

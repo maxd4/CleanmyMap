@@ -27,7 +27,6 @@ describe("getRibbonNavigationGroups", () => {
     makeSpace("network"),
     makeSpace("connect"),
     makeSpace("learn"),
-    makeSpace("pilot"),
   ];
 
   it("keeps six core blocks visible when the active block is primary", () => {
@@ -43,7 +42,6 @@ describe("getRibbonNavigationGroups", () => {
     ]);
     expect(groups.secondarySpaces.map((space) => space.id)).toEqual([
       "learn",
-      "pilot",
     ]);
   });
 
@@ -58,9 +56,7 @@ describe("getRibbonNavigationGroups", () => {
       "network",
       "learn",
     ]);
-    expect(groups.secondarySpaces.map((space) => space.id)).toEqual([
-      "pilot",
-    ]);
+    expect(groups.secondarySpaces.map((space) => space.id)).toEqual([]);
     expect(groups.activeSpace?.id).toBe("learn");
   });
 

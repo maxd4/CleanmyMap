@@ -34,7 +34,6 @@ const NAVIGATION_DROPDOWN_CARD_GEOMETRY: Record<NavigationBlockId, NavigationDro
   network: SHARED_NAVIGATION_DROPDOWN_CARD_GEOMETRY,
   connect: SHARED_NAVIGATION_DROPDOWN_CARD_GEOMETRY,
   learn: SHARED_NAVIGATION_DROPDOWN_CARD_GEOMETRY,
-  pilot: SHARED_NAVIGATION_DROPDOWN_CARD_GEOMETRY,
 };
 
 export function getNavigationDropdownCardGeometry(spaceId: NavigationBlockId | null) {

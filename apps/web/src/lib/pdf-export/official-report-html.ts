@@ -196,22 +196,27 @@ function renderRows(payload: PdfReportPayload): string {
 
 function renderChapter(chapter: PdfReportChapter, index: number): string {
   const lines = chapter.lines ?? [];
+  const isLocked = Boolean(chapter.locked);
   const hasStats = Boolean(chapter.stats?.length);
   const hasRows = Boolean(chapter.rows?.length);
   const columns =
     chapter.columns ?? Object.keys(chapter.rows?.[0] ?? {}).map((key) => ({ key, label: key }));
+  const calloutClass = isLocked ? "locked" : "note";
 
   return `
-    <section class="cmm-web-section" id="${escapeHtml(chapter.id ?? `chapter-${index + 1}`)}">
+    <section class="cmm-web-section${isLocked ? " is-locked" : ""}" id="${escapeHtml(chapter.id ?? `chapter-${index + 1}`)}">
       <div class="cmm-web-section__header">
-      <p class="cmm-kicker">Chapitre ${index + 1}</p>
-      <h2 class="cmm-web-section__title">${escapeHtml(chapter.title)}</h2>
-      ${chapter.subtitle ? `<p class="cmm-web-section__subtitle">${escapeHtml(chapter.subtitle)}</p>` : ""}
+        <div class="cmm-web-section__header-top">
+          <p class="cmm-kicker">Chapitre ${index + 1}</p>
+          ${isLocked ? `<span class="cmm-web-section__badge">Section verrouillée${chapter.requiredDetailLevelLabel ? ` · ${escapeHtml(chapter.requiredDetailLevelLabel)}` : ""}</span>` : ""}
+        </div>
+        <h2 class="cmm-web-section__title">${escapeHtml(chapter.title)}</h2>
+        ${chapter.subtitle ? `<p class="cmm-web-section__subtitle">${escapeHtml(chapter.subtitle)}</p>` : ""}
       </div>
       <div class="cmm-web-section__body">
-        ${lines.length ? `<div class="cmm-callout note">${renderList(lines)}</div>` : ""}
+        ${lines.length ? `<div class="cmm-callout ${calloutClass}">${isLocked ? `<div class="cmm-callout-title">Lecture réduite</div>` : ""}${renderList(lines)}</div>` : ""}
         ${
-          hasStats
+          !isLocked && hasStats
             ? `
               <div class="cmm-web-section__grid cmm-web-section__grid--${Math.min(4, Math.max(2, chapter.stats!.length))}">
                 ${chapter.stats!
@@ -230,7 +235,7 @@ function renderChapter(chapter: PdfReportChapter, index: number): string {
             : ""
         }
         ${
-          hasRows
+          !isLocked && hasRows
             ? `
               <div class="cmm-table-wrap">
                 <table>

@@ -7,7 +7,6 @@ const EXPECTED_OVERVIEW_ROUTES = [
   "/learn/comprendre",
   "/learn/sentrainer",
   "/learn/bonnes-pratiques",
-  "/learn/ressources",
 ];
 
 const EXPECTED_PRACTICE_ROUTES = [
@@ -22,15 +21,13 @@ const EXPECTED_PRACTICE_ROUTES = [
 describe("learn rubric inventory", () => {
   it("keeps the expected progression order", () => {
     expect(LEARN_PROGRESS_ORDER).toEqual([
-      "hub",
       "comprendre",
       "sentrainer",
       "bonnes-pratiques",
-      "ressources",
     ]);
   });
 
-  it("keeps the hub cards ordered and aligned across locales", () => {
+  it("keeps the learn overview cards ordered and aligned across locales", () => {
     expect(LEARN_OVERVIEW_CARDS.fr.map((card) => card.href)).toEqual(EXPECTED_OVERVIEW_ROUTES);
     expect(LEARN_OVERVIEW_CARDS.en.map((card) => card.href)).toEqual(EXPECTED_OVERVIEW_ROUTES);
 
@@ -51,7 +48,7 @@ describe("learn rubric inventory", () => {
     });
   });
 
-  it("keeps the practice cards aligned with the hub shortcuts", () => {
+  it("keeps the practice cards aligned with the learn shortcuts", () => {
     expect(LEARN_PRACTICE_LINKS.fr.map((card) => card.href)).toEqual(EXPECTED_PRACTICE_ROUTES);
     expect(LEARN_PRACTICE_LINKS.en.map((card) => card.href)).toEqual(EXPECTED_PRACTICE_ROUTES);
 

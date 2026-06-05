@@ -540,7 +540,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntry[] = [
     location: "France / Paris 5e",
     lat: 48.8489,
     lng: 2.3431,
-    websiteUrl: "/partners/network/pepite",
+    websiteUrl: "/sections/community?tab=partners",
     coveredArrondissements: [5],
     contributionTypes: ["communication", "accueil"],
     tags: ["Entrepreneuriat étudiant", "Réseau national", "Sorbonne Université"],
@@ -548,7 +548,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntry[] = [
     primaryChannel: {
       platform: "site web",
       label: "Fiche partenaire",
-      url: "/partners/network/pepite",
+      url: "/sections/community?tab=partners",
     },
     verificationStatus: "verifie",
     qualificationStatus: "partenaire_actif",
@@ -565,7 +565,7 @@ const ASSOCIATIONS_BASE_ENTRIES: AnnuaireEntry[] = [
         {
           label: "Fiche partenaire Pépite",
           description: "Accès à la fiche détaillée du partenaire dans CleanMyMap.",
-          url: "/partners/network/pepite",
+          url: "/sections/community?tab=partners",
         },
       ],
       publicCalls: [],

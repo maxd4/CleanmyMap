@@ -18,8 +18,6 @@ describe("page-families resolver", () => {
     expect(resolveBasePageFamilyId("/signalement")).toBe("agir");
     expect(resolveBasePageFamilyId("/actions/map")).toBe("cartographie-impact");
     expect(resolveBasePageFamilyId("/reports")).toBe("cartographie-impact");
-    expect(resolveBasePageFamilyId("/sandbox")).toBe("cartographie-impact");
-    expect(resolveBasePageFamilyId("/sections/sandbox")).toBe("cartographie-impact");
     expect(resolveBasePageFamilyId("/gamification")).toBe("cartographie-impact");
     expect(resolveBasePageFamilyId("/sections/gamification")).toBe("cartographie-impact");
 
@@ -30,7 +28,7 @@ describe("page-families resolver", () => {
     expect(resolveBasePageFamilyId("/open-data")).toBe("reseau-discussions");
     expect(resolveBasePageFamilyId("/sections/open-data")).toBe("reseau-discussions");
 
-    expect(resolveBasePageFamilyId("/learn/hub")).toBe("apprendre");
+    expect(resolveBasePageFamilyId("/learn/comprendre")).toBe("apprendre");
     expect(resolveBasePageFamilyId("/sign-in")).toBe("authentification");
     expect(resolveBasePageFamilyId("/conditions-utilisation")).toBe("juridique");
     expect(resolveBasePageFamilyId("/form-comparison")).toBe("systeme");

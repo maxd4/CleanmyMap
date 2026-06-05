@@ -6,14 +6,14 @@ import { LearnComprendreVisualIntro } from "./learn-comprendre-visual-intro";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
 
 describe("LearnComprendreVisualIntro", () => {
-  it("renders a visual first layer for the Comprendre rubric", () => {
+  it("renders a visual first layer for the Vulgarisation rubric", () => {
     const card = LEARN_OVERVIEW_CARDS.fr[0];
 
     const markup = renderToStaticMarkup(
       React.createElement(LearnComprendreVisualIntro, {
         locale: "fr",
         card,
-        question: "Comprendre avant d'agir",
+        question: "Vulgariser avant d'agir",
         clue: "Repères, ordres de grandeur et méthode se lisent ensemble avant de passer au geste.",
         action: {
           href: "/learn/sentrainer",
@@ -23,7 +23,7 @@ describe("LearnComprendreVisualIntro", () => {
     );
 
     expect(markup).toContain("Aperçu visuel");
-    expect(markup).toContain("Comprendre avant d");
+    expect(markup).toContain("Vulgariser avant d");
     expect(markup).toContain("Contexte");
     expect(markup).toContain("Ordres de grandeur");
     expect(markup).toContain("Méthode");

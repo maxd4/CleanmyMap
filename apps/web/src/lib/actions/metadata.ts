@@ -12,6 +12,7 @@ type ActionNotesMeta = {
   submissionMode?: ActionSubmissionMode;
   wasteBreakdown?: ActionWasteBreakdown;
   associationName?: string;
+  groupJoinEnabled?: boolean;
   placeType?: string;
   departureLocationLabel?: string;
   arrivalLocationLabel?: string;
@@ -39,6 +40,7 @@ export function appendActionMetadataToNotes(
     submissionMode?: ActionSubmissionMode;
     wasteBreakdown?: ActionWasteBreakdown;
     associationName?: string;
+    groupJoinEnabled?: boolean;
     placeType?: string;
     departureLocationLabel?: string;
     arrivalLocationLabel?: string;
@@ -59,6 +61,7 @@ export function appendActionMetadataToNotes(
     metadata.submissionMode ||
     hasWasteBreakdown ||
     associationName ||
+    metadata.groupJoinEnabled === false ||
     metadata.placeType ||
     metadata.departureLocationLabel ||
     metadata.arrivalLocationLabel ||
@@ -79,6 +82,9 @@ export function appendActionMetadataToNotes(
   }
   if (associationName) {
     metaPayload.associationName = associationName;
+  }
+  if (metadata.groupJoinEnabled === false) {
+    metaPayload.groupJoinEnabled = false;
   }
   if (metadata.placeType) {
     metaPayload.placeType = metadata.placeType;
@@ -113,6 +119,7 @@ export function extractActionMetadataFromNotes(
   submissionMode: ActionSubmissionMode | null;
   wasteBreakdown: ActionWasteBreakdown | null;
   associationName: string | null;
+  groupJoinEnabled: boolean;
   placeType: string | null;
   departureLocationLabel: string | null;
   arrivalLocationLabel: string | null;
@@ -127,6 +134,7 @@ export function extractActionMetadataFromNotes(
       submissionMode: null,
       wasteBreakdown: null,
       associationName: null,
+      groupJoinEnabled: true,
       placeType: null,
       departureLocationLabel: null,
       arrivalLocationLabel: null,
@@ -141,6 +149,7 @@ export function extractActionMetadataFromNotes(
   let submissionMode: ActionSubmissionMode | null = null;
   let wasteBreakdown: ActionWasteBreakdown | null = null;
   let associationName: string | null = null;
+  let groupJoinEnabled = true;
   let placeType: string | null = null;
   let departureLocationLabel: string | null = null;
   let arrivalLocationLabel: string | null = null;
@@ -182,6 +191,9 @@ export function extractActionMetadataFromNotes(
       parsed.associationName.trim().length > 0
     ) {
       associationName = parsed.associationName.trim();
+    }
+    if (typeof parsed.groupJoinEnabled === "boolean") {
+      groupJoinEnabled = parsed.groupJoinEnabled;
     }
     if (
       typeof parsed.departureLocationLabel === "string" &&
@@ -228,6 +240,7 @@ export function extractActionMetadataFromNotes(
     submissionMode,
     wasteBreakdown,
     associationName,
+    groupJoinEnabled,
     placeType,
     departureLocationLabel,
     arrivalLocationLabel,

@@ -72,6 +72,7 @@ function toActionContractFromRow(row: StoredAction): ActionDataContract {
     durationMinutes: row.duration_minutes,
     actorName: row.actor_name,
     associationName: parsedMetadata.associationName,
+    groupJoinEnabled: parsedMetadata.groupJoinEnabled,
     placeType: parsedMetadata.placeType,
     departureLocationLabel: parsedMetadata.departureLocationLabel,
     arrivalLocationLabel: parsedMetadata.arrivalLocationLabel,

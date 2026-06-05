@@ -23,8 +23,13 @@ import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-com
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
-import type { EnvironmentalImpactInfrastructureServiceEstimate } from "@/lib/environmental-impact-estimator/types";
+import type {
+  EnvironmentalImpactInfrastructureServiceEstimate,
+  EnvironmentalImpactSnapshotRecord,
+} from "@/lib/environmental-impact-estimator/types";
+import type { GitHubRepositoryStats } from "@/lib/github/github-repository-stats";
 import { FreePlanServicesMethodologyVisual } from "./free-plan-services-methodology-visual";
+import { MonthlyImpactHistoryChart } from "./monthly-impact-history-chart";
 
 type MethodologyColor = "red" | "slate";
 
@@ -58,6 +63,10 @@ type MethodologiePageClientProps = {
     totalKgCo2eProxy: number | null;
     generatedAt: string | null;
   };
+  impactSnapshots: EnvironmentalImpactSnapshotRecord[];
+  impactGeneratedAt: string | null;
+  impactLaunchedAt: string | null;
+  githubStats: GitHubRepositoryStats | null;
 };
 
 function MethodologyCard({
@@ -266,7 +275,14 @@ const OPEN_SOURCE_DOCS: OpenSourceDoc[] = [
   },
 ];
 
-export function MethodologiePageClient({ freePlanServices, impactTotals }: MethodologiePageClientProps) {
+export function MethodologiePageClient({
+  freePlanServices,
+  impactTotals,
+  impactSnapshots,
+  impactGeneratedAt,
+  impactLaunchedAt,
+  githubStats,
+}: MethodologiePageClientProps) {
   const { locale } = useSitePreferences();
   const isFrench = locale === "fr";
   const { factors, sources, version } = IMPACT_PROXY_CONFIG;
@@ -390,6 +406,7 @@ export function MethodologiePageClient({ freePlanServices, impactTotals }: Metho
         <FreePlanServicesMethodologyVisual
           services={freePlanServices}
           impactTotals={impactTotals}
+          githubStats={githubStats}
           isFrench={isFrench}
         />
 
@@ -531,6 +548,25 @@ export function MethodologiePageClient({ freePlanServices, impactTotals }: Metho
             ))}
           </div>
         </div>
+
+        <section className="space-y-8 pt-10 border-t border-white/10">
+          <div className="space-y-4 text-center">
+            <h2 className="text-4xl font-black tracking-tight text-white">
+              Historique mensuel d&apos;impact
+            </h2>
+            <p className="mx-auto max-w-3xl text-lg font-medium leading-relaxed text-red-100/50">
+              La courbe du bas suit l&apos;historique persistant enregistré dans Supabase, tandis que
+              la ligne pointillée estime l&apos;impact du développement par IA depuis le lancement du
+              projet. Aucun chiffre n&apos;est inventé: les données absentes restent en NA.
+            </p>
+          </div>
+
+          <MonthlyImpactHistoryChart
+            snapshots={impactSnapshots}
+            launchedAt={impactLaunchedAt}
+            generatedAt={impactGeneratedAt}
+          />
+        </section>
 
         <footer className="cmm-ribbon-surface flex flex-col items-center justify-between gap-10 pt-20 sm:flex-row">
           <div className="space-y-3 text-center sm:text-left">

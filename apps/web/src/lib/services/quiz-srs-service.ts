@@ -54,7 +54,7 @@ export async function loadQuizSRSData(
     const supabase = getSupabaseBrowserClient(accessTokenProvider) as unknown as QuizSrsTableClient;
     const { data: dbData, error } = await supabase
       .from("quiz_srs")
-      .select("*")
+      .select("question_id, last_seen_at, next_review_at, success_count, failure_count, streak, ease_factor, mastery_level")
       .eq("user_id", userId)
       .in("question_id", questionIds);
 

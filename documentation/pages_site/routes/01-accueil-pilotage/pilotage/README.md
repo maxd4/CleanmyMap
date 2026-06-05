@@ -9,7 +9,7 @@
 - **Famille / bloc fonctionnel** : Accueil & Pilotage (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux pages de lecture principale.
+- **Objectif utilisateur principal** : Donner un accès rapide aux vues de synthèse, au pilotage et aux lectures décideurs/gouvernance via trois onglets.
 - **Action principale attendue** : Consulter l'état du compte ou arbitrer une action.
 - **Palette attendue** : amber / brun
 - **Scope** : à corriger
@@ -27,7 +27,7 @@
 - Rappels redondants
 - badges de contexte répétés
 - blocs d'aide trop verbeux
-- **Bulles / cartes / contextes trop nombreux** : Le bloc mélange des cartes de lecture et des CTA, la densité doit rester maîtrisée.
+- **Bulles / cartes / contextes trop nombreux** : Le bloc mélange des cartes de lecture et des CTA, la densité doit rester maîtrisée. Trois onglets structurent maintenant la lecture: décideurs, pilotage, gouvernance.
 - **Composants UI concernés** :
 - Titre
 - cards métriques

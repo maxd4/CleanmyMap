@@ -11,6 +11,7 @@ type DecisionReadingSectionProps = {
   title: string;
   description: string;
   links: PilotageClusterLink[];
+  activeLinkId?: string;
   className?: string;
   variant?: "pilotage" | "sponsor" | "governance";
 };
@@ -49,6 +50,7 @@ export function DecisionReadingSection({
   title,
   description,
   links,
+  activeLinkId,
   className,
   variant = "pilotage",
 }: DecisionReadingSectionProps) {
@@ -79,6 +81,7 @@ export function DecisionReadingSection({
       <PilotageClusterLinks
         className="mt-6"
         links={links}
+        activeLinkId={activeLinkId}
       />
     </section>
   );

@@ -252,17 +252,6 @@ export const entries = [
     legacyDocs: ["../3-BLOC-VISUALISER&IMPACTER/carte_actions.md"],
   },
   {
-    route: "/sandbox",
-    slug: "sandbox",
-    title: "Sandbox carte",
-    family: "03-cartographie-impact",
-    kind: "page",
-    status: "canonique",
-    exception: false,
-    summary: "Bac à sable cartographique pour tester les comportements.",
-    legacyDocs: ["../3-BLOC-VISUALISER&IMPACTER/sandbox.md"],
-  },
-  {
     route: "/reports",
     slug: "reports",
     title: "Rapports d'impact",
@@ -332,17 +321,6 @@ export const entries = [
     legacyDocs: [],
   },
   {
-    route: "/partners/network",
-    slug: "partners-network",
-    title: "Réseau engagé",
-    family: "04-reseau-discussions",
-    kind: "page",
-    status: "canonique",
-    exception: false,
-    summary: "Cartographie du réseau et des partenaires engagés.",
-    legacyDocs: ["../4-BLOC-RESEAU&DISCUSSION/reseau_engage.md"],
-  },
-  {
     route: "/partners/dashboard",
     slug: "partners-dashboard",
     title: "Annuaire partenaires",
@@ -390,7 +368,7 @@ export const entries = [
   {
     route: "/learn/comprendre",
     slug: "learn-comprendre",
-    title: "Comprendre l'enjeu",
+    title: "Ordres de grandeur",
     family: "05-apprendre",
     kind: "page",
     status: "canonique",
@@ -820,7 +798,7 @@ function expectedToneKeyForRoute(routePattern) {
   if (base === "explorer") return "yellow";
   if (base === "pilotage" || base === "sponsor-portal" || base === "elus") return "pilotage";
 
-  if (isRoute("/actions/map") || isRoute("/sandbox")) return "sky";
+  if (isRoute("/actions/map")) return "sky";
   if (isRoute("/sections/route")) return "emerald";
   if (isRoute("/sections/[sectionId]")) return "system";
   if (isRoute("/parcours")) return "amber";
@@ -1091,7 +1069,7 @@ function resolveBackdropToneKey(pathname) {
     return "print";
   }
 
-  if (isRoute("/actions/map") || isRoute("/sections/sandbox")) {
+  if (isRoute("/actions/map")) {
     return "sky";
   }
 

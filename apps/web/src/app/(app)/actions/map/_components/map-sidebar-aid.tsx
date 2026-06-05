@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, ChevronDown, Compass, ExternalLink, GraduationCap, Target } from "lucide-react";
+import { BookOpen, ChevronDown, Compass, ExternalLink, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { CmmButton } from "@/components/ui/cmm-button";
@@ -75,26 +75,6 @@ export function MapSidebarAid() {
           </div>
         </details>
 
-        <details className="group rounded-[1.75rem] border border-sky-200/80 bg-white/75 p-3 sm:p-4">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-slate-950">
-            <span className="inline-flex items-center gap-2">
-              <Target size={15} className="text-sky-700" />
-              Sandbox terrain
-            </span>
-            <ChevronDown size={16} className="text-slate-500 transition-transform group-open:rotate-180" />
-          </summary>
-          <p className="mt-3 text-sm leading-relaxed text-slate-600">
-            Données simulées. Test local. Aucun effet sur la production.
-          </p>
-          <div className="mt-4">
-            <Link
-              href="/sections/sandbox"
-              className="inline-flex w-full items-center justify-center rounded-[1.5rem] border border-sky-200/80 bg-sky-100 px-5 py-3 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition hover:bg-sky-200 active:scale-95"
-            >
-              Ouvrir la sandbox
-            </Link>
-          </div>
-        </details>
       </div>
     </section>
   );

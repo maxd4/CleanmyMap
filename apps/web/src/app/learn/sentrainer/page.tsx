@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { LearnPracticeVisualIntro } from "@/components/learn/learn-practice-visual-intro";
+import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
 import { QuizArchitectureStrip } from "@/components/learn/quiz-architecture-strip";
 import { EnvironmentalQuiz } from "@/components/learn/environmental-quiz";
@@ -27,8 +28,8 @@ export default function LearnSentrainerPage() {
         fr: "Sessions courtes, questions mélangées et retour immédiat.",
         en: "Short sessions, mixed questions and immediate feedback.",
       }}
-      backHref="/learn/hub"
-      backLabel={{ fr: "Retour au point de départ", en: "Back to start" }}
+      backHref="/explorer"
+      backLabel={{ fr: "Retour au sommaire", en: "Back to summary" }}
       accent="yellow"
       highlights={[
         { fr: "Rappel actif", en: "Active recall" },
@@ -37,7 +38,10 @@ export default function LearnSentrainerPage() {
       ]}
       cta={{
         href: "/learn/bonnes-pratiques",
-        label: { fr: "Voir les bonnes pratiques", en: "See best practices" },
+        label: {
+          fr: "Voir tri, composte, comportements",
+          en: "See sorting, composting, behaviors",
+        },
       }}
     >
       <div className="space-y-8">
@@ -55,6 +59,7 @@ export default function LearnSentrainerPage() {
             label: locale === "fr" ? "Voir le panneau de session" : "See the session panel",
           }}
         />
+        <LearnBlockJourneySection locale={locale} currentPageId="sentrainer" />
 
         <section id="quiz-architecture">
           <QuizArchitectureStrip

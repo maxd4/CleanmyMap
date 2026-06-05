@@ -21,7 +21,6 @@ Vue carte, impact, méthodologie et lecture des résultats.
 | `/gamification` | [Progression & badges](./gamification/gamification-README.md) | page de bloc | protégé | à corriger | non | critique | `apps/web/src/app/(app)/gamification/page.tsx` |
 | `/profil/impact` | [Profil impact](./profil-impact/profil-impact-README.md) | page de bloc | protégé | à corriger | non | moyenne | `apps/web/src/app/(app)/profil/impact/page.tsx` |
 | `/reports` | [Rapports d'impact](./reports/reports-README.md) | page de bloc | protégé | à corriger | non | moyenne | `apps/web/src/app/(app)/reports/page.tsx` |
-| `/sandbox` | [Sandbox carte](./sandbox/sandbox-README.md) | page de bloc | protégé | à corriger | non | critique | `apps/web/src/app/(app)/sandbox/page.tsx` |
 
 ## Notes
 

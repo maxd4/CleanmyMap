@@ -396,12 +396,12 @@ export function HomeCommunityCredibility({
                     <ArrowRight size={15} />
                   </CmmButton>
                   <CmmButton
-                    href="/partners/network"
+                    href="/sections/community?tab=partners"
                     tone="secondary"
                     variant="pill"
                     className="h-12 px-6 text-[13px] font-black gap-2 transition-transform hover:-translate-y-0.5"
                   >
-                    Annuaire partenaires
+                    Voir les partenaires
                     <ArrowRight size={15} />
                   </CmmButton>
                 </div>

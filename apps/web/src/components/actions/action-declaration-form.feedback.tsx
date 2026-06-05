@@ -1,6 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, AlertCircle, ExternalLink, RotateCcw, Share2 } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertCircle,
+  ClipboardCopy,
+  ExternalLink,
+  Link2,
+  RotateCcw,
+  Share2,
+} from "lucide-react";
 import type {
   PostActionRetentionLoop,
   SubmissionState,
@@ -14,6 +22,8 @@ type ActionDeclarationFormFeedbackProps = {
   hasAttemptedSubmit: boolean;
   validationIssues: ValidationIssue[];
   retentionLoop: PostActionRetentionLoop | null;
+  groupJoinHref?: string | null;
+  showGroupInvite?: boolean;
   onReset?: () => void;
 };
 
@@ -24,6 +34,8 @@ export function ActionDeclarationFormFeedback({
   hasAttemptedSubmit,
   validationIssues,
   retentionLoop,
+  groupJoinHref,
+  showGroupInvite,
   onReset,
 }: ActionDeclarationFormFeedbackProps) {
   const shareUrl = useMemo(() => {
@@ -31,6 +43,18 @@ export function ActionDeclarationFormFeedback({
     if (typeof window === "undefined") return retentionLoop.share.url;
     return new URL(retentionLoop.share.url, window.location.origin).toString();
   }, [retentionLoop]);
+  const resolvedGroupJoinHref = useMemo(() => {
+    if (!showGroupInvite || !groupJoinHref) {
+      return "";
+    }
+
+    if (typeof window === "undefined") {
+      return groupJoinHref;
+    }
+
+    return new URL(groupJoinHref, window.location.origin).toString();
+  }, [groupJoinHref, showGroupInvite]);
+  const [groupLinkCopied, setGroupLinkCopied] = useState(false);
 
   async function handleShare() {
     if (!retentionLoop) return;
@@ -41,6 +65,30 @@ export function ActionDeclarationFormFeedback({
         return;
       }
       await navigator.clipboard.writeText(text);
+    } catch {
+      // best-effort
+    }
+  }
+
+  async function handleGroupInviteShare() {
+    if (!resolvedGroupJoinHref) {
+      return;
+    }
+
+    const text = `Cette action pourra être rejointe après validation: ${resolvedGroupJoinHref}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Formulaire de groupe CleanMyMap",
+          text,
+          url: resolvedGroupJoinHref,
+        });
+        return;
+      }
+
+      await navigator.clipboard.writeText(text);
+      setGroupLinkCopied(true);
+      window.setTimeout(() => setGroupLinkCopied(false), 2500);
     } catch {
       // best-effort
     }
@@ -102,6 +150,46 @@ export function ActionDeclarationFormFeedback({
               </div>
               <p className="text-xs text-emerald-900/80">{retentionLoop.thanksMessage}</p>
               <p className="text-xs text-emerald-900/70">💡 {retentionLoop.nextActionSuggestion}</p>
+            </div>
+          )}
+
+          {showGroupInvite && createdId && resolvedGroupJoinHref && (
+            <div className="rounded-2xl border border-sky-200/70 bg-gradient-to-br from-sky-50 to-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-sky-700">
+                    Formulaire de groupe
+                  </p>
+                  <p className="text-sm font-semibold text-sky-950">
+                    Cette action pourra être rejointe après validation.
+                  </p>
+                  <p className="text-xs leading-relaxed text-sky-900/70">
+                    L&apos;organisateur principal et les coorganisateurs peuvent partager ce lien. Il pointera vers la page de jonction et deviendra opérationnel une fois l&apos;action validée.
+                  </p>
+                </div>
+                <div className="rounded-full border border-sky-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-sky-800">
+                  Prêt à partager
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link
+                  href={resolvedGroupJoinHref}
+                  prefetch
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-950 hover:bg-sky-100 transition"
+                >
+                  <Link2 size={13} />
+                  Ouvrir le formulaire de groupe
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => void handleGroupInviteShare()}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-white px-3 py-2 text-xs font-semibold text-sky-900 hover:bg-sky-50 transition"
+                >
+                  <ClipboardCopy size={13} />
+                  {groupLinkCopied ? "Lien copié" : "Copier le lien"}
+                </button>
+              </div>
             </div>
           )}
 

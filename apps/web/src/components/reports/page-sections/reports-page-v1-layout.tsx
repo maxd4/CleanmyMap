@@ -1,22 +1,16 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { ReportsWebDocument } from "@/components/reports/reports-web-document.tsx";
-import { ReportsKpiSummary } from "@/components/reports/reports-kpi-summary";
-import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { ReportsImpactReadingsSection } from "@/components/reports/reports-impact-readings-section";
+import { ReportsPageTabs } from "./reports-page-tabs";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import type { Locale } from "@/lib/ui/preferences";
 import type { AppProfile, ProfileAction } from "@/lib/profiles";
-import { isAdminLikeProfile } from "@/lib/profiles";
 import { resolvePageFamily } from "@/lib/ui/page-families";
-import type { ThirtySecondsSummaryProps } from "@/components/pilotage/thirty-seconds-summary";
-import type { ActionListResponse } from "@/lib/actions/types";
-import type { AdminOperationAuditItem } from "@/components/reports/admin-workflow/types";
 
 type ReportsWeather = {
   current?: {
@@ -31,14 +25,19 @@ type ReportsPageV1LayoutProps = {
   roleLabel: string;
   profile: AppProfile;
   primaryAction: ProfileAction;
-  summaryKpis: NonNullable<ThirtySecondsSummaryProps["kpis"]>;
+  summaryKpis: Array<{
+    label: string;
+    value: string;
+    previousValue: string;
+    deltaAbsolute: string;
+    deltaPercent: string;
+    interpretation: "positive" | "negative" | "neutral";
+  }>;
   headerActions: Array<{ href: string; label: string }>;
   overview: PilotageOverview | null;
   contracts: ActionDataContract[];
   communityEvents: CommunityEventItem[];
   weather: ReportsWeather;
-  adminWorkflowPreview: ActionListResponse | null;
-  adminWorkflowAudit: AdminOperationAuditItem[] | null;
   publicAccessBanner: ReactNode;
 };
 
@@ -53,8 +52,6 @@ export function ReportsPageV1Layout({
   contracts,
   communityEvents,
   weather,
-  adminWorkflowPreview,
-  adminWorkflowAudit,
   publicAccessBanner,
 }: ReportsPageV1LayoutProps) {
   const pageFamily = resolvePageFamily("/reports");
@@ -63,22 +60,15 @@ export function ReportsPageV1Layout({
     <div data-rubrique-report-root className="space-y-4">
       {publicAccessBanner}
 
-      <ReportsWebDocument
-        contracts={contracts}
-        communityEvents={communityEvents}
-        weather={weather}
-        overview={overview}
-      />
-
       <PageHero
         family={pageFamily}
         eyebrow={`Profil ${roleLabel}`}
         title="Rapports d'impact"
-        subtitle="Arbitrer sur 30j/90j/12m avec comparatifs N vs N-1 et priorités auto justifiées."
+        subtitle="Arbitrer sur six mois, l'année en cours ou l'historique complet avec comparatifs N vs N-1."
         badges={
           <>
             <PageHeroBadge family={pageFamily}>
-              30j / 90j / 12m
+              Six mois / Année en cours / Historique complet
             </PageHeroBadge>
             <PageHeroBadge family={pageFamily} muted>
               Exports contrôlés
@@ -100,47 +90,70 @@ export function ReportsPageV1Layout({
         ))}
       </div>
 
-      <ThirtySecondsSummary
-        kpis={summaryKpis}
-        alert={overview ? overview.summary.alert : undefined}
-        recommendedAction={{
-          href: overview?.summary.recommendedAction.href ?? primaryAction.href,
-          label:
-            overview?.summary.recommendedAction.label ?? primaryAction.label[locale],
-        }}
-        recommendedReason={overview?.summary.recommendedAction.reason}
+      <ReportsPageTabs
+        generation={
+          <ReportsWebDocument
+            contracts={contracts}
+            communityEvents={communityEvents}
+            weather={weather}
+            overview={overview}
+          />
+        }
+        pilotage={
+          <div className="space-y-6">
+            <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)]">
+              <div>
+                <p className="text-sm font-black uppercase tracking-[0.16em] text-red-600">
+                  Pilotage
+                </p>
+                <h2 className="mt-1 text-2xl font-black tracking-tight text-slate-950">
+                  KPI et lecture du périmètre
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  Les signaux opérationnels et les résumés de lecture sont regroupés ici pour ne
+                  pas surcharger la génération du rapport.
+                </p>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
+                {summaryKpis.map((kpi) => (
+                  <article
+                    key={kpi.label}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4"
+                  >
+                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                      {kpi.label}
+                    </p>
+                    <p className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+                      {kpi.value}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-500">
+                      vs {kpi.previousValue} · {kpi.deltaAbsolute} · {kpi.deltaPercent}
+                    </p>
+                  </article>
+                ))}
+              </div>
+
+              <div className="mt-4">
+                <a
+                  href={primaryAction.href}
+                  className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-black text-red-700 transition hover:border-red-300 hover:bg-red-100"
+                >
+                  {primaryAction.label[locale]}
+                </a>
+              </div>
+            </section>
+
+            <ReportsImpactReadingsSection
+              contracts={contracts}
+              communityEvents={communityEvents}
+              weather={weather}
+            />
+
+            <RolePrimaryActions profile={profile} />
+          </div>
+        }
       />
-
-      <ReportsImpactReadingsSection
-        contracts={contracts}
-        communityEvents={communityEvents}
-        weather={weather}
-        overview={overview}
-      />
-
-      <ReportsKpiSummary contracts={contracts} />
-
-      {isAdminLikeProfile(profile) ? (
-        <ActionsReportPanel
-          initialPreview={adminWorkflowPreview}
-          initialAuditItems={adminWorkflowAudit}
-        />
-      ) : (
-        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-          <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] text-amber-700">
-            Admin requis
-          </p>
-          <h2 className="mt-2 text-xl font-semibold text-amber-900">
-            Exports et modération réservés aux admins
-          </h2>
-          <p className="mt-2 cmm-text-small text-amber-800">
-            Tu vois la synthèse KPI, mais les exports CSV/JSON et la modération
-            restent limités au rôle <span className="font-semibold">admin</span> ou <span className="font-semibold">max</span>.
-          </p>
-        </section>
-      )}
-
-      <RolePrimaryActions profile={profile} />
     </div>
   );
 }

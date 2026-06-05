@@ -8,7 +8,6 @@ import { DASHBOARD_ROUTE } from "@/lib/accueil-pilotage-routes";
 import {
  getActiveSpaceForPath,
  getNavigationSpacesForProfile,
- getPilotFallbackItems,
 } from"@/lib/navigation";
 import { getLocalizedText } from "@/lib/navigation";
 import type { AppProfile } from"@/lib/profiles";
@@ -29,10 +28,7 @@ export function BlockSwitcher({ currentProfile }: BlockSwitcherProps) {
  const activeItem = activeSpace?.items.find(
  (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
  );
- const activeSpaceItems =
- activeSpace?.id ==="pilot" && activeSpace.items.length === 0
- ? getPilotFallbackItems(locale)
- : activeSpace?.items ?? [];
+ const activeSpaceItems = activeSpace?.items ?? [];
 
  function onTrackNavigation(href: string, label: string, spaceId: string | null) {
  trackNavigationClick({

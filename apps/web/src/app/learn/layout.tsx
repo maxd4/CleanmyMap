@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Apprendre - Ressources Écologie & Bonnes Pratiques | CleanMyMap",
+  title: "Apprendre - Vulgarisation, entraînement et tri | CleanMyMap",
   description:
-    "Point de départ pédagogique CleanMyMap. Reprenez votre dernière étape, comprenez le contexte, entraînez-vous et retrouvez les ressources utiles sans dupliquer le contenu des pages dédiées.",
+    "Trois rubriques pédagogiques pour vulgariser les enjeux, s'entraîner et apprendre le tri, le compost et les comportements utiles.",
   keywords: [
     "apprendre écologie",
-    "bonnes pratiques dépollution",
+    "vulgarisation environnement",
+    "entraînement tri",
+    "tri compost comportements",
     "développement durable",
     "formation bénévole",
     "écologie urbaine",
     "impact environnemental",
     "action citoyenne",
-    "ressources dépollution",
     "tutoriel cleanwalk",
     "guide propreté Paris",
     "méthodologie collecte",

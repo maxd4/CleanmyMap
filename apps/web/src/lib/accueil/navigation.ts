@@ -1,7 +1,7 @@
 import { NavigationItem } from "@/lib/navigation";
 
 export const BLOCK_PREVIEW_PRIORITY: Record<
-  "home" | "act" | "visualize" | "impact" | "network" | "learn" | "pilot",
+  "home" | "act" | "visualize" | "impact" | "network" | "learn",
   Partial<Record<NavigationItem["id"], number>>
 > = {
   home: {
@@ -21,7 +21,6 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
   },
   visualize: {
     map: 1,
-    sandbox: 2,
     reports: 3,
     gamification: 4,
   },
@@ -40,11 +39,6 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
     hub: 1,
     climate: 2,
     recycling: 3,
-  },
-  pilot: {
-    admin: 1,
-    sponsor: 2,
-    elus: 3,
   },
 };
 

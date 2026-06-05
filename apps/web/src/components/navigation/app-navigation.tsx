@@ -16,7 +16,6 @@ import {
  getNavigationCategoriesForProfile,
  getNavigationLabels,
  getNavigationProfileOverview,
- getPilotFallbackItems,
  getNavigationSpacesForProfile,
  getProfileNavigationEntries,
 } from"@/lib/navigation";
@@ -65,9 +64,7 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
  ? spaces.map((space) => ({ ...space, items: space.items.slice(0, 2) }))
  : spaces;
  const getRenderedSpaceItems = (space: (typeof renderedSpaces)[number]) =>
- space.id ==="pilot" && space.items.length === 0
- ? getPilotFallbackItems(locale)
- : space.items;
+ space.items;
 
  function onTrackNavigation(
  href: string,
@@ -237,7 +234,7 @@ export function AppNavigation({ currentProfile, isAdmin }: AppNavigationProps) {
  </li>
  );
  })}
-{space.items.length === 0 && space.id !=="pilot" ? (
+{space.items.length === 0 ? (
  <li className="rounded-lg border border-dashed border-slate-300 px-3 py-2 cmm-text-caption cmm-text-muted">
  {locale ==="fr"
  ?"Aucune page n'est encore rattachée à cette section."
@@ -296,7 +293,7 @@ style={getNavigationDropdownTitleGradientStyle(space.id)}
  </li>
  );
  })}
-{space.items.length === 0 && space.id !=="pilot" ? (
+{space.items.length === 0 ? (
  <li className="rounded-lg border border-dashed border-slate-300 px-3 py-2 cmm-text-caption cmm-text-muted">
  {locale ==="fr"
  ?"Aucune page n'est encore rattachée à cette section."

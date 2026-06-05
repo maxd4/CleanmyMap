@@ -83,11 +83,9 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
   }
 
   if (
-    base === "sandbox" ||
     base === "gamification" ||
     isAnyRoute(pathname, [
       "/actions/map",
-      "/sections/sandbox",
       "/sections/gamification",
     ])
   ) {

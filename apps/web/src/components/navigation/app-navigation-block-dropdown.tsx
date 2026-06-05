@@ -7,7 +7,6 @@ import {
   BarChart3,
   ChevronRight,
   Info,
-  Dumbbell,
   MapPinned,
   Medal,
 } from "lucide-react";
@@ -59,8 +58,6 @@ function getVisualizeItemIcon(routeId: string) {
   switch (routeId) {
     case "map":
       return MapPinned;
-    case "sandbox":
-      return Dumbbell;
     case "reports":
       return BarChart3;
     case "gamification":

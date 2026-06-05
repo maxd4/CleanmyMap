@@ -224,6 +224,22 @@ export function buildOfficialReportCss(): string {
       color: ${c.white};
       background: linear-gradient(135deg, ${c.teal}, ${c.navy});
     }
+    .cmm-web-section.is-locked {
+      border-color: #D5DEE6;
+      background: #F8FAFC;
+    }
+    .cmm-web-section.is-locked .cmm-web-section__header {
+      background: linear-gradient(135deg, #EEF2F6, #E7EDF3);
+      color: ${c.gray};
+      border-bottom: 1px solid #D5DEE6;
+      padding: 4mm 5.5mm 3.5mm;
+    }
+    .cmm-web-section__header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 3mm;
+    }
     .cmm-web-section__kicker {
       color: rgba(255, 255, 255, 0.78);
       font-size: ${t.caption};
@@ -231,21 +247,47 @@ export function buildOfficialReportCss(): string {
       letter-spacing: 0.16em;
       text-transform: uppercase;
     }
+    .cmm-web-section.is-locked .cmm-web-section__kicker {
+      color: #64748B;
+    }
     .cmm-web-section__title {
       margin: 1.5mm 0 0;
       font-size: ${t.subsection};
       font-weight: 760;
       line-height: 1.14;
     }
+    .cmm-web-section.is-locked .cmm-web-section__title {
+      color: #334155;
+      margin-top: 1.25mm;
+      font-size: 13.5pt;
+    }
     .cmm-web-section__subtitle {
       margin-top: 1.8mm;
       color: rgba(255, 255, 255, 0.88);
+    }
+    .cmm-web-section.is-locked .cmm-web-section__subtitle {
+      color: #64748B;
+      margin-top: 1.2mm;
     }
     .cmm-web-section__body {
       padding: 5mm 6mm;
       display: flex;
       flex-direction: column;
       gap: 4mm;
+    }
+    .cmm-web-section.is-locked .cmm-web-section__body {
+      padding: 3.5mm 5.5mm 4mm;
+      gap: 3mm;
+    }
+    .cmm-web-section__badge {
+      border: 1px solid ${c.rule};
+      border-radius: 999px;
+      background: ${c.white};
+      color: ${c.gray};
+      font-size: ${t.caption};
+      font-weight: 700;
+      padding: 1.25mm 2.5mm;
+      white-space: nowrap;
     }
     .cmm-web-section__grid {
       display: grid;
@@ -361,6 +403,22 @@ export function buildOfficialReportCss(): string {
     .cmm-callout.limite {
       border-left-color: ${c.gray};
       background: #F7F8FA;
+    }
+    .cmm-callout.locked {
+      border-left-color: #94A3B8;
+      background: #F8FAFC;
+      border: 1px solid #D8E1E8;
+      border-left-width: 2mm;
+      padding: 3.25mm 4.5mm;
+      margin: 2mm 0 0;
+    }
+    .cmm-callout.locked .cmm-callout-title {
+      color: #64748B;
+      margin-bottom: 1.5mm;
+    }
+    .cmm-callout.locked ul {
+      margin-bottom: 0;
+      padding-left: 4.25mm;
     }
     .cmm-callout-title {
       color: ${c.navy};

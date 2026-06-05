@@ -13,7 +13,10 @@ import type { PilotageLocale } from "../access-screen-constants";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import { PilotageOverviewSupportSections } from "./pilotage-overview-support-sections";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
-import { DecisionReadingSection } from "@/components/pilotage/decision-reading-section";
+import { DecisionClusterSection } from "@/components/pilotage/decision-cluster-section";
+import { PilotageOverviewSurfaceTabs } from "./pilotage-overview-surface-tabs";
+
+import type { NavigationGridItem } from "@/components/ui/navigation-grid";
 
 type PilotageOverviewCopy = {
   summaryEyebrow: string;
@@ -23,18 +26,11 @@ type PilotageOverviewCopy = {
   accessEyebrow: string;
 };
 
-type PilotageOverviewLink = {
-  id: string;
-  href: string;
-  label: string;
-  description: string;
-};
-
 type PilotageOverviewContentProps = {
   locale: PilotageLocale;
   copy: PilotageOverviewCopy;
   overview: PilotageOverview | null;
-  overviewLinks: PilotageOverviewLink[];
+  overviewLinks: NavigationGridItem[];
   accessAllowed: boolean;
   lastUpdatedAt: string | null;
 };
@@ -53,6 +49,8 @@ export function PilotageOverviewContent({
   if (overview) {
     return (
       <>
+        <PilotageOverviewSurfaceTabs locale={locale} overview={overview} />
+
         <div className="space-y-8">
           <div className="space-y-3">
             <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
@@ -71,7 +69,7 @@ export function PilotageOverviewContent({
           </div>
         </div>
 
-        <section className="rounded-[1.75rem] border border-stone-400/18 bg-[rgba(44,28,15,0.82)] p-5 md:p-6">
+        <section id="pilotage" className="scroll-mt-28 rounded-[1.75rem] border border-stone-400/18 bg-[rgba(44,28,15,0.82)] p-5 md:p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="max-w-2xl space-y-3">
               <div className="flex flex-wrap items-center gap-2">
@@ -111,48 +109,9 @@ export function PilotageOverviewContent({
           </div>
         </section>
 
-        <DecisionReadingSection
-          variant="pilotage"
-          eyebrow={locale === "fr" ? "Cluster décisionnel" : "Decision cluster"}
-          title={
-            locale === "fr"
-              ? "Mon espace, Portail décideur et Gouvernance"
-              : "Dashboard, decision portal and governance"
-          }
-          description={
-            locale === "fr"
-              ? "Les trois surfaces partagent les mêmes repères de lecture: synthèse rapide, arbitrage, puis bascule vers le bon niveau de décision."
-              : "The three surfaces share the same reading pattern: quick synthesis, arbitration, then a jump to the right decision level."
-          }
-          links={[
-            {
-              id: "dashboard",
-              href: "/dashboard",
-              label: locale === "fr" ? "Mon espace" : "Dashboard",
-              description:
-                locale === "fr"
-                  ? "KPI, profil et arbitrages du quotidien."
-                  : "KPIs, profile and day-to-day arbitration.",
-            },
-            {
-              id: "sponsor-portal",
-              href: "/sponsor-portal",
-              label: locale === "fr" ? "Portail décideur" : "Decision portal",
-              description:
-                locale === "fr"
-                  ? "ROI, impact territorial et lecture institutionnelle."
-                  : "ROI, territorial impact and institutional reading.",
-            },
-            {
-              id: "elus",
-              href: "/sections/elus",
-              label: locale === "fr" ? "Gouvernance" : "Governance",
-              description:
-                locale === "fr"
-                  ? "Priorités, méthode et recommandations territoriales."
-                  : "Priorities, methods and territorial recommendations.",
-            },
-          ]}
+        <DecisionClusterSection
+          locale={locale}
+          surfaceId="pilotage"
           className="border-white/12 bg-white/[0.06]"
         />
 
@@ -308,7 +267,7 @@ export function PilotageOverviewContent({
         </article>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1.02fr_0.98fr]">
+        <section className="grid gap-4 lg:grid-cols-[1.02fr_0.98fr]">
         <article className="rounded-[1.75rem] border border-stone-400/18 bg-[rgba(44,28,15,0.82)] p-5 md:p-6">
           <p className="text-[11px] font-black uppercase tracking-[0.18em] text-amber-700">
             {copy.prioritiesEyebrow}

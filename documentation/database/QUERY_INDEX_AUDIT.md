@@ -35,7 +35,7 @@
 | `.eq("user_id")` | profiles | Primary Key | O(log n) |
 | `.ilike("handle")` | profiles | idx_profiles_handle | O(log n) |
 | `.in("role_label")` | profiles | idx_profiles_role_label | O(log n) |
-| `.order("created_at desc")` | app_messages | idx_messages_created_at | O(log n) |
+| `.order("created_at desc")` | app_messages | idx_app_messages_created_at | O(log n) |
 
 ---
 

@@ -34,7 +34,7 @@ export const LEARN_OVERVIEW_CARDS: Record<LearnLocale, LearnLinkCard[]> = {
   fr: [
     {
       href: "/learn/comprendre",
-      title: "Comprendre",
+      title: "Vulgarisation",
       detail: "Lire le contexte, les ordres de grandeur et le lien vers la méthodologie.",
       visual: {
         tone: "violet",
@@ -70,8 +70,8 @@ export const LEARN_OVERVIEW_CARDS: Record<LearnLocale, LearnLinkCard[]> = {
     },
     {
       href: "/learn/bonnes-pratiques",
-      title: "Bonnes pratiques",
-      detail: "Guides courts, gestes utiles et séquence avant / pendant / après.",
+      title: "Tri, composte, comportements",
+      detail: "Repères courts pour trier, composter et garder les bons comportements.",
       visual: {
         tone: "emerald",
         motif: "guides",
@@ -86,30 +86,12 @@ export const LEARN_OVERVIEW_CARDS: Record<LearnLocale, LearnLinkCard[]> = {
         ],
       },
     },
-    {
-      href: "/learn/ressources",
-      title: "Ressources",
-      detail: "Kit terrain, repères de tri et événements utiles.",
-      visual: {
-        tone: "amber",
-        motif: "resources",
-        badge: { fr: "Kit terrain", en: "Field kit" },
-        chips: [
-          { fr: "Kit", en: "Kit" },
-          { fr: "Tri", en: "Sorting" },
-        ],
-        stats: [
-          { value: "12", label: { fr: "repères", en: "references" } },
-          { value: "2", label: { fr: "événements", en: "events" } },
-        ],
-      },
-    },
   ],
   en: [
     {
       href: "/learn/comprendre",
-      title: "Understand",
-      detail: "Read the context, the order of magnitude and the link to methodology.",
+      title: "Explanation",
+      detail: "Read the context, the orders of magnitude and the link to methodology.",
       visual: {
         tone: "violet",
         motif: "layers",
@@ -144,8 +126,8 @@ export const LEARN_OVERVIEW_CARDS: Record<LearnLocale, LearnLinkCard[]> = {
     },
     {
       href: "/learn/bonnes-pratiques",
-      title: "Best practices",
-      detail: "Short guides, useful gestures and a before / during / after sequence.",
+      title: "Sorting, composting, behaviors",
+      detail: "Short cues for sorting, composting and keeping the right behaviors.",
       visual: {
         tone: "emerald",
         motif: "guides",
@@ -157,24 +139,6 @@ export const LEARN_OVERVIEW_CARDS: Record<LearnLocale, LearnLinkCard[]> = {
         stats: [
           { value: "1", label: { fr: "checklist", en: "checklist" } },
           { value: "3", label: { fr: "temps", en: "steps" } },
-        ],
-      },
-    },
-    {
-      href: "/learn/ressources",
-      title: "Resources",
-      detail: "Field kit, sorting cues and useful events.",
-      visual: {
-        tone: "amber",
-        motif: "resources",
-        badge: { fr: "Kit terrain", en: "Field kit" },
-        chips: [
-          { fr: "Kit", en: "Kit" },
-          { fr: "Tri", en: "Sorting" },
-        ],
-        stats: [
-          { value: "12", label: { fr: "repères", en: "references" } },
-          { value: "2", label: { fr: "événements", en: "events" } },
         ],
       },
     },

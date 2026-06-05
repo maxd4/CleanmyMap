@@ -6,20 +6,20 @@ import { LearnPracticeGuideIntro } from "./learn-practice-guide-intro";
 import { LEARN_OVERVIEW_CARDS } from "@/lib/learning/learn-rubric-data";
 
 describe("LearnPracticeGuideIntro", () => {
-  it("renders a visual first layer for the Bonnes pratiques rubric", () => {
+  it("renders a visual first layer for the Tri, composte, comportements rubric", () => {
     const card = LEARN_OVERVIEW_CARDS.fr[2];
 
     const markup = renderToStaticMarkup(
       React.createElement(LearnPracticeGuideIntro, {
         locale: "fr",
-        title: { fr: "Bonnes pratiques", en: "Best practices" },
+        title: { fr: "Tri, composte, comportements", en: "Sorting, composting, behaviors" },
         question: {
-          fr: "Comment garder le bon réflexe sans alourdir l'action ?",
-          en: "How do we keep the right reflex without slowing the action?",
+          fr: "Comment trier juste, composter mieux et garder les bons comportements sans ralentir l'action ?",
+          en: "How do we sort right, compost better and keep the right behaviors without slowing the action?",
         },
         clue: {
-          fr: "Avant / pendant / après : une lecture rapide pour agir juste.",
-          en: "Before / during / after: a quick read to act well.",
+          fr: "Tri, compostage et attitude terrain: trois repères courts pour agir proprement.",
+          en: "Sorting, composting and field behavior: three short cues to act cleanly.",
         },
         cta: {
           href: card.href,
@@ -29,7 +29,7 @@ describe("LearnPracticeGuideIntro", () => {
     );
 
     expect(markup).toContain("Lecture rapide");
-    expect(markup).toContain("Bonnes pratiques");
+    expect(markup).toContain("Tri, composte, comportements");
     expect(markup).toContain("Séquence");
     expect(markup).toContain("Préparer");
     expect(markup).toContain("Rester lisible");

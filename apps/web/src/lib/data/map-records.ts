@@ -78,6 +78,7 @@ function toLocalContract(
     volunteersCount: Number(record.metrics?.volunteersCount ?? 0),
     durationMinutes: Number(record.metrics?.durationMinutes ?? 0),
     associationName: parsedMetadata.associationName,
+    groupJoinEnabled: parsedMetadata.groupJoinEnabled,
     placeType: parsedMetadata.placeType,
     departureLocationLabel: parsedMetadata.departureLocationLabel,
     arrivalLocationLabel: parsedMetadata.arrivalLocationLabel,

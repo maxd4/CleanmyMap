@@ -18,6 +18,7 @@ const FORM_STATE_KEYS = [
   "associationName",
   "enterpriseName",
   "organizerAccounts",
+  "groupJoinEnabled",
   "actionDate",
   "locationLabel",
   "departureLocationLabel",
@@ -174,12 +175,19 @@ export function loadDraftSnapshot(
       return cacheDraftSnapshot(cacheKey, null);
     }
 
-    const next = { ...fallback } as Record<keyof FormState, string>;
+    const next = { ...fallback } as FormState & Record<string, string | boolean>;
 
     for (const key of FORM_STATE_KEYS) {
       const value = parsed[key];
+      if (key === "groupJoinEnabled") {
+        if (typeof value === "boolean") {
+          Object.assign(next, { groupJoinEnabled: value });
+        }
+        continue;
+      }
+
       if (typeof value === "string") {
-        next[key] = value;
+        Object.assign(next, { [key]: value });
       }
     }
 

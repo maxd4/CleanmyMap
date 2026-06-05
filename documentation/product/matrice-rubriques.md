@@ -30,10 +30,9 @@ flowchart LR
   B3 --> REP["/reports"]
   B3 --> BADGES["/sections/gamification"]
 
-  B4 --> NET["/partners/network"]
   B4 --> ANNUAIRE["/partners/dashboard"]
+  B4 --> COMM["/sections/community"]
   B4 --> MSG["/sections/messagerie"]
-  B4 --> COMMUNITY["/sections/community"]
   B4 --> OPENDATA["/sections/open-data"]
 
   B5 --> HUB["/learn/hub"]

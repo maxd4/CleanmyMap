@@ -138,8 +138,8 @@ export function JoinFormSection() {
   const emptyMessage = useMemo(
     () =>
       fr
-        ? "Aucune action validée n'est prête à être rejointe pour le moment."
-        : "No validated actions are available to join right now.",
+        ? "Aucune action validée et ouverte n'est prête à être rejointe pour le moment."
+        : "No validated and opened actions are available to join right now.",
     [fr],
   );
 
@@ -225,8 +225,8 @@ export function JoinFormSection() {
           title={fr ? "Rejoindre un formulaire" : "Join a form"}
           subtitle={
             fr
-              ? "Rejoindre un formulaire issu d'une action déjà validée par les administrateurs, sans créer une nouvelle action."
-              : "Join a form from an already approved action, without creating a new action."
+              ? "Rejoindre un formulaire issu d'une action déjà validée et ouverte par l'organisateur, sans créer une nouvelle action."
+              : "Join a form from an already approved action opened by the organizer, without creating a new action."
           }
           badges={
             <>
@@ -251,8 +251,8 @@ export function JoinFormSection() {
                 </h2>
                 <p className="max-w-2xl text-sm leading-relaxed text-slate-300">
                   {fr
-                    ? "Chaque carte ci-dessous correspond à une action déjà validée. Rejoindre enregistre votre participation dans `action_participants` et alimente les badges et les stats."
-                    : "Each card below maps to an already approved action. Joining records your participation in `action_participants` and updates badges and stats."}
+                    ? "Chaque carte ci-dessous correspond à une action déjà validée et explicitement ouverte par l'organisateur. Rejoindre enregistre votre participation dans `action_participants` et alimente les badges et les stats."
+                    : "Each card below maps to an already approved action that the organizer has explicitly opened. Joining records your participation in `action_participants` and updates badges and stats."}
                 </p>
               </div>
 
@@ -337,6 +337,15 @@ export function JoinFormSection() {
                               <CheckCircle2 size={12} />
                               {fr ? "Validée" : "Approved"}
                             </span>
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-sky-800">
+                              {item.groupJoinEnabled
+                                ? fr
+                                  ? "Ouverte"
+                                  : "Open"
+                                : fr
+                                  ? "Fermée"
+                                  : "Closed"}
+                            </span>
                             {item.joined && (
                               <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.28em] text-slate-700">
                                 {fr ? "Déjà rejoint" : "Already joined"}
@@ -368,8 +377,8 @@ export function JoinFormSection() {
 
                           <p className="text-sm leading-relaxed text-slate-600">
                             {fr
-                              ? "Le formulaire de cette action est déjà créé. Votre participation est ajoutée au même fil de validation."
-                              : "The form for this action already exists. Your participation is added to the same validation thread."}
+                              ? "Le formulaire de cette action est déjà créé. Votre participation est ajoutée au même fil de validation et reste traçable séparément."
+                              : "The form for this action already exists. Your participation is added to the same validation thread and stays individually traceable."}
                           </p>
                         </div>
 
@@ -449,13 +458,13 @@ export function JoinFormSection() {
                 <ul className="space-y-3 text-sm leading-relaxed text-slate-700">
                   <li className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
                     {fr
-                      ? "La carte n'apparaît que si l'action est validée par un admin."
-                      : "The card appears only after admin validation."}
+                      ? "La carte n'apparaît que si l'action est validée par un admin et ouverte par l'organisateur."
+                      : "The card appears only after admin validation and organizer opening."}
                   </li>
                   <li className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
                     {fr
-                      ? "La participation est stockée dans `action_participants` avec unicité par bénévole."
-                      : "Participation is stored in `action_participants` with volunteer-level uniqueness."}
+                      ? "La participation est stockée dans `action_participants` avec unicité par bénévole et par action."
+                      : "Participation is stored in `action_participants` with uniqueness per volunteer and action."}
                   </li>
                   <li className="rounded-[1.25rem] border border-emerald-200/60 bg-emerald-50/40 px-4 py-3">
                     {fr
@@ -481,8 +490,8 @@ export function JoinFormSection() {
                 </h2>
                 <p className="text-sm leading-relaxed text-slate-700">
                   {fr
-                    ? "La table de participation alimente le badge Participant et les compteurs de progression collective. Le backend rejette toute jonction sur une action encore en attente."
-                    : "The participation table feeds the Participant badge and collective progression counters. The backend rejects any join request for a still-pending action."}
+                    ? "La table de participation alimente le badge Participant et les compteurs de progression collective. Le backend rejette toute jonction sur une action encore en attente ou non ouverte."
+                    : "The participation table feeds the Participant badge and collective progression counters. The backend rejects any join request for a still-pending or closed action."}
                 </p>
               </div>
             </FamilyRubriqueCard>

@@ -5,11 +5,11 @@ export const metadata: Metadata = {
   description: 'Analysez les données de nettoyage participatif, téléchargez des rapports détaillés et visualisez l\'évolution de l\'impact environnemental.',
 };
 
-import { 
- BarChart3, 
- Layers, 
- Info, 
- DownloadCloud 
+import {
+ BarChart3,
+ Layers,
+ Info,
+ DownloadCloud
 } from"lucide-react";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { type NavigationGridItem } from"@/components/ui/navigation-grid";
@@ -17,14 +17,13 @@ import { getCurrentUserRoleLabel } from"@/lib/authz";
 import { getSafeAuthSession } from"@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 import { isFeatureEnabled } from"@/lib/feature-flags";
-import { getActionOperationalContext, toActionListItem, type ActionDataContract } from"@/lib/actions/data-contract";
+import { getActionOperationalContext, type ActionDataContract } from"@/lib/actions/data-contract";
 import { fetchCommunityEvents } from "@/lib/community/http";
 import { loadPilotageOverview } from"@/lib/pilotage/overview";
 import {
  getProfilePrimaryAction,
  getProfileSecondaryAction,
- getProfileLabel,
-  isAdminLikeProfile,
+  getProfileLabel,
   toProfile,
 } from"@/lib/profiles";
 import { getServerLocale } from"@/lib/server-preferences";
@@ -32,7 +31,6 @@ import { getSupabaseServerClient } from"@/lib/supabase/server";
 import { ReportsPageV2Layout } from "@/components/reports/page-sections/reports-page-v2-layout";
 import { ReportsPageV1Layout } from "@/components/reports/page-sections/reports-page-v1-layout";
 import { PROFIL_ROUTE } from "@/lib/accueil-pilotage-routes";
-import { listAdminOperationAudit } from "@/lib/admin/operation-audit";
 
 type ReportsSummaryKpi = {
   label: string;
@@ -43,18 +41,11 @@ type ReportsSummaryKpi = {
   interpretation: "positive" | "negative" | "neutral";
 };
 
-function buildDateFloor(daysWindow: number): string {
-  const now = new Date();
-  now.setUTCHours(0, 0, 0, 0);
-  now.setUTCDate(now.getUTCDate() - (daysWindow - 1));
-  return now.toISOString().slice(0, 10);
-}
-
-async function loadReportsData(showAdminWorkflow: boolean) {
+async function loadReportsData() {
   const supabase = getSupabaseServerClient();
   const { fetchUnifiedActionContracts } = await import("@/lib/actions/unified-source");
 
-  const [overview, contractsResult, communityEvents, weather, adminWorkflowPreview, adminWorkflowAudit] = await Promise.all([
+  const [overview, contractsResult, communityEvents, weather] = await Promise.all([
     loadPilotageOverview({
       supabase,
       periodDays: 90,
@@ -85,34 +76,6 @@ async function loadReportsData(showAdminWorkflow: boolean) {
         }>;
       })
       .catch(() => null),
-    showAdminWorkflow
-      ? fetchUnifiedActionContracts(supabase, {
-          limit: 250,
-          status: null,
-          floorDate: buildDateFloor(90),
-          requireCoordinates: false,
-          types: null,
-        })
-          .then((result) => ({
-            status: "ok" as const,
-            count: result.items.length,
-            items: result.items.map((contract) => toActionListItem(contract)),
-          }))
-          .catch(() => null)
-      : Promise.resolve(null),
-    showAdminWorkflow
-      ? listAdminOperationAudit(25)
-          .then((items) => items.slice(0, 25).map((entry) => ({
-            operationId: entry.operationId,
-            at: entry.at,
-            actorUserId: entry.actorUserId,
-            operationType: entry.operationType,
-            outcome: entry.outcome,
-            targetId: entry.targetId,
-            details: entry.details,
-          })))
-          .catch(() => null)
-      : Promise.resolve(null),
   ]);
 
   return {
@@ -120,8 +83,6 @@ async function loadReportsData(showAdminWorkflow: boolean) {
     contracts: contractsResult.items,
     communityEvents,
     weather,
-    adminWorkflowPreview,
-    adminWorkflowAudit,
   };
 }
 
@@ -156,7 +117,6 @@ export default async function ReportsPage() {
       ? await getCurrentUserRoleLabel().catch(() => "anonymous" as const)
       : ("anonymous" as const);
   const profile = toProfile(role);
-  const isAdmin = isAdminLikeProfile(profile);
   const primaryAction = getProfilePrimaryAction(profile);
   const secondaryAction = getProfileSecondaryAction(profile);
   const roleLabel =
@@ -164,7 +124,7 @@ export default async function ReportsPage() {
   const pageTemplateV2Enabled = isFeatureEnabled("pageTemplateV2");
 
   const [data, utils] = await Promise.all([
-    loadReportsData(isAdmin).catch(() => null),
+    loadReportsData().catch(() => null),
     import("@/lib/pilotage/analytics-data-utils"),
   ]);
   const { aggregateMonthlyAnalytics } = utils;
@@ -173,8 +133,6 @@ export default async function ReportsPage() {
   const contracts = data?.contracts ?? [];
   const communityEvents = data?.communityEvents ?? [];
   const weather = data?.weather ?? null;
-  const adminWorkflowPreview = data?.adminWorkflowPreview ?? null;
-  const adminWorkflowAudit = data?.adminWorkflowAudit ?? null;
   const monthlyData = aggregateMonthlyAnalytics(contracts);
   const publicAccessBanner = !userId ? (
     <section className="rounded-2xl border border-red-200 bg-red-50 p-4 cmm-text-small text-red-900 shadow-sm">
@@ -186,10 +144,10 @@ export default async function ReportsPage() {
   const headerActions = userId
     ? [
         { href: PROFIL_ROUTE, label: "Cockpit" },
-        { href: "/learn/hub", label: "Apprendre" },
+        { href: "/learn/comprendre", label: "Apprendre" },
       ]
     : [
-        { href: "/learn/hub", label: "Apprendre" },
+        { href: "/learn/comprendre", label: "Apprendre" },
         { href: "/sign-in", label: "Se connecter" },
       ];
 
@@ -300,7 +258,6 @@ export default async function ReportsPage() {
         <ReportsPageV2Layout
           locale={locale}
           roleLabel={roleLabel}
-          profile={profile}
           primaryAction={primaryAction}
           secondaryAction={secondaryAction}
           summaryKpis={summaryKpis}
@@ -309,8 +266,6 @@ export default async function ReportsPage() {
           contracts={contracts}
           communityEvents={communityEvents}
           weather={weather}
-          adminWorkflowPreview={adminWorkflowPreview}
-          adminWorkflowAudit={adminWorkflowAudit}
           monthlyData={monthlyData}
           toReportsExportRow={toReportsExportRow}
           publicAccessBanner={publicAccessBanner}
@@ -332,8 +287,6 @@ export default async function ReportsPage() {
         contracts={contracts}
         communityEvents={communityEvents}
         weather={weather}
-        adminWorkflowPreview={adminWorkflowPreview}
-        adminWorkflowAudit={adminWorkflowAudit}
         publicAccessBanner={publicAccessBanner}
       />
     </AccountCompletionGate>

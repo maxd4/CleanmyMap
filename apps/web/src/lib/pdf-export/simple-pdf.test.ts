@@ -96,6 +96,41 @@ describe("simple PDF export", () => {
     expect(html).toContain("Résumé du rapport.");
   });
 
+  it("renders the locked section message when a chapter is empty", () => {
+    const lockedMessage =
+      'Générez le rapport avec un niveau de détail : "Exhaustif" si vous voulez le détail de cette sous partie.';
+    const escapedLockedMessage =
+      'Générez le rapport avec un niveau de détail : &quot;Exhaustif&quot; si vous voulez le détail de cette sous partie.';
+    const html = buildOfficialReportHtml({
+      ...payload,
+      data: {
+        ...payload.data,
+        chapters: [
+          {
+            title: "Synthèse exécutive",
+            subtitle: "Vue d’ensemble",
+            lines: ["Résumé du rapport.", "Chiffres clés disponibles."],
+            stats: [{ label: "Actions", value: 12 }],
+          },
+          {
+            title: "Cartographie d’impact",
+            subtitle: "Lecture spatiale et évolution des signalements",
+            locked: true,
+            requiredDetailLevelLabel: "Exhaustif",
+            lines: [lockedMessage],
+          },
+        ],
+      },
+    });
+
+    expect(html).toContain("Sommaire cliquable");
+    expect(html).toContain("Cartographie d’impact");
+    expect(html).toContain("is-locked");
+    expect(html).toContain("Section verrouillée");
+    expect(html).toContain("Lecture réduite");
+    expect(html).toContain(escapedLockedMessage);
+  });
+
   it("renders the controlled markdown grammar and escapes html", () => {
     const html = renderOfficialMarkdown([
       "# Titre",
