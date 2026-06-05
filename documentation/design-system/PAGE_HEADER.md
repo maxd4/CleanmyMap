@@ -9,7 +9,9 @@
 - `PageHero` reste un alias de compatibilité pour les pages héritées
 - aucun nouveau système de titre décoratif ne doit être créé hors cas documenté
 - le header canonique n'affiche plus de bulles, badges ou contexte au-dessus du titre
-- les titres et sous-titres doivent tenir sur une seule ligne sur desktop standard
+- les titres doivent tenir sur une seule ligne avec la taille de base du composant
+- les sous-titres doivent tenir sur une ou deux lignes avec la taille de base du composant
+- si le contenu ne tient pas, déplacer ce qui bloque vers la droite ou le réduire plutôt que casser la ligne du titre
 - les sous-titres doivent rester courts, lisibles et non exhaustifs
 - les majuscules décoratives ne sont admises que pour un eyebrow très court
 
@@ -56,6 +58,8 @@
 - `default` est le comportement standard
 - `inverse` est réservé aux surfaces sombres
 - le contraste ne change pas le layout, seulement les couleurs de lecture
+- la couleur du titre vient de la famille de page et doit reprendre la teinte foncée de la rubrique
+- pour le bloc Agir, les titres utilisent un vert foncé canonique
 
 ### Lecture canonique des tons
 
@@ -91,8 +95,9 @@
 ## Lisibilité
 
 - éviter les retours à la ligne manuels sur `title` et `subtitle`
-- réduire d'abord la taille, puis le tracking, puis la largeur utile avant toute autre solution
-- si le texte ne peut pas tenir, privilégier l'ellipsis plutôt qu'un retour décoratif
+- réduire d'abord le contenu bloquant, puis la largeur utile, puis la taille avant toute autre solution
+- si le titre ne peut pas tenir, privilégier l'ellipsis plutôt qu'un retour décoratif
+- le sous-titre peut s'étendre sur deux lignes maximum, sans casser la lecture du titre
 - conserver une lecture centrée pour les pages qui passent en `align="center"`
 - les repères de contexte au-dessus du titre doivent être déplacés vers le corps de page ou supprimés
 

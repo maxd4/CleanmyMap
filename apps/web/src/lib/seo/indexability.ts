@@ -25,7 +25,6 @@ export const PUBLIC_APP_SITEMAP_PATHS = [
   "/learn/sentrainer",
   "/mentions-legales",
   "/methodologie",
-  "/observatoire",
   "/politique-confidentialite",
   "/politique-cookies",
   "/reports",

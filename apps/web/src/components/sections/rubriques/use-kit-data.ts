@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { PackType } from "./weather-types";
 
-export function useKitData(activeTab: "conditions" | "preparation" | "protocol", fr: boolean) {
+export function useKitData(fr: boolean) {
   const [packType, setPackType] = useState<PackType>("team");
   const [kitChecks, setKitChecks] = useState<Record<string, boolean>>({
     ppe: false,
@@ -51,29 +51,34 @@ export function useKitData(activeTab: "conditions" | "preparation" | "protocol",
   };
 
   useEffect(() => {
-    if (activeTab !== "preparation") return;
     let active = true;
     void fetch("/api/users/checklist-progress?checklistId=kit-main", {
       method: "GET",
       cache: "no-store",
-    }).then(async (res) => {
-      if (!res.ok) return;
-      const payload = (await res.json()) as { entry?: { checks?: Record<string, boolean> } };
-      if (active && payload.entry?.checks) {
-        setKitChecks((prev) => ({ ...prev, ...payload.entry?.checks }));
-      }
-    }).finally(() => { if (active) setKitReady(true); });
-    return () => { active = false; };
-  }, [activeTab]);
+    })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const payload = (await res.json()) as { entry?: { checks?: Record<string, boolean> } };
+        if (active && payload.entry?.checks) {
+          setKitChecks((prev) => ({ ...prev, ...payload.entry?.checks }));
+        }
+      })
+      .finally(() => {
+        if (active) setKitReady(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
-    if (!kitReady || activeTab !== "preparation") return;
+    if (!kitReady) return;
     void fetch("/api/users/checklist-progress", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ checklistId: "kit-main", checks: kitChecks }),
     }).catch(() => undefined);
-  }, [kitChecks, kitReady, activeTab]);
+  }, [kitChecks, kitReady]);
 
   return {
     packType,

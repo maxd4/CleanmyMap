@@ -66,7 +66,7 @@ export default async function SectionPage({ params }: SectionPageProps) {
   }
 
   if (sectionId === "guide") {
-    redirect("/sections/weather?tab=protocol");
+    redirect("/sections/weather");
   }
 
   const section = getSectionRubriqueById(sectionId);

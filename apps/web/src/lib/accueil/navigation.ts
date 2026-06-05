@@ -11,7 +11,6 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
     admin: 4,
     sponsor: 5,
     elus: 6,
-    godmode: 7,
   },
   act: {
     new: 1,
@@ -46,7 +45,6 @@ export const BLOCK_PREVIEW_PRIORITY: Record<
     admin: 1,
     sponsor: 2,
     elus: 3,
-    godmode: 4,
   },
 };
 

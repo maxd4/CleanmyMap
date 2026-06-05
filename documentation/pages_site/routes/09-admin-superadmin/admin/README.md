@@ -1,4 +1,4 @@
-# Administration du site
+# Administration
 
 ## Fiche canonique
 
@@ -27,6 +27,7 @@
 - Bannières techniques
 - rappels de contexte
 - textes non essentiels
+- Le bloc `max` caché est intégré en fin de page et ne doit pas apparaître comme une surface autonome.
 - **Bulles / cartes / contextes trop nombreux** : Les vues d'administration concentrent des panneaux, tables et actions à forte densité.
 - **Composants UI concernés** :
 - Dashboards admin

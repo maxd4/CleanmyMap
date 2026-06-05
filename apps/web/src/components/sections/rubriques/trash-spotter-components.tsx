@@ -1,278 +1,398 @@
 "use client";
 
+import type { Dispatch, SetStateAction } from "react";
 import { memo } from "react";
 import { motion } from "framer-motion";
-import { 
-  Target, 
-  Clock,
-  CheckCircle2, 
-  Globe, 
-  MapPin, 
-  Navigation, 
-  Plus, 
-  Map as MapIcon, 
-  ChevronRight,
+import {
+  ArrowRight,
+  CheckCircle2,
+  Clock3,
+  Info,
+  MapPin,
+  PenLine,
+  ShieldCheck,
+  Sparkles,
+  Target,
 } from "lucide-react";
-import { CmmButton } from "@/components/ui/cmm-button";
 import { cn } from "@/lib/utils";
+import type { ActionMapItem } from "@/lib/actions/types";
+import type { SpotFormStatus, SpotType } from "./trash-spotter-types";
 
-// --- KPI Grid Component ---
-
-export const SpotterKpiGrid = memo(function SpotterKpiGrid({
-  fr,
-  total,
-  approved,
-  geoCoverage,
-}: {
+type SpotterFormProps = {
   fr: boolean;
-  total: number;
-  approved: number;
-  geoCoverage: string;
-}) {
-  const kpis = [
-    { label: fr ? "Signalements validés" : "Approved reports", value: total, icon: Target, tone: "blue" },
-    { label: fr ? "Validés" : "Approved", value: approved, icon: CheckCircle2, tone: "emerald" },
-    { label: fr ? "Couverture" : "Coverage", value: geoCoverage, icon: Globe, tone: "purple" },
-  ];
+  spotType: SpotType;
+  setSpotType: Dispatch<SetStateAction<SpotType>>;
+  spotLabel: string;
+  setSpotLabel: Dispatch<SetStateAction<string>>;
+  spotLatitude: string;
+  setSpotLatitude: Dispatch<SetStateAction<string>>;
+  spotLongitude: string;
+  setSpotLongitude: Dispatch<SetStateAction<string>>;
+  spotNotes: string;
+  setSpotNotes: Dispatch<SetStateAction<string>>;
+  spotState: SpotFormStatus;
+  spotMessage: string | null;
+  onCreateSpot: () => void;
+};
 
-  return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-      {kpis.map((kpi) => (
-        <motion.div
-          key={kpi.label}
-          whileHover={{ y: -5, scale: 1.02 }}
-          className="relative overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-900/40 p-8 backdrop-blur-3xl shadow-2xl transition-all group"
-        >
-          <div className={cn(
-            "absolute -right-8 -top-8 w-24 h-24 blur-3xl opacity-10 rounded-full",
-            kpi.tone === 'blue' ? 'bg-blue-500' : 
-            kpi.tone === 'amber' ? 'bg-amber-500' : 
-            kpi.tone === 'emerald' ? 'bg-emerald-500' : 'bg-purple-500'
-          )} />
-          
-          <div className="flex flex-col gap-4">
-            <div className={cn(
-              "p-3 rounded-2xl w-fit border shadow-xl",
-              kpi.tone === 'blue' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 
-              kpi.tone === 'amber' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 
-              kpi.tone === 'emerald' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-purple-500/10 border-purple-500/20 text-purple-400'
-            )}>
-              <kpi.icon size={20} />
-            </div>
-            <div className="space-y-1">
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 group-hover:text-slate-400 transition-colors">
-                {kpi.label}
-              </p>
-              <p className="text-3xl font-black text-white tracking-tighter">{kpi.value}</p>
-            </div>
-          </div>
-        </motion.div>
-      ))}
-    </div>
-  );
-});
+type SpotterRecentListProps = {
+  fr: boolean;
+  recent: ActionMapItem[];
+};
 
-// --- Form Component ---
+const typeButtonClasses = {
+  selected: "border-emerald-300/80 bg-emerald-100 text-emerald-950 shadow-[0_20px_40px_-30px_rgba(34,197,94,0.42)]",
+  idle: "border-slate-200 bg-white text-slate-600 hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-900",
+} as const;
+
+const statusToneClasses: Record<string, { dot: string; pill: string; label: string }> = {
+  approved: {
+    dot: "bg-emerald-500",
+    pill: "border-emerald-200 bg-emerald-100 text-emerald-800",
+    label: "Validé",
+  },
+  pending: {
+    dot: "bg-amber-500",
+    pill: "border-amber-200 bg-amber-100 text-amber-800",
+    label: "En attente",
+  },
+  rejected: {
+    dot: "bg-rose-500",
+    pill: "border-rose-200 bg-rose-100 text-rose-800",
+    label: "Refusé",
+  },
+  default: {
+    dot: "bg-slate-400",
+    pill: "border-slate-200 bg-slate-100 text-slate-700",
+    label: "Publié",
+  },
+};
+
+function formatRelativeTime(value: string, fr: boolean): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return fr ? "Récemment" : "Recently";
+  }
+
+  const diffSeconds = Math.round((date.getTime() - Date.now()) / 1000);
+  const abs = Math.abs(diffSeconds);
+  const rtf = new Intl.RelativeTimeFormat(fr ? "fr" : "en", { numeric: "auto" });
+
+  if (abs < 60) {
+    return rtf.format(diffSeconds, "second");
+  }
+
+  const diffMinutes = Math.round(diffSeconds / 60);
+  if (Math.abs(diffMinutes) < 60) {
+    return rtf.format(diffMinutes, "minute");
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (Math.abs(diffHours) < 24) {
+    return rtf.format(diffHours, "hour");
+  }
+
+  const diffDays = Math.round(diffHours / 24);
+  return rtf.format(diffDays, "day");
+}
+
+function getStatusTone(status?: string | null) {
+  return statusToneClasses[status ?? "default"] ?? statusToneClasses.default;
+}
 
 export const SpotterForm = memo(function SpotterForm({
   fr,
-  spotType, setSpotType,
-  spotLabel, setSpotLabel,
-  spotLatitude, setSpotLatitude,
-  spotLongitude, setSpotLongitude,
-  spotNotes, setSpotNotes,
+  spotType,
+  setSpotType,
+  spotLabel,
+  setSpotLabel,
+  spotLatitude,
+  setSpotLatitude,
+  spotLongitude,
+  setSpotLongitude,
+  spotNotes,
+  setSpotNotes,
   spotState,
   spotMessage,
   onCreateSpot,
-}: any) {
+}: SpotterFormProps) {
+  const noteCount = spotNotes.trim().length;
+  const isPending = spotState === "pending";
+  const isSuccess = spotState === "success";
+
   return (
-    <div className="p-10 rounded-[3rem] border border-white/10 bg-slate-900/40 backdrop-blur-3xl shadow-2xl relative overflow-hidden space-y-10">
-      <div className="absolute top-0 right-0 p-10 opacity-5 pointer-events-none">
-        <Plus size={100} className="text-white" />
-      </div>
+    <div className="relative overflow-hidden rounded-[2rem] border border-emerald-100/90 bg-white/96 p-6 shadow-[0_24px_64px_-42px_rgba(34,197,94,0.25)] sm:p-7">
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-400 via-emerald-500 to-emerald-300" />
+      <div className="absolute right-0 top-0 h-36 w-36 translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-100/70 blur-3xl" />
 
-      <div className="space-y-2">
-        <h3 className="text-2xl font-black text-white tracking-tighter">{fr ? "Nouveau Signalement" : "New Report"}</h3>
-        <p className="text-slate-400 text-sm font-medium leading-relaxed">
-          {fr ? "Renseignez les détails pour l'intervention." : "Provide details for intervention."}
-        </p>
-      </div>
+      <div className="relative space-y-6">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] text-emerald-800">
+            <PenLine size={12} />
+            {fr ? "Nouveau signalement" : "New report"}
+          </div>
+          <h3 className="text-2xl font-black tracking-[-0.04em] text-slate-950">
+            {fr ? "Décrivez le problème et sa localisation." : "Describe the issue and its location."}
+          </h3>
+          <p className="max-w-xl text-sm font-medium leading-relaxed text-slate-600">
+            {fr
+              ? "Chaque signalement alimente la carte d'action, l'itinéraire IA et le rapport d'impact."
+              : "Every report feeds the action map, the AI route and the impact report."}
+          </p>
+        </div>
 
-      <div className="space-y-8">
-        {/* Type selection */}
-        <div className="space-y-4">
-          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-2">Nature du dépôt</label>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-3">
+          <label className="ml-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">
+            {fr ? "Type de signalement" : "Report type"}
+          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
             {[
-              { id: 'waste', label: fr ? 'Dépôt sauvage' : 'Illegal dump', color: 'rose' },
-              { id: 'overflow', label: fr ? 'Bac plein' : 'Full bin', color: 'amber' },
-              { id: 'graffiti', label: fr ? 'Tags/Graffitis' : 'Graffiti', color: 'blue' },
-              { id: 'other', label: fr ? 'Autre' : 'Other', color: 'slate' },
-            ].map((type) => (
-              <CmmButton
-                key={type.id}
-                onClick={() => setSpotType(type.id)}
-                tone={spotType === type.id ? "primary" : "tertiary"}
-                variant="pill"
-                className={cn(
-                  "px-6 py-4 rounded-2xl text-xs font-black uppercase tracking-widest border transition-all duration-300",
-                  spotType === type.id 
-                    ? `bg-${type.color}-500/20 border-${type.color}-500/50 text-white shadow-xl`
-                    : "bg-white/5 border-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300"
-                )}
-              >
-                {type.label}
-              </CmmButton>
-            ))}
+              {
+                id: "spot" as const,
+                title: fr ? "Point de pollution" : "Pollution point",
+                description: fr ? "Visible sur la carte globale" : "Visible on the global map",
+                icon: Target,
+              },
+              {
+                id: "clean_place" as const,
+                title: fr ? "Zone propre" : "Clean place",
+                description: fr ? "Référence utile pour le clean zone" : "Reference for the clean-zone flow",
+                icon: ShieldCheck,
+              },
+            ].map((option) => {
+              const selected = spotType === option.id;
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setSpotType(option.id)}
+                  className={cn(
+                    "flex items-start gap-3 rounded-[1.5rem] border px-4 py-3 text-left transition",
+                    selected ? typeButtonClasses.selected : typeButtonClasses.idle,
+                  )}
+                  aria-pressed={selected}
+                >
+                  <div
+                    className={cn(
+                      "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border",
+                      selected
+                        ? "border-emerald-200 bg-white text-emerald-700"
+                        : "border-slate-200 bg-slate-50 text-slate-500",
+                    )}
+                  >
+                    <option.icon size={18} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-black tracking-[-0.02em]">{option.title}</p>
+                    <p className={cn("text-xs font-medium", selected ? "text-emerald-800/70" : "text-slate-500")}>
+                      {option.description}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Label input */}
         <div className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-2">Description rapide</label>
-          <div className="relative">
+          <label className="ml-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">
+            {fr ? "Description" : "Description"}
+          </label>
+          <input
+            type="text"
+            value={spotLabel}
+            onChange={(event) => setSpotLabel(event.target.value)}
+            placeholder={fr ? "Ex: Dépôt sauvage au pied du passage piéton" : "Ex: Waste pile near the crossing"}
+            className="h-12 w-full rounded-[1.2rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
+          />
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-3">
+            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">
+              {fr ? "Localisation" : "Location"}
+            </label>
             <input
               type="text"
-              value={spotLabel}
-              onChange={(e) => setSpotLabel(e.target.value)}
-              placeholder={fr ? "Ex: Sacs devant le 24 rue..." : "Ex: Bags in front of 24 street..."}
-              className="w-full bg-slate-950/50 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold text-white placeholder:text-slate-600 outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all"
-            />
-          </div>
-        </div>
-
-        {/* Coordinates */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-2">Latitude</label>
-            <input
-              type="number"
-              step="any"
               value={spotLatitude}
-              onChange={(e) => setSpotLatitude(e.target.value)}
-              className="w-full bg-slate-950/50 border border-white/5 rounded-2xl px-6 py-4 text-xs font-bold text-white outline-none focus:border-emerald-500/50 transition-all"
+              onChange={(event) => setSpotLatitude(event.target.value)}
+              placeholder={fr ? "Latitude" : "Latitude"}
+              className="h-12 w-full rounded-[1.2rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
             />
           </div>
           <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-2">Longitude</label>
+            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">
+              {fr ? "Précision" : "Precision"}
+            </label>
             <input
-              type="number"
-              step="any"
+              type="text"
               value={spotLongitude}
-              onChange={(e) => setSpotLongitude(e.target.value)}
-              className="w-full bg-slate-950/50 border border-white/5 rounded-2xl px-6 py-4 text-xs font-bold text-white outline-none focus:border-emerald-500/50 transition-all"
+              onChange={(event) => setSpotLongitude(event.target.value)}
+              placeholder={fr ? "Longitude" : "Longitude"}
+              className="h-12 w-full rounded-[1.2rem] border border-slate-200 bg-white px-4 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
             />
           </div>
         </div>
 
-        {/* Action Button */}
-        <CmmButton
-          onClick={onCreateSpot}
-          disabled={spotState === 'loading'}
-          tone="primary"
-          variant="pill"
-          className={cn(
-            "w-full py-6 rounded-[2rem] text-sm font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-4 shadow-2xl",
-            spotState === 'success' 
-              ? "bg-emerald-500 text-white shadow-emerald-500/40" 
-              : "bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/40 active:scale-[0.98]"
-          )}
-        >
-          {spotState === 'loading' ? (
-            <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : spotState === 'success' ? (
-            <CheckCircle2 size={20} />
-          ) : (
-            <Plus size={20} />
-          )}
-          <span>{spotState === 'success' ? (fr ? "Transmis !" : "Sent !") : (fr ? "Publier le signalement" : "Publish report")}</span>
-        </CmmButton>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <label className="ml-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">
+              {fr ? "Précisions" : "Notes"}
+            </label>
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700">
+              {noteCount}/2000
+            </span>
+          </div>
+          <textarea
+            value={spotNotes}
+            onChange={(event) => setSpotNotes(event.target.value)}
+            placeholder={fr ? "Adresse, point de repère, accès, contexte..." : "Address, landmark, access, context..."}
+            rows={4}
+            maxLength={2000}
+            className="w-full rounded-[1.25rem] border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-emerald-300 focus:ring-4 focus:ring-emerald-100"
+          />
+        </div>
 
-        {spotMessage && (
-          <motion.p 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <button
+            type="button"
+            onClick={onCreateSpot}
+            disabled={isPending}
             className={cn(
-              "text-center text-xs font-black uppercase tracking-widest",
-              spotState === 'success' ? "text-emerald-400" : "text-rose-400"
+              "inline-flex h-12 items-center justify-center gap-3 rounded-[1.25rem] px-5 text-sm font-black tracking-[0.08em] text-white transition",
+              isSuccess
+                ? "bg-emerald-500 shadow-[0_18px_38px_-20px_rgba(34,197,94,0.55)]"
+                : "bg-gradient-to-r from-emerald-600 to-emerald-500 shadow-[0_18px_38px_-20px_rgba(22,163,74,0.58)] hover:from-emerald-500 hover:to-emerald-400",
+              isPending && "cursor-wait opacity-80",
             )}
           >
-            {spotMessage}
+            {isPending ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/35 border-t-white" />
+                {fr ? "Publication..." : "Publishing..."}
+              </>
+            ) : isSuccess ? (
+              <>
+                <CheckCircle2 size={18} />
+                {fr ? "Transmis" : "Sent"}
+              </>
+            ) : (
+              <>
+                <Sparkles size={18} />
+                {fr ? "Publier le signalement" : "Publish report"}
+              </>
+            )}
+          </button>
+
+          <div className="hidden items-center gap-2 rounded-[1.25rem] border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 sm:inline-flex">
+            <MapPin size={16} />
+            {fr ? "Alimente la carte globale" : "Feeds the global map"}
+          </div>
+        </div>
+
+        {spotMessage ? (
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+              "flex items-start gap-2 rounded-[1.25rem] border px-4 py-3 text-sm font-medium",
+              spotState === "error"
+                ? "border-rose-200 bg-rose-50 text-rose-800"
+                : spotState === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : "border-slate-200 bg-slate-50 text-slate-700",
+            )}
+          >
+            <Info size={16} className="mt-0.5 shrink-0" />
+            <span>{spotMessage}</span>
           </motion.p>
-        )}
+        ) : null}
       </div>
     </div>
   );
 });
 
-// --- Recent List Component ---
-
-export const SpotterRecentList = memo(function SpotterRecentList({ fr, recent }: { fr: boolean, recent: any[] }) {
+export const SpotterRecentList = memo(function SpotterRecentList({
+  fr,
+  recent,
+}: SpotterRecentListProps) {
   return (
-    <div className="space-y-8">
-      <div className="flex items-center gap-4">
-        <div className="p-3 rounded-2xl bg-white/5 border border-white/10">
-          <Clock size={20} className="text-slate-400" />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700">
+            <Clock3 size={18} />
+          </div>
+          <div>
+            <h3 className="text-lg font-black tracking-[-0.03em] text-slate-950">
+              {fr ? "Signalements récents" : "Recent reports"}
+            </h3>
+            <p className="text-sm font-medium text-slate-600">
+              {fr ? "Dernières contributions reçues" : "Latest contributions received"}
+            </p>
+          </div>
         </div>
-        <h3 className="text-xl font-black text-white tracking-tight">{fr ? "Signalements récents" : "Recent Reports"}</h3>
+
+        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-800">
+          {fr ? "En direct" : "Live"}
+        </span>
       </div>
 
-      <div className="space-y-4">
-        {recent.slice(0, 5).map((spot, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: i * 0.1 }}
-            className="group p-6 rounded-[2rem] border border-white/5 bg-slate-900/20 hover:bg-white/5 hover:border-white/10 transition-all flex items-center justify-between shadow-lg"
-          >
-            <div className="flex items-center gap-6">
-              <div className="p-4 rounded-2xl bg-white/5 text-slate-500 group-hover:text-blue-400 transition-colors">
-                <MapPin size={24} />
+      <div className="space-y-3">
+        {recent.slice(0, 5).map((spot) => {
+          const statusTone = getStatusTone(spot.status);
+          return (
+            <motion.article
+              key={spot.id}
+              whileHover={{ y: -2 }}
+              className="flex items-start gap-4 rounded-[1.5rem] border border-slate-200 bg-white px-4 py-4 shadow-[0_12px_30px_-24px_rgba(15,23,42,0.26)]"
+            >
+              <div className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 text-emerald-700">
+                <MapPin size={18} />
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-black text-white tracking-tight">{spot.label || (fr ? "Sans titre" : "No title")}</p>
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{spot.type}</span>
-                  <div className="w-1 h-1 rounded-full bg-white/10" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">il y a 2h</span>
+
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="truncate text-sm font-black tracking-[-0.02em] text-slate-950">
+                    {spot.location_label}
+                  </p>
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.14em]",
+                      statusTone.pill,
+                    )}
+                  >
+                    <span className={cn("h-1.5 w-1.5 rounded-full", statusTone.dot)} />
+                    {statusTone.label}
+                  </span>
+                </div>
+
+                <p className="text-sm font-medium text-slate-600">
+                  {formatRelativeTime(spot.action_date, fr)} · {spot.latitude !== null && spot.longitude !== null ? `${spot.latitude.toFixed(4)}, ${spot.longitude.toFixed(4)}` : fr ? "Sans coordonnées" : "No coordinates"}
+                </p>
+
+                <div className="flex items-center justify-between gap-3 pt-1">
+                  <p className="truncate text-xs font-medium text-slate-500">
+                    {spot.location_label}
+                  </p>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-full px-0 py-0 text-xs font-black uppercase tracking-[0.18em] text-emerald-700 transition hover:text-emerald-800"
+                  >
+                    {fr ? "Voir" : "Open"}
+                    <ArrowRight size={14} />
+                  </button>
                 </div>
               </div>
-            </div>
-            <CmmButton tone="tertiary" variant="pill" className="p-3 rounded-xl text-slate-500 hover:text-white hover:bg-white/10 transition-all">
-              <ChevronRight size={20} />
-            </CmmButton>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-});
+            </motion.article>
+          );
+        })}
 
-// --- Map Feed Placeholder ---
-// Normally this would be a real map, but for the modernization we focus on the container and header
-
-export const ActionsMapFeed = memo(function ActionsMapFeed({ types, days, statusFilter, impactFilter, qualityMin }: any) {
-  return (
-    <div className="w-full h-[500px] bg-slate-950 relative flex items-center justify-center">
-      {/* Background patterns to mimic a map interface */}
-      <div className="absolute inset-0 opacity-10 pointer-events-none" 
-           style={{ backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-      
-      <div className="relative z-10 text-center space-y-6">
-        <div className="w-20 h-20 rounded-[1.5rem] bg-white/5 border border-white/10 mx-auto flex items-center justify-center text-white/20">
-          <MapIcon size={40} />
-        </div>
-        <div className="space-y-2">
-          <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500">Moteur Cartographique</p>
-          <p className="text-slate-400 font-medium">Interface interactive des signalements actifs</p>
-        </div>
-      </div>
-
-      {/* Decorative overlays */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
-        <div className="p-2 bg-slate-900/80 border border-white/10 rounded-lg text-white/50"><Plus size={16} /></div>
-        <div className="p-2 bg-slate-900/80 border border-white/10 rounded-lg text-white/50"><Navigation size={16} /></div>
+        {recent.length === 0 ? (
+          <div className="rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-sm font-medium text-slate-600">
+            {fr ? "Aucun signalement récent pour le moment." : "No recent reports yet."}
+          </div>
+        ) : null}
       </div>
     </div>
   );

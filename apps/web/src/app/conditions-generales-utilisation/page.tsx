@@ -65,7 +65,7 @@ export default function ConditionsGeneralesUtilisationPage() {
           <ul className="space-y-2 text-sm leading-6 text-slate-600">
             <li>Signalement d&apos;un point de pollution ou d&apos;un lieu propre.</li>
             <li>Déclaration d&apos;une action de nettoyage.</li>
-            <li>Carte, observatoire, rapports et tableaux de bord d&apos;impact.</li>
+            <li>Carte, rapports et tableaux de bord d&apos;impact.</li>
             <li>Événements communautaires, messagerie et coordination locale.</li>
             <li>Parrainage, liens d&apos;invitation et badge communautaire one-shot.</li>
             <li>Newsletter et formulaires d&apos;échange avec l&apos;équipe.</li>

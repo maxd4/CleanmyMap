@@ -23,6 +23,8 @@ import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-com
 import { getBlockClasses } from "@/lib/ui/block-accents";
 import { cn } from "@/lib/utils";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
+import type { EnvironmentalImpactInfrastructureServiceEstimate } from "@/lib/environmental-impact-estimator/types";
+import { FreePlanServicesMethodologyVisual } from "./free-plan-services-methodology-visual";
 
 type MethodologyColor = "red" | "slate";
 
@@ -45,6 +47,16 @@ type OpenSourceDoc = {
   secondaryAction?: {
     href: string;
     label: { fr: string; en: string };
+  };
+};
+
+type MethodologiePageClientProps = {
+  freePlanServices: EnvironmentalImpactInfrastructureServiceEstimate[];
+  impactTotals: {
+    monthlyKgCo2eProxy: number | null;
+    annualKgCo2eProxy: number | null;
+    totalKgCo2eProxy: number | null;
+    generatedAt: string | null;
   };
 };
 
@@ -220,21 +232,21 @@ const OPEN_SOURCE_DOCS: OpenSourceDoc[] = [
   {
     id: "quota-free-services",
     title: {
-      fr: "Estimateur des quotas gratuits",
-      en: "Free Quota Estimator",
+      fr: "Impact numérique des services suivis",
+      en: "Digital impact of tracked services",
     },
     desc: {
-      fr: "Texte d'appui pour comprendre les quotas gratuits, ouvrir l'estimateur et consulter la photo du graphique admin réel liée au même tableau de bord.",
-      en: "Supporting text to explain free quotas, open the estimator, and view the real admin graph photo tied to the same dashboard.",
+      fr: "Bloc de pilotage des services suivis, avec accès au texte d'appui et à la vue détaillée intégrée au site.",
+      en: "Control block for tracked services, with access to supporting text and the detailed inline view on the site.",
     },
     href: "/docs/plans/journal_impact_DU.md",
     icon: <Sparkles className="h-6 w-6" />,
     isPdf: false,
     secondaryAction: {
-      href: "/docs/pages_site/routes/09-admin-superadmin/admin-services/photo/desktop/quota-graph.webp",
+      href: "#impact-services",
       label: {
-        fr: "Voir le graphique réel",
-        en: "View real graph",
+        fr: "Voir le bloc",
+        en: "View block",
       },
     },
   },
@@ -254,7 +266,7 @@ const OPEN_SOURCE_DOCS: OpenSourceDoc[] = [
   },
 ];
 
-export function MethodologiePageClient() {
+export function MethodologiePageClient({ freePlanServices, impactTotals }: MethodologiePageClientProps) {
   const { locale } = useSitePreferences();
   const isFrench = locale === "fr";
   const { factors, sources, version } = IMPACT_PROXY_CONFIG;
@@ -374,6 +386,12 @@ export function MethodologiePageClient() {
             </div>
           ))}
         </div>
+
+        <FreePlanServicesMethodologyVisual
+          services={freePlanServices}
+          impactTotals={impactTotals}
+          isFrench={isFrench}
+        />
 
         <section className="grid gap-10 xl:grid-cols-2">
           <MethodologyCard

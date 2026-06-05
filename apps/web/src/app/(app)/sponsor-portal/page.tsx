@@ -5,13 +5,11 @@ import {
   Leaf, 
   Map as MapIcon,
   Download,
-  Info,
   ShieldCheck,
   Zap,
   ArrowRight,
   Activity
 } from "lucide-react";
-import Link from "next/link";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { loadPilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
@@ -19,8 +17,12 @@ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
-import { cn } from "@/lib/utils";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
+import {
+  PilotageInsightCard,
+  PilotageMetricGrid,
+} from "@/components/pilotage/pilotage-cluster-panels";
+import { DecisionReadingSection } from "@/components/pilotage/decision-reading-section";
 import { getPageFamilyById } from "@/lib/ui/page-families";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 
@@ -90,31 +92,45 @@ export default async function SponsorPortalPage() {
       </header>
 
       {/* ROI CARDS - High Impact Tiles */}
-      <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {[
-          { label: "Économie de voirie", val: `${totalEuroSaved.toLocaleString()} €`, icon: <Euro size={28} />, color: "amber", trend: "+12%" },
-          { label: "CO2 évité (estimé)", val: `${totalCo2.toLocaleString()} kg`, icon: <Leaf size={28} />, color: "emerald", trend: "+8%" },
-          { label: "Mobilisation citoyenne", val: totalVolunteers.toLocaleString(), icon: <Users size={28} />, color: "sky", trend: "+24%" },
-          { label: "Masse extraite", val: `${totalKg.toLocaleString()} kg`, icon: <MapIcon size={28} />, color: "rose", trend: "+15%" },
-        ].map((card, i) => (
-          <div key={i} className="group relative overflow-hidden p-10 rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-3xl transition-all duration-500 hover:bg-white/10 hover:border-white/10 aspect-square flex flex-col justify-between">
-            <div className="flex justify-between items-start">
-              <div className={cn("p-4 rounded-2xl bg-white/5 transition-transform group-hover:scale-110 duration-500", `text-${card.color}-400`)}>
-                {card.icon}
-              </div>
-              <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">{card.trend}</span>
-            </div>
-            
-            <div className="space-y-2">
-              <p className="text-6xl font-black text-white tracking-tighter leading-none">
-                {card.val}
-              </p>
-              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40">
-                {card.label}
-              </p>
-            </div>
-          </div>
-        ))}
+      <section>
+        <PilotageMetricGrid
+          variant="sponsor"
+          metrics={[
+            {
+              id: "economie-voirie",
+              label: "Économie de voirie",
+              value: `${totalEuroSaved.toLocaleString()} €`,
+              deltaPercent: "+12%",
+              icon: Euro,
+              interpretation: "positive",
+            },
+            {
+              id: "co2-evite",
+              label: "CO2 évité (estimé)",
+              value: `${totalCo2.toLocaleString()} kg`,
+              deltaPercent: "+8%",
+              icon: Leaf,
+              interpretation: "positive",
+            },
+            {
+              id: "mobilisation-citoyenne",
+              label: "Mobilisation citoyenne",
+              value: totalVolunteers.toLocaleString(),
+              deltaPercent: "+24%",
+              icon: Users,
+              interpretation: "positive",
+            },
+            {
+              id: "masse-extraite",
+              label: "Masse extraite",
+              value: `${totalKg.toLocaleString()} kg`,
+              deltaPercent: "+15%",
+              icon: MapIcon,
+              interpretation: "positive",
+            },
+          ]}
+          className="grid-cols-1 md:grid-cols-2 xl:grid-cols-4"
+        />
       </section>
 
       {/* Detailed Insights */}
@@ -152,11 +168,19 @@ export default async function SponsorPortalPage() {
 
         <div className="rounded-[3rem] p-12 border border-white/5 bg-white/5 backdrop-blur-2xl space-y-10 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 rounded-full blur-[100px] pointer-events-none" />
-          
-          <div className="flex items-center justify-between relative z-10">
-            <h3 className="text-2xl font-black text-white tracking-tight uppercase">Points Chauds</h3>
-            <span className="text-[10px] font-bold text-amber-400 bg-amber-400/10 px-3 py-1 rounded-full border border-amber-400/20">TEMPS RÉEL</span>
-          </div>
+
+          <PilotageInsightCard
+            variant="sponsor"
+            className="relative z-10"
+            insight={{
+              eyebrow: "Périmètre de pilotage",
+              title: "Points chauds",
+              detail:
+                "Lecture consolidée du réseau territorial, avec recommandations et priorités directement actionnables.",
+              actionLabel: "Voir les rapports",
+              actionHref: "/reports",
+            }}
+          />
 
           <div className="space-y-4 relative z-10">
             {observedZones.length > 0 ? (
@@ -185,6 +209,33 @@ export default async function SponsorPortalPage() {
           </div>
         </div>
       </section>
+
+      <DecisionReadingSection
+        variant="sponsor"
+        eyebrow="Cluster commun"
+        title="Mon espace, Portail décideur et Gouvernance"
+        description="Les mêmes repères de lecture sont partagés sur les trois surfaces, avec une entrée différente selon le rôle et le niveau d'arbitrage attendu."
+        links={[
+          {
+            id: "dashboard",
+            href: "/dashboard",
+            label: "Mon espace",
+            description: "KPI, profil et arbitrages du quotidien.",
+          },
+          {
+            id: "pilotage",
+            href: "/pilotage",
+            label: "Pilotage",
+            description: "Synthèse transverse, recommandations et méthodes.",
+          },
+          {
+            id: "gouvernance",
+            href: "/sections/elus",
+            label: "Gouvernance",
+            description: "Lecture territoriale et arbitrages publics.",
+          },
+        ]}
+      />
 
       {/* Protocol Transparency */}
       <section className="relative group p-12 rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-2xl overflow-hidden transition-all hover:bg-white/[0.07]">

@@ -21,7 +21,7 @@ Ancienne structure 7 blocs → nouvelle structure 5 blocs (homepage) :
 5. Profil & impact
 6. Rapports d'impact
 7. Méthodologie
-8. Itinéraire IA
+8. Où agir
 9. Signalement Déchets
 10. Carte d'entraînement
 11. Point de départ (Apprendre)
@@ -31,7 +31,7 @@ Ancienne structure 7 blocs → nouvelle structure 5 blocs (homepage) :
 15. Messagerie Pro
 16. Gouvernance / Pilotage
 17. Administration
-18. Observatoire Public
+18. Données publiques
 19. Découvrir le réseau
 20. Progression & Badges
 21. Météo
@@ -50,7 +50,7 @@ Ancienne structure 7 blocs → nouvelle structure 5 blocs (homepage) :
 34. Impression rapport
 35. Historique des actions
 36. Services admin
-37. God Mode
+37. Administration avancée (sous-partie cachée)
 38. Connexion
 39. Inscription
 40. Onboarding localisation
@@ -69,7 +69,7 @@ quadrantChart
   quadrant-3 Faible priorite immediate
   quadrant-4 Impact a confirmer
   "Accueil": [0.80, 0.82]
-  "Itineraire IA": [0.78, 0.87]
+  "Où agir": [0.78, 0.87]
   "Trash Spotter": [0.75, 0.84]
   "Carte des actions": [0.88, 0.89]
   "Sandbox carte": [0.82, 0.82]
@@ -124,7 +124,7 @@ quadrantChart
 - Utilite : conserver les liens historiques sans dupliquer la page.
 - Impact : aucune divergence d'usage.
 
-**Vue Pilotage / Gouvernance** `/pilotage`
+**Cluster Pilotage / Gouvernance** `/pilotage`
 
 - Résultats pour les décideurs publics.
 - Disponibilité : `coordinateur`, `scientifique`, `elu`, `admin`.
@@ -138,6 +138,12 @@ quadrantChart
 - Utilite : donner un outil dédié aux décideurs.
 - Impact : facilite le pilotage institutionnel.
 
+**Note de fusion**
+
+- `Pilotage`, `Portail Décideur` et `Gouvernance` partagent désormais un socle commun de KPI, d'insight et de navigation.
+- `Pilotage` porte la synthèse, `Portail Décideur` la lecture ROI, `Gouvernance` la lecture territoriale.
+- Les trois surfaces réutilisent les mêmes blocs pour éviter les bulles répétées et les doublons de contenu.
+
 **Famille autonome — Administration** `/admin`
 
 - Modération et supervision.
@@ -145,10 +151,10 @@ quadrantChart
 - Utilite : garantir la fiabilité des données.
 - Impact : protection contre les abus.
 
-**Famille autonome — God Mode** `/admin/godmode`
+**Famille autonome — Administration avancée** `/admin/godmode`
 
-- Supervision master admin.
-- Disponibilité : `admin` uniquement.
+- Sous-partie cachée de l'administration.
+- Disponibilité : `max` uniquement.
 - Utilite : outils avancés de maintenance.
 - Impact : support technique et gouvernance renforcés.
 
@@ -162,7 +168,7 @@ quadrantChart
 - Utilite : capter rapidement une action de dépollution.
 - Impact : accélère l'augmentation du volume de données terrain et alimente la carte, les rapports et le pilotage.
 
-**Itinéraire IA** `/sections/route`
+**Où agir** `/sections/route`
 
 - Recommandations dynamiques : où agir aujourd'hui.
 - Utilite : transformer la data en parcours d'action.
@@ -218,12 +224,6 @@ quadrantChart
 - Sandbox séparée pour tester filtres, couches et navigation cartographique.
 - Utilite : explorer sans engagement et valider les comportements de la carte.
 - Impact : réduit les erreurs d'utilisation de l'outil cartographique.
-
-**Observatoire public** `/observatoire`
-
-- Données ouvertes, accessibles sans connexion.
-- Utilite : ouvrir les données aux chercheurs et collectivités.
-- Impact : favorise la réutilisation et la transparence.
 
 **Rapports d'impact** `/reports`
 
@@ -323,8 +323,9 @@ quadrantChart
 
 - Les rubriques de gouvernance et d'administration ne sont pas visibles dans le ruban standard pour les bénévoles.
 - `Météo` vit dans le bloc Agir et sert de filtre opérationnel avant sortie terrain.
-- `Portail Décideur` et `Gouvernance` sont exposés différemment selon le rôle : `elu` et `admin` ont un accès plus large, tandis que `coordinateur` et `scientifique` voient principalement `Gouvernance`.
-- `Administration` et `God Mode` sont des rubriques strictement `admin`.
+- `Pilotage`, `Portail Décideur` et `Gouvernance` forment un cluster décisionnel commun : mêmes briques de synthèse, mais lecture adaptée au rôle et au contexte.
+- `elu` et `admin` ont l'accès le plus large ; `coordinateur` et `scientifique` accèdent surtout à `Gouvernance`.
+- `Administration` et la sous-partie cachée `Administration avancée` sont strictement réservées au profil `max` ou aux comptes `admin` selon le contexte de la page, sans exposition directe dans la navigation publique.
 - `Historique` existe mais reste `hidden` dans le registre ; il n'est pas proposé dans le ruban principal.
 
 ---

@@ -144,6 +144,61 @@ Le nom de domaine du site est géré chez LWS et sert de point d'entrée public.
 
 Dans la logique du projet, ce poste est un coût fixe à suivre, au même titre que l'hébergement et les autres dépendances d'infrastructure.
 
+## Quotas gratuits de référence
+
+Cette section sert de base pour l'onglet `Plans et quotas`.
+
+Règle de lecture:
+
+- le quota principal d'un service doit être la limite la plus proche du plafond;
+- les autres limites restent visibles en détail;
+- `NA` signifie soit "non publié de façon fiable", soit "pas de plan gratuit pertinent".
+
+Vérification web effectuée le 4 juin 2026 à partir des sources officielles ci-dessous.
+
+| Service | Plan | Quotas gratuits publiés | Statut quota tab | Source officielle |
+| --- | --- | --- | --- | --- |
+| Vercel | Hobby | 100 GB de Fast Data Transfer; 1 000 000 de function invocations; 100 GB-hours de function duration; 6 000 minutes de build; 1 000 images source; 50 000 web analytics events; 100 déploiements/jour | utilisable | [vercel.com/docs/accounts/plans](https://vercel.com/docs/accounts/plans) |
+| Supabase | Free | 50 000 MAU; 500 MB de base; 5 GB d'egress; 1 GB de stockage fichiers; 500 000 invocations Edge Functions; 200 connexions Realtime; 100 messages/s; upload max 50 MB | utilisable | [supabase.com/pricing](https://supabase.com/pricing) |
+| Clerk | Hobby | 50 000 MRU par app; 3 seats dashboard; 5 impersonations; sessions fixes de 7 jours; 2 500 créations et 100 000 vérifications pour les API keys M2M | utilisable | [clerk.com/pricing](https://clerk.com/pricing) |
+| Resend | Free | 3 000 emails/mois; 100 emails/jour; 1 domaine; 10 000 automation runs; 30 jours de rétention | utilisable | [resend.com/pricing](https://resend.com/pricing) |
+| PostHog | Free tier | 1 000 000 events/mois en product analytics; 5 000 recordings/mois en session replay; 1 000 000 requests/mois en feature flags; 1 000 000 rows/mois en managed warehouse | utilisable | [posthog.com](https://posthog.com/posthug) |
+| Sentry | Developer / free | 5 GB de logs/mois sont inclus sur tous les plans; quota exact d'erreurs publics non stabilisé -> `NA` | partiel | [sentry.io/changelog/logs-are-generally-available](https://sentry.io/changelog/logs-are-generally-available/) |
+| Upstash Redis | Free | 256 MB de données; 10 GB de bandwidth; 500 000 commands/mois | utilisable | [upstash.com/pricing/redis](https://upstash.com/pricing/redis) |
+| Upstash QStash | Free | 1 000 messages/jour; 50 GB de bandwidth mensuelle; 1 MB max par message; 10 queues; 10 active schedules; 3 retries; 7 jours de délai max | utilisable | [upstash.com/docs/qstash/overall/pricing](https://upstash.com/docs/qstash/overall/pricing) |
+| Pinecone | Starter | 1 projet par organisation; 5 indexes serverless par projet; 2 GB de stockage serverless par projet; 1 000 000 read units/mois; 2 000 000 write units/mois; 1 seule région cloud (`us-east-1`) | utilisable | [docs.pinecone.io/docs/limits](https://docs.pinecone.io/docs/limits) |
+
+Services hors périmètre gratuit documenté:
+
+- `Stripe`: paiement à l'usage, pas de quota gratuit public fixe;
+- `LWS / domaine`: coût fixe, pas de quota gratuit à piloter;
+- `GPT-5.4 mini / Codex`: outils IA de développement, pas de quota gratuit public exploitable dans cette fiche de quotas web.
+
+Pour le pilotage interne, les services `NA` doivent rester visibles comme "non documentés" plutôt que remplacés par une moyenne.
+
+## IA de développement et ACV
+
+Les modèles utilisés pour coder le site ne doivent pas être mélangés avec les services web de quotas.
+
+Si CleanMyMap n'appelle pas directement un modèle GPT en production, alors ce poste doit rester dans l'onglet `Impact carbone / ACV` et hors de l'onglet `Plans et quotas`.
+
+Références de badge à afficher dans l'ACV:
+
+- `GPT-5.4 mini — développement du site`:
+  - `Inclus ACV`
+  - `Hors production`
+  - `Hors quotas web`
+- `Codex — développement du site`:
+  - `Inclus ACV`
+  - `Hors production`
+  - `Hors quotas web`
+
+Règle de pilotage:
+
+- les quotas web concernent seulement les services de production réellement exposés au site;
+- les modèles IA de développement restent dans l'analyse de cycle de vie et les coûts projet;
+- aucune moyenne externe ne doit remplacer ce découpage.
+
 ## Chaîne de fonctionnement
 
 Lorsqu'un utilisateur agit sur le site :
@@ -175,4 +230,3 @@ Cette méthodologie doit rester alignée avec les règles du dépôt :
 - [Services web stack](../operations/services-stack.md)
 - [Fiche technique](../fiche-technique-cleanmymap.md)
 - [Gouvernance des données](./data-governance.md)
-

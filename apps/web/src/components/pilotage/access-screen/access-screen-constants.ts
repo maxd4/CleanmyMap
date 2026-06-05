@@ -12,7 +12,6 @@ import {
   ADMIN_GODMODE_ROUTE,
   ADMIN_ROUTE,
   DASHBOARD_ROUTE,
-  OBSERVATOIRE_ROUTE,
   REPORTS_ROUTE,
   SPONSOR_PORTAL_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
@@ -113,17 +112,17 @@ export function buildAccessLinks(profile: AppProfile, locale: PilotageLocale): N
     },
     {
       icon: Compass,
-      title: locale === "fr" ? "Observatoire" : "Observatory",
+      title: locale === "fr" ? "Carte des actions" : "Action map",
       desc:
         locale === "fr"
-          ? "Lecture large des tendances, avant la prise de décision."
-          : "Wide trend reading before making decisions.",
+          ? "Vue large des actions pour repérer les tendances avant la décision."
+          : "Broad action view to spot trends before deciding.",
       iconBg: "bg-white/10",
       iconColor: "text-yellow-100",
       accent: "from-[#2A1B10] to-[#4A3119]",
       ring: "ring-yellow-200/30",
       dot: "bg-yellow-300",
-      href: OBSERVATOIRE_ROUTE,
+      href: "/actions/map",
     },
   ];
 

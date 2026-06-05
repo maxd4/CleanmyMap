@@ -152,7 +152,6 @@ export function ActionsMapExportButton({
         const dataUrl = await toPng(target, {
           cacheBust: true,
           pixelRatio: 2,
-          useCORS: true,
           backgroundColor: "#ddf3fd",
         });
         triggerDownloadUrl(dataUrl, pngFilename);

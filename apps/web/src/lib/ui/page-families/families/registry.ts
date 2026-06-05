@@ -41,42 +41,48 @@ export const darkHero = (
       iconWrap: "rounded-2xl border border-emerald-200/35 bg-emerald-50/70 p-3",
       icon: "text-emerald-800",
       eyebrow: "text-emerald-900/85",
-      title: "text-stone-950",
+      title: "text-emerald-900",
+      subtitle: "text-emerald-900/78",
     },
     sky: {
       gradient: "from-sky-500/18 via-cyan-500/10 to-transparent",
       iconWrap: "rounded-2xl border border-sky-200/35 bg-sky-50/70 p-3",
       icon: "text-sky-900",
       eyebrow: "text-sky-950/85",
-      title: "text-stone-950",
+      title: "text-sky-900",
+      subtitle: "text-sky-900/78",
     },
     red: {
       gradient: "from-red-500/18 via-rose-500/10 to-transparent",
       iconWrap: "rounded-2xl border border-rose-200/35 bg-rose-50/70 p-3",
       icon: "text-rose-900",
       eyebrow: "text-rose-950/85",
-      title: "text-stone-950",
+      title: "text-rose-900",
+      subtitle: "text-rose-900/78",
     },
     pink: {
       gradient: "from-pink-500/18 via-fuchsia-500/10 to-transparent",
       iconWrap: "rounded-2xl border border-pink-200/35 bg-pink-50/70 p-3",
       icon: "text-pink-900",
       eyebrow: "text-pink-950/85",
-      title: "text-stone-950",
+      title: "text-pink-900",
+      subtitle: "text-pink-900/78",
     },
     indigo: {
       gradient: "from-indigo-500/18 via-violet-500/10 to-transparent",
       iconWrap: "rounded-2xl border border-indigo-200/35 bg-indigo-50/70 p-3",
       icon: "text-indigo-900",
       eyebrow: "text-indigo-950/85",
-      title: "text-stone-950",
+      title: "text-indigo-900",
+      subtitle: "text-indigo-900/78",
     },
     yellow: {
       gradient: "from-yellow-500/18 via-orange-500/12 to-transparent",
       iconWrap: "rounded-2xl border border-amber-200/35 bg-amber-50/70 p-3",
       icon: "text-amber-900",
       eyebrow: "text-amber-950/85",
-      title: "text-stone-950",
+      title: "text-amber-950",
+      subtitle: "text-amber-950/78",
     },
   } as const;
   const t = map[accent];
@@ -84,7 +90,7 @@ export const darkHero = (
     eyebrow: `cmm-page-header-eyebrow ${t.eyebrow}`,
     title: `cmm-page-header-title ${t.title}`,
     titleCompact: `cmm-page-header-title ${t.title}`,
-    subtitle: "cmm-page-header-subtitle text-stone-800/90",
+    subtitle: `cmm-page-header-subtitle ${t.subtitle}`,
     badge:
       `cmm-page-header-badge border-white/20 bg-white/50 text-stone-900`,
     badgeMuted:
@@ -98,9 +104,9 @@ export const darkHero = (
 /** Sommaire `/explorer` — fond jaune, hero clair (cartes = exception locale). */
 const SOMMAIRE_EXPLORER_HERO: PageFamilyHeroTokens = {
   eyebrow: "cmm-page-header-eyebrow text-yellow-950/85",
-  title: "cmm-page-header-title text-white",
-  titleCompact: "cmm-page-header-title text-white",
-  subtitle: "cmm-page-header-subtitle text-white/82",
+  title: "cmm-page-header-title text-amber-950",
+  titleCompact: "cmm-page-header-title text-amber-950",
+  subtitle: "cmm-page-header-subtitle text-amber-950/78",
   badge:
     "cmm-page-header-badge border-yellow-200/35 bg-yellow-50/50 text-yellow-950",
   badgeMuted:
@@ -117,9 +123,9 @@ export const ACCUEIL_PILOTAGE_FAMILY: PageFamilyDefinition = {
   backdropToneKey: FAMILY_META["accueil-pilotage"].backdropToneKey,
   hero: {
     eyebrow: "cmm-page-header-eyebrow text-orange-950/85",
-    title: "cmm-page-header-title text-stone-950",
-    titleCompact: "cmm-page-header-title text-stone-950",
-    subtitle: "cmm-page-header-subtitle text-stone-800/90",
+    title: "cmm-page-header-title text-orange-950",
+    titleCompact: "cmm-page-header-title text-orange-950",
+    subtitle: "cmm-page-header-subtitle text-orange-950/78",
     badge:
       "cmm-page-header-badge border-orange-200/35 bg-orange-50/70 text-stone-900",
     badgeMuted:

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildServiceThresholdAlerts } from "./service-risk";
+import {
+  buildServiceQuotaSummary,
+  buildServiceThresholdAlerts,
+  formatServiceQuotaStateLabel,
+} from "./service-risk";
 import type { EnvironmentalImpactSnapshotRecord } from "./types";
 
 describe("buildServiceThresholdAlerts", () => {
@@ -180,5 +184,54 @@ describe("buildServiceThresholdAlerts", () => {
     expect(alerts[0].details).toContain("78");
     expect(alerts[1].recommendedAction).toContain("croissance");
     expect(alerts[2].recommendedAction).toContain("deux mois");
+  });
+});
+
+describe("buildServiceQuotaSummary", () => {
+  it("selects the most constrained metric as the primary quota", () => {
+    const summary = buildServiceQuotaSummary({
+      key: "supabase",
+      label: "Supabase",
+      description: "",
+      sourceNote: "",
+      basis: "monthly",
+      status: "ready",
+      monthlyKgCo2eProxy: 2.8,
+      annualKgCo2eProxy: 33.6,
+      sharePercent: 78,
+      confidencePercent: 90,
+      uncertaintyPercent: 10,
+      metricCount: 2,
+      referenceMetricCount: 0,
+      metricEstimates: [
+        {
+          key: "supabaseStorageGbMonths",
+          label: "Stockage",
+          unitLabel: "GB-mois",
+          proxyKgCo2ePerUnit: 0.015,
+          referenceMonthlyQuantity: 100,
+          quantityPerMonth: 5,
+          estimatedKgCo2eProxy: 0.08,
+          source: "derived",
+        },
+        {
+          key: "supabaseEgressGb",
+          label: "Bande passante",
+          unitLabel: "GB",
+          proxyKgCo2ePerUnit: 0.02,
+          referenceMonthlyQuantity: 100,
+          quantityPerMonth: 92,
+          estimatedKgCo2eProxy: 1.84,
+          source: "input",
+        },
+      ],
+    } as unknown as Parameters<typeof buildServiceQuotaSummary>[0]);
+
+    expect(summary.state).toBe("proche limite");
+    expect(formatServiceQuotaStateLabel(summary.state)).toBe("proche limite");
+    expect(summary.primaryMetric?.label).toBe("Bande passante");
+    expect(summary.primaryMetric?.consumedPercent).toBe(92);
+    expect(summary.metrics[0]?.isPrimary).toBe(true);
+    expect(summary.metrics[1]?.state).toBe("ok");
   });
 });

@@ -90,12 +90,6 @@ export function SiteNavigationJsonLd() {
       },
       {
         "@type": "SiteNavigationElement",
-        name: "Observatoire",
-        description: "Données publiques et statistiques d'impact environnemental",
-        url: "https://cleanmymap.fr/observatoire",
-      },
-      {
-        "@type": "SiteNavigationElement",
         name: "Méthodologie",
         description: "Méthodologie de calcul d'impact et transparence des métriques",
         url: "https://cleanmymap.fr/methodologie",

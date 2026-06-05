@@ -1,4 +1,4 @@
-import { auth } from"@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from"next/server";
 import { z } from"zod";
 import { getSupabaseServerClient } from"@/lib/supabase/server";
@@ -63,9 +63,9 @@ export async function GET(request: Request) {
  try {
  const supabase = getSupabaseServerClient();
  let query = supabase
- .from("spots")
+ .from("trash_spotter_spots")
  .select(
-"id, created_at, label, waste_type, latitude, longitude, status",
+"id, created_at, created_by_clerk_id, label, spot_type, latitude, longitude, status, notes",
  )
  .order("created_at", { ascending: false })
  .limit(limit);
@@ -120,18 +120,19 @@ export async function POST(request: Request) {
  : notePrefix;
 
  const inserted = await supabase
- .from("spots")
+ .from("trash_spotter_spots")
  .insert({
  created_by_clerk_id: userId,
+ user_id: userId,
  label: parsed.data.label,
- waste_type: parsed.data.type,
+ spot_type: parsed.data.type,
  latitude: parsed.data.latitude ?? null,
  longitude: parsed.data.longitude ?? null,
  status:"new",
  notes: composedNotes,
  })
  .select(
-"id, created_at, label, waste_type, latitude, longitude, status, notes",
+"id, created_at, created_by_clerk_id, label, spot_type, latitude, longitude, status, notes",
  )
  .single();
 
@@ -158,18 +159,18 @@ export async function POST(request: Request) {
  // Business Tracking
  const consentGranted = hasAnalyticsConsentCookie(request.headers.get("cookie"));
  if (consentGranted) {
-  await trackServerEvent(userId,"spot_created", {
- waste_type: inserted.data.waste_type,
+ await trackServerEvent(userId,"spot_created", {
+ waste_type: inserted.data.spot_type,
  location: inserted.data.label
-  }, {
+ }, {
    consentGranted,
   });
- }
+}
 
- return NextResponse.json(
- { status:"created", source:"spots", item: inserted.data },
+return NextResponse.json(
+ { status:"created", source:"trash_spotter_spots", item: inserted.data },
  { status: 201 },
- );
+);
  } catch (error) {
  return handleApiError(error,"POST /api/spots");
  }

@@ -32,7 +32,7 @@
     "label": "Cartographie & Impact",
     "scope": "bloc",
     "legacyFolder": "3-BLOC-VISUALISER&IMPACTER",
-    "description": "Vue carte, impact, observatoire et lecture des résultats.",
+    "description": "Vue carte, impact et lecture des résultats.",
     "backdropToneKey": "sky"
   },
   {

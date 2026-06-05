@@ -11,7 +11,7 @@
 | # | Bloc Homepage | Dossier | AUDIT produit | Rubriques produites | KAIZEN produit |
 |---|---------------|---------|:---:|:---:|:---:|
 | 01 | Accueil & Pilotage | `1-BLOC-ACCUEIL&PILOTAGE` | ❌ | — | — |
-| 02 | Agir | `2-BLOC-AGIR` | ❌ | 6 rubriques `.md` (pas de RUBRIQUE-*) | — |
+| 02 | Agir | `2-BLOC-AGIR` | ❌ | 7 rubriques `.md` (pas de RUBRIQUE-*) | — |
 | 03 | Cartographie & Impact | `3-BLOC-VISUALISER&IMPACTER` | ❌ | 4 rubriques `.md` | — |
 | 04 | Réseau & Discussions | `4-BLOC-RESEAU&DISCUSSION` | ❌ | 4 rubriques `.md` | — |
 | 05 | Apprendre | `5-BLOC-APPRENDRE` | ❌ | 2 rubriques `.md` | — |
@@ -77,6 +77,7 @@ Certains blocs ont plusieurs teintes directrices selon le type de page :
 - Alias de compatibilité (`/profil`) → même rendu que `/dashboard`
 - Pages pilotage (`/pilotage`, `/sponsor-portal`, `/elus`) → `amber` / `brun`
 - Sommaire (`/explorer`) → exception validée, palette dédiée conservée
+- Le triptyque `Pilotage` / `Portail Décideur` / `Gouvernance` partage un socle commun de KPI, d'insight et de navigation pour éviter les doublons de contenu.
 
 **Bloc "Cartographie & Impact"** :
 - Cartographie (`/actions/map`, `/sandbox`) → `sky`
@@ -86,7 +87,7 @@ Certains blocs ont plusieurs teintes directrices selon le type de page :
 - Auth & Onboarding (`/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation`) → `auth`
 - Institutionnel & Légal (`/contact`, `/conditions-*`, `/mentions-legales`, `/politique-*`, `/en`) → `legal`
 - Système & Utilitaires (`/reglages`, `/form-comparison`, `/declaration-simple`, `/preview/actions/new`, `/error/429`) → `system`
-- Admin & Super-admin (`/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`) → `admin` et `max`; le bloc 01 expose `/pilotage` et `/sections/elus` au profil `admin`, tandis que `/admin/godmode` reste réservé au profil `max`
+- Admin & Super-admin (`/admin`, `/admin/forms`, `/admin/services`, `/admin/godmode`) → `admin` et `max`; le bloc 01 expose `/pilotage` et `/sections/elus` au profil `admin`, tandis que `/admin/godmode` reste une sous-partie cachée réservée au profil `max` et n'apparaît pas dans la navigation publique
 - Print & Export (`/prints/report`) → `print`
 
 **Bloc "Cartographie & Impact"** :

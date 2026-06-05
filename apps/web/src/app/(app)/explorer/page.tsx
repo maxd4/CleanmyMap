@@ -21,14 +21,14 @@ export const metadata: Metadata = {
 };
 
 const BLOCK_PREVIEW_PRIORITY: Record<NavigationBlockId, Partial<Record<NavigationItem["id"], number>>> = {
-  home:      { dashboard: 1, explorer: 2, pilotage: 3, admin: 4, sponsor: 5, elus: 6, godmode: 7 },
-  act:       { new: 1, route: 2, "trash-spotter": 3 },
+  home:      { dashboard: 1, explorer: 2, pilotage: 3, admin: 4, sponsor: 5, elus: 6 },
+  act:       { new: 1, "rejoindre-un-formulaire": 2, route: 3, "trash-spotter": 4 },
   visualize: { map: 1, sandbox: 2, methodologie: 3, reports: 4, gamification: 5, weather: 6 },
   impact:    {},
   network:   { network: 1, community: 2, feedback: 3, messagerie: 4, "open-data": 5, annuaire: 6 },
   connect:   { messagerie: 1, dm: 2 },
   learn:     { hub: 1, guide: 2, climate: 3, recycling: 4 },
-  pilot:     { admin: 1, sponsor: 2, elus: 3, godmode: 4 },
+  pilot:     { admin: 1, sponsor: 2, elus: 3 },
 };
 
 function getOrderedPreviewItems(blockId: NavigationBlockId, items: NavigationItem[]): NavigationItem[] {
@@ -202,10 +202,10 @@ export default async function ExplorerPage() {
 
         {/* ── Header ── */}
         <div className="mb-12 space-y-4">
-          <h1 className="text-[clamp(3rem,6vw,5.5rem)] font-black leading-[0.92] tracking-[-0.05em] text-white">
+          <h1 className="text-[clamp(3rem,6vw,5.5rem)] font-black leading-[0.92] tracking-[-0.05em] text-stone-950">
             {locale === "fr" ? "Sommaire" : "Summary"}
           </h1>
-          <p className="max-w-xl text-base font-medium text-white/82 leading-relaxed">
+          <p className="max-w-xl text-base font-medium leading-relaxed text-black">
             {locale === "fr"
               ? "Accédez à toutes les rubriques disponibles pour votre profil."
               : "Access all sections available for your profile."}

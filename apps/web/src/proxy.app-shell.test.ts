@@ -18,7 +18,6 @@ describe("proxy app shell routes", () => {
       EXPLORER_ROUTE,
       "/learn",
       "/methodologie",
-      "/observatoire",
       PARCOURS_ROUTE,
       "/partners",
       "/prints",

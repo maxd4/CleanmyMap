@@ -33,13 +33,13 @@ export default function RoutePage() {
               Bloc Agir
             </span>
           }
-          title="Itinéraire IA"
+          title="Où agir"
           subtitle="Décidez vite où agir aujourd’hui avec le temps disponible, la météo, l’accessibilité et l’impact prioritaire."
           badges={
             <>
               <PageHeaderBadge tone="emerald" contrast="inverse">Agir</PageHeaderBadge>
               <PageHeaderBadge tone="emerald" contrast="inverse" muted>
-                Itinéraire
+                Où agir
               </PageHeaderBadge>
             </>
           }

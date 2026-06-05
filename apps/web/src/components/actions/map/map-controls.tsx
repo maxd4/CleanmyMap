@@ -27,9 +27,12 @@ export function MapControls({
         onClick={() => map.flyTo(center, 12)}
         aria-label="Recentrer la carte"
         className={[
-          "flex w-fit items-center gap-2 rounded-full border px-3 py-2.5 text-sm font-black text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-xl transition max-sm:px-4",
+          "flex w-fit items-center gap-2 rounded-full border px-3 py-2.5 text-sm font-black text-slate-950 backdrop-blur-xl transition max-sm:px-4",
           isEmerald
-            ? "border-emerald-200/80 bg-emerald-100 hover:border-emerald-300 hover:bg-emerald-200 focus-visible:border-emerald-300 focus-visible:bg-emerald-200 shadow-[0_24px_56px_-32px_rgba(34,197,94,0.18)]"
+            ? "shadow-[0_24px_56px_-32px_rgba(34,197,94,0.18)]"
+            : "shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]",
+          isEmerald
+            ? "border-emerald-200/80 bg-emerald-100 hover:border-emerald-300 hover:bg-emerald-200 focus-visible:border-emerald-300 focus-visible:bg-emerald-200"
             : "border-sky-200/80 bg-sky-100 hover:border-sky-300 hover:bg-sky-200 focus-visible:border-sky-300 focus-visible:bg-sky-200",
         ].join(" ")}
       >

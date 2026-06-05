@@ -4,6 +4,7 @@ import { useMemo, useState } from"react";
 import useSWR from"swr";
 import { fetchActions } from"@/lib/actions/http";
 import { evaluateActionQuality } from"@/lib/actions/quality";
+import { CmmButton } from"@/components/ui/cmm-button";
 import {
  getActionOperationalContext,
  mapItemWasteKg,
@@ -36,6 +37,14 @@ function formatRecordType(item: ActionListItem): string {
  return"spot";
  }
  return"action";
+}
+
+function buildJoinHref(actionId: string): string {
+ return `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(actionId)}`;
+}
+
+function isJoinableAction(item: ActionListItem): boolean {
+ return item.record_type === "action";
 }
 
 function qualityTone(grade:"A" |"B" |"C"): string {
@@ -406,6 +415,7 @@ export function ActionsHistoryList() {
  <th className="px-2 py-2 font-medium">Megots</th>
  <th className="px-2 py-2 font-medium">Statut</th>
  <th className="px-2 py-2 font-medium">Qualite</th>
+ <th className="px-2 py-2 font-medium">Jonction</th>
  </tr>
  </thead>
  <tbody>
@@ -457,6 +467,20 @@ export function ActionsHistoryList() {
  </div>
  ) : (
  <span className="cmm-text-caption cmm-text-muted">n/a</span>
+ )}
+ </td>
+ <td className="px-2 py-2">
+ {item.status ==="approved" && isJoinableAction(item) ? (
+ <CmmButton
+ href={buildJoinHref(item.id)}
+ tone="secondary"
+ variant="pill"
+ className="h-9 px-3 text-[10px] font-black uppercase tracking-[0.16em]"
+ >
+ Rejoindre
+ </CmmButton>
+ ) : (
+ <span className="cmm-text-caption cmm-text-muted">-</span>
  )}
  </td>
  </tr>

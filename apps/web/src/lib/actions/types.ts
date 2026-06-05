@@ -217,6 +217,9 @@ export type ActionMapItem = Pick<
   | "status"
   | "created_by_clerk_id"
 > & {
+  volunteers_count?: number | null;
+  duration_minutes?: number | null;
+  notes_plain?: string | null;
   record_type?: ActionRecordType | LegacyActionRecordType;
   source?: string;
   geometry_kind?: ActionGeometryKind | null;

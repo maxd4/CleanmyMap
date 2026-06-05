@@ -1,7 +1,7 @@
 # Méthodologie
 
 > Fiche legacy conservée pour transition. La fiche canonique est maintenant dans
-> [documentation/pages_site/routes/03-cartographie-impact/methodologie/README.md](../../03-cartographie-impact/methodologie/README.md).
+> [documentation/pages_site/routes/03-cartographie-impact/methodologie/methodologie-README.md](../../03-cartographie-impact/methodologie/methodologie-README.md).
 
 ## Fiche canonique
 
@@ -50,4 +50,4 @@
 ## Notes d'audit
 
 - Cette fiche est conservée comme alias documentaire.
-- La source de vérité canonique est la fiche du bloc [Cartographie & Impact](../../03-cartographie-impact/methodologie/README.md).
+- La source de vérité canonique est la fiche du bloc [Cartographie & Impact](../../03-cartographie-impact/methodologie/methodologie-README.md).

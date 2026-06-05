@@ -123,7 +123,7 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 pt-2">
+                  <div className="grid grid-cols-2 gap-2 pt-2 lg:grid-cols-4">
                     <CmmButton
                       href="/actions/map"
                       tone="primary"
@@ -143,6 +143,16 @@ export function HomeHero({ metrics }: HomeHeroProps) {
                     >
                       <FileText size={19} />
                       Formulaire bénévole
+                    </CmmButton>
+                    <CmmButton
+                      href="/sections/rejoindre-un-formulaire"
+                      tone="secondary"
+                      variant="pill"
+                      size="lg"
+                      className="h-[52px] w-full min-w-0 rounded-full px-4 text-[13px] font-black gap-2 whitespace-nowrap transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                    >
+                      <UsersRound size={19} />
+                      Rejoindre un formulaire
                     </CmmButton>
                     <CmmButton
                       href={EXPLORER_ROUTE}

@@ -1,4 +1,4 @@
-# Créateur du site
+# Administration avancée
 
 ## Fiche canonique
 
@@ -8,9 +8,9 @@
 - **Type fonctionnel** : administration
 - **Famille / bloc fonctionnel** : Admin & Super-admin (hors bloc)
 - **Statut** : technique
-- **Contexte nécessaire** : Compte connecté, parfois rôle technique ou de supervision
-- **Objectif utilisateur principal** : Piloter les réglages avancés, la modération et la supervision.
-- **Action principale attendue** : Consulter un panneau d'administration ou agir sur une ressource.
+- **Contexte nécessaire** : Compte connecté, profil `max` uniquement
+- **Objectif utilisateur principal** : Accéder à la sous-partie cachée de l'administration pour les arbitrages sensibles.
+- **Action principale attendue** : Consulter la console avancée ou agir sur une ressource critique.
 - **Palette attendue** : amber / brun sombre
 - **Scope** : à corriger
 - **Terminée** : non
@@ -27,7 +27,7 @@
 - Bannières techniques
 - rappels de contexte
 - textes non essentiels
-- **Bulles / cartes / contextes trop nombreux** : Les vues d'administration concentrent des panneaux, tables et actions à forte densité.
+- **Bulles / cartes / contextes trop nombreux** : Les vues d'administration concentrent des panneaux, tables et actions à forte densité. Cette sous-partie doit rester plus discrète que la page `/admin`.
 - **Composants UI concernés** :
 - Dashboards admin
 - tables
@@ -46,5 +46,5 @@
 
 ## Notes d'audit
 
-- Cette fiche est la source de vérité canonique pour la page.
+- Cette fiche est la source de vérité canonique pour la sous-partie cachée `/admin/godmode`.
 - Les dossiers legacy de `documentation/pages_site/` restent lisibles pour transition, mais ils ne sont plus la référence principale.

@@ -13,7 +13,7 @@ export function OpenDataSection() {
   return (
     <SectionShell
       id="open-data"
-      title={fr ? "Open Data & API" : "Open Data & API"}
+      title={fr ? "Données publiques et API" : "Open Data & API"}
       subtitle={fr 
         ? "Accédez aux données opérationnelles et indicateurs d'impact pour la recherche et l'innovation locale."
         : "Access operational data and impact indicators for research and local innovation."}

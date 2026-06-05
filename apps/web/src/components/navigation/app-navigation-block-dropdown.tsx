@@ -184,8 +184,8 @@ export function AppNavigationBlockDropdown({
     }
   }
 
-  function handleTrackNavigation(item: NavigationItem) {
-    onTrackNavigation(item.href, getLocalizedText(item.label, locale, item.href), space.id);
+  function handleTrackNavigation(href: string, label: string, spaceId: string | null) {
+    onTrackNavigation(href, label, spaceId);
     setIsOpen(false);
   }
 
@@ -364,7 +364,13 @@ export function AppNavigationBlockDropdown({
                             <Link
                               href={item.href}
                               aria-current={isActiveItem ? "page" : undefined}
-                              onClick={() => handleTrackNavigation(item)}
+                              onClick={() =>
+                                handleTrackNavigation(
+                                  item.href,
+                                  getLocalizedText(item.label, locale, item.href),
+                                  space.id,
+                                )
+                              }
                               className={cn(
                                 "group/item flex items-center rounded-[0.9rem] px-[0.55rem] py-[0.35rem] transition focus-visible:outline-none",
                                 NAVIGATION_DROPDOWN_ITEM_LINK_GAP_CLASS_NAME,

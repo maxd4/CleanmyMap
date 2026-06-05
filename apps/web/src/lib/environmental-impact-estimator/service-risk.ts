@@ -1,10 +1,32 @@
 import type {
   EnvironmentalImpactInfrastructureMetricEstimate,
+  EnvironmentalImpactInfrastructureServiceEstimate,
   EnvironmentalImpactInfrastructureServiceKey,
   EnvironmentalImpactSnapshotRecord,
 } from "./types";
 
 export type ServiceRiskBand = "faible" | "surveiller" | "alerte" | "critique";
+
+export type ServiceQuotaState = "ok" | "attention" | "proche limite" | "dépassé" | "NA";
+
+export type ServiceQuotaMetricSummary = {
+  key: string;
+  label: string;
+  unitLabel: string;
+  quantityPerMonth: number | null;
+  referenceMonthlyQuantity: number;
+  consumedPercent: number | null;
+  estimatedKgCo2eProxy: number | null;
+  source: EnvironmentalImpactInfrastructureMetricEstimate["source"];
+  state: ServiceQuotaState;
+  isPrimary: boolean;
+};
+
+export type ServiceQuotaSummary = {
+  state: ServiceQuotaState;
+  primaryMetric: ServiceQuotaMetricSummary | null;
+  metrics: ServiceQuotaMetricSummary[];
+};
 
 export type ServiceRiskDriverBreakdown = {
   quotaConsumedPercent: number;
@@ -46,6 +68,11 @@ export type ServiceThresholdAlert = {
   recommendedAction: string;
 };
 
+const DEVELOPMENT_AI_SERVICE_KEYS = new Set<EnvironmentalImpactInfrastructureServiceKey>([
+  "chatgpt",
+  "codex",
+]);
+
 type ServiceRiskSource = {
   key: EnvironmentalImpactInfrastructureServiceKey;
   label: string;
@@ -59,6 +86,12 @@ type ServiceRiskPreviousSource = {
   key: EnvironmentalImpactInfrastructureServiceKey;
   monthlyKgCo2eProxy: number | null;
 };
+
+export function isDevelopmentAiServiceKey(
+  serviceKey: EnvironmentalImpactInfrastructureServiceKey,
+): boolean {
+  return DEVELOPMENT_AI_SERVICE_KEYS.has(serviceKey);
+}
 
 const SERVICE_CRITICALITY_BY_KEY: Partial<
   Record<EnvironmentalImpactInfrastructureServiceKey, number>
@@ -99,6 +132,153 @@ function getRiskBand(score: number): ServiceRiskBand {
   }
 
   return "faible";
+}
+
+function getServiceQuotaState(consumedPercent: number | null): ServiceQuotaState {
+  if (consumedPercent === null || Number.isNaN(consumedPercent)) {
+    return "NA";
+  }
+
+  if (consumedPercent >= 100) {
+    return "dépassé";
+  }
+
+  if (consumedPercent >= 90) {
+    return "proche limite";
+  }
+
+  if (consumedPercent >= 70) {
+    return "attention";
+  }
+
+  return "ok";
+}
+
+export function formatServiceQuotaStateLabel(state: ServiceQuotaState): string {
+  switch (state) {
+    case "dépassé":
+      return "dépassé";
+    case "proche limite":
+      return "proche limite";
+    case "attention":
+      return "attention";
+    case "ok":
+      return "OK";
+    default:
+      return "NA";
+  }
+}
+
+function getMetricConsumedPercent(
+  metric: EnvironmentalImpactInfrastructureMetricEstimate,
+): number | null {
+  if (metric.quantityPerMonth === null || metric.referenceMonthlyQuantity <= 0) {
+    return null;
+  }
+
+  return round((metric.quantityPerMonth / metric.referenceMonthlyQuantity) * 100);
+}
+
+function compareQuotaMetrics(
+  left: ServiceQuotaMetricSummary,
+  right: ServiceQuotaMetricSummary,
+): number {
+  const leftPercent = left.consumedPercent ?? -1;
+  const rightPercent = right.consumedPercent ?? -1;
+
+  if (rightPercent !== leftPercent) {
+    return rightPercent - leftPercent;
+  }
+
+  const leftImpact = left.estimatedKgCo2eProxy ?? -1;
+  const rightImpact = right.estimatedKgCo2eProxy ?? -1;
+  if (rightImpact !== leftImpact) {
+    return rightImpact - leftImpact;
+  }
+
+  return left.label.localeCompare(right.label, "fr");
+}
+
+export function buildServiceQuotaSummary(
+  service: EnvironmentalImpactInfrastructureServiceEstimate,
+): ServiceQuotaSummary {
+  const metrics = service.metricEstimates
+    .map<ServiceQuotaMetricSummary>((metric) => {
+      const consumedPercent = getMetricConsumedPercent(metric);
+      return {
+        key: metric.key,
+        label: metric.label,
+        unitLabel: metric.unitLabel,
+        quantityPerMonth: metric.quantityPerMonth,
+        referenceMonthlyQuantity: metric.referenceMonthlyQuantity,
+        consumedPercent,
+        estimatedKgCo2eProxy: metric.estimatedKgCo2eProxy,
+        source: metric.source,
+        state: getServiceQuotaState(consumedPercent),
+        isPrimary: false,
+      };
+    })
+    .sort(compareQuotaMetrics);
+
+  const primaryMetric = metrics[0] ?? null;
+
+  return {
+    state: primaryMetric?.state ?? "NA",
+    primaryMetric:
+      primaryMetric === null
+        ? null
+        : {
+            ...primaryMetric,
+            isPrimary: true,
+          },
+    metrics: metrics.map((metric, index) => ({
+      ...metric,
+      isPrimary: index === 0,
+    })),
+  };
+}
+
+export function buildPortfolioQuotaSummary(
+  services: EnvironmentalImpactInfrastructureServiceEstimate[],
+): ServiceQuotaSummary {
+  const webQuotaServices = services.filter((service) => !isDevelopmentAiServiceKey(service.key));
+
+  const metrics = webQuotaServices
+    .flatMap((service) =>
+      service.metricEstimates.map<ServiceQuotaMetricSummary>((metric) => {
+        const consumedPercent = getMetricConsumedPercent(metric);
+        return {
+          key: `${service.key}:${metric.key}`,
+          label: metric.label,
+          unitLabel: metric.unitLabel,
+          quantityPerMonth: metric.quantityPerMonth,
+          referenceMonthlyQuantity: metric.referenceMonthlyQuantity,
+          consumedPercent,
+          estimatedKgCo2eProxy: metric.estimatedKgCo2eProxy,
+          source: metric.source,
+          state: getServiceQuotaState(consumedPercent),
+          isPrimary: false,
+        };
+      }),
+    )
+    .sort(compareQuotaMetrics);
+
+  const primaryMetric = metrics[0] ?? null;
+
+  return {
+    state: primaryMetric?.state ?? "NA",
+    primaryMetric:
+      primaryMetric === null
+        ? null
+        : {
+            ...primaryMetric,
+            isPrimary: true,
+          },
+    metrics: metrics.map((metric, index) => ({
+      ...metric,
+      isPrimary: index === 0,
+    })),
+  };
 }
 
 function getServiceCriticalityPercent(
@@ -173,32 +353,6 @@ function getGrowthPercent(
       100,
     ),
   );
-}
-
-function getServiceSummaryFromSnapshot(
-  snapshot: EnvironmentalImpactSnapshotRecord | null | undefined,
-  serviceKey: EnvironmentalImpactInfrastructureServiceKey,
-): {
-  snapshotDate: string;
-  monthLabel: string;
-  monthlyKgCo2eProxy: number;
-  sharePercent: number;
-} | null {
-  if (!snapshot) {
-    return null;
-  }
-
-  const service = snapshot.model.infrastructure.services.find((item) => item.key === serviceKey);
-  if (!service) {
-    return null;
-  }
-
-  return {
-    snapshotDate: snapshot.snapshotDate,
-    monthLabel: formatMonthLabel(snapshot.snapshotDate),
-    monthlyKgCo2eProxy: service.monthlyKgCo2eProxy ?? 0,
-    sharePercent: clamp(service.sharePercent, 0, 100),
-  };
 }
 
 function getStreakEndLabel<T>(series: T[], predicate: (item: T) => boolean): number {

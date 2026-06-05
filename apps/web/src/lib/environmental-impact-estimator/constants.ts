@@ -27,7 +27,7 @@ export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_HYPOTHESES = [
   "Les métriques absentes utilisent une charge de référence mensuelle documentée plutôt qu'une valeur nulle implicite.",
   "Le coût du domaine LWS est amorti sur la période pour matérialiser sa contribution dans la courbe temporelle.",
   "Les impacts de Vercel, Supabase et Resend sont modélisés à partir de leurs facteurs de charge dominants: pages, fonctions, requêtes, stockage, emails et bande passante.",
-  "Les conversations ChatGPT / LLM sont séparées des sessions Codex: le premier poste couvre les échanges en mode ChatGPT 5.5 étendu, le second couvre les sessions de développement assisté.",
+  "Les modèles IA de développement restent séparés des services web: GPT-5.4 mini couvre l'assistance de codage et Codex couvre les sessions de développement assisté.",
   "L'impact de Codex est calculé à partir d'un journal hebdomadaire CleanMyMap: sessions, conversations, actions outillées, tests et temps actif.",
   "Les services transverses comme Clerk, PostHog, Sentry, Upstash, Pinecone et Stripe restent séparés pour garder le calcul auditable.",
   "Les valeurs mensuelles évoluent à partir des signaux d'usage du site et d'un taux de croissance explicite lorsque les mesures réelles ne sont pas encore branchées.",
@@ -38,7 +38,7 @@ export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_NOTES = [
   "Chaque point est calculé sur la charge mensuelle courante et non sur un score global opaque.",
   "Les facteurs peuvent être remplacés plus tard par des mesures réelles sans casser le contrat de rendu.",
   "Les courbes dynamiques privilégient les derniers signaux CleanMyMap pour rester spécifiques au projet.",
-  "Les usages ChatGPT / LLM et Codex ne sont jamais fusionnés: ils restent deux postes distincts du moteur.",
+  "Les usages GPT-5.4 mini et Codex ne sont jamais fusionnés: ils restent deux postes distincts du moteur ACV.",
   "Le journal Codex hebdomadaire sert de source spécifique au projet; sans journal, le poste Codex reste explicitement signalé comme non branché plutôt que remplacé par une moyenne externe.",
 ] as const;
 
@@ -226,7 +226,7 @@ export const ENVIRONMENTAL_IMPACT_PROJECT_ANCHORS = [
   },
   {
     key: "chatgpt-llm-extended-conversations",
-    label: "Conversation LLM ChatGPT 5.5 en mode étendu",
+    label: "Conversation LLM GPT-5.4 mini en mode développement",
     description:
       "Ancrage de travail pour environ 2 heures de conversation LLM par semaine, distinct du journal Codex.",
     kWhEquivalent: 1,
@@ -360,7 +360,7 @@ export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_METRIC_DEFINITIONS = [
   },
   {
     key: "chatgptConversationHours",
-    label: "ChatGPT 5.5 - conversations LLM",
+    label: "GPT-5.4 mini - conversations LLM",
     unitLabel: "heures / mois",
     proxyKgCo2ePerUnit: 0.12,
     referenceMonthlyQuantity: 8.6666666667,
@@ -524,18 +524,18 @@ export const ENVIRONMENTAL_IMPACT_INFRASTRUCTURE_SERVICE_DEFINITIONS = [
   },
   {
     key: "chatgpt",
-    label: "ChatGPT 5.5 / LLM",
-    description: "Conversations LLM assistées en mode étendu, séparées des sessions Codex.",
+    label: "GPT-5.4 mini — développement du site",
+    description: "Modèle IA utilisé pendant le développement CleanMyMap, séparé des services web de production.",
     sourceNote:
-      "Ancré à 2h de conversation par semaine en mode ChatGPT 5.5 étendu tant qu'aucun journal plus fin n'est branché.",
+      "Inclus ACV, hors production et hors quotas web tant qu'aucune utilisation IA de production n'est documentée.",
     basis: "monthly",
     metricKeys: ["chatgptConversationHours"],
   },
   {
     key: "codex",
-    label: "Codex / ChatGPT Plus",
-    description: "Sessions Codex liées au développement CleanMyMap, avec journal hebdomadaire de semaine à semaine.",
-    sourceNote: "Journal hebdomadaire spécifique au projet, sans moyenne externe ni calcul implicite.",
+    label: "Codex — développement du site",
+    description: "Sessions de développement assisté CleanMyMap, séparées des services web de production.",
+    sourceNote: "Inclus ACV, hors production et hors quotas web; journal hebdomadaire spécifique au projet.",
     basis: "monthly",
     metricKeys: [
       "codexSessions",

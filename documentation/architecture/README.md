@@ -24,6 +24,7 @@ Documentation d'architecture pour agents IA.
 - **modules-cles-et-dependances.md** - Modules et dépendances
 - **section-ownership-boundaries.md** - Frontieres `app` / registry / UI pour les rubriques
 - **rubrique-placement-guide.md** - Guide de placement concret pour les développeurs
+- **methodologie-fonctionnement-site.md** - Fonctionnement technique du site et quotas gratuits de référence
 - **traceability-matrix.md** - Rattachement code/doc
 - **migrations-techniques.md** - Migrations techniques
 - **monolith-split-plan.md** - Plan de découpage monolithe

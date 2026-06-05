@@ -32,7 +32,7 @@ export function StepJournal({ workflow }: StepJournalProps) {
   {new Date(entry.at).toLocaleString(fr ? "fr-FR" : "en-GB")}
   </span>{""}
   <span
-    className={`font-semibold ${entry.outcome ==="success" ?"text-emerald-700" :"text-rose-700"}`}
+    className={`font-semibold ${entry.outcome ==="success" ?"text-emerald-700" :"text-red-700"}`}
   >
   {entry.outcome ==="success" ? (fr ? "OK" : "OK") : (fr ? "ERREUR" : "ERROR")}
   </span>{""}
@@ -57,7 +57,7 @@ export function StepJournal({ workflow }: StepJournalProps) {
   <p className="mt-2 cmm-text-caption cmm-text-muted">{fr ? "Chargement..." : "Loading..."}</p>
   ) : null}
   {workflow.auditError ? (
-  <p className="mt-2 cmm-text-caption text-rose-700">{fr ? "Audit indisponible." : "Audit unavailable."}</p>
+  <p className="mt-2 cmm-text-caption text-red-700">{fr ? "Audit indisponible." : "Audit unavailable."}</p>
   ) : null}
   {!workflow.auditLoading && !workflow.auditError ? (
   <ul className="mt-2 space-y-2">
@@ -70,7 +70,7 @@ export function StepJournal({ workflow }: StepJournalProps) {
   {new Date(entry.at).toLocaleString(fr ? "fr-FR" : "en-GB")}
   </span>{""}
   <span
-    className={`font-semibold ${entry.outcome ==="success" ?"text-emerald-700" :"text-rose-700"}`}
+    className={`font-semibold ${entry.outcome ==="success" ?"text-emerald-700" :"text-red-700"}`}
   >
   {entry.outcome ==="success" ? (fr ? "OK" : "OK") : (fr ? "ERREUR" : "ERROR")}
   </span>{""}

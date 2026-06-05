@@ -182,7 +182,7 @@ describe("environmental impact estimator", () => {
     expect(model.methodology.projectAnchors[0].kWhEquivalent).toBe(100);
     expect(model.methodology.projectAnchors[1].comparisonNote).toContain("ordre de grandeur");
     expect(
-      model.methodology.projectAnchors.some((anchor) => anchor.label.includes("ChatGPT 5.5")),
+      model.methodology.projectAnchors.some((anchor) => anchor.label.includes("GPT-5.4 mini")),
     ).toBe(true);
     expect(model.lifecycle.totalKgCo2eProxy).toBe(model.infrastructure.totalKgCo2eProxy);
     expect(model.lifecycle.axisEstimates).toHaveLength(5);
@@ -198,7 +198,7 @@ describe("environmental impact estimator", () => {
 
     expect(chatgpt?.status).toBe("derived");
     expect(chatgpt?.monthlyKgCo2eProxy).toBeGreaterThan(0);
-    expect(chatgpt?.sourceNote).toContain("2h de conversation par semaine");
+    expect(chatgpt?.sourceNote).toContain("Inclus ACV");
   });
 
   it("includes Codex weekly journal metrics as a separate infrastructure service", () => {
@@ -264,10 +264,10 @@ describe("environmental impact estimator", () => {
     expect(codex?.status).toBe("derived");
     expect(codex?.monthlyKgCo2eProxy).toBeGreaterThan(0);
     expect(codex?.metricEstimates.every((metric) => metric.source === "derived")).toBe(true);
-    expect(codex?.sourceNote).toContain("Journal hebdomadaire");
+    expect(codex?.sourceNote).toContain("journal hebdomadaire");
     expect(chatgpt?.status).toBe("derived");
     expect(chatgpt?.monthlyKgCo2eProxy).toBeGreaterThan(0);
-    expect(chatgpt?.sourceNote).toContain("2h de conversation par semaine");
+    expect(chatgpt?.sourceNote).toContain("Inclus ACV");
   });
 
   it("surfaces invalid negative inputs through validation", () => {

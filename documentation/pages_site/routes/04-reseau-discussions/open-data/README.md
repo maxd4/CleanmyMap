@@ -1,4 +1,4 @@
-# Open data
+# Données publiques
 
 ## Fiche canonique
 
@@ -9,8 +9,8 @@
 - **Famille / bloc fonctionnel** : Réseau & Discussions (bloc)
 - **Statut** : protégé
 - **Contexte nécessaire** : Compte connecté, parfois rôle ou profil spécifique
-- **Objectif utilisateur principal** : Faire circuler l'information et faciliter les échanges entre acteurs.
-- **Action principale attendue** : Lire, contacter ou rejoindre une discussion / un réseau.
+- **Objectif utilisateur principal** : Faire circuler l'information publique et faciliter la réutilisation des données.
+- **Action principale attendue** : Consulter, exporter ou réutiliser des jeux de données et des API.
 - **Palette attendue** : pink
 - **Scope** : à corriger
 - **Terminée** : non

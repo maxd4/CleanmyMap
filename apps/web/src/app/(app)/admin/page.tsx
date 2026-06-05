@@ -1,49 +1,50 @@
-import {
-  ShieldCheck,
-  FileSearch,
-  Settings,
-  AlertTriangle,
-  Zap,
-  HardDrive,
-  Database,
-  Link2,
-} from "lucide-react";
 import type { Metadata } from "next";
-import { BusinessAlertsPanel } from "@/components/dashboard/business-alerts-panel";
-import { CreatorInboxPanel } from "@/components/admin/creator-inbox-panel";
-import { RoleManagementPanel } from "@/components/admin/role-management-panel";
-import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
+import {
+  Activity,
+  AlertTriangle,
+  Database,
+  Download,
+  HardDrive,
+  Inbox,
+  Settings,
+  ShieldCheck,
+  Trash2,
+} from "lucide-react";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
-import { ReferralAdminTabs } from "@/components/gamification/referral-admin-tabs";
-
-import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
-import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
+import { AdminCreatorConsole } from "@/components/admin/admin-creator-console";
 import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { PageHeader, PageHeaderBadge } from "@/components/ui/page-header";
-import { RubriquePdfExportButton } from "@/components/ui/rubrique-pdf-export-button";
-import { listAdminOperationAudit } from "@/lib/admin/operation-audit";
-import { listManagedRoleAccounts } from "@/lib/admin/role-management";
-import { getCurrentUserRoleLabel } from "@/lib/authz";
-import { loadCreatorInboxItems } from "@/lib/community/creator-inbox-loader";
-import { loadPilotageOverview } from "@/lib/pilotage/overview";
-import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
-import { isAdminLikeProfile } from "@/lib/profiles";
-import { getProfilePrimaryAction, toProfile } from "@/lib/profiles";
-import { getServerLocale } from "@/lib/server-preferences";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
-import { cn } from "@/lib/utils";
 import {
-  NavigationGrid,
-  type NavigationGridItem,
-} from "@/components/ui/navigation-grid";
-import { SectionShell } from "@/components/sections/rubriques/shared";
-import { RubriqueCard } from "@/components/ui/rubrique-card";
+  AdminActionGrid,
+  AdminHeroStrip,
+  AdminInfoBanner,
+  AdminMetricGrid,
+  AdminPillLink,
+  AdminProfileSwitchStrip,
+  AdminSectionHeader,
+} from "@/components/admin/admin-dashboard-ui";
+import { getCurrentUserIdentity, getCurrentUserRoleLabel } from "@/lib/authz";
 import { getSafeAuthSession } from "@/lib/auth/safe-session";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
+import { loadCreatorInboxItems } from "@/lib/community/creator-inbox-loader";
+import { listAdminOperationAudit } from "@/lib/admin/operation-audit";
+import { listPublishedPartnerAnnuaireEntries } from "@/lib/partners/published-annuaire-entries-store";
+import {
+  getProfileLabel,
+  getProfilePrimaryAction,
+  getSwitchableProfiles,
+  isAdminLikeProfile,
+  toProfile,
+} from "@/lib/profiles";
+import { getServerLocale } from "@/lib/server-preferences";
+import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { buildProfileRoute, ADMIN_GODMODE_ROUTE } from "@/lib/accueil-pilotage-routes";
 import { resolvePageFamily } from "@/lib/ui/page-families";
+import { loadPilotageOverview, type DecisionSummaryKpi } from "@/lib/pilotage/overview";
+import { resolvePublicContactEmail } from "@/lib/email-config";
 
 export const metadata: Metadata = {
-  title: "Administration du site - CleanMyMap",
+  title: "Administration - CleanMyMap",
   description:
     "Back-office du site pour gérer les utilisateurs, la modération et les demandes.",
 };
@@ -57,6 +58,12 @@ async function loadAdminOverview() {
   });
 }
 
+function getForecastLabel(kpi: DecisionSummaryKpi): string {
+  if (kpi.id === "impact") return "Prévision prochaine : stabilisation";
+  if (kpi.id === "mobilization") return "Prévision prochaine : consolidation";
+  return "Prévision prochaine : vigilance renforcée";
+}
+
 export default async function AdminPage() {
   const { userId, clerkReachable } = await getSafeAuthSession();
   const locale = await getServerLocale();
@@ -66,10 +73,10 @@ export default async function AdminPage() {
       <ClerkRequiredGate
         isAuthenticated={false}
         mode="blur"
-        title="Administration du site"
+        title="Administration"
         description="Accès réservé aux comptes Clerk autorisés."
         lockedPreview={
-          <div className="grid gap-6 md:grid-cols-3 rounded-[3rem] border border-stone-400/18 p-8 bg-[rgba(44,28,15,0.40)] backdrop-blur-2xl">
+          <div className="grid gap-6 rounded-[3rem] border border-stone-400/18 bg-[linear-gradient(145deg,rgba(36,24,16,0.94)_0%,rgba(94,58,29,0.88)_58%,rgba(245,158,11,0.22)_100%)] p-8 shadow-[0_24px_56px_-34px_rgba(69,45,28,0.36)] md:grid-cols-3">
             {[
               {
                 label: "Supervision",
@@ -83,15 +90,15 @@ export default async function AdminPage() {
                 label: "Export",
                 desc: "Les livrables d'administration nécessitent un compte autorisé.",
               },
-            ].map((item, i) => (
+            ].map((item) => (
               <article
-                key={i}
-                className="rounded-[2rem] border border-white/5 bg-white/5 p-8"
+                key={item.label}
+                className="rounded-[2rem] border border-white/8 bg-white/[0.06] p-6"
               >
-                <p className="text-[10px] font-black uppercase tracking-widest text-amber-400/60">
+                <p className="text-[10px] font-black uppercase tracking-[0.22em] text-amber-100/72">
                   {item.label}
                 </p>
-                <p className="mt-3 text-sm text-amber-100/40 leading-relaxed">
+                <p className="mt-3 text-sm leading-relaxed text-amber-50/72">
                   {item.desc}
                 </p>
               </article>
@@ -104,67 +111,75 @@ export default async function AdminPage() {
     );
   }
 
-  const accountCompletion = userId
-    ? await loadAccountCompletionGateState({ userId, clerkReachable }).catch(
-        () => null,
-      )
-    : null;
+  const accountCompletion = await loadAccountCompletionGateState({
+    userId,
+    clerkReachable,
+  }).catch(() => null);
+
   const role = await getCurrentUserRoleLabel();
   const profile = toProfile(role);
   const primaryAction = getProfilePrimaryAction(profile);
   const pageFamily = resolvePageFamily("/admin");
+  const contactEmail = resolvePublicContactEmail() ?? "contact@cleanmymap.fr";
+  const creatorIdentity =
+    role === "max"
+      ? await getCurrentUserIdentity().catch(() => null)
+      : null;
+  const creatorDisplayName =
+    creatorIdentity?.displayName?.trim() ||
+    creatorIdentity?.firstName?.trim() ||
+    creatorIdentity?.username ||
+    creatorIdentity?.handle ||
+    "Administration avancée";
 
   if (!isAdminLikeProfile(profile)) {
     return (
-      <div className="p-12">
-        <RubriqueCard
-          themeColor="amber"
-          withTopBar={false}
-          className="p-12 text-center"
-        >
-          <div className="inline-flex p-4 rounded-3xl bg-amber-400/10 text-amber-400 mb-6">
-            <ShieldCheck size={32} />
-          </div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-400/60">
-            Accès Restreint
-          </p>
-          <h2 className="mt-4 text-4xl font-black tracking-tight text-white">
-            Privilèges d'administration du site requis
-          </h2>
-          <p className="mt-4 text-sm text-amber-100/40 max-w-md mx-auto leading-relaxed">
-            Votre compte actuel ne dispose pas des autorisations nécessaires
-            pour accéder au pilotage système. Contactez un administrateur Clerk.
-          </p>
-        </RubriqueCard>
+      <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(255,249,243,0.98)_0%,_rgba(246,239,228,0.96)_48%,_rgba(238,231,219,0.98)_100%)] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          <PageHeader
+            family={pageFamily}
+            eyebrow="Espace administratif"
+            title="Mon espace"
+            subtitle="Cockpit opérationnel de l'administration."
+            badges={
+              <>
+                <PageHeaderBadge family={pageFamily}>
+                  Console verrouillée
+                </PageHeaderBadge>
+                <PageHeaderBadge family={pageFamily} muted>
+                  Accès restreint
+                </PageHeaderBadge>
+              </>
+            }
+            action={
+              <AdminPillLink href="/sign-in">
+                Se connecter
+              </AdminPillLink>
+            }
+            className="max-w-none w-full"
+          />
+
+          <AdminInfoBanner
+            eyebrow="Accès restreint"
+            title="Privilèges d'administration requis"
+            description="Votre compte actuel ne dispose pas des autorisations nécessaires pour accéder au pilotage système. Contactez un administrateur Clerk."
+            icon={ShieldCheck}
+            tone="light"
+            action={<AdminPillLink href="/sign-in">Se connecter</AdminPillLink>}
+            className="mt-8"
+          />
+        </div>
       </div>
     );
   }
 
-  const [
-    overview,
-    creatorInboxItems,
-    roleAccounts,
-    publishedEntries,
-    adminAudit,
-    referralLineageProfilesResult,
-  ] = await Promise.all([
-    loadAdminOverview().catch(() => null),
-    profile === "max"
-      ? loadCreatorInboxItems().catch(() => [])
-      : Promise.resolve([]),
-    profile === "max"
-      ? listManagedRoleAccounts().catch(() => [])
-      : Promise.resolve([]),
-    listPublishedPartnerAnnuaireEntries().catch(() => []),
-    listAdminOperationAudit(25).catch(() => []),
-    getSupabaseServerClient()
-      .from("profiles")
-      .select(
-        "id, display_name, referral_code, referred_by_profile_id, referred_at, created_at",
-      )
-      .order("display_name", { ascending: true }),
-  ]);
-  const referralLineageProfiles = referralLineageProfilesResult.data ?? [];
+  const [overview, creatorInboxItems, publishedEntries, adminAudit] =
+    await Promise.all([
+      loadAdminOverview().catch(() => null),
+      loadCreatorInboxItems().catch(() => []),
+      listPublishedPartnerAnnuaireEntries().catch(() => []),
+      listAdminOperationAudit(25).catch(() => []),
+    ]);
 
   const onboardingStatus = {
     pending: creatorInboxItems.filter(
@@ -175,9 +190,6 @@ export default async function AdminPage() {
     accepted: creatorInboxItems.filter(
       (item) => item.source === "partner" && item.sourceStatus === "accepted",
     ).length,
-    rejected: creatorInboxItems.filter(
-      (item) => item.source === "partner" && item.sourceStatus === "rejected",
-    ).length,
   };
 
   const publicationStatus = {
@@ -187,372 +199,349 @@ export default async function AdminPage() {
     accepted: publishedEntries.filter(
       (item) => item.publicationStatus === "accepted",
     ).length,
-    rejected: publishedEntries.filter(
-      (item) => item.publicationStatus === "rejected",
-    ).length,
   };
 
   const moderationAudit = {
     success: adminAudit.filter((item) => item.outcome === "success").length,
     error: adminAudit.filter((item) => item.outcome === "error").length,
   };
-  const adminPdfData = {
-    title: "Rapport administration CleanMyMap",
-    summary: [
-      "Synthèse des flux administratifs visibles sur la console.",
-      `Rôle actif: ${profile}.`,
-      overview
-        ? `Fenêtre pilotage: ${overview.periodDays} jours, générée le ${new Date(overview.generatedAt).toLocaleString("fr-FR")}.`
-        : "Indicateurs pilotage indisponibles au moment de l'export.",
-    ],
-    stats: [
-      {
-        label: "Onboarding partenaires en attente",
-        value: onboardingStatus.pending,
-      },
-      {
-        label: "Publications annuaire en attente",
-        value: publicationStatus.pending,
-      },
-      { label: "Opérations admin réussies", value: moderationAudit.success },
-      { label: "Opérations admin en erreur", value: moderationAudit.error },
-      ...(overview
-        ? overview.summary.kpis.map((kpi) => ({
-            label: kpi.label,
-            value: kpi.value,
-            detail: `N-1 ${kpi.previousValue}, delta ${kpi.deltaAbsolute}`,
-          }))
-        : []),
-    ],
-    rows: adminAudit.slice(0, 25).map((item) => ({
-      Date: item.at,
-      Action: item.operationType,
-      Cible: item.targetId ?? "n/a",
-      Résultat: item.outcome,
-    })),
-    columns: [
-      { key: "Date", label: "Date" },
-      { key: "Action", label: "Action" },
-      { key: "Cible", label: "Cible" },
-      { key: "Résultat", label: "Résultat" },
-    ],
-    ...(overview ? { generatedAt: overview.generatedAt } : {}),
-  };
 
-  const navigationItems: NavigationGridItem[] = [
+  const summaryKpis: DecisionSummaryKpi[] = (
+    overview?.summary.kpis ?? [
+      {
+        id: "mobilization",
+        label: "Actions validées",
+        value: `${moderationAudit.success}`,
+        previousValue: "—",
+        deltaAbsolute: "—",
+        deltaPercent: "—",
+        interpretation: "positive",
+      },
+      {
+        id: "quality",
+        label: "Qualité data",
+        value: `${Math.max(
+          0,
+          100 - (publicationStatus.pending + onboardingStatus.pending) * 4,
+        )}/100`,
+        previousValue: "—",
+        deltaAbsolute: "—",
+        deltaPercent: "—",
+        interpretation: "neutral",
+      },
+    ]
+  ).filter((kpi) => kpi.id !== "impact");
+
+  const fallbackRecommendedAction = {
+    href: primaryAction.href,
+    label: primaryAction.label[locale],
+  };
+  const recommendedAction =
+    overview?.summary.recommendedAction ?? fallbackRecommendedAction;
+  const alertTitle =
+    overview?.summary.alert.title ?? "Qualité des données à renforcer";
+  const alertDetail =
+    overview?.summary.alert.detail ??
+    "La qualité de la geo-ouverture conditionne le lecteur KPI et les rapports institutionnels.";
+  const switchableProfiles = getSwitchableProfiles(profile);
+  const profileLink = buildProfileRoute(profile);
+  const profileCountLabel =
+    switchableProfiles.length > 1
+      ? `${switchableProfiles.length} profils`
+      : "Profil actif";
+
+  const metricCards = summaryKpis.map((kpi) => ({
+    id: kpi.id,
+    label: kpi.label,
+    value: kpi.value,
+    previousValue: kpi.previousValue,
+    deltaPercent: kpi.deltaPercent,
+    interpretation: kpi.interpretation,
+    forecastLabel: getForecastLabel(kpi),
+  }));
+
+  const actionTiles = [
     {
-      icon: ShieldCheck,
-      title: "Gouvernance",
-      desc: "Décisions et statuts clés.",
-      iconBg: "bg-amber-500/10",
-      iconColor: "text-amber-400",
-      accent: "from-amber-600/10 to-stone-900/20",
-      ring: "ring-amber-500/20",
-      dot: "bg-amber-400",
-      href: "#governance",
-    },
-    {
-      icon: AlertTriangle,
-      title: "Alertes",
-      desc: "Écarts à traiter rapidement.",
-      iconBg: "bg-orange-500/10",
-      iconColor: "text-orange-400",
-      accent: "from-orange-600/10 to-stone-900/20",
-      ring: "ring-orange-500/20",
-      dot: "bg-orange-400",
-      href: "#alerts",
-    },
-    {
-      icon: FileSearch,
-      title: "Modération",
-      desc: "Validation des actions et preuves.",
-      iconBg: "bg-amber-500/10",
-      iconColor: "text-amber-300",
-      accent: "from-amber-700/10 to-stone-900/20",
-      ring: "ring-amber-500/20",
-      dot: "bg-amber-300",
-      href: "#moderation",
-    },
-    {
-      icon: Settings,
-      title: "Services",
-      desc: "État des API et de l'infrastructure.",
-      iconBg: "bg-stone-500/10",
-      iconColor: "text-stone-400",
-      accent: "from-stone-600/10 to-stone-950/20",
-      ring: "ring-stone-500/20",
-      dot: "bg-stone-400",
-      href: "/admin/services",
-    },
-    {
-      icon: Zap,
-      title: "Journal Codex",
-      desc: "Saisie hebdomadaire de l'usage IA et historique projet.",
-      iconBg: "bg-amber-500/10",
-      iconColor: "text-amber-400",
-      accent: "from-amber-600/10 to-stone-900/20",
-      ring: "ring-amber-500/20",
-      dot: "bg-amber-400",
-      href: "/admin/services#codex-usage",
-    },
-    {
-      icon: HardDrive,
-      title: "Stockage",
-      desc: "Quota Supabase, usage et croissance mensuelle.",
-      iconBg: "bg-orange-500/10",
-      iconColor: "text-orange-400",
-      accent: "from-orange-600/10 to-stone-900/20",
-      ring: "ring-orange-500/20",
-      dot: "bg-orange-400",
-      href: "/admin/services#storage",
-    },
-    {
-      icon: Database,
-      title: "Plans gratuits",
-      desc: "Vercel, Resend, Clerk et autres proxys mensuels.",
-      iconBg: "bg-stone-500/10",
-      iconColor: "text-stone-300",
-      accent: "from-stone-600/10 to-stone-900/20",
-      ring: "ring-stone-500/20",
-      dot: "bg-stone-300",
-      href: "/admin/services#free-plans",
-    },
-    {
-      icon: FileSearch,
-      title: "Rapport mensuel",
-      desc: "PDF central de gouvernance et archive publique.",
-      iconBg: "bg-amber-500/10",
-      iconColor: "text-amber-400",
-      accent: "from-amber-600/10 to-stone-900/20",
-      ring: "ring-amber-500/20",
-      dot: "bg-amber-400",
+      id: "creator-inbox",
+      icon: Inbox,
+      title: "Inbox créateur",
+      description:
+        onboardingStatus.pending > 0
+          ? `${onboardingStatus.pending} demandes prioritaires à traiter.`
+          : "Aucune demande prioritaire en attente.",
       href: "/admin/services#governance-report",
+      badge: "Prioritaire",
     },
     {
-      icon: Database,
-      title: "Impact CO2e",
-      desc: "Capture manuelle et historique environnemental.",
-      iconBg: "bg-orange-500/10",
-      iconColor: "text-orange-300",
-      accent: "from-orange-600/10 to-stone-900/20",
-      ring: "ring-orange-500/20",
-      dot: "bg-orange-300",
-      href: "/admin/services#environmental-impact",
+      id: "export-data",
+      icon: Download,
+      title: "Exporter les données",
+      description:
+        publishedEntries.length > 0
+          ? `${publishedEntries.length} entrées visibles dans l'annuaire.`
+          : "Suivre les exports et les journaux.",
+      href: "/admin/services#governance-report",
+      badge: "Rapide",
     },
     {
-      icon: Link2,
-      title: "Filiation",
-      desc: "Exports des liens de parrainage et relations.",
-      iconBg: "bg-amber-500/10",
-      iconColor: "text-amber-300",
-      accent: "from-amber-600/10 to-stone-900/20",
-      ring: "ring-amber-500/20",
-      dot: "bg-amber-300",
-      href: "#filiation",
+      id: "system-control",
+      icon: Activity,
+      title: "Contrôle système",
+      description:
+        moderationAudit.error > 0
+          ? `${moderationAudit.error} incidents techniques à inspecter.`
+          : "Ouvrir l'arbitrage et les outils sensibles.",
+      href: ADMIN_GODMODE_ROUTE,
+      badge: "Rapide",
     },
   ];
 
+  const quickAccessTiles = [
+    {
+      id: "declare-action",
+      icon: Activity,
+      title: "Déclarer une action",
+      description: "Enregistrer une intervention terrain.",
+      href: "/actions/new",
+      badge: "Rapide",
+      iconWrapClassName: "bg-amber-100 text-amber-700 border-amber-200/60",
+      iconClassName: "text-amber-700",
+    },
+    {
+      id: "manage-data",
+      icon: Database,
+      title: "Gérer les données",
+      description: "Valider, corriger, enrichir.",
+      href: "/actions/history",
+      badge: "Rapide",
+      iconWrapClassName: "bg-emerald-100 text-emerald-700 border-emerald-200/60",
+      iconClassName: "text-emerald-700",
+    },
+    {
+      id: "traceability",
+      icon: ShieldCheck,
+      title: "Renforcer traçabilité",
+      description: "Qualité data en baisse.",
+      href: "/admin/services#governance-report",
+      badge: "Rapide",
+      iconWrapClassName: "bg-violet-100 text-violet-700 border-violet-200/60",
+      iconClassName: "text-violet-700",
+    },
+    {
+      id: "site-health",
+      icon: HardDrive,
+      title: "Santé du site",
+      description: "Contrôler les flux et l'état général.",
+      href: "/admin/services",
+      badge: "Rapide",
+      iconWrapClassName: "bg-sky-100 text-sky-700 border-sky-200/60",
+      iconClassName: "text-sky-700",
+    },
+  ];
+
+  const privacyTiles = [
+    {
+      id: "account-settings",
+      icon: Settings,
+      title: "Paramètres du compte",
+      description: "Gérer vos préférences et vos données.",
+      href: "/reglages",
+      badge: "Accès",
+      iconWrapClassName: "bg-amber-100 text-amber-700 border-amber-200/60",
+      iconClassName: "text-amber-700",
+    },
+    {
+      id: "privacy",
+      icon: ShieldCheck,
+      title: "Confidentialité",
+      description: "Gérez comment vos données sont utilisées et partagées.",
+      href: "/politique-confidentialite",
+      badge: "Protection",
+      iconWrapClassName: "bg-emerald-100 text-emerald-700 border-emerald-200/60",
+      iconClassName: "text-emerald-700",
+    },
+    {
+      id: "delete-account",
+      icon: Trash2,
+      title: "Suppression du compte",
+      description: "Vous pouvez supprimer votre compte à tout moment.",
+      href: `mailto:${contactEmail}?subject=${encodeURIComponent(
+        "Demande RGPD - Suppression de compte",
+      )}`,
+      badge: "Urgent",
+      iconWrapClassName: "bg-rose-100 text-rose-700 border-rose-200/60",
+      iconClassName: "text-rose-700",
+    },
+  ];
+
+  const systemChips = ["Classement global", "Niveau utilisateur"];
+
   return (
     <AccountCompletionGate state={accountCompletion}>
-      <SectionShell
-        id="admin"
-        hideHeader
-        gradient="from-amber-700/20 via-stone-500/10 to-transparent"
-      >
-        <div className="space-y-20 pt-8">
-          <PageHeader
-            family={pageFamily}
-            eyebrow="Back-office central"
-            title="Administration du site"
-            subtitle="Console centrale pour la supervision des flux, la modération et la gestion des privilèges."
-            badges={
-              <>
-                <PageHeaderBadge family={pageFamily}>
-                  <Zap size={12} className="mr-2 inline-block align-[-2px]" />
-                  Console active
-                </PageHeaderBadge>
-                <PageHeaderBadge family={pageFamily} muted>
-                  Rôle: {role}
-                </PageHeaderBadge>
-              </>
-            }
+      <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(ellipse_at_top,_rgba(255,249,243,0.98)_0%,_rgba(248,239,228,0.95)_45%,_rgba(239,231,220,0.98)_100%)] text-stone-950">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-x-0 top-0 h-44 bg-[linear-gradient(180deg,rgba(32,28,39,0.94)_0%,rgba(32,28,39,0.8)_62%,rgba(32,28,39,0)_100%)]" />
+          <div className="absolute -left-24 top-24 h-96 w-96 rounded-full bg-amber-300/22 blur-2xl" />
+          <div className="absolute right-0 top-40 h-[30rem] w-[30rem] rounded-full bg-stone-200/22 blur-2xl" />
+          <div className="absolute bottom-0 left-1/2 h-[24rem] w-[28rem] -translate-x-1/2 rounded-full bg-white/30 blur-2xl" />
+        </div>
+
+        <div className="relative mx-auto max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <AdminHeroStrip
+            icon={ShieldCheck}
+            eyebrow="Espace administratif"
+            description="Supervision système et modération critique."
+            accessLabel="Accès administration"
             action={
-              <RubriquePdfExportButton
-                rubrique="administration-du-site"
-                periode={`30_jours_${new Date().getFullYear()}`}
-                organizationType="admin"
-                defaultTitle="Rapport administration du site"
-                data={adminPdfData}
-                className="w-full max-w-xl"
-              />
+              <AdminPillLink href={profileLink} subdued>
+                Voir profil
+              </AdminPillLink>
             }
-            className="max-w-5xl"
           />
 
-          {/* Résumé Décisionnel (ThirtySecondsSummary) */}
-          {overview && (
-            <ThirtySecondsSummary
-              kpis={overview.summary.kpis}
-              alert={overview.summary.alert}
-              recommendedAction={{
-                href:
-                  overview.summary.recommendedAction.href ?? primaryAction.href,
-                label:
-                  overview.summary.recommendedAction.label ??
-                  primaryAction.label[locale],
-              }}
-              recommendedReason={overview.summary.recommendedAction.reason}
+          <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_auto] xl:items-end">
+            <PageHeader
+              family={pageFamily}
+              eyebrow="Espace administratif"
+              title="Mon espace"
+              subtitle="Cockpit opérationnel de l'administration."
+              badges={
+                <>
+                  <PageHeaderBadge family={pageFamily}>
+                    Console active
+                  </PageHeaderBadge>
+                  <PageHeaderBadge family={pageFamily} muted>
+                    Rôle: {role}
+                  </PageHeaderBadge>
+                </>
+              }
+              action={
+                <AdminPillLink href={profileLink}>
+                  Voir profil
+                </AdminPillLink>
+              }
+              className="max-w-none w-full"
             />
-          )}
-
-          {/* Navigation Grid Premium */}
-          <RubriqueCard
-            themeColor="amber"
-            withTopBar={true}
-            topBarContent="Administration du site"
-            className="p-12"
-          >
-            <NavigationGrid
-              items={navigationItems}
-              columns={{ default: 1, sm: 2, md: 4, xl: 5 }}
-            />
-          </RubriqueCard>
-
-          <div id="filiation" className="space-y-12">
-            <RubriqueCard
-              themeColor="amber"
-              withTopBar={true}
-              topBarContent="Parrainage et filiation"
-              className="p-12"
-            >
-              <ReferralAdminTabs profiles={referralLineageProfiles} />
-            </RubriqueCard>
           </div>
 
-          {profile === "max" && (
-            <>
-              <RubriqueCard
-                themeColor="amber"
-                withTopBar={true}
-                topBarContent="Accès privilégié"
-                className="p-12"
-              >
-                <div className="mb-10">
-                  <h2 className="text-4xl font-black tracking-tight text-white mt-2">
-                    Demandes de collaboration
-                  </h2>
-                  <p className="mt-4 text-sm text-amber-100/40 max-w-2xl leading-relaxed">
-                    Supervision des flux entrants : promotion, événements et
-                    partenariats stratégiques.
-                  </p>
-                </div>
-                <CreatorInboxPanel initialItems={creatorInboxItems} />
-              </RubriqueCard>
+          <AdminInfoBanner
+            eyebrow="Alerte"
+            title={alertTitle}
+            description={alertDetail}
+            icon={AlertTriangle}
+            tone="light"
+            action={
+              <AdminPillLink href={recommendedAction.href}>
+                {recommendedAction.label}
+              </AdminPillLink>
+            }
+            className="mt-8"
+          />
 
-              <RubriqueCard
-                themeColor="amber"
-                withTopBar={true}
-                topBarContent="Gestion des rôles"
-                className="p-12"
-              >
-                <div className="mb-10">
-                  <h2 className="text-4xl font-black tracking-tight text-white mt-2">
-                    Comptes et rôles
-                  </h2>
-                </div>
-                <RoleManagementPanel
-                  initialAccounts={roleAccounts}
-                  currentUserId={userId}
-                />
-              </RubriqueCard>
-            </>
-          )}
+          <AdminMetricGrid items={metricCards} className="mt-8 lg:grid-cols-2" />
 
-          <div id="governance" className="space-y-12">
-            <RubriqueCard
-              themeColor="amber"
-              withTopBar={true}
-              topBarContent="Governance Monitor"
-              className="p-12"
-            >
-              <div className="grid gap-8 md:grid-cols-3">
-                {[
-                  {
-                    title: "Onboarding Partenaires",
-                    stats: onboardingStatus,
-                    color: "text-amber-400",
-                  },
-                  {
-                    title: "Publication Annuaire",
-                    stats: publicationStatus,
-                    color: "text-orange-400",
-                  },
-                  {
-                    title: "Audit Opérations",
-                    stats: moderationAudit,
-                    color: "text-amber-400",
-                  },
-                ].map((panel, idx) => (
-                  <article
-                    key={idx}
-                    className="rounded-[2.5rem] border border-white/5 bg-white/5 p-8 group hover:bg-white/[0.08] transition-all duration-500"
-                  >
-                    <h3
-                      className={cn(
-                        "text-sm font-black uppercase tracking-widest mb-6",
-                        panel.color,
-                      )}
+          <section className="mt-10">
+            <AdminSectionHeader
+              eyebrow="À faire maintenant"
+              description="Les actions prioritaires restent accessibles depuis les sous-rubriques dédiées."
+              action={
+                <AdminPillLink href="/admin/services">
+                  Voir toutes les actions
+                </AdminPillLink>
+              }
+            />
+
+            <AdminActionGrid items={actionTiles} className="mt-4" />
+          </section>
+
+          <section className="mt-10">
+            <AdminSectionHeader
+              eyebrow="Accès rapides"
+              description="Les raccourcis de la console restent triés par usage courant."
+            />
+
+            <AdminActionGrid
+              items={quickAccessTiles}
+              compact
+              className="mt-4"
+            />
+          </section>
+
+          <section className="mt-10 rounded-[2rem] border border-stone-200/80 bg-white/76 p-5 shadow-[0_16px_40px_-32px_rgba(69,45,28,0.26)] backdrop-blur-sm">
+            <AdminSectionHeader
+              eyebrow="Confidentialité & compte"
+              description="Les accès sensibles et les options de compte sont centralisés ici."
+            />
+
+            <AdminActionGrid
+              items={privacyTiles}
+              compact
+              columnsClassName="md:grid-cols-3"
+              className="mt-4"
+            />
+          </section>
+
+          <section className="mt-10 space-y-4">
+            <AdminSectionHeader
+              eyebrow="Informations système"
+              description="Les repères internes restent concentrés dans un seul espace de supervision."
+              action={
+                <PageHeaderBadge family={pageFamily} muted>
+                  {profileCountLabel}
+                </PageHeaderBadge>
+              }
+            />
+
+            <AdminInfoBanner
+              eyebrow="Classement global"
+              title="Le classement n'est pas encore disponible."
+              tone="muted"
+              action={
+                <div className="flex flex-wrap gap-2">
+                  {systemChips.map((chip) => (
+                    <span
+                      key={chip}
+                      className="inline-flex rounded-full border border-white/12 bg-white/10 px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-white/90"
                     >
-                      {panel.title}
-                    </h3>
-                    <div className="space-y-3">
-                      {Object.entries(panel.stats).map(([key, val]) => (
-                        <div
-                          key={key}
-                          className="flex items-center justify-between"
-                        >
-                          <span className="text-[10px] font-black uppercase tracking-widest text-white/20 group-hover:text-white/40 transition-colors">
-                            {key}
-                          </span>
-                          <span className="text-lg font-black text-white">
-                            {val}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </RubriqueCard>
-          </div>
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              }
+            />
 
-          <div id="alerts" className="relative">
-            <RubriqueCard
-              themeColor="amber"
-              withTopBar={true}
-              topBarContent="Business Alerts"
-              className="p-12"
-            >
-              <BusinessAlertsPanel />
-            </RubriqueCard>
-          </div>
+            <AdminInfoBanner
+              eyebrow="Privilèges système"
+              title="Vous avez déjà un niveau de supervision élevé."
+              description="Le formulaire de promotion est réservé aux profils de terrain et de coordination nécessitant des droits étendus."
+              icon={ShieldCheck}
+              tone="warm"
+              action={
+                <AdminPillLink href={profileLink} subdued>
+                  Évolution du compte
+                </AdminPillLink>
+              }
+            />
 
-          <div id="moderation" className="relative">
-            <RubriqueCard
-              themeColor="amber"
-              withTopBar={true}
-              topBarContent="Modération Terrain"
-              className="p-12"
-            >
-              <ActionsReportPanel />
-            </RubriqueCard>
-          </div>
+            <AdminProfileSwitchStrip
+              profiles={switchableProfiles}
+              activeProfile={profile}
+              getProfileLabel={getProfileLabel}
+              locale={locale}
+              label="Switch de profil (Admin)"
+              getHref={buildProfileRoute}
+            />
+          </section>
 
-          <div className="rounded-[3rem] border border-white/5 bg-white/5 p-4">
-            <RolePrimaryActions profile={profile} tone="dark" />
-          </div>
+          {role === "max" ? (
+            <AdminCreatorConsole
+              displayName={creatorDisplayName}
+              embedded
+              className="mt-10"
+            />
+          ) : null}
         </div>
-      </SectionShell>
+      </main>
     </AccountCompletionGate>
   );
 }

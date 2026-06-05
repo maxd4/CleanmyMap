@@ -197,7 +197,7 @@ export function CodexUsagePanel() {
   return (
     <AdminPanelShell
       title="Journal Codex hebdomadaire"
-      subtitle="Enregistre l'activité Codex / ChatGPT Plus semaine par semaine pour produire un historique CleanMyMap spécifique au projet."
+      subtitle="Enregistre l'activité Codex — développement du site semaine par semaine pour produire un historique CleanMyMap spécifique au projet."
       headerAction={
         <button
           type="button"
@@ -219,7 +219,7 @@ export function CodexUsagePanel() {
               Source
             </p>
             <p className="mt-2 text-sm font-semibold text-white/80">
-              Journal hebdomadaire manuel, importé ou reconstruit à partir de l'activité réelle du projet.
+              Journal hebdomadaire manuel, importé ou reconstruit à partir de l&apos;activité réelle du projet.
             </p>
           </article>
           <article className="rounded-3xl border border-white/5 bg-white/5 p-4">
@@ -235,7 +235,7 @@ export function CodexUsagePanel() {
               Historique
             </p>
             <p className="mt-2 text-sm font-semibold text-white/80">
-              Le calculateur lit ensuite les 4 dernières semaines pour produire l'équivalent mensuel.
+              Le calculateur lit ensuite les 4 dernières semaines pour produire l&apos;équivalent mensuel.
             </p>
           </article>
         </div>

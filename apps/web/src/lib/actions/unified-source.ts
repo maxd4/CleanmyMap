@@ -31,12 +31,12 @@ export type UnifiedSourceHealth = {
   warnings: string[];
 };
 
-type SpotRow = {
+type TrashSpotterSpotRow = {
   id: string;
   created_at: string;
   created_by_clerk_id?: string | null;
   label: string;
-  waste_type: string | null;
+  spot_type: string | null;
   latitude: number | null;
   longitude: number | null;
   derived_geometry_kind?: "point" | "polyline" | "polygon" | null;
@@ -86,7 +86,7 @@ function toActionContractFromRow(row: StoredAction): ActionDataContract {
   });
 }
 
-function mapSpotStatusToActionStatus(status: SpotRow["status"]): ActionStatus {
+function mapSpotStatusToActionStatus(status: TrashSpotterSpotRow["status"]): ActionStatus {
   if (status === "validated" || status === "cleaned") {
     return "approved";
   }
@@ -95,7 +95,7 @@ function mapSpotStatusToActionStatus(status: SpotRow["status"]): ActionStatus {
 
 function mapActionStatusToSpotStatuses(
   status: ActionStatus | null,
-): SpotRow["status"][] | null {
+): TrashSpotterSpotRow["status"][] | null {
   if (!status) {
     return null;
   }
@@ -108,21 +108,21 @@ function mapActionStatusToSpotStatuses(
   return [];
 }
 
-function mapSpotWasteTypeToEntityType(
-  wasteType: string | null,
+function mapSpotTypeToEntityType(
+  spotType: string | null,
 ): ActionEntityType {
-  if ((wasteType ?? "").trim().toLowerCase() === "spot") {
+  if ((spotType ?? "").trim().toLowerCase() === "spot") {
     return "spot";
   }
   return "clean_place";
 }
 
-function toSpotContractFromRow(row: SpotRow): ActionDataContract {
+function toSpotContractFromRow(row: TrashSpotterSpotRow): ActionDataContract {
   return buildActionDataContract({
     id: row.id,
-    type: mapSpotWasteTypeToEntityType(row.waste_type),
+    type: mapSpotTypeToEntityType(row.spot_type),
     status: mapSpotStatusToActionStatus(row.status),
-    source: "spots",
+    source: "trash_spotter_spots",
     createdByClerkId: row.created_by_clerk_id,
     observedAt: row.created_at,
     createdAt: row.created_at,
@@ -225,13 +225,13 @@ export async function fetchUnifiedActionContracts(
       (async () => {
         const spotStatuses = mapActionStatusToSpotStatuses(params.status);
         if (spotStatuses && spotStatuses.length === 0) {
-          return [] as SpotRow[];
+          return [] as TrashSpotterSpotRow[];
         }
 
         let query = supabase
-          .from("spots")
+          .from("trash_spotter_spots")
           .select(
-            "id, created_at, created_by_clerk_id, label, waste_type, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, status, notes",
+            "id, created_at, created_by_clerk_id, label, spot_type, latitude, longitude, derived_geometry_kind, derived_geometry_geojson, geometry_confidence, geometry_source, status, notes",
           )
           .order("created_at", { ascending: false })
           .limit(params.limit + 1); // Un de plus ici aussi
@@ -252,7 +252,7 @@ export async function fetchUnifiedActionContracts(
         if (result.error) {
           throw result.error;
         }
-        return (result.data ?? []) as SpotRow[];
+        return (result.data ?? []) as TrashSpotterSpotRow[];
       })(),
       loadLocalActionContracts({
         status: params.status,
@@ -276,8 +276,8 @@ export async function fetchUnifiedActionContracts(
 
   if (remoteSpotsResult.status === "rejected") {
     failedSources.push("spots");
-    logFailure("UnifiedSource", "Spots fetch failed", remoteSpotsResult.reason, {
-      source: "spots",
+    logFailure("UnifiedSource", "Trash spotter fetch failed", remoteSpotsResult.reason, {
+      source: "trash_spotter_spots",
     });
   } else {
     availableSources.push("spots");

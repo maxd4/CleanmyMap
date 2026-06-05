@@ -2,11 +2,11 @@
 
 import { memo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  CloudSun, 
-  ClipboardCheck, 
-  MapPin, 
-  Navigation, 
+import {
+  CloudSun,
+  ClipboardCheck,
+  MapPin,
+  Navigation,
   ShieldAlert, 
   Thermometer, 
   Wind, 
@@ -18,7 +18,6 @@ import {
   Layers,
   ChevronRight,
   AlertCircle,
-  BookOpen,
   Sparkles,
   Droplets,
   Calendar,
@@ -41,14 +40,13 @@ export const WeatherTabs = memo(function WeatherTabs({
   setActiveTab,
   fr,
 }: {
-  activeTab: "conditions" | "preparation" | "protocol";
-  setActiveTab: (tab: "conditions" | "preparation" | "protocol") => void;
+  activeTab: "conditions" | "preparation";
+  setActiveTab: (tab: "conditions" | "preparation") => void;
   fr: boolean;
 }) {
   const tabs = [
     { id: "conditions", label: fr ? "Météo" : "Weather", icon: CloudSun },
     { id: "preparation", label: fr ? "Préparation terrain" : "Field prep", icon: ClipboardCheck },
-    { id: "protocol", label: fr ? "Protocole opérationnel" : "Operational protocol", icon: BookOpen },
   ] as const;
 
   return (
@@ -89,13 +87,9 @@ export const WeatherTabs = memo(function WeatherTabs({
                   ? fr
                     ? "Est-ce le bon moment pour agir ?"
                     : "Is it the right time to act?"
-                  : tab.id === "preparation"
-                    ? fr
-                      ? "Quoi emporter ?"
-                      : "What to bring?"
-                    : fr
-                      ? "Avant / pendant / après"
-                      : "Before / during / after"}
+                  : fr
+                    ? "Quoi emporter ?"
+                    : "What to bring?"}
               </span>
             </span>
           </button>

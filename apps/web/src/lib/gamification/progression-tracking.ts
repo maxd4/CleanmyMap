@@ -182,7 +182,7 @@ export async function trackSpotCreated(
   const inserted = await insertProgressionEvent(supabase, {
     userId: params.userId,
     eventType: "spot_create_pending",
-    sourceTable: "spots",
+    sourceTable: "trash_spotter_spots",
     sourceId: spot.id,
     statusPhase: "pending",
     weight: 2,
@@ -218,7 +218,7 @@ export async function trackSpotValidationBonus(
   const inserted = await insertProgressionEvent(supabase, {
     userId: spot.created_by_clerk_id,
     eventType: "spot_validation_bonus",
-    sourceTable: "spots",
+    sourceTable: "trash_spotter_spots",
     sourceId: spot.id,
     statusPhase: "validated",
     weight: 3,

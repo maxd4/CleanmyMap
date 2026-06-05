@@ -40,7 +40,6 @@ Routes concernées:
 - `/actions/map`
 - `/methodologie`
 - `/gamification`
-- `/observatoire`
 - `/sandbox`
 - `/community`
 - `/messagerie`
@@ -56,7 +55,6 @@ Fichiers à modifier:
 
 - `apps/web/src/app/(app)/actions/map/page.tsx`
 - `apps/web/src/app/(app)/gamification/page.tsx`
-- `apps/web/src/app/(app)/observatoire/page.tsx`
 - `apps/web/src/app/(app)/sandbox/page.tsx`
 - `apps/web/src/app/(app)/community/page.tsx`
 - `apps/web/src/app/(app)/messagerie/page.tsx`
@@ -69,7 +67,6 @@ Palette attendue:
 - `/actions/map` -> `sky`
 - `/methodologie` -> `red`
 - `/gamification` -> `red`
-- `/observatoire` -> `sky`
 - `/sandbox` -> `sky`
 - `/community` -> `pink`
 - `/messagerie` -> `pink`
@@ -106,15 +103,14 @@ Risques de régression:
 Ordre recommandé d'exécution:
 
 1. `/actions/map`
-2. `/observatoire`
-3. `/sandbox`
-4. `/gamification`
-5. `/methodologie`
-6. `/community`
-7. `/messagerie`
-8. `/open-data`
-9. `/parcours`
-10. `/parcours/[profile]`
+2. `/sandbox`
+3. `/gamification`
+4. `/methodologie`
+5. `/community`
+6. `/messagerie`
+7. `/open-data`
+8. `/parcours`
+9. `/parcours/[profile]`
 
 ## Lot 2 — Pages auth
 
@@ -607,7 +603,6 @@ Routes concernées:
 - `/parcours/[profile]`
 - `/actions/map`
 - `/gamification`
-- `/observatoire`
 - `/reports`
 - `/sandbox`
 - `/community`
@@ -636,7 +631,7 @@ Reste prioritaire dans le lot 8:
 
 - `/dashboard` si un résidu de warm/orange doit encore être lissé
 - `/parcours` et `/parcours/[profile]` si des écarts de palette ou de surcharge textuelle subsistent
-- `/observatoire`, `/sandbox`, `/open-data`, `/messagerie`, `/community` si des sous-composants secondaires gardent encore des accents mixtes
+- `/sandbox`, `/open-data`, `/messagerie`, `/community` si des sous-composants secondaires gardent encore des accents mixtes
 - `/learn/*` si des cartes ou illustrations internes restent au-dessus du niveau de densité attendu
 
 Palette attendue:

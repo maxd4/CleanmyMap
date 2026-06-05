@@ -127,7 +127,7 @@ export function GuideOperationalPanel() {
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] text-emerald-700">
                 <ShieldCheck size={14} />
-                {fr ? "Protocole opérationnel" : "Operational protocol"}
+                {fr ? "Checklist opérationnelle" : "Operational checklist"}
               </div>
               <h3 className="text-2xl font-black tracking-tight text-slate-900">
                 {fr ? "Avant / pendant / après" : "Before / during / after"}
@@ -227,7 +227,7 @@ export function GuideOperationalPanel() {
               {fr ? "Planifier une action" : "Plan an action"}
             </CmmButton>
             <CmmButton
-              href="/sections/weather?tab=preparation"
+              href="/sections/weather"
               tone="secondary"
               variant="pill"
               className="h-14 px-6 font-black uppercase tracking-widest text-xs"
@@ -248,7 +248,7 @@ export function GuideSection() {
   return (
     <SectionShell
       id="guide"
-      title={fr ? "Protocole opérationnel" : "Operational protocol"}
+      title={fr ? "Préparation terrain" : "Field preparation"}
       subtitle={
         fr
           ? "Avant / pendant / après"

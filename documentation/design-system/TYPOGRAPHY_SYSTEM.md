@@ -170,10 +170,11 @@ Utiliser les utilitaires canoniques suivants:
 
 ### Règle de lisibilité des héros
 
-- Les titres et sous-titres de hero doivent tenir sur une seule ligne sur desktop standard.
+- Les titres de hero doivent tenir sur une seule ligne avec la taille de base du composant.
+- Les sous-titres de hero doivent tenir sur une ou deux lignes avec la taille de base du composant.
 - Le titre doit rester au-dessus du sous-titre avec une lecture centrée quand le hero est documenté en `align="center"`.
-- Si une ligne casse, réduire d'abord la taille, le tracking ou la largeur utile avant d'ajouter un retour manuel.
-- N'utiliser `whitespace-nowrap` que pour les heroes courts, les labels ou les CTA dont la lisibilité reste bonne sur tablette et desktop.
+- Si une ligne casse, déplacer le contenu qui bloque vers la droite ou le réduire avant toute autre solution.
+- N'utiliser `whitespace-nowrap` que pour les titres de hero courts, les labels ou les CTA dont la lisibilité reste bonne sur tablette et desktop.
 - Éviter les retours à la ligne décoratifs dans les zones d'accroche: un hero doit rester compact, lisible et laisser apparaître rapidement le contenu suivant.
 - Sur mobile, privilégier la réorganisation verticale plutôt que le forçage de coupures texte arbitraires.
 

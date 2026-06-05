@@ -91,7 +91,7 @@ describe("simple PDF export", () => {
       },
     });
 
-    expect(html).toContain("Chapitres détaillés");
+    expect(html).toContain("Sommaire cliquable");
     expect(html).toContain("Synthèse exécutive");
     expect(html).toContain("Résumé du rapport.");
   });

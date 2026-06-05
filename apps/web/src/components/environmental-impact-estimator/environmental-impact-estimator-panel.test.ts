@@ -30,7 +30,7 @@ describe("EnvironmentalImpactEstimatorPanel", () => {
     expect(markup).toContain("Serveurs");
     expect(markup).toContain("Vercel");
     expect(markup).toContain("Supabase");
-    expect(markup).toContain("ChatGPT / LLM");
+    expect(markup).toContain("GPT-5.4 mini");
     expect(markup).toContain("Resend");
     expect(markup).toContain("Nom de domaine LWS");
     expect(markup).toContain("Notes de données manquantes");

@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Crown, LayoutGrid, List, MessageSquareText, ShieldCheck, Sparkles, Target, UserRound, type LucideIcon } from "lucide-react";
+import { Building2, Crown, LayoutGrid, List, MessageSquareText, ShieldCheck, Target, UserRound, type LucideIcon } from "lucide-react";
 import type { NavigationSpace } from "@/lib/navigation";
 import { getLocalizedText } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
@@ -42,8 +42,6 @@ function getHomeItemIcon(routeId: string): LucideIcon {
       return Crown;
     case "sponsor":
       return Building2;
-    case "godmode":
-      return Sparkles;
     default:
       return LayoutGrid;
   }

@@ -210,12 +210,16 @@ export type PageHeaderProps = {
 export function PageHeader({
   family: familyProp,
   tone,
+  eyebrow,
+  badge,
+  badges,
   title,
   subtitle,
   action,
   align = "left",
   contrast = "default",
   className,
+  badgesClassName,
   actionClassName,
 }: PageHeaderProps) {
   const pathname = usePathname();
@@ -231,13 +235,39 @@ export function PageHeader({
         className,
       )}
     >
-      <h1 className={tokens.title}>{title}</h1>
-
-      {subtitle ? <p className={tokens.subtitle}>{subtitle}</p> : null}
-
-      {action ? (
-        <div className={cn("cmm-page-header-action", actionClassName)}>{action}</div>
+      {eyebrow || badge || badges ? (
+        <div className={cn("cmm-page-header-badges", badgesClassName)}>
+          {eyebrow ? <span className={tokens.eyebrow}>{eyebrow}</span> : null}
+          {badge ? badge : null}
+          {badges ? badges : null}
+        </div>
       ) : null}
+
+      <div
+        className={cn(
+          "flex w-full flex-col gap-4",
+          isCenter ? "items-center" : "items-start",
+          action ? "sm:flex-row sm:items-start sm:justify-between" : null,
+        )}
+      >
+        <div
+          className={cn(
+            "min-w-0",
+            action ? "flex-1" : "w-full",
+            isCenter ? "text-center" : null,
+          )}
+        >
+          <h1 className={tokens.title}>{title}</h1>
+
+          {subtitle ? <p className={tokens.subtitle}>{subtitle}</p> : null}
+        </div>
+
+        {action ? (
+          <div className={cn("cmm-page-header-action shrink-0", actionClassName)}>
+            {action}
+          </div>
+        ) : null}
+      </div>
     </header>
   );
 }

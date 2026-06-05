@@ -202,16 +202,173 @@ function renderChapter(chapter: PdfReportChapter, index: number): string {
     chapter.columns ?? Object.keys(chapter.rows?.[0] ?? {}).map((key) => ({ key, label: key }));
 
   return `
-    <section class="cmm-section" id="chapter-${index + 1}">
+    <section class="cmm-web-section" id="${escapeHtml(chapter.id ?? `chapter-${index + 1}`)}">
+      <div class="cmm-web-section__header">
       <p class="cmm-kicker">Chapitre ${index + 1}</p>
-      <h2 class="cmm-section-title">${escapeHtml(chapter.title)}</h2>
-      ${chapter.subtitle ? `<p>${escapeHtml(chapter.subtitle)}</p>` : ""}
-      ${lines.length ? `<div class="cmm-callout note">${renderList(lines)}</div>` : ""}
+      <h2 class="cmm-web-section__title">${escapeHtml(chapter.title)}</h2>
+      ${chapter.subtitle ? `<p class="cmm-web-section__subtitle">${escapeHtml(chapter.subtitle)}</p>` : ""}
+      </div>
+      <div class="cmm-web-section__body">
+        ${lines.length ? `<div class="cmm-callout note">${renderList(lines)}</div>` : ""}
+        ${
+          hasStats
+            ? `
+              <div class="cmm-web-section__grid cmm-web-section__grid--${Math.min(4, Math.max(2, chapter.stats!.length))}">
+                ${chapter.stats!
+                  .map(
+                    (stat) => `
+                      <article class="cmm-card">
+                        <div class="cmm-card-label">${escapeHtml(stat.label)}</div>
+                        <div class="cmm-card-value">${escapeHtml(formatValue(stat.value))}</div>
+                        ${stat.detail ? `<p class="cmm-muted">${escapeHtml(stat.detail)}</p>` : ""}
+                      </article>
+                    `,
+                  )
+                  .join("")}
+              </div>
+            `
+            : ""
+        }
+        ${
+          hasRows
+            ? `
+              <div class="cmm-table-wrap">
+                <table>
+                  <thead>
+                    <tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}</tr>
+                  </thead>
+                  <tbody>
+                    ${chapter.rows!
+                      .slice(0, 40)
+                      .map(
+                        (row) => `
+                          <tr>
+                            ${columns.map((column) => `<td>${escapeHtml(formatValue(row[column.key]))}</td>`).join("")}
+                          </tr>
+                        `,
+                      )
+                      .join("")}
+                  </tbody>
+                </table>
+              </div>
+            `
+            : ""
+        }
+      </div>
+    </section>
+  `;
+}
+
+function renderWebHero(chapter: PdfReportChapter, payload: PdfReportPayload): string {
+  const lines = chapter.lines ?? [];
+  const stats = chapter.stats ?? [];
+  return `
+    <section class="cmm-web-hero" id="${escapeHtml(chapter.id ?? "synthese-executive")}">
+      <div class="cmm-web-hero__left">
+        <p class="cmm-web-header__kicker">Synthèse exécutive</p>
+        <h1 class="cmm-web-header__title">${escapeHtml(chapter.title)}</h1>
+        ${chapter.subtitle ? `<p class="cmm-web-header__subtitle">${escapeHtml(chapter.subtitle)}</p>` : ""}
+        <div class="cmm-web-pill-row">
+          <span class="cmm-web-pill">Rapport: ${escapeHtml(payload.rubrique)}</span>
+          <span class="cmm-web-pill">Période: ${escapeHtml(payload.periode)}</span>
+          <span class="cmm-web-pill">Généré le ${escapeHtml(formatGeneratedAt(payload.data.generatedAt))}</span>
+        </div>
+        ${payload.data.summary?.length ? `<div class="cmm-callout note"><ul>${payload.data.summary.filter((item) => item.trim()).map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul></div>` : ""}
+        <div class="cmm-web-section__grid cmm-web-section__grid--${Math.min(4, Math.max(2, stats.length || 4))}">
+          ${stats
+            .map(
+              (stat) => `
+                <article class="cmm-card">
+                  <div class="cmm-card-label">${escapeHtml(stat.label)}</div>
+                  <div class="cmm-card-value">${escapeHtml(formatValue(stat.value))}</div>
+                  ${stat.detail ? `<p class="cmm-muted">${escapeHtml(stat.detail)}</p>` : ""}
+                </article>
+              `,
+            )
+            .join("")}
+        </div>
+      </div>
+      <div class="cmm-web-hero__right">
+        <article class="cmm-card">
+          <div class="cmm-card-label">Vue d’ensemble du rapport</div>
+          <div class="cmm-card-value">${escapeHtml(chapter.title)}</div>
+          <p class="cmm-muted">${escapeHtml(chapter.subtitle ?? "")}</p>
+        </article>
+        ${lines.length ? `<div class="cmm-callout note">${renderList(lines)}</div>` : ""}
+        <article class="cmm-card">
+          <div class="cmm-card-label">Lecture rapide</div>
+          <p class="cmm-muted">${escapeHtml(payload.data.summary?.[0] ?? "Aucune synthèse disponible.")}</p>
+        </article>
+      </div>
+    </section>
+  `;
+}
+
+export function buildOfficialReportHtml(payload: PdfReportPayload): string {
+  const generatedAt = formatGeneratedAt(payload.data.generatedAt);
+  const title = payload.title || payload.data.title || "Rapport CleanMyMap";
+  const summary = payload.data.summary?.filter((line) => line.trim().length > 0) ?? [];
+  const hasSummary = summary.length > 0;
+  const hasStats = Boolean(payload.data.stats?.length);
+  const hasChapters = Boolean(payload.data.chapters?.length);
+  const hasRows = Boolean(payload.data.rows?.length);
+  const chapters = payload.data.chapters ?? [];
+  const heroChapter = chapters[0] ?? null;
+  const sectionChapters = chapters.slice(1);
+
+  if (hasChapters && heroChapter) {
+    return `<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${escapeHtml(title)}</title>
+  <style>${buildOfficialReportCss()}</style>
+</head>
+<body>
+  <main class="cmm-report cmm-web-shell">
+    <section class="cmm-web-header">
+      <div class="cmm-web-header__top">
+        <div>
+          <p class="cmm-web-header__kicker">Livrable officiel CleanMyMap</p>
+          <h1 class="cmm-web-header__title">${escapeHtml(title)}</h1>
+          <p class="cmm-web-header__subtitle">
+            Même structure que la vue web: bandeau de synthèse, sommaire latéral et chapitres
+            détaillés dans un flux continu prêt à imprimer.
+          </p>
+        </div>
+        <div class="cmm-web-header__meta">
+          <article class="cmm-card">
+            <div class="cmm-card-label">Rubrique</div>
+            <div class="cmm-card-value">${escapeHtml(payload.rubrique)}</div>
+          </article>
+          <article class="cmm-card">
+            <div class="cmm-card-label">Période</div>
+            <div class="cmm-card-value">${escapeHtml(payload.periode)}</div>
+          </article>
+          <article class="cmm-card">
+            <div class="cmm-card-label">Organisation</div>
+            <div class="cmm-card-value">${escapeHtml(payload.organizationName?.trim() || payload.organizationType)}</div>
+          </article>
+          <article class="cmm-card">
+            <div class="cmm-card-label">Génération</div>
+            <div class="cmm-card-value">${escapeHtml(generatedAt)}</div>
+          </article>
+        </div>
+      </div>
+      <div class="cmm-web-pill-row">
+        ${(payload.data.summary ?? [])
+          .filter((line) => line.trim().length > 0)
+          .slice(0, 3)
+          .map((line) => `<span class="cmm-web-pill">${renderInlineMarkdown(line)}</span>`)
+          .join("")}
+      </div>
       ${
         hasStats
           ? `
-            <div class="cmm-stat-grid">
-              ${chapter.stats!
+            <div class="cmm-web-section__grid cmm-web-section__grid--4" style="margin-top: 4mm;">
+              ${(payload.data.stats ?? [])
+                .slice(0, 4)
                 .map(
                   (stat) => `
                     <article class="cmm-card">
@@ -226,43 +383,39 @@ function renderChapter(chapter: PdfReportChapter, index: number): string {
           `
           : ""
       }
-      ${
-        hasRows
-          ? `
-            <div class="cmm-table-wrap">
-              <table>
-                <thead>
-                  <tr>${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join("")}</tr>
-                </thead>
-                <tbody>
-                  ${chapter.rows!
-                    .slice(0, 40)
-                    .map(
-                      (row) => `
-                        <tr>
-                          ${columns.map((column) => `<td>${escapeHtml(formatValue(row[column.key]))}</td>`).join("")}
-                        </tr>
-                      `,
-                    )
-                    .join("")}
-                </tbody>
-              </table>
-            </div>
-          `
-          : ""
-      }
     </section>
-  `;
-}
 
-export function buildOfficialReportHtml(payload: PdfReportPayload): string {
-  const generatedAt = formatGeneratedAt(payload.data.generatedAt);
-  const title = payload.title || payload.data.title || "Rapport CleanMyMap";
-  const summary = payload.data.summary?.filter((line) => line.trim().length > 0) ?? [];
-  const hasSummary = summary.length > 0;
-  const hasStats = Boolean(payload.data.stats?.length);
-  const hasChapters = Boolean(payload.data.chapters?.length);
-  const hasRows = Boolean(payload.data.rows?.length);
+    <div class="cmm-web-layout">
+      <aside class="cmm-web-aside">
+        <p class="cmm-kicker">Navigation</p>
+        <h2 class="cmm-section-title">Sommaire cliquable</h2>
+        <nav>
+          ${chapters
+            .map(
+              (chapter, index) => `
+                <a class="cmm-toc-item" href="#${escapeHtml(chapter.id ?? `chapter-${index + 1}`)}">
+                  <span class="cmm-toc-title">${escapeHtml(chapter.title)}</span>
+                  ${chapter.subtitle ? `<span class="cmm-toc-subtitle">${escapeHtml(chapter.subtitle)}</span>` : ""}
+                </a>
+              `,
+            )
+            .join("")}
+        </nav>
+        <div class="cmm-callout limite" style="margin-top:4mm;">
+          <div class="cmm-callout-title">Lecture rapide</div>
+          <p>Le document imprimable reprend la même architecture visuelle que la vue web, avec les mêmes sections et le même rythme de lecture.</p>
+        </div>
+      </aside>
+
+      <div class="cmm-web-main">
+        ${renderWebHero(heroChapter, payload)}
+        ${sectionChapters.map((chapter, index) => renderChapter(chapter, index + 2)).join("\n")}
+      </div>
+    </div>
+  </main>
+</body>
+</html>`;
+  }
 
   return `<!doctype html>
 <html lang="fr">

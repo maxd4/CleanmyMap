@@ -10,7 +10,6 @@ const SITEMAP_PATH_PRIORITY: Record<string, number> = {
   "/": 1,
   "/en": 0.9,
   [EXPLORER_ROUTE]: 0.9,
-  "/observatoire": 0.8,
   "/reports": 0.7,
   "/methodologie": 0.7,
   "/learn": 0.65,
@@ -36,9 +35,7 @@ function toSitemapEntry(url: string, now: Date): MetadataRoute.Sitemap[number] {
         ? "daily"
         : url.startsWith("/learn/")
           ? "monthly"
-          : url === "/observatoire"
-            ? "hourly"
-            : url === "/reports"
+          : url === "/reports"
               ? "weekly"
               : "monthly",
     priority: SITEMAP_PATH_PRIORITY[new URL(url, "https://cleanmymap.fr").pathname] ?? 0.5,

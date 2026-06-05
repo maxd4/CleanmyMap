@@ -59,8 +59,8 @@ export function ActionsReportPanel({
         )}
 
         {workflow.errorMessage && (
-          <div className="rounded-2xl border border-rose-500/10 bg-rose-500/5 p-4">
-            <p className="text-xs font-medium text-rose-400">
+          <div className="rounded-2xl border border-red-500/10 bg-red-500/5 p-4">
+            <p className="text-xs font-medium text-red-400">
               {workflow.errorMessage}
             </p>
           </div>

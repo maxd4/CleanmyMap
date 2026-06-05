@@ -6,3 +6,4 @@ export { ClimateSection } from"./climate-section";
 export { WeatherSection } from"./weather-section";
 export { CompareSection } from"./compare-section";
 export { SandboxSection } from"./sandbox-section";
+export { JoinFormSection } from"./rejoindre-un-formulaire-section";

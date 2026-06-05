@@ -433,7 +433,7 @@ html[data-theme="dark"] {
   .cmm-page-header-title {
     display: block;
     width: 100%;
-    font-size: clamp(2.75rem, 5vw, 5rem);
+    font-size: clamp(2.5rem, 4vw, 4.5rem);
     font-weight: 900;
     line-height: 0.96;
     letter-spacing: -0.05em;
@@ -449,9 +449,12 @@ html[data-theme="dark"] {
     font-size: 1rem;
     font-weight: 500;
     line-height: 1.55;
-    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
   }
 
   .cmm-page-header-badges {
@@ -492,7 +495,7 @@ html[data-theme="dark"] {
   }
 
   .cmm-home-section-title {
-    font-size: clamp(2.75rem, 5vw, 5rem);
+    font-size: clamp(2.5rem, 4vw, 4.5rem);
     line-height: 0.96;
     font-weight: 900;
     letter-spacing: -0.05em;
@@ -509,9 +512,12 @@ html[data-theme="dark"] {
     line-height: 1.55;
     font-weight: 500;
     color: rgba(6, 78, 59, 0.66);
-    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
   }
 
   .cmm-ribbon-surface {

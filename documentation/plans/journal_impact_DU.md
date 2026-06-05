@@ -41,7 +41,7 @@ flowchart TD
   GI["documentation/plans/rapport_impact/graphique_impact_CO2e.md"]
   JI["documentation/plans/journal_impact_DU.md"]
   EI["Estimateur d'impact environnemental"]
-  QG["Estimateur des quotas gratuits<br/>des services web utilisés"]
+  QG["Impact numérique des services suivis<br/>des services web utilisés"]
 
   JI --> AJ
   JI --> RI
@@ -68,7 +68,7 @@ Lecture rapide:
 - `rapport_impact/impact_IA.md` concentre l'analyse principale;
 - `graphique_impact_CO2e.md` documente la méthode du graphe;
 - l'estimateur d'impact agrège les signaux du projet;
-- l'estimateur des quotas gratuits aide à cadrer les limites et hypothèses des services web.
+- le visuel synthétique des services suivis aide à cadrer les limites et hypothèses des services web.
 
 ### Concepts cles appliques
 
@@ -122,8 +122,8 @@ Lecture rapide:
 | 13/05/26 | **Reporting qualité CI/CD orienté pilotage** | Création de `scripts/cicd-metrics-report.mjs` et de `documentation/maintenance/ci-cd-metrics-report.md` pour suivre les runs GitHub Actions, le cache et les déploiements Vercel dans une logique de mesure continue. |
 | 13/05/26 | **Audit exécutable des messages Ateliers DU** | Formalisation de `documentation/plans/ateliers_DU_execution_rapide.md` pour distinguer les lots déjà absorbés, les écarts encore ouverts et l'ordre d'attaque réaliste. |
 | 20/05/26 | **Socle d'estimateur d'impact environnemental** | Mise en place de l'architecture du calcul transparent pour le site et l'utilisateur, avec postes visibles, hypothèses versionnées et panneau UI prêt à brancher dans le rapport d'impact IA. |
-| 21/05/26 | **Séparation Codex / ChatGPT LLM** | Distinction explicite entre les sessions Codex et les conversations ChatGPT 5.5 en mode étendu, avec ancrage de 2h hebdomadaires LLM, pour éviter de fusionner deux usages IA de nature différente. |
-| 26/05/26 | **Journal hebdomadaire Codex** | Ajout d'un historique spécifique à l'usage Codex / ChatGPT Plus pour enregistrer les semaines manuellement, reconstruire les périodes passées et convertir ces signaux projet-spécifiques en équivalent CO2e sans moyenne externe. |
+| 21/05/26 | **Séparation Codex / GPT-5.4 mini** | Distinction explicite entre les sessions Codex et le modèle GPT-5.4 mini utilisé pendant le développement du site, avec badge ACV dédié, pour éviter de mélanger développement et production. |
+| 26/05/26 | **Journal hebdomadaire Codex** | Ajout d'un historique spécifique à l'usage Codex — développement du site pour enregistrer les semaines manuellement, reconstruire les périodes passées et convertir ces signaux projet-spécifiques en équivalent CO2e sans moyenne externe. |
 | 21/05/26 | **Deuxième ordre d'impact** | Ajout d'une décomposition lisible du CO2e en CO2 brut, électricité, autres GES, produits chimiques et eau, afin de détailler la structure du graphe et ses priorités de réduction. |
 | 24/05/26 | **Chaîne Sentry post-build sans blocage** | Remplacement du build plugin Sentry par un upload post-build des source maps via `sentry-cli` avec injection des debug IDs. Impact positif: le build n'est plus fragile sur les dépendances natives et les symboles restent récupérables en production. Limite: il faut un `SENTRY_AUTH_TOKEN` et des variables Sentry correctement renseignées, sinon l'upload est sauté. |
 

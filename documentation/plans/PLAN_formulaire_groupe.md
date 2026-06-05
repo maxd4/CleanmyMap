@@ -1,9 +1,9 @@
-# Feature absorbed into Spec Kit flow
+# Feature absorbed into product docs
 
-This plan has been converted into structured artifacts:
+The group action flow is now maintained in:
 
-- [Spec](../specs/group-action/spec.md)
-- [Plan](../specs/group-action/plan.md)
-- [Tasks](../specs/group-action/tasks.md)
+- [Feature documentation](../features/group-action.md)
+- `apps/web/src/components/sections/rubriques/rejoindre-un-formulaire-section.tsx`
+- `apps/web/src/app/api/actions/group-join/route.ts`
 
-Use those files as the canonical source of truth for the group action feature.
+The old Spec Kit artifacts have been retired.

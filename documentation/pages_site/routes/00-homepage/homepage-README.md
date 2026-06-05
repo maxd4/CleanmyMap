@@ -6,8 +6,13 @@ Famille autonome de la homepage canonique.
 
 | Route | Fiche | Type de page | Statut | Scope | Capture disponible | Priorité | Fichier source principal |
 |---|---|---|---|---|:---:|---|---|
-| `/` | [Homepage canonique](./homepage/homepage-README.md) | homepage | public | à corriger | non | faible | apps/web/src/app/page.tsx |
+| `/` | [Homepage canonique](./homepage-README.md) | homepage | public | à corriger | non | faible | apps/web/src/app/page.tsx |
 
+## Fichiers associés
+
+- [Homepage - Présentation détaillée](./homepage-presentation-detaillee.md)
+- [Homepage - Liste des propositions à traiter](./homepage-liste-propositions-a-traiter.md)
+- [Homepage - Objectifs non pertinents](./homepage-objectifs-non-pertinents.md)
 
 
 ## Notes

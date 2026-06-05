@@ -177,7 +177,10 @@ describe("FreePlanServicesPanel", () => {
     expect(markup).toContain("Dérive mensuelle");
     expect(markup).toContain("Service le plus exposé");
     expect(markup).toContain("Lecture de décision");
-    expect(markup).toContain("Part quota");
+    expect(markup).toContain("Quota principal");
+    expect(markup).toContain("plan gratuit");
+    expect(markup).toContain("prix NA");
+    expect(markup).toContain("dépassé");
     expect(markup).toContain("Franchissement de seuil");
     expect(markup).toContain("Liens de pilotage");
     expect(markup).toContain("Méthodologie de calcul");

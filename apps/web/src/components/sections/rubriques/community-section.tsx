@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCommunitySection } from "@/components/sections/rubriques/community/use-community-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { notifyNetworkToast } from "@/lib/errors/network-toast";
 import type { AppError } from "@/lib/errors/app-errors";
+import { CmmButton } from "@/components/ui/cmm-button";
 import {
   CommunityHubNav,
   CommunityAgirView,
@@ -12,10 +14,13 @@ import {
   CommunitySolutionsView,
   HubCategory,
 } from "./community-section-components";
+import { PartnersNetworkSection } from "./partners-network-section";
 import { SectionShell } from "@/components/sections/rubriques/shared";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Info, Sparkles, MapPin, Target } from "lucide-react";
+import { Handshake, Info, Sparkles, MapPin, Target, Users } from "lucide-react";
+
+type SurfaceTab = "community" | "partners";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -42,11 +47,27 @@ export function CommunitySection() {
   } = model;
   const { locale } = useSitePreferences();
   const fr = locale === "fr";
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const lastToastRef = useRef<string | null>(null);
 
   // États du Hub Opérationnel
   const [hubCategory, setHubCategory] = useState<HubCategory>("missions");
   const [hubZone, setHubZone] = useState("paris");
+  const surfaceTab: SurfaceTab = searchParams.get("tab") === "partners" ? "partners" : "community";
+
+  function setSurfaceTab(nextTab: SurfaceTab) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextTab === "partners") {
+      params.set("tab", "partners");
+    } else {
+      params.delete("tab");
+    }
+
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
 
   useEffect(() => {
     const error = [eventsLoadError, highlightsLoadError].find(
@@ -73,11 +94,54 @@ export function CommunitySection() {
   return (
     <SectionShell 
       id="community"
-      title={fr ? "Hub Communautaire" : "Community Hub"}
-      subtitle={fr ? "Coordonnez vos actions, gérez les missions et découvrez des solutions durables." : "Coordinate your actions, manage missions and discover sustainable solutions."}
+      title={fr ? "Communauté" : "Community"}
+      subtitle={fr ? "Coordonnez la vie de la communauté et accédez au réseau de partenaires." : "Coordinate community life and access the partner network."}
       icon={Users}
     >
       <div className="space-y-12 pb-20">
+        <div className="rounded-[2.5rem] border border-white/10 bg-black/25 p-2 backdrop-blur-2xl shadow-2xl">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="px-4 pt-2 lg:pt-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-white/45">
+                {fr ? "Navigation de la page" : "Page navigation"}
+              </p>
+              <p className="mt-2 text-sm font-semibold text-white/70">
+                {surfaceTab === "community"
+                  ? (fr ? "Vie de la communauté et coordination interne." : "Community life and internal coordination.")
+                  : (fr ? "Carte des partenaires et parcours réseau." : "Partner map and network journeys.")}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <CmmButton
+                onClick={() => setSurfaceTab("community")}
+                tone={surfaceTab === "community" ? "primary" : "tertiary"}
+                variant="pill"
+                className="px-5 py-3"
+              >
+                <Users size={16} />
+                <span className="text-[11px] font-black uppercase tracking-[0.18em]">
+                  {fr ? "Communauté" : "Community"}
+                </span>
+              </CmmButton>
+              <CmmButton
+                onClick={() => setSurfaceTab("partners")}
+                tone={surfaceTab === "partners" ? "primary" : "tertiary"}
+                variant="pill"
+                className="px-5 py-3"
+              >
+                <Handshake size={16} />
+                <span className="text-[11px] font-black uppercase tracking-[0.18em]">
+                  {fr ? "Partenaires" : "Partners"}
+                </span>
+              </CmmButton>
+            </div>
+          </div>
+        </div>
+
+        {surfaceTab === "partners" ? (
+          <PartnersNetworkSection fr={fr} />
+        ) : (
+          <>
         {/* Modernized Control Bar */}
         <FamilyRubriqueCard 
           initial={{ opacity: 0, y: 20 }}
@@ -188,6 +252,8 @@ export function CommunitySection() {
               : "Join over 15,000 volunteers for a cleaner city."}
           </p>
         </motion.div>
+          </>
+        )}
       </div>
     </SectionShell>
   );

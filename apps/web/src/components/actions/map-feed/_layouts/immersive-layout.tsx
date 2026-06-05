@@ -67,10 +67,10 @@ export function ImmersiveLayout({
 
   return (
     <>
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.26),transparent_28%),radial-gradient(circle_at_top_right,rgba(191,219,254,0.24),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]" />
+      <div className={`pointer-events-none absolute inset-0 ${isEmerald ? "bg-[radial-gradient(circle_at_top_left,rgba(134,239,172,0.24),transparent_28%),radial-gradient(circle_at_top_right,rgba(187,247,208,0.22),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]" : "bg-[radial-gradient(circle_at_top_left,rgba(125,211,252,0.26),transparent_28%),radial-gradient(circle_at_top_right,rgba(191,219,254,0.24),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.34),rgba(255,255,255,0))]"}`} />
       <div className="relative z-10 flex flex-col gap-6">
         {showIntro ? (
-          <div className={`flex flex-wrap items-start justify-between gap-3 rounded-[2.25rem] px-6 py-5 text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-xl border ${isEmerald ? "border-emerald-200/80 bg-emerald-50" : "border-sky-200/80 bg-sky-50"}`}>
+          <div className={`flex flex-wrap items-start justify-between gap-3 rounded-[2.25rem] px-6 py-5 text-slate-950 backdrop-blur-xl border ${isEmerald ? "border-emerald-200/80 bg-emerald-50 shadow-[0_24px_56px_-32px_rgba(34,197,94,0.16)]" : "border-sky-200/80 bg-sky-50 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]"}`}>
             <div className="max-w-2xl">
               {hasPartialSource ? (
                 <span className={`inline-flex items-center rounded-full border px-2.5 py-1 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 ${isEmerald ? "border-emerald-300/40 bg-emerald-100" : "border-amber-300/40 bg-amber-100"}`}>
@@ -84,8 +84,8 @@ export function ImmersiveLayout({
               Visualisation des flux terrain, de leur densité et de leur qualité.
             </p>
             {freshnessLabel ? (
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-sky-200/80 bg-white/80 px-3 py-1.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700">
-                <span className="h-2 w-2 rounded-full bg-sky-500" />
+              <div className={`mt-4 inline-flex items-center gap-2 rounded-full border bg-white/80 px-3 py-1.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-700 ${isEmerald ? "border-emerald-200/80" : "border-sky-200/80"}`}>
+                <span className={`h-2 w-2 rounded-full ${isEmerald ? "bg-emerald-500" : "bg-sky-500"}`} />
                 {freshnessLabel}
               </div>
             ) : null}
@@ -102,7 +102,7 @@ export function ImmersiveLayout({
         <div className="grid gap-6">
           <div
             ref={mapExportTargetRef}
-            className="relative min-h-[600px] overflow-hidden rounded-[2.75rem] border border-sky-200/80 bg-sky-50 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]"
+            className={`relative min-h-[600px] overflow-hidden rounded-[2.75rem] ${isEmerald ? "border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(244,250,242,0.98),rgba(252,254,250,0.98))] shadow-[0_24px_56px_-32px_rgba(34,197,94,0.16)]" : "border border-sky-200/80 bg-sky-50 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]"}`}
           >
             {mapCanvasError ? (
               <div className="flex h-full items-center justify-center bg-rose-50 px-6 text-center text-slate-950">
@@ -125,9 +125,10 @@ export function ImmersiveLayout({
                 onReload={onReload}
                 isValidating={isValidating}
                 zoneQuery={zoneQuery}
+                tone={tone}
               />
             ) : !MapCanvas ? (
-              <MapLoadingState fullViewport />
+              <MapLoadingState fullViewport tone={tone} />
             ) : (
               <MapCanvas
                 items={items}
@@ -142,7 +143,7 @@ export function ImmersiveLayout({
         </div>
 
         {showStoriesCarousel ? (
-          <div className={`rounded-[2.75rem] p-6 text-slate-950 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)] backdrop-blur-3xl border ${isEmerald ? "border-emerald-200/80 bg-emerald-50" : "border-sky-200/80 bg-sky-50"}`}>
+          <div className={`rounded-[2.75rem] p-6 text-slate-950 backdrop-blur-3xl border ${isEmerald ? "border-emerald-200/80 bg-emerald-50 shadow-[0_24px_56px_-32px_rgba(34,197,94,0.16)]" : "border-sky-200/80 bg-sky-50 shadow-[0_24px_56px_-32px_rgba(14,165,233,0.16)]"}`}>
             <ActionStoriesCarousel items={items} onOpenAction={onOpenAction} />
           </div>
         ) : null}

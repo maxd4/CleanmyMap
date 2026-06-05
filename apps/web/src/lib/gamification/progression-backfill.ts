@@ -19,7 +19,7 @@ async function backfillUserSpots(
   userId: string,
 ): Promise<void> {
   const result = await supabase
-    .from("spots")
+    .from("trash_spotter_spots")
     .select("id, created_at, created_by_clerk_id, status, label, notes")
     .eq("created_by_clerk_id", userId)
     .limit(6000);
@@ -33,7 +33,7 @@ async function backfillUserSpots(
     await insertProgressionEvent(supabase, {
       userId,
       eventType: "spot_create_pending",
-      sourceTable: "spots",
+      sourceTable: "trash_spotter_spots",
       sourceId: spot.id,
       statusPhase: "pending",
       weight: 2,
@@ -47,7 +47,7 @@ async function backfillUserSpots(
       await insertProgressionEvent(supabase, {
         userId,
         eventType: "spot_validation_bonus",
-        sourceTable: "spots",
+        sourceTable: "trash_spotter_spots",
         sourceId: spot.id,
         statusPhase: "validated",
         weight: 3,
@@ -161,7 +161,7 @@ export async function backfillAllProgression(
 ): Promise<void> {
   const [actionsUsers, spotsUsers, rsvpUsers, eventUsers] = await Promise.all([
     supabase.from("actions").select("created_by_clerk_id").limit(10000),
-    supabase.from("spots").select("created_by_clerk_id").limit(10000),
+    supabase.from("trash_spotter_spots").select("created_by_clerk_id").limit(10000),
     supabase.from("event_rsvps").select("participant_clerk_id").limit(10000),
     supabase.from("community_events").select("organizer_clerk_id").limit(10000),
   ]);

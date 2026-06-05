@@ -123,7 +123,7 @@ export async function handleNotificationEvent(event: Event): Promise<void> {
       const payload = event.payload as EventPayload["SPOT_VALIDATED"];
       try {
         const { data: spot } = await supabase
-          .from("spots")
+          .from("trash_spotter_spots")
           .select("label")
           .eq("id", payload.spotId)
           .single();
