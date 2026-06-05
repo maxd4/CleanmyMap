@@ -17,24 +17,28 @@ export function RadialProgressGauge({
   strokeWidth = 16,
   label,
   subLabel,
-  color = "emerald"
+  color = "red"
 }: RadialProgressGaugeProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (value / 100) * circumference;
 
   const colorClasses = {
-    emerald: "stroke-emerald-500",
-    blue: "stroke-blue-500",
-    violet: "stroke-violet-500",
-    amber: "stroke-amber-500"
+    red: "stroke-red-500",
+    cyan: "stroke-cyan-500",
+    blue: "stroke-cyan-500",
+    emerald: "stroke-sky-500",
+    violet: "stroke-sky-500",
+    amber: "stroke-red-400"
   };
 
   const bgClasses = {
-    emerald: "stroke-emerald-100 dark:stroke-emerald-950",
-    blue: "stroke-blue-100 dark:stroke-blue-950",
-    violet: "stroke-violet-100 dark:stroke-violet-950",
-    amber: "stroke-amber-100 dark:stroke-amber-950"
+    red: "stroke-red-100 dark:stroke-red-950",
+    cyan: "stroke-cyan-100 dark:stroke-cyan-950",
+    blue: "stroke-cyan-100 dark:stroke-cyan-950",
+    emerald: "stroke-sky-100 dark:stroke-sky-950",
+    violet: "stroke-sky-100 dark:stroke-sky-950",
+    amber: "stroke-red-100 dark:stroke-red-950"
   };
 
   return (

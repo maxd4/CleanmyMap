@@ -2,13 +2,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
 import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
-import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
-import { ReportsWindowComparisonsSection } from "@/components/reports/reports-window-comparisons-section";
-import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
-import { ReportsWebDocument } from "@/components/reports/reports-web-document";
+import { ReportsWebDocument } from "@/components/reports/reports-web-document.tsx";
 import { ReportsKpiSummary } from "@/components/reports/reports-kpi-summary";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
-import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
+import { ReportsImpactReadingsSection } from "@/components/reports/reports-impact-readings-section";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
@@ -42,7 +39,6 @@ type ReportsPageV1LayoutProps = {
   weather: ReportsWeather;
   adminWorkflowPreview: ActionListResponse | null;
   adminWorkflowAudit: AdminOperationAuditItem[] | null;
-  toReportsExportRow: (contract: ActionDataContract) => Record<string, unknown>;
   publicAccessBanner: ReactNode;
 };
 
@@ -59,7 +55,6 @@ export function ReportsPageV1Layout({
   weather,
   adminWorkflowPreview,
   adminWorkflowAudit,
-  toReportsExportRow,
   publicAccessBanner,
 }: ReportsPageV1LayoutProps) {
   const pageFamily = resolvePageFamily("/reports");
@@ -67,6 +62,13 @@ export function ReportsPageV1Layout({
   return (
     <div data-rubrique-report-root className="space-y-4">
       {publicAccessBanner}
+
+      <ReportsWebDocument
+        contracts={contracts}
+        communityEvents={communityEvents}
+        weather={weather}
+        overview={overview}
+      />
 
       <PageHero
         family={pageFamily}
@@ -109,38 +111,11 @@ export function ReportsPageV1Layout({
         recommendedReason={overview?.summary.recommendedAction.reason}
       />
 
-      <TerritoryMapComparisonCards
-        title="Deux lectures du territoire d'impact"
-        subtitle="La carte de base reste la référence terrain. La carte Terraink ajoute une lecture plus éditoriale et plus imprimable. On conserve les deux pour comparer la clarté, l'usage et la valeur documentaire."
-        locationLabel="Territoire audité"
-        tone="rose"
-        note="Cette double présentation évite de figer trop tôt un seul style. La carte brute et la carte Terraink servent à comparer deux intentions différentes."
-      />
-
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <p className="cmm-text-caption font-semibold uppercase tracking-[0.14em] cmm-text-muted">
-          Tracer
-        </p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <RubriqueExcelExportButton
-            rubriqueTitle="Reporting et pilotage"
-            data={contracts.map(toReportsExportRow)}
-          />
-        </div>
-      </section>
-
-      {overview ? (
-        <ReportsWindowComparisonsSection
-          comparisonsByWindow={overview.comparisonsByWindow}
-        />
-      ) : null}
-
-      {overview ? <KpiMethodBlock methods={overview.methods} title="Méthode" /> : null}
-
-      <ReportsWebDocument
+      <ReportsImpactReadingsSection
         contracts={contracts}
         communityEvents={communityEvents}
         weather={weather}
+        overview={overview}
       />
 
       <ReportsKpiSummary contracts={contracts} />

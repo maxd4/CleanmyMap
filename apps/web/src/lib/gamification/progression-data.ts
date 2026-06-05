@@ -254,7 +254,7 @@ export async function loadUserProgressionStats(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<UserProgressionStats> {
-  const [eventsResult, actionRows, validatedActionIds] = await Promise.all([
+  const [eventsResult, actionRows, validatedActionIds, participationCountResult] = await Promise.all([
     supabase
       .from("progression_events")
       .select("event_type, status_phase, xp_awarded")
@@ -262,10 +262,17 @@ export async function loadUserProgressionStats(
       .limit(12000),
     loadActionRowsForUser(supabase, userId),
     loadValidatedActionIdsForUser(supabase, userId),
+    supabase
+      .from("action_participants")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId),
   ]);
 
   if (eventsResult.error) {
     throw new Error(eventsResult.error.message);
+  }
+  if (participationCountResult.error) {
+    throw new Error(participationCountResult.error.message);
   }
 
   const events =
@@ -290,6 +297,8 @@ export async function loadUserProgressionStats(
       collectiveEvents += 1;
     }
   }
+
+  collectiveEvents += Number(participationCountResult.count ?? 0);
 
   let totalActions = 0;
   let approvedActions = 0;
@@ -351,7 +360,7 @@ export async function fetchSpotById(
   spotId: string,
 ): Promise<SpotRow | null> {
   const result = await supabase
-    .from("spots")
+    .from("trash_spotter_spots")
     .select("id, created_at, created_by_clerk_id, status, label, notes")
     .eq("id", spotId)
     .maybeSingle();

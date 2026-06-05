@@ -216,7 +216,7 @@ Le développement n'a pas reposé sur un seul modèle ni sur une seule plateform
 |---|---|---|---|
 | ChatGPT / Codex / modèle de langage équivalent | 50 % | 50 h | cadrage, génération, refactor, documentation, débogage |
 | Autres modèles de code | 20 % | 20 h | UX, plans d'améliorations, modularisation, documentation |
-| ChatGPT 5.5 modèle de langage | 20 % | 20 h | instructions, réflexions, sources, rédaction du rapport IA |
+| GPT-5.4 mini — développement du site | 20 % | 20 h | instructions, réflexions, sources, rédaction du rapport IA |
 | Outils non IA mais induits par l'usage IA | 10 % | 10 h | tests, validation, ajustements après propositions IA |
 
 Les ratios de productivité qui en découlent sont des ratios apparents, pas des mesures de performance humaine. Ils agrègent du code utile, du code remplacé, du refactor, de la configuration, du SQL, des scripts, du Markdown et du churn Git. Ils montrent surtout que la quantité produite doit toujours être relue à la lumière de la maintenabilité, de la qualité et du gain réel pour le projet.

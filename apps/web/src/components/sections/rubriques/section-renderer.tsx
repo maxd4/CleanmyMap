@@ -21,6 +21,7 @@ import {
   SandboxSection,
   TrashSpotterSection,
   WeatherSection,
+  JoinFormSection,
 } from "./terrain-sections";
 import { ConnectSection } from "./connect-section";
 import { PendingSection } from "./shared";
@@ -45,6 +46,7 @@ export const FINALIZED_SECTION_RENDERERS = {
   funding: () => <FundingSection />,
   "trash-spotter": () => <TrashSpotterSection />,
   route: () => <RouteSection />,
+  "rejoindre-un-formulaire": () => <JoinFormSection />,
   recycling: () => <RecyclingSection />,
   compost: () => <CompostSection />,
   climate: () => (

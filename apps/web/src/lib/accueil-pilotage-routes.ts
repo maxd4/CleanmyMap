@@ -6,7 +6,6 @@ export const PROFIL_ROUTE = "/profil";
 export const ADMIN_ROUTE = "/admin";
 export const ADMIN_GODMODE_ROUTE = "/admin/godmode";
 export const SPONSOR_PORTAL_ROUTE = "/sponsor-portal";
-export const OBSERVATOIRE_ROUTE = "/observatoire";
 export const REPORTS_ROUTE = "/reports";
 export const SIGN_IN_ROUTE = "/sign-in";
 export const ONBOARDING_LOCALISATION_ROUTE = "/onboarding/localisation";

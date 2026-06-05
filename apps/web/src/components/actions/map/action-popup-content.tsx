@@ -77,6 +77,13 @@ export function ActionPopupContent({
     cigaretteButts: butts,
     volunteersCount: volunteers,
   });
+  const isJoinableAction =
+    item.status === "approved" &&
+    (item.record_type === "action" || contract?.type === "action");
+  const joinHref =
+    isJoinableAction
+      ? `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(item.id)}`
+      : null;
 
   return (
     <div className="min-w-[300px] max-w-[340px] overflow-hidden rounded-3xl border border-slate-200/70 bg-white/95 shadow-[0_24px_60px_-28px_rgba(15,23,42,0.35)] backdrop-blur-xl dark:border-slate-800/70 dark:bg-slate-950/95">
@@ -114,6 +121,7 @@ export function ActionPopupContent({
         observedAt={observedAt}
         sourceLabel={`Source: ${contract?.source ?? item.source ?? "n/a"}`}
         updateHref={updateHref}
+        joinHref={joinHref}
         hasPollution={hasPollution}
       />
     </div>

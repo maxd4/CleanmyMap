@@ -9,7 +9,6 @@ import { PageHero, PageHeroBadge } from "@/components/ui/page-hero";
 import { getPageFamilyById } from "@/lib/ui/page-families";
 import {
   DASHBOARD_ROUTE,
-  OBSERVATOIRE_ROUTE,
   REPORTS_ROUTE,
 } from "@/lib/accueil-pilotage-routes";
 
@@ -143,10 +142,10 @@ export function PilotageRestrictedPage({
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
             <Link
-              href={OBSERVATOIRE_ROUTE}
+              href="/actions/map"
               className="inline-flex min-h-11 items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 text-sm font-black cmm-text-primary transition hover:-translate-y-[1px] hover:border-amber-300"
             >
-              {locale === "fr" ? "Observatoire" : "Observatory"}
+              {locale === "fr" ? "Carte des actions" : "Action map"}
               <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>

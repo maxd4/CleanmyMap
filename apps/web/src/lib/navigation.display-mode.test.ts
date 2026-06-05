@@ -154,11 +154,10 @@ describe("navigation display modes", () => {
       "admin",
       "sponsor",
       "elus",
-      "godmode",
     ]);
   });
 
-  it("shows the admin home block without godmode but with pilotage and elus", () => {
+  it("shows the admin home block with pilotage and elus", () => {
     const homeSpace = getNavigationSpacesForProfile(
       "admin",
       "exhaustif",
@@ -207,10 +206,9 @@ describe("navigation display modes", () => {
       "Mon espace",
       "Sommaire",
       "Pilotage",
-      "Administration du site",
+      "Administration",
       "Portail décideurs",
       "Gouvernance",
-      "Créateur du site",
     ]);
     expect(learnSpace?.items.map((item) => item.label.fr)).toContain("S'entraîner");
     expect(visualizeSpace?.items.map((item) => item.label.fr)).toContain("Rapports d'impact");

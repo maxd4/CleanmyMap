@@ -57,11 +57,11 @@ export function generatePdfHtml(
     
     <div style="background: rgba(255,255,255,0.05); padding: 24px; border-radius: 16px; display: flex; align-items: center; gap: 24px; margin-top: 40px;">
       <div style="width: 100px; height: 100px; background: white; padding: 8px; border-radius: 12px;">
-         <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://cleanmymap.com/observatoire?org=${encodeURIComponent(selectedOrg || "")}" style="width: 100%; height: 100%;" />
+         <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://cleanmymap.com/reports?org=${encodeURIComponent(selectedOrg || "")}" style="width: 100%; height: 100%;" />
       </div>
       <div>
-        <div style="font-weight: 600; font-size: 16px; color: white; font-family: 'Outfit';">Accès Live Observatoire</div>
-        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px; line-height: 1.5;">Scannez pour consulter les données vivantes, les preuves spatiales et les certificats d'action détaillés sur la plateforme CleanMyMap.</p>
+        <div style="font-weight: 600; font-size: 16px; color: white; font-family: 'Outfit';">Accès rapports d&apos;impact</div>
+        <p style="font-size: 13px; color: #94a3b8; margin-top: 4px; line-height: 1.5;">Scannez pour consulter les synthèses, les preuves spatiales et les certificats d'action détaillés sur la plateforme CleanMyMap.</p>
       </div>
     </div>
 

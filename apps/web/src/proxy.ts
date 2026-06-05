@@ -108,7 +108,6 @@ export const APP_SHELL_ROUTE_PREFIXES = [
   EXPLORER_ROUTE,
   "/learn",
   "/methodologie",
-  "/observatoire",
   PARCOURS_ROUTE,
   "/partners",
   "/prints",

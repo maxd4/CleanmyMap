@@ -17,13 +17,20 @@ import {
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
-import { Cell, Pie, PieChart as RechartsPieChart, ResponsiveContainer, Tooltip } from "recharts";
 import type { ServiceStatusInfo } from "@/lib/dashboard/status";
 import type {
   EnvironmentalImpactInfrastructureServiceEstimate,
   EnvironmentalImpactInfrastructureServiceKey,
-} from "@/lib/environmental-impact-estimator";
-import { buildServiceRiskRows, formatServiceRiskBandLabel } from "@/lib/environmental-impact-estimator/service-risk";
+} from "@/lib/environmental-impact-estimator/types";
+import { getServicePlanInfo } from "@/lib/environmental-impact-estimator/service-plan";
+import {
+  buildPortfolioQuotaSummary,
+  buildServiceQuotaSummary,
+  buildServiceRiskRows,
+  formatServiceQuotaStateLabel,
+  formatServiceRiskBandLabel,
+  isDevelopmentAiServiceKey,
+} from "@/lib/environmental-impact-estimator/service-risk";
 import { cn } from "@/lib/utils";
 
 export type FreePlanSelectionKey = "total" | EnvironmentalImpactInfrastructureServiceKey;
@@ -53,6 +60,8 @@ export type FreePlanDashboardState = {
   selectedBand: string;
   selectedHealthState: ServiceStatusInfo["state"] | "total";
   selectedColor: string;
+  selectedPrimaryQuotaLabel: string;
+  selectedPrimaryQuotaState: string;
   selectedMonthlyKgCo2eProxy: number;
   selectedAnnualKgCo2eProxy: number | null;
   selectedDeltaKgCo2eProxy: number | null;
@@ -181,15 +190,6 @@ function formatKg(value: number | null | undefined): string {
   return `${formatNumber(value, 2)} kg CO2e proxy`;
 }
 
-function formatDeltaKg(value: number | null | undefined): string {
-  if (typeof value !== "number" || Number.isNaN(value)) {
-    return "NA";
-  }
-
-  const sign = value > 0 ? "+" : value < 0 ? "-" : "";
-  return `${sign}${formatNumber(Math.abs(value), 2)} kg CO2e proxy`;
-}
-
 function getPreviousServiceCharge(
   previousServices: EnvironmentalImpactInfrastructureServiceEstimate[],
   serviceKey: EnvironmentalImpactInfrastructureServiceKey,
@@ -244,6 +244,7 @@ export function buildFreePlanChartEntries(params: {
   selectedKey: FreePlanSelectionKey;
 }): FreePlanChartEntry[] {
   const sortedServices = params.services
+    .filter((service) => !isDevelopmentAiServiceKey(service.key))
     .slice()
     .sort((left, right) => {
       const byCharge = (right.monthlyKgCo2eProxy ?? 0) - (left.monthlyKgCo2eProxy ?? 0);
@@ -274,21 +275,27 @@ export function buildFreePlanDashboardState(params: {
   serviceHealth: Record<string, ServiceStatusInfo>;
   selectedKey: FreePlanSelectionKey;
 }): FreePlanDashboardState {
-  const serviceByKey = new Map(params.services.map((service) => [service.key, service] as const));
-  const riskRows = buildServiceRiskRows(params.services, params.previousServices);
+  const quotaServices = params.services.filter((service) => !isDevelopmentAiServiceKey(service.key));
+  const previousQuotaServices = params.previousServices.filter(
+    (service) => !isDevelopmentAiServiceKey(service.key),
+  );
+  const serviceByKey = new Map(quotaServices.map((service) => [service.key, service] as const));
+  const riskRows = buildServiceRiskRows(quotaServices, previousQuotaServices);
   const riskByKey = new Map(riskRows.map((row) => [row.key, row] as const));
 
-  const totalMonthlyKgCo2eProxy = params.services.reduce(
+  const totalMonthlyKgCo2eProxy = quotaServices.reduce(
     (sum, service) => sum + (service.monthlyKgCo2eProxy ?? 0),
     0,
   );
-  const hasAllAnnualValues = params.services.every((service) => service.annualKgCo2eProxy !== null && service.annualKgCo2eProxy !== undefined);
+  const hasAllAnnualValues = quotaServices.every(
+    (service) => service.annualKgCo2eProxy !== null && service.annualKgCo2eProxy !== undefined,
+  );
   const totalAnnualKgCo2eProxy = hasAllAnnualValues
-    ? params.services.reduce((sum, service) => sum + (service.annualKgCo2eProxy ?? 0), 0)
+    ? quotaServices.reduce((sum, service) => sum + (service.annualKgCo2eProxy ?? 0), 0)
     : null;
-  const hasPreviousBaseline = params.previousServices.length > 0;
+  const hasPreviousBaseline = previousQuotaServices.length > 0;
   const totalPreviousKgCo2eProxy = hasPreviousBaseline
-    ? params.previousServices.reduce(
+    ? previousQuotaServices.reduce(
         (sum, service) => sum + (service.monthlyKgCo2eProxy ?? 0),
         0,
       )
@@ -314,7 +321,6 @@ export function buildFreePlanDashboardState(params: {
       weight: service.monthlyKgCo2eProxy ?? 0,
     })),
   );
-
   const resolvedSelectedKey =
     params.selectedKey === "total" || serviceByKey.has(params.selectedKey)
       ? params.selectedKey
@@ -372,8 +378,6 @@ export function buildFreePlanDashboardState(params: {
             return selectedMonthlyKgCo2eProxy - previousMonthlyKgCo2eProxy;
           })()
         : null;
-  const selectedSharePercent =
-    resolvedSelectedKey === "total" ? 100 : selectedService?.sharePercent ?? null;
   const selectedThresholdProximityPercent =
     resolvedSelectedKey === "total"
       ? totalThresholdProximityPercent
@@ -386,16 +390,26 @@ export function buildFreePlanDashboardState(params: {
     resolvedSelectedKey === "total"
       ? totalConfidencePercent
       : selectedService?.confidencePercent ?? null;
+  const selectedQuotaSummary =
+    resolvedSelectedKey === "total"
+      ? buildPortfolioQuotaSummary(quotaServices)
+      : selectedService
+        ? buildServiceQuotaSummary(selectedService)
+        : null;
+  const selectedPrimaryQuota = selectedQuotaSummary?.primaryMetric ?? null;
+  const selectedPrimaryQuotaLabel = selectedPrimaryQuota?.label ?? "NA";
+  const selectedPrimaryQuotaState = selectedQuotaSummary?.state ?? "NA";
+  const selectedPrimaryQuotaPercent = selectedPrimaryQuota?.consumedPercent ?? null;
 
   const quotaCards: FreePlanMetricCard[] = [
     {
-      label: "Part du plan utilisée",
-      value: selectedSharePercent,
+      label: "Quota principal",
+      value: selectedPrimaryQuotaPercent,
       unit: "percent",
       hint:
-        resolvedSelectedKey === "total"
-          ? "Vue globale normalisée à 100 %."
-          : "Part du service dans le portefeuille du mois.",
+        selectedPrimaryQuota === null
+          ? "NA"
+          : `${selectedPrimaryQuotaLabel} · ${formatServiceQuotaStateLabel(selectedPrimaryQuotaState)}`,
       tone: "sky",
     },
     {
@@ -456,13 +470,13 @@ export function buildFreePlanDashboardState(params: {
         resolvedSelectedKey === "total"
           ? "Écart du portefeuille total par rapport au snapshot précédent."
           : "Écart du service sélectionné par rapport au mois précédent.",
-      tone: selectedDeltaKgCo2eProxy >= 0 ? "rose" : "emerald",
+      tone: (selectedDeltaKgCo2eProxy ?? 0) >= 0 ? "rose" : "emerald",
     },
     {
       label: "Total portefeuille",
       value: totalMonthlyKgCo2eProxy,
       unit: "kg",
-      hint: `${params.services.length} service${params.services.length > 1 ? "s" : ""} suivis.`,
+      hint: `${quotaServices.length} service${quotaServices.length > 1 ? "s" : ""} web suivis.`,
       tone: "amber",
     },
   ];
@@ -475,13 +489,15 @@ export function buildFreePlanDashboardState(params: {
     selectedBand,
     selectedHealthState,
     selectedColor,
+    selectedPrimaryQuotaLabel,
+    selectedPrimaryQuotaState,
     selectedMonthlyKgCo2eProxy,
     selectedAnnualKgCo2eProxy,
     selectedDeltaKgCo2eProxy,
     totalMonthlyKgCo2eProxy,
     totalAnnualKgCo2eProxy,
     totalDeltaKgCo2eProxy,
-    serviceCount: params.services.length,
+    serviceCount: quotaServices.length,
     quotaCards,
     impactCards,
   };
@@ -567,38 +583,6 @@ function ServiceButton({
   );
 }
 
-function ChartTooltip({
-  active,
-  payload,
-}: {
-  active?: boolean;
-  payload?: Array<{ payload: FreePlanChartEntry }>;
-}) {
-  if (!active || !payload?.length) {
-    return null;
-  }
-
-  const item = payload[0]?.payload;
-  if (!item) {
-    return null;
-  }
-
-  return (
-    <div className="rounded-3xl border border-white/10 bg-slate-950 px-4 py-3 shadow-2xl">
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-        Service
-      </p>
-      <p className="mt-1 text-sm font-black text-white">{item.label}</p>
-      <p className="mt-2 text-sm font-semibold text-white/80">
-        Part du plan: {formatPercent(item.value)}
-      </p>
-      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
-        {formatKg(item.monthlyKgCo2eProxy)}
-      </p>
-    </div>
-  );
-}
-
 export function FreePlanServicesVisual({
   services,
   previousServices,
@@ -610,8 +594,9 @@ export function FreePlanServicesVisual({
 }) {
   const [selectedKey, setSelectedKey] = useState<FreePlanSelectionKey>("total");
   const [hoveredKey, setHoveredKey] = useState<FreePlanSelectionKey | null>(null);
+  const visibleServices = services.filter((service) => !isDevelopmentAiServiceKey(service.key));
   const resolvedSelectedKey =
-    selectedKey === "total" || services.some((service) => service.key === selectedKey)
+    selectedKey === "total" || visibleServices.some((service) => service.key === selectedKey)
       ? selectedKey
       : "total";
   const activeKey = hoveredKey ?? resolvedSelectedKey;
@@ -619,29 +604,27 @@ export function FreePlanServicesVisual({
   const dashboardState = useMemo(
     () =>
       buildFreePlanDashboardState({
-        services,
+        services: visibleServices,
         previousServices,
         serviceHealth,
         selectedKey: resolvedSelectedKey,
       }),
-    [services, previousServices, serviceHealth, resolvedSelectedKey],
+    [visibleServices, previousServices, serviceHealth, resolvedSelectedKey],
   );
 
   const chartEntries = useMemo(
     () =>
       buildFreePlanChartEntries({
-        services,
+        services: visibleServices,
         selectedKey: activeKey,
       }),
-    [services, activeKey],
+    [visibleServices, activeKey],
   );
 
   const selectedService =
     dashboardState.selectionKey === "total"
       ? null
-      : services.find((service) => service.key === dashboardState.selectionKey) ?? null;
-  const selectedVisual = getServiceVisualMeta(dashboardState.selectionKey);
-  const SelectedIcon = selectedVisual.icon;
+      : visibleServices.find((service) => service.key === dashboardState.selectionKey) ?? null;
   const selectedHealthTone =
     dashboardState.selectedHealthState === "ready"
       ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-100"
@@ -652,6 +635,7 @@ export function FreePlanServicesVisual({
           : dashboardState.selectedHealthState === "missing"
             ? "border-rose-500/20 bg-rose-500/10 text-rose-100"
             : "border-amber-500/20 bg-amber-500/10 text-amber-100";
+  const selectedPlanInfo = selectedService ? getServicePlanInfo(selectedService.key) : null;
 
   return (
     <section className="rounded-[3rem] border border-white/5 bg-white/5 p-4 shadow-sm">
@@ -688,7 +672,7 @@ export function FreePlanServicesVisual({
             selectedKey={dashboardState.selectionKey === "total"}
             onClick={() => setSelectedKey("total")}
           />
-          {services.map((service) => {
+          {visibleServices.map((service) => {
             const meta = SERVICE_VISUALS[service.key];
             const isActive = dashboardState.selectionKey === service.key;
             return (
@@ -707,153 +691,220 @@ export function FreePlanServicesVisual({
 
         <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
           <article className="relative overflow-hidden rounded-[2.5rem] border border-white/5 bg-slate-950/35 p-4">
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
-              <div className="relative h-[320px]">
-                {chartEntries.length > 0 ? (
-                  <>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RechartsPieChart>
-                        <Pie
-                          data={chartEntries}
-                          dataKey="value"
-                          nameKey="label"
-                          innerRadius={92}
-                          outerRadius={128}
-                          paddingAngle={2}
-                          stroke="rgba(255,255,255,0.10)"
-                          strokeWidth={1}
-                          onMouseLeave={() => setHoveredKey(null)}
-                          onMouseEnter={(_, index) => {
-                            const item = chartEntries[index];
-                            if (item) {
-                              setHoveredKey(item.key);
-                            }
-                          }}
-                          onClick={(_, index) => {
-                            const item = chartEntries[index];
-                            if (item) {
-                              setSelectedKey(item.key);
-                              setHoveredKey(item.key);
-                            }
-                          }}
-                        >
-                          {chartEntries.map((entry) => (
-                            <Cell
-                              key={entry.key}
-                              fill={entry.color}
-                              opacity={entry.selected ? 1 : 0.28}
-                            />
-                          ))}
-                        </Pie>
-                        <Tooltip content={<ChartTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                      <div className="rounded-[2rem] border border-white/8 bg-slate-950/82 px-5 py-4 text-center shadow-2xl">
-                        <div
-                          className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10"
-                          style={{
-                            color: selectedVisual.color,
-                            boxShadow: `0 0 0 1px ${selectedVisual.glow}`,
-                          }}
-                        >
-                          <SelectedIcon size={24} />
-                        </div>
-                        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-                          {dashboardState.selectedLabel}
-                        </p>
-                        <p className="mt-2 text-3xl font-black text-white">
-                          {formatKg(dashboardState.selectedMonthlyKgCo2eProxy)}
-                        </p>
-                        <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
-                          {dashboardState.selectionKey === "total"
-                            ? `${dashboardState.serviceCount} services`
-                            : `${formatPercent(dashboardState.selectedSharePercent)} du plan`}
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex h-full items-center justify-center rounded-[2rem] border border-dashed border-white/10 bg-black/20 text-sm text-white/35">
-                    Aucun service disponible pour le moment.
-                  </div>
-                )}
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
+                  Plans et quotas
+                </p>
+                <h4 className="mt-1 text-2xl font-black text-white">
+                  Qui pèse le plus
+                </h4>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/55">
+                  La répartition est lisible uniquement ici, parce qu&apos;elle compare
+                  directement les services qui composent l&apos;ACV numérique de CleanMyMap.
+                </p>
               </div>
-
-              <div className="space-y-3 rounded-[2rem] border border-white/5 bg-white/5 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
-                      Vue sélectionnée
-                    </p>
-                    <h4 className="mt-1 text-xl font-black text-white">
-                      {dashboardState.selectedLabel}
-                    </h4>
-                    <p className="mt-2 text-sm leading-relaxed text-white/55">
-                      {dashboardState.selectedDescription}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30">
-                      Pollution mensuelle
-                    </p>
-                    <p className="mt-1 text-lg font-black text-white">
-                      {formatKg(dashboardState.selectedMonthlyKgCo2eProxy)}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30">
-                      Pollution annuelle
-                    </p>
-                    <p className="mt-1 text-lg font-black text-white">
-                      {formatKg(dashboardState.selectedAnnualKgCo2eProxy)}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30">
-                    Delta vs N-1
-                  </p>
-                  <p
-                    className={cn(
-                      "mt-1 text-lg font-black",
-                      dashboardState.selectedDeltaKgCo2eProxy > 0
-                        ? "text-rose-300"
-                        : dashboardState.selectedDeltaKgCo2eProxy < 0
-                          ? "text-emerald-300"
-                          : "text-white",
-                    )}
-                  >
-                    {formatDeltaKg(dashboardState.selectedDeltaKgCo2eProxy)}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30">
-                    Total portefeuille
-                  </p>
-                  <p className="mt-1 text-lg font-black text-white">
-                    {formatKg(dashboardState.totalMonthlyKgCo2eProxy)}
-                  </p>
-                </div>
-
-                {dashboardState.selectionKey !== "total" && selectedService ? (
-                  <div className="rounded-2xl border border-white/10 bg-black/10 p-3 text-xs leading-relaxed text-white/55">
-                    {selectedService.description}
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-white/10 bg-black/10 p-3 text-xs leading-relaxed text-white/55">
-                    La vue Total agrège tous les services et alimente le donut global.
-                  </div>
-                )}
+              <div className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
+                {dashboardState.selectionKey === "total"
+                  ? "Vue totale"
+                  : dashboardState.selectedLabel}
               </div>
             </div>
+
+            <div className="mt-5 space-y-4">
+              {chartEntries.length > 0 ? (
+                <>
+                  <div className="overflow-hidden rounded-full border border-white/10 bg-white/5">
+                    <div className="flex h-14 overflow-hidden rounded-full">
+                      {chartEntries.map((entry) => {
+                        const isActive = activeKey === entry.key;
+                        const isSelected = dashboardState.selectionKey === "total" || entry.selected;
+                        return (
+                          <button
+                            key={entry.key}
+                            type="button"
+                            onMouseEnter={() => setHoveredKey(entry.key)}
+                            onMouseLeave={() => setHoveredKey(null)}
+                            onClick={() => {
+                              setSelectedKey(entry.key);
+                              setHoveredKey(entry.key);
+                            }}
+                            className={cn(
+                              "relative flex h-full min-w-0 items-center justify-center border-r border-black/20 last:border-r-0",
+                              isActive ? "shadow-[inset_0_0_0_1px_rgba(255,255,255,0.22)]" : "opacity-80",
+                            )}
+                            style={{
+                              width: `${Math.max(0, entry.value)}%`,
+                              backgroundColor: entry.color,
+                              opacity: isSelected ? 1 : 0.34,
+                            }}
+                            title={`${entry.label}: ${formatPercent(entry.value)}`}
+                            aria-label={`${entry.label} ${formatPercent(entry.value)} du total`}
+                          >
+                            {entry.value >= 6 ? (
+                              <span className="px-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-950 drop-shadow-[0_1px_0_rgba(255,255,255,0.4)]">
+                                {formatPercent(entry.value)}
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.18em] text-white/30">
+                    <span>0%</span>
+                    <span>{formatPercent(100)}</span>
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30">
+                        Quota principal
+                      </p>
+                      <p className="mt-1 text-lg font-black text-white">
+                        {dashboardState.selectedPrimaryQuotaState === "NA"
+                          ? "NA"
+                          : `${dashboardState.selectedPrimaryQuotaLabel} · ${formatPercent(
+                              dashboardState.quotaCards[0]?.value ?? null,
+                            )}`}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/30">
+                        État du quota
+                      </p>
+                      <p className="mt-1 text-lg font-black text-white">
+                        {dashboardState.selectedPrimaryQuotaState === "NA"
+                          ? "NA"
+                          : formatServiceQuotaStateLabel(
+                              dashboardState.selectedPrimaryQuotaState as
+                                | "ok"
+                                | "attention"
+                                | "proche limite"
+                                | "dépassé"
+                                | "NA",
+                            )}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex h-[180px] items-center justify-center rounded-[2rem] border border-dashed border-white/10 bg-black/20 text-sm text-white/35">
+                  Aucun service disponible pour le moment.
+                </div>
+              )}
+            </div>
           </article>
+
+          <aside className="space-y-3 rounded-[2.5rem] border border-white/5 bg-white/5 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-white/30">
+                  Légende
+                </p>
+                <h4 className="mt-1 text-xl font-black text-white">
+                  Services principaux
+                </h4>
+                <p className="mt-2 text-sm leading-relaxed text-white/55">
+                  Les services les plus lourds sont listés en premier, puis le bloc
+                  autres rassemble le reste de la répartition.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {chartEntries.length > 0 ? (
+                <>
+                  {chartEntries.slice(0, 5).map((entry) => {
+                    const meta = SERVICE_VISUALS[entry.key];
+                    const Icon = meta.icon;
+                    return (
+                      <div
+                        key={entry.key}
+                        className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/10 px-3 py-3"
+                      >
+                        <span
+                          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/20"
+                          style={{ color: meta.color, boxShadow: `inset 0 0 0 1px ${meta.color}22` }}
+                        >
+                          <Icon size={16} />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-white">
+                            {entry.label}
+                          </p>
+                          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/32">
+                            Part de l&apos;impact numérique estimé
+                          </p>
+                        </div>
+                        <p className="text-sm font-black text-white">
+                          {formatPercent(entry.value)}
+                        </p>
+                      </div>
+                    );
+                  })}
+
+                  {chartEntries.length > 5 ? (
+                    <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-black/10 px-3 py-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/20 text-white/60">
+                        ...
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-white">
+                          Autres ({chartEntries.length - 5})
+                        </p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/32">
+                          Reste du portefeuille
+                        </p>
+                      </div>
+                      <p className="text-sm font-black text-white">
+                        {formatPercent(
+                          chartEntries
+                            .slice(5)
+                            .reduce((sum, item) => sum + (item.value ?? 0), 0),
+                        )}
+                      </p>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <div className="rounded-2xl border border-dashed border-white/10 p-4 text-sm text-white/40">
+                  NA
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-[1.75rem] border border-white/10 bg-black/10 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/30">
+                Vue sélectionnée
+              </p>
+              <h5 className="mt-1 text-lg font-black text-white">
+                {dashboardState.selectedLabel}
+              </h5>
+              <p className="mt-2 text-sm leading-relaxed text-white/55">
+                {dashboardState.selectedDescription}
+              </p>
+              {selectedPlanInfo ? (
+                <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
+                    Plan {selectedPlanInfo.type}
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
+                    Prix {selectedPlanInfo.price}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="rounded-[1.75rem] border border-white/10 bg-black/10 p-4 text-xs leading-relaxed text-white/55">
+              {dashboardState.selectionKey !== "total" && selectedService ? (
+                selectedService.description
+              ) : (
+                <>La vue Total agrège tous les services du graphique de comparaison.</>
+              )}
+            </div>
+          </aside>
         </div>
 
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">

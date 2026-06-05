@@ -57,7 +57,7 @@ export function MetricCard(props: {
  props.tone ==="accent"
  ?"border-[#3f7f95] bg-[#edf7fa]"
  : props.tone ==="danger"
- ?"border-rose-200 bg-rose-50"
+ ?"border-red-200 bg-red-50"
  :"border-slate-200 bg-[#f8fafc]";
 
  return (

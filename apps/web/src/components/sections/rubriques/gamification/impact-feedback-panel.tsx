@@ -78,7 +78,7 @@ export const ImpactFeedbackPanel = memo(function ImpactFeedbackPanel({
 
   const impact = progression.impact;
   const zonesCount = countUniqueZones(progression.history.mapPoints);
-  const wasteKg = roundValue(impact.wasteKg);
+  const surfaceCleanedM2 = roundValue(impact.surfaceCleanedM2);
 
   return (
     <section className="rounded-[3rem] border border-white/5 bg-slate-950/40 backdrop-blur-3xl p-8 shadow-2xl relative overflow-hidden">
@@ -109,17 +109,15 @@ export const ImpactFeedbackPanel = memo(function ImpactFeedbackPanel({
           {fr ? (
             <>
               Vos contributions validées représentent environ{" "}
-              <span className="text-red-300">{wasteKg} kg</span> de déchets retirés,
-              <span className="text-red-300"> {impact.cigaretteButts}</span> mégots
-              récupérés et une couverture d&apos;environ{" "}
+              <span className="text-red-300">{surfaceCleanedM2} m²</span> de surface nettoyée,
+              et une couverture d&apos;environ{" "}
               <span className="text-red-300">{zonesCount}</span> zones distinctes.
             </>
           ) : (
             <>
               Your validated contributions represent about{" "}
-              <span className="text-red-300">{wasteKg} kg</span> of removed waste,
-              <span className="text-red-300"> {impact.cigaretteButts}</span> collected
-              cigarette butts and coverage across{" "}
+              <span className="text-red-300">{surfaceCleanedM2} m²</span> of cleaned surface,
+              and coverage across{" "}
               <span className="text-red-300">{zonesCount}</span> distinct zones.
             </>
           )}

@@ -130,6 +130,7 @@ type ProfileSpacePageMap = Record<
 const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "profile",
   "new",
+  "rejoindre-un-formulaire",
   "map",
   "history",
   "dashboard",
@@ -156,6 +157,7 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
 const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "profile",
   "new",
+  "rejoindre-un-formulaire",
   "map",
   "history",
   "dashboard",
@@ -177,7 +179,7 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
 const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   benevole: {
     home: ["dashboard", "explorer"],
-    act: ["new", "route", "weather", "trash-spotter"],
+    act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -193,7 +195,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   },
   coordinateur: {
     home: ["dashboard", "explorer", "pilotage", "elus"],
-    act: ["new", "route", "weather", "trash-spotter"],
+    act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -209,7 +211,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   },
   scientifique: {
     home: ["dashboard", "explorer", "elus"],
-    act: ["new", "route", "weather", "trash-spotter"],
+    act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -225,7 +227,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   },
   entreprise: {
     home: ["dashboard", "explorer", "sponsor", "funding"],
-    act: ["new", "route", "weather", "trash-spotter"],
+    act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -241,7 +243,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   },
   elu: {
     home: ["dashboard", "explorer", "sponsor", "elus"],
-    act: ["new", "route", "weather", "trash-spotter"],
+    act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -257,7 +259,7 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   },
   admin: {
     home: ["dashboard", "explorer", "pilotage", "admin", "elus"],
-    act: ["new", "route", "weather", "trash-spotter"],
+    act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
@@ -272,8 +274,8 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
     pilot: [],
   },
   max: {
-    home: ["dashboard", "explorer", "pilotage", "admin", "sponsor", "elus", "godmode"],
-    act: ["new", "route", "weather", "trash-spotter"],
+    home: ["dashboard", "explorer", "pilotage", "admin", "sponsor", "elus"],
+    act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
     visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],

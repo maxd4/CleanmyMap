@@ -38,7 +38,6 @@ const ROUTE_ACCESS_RULES: Array<{
   { pattern: /^\/sponsor-portal$/, mode: "disabled" },
   { pattern: /^\/reports$/, mode: "visible" },
   { pattern: /^\/learn\/hub$/, mode: "visible" },
-  { pattern: /^\/observatoire$/, mode: "visible" },
   { pattern: /^\/methodologie$/, mode: "visible" },
 ];
 

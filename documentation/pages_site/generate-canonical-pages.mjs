@@ -172,7 +172,7 @@ export const entries = [
   {
     route: "/sections/route",
     slug: "sections-route",
-    title: "Itinéraire IA",
+    title: "Où agir",
     family: "02-agir",
     kind: "page",
     status: "canonique",
@@ -263,17 +263,6 @@ export const entries = [
     legacyDocs: ["../3-BLOC-VISUALISER&IMPACTER/sandbox.md"],
   },
   {
-    route: "/observatoire",
-    slug: "observatoire",
-    title: "Observatoire public",
-    family: "03-cartographie-impact",
-    kind: "page",
-    status: "canonique",
-    exception: false,
-    summary: "Lecture publique des données ouvertes et vérifiables.",
-    legacyDocs: ["../3-BLOC-VISUALISER&IMPACTER/observatoire_public.md"],
-  },
-  {
     route: "/reports",
     slug: "reports",
     title: "Rapports d'impact",
@@ -334,7 +323,7 @@ export const entries = [
   {
     route: "/open-data",
     slug: "open-data",
-    title: "Open data",
+    title: "Données publiques",
     family: "04-reseau-discussions",
     kind: "page",
     status: "canonique",
@@ -619,7 +608,7 @@ export const entries = [
   {
     route: "/admin",
     slug: "admin",
-    title: "Administration du site",
+    title: "Administration",
     family: "09-admin-superadmin",
     kind: "page",
     status: "canonique",
@@ -652,12 +641,12 @@ export const entries = [
   {
     route: "/admin/godmode",
     slug: "admin-godmode",
-    title: "Créateur du site",
+    title: "Administration avancée",
     family: "09-admin-superadmin",
     kind: "page",
     status: "canonique",
     exception: false,
-    summary: "Supervision avancée et maintenance privilégiée.",
+    summary: "Sous-partie cachée de l'administration pour max.",
     legacyDocs: [],
   },
 
@@ -831,7 +820,7 @@ function expectedToneKeyForRoute(routePattern) {
   if (base === "explorer") return "yellow";
   if (base === "pilotage" || base === "sponsor-portal" || base === "elus") return "pilotage";
 
-  if (isRoute("/actions/map") || isRoute("/sandbox") || isRoute("/observatoire")) return "sky";
+  if (isRoute("/actions/map") || isRoute("/sandbox")) return "sky";
   if (isRoute("/sections/route")) return "emerald";
   if (isRoute("/sections/[sectionId]")) return "system";
   if (isRoute("/parcours")) return "amber";
@@ -1142,7 +1131,6 @@ function resolveBackdropToneKey(pathname) {
 
   if (
     base === "pilotage" ||
-    base === "observatoire" ||
     base === "reports" ||
     base === "sponsor-portal" ||
     base === "elus"

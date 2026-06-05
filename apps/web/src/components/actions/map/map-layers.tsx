@@ -53,6 +53,10 @@ import {
   INFRASTRUCTURE_ALERT_THRESHOLD,
 } from "@/components/actions/map-marker-categories";
 
+type LeafletClusterLike = {
+  getChildCount: () => number;
+};
+
 function resolvePointColor(
   item: ActionMapItem,
   references?: PollutionScoreReferences | null,
@@ -69,7 +73,12 @@ function resolvePointColor(
 
 export function isTrashSpotterItem(item: ActionMapItem): boolean {
   const type = mapItemType(item);
-  return type === "spot" || item.source === "spots" || item.record_type === "other";
+  return (
+    type === "spot" ||
+    item.source === "trash_spotter_spots" ||
+    item.source === "spots" ||
+    item.record_type === "other"
+  );
 }
 
 export function SignalementMarkers({
@@ -107,7 +116,7 @@ export function SignalementMarkers({
       spiderfyOnMaxZoom={true}
       spiderfyDistanceMultiplier={1.6}
       showCoverageOnHover={false}
-      iconCreateFunction={(cluster) => {
+      iconCreateFunction={(cluster: LeafletClusterLike) => {
         const childCount = cluster.getChildCount();
         const tier = resolveClusterDensityTier(childCount);
         const size = resolveClusterIconSize(childCount);
@@ -373,7 +382,7 @@ export function TrashSpotterMarkers({
       spiderfyOnMaxZoom={true}
       spiderfyDistanceMultiplier={1.6}
       showCoverageOnHover={false}
-      iconCreateFunction={(cluster) => {
+      iconCreateFunction={(cluster: LeafletClusterLike) => {
         const childCount = cluster.getChildCount();
         const tier = resolveClusterDensityTier(childCount);
         const size = resolveClusterIconSize(childCount);

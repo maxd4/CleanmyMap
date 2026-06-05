@@ -54,13 +54,6 @@ const captureConfig = [
     filename: "reseau-page"
   },
   {
-    route: "/observatoire-public",
-    type: "page",
-    section: "observatoire",
-    outputDir: "documentation/liberte-UX-UI/04-BLOC-VISUALISER",
-    filename: "observatoire-public"
-  },
-  {
     route: "/annuaire-partenaires",
     type: "page",
     section: "annuaire",

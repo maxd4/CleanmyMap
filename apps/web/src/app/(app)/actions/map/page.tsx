@@ -186,9 +186,6 @@ function ActionsMapPageContent() {
             <CmmButton href="/actions/new" tone="primary" variant="pill" className="w-full justify-center px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">
               Déclarer <ArrowRight size={14} className="transition-transform hover:translate-x-1" />
             </CmmButton>
-            <CmmButton href="/observatoire" tone="secondary" variant="pill" className="w-full justify-center px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">
-              Observatoire <ArrowRight size={14} />
-            </CmmButton>
             <CmmButton href="/methodologie" tone="tertiary" variant="pill" className="w-full justify-center px-5 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] gap-3 sm:w-auto">
               Méthodologie <ArrowRight size={14} />
             </CmmButton>

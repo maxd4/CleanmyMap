@@ -77,6 +77,24 @@ const services = [
     confidencePercent: 90,
     metricEstimates: [buildMetric("supabaseStorage", "Supabase - stockage", 50, 100)],
   }),
+  buildService({
+    key: "chatgpt",
+    label: "GPT-5.4 mini — développement du site",
+    monthlyKgCo2eProxy: 4.1,
+    annualKgCo2eProxy: 49.2,
+    sharePercent: 91,
+    confidencePercent: 74,
+    metricEstimates: [buildMetric("chatgptConversationHours", "GPT-5.4 mini - heures", 8, 10)],
+  }),
+  buildService({
+    key: "codex",
+    label: "Codex — développement du site",
+    monthlyKgCo2eProxy: 1.1,
+    annualKgCo2eProxy: 13.2,
+    sharePercent: 18,
+    confidencePercent: 78,
+    metricEstimates: [buildMetric("codexSessions", "Codex - sessions", 3, 5)],
+  }),
 ] as EnvironmentalImpactInfrastructureServiceEstimate[];
 
 const previousServices = [
@@ -97,6 +115,24 @@ const previousServices = [
     sharePercent: 80,
     confidencePercent: 88,
     metricEstimates: [buildMetric("supabaseStorage", "Supabase - stockage", 40, 100)],
+  }),
+  buildService({
+    key: "chatgpt",
+    label: "GPT-5.4 mini — développement du site",
+    monthlyKgCo2eProxy: 3.3,
+    annualKgCo2eProxy: 39.6,
+    sharePercent: 85,
+    confidencePercent: 72,
+    metricEstimates: [buildMetric("chatgptConversationHours", "GPT-5.4 mini - heures", 6, 10)],
+  }),
+  buildService({
+    key: "codex",
+    label: "Codex — développement du site",
+    monthlyKgCo2eProxy: 0.9,
+    annualKgCo2eProxy: 10.8,
+    sharePercent: 14,
+    confidencePercent: 76,
+    metricEstimates: [buildMetric("codexSessions", "Codex - sessions", 2, 5)],
   }),
 ] as EnvironmentalImpactInfrastructureServiceEstimate[];
 
@@ -133,7 +169,8 @@ describe("free-plan-services visual", () => {
     expect(state.selectedMonthlyKgCo2eProxy).toBe(4);
     expect(state.selectedAnnualKgCo2eProxy).toBe(48);
     expect(state.selectedDeltaKgCo2eProxy).toBeCloseTo(1.2, 6);
-    expect(state.quotaCards[0]?.value).toBe(100);
+    expect(state.selectedPrimaryQuotaState).toBe("ok");
+    expect(state.quotaCards[0]?.value).toBe(50);
     expect(state.impactCards[0]?.value).toBe(4);
     expect(state.impactCards[3]?.value).toBe(4);
   });
@@ -151,7 +188,9 @@ describe("free-plan-services visual", () => {
     expect(state.selectedMonthlyKgCo2eProxy).toBe(2.8);
     expect(state.selectedAnnualKgCo2eProxy).toBe(33.6);
     expect(state.selectedDeltaKgCo2eProxy).toBeCloseTo(0.8, 6);
-    expect(state.quotaCards[0]?.value).toBe(70);
+    expect(state.selectedPrimaryQuotaLabel).toBe("Supabase - stockage");
+    expect(state.selectedPrimaryQuotaState).toBe("ok");
+    expect(state.quotaCards[0]?.value).toBe(50);
     expect(state.quotaCards[1]?.value).toBe(50);
     expect(state.impactCards[0]?.value).toBe(2.8);
     expect(state.impactCards[3]?.value).toBe(4);
@@ -169,7 +208,7 @@ describe("free-plan-services visual", () => {
     expect(state.selectedLabel).toBe("Total");
   });
 
-  it("builds the donut data with the selected slice highlighted", () => {
+  it("builds the stacked comparison data with the selected slice highlighted", () => {
     const chartEntries = buildFreePlanChartEntries({
       services,
       selectedKey: "supabase",
@@ -194,14 +233,18 @@ describe("free-plan-services visual", () => {
     );
 
     expect(markup).toContain("Sélecteur des plans gratuits");
+    expect(markup).toContain("Plans et quotas");
+    expect(markup).toContain("Qui pèse le plus");
     expect(markup).toContain("Total");
     expect(markup).toContain("Vercel");
     expect(markup).toContain("Supabase");
-    expect(markup).toContain("Part du plan utilisée");
+    expect(markup).not.toContain("GPT-5.4 mini");
+    expect(markup).not.toContain("Codex — développement du site");
+    expect(markup).toContain("Quota principal");
+    expect(markup).toContain("État du quota");
     expect(markup).toContain("Proximité du seuil");
     expect(markup).toContain("Croissance mensuelle");
     expect(markup).toContain("Confiance");
-    expect(markup).toContain("Pollution mensuelle");
     expect(markup).toContain("Pollution annuelle");
     expect(markup).toContain("Delta vs N-1");
   });

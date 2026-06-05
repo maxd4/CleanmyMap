@@ -6,18 +6,22 @@ import { AdminPanelShell } from "@/components/admin/admin-panel-shell";
 import { FreePlanServicesVisual } from "@/components/admin/free-plan-services-visual";
 import { buildGovernanceMethodologyLinks } from "@/lib/governance/governance-links";
 import {
+  buildServiceQuotaSummary,
   buildServiceRiskRows,
   buildServiceThresholdAlerts,
+  formatServiceQuotaStateLabel,
   formatServiceRiskBandLabel,
+  isDevelopmentAiServiceKey,
 } from "@/lib/environmental-impact-estimator/service-risk";
+import { getServicePlanInfo } from "@/lib/environmental-impact-estimator/service-plan";
 import { swrRecentViewOptions } from "@/lib/swr-config";
 import type { ServicesPayload, ServiceStatusInfo } from "@/lib/dashboard/status";
 import type {
   EnvironmentalImpactEstimateModel,
   EnvironmentalImpactSnapshotRecord,
   EnvironmentalImpactProjectSignals,
-  EnvironmentalImpactInfrastructureServiceEstimate,
   EnvironmentalImpactInfrastructureMetricEstimate,
+  EnvironmentalImpactInfrastructureServiceEstimate,
 } from "@/lib/environmental-impact-estimator";
 import { cn } from "@/lib/utils";
 
@@ -62,16 +66,6 @@ function toReportMonth(value: string | null): string {
   const year = date.getUTCFullYear();
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   return `${year}-${month}-01`;
-}
-
-function formatMetricValue(metric: EnvironmentalImpactInfrastructureMetricEstimate): string {
-  if (metric.quantityPerMonth === null) {
-    return "—";
-  }
-
-  const fractionDigits =
-    metric.quantityPerMonth < 10 || metric.unitLabel.includes("GB") ? 2 : 0;
-  return `${formatNumber(metric.quantityPerMonth, fractionDigits)} ${metric.unitLabel}`;
 }
 
 function getHealthTone(state: ServiceStatusInfo["state"]) {
@@ -191,10 +185,11 @@ export function FreePlanServicesPanel() {
   const hasError = Boolean(freePlan.error || servicesHealth.error);
 
   const services = freePlan.data?.model.infrastructure.services ?? [];
+  const quotaServices = services.filter((service) => !isDevelopmentAiServiceKey(service.key));
   const snapshots = freePlan.data?.snapshots ?? [];
   const snapshotCount = freePlan.data?.snapshots.length ?? 0;
   const generatedAt = freePlan.data?.model.generatedAt ?? null;
-  const serviceByKey = new Map(services.map((service) => [service.key, service] as const));
+  const serviceByKey = new Map(quotaServices.map((service) => [service.key, service] as const));
   const serviceHealth = servicesHealth.data?.services ?? {};
   const readyServices = Object.values(serviceHealth).filter(
     (service) => service.state === "ready",
@@ -202,15 +197,15 @@ export function FreePlanServicesPanel() {
   const trackedServices = Object.values(serviceHealth).filter(
     (service) => service.state !== "external",
   ).length;
-  const monitoredMetrics = services.reduce(
+  const monitoredMetrics = quotaServices.reduce(
     (acc, service) => acc + service.metricCount,
     0,
   );
-  const inputMetrics = countMetricsBySource(services, "input");
-  const derivedMetrics = countMetricsBySource(services, "derived");
-  const referenceMetrics = countMetricsBySource(services, "reference");
+  const inputMetrics = countMetricsBySource(quotaServices, "input");
+  const derivedMetrics = countMetricsBySource(quotaServices, "derived");
+  const referenceMetrics = countMetricsBySource(quotaServices, "reference");
 
-  const sortedServices = services
+  const sortedServices = quotaServices
     .slice()
     .sort((left, right) => {
       const byCharge =
@@ -251,12 +246,14 @@ export function FreePlanServicesPanel() {
   const reportMonth = toReportMonth(generatedAt);
   const methodologyLinks = buildGovernanceMethodologyLinks(reportMonth);
   const serviceRiskRows = buildServiceRiskRows(
-    services,
-    snapshots[1]?.model.infrastructure.services ?? [],
+    quotaServices,
+    (snapshots[1]?.model.infrastructure.services ?? []).filter(
+      (service) => !isDevelopmentAiServiceKey(service.key),
+    ),
   );
   const serviceThresholdAlerts = buildServiceThresholdAlerts({
     currentGeneratedAt: generatedAt ?? new Date().toISOString(),
-    currentServices: services,
+    currentServices: quotaServices,
     snapshots,
   });
   const serviceRiskLeader = serviceRiskRows[0] ?? null;
@@ -361,11 +358,13 @@ export function FreePlanServicesPanel() {
             </article>
           </div>
 
-          <FreePlanServicesVisual
-            services={services}
-            previousServices={snapshots[1]?.model.infrastructure.services ?? []}
-            serviceHealth={serviceHealth}
-          />
+            <FreePlanServicesVisual
+              services={quotaServices}
+              previousServices={(snapshots[1]?.model.infrastructure.services ?? []).filter(
+                (service) => !isDevelopmentAiServiceKey(service.key),
+              )}
+              serviceHealth={serviceHealth}
+            />
 
           <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
             <article className="rounded-3xl border border-sky-400/20 bg-sky-500/10 p-4 text-sm text-sky-100/80">
@@ -645,20 +644,24 @@ export function FreePlanServicesPanel() {
               }
 
               const health = serviceHealth[service.key];
-              const metrics = service.metricEstimates.slice(0, 3);
-              const extraMetrics = Math.max(0, service.metricEstimates.length - metrics.length);
+              const planInfo = getServicePlanInfo(service.key);
+              const quotaSummary = buildServiceQuotaSummary(service);
+              const primaryQuota = quotaSummary.primaryMetric;
+              const extraQuotaMetrics = quotaSummary.metrics.slice(1);
+              const quotaStateLabel = formatServiceQuotaStateLabel(quotaSummary.state);
+              const primaryQuotaConsumedPercent = primaryQuota?.consumedPercent ?? null;
+              const quotaValue =
+                primaryQuotaConsumedPercent === null
+                  ? "NA"
+                  : `${formatNumber(primaryQuotaConsumedPercent, 0)}%`;
+              const impactLabel =
+                service.monthlyKgCo2eProxy === null
+                  ? "NA"
+                  : `${formatNumber(service.monthlyKgCo2eProxy, 2)} kg CO2e proxy`;
               const deltaLabel =
                 previousSnapshot === null
                   ? "NA"
                   : `${row.deltaKgCo2eProxy > 0 ? "+" : ""}${formatNumber(row.deltaKgCo2eProxy, 2)} kg`;
-              const growthLabel =
-                previousSnapshot === null
-                  ? "NA"
-                  : `+${formatNumber(row.growthPercent, 0)}%`;
-              const deltaBadgeLabel =
-                previousSnapshot === null
-                  ? "NA"
-                  : `${formatNumber(row.deltaKgCo2eProxy, 2)} kg`;
 
               return (
                 <article
@@ -674,150 +677,137 @@ export function FreePlanServicesPanel() {
                       <p className="mt-1 text-xs leading-relaxed opacity-80">
                         {service.description}
                       </p>
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] opacity-85">
+                          plan {planInfo.type}
+                        </span>
+                        <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] opacity-85">
+                          prix {planInfo.price}
+                        </span>
+                        {health ? (
+                          <span
+                            className={cn(
+                              "rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em]",
+                              getHealthTone(health.state),
+                            )}
+                          >
+                            {getHealthLabel(health.state)}
+                          </span>
+                        ) : null}
+                        <span
+                          className={cn(
+                            "rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em]",
+                            getEstimateTone(service.status),
+                          )}
+                        >
+                          {service.status === "ready"
+                            ? "branché"
+                            : service.status === "derived"
+                              ? "estimé"
+                              : service.status === "partial"
+                                ? "mixte"
+                                : "référence"}
+                        </span>
+                      </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-3xl font-black text-white">{row.score}</p>
-                      <p className="text-[10px] font-black uppercase tracking-[0.22em] opacity-70">
-                        score / 100
+                      <p className="rounded-full border border-white/10 bg-black/10 px-3 py-2 text-[10px] font-black uppercase tracking-[0.22em] opacity-85">
+                        {quotaStateLabel}
                       </p>
-                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.2em] opacity-70">
+                      <p className="mt-2 text-[10px] font-black uppercase tracking-[0.2em] opacity-70">
                         {formatServiceRiskBandLabel(row.band)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,0.75fr)]">
                     <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
                       <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                        Charge
+                        Quota principal
                       </p>
-                      <p className="mt-1 text-lg font-black text-white">
-                        {formatNumber(service.monthlyKgCo2eProxy, 2)} kg CO2e proxy
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                        Part quota
-                      </p>
-                      <p className="mt-1 text-lg font-black text-white">
-                        {formatNumber(row.quotaConsumedPercent, 0)}%
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                        Croissance
-                      </p>
-                      <p className="mt-1 text-lg font-black text-white">
-                        {growthLabel}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                        Seuil gratuit
-                      </p>
-                      <p className="mt-1 text-lg font-black text-white">
-                        {formatNumber(row.thresholdProximityPercent, 0)}%
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 rounded-2xl border border-white/10 bg-black/10 px-3 py-2">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
-                      Dérive vs mois précédent
-                    </p>
-                    <p
-                      className={cn(
-                        "mt-1 text-sm font-black",
-                        previousSnapshot === null
-                          ? "text-white/55"
-                          : row.deltaKgCo2eProxy > 0
-                            ? "text-rose-300"
-                            : row.deltaKgCo2eProxy < 0
-                              ? "text-emerald-300"
-                              : "text-white",
-                      )}
-                    >
-                      {deltaLabel}
-                    </p>
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] opacity-80">
-                      critique métier {formatNumber(row.criticalityPercent, 0)}%
-                    </span>
-                    <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] opacity-80">
-                      confiance {formatNumber(service.confidencePercent, 0)}%
-                    </span>
-                    <span className="rounded-full border border-white/10 bg-black/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] opacity-80">
-                      delta {deltaBadgeLabel}
-                    </span>
-                    {health ? (
-                      <span
-                        className={cn(
-                          "rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em]",
-                          getHealthTone(health.state),
-                        )}
-                      >
-                        {getHealthLabel(health.state)}
-                      </span>
-                    ) : null}
-                    <span
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em]",
-                        getEstimateTone(service.status),
-                      )}
-                    >
-                      {service.status === "ready"
-                        ? "branché"
-                        : service.status === "derived"
-                          ? "estimé"
-                          : service.status === "partial"
-                            ? "mixte"
-                            : "référence"}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    {metrics.map((metric) => (
-                      <div
-                        key={metric.key}
-                        className="rounded-2xl border border-white/5 bg-slate-950/40 px-3 py-2"
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-white">
-                              {metric.label}
-                            </p>
-                            <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/25">
-                              {metric.source === "input"
-                                ? "mesure branchée"
-                                : metric.source === "derived"
-                                  ? "estimée depuis les signaux"
-                                  : "référence interne"}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-black text-white">
-                              {formatMetricValue(metric)}
-                            </p>
-                            <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/25">
-                              ref {formatNumber(metric.referenceMonthlyQuantity, 0)}{" "}
-                              {metric.unitLabel}
-                            </p>
-                          </div>
+                      <div className="mt-1 flex items-end justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-white">
+                            {primaryQuota?.label ?? "NA"}
+                          </p>
+                          <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/25">
+                            {primaryQuota?.referenceMonthlyQuantity
+                              ? `ref ${formatNumber(primaryQuota.referenceMonthlyQuantity, 0)} ${primaryQuota.unitLabel}`
+                              : "NA"}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-black text-white">{quotaValue}</p>
+                          <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.18em] opacity-70">
+                            {quotaStateLabel}
+                          </p>
                         </div>
                       </div>
-                    ))}
-
-                    {extraMetrics > 0 ? (
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/25">
-                        +{extraMetrics} métrique{extraMetrics > 1 ? "s" : ""}
-                        supplémentaire{extraMetrics > 1 ? "s" : ""}
+                      <p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-white/35">
+                        Le quota le plus proche de la limite sert d&apos;indicateur principal.
                       </p>
-                    ) : null}
+                    </div>
+
+                    <div className="rounded-2xl border border-white/10 bg-black/10 p-3">
+                      <p className="text-[10px] font-black uppercase tracking-[0.18em] opacity-60">
+                        Impact mensuel
+                      </p>
+                      <p className="mt-1 text-sm font-black text-white">{impactLabel}</p>
+                      <p className="mt-1 text-[10px] font-black uppercase tracking-[0.18em] text-white/25">
+                        Dérive vs mois précédent {deltaLabel}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 space-y-2">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30">
+                      Quotas principaux
+                    </p>
+                    {primaryQuota ? (
+                      <>
+                        {extraQuotaMetrics.length > 0 ? (
+                          extraQuotaMetrics.map((metric) => (
+                            <div
+                              key={metric.key}
+                              className="rounded-2xl border border-white/5 bg-slate-950/40 px-3 py-2"
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-semibold text-white">
+                                    {metric.label}
+                                  </p>
+                                  <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/25">
+                                    {metric.source === "input"
+                                      ? "mesure branchée"
+                                      : metric.source === "derived"
+                                        ? "estimée depuis les signaux"
+                                        : "référence interne"}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-sm font-black text-white">
+                                    {metric.consumedPercent === null
+                                      ? "NA"
+                                      : `${formatNumber(metric.consumedPercent, 0)}%`}
+                                  </p>
+                                  <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/25">
+                                    {formatServiceQuotaStateLabel(metric.state)}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="rounded-2xl border border-dashed border-white/10 bg-black/10 px-3 py-2 text-xs text-white/40">
+                            NA
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p className="rounded-2xl border border-dashed border-white/10 bg-black/10 px-3 py-2 text-xs text-white/40">
+                        NA
+                      </p>
+                    )}
                   </div>
 
                   <p className="mt-3 text-xs leading-relaxed text-white/45">

@@ -9,6 +9,7 @@ import {
   Users,
   Zap,
 } from "lucide-react";
+import { CmmButton } from "@/components/ui/cmm-button";
 import { formatNumber } from "./action-popup-content.helpers";
 
 type ActionPopupContentBodyProps = {
@@ -24,6 +25,7 @@ type ActionPopupContentBodyProps = {
   observedAt: string;
   sourceLabel: string;
   updateHref: string | null;
+  joinHref?: string | null;
   hasPollution: boolean;
 };
 
@@ -40,6 +42,7 @@ export function ActionPopupContentBody({
   observedAt,
   sourceLabel,
   updateHref,
+  joinHref,
   hasPollution,
 }: ActionPopupContentBodyProps) {
   return (
@@ -174,6 +177,16 @@ export function ActionPopupContentBody({
           </span>
         </div>
       )}
+      {joinHref ? (
+        <CmmButton
+          href={joinHref}
+          tone="primary"
+          variant="pill"
+          className="h-11 w-full px-4 text-[11px] font-black uppercase tracking-[0.16em]"
+        >
+          Rejoindre un formulaire
+        </CmmButton>
+      ) : null}
     </div>
   );
 }

@@ -111,7 +111,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
 
   return (
     <div className="space-y-8">
-      <ReportPage id={section1.id} {...section1}>
+      <ReportPage {...section1}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             label="Période analysée"
@@ -129,12 +129,12 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
             value={activeScopeLabel === "Global" ? "Collectif CleanMyMap" : activeScopeLabel}
             hint="Lecture contextuelle"
           />
-          <MetricCard
-            label="Sources des données"
-            value={`${Object.keys(report.impactMethodology.sources).length} familles`}
-            tone="accent"
-            hint="Actions, carte, communauté, météo"
-          />
+            <MetricCard
+              label="Sources des données"
+              value={`${Object.keys(report.impactMethodology.sources ?? {}).length} familles`}
+              tone="accent"
+              hint="Actions, carte, communauté, météo"
+            />
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           <InsightBox
@@ -145,18 +145,18 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
               "Le rapport agrège les données validées, la cartographie d’action, les événements communauté et les proxys météo.",
             ]}
           />
-          <ReportTable
-            headers={["Source", "Rôle", "Statut"]}
-            rows={Object.entries(report.impactMethodology.sources).map(([key, value]) => [
-              formatSourceLabel(key),
-              value,
-              "Documentée",
-            ])}
+        <ReportTable
+          headers={["Source", "Rôle", "Statut"]}
+          rows={Object.entries(report.impactMethodology.sources ?? {}).map(([key, value]) => [
+            formatSourceLabel(key),
+            value,
+            "Documentée",
+          ])}
           />
         </div>
       </ReportPage>
 
-      <ReportPage id={section2.id} {...section2}>
+      <ReportPage {...section2}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Actions recensées" value={toFrInt(report.totals.actions)} />
           <MetricCard
@@ -201,7 +201,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         />
       </ReportPage>
 
-      <ReportPage id={section3.id} {...section3}>
+      <ReportPage {...section3}>
         <div className="grid gap-3 md:grid-cols-4">
           <MetricCard label="Couverture GPS" value={`${toFrNumber(report.map.geoCoverage)}%`} />
           <MetricCard
@@ -240,7 +240,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         />
       </ReportPage>
 
-      <ReportPage id={section4.id} {...section4}>
+      <ReportPage {...section4}>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           <MetricCard
             label="Impact estimé"
@@ -286,7 +286,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         </div>
       </ReportPage>
 
-      <ReportPage id={section5.id} {...section5}>
+      <ReportPage {...section5}>
         <div className="grid gap-3 md:grid-cols-3">
           <MetricCard
             label="Typologie dominante"
@@ -337,7 +337,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         />
       </ReportPage>
 
-      <ReportPage id={section6.id} {...section6}>
+      <ReportPage {...section6}>
         <div className="grid gap-3 md:grid-cols-2">
           <InsightBox
             title="Mode de calcul"
@@ -398,14 +398,14 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         </div>
         <ReportTable
           headers={["Source", "Description"]}
-          rows={Object.entries(report.impactMethodology.sources).map(([key, value]) => [
+          rows={Object.entries(report.impactMethodology.sources ?? {}).map(([key, value]) => [
             formatSourceLabel(key),
             value,
           ])}
         />
       </ReportPage>
 
-      <ReportPage id={section7.id} {...section7}>
+      <ReportPage {...section7}>
         <div className="grid gap-3 md:grid-cols-4">
           <MetricCard label="Événements créés" value={toFrInt(report.community.totalEvents)} />
           <MetricCard label="À venir" value={toFrInt(report.community.upcomingEvents)} tone="accent" />
@@ -467,7 +467,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         />
       </ReportPage>
 
-      <ReportPage id={section8.id} {...section8}>
+      <ReportPage {...section8}>
         <div className="grid gap-3 md:grid-cols-2">
           <InsightBox
             title="Validation des données"
@@ -499,7 +499,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         />
         <ReportTable
           headers={["Traçabilité", "Source", "Statut"]}
-          rows={Object.entries(report.impactMethodology.sources).map(([key, value]) => [
+          rows={Object.entries(report.impactMethodology.sources ?? {}).map(([key, value]) => [
             formatSourceLabel(key),
             value,
             "Documentée",
@@ -507,7 +507,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         />
       </ReportPage>
 
-      <ReportPage id={section9.id} {...section9}>
+      <ReportPage {...section9}>
         <div className="grid gap-3 md:grid-cols-3">
           <InsightBox title="Actions à court terme" lines={executive.budgetUseCases.slice(0, 1)} />
           <InsightBox
@@ -535,7 +535,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         />
       </ReportPage>
 
-      <ReportPage id={section10.id} {...section10}>
+      <ReportPage {...section10}>
         <ReportTable headers={["Sprint", "Période", "Objectif principal", "Responsables"]} rows={report.calendar} />
         <div className="grid gap-3 md:grid-cols-2">
           <InsightBox
@@ -555,11 +555,11 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         </div>
       </ReportPage>
 
-      <ReportPage id={section11.id} {...section11}>
+      <ReportPage {...section11}>
         <ReportTable headers={["Terme", "Définition claire"]} rows={GLOSSARY_ROWS.map((row) => [...row])} />
       </ReportPage>
 
-      <ReportPage id={section12.id} {...section12}>
+      <ReportPage {...section12}>
         <div className="grid gap-3 md:grid-cols-2">
           <ReportTable
             headers={["Section", "Donnée clé", "Usage"]}
@@ -662,7 +662,7 @@ export function ReportsWebSections(props: ReportsWebSectionsProps) {
         </p>
       ) : null}
       {hasError ? (
-        <p className="rounded-xl border border-rose-200 bg-rose-50 p-3 cmm-text-small text-rose-700">
+        <p className="rounded-xl border border-red-200 bg-red-50 p-3 cmm-text-small text-red-700">
           Certaines sources n’ont pas pu être chargées. Le rapport reste visible avec les données
           disponibles.
         </p>

@@ -6,7 +6,6 @@ import { getPageFamilyById } from "@/lib/ui/page-families";
 import type { PilotageLocale } from "../access-screen-constants";
 import {
   DASHBOARD_ROUTE,
-  OBSERVATOIRE_ROUTE,
   buildPilotageSignInHref,
 } from "@/lib/accueil-pilotage-routes";
 
@@ -141,11 +140,11 @@ export function PilotageLockedPage({
                 {locale === "fr" ? "Mon espace" : "Dashboard"}
               </Link>
               <Link
-                href={OBSERVATOIRE_ROUTE}
+                href="/actions/map"
                 className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-white/12 bg-white/8 px-4 py-2.5 text-sm font-black text-white transition hover:-translate-y-[1px] hover:bg-white/14"
               >
                 <Compass size={16} aria-hidden="true" />
-                {locale === "fr" ? "Observatoire" : "Observatory"}
+                {locale === "fr" ? "Carte des actions" : "Action map"}
               </Link>
             </div>
           </aside>

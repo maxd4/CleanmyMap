@@ -60,6 +60,7 @@
 - Prefer minimal, localized edits.
 - Avoid large refactors in mixed-scope tasks.
 - **Homepage restriction**: Ne jamais modifier la homepage sauf demande explicite de l'utilisateur.
+- **Browser verification restriction**: Ne pas lancer de vérifications web du rendu du site ni d'inspections navigateur de l'UI sans demande explicite de l'utilisateur.
 
 ## Critical validation commands
 - Full workspace tests: `npm run test`

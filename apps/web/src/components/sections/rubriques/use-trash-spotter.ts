@@ -27,7 +27,7 @@ export function useTrashSpotter(fr: boolean) {
   const { data, isLoading, error, mutate } = useSWR(
     ["section-trash-spotter"],
     () => fetchMapActions({
-      status: "approved",
+      status: "all",
       days: 180,
       limit: 250,
       types: ["spot"],
@@ -90,12 +90,17 @@ export function useTrashSpotter(fr: boolean) {
   const quality = useMemo(() => {
     const items = (data?.items ?? []).filter((item) => {
       const type = mapItemType(item);
-      return type === "clean_place" || type === "spot";
+      return type === "spot";
     });
     const approved = items.filter((i) => i.status === "approved");
-    const withCoords = approved.filter((i) => i.latitude !== null && i.longitude !== null).length;
-    const recent = [...approved].sort((a, b) => b.action_date.localeCompare(a.action_date)).slice(0, 6);
-    return { approved: approved.length, withCoords, total: approved.length, recent };
+    const withCoords = items.filter((i) => i.latitude !== null && i.longitude !== null).length;
+    const recent = [...items].sort((a, b) => b.action_date.localeCompare(a.action_date)).slice(0, 6);
+    return {
+      received: items.length,
+      approved: approved.length,
+      withCoords,
+      recent,
+    };
   }, [data?.items]);
 
   return {

@@ -138,7 +138,10 @@ export function ActionsMapCanvas({
               type="button"
               onClick={() => toggleLayer(layer.key)}
               className={[
-                "pointer-events-auto rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)] backdrop-blur-xl transition",
+                "pointer-events-auto rounded-full border px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] backdrop-blur-xl transition",
+                isEmerald
+                  ? "shadow-[0_24px_56px_-32px_rgba(34,197,94,0.22)]"
+                  : "shadow-[0_24px_56px_-32px_rgba(56,189,248,0.28)]",
                 active ? layerButtonClasses.active : layerButtonClasses.inactive,
               ].join(" ")}
               aria-pressed={active}

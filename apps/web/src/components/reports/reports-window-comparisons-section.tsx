@@ -16,7 +16,7 @@ function signed(value: number, suffix = ""): string {
 function reliabilityTone(level: "elevee" | "moyenne" | "faible"): { bg: string; text: string; icon: LucideIcon } {
   if (level === "elevee") return { bg: "bg-emerald-500/10 border-emerald-500/20", text: "text-emerald-600", icon: CheckCircle2 };
   if (level === "moyenne") return { bg: "bg-amber-500/10 border-amber-500/20", text: "text-amber-600", icon: AlertCircle };
-  return { bg: "bg-rose-500/10 border-rose-500/20", text: "text-rose-600", icon: AlertCircle };
+  return { bg: "bg-red-500/10 border-red-500/20", text: "text-red-600", icon: AlertCircle };
 }
 
 const containerVariants = {
@@ -38,11 +38,11 @@ export function ReportsWindowComparisonsSection({
   return (
     <section className="relative overflow-hidden rounded-3xl border border-white/20 bg-white/40 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl">
       <div className="flex items-center gap-3 mb-8">
-        <div className="p-3 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl text-white shadow-lg shadow-indigo-500/20">
+        <div className="p-3 bg-gradient-to-br from-red-500 to-cyan-500 rounded-2xl text-white shadow-lg shadow-red-500/20">
           <CalendarDays size={24} strokeWidth={2} />
         </div>
         <div>
-          <h2 className="text-2xl font-black bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-black bg-gradient-to-r from-red-700 to-cyan-700 bg-clip-text text-transparent">
             Analyse Temporelle
           </h2>
           <p className="text-sm font-semibold text-slate-500">
@@ -68,7 +68,7 @@ export function ReportsWindowComparisonsSection({
               key={windowKey}
               className="relative flex flex-col rounded-2xl border border-white/40 bg-white/60 p-5 shadow-[0_4px_20px_rgb(0,0,0,0.02)] backdrop-blur-md"
             >
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-t-2xl" />
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-red-500/20 to-cyan-500/20 rounded-t-2xl" />
               
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>

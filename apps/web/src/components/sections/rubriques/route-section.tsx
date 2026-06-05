@@ -29,9 +29,9 @@ export function RouteSection() {
   return (
     <SectionShell
       id="route"
-      title={fr ? "Optimisation de Parcours" : "Route Optimization"}
+      title={fr ? "Où agir" : "Where to act"}
       subtitle={fr 
-        ? "Intelligence spatiale pour planifier vos collectes et maximiser l'impact terrain." 
+        ? "Décidez rapidement où agir selon l'impact, la météo et la disponibilité." 
         : "Spatial intelligence to plan your collections and maximize field impact."}
       icon={Navigation}
       gradient="from-blue-500/20 via-indigo-500/10 to-transparent"
@@ -100,7 +100,7 @@ export function RouteSection() {
                       <div className="space-y-6">
                          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">
                             <Sparkles size={12} />
-                            {fr ? "Parcours optimisé" : "Optimized route"}
+                            {fr ? "Où agir" : "Where to act"}
                          </div>
                          <div className="flex items-baseline gap-4">
                             <span className="text-5xl font-black text-white tracking-tighter">{totalKm.toFixed(2)}</span>

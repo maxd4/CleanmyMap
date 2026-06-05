@@ -938,12 +938,12 @@ export function EnvironmentalImpactEstimatorPanel({
                 Services d&apos;infrastructure
               </p>
               <h3 className="mt-1 text-xl font-black tracking-tight text-white">
-                Vercel, Supabase, ChatGPT / LLM, Codex et les autres postes web visibles
+                Vercel, Supabase, GPT-5.4 mini, Codex et les autres postes visibles
               </h3>
               <p className="mt-1 max-w-3xl text-xs leading-relaxed text-red-100/45">
-                Les conversations ChatGPT / LLM et les sessions Codex sont suivies comme deux
-                postes distincts, chacun avec ses propres hypothèses et son propre poids dans le
-                calcul.
+                GPT-5.4 mini — développement du site et les sessions Codex sont suivis comme deux
+                postes distincts ACV, chacun avec ses propres hypothèses et son propre poids dans
+                le calcul.
               </p>
             </div>
             <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-red-100/50">

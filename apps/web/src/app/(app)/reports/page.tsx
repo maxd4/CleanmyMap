@@ -177,7 +177,7 @@ export default async function ReportsPage() {
   const adminWorkflowAudit = data?.adminWorkflowAudit ?? null;
   const monthlyData = aggregateMonthlyAnalytics(contracts);
   const publicAccessBanner = !userId ? (
-    <section className="rounded-2xl border border-rose-200 bg-rose-50 p-4 cmm-text-small text-rose-900 shadow-sm">
+    <section className="rounded-2xl border border-red-200 bg-red-50 p-4 cmm-text-small text-red-900 shadow-sm">
       Lecture publique: parcourez les rapports et exportez un livrable sans
       compte. La connexion sert aux vues personnalisées et à la modération.
     </section>
@@ -252,44 +252,44 @@ export default async function ReportsPage() {
       icon: BarChart3,
       title: "Comparaisons",
       desc: "Comparer 30j / 90j / 12m.",
-      iconBg: "bg-rose-500/20",
-      iconColor: "text-rose-400",
-      accent: "from-rose-600/20 to-red-900/40",
-      ring: "ring-rose-500/30",
-      dot: "bg-rose-400",
+      iconBg: "bg-red-500/20",
+      iconColor: "text-red-400",
+      accent: "from-red-600/20 to-red-950/40",
+      ring: "ring-red-500/30",
+      dot: "bg-red-400",
       href: "#comparisons",
     },
     {
       icon: Info,
       title: "Méthode KPI",
       desc: "Lire la méthode et les sources.",
-      iconBg: "bg-red-500/20",
-      iconColor: "text-red-400",
-      accent: "from-red-600/20 to-rose-900/40",
-      ring: "ring-red-500/30",
-      dot: "bg-red-400",
+      iconBg: "bg-cyan-500/20",
+      iconColor: "text-cyan-400",
+      accent: "from-cyan-600/20 to-sky-900/40",
+      ring: "ring-cyan-500/30",
+      dot: "bg-cyan-400",
       href: "#method",
     },
     {
       icon: Layers,
       title: "Vue mensuelle",
       desc: "Consulter les agrégats et les tendances.",
-      iconBg: "bg-orange-500/20",
-      iconColor: "text-orange-400",
-      accent: "from-orange-600/20 to-amber-900/40",
-      ring: "ring-orange-500/30",
-      dot: "bg-orange-400",
+      iconBg: "bg-red-500/20",
+      iconColor: "text-red-400",
+      accent: "from-red-600/20 to-cyan-900/40",
+      ring: "ring-red-500/30",
+      dot: "bg-red-400",
       href: "#cockpit",
     },
     {
       icon: DownloadCloud,
       title: "Exports",
       desc: "Exporter PDF, Excel et synthèse.",
-      iconBg: "bg-rose-500/20",
-      iconColor: "text-rose-400",
-      accent: "from-rose-600/20 to-red-900/40",
-      ring: "ring-rose-500/30",
-      dot: "bg-rose-400",
+      iconBg: "bg-cyan-500/20",
+      iconColor: "text-cyan-400",
+      accent: "from-cyan-600/20 to-red-900/40",
+      ring: "ring-cyan-500/30",
+      dot: "bg-cyan-400",
       href: "#exports",
     },
   ];
@@ -334,7 +334,6 @@ export default async function ReportsPage() {
         weather={weather}
         adminWorkflowPreview={adminWorkflowPreview}
         adminWorkflowAudit={adminWorkflowAudit}
-        toReportsExportRow={toReportsExportRow}
         publicAccessBanner={publicAccessBanner}
       />
     </AccountCompletionGate>

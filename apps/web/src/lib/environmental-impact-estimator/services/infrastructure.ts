@@ -66,9 +66,9 @@ export function buildInfrastructureMissingDataNotes(
       ) {
         return {
           key: "infrastructure.chatgpt",
-          title: "ChatGPT 5.5 / LLM - ancrage de conversation non remplacé",
+          title: "GPT-5.4 mini — développement du site - ancrage de conversation non remplacé",
           detail:
-            "Aucun journal LLM plus fin n'est branché. L'estimateur conserve l'ancrage CleanMyMap de 2h de conversation par semaine en mode ChatGPT 5.5 étendu, distinct du journal Codex, afin d'éviter une moyenne externe générique.",
+            "Aucun journal IA plus fin n'est branché. L'estimateur conserve l'ancrage CleanMyMap de 2h de conversation par semaine pour le développement du site, distinct du journal Codex, afin d'éviter une moyenne externe générique.",
           scope: "infrastructure" as const,
           severity: "info" as const,
         };
@@ -77,7 +77,7 @@ export function buildInfrastructureMissingDataNotes(
       if (service.key === "codex" && service.metricEstimates.every((metric) => metric.source === "reference")) {
         return {
           key: "infrastructure.codex",
-          title: "Codex / ChatGPT Plus - journal hebdomadaire non branché",
+          title: "Codex — développement du site - journal hebdomadaire non branché",
           detail:
             "Aucune semaine Codex n'a encore été enregistrée. L'estimateur garde ce poste à zéro tant qu'un journal hebdomadaire CleanMyMap n'est pas saisi, afin d'éviter une moyenne externe générique.",
           scope: "infrastructure" as const,
@@ -296,7 +296,6 @@ export function buildSecondOrderScoreSignals(
   const resend = serviceByKey.get("resend")?.monthlyKgCo2eProxy ?? 0;
   const chatgpt = serviceByKey.get("chatgpt")?.monthlyKgCo2eProxy ?? 0;
   const codex = serviceByKey.get("codex")?.monthlyKgCo2eProxy ?? 0;
-  const clerk = serviceByKey.get("clerk")?.monthlyKgCo2eProxy ?? 0;
   const posthog = serviceByKey.get("posthog")?.monthlyKgCo2eProxy ?? 0;
   const sentry = serviceByKey.get("sentry")?.monthlyKgCo2eProxy ?? 0;
   const upstash = serviceByKey.get("upstash")?.monthlyKgCo2eProxy ?? 0;

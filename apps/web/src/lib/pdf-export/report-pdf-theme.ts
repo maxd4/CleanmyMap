@@ -69,6 +69,197 @@ export function buildOfficialReportCss(): string {
       width: 100%;
       background: ${c.white};
     }
+    .cmm-web-shell {
+      display: flex;
+      flex-direction: column;
+      gap: 5mm;
+      width: 100%;
+    }
+    .cmm-web-header {
+      border: 1px solid ${c.rule};
+      border-radius: ${s.radius};
+      background: linear-gradient(135deg, ${c.noteLight}, ${c.white});
+      padding: 6mm 7mm;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .cmm-web-header__top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 4mm;
+      align-items: flex-start;
+    }
+    .cmm-web-header__kicker {
+      color: ${c.gray};
+      font-size: ${t.caption};
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 2mm;
+    }
+    .cmm-web-header__title {
+      color: ${c.navy};
+      font-size: 21pt;
+      line-height: 1.08;
+      margin: 0;
+      font-weight: 760;
+      letter-spacing: -0.02em;
+    }
+    .cmm-web-header__subtitle {
+      margin-top: 2mm;
+      color: ${c.gray};
+      max-width: 120mm;
+    }
+    .cmm-web-header__meta {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 3mm;
+      margin-top: 4mm;
+    }
+    .cmm-web-pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2mm;
+      margin-top: 3mm;
+    }
+    .cmm-web-pill {
+      border: 1px solid ${c.rule};
+      border-radius: 999px;
+      background: ${c.white};
+      padding: 1.5mm 3mm;
+      font-size: ${t.caption};
+      color: ${c.navy};
+      font-weight: 700;
+    }
+    .cmm-web-layout {
+      display: grid;
+      grid-template-columns: 18rem minmax(0, 1fr);
+      gap: 5mm;
+      align-items: start;
+    }
+    .cmm-web-aside {
+      position: sticky;
+      top: 0;
+      align-self: start;
+      border: 1px solid ${c.rule};
+      border-radius: ${s.radius};
+      padding: 5mm;
+      background: ${c.white};
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .cmm-web-main {
+      display: flex;
+      flex-direction: column;
+      gap: 5mm;
+      min-width: 0;
+    }
+    .cmm-toc-item {
+      border: 1px solid transparent;
+      border-radius: 3mm;
+      padding: 2.5mm 3mm;
+      color: ${c.ink};
+      display: block;
+    }
+    .cmm-toc-item:hover {
+      border-color: ${c.rule};
+      background: ${c.noteLight};
+    }
+    .cmm-toc-title {
+      color: ${c.navy};
+      font-weight: 750;
+    }
+    .cmm-toc-subtitle {
+      color: ${c.gray};
+      font-size: ${t.caption};
+      margin-top: 0.8mm;
+    }
+    .cmm-toc-links {
+      margin-top: 2mm;
+      padding-top: 2mm;
+      border-top: 1px solid ${c.rule};
+      display: flex;
+      flex-direction: column;
+      gap: 1.25mm;
+    }
+    .cmm-toc-link {
+      display: block;
+      padding: 1.5mm 2.5mm;
+      border-radius: 2mm;
+      background: ${c.white};
+      border: 1px solid ${c.rule};
+      color: ${c.ink};
+      font-size: ${t.caption};
+    }
+    .cmm-toc-link strong {
+      color: ${c.navy};
+      display: block;
+      font-size: ${t.small};
+    }
+    .cmm-web-hero,
+    .cmm-web-section {
+      border: 1px solid ${c.rule};
+      border-radius: ${s.radius};
+      overflow: hidden;
+      background: ${c.white};
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .cmm-web-hero {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+    }
+    .cmm-web-hero__left {
+      padding: 6mm 7mm;
+      color: ${c.white};
+      background: linear-gradient(135deg, ${c.teal}, ${c.navy});
+    }
+    .cmm-web-hero__right {
+      padding: 6mm 7mm;
+      background: ${c.noteLight};
+    }
+    .cmm-web-section__header {
+      padding: 5mm 6mm;
+      color: ${c.white};
+      background: linear-gradient(135deg, ${c.teal}, ${c.navy});
+    }
+    .cmm-web-section__kicker {
+      color: rgba(255, 255, 255, 0.78);
+      font-size: ${t.caption};
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .cmm-web-section__title {
+      margin: 1.5mm 0 0;
+      font-size: ${t.subsection};
+      font-weight: 760;
+      line-height: 1.14;
+    }
+    .cmm-web-section__subtitle {
+      margin-top: 1.8mm;
+      color: rgba(255, 255, 255, 0.88);
+    }
+    .cmm-web-section__body {
+      padding: 5mm 6mm;
+      display: flex;
+      flex-direction: column;
+      gap: 4mm;
+    }
+    .cmm-web-section__grid {
+      display: grid;
+      gap: 4mm;
+    }
+    .cmm-web-section__grid--2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .cmm-web-section__grid--3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .cmm-web-section__grid--4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
     .cmm-page {
       min-height: calc(${p.minHeight} - 20mm);
       page-break-after: always;
@@ -224,6 +415,9 @@ export function buildOfficialReportCss(): string {
       body { background: #EEF3F5; padding: 16px; }
       .cmm-report { max-width: 210mm; margin: 0 auto; box-shadow: 0 24px 80px -60px rgba(15,23,42,0.55); }
       .cmm-page, .cmm-cover { background-color: ${c.white}; padding: 18mm; }
+    }
+    @media print {
+      .cmm-web-aside { position: static; }
     }
   `;
 }

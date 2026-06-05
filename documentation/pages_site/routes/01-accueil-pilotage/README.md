@@ -21,4 +21,5 @@ Entrées opérationnelles de pilotage, profil et sommaire.
 
 - Les fiches de cette famille suivent le format d'audit standard du dossier `pages_site`.
 - Les captures officielles, quand elles existent, vivent dans `photo/` de chaque route canonique et sont en `WebP`.
-- `/methodologie` est désormais documentée dans la famille [Cartographie & Impact](../03-cartographie-impact/README.md) et sa fiche canonique vit dans [03-cartographie-impact/methodologie/README.md](../03-cartographie-impact/methodologie/README.md).
+- `/pilotage`, `/sponsor-portal` et `/sections/elus` forment un cluster décisionnel commun : mêmes blocs de synthèse, mêmes repères de KPI, mais angle de lecture différent selon le rôle.
+- `/methodologie` est désormais documentée dans la famille [Cartographie & Impact](../03-cartographie-impact/cartographie-impact-README.md) et sa fiche canonique vit dans [03-cartographie-impact/methodologie/methodologie-README.md](../03-cartographie-impact/methodologie/methodologie-README.md).

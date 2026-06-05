@@ -23,7 +23,6 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "GPTBot",
         allow: [
-          "/observatoire",
           EXPLORER_ROUTE,
           "/methodologie",
           "/learn",
@@ -35,7 +34,6 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "ChatGPT-User",
         allow: [
-          "/observatoire",
           EXPLORER_ROUTE,
           "/methodologie",
         ],

@@ -6,8 +6,8 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 
 - [Homepage (hors bloc)](./routes/00-homepage/homepage-README.md)
 - [Accueil & Pilotage (bloc)](./routes/01-accueil-pilotage/README.md)
-- [Agir (bloc)](./routes/02-agir/README.md)
-- [Cartographie & Impact (bloc)](./routes/03-cartographie-impact/README.md)
+- [Agir (bloc)](./routes/02-agir/agir-README.md)
+- [Cartographie & Impact (bloc)](./routes/03-cartographie-impact/cartographie-impact-README.md)
 - [Réseau & Discussions (bloc)](./routes/04-reseau-discussions/README.md)
 - [Apprendre (bloc)](./routes/05-apprendre/README.md)
 - [Auth & Onboarding (hors bloc)](./routes/06-auth-onboarding/README.md)
@@ -22,7 +22,7 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 - Les routes dynamiques sont documentées par un exemple canonique par pattern.
 - Les routes alias ou redirections restent inventoriées mais ne sont pas traitées comme des pages UI autonomes.
 - Chaque route canonique possède son propre sous-dossier dans `documentation/pages_site/routes/`.
-- Ce sous-dossier contient des captures de la page complète, un `README.md` préfixé et titré avec le nom de la page, un `presentation-detaillee.md`, un `liste-propositions-a-traiter.md` et un `objectifs-non-pertinents.md`, tous préfixés par le nom de la page.
+- Ce sous-dossier contient des captures de la page complète, un `nom-de-page-README.md` préfixé et titré avec le nom de la page, un `nom-de-page-presentation-detaillee.md`, un `nom-de-page-liste-propositions-a-traiter.md` et un `nom-de-page-objectifs-non-pertinents.md`, tous préfixés par le nom de la page.
 - Les captures `.webp` vivent dans un dossier photo centralisé au niveau d'entrée du bloc concerné.
 - Les captures sont nommées avec la route, le nom lisible de la page et la date de capture.
 - Chaque sous-dossier de page doit conserver ces quatre fichiers préfixés par le nom de la page.
@@ -41,7 +41,7 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 
 | Route | Type de page | Fiche | Famille / hors bloc | Statut | Contexte d'accès | Palette attendue | Scope | Fichier source | Dossier canonique | Capture disponible | Surcharge textuelle | Incohérence couleur | Priorité |
 |---|---|---|---|---|---|---|---|---|---|:---:|---|:---:|---|
-| `/` | homepage | [Homepage](./routes/00-homepage/homepage/homepage-README.md) | Homepage (hors bloc) | public | Aucun | vert clair / emerald | à corriger | apps/web/src/app/page.tsx | ./routes/00-homepage/homepage | non | moyen | non | faible |
+| `/` | homepage | [Homepage](./routes/00-homepage/homepage-README.md) | Homepage (hors bloc) | public | Aucun | vert clair / emerald | à corriger | apps/web/src/app/page.tsx | ./routes/00-homepage/homepage | non | moyen | non | faible |
 
 
 
@@ -64,30 +64,30 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 
 | Route | Type de page | Fiche | Famille / hors bloc | Statut | Contexte d'accès | Palette attendue | Scope | Fichier source | Dossier canonique | Capture disponible | Surcharge textuelle | Incohérence couleur | Priorité |
 |---|---|---|---|---|---|---|---|---|---|:---:|---|:---:|---|
-| `/actions/history` | page d'action | [Historique des actions](./routes/02-agir/actions-history/README.md) | Agir (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | emerald | à corriger | apps/web/src/app/(app)/actions/history/page.tsx | ./routes/02-agir/actions-history | non | moyen | non | faible |
-| `/actions/new` | page d'action | [Déclarer une action](./routes/02-agir/actions-new/README.md) | Agir (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | emerald | à corriger | apps/web/src/app/(app)/actions/new/page.tsx | ./routes/02-agir/actions-new | non | moyen | non | faible |
-| `/missions/[id] (ex. /missions/terrain-2026)` | dynamique — mission | [Mission détaillée](./routes/02-agir/missions-id/README.md) | Agir (bloc) | dynamique | Paramètre de route requis (profil, id, section, mission...) | emerald | à corriger | apps/web/src/app/(app)/missions/[id]/page.tsx | ./routes/02-agir/missions-id | non | moyen | non | moyenne |
-| `/sections/route` | page de bloc | [Itinéraire IA](./routes/02-agir/sections-route/README.md) | Agir (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | emerald | à corriger | apps/web/src/app/(app)/sections/route/page.tsx | ./routes/02-agir/sections-route | non | moyen | non | faible |
-| `/signalement` | page d'action | [Signalement déchets](./routes/02-agir/signalement/README.md) | Agir (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | emerald | à corriger | apps/web/src/app/(app)/signalement/page.tsx | ./routes/02-agir/signalement | non | moyen | non | faible |
+| `/actions/history` | page d'action | [Historique des actions](./routes/02-agir/actions-history/actions-history-README.md) | Agir (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | emerald | à corriger | apps/web/src/app/(app)/actions/history/page.tsx | ./routes/02-agir/actions-history | non | moyen | non | faible |
+| `/actions/new` | page d'action | [Déclarer une action](./routes/02-agir/actions-new/actions-new-README.md) | Agir (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | emerald | à corriger | apps/web/src/app/(app)/actions/new/page.tsx | ./routes/02-agir/actions-new | non | moyen | non | faible |
+| `/sections/rejoindre-un-formulaire` | page de bloc | [Formulaire de groupe](./routes/02-agir/formulaire-de-groupe/formulaire-de-groupe-README.md) | Agir (bloc) | protégé | Compte connecté pour rejoindre, affichage public possible des actions validées | emerald | finalisée | apps/web/src/app/(app)/sections/[sectionId]/page.tsx | ./routes/02-agir/formulaire-de-groupe | non | moyen | non | faible |
+| `/missions/[id] (ex. /missions/terrain-2026)` | dynamique — mission | [Missions](./routes/02-agir/missions/missions-README.md) | Agir (bloc) | dynamique | Paramètre de route requis (profil, id, section, mission...) | emerald | à corriger | apps/web/src/app/(app)/missions/[id]/page.tsx | ./routes/02-agir/missions | non | moyen | non | moyenne |
+| `/sections/route` | page de bloc | [Où agir](./routes/02-agir/ou-agir/ou-agir-README.md) | Agir (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | emerald | à corriger | apps/web/src/app/(app)/sections/route/page.tsx | ./routes/02-agir/ou-agir | non | moyen | non | faible |
+| `/signalement` | page d'action | [Signalement déchets](./routes/02-agir/signalement/signalement-README.md) | Agir (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | emerald | à corriger | apps/web/src/app/(app)/signalement/page.tsx | ./routes/02-agir/signalement | non | moyen | non | faible |
 
 #### Redirections et alias
 
 | Route | Type de page | Fiche | Famille / hors bloc | Statut | Contexte d'accès | Palette attendue | Scope | Fichier source | Dossier canonique | Capture disponible | Surcharge textuelle | Incohérence couleur | Priorité |
 |---|---|---|---|---|---|---|---|---|---|:---:|---|:---:|---|
-| `/declaration` | redirection | [Déclaration](./routes/02-agir/declaration/README.md) | Agir (bloc) | redirection | Aucun, la page redirige automatiquement | emerald | hors scope | apps/web/src/app/declaration/page.tsx | ./routes/02-agir/declaration | non | faible | non | moyenne |
+| `/declaration` | redirection | [Déclaration (alias)](./routes/02-agir/agir-README.md) | Agir (bloc) | redirection | Aucun, la page redirige automatiquement | emerald | hors scope | apps/web/src/app/declaration/page.tsx | ./routes/02-agir/agir-README.md | non | faible | non | moyenne |
 
 
 ### Cartographie & Impact (bloc)
 
 | Route | Type de page | Fiche | Famille / hors bloc | Statut | Contexte d'accès | Palette attendue | Scope | Fichier source | Dossier canonique | Capture disponible | Surcharge textuelle | Incohérence couleur | Priorité |
 |---|---|---|---|---|---|---|---|---|---|:---:|---|:---:|---|
-| `/actions/map` | page d'action | [Carte des actions](./routes/03-cartographie-impact/actions-map/README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | sky | à corriger | apps/web/src/app/(app)/actions/map/page.tsx | ./routes/03-cartographie-impact/actions-map | non | moyen | non | faible |
-| `/methodologie` | exception UI — impact | [Méthodologie](./routes/03-cartographie-impact/methodologie/README.md) | Cartographie & Impact (bloc) | public | Aucun | red | terminé | apps/web/src/app/(app)/methodologie/page.tsx | ./routes/03-cartographie-impact/methodologie | non | moyen | non | faible |
-| `/gamification` | page de bloc | [Progression & badges](./routes/03-cartographie-impact/gamification/README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | red | à corriger | apps/web/src/app/(app)/gamification/page.tsx | ./routes/03-cartographie-impact/gamification | non | moyen | oui | critique |
-| `/observatoire` | page de bloc | [Observatoire public](./routes/03-cartographie-impact/observatoire/README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | sky | à corriger | apps/web/src/app/(app)/observatoire/page.tsx | ./routes/03-cartographie-impact/observatoire | non | moyen | oui | critique |
-| `/profil/impact` | page de bloc | [Profil impact](./routes/03-cartographie-impact/profil-impact/README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | amber / orange | à corriger | apps/web/src/app/(app)/profil/impact/page.tsx | ./routes/03-cartographie-impact/profil-impact | non | fort | non | moyenne |
-| `/reports` | page de bloc | [Rapports d'impact](./routes/03-cartographie-impact/reports/README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | red | à corriger | apps/web/src/app/(app)/reports/page.tsx | ./routes/03-cartographie-impact/reports | non | fort | non | moyenne |
-| `/sandbox` | page de bloc | [Sandbox carte](./routes/03-cartographie-impact/sandbox/README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | sky | à corriger | apps/web/src/app/(app)/sandbox/page.tsx | ./routes/03-cartographie-impact/sandbox | non | moyen | oui | critique |
+| `/actions/map` | page d'action | [Carte des actions](./routes/03-cartographie-impact/actions-map/actions-map-README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | sky | à corriger | apps/web/src/app/(app)/actions/map/page.tsx | ./routes/03-cartographie-impact/actions-map | non | moyen | non | faible |
+| `/methodologie` | exception UI — impact | [Méthodologie](./routes/03-cartographie-impact/methodologie/methodologie-README.md) | Cartographie & Impact (bloc) | public | Aucun | red | terminé | apps/web/src/app/(app)/methodologie/page.tsx | ./routes/03-cartographie-impact/methodologie | non | moyen | non | faible |
+| `/gamification` | page de bloc | [Progression & badges](./routes/03-cartographie-impact/gamification/gamification-README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | red | à corriger | apps/web/src/app/(app)/gamification/page.tsx | ./routes/03-cartographie-impact/gamification | non | moyen | oui | critique |
+| `/profil/impact` | page de bloc | [Profil impact](./routes/03-cartographie-impact/profil-impact/profil-impact-README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | amber / orange | à corriger | apps/web/src/app/(app)/profil/impact/page.tsx | ./routes/03-cartographie-impact/profil-impact | non | fort | non | moyenne |
+| `/reports` | page de bloc | [Rapports d'impact](./routes/03-cartographie-impact/reports/reports-README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | red | à corriger | apps/web/src/app/(app)/reports/page.tsx | ./routes/03-cartographie-impact/reports | non | fort | non | moyenne |
+| `/sandbox` | page de bloc | [Sandbox carte](./routes/03-cartographie-impact/sandbox/sandbox-README.md) | Cartographie & Impact (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | sky | à corriger | apps/web/src/app/(app)/sandbox/page.tsx | ./routes/03-cartographie-impact/sandbox | non | moyen | oui | critique |
 
 
 
@@ -97,7 +97,7 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 |---|---|---|---|---|---|---|---|---|---|:---:|---|:---:|---|
 | `/community` | page de réseau | [Communauté](./routes/04-reseau-discussions/community/README.md) | Réseau & Discussions (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | pink | à corriger | apps/web/src/app/(app)/community/page.tsx | ./routes/04-reseau-discussions/community | non | fort | oui | critique |
 | `/messagerie` | page de réseau | [Messagerie](./routes/04-reseau-discussions/messagerie/README.md) | Réseau & Discussions (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | pink | à corriger | apps/web/src/app/(app)/messagerie/page.tsx | ./routes/04-reseau-discussions/messagerie | non | fort | oui | critique |
-| `/open-data` | page de réseau | [Open data](./routes/04-reseau-discussions/open-data/README.md) | Réseau & Discussions (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | pink | à corriger | apps/web/src/app/(app)/open-data/page.tsx | ./routes/04-reseau-discussions/open-data | non | moyen | oui | critique |
+| `/open-data` | page de réseau | [Données publiques](./routes/04-reseau-discussions/open-data/README.md) | Réseau & Discussions (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | pink | à corriger | apps/web/src/app/(app)/open-data/page.tsx | ./routes/04-reseau-discussions/open-data | non | moyen | oui | critique |
 | `/partners/dashboard` | page de réseau | [Annuaire partenaires](./routes/04-reseau-discussions/partners-dashboard/README.md) | Réseau & Discussions (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | indigo | à corriger | apps/web/src/app/(app)/partners/dashboard/page.tsx | ./routes/04-reseau-discussions/partners-dashboard | non | fort | non | moyenne |
 | `/partners/network` | page de réseau | [Réseau engagé](./routes/04-reseau-discussions/partners-network/README.md) | Réseau & Discussions (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | indigo | à corriger | apps/web/src/app/(app)/partners/network/page.tsx | ./routes/04-reseau-discussions/partners-network | non | fort | non | moyenne |
 | `/partners/onboarding` | page de réseau | [Onboarding partenaire](./routes/04-reseau-discussions/partners-onboarding/README.md) | Réseau & Discussions (bloc) | protégé | Compte connecté, parfois rôle ou profil spécifique | indigo | à corriger | apps/web/src/app/(app)/partners/onboarding/page.tsx | ./routes/04-reseau-discussions/partners-onboarding | non | fort | non | moyenne |
@@ -162,9 +162,9 @@ Ce document est la table de référence exhaustive de `documentation/pages_site`
 
 | Route | Type de page | Fiche | Famille / hors bloc | Statut | Contexte d'accès | Palette attendue | Scope | Fichier source | Dossier canonique | Capture disponible | Surcharge textuelle | Incohérence couleur | Priorité |
 |---|---|---|---|---|---|---|---|---|---|:---:|---|:---:|---|
-| `/admin` | administration | [Administration du site](./routes/09-admin-superadmin/admin/README.md) | Admin & Super-admin (hors bloc) | technique | Compte connecté, parfois rôle technique ou de supervision | amber / brun sombre | à corriger | apps/web/src/app/(app)/admin/page.tsx | ./routes/09-admin-superadmin/admin | non | fort | non | moyenne |
+| `/admin` | administration | [Administration](./routes/09-admin-superadmin/admin/README.md) | Admin & Super-admin (hors bloc) | technique | Compte connecté, parfois rôle technique ou de supervision | amber / brun sombre | à corriger | apps/web/src/app/(app)/admin/page.tsx | ./routes/09-admin-superadmin/admin | non | fort | non | moyenne |
 | `/admin/forms` | administration | [Administration des formulaires](./routes/09-admin-superadmin/admin-forms/README.md) | Admin & Super-admin (hors bloc) | technique | Compte connecté, parfois rôle technique ou de supervision | amber / brun sombre | à corriger | apps/web/src/app/(app)/admin/forms/page.tsx | ./routes/09-admin-superadmin/admin-forms | non | fort | non | moyenne |
-| `/admin/godmode` | administration | [Créateur du site](./routes/09-admin-superadmin/admin-godmode/README.md) | Admin & Super-admin (hors bloc) | technique | Compte connecté, parfois rôle technique ou de supervision | amber / brun sombre | à corriger | apps/web/src/app/(app)/admin/godmode/page.tsx | ./routes/09-admin-superadmin/admin-godmode | non | fort | non | moyenne |
+| `/admin/godmode` | administration | [Administration avancée](./routes/09-admin-superadmin/admin-godmode/README.md) | Admin & Super-admin (hors bloc) | caché | Profil `max` uniquement | amber / brun sombre | à corriger | apps/web/src/app/(app)/admin/godmode/page.tsx | ./routes/09-admin-superadmin/admin-godmode | non | fort | non | moyenne |
 | `/admin/services` | administration | [Administration des services](./routes/09-admin-superadmin/admin-services/README.md) | Admin & Super-admin (hors bloc) | technique | Compte connecté, parfois rôle technique ou de supervision | amber / brun sombre | à corriger | apps/web/src/app/(app)/admin/services/page.tsx | ./routes/09-admin-superadmin/admin-services | non | fort | non | moyenne |
 
 

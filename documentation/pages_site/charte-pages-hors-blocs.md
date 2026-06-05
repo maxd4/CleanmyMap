@@ -554,7 +554,7 @@ Routes detectees:
 - `/admin`
 - `/admin/forms`
 - `/admin/services`
-- `/admin/godmode`
+- `/admin/godmode` (sous-partie cachée réservée à `max`)
 
 Palette proposee:
 

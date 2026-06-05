@@ -46,4 +46,50 @@ describe("/api/geo/address-suggestions", () => {
 
     expect(body.items).toEqual([]);
   });
+
+  it("falls back to geoplateforme completion outside the local paris cache", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [
+          {
+            x: 4.8357,
+            y: 45.764,
+            fulltext: "Lyon, 69000 Lyon",
+            city: "Lyon",
+            zipcode: "69000",
+            kind: "municipality",
+            classification: 2,
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock as typeof fetch);
+
+    const response = await GET(
+      new Request("http://localhost/api/geo/address-suggestions?q=Lyon&limit=3"),
+    );
+    const body = (await response.json()) as {
+      status: string;
+      query: string;
+      items: Array<{
+        label: string;
+        subtitle: string;
+        latitude: number;
+        longitude: number;
+        importance: number | null;
+      }>;
+    };
+
+    expect(body.status).toBe("ok");
+    expect(body.query).toBe("Lyon");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0]).toMatchObject({
+      label: "Lyon, 69000 Lyon",
+      subtitle: "69000 Lyon · municipality",
+      latitude: 45.764,
+      longitude: 4.8357,
+    });
+  });
 });

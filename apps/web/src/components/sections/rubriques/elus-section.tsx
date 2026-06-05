@@ -1,11 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import useSWR from "swr";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
-import { PRIORITIZATION_RULESET } from "@/lib/pilotage/constants";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { CmmSkeleton } from "@/components/ui/cmm-skeleton";
 import { SectionShell } from "@/components/sections/rubriques/shared";
@@ -19,12 +17,6 @@ import {
   Clock, 
   MapPin, 
   TrendingUp, 
-  Sparkles, 
-  Target, 
-  ArrowRight,
-  Zap,
-  Building2,
-  CheckCircle2,
   Activity,
   Layers,
   Search,
@@ -35,6 +27,11 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { CmmButton } from "@/components/ui/cmm-button";
+import {
+  PilotageInsightCard,
+  PilotageMetricGrid,
+} from "@/components/pilotage/pilotage-cluster-panels";
+import { DecisionReadingSection } from "@/components/pilotage/decision-reading-section";
 
 type PilotageOverviewResponse = {
   status: "ok";
@@ -136,7 +133,7 @@ export function ElusSection() {
           </div>
           <h3 className="text-3xl font-black text-white tracking-tighter mb-4">Accès restreint ou indisponible</h3>
           <p className="text-slate-400 font-bold max-w-md mx-auto leading-relaxed">
-            Le dashboard de pilotage nécessite une authentification institutionnelle de haut niveau ou fait l'objet d'une maintenance technique périodique.
+            Le dashboard de pilotage nécessite une authentification institutionnelle de haut niveau ou fait l&apos;objet d&apos;une maintenance technique périodique.
           </p>
           <CmmButton type="button" tone="secondary" variant="pill" className="mt-10 px-8 py-4 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-transform">
              Demander un accès
@@ -218,29 +215,64 @@ export function ElusSection() {
                       <div className="lg:col-span-8">
                          <ThirtySecondsSummary summary={data.summary} />
                       </div>
-                      <div className="lg:col-span-4 p-12 rounded-[4rem] border border-sky-500/30 bg-slate-900/40 backdrop-blur-3xl shadow-[0_0_80px_rgba(14,165,233,0.1)] flex flex-col justify-between group overflow-hidden relative">
-                         <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none group-hover:scale-125 transition-transform duration-1000">
-                            <Target size={200} className="text-sky-400" />
-                         </div>
-                         
-                         <div className="relative z-10 space-y-8">
-                            <div className="p-5 w-16 h-16 rounded-3xl bg-sky-500/10 border border-sky-500/20 text-sky-400 group-hover:scale-110 transition-transform duration-500 shadow-2xl">
-                               <Sparkles size={28} className="animate-pulse" />
-                            </div>
-                            <div className="space-y-3">
-                               <h4 className="text-3xl font-black text-white tracking-tighter leading-none">Focus Stratégique</h4>
-                               <p className="text-[10px] font-black text-sky-400 uppercase tracking-[0.2em]">Recommandation IA v4.2</p>
-                            </div>
-                            <p className="text-slate-400 font-bold leading-relaxed text-lg">
-                               {data.summary.recommendedAction.reason}
-                            </p>
-                         </div>
-                         <CmmButton href={data.summary.recommendedAction.href} tone="primary" variant="pill" className="relative z-10 mt-12 flex items-center justify-between p-6 text-[10px] font-black uppercase tracking-[0.2em] shadow-2xl transition-transform">
-                            {data.summary.recommendedAction.label}
-                            <ArrowRight size={18} />
-                         </CmmButton>
-                      </div>
+                      <PilotageInsightCard
+                        variant="governance"
+                        className="lg:col-span-4"
+                        insight={{
+                          eyebrow: "Lecture territoriale",
+                          title: "Focus stratégique",
+                          detail: data.summary.recommendedAction.reason,
+                          actionLabel: data.summary.recommendedAction.label,
+                          actionHref: data.summary.recommendedAction.href,
+                        }}
+                      />
                    </div>
+
+                   <PilotageMetricGrid
+                     variant="governance"
+                     metrics={data.summary.kpis.map((kpi) => ({
+                       id: kpi.label,
+                       label: kpi.label,
+                       value: kpi.value,
+                       previousValue: kpi.previousValue,
+                       deltaAbsolute: kpi.deltaAbsolute,
+                       deltaPercent: kpi.deltaPercent,
+                       interpretation: kpi.interpretation,
+                     }))}
+                   />
+
+                   <DecisionReadingSection
+                     variant="governance"
+                     eyebrow={fr ? "Cluster commun" : "Shared cluster"}
+                     title={fr ? "Mon espace, Portail décideur et Pilotage" : "Dashboard, decision portal and pilotage"}
+                     description={fr ? "Les trois surfaces partagent une même lecture de la décision: synthèse rapide, impact lisible, puis arbitrage adapté au contexte." : "The three surfaces share the same decision reading pattern: quick synthesis, readable impact, then arbitration adapted to context."}
+                     links={[
+                       {
+                         id: "dashboard",
+                         href: "/dashboard",
+                         label: fr ? "Mon espace" : "Dashboard",
+                         description: fr
+                           ? "KPI, profil et arbitrages du quotidien."
+                           : "KPIs, profile and day-to-day arbitration.",
+                       },
+                       {
+                         id: "sponsor-portal",
+                         href: "/sponsor-portal",
+                         label: fr ? "Portail décideur" : "Decision portal",
+                         description: fr
+                           ? "ROI, impact territorial et lecture institutionnelle."
+                           : "ROI, territorial impact and institutional reading.",
+                       },
+                       {
+                         id: "pilotage",
+                         href: "/pilotage",
+                         label: fr ? "Pilotage" : "Pilotage",
+                         description: fr
+                           ? "Synthèse transverse, méthodes et recommandations."
+                           : "Transverse summary, methods and recommendations.",
+                       },
+                     ]}
+                   />
 
                    {/* Secondary KPIs / Detailed Analytics */}
                    <div className="space-y-10">
@@ -420,7 +452,7 @@ export function ElusSection() {
                          <div className="space-y-3">
                             <h4 className="text-lg font-black text-white tracking-tight uppercase tracking-[0.1em]">Garantie de Précision</h4>
                             <p className="text-sm font-bold text-slate-500 leading-relaxed italic opacity-80">
-                               Toutes les données sont vérifiées par notre protocole de modération hybride (IA + Validation Humaine) avant d'intégrer le dashboard.
+                               Toutes les données sont vérifiées par notre protocole de modération hybride (IA + Validation Humaine) avant d&apos;intégrer le dashboard.
                             </p>
                          </div>
                       </div>
@@ -441,7 +473,7 @@ export function ElusSection() {
                    </div>
                    
                    <div className="grid grid-cols-1 gap-10">
-                      {data.methods.map((method, i) => (
+                      {data.methods.map((method) => (
                         <KpiMethodBlock key={method.id} method={method} />
                       ))}
                    </div>

@@ -11,7 +11,7 @@ type StepPreviewProps = {
 function qualityTone(grade: ActionQualityGrade): string {
   if (grade ==="A") return"border-emerald-200 bg-emerald-50 text-emerald-700";
   if (grade ==="B") return"border-amber-200 bg-amber-50 text-amber-700";
-  return"border-rose-200 bg-rose-50 text-rose-700";
+  return"border-red-200 bg-red-50 text-red-700";
 }
 
 export function StepPreview({ workflow }: StepPreviewProps) {
@@ -35,7 +35,7 @@ export function StepPreview({ workflow }: StepPreviewProps) {
     <p className="mt-2 cmm-text-small cmm-text-muted">{fr ? "Chargement de l'aperçu..." : "Loading preview..."}</p>
     ) : null}
     {workflow.previewError ? (
-    <p className="mt-2 cmm-text-small text-rose-700">{fr ? "Aperçu indisponible." : "Preview unavailable."}</p>
+    <p className="mt-2 cmm-text-small text-red-700">{fr ? "Aperçu indisponible." : "Preview unavailable."}</p>
     ) : null}
     {!workflow.previewLoading && !workflow.previewError ? (
     <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200 bg-white">

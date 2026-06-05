@@ -27,10 +27,10 @@ Chaque page du site possède son propre sous-dossier dans `./routes/`.
 Ces sous-dossiers regroupent les éléments de référence suivants :
 
 - des captures plein écran de la page complète ;
-- un `README.md` préfixé par le nom de la page ou de la rubrique et titré avec ce même nom ;
-- un `presentation-detaillee.md` préfixé par le nom de la page ou de la rubrique ;
-- un `liste-propositions-a-traiter.md` préfixé par le nom de la page ou de la rubrique ;
-- un `objectifs-non-pertinents.md` préfixé par le nom de la page ou de la rubrique ;
+- un fichier `nom-de-page-README.md` préfixé par le nom de la page ou de la rubrique et titré avec ce même nom ;
+- un fichier `nom-de-page-presentation-detaillee.md` préfixé par le nom de la page ou de la rubrique ;
+- un fichier `nom-de-page-liste-propositions-a-traiter.md` préfixé par le nom de la page ou de la rubrique ;
+- un fichier `nom-de-page-objectifs-non-pertinents.md` préfixé par le nom de la page ou de la rubrique ;
 - un markdown dédié aux exceptions UI de la page, préfixé par le nom de la page ou de la rubrique, quand cela sert à documenter un écart visuel réel.
 
 Les fichiers optionnels ne doivent être créés que quand ils deviennent pertinents pour la page ou la rubrique. Si la page n a pas d exceptions UI, de cas particulier ou de mémoire locale utile, on ne force pas la création d un fichier vide.
@@ -50,22 +50,22 @@ L'objectif est de centraliser, pour chaque page, à la fois la preuve visuelle, 
 
 Quand un sous-dossier représente une rubrique fonctionnelle du site, il doit aussi contenir un petit noyau documentaire stable:
 
-- un `README.md` préfixé par le nom de la rubrique, par exemple `gamification-README.md` : point d entrée de la rubrique, avec le nom de la rubrique dans le titre H1;
-- un `presentation-detaillee.md` préfixé par le nom de la rubrique, par exemple `gamification-presentation-detaillee.md` : rôle, périmètre, états, composants concernés, notes d audit;
-- un `liste-propositions-a-traiter.md` préfixé par le nom de la rubrique, par exemple `gamification-liste-propositions-a-traiter.md` : propositions retenues mais pas encore exécutées;
-- un `objectifs-non-pertinents.md` préfixé par le nom de la rubrique, par exemple `gamification-objectifs-non-pertinents.md` : mémoire locale des idées écartées pour cette rubrique;
+- un fichier `nom-de-rubrique-README.md` préfixé par le nom de la rubrique, par exemple `gamification-README.md` : point d entrée de la rubrique, avec le nom de la rubrique dans le titre H1;
+- un fichier `nom-de-rubrique-presentation-detaillee.md` préfixé par le nom de la rubrique, par exemple `gamification-presentation-detaillee.md` : rôle, périmètre, états, composants concernés, notes d audit;
+- un fichier `nom-de-rubrique-liste-propositions-a-traiter.md` préfixé par le nom de la rubrique, par exemple `gamification-liste-propositions-a-traiter.md` : propositions retenues mais pas encore exécutées;
+- un fichier `nom-de-rubrique-objectifs-non-pertinents.md` préfixé par le nom de la rubrique, par exemple `gamification-objectifs-non-pertinents.md` : mémoire locale des idées écartées pour cette rubrique;
 - un dossier photo centralisé au niveau d'entrée du bloc de la rubrique, contenant les captures `webp` de toutes les pages du bloc, nommées avec la route, le nom de la page et la date de capture.
 
 Ces fichiers doivent rester synchronisés avec la spec canonique de la rubrique concernée.
 Si une proposition change d état, elle doit être déplacée dans le bon fichier sans duplication.
 Si aucune proposition n est active, le fichier `liste-propositions-a-traiter.md` peut rester vide en affichant clairement `Aucune proposition active à ce jour`.
 Le titre H1 de chacun de ces fichiers doit commencer par le nom de la rubrique pour éviter les ambiguïtés, par exemple `Gamification - ...`.
-Le titre H1 du `README.md` doit aussi commencer par le nom de la page ou de la rubrique.
+Le titre H1 du fichier `nom-de-rubrique-README.md` doit aussi commencer par le nom de la page ou de la rubrique.
 Les fichiers optionnels ne doivent être créés que quand ils deviennent pertinents pour la rubrique. On évite les fichiers vides créés par anticipation sans besoin réel.
 
 ## Mémoire des idées écartées
 
-Chaque sous-dossier de page doit conserver un `README.md`, un `presentation-detaillee.md`, un `liste-propositions-a-traiter.md` et un `objectifs-non-pertinents.md`, tous préfixés par le nom de la page ou de la rubrique.
+Chaque sous-dossier de page doit conserver un fichier `nom-de-page-README.md`, un fichier `nom-de-page-presentation-detaillee.md`, un fichier `nom-de-page-liste-propositions-a-traiter.md` et un fichier `nom-de-page-objectifs-non-pertinents.md`, tous préfixés par le nom de la page ou de la rubrique.
 
 Le fichier `objectifs-non-pertinents.md` sert de mémoire locale de rejet.
 
@@ -85,7 +85,7 @@ La règle de nommage est la suivante.
 
 - Le dossier canonique d'une page doit porter le nom de la page ou de la rubrique.
 - Les fichiers qu'il contient doivent aussi porter ce même nom en préfixe.
-- Le `README.md` n'échappe pas à cette règle.
+- Le fichier `nom-de-page-README.md` n'échappe pas à cette règle.
 - Les dossiers photo ne vivent pas dans chaque page : ils sont centralisés au niveau d'entrée du bloc.
 - Les captures de référence restent en `.webp`.
 - Les noms de capture doivent inclure la route, le nom lisible de la page et la date.

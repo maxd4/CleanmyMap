@@ -60,15 +60,15 @@ export function DefaultLayout({
             Flux géolocalisé depuis <code>/api/actions/map</code>.
           </p>
           {freshnessLabel ? (
-            <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-sky-200/80 bg-sky-100 px-3 py-1.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950">
-              <span className="h-2 w-2 rounded-full bg-sky-500" />
+            <div className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 ${tone === "emerald" ? "border-emerald-200/80 bg-emerald-100" : "border-sky-200/80 bg-sky-100"}`}>
+              <span className={`h-2 w-2 rounded-full ${tone === "emerald" ? "bg-emerald-500" : "bg-sky-500"}`} />
               {freshnessLabel}
             </div>
           ) : null}
         </div>
         <button
           onClick={onReload}
-          className="rounded-lg border border-sky-200/80 bg-sky-100 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:border-sky-300 hover:bg-sky-200"
+          className={`rounded-lg border px-3 py-2 text-sm font-semibold text-slate-950 transition ${tone === "emerald" ? "border-emerald-200/80 bg-emerald-100 hover:border-emerald-300 hover:bg-emerald-200" : "border-sky-200/80 bg-sky-100 hover:border-sky-300 hover:bg-sky-200"}`}
         >
           {isValidating ? "Actualisation..." : "Rafraîchir"}
         </button>
@@ -76,7 +76,7 @@ export function DefaultLayout({
 
       <div
         ref={mapExportTargetRef}
-        className="mt-5 overflow-hidden rounded-[1.75rem] border border-sky-200/80 bg-sky-50 shadow-inner"
+        className={`mt-5 overflow-hidden rounded-[1.75rem] shadow-inner ${tone === "emerald" ? "border border-emerald-200/80 bg-[linear-gradient(180deg,rgba(244,250,242,0.98),rgba(252,254,250,0.98))]" : "border border-sky-200/80 bg-sky-50"}`}
       >
         {mapCanvasError ? (
           <div className="flex h-[28rem] items-center justify-center rounded-[1.75rem] border border-rose-200/70 bg-rose-50 px-6 text-center text-slate-950">
@@ -88,7 +88,7 @@ export function DefaultLayout({
             </div>
           </div>
         ) : !MapCanvas ? (
-          <MapLoadingState />
+          <MapLoadingState tone={tone} />
         ) : !hasItems ? (
           <MapEmptyState
             mode={emptyMode}
@@ -99,6 +99,7 @@ export function DefaultLayout({
             onReload={onReload}
             isValidating={isValidating}
             zoneQuery={zoneQuery}
+            tone={tone}
           />
         ) : (
           <MapCanvas

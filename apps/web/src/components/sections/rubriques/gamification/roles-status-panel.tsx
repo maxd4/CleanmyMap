@@ -65,12 +65,14 @@ export function buildRoleStatusCards(
   );
   const contributorGate = hasContribution;
   const referentGate =
-    Boolean(currentContributor) &&
+    currentContributor !== null &&
+    currentContributor !== undefined &&
     currentContributor.verifiedContributions >= 3 &&
     currentContributor.activeMonths >= 2;
   const mentorGate = Boolean(currentContributor?.mentorEligible);
   const coordinatorGate =
-    Boolean(currentContributor) &&
+    currentContributor !== null &&
+    currentContributor !== undefined &&
     currentContributor.contributionType === "coordination" &&
     currentContributor.verifiedContributions >= 12 &&
     currentContributor.activeMonths >= 6;

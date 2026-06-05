@@ -114,7 +114,7 @@ export function resolveBasePageFamilyId(pathname: string): PageFamilyId {
     return "agir";
   }
 
-  if (base === "reports" || base === "observatoire") {
+  if (base === "reports") {
     return "cartographie-impact";
   }
 

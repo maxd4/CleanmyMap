@@ -27,4 +27,12 @@ export const PAGE_FAMILY_ROUTE_EXCEPTIONS: PageFamilyRouteException[] = [
       pathname === "/sections/weather" || pathname.startsWith("/sections/weather/"),
     familyId: "agir",
   },
+  {
+    id: "join-group-form",
+    note: "Rubrique de jonction de formulaire rattachée au bloc Agir",
+    match: (pathname) =>
+      pathname === "/sections/rejoindre-un-formulaire" ||
+      pathname.startsWith("/sections/rejoindre-un-formulaire/"),
+    familyId: "agir",
+  },
 ];

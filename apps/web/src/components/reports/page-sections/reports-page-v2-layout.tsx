@@ -3,21 +3,18 @@ import { PageReadingTemplate } from "@/components/ui/page-reading-template";
 import { AnimatedImpactMetrics } from "@/components/reports/AnimatedImpactMetrics";
 import { RadialProgressGauge } from "@/components/reports/RadialProgressGauge";
 import { NavigationGrid, type NavigationGridItem } from "@/components/ui/navigation-grid";
-import { ReportsWindowComparisonsSection } from "@/components/reports/reports-window-comparisons-section";
-import { EcologicalTimeline } from "@/components/reports/EcologicalTimeline";
 import { RubriqueExcelExportButton } from "@/components/ui/rubrique-excel-export-button";
 import { KpiMethodBlock } from "@/components/pilotage/kpi-method-block";
 import { AnalyticsCockpit } from "@/components/reports/analytics-cockpit";
-import { ReportsWebDocument } from "@/components/reports/reports-web-document";
+import { ReportsWebDocument } from "@/components/reports/reports-web-document.tsx";
 import { ReportsKpiSummary } from "@/components/reports/reports-kpi-summary";
 import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
-import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
+import { ReportsImpactReadingsSection } from "@/components/reports/reports-impact-readings-section";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { Locale } from "@/lib/ui/preferences";
 import type { AppProfile, ProfileAction } from "@/lib/profiles";
 import { isAdminLikeProfile } from "@/lib/profiles";
-import { getActionOperationalContext } from "@/lib/actions/data-contract";
 import type { MonthlyAnalyticsPoint } from "@/lib/pilotage/analytics-data-utils";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import type { ActionListResponse } from "@/lib/actions/types";
@@ -81,6 +78,13 @@ export function ReportsPageV2Layout({
     <div className="space-y-4">
       {publicAccessBanner}
 
+      <ReportsWebDocument
+        contracts={contracts}
+        communityEvents={communityEvents}
+        weather={weather}
+        overview={overview}
+      />
+
       <PageReadingTemplate
         context={`Profil ${roleLabel}`}
         title="Rapports d'impact"
@@ -94,25 +98,25 @@ export function ReportsPageV2Layout({
                 value={78}
                 label="Réduction Déchets"
                 subLabel="Objectif Q2 2026"
-                color="emerald"
+                color="red"
               />
               <RadialProgressGauge
                 value={45}
                 label="Mobilisation"
                 subLabel="Nouveaux bénévoles"
-                color="blue"
+                color="cyan"
               />
               <RadialProgressGauge
                 value={92}
                 label="Qualité Data"
                 subLabel="Précision GPS"
-                color="violet"
+                color="cyan"
               />
               <RadialProgressGauge
                 value={65}
                 label="Impact CO2"
                 subLabel="Émissions évitées"
-                color="amber"
+                color="red"
               />
             </div>
 
@@ -132,47 +136,12 @@ export function ReportsPageV2Layout({
             : undefined
         }
         analysis={
-          <div className="space-y-16">
-            <TerritoryMapComparisonCards
-              title="Deux lectures du territoire d'impact"
-              subtitle="La carte de base garde une lecture terrain et opérationnelle. La version Terraink ajoute une lecture plus éditoriale, utile pour les rapports, les exports et les présentations. Les deux restent disponibles pour trancher plus tard."
-              locationLabel="Territoire audité"
-              tone="rose"
-              note="La version Terraink ne remplace rien ici. Elle sert de piste visuelle à comparer avec la carte brute et à valider selon le contexte d'usage."
-            />
-
-            <div id="comparisons">
-              {overview ? (
-                <ReportsWindowComparisonsSection
-                  comparisonsByWindow={overview.comparisonsByWindow}
-                />
-              ) : (
-                <section className="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
-                  <p className="cmm-text-small text-amber-800">
-                    Données de comparaison temporairement indisponibles.
-                    Vérifier la source pilotage.
-                  </p>
-                </section>
-              )}
-            </div>
-
-            <div className="space-y-10">
-              <div className="text-center">
-                <h3 className="text-3xl font-black cmm-text-primary mb-2">Historique d&apos;impact</h3>
-                <p className="cmm-text-secondary font-medium italic">Les actions les plus significatives sur le terrain</p>
-              </div>
-              <EcologicalTimeline
-                actions={contracts.map((c: ActionDataContract) => ({
-                  id: c.id,
-                  date: c.dates.observedAt,
-                  label: c.location.label,
-                  wasteKg: c.metadata.wasteKg || 0,
-                  volunteers: getActionOperationalContext(c).volunteersCount,
-                  type: c.type
-                }))}
-              />
-            </div>
-          </div>
+          <ReportsImpactReadingsSection
+            contracts={contracts}
+            communityEvents={communityEvents}
+            weather={weather}
+            overview={overview}
+          />
         }
       />
 
@@ -207,14 +176,6 @@ export function ReportsPageV2Layout({
             </p>
           </div>
           <AnalyticsCockpit data={monthlyData} />
-        </section>
-
-        <section id="document" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">
-          <ReportsWebDocument
-            contracts={contracts}
-            communityEvents={communityEvents}
-            weather={weather}
-          />
         </section>
 
         <section id="kpi-summary" className="space-y-4 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-xl backdrop-blur-md">

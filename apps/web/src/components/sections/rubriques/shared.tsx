@@ -45,7 +45,7 @@ export function SectionShell({
   const pageFamily = resolvePageFamily(pathname);
   const hero = pageFamily.hero;
   const fr = locale === "fr";
-  const useFamilyHero = pageFamily.id !== "fallback";
+  const useFamilyHero = true;
 
   return (
     <section
