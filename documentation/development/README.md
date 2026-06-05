@@ -29,6 +29,7 @@ Guides de développement pour agents IA.
 ### Contribution & Documentation
 - **CONTRIBUTING.md** - Guide de contribution
 - **DOCUMENTATION_POLICY.md** - Politique de documentation
+- **supabase-quota-guide.md** - Guide développeur pour éviter d'augmenter les quotas Supabase
 
 ### Dette Technique
 - **dette-technique.md** - Dette technique actuelle
@@ -53,6 +54,7 @@ Guides de développement pour agents IA.
 4. Suivre **typescript-precision-policy.md** pour tout typage, cast ou accès dynamique
 5. Utiliser **typescript-anti-errors-checklist.md** pour le runbook court
 6. Utiliser **typescript-anti-errors-playbook.md** pour classer et corriger les erreurs TypeScript
+7. Relire **supabase-quota-guide.md** avant d'ajouter une requête Supabase lourde
 
 ### Avant de Commit
 1. Vérifier **regression-gates.md** (tests critiques)

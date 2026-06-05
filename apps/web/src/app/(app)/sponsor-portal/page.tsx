@@ -22,7 +22,7 @@ import {
   PilotageInsightCard,
   PilotageMetricGrid,
 } from "@/components/pilotage/pilotage-cluster-panels";
-import { DecisionReadingSection } from "@/components/pilotage/decision-reading-section";
+import { DecisionClusterSection } from "@/components/pilotage/decision-cluster-section";
 import { getPageFamilyById } from "@/lib/ui/page-families";
 import { loadAccountCompletionGateState } from "@/lib/auth/account-completion-gate";
 
@@ -210,32 +210,7 @@ export default async function SponsorPortalPage() {
         </div>
       </section>
 
-      <DecisionReadingSection
-        variant="sponsor"
-        eyebrow="Cluster commun"
-        title="Mon espace, Portail décideur et Gouvernance"
-        description="Les mêmes repères de lecture sont partagés sur les trois surfaces, avec une entrée différente selon le rôle et le niveau d'arbitrage attendu."
-        links={[
-          {
-            id: "dashboard",
-            href: "/dashboard",
-            label: "Mon espace",
-            description: "KPI, profil et arbitrages du quotidien.",
-          },
-          {
-            id: "pilotage",
-            href: "/pilotage",
-            label: "Pilotage",
-            description: "Synthèse transverse, recommandations et méthodes.",
-          },
-          {
-            id: "gouvernance",
-            href: "/sections/elus",
-            label: "Gouvernance",
-            description: "Lecture territoriale et arbitrages publics.",
-          },
-        ]}
-      />
+      <DecisionClusterSection locale="fr" surfaceId="sponsor" />
 
       {/* Protocol Transparency */}
       <section className="relative group p-12 rounded-[3rem] border border-white/5 bg-white/5 backdrop-blur-2xl overflow-hidden transition-all hover:bg-white/[0.07]">

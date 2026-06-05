@@ -25,7 +25,7 @@ export function AdminCreatorConsole({
   embedded = false,
   className,
 }: AdminCreatorConsoleProps) {
-  const classes = getBlockClasses("pilot");
+  const classes = getBlockClasses("home");
   const pageFamily = resolvePageFamily("/admin/godmode");
   const rootClassName = embedded
     ? "space-y-10 rounded-[2.5rem] border border-stone-200/80 bg-white/78 p-6 shadow-[0_16px_40px_-32px_rgba(69,45,28,0.26)] backdrop-blur-sm"

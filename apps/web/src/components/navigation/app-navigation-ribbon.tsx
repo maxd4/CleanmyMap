@@ -14,7 +14,6 @@ import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import {
   getActiveSpaceForPath,
   getNavigationSpacesForProfile,
-  getPilotFallbackItems,
 } from "@/lib/navigation";
 import type { AppProfile } from "@/lib/profiles";
 import { trackNavigationClick } from "@/lib/analytics/navigation-client";
@@ -29,7 +28,6 @@ import { useAdaptiveRibbonChrome } from "./app-navigation-ribbon-theme";
 import { AppNavigationTreeMenu } from "./app-navigation-tree-menu";
 import { AppNavigationBlockDropdown } from "./app-navigation-block-dropdown";
 import { useDropdownPlacement } from "@/components/ui/use-dropdown-placement";
-import { getLocalizedText } from "@/lib/navigation";
 
 type AppNavigationRibbonProps = {
   currentProfile: AppProfile;
@@ -66,13 +64,7 @@ export function AppNavigationRibbon({
 
   const spaces = useMemo(() => {
     const rawSpaces = getNavigationSpacesForProfile(currentProfile, displayMode, locale);
-    return rawSpaces.map((space) => ({
-      ...space,
-      items:
-        space.id === "pilot" && space.items.length === 0
-          ? getPilotFallbackItems(locale)
-          : space.items,
-    }));
+    return rawSpaces;
   }, [currentProfile, displayMode, locale]);
 
   const activeSpaceId = getActiveSpaceForPath(currentProfile, pathname, displayMode);

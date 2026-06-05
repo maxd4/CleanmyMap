@@ -209,7 +209,7 @@ export function RecyclingQuestionAssistant() {
               )}
 
               <CmmButton
-                href="/learn/ressources"
+                href="/learn/bonnes-pratiques#ressources-utiles"
                 tone="secondary"
                 variant="pill"
                 className="group flex items-center justify-center gap-3 rounded-2xl px-6 py-4 text-sm font-black text-slate-950 transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-white/5"

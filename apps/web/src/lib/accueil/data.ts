@@ -24,7 +24,6 @@ export const ACCUEIL_TEST_MARKERS = [
   "test",
   "demo",
   "seed",
-  "sandbox",
   "dummy",
   "fake",
   "runtime_seed",

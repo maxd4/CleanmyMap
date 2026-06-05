@@ -51,3 +51,9 @@
 - Cette fiche est la source de vérité canonique pour la rubrique feedback.
 - Le rendu est assuré par la route dynamique `/sections/[sectionId]` avec `sectionId = feedback`.
 - Les autres chemins de rappel vers la rubrique doivent converger vers cette fiche sans recréer une entrée séparée dans un autre bloc.
+
+## Fichiers associés
+
+- [Présentation détaillée](./feedback-presentation-detaillee.md)
+- [Liste des propositions à traiter](./feedback-liste-propositions-a-traiter.md)
+- [Objectifs non pertinents](./feedback-objectifs-non-pertinents.md)

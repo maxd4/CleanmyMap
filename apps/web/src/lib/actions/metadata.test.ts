@@ -34,6 +34,17 @@ describe("action metadata notes", () => {
     expect(parsed.submissionMode).toBeNull();
     expect(parsed.associationName).toBeNull();
     expect(parsed.wasteBreakdown).toBeNull();
+    expect(parsed.groupJoinEnabled).toBe(true);
+  });
+
+  it("persists a closed group form flag in metadata", () => {
+    const notes = appendActionMetadataToNotes("Simple note", {
+      groupJoinEnabled: false,
+    });
+    const parsed = extractActionMetadataFromNotes(notes);
+
+    expect(parsed.cleanNotes).toBe("Simple note");
+    expect(parsed.groupJoinEnabled).toBe(false);
   });
 
   it("extracts legacy association line and strips it from plain notes", () => {

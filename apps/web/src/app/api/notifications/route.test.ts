@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const authMock = vi.hoisted(() => vi.fn());
@@ -18,5 +19,12 @@ describe("GET /api/notifications", () => {
     const body = (await response.json()) as { error?: string };
     expect(response.status).toBe(401);
     expect(body.error).toBe("Vous devez vous reconnecter pour continuer.");
+  });
+
+  it("selects only the notification columns the UI needs", () => {
+    const source = readFileSync(new URL("./route.ts", import.meta.url), "utf8");
+
+    expect(source).toContain('.select("id, type, title, content, read_at, created_at, payload")');
+    expect(source).not.toContain('.select("*")');
   });
 });

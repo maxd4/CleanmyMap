@@ -27,6 +27,8 @@
     "backend:supabase:advisors": "node scripts/supabase-security-advisors.mjs",
     "backend:supabase:advisors:local": "node scripts/supabase-security-advisors.mjs --local",
     "backend:supabase:advisors:linked": "node scripts/supabase-security-advisors.mjs --linked",
+    "backend:supabase:quota-audit": "node scripts/supabase-quota-audit.mjs",
+    "backend:supabase:quota-audit:db": "node scripts/supabase-quota-audit.mjs --with-db",
     "backend:vercel:env:sync": "node scripts/vercel-sync-env.mjs --file=.env.local --environments=development,production",
     "backend:supabase:push": "npx supabase db push --workdir . --yes",
     "backend:bootstrap": "node scripts/backend-bootstrap.mjs",

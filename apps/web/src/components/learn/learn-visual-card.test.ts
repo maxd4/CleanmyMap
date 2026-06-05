@@ -7,7 +7,7 @@ import type { LearnLinkCard } from "@/lib/learning/learn-rubric-data";
 
 const card: LearnLinkCard = {
   href: "/learn/comprendre",
-  title: "Comprendre",
+  title: "Vulgarisation",
   detail: "Lire le contexte, les ordres de grandeur et le lien vers la méthodologie.",
   visual: {
     tone: "violet",
@@ -34,7 +34,7 @@ describe("LearnVisualCard", () => {
       }),
     );
 
-    expect(markup).toContain("Comprendre");
+    expect(markup).toContain("Vulgarisation");
     expect(markup).toContain("Contexte");
     expect(markup).toContain("Ordres de grandeur");
     expect(markup).toContain("Ouvrir la page");

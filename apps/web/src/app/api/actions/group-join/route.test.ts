@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { appendActionMetadataToNotes } from "@/lib/actions/metadata";
 
 const authMock = vi.hoisted(() => vi.fn());
 const getSupabaseServerClientMock = vi.hoisted(() => vi.fn());
@@ -24,6 +25,7 @@ type ActionRow = {
   volunteers_count: number;
   duration_minutes: number;
   status: "pending" | "approved" | "rejected";
+  notes?: string | null;
 };
 
 type ParticipantRow = {
@@ -259,6 +261,47 @@ describe("GET /api/actions/group-join", () => {
     });
   }, 15000);
 
+  it("excludes approved actions that are not opened to participants", async () => {
+    const supabase = createSupabaseMock({
+      actions: [
+        {
+          id: "action-open",
+          created_at: "2026-05-01T10:00:00Z",
+          action_date: "2026-05-10",
+          location_label: "Parc Nord",
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status: "approved",
+          notes: appendActionMetadataToNotes("Ouverte", { groupJoinEnabled: true }),
+        },
+        {
+          id: "action-closed",
+          created_at: "2026-05-02T10:00:00Z",
+          action_date: "2026-05-09",
+          location_label: "Quai Est",
+          volunteers_count: 8,
+          duration_minutes: 30,
+          status: "approved",
+          notes: appendActionMetadataToNotes("Fermée", { groupJoinEnabled: false }),
+        },
+      ],
+      participants: [],
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const { GET } = await import("./route");
+    const response = await GET(new Request("http://localhost/api/actions/group-join?limit=6"));
+    const body = (await response.json()) as {
+      count?: number;
+      items?: Array<{ id: string }>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.count).toBe(1);
+    expect(body.items?.[0]?.id).toBe("action-open");
+    expect(body.items?.some((item) => item.id === "action-closed")).toBe(false);
+  }, 15000);
+
   it("prioritizes a requested approved action even when it is outside the default slice", async () => {
     const supabase = createSupabaseMock({
       actions: [
@@ -419,6 +462,37 @@ describe("POST /api/actions/group-join", () => {
     const body = (await response.json()) as { details?: { actionId?: string[] } };
     expect(response.status).toBe(422);
     expect(body.details?.actionId?.[0]).toContain("validée par un admin");
+  });
+
+  it("rejects joining an approved action that is closed by the organizer", async () => {
+    const supabase = createSupabaseMock({
+      actions: [
+        {
+          id: "action-3",
+          created_at: "2026-05-01T10:00:00Z",
+          action_date: "2026-05-10",
+          location_label: "Parc Nord",
+          volunteers_count: 12,
+          duration_minutes: 45,
+          status: "approved",
+          notes: appendActionMetadataToNotes("Fermée", { groupJoinEnabled: false }),
+        },
+      ],
+      participants: [],
+    });
+    getSupabaseServerClientMock.mockReturnValue(supabase);
+
+    const { POST } = await import("./route");
+    const response = await POST(
+      new Request("http://localhost/api/actions/group-join", {
+        method: "POST",
+        body: JSON.stringify({ actionId: "action-3" }),
+      }),
+    );
+
+    const body = (await response.json()) as { details?: { actionId?: string[] } };
+    expect(response.status).toBe(422);
+    expect(body.details?.actionId?.[0]).toContain("n'a pas ouvert");
   });
 
   it("rejects unauthenticated users", async () => {

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/system-state";
 import { SystemStateRetryButton } from "@/components/ui/system-state-retry-button";
 import { ThirtySecondsSummary } from "@/components/pilotage/thirty-seconds-summary";
+import { DecisionClusterSection } from "@/components/pilotage/decision-cluster-section";
 import { DashboardTodayPanel } from "@/components/dashboard/dashboard-today-panel";
 import { buildDashboardTodayState, type DashboardRecommendedAction } from "@/lib/dashboard/today";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
@@ -87,6 +88,11 @@ export async function DashboardOverviewSection({
           </SystemStateAction>
         </SystemStateLayout>
         <DashboardTodayPanel state={errorState} />
+        <DecisionClusterSection
+          locale={locale}
+          surfaceId="dashboard"
+          className="border-amber-200/18 bg-[rgba(44,28,15,0.82)]"
+        />
       </div>
     );
   }
@@ -117,6 +123,11 @@ export async function DashboardOverviewSection({
         recommendedReason={recommendedAction.reason}
       />
       <DashboardTodayPanel state={todayState} />
+      <DecisionClusterSection
+        locale={locale}
+        surfaceId="dashboard"
+        className="border-amber-200/18 bg-[rgba(44,28,15,0.82)]"
+      />
     </div>
   );
 }

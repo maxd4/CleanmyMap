@@ -272,57 +272,84 @@ const services = [
   }),
 ] satisfies EnvironmentalImpactInfrastructureServiceEstimate[];
 
+const githubStats = {
+  fullName: "maxd4/CleanmyMap",
+  htmlUrl: "https://github.com/maxd4/CleanmyMap",
+  isPrivate: false,
+  defaultBranch: "main",
+  dependabotOpenAlertsCount: 0,
+  codeScanningWarningCount: 32,
+  actionsQuotaLabel: "Repo public: runners standards gratuits et illimités",
+  actionsNotes: [
+    "Dépôt public: les runners GitHub standard sont gratuits et illimités.",
+    "Les quotas minute Actions s’appliquent surtout aux dépôts privés.",
+  ],
+  source: "api" as const,
+};
+
 describe("FreePlanServicesMethodologyVisual", () => {
-  it("renders the impact tab with real services and the ACV development split", () => {
+  it("renders the impact tab with the linear ACV breakdown and development split", () => {
     const markup = renderToStaticMarkup(
       React.createElement(FreePlanServicesMethodologyVisual, {
         services,
+        githubStats,
         isFrench: true,
       }),
     );
 
     expect(markup).toContain("Impact carbone des services suivis");
-    expect(markup).toContain("Relais actif");
-    expect(markup).toContain("Impact carbone");
+    expect(markup).toContain("Impact carbone année en cours");
+    expect(markup).toContain("Total carbone depuis la création du site");
+    expect(markup).toContain("Contribution estimée à l&#x27;empreinte carbone (ACV)");
     expect(markup).toContain("Supabase");
     expect(markup).toContain("Vercel");
-    expect(markup).toContain("GitHub");
     expect(markup).toContain("Resend");
     expect(markup).toContain("PostHog");
     expect(markup).toContain("LWS");
-    expect(markup).toContain("IA de développement");
+    expect(markup).toContain("Top contributeurs");
+    expect(markup).toContain("Légende");
+    expect(markup).toContain("Développement IA");
     expect(markup).toContain("GPT-5.4 mini — développement du site");
     expect(markup).toContain("Codex — développement du site");
     expect(markup).toContain("Inclus ACV");
     expect(markup).toContain("Hors production");
     expect(markup).toContain("Hors quotas web");
-    expect(markup).toContain("Services suivis");
-    expect(markup).toContain("Plans payants");
-    expect(markup).toContain("Services proches d&#x27;une limite");
     expect(markup).toContain("NA");
-    expect(markup).toContain("Voir la charte");
+    expect(markup).not.toContain("Relais actif");
+    expect(markup).not.toContain("Voir la charte");
   });
 
   it("renders the quota dashboard when requested", () => {
     const markup = renderToStaticMarkup(
       React.createElement(FreePlanServicesMethodologyVisual, {
         services,
+        githubStats,
         isFrench: true,
         initialTab: "quota",
       }),
     );
 
     expect(markup).toContain("Quotas &amp; plans des services web");
-    expect(markup).toContain("Vue d&#x27;ensemble");
     expect(markup).toContain("Quotas &amp; plans");
     expect(markup).toContain("Impact carbone");
-    expect(markup).toContain("Suivi des quotas par service");
-    expect(markup).toContain("Détail des quotas");
+    expect(markup).toContain("Survolez une carte pour afficher le détail");
     expect(markup).toContain("Supabase - stockage");
-    expect(markup).toContain("NA");
+    expect(markup).toContain("Repo public");
+    expect(markup).toContain("runners standards gratuits et illimités");
+    expect(markup).toContain("Dependabot: 0");
+    expect(markup).toContain("Warnings: 32");
+    expect(markup).toContain("Ouvrir le repo GitHub");
     expect(markup).toContain("Plans payants");
     expect(markup).toContain("Services suivis");
     expect(markup).toContain("Services proches d&#x27;une limite");
+    expect(markup).toContain("Réinitialisation du cycle le 25 de chaque mois");
+    expect(markup).toContain("Taille base de données: 0,5 GB");
+    expect(markup).toContain("Egress: 5 GB");
+    expect(markup).toContain("Invocations Edge Functions: 500 000");
+    expect(markup).toContain("2 Go d’hébergement web");
+    expect(markup).toContain("2 adresses e-mails pro");
+    expect(markup).toContain("10 000 e-mails stockés par boîte");
+    expect(markup).toContain("Pièce jointe jusqu’à 25 Mo");
     expect(markup).not.toContain("GPT-5.4 mini — développement du site");
     expect(markup).not.toContain("Croissance mensuelle");
     expect(markup).not.toContain("Delta vs N-1");
@@ -332,6 +359,7 @@ describe("FreePlanServicesMethodologyVisual", () => {
     const markup = renderToStaticMarkup(
       React.createElement(FreePlanServicesMethodologyVisual, {
         services: [],
+        githubStats: null,
         isFrench: true,
         initialTab: "quota",
       }),
@@ -339,6 +367,7 @@ describe("FreePlanServicesMethodologyVisual", () => {
 
     expect(markup).toContain("GitHub");
     expect(markup).toContain("NA");
-    expect(markup).toContain("Aucune donnée de quota n&#x27;est branchée");
+    expect(markup).toContain("Réinitialisation du cycle le 25 de chaque mois");
+    expect(markup).toContain("Taille base de données: 0,5 GB");
   });
 });

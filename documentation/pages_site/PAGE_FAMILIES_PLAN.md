@@ -249,7 +249,7 @@ Piste :
 | 00 Homepage | autonome | `/` | hors bloc |
 | 01 Accueil & Pilotage | famille bloc | `/dashboard`, `/profil` (alias), `/pilotage`, `/profil/[profile]`, `/sponsor-portal`, `/explorer`, `/parcours` | cockpit personnel fusionné, exceptions UI et profils détaillés |
 | 02 Agir | famille bloc | `/actions/new`, `/actions/history`, `/signalement`, `/missions/[id]`, `/sections/route`, `/declaration` | famille métier orientée action |
-| 03 Cartographie & Impact | famille bloc | `/actions/map`, `/methodologie`, `/gamification`, `/profil/impact`, `/reports`, `/sandbox` | deux sous-teintes logiques sky / red |
+| 03 Cartographie & Impact | famille bloc | `/actions/map`, `/methodologie`, `/gamification`, `/profil/impact`, `/reports` | deux sous-teintes logiques sky / red |
 | 04 Réseau & Discussions | famille bloc | `/community`, `/sections/feedback`, `/messagerie`, `/open-data`, `/partners/*` | palette indigo / pink selon les sous-espaces |
 | 05 Apprendre | famille bloc | `/learn/*` | palette yellow + amber |
 | 06 Auth & Onboarding | autonome | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | charte auth dédiée |

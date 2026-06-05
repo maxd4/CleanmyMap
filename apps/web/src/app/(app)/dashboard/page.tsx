@@ -7,6 +7,7 @@ import { ClerkRequiredGate } from "@/components/ui/clerk-required-gate";
 import { FamilyRubriqueCard } from "@/components/ui/family-rubrique-card";
 import { IdentityProfileBanner } from "@/components/ui/identity-profile-banner";
 import { RolePrimaryActions } from "@/components/navigation/role-primary-actions";
+import { ActionsReportPanel } from "@/components/reports/actions-report-panel";
 import { CmmButton } from "@/components/ui/cmm-button";
 import { AccountCompletionGate } from "@/components/account/account-completion-gate";
 import { TerritoryMapComparisonCards } from "@/components/maps/territory-map-comparison-cards";
@@ -437,6 +438,26 @@ export default async function DashboardPage() {
           </div>
 
           <div className="mt-14 h-px bg-amber-200/24" />
+
+          {isAdmin ? (
+            <div data-gsap-reveal className="mt-10 space-y-4">
+              <div className="max-w-3xl space-y-2">
+                <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-amber-100/78">
+                  {locale === "fr" ? "Pilotage administratif" : "Administrative steering"}
+                </p>
+                <h2 className="text-2xl font-black tracking-tight text-white">
+                  {locale === "fr" ? "Exports et modération" : "Exports and moderation"}
+                </h2>
+                <p className="max-w-2xl text-sm leading-relaxed text-white/72">
+                  {locale === "fr"
+                    ? "Le workflow avancé de prévisualisation, confirmation et journal d’opérations a été déplacé ici pour garder la page rapports concentrée sur l’aperçu."
+                    : "The advanced preview, confirmation and audit workflow has been moved here to keep the reports page focused on the preview."}
+                </p>
+              </div>
+
+              <ActionsReportPanel />
+            </div>
+          ) : null}
 
           {/* ── Parrainages + Classement global des niveaux utilisateur ── */}
           <div

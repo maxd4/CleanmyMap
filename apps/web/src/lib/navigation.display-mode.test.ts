@@ -4,7 +4,6 @@ import {
   getNavigationCategoriesForProfile,
   getNavigationProfileOverview,
   getNavigationSpacesForProfile,
-  getPilotFallbackItems,
   getProfileNavigationEntries,
 } from "./navigation";
 
@@ -103,11 +102,9 @@ describe("navigation display modes", () => {
     );
 
     expect(learnSpace?.items.map((item) => item.routeId)).toEqual([
-      "hub",
       "learn-comprendre",
       "learn-sentrainer",
       "learn-bonnes-pratiques",
-      "learn-ressources",
     ]);
   });
 
@@ -118,7 +115,6 @@ describe("navigation display modes", () => {
     ).find((space) => space.id === "network");
 
     expect(networkSpace?.items.map((item) => item.routeId)).toEqual([
-      "network",
       "community",
       "feedback",
       "messagerie",
@@ -134,43 +130,34 @@ describe("navigation display modes", () => {
 
     expect(visualizeSpace?.items.map((item) => item.routeId)).toEqual([
       "map",
-      "sandbox",
       "methodologie",
       "reports",
       "gamification",
     ]);
   });
 
-  it("moves pilot pages into the home block", () => {
-    const homeSpace = getNavigationSpacesForProfile(
-      "max",
+  it("keeps the home block focused on entry and decision pages", () => {
+    const adminHomeSpace = getNavigationSpacesForProfile(
+      "admin",
+      "exhaustif",
+    ).find((space) => space.id === "home");
+    const eluHomeSpace = getNavigationSpacesForProfile(
+      "elu",
       "exhaustif",
     ).find((space) => space.id === "home");
 
-    expect(homeSpace?.items.map((item) => item.routeId)).toEqual([
+    expect(adminHomeSpace?.items.map((item) => item.routeId)).toEqual([
       "dashboard",
       "explorer",
       "pilotage",
       "admin",
+    ]);
+    expect(eluHomeSpace?.items.map((item) => item.routeId)).toEqual([
+      "dashboard",
+      "explorer",
+      "pilotage",
       "sponsor",
-      "elus",
     ]);
-  });
-
-  it("shows the admin home block with pilotage and elus", () => {
-    const homeSpace = getNavigationSpacesForProfile(
-      "admin",
-      "exhaustif",
-    ).find((space) => space.id === "home");
-
-    expect(homeSpace?.items.map((item) => item.routeId)).toEqual([
-      "dashboard",
-      "explorer",
-      "pilotage",
-      "admin",
-      "elus",
-    ]);
-    expect(homeSpace?.items.map((item) => item.routeId)).not.toContain("godmode");
   });
 
   it("places feedback in the network block", () => {
@@ -180,7 +167,6 @@ describe("navigation display modes", () => {
     ).find((space) => space.id === "network");
 
     expect(networkSpace?.items.map((item) => item.routeId)).toEqual([
-      "network",
       "community",
       "feedback",
       "messagerie",
@@ -207,15 +193,13 @@ describe("navigation display modes", () => {
       "Sommaire",
       "Pilotage",
       "Administration",
-      "Portail décideurs",
-      "Gouvernance",
     ]);
     expect(learnSpace?.items.map((item) => item.label.fr)).toContain("S'entraîner");
     expect(visualizeSpace?.items.map((item) => item.label.fr)).toContain("Rapports d'impact");
     expect(visualizeSpace?.items.map((item) => item.label.fr)).toContain("Méthodologie");
   });
 
-  it("hides the empty pilot space for benevole", () => {
+  it("keeps decision pages out of separate visible spaces", () => {
     const benevoleSpaceIds = getNavigationSpacesForProfile(
       "benevole",
       "exhaustif",
@@ -228,20 +212,8 @@ describe("navigation display modes", () => {
       "network",
       "learn",
     ]);
-    expect(benevoleSpaceIds).not.toContain("pilot");
     expect(benevoleSpaceIds).not.toContain("connect");
     expect(benevoleSpaceIds).not.toContain("impact");
-  });
-
-  it("provides fallback pilot items for empty pilot blocks", () => {
-    const fallback = getPilotFallbackItems("fr");
-
-    expect(fallback.map((item) => item.routeId)).toEqual([
-      "dashboard",
-      "reports",
-    ]);
-    expect(fallback[0]?.label.fr).toBe("Mon espace");
-    expect(fallback[1]?.label.fr).toBe("Rapports d'impact");
   });
 
   it("places feedback in the community category", () => {

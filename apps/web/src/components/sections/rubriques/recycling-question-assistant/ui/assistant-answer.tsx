@@ -79,7 +79,7 @@ export function AssistantAnswer({ answer, copy }: AssistantAnswerProps) {
           </p>
 
           <Link
-            href="/learn/ressources"
+            href="/learn/bonnes-pratiques#ressources-utiles"
             className="group flex items-center justify-between w-full h-14 rounded-2xl bg-white px-6 py-2.5 text-[11px] font-black uppercase tracking-[0.2em] text-slate-950 transition-all hover:bg-emerald-400 hover:scale-[1.02] active:scale-[0.98]"
           >
             <span className="flex items-center gap-2">

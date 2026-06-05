@@ -457,6 +457,12 @@ export function ActionDeclarationForm(props: ActionDeclarationFormProps) {
             hasAttemptedSubmit={hasAttemptedSubmit}
             validationIssues={validationIssues}
             retentionLoop={retentionLoop}
+            showGroupInvite={form.recordType === "action" && form.groupJoinEnabled}
+            groupJoinHref={
+              createdId && form.recordType === "action" && form.groupJoinEnabled
+                ? `/sections/rejoindre-un-formulaire?actionId=${encodeURIComponent(createdId)}`
+                : null
+            }
             onReset={() => {
               setForm(createInitialFormState(resolvedDefaultActorName, props.initialRecordType ?? "action"));
               window.scrollTo({ top: 0, behavior: "smooth" });

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
@@ -19,6 +20,7 @@ import { format, parse, startOfWeek, getDay, type Locale } from "date-fns";
 import { fr, enUS } from "date-fns/locale";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { LearnRubricShell } from "@/components/learn/learn-rubric-shell";
+import { LearnBlockJourneySection } from "@/components/learn/learn-block-journey-section";
 import { useSitePreferences } from "@/components/ui/site-preferences-provider";
 import { cn } from "@/lib/utils";
 import { LEARN_RESOURCE_EVENTS } from "@/lib/learning/learn-rubric-data";
@@ -565,13 +567,13 @@ export function LearnArtworkAccordion({ locale }: { locale: LearnLocale }) {
 
             <div className="border-t border-amber-100 px-4 pb-4 pt-4 md:px-5 md:pb-5">
               <div className="grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
-                <figure className="overflow-hidden rounded-[1.4rem] border border-slate-200 bg-slate-50">
-                  <img
+                <figure className="relative h-64 overflow-hidden rounded-[1.4rem] border border-slate-200 bg-slate-50 md:h-[22rem]">
+                  <Image
                     src={artwork.image.src}
                     alt={artwork.image.alt[locale]}
-                    className="h-64 w-full object-cover md:h-[22rem]"
-                    loading="lazy"
-                    decoding="async"
+                    fill
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    className="object-cover"
                   />
                   <figcaption className="border-t border-slate-200 px-3 py-2 text-[11px] leading-relaxed text-slate-500">
                     {artwork.image.caption[locale]}{" "}
@@ -710,7 +712,7 @@ export function LearnRessourcesClient() {
   const isFrench = locale === "fr";
 
   useEffect(() => {
-    recordLearnPageVisit("ressources");
+    recordLearnPageVisit("bonnes-pratiques");
   }, []);
 
   const sortingCues = [
@@ -769,8 +771,8 @@ export function LearnRessourcesClient() {
         fr: "Trois portes d'entrée visibles d'abord, puis un calendrier plus léger pour garder la page orientée action.",
         en: "Three visible entry points first, then a lighter calendar to keep the page action-oriented.",
       }}
-      backHref="/learn/hub"
-      backLabel={{ fr: "Retour au point de départ", en: "Back to start" }}
+      backHref="/explorer"
+      backLabel={{ fr: "Retour au sommaire", en: "Back to summary" }}
       accent="yellow"
       highlights={[
         { fr: "Kit terrain", en: "Field kit" },
@@ -783,6 +785,7 @@ export function LearnRessourcesClient() {
       }}
     >
     <div className="space-y-6">
+      <LearnBlockJourneySection locale={locale} currentPageId="bonnes-pratiques" />
       <LearnRessourcesOverview locale={locale} />
       <LearnArtworkAccordion locale={locale} />
 

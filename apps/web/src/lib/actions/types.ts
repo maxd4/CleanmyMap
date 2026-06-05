@@ -131,6 +131,7 @@ export type ActionListItem = {
       associationName?: string | null;
       notes: string | null;
       notesPlain: string | null;
+      groupJoinEnabled: boolean | null;
       wasteKg: number | null;
       cigaretteButts: number | null;
       volunteersCount: number;
@@ -173,6 +174,7 @@ export type CreateActionPayload = {
   actorName?: string;
   associationName?: string;
   organizerAccounts?: string[];
+  groupJoinEnabled?: boolean;
   actionDate: string;
   locationLabel: string;
   departureLocationLabel?: string;
@@ -267,6 +269,7 @@ export type ActionMapItem = Pick<
       arrivalLocationLabel?: string | null;
       notes: string | null;
       notesPlain: string | null;
+      groupJoinEnabled: boolean | null;
       wasteKg: number | null;
       cigaretteButts: number | null;
       volunteersCount: number;

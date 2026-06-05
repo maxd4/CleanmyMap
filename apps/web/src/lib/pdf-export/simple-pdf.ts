@@ -19,6 +19,8 @@ export type PdfReportChapter = {
   stats?: PdfReportStat[];
   rows?: Record<string, unknown>[];
   columns?: PdfReportColumn[];
+  locked?: boolean;
+  requiredDetailLevelLabel?: string;
 };
 
 export type PdfReportData = {

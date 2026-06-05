@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ActionParticipantRow, ActionRow } from "@/types/database";
+import { extractActionMetadataFromNotes } from "@/lib/actions/metadata";
 
 export type JoinableActionItem = Pick<
   ActionRow,
@@ -14,6 +15,7 @@ export type JoinableActionItem = Pick<
   participantsCount: number;
   joined: boolean;
   joinedAt: string | null;
+  groupJoinEnabled: boolean;
 };
 
 type ActionPreviewRow = Pick<
@@ -25,6 +27,7 @@ type ActionPreviewRow = Pick<
   | "volunteers_count"
   | "duration_minutes"
   | "status"
+  | "notes"
 >;
 
 async function loadActionParticipantsForActions(
@@ -56,15 +59,16 @@ export async function loadJoinableActions(
     actionId?: string | null;
   },
 ): Promise<JoinableActionItem[]> {
+  const fetchLimit = Math.max(params.limit * 4, params.limit);
   const actionsResult = await supabase
     .from("actions")
     .select(
-      "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status",
+      "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status, notes",
     )
     .eq("status", "approved")
     .order("action_date", { ascending: false })
     .order("created_at", { ascending: false })
-    .limit(params.limit);
+    .limit(fetchLimit);
 
   if (actionsResult.error) {
     throw new Error(actionsResult.error.message);
@@ -80,7 +84,7 @@ export async function loadJoinableActions(
     const focusedActionResult = await supabase
       .from("actions")
       .select(
-        "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status",
+        "id, created_at, action_date, location_label, volunteers_count, duration_minutes, status, notes",
       )
       .eq("id", params.actionId)
       .eq("status", "approved")
@@ -94,11 +98,23 @@ export async function loadJoinableActions(
       orderedActions = [
         focusedActionResult.data as ActionPreviewRow,
         ...actions.filter((action) => action.id !== params.actionId),
-      ].slice(0, params.limit);
+      ].slice(0, fetchLimit);
     }
   }
 
-  const actionIds = orderedActions.map((action) => action.id);
+  const joinableActions = orderedActions
+    .map((action) => ({
+      action,
+      metadata: extractActionMetadataFromNotes(action.notes),
+    }))
+    .filter(({ metadata }) => metadata.groupJoinEnabled !== false)
+    .slice(0, params.limit);
+
+  if (joinableActions.length === 0) {
+    return [];
+  }
+
+  const actionIds = joinableActions.map(({ action }) => action.id);
   const [participantRows, joinedRows] = await Promise.all([
     loadActionParticipantsForActions(supabase, actionIds),
     params.userId
@@ -130,11 +146,12 @@ export async function loadJoinableActions(
     joinedByActionId.set(row.action_id, row.created_at);
   }
 
-  return orderedActions.map((action) => ({
+  return joinableActions.map(({ action, metadata }) => ({
     ...action,
     participantsCount: participantCounts.get(action.id) ?? 0,
     joined: joinedByActionId.has(action.id),
     joinedAt: joinedByActionId.get(action.id) ?? null,
+    groupJoinEnabled: metadata.groupJoinEnabled,
   }));
 }
 
@@ -148,7 +165,7 @@ export async function joinActionParticipation(
 }> {
   const actionResult = await supabase
     .from("actions")
-    .select("id, status")
+    .select("id, status, notes")
     .eq("id", params.actionId)
     .maybeSingle();
 
@@ -165,6 +182,15 @@ export async function joinActionParticipation(
   if (actionResult.data.status !== "approved") {
     const validationError = new Error(
       "L'action doit être validée par un admin avant de rejoindre son formulaire.",
+    );
+    validationError.name = "ValidationError";
+    throw validationError;
+  }
+
+  const actionMetadata = extractActionMetadataFromNotes(actionResult.data.notes);
+  if (actionMetadata.groupJoinEnabled === false) {
+    const validationError = new Error(
+      "L'organisateur n'a pas ouvert ce formulaire de groupe.",
     );
     validationError.name = "ValidationError";
     throw validationError;

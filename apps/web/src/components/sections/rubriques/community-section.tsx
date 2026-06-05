@@ -107,8 +107,8 @@ export function CommunitySection() {
               </p>
               <p className="mt-2 text-sm font-semibold text-white/70">
                 {surfaceTab === "community"
-                  ? (fr ? "Vie de la communauté et coordination interne." : "Community life and internal coordination.")
-                  : (fr ? "Carte des partenaires et parcours réseau." : "Partner map and network journeys.")}
+                  ? (fr ? "Communauté et coordination interne." : "Community coordination and internal operations.")
+                  : (fr ? "Partenaires et parcours réseau." : "Partners and network journeys.")}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

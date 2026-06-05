@@ -21,7 +21,6 @@ const NAVIGATION_SPACE_ACCENT_PAIRS: Record<NavigationBlockId, AccentPair> = {
   network: ["indigo", "pink"],
   connect: ["pink"],
   learn: ["yellow"],
-  pilot: ["amber"],
 };
 
 function resolveAccentPair(spaceId: NavigationBlockId | null): AccentPair {

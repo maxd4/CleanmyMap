@@ -76,6 +76,11 @@ documentation/
 │   ├── adr/
 │   └── [7 autres fichiers]
 │
+├── database/                    💾 Quotas, requêtes et index Supabase
+│   ├── README.md
+│   ├── QUERY_INDEX_AUDIT.md
+│   └── supabase-quota-audit.md
+│
 ├── operations/                  🔧 Ops & déploiement
 │   ├── README.md
 │   ├── INCIDENT_RUNBOOK_SHORT.md

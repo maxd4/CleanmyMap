@@ -10,6 +10,7 @@ export type FormState = {
  associationName: string;
  enterpriseName: string;
  organizerAccounts: string;
+ groupJoinEnabled: boolean;
  actionDate: string;
  locationLabel: string;
  departureLocationLabel: string;
@@ -44,6 +45,7 @@ export const initialState: FormState = {
  associationName: ASSOCIATION_SELECTION_OPTIONS[0],
  enterpriseName:"",
  organizerAccounts:"",
+ groupJoinEnabled: true,
  actionDate: new Date().toISOString().slice(0, 10),
  locationLabel:"",
  departureLocationLabel:"",

@@ -44,7 +44,10 @@ function buildJoinHref(actionId: string): string {
 }
 
 function isJoinableAction(item: ActionListItem): boolean {
- return item.record_type === "action";
+ return (
+ item.record_type === "action" &&
+ item.contract?.metadata.groupJoinEnabled !== false
+ );
 }
 
 function qualityTone(grade:"A" |"B" |"C"): string {
@@ -472,13 +475,19 @@ export function ActionsHistoryList() {
  <td className="px-2 py-2">
  {item.status ==="approved" && isJoinableAction(item) ? (
  <CmmButton
- href={buildJoinHref(item.id)}
- tone="secondary"
- variant="pill"
- className="h-9 px-3 text-[10px] font-black uppercase tracking-[0.16em]"
+  href={buildJoinHref(item.id)}
+  tone="secondary"
+  variant="pill"
+  className="h-9 px-3 text-[10px] font-black uppercase tracking-[0.16em]"
  >
  Rejoindre
  </CmmButton>
+ ) : item.status === "approved" &&
+ item.record_type === "action" &&
+ item.contract?.metadata.groupJoinEnabled === false ? (
+ <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 cmm-text-caption font-semibold uppercase tracking-wide text-slate-500">
+  Fermé
+ </span>
  ) : (
  <span className="cmm-text-caption cmm-text-muted">-</span>
  )}

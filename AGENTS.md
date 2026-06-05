@@ -89,6 +89,7 @@ Sans cet accord, utiliser uniquement la branche courante et les fichiers du doss
 - Si une seule vérification ciblée suffit, préférer cette vérification à un scan global.
 - Arrêter toute commande qui n'est plus utile dès qu'elle a terminé son rôle.
 - Fermer les commandes liées à un `localhost` dès que ce `localhost` n'est plus ouvert ou n'est plus utilisé.
+- Ne pas lancer de vérifications web du rendu du site ni d'inspections navigateur de l'UI sans demande explicite de l'utilisateur.
 - Les commandes `git` peuvent rester en arrière-plan car elles sont généralement peu coûteuses.
 
 ## Contrat projet migré depuis `.cursorrules`

@@ -86,7 +86,7 @@ Ces elements sont hors perimetre de la charte parce qu ils sont deja figes, term
 | `/reports` et `/gamification` | Exceptions UI rouges | Impact conserve comme exception visuelle rouge |
 | `/sign-in`, `/sign-up`, `/onboarding`, `/onboarding/localisation` | Famille autonome | Fond lavande clair vers vert menthe clair, Clerk violet nuit / indigo fonce |
 | `/declaration` | Alias / redirection | Pas de UI propre |
-| `/community`, `/messagerie`, `/open-data`, `/sandbox`, `/gamification` | Alias / redirections | Pas de UI propre |
+| `/community`, `/messagerie`, `/open-data`, `/gamification` | Alias / redirections | Pas de UI propre |
 | Pages deja couvertes par les 5 blocs principaux | Hors scope | Suivent leur charte de bloc existante |
 
 La route `/methodologie` est maintenant documentee dans le bloc `Cartographie & Impact` et ne releve plus de cette charte hors blocs.

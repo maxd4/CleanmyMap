@@ -3,20 +3,19 @@
 import { useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
-  Building2,
   CalendarDays,
-  CircleCheckBig,
+  CheckCircle2,
   Download,
   Eye,
   FileText,
   Leaf,
   MapPin,
+  Loader2,
   ShoppingBag,
   Map as MapIcon,
   ShieldCheck,
+  TriangleAlert,
   SlidersHorizontal,
-  Wrench,
-  type LucideIcon,
 } from "lucide-react";
 import { REPORT_SECTIONS } from "@/components/reports/web-document/constants";
 import { useReportsWebDocumentModel } from "@/components/reports/web-document/use-reports-web-document-model";
@@ -26,6 +25,7 @@ import type { ActionDataContract } from "@/lib/actions/data-contract";
 import type { CommunityEventItem } from "@/lib/community/http";
 import type { PilotageOverview } from "@/lib/pilotage/overview";
 import { IMPACT_PROXY_CONFIG } from "@/lib/gamification/impact-proxy-config";
+import { buildExecutiveNarrative, toFrInt, toFrNumber } from "@/components/reports/web-document/analytics";
 
 type ReportsWeather = {
   current?: {
@@ -42,9 +42,14 @@ type ReportsWebDocumentProps = {
   overview?: PilotageOverview | null;
 };
 
-type ReportTypeId = "standard" | "institutionnel" | "technique" | "personnalise";
-type DetailLevelId = "standard" | "approfondi" | "complet";
-type PeriodId = "30j" | "90j" | "12m" | "annee";
+const DETAIL_LEVEL_OPTIONS = [
+  { id: "concis", label: "Concis", pages: "6 à 8 pages" },
+  { id: "default", label: "Par défaut", pages: "12 à 16 pages" },
+  { id: "exhaustif", label: "Exhaustif", pages: "20 à 28 pages" },
+] as const;
+
+type DetailLevelId = (typeof DETAIL_LEVEL_OPTIONS)[number]["id"];
+type PeriodId = "six_months" | "current_year" | "full_history";
 type SelectedPeriodId = PeriodId | "";
 type ModuleState = {
   dataAndCartography: boolean;
@@ -58,22 +63,8 @@ type RecentReportRow = {
   report: string;
   period: string;
   perimeter: string;
-  type: string;
+  detail: string;
   generatedAt: string;
-};
-
-type ReportTypeOption = {
-  id: ReportTypeId;
-  title: string;
-  description: string;
-  icon: LucideIcon;
-};
-
-type DetailLevelOption = {
-  id: DetailLevelId;
-  label: string;
-  description: string;
-  icon: LucideIcon;
 };
 
 type ModuleOption = {
@@ -89,7 +80,11 @@ function filterContractsByPeriod(
   const now = new Date();
   now.setUTCHours(0, 0, 0, 0);
 
-  if (period === "annee") {
+  if (period === "full_history") {
+    return contracts;
+  }
+
+  if (period === "current_year") {
     const startOfYear = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
     return contracts.filter((contract) => {
       const observedAt = new Date(contract.dates.observedAt);
@@ -97,10 +92,10 @@ function filterContractsByPeriod(
     });
   }
 
-  const windowDays =
-    period === "30j" ? 30 : period === "90j" ? 90 : 365;
+  const sixMonthsAgo = new Date(now);
+  sixMonthsAgo.setUTCMonth(sixMonthsAgo.getUTCMonth() - 6);
   const floor = new Date(now);
-  floor.setUTCDate(floor.getUTCDate() - (windowDays - 1));
+  floor.setTime(sixMonthsAgo.getTime());
 
   return contracts.filter((contract) => {
     const observedAt = new Date(contract.dates.observedAt);
@@ -121,52 +116,58 @@ function formatDateTime(value: string | undefined): string {
 
 function periodLabel(period: PeriodId): string {
   switch (period) {
-    case "30j":
-      return "30 derniers jours";
-    case "90j":
-      return "90 derniers jours";
-    case "12m":
-      return "12 mois glissants";
-    case "annee":
-      return "Année civile";
-  }
-}
-
-function reportTypeLabel(id: ReportTypeId): string {
-  switch (id) {
-    case "standard":
-      return "Standard";
-    case "institutionnel":
-      return "Institutionnel";
-    case "technique":
-      return "Technique";
-    case "personnalise":
-      return "Personnalisé";
+    case "six_months":
+      return "Six mois";
+    case "current_year":
+      return "Année en cours";
+    case "full_history":
+      return "Historique complet";
   }
 }
 
 function detailLevelLabel(id: DetailLevelId): string {
+  const option = DETAIL_LEVEL_OPTIONS.find((entry) => entry.id === id);
+  return option ? `${option.label} (${option.pages})` : "";
+}
+
+function detailLevelShortLabel(id: DetailLevelId): string {
+  const option = DETAIL_LEVEL_OPTIONS.find((entry) => entry.id === id);
+  return option?.label ?? "";
+}
+
+function detailLevelRank(id: DetailLevelId): number {
   switch (id) {
-    case "standard":
-      return "Standard (recommandé)";
-    case "approfondi":
-      return "Approfondi";
-    case "complet":
-      return "Complet";
+    case "concis":
+      return 0;
+    case "default":
+      return 1;
+    case "exhaustif":
+      return 2;
   }
 }
 
-function reportTypeToPeriod(id: ReportTypeId): PeriodId {
-  switch (id) {
-    case "standard":
-      return "12m";
-    case "institutionnel":
-      return "annee";
-    case "technique":
-      return "90j";
-    case "personnalise":
-      return "30j";
-  }
+function isDetailLevelAtLeast(current: DetailLevelId, required: DetailLevelId): boolean {
+  return detailLevelRank(current) >= detailLevelRank(required);
+}
+
+function buildLockedSectionMessage(required: DetailLevelId): string {
+  return `Générez le rapport avec un niveau de détail : "${detailLevelShortLabel(required)}" si vous voulez le détail de cette sous partie.`;
+}
+
+function buildLockedSectionChapter(params: {
+  id: string;
+  title: string;
+  subtitle: string;
+  required: DetailLevelId;
+}) {
+  return {
+    id: params.id,
+    title: params.title,
+    subtitle: params.subtitle,
+    lines: [buildLockedSectionMessage(params.required)],
+    locked: true,
+    requiredDetailLevelLabel: detailLevelLabel(params.required),
+  };
 }
 
 function buildScopeSelectValue(kind: string, value: string): string {
@@ -190,35 +191,28 @@ function parseScopeSelectValue(
   return { kind: "global", value: "" };
 }
 
-function reportTypeToModules(id: ReportTypeId): ModuleState {
+function detailLevelToModules(id: DetailLevelId): ModuleState {
   switch (id) {
-    case "standard":
+    case "concis":
       return {
         dataAndCartography: true,
         environmentalImpact: true,
         rawData: false,
         detailedFiles: false,
       };
-    case "institutionnel":
+    case "default":
       return {
         dataAndCartography: true,
         environmentalImpact: true,
         rawData: false,
         detailedFiles: true,
       };
-    case "technique":
+    case "exhaustif":
       return {
         dataAndCartography: true,
         environmentalImpact: true,
         rawData: true,
         detailedFiles: true,
-      };
-    case "personnalise":
-      return {
-        dataAndCartography: true,
-        environmentalImpact: true,
-        rawData: false,
-        detailedFiles: false,
       };
   }
 }
@@ -227,50 +221,38 @@ function buildRecentReports(params: {
   overview?: PilotageOverview | null;
   activeScopeLabel: string;
   period: PeriodId;
-  reportType: ReportTypeId;
+  detailLevel: DetailLevelId;
 }): RecentReportRow[] {
   const generatedAt = formatDateTime(params.overview?.generatedAt);
-  const windows: Array<{ key: "30" | "90" | "365"; type: ReportTypeId; period: string }> = [
-    { key: "30", type: params.reportType, period: periodLabel(params.period) },
-    { key: "90", type: "institutionnel", period: "90 derniers jours" },
-    { key: "365", type: "technique", period: "12 mois glissants" },
+  const windows: Array<{ key: "six_months" | "current_year" | "full_history"; detail: DetailLevelId; period: string }> = [
+    { key: "six_months", detail: params.detailLevel, period: periodLabel(params.period) },
+    { key: "current_year", detail: "default", period: "Année en cours" },
+    { key: "full_history", detail: "exhaustif", period: "Historique complet" },
   ];
 
-  return windows.map((window) => {
-    const comparison = params.overview?.comparisonsByWindow[window.key];
-    const suffix =
-      comparison?.current.reliability.level === "elevee"
-        ? "fiable"
-        : comparison?.current.reliability.level === "moyenne"
-          ? "à vérifier"
-          : "à surveiller";
-
-    return {
-      id: `window-${window.key}`,
-      report: "Rapport d'impact",
-      period: window.period,
-      perimeter: params.activeScopeLabel,
-      type: reportTypeLabel(window.type),
-      generatedAt: `${generatedAt}${suffix ? ` · ${suffix}` : ""}`,
-    };
-  });
+  return windows.map((window) => ({
+    id: `window-${window.key}`,
+    report: "Rapport d'impact",
+    period: window.period,
+    perimeter: params.activeScopeLabel,
+    detail: detailLevelLabel(window.detail),
+    generatedAt,
+  }));
 }
 
-function buildReportTitle(reportType: ReportTypeId, scopeLabel: string): string {
-  return `Rapport d'impact - ${reportTypeLabel(reportType)} - ${scopeLabel}`;
+function buildReportTitle(scopeLabel: string, detailLevel: DetailLevelId): string {
+  return `Rapport d'impact - ${scopeLabel} - ${detailLevelShortLabel(detailLevel)}`;
 }
 
 function buildPdfData(params: {
   reportTitle: string;
   scopeLabel: string;
   period: PeriodId;
-  reportType: ReportTypeId;
   detailLevel: DetailLevelId;
-  modules: ModuleState;
   model: ReturnType<typeof useReportsWebDocumentModel>;
   surfaceProxy: number;
 }): Parameters<typeof usePdfExport>[0]["data"] {
-  const { model, modules, detailLevel, period, reportType, reportTitle, scopeLabel, surfaceProxy } = params;
+  const { model, detailLevel, period, reportTitle, scopeLabel, surfaceProxy } = params;
   const report = model.report;
   const executive = report.executive as {
     summary: string;
@@ -282,6 +264,8 @@ function buildPdfData(params: {
     headline: string;
   };
 
+  const visibleDefaultDetail = isDetailLevelAtLeast(detailLevel, "default");
+  const visibleExhaustifDetail = isDetailLevelAtLeast(detailLevel, "exhaustif");
   const chapters = [
     {
       id: "synthese-executive",
@@ -291,7 +275,7 @@ function buildPdfData(params: {
         executive.summary,
         `Lecture: ${executive.readinessLabel}.`,
         model.weatherAdvice,
-        `Période: ${periodLabel(period)} · ${reportTypeLabel(reportType)} · ${detailLevelLabel(detailLevel)}.`,
+        `Période: ${periodLabel(period)} · ${detailLevelLabel(detailLevel)}.`,
       ],
       stats: [
         { label: "Actions validées", value: report.totals.actions },
@@ -299,7 +283,6 @@ function buildPdfData(params: {
         { label: "Crédibilité data", value: `${executive.readinessScore.toFixed(1)} / 100` },
         { label: "Géolocalisation", value: `${report.map.geoCoverage.toFixed(1)}%` },
       ],
-      always: true,
     },
     {
       id: "perimetre-rapport",
@@ -311,34 +294,36 @@ function buildPdfData(params: {
         `Organisation ou collectif concerné: ${scopeLabel === "Global" ? "Collectif CleanMyMap" : scopeLabel}.`,
         `Sources des données: ${Object.keys(report.impactMethodology.sources ?? {}).join(", ")}.`,
       ],
-      always: true,
     },
-    modules.dataAndCartography
-      ? {
-          id: "resultats-terrain",
-          title: "Résultats terrain",
-          subtitle: "Actions, déchets, bénévoles et zones traitées",
-          stats: [
-            { label: "Actions recensées", value: report.totals.actions },
-            { label: "Déchets collectés", value: `${report.totals.kg.toFixed(1)} kg` },
-            { label: "Déchets signalés", value: report.terrain.spotCount },
-            { label: "Participation bénévole", value: report.totals.volunteers },
-          ],
-          lines: [
-            `Zones traitées: ${report.areas.length}.`,
-            `Zones restantes (proxy): ${Math.max(0, 100 - report.map.geoCoverage).toFixed(1)}%.`,
-          ],
-        }
-      : null,
-    modules.dataAndCartography
+    {
+      id: "resultats-terrain",
+      title: "Résultats terrain",
+      subtitle: "Actions, déchets, bénévoles et zones traitées",
+      lines: [
+        `Zones traitées: ${report.areas.length}.`,
+        `Zones restantes (proxy): ${Math.max(0, 100 - report.map.geoCoverage).toFixed(1)}%.`,
+      ],
+      stats: [
+        { label: "Actions recensées", value: report.totals.actions },
+        { label: "Déchets collectés", value: `${report.totals.kg.toFixed(1)} kg` },
+        { label: "Déchets signalés", value: report.terrain.spotCount },
+        { label: "Participation bénévole", value: report.totals.volunteers },
+      ],
+    },
+    visibleDefaultDetail
       ? {
           id: "cartographie-impact",
           title: "Cartographie d’impact",
           subtitle: "Lecture spatiale et évolution des signalements",
+          lines: [
+            `Couverture GPS: ${report.map.geoCoverage.toFixed(1)}%.`,
+            `Taux de traces: ${report.map.traceCoverage.toFixed(1)}%.`,
+            `Évolution: ${report.trendPercent >= 0 ? "+" : ""}${report.trendPercent.toFixed(1)}%.`,
+          ],
           stats: [
-            { label: "Couverture GPS", value: `${report.map.geoCoverage.toFixed(1)}%` },
-            { label: "Taux de traces", value: `${report.map.traceCoverage.toFixed(1)}%` },
-            { label: "Évolution", value: `${report.trendPercent >= 0 ? "+" : ""}${report.trendPercent.toFixed(1)}%` },
+            { label: "Zones couvertes", value: report.areas.length },
+            { label: "Signalements", value: report.terrain.spotCount },
+            { label: "Points cartographiés", value: report.map.points },
           ],
           rows: report.areas.slice(0, 6).map((row) => ({
             Zone: row.area,
@@ -354,8 +339,13 @@ function buildPdfData(params: {
             { key: "Recurrence", label: "Récurrence" },
             { key: "Score", label: "Score" },
           ],
-        }
-      : null,
+      }
+      : buildLockedSectionChapter({
+          id: "cartographie-impact",
+          title: "Cartographie d’impact",
+          subtitle: "Lecture spatiale et évolution des signalements",
+          required: "default",
+        }),
     {
       id: "indicateurs-environnementaux",
       title: "Indicateurs environnementaux",
@@ -370,9 +360,8 @@ function buildPdfData(params: {
         `Surface d’action proxy: ${surfaceProxy.toFixed(1)} m².`,
         `Indice de tri propre: ${report.recycling.triIndex.toFixed(1)} / 100.`,
       ],
-      always: true,
     },
-    modules.environmentalImpact
+    visibleDefaultDetail
       ? {
           id: "contexte-local",
           title: "Analyse du contexte local",
@@ -392,9 +381,14 @@ function buildPdfData(params: {
             { key: "Kg", label: "Kg" },
             { key: "Actions", label: "Actions concernées" },
           ],
-        }
-      : null,
-    modules.rawData
+      }
+      : buildLockedSectionChapter({
+          id: "contexte-local",
+          title: "Analyse du contexte local",
+          subtitle: "Typologie des déchets et contraintes du territoire",
+          required: "default",
+        }),
+    visibleDefaultDetail
       ? {
           id: "communaute-mobilisation",
           title: "Communauté et mobilisation",
@@ -416,9 +410,14 @@ function buildPdfData(params: {
             { key: "Kg", label: "Kg" },
             { key: "Mégots", label: "Mégots" },
           ],
-        }
-      : null,
-    modules.environmentalImpact
+      }
+      : buildLockedSectionChapter({
+          id: "communaute-mobilisation",
+          title: "Communauté et mobilisation",
+          subtitle: "Bénévoles, partenaires et contribution citoyenne",
+          required: "default",
+        }),
+    visibleDefaultDetail
       ? {
           id: "methodologie-fiabilite",
           title: "Méthodologie et fiabilité",
@@ -438,9 +437,14 @@ function buildPdfData(params: {
             { key: "Lecture", label: "Lecture" },
             { key: "Interprétation", label: "Interprétation" },
           ],
-        }
-      : null,
-    modules.environmentalImpact
+      }
+      : buildLockedSectionChapter({
+          id: "methodologie-fiabilite",
+          title: "Méthodologie et fiabilité",
+          subtitle: "Mode de calcul, qualité et limites",
+          required: "default",
+        }),
+    visibleDefaultDetail
       ? {
           id: "gouvernance-transparence",
           title: "Gouvernance et transparence",
@@ -450,34 +454,44 @@ function buildPdfData(params: {
             `Modération: ${report.moderation.approved} approuvés / ${report.moderation.rejected} rejetés.`,
             `Délai moyen: ${report.moderation.delayDays.toFixed(1)} jours.`,
           ],
-        }
-      : null,
+      }
+      : buildLockedSectionChapter({
+          id: "gouvernance-transparence",
+          title: "Gouvernance et transparence",
+          subtitle: "Validation, modération et traçabilité",
+          required: "default",
+        }),
     {
       id: "recommandations-operationnelles",
       title: "Recommandations opérationnelles",
       subtitle: "Court terme, moyen terme et priorités",
       lines: executive.budgetUseCases.concat([`Zone prioritaire: ${report.areas[0]?.area ?? "n/a"}.`]),
-      always: true,
     },
-    {
-      id: "calendrier-previsionnel",
-      title: "Calendrier prévisionnel",
-      subtitle: "Prochaines actions et échéances recommandées",
-      rows: report.calendar.map(([sprint, periode, objectif, responsable]) => ({
-        Sprint: sprint,
-        Période: periode,
-        Objectif: objectif,
-        Responsable: responsable,
-      })),
-      columns: [
-        { key: "Sprint", label: "Sprint" },
-        { key: "Période", label: "Période" },
-        { key: "Objectif", label: "Objectif" },
-        { key: "Responsable", label: "Responsable" },
-      ],
-      always: true,
-    },
-    modules.environmentalImpact
+    visibleDefaultDetail
+      ? {
+          id: "calendrier-previsionnel",
+          title: "Calendrier prévisionnel",
+          subtitle: "Prochaines actions et échéances recommandées",
+          rows: report.calendar.map(([sprint, periode, objectif, responsable]) => ({
+            Sprint: sprint,
+            Période: periode,
+            Objectif: objectif,
+            Responsable: responsable,
+          })),
+          columns: [
+            { key: "Sprint", label: "Sprint" },
+            { key: "Période", label: "Période" },
+            { key: "Objectif", label: "Objectif" },
+            { key: "Responsable", label: "Responsable" },
+          ],
+      }
+      : buildLockedSectionChapter({
+          id: "calendrier-previsionnel",
+          title: "Calendrier prévisionnel",
+          subtitle: "Prochaines actions et échéances recommandées",
+          required: "default",
+        }),
+    visibleDefaultDetail
       ? {
           id: "glossaire-simplifie",
           title: "Glossaire simplifié",
@@ -495,9 +509,14 @@ function buildPdfData(params: {
             { key: "Terme", label: "Terme" },
             { key: "Définition", label: "Définition" },
           ],
-        }
-      : null,
-    modules.detailedFiles
+      }
+      : buildLockedSectionChapter({
+          id: "glossaire-simplifie",
+          title: "Glossaire simplifié",
+          subtitle: "Définitions clés et méthodes de calcul",
+          required: "default",
+        }),
+    visibleExhaustifDetail
       ? {
           id: "annexes",
           title: "Annexes",
@@ -514,37 +533,33 @@ function buildPdfData(params: {
             { key: "Kg", label: "Kg" },
             { key: "Score", label: "Score" },
           ],
-        }
-      : null,
-  ]
-    .filter((chapter): chapter is NonNullable<typeof chapter> => Boolean(chapter))
-    .map((chapter) => ({
-      id: chapter.id,
-      title: chapter.title,
-      subtitle: chapter.subtitle,
-      lines: chapter.lines,
-      stats: chapter.stats,
-      rows: chapter.rows,
-      columns: chapter.columns,
-    }));
+      }
+      : buildLockedSectionChapter({
+          id: "annexes",
+          title: "Annexes",
+          subtitle: "Données détaillées et exports techniques",
+          required: "exhaustif",
+        }),
+  ].map((chapter) => ({
+    id: chapter.id,
+    title: chapter.title,
+    subtitle: chapter.subtitle,
+    lines: chapter.lines,
+    stats: "stats" in chapter ? chapter.stats : undefined,
+    rows: "rows" in chapter ? chapter.rows : undefined,
+    columns: "columns" in chapter ? chapter.columns : undefined,
+    locked: "locked" in chapter ? chapter.locked : false,
+    requiredDetailLevelLabel:
+      "requiredDetailLevelLabel" in chapter ? chapter.requiredDetailLevelLabel : undefined,
+  }));
 
   return {
     title: reportTitle,
     summary: [
       `Périmètre: ${scopeLabel}`,
-      `Type: ${reportTypeLabel(reportType)}.`,
       `Niveau de détail: ${detailLevelLabel(detailLevel)}.`,
+      `Structure commune: sommaire exhaustif complet pour tous les niveaux.`,
       `Actions consolidées: ${report.totals.actions}`,
-      `Modules sélectionnés: ${
-        [
-          modules.dataAndCartography ? "Données & cartographie" : null,
-          modules.environmentalImpact ? "Impact environnemental" : null,
-          modules.rawData ? "Données brutes" : null,
-          modules.detailedFiles ? "Fichiers détaillés" : null,
-        ]
-          .filter(Boolean)
-          .join(", ") || "Aucun module additionnel"
-      }`,
       `Qualité de données: ${report.quality.completenessScore.toFixed(0)}% de complétude, ${report.quality.coherenceScore.toFixed(0)}% de cohérence.`,
     ],
     stats: [
@@ -582,10 +597,9 @@ export function ReportsWebDocument({
   const previewRef = useRef<HTMLDivElement>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [period, setPeriod] = useState<SelectedPeriodId>("");
-  const [reportType, setReportType] = useState<ReportTypeId>("standard");
-  const [detailLevel, setDetailLevel] = useState<DetailLevelId>("standard");
-  const [modules, setModules] = useState<ModuleState>(reportTypeToModules("standard"));
-  const effectivePeriod = period || "12m";
+  const [detailLevel, setDetailLevel] = useState<DetailLevelId>("default");
+  const [modules, setModules] = useState<ModuleState>(detailLevelToModules("default"));
+  const effectivePeriod = period || "six_months";
   const filteredContracts = useMemo(
     () => filterContractsByPeriod(contracts, effectivePeriod),
     [contracts, effectivePeriod],
@@ -609,25 +623,23 @@ export function ReportsWebDocument({
         overview,
         activeScopeLabel,
         period: effectivePeriod,
-        reportType,
+        detailLevel,
       }),
-    [activeScopeLabel, effectivePeriod, overview, reportType],
+    [activeScopeLabel, detailLevel, effectivePeriod, overview],
   );
 
-  const defaultTitle = buildReportTitle(reportType, activeScopeLabel);
+  const defaultTitle = buildReportTitle(activeScopeLabel, detailLevel);
   const pdfData = useMemo(
     () =>
       buildPdfData({
         reportTitle: defaultTitle,
         scopeLabel: activeScopeLabel,
         period: effectivePeriod,
-        reportType,
         detailLevel,
-        modules,
         model,
         surfaceProxy,
       }),
-    [activeScopeLabel, defaultTitle, detailLevel, effectivePeriod, model, modules, reportType, surfaceProxy],
+    [activeScopeLabel, defaultTitle, detailLevel, effectivePeriod, model, surfaceProxy],
   );
 
   const moduleOptions: ModuleOption[] = [
@@ -657,6 +669,7 @@ export function ReportsWebDocument({
     state,
     message,
     copy,
+    hasData,
     isDisabled,
     exportRubriquePdf,
   } = usePdfExport({
@@ -667,54 +680,6 @@ export function ReportsWebDocument({
     data: pdfData,
     disabled: model.isLoading || model.hasError,
   });
-
-  const reportTypeOptions: ReportTypeOption[] = [
-    {
-      id: "standard",
-      title: "Standard",
-      description: "Rapport d'impact complet par défaut.",
-      icon: FileText,
-    },
-    {
-      id: "institutionnel",
-      title: "Institutionnel",
-      description: "Version adaptée pour le reporting institutionnel.",
-      icon: Building2,
-    },
-    {
-      id: "technique",
-      title: "Technique",
-      description: "Focus sur la méthodologie et les données.",
-      icon: Wrench,
-    },
-    {
-      id: "personnalise",
-      title: "Personnalisé",
-      description: "Choisissez les modules et sections inclus.",
-      icon: SlidersHorizontal,
-    },
-  ];
-
-  const detailOptions: DetailLevelOption[] = [
-    {
-      id: "standard",
-      label: "Standard (recommandé)",
-      description: "Format compact et lisible.",
-      icon: CircleCheckBig,
-    },
-    {
-      id: "approfondi",
-      label: "Approfondi",
-      description: "Plus de contexte et de preuves.",
-      icon: CalendarDays,
-    },
-    {
-      id: "complet",
-      label: "Complet",
-      description: "Inclut plus de détails et d'annexes.",
-      icon: FileText,
-    },
-  ];
 
   const sectionCards = REPORT_SECTIONS.slice(0, 4).map((section, index) => ({
     id: section.id,
@@ -733,15 +698,13 @@ export function ReportsWebDocument({
           ? "Impacts évités et bénéfices environnementaux."
           : index === 2
             ? "Cartes, visualisations et données clés du territoire."
-            : "Méthodologie, hypothèses et contrôle qualité.",
+        : "Méthodologie, hypothèses et contrôle qualité.",
   }));
+  const executiveNarrative = useMemo(() => buildExecutiveNarrative(report), [report]);
 
-  function syncModulesFromReportType(nextType: ReportTypeId): void {
-    setReportType(nextType);
-    if (!period) {
-      setPeriod(reportTypeToPeriod(nextType));
-    }
-    setModules(reportTypeToModules(nextType));
+  function syncModulesFromDetailLevel(nextLevel: DetailLevelId): void {
+    setDetailLevel(nextLevel);
+    setModules(detailLevelToModules(nextLevel));
   }
 
   function toggleModule(key: keyof ModuleState): void {
@@ -764,6 +727,48 @@ export function ReportsWebDocument({
     }
   }
 
+  const exportStatus =
+    state === "pending"
+      ? {
+          icon: Loader2,
+          label: "Génération en cours",
+          description: "Le livrable est en cours de préparation.",
+          tone: "border-cyan-200 bg-cyan-50 text-cyan-900",
+          iconTone: "text-cyan-600",
+        }
+      : state === "success"
+          ? {
+              icon: CheckCircle2,
+              label: "Prêt à exporter",
+              description: "Le PDF officiel est ouvert et prêt à être enregistré.",
+              tone: "border-red-200 bg-red-50 text-red-900",
+              iconTone: "text-red-600",
+            }
+          : state === "error"
+          ? {
+              icon: TriangleAlert,
+              label: "Export à vérifier",
+              description: message ?? "Une action est nécessaire avant de relancer l'export.",
+              tone: "border-red-200 bg-red-50 text-red-900",
+              iconTone: "text-red-600",
+            }
+          : hasData
+            ? {
+                icon: FileText,
+                label: "Prêt à générer",
+                description: "La configuration actuelle permet de lancer l'export.",
+                tone: "border-slate-200 bg-slate-50 text-slate-900",
+                iconTone: "text-red-600",
+              }
+            : {
+                icon: TriangleAlert,
+                label: "Export indisponible",
+                description: "Aucune donnée exploitable n'est disponible pour cette configuration.",
+                tone: "border-slate-200 bg-slate-50 text-slate-900",
+                iconTone: "text-slate-400",
+              };
+  const ExportStatusIcon = exportStatus.icon;
+
   return (
     <section className="space-y-6 rounded-[2.25rem] border border-slate-200 bg-white p-4 shadow-[0_18px_55px_-30px_rgba(15,23,42,0.25)] sm:p-6">
       <header className="flex items-start gap-4">
@@ -780,7 +785,7 @@ export function ReportsWebDocument({
         </div>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.85fr)]">
+      <div className="grid gap-4">
         <section className="space-y-5 rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
           <div>
             <p className="text-base font-black text-red-600">1. Configurez votre rapport</p>
@@ -797,10 +802,9 @@ export function ReportsWebDocument({
                 onChange={(event) => setPeriod(event.target.value as SelectedPeriodId)}
                 className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
               >
-                <option value="30j">30 derniers jours</option>
-                <option value="90j">90 derniers jours</option>
-                <option value="12m">12 mois glissants</option>
-                <option value="annee">Année civile</option>
+                <option value="six_months">Six mois</option>
+                <option value="current_year">Année en cours</option>
+                <option value="full_history">Historique complet</option>
               </select>
             </div>
           </div>
@@ -851,66 +855,25 @@ export function ReportsWebDocument({
 
           <div className="space-y-3">
             <label className="block text-sm font-black text-slate-900">
-              Type de rapport
-            </label>
-            <div className="grid gap-3 md:grid-cols-2">
-              {reportTypeOptions.map((option) => {
-                const Icon = option.icon;
-                const active = reportType === option.id;
-
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => syncModulesFromReportType(option.id)}
-                    className={`flex min-h-[96px] items-start gap-4 rounded-2xl border p-4 text-left transition ${
-                      active
-                        ? "border-red-300 bg-red-50 shadow-[0_12px_24px_-18px_rgba(220,38,38,0.35)]"
-                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
-                    }`}
-                  >
-                    <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                        active ? "bg-red-600 text-white" : "bg-slate-100 text-slate-400"
-                      }`}
-                    >
-                      <Icon size={22} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-black text-slate-900">{option.title}</p>
-                        {active ? (
-                          <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-[10px] font-black text-white">
-                            ✓
-                          </span>
-                        ) : null}
-                      </div>
-                      <p className="mt-1 text-sm leading-5 text-slate-600">{option.description}</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <label className="block text-sm font-black text-slate-900">
               Niveau de détail
             </label>
             <div className="relative">
               <SlidersHorizontal className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
               <select
                 value={detailLevel}
-                onChange={(event) => setDetailLevel(event.target.value as DetailLevelId)}
+                onChange={(event) => syncModulesFromDetailLevel(event.target.value as DetailLevelId)}
                 className="h-12 w-full rounded-xl border border-slate-200 bg-white pl-11 pr-10 text-sm text-slate-600 shadow-[inset_0_1px_4px_rgba(15,23,42,0.04)] outline-none transition focus:border-red-300"
               >
-                {detailOptions.map((option) => (
+                {DETAIL_LEVEL_OPTIONS.map((option) => (
                   <option key={option.id} value={option.id}>
-                    {option.label}
+                    {option.label} ({option.pages})
                   </option>
                 ))}
               </select>
             </div>
+            <p className="text-xs leading-5 text-slate-500">
+              Le nombre de pages est indicatif et varie légèrement selon le volume de données.
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -968,6 +931,18 @@ export function ReportsWebDocument({
               {showPreview ? "Masquer l'aperçu" : "Voir l'aperçu"}
             </button>
 
+            <div className={`flex items-start gap-3 rounded-xl border px-3 py-3 ${exportStatus.tone}`}>
+              <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm ${exportStatus.iconTone}`}>
+                <ExportStatusIcon size={18} className={state === "pending" ? "animate-spin" : ""} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-black">{exportStatus.label}</p>
+                <p className="mt-0.5 text-xs leading-5 text-slate-600">
+                  {exportStatus.description}
+                </p>
+              </div>
+            </div>
+
             <p className="flex items-start gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">
               <ShieldCheck size={16} className="mt-0.5 shrink-0 text-red-600" />
               Le rapport est généré à partir des données et de la méthodologie CleanMyMap.
@@ -988,81 +963,6 @@ export function ReportsWebDocument({
           </div>
         </section>
 
-        <aside className="space-y-4">
-          <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
-            <p className="text-base font-black text-red-600">Comment ça marche ?</p>
-            <div className="mt-4 space-y-4">
-              {[
-                {
-                  step: "1",
-                  title: "Configurez",
-                  text: "Sélectionnez la période, le périmètre et le type de rapport.",
-                },
-                {
-                  step: "2",
-                  title: "Générez",
-                  text: "Nous préparons votre rapport avec les données CleanMyMap.",
-                },
-                {
-                  step: "3",
-                  title: "Consultez",
-                  text: "Visualisez le rapport en ligne ou téléchargez-le.",
-                },
-                {
-                  step: "4",
-                  title: "Partagez",
-                  text: "Diffusez facilement votre rapport auprès de vos parties prenantes.",
-                },
-              ].map((item, index, array) => (
-                <div key={item.step} className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-red-50 text-sm font-black text-red-600">
-                      {item.step}
-                    </span>
-                    {index < array.length - 1 ? (
-                      <span className="mt-2 h-full w-px flex-1 bg-slate-200" />
-                    ) : null}
-                  </div>
-                  <div className="pb-4">
-                    <p className="text-sm font-black text-slate-900">{item.title}</p>
-                    <p className="mt-1 text-sm leading-5 text-slate-500">{item.text}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
-            <p className="text-base font-black text-red-600">Indicateurs inclus</p>
-            <ul className="mt-4 space-y-3">
-              {[
-                "Collecte des données",
-                "Impact environnemental",
-                "Données & cartographie",
-                "Transparence & méthodes",
-              ].map((item) => (
-                <li key={item} className="flex items-start gap-3 rounded-xl border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
-                  <CircleCheckBig size={18} className="mt-0.5 shrink-0 text-red-600" />
-                  <div>
-                    <p className="text-sm font-semibold text-slate-800">{item}</p>
-                    <p className="mt-0.5 text-xs leading-5 text-slate-500">
-                      {item === "Collecte des données"
-                        ? "Volumes collectés et sources de terrain."
-                        : item === "Impact environnemental"
-                          ? "Émissions évitées, eau préservée et surface d’action."
-                          : item === "Données & cartographie"
-                            ? "Cartes, zones couvertes et précision géographique."
-                            : "Méthodologie, hypothèses et contrôle qualité."}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <p className="mt-4 text-sm leading-6 text-slate-500">
-              Le contenu varie selon le type de rapport et les modules sélectionnés.
-            </p>
-          </section>
-        </aside>
       </div>
 
       {showPreview ? (
@@ -1082,9 +982,6 @@ export function ReportsWebDocument({
             </div>
             <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
               <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
-                {reportTypeLabel(reportType)}
-              </span>
-              <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
                 {detailLevelLabel(detailLevel)}
               </span>
               <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">
@@ -1101,39 +998,116 @@ export function ReportsWebDocument({
         </section>
       ) : null}
 
-      <section className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
+      <section className="rounded-[1.75rem] border border-red-100 bg-white p-5 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.22)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-base font-black text-red-600">Sections incluses dans le rapport</p>
+            <p className="text-base font-black text-red-600">Résultat attendu à l&apos;export</p>
             <p className="mt-1 text-sm text-slate-500">
-              Les sections affichées ci-dessous correspondent au livrable généré.
+              Une mini maquette du PDF officiel pour comprendre le rendu avant export.
             </p>
+          </div>
+          <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">A4 portrait</span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">Sommaire cliquable</span>
+            <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1">12 sections</span>
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {sectionCards.map((section, index) => (
-            <article
-              key={section.id}
-              className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_8px_20px_-18px_rgba(15,23,42,0.2)]"
-            >
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
-                {index === 0 ? (
-                  <ShoppingBag size={22} />
-                ) : index === 1 ? (
-                  <Leaf size={22} />
-                ) : index === 2 ? (
-                  <MapIcon size={22} />
-                ) : (
-                  <ShieldCheck size={22} />
-                )}
+        <div className="mt-4 grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-[0_10px_24px_-18px_rgba(15,23,42,0.2)]">
+            <div className="h-2 bg-gradient-to-r from-red-600 to-red-500" />
+            <div className="space-y-4 p-4 sm:p-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-600">
+                    Synthèse exécutive
+                  </p>
+                  <h3 className="mt-2 text-2xl font-black tracking-tight text-slate-950">
+                    Rapport d&apos;impact
+                  </h3>
+                  <p className="mt-1 max-w-xl text-sm leading-6 text-slate-500">
+                    {executiveNarrative.headline ?? executiveNarrative.summary}
+                  </p>
+                </div>
+                <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
+                  {report.generatedAt}
+                </span>
               </div>
-              <div>
-                <p className="text-sm font-black text-slate-900">{section.title}</p>
-                <p className="mt-1 text-sm leading-5 text-slate-500">{section.subtitle}</p>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-500">
+                    Ce que l&apos;export montrera
+                  </p>
+                  <div className="mt-2 grid gap-1.5 text-sm font-semibold text-slate-800">
+                    <p>{toFrInt(report.totals.actions)} actions validées</p>
+                    <p>{toFrNumber(report.totals.kg)} kg collectés</p>
+                    <p>{toFrNumber(report.map.geoCoverage)}% de couverture géographique</p>
+                    <p>{toFrNumber(executiveNarrative.readinessScore)} / 100 de crédibilité data</p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-red-100 bg-red-50 p-3">
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-red-600">
+                    Première page du PDF
+                  </p>
+                  <p className="mt-2 text-sm font-black text-slate-950">Vue d’ensemble du rapport</p>
+                  <p className="mt-1 text-sm leading-5 text-slate-600">
+                    Synthèse, chiffres clés, conclusions et recommandations prioritaires.
+                  </p>
+                </div>
               </div>
-            </article>
-          ))}
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                {sectionCards.map((section, index) => {
+                  const Icon = index === 0 ? ShoppingBag : index === 1 ? Leaf : index === 2 ? MapIcon : ShieldCheck;
+                  return (
+                    <div key={section.id} className="flex items-start gap-3 rounded-2xl border border-slate-200/80 bg-white px-3 py-2.5">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                        <Icon size={18} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-slate-900">{section.title}</p>
+                        <p className="mt-0.5 text-xs leading-5 text-slate-500">{section.subtitle}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.2)]">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-red-600">
+                Ce que l&apos;utilisateur voit
+              </p>
+              <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+                <li className="flex gap-2">
+                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
+                  Une première page lisible avec synthèse, chiffres clés et recommandations.
+                </li>
+                <li className="flex gap-2">
+                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
+                  Un sommaire cliquable qui mène vers les sections détaillées.
+                </li>
+                <li className="flex gap-2">
+                  <span className="mt-2 h-1.5 w-1.5 rounded-full bg-red-500" />
+                  Un export A4 pensé pour être partagé sans mise en forme supplémentaire.
+                </li>
+              </ul>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-cyan-200 bg-cyan-50 p-4">
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-700">
+                Lecture rapide
+              </p>
+              <p className="mt-2 text-sm leading-6 text-cyan-950/90">
+                Le bloc ci-dessus sert de “photo du PDF”. Il montre le rendu attendu avant export,
+                sans ouvrir le livrable détaillé.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1156,7 +1130,7 @@ export function ReportsWebDocument({
           <table className="min-w-full border-separate border-spacing-0 text-left">
             <thead className="bg-slate-50 text-[11px] uppercase tracking-[0.18em] text-slate-500">
               <tr>
-                {["Rapport", "Période", "Périmètre", "Type", "Généré le", "Actions"].map((header) => (
+                {["Rapport", "Période", "Périmètre", "Détail", "Généré le", "Actions"].map((header) => (
                   <th key={header} className="border-b border-slate-200 px-4 py-3 font-black">
                     {header}
                   </th>
@@ -1173,7 +1147,7 @@ export function ReportsWebDocument({
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-slate-900">{row.report}</p>
-                        <p className="text-xs text-slate-500">{row.type}</p>
+                        <p className="text-xs text-slate-500">{row.detail}</p>
                       </div>
                     </div>
                   </td>
@@ -1184,7 +1158,7 @@ export function ReportsWebDocument({
                     {row.perimeter}
                   </td>
                   <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
-                    {row.type}
+                    {row.detail}
                   </td>
                   <td className="border-b border-slate-100 px-4 py-3 text-sm text-slate-600">
                     {row.generatedAt}

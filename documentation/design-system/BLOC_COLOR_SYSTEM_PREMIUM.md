@@ -253,7 +253,7 @@ dot accent    : bg-indigo-300
 
 **Pages concernées :**
 - `/partners/dashboard`
-- `/partners/network`
+- `/sections/community`
 - `/partners/onboarding`
 
 ---

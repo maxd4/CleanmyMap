@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { Target } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getBlockClasses } from "@/lib/ui/block-accents";
@@ -23,12 +22,6 @@ export function MapSupervision() {
           Testez des données simulées sans toucher à la production.
         </p>
       </div>
-      <Link
-        href="/sections/sandbox"
-        className="flex w-full items-center justify-center rounded-[1.5rem] border border-sky-200/80 bg-sky-100 py-5 cmm-text-caption font-semibold tracking-[0.12em] text-slate-950 transition-all hover:bg-sky-200 hover:-translate-y-1 active:scale-95 group-hover:text-slate-950"
-      >
-        Ouvrir la sandbox
-      </Link>
     </div>
   );
 }

@@ -39,6 +39,7 @@ const BASE_FORM_STATE: FormState = {
  associationName: ASSOCIATION_SELECTION_OPTIONS[0],
  enterpriseName:"",
  organizerAccounts:"",
+ groupJoinEnabled: true,
  actionDate: new Date().toISOString().slice(0, 10),
  locationLabel:"",
  departureLocationLabel:"",
@@ -200,10 +201,11 @@ export function buildCreateActionPayload(params: {
  )
  : undefined;
 
- return {
- actorName: form.actorName.trim() || undefined,
- associationName,
- organizerAccounts: isSpontaneousAction
+  return {
+    actorName: form.actorName.trim() || undefined,
+    associationName,
+    groupJoinEnabled: form.groupJoinEnabled,
+    organizerAccounts: isSpontaneousAction
    ? undefined
    : (() => {
      const tokens = parseOrganizerAccounts(form.organizerAccounts);

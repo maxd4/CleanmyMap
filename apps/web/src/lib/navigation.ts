@@ -32,9 +32,7 @@ export type NavigationBlockId =
   | "impact"
   | "network"
   | "connect"
-  | "learn"
-  | "pilot";
-
+  | "learn";
 export type NavigationSpaceMeta = {
   id: NavigationBlockId;
   label: LocalizedText;
@@ -49,7 +47,6 @@ export type NavigationSpace = {
   color: string;
   items: NavigationItem[];
 };
-
 const SPACE_DEFINITIONS: Record<NavigationBlockId, NavigationSpaceMeta> = {
   home: {
     id: "home",
@@ -73,12 +70,6 @@ const SPACE_DEFINITIONS: Record<NavigationBlockId, NavigationSpaceMeta> = {
   },
   connect: { id: "connect", label: { fr: "Discussion", en: "Discussions" }, icon: "💬", color: "text-pink-600" },
   learn: { id: "learn", label: { fr: "Apprendre", en: "Learn" }, icon: "📚", color: "text-yellow-600" },
-  pilot: {
-    id: "pilot",
-    label: { fr: "Pilotage", en: "Governance" },
-    icon: "🎯",
-    color: "text-amber-800",
-  },
 };
 const FIXED_SPACE_ORDER: NavigationBlockId[] = [
   "home",
@@ -88,7 +79,6 @@ const FIXED_SPACE_ORDER: NavigationBlockId[] = [
   "network",
   "connect",
   "learn",
-  "pilot",
 ];
 
 export type NavigationCategory = {
@@ -135,7 +125,6 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "history",
   "dashboard",
   "feedback",
-  "sandbox",
   "methodologie",
   "community",
   "messagerie",
@@ -151,7 +140,6 @@ const SOBRE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "learn-comprendre",
   "learn-sentrainer",
   "learn-bonnes-pratiques",
-  "learn-ressources",
 ]);
 
 const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
@@ -162,7 +150,6 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "history",
   "dashboard",
   "feedback",
-  "sandbox",
   "methodologie",
   "community",
   "messagerie",
@@ -172,7 +159,6 @@ const MINIMALISTE_ALLOWED_ROUTE_IDS = new Set<RouteId>([
   "learn-comprendre",
   "learn-sentrainer",
   "learn-bonnes-pratiques",
-  "learn-ressources",
 ]);
 
 // Source de vérité navigation: profil -> espaces -> pages.
@@ -180,114 +166,65 @@ const PARCOURS_SPACE_PAGE_MAP: ProfileSpacePageMap = {
   benevole: {
     home: ["dashboard", "explorer"],
     act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
-    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
+    visualize: ["map", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
-    learn: [
-      "hub",
-      "learn-comprendre",
-      "learn-sentrainer",
-      "learn-bonnes-pratiques",
-      "learn-ressources",
-    ],
-    pilot: [],
+    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
   },
   coordinateur: {
-    home: ["dashboard", "explorer", "pilotage", "elus"],
+    home: ["dashboard", "explorer", "pilotage"],
     act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
-    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
+    visualize: ["map", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
-    learn: [
-      "hub",
-      "learn-comprendre",
-      "learn-sentrainer",
-      "learn-bonnes-pratiques",
-      "learn-ressources",
-    ],
-    pilot: [],
+    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
   },
   scientifique: {
-    home: ["dashboard", "explorer", "elus"],
+    home: ["dashboard", "explorer", "pilotage"],
     act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
-    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
+    visualize: ["map", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
-    learn: [
-      "hub",
-      "learn-comprendre",
-      "learn-sentrainer",
-      "learn-bonnes-pratiques",
-      "learn-ressources",
-    ],
-    pilot: [],
+    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
   },
   entreprise: {
     home: ["dashboard", "explorer", "sponsor", "funding"],
     act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
-    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
+    visualize: ["map", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
-    learn: [
-      "hub",
-      "learn-comprendre",
-      "learn-sentrainer",
-      "learn-bonnes-pratiques",
-      "learn-ressources",
-    ],
-    pilot: [],
+    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
   },
   elu: {
-    home: ["dashboard", "explorer", "sponsor", "elus"],
+    home: ["dashboard", "explorer", "pilotage", "sponsor"],
     act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
-    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
+    visualize: ["map", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
-    learn: [
-      "hub",
-      "learn-comprendre",
-      "learn-sentrainer",
-      "learn-bonnes-pratiques",
-      "learn-ressources",
-    ],
-    pilot: [],
+    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
   },
   admin: {
-    home: ["dashboard", "explorer", "pilotage", "admin", "elus"],
+    home: ["dashboard", "explorer", "pilotage", "admin"],
     act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
-    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
+    visualize: ["map", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
-    learn: [
-      "hub",
-      "learn-comprendre",
-      "learn-sentrainer",
-      "learn-bonnes-pratiques",
-      "learn-ressources",
-    ],
-    pilot: [],
+    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
   },
   max: {
-    home: ["dashboard", "explorer", "pilotage", "admin", "sponsor", "elus"],
+    home: ["dashboard", "explorer", "pilotage", "admin"],
     act: ["new", "rejoindre-un-formulaire", "route", "weather", "trash-spotter"],
-    visualize: ["map", "sandbox", "methodologie", "reports", "gamification"],
+    visualize: ["map", "methodologie", "reports", "gamification"],
     impact: [],
     network: ["network", "community", "feedback", "messagerie", "open-data"],
     connect: [],
-    learn: [
-      "hub",
-      "learn-comprendre",
-      "learn-sentrainer",
-      "learn-bonnes-pratiques",
-      "learn-ressources",
-    ],
-    pilot: [],
+    learn: ["learn-comprendre", "learn-sentrainer", "learn-bonnes-pratiques"],
   },
 };
 
@@ -303,38 +240,6 @@ function toNavItem(rubrique: Rubrique): NavigationItem {
     description: rubrique.description,
     routeId: rubrique.id,
   };
-}
-
-export function getPilotFallbackItems(locale: string = "fr"): NavigationItem[] {
-  const fallbackRouteIds: RouteId[] = ["dashboard", "reports"];
-  const isFrench = locale === "fr";
-  return fallbackRouteIds
-    .map((routeId) => RUBRIQUE_BY_ID.get(routeId))
-    .filter((rubrique): rubrique is Rubrique => Boolean(rubrique))
-    .map((rubrique) => toNavItem(rubrique))
-    .map((item) => ({
-      ...item,
-      description: {
-        fr: item.routeId === "dashboard"
-          ? "Vue synthèse de Mon espace"
-          : "Synthèse d'impact, exports et contrôle",
-        en: item.routeId === "dashboard"
-          ? "Operational overview"
-          : "Impact synthesis, exports and control",
-      },
-      label: {
-        fr: isFrench
-          ? item.routeId === "dashboard"
-            ? "Mon espace"
-            : "Rapports d'impact"
-          : item.routeId === "dashboard"
-            ? "Dashboard"
-            : "Impact reports",
-        en: item.routeId === "dashboard"
-          ? "Dashboard"
-          : "Impact reports",
-      },
-    }));
 }
 
 function isRouteAllowedByDisplayMode(
@@ -464,30 +369,25 @@ export function getProfileNavigationEntries(params: {
     ];
   }
 
-  const visibleProfiles =
-    params.currentProfile === "max"
-      ? PROFILE_ORDER
-      : PROFILE_ORDER.filter((profile) => profile !== "max");
-
+  const visibleProfiles = params.currentProfile === "max" ? PROFILE_ORDER : PROFILE_ORDER.filter((profile) => profile !== "max");
   return visibleProfiles
     .filter(
       (profile) =>
         params.isAdmin || params.currentProfile === "max" || profile !== "admin",
     )
     .map((profile) => ({
-    id: profile,
-    href: getProfileEntryPath(profile),
-    label: {
-      fr: getProfileLabel(profile, "fr"),
-      en: getProfileLabel(profile, "en"),
-    },
-    description: {
-      fr: getProfileSubtitle(profile, "fr"),
-      en: getProfileSubtitle(profile, "en"),
-    },
-  }));
+      id: profile,
+      href: getProfileEntryPath(profile),
+      label: {
+        fr: getProfileLabel(profile, "fr"),
+        en: getProfileLabel(profile, "en"),
+      },
+      description: {
+        fr: getProfileSubtitle(profile, "fr"),
+        en: getProfileSubtitle(profile, "en"),
+      },
+    }));
 }
-
 export function getNavigationLabels(
   locale: Locale,
   profile: AppProfile,
@@ -495,10 +395,7 @@ export function getNavigationLabels(
 ) {
   const displayMode = params.displayMode;
   const spaces = getNavigationSpacesForProfile(profile, displayMode);
-  const rubriqueCount = spaces.reduce(
-    (acc, space) => acc + space.items.length,
-    0,
-  );
+  const rubriqueCount = spaces.reduce((acc, space) => acc + space.items.length, 0);
   const spaceCount = spaces.length;
   const profileLabel = getProfileLabel(profile, locale);
   const displayModeLabel = getDisplayModeLabel(displayMode, locale);

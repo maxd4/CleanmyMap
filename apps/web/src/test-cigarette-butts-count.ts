@@ -9,6 +9,7 @@ const mockFormActionSpontanee: FormState = {
   actorName: "Test User",
   associationName: "Action spontanee", // Action spontanée
   enterpriseName: "",
+  groupJoinEnabled: false,
   actionDate: "2024-01-15",
   locationLabel: "Test Location",
   departureLocationLabel: "Départ Test",

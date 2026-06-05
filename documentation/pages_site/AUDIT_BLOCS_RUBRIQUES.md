@@ -75,12 +75,13 @@ Certains blocs ont plusieurs teintes directrices selon le type de page :
 **Bloc "Accueil & Pilotage"** :
 - Page accueil centrale (`/dashboard`) → `amber` / `orange`
 - Alias de compatibilité (`/profil`) → même rendu que `/dashboard`
-- Pages pilotage (`/pilotage`, `/sponsor-portal`, `/elus`) → `amber` / `brun`
+- Hub pilotage (`/pilotage`) → `amber` / `brun`
+- Surfaces secondaires du hub (`/sponsor-portal`, `/sections/elus`) → même socle de KPI et de synthèse, mais point d'entrée réduit dans la navigation
 - Sommaire (`/explorer`) → exception validée, palette dédiée conservée
-- Le triptyque `Pilotage` / `Portail Décideur` / `Gouvernance` partage un socle commun de KPI, d'insight et de navigation pour éviter les doublons de contenu.
+- Le quatuor `Mon espace` / `Pilotage` / `Portail Décideur` / `Gouvernance` partage un socle commun de KPI, d'insight et de navigation pour éviter les doublons de contenu. `Pilotage` concentre maintenant trois onglets internes - décideurs, pilotage, gouvernance - tandis que seules les deux premières surfaces restent visibles dans la navigation principale, les deux autres étant accessibles depuis le hub.
 
 **Bloc "Cartographie & Impact"** :
-- Cartographie (`/actions/map`, `/sandbox`) → `sky`
+- Cartographie (`/actions/map`) → `sky`
 - Impact (`/reports`, `/gamification`, `/methodologie`) → `red`
 
 **Familles autonomes hors 5 blocs** :
@@ -91,7 +92,7 @@ Certains blocs ont plusieurs teintes directrices selon le type de page :
 - Print & Export (`/prints/report`) → `print`
 
 **Bloc "Cartographie & Impact"** :
-- Pages carto (`/actions/map`, `/sandbox`) → `sky`
+- Pages carto (`/actions/map`) → `sky`
 - Pages impact (`/reports`, `/gamification`) → `red` / `rose`
 
 **Autres blocs (teinte unique)** :

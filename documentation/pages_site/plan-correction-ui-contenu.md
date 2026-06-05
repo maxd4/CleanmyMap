@@ -40,7 +40,6 @@ Routes concernées:
 - `/actions/map`
 - `/methodologie`
 - `/gamification`
-- `/sandbox`
 - `/community`
 - `/messagerie`
 - `/open-data`
@@ -49,13 +48,12 @@ Routes concernées:
 
 Note:
 
-- les routes alias `/community`, `/messagerie`, `/open-data`, `/sandbox` et `/gamification` redirigent vers les sections rendues par `/sections/[sectionId]`; la correction du lot 1 s'applique donc aux vues réellement affichées.
+- les routes alias `/community`, `/messagerie`, `/open-data` et `/gamification` redirigent vers les sections rendues par `/sections/[sectionId]`; la correction du lot 1 s'applique donc aux vues réellement affichées.
 
 Fichiers à modifier:
 
 - `apps/web/src/app/(app)/actions/map/page.tsx`
 - `apps/web/src/app/(app)/gamification/page.tsx`
-- `apps/web/src/app/(app)/sandbox/page.tsx`
 - `apps/web/src/app/(app)/community/page.tsx`
 - `apps/web/src/app/(app)/messagerie/page.tsx`
 - `apps/web/src/app/(app)/open-data/page.tsx`
@@ -67,7 +65,6 @@ Palette attendue:
 - `/actions/map` -> `sky`
 - `/methodologie` -> `red`
 - `/gamification` -> `red`
-- `/sandbox` -> `sky`
 - `/community` -> `pink`
 - `/messagerie` -> `pink`
 - `/open-data` -> `pink`
@@ -103,14 +100,13 @@ Risques de régression:
 Ordre recommandé d'exécution:
 
 1. `/actions/map`
-2. `/sandbox`
-3. `/gamification`
-4. `/methodologie`
-5. `/community`
-6. `/messagerie`
-7. `/open-data`
-8. `/parcours`
-9. `/parcours/[profile]`
+2. `/gamification`
+3. `/methodologie`
+4. `/community`
+5. `/messagerie`
+6. `/open-data`
+7. `/parcours`
+8. `/parcours/[profile]`
 
 ## Lot 2 — Pages auth
 
@@ -604,7 +600,6 @@ Routes concernées:
 - `/actions/map`
 - `/gamification`
 - `/reports`
-- `/sandbox`
 - `/community`
 - `/messagerie`
 - `/open-data`
@@ -631,7 +626,7 @@ Reste prioritaire dans le lot 8:
 
 - `/dashboard` si un résidu de warm/orange doit encore être lissé
 - `/parcours` et `/parcours/[profile]` si des écarts de palette ou de surcharge textuelle subsistent
-- `/sandbox`, `/open-data`, `/messagerie`, `/community` si des sous-composants secondaires gardent encore des accents mixtes
+- `/open-data`, `/messagerie`, `/community` si des sous-composants secondaires gardent encore des accents mixtes
 - `/learn/*` si des cartes ou illustrations internes restent au-dessus du niveau de densité attendu
 
 Palette attendue:

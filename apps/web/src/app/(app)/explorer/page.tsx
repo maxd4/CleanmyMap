@@ -9,10 +9,7 @@ import {
 } from "@/lib/navigation";
 import { toProfile } from "@/lib/profiles";
 import { getServerDisplayModePreference, getServerLocale } from "@/lib/server-preferences";
-import {
-  DASHBOARD_ROUTE,
-  EXPLORER_ROUTE,
-} from "@/lib/accueil-pilotage-routes";
+import { EXPLORER_ROUTE } from "@/lib/accueil-pilotage-routes";
 
 export const metadata: Metadata = {
   title: "Sommaire CleanMyMap - Plan du site et navigation",
@@ -21,14 +18,17 @@ export const metadata: Metadata = {
 };
 
 const BLOCK_PREVIEW_PRIORITY: Record<NavigationBlockId, Partial<Record<NavigationItem["id"], number>>> = {
-  home:      { dashboard: 1, explorer: 2, pilotage: 3, admin: 4, sponsor: 5, elus: 6 },
+  home:      { dashboard: 1, explorer: 2, pilotage: 3, admin: 4, sponsor: 5, funding: 6 },
   act:       { new: 1, "rejoindre-un-formulaire": 2, route: 3, "trash-spotter": 4 },
-  visualize: { map: 1, sandbox: 2, methodologie: 3, reports: 4, gamification: 5, weather: 6 },
+  visualize: { map: 1, methodologie: 2, reports: 3, gamification: 4 },
   impact:    {},
   network:   { network: 1, community: 2, feedback: 3, messagerie: 4, "open-data": 5, annuaire: 6 },
   connect:   { messagerie: 1, dm: 2 },
-  learn:     { hub: 1, guide: 2, climate: 3, recycling: 4 },
-  pilot:     { admin: 1, sponsor: 2, elus: 3 },
+  learn:     {
+    "learn-comprendre": 1,
+    "learn-sentrainer": 2,
+    "learn-bonnes-pratiques": 3,
+  },
 };
 
 function getOrderedPreviewItems(blockId: NavigationBlockId, items: NavigationItem[]): NavigationItem[] {
@@ -160,21 +160,6 @@ const BLOCK_THEME: Record<NavigationBlockId, {
     itemHover: "hover:border-white/12 hover:bg-white/8 hover:text-white",
     divider:   "bg-yellow-200/32",
   },
-  pilot: {
-    backgroundImage: "linear-gradient(135deg, #2a1604 0%, #5c1c0f 52%, #92400e 100%)",
-    ring:      "ring-amber-200/20",
-    iconBg:    "bg-amber-500",
-    iconColor: "text-white",
-    badge:     "border-amber-200/25 bg-amber-100/12 text-white/90",
-    border:    "border-amber-200/18",
-    glow:      "group-hover:shadow-amber-950/28",
-    cta:       "border-white/14 bg-white/10 text-white hover:bg-white/16",
-    text:      "text-white",
-    mutedText: "text-white/82",
-    dot:       "bg-amber-300",
-    itemHover: "hover:border-white/12 hover:bg-white/8 hover:text-white",
-    divider:   "bg-amber-200/32",
-  },
 };
 
 function formatBlockLabel(label: string): string {
@@ -216,7 +201,7 @@ export default async function ExplorerPage() {
         <div className="flex flex-wrap justify-center gap-4 xl:flex-nowrap">
           {visibleSpaces.map((space) => {
             const orderedItems = getOrderedPreviewItems(space.id, space.items);
-            const firstHref = orderedItems[0]?.href ?? DASHBOARD_ROUTE;
+            const firstHref = orderedItems[0]?.href ?? EXPLORER_ROUTE;
             const t = BLOCK_THEME[space.id];
 
             return (

@@ -35,7 +35,7 @@ const CHECKLIST_ITEMS = [
     items: [
       "Définir l'objectif, la zone et le point de rendez-vous.",
       "Prévenir la mairie ou le gestionnaire du site si nécessaire.",
-      "Préparer le nombre de bénévoles, le matériel et les contacts utiles.",
+      "Préparer le nombre de bénévoles, le matériel, les contacts utiles et le binôme sécurité.",
       "Partager l'affiche, le mail d'invitation et le message de rappel.",
     ],
   },
@@ -45,6 +45,7 @@ const CHECKLIST_ITEMS = [
     items: [
       "Faire l'accueil, rappeler les consignes et attribuer les zones.",
       "Vérifier la sécurité, la météo et les déchets à risque.",
+      "Rappeler la conduite attendue: rester groupé, signaler, ne pas manipuler seul un objet dangereux.",
       "Suivre le tri, les sacs pleins et le rythme de collecte.",
       "Conserver les observations terrain pour le bilan.",
     ],
@@ -63,11 +64,12 @@ const CHECKLIST_ITEMS = [
 
 const RESOURCE_SECTIONS = [
   {
-    title: "Sécuriser l'action",
+    title: "Sécurité et conduite",
     icon: ShieldCheck,
     accentClass: "border-emerald-200 bg-emerald-50/80 text-emerald-900",
     items: [
       "Fiche sécurité pour rappeler les gants, pinces, objets dangereux et gestes d'alerte.",
+      "Brief de conduite pour le groupe: binômes, signalement et respect du site.",
       "Modèle d'autorisation mairie pour cadrer l'usage du lieu et le parcours.",
       "Liste matériel selon météo: soleil, pluie, vent, froid ou forte chaleur.",
     ],
@@ -120,7 +122,7 @@ const TEMPLATES: KitTemplate[] = [
     description: "Trame courte pour lancer l'action et poser les consignes.",
     accentClass: "border-violet-200 bg-violet-50 text-violet-900",
     content:
-      "Bienvenue à toutes et tous.\n\n1. Présentation rapide de l'objectif et du parcours.\n2. Rappel sécurité: gants, pinces, pas d'objets dangereux seuls, signaler tout incident.\n3. Répartition des rôles et des zones.\n4. Consignes de tri et de remontée des observations terrain.\n5. Photo de groupe et départ de l'action.\n\nMerci pour votre aide et votre vigilance.",
+      "Bienvenue à toutes et tous.\n\n1. Présentation rapide de l'objectif et du parcours.\n2. Rappel sécurité: gants, pinces, pas d'objets dangereux seuls, signaler tout incident.\n3. Répartition des rôles, des zones et du binôme sécurité.\n4. Consignes de tri, de conduite sur site et de remontée des observations terrain.\n5. Photo de groupe et départ de l'action.\n\nMerci pour votre aide et votre vigilance.",
   },
 ];
 

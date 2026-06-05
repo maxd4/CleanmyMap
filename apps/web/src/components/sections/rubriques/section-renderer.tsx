@@ -18,7 +18,6 @@ import {
   CompareSection,
   CompostSection,
   RecyclingSection,
-  SandboxSection,
   TrashSpotterSection,
   WeatherSection,
   JoinFormSection,
@@ -61,7 +60,6 @@ export const FINALIZED_SECTION_RENDERERS = {
     </div>
   ),
   weather: () => <WeatherSection />,
-  sandbox: () => <SandboxSection />,
   messagerie: () => <ConnectSection defaultTab="discussions" />,
   elus: () => <ElusSection />,
 } satisfies Record<VisibleFinalizedSectionId, () => ReactNode>;

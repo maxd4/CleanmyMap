@@ -3,3 +3,6 @@
 .cursor/
 .mcp.json
 .vscode/
+apps/web/.next-sourcemap-test/
+apps/web/.next/
+apps/web/artifacts/

@@ -29,6 +29,7 @@ export function buildPersistedNotes(payload: CreateActionPayload): string | null
     submissionMode: payload.submissionMode,
     wasteBreakdown: payload.wasteBreakdown,
     associationName: payload.associationName,
+    groupJoinEnabled: payload.groupJoinEnabled,
     placeType: payload.placeType,
     departureLocationLabel: payload.departureLocationLabel,
     arrivalLocationLabel: payload.arrivalLocationLabel,

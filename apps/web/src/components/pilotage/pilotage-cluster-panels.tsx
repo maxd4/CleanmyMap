@@ -53,6 +53,7 @@ type PilotageInsightCardProps = {
 type PilotageClusterLinksProps = {
   links: PilotageClusterLink[];
   className?: string;
+  activeLinkId?: string;
 };
 
 const VARIANT_CARD_STYLES: Record<
@@ -269,14 +270,23 @@ export function PilotageInsightCard({
   );
 }
 
-export function PilotageClusterLinks({ links, className }: PilotageClusterLinksProps) {
+export function PilotageClusterLinks({
+  links,
+  className,
+  activeLinkId,
+}: PilotageClusterLinksProps) {
   return (
     <div className={cn("grid gap-4 md:grid-cols-3", className)}>
       {links.map((link, index) => (
         <Link
           key={link.id}
           href={link.href}
-          className="group rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 transition-all hover:-translate-y-0.5 hover:bg-white/[0.09]"
+          aria-current={activeLinkId === link.id ? "page" : undefined}
+          className={cn(
+            "group rounded-[2rem] border border-white/10 bg-white/[0.06] p-5 transition-all hover:-translate-y-0.5 hover:bg-white/[0.09]",
+            activeLinkId === link.id &&
+              "border-white/25 bg-white/[0.12] shadow-[0_18px_40px_-28px_rgba(255,255,255,0.18)]",
+          )}
         >
           <p className="text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
             {String(index + 1).padStart(2, "0")}

@@ -128,12 +128,12 @@ export function OriginCredibility() {
                   <ArrowRight size={14} />
                 </CmmButton>
                 <CmmButton
-                  href="/partners/network"
+                  href="/sections/community?tab=partners"
                   tone="secondary"
                   variant="pill"
                   className="h-11 px-4 text-[12px] font-bold gap-2 transition-transform hover:-translate-y-0.5"
                 >
-                  Annuaire partenaires
+                  Voir les partenaires
                   <ArrowRight size={14} />
                 </CmmButton>
               </div>

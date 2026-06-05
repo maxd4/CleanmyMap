@@ -20,21 +20,21 @@ export async function GET() {
     // Fetch user counts per stage
     const { count: totalUsers } = await supabase
       .from("user_points")
-      .select("*", { count: "exact", head: true });
+      .select("total_points", { count: "exact", head: true });
 
     const { count: usersWithPoints } = await supabase
       .from("user_points")
-      .select("*", { count: "exact", head: true })
+      .select("total_points", { count: "exact", head: true })
       .gt("total_points", 0);
 
     const { count: usersWithBadges } = await supabase
       .from("user_points")
-      .select("*", { count: "exact", head: true })
+      .select("total_points", { count: "exact", head: true })
       .gte("total_points", 10);
 
     const { count: usersHighActivity } = await supabase
       .from("user_points")
-      .select("*", { count: "exact", head: true })
+      .select("total_points", { count: "exact", head: true })
       .gte("total_points", 500);
 
     const counts = [

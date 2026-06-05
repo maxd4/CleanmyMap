@@ -5,6 +5,7 @@ export type FormState = {
  associationName: string;
  enterpriseName: string;
  organizerAccounts: string;
+ groupJoinEnabled: boolean;
  actionDate: string;
  locationLabel: string;
  departureLocationLabel: string;

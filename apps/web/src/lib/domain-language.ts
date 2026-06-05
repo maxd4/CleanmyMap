@@ -88,7 +88,7 @@ export function getEffectiveAccessForSessionRole(
     canExportCommunityFunnelCsv: isAdmin,
     // /api/reports/elus-dossier est accessible a tout utilisateur authentifie.
     canExportElusDossier: isAuthenticated,
-    // /api/sandbox/runbook-checks est reserve aux admins.
+    // API de runbook interne reservee aux admins.
     canRunSandboxChecksWithoutAuth: false,
   };
 }

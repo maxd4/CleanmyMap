@@ -75,7 +75,7 @@ Axes notés:
 | Parcours personnalisé      | `/parcours`                | 56             | 54  | 53  | 52                   | 53            | 58         | 49               | 53          | Fonctionnel partiel | Moyenne  |
 | Parcours profil            | `/parcours/[profile]`      | 61             | 59  | 58  | 56                   | 58            | 60         | 54               | 58          | Fonctionnel partiel | Moyenne  |
 | Pilotage réseau            | `/partners/dashboard`      | 73             | 71  | 70  | 69                   | 70            | 68         | 71               | 70          | Utilisable          | Haute    |
-| Réseau local               | `/partners/network`        | 82             | 80  | 82  | 83                   | 80            | 77         | 79               | 80          | Presque prêt        | Basse    |
+| Communauté                 | `/sections/community`      | 82             | 80  | 82  | 83                   | 80            | 77         | 79               | 80          | Presque prêt        | Basse    |
 | Parcours partenaire        | `/partners/onboarding`     | 64             | 62  | 62  | 60                   | 62            | 61         | 59               | 61          | Fonctionnel partiel | Haute    |
 | Rapport imprimable         | `/prints/report`           | 82             | 80  | 81  | 79                   | 78            | 76         | 78               | 79          | Presque prêt        | Moyenne  |
 | Profil racine              | `/profil`                  | 56             | 54  | 53  | 52                   | 53            | 58         | 49               | 53          | Fonctionnel partiel | Moyenne  |
@@ -119,7 +119,7 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 | Données ouvertes         | `/sections/open-data`     | 81             | 79  | 80  | 78                   | 78            | 75         | 77               | 78          | Utilisable          | Moyenne  |
 | Financement / sponsoring | `/sections/funding`       | 78             | 76  | 77  | 75                   | 76            | 73         | 74               | 75          | Utilisable          | Moyenne  |
 | Signalement Déchets      | `/sections/trash-spotter` | 76             | 74  | 75  | 73                   | 74            | 70         | 71               | 73          | Utilisable          | Moyenne  |
-| Découvrir le réseau      | `/partners/network`       | 82             | 80  | 82  | 83                   | 80            | 77         | 79               | 80          | Presque prêt        | Basse    |
+| Découvrir la communauté  | `/sections/community`     | 82             | 80  | 82  | 83                   | 80            | 77         | 79               | 80          | Presque prêt        | Basse    |
 | Point de départ (Apprendre) | `/learn/hub`              | 82             | 80  | 83  | 84                   | 79            | 75         | 79               | 80          | Presque prêt        | Basse    |
 | Portail Décideur         | `/sponsor-portal`         | 82             | 80  | 81  | 81                   | 78            | 75         | 77               | 79          | Presque prêt        | Moyenne  |
 | God Mode                 | `/admin/godmode`          | 55             | 52  | 54  | 57                   | 52            | 60         | 47               | 54          | Fonctionnel partiel | Haute    |
@@ -149,7 +149,7 @@ Note de deuxième passe: `/actions/history` est bien une page existante. En reva
 ### Phase 1 - Cadrage de sortie
 
 1. Figer le périmètre public à 8 à 10 routes maximum.
-   - Garder: `/`, `/explorer`, `/learn/hub`, `/reports`, `/actions/new`, `/actions/map`, `/observatoire`, `/prints/report`, `/partners/network`, `/sponsor-portal`.
+   - Garder: `/`, `/explorer`, `/learn/hub`, `/reports`, `/actions/new`, `/actions/map`, `/observatoire`, `/prints/report`, `/sections/community`, `/sponsor-portal`.
    - Mettre hors vitrine publique: `/admin`, `/admin/forms`, `/admin/godmode`, `/profil`, `/parcours`, `/onboarding/localisation`, la comparaison interne des formulaires, `/sign-in`, `/sign-up`, les routes dynamiques non garanties.
 2. Décider explicitement ce qui est public, ce qui est interne, et ce qui est caché dans la navigation.
 3. Marquer dans le code les pages non publicables comme secondaires ou hors menu principal.

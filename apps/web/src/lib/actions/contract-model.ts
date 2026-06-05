@@ -42,6 +42,7 @@ export type ActionDataDates = {
 export type ActionDataMetadata = {
   actorName: string | null;
   associationName: string | null;
+  groupJoinEnabled: boolean;
   placeType: string | null;
   departureLocationLabel: string | null;
   arrivalLocationLabel: string | null;
@@ -91,6 +92,7 @@ export type BuildActionContractParams = {
   durationMinutes?: number | null;
   actorName?: string | null;
   associationName?: string | null;
+  groupJoinEnabled?: boolean | null;
   placeType?: string | null;
   departureLocationLabel?: string | null;
   arrivalLocationLabel?: string | null;
@@ -181,6 +183,7 @@ export function buildActionDataContract(
     metadata: {
       actorName: params.actorName ?? null,
       associationName: params.associationName ?? null,
+      groupJoinEnabled: params.groupJoinEnabled ?? true,
       placeType: params.placeType ?? null,
       departureLocationLabel: params.departureLocationLabel ?? null,
       arrivalLocationLabel: params.arrivalLocationLabel ?? null,

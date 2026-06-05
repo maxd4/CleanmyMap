@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Briefcase, Dumbbell, ShieldCheck, Target } from "lucide-react";
+import { BookOpen, Dumbbell, ShieldCheck, Target } from "lucide-react";
 import type { NavigationSpace } from "@/lib/navigation";
 import { getLocalizedText } from "@/lib/navigation";
 import type { Locale } from "@/lib/ui/preferences";
@@ -26,18 +26,14 @@ type AppNavigationBlockDropdownLearnProps = {
 
 function getLearnItemIcon(routeId: string) {
   switch (routeId) {
-    case "hub":
-      return BookOpen;
     case "learn-comprendre":
-      return Target;
+      return BookOpen;
     case "learn-sentrainer":
       return Dumbbell;
     case "learn-bonnes-pratiques":
       return ShieldCheck;
-    case "learn-ressources":
-      return Briefcase;
     default:
-      return BookOpen;
+      return Target;
   }
 }
 

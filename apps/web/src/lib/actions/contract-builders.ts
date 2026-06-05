@@ -31,6 +31,7 @@ export type ActionContractCreatePayload = {
     actorName?: string;
     associationName?: string;
     organizerAccounts?: string[];
+    groupJoinEnabled?: boolean;
     placeType?: string;
     wasteKg: number;
     cigaretteButts?: number;
@@ -79,6 +80,7 @@ export function toContractCreatePayload(
       actorName: payload.actorName,
       associationName: payload.associationName,
       organizerAccounts: payload.organizerAccounts,
+      groupJoinEnabled: payload.groupJoinEnabled,
       placeType: payload.placeType,
       wasteKg: payload.wasteKg,
       cigaretteButts: payload.cigaretteButts,
@@ -107,6 +109,7 @@ export function normalizeCreatePayload(
   return {
     actorName: payload.metadata.actorName,
     associationName: payload.metadata.associationName,
+    groupJoinEnabled: payload.metadata.groupJoinEnabled,
     organizerAccounts: payload.metadata.organizerAccounts ?? undefined,
     actionDate: payload.dates.observedAt,
     recordType: payload.type,

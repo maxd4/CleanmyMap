@@ -31,7 +31,7 @@ import {
   PilotageInsightCard,
   PilotageMetricGrid,
 } from "@/components/pilotage/pilotage-cluster-panels";
-import { DecisionReadingSection } from "@/components/pilotage/decision-reading-section";
+import { DecisionClusterSection } from "@/components/pilotage/decision-cluster-section";
 
 type PilotageOverviewResponse = {
   status: "ok";
@@ -241,38 +241,7 @@ export function ElusSection() {
                      }))}
                    />
 
-                   <DecisionReadingSection
-                     variant="governance"
-                     eyebrow={fr ? "Cluster commun" : "Shared cluster"}
-                     title={fr ? "Mon espace, Portail décideur et Pilotage" : "Dashboard, decision portal and pilotage"}
-                     description={fr ? "Les trois surfaces partagent une même lecture de la décision: synthèse rapide, impact lisible, puis arbitrage adapté au contexte." : "The three surfaces share the same decision reading pattern: quick synthesis, readable impact, then arbitration adapted to context."}
-                     links={[
-                       {
-                         id: "dashboard",
-                         href: "/dashboard",
-                         label: fr ? "Mon espace" : "Dashboard",
-                         description: fr
-                           ? "KPI, profil et arbitrages du quotidien."
-                           : "KPIs, profile and day-to-day arbitration.",
-                       },
-                       {
-                         id: "sponsor-portal",
-                         href: "/sponsor-portal",
-                         label: fr ? "Portail décideur" : "Decision portal",
-                         description: fr
-                           ? "ROI, impact territorial et lecture institutionnelle."
-                           : "ROI, territorial impact and institutional reading.",
-                       },
-                       {
-                         id: "pilotage",
-                         href: "/pilotage",
-                         label: fr ? "Pilotage" : "Pilotage",
-                         description: fr
-                           ? "Synthèse transverse, méthodes et recommandations."
-                           : "Transverse summary, methods and recommendations.",
-                       },
-                     ]}
-                   />
+                    <DecisionClusterSection locale={locale} surfaceId="governance" />
 
                    {/* Secondary KPIs / Detailed Analytics */}
                    <div className="space-y-10">

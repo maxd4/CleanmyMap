@@ -140,9 +140,9 @@ quadrantChart
 
 **Note de fusion**
 
-- `Pilotage`, `Portail Décideur` et `Gouvernance` partagent désormais un socle commun de KPI, d'insight et de navigation.
-- `Pilotage` porte la synthèse, `Portail Décideur` la lecture ROI, `Gouvernance` la lecture territoriale.
-- Les trois surfaces réutilisent les mêmes blocs pour éviter les bulles répétées et les doublons de contenu.
+- `Pilotage` porte la synthèse et devient le point d'entrée principal.
+- `Portail Décideur` et `Gouvernance` réutilisent le même socle de KPI, d'insight et de navigation, mais restent des surfaces secondaires non exposées dans la navigation principale pour réduire le nombre de pages visibles.
+- Les blocs partagés évitent les bulles répétées et les doublons de contenu.
 
 **Famille autonome — Administration** `/admin`
 
@@ -219,12 +219,6 @@ quadrantChart
 - Utilite : visualiser les lieux d'intervention fiables.
 - Impact : améliore la priorisation locale et réduit les doublons.
 
-**Carte d'entraînement (sandbox)** `/sections/sandbox`
-
-- Sandbox séparée pour tester filtres, couches et navigation cartographique.
-- Utilite : explorer sans engagement et valider les comportements de la carte.
-- Impact : réduit les erreurs d'utilisation de l'outil cartographique.
-
 **Rapports d'impact** `/reports`
 
 - Synthèses et exports pour élus, chercheurs et partenaires.
@@ -247,10 +241,10 @@ quadrantChart
 
 ### Bloc 4 — Réseau & Discussions · `indigo`
 
-**Découvrir le réseau** `/partners/network`
+**Découvrir le réseau** `/sections/community?tab=partners`
 
-- Vue du réseau engagé.
-- Utilite : cartographier les partenaires mobilisés.
+- Vue du réseau partenaire intégré à la page Communauté.
+- Utilite : cartographier les partenaires mobilisés sans créer une page autonome.
 - Impact : facilite la collaboration institutionnelle.
 
 **Annuaire partenaires** `/partners/dashboard`
@@ -293,7 +287,7 @@ quadrantChart
 - Utilite : centraliser l'entrée du bloc et rediriger vers les pages dédiées sans mélanger les usages.
 - Impact : améliore la qualité des interventions, la reprise mobile et la continuité de lecture.
 
-**Comprendre l'enjeu** `/learn/comprendre`
+**Ordres de grandeur** `/learn/comprendre`
 
 - Contexte climat, ordres de grandeur, renvoi vers méthodologie.
 - Utilite : relier l'action locale aux ODD et aux repères scientifiques.
@@ -323,8 +317,8 @@ quadrantChart
 
 - Les rubriques de gouvernance et d'administration ne sont pas visibles dans le ruban standard pour les bénévoles.
 - `Météo` vit dans le bloc Agir et sert de filtre opérationnel avant sortie terrain.
-- `Pilotage`, `Portail Décideur` et `Gouvernance` forment un cluster décisionnel commun : mêmes briques de synthèse, mais lecture adaptée au rôle et au contexte.
-- `elu` et `admin` ont l'accès le plus large ; `coordinateur` et `scientifique` accèdent surtout à `Gouvernance`.
+- `Pilotage` est le hub de lecture décisionnelle, et `Portail Décideur` / `Gouvernance` deviennent des surfaces secondaires reliées au même socle, accessibles depuis le hub plutôt que depuis la navigation principale.
+- `elu` et `admin` ont l'accès le plus large ; `coordinateur` et `scientifique` accèdent surtout au hub `Pilotage`, puis aux surfaces secondaires si besoin.
 - `Administration` et la sous-partie cachée `Administration avancée` sont strictement réservées au profil `max` ou aux comptes `admin` selon le contexte de la page, sans exposition directe dans la navigation publique.
 - `Historique` existe mais reste `hidden` dans le registre ; il n'est pas proposé dans le ruban principal.
 

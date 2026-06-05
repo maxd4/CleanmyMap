@@ -40,6 +40,7 @@ describe("report scope helpers", () => {
       routeAdjustmentMessage: null,
       notes: null,
       notesPlain: null,
+      groupJoinEnabled: true,
       submissionMode: null,
       wasteBreakdown: null,
       photos: null,
